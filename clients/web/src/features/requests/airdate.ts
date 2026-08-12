@@ -29,6 +29,15 @@ export function relativeAirDate(
   return rtf.format(Math.round(days / 365), 'year');
 }
 
+/** The same string with its opening letter capitalised, for a sentence that
+ * starts with a relative date ("dans 3 jours" reading as a line of its own).
+ * `Intl.RelativeTimeFormat` has no sentence-case option and `::first-letter`
+ * has no React Native spelling. */
+export function sentenceCase(text: string, locale: string): string {
+  if (!text) return text;
+  return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
+}
+
 /** Compact day label with the weekday, e.g. "ven. 24 juil." / "Fri, Jul 24". */
 export function shortDayLabel(airDate: string, locale: string): string {
   return new Date(`${airDate}T00:00:00`).toLocaleDateString(locale, {

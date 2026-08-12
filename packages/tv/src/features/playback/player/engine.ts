@@ -29,7 +29,7 @@ export interface EngineListeners {
   onAudioFilterUnavailable?(): void;
   // Only the native backend fires this: expo-video's player is a value the engine replaces (on
   // the direct→remux fallback, and on every anchored-master seek), unlike the browser engines'
-  // stable DOM elements. Without it the `<VideoView>` kept rendering a released player — a
+  // stable DOM elements. Without it the `<VideoView>` kept rendering a released player: a
   // black, unscrubbable screen.
   onSurfaceChange?(): void;
 }
@@ -128,7 +128,7 @@ export function avplayAvailable(): boolean {
 
 // Desktop mpv bridge (Tauri): the @kroma/desktop shell runs a native mpv
 // process for video and exposes a command surface + event stream to the
-// webview, reached through Tauri's injected `window.__TAURI__` globals — so
+// webview, reached through Tauri's injected `window.__TAURI__` globals, so
 // @kroma/tv needs no Tauri dependency, and this path stays inert in a plain
 // browser (getTauri() → null → the HTML/AVPlay engines are used instead).
 

@@ -175,7 +175,7 @@ function importCer(cerPath: string, dir: string): void {
   const p12 = join(dir, 'kroma-developer-id.p12');
   // Keychain and `security import` want the pre-OpenSSL-3 PBE; OpenSSL 3 defaults
   // to AES-256-CBC + PBKDF2 and needs `-legacy` to go back, but 1.1.1 and LibreSSL
-  // (what macOS ships) reject that flag outright — so ask the binary which it is.
+  // (what macOS ships) reject that flag outright, so ask the binary which it is.
   const openssl3 = execFileSync('openssl', ['version']).toString().startsWith('OpenSSL 3.');
   execFileSync('openssl', [
     'pkcs12',

@@ -1,7 +1,7 @@
 // The icon subset decides what every client ships; missing a name means the
 // app silently draws a question mark, in production only. So these tests pin
-// the behaviour a broken scan would break — aliases survive, the fallback is
-// always present, a renamed target fails loudly — not the exact icon count.
+// the behaviour a broken scan would break: aliases survive, the fallback is
+// always present, a renamed target fails loudly, not the exact icon count.
 // They run against the real Tabler install and the real repo on purpose.
 import {
   existsSync,
@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os';
 import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { kromaUi } from './index';
+import { kromaUi, sourceRoots, walkReaches, walkSources } from './index';
 
 const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url));
 const GLYPH_SOURCE = 'packages/ui/src/lib/icons/glyph-source.ts';
@@ -101,7 +101,7 @@ describe('the vite half', () => {
     // 66 of Tabler's exports are ALIASES with no module of their own
     // (`IconDiscountCheck` lives in `IconRosetteDiscount.mjs`). A directory
     // listing misses them, and because they stay in the .d.ts they typecheck and
-    // draw in a full build — so the subset would fall back to the question mark
+    // draw in a full build, so the subset would fall back to the question mark
     // for them in production only. More known names than icon files is what
     // distinguishes the two sources, whether or not any alias is used today.
     const available = Number(/\d+ of (\d+)/.exec(loadGlyphSource().notes[0] ?? '')?.[1]);
@@ -224,6 +224,109 @@ function vi_fn() {
   };
   return Object.assign(fn, { calls });
 }
+
+describe('the workspace walk', () => {
+  function tree(): string {
+    const dir = mkdtempSync(join(tmpdir(), 'kroma-ui-walk-'));
+    mkdirSync(join(dir, 'nested'), { recursive: true });
+    mkdirSync(join(dir, 'node_modules'), { recursive: true });
+    mkdirSync(join(dir, '.expo'), { recursive: true });
+    writeFileSync(join(dir, 'a.ts'), 'a');
+    writeFileSync(join(dir, 'nested', 'b.test.ts'), 'b');
+    writeFileSync(join(dir, 'nested', 'c.tsx'), 'c');
+    writeFileSync(join(dir, 'd.md'), 'd');
+    writeFileSync(join(dir, 'node_modules', 'e.ts'), 'e');
+    writeFileSync(join(dir, '.expo', 'f.ts'), 'f');
+    return dir;
+  }
+
+  function collector(wants: (name: string) => boolean) {
+    const saw: string[] = [];
+    let ended = 0;
+    return {
+      saw,
+      ended: () => ended,
+      pass: {
+        wants,
+        read: (source: string) => {
+          saw.push(source);
+        },
+        done: () => {
+          ended += 1;
+        },
+      },
+    };
+  }
+
+  it('carries every collector over one traversal, each file read once', () => {
+    // The whole point of the pass shape: the icon subset and the token scan read
+    // the same four directories, and the traversal is what a scan costs.
+    const dir = tree();
+    try {
+      const all = collector(() => true);
+      const shipped = collector((name) => !name.includes('.test.'));
+
+      walkSources([dir], [all.pass, shipped.pass]);
+
+      expect(all.saw.sort()).toEqual(['a', 'b', 'c']);
+      expect(shipped.saw.sort()).toEqual(['a', 'c']);
+      expect(all.ended()).toBe(1);
+      expect(shipped.ended()).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('ends a collector that wanted nothing, rather than leaving it open', () => {
+    const dir = tree();
+    try {
+      const none = collector(() => false);
+      walkSources([dir], [none.pass]);
+      expect(none.saw).toEqual([]);
+      expect(none.ended()).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('never begins the traversal when every collector already has its answer', () => {
+    const dir = tree();
+    try {
+      // The traversal IS the cost, and the only way to watch it not happen is to
+      // hand the roots over through a getter.
+      let reached = 0;
+      const roots: string[] = [];
+      Object.defineProperty(roots, 0, {
+        enumerable: true,
+        get: () => {
+          reached += 1;
+          return dir;
+        },
+      });
+
+      walkSources(roots, []);
+      expect(reached).toBe(0);
+
+      walkSources(roots, [collector(() => true).pass]);
+      expect(reached).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('places a changed file against the walk without walking again', () => {
+    const roots = sourceRoots('/repo');
+    expect(roots).toEqual(
+      ['packages', 'clients', 'apps', 'modules'].map((dir) => join('/repo', dir)),
+    );
+
+    expect(walkReaches(roots, join('/repo', 'packages', 'ui', 'src', 'a.tsx'))).toBe(true);
+    expect(walkReaches(roots, join('/repo', 'packages', 'node_modules', 'a.ts'))).toBe(false);
+    expect(walkReaches(roots, join('/repo', 'packages', '.expo', 'a.ts'))).toBe(false);
+    expect(walkReaches(roots, join('/repo', 'packages', 'a.md'))).toBe(false);
+    expect(walkReaches(roots, join('/repo', 'server', 'a.ts'))).toBe(false);
+  });
+});
 
 describe('the scan', () => {
   it('is done once per package, not once per bundler process', () => {

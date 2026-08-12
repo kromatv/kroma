@@ -25,4 +25,4 @@ needs computing, one of those three cannot read it.
 10-foot screen is authored against. That is why sizes in this kit are plain
 numbers: on a fixed stage a number IS the design's px value, so there is no scale
 to memorise and nothing to re-tune per platform. See
-[`../../ui/templates/`](../../ui/templates).
+[`../../components/templates/`](../../components/templates).

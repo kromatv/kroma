@@ -42,7 +42,7 @@ const REMOTE: Record<string, Direction> = {
 
 // A SET, not a single slot: screens stack, so two navigators can be subscribed
 // for a moment, and React tears the old subscription down AFTER the new one is
-// up — one slot would let that teardown null the live handler.
+// up. One slot would let that teardown null the live handler.
 const handlers = new Set<(direction: Direction) => void>();
 
 /** Call once at startup, before the first screen renders; calling it twice is
@@ -65,7 +65,7 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVEN
   ? useTVEventHandler
   : () => {};
 
-/** Mounted by <FocusScope>. `on` lets a scope nested inside another opt out —
+/** Mounted by <FocusScope>. `on` lets a scope nested inside another opt out:
  * this posts to EVERY registered navigator, so two live bridges would deliver
  * each press twice. See <FocusScope>'s `bridge` prop. */
 export function useRemoteBridge(on = true): void {

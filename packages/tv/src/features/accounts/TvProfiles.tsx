@@ -10,7 +10,7 @@ import {
   Hint,
   StatusDot,
   styles,
-  Txt,
+  Text,
   useFocusNav,
 } from '@kroma/ui/kit';
 import { useMemo } from 'react';
@@ -70,15 +70,12 @@ export function TvProfiles() {
       <Box mb={28}>
         <KromaMark size={GATE_MARK} />
       </Box>
-      <Txt
-        variant="hero"
-        style={{ fontSize: 50, lineHeight: 50, fontWeight: '600', marginBottom: 12 }}
-      >
+      <Text variant="titleTv" mb={12}>
         {t('auth.whoWatching')}
-      </Txt>
-      <Txt style={{ fontSize: 17, fontWeight: '500', marginBottom: 44 }} color="textDim">
+      </Text>
+      <Text variant="leadTv" mb={44} color="textDim">
         {t('profiles.subtitle')}
-      </Txt>
+      </Text>
 
       {/* No own scroll or clip: the page (AuthScreen) scrolls, so the focus zoom
           and the amber ring are never cropped. Gutters keep the edge tiles'
@@ -109,17 +106,14 @@ export function TvProfiles() {
                 </Box>
               </Focusable>
               <Box align="center" gap={5}>
-                <Txt style={{ fontSize: 18, fontWeight: '500' }} color="rgba(244, 243, 240, 0.82)">
+                <Text variant="leadTv" color="text/82">
                   {account.user.username}
-                </Txt>
+                </Text>
                 <Box row align="center" gap={6}>
                   <StatusDot online={up} />
-                  <Txt
-                    style={{ fontSize: 12, fontWeight: '600' }}
-                    color={offline ? 'danger' : 'rgba(244, 243, 240, 0.42)'}
-                  >
+                  <Text variant="meta" color={offline ? 'danger' : 'text/42'}>
                     {offline ? t('connection.offline') : serverName}
-                  </Txt>
+                  </Text>
                 </Box>
               </Box>
             </Box>
@@ -154,7 +148,7 @@ export function TvProfiles() {
         size={14}
         gap={4}
         mt={24}
-        color="rgba(244, 243, 240, 0.4)"
+        color="text/40"
         textStyle={s.navHint}
       />
     </AuthScreen>

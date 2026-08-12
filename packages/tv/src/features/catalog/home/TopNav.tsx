@@ -6,19 +6,20 @@ import {
   Focusable,
   FocusRegion,
   FocusSlot,
+  Frost,
   gradient,
   Icon,
+  NavPill,
   Spinner,
   StatusDot,
   shade,
   styles,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
 import { CastRemotes } from '#tv/features/cast/CastRemotes';
-import { type NavItem, NavPill } from '#tv/features/catalog/home/NavPill';
 import { KromaMark, useClock } from '#tv/shared/ui';
 
 export type NavKey = 'home' | 'films' | 'series' | 'genres' | 'mylist' | 'search';
@@ -35,30 +36,6 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
   const clock = useClock();
   const { user } = useAuth();
   const { client, online } = useConnection();
-
-  const items: NavItem[] = [
-    { key: 'home', icon: 'home', label: t('nav.home'), onPress: () => nav.home() },
-    {
-      key: 'films',
-      icon: 'movie',
-      label: t('nav.films'),
-      onPress: () => nav.reset('grid', { kind: 'films' }),
-    },
-    {
-      key: 'series',
-      icon: 'device-tv',
-      label: t('nav.series'),
-      onPress: () => nav.reset('grid', { kind: 'series' }),
-    },
-    { key: 'genres', icon: 'category', label: t('nav.genres'), onPress: () => nav.reset('genres') },
-    {
-      key: 'mylist',
-      icon: 'bookmark',
-      label: t('nav.myList'),
-      onPress: () => nav.reset('grid', { kind: 'mylist' }),
-    },
-    { key: 'search', icon: 'search', label: t('nav.search'), onPress: () => nav.reset('search') },
-  ];
 
   return (
     <Box absolute left={0} right={0} top={0} z={10} px={64} py={32}>
@@ -86,12 +63,56 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
             <KromaMark size={28} />
           </Box>
         </FocusSlot>
-        <NavPill items={items} active={active} />
+        <NavPill.Root size="tv" label={t('nav.menu')}>
+          {/* Platforms without a blur (legacy panels, an unregistered shell)
+              keep the pill's solid fill. */}
+          <NavPill.Backdrop>
+            <Frost amount={16} />
+          </NavPill.Backdrop>
+          <NavPill.Item
+            icon="home"
+            label={t('nav.home')}
+            active={active === 'home'}
+            onPress={() => nav.home()}
+          />
+          <NavPill.Item
+            icon="movie"
+            label={t('nav.films')}
+            active={active === 'films'}
+            onPress={() => nav.reset('grid', { kind: 'films' })}
+          />
+          <NavPill.Item
+            icon="device-tv"
+            label={t('nav.series')}
+            active={active === 'series'}
+            onPress={() => nav.reset('grid', { kind: 'series' })}
+          />
+          <NavPill.Item
+            icon="category"
+            label={t('nav.genres')}
+            active={active === 'genres'}
+            onPress={() => nav.reset('genres')}
+          />
+          <NavPill.Item
+            icon="bookmark"
+            label={t('nav.myList')}
+            active={active === 'mylist'}
+            onPress={() => nav.reset('grid', { kind: 'mylist' })}
+          />
+          <NavPill.Item
+            icon="search"
+            label={t('nav.search')}
+            active={active === 'search'}
+            onPress={() => nav.reset('search')}
+          />
+        </NavPill.Root>
         <Box row align="center" gap={18}>
           {/* Renders only while a phone or browser is driving this set. */}
           <CastRemotes />
           <ConnectionStatus online={online} label={t('connection.reconnecting')} />
-          <Txt style={s.clock}>{clock}</Txt>
+          <Text variant="labelTv" style={s.clock}>
+            {clock}
+          </Text>
           {user ? (
             <Focusable
               onPress={() => nav.go('profileMenu')}
@@ -119,10 +140,10 @@ function ConnectionStatus({ online, label }: Readonly<{ online: boolean; label: 
   return (
     <Box w={36} h={36} center accessibilityLabel={label} accessibilityRole="progressbar">
       <Box absolute>
-        <Spinner size={34} thickness={2} color="rgba(229, 57, 53, 0.8)" />
+        <Spinner size={34} thickness={2} color="danger/80" />
       </Box>
       <Box w={28} h={28} center radius="pill" bg="danger" style={s.offlineBadge}>
-        <Icon name="wifi-off" size={16} stroke={2.2} color="#FFFFFF" />
+        <Icon name="wifi-off" size={16} thickness={2.2} color="white" />
       </Box>
     </Box>
   );
@@ -131,8 +152,6 @@ function ConnectionStatus({ online, label }: Readonly<{ online: boolean; label: 
 const s = styles({
   band: { w: '100%', align: 'center', justify: 'space-between' },
   clock: {
-    fontSize: 17,
-    fontWeight: '600',
     fontVariant: ['tabular-nums'],
     textShadow: '0 1px 4px rgba(0, 0, 0, 0.6)',
   },

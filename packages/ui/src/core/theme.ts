@@ -105,3 +105,28 @@ export function themed<T>(make: (theme: Theme) => T): () => T {
     return value;
   };
 }
+
+/**
+ * The same, keyed: many values behind one memo, emptied on every swap. What a
+ * resolved style, a resolved <Box> prop bag and a resolved icon paint are kept
+ * in.
+ *
+ * Capped, because the key is the caller's and one built from a measured number
+ * would otherwise mint an entry forever; past the cap it computes correctly and
+ * stops remembering.
+ */
+export function themedCache<T>(limit: number): (key: string, make: () => T) => T {
+  const entries = new Map<string, T>();
+  let at = -1;
+  return (key, make) => {
+    if (at !== version) {
+      entries.clear();
+      at = version;
+    }
+    const hit = entries.get(key);
+    if (hit !== undefined) return hit;
+    const made = make();
+    if (entries.size < limit) entries.set(key, made);
+    return made;
+  };
+}

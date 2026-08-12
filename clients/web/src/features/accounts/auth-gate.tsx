@@ -9,15 +9,29 @@ import {
   UserId,
 } from '@kroma/core';
 import { type ActivateResult, useT } from '@kroma/ui';
-import { AddTile, Button, Logo, OtpField } from '@kroma/ui/kit';
-import { IconLock } from '@tabler/icons-react';
-import { type ReactNode, useEffect, useState } from 'react';
+import {
+  AddTile,
+  Box,
+  Spinner as BusyRing,
+  Button,
+  Focusable,
+  Icon,
+  Logo,
+  OtpField,
+  Row,
+  type StyleDecl,
+  styles,
+  svFor,
+  Text,
+} from '@kroma/ui/kit';
+import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { LoginForm, RegisterForm } from '#web/features/accounts/auth-forms';
 import { LoginBackdrop } from '#web/features/accounts/login-backdrop';
 import { LoginSettings } from '#web/features/accounts/login-settings';
-import { UserAvatar } from '#web/features/accounts/user-avatar';
 import { useAuth } from '#web/shared/lib/auth';
 import { passkeysSupported } from '#web/shared/lib/webauthn';
+import { PAGE_RADIAL } from '#web/shared/ui';
+import { UserAvatar } from '#web/shared/ui/user-avatar';
 
 type Mode =
   | { kind: 'pick' }
@@ -25,25 +39,87 @@ type Mode =
   | { kind: 'register' }
   | { kind: 'pin'; account: StoredSession };
 
-export const RADIAL = 'radial-gradient(120% 90% at 50% 0%, #15131C, #0A0A0C 70%)';
+const AVATAR = 146;
+const AVATAR_RADIUS = 22;
+
+// The amber edge the row's tiles take, drawn on the avatar rather than around
+// the whole column: the caption below is part of the control, not part of the
+// picture. Same shape <AddTile> beside them takes.
+const profileTile = svFor<{ root: StyleDecl; well: StyleDecl; label: StyleDecl }>()({
+  slots: {
+    root: { align: 'center', gap: 14 },
+    well: {
+      radius: AVATAR_RADIUS,
+      shadow: 'card',
+      _hover: { ring: 'focus' },
+      _focus: { ring: 'focus' },
+    },
+    label: { color: 'text/82', fontWeight: '500' },
+  },
+});
+
+const forgetLink = svFor<{ root: StyleDecl; label: StyleDecl }>()({
+  slots: {
+    root: {},
+    label: { color: 'textDim', _hover: { color: 'text' }, _focus: { color: 'text' } },
+  },
+});
+
+const s = styles({
+  tiles: { columnGap: 28, rowGap: 36, alignContent: 'flex-start' },
+});
+
+// Declared in styles.css, so the rejected PIN shakes without a keyframe the
+// vocabulary has no spelling for.
+const SHAKE: CSSProperties = { animation: 'otp-shake 0.4s ease' };
+
+// The gate is one viewport tall, and the kit carries no viewport unit: every
+// screen it draws sits on a fixed 1920x1080 stage instead. So the two frames
+// that measure themselves against the window stay plain CSS.
+const GATE: CSSProperties = {
+  position: 'relative',
+  display: 'flex',
+  width: '100%',
+  minHeight: '100vh',
+  overflowX: 'hidden',
+  background: PAGE_RADIAL,
+};
+
+const GATE_COLUMN: CSSProperties = {
+  position: 'relative',
+  zIndex: 10,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  width: '100%',
+  minHeight: '100vh',
+  overflowY: 'auto',
+  padding: '48px 24px',
+};
+
+const GATE_CENTRED: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+  minHeight: '100vh',
+  background: PAGE_RADIAL,
+};
 
 export function LoginGate() {
   const { ready } = useAuth();
   return (
-    <div
-      className="relative flex min-h-screen w-full overflow-x-hidden"
-      style={{ background: RADIAL }}
-    >
+    <div style={GATE}>
       <LoginBackdrop />
       <LoginSettings />
       {/* Centred via the child's auto margins, not justify-center: a centred
           scroll container clips overflow ABOVE the fold out of reach on short
           viewports, while my-auto degrades to a normal scroll from the top. */}
-      <div className="relative z-10 flex min-h-screen w-full flex-col items-center overflow-y-auto px-6 py-12">
-        <div className="my-auto flex w-full flex-col items-center">
+      <div style={GATE_COLUMN}>
+        <Box my="auto" w="100%" align="center">
           <Brand />
           {ready ? <GateBody /> : <Spinner />}
-        </div>
+        </Box>
       </div>
     </div>
   );
@@ -51,9 +127,9 @@ export function LoginGate() {
 
 export function Brand() {
   return (
-    <div className="mb-12">
+    <Box mb={48}>
       <Logo size={38} />
-    </div>
+    </Box>
   );
 }
 
@@ -65,10 +141,7 @@ export function Spinner() {
  * /login is in flight (see {@link useRequireAuth}). */
 export function GateLoading() {
   return (
-    <div
-      className="flex min-h-screen w-full items-center justify-center"
-      style={{ background: RADIAL }}
-    >
+    <div style={GATE_CENTRED}>
       <Spinner />
     </div>
   );
@@ -255,89 +328,83 @@ export function GateBody() {
         locked: true,
       })),
   ];
-  return (
-    <div className="flex w-full max-w-4xl flex-col items-center">
-      <h1 className="text-center font-display text-[clamp(38px,6vw,58px)] font-bold tracking-[-.02em]">
-        {t('auth.whoWatching')}
-      </h1>
-      <p className="mt-3 mb-12 max-w-xl text-center text-[15px] text-muted">
-        {t('auth.whoWatchingHint')}
-      </p>
 
-      <div className="flex w-full max-w-[1100px] flex-wrap content-start items-start justify-center gap-x-7 gap-y-9 px-6 py-4">
+  const pick = async (tile: (typeof tiles)[number]) => {
+    setError(null);
+    const acc = tile.remembered;
+    if (!acc) {
+      setMode({
+        kind: 'login',
+        user: {
+          id: UserId.of(tile.id),
+          username: tile.username,
+          avatarUrl: tile.avatarUrl,
+          hasPin: false,
+        },
+      });
+      return;
+    }
+    // Probe with a no-PIN exchange to let the server decide what's needed,
+    // rather than trusting the cached `hasPin`.
+    const r = await activate(acc);
+    if (r.ok) return;
+    if (r.needsPin) {
+      setMode({ kind: 'pin', account: acc });
+      return;
+    }
+    // Dead token: send them to sign-in (pre-filled) instead of a dead-end PIN
+    // prompt.
+    setMode({ kind: 'login', user: acc.user, expired: true });
+  };
+
+  return (
+    <Box w="100%" maxW={896} align="center">
+      <Text variant="h1" accessibilityRole="header" textAlign="center">
+        {t('auth.whoWatching')}
+      </Text>
+      <Text variant="body" color="textMuted" textAlign="center" maxW={576} mt={12} mb={48}>
+        {t('auth.whoWatchingHint')}
+      </Text>
+
+      <Box
+        row
+        wrap
+        w="100%"
+        maxW={1100}
+        align="flex-start"
+        justify="center"
+        px={24}
+        py={16}
+        style={s.tiles}
+      >
         {tiles.map((p) => (
-          <div key={p.id} className="flex w-[150px] flex-col items-center gap-3">
-            <button
-              type="button"
-              onClick={async () => {
-                setError(null);
-                const acc = p.remembered;
-                if (!acc) {
-                  setMode({
-                    kind: 'login',
-                    user: {
-                      id: UserId.of(p.id),
-                      username: p.username,
-                      avatarUrl: p.avatarUrl,
-                      hasPin: false,
-                    },
-                  });
-                  return;
-                }
-                // Probe with a no-PIN exchange to let the server decide what's
-                // needed, rather than trusting the cached `hasPin`.
-                const r = await activate(acc);
-                if (r.ok) return;
-                if (r.needsPin) {
-                  setMode({ kind: 'pin', account: acc });
-                  return;
-                }
-                // Dead token: send them to sign-in (pre-filled) instead of a
-                // dead-end PIN prompt.
-                setError(null);
-                setMode({ kind: 'login', user: acc.user, expired: true });
-              }}
-              className="group flex flex-col items-center gap-3.5 focus:outline-none"
-            >
-              <div className="relative w-fit transition-transform duration-200 group-hover:scale-[1.06] group-focus-visible:scale-[1.06]">
-                {/* Shadow/ring live on the avatar itself, not a wrapper, so they trace its
-                    rounded box. The ring is an outline rather than a second shadow in the
-                    list: shadows interpolate item by item, so the drop shadow used to melt
-                    into the ring's slot and the ring appeared as a blur first. */}
-                <UserAvatar
-                  name={p.username}
-                  avatarUrl={p.avatarUrl}
-                  seed={p.id}
-                  size={146}
-                  radius={22}
-                  className="shadow-[0_10px_25px_-8px_rgba(0,0,0,0.6)] outline-4 outline-transparent transition-[outline-color] duration-200 group-hover:outline-accent group-focus-visible:outline-accent"
-                />
-                {p.locked ? (
-                  // Solid surface, never a translucent one: an alpha background
-                  // lets the avatar gradient bleed through and muddies the icon.
-                  <span
-                    className="absolute right-2 bottom-2 flex h-[30px] w-[30px] items-center justify-center rounded-full border border-white/12 bg-surface-2 text-accent shadow-[0_3px_10px_rgba(0,0,0,0.5)]"
-                    title={t('auth.passwordRequired')}
-                  >
-                    <IconLock size={15} stroke={2.2} />
-                  </span>
-                ) : null}
-              </div>
-              <span className="text-[18px] font-medium text-text/82">{p.username}</span>
-            </button>
+          <Box key={p.id} w={150} align="center" gap={12}>
+            <ProfileTile
+              username={p.username}
+              avatarUrl={p.avatarUrl}
+              seed={p.id}
+              locked={p.locked}
+              lockedLabel={t('auth.passwordRequired')}
+              onPress={() => void pick(p)}
+            />
             {p.remembered ? (
-              <button
-                type="button"
-                onClick={() => forget(p.id)}
-                className="text-[12px] font-medium text-dim transition-colors hover:text-text"
+              <Focusable
+                sv={forgetLink}
+                ring={false}
+                label={t('auth.logout')}
+                onPress={() => forget(p.id)}
               >
-                {t('auth.logout')}
-              </button>
+                {({ slots }) => (
+                  <Text variant="meta" style={slots.label}>
+                    {t('auth.logout')}
+                  </Text>
+                )}
+              </Focusable>
             ) : null}
-          </div>
+          </Box>
         ))}
 
-        <div className="flex w-[150px] flex-col items-center">
+        <Box w={150} align="center">
           <AddTile
             label={t('auth.addProfile')}
             onPress={() => {
@@ -345,11 +412,71 @@ export function GateBody() {
               setMode({ kind: 'login', user: null });
             }}
           />
-        </div>
-      </div>
+        </Box>
+      </Box>
 
-      {error ? <p className="mt-8 text-[13px] font-medium text-danger">{error}</p> : null}
-    </div>
+      {error ? (
+        <Text variant="meta" color="danger" mt={32}>
+          {error}
+        </Text>
+      ) : null}
+    </Box>
+  );
+}
+
+function ProfileTile({
+  username,
+  avatarUrl,
+  seed,
+  locked,
+  lockedLabel,
+  onPress,
+}: Readonly<{
+  username: string;
+  avatarUrl: string | null;
+  seed: string;
+  locked: boolean;
+  lockedLabel: string;
+  onPress: () => void;
+}>) {
+  return (
+    <Focusable sv={profileTile} ring={false} focusScale={1.06} label={username} onPress={onPress}>
+      {({ slots }) => (
+        <>
+          <Box style={slots.well}>
+            <UserAvatar
+              name={username}
+              avatarUrl={avatarUrl}
+              seed={seed}
+              size={AVATAR}
+              radius={AVATAR_RADIUS}
+            />
+            {locked ? (
+              // Solid surface, never a translucent one: an alpha background
+              // lets the avatar gradient bleed through and muddies the icon.
+              <Box
+                absolute
+                right={8}
+                bottom={8}
+                center
+                w={30}
+                h={30}
+                radius="circle"
+                border="white/12"
+                bg="surface2"
+                shadow="card"
+                accessibilityLabel={lockedLabel}
+              >
+                <Icon name="lock" size={15} thickness={2.2} color="accent" />
+              </Box>
+            ) : null}
+          </Box>
+          <Text variant="body" style={slots.label}>
+            {username}
+          </Text>
+        </>
+      )}
+    </Focusable>
   );
 }
 
@@ -395,42 +522,46 @@ function PinEntry({
     setPin('');
     if (r.retryAfter) setCooldown(r.retryAfter);
     setError(r.error || t('auth.pinIncorrect'));
-    setShake((s) => s + 1);
+    setShake((n) => n + 1);
   };
 
   let status: ReactNode = null;
   if (busy) {
     status = (
       <>
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-accent" />
-        <span className="text-[13px] font-medium text-muted">{t('pin.verifying')}</span>
+        <BusyRing size={16} thickness={2} />
+        <Text variant="meta" color="textMuted">
+          {t('pin.verifying')}
+        </Text>
       </>
     );
   } else if (error) {
     status = (
-      <span className="text-[13px] font-medium text-danger">
+      <Text variant="meta" color="danger">
         {cooldown > 0 ? t('pin.lockedRetry', { seconds: cooldown }) : error}
-      </span>
+      </Text>
     );
   }
 
   return (
-    <div className="flex w-full max-w-90 flex-col items-center gap-6">
+    <Box w="100%" maxW={360} align="center" gap={24}>
       <UserAvatar
         name={account.user.username}
         avatarUrl={account.user.avatarUrl}
         seed={account.user.id}
         size={96}
       />
-      <h1 className="font-display text-[24px] font-semibold">{account.user.username}</h1>
-      <p className="text-[14px] text-muted">{t('pin.verifySubtitle')}</p>
+      <Text variant="h2">{account.user.username}</Text>
+      <Text variant="meta" color="textMuted">
+        {t('pin.verifySubtitle')}
+      </Text>
 
       {/* key={shake} remounts the row so the shake animation replays each error. */}
-      <div key={shake} className={shake ? 'animate-[otp-shake_0.4s_ease]' : ''}>
-        <OtpField
+      <div key={shake} style={shake ? SHAKE : undefined}>
+        <OtpField.Root
           maxLength={4}
           value={pin}
-          onChange={(v) => {
+          onValueChange={(v) => {
             setError(null);
             setPin(v);
           }}
@@ -443,7 +574,9 @@ function PinEntry({
         />
       </div>
 
-      <div className="flex h-5 items-center gap-2">{status}</div>
+      <Row h={20} gap={8}>
+        {status}
+      </Row>
 
       <Button
         variant="ghost"
@@ -452,6 +585,6 @@ function PinEntry({
         label={t('common.back')}
         onPress={onBack}
       />
-    </div>
+    </Box>
   );
 }

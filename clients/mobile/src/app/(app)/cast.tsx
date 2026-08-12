@@ -4,7 +4,7 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { formatTimecode, type MediaItem, sizedImageUrl } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { Box, Icon, type IconName, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, type IconName, styles, Text } from '@kroma/ui/kit';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
@@ -86,16 +86,16 @@ function RemoteArtwork({ item }: Readonly<{ item?: MediaItem }>) {
         <Image source={{ uri: art }} style={s.art} contentFit="cover" transition={200} />
       ) : (
         <Box style={[s.art, s.artFallback]}>
-          <Icon name="device-tv" size={40} stroke={1.4} color="textDim" />
+          <Icon name="device-tv" size={40} thickness={1.4} color="textDim" />
         </Box>
       )}
-      <Txt lines={2} style={s.title}>
+      <Text lines={2} style={s.title}>
         {item?.metadata?.title ?? item?.title ?? ''}
-      </Txt>
+      </Text>
       {item?.showTitle ? (
-        <Txt lines={1} style={s.subtitle}>
+        <Text lines={1} style={s.subtitle}>
           {item.showTitle}
-        </Txt>
+        </Text>
       ) : null}
     </>
   );
@@ -114,7 +114,7 @@ export default function CastRemoteScreen() {
       <Screen>
         <Header title={t('cast.remote')} onBack={() => goBack(router)} />
         <EmptyState
-          icon={<Icon name="cast" size={40} stroke={1.4} color="textDim" />}
+          icon={<Icon name="cast" size={40} thickness={1.4} color="textDim" />}
           title={t('cast.noDevices')}
           hint={t('cast.noDevicesHint')}
         />
@@ -132,13 +132,13 @@ export default function CastRemoteScreen() {
     <Screen>
       <Header title={active.name} onBack={() => goBack(router)} />
       <Pressable onPress={() => devices.current?.present()} style={s.deviceRow}>
-        <Icon name="cast" size={18} stroke={1.8} color={playing ? 'accent' : 'textMuted'} />
-        <Txt style={[s.deviceText, !playing && s.deviceTextIdle]}>
+        <Icon name="cast" size={18} thickness={1.8} color={playing ? 'accent' : 'textMuted'} />
+        <Text style={[s.deviceText, !playing && s.deviceTextIdle]}>
           {t(playing ? 'cast.playingOn' : 'cast.connectedTo', {
             device: `${active.name} · ${active.username}`,
           })}
-        </Txt>
-        <Icon name="chevron-right" size={16} stroke={2} color="textMuted" />
+        </Text>
+        <Icon name="chevron-right" size={16} thickness={2} color="textMuted" />
       </Pressable>
 
       {playing ? (
@@ -153,12 +153,12 @@ export default function CastRemoteScreen() {
               onSeek={(abs) => void send({ type: 'seek', positionMs: Math.round(abs * 1000) })}
             />
             <Box style={s.times}>
-              <Txt style={s.time}>{formatTimecode(positionMs / 1000)}</Txt>
-              <Txt style={s.time}>
+              <Text style={s.time}>{formatTimecode(positionMs / 1000)}</Text>
+              <Text style={s.time}>
                 {durationMs
                   ? `-${formatTimecode(Math.max(0, (durationMs - positionMs) / 1000))}`
                   : ''}
-              </Txt>
+              </Text>
             </Box>
           </Box>
 
@@ -204,7 +204,7 @@ export default function CastRemoteScreen() {
         </ScrollView>
       ) : (
         <EmptyState
-          icon={<Icon name="device-tv" size={40} stroke={1.4} color="textDim" />}
+          icon={<Icon name="device-tv" size={40} thickness={1.4} color="textDim" />}
           title={t('cast.idleTitle')}
           hint={t('cast.idleHint', { device: active.name })}
           actionLabel={t('cast.disconnect')}
@@ -256,11 +256,11 @@ function Header({ title, onBack }: Readonly<{ title: string; onBack(): void }>) 
   return (
     <Box style={s.header}>
       <Pressable onPress={onBack} hitSlop={12} accessibilityRole="button">
-        <Icon name="chevron-down" size={26} stroke={2} />
+        <Icon name="chevron-down" size={26} thickness={2} />
       </Pressable>
-      <Txt lines={1} style={s.headerTitle}>
+      <Text lines={1} style={s.headerTitle}>
         {title}
-      </Txt>
+      </Text>
       <Box style={s.headerSpacer} />
     </Box>
   );
@@ -279,7 +279,7 @@ function Round({
       accessibilityLabel={label}
       style={({ pressed }) => [s.round, big && s.roundBig, pressed && { opacity: 0.7 }]}
     >
-      <Icon name={icon} size={big ? 34 : 26} stroke={1.8} color="text" />
+      <Icon name={icon} size={big ? 34 : 26} thickness={1.8} color="text" />
     </Pressable>
   );
 }
@@ -296,14 +296,14 @@ function Wide({
       accessibilityRole="button"
       style={({ pressed }) => [s.wide, pressed && { opacity: 0.75 }]}
     >
-      <Icon name={icon} size={20} stroke={1.8} color="text" />
-      <Txt lines={1} style={s.wideLabel}>
+      <Icon name={icon} size={20} thickness={1.8} color="text" />
+      <Text lines={1} style={s.wideLabel}>
         {label}
-      </Txt>
+      </Text>
       {value ? (
-        <Txt lines={1} style={s.wideValue}>
+        <Text lines={1} style={s.wideValue}>
           {value}
-        </Txt>
+        </Text>
       ) : null}
     </Pressable>
   );

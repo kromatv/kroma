@@ -6,7 +6,7 @@ Level 3. A few atoms bonded into one arrangement the design names: `PosterCard`
 slots).
 
 **The test for adding one: has this arrangement now been written twice?**
-`ListRow` earned its place after the third copy — the TV profile menu, the
+`ListRow` earned its place after the third copy: the TV profile menu, the
 signed-out settings, and the admin lists had each grown their own.
 
 **What a molecule owns**
@@ -20,7 +20,7 @@ place so no screen can get it wrong.
 
 - Where its data came from. It may know the SHAPE it lays out (a title, a
   progress fraction) but never the server, the router or the session.
-- Behaviour that makes it a region of a screen — scrolling, windowing, holding the
+- Behaviour that makes it a region of a screen: scrolling, windowing, holding the
   remote. That is an [organism](../organisms).
 
 `media.test.tsx` sits at this level rather than in a component folder on purpose:

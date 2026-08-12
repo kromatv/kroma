@@ -3,7 +3,7 @@
 // Unlike a module that only ever calls itself, this one is also driven by the
 // torrents module's manual-grab flow, so the hook binds an explicit id rather
 // than the rendering page's. This is the one place the id is written down, and
-// it is the right one — a module publishing the address others reach it at.
+// it is the right one: a module publishing the address others reach it at.
 // Import from `@kroma/module-acquisition/api`.
 
 import { moduleApiHook } from '@kroma/module-sdk';

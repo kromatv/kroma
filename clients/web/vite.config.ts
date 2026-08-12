@@ -11,7 +11,6 @@ import { standaloneScript } from '@kroma/bundler/standalone-script';
 import { kromaModule } from '@kroma/module-sdk/vite';
 import { kromaUI } from '@kroma/ui/vite';
 import babel from '@rolldown/plugin-babel';
-import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
@@ -28,7 +27,6 @@ export default defineConfig({
     kromaModule(),
     buildInfoPlugin({ projectRoot: fileURLToPath(new URL('.', import.meta.url)) }),
     standaloneScript(swScript),
-    tailwindcss(),
     tanstackStart({ spa: { enabled: true } }),
     react(),
     babel({ presets: [reactCompilerPreset()] }),

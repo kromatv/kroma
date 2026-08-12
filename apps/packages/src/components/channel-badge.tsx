@@ -1,6 +1,6 @@
+import { Badge } from '@kroma/ui/kit/atoms/badge';
+import { Box } from '@kroma/ui/kit/atoms/box';
 import type { Release } from '#site/lib/release';
-import { Badge } from '#ui/components/atoms/badge';
-import { Box } from '#ui/components/atoms/box';
 
 export interface ChannelBadgeProps {
   channel: Release['channel'];

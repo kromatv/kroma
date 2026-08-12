@@ -9,6 +9,7 @@ const extra = Constants.expoConfig?.extra?.buildInfo as Partial<BuildInfo> | und
 export const BUILD: BuildInfo = {
   version: extra?.version ?? Constants.expoConfig?.version ?? '',
   commit: extra?.commit ?? null,
+  commitFull: extra?.commitFull ?? null,
   branch: extra?.branch ?? null,
   dirty: extra?.dirty ?? false,
   buildDate: extra?.buildDate ?? null,

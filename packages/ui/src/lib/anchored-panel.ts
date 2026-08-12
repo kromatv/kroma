@@ -79,6 +79,48 @@ export function useTriggerFocus(anchor: RefObject<unknown>): void {
   }, [anchor]);
 }
 
+/**
+ * Wires the trigger to a panel it does not contain: its keys reach the panel's
+ * keyboard, and `aria-controls`/`aria-haspopup` say what it opens. The trigger
+ * keeps the DOM focus (see {@link useTriggerFocus}), so it is where the keys
+ * arrive.
+ */
+export function useTriggerKeys(
+  anchor: RefObject<unknown>,
+  at: { listId: string; haspopup: string; onKeyDown: (event: PanelKeyEvent) => void },
+): void {
+  const { listId, haspopup, onKeyDown } = at;
+  useEffect(() => {
+    const trigger = anchor.current as HTMLElement | null;
+    if (!trigger) return;
+    const onKey = (event: KeyboardEvent) => {
+      onKeyDown({
+        nativeEvent: { key: event.key },
+        preventDefault: () => event.preventDefault(),
+        stopPropagation: () => event.stopPropagation(),
+      });
+    };
+    trigger.addEventListener('keydown', onKey);
+    trigger.setAttribute('aria-controls', listId);
+    trigger.setAttribute('aria-haspopup', haspopup);
+    return () => {
+      trigger.removeEventListener('keydown', onKey);
+      trigger.removeAttribute('aria-controls');
+      trigger.removeAttribute('aria-haspopup');
+    };
+  }, [anchor, listId, haspopup, onKeyDown]);
+}
+
+/** Names the active row on the trigger, which is what holds the focus. */
+export function useActiveDescendant(anchor: RefObject<unknown>, rowId: string): void {
+  useEffect(() => {
+    const trigger = anchor.current as HTMLElement | null;
+    if (!trigger) return;
+    trigger.setAttribute('aria-activedescendant', rowId);
+    return () => trigger.removeAttribute('aria-activedescendant');
+  }, [anchor, rowId]);
+}
+
 export interface ListKeysAt {
   count: number;
   active: number;

@@ -4,8 +4,21 @@
 // the cursor of the field being edited; clicking a preset replaces the field.
 
 import { useT } from '@kroma/module-sdk';
-import { Button, IconButton, Select } from '@kroma/ui/kit';
-import { useRef, useState } from 'react';
+import {
+  Box,
+  Button,
+  Dialog,
+  Focusable,
+  Grid,
+  IconButton,
+  Row,
+  Section,
+  Select,
+  sv,
+  Text,
+  useBreakpoint,
+} from '@kroma/ui/kit';
+import { type CSSProperties, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import type { NamingTemplatesView } from './schemas';
 
@@ -16,8 +29,34 @@ type Group = Readonly<{ titleKey: string; tokens: readonly Token[] }>;
 
 // The working value needs cursor-position inserts, so it stays a hand-rolled
 // DOM input wearing the field box locally.
-const FIELD =
-  'min-w-0 rounded-[9px] border border-border-strong bg-surface-2 px-3.5 py-2.25 font-mono text-[13px] font-semibold text-text outline-none transition-colors focus:border-accent';
+const FIELD: CSSProperties = {
+  flex: 1,
+  minWidth: 0,
+  borderRadius: 'var(--radius-md)',
+  border: '1px solid var(--kroma-border-strong)',
+  background: 'var(--kroma-surface-2)',
+  padding: '9px 14px',
+  font: 'var(--type-meta)',
+  fontFamily: 'var(--font-mono)',
+  color: 'var(--kroma-text)',
+  transition: 'border-color var(--dur-fast) var(--ease-out)',
+};
+
+const tokenTile = sv({
+  base: {
+    w: '100%',
+    radius: 'sm',
+    border: 'tint/10',
+    bg: 'tint/3',
+    px: 10,
+    py: 6,
+    _hover: { border: 'accent/50', bg: 'tint/6' },
+  },
+  variants: {
+    kind: { preset: { px: 12, py: 8 }, token: {} },
+  },
+  defaults: { kind: 'token' },
+});
 
 const QUALITY: Group = {
   titleKey: 'naming.grpQuality',
@@ -137,6 +176,7 @@ export const NamingTokenModal = createCallable<
   const [value, setValue] = useState(initialValue);
   const [separator, setSeparator] = useState(' ');
   const inputRef = useRef<HTMLInputElement>(null);
+  const columns = useBreakpoint() === 'base' ? 2 : 3;
 
   const onChange = (next: string) => {
     setValue(next);
@@ -160,106 +200,115 @@ export const NamingTokenModal = createCallable<
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* The panel is a sibling that paints above this backdrop, so inside-clicks
-          never reach it (no stopPropagation needed). */}
-      <button
-        type="button"
-        aria-label={t('common.close')}
-        onClick={() => call.end()}
-        className="absolute inset-0 bg-black/60"
-      />
-      <div className="relative flex max-h-[88vh] w-full max-w-3xl flex-col rounded-2xl border border-border bg-surface-1 shadow-pop">
-        <div className="flex items-center justify-between border-b border-white/[0.07] px-6 py-4">
-          <div className="font-display text-[18px] font-bold">
-            {t('naming.tokensTitle')} <span className="text-dim">· {fieldLabel}</span>
-          </div>
+    <Dialog.Root
+      open
+      title={t('naming.tokensTitle')}
+      width="xl"
+      pad={24}
+      onClose={() => call.end()}
+    >
+      <Dialog.Header>
+        <Row between gap={12}>
+          <Row gap={6} minW={0}>
+            <Text variant="title">{t('naming.tokensTitle')}</Text>
+            <Text variant="title" color="textDim" lines={1}>
+              · {fieldLabel}
+            </Text>
+          </Row>
           <IconButton
             variant="ghost"
             icon="x"
             label={t('common.close')}
             onPress={() => call.end()}
           />
-        </div>
+        </Row>
+      </Dialog.Header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-          <div className="mb-4 flex items-center gap-2 text-[12px] font-semibold text-dim">
+      <Dialog.Panel>
+        <Row gap={8}>
+          <Text variant="meta" color="textDim">
             {t('naming.separator')}
-            <Select
-              label={t('naming.separator')}
-              value={separator}
-              onChange={setSeparator}
-              options={SEPARATORS.map((s) => ({
-                value: s.value,
-                label: t(s.labelKey as Parameters<typeof t>[0]),
-              }))}
-            />
-          </div>
+          </Text>
+          <Select.Root label={t('naming.separator')} value={separator} onValueChange={setSeparator}>
+            <Select.Trigger />
+            {SEPARATORS.map((sep) => (
+              <Select.Item key={sep.value} value={sep.value}>
+                {t(sep.labelKey as Parameters<typeof t>[0])}
+              </Select.Item>
+            ))}
+          </Select.Root>
+        </Row>
 
-          <Fieldset title={t('naming.grpPresets')}>
-            {presets.map((parts) => {
-              const tokenStr = parts.join(separator);
-              return (
-                <button
-                  key={tokenStr}
-                  type="button"
-                  onClick={() => onChange(tokenStr)}
-                  className="w-full rounded-lg border border-white/10 bg-white/3 px-3 py-2 text-left hover:border-accent/50 hover:bg-white/6"
+        <Section.Root gap={6}>
+          <Section.Header>
+            <Section.Title>{t('naming.grpPresets')}</Section.Title>
+          </Section.Header>
+          {presets.map((parts) => {
+            const tokenStr = parts.join(separator);
+            return (
+              <Focusable
+                key={tokenStr}
+                sv={tokenTile}
+                vars={{ kind: 'preset' }}
+                label={tokenStr}
+                onPress={() => onChange(tokenStr)}
+              >
+                <Text variant="meta" font="mono" color="info">
+                  {tokenStr}
+                </Text>
+              </Focusable>
+            );
+          })}
+        </Section.Root>
+
+        {groups.map((g) => (
+          <Section.Root key={g.titleKey} gap={6}>
+            <Section.Header>
+              <Section.Title>{t(g.titleKey as Parameters<typeof t>[0])}</Section.Title>
+            </Section.Header>
+            <Grid columns={columns} gap={6}>
+              {g.tokens.map((tok) => (
+                <Focusable
+                  key={tok.token}
+                  sv={tokenTile}
+                  label={tok.token}
+                  onPress={() => insert(tok.token)}
                 >
-                  <div className="font-mono text-[12px] text-[#86A8FF]">{tokenStr}</div>
-                </button>
-              );
-            })}
-          </Fieldset>
+                  <Text variant="meta" font="mono" color="text/80" lines={1}>
+                    {tok.token}
+                  </Text>
+                  <Text variant="meta" color="textDim" lines={1}>
+                    {example(tok.example, separator)}
+                  </Text>
+                </Focusable>
+              ))}
+            </Grid>
+          </Section.Root>
+        ))}
+      </Dialog.Panel>
 
-          {groups.map((g) => (
-            <Fieldset key={g.titleKey} title={t(g.titleKey as Parameters<typeof t>[0])}>
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-                {g.tokens.map((tok) => (
-                  <button
-                    key={tok.token}
-                    type="button"
-                    onClick={() => insert(tok.token)}
-                    className="rounded-lg border border-white/10 bg-white/3 px-2.5 py-1.5 text-left hover:border-accent/50 hover:bg-white/6"
-                  >
-                    <div className="truncate font-mono text-[11.5px] font-semibold text-white/80">
-                      {tok.token}
-                    </div>
-                    <div className="truncate text-[11px] text-dim">
-                      {example(tok.example, separator)}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </Fieldset>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-3 border-t border-white/[0.07] px-6 py-4">
+      <Dialog.Footer>
+        <Row gap={12}>
           <input
             ref={inputRef}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             aria-label={fieldLabel}
-            className={`${FIELD} flex-1`}
+            style={FIELD}
           />
-          <Button variant="glass" size="sm" label={t('common.close')} onPress={() => call.end()} />
-        </div>
-      </div>
-    </div>
+          <Box shrink={0}>
+            <Button
+              variant="glass"
+              size="sm"
+              label={t('common.close')}
+              onPress={() => call.end()}
+            />
+          </Box>
+        </Row>
+      </Dialog.Footer>
+    </Dialog.Root>
   );
 });
-
-function Fieldset({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
-  return (
-    <fieldset className="mb-4">
-      <legend className="mb-2 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
-        {title}
-      </legend>
-      <div className="flex flex-col gap-1.5">{children}</div>
-    </fieldset>
-  );
-}
 
 function example(ex: string, separator: string): string {
   return separator === ' ' ? ex : ex.replaceAll(' ', separator);

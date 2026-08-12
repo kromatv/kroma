@@ -9,7 +9,7 @@
 
 import type { ReactNode, Ref } from 'react';
 import { type StyleProp, View, type ViewProps, type ViewStyle } from 'react-native';
-import { BOX_STYLE_PROPS, type BoxStyleProps, styles } from '#ui/core';
+import { type BoxStyleProps, splitShorthand, styles, useBreakpointStep } from '#ui/core';
 import { sharedBoxStyle } from '#ui/lib/box-style';
 
 interface BoxProps extends BoxStyleProps, Omit<ViewProps, 'style'> {
@@ -25,9 +25,28 @@ interface BoxProps extends BoxStyleProps, Omit<ViewProps, 'style'> {
 }
 
 function Box({ children, style, ref, ...props }: Readonly<BoxProps>) {
-  const { view, layout } = splitProps(props);
+  const split = splitShorthand(props);
+  // A box holding a breakpoint object is a different component, not a branch:
+  // it is the only one that has to follow the design width, and a hook here
+  // would tax every box in the app with a subscription it never reads.
+  if (split.breakpoints !== 0) {
+    return (
+      <FluidBox split={split} style={style} ref={ref}>
+        {children}
+      </FluidBox>
+    );
+  }
   return (
-    <View {...view} ref={ref} style={[layout, style]}>
+    <View {...split.rest} ref={ref} style={[layoutOf(split, 0), style]}>
+      {children}
+    </View>
+  );
+}
+
+function FluidBox({ split, style, ref, children }: Readonly<FluidBoxProps>) {
+  const step = useBreakpointStep(split.breakpoints);
+  return (
+    <View {...split.rest} ref={ref} style={[layoutOf(split, step), style]}>
       {children}
     </View>
   );
@@ -56,43 +75,26 @@ function Spacer() {
 
 const s = styles({ spacer: { flex: true } });
 
-// Every style shorthand <Box> owns. Anything else is a real View prop and is
-// forwarded untouched (onLayout, pointerEvents, testID, accessibility...). The
-// list lives with the resolver so `sv`'s `style()` reads the same one.
-const STYLE_PROPS = BOX_STYLE_PROPS;
+type Split = ReturnType<typeof splitShorthand>;
 
-// Splits the shorthand props from the real View props, and resolves the first
-// into one style object shared by identity between every box asking for the
-// same thing (see `sharedBoxStyle`). The cache key is built during the split
-// rather than from the finished style, since the key is thrown away on a hit
-// (the common case), which is cheaper than resolving the style and hashing it.
-// Sorting the handful of parts canonicalises the caller's prop order, so `row
-// gap={4}` and `gap={4} row` are one cache entry rather than two — and costs
-// less than a second pass over the whole vocabulary.
-function splitProps(props: Record<string, unknown>): {
-  view: Record<string, unknown>;
-  layout: ViewStyle;
-} {
-  const style: Record<string, unknown> = {};
-  const view: Record<string, unknown> = {};
-  const parts: string[] = [];
-  for (const key of Object.keys(props)) {
-    const value = props[key];
-    if (!STYLE_PROPS.has(key)) {
-      view[key] = value;
-      continue;
-    }
-    style[key] = value;
-    if (value === undefined) continue;
-    // A transform is an array of objects; everything else is a primitive. The
-    // primitive side is named explicitly so String() never meets an object.
-    const primitive =
-      typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
-    parts.push(`${key}:${primitive ? String(value) : JSON.stringify(value)}`);
-  }
-  if (parts.length === 0) return { view, layout: EMPTY };
-  parts.sort((a, b) => (a < b ? -1 : 1));
-  return { view, layout: sharedBoxStyle(parts.join(';'), style as BoxStyleProps) };
+interface FluidBoxProps {
+  split: Split;
+  style?: StyleProp<ViewStyle>;
+  ref?: Ref<View>;
+  children?: ReactNode;
+}
+
+// Anything the vocabulary does not name is a real View prop and is forwarded
+// untouched (onLayout, pointerEvents, testID, accessibility...). The resolved
+// half becomes one style object shared by identity between every box asking for
+// the same thing (see `sharedBoxStyle`), keyed on the split's canonical key
+// rather than on the finished style, since the key is thrown away on a hit. The
+// step joins that key only for a box that states a value per breakpoint, so a
+// flat one still mints the single entry it always has.
+function layoutOf(split: Split, step: number): ViewStyle {
+  if (!split.key) return EMPTY;
+  const key = split.breakpoints === 0 ? split.key : `${step}|${split.key}`;
+  return sharedBoxStyle(key, split.shorthand as BoxStyleProps);
 }
 
 // A box with no shorthand at all still must not mint an object per render.

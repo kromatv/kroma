@@ -64,6 +64,9 @@ describe('a row that is doing something', () => {
     list({ connectingHandle: 'h-salon' });
     expect(screen.getByText('handoff.connecting')).toBeTruthy();
     expect(screen.queryByText('K7QMR')).toBeNull();
+    // The spinner is inside the row's own name, so the row is what has to
+    // announce that it is working.
+    expect(screen.getByLabelText('Salon').getAttribute('aria-busy')).toBe('true');
   });
 
   it('is still pressable, since nothing has ended yet', () => {

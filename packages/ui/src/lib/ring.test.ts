@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { RING_BUSY_ARC, ringGeometry } from './ring';
 
 describe('ringGeometry', () => {
-  it('insets the radius by half the stroke so the ring is not clipped', () => {
-    const g = ringGeometry({ value: 0, size: 22, stroke: 2.5 });
+  it('insets the radius by half the thickness so the ring is not clipped', () => {
+    const g = ringGeometry({ value: 0, size: 22, thickness: 2.5 });
     expect(g.radius).toBe((22 - 2.5) / 2);
     expect(g.centre).toBe(11);
   });

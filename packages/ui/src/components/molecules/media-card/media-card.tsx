@@ -1,16 +1,14 @@
 // <MediaCard>: the 16:9 landscape rail tile of the 10-foot home. Focusable, so
 // the same source is a D-pad stop on a TV and a click target in a browser.
 
+import { ArtScrim } from '#ui/components/atoms/art-scrim';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
 import { Progress } from '#ui/components/atoms/progress';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { styles, useTheme } from '#ui/core';
-import { gradient } from '#ui/lib/css';
-
-const CARD_SCRIM = 'linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 40%, rgba(0, 0, 0, 0.75) 100%)';
 
 /** The fill behind artwork, so a tile is never blank while the art loads. */
 function tintGradient(tint: readonly [string, string]): string {
@@ -65,13 +63,13 @@ function MediaCard({
             Chrome fails to apply an `overflow: hidden` + `border-radius` clip to
             a composited descendant, which the `<img decoding="async">` is. */}
         <Img src={art} background={tintGradient(tint)} radius={radius.xl} position="50% 28%" fill />
-        <Box fill radius="xl" style={gradient(CARD_SCRIM)} />
+        <ArtScrim radius="xl" />
         {watched ? <WatchedBadge /> : null}
         <Box absolute left={18} right={18} bottom={16} gap={5}>
-          {overline ? <Txt style={s.overline}>{overline}</Txt> : null}
-          <Txt style={s.title} lines={2}>
+          {overline ? <Text style={s.overline}>{overline}</Text> : null}
+          <Text style={s.title} lines={2}>
             {title}
-          </Txt>
+          </Text>
         </Box>
         {progress == null ? null : (
           <Box absolute left={0} right={0} bottom={0}>
@@ -94,13 +92,10 @@ const s = styles({
     color: 'white/65',
   },
   title: {
-    font: 'display',
-    fontWeight: '700',
-    fontSize: 24,
-    lineHeight: 25,
+    text: 'subheading',
     color: 'white',
   },
 });
 
 export type { MediaCardProps };
-export { CARD_SCRIM, MediaCard, tintGradient };
+export { MediaCard, tintGradient };

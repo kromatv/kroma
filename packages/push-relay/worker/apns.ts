@@ -1,4 +1,4 @@
-// Apple, from inside the relay. Mirrors `server/crates/kroma-push/src/apns.rs` — the same
+// Apple, from inside the relay. Mirrors `server/crates/kroma-push/src/apns.rs`: the same
 // payload, the same headers, the same two facts that are easy to get wrong: APNs refuses
 // HTTP/1.1 (a Worker's `fetch` speaks HTTP/2 to Apple, so this is handled for us), and a device
 // token belongs to exactly ONE of the two hosts. That second one is why nothing here takes an

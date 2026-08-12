@@ -1,11 +1,11 @@
 import { type ResolvedOrigin, resolveServerOrigin } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Field, Hint, Icon, type IconName, styles, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, Field, Hint, Icon, type IconName, Text, useFocusNav } from '@kroma/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
-import { AuthScreen, GATE_MARK, KromaMark, OnScreenKeyboard } from '#tv/shared/ui';
+import { AuthScreen, GATE_MARK, KromaMark, UrlKeyboard } from '#tv/shared/ui';
 
 /**
  * Add a server by address via an on-screen URL keyboard; on submit the server is
@@ -100,42 +100,35 @@ export function TvConnect() {
         <KromaMark size={GATE_MARK} />
       </Box>
       <Box w="100%" maxW={720}>
-        <Txt variant="h1" style={{ fontSize: 38, fontWeight: '600', textAlign: 'center' }}>
+        <Text variant="titleTv" textAlign="center">
           {t('connect.addServerTitle')}
-        </Txt>
-        <Txt
-          style={{
-            fontSize: 16,
-            fontWeight: '500',
-            textAlign: 'center',
-            marginTop: 6,
-            marginBottom: 24,
-          }}
-          color="textDim"
-        >
+        </Text>
+        <Text variant="leadTv" textAlign="center" mt={6} mb={24} color="textDim">
           {t('connect.addServerSub')}
-        </Txt>
+        </Text>
 
-        <Field
-          value={value}
-          onChange={setValue}
-          onSubmit={submit}
-          icon="world-search"
-          placeholder={t('connect.serverPlaceholder')}
+        <Field.Root
           label={t('connect.addServerTitle')}
           hideLabel
-          keyboardType="url"
-          physicalKeyboard={physicalKeyboard}
+          value={value}
+          onValueChange={setValue}
           mb={20}
-        />
+        >
+          <Field.Input
+            icon="world-search"
+            placeholder={t('connect.serverPlaceholder')}
+            keyboardType="url"
+            physicalKeyboard={physicalKeyboard}
+            onSubmit={submit}
+          />
+        </Field.Root>
 
         {value.trim() ? <SchemeBadge probing={probing} probe={probe} /> : null}
 
-        <OnScreenKeyboard
+        <UrlKeyboard
           value={value}
-          onChange={setValue}
+          onValueChange={setValue}
           onSubmit={submit}
-          layout="url"
           submitLabel={t('connect.connect')}
         />
 
@@ -145,17 +138,13 @@ export function TvConnect() {
           gap={4}
           justify="center"
           mt={20}
-          color="rgba(244, 243, 240, 0.4)"
+          color="text/40"
           textStyle={{ fontWeight: '500' }}
         />
       </Box>
     </AuthScreen>
   );
 }
-
-const s = styles({
-  schemeText: { fontSize: 14, fontWeight: '600' },
-});
 
 // Plain HTTP is `accent`, not `danger`: an unencrypted server on a home LAN
 // is the normal case here. A probe that ANSWERED nothing is `danger`, because
@@ -186,9 +175,9 @@ function SchemeBadge({
   return (
     <Box row align="center" justify="center" gap={6} mb={16}>
       <Icon name={icon} size={16} color={color} />
-      <Txt style={s.schemeText} color={color}>
+      <Text variant="labelTv" color={color}>
         {text}
-      </Txt>
+      </Text>
     </Box>
   );
 }

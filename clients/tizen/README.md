@@ -22,7 +22,7 @@ the app from **Tizen 6.0 (2021)**, so the build emits **two bundles** and
 Without it a 2021 set cannot even *parse* the bundle (`?.` and `??` are Chrome
 80) and 2022-2023 sets drop every `@layer` block, so the app installs and shows
 a black or unstyled screen. This is the same machinery webOS uses; it is driven
-by `tv.target.ts` through the shared factory in `clients/tv-build/shell.ts`.
+by `tv.target.ts` through the shared factory in `packages/bundler/src/shell.ts`.
 
 Authoring rules that keep the legacy tier working: flex only (no CSS grid), no
 `/opacity` colour modifiers, spacing via `gap-*` (shimmed) or margins.
@@ -50,10 +50,11 @@ tile opens that movie's detail page in KROMA.
 
 How it works:
 
-- A **background service** ([`public/service/preview-service.js`](./public/service/preview-service.js))
-  is declared in `config.xml` (`use.preview = bg_service`). The TV runs it on its
+- A **background service** ([`src/preview-service.cts`](./src/preview-service.cts),
+  built to `dist/service/preview-service.js`) is declared in `config.xml`
+  (`use.preview = bg_service`). The TV runs it on its
   own schedule to fetch the carousel data.
-- The foreground app ([`@kroma/tv` `preview.ts`](../../packages/tv/src/preview.ts))
+- The foreground app ([`@kroma/tv` `shared/preview/`](../../packages/tv/src/shared/preview))
   builds the tile JSON from the live catalog and writes it to the package-private
   `wgt-private/preview.json`; the service reads that file and calls
   `webapis.preview.setPreviewData()`.
@@ -72,7 +73,8 @@ Notes / caveats:
 - **Images must be PNG/JPG, not WebP** (Samsung carousel limit; also ≤360 KB,
   height ≤360 px). KROMA caches posters as WebP, so tiles request the server's
   on-the-fly JPEG rendition (`/api/images/<hash>.webp.jpg`, see
-  [`server/src/image.rs`](../../server/src/image.rs) `jpeg_rendition`). The
+  [`kroma-engine/src/infra/image.rs`](../../server/crates/kroma-engine/src/infra/image.rs)
+  `jpeg_rendition`). The
   server must be running a build with that endpoint.
 - Only movies with resolved TMDB art are included (un-enriched titles, which
   would fall back to a non-raster SVG poster, are skipped until enrichment).
@@ -128,7 +130,7 @@ Or via bun from the repo root: `bun run --filter @kroma/tizen deploy` (after a
 
 ## Publishing to Samsung Apps TV
 
-See [STORE.md](./STORE.md) — TV Seller Office membership (a new seller can launch
+See [STORE.md](./STORE.md) for TV Seller Office membership (a new seller can launch
 in the **US only**), assets, listing fields, the FCC caption/TTS requirement, and
 what Samsung's testers need in order to be able to test a client for a server
 they cannot reach.

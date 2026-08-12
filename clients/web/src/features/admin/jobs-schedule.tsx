@@ -3,7 +3,7 @@
 
 import { type JobInfo, KromaApiError } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Chip, Dialog, DialogActions, Field, Txt } from '@kroma/ui/kit';
+import { Badge, Box, Button, Chip, Dialog, Field, Row, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';
@@ -40,47 +40,60 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
     );
 
   return (
-    <Dialog open title={t('jobs.editSchedule')} width={520} onClose={() => call.end(false)}>
-      <Field
-        label={t('jobs.cronExpr')}
-        icon="clock"
-        value={value}
-        onChange={setValue}
-        placeholder="0 4 * * *"
-        entry={{ textStyle: MONO }}
-      />
+    <Dialog.Root open title={t('jobs.editSchedule')} width="md" onClose={() => call.end(false)}>
+      <Field.Root label={t('jobs.cronExpr')}>
+        <Field.Input
+          icon="clock"
+          value={value}
+          onValueChange={setValue}
+          placeholder="0 4 * * *"
+          textStyle={MONO}
+        />
+      </Field.Root>
 
-      <div className="flex flex-wrap gap-2">
+      <Row wrap gap={8}>
         {PRESETS.map((p) => (
           <Chip key={p.expr} variant="surface" onPress={() => setValue(p.expr)}>
-            <Txt style={CRON} color="textMuted">
+            <Text style={CRON} color="textMuted">
               {p.label}
-            </Txt>
+            </Text>
           </Chip>
         ))}
         <Chip variant="surface" label={t('jobs.manual')} onPress={() => setValue('')} />
-      </div>
+      </Row>
 
-      <p className="text-[12px] leading-relaxed text-dim">{t('jobs.cronHint')}</p>
+      <Text variant="meta" color="textDim">
+        {t('jobs.cronHint')}
+      </Text>
       {job.defaultSchedule && job.defaultSchedule !== value ? (
-        <div className="flex">
-          <Button variant="ghost" size="sm" onPress={() => setValue(job.defaultSchedule ?? '')}>
-            <Txt color="accent" style={RESET_LABEL}>
-              {t('jobs.resetDefault')} ({job.defaultSchedule})
-            </Txt>
+        <Box self="flex-start">
+          <Button
+            variant="ghost"
+            size="sm"
+            label={t('jobs.resetDefault')}
+            onPress={() => setValue(job.defaultSchedule ?? '')}
+          >
+            <Text color="accentText" style={RESET_LABEL}>
+              {t('jobs.resetDefault')}
+            </Text>
+            <Badge tone="neutral">{job.defaultSchedule}</Badge>
           </Button>
-        </div>
+        </Box>
       ) : null}
 
-      {error ? <div className="text-[12.5px] font-semibold text-[#E8536A]">{error}</div> : null}
+      {error ? (
+        <Text variant="meta" color="danger">
+          {error}
+        </Text>
+      ) : null}
 
-      <DialogActions
+      <Dialog.Actions
         onCancel={() => call.end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={save}
         confirmLabel={busy ? t('jobs.saving') : t('common.save')}
         busy={busy}
       />
-    </Dialog>
+    </Dialog.Root>
   );
 });

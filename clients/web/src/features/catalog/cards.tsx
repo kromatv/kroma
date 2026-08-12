@@ -1,8 +1,9 @@
 import { metaLine, posterColors, type Section } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Badge, Button } from '@kroma/ui/kit';
+import { Badge, Box, Button, gradient, Row, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
-import { memo } from 'react';
+import { type CSSProperties, memo } from 'react';
+import { TileGrid } from '#web/features/catalog/tile-grid';
 import type { MovieView, ShowView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import type { HeroEntry } from '#web/shared/lib/queries';
@@ -20,7 +21,54 @@ function heroBadges(v: MovieView['video']): HeroBadge[] {
   return out;
 }
 
-const SECTION_TITLE = 'mb-5 mt-10 font-display text-[22px] font-bold tracking-[-.02em] text-text';
+/** The title above a home rail. Still an `<h2>`: `<Text accessibilityRole>` can
+ *  only render an `h1`. */
+export function SectionHeading({ children }: Readonly<{ children: string }>) {
+  return (
+    <h2>
+      <Text variant="h2" mt={40} mb={20}>
+        {children}
+      </Text>
+    </h2>
+  );
+}
+
+// Bled to the content edges (cancels the page gutter) and faded into the rails
+// below. The gutter is a fluid CSS custom property, which no style number can
+// carry, so the frame stays a plain element.
+const HERO: CSSProperties = {
+  position: 'relative',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'flex-end',
+  overflow: 'hidden',
+  marginLeft: 'calc(var(--gutter-web) * -1)',
+  marginRight: 'calc(var(--gutter-web) * -1)',
+  marginTop: -36,
+  marginBottom: 32,
+  minHeight: 'clamp(200px, 52vw, 460px)',
+  paddingLeft: 'var(--gutter-web)',
+  paddingRight: 'var(--gutter-web)',
+  paddingTop: 'clamp(40px, 5vw, 64px)',
+  paddingBottom: 40,
+};
+
+const HERO_BREATHE: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  pointerEvents: 'none',
+  animation: 'kroma-breathe 7s var(--ease-out) infinite',
+  background:
+    'radial-gradient(58% 68% at 72% 32%, color-mix(in srgb, var(--kroma-accent-wash) 16%, transparent), transparent 62%)',
+};
+
+const HERO_SCRIM = gradient(
+  [
+    'linear-gradient(90deg, var(--kroma-bg) 6%,',
+    'color-mix(in srgb, var(--kroma-bg) 35%, transparent) 42%, transparent 64%),',
+    'linear-gradient(0deg, var(--kroma-bg) 2%, transparent 46%)',
+  ].join(' '),
+);
 
 /** Full-bleed featured banner TMDB backdrop as cinematic art, bled to the
  * content edges (cancels the page gutter) and faded into the rails below. */
@@ -40,35 +88,37 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
           .join(' · ');
 
   return (
-    <div className="relative -mx-(--gutter-web) -mt-9 mb-8 flex min-h-[52vw] flex-col justify-end overflow-hidden px-(--gutter-web) pb-10 pt-10 sm:min-h-115 sm:pt-16">
+    <div style={HERO}>
       <Image src={media.backdrop} fit="cover" position="center 18%" background={gradient} fill />
-      <div className="pointer-events-none absolute inset-0 animate-[kroma-breathe_7s_var(--ease-out)_infinite] bg-[radial-gradient(58%_68%_at_72%_32%,rgba(242,180,66,.16),transparent_62%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,var(--kroma-bg)_6%,rgba(10,10,12,.35)_42%,transparent_64%),linear-gradient(0deg,var(--kroma-bg)_2%,transparent_46%)]" />
+      <div style={HERO_BREATHE} />
+      <Box fill pointerEvents="none" style={HERO_SCRIM} />
 
-      <div className="relative max-w-170">
-        <div className="mb-3.5 inline-flex items-center gap-1.75 text-[12px] font-bold uppercase tracking-[.22em] text-accent">
+      <Box maxW={680}>
+        <Text variant="overline" color="accent" mb={14}>
           {t('content.featured')}
-        </div>
-        <h1 className="mb-3.5 font-display text-[clamp(34px,6vw,66px)] font-bold leading-[.98] tracking-[-.02em]">
+        </Text>
+        <Text variant="hero" mb={14}>
           {media.title}
-        </h1>
-        <div className="mb-4 flex flex-wrap items-center gap-3 text-[13px] font-medium text-muted max-sm:text-[15px]">
+        </Text>
+        <Row wrap gap={12} mb={16}>
           {meta?.rating ? (
-            <span className="font-semibold text-accent">{meta.rating.toFixed(1)}★</span>
+            <Text variant="meta" color="accent">{`${meta.rating.toFixed(1)}★`}</Text>
           ) : null}
-          <span>{line}</span>
+          <Text variant="meta" color="textMuted">
+            {line}
+          </Text>
           {badges.map((b) => (
             <Badge key={b} tone={b}>
               {b}
             </Badge>
           ))}
-        </div>
+        </Row>
         {meta?.overview ? (
-          <p className="mb-5 line-clamp-3 max-w-135 text-[16px] leading-[1.55] text-text max-sm:text-[17px]">
+          <Text variant="body" lines={3} maxW={540} mb={20}>
             {meta.overview}
-          </p>
+          </Text>
         ) : null}
-        <div className="flex flex-wrap gap-3.5">
+        <Row wrap gap={14}>
           {entry.type === 'movie' ? (
             <>
               <Button
@@ -87,15 +137,18 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
               onPress={() => navigate({ to: '/show/$id', params: { id: media.id } })}
             />
           )}
-        </div>
-      </div>
+        </Row>
+      </Box>
     </div>
   );
 }
 
 // Cards are memo()d: a home page renders hundreds of them, and without memo any
 // parent state change (hover, a poll refetch, router transitions) re-renders every card.
-const MoviePoster = memo(function MoviePoster({ item }: Readonly<{ item: MovieView }>) {
+const MoviePoster = memo(function MoviePoster({
+  item,
+  width,
+}: Readonly<{ item: MovieView; width?: number }>) {
   const t = useT();
   const navigate = useNavigate();
   const { isWatched, toggleWatched } = useWatched();
@@ -105,6 +158,7 @@ const MoviePoster = memo(function MoviePoster({ item }: Readonly<{ item: MovieVi
       genre={t('content.film')}
       colors={posterColors(item.id)}
       poster={item.poster}
+      width={width}
       watched={isWatched(item.id)}
       onToggleWatched={() => toggleWatched(item.id)}
       onClick={() => navigate({ to: '/movie/$id', params: { id: item.id } })}
@@ -112,7 +166,10 @@ const MoviePoster = memo(function MoviePoster({ item }: Readonly<{ item: MovieVi
   );
 });
 
-const ShowPoster = memo(function ShowPoster({ show }: Readonly<{ show: ShowView }>) {
+const ShowPoster = memo(function ShowPoster({
+  show,
+  width,
+}: Readonly<{ show: ShowView; width?: number }>) {
   const t = useT();
   const navigate = useNavigate();
   const { isWatched, toggleWatched } = useWatched();
@@ -122,6 +179,7 @@ const ShowPoster = memo(function ShowPoster({ show }: Readonly<{ show: ShowView 
       genre={t('content.seasonCount', { count: show.seasonCount })}
       colors={posterColors(show.id)}
       poster={show.poster}
+      width={width}
       progress={show.progress ?? null}
       watched={isWatched(show.id)}
       onToggleWatched={() => toggleWatched(show.id)}
@@ -184,34 +242,25 @@ export function ShowRail({ title, shows }: Readonly<{ title: string; shows: Show
   if (shows.length === 0) return null;
   return (
     <section>
-      <h2 className={SECTION_TITLE}>{title}</h2>
+      <SectionHeading>{title}</SectionHeading>
       <PosterRail data={shows} renderItem={(show) => <ShowPoster show={show} />} />
     </section>
   );
 }
 
-// Auto-fill columns at least one card wide, stretched to fill the row (no dead
-// right edge on phones); `*:w-full!` overrides the tiles' inline default width.
-const GRID =
-  'grid grid-cols-[repeat(auto-fill,minmax(min(var(--card-w),100%),1fr))] gap-x-4.5 gap-y-6 *:w-full!';
-
 export function MovieGrid({ movies }: Readonly<{ movies: MovieView[] }>) {
   return (
-    <div className={GRID}>
-      {movies.map((item) => (
-        <MoviePoster key={item.id} item={item} />
-      ))}
-    </div>
+    <TileGrid>
+      {(width) => movies.map((item) => <MoviePoster key={item.id} item={item} width={width} />)}
+    </TileGrid>
   );
 }
 
 export function ShowGrid({ shows }: Readonly<{ shows: ShowView[] }>) {
   return (
-    <div className={GRID}>
-      {shows.map((show) => (
-        <ShowPoster key={show.id} show={show} />
-      ))}
-    </div>
+    <TileGrid>
+      {(width) => shows.map((show) => <ShowPoster key={show.id} show={show} width={width} />)}
+    </TileGrid>
   );
 }
 
@@ -222,14 +271,16 @@ export type CatalogEntry = { kind: 'movie'; movie: MovieView } | { kind: 'show';
 /** A grid mixing movies and shows in the given order (server-ranked). */
 export function CatalogGrid({ entries }: Readonly<{ entries: CatalogEntry[] }>) {
   return (
-    <div className={GRID}>
-      {entries.map((e) =>
-        e.kind === 'movie' ? (
-          <MoviePoster key={e.movie.id} item={e.movie} />
-        ) : (
-          <ShowPoster key={e.show.id} show={e.show} />
-        ),
-      )}
-    </div>
+    <TileGrid>
+      {(width) =>
+        entries.map((e) =>
+          e.kind === 'movie' ? (
+            <MoviePoster key={e.movie.id} item={e.movie} width={width} />
+          ) : (
+            <ShowPoster key={e.show.id} show={e.show} width={width} />
+          ),
+        )
+      }
+    </TileGrid>
   );
 }

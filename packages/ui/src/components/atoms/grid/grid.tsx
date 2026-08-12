@@ -1,4 +1,4 @@
-// <Grid>: the fixed-column tile grid of the browse screens.
+// <Grid>: the tile grid of the browse screens.
 //
 // React Native has no CSS grid (and neither does the legacy webOS tier this app
 // still ships to), so the columns are computed and the children laid out with
@@ -10,15 +10,22 @@
 // grid is one long line and Down from the first tile walks to the second rather
 // than to the tile underneath it.
 
-import { Children, type ReactNode } from 'react';
+import { Children, type ReactNode, useState } from 'react';
+import type { LayoutChangeEvent } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { FocusRegion } from '#ui/lib/focus-scope';
 import { FocusLine } from '#ui/lib/focus-scroll';
 
 interface GridProps {
-  /** Total width available to the grid, gutters included. */
-  width: number;
-  columns: number;
+  /** The narrowest a cell may be. The grid measures itself and fits as many
+   *  cells as the room allows, the way `auto-fill` does in CSS. */
+  min?: number;
+  /** A fixed count, for a design that demands one whatever the width. Wins
+   *  over `min`. */
+  columns?: number;
+  /** The width to divide, when the caller already knows it. Omit and the grid
+   *  measures its own box, which costs one frame before the first paint. */
+  width?: number;
   /** Horizontal gap, which is also what the column maths removes. */
   gap?: number;
   /** Vertical gap. Defaults to `gap`; the browse grids run looser vertically so
@@ -34,32 +41,53 @@ function cellWidth(width: number, columns: number, gap: number): number {
   return Math.floor((width - gap * (columns - 1)) / columns);
 }
 
-function Grid({ width, columns, gap = 24, rowGap, children }: Readonly<GridProps>) {
-  const cell = cellWidth(width, columns, gap);
-  const cells = Children.toArray(children);
-  const lines: ReactNode[][] = [];
-  for (let at = 0; at < cells.length; at += columns) lines.push(cells.slice(at, at + columns));
+/** How many `min`-wide cells fit in `width`. At least one, so a container
+ * narrower than a single cell still renders it rather than nothing. */
+function columnsFor(width: number, min: number, gap: number): number {
+  if (min <= 0) return 1;
+  return Math.max(1, Math.floor((width + gap) / (min + gap)));
+}
+
+function Grid({ min, columns, width, gap = 24, rowGap, children }: Readonly<GridProps>) {
+  const [measured, setMeasured] = useState(0);
+  // Both the cell width and an auto-fill count need the room, so a grid that was
+  // not handed one paints nothing until it has measured itself.
+  const room = width ?? measured;
+  const count = columns ?? (min ? columnsFor(room, min, gap) : 1);
+
+  const onLayout = (event: LayoutChangeEvent) => {
+    const next = Math.round(event.nativeEvent.layout.width);
+    setMeasured((current) => (current === next ? current : next));
+  };
+
   return (
-    <Box gap={rowGap ?? gap}>
-      {lines.map((line, index) => (
-        // Each line is also the page's scroll anchor (see <FocusLine>): inside
-        // a <FocusSlot> taller than the screen, the page would otherwise pin
-        // the slot's top once and never follow the focus down the grid.
-        // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the row's identity.
-        <FocusLine key={index}>
-          <FocusRegion style={{ flexDirection: 'row', gap }}>
-            {line.map((child, column) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the cell's slot in the row.
-              <Box key={column} w={cell}>
-                {child}
-              </Box>
-            ))}
-          </FocusRegion>
-        </FocusLine>
-      ))}
+    <Box gap={rowGap ?? gap} onLayout={width === undefined ? onLayout : undefined}>
+      {room > 0 ? lines(children, count, cellWidth(room, count, gap), gap) : null}
     </Box>
   );
 }
 
+function lines(children: ReactNode, count: number, cell: number, gap: number): ReactNode[] {
+  const cells = Children.toArray(children);
+  const rows: ReactNode[][] = [];
+  for (let at = 0; at < cells.length; at += count) rows.push(cells.slice(at, at + count));
+  return rows.map((row, index) => (
+    // Each line is also the page's scroll anchor (see <FocusLine>): inside
+    // a <FocusSlot> taller than the screen, the page would otherwise pin
+    // the slot's top once and never follow the focus down the grid.
+    // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the row's identity.
+    <FocusLine key={index}>
+      <FocusRegion style={{ flexDirection: 'row', gap }}>
+        {row.map((child, column) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the cell's slot in the row.
+          <Box key={column} w={cell}>
+            {child}
+          </Box>
+        ))}
+      </FocusRegion>
+    </FocusLine>
+  ));
+}
+
 export type { GridProps };
-export { cellWidth, Grid };
+export { cellWidth, columnsFor, Grid };

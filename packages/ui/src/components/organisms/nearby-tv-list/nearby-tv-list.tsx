@@ -45,18 +45,23 @@ export function NearbyTvList({
       {devices.map((device) => {
         const busy = connectingHandle === device.handle;
         const outcome = outcomeFor(device);
+        const hint = handoffRowHint(device, busy, outcome, t);
         return (
-          <ListRow
+          <ListRow.Root
             key={device.handle}
             size="sm"
             icon="device-tv"
-            label={device.name}
-            hint={handoffRowHint(device, busy, outcome, t) || undefined}
-            trailing={<RowEnd device={device} busy={busy} outcome={outcome} />}
             // A finished row is not a row to press again: the beacon behind it
             // is spent, and the row is only still here to be read.
             onPress={outcome ? undefined : () => onSelect(device)}
-          />
+            busy={busy || undefined}
+          >
+            <ListRow.Label>{device.name}</ListRow.Label>
+            {hint ? <ListRow.Hint>{hint}</ListRow.Hint> : null}
+            <ListRow.Trailing>
+              <RowEnd device={device} busy={busy} outcome={outcome} />
+            </ListRow.Trailing>
+          </ListRow.Root>
         );
       })}
     </ListRow.Group>
@@ -72,7 +77,7 @@ function RowEnd({
   outcome,
 }: Readonly<{ device: DiscoveredTv; busy: boolean; outcome: HandoffOutcome | null }>): ReactNode {
   if (busy) return <Spinner size={18} thickness={2} />;
-  if (outcome === 'done') return <Icon name="check" size={18} stroke={2.4} color="success" />;
-  if (outcome) return <Icon name="alert-triangle" size={18} stroke={2.2} color="danger" />;
+  if (outcome === 'done') return <Icon name="check" size={18} thickness={2.4} color="success" />;
+  if (outcome) return <Icon name="alert-triangle" size={18} thickness={2.2} color="danger" />;
   return <Badge tone="neutral">{device.check}</Badge>;
 }

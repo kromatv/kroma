@@ -31,7 +31,7 @@ export default story({
         <Badge tone="H.265">H.265 OK</Badge>
       </Tooltip>
       <Tooltip label="Refresh">
-        <IconButton icon="refresh" label="Refresh" size={36} />
+        <IconButton icon="refresh" label="Refresh" diameter={36} />
       </Tooltip>
     </Box>
   ),

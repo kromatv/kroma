@@ -16,14 +16,15 @@ ES5 loader gated on `CSSLayerBlockRule`):
 - **legacy** (`dist/legacy/`): one ES2015 IIFE + a flattened stylesheet for
   Chromium 53-94 (webOS 4.x-23, 2018-2023 models). `vite.config.legacy.ts`
   lowers the JS (core-js + AbortController + IntersectionObserver polyfills);
-  `../tv-build/legacy-css.ts` shims flex `gap` (negative-margin technique),
-  `aspect-ratio` (`::before` strut) and `scale`/`translate` (composed
-  transform), then `@csstools/postcss-cascade-layers` compiles `@layer` away
-  and Lightning CSS down-levels to Chrome 53. `../tv-build/check-legacy.ts`
-  fails the build if anything unparseable for Chromium 53 sneaks back.
+  `@kroma/bundler`'s `legacy-css.ts` shims flex `gap` (negative-margin
+  technique), `aspect-ratio` (`::before` strut) and `scale`/`translate`
+  (composed transform), then `legacy-finalize.ts` hands the sheet to Lightning
+  CSS, which flattens `@layer` and down-levels to Chrome 53.
+  `../tv-build/check-legacy.ts` fails the build if anything unparseable for
+  Chromium 53 sneaks back.
 
 The whole thing is driven by `tv.target.ts` (platform, dev port, engine
-floors) through the shared factory in `clients/tv-build/shell.ts` - see that
+floors) through the shared factory in `packages/bundler/src/shell.ts` - see that
 file for how to give any shell a legacy tier.
 
 Playback on those engines: MSE cannot decode HEVC there, so `useDirectPlayback`
@@ -105,7 +106,7 @@ passing it since `_release-tv.yml`). Vite has already minified the output.
 
 ## Publishing to the LG Content Store
 
-See [STORE.md](./STORE.md) — Seller Lounge account, assets, listing fields, the
+See [STORE.md](./STORE.md) for the Seller Lounge account, assets, listing fields, the
 self-checklist items that need real attention, and what LG's QA needs in order to
 be able to test a client for a server it cannot reach.
 

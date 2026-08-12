@@ -32,7 +32,7 @@ import { artworkScaleValue } from '@kroma/core';
 import { useEffect, useState } from 'react';
 import { Dimensions, PixelRatio } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { type PerfReport, perfReport, startPerf, stopPerf } from '#ui/lib/perf';
 import { PerfChart } from './perf-chart';
@@ -99,12 +99,12 @@ function screenText(): string {
 function Row({ label, value, bad }: Readonly<{ label: string; value: string; bad: boolean }>) {
   return (
     <Box row between gap={16}>
-      <Txt style={s.label} color="textDim">
+      <Text style={s.label} color="textDim">
         {label}
-      </Txt>
-      <Txt style={s.value} color={bad ? 'danger' : 'success'}>
+      </Text>
+      <Text style={s.value} color={bad ? 'danger' : 'success'}>
         {value}
-      </Txt>
+      </Text>
     </Box>
   );
 }

@@ -5,7 +5,7 @@ import { HINT_KEYS, Hint } from './hint';
 export default story({
   name: 'Hint',
   group: 'Feedback',
-  docs: "The line that tells you what the remote does. The translation carries only the WORDS, with `{left}`-style tokens where a key belongs, and those become real glyphs from the kit's own set at the text's size and colour. The alternative — geometric characters typed into the translation — put part of the interface inside a string a translator edits, and tvOS rendered several of those code points as blue **emoji**.",
+  docs: "The line that tells you what the remote does. The translation carries only the WORDS, with `{left}`-style tokens where a key belongs, and those become real glyphs from the kit's own set at the text's size and colour. The alternative (geometric characters typed into the translation) put part of the interface inside a string a translator edits, and tvOS rendered several of those code points as blue **emoji**.",
   usage: `<Hint text={t('profiles.navHint')} />
 // "profiles.navHint": "{left} {right} Browse · OK Select"`,
   guidelines: {
@@ -19,12 +19,12 @@ export default story({
     ],
   },
   matrix: false,
+  component: Hint,
   args: {
     text: '{left} {right} Browse · OK Select · {back} Back',
     size: 15,
   },
   controls: { size: { min: 11, max: 28, step: 1 } },
-  render: (props) => <Hint {...props} />,
   scenes: [
     {
       name: 'Every key',

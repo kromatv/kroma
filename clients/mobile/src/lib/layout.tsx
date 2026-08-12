@@ -1,5 +1,5 @@
 // Tablet-aware layout primitives. Multi-column layouts key off the LIVE
-// window width (useIsWide), never the device class — iPadOS windows resize
+// window width (useIsWide), never the device class: iPadOS windows resize
 // freely, so a narrow floating window must collapse back to single-column.
 
 import { Box, styles } from '@kroma/ui/kit';
@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing } from './theme';
 
 // Device class, for capabilities that genuinely follow the hardware (e.g.
-// player orientation locks) — resizable iPad windows make it wrong for any
+// player orientation locks). Resizable iPad windows make it wrong for any
 // layout decision, which should use useIsWide instead.
 export const isTablet = Device.deviceType === Device.DeviceType.TABLET;
 

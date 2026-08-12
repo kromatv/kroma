@@ -34,7 +34,7 @@ export interface HtmlOptions {
   direct: boolean;
   /** Request the AAC renditions of the master (MSE can't decode AC3). */
   masterAac: boolean;
-  /** Drive the MSE master through Shaka Player rather than hls.js — the default
+  /** Drive the MSE master through Shaka Player rather than hls.js, the default
    * everywhere Shaka ships, like the web client; `false` is the `remux`
    * preference's explicit hls.js. Native HLS (Safari/WKWebView, legacy webOS)
    * still wins over both. */

@@ -2,10 +2,9 @@
 // into this profile on a shared device. It is not the login credential.
 
 import { useT } from '@kroma/ui';
-import { Button, OtpField } from '@kroma/ui/kit';
-import { IconLock } from '@tabler/icons-react';
+import { Box, Button, IconWell, OtpField, Row, Surface, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
-import { Panel, StatusText, useSave } from '#web/features/accounts/account/ui';
+import { StatusText, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
 
 function PinRow({
@@ -14,17 +13,19 @@ function PinRow({
   onChange,
 }: Readonly<{ label: string; value: string; onChange: (v: string) => void }>) {
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-dim">{label}</span>
-      <OtpField
+    <Box gap={8}>
+      <Text variant="overline" color="textDim">
+        {label}
+      </Text>
+      <OtpField.Root
         maxLength={4}
         value={value}
-        onChange={onChange}
+        onValueChange={onChange}
         mask
         physicalKeyboard
         label={label}
       />
-    </div>
+    </Box>
   );
 }
 
@@ -74,57 +75,61 @@ export function PinCard() {
   };
 
   return (
-    <Panel className="p-5.5">
-      <div className="mb-4 flex items-center gap-3.5">
-        <span className="flex size-10 flex-none items-center justify-center rounded-md bg-accent-soft text-accent">
-          <IconLock size={20} stroke={1.8} />
-        </span>
-        <div className="min-w-0">
-          <div className="font-display text-[15px] font-bold text-text">{t('account.pin')}</div>
-          <div className="mt-0.5 text-[12.5px] text-muted">
+    <Surface elevated pad="none" p={22} radius="lg" border="border">
+      <Row gap={14} mb={16}>
+        <IconWell name="lock" size="sm" tone="accent" />
+        <Box minW={0}>
+          <Text variant="label" font="display">
+            {t('account.pin')}
+          </Text>
+          <Text variant="meta" color="textMuted" mt={2}>
             {hasPin ? t('account.pinSubSet') : t('account.pinSub')}
-          </div>
-        </div>
-      </div>
+          </Text>
+        </Box>
+      </Row>
 
-      <form onSubmit={submit} className="flex flex-col gap-4">
-        {hasPin ? (
-          <PinRow label={t('account.currentPin')} value={current} onChange={setCurrent} />
-        ) : null}
-        <PinRow
-          label={hasPin ? t('account.newPin') : t('account.pin')}
-          value={pin}
-          onChange={setPin}
-        />
-        <PinRow label={t('account.confirmPin')} value={confirm} onChange={setConfirm} />
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            size="sm"
-            label={save.status === 'saving' ? t('common.saving') : submitLabel}
-            onPress={submit}
-            loading={save.status === 'saving'}
-            disabled={pin.length !== 4 || (hasPin && current.length !== 4)}
-          />
+      <form onSubmit={submit}>
+        <Box gap={16}>
           {hasPin ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              label={remove.status === 'saving' ? t('common.saving') : t('account.removePin')}
-              onPress={removePin}
-              loading={remove.status === 'saving'}
-              disabled={current.length !== 4}
-            />
+            <PinRow label={t('account.currentPin')} value={current} onChange={setCurrent} />
           ) : null}
-          {mismatch ? (
-            <span className="text-[13px] font-medium text-danger">{t('account.pinMismatch')}</span>
-          ) : (
-            <StatusText
-              status={save.status === 'idle' ? remove.status : save.status}
-              error={save.error ?? remove.error}
+          <PinRow
+            label={hasPin ? t('account.newPin') : t('account.pin')}
+            value={pin}
+            onChange={setPin}
+          />
+          <PinRow label={t('account.confirmPin')} value={confirm} onChange={setConfirm} />
+          <Row wrap gap={12}>
+            <Button
+              size="sm"
+              label={save.status === 'saving' ? t('common.saving') : submitLabel}
+              onPress={submit}
+              loading={save.status === 'saving'}
+              disabled={pin.length !== 4 || (hasPin && current.length !== 4)}
             />
-          )}
-        </div>
+            {hasPin ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                label={remove.status === 'saving' ? t('common.saving') : t('account.removePin')}
+                onPress={removePin}
+                loading={remove.status === 'saving'}
+                disabled={current.length !== 4}
+              />
+            ) : null}
+            {mismatch ? (
+              <Text variant="meta" color="danger">
+                {t('account.pinMismatch')}
+              </Text>
+            ) : (
+              <StatusText
+                status={save.status === 'idle' ? remove.status : save.status}
+                error={save.error ?? remove.error}
+              />
+            )}
+          </Row>
+        </Box>
       </form>
-    </Panel>
+    </Surface>
   );
 }

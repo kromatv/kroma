@@ -107,7 +107,7 @@ describe('spending a grant', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ delivered: true });
 
-    // The device token comes out of the grant, never off the request — a caller
+    // The device token comes out of the grant, never off the request: a caller
     // has no field with which to name someone else's phone.
     expect(calls[0]?.url).toBe('https://api.push.apple.com/3/device/DEVICE-A');
     const headers = calls[0]?.init.headers as Record<string, string>;

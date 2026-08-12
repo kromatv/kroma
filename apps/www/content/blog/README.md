@@ -18,7 +18,7 @@ English is the default language, so the base file is English and other languages
 are `.<lang>.mdx` overrides of the **same slug**:
 
 ```
-my-post.mdx        the default version (English) — the fallback
+my-post.mdx        the default version (English), the fallback
 my-post.fr.mdx     the French translation of the same post
 ```
 
@@ -32,7 +32,7 @@ my-post.fr.mdx     the French translation of the same post
 
 ## Frontmatter
 
-A YAML block between `---`. Only `title` is truly required, but fill them in —
+A YAML block between `---`. Only `title` is truly required, but fill them in:
 they feed the list, the article page and the social (Open Graph) card.
 
 ```mdx

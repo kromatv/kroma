@@ -6,7 +6,7 @@
 
 /**
  * Translates a server link (written for the web app's routes) into this app's
- * route, or `null` when the phone has no matching screen — e.g. `/watch/:id`
+ * route, or `null` when the phone has no matching screen; e.g. `/watch/:id`
  * on the web maps to `/player/:id` here.
  */
 export function mobileRoute(link: string | undefined | null): string | null {

@@ -1,0 +1,120 @@
+import { story } from '@kroma/workbench/story';
+import { useEffect, useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
+import { chromeMetrics, GUTTER } from '../../lib/metrics';
+import type { ControlId } from '../../lib/nav';
+import { ControlCluster } from './control-cluster';
+
+const ALL: ControlId[] = [
+  'rewind',
+  'play',
+  'forward',
+  'next',
+  'volume',
+  'subtitles',
+  'audio',
+  'settings',
+  'pip',
+  'fullscreen',
+];
+
+interface LiveProps {
+  focused: ControlId;
+  playing: boolean;
+  muted: boolean;
+  volume: number;
+  pipActive: boolean;
+  fullscreen: boolean;
+}
+
+function Live({ focused: focusedArg, playing, muted, volume, ...rest }: Readonly<LiveProps>) {
+  const [state, setState] = useState({ focused: focusedArg, playing, muted, volume });
+  useEffect(() => {
+    setState({ focused: focusedArg, playing, muted, volume });
+  }, [focusedArg, playing, muted, volume]);
+
+  const activate = (id: ControlId) => {
+    if (id === 'play') setState((prev) => ({ ...prev, playing: !prev.playing }));
+    if (id === 'volume') setState((prev) => ({ ...prev, muted: !prev.muted }));
+  };
+
+  const [width, setWidth] = useState(0);
+  const metrics = chromeMetrics(ALL, width);
+
+  return (
+    <Ground tone="dark" flex>
+      <Box
+        flex
+        justify="flex-end"
+        bg="bg"
+        px={GUTTER}
+        pb={40}
+        onLayout={(e) => setWidth(Math.round(e.nativeEvent.layout.width))}
+      >
+        <ControlCluster
+          {...rest}
+          focused={state.focused}
+          playing={state.playing}
+          muted={state.muted}
+          volume={state.volume}
+          metrics={metrics}
+          onActivate={activate}
+          onFocus={(id) => setState((prev) => ({ ...prev, focused: id }))}
+          onVolume={(next) => setState((prev) => ({ ...prev, muted: false, volume: next }))}
+        />
+      </Box>
+    </Ground>
+  );
+}
+
+export default story({
+  name: 'PlayerControls',
+  group: 'Player',
+  docs: 'The transport row. Which controls exist is decided by the player (no `next` without a next episode, no `pip` where the platform has none) and handed in through `metrics`, so this draws whatever it is given rather than knowing about episodes or platforms. One `onActivate` serves a mouse click and a D-pad OK alike, and hover moves focus so a pointer and a remote agree on where they are.\n\nIt is drawn for the 1920 stage but not fixed to it: `metrics` (from `chromeMetrics`, which weighs the controls actually present against the width there is) shrinks every circle together, then lets the cluster claim its width from the centring spacer, and when even that would take a button below the size of a fingertip it gives something up: the volume rail first, then one control at a time. What it never does is wrap onto a second line. Nothing is lost by that: every shed control comes back as `metrics.overflow`, which the player lists in the settings panel the gear opens, so a phone-width window trades one tap for two rather than a feature. Switch the viewport to a phone to watch it go.',
+  usage: `<ControlCluster
+  focused={nav.control}
+  playing={playing}
+  muted={muted}
+  volume={volume}
+  pipActive={pipActive}
+  fullscreen={fullscreen}
+  metrics={chromeMetrics(controls, stageWidth)}
+  onActivate={run}
+  onFocus={nav.focus}
+  onVolume={setVolume}
+/>`,
+  guidelines: {
+    do: [
+      'Build the row from what the platform and the item actually support, and let `chromeMetrics` decide what fits.',
+      'Share one `onActivate` between pointer and remote: they run the same thing.',
+      'Pass `metrics` measured on the stage the row is drawn in, not on the window.',
+      'Feed `metrics.controls` to the nav machine too, so a shed control loses its D-pad stop with it.',
+    ],
+    dont: [
+      "Don't hide a control by rendering it disabled - leave it out of the row.",
+      "Don't drop `metrics.overflow` on the floor: shedding is only safe because the settings panel picks it up.",
+    ],
+  },
+  matrix: false,
+  component: Live,
+  args: {
+    focused: 'play' as ControlId,
+    playing: true,
+    muted: false,
+    volume: 0.7,
+    pipActive: false,
+    fullscreen: false,
+  },
+  controls: { focused: ALL, volume: { min: 0, max: 1, step: 0.05 } },
+  scenes: [
+    {
+      name: 'Paused, muted',
+      args: { playing: false, muted: true, volume: 0, focused: 'volume' },
+    },
+    {
+      name: 'On the settings gear',
+      args: { focused: 'settings' },
+    },
+  ],
+});

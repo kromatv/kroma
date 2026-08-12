@@ -9,10 +9,13 @@ export * from './components/templates';
 export type {
   AnySv,
   BoxStyleProps,
+  Breakpoints,
   ColorValue,
   Resolved,
+  Responsive,
   StyleDecl,
   SvState,
+  TextLayoutProps,
   Theme,
   ThemeMode,
   ThemeOverrides,
@@ -27,11 +30,13 @@ export {
   boxStyle,
   color,
   createTheme,
+  currentBreakpoint,
   groundShade,
   KROMA,
   KROMA_LIGHT,
   onPaper,
   onThemeChange,
+  pinDesignWidth,
   readMode,
   setTheme,
   sharedStyle,
@@ -41,6 +46,7 @@ export {
   svFor,
   ThemeProvider,
   themeVersion,
+  useBreakpoint,
   useSystemGround,
   useTheme,
   writeMode,
@@ -59,6 +65,7 @@ export {
 export type { Rect } from './lib/cover-rect';
 export { coverRect, parsePosition } from './lib/cover-rect';
 export { backdropBlur, bgPosition, bgSize, gradient, promote } from './lib/css';
+export { ARROW, HAND } from './lib/cursor';
 // The one sanctioned way to ask for the DOM from shared code (null on a TV).
 export { webDocument, webWindow } from './lib/dom';
 export { armEscapeGuard } from './lib/escape-guard';
@@ -82,10 +89,12 @@ export type {
 export { msg, useForm } from './lib/form';
 export {
   DEFAULT_ICON_SIZE,
-  DEFAULT_ICON_STROKE,
+  DEFAULT_ICON_THICKNESS,
   hasGlyph,
   iconNames,
 } from './lib/glyph';
+export type { IconCatalog, IconEntry } from './lib/icon-catalog';
+export { iconCategories, iconEntry, setIconCatalog } from './lib/icon-catalog';
 export type { ImageBackend, ImageBackendProps } from './lib/image-backend';
 export { imageBackend, reactNativeImage, setImageBackend } from './lib/image-backend';
 export { clearInputHolds, holdInput, inputHeld } from './lib/input-gate';
@@ -105,7 +114,11 @@ export type { ReportCategoryMeta } from './lib/report-categories';
 export { REPORT_CATEGORIES } from './lib/report-categories';
 export type { RingGeometry, RingProps } from './lib/ring';
 export { RING_ROTATION, ringGeometry } from './lib/ring';
+export type { SurfaceWidth } from './lib/surface-shell';
+export { DIALOG_PAD, SURFACE_WIDTH } from './lib/surface-shell';
 export { SvgXml } from './lib/svg';
+export type { CopyState } from './lib/use-copy';
+export { useCopy } from './lib/use-copy';
 export type { GrowingCount } from './lib/use-growing-count';
 export { useGrowingCount } from './lib/use-growing-count';
 export type { WheelSpin } from './lib/wheel-paths';

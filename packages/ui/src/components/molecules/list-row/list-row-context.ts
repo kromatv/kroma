@@ -1,0 +1,17 @@
+// What <ListRow>'s parts share: the shell size the Root settled on, and the
+// styles it already resolved for them.
+
+import type { ControlMetrics, ControlSize } from '#ui/lib/field-shell';
+import { partContext } from '#ui/lib/part-context';
+import type { listRowVariants } from './list-row-variants';
+
+interface ListRowState {
+  size: ControlSize;
+  metrics: ControlMetrics;
+  slots: ReturnType<typeof listRowVariants>;
+}
+
+const [ListRowContext, useListRow] = partContext<ListRowState>('ListRow.Root');
+
+export type { ListRowState };
+export { ListRowContext, useListRow };

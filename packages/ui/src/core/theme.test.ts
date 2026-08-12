@@ -9,6 +9,7 @@ import {
   onThemeChange,
   setTheme,
   themed,
+  themedCache,
   themeVersion,
 } from './theme';
 
@@ -65,6 +66,45 @@ describe('themed', () => {
     setTheme(createTheme({ colors: { accent: '#3FB6F2' } }));
     expect(accent()).toBe('#3FB6F2');
     expect(calls).toBe(2);
+  });
+});
+
+describe('themedCache', () => {
+  it('computes once per key, and again for every key after a swap', () => {
+    let calls = 0;
+    const cache = themedCache<string>(10);
+    const paint = (key: string) =>
+      cache(key, () => {
+        calls += 1;
+        return `${key}:${calls}`;
+      });
+
+    expect(paint('accent')).toBe('accent:1');
+    expect(paint('accent')).toBe('accent:1');
+    expect(paint('danger')).toBe('danger:2');
+    expect(calls).toBe(2);
+
+    setTheme(KROMA_LIGHT);
+    expect(paint('accent')).toBe('accent:3');
+    expect(calls).toBe(3);
+  });
+
+  it('keeps resolving past the cap, and stops remembering', () => {
+    let calls = 0;
+    const cache = themedCache<number>(2);
+    const at = (key: string) =>
+      cache(key, () => {
+        calls += 1;
+        return calls;
+      });
+
+    expect(at('a')).toBe(1);
+    expect(at('b')).toBe(2);
+    expect(at('a')).toBe(1);
+    // Third key: computed correctly, never stored, so the next read recomputes.
+    expect(at('c')).toBe(3);
+    expect(at('c')).toBe(4);
+    expect(at('a')).toBe(1);
   });
 });
 

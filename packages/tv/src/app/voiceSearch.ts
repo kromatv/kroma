@@ -1,7 +1,7 @@
 // Voice search: the design lives here, the microphone does not. A shell
 // registers a backend only if its television can actually hear; no backend
 // registered means no mic button. tvOS has no third-party microphone API at
-// all — the Siri Remote's mic only feeds dictation into a system text field —
+// all (the Siri Remote's mic only feeds dictation into a system text field),
 // so Apple TV registers none here and dictates through `app/searchShell` instead.
 
 import type { ComponentType } from 'react';

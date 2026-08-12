@@ -1,7 +1,7 @@
 // The strip above the tab bar while this phone is driving a TV.
 
 import { useCast } from '@kroma/ui';
-import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, styles, Text } from '@kroma/ui/kit';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
@@ -35,16 +35,16 @@ export function CastMiniBar() {
         <Image source={{ uri: poster }} style={s.poster} contentFit="cover" />
       ) : (
         <Box style={[s.poster, s.posterFallback]}>
-          <Icon name="device-tv" size={18} stroke={1.8} color="textMuted" />
+          <Icon name="device-tv" size={18} thickness={1.8} color="textMuted" />
         </Box>
       )}
       <Box style={s.text}>
-        <Txt lines={1} style={s.title}>
+        <Text lines={1} style={s.title}>
           {title}
-        </Txt>
-        <Txt lines={1} style={s.device}>
+        </Text>
+        <Text lines={1} style={s.device}>
           {t('cast.playingOn', { device: active.name })}
-        </Txt>
+        </Text>
       </Box>
       {playing ? (
         <Pressable

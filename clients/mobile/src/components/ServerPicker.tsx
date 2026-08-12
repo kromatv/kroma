@@ -50,7 +50,7 @@ export function ServerPicker({
         })}
         <ServerRow
           name={t('connect.addServerTitle')}
-          icon={<Icon name="plus" size={17} stroke={2.2} color="accentText" />}
+          icon={<Icon name="plus" size={17} thickness={2.2} color="accentText" />}
           onPress={onAddServer}
         />
       </ServerList>

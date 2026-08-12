@@ -42,7 +42,7 @@ export default story({
     {
       name: 'Nothing to expand',
       docs: 'Text that fits its clamp gets no affordance and no press target: the ghost measures no taller than the visible copy, so there is nothing to reveal.',
-      render: () => (
+      example: () => (
         <Box maxW={520}>
           <ExpandableText lines={3} moreLabel="More">
             Two sentences that fit. There is no more to show, so no affordance is drawn.

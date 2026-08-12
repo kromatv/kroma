@@ -1,10 +1,10 @@
 // Who a person is, above their filmography: portrait, life facts, biography.
 //
-// Data comes from `GET /api/people/details` and is optional — with nothing to
+// Data comes from `GET /api/people/details` and is optional: with nothing to
 // show, the component renders nothing and the grid keeps its header-less look.
 
 import { type PersonDetail, personFacts } from '@kroma/core';
-import { Box, styles, Txt } from '@kroma/ui/kit';
+import { Box, DataField, styles, Text } from '@kroma/ui/kit';
 import { Avatar } from '#mobile/components/Avatar';
 import { ExpandableText } from '#mobile/components/ui';
 import { useI18n, useT } from '#mobile/lib/i18n';
@@ -35,19 +35,19 @@ export function PersonProfile({
       <Box style={s.identity}>
         <Avatar uri={photo} name={name} size={92} />
         <Box style={s.facts}>
-          {roles.length ? <Txt style={s.roles}>{roles.join(' · ')}</Txt> : null}
+          {roles.length ? <Text style={s.roles}>{roles.join(' · ')}</Text> : null}
           {facts.map((f) => (
-            <Box key={f.key} style={s.fact}>
-              <Txt style={s.factLabel}>{f.label}</Txt>
-              <Txt style={s.factValue}>{f.value}</Txt>
-            </Box>
+            <DataField.Root key={f.key} size="sm">
+              <DataField.Label>{f.label}</DataField.Label>
+              <DataField.Value>{f.value}</DataField.Value>
+            </DataField.Root>
           ))}
         </Box>
       </Box>
 
       {biography ? (
         <Box>
-          <Txt style={s.group}>{t('person.biography')}</Txt>
+          <Text style={s.group}>{t('person.biography')}</Text>
           {/* The kit's paragraph, like the film and series overviews on this
               app: it GROWS into its full height rather than jumping, and it
               only offers "read more" when the copy actually overflows - the
@@ -66,8 +66,5 @@ const s = styles({
   identity: { row: true, align: 'center', gap: spacing.md },
   facts: { flex: true, gap: 6 },
   roles: { ...type.caption, color: 'accentText', fontWeight: '700' },
-  fact: { gap: 1 },
-  factLabel: { ...type.small, color: 'textDim', textTransform: 'uppercase', letterSpacing: 1 },
-  factValue: { ...type.caption, color: 'text', fontWeight: '600' },
   group: { ...type.small, mb: 4, color: 'textDim', textTransform: 'uppercase', letterSpacing: 1 },
 });

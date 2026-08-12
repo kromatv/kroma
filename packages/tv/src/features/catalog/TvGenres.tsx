@@ -14,7 +14,7 @@ import {
   FocusRegion,
   FocusScroll,
   styles,
-  Txt,
+  Text,
   tintGradient,
   useFocusNav,
 } from '@kroma/ui/kit';
@@ -40,9 +40,9 @@ export function TvGenres() {
   return (
     <Box fill bg="bg" overflow="hidden">
       <Box px={64} pt={112} pb={16}>
-        <Txt variant="hero" style={TITLE}>
+        <Text variant="hero" style={TITLE}>
           {t('nav.genres')}
-        </Txt>
+        </Text>
       </Box>
 
       {genres.length ? (
@@ -77,12 +77,9 @@ export function TvGenres() {
         </FocusScroll>
       ) : (
         <Box flex center px={64}>
-          <Txt
-            style={{ fontSize: 18, fontWeight: '500', textAlign: 'center', maxWidth: 640 }}
-            color="textDim"
-          >
+          <Text variant="leadTv" textAlign="center" maxW={640} color="textDim">
             {t('genres.empty')}
-          </Txt>
+          </Text>
         </Box>
       )}
     </Box>

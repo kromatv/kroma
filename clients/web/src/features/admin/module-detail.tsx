@@ -6,7 +6,7 @@
 // when anything changed, so the caller knows whether to refresh.
 
 import { useT } from '@kroma/ui';
-import { Button, Drawer, IconButton, Switch } from '@kroma/ui/kit';
+import { Box, Button, Dialog, Drawer, Row, Spacer, Switch, Text } from '@kroma/ui/kit';
 import { type ReactNode, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import { message, UninstallConflictError, uninstallModule } from '#web/features/admin/module-api';
@@ -21,6 +21,7 @@ import {
 } from '#web/features/admin/module-detail-sections';
 import { InstallModal } from '#web/features/admin/module-install';
 import { useStoreOps } from '#web/features/admin/module-ops';
+import { Pill } from '#web/features/admin/pill';
 
 /** The inline confirm strip the footer swaps to before an uninstall: the
  * plain ask first, then the informed-force variant listing dependents. */
@@ -41,27 +42,19 @@ function ConfirmStrip({
 }>) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-3">
-      <p className={`text-[12.5px] leading-relaxed ${danger ? 'text-danger' : 'text-muted'}`}>
+    <Box gap={12}>
+      <Text variant="meta" color={danger ? 'danger' : 'textMuted'}>
         {text}
-      </p>
-      <div className="flex justify-end gap-2.5">
-        <Button
-          variant="ghost"
-          size="sm"
-          label={t('common.cancel')}
-          onPress={onCancel}
-          disabled={busy}
-        />
-        <Button
-          variant="danger"
-          size="sm"
-          label={confirmLabel}
-          onPress={onConfirm}
-          loading={busy}
-        />
-      </div>
-    </div>
+      </Text>
+      <Dialog.Actions
+        onCancel={onCancel}
+        cancelLabel={t('common.cancel')}
+        onConfirm={onConfirm}
+        confirmLabel={confirmLabel}
+        destructive
+        busy={busy}
+      />
+    </Box>
   );
 }
 
@@ -121,7 +114,7 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
       t('admin.modulesVersion'),
       update ? (
         <>
-          v{installed?.version} <span className="text-accent">→ v{entry?.version}</span>
+          v{installed?.version} <Text color="accentText">→ v{entry?.version}</Text>
         </>
       ) : (
         `v${version ?? '?'}`
@@ -160,20 +153,20 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
       );
     }
     return (
-      <div className="flex items-center gap-3">
+      <Row gap={12}>
         {installed && (
-          <div className="flex items-center gap-2">
+          <Row gap={8}>
             <Switch
               checked={installed.enabled}
-              onChange={toggler.busy ? undefined : (v) => void toggler.toggle(v)}
+              onCheckedChange={toggler.busy ? undefined : (v) => void toggler.toggle(v)}
               label={name}
             />
-            <span className="text-[12px] font-semibold text-dim">
+            <Text variant="meta" color="textDim">
               {installed.enabled ? t('admin.modulesEnabled') : t('admin.modulesDisabled')}
-            </span>
-          </div>
+            </Text>
+          </Row>
         )}
-        <div className="flex-1" />
+        <Spacer />
         {installed?.removable && (
           <Button
             variant="ghost"
@@ -198,62 +191,78 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
             onPress={() => void install()}
           />
         )}
-      </div>
+      </Row>
     );
   })();
 
   return (
-    <Drawer open={!call.ended} onClose={close} title={name} width={460}>
-      <div className="border-b border-white/[0.07] px-6 py-5">
-        <div className="mb-4 flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+    <Drawer.Root open={!call.ended} onClose={close} title={name}>
+      <Drawer.Header>
+        <Row between mb={16}>
+          <Text variant="overline" color="textDim">
             {t('admin.modulesSheet')}
-          </span>
-          <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={close} />
-        </div>
-        <div className="flex items-start gap-4">
+          </Text>
+          <Drawer.Close />
+        </Row>
+        <Box row align="flex-start" gap={16}>
           <HeaderIcon id={id} installed={!!installed} icon={entry?.icon} />
-          <div className="min-w-0 pt-0.5">
-            <h2 className="font-display text-[21px] font-bold leading-[1.12]">{name}</h2>
-            <div className="mt-1 truncate font-mono text-[11.5px] text-white/45">{id}</div>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+          <Box minW={0} pt={2}>
+            <Text variant="h2" accessibilityRole="header">
+              {name}
+            </Text>
+            <Text variant="meta" font="mono" color="textDim" lines={1} mt={4}>
+              {id}
+            </Text>
+            <Row wrap gap={6} mt={8}>
               {entry?.library && (
-                <span className="rounded-full bg-white/6 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-muted">
+                <Pill ink="textMuted" bg="tint/6" variant="overline">
                   {t('admin.modulesLibraryChip')}
-                </span>
+                </Pill>
               )}
               {installed && (
-                <span
-                  className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${installed.enabled ? 'bg-[rgba(70,208,141,.14)] text-success' : 'bg-white/6 text-dim'}`}
+                <Pill
+                  ink={installed.enabled ? 'success' : 'textDim'}
+                  bg={installed.enabled ? 'success/14' : 'tint/6'}
+                  variant="overline"
                 >
                   {installed.enabled ? t('admin.modulesEnabled') : t('admin.modulesDisabled')}
-                </span>
+                </Pill>
               )}
               {update && (
-                <span className="rounded-full bg-accent-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-accent">
+                <Pill ink="accentText" bg="accentSoft" variant="overline">
                   {t('admin.modulesUpdateChip', { version: entry.version })}
-                </span>
+                </Pill>
               )}
-            </div>
-          </div>
-        </div>
-      </div>
+            </Row>
+          </Box>
+        </Box>
+      </Drawer.Header>
 
-      <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-6 py-5">
-        {(error ?? toggler.error) && (
-          <p className="break-words text-xs font-semibold text-danger">{error ?? toggler.error}</p>
-        )}
-        {description && <p className="text-[13px] leading-relaxed text-muted">{description}</p>}
-        {entry && !entry.compatible && entry.reason && (
-          <p className="text-[12.5px] font-semibold text-danger">{entry.reason}</p>
-        )}
-        <Meta rows={metaRows} />
-        <DepsSection installed={installed} entry={entry} all={all} />
-        <Addons id={id} catalog={catalog} />
-        {installed && <DrawerSettings module={installed} onSaved={reload} />}
-      </div>
+      <Drawer.Panel>
+        <Box gap={24}>
+          {(error ?? toggler.error) && (
+            <Text variant="meta" color="danger">
+              {error ?? toggler.error}
+            </Text>
+          )}
+          {description && (
+            <Text variant="meta" color="textMuted">
+              {description}
+            </Text>
+          )}
+          {entry && !entry.compatible && entry.reason && (
+            <Text variant="meta" color="danger">
+              {entry.reason}
+            </Text>
+          )}
+          <Meta rows={metaRows} />
+          <DepsSection installed={installed} entry={entry} all={all} />
+          <Addons id={id} catalog={catalog} />
+          {installed && <DrawerSettings module={installed} onSaved={reload} />}
+        </Box>
+      </Drawer.Panel>
 
-      <div className="border-t border-white/[0.07] px-6 py-4.5">{footer}</div>
-    </Drawer>
+      <Drawer.Footer>{footer}</Drawer.Footer>
+    </Drawer.Root>
   );
 }, 400);

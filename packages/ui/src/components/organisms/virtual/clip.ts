@@ -11,7 +11,7 @@ import { styles } from '#ui/core';
 
 // How far outside the list the clip box reaches. A tile grows when it takes
 // focus (1.05, a 4px amber ring, a 28px drop shadow), and the box that clips
-// the list's translation was clipping that too — shaving the top and bottom
+// the list's translation was clipping that too, shaving the top and bottom
 // off every focused tile. The clip box is drawn this much bigger than the
 // list in every direction and pulled back by the same amount, so it still
 // clips the translation without clipping the focus treatment.
@@ -39,7 +39,7 @@ export const clipStyles = styles({
     pointerEvents: 'box-none',
   },
 
-  // The same box, but flush at the top — for a vertical list, which always has
+  // The same box, but flush at the top: for a vertical list, which always has
   // chrome directly above it. The bleed is a hole in the clip, and upwards
   // that hole points straight at whatever the screen puts over the list (the
   // sort/genre filter strip on the browse screens), showing the scrolled-off

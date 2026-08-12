@@ -1,17 +1,17 @@
+import { Badge } from '@kroma/ui/kit/atoms/badge';
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Divider } from '@kroma/ui/kit/atoms/divider';
+import { Icon, type IconName } from '@kroma/ui/kit/atoms/icon';
+import { Img } from '@kroma/ui/kit/atoms/img';
+import { Text } from '@kroma/ui/kit/atoms/text';
+import { CopyButton } from '@kroma/ui/kit/molecules/copy-button';
 import type { ReactNode } from 'react';
 import type { ModuleEntry } from '#site/catalog';
 import { ModuleDownload, useDownloadPick } from '#site/components/module-download';
 import { downloads } from '#site/lib/artifacts';
 import { type Dependency, depEntries } from '#site/lib/deps';
 import { shortHash } from '#site/lib/ui';
-import { Badge } from '#ui/components/atoms/badge';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Divider } from '#ui/components/atoms/divider';
-import { Icon, type IconName } from '#ui/components/atoms/icon';
-import { Img } from '#ui/components/atoms/img';
-import { Txt } from '#ui/components/atoms/text';
-import { CopyButton } from '#ui/components/molecules/copy-button';
 
 const ICON = 60;
 const ICON_RADIUS = 15;
@@ -21,9 +21,9 @@ function Requirement({ icon, children }: Readonly<{ icon: IconName; children: Re
     <Row gap={6} px={10} py={4} radius="pill" bg="surface2" border="border" shrink={1} minW={0}>
       <Icon name={icon} size={13} color="textDim" />
       <Box shrink={1} minW={0}>
-        <Txt color="textMuted" variant="meta" lines={1}>
+        <Text color="textMuted" variant="meta" lines={1}>
           {children}
-        </Txt>
+        </Text>
       </Box>
     </Row>
   );
@@ -35,9 +35,9 @@ function Requirements({
 }: Readonly<{ minServer: string | null | undefined; deps: Dependency[] }>) {
   return (
     <Row gap={8} wrap align="center">
-      <Txt color="textDim" variant="overline">
+      <Text color="textDim" variant="overline">
         Requires
-      </Txt>
+      </Text>
       {minServer ? <Requirement icon="server">KROMA {minServer}+</Requirement> : null}
       {deps.map((dep) => (
         <Requirement key={dep.id} icon="packages">
@@ -55,9 +55,9 @@ function Footer({ id, sha256 }: Readonly<{ id: string; sha256: string | null }>)
         <>
           <Icon name="fingerprint" size={14} color="textDim" />
           <Box shrink={1} minW={0}>
-            <Txt color="textDim" variant="meta" font="mono" lines={1}>
+            <Text color="textDim" variant="meta" font="mono" lines={1}>
               sha256 {shortHash(sha256)}
-            </Txt>
+            </Text>
           </Box>
           <Box shrink={0}>
             <CopyButton value={sha256} label="Copy hash" iconOnly />
@@ -104,7 +104,7 @@ export function ModuleCard({ module: m }: Readonly<{ module: ModuleEntry }>) {
         <Column gap={4} grow={1} shrink={1} basis={220} minW={0}>
           <Row gap={8} align="baseline">
             <Box shrink={1} minW={0}>
-              <Txt variant="title">{m.name}</Txt>
+              <Text variant="title">{m.name}</Text>
             </Box>
             <Row gap={6} shrink={0}>
               <Badge tone="neutral">v{m.version}</Badge>
@@ -116,13 +116,13 @@ export function ModuleCard({ module: m }: Readonly<{ module: ModuleEntry }>) {
               ))}
             </Row>
           </Row>
-          <Txt color="textDim" variant="meta" font="mono" lines={1}>
+          <Text color="textDim" variant="meta" font="mono" lines={1}>
             {m.id}
-          </Txt>
+          </Text>
           {m.description ? (
-            <Txt color="textMuted" variant="meta" lines={2}>
+            <Text color="textMuted" variant="meta" lines={2}>
               {m.description}
-            </Txt>
+            </Text>
           ) : null}
         </Column>
         {picked ? <ModuleDownload files={files} picked={picked} onPick={pick} /> : null}

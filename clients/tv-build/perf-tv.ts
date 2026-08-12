@@ -66,8 +66,14 @@ const pending = new Map<number, (result: unknown) => void>();
 socket.addEventListener('message', (event) => {
   const message = JSON.parse(String(event.data)) as { id?: unknown; result?: unknown };
   if (typeof message.id !== 'number') return; // an event, not an answer
-  pending.get(message.id)?.(message.result);
-  pending.delete(message.id);
+  // Found among the calls we made rather than looked up by what arrived: the id
+  // is off the wire, and only ever compared here, never used to reach anything.
+  for (const [id, settle] of pending) {
+    if (id !== message.id) continue;
+    pending.delete(id);
+    settle(message.result);
+    return;
+  }
 });
 
 function send<T = Record<string, unknown>>(method: string, params: unknown = {}): Promise<T> {

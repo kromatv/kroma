@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { OtpField } from './otp-field';
 
 type Status = 'idle' | 'checking' | 'wrong' | 'done';
@@ -33,22 +33,22 @@ export default function Verify() {
 
   return (
     <Box gap={18} align="flex-start">
-      <OtpField
+      <OtpField.Root
         maxLength={6}
         groups={[3, 3]}
         physicalKeyboard
         value={code}
         invalid={status === 'wrong'}
         disabled={status === 'checking' || status === 'done'}
-        onChange={(next) => {
+        onValueChange={(next) => {
           setCode(next);
           setStatus('idle');
         }}
         onComplete={check}
       />
-      <Txt variant="meta" color={status === 'wrong' ? 'danger' : 'textDim'}>
+      <Text variant="meta" color={status === 'wrong' ? 'danger' : 'textDim'}>
         {MESSAGE[status]}
-      </Txt>
+      </Text>
       {status === 'wrong' || status === 'done' ? (
         <Button
           variant="ghost"

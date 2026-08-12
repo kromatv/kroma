@@ -1,11 +1,26 @@
 import { type AdminUser, type Invite, PERMISSIONS, type Permission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, confirm, Dialog, DialogActions, Field, InputGroup } from '@kroma/ui/kit';
-import { IconMail } from '@tabler/icons-react';
+import {
+  Box,
+  Button,
+  Callout,
+  ChoiceList,
+  color,
+  confirm,
+  Dialog,
+  Field,
+  Icon,
+  InputGroup,
+  ListRow,
+  Row,
+  Text,
+} from '@kroma/ui/kit';
 import { useCallback, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
+
+const DASHED = { borderWidth: 1, borderColor: color('text/25'), borderStyle: 'dashed' } as const;
 
 export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChange: () => void }>) {
   const t = useT();
@@ -22,23 +37,19 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
     }
   }
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-surface-1 px-5 py-3.75">
-      <div className="flex min-w-0 items-center gap-3.5">
-        <span className="flex h-10.5 w-10.5 shrink-0 items-center justify-center rounded-full border border-dashed border-text/25">
-          <IconMail size={18} stroke={1.8} color="rgba(244,243,240,.5)" />
-        </span>
-        <div className="min-w-0">
-          <div className="truncate text-[14.5px] font-bold">
-            {inv.permissions.join(', ') || t('admin.permPlayback')}
-          </div>
-          <div className="text-[12.5px] font-medium text-text/45">
-            {t('admin.expiresOn', {
-              date: new Date(inv.expiresAt * 1000).toLocaleDateString('fr-FR'),
-            })}
-          </div>
-        </div>
-      </div>
-      <div className="flex shrink-0 gap-2.5">
+    <ListRow.Root size="md">
+      <ListRow.Label>{inv.permissions.join(', ') || t('admin.permPlayback')}</ListRow.Label>
+      <ListRow.Hint>
+        {t('admin.expiresOn', {
+          date: new Date(inv.expiresAt * 1000).toLocaleDateString('fr-FR'),
+        })}
+      </ListRow.Hint>
+      <ListRow.Leading>
+        <Row center w={42} h={42} shrink={0} radius="circle" style={DASHED}>
+          <Icon name="mail" size={18} thickness={1.8} color="textDim" />
+        </Row>
+      </ListRow.Leading>
+      <ListRow.Trailing>
         <Button
           variant="glass"
           size="sm"
@@ -51,8 +62,8 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
           label={t('common.cancel')}
           onPress={() => void client.revokeInvite(inv.token).then(onChange)}
         />
-      </div>
-    </div>
+      </ListRow.Trailing>
+    </ListRow.Root>
   );
 }
 
@@ -65,27 +76,29 @@ function PermPicker({
 }>) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-2">
+    <ChoiceList.Root
+      mode="multiple"
+      size="sm"
+      label={t('admin.permissions')}
+      value={[...selected]}
+      onValueChange={(next) => toggle(diff(selected, next))}
+    >
       {PERMISSIONS.map((p) => (
-        <label
-          key={p.key}
-          aria-label={t(p.labelKey)}
-          className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/3"
-        >
-          <input
-            type="checkbox"
-            checked={selected.has(p.key)}
-            onChange={() => toggle(p.key)}
-            className="h-4 w-4 accent-(--kroma-accent)"
-          />
-          <span className="min-w-0">
-            <span className="block text-[14px] font-semibold">{t(p.labelKey)}</span>
-            <span className="block text-[12px] text-dim">{t(p.hintKey)}</span>
-          </span>
-        </label>
+        <ChoiceList.Item key={p.key} value={p.key}>
+          <ChoiceList.Label>{t(p.labelKey)}</ChoiceList.Label>
+          <ChoiceList.Hint>{t(p.hintKey)}</ChoiceList.Hint>
+        </ChoiceList.Item>
       ))}
-    </div>
+    </ChoiceList.Root>
   );
+}
+
+// <ChoiceList> reports the whole next selection; the caller's toggle takes the
+// one entry that moved.
+function diff(before: Set<Permission>, after: string[]): Permission {
+  const added = after.find((p) => !before.has(p as Permission));
+  if (added) return added as Permission;
+  return [...before].find((p) => !after.includes(p)) as Permission;
 }
 
 function usePermissionSet(
@@ -141,37 +154,48 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
   };
 
   return (
-    <Dialog
+    <Dialog.Root
       open
       title={t('admin.editUser', { name: user.username })}
       onClose={() => call.end(false)}
-      width={460}
+      width="lg"
     >
-      <Field label={t('admin.name')} icon="user" value={name} onChange={setName} />
-      <div>
-        <div className="mb-2 text-[12px] font-bold uppercase tracking-[.12em] text-dim">
+      <Field.Root label={t('admin.name')}>
+        <Field.Input icon="user" value={name} onValueChange={setName} />
+      </Field.Root>
+      <Box>
+        <Text variant="overline" color="textDim" mb={8}>
           {t('admin.permissions')}
-        </div>
+        </Text>
         <PermPicker selected={perms} toggle={toggle} />
-        {error ? <p className="mt-3 text-[13px] text-danger">{error}</p> : null}
-      </div>
-      <DialogActions
-        onCancel={() => call.end(false)}
-        cancelLabel={t('common.cancel')}
-        onConfirm={() => {
-          save();
-        }}
-        confirmLabel={busy ? t('common.saving') : t('common.save')}
-        busy={busy}
-        destructive={{
-          label: t('admin.deleteAccount'),
-          onPress: () => {
-            void remove();
-          },
-          disabled: isSelf,
-        }}
-      />
-    </Dialog>
+        {error ? (
+          <Text variant="meta" color="danger" mt={12}>
+            {error}
+          </Text>
+        ) : null}
+      </Box>
+      <Dialog.Footer>
+        <Dialog.Actions
+          onCancel={() => call.end(false)}
+          cancelLabel={t('common.cancel')}
+          onConfirm={() => {
+            save();
+          }}
+          confirmLabel={busy ? t('common.saving') : t('common.save')}
+          busy={busy}
+        >
+          <Button
+            variant="dangerGhost"
+            size="sm"
+            label={t('admin.deleteAccount')}
+            onPress={() => {
+              void remove();
+            }}
+            disabled={busy || isSelf}
+          />
+        </Dialog.Actions>
+      </Dialog.Footer>
+    </Dialog.Root>
   );
 });
 
@@ -206,16 +230,16 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
   }
 
   return (
-    <Dialog open title={t('nav.inviteUser')} onClose={close} width={460}>
-      <div>
-        <p className="mb-4 text-[13px] text-dim">{t('admin.inviteIntro')}</p>
+    <Dialog.Root open title={t('nav.inviteUser')} onClose={close} width="lg">
+      <Box>
+        <Text variant="meta" color="textDim" mb={16}>
+          {t('admin.inviteIntro')}
+        </Text>
         <PermPicker selected={perms} toggle={toggle} />
-      </div>
+      </Box>
       {link ? (
-        <div className="rounded-xl border border-accent/40 bg-accent-soft p-4">
-          <div className="mb-2 text-[12px] font-bold uppercase tracking-[.12em] text-accent">
-            {t('admin.inviteLink')}
-          </div>
+        <Callout.Root tone="accent">
+          <Callout.Title>{t('admin.inviteLink')}</Callout.Title>
           <InputGroup.Root label={t('admin.inviteLink')}>
             <InputGroup.Input value={link} autoFocus={false} />
             <InputGroup.Addon align="inline-end">
@@ -226,19 +250,24 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
               />
             </InputGroup.Addon>
           </InputGroup.Root>
-        </div>
-      ) : (
-        <DialogActions
-          onCancel={close}
-          cancelLabel={t('common.cancel')}
-          onConfirm={() => {
-            create();
-          }}
-          confirmLabel={busy ? t('common.creating') : t('admin.createLink')}
-          busy={busy}
-          disabled={perms.size === 0}
-        />
-      )}
-    </Dialog>
+        </Callout.Root>
+      ) : null}
+      <Dialog.Footer>
+        {link ? (
+          <Dialog.Actions onCancel={close} cancelLabel={t('common.close')} />
+        ) : (
+          <Dialog.Actions
+            onCancel={close}
+            cancelLabel={t('common.cancel')}
+            onConfirm={() => {
+              create();
+            }}
+            confirmLabel={busy ? t('common.creating') : t('admin.createLink')}
+            busy={busy}
+            disabled={perms.size === 0}
+          />
+        )}
+      </Dialog.Footer>
+    </Dialog.Root>
   );
 });

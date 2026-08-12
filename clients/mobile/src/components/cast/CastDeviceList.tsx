@@ -7,7 +7,7 @@
 import type { CastReceiver, DiscoveredTv, FinalRefusal, GrantResult } from '@kroma/core';
 import { checkRetryable, grantRefusal } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { Box, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, styles, Text } from '@kroma/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable } from 'react-native';
 import { CheckPrompt } from '#mobile/components/connect/CheckPrompt';
@@ -160,10 +160,10 @@ function NoDevices() {
   return (
     <Box style={s.empty}>
       <Box style={s.emptyDisc}>
-        <Icon name="device-tv" size={34} stroke={1.4} color="textMuted" />
+        <Icon name="device-tv" size={34} thickness={1.4} color="textMuted" />
       </Box>
-      <Txt style={s.emptyTitle}>{t('cast.noDevices')}</Txt>
-      <Txt style={s.emptyHint}>{t('cast.noDevicesHint')}</Txt>
+      <Text style={s.emptyTitle}>{t('cast.noDevices')}</Text>
+      <Text style={s.emptyHint}>{t('cast.noDevicesHint')}</Text>
       <Searching />
     </Box>
   );
@@ -186,7 +186,7 @@ function Searching() {
   return (
     <Box style={s.searching}>
       <Animated.View style={[s.searchingDot, { opacity: pulse }]} />
-      <Txt style={s.searchingLabel}>{t('cast.searching')}</Txt>
+      <Text style={s.searchingLabel}>{t('cast.searching')}</Text>
     </Box>
   );
 }
@@ -226,16 +226,16 @@ function DeviceRow({
       accessibilityRole="button"
       accessibilityState={{ selected }}
     >
-      <Icon name={icon} size={24} stroke={1.8} color={selected ? 'accentText' : 'text'} />
+      <Icon name={icon} size={24} thickness={1.8} color={selected ? 'accentText' : 'text'} />
       <Box style={s.rowText}>
-        <Txt lines={1} style={[s.rowName, selected && s.rowNameActive]}>
+        <Text lines={1} style={[s.rowName, selected && s.rowNameActive]}>
           {name}
-        </Txt>
-        <Txt lines={1} style={s.rowDetail}>
+        </Text>
+        <Text lines={1} style={s.rowDetail}>
           {detail}
-        </Txt>
+        </Text>
       </Box>
-      {selected ? <Icon name="check" size={20} stroke={2.4} color="accentText" /> : null}
+      {selected ? <Icon name="check" size={20} thickness={2.4} color="accentText" /> : null}
     </Pressable>
   );
 }

@@ -1,4 +1,4 @@
-// Web adapter over the kit's <Img>: Tailwind classes size the box, the kit
+// Web adapter over the kit's <Img>: a class or a style sizes the box, the kit
 // fills it and owns the fade, cross-fade, fallback and sanitising. `fill`
 // stretches the box itself to a positioned parent.
 

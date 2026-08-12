@@ -1,5 +1,5 @@
 // Playback-language picker sheet: searches across ~200 languages in a
-// virtualized list. Sized to a fixed screen share, not to content —
+// virtualized list. Sized to a fixed screen share, not to content:
 // @gorhom/bottom-sheet's dynamic sizing measures only the header, so the list
 // would draw over the search field otherwise.
 
@@ -10,7 +10,7 @@ import {
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import { LANG_OFF, langOptions, offeredLang } from '@kroma/core';
-import { Box, color, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, color, Icon, styles, Text } from '@kroma/ui/kit';
 import { forwardRef, useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,7 +68,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
     }, [t, locale, offerOff]);
 
     // Matches the most specific stored value: `fr-CA` ticks "Français (Canada)",
-    // not the base "Français" — comparing on the base would lose the variant.
+    // not the base "Français": comparing on the base would lose the variant.
     const current = value && value !== LANG_OFF ? offeredLang(value) : null;
     const isActive = useCallback(
       (row: Row) => {
@@ -113,7 +113,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
         <Box style={s.header}>
           <SheetTitle>{title}</SheetTitle>
           <Box style={s.searchBox}>
-            <Icon name="search" size={17} stroke={2} color="textDim" />
+            <Icon name="search" size={17} thickness={2} color="textDim" />
             <BottomSheetTextInput
               value={query}
               // Reset scroll on each keystroke, or a prior scroll offset can
@@ -139,7 +139,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
                 accessibilityLabel={t('common.clear')}
                 hitSlop={10}
               >
-                <Icon name="x" size={16} stroke={2.4} color="textDim" />
+                <Icon name="x" size={16} thickness={2.4} color="textDim" />
               </Pressable>
             ) : null}
           </Box>
@@ -168,7 +168,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
               onPress={() => onPick(item.value)}
             />
           )}
-          ListEmptyComponent={<Txt style={s.empty}>{t('search.noResults')}</Txt>}
+          ListEmptyComponent={<Text style={s.empty}>{t('search.noResults')}</Text>}
         />
       </BottomSheetModal>
     );
@@ -188,11 +188,11 @@ function LangRow({
       accessibilityState={{ selected: active }}
       style={({ pressed }) => [s.row, ruled && s.ruled, pressed && s.rowPressed]}
     >
-      <Txt lines={1} style={[s.rowLabel, active && s.rowLabelActive]}>
+      <Text lines={1} style={[s.rowLabel, active && s.rowLabelActive]}>
         {row.label}
-      </Txt>
-      {active ? <Icon name="check" size={17} stroke={2.4} color="accentText" /> : null}
-      {row.code && !active ? <Txt style={s.rowCode}>{row.code.toUpperCase()}</Txt> : null}
+      </Text>
+      {active ? <Icon name="check" size={17} thickness={2.4} color="accentText" /> : null}
+      {row.code && !active ? <Text style={s.rowCode}>{row.code.toUpperCase()}</Text> : null}
     </Pressable>
   );
 }

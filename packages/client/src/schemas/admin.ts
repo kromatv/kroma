@@ -252,6 +252,7 @@ export type InviteCreated = z.infer<typeof InviteCreated>;
 
 /** One line of the server's in-memory log ring (`GET /api/admin/logs`). */
 export const LogEntry = z.object({
+  seq: z.number(),
   ts: z.number(),
   level: z.string(),
   target: z.string(),

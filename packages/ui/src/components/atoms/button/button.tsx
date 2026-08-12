@@ -2,7 +2,7 @@
 //
 // It is a <Focusable>, so the same component is a mouse button in the browser
 // and a D-pad target on a TV, with the amber ring and the design's 1.04 press
-// scale already wired. The whole design — fills, paddings, label metrics — is
+// scale already wired. The whole design (fills, paddings, label metrics) is
 // declared once with `sv` slots rather than assembled from conditionals and
 // parallel lookup maps at the call site.
 
@@ -13,7 +13,7 @@ import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Spinner } from '#ui/components/atoms/spinner';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor, useTheme, type Variant } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
 import { useGroupMember } from '#ui/lib/group-shape';
@@ -148,12 +148,14 @@ type ButtonVariant = Variant<typeof buttonVariants, 'variant'>;
 type ButtonSize = Variant<typeof buttonVariants, 'size'>;
 
 interface ButtonProps
-  extends Omit<FocusableProps, 'children' | 'style' | 'focusScale' | 'label' | 'ring'> {
+  extends Omit<FocusableProps, 'children' | 'style' | 'focusScale' | 'label' | 'ring' | 'busy'> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   /** Stretch to the width of the parent. */
   block?: boolean;
-  /** Pressed state of a toggle. Only the `outline` variant paints it. */
+  /** The active coat, which only the `outline` variant paints. It is paint and
+   *  nothing else: a button that toggles something says so with `pressed`,
+   *  which is what assistive tech hears. */
   active?: boolean;
   /** Leading glyph. */
   icon?: IconName;
@@ -208,6 +210,7 @@ function Button({
       onBlur={group.onBlur}
       disabled={disabled}
       inert={loading}
+      busy={loading || undefined}
       focusScale={focusScale ?? (group.grouped ? 1 : 1.04)}
       label={label}
       sv={buttonVariants}
@@ -268,7 +271,7 @@ function ButtonContent({
   return (
     <>
       {leading}
-      {label === undefined ? null : <Txt style={labelStyle}>{label}</Txt>}
+      {label === undefined ? null : <Text style={labelStyle}>{label}</Text>}
       {children}
       {iconRight ? <Icon name={iconRight} {...glyph} /> : null}
     </>

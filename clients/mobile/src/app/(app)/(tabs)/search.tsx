@@ -2,7 +2,7 @@
 // as a poster grid.
 
 import { type MediaItem, sizedImageUrl } from '@kroma/core';
-import { Box, Field, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Field, Icon, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -43,9 +43,9 @@ function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
         radius={radius.sm}
         style={s.suggestThumb}
       />
-      <Txt lines={2} style={s.suggestTitle}>
+      <Text lines={2} style={s.suggestTitle}>
         {item.metadata?.title ?? item.title}
-      </Txt>
+      </Text>
       <Pressable
         onPress={() => void play(item.id)}
         hitSlop={8}
@@ -89,7 +89,7 @@ export default function Search() {
     if (q.length >= 2 && results.isSuccess)
       return (
         <EmptyState
-          icon={<Icon name="search" size={34} stroke={1.8} color="textMuted" />}
+          icon={<Icon name="search" size={34} thickness={1.8} color="textMuted" />}
           title={t('search.noResults')}
           hint={t('search.placeholder')}
         />
@@ -100,7 +100,7 @@ export default function Search() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <SuggestedRow item={item} />}
         ListHeaderComponent={
-          <Txt style={[s.suggestHeader, gutters.style]}>{t('content.forYou')}</Txt>
+          <Text style={[s.suggestHeader, gutters.style]}>{t('content.forYou')}</Text>
         }
         contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
         keyboardShouldPersistTaps="handled"
@@ -111,15 +111,15 @@ export default function Search() {
   return (
     <Box style={[s.screen, { paddingTop: insets.top + spacing.sm }]}>
       <Box style={[s.inputBox, gutters.style]}>
-        <Txt style={s.pageTitle}>{t('nav.search')}</Txt>
-        <Field
+        <Text style={s.pageTitle}>{t('nav.search')}</Text>
+        <Field.Root
           label={t('search.placeholder')}
           hideLabel
-          icon="search"
           value={query}
-          onChange={setQuery}
-          placeholder={t('search.placeholder')}
-        />
+          onValueChange={setQuery}
+        >
+          <Field.Input icon="search" placeholder={t('search.placeholder')} />
+        </Field.Root>
       </Box>
       {searchBody()}
     </Box>

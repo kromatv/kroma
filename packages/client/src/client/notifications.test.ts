@@ -6,6 +6,7 @@ import {
   listNotifications,
   markAllRead,
   markRead,
+  markUnread,
   pushKey,
   runNotificationAction,
   setNotificationPrefs,
@@ -44,6 +45,13 @@ describe('the notification centre', () => {
     expect(calls[0]).toMatchObject({ path: '/notifications/read', init: { method: 'POST' } });
     expect(body(calls[0]?.init)).toEqual({ ids: ['n1', 'n2'] });
     expect(body(calls[1]?.init)).toEqual({});
+  });
+
+  it('sends the ids to put back on their own route', () => {
+    const { ctx, calls } = recordCtx();
+    void markUnread(ctx, ['n1']);
+    expect(calls[0]).toMatchObject({ path: '/notifications/unread', init: { method: 'POST' } });
+    expect(body(calls[0]?.init)).toEqual({ ids: ['n1'] });
   });
 
   it('encodes the id it deletes', () => {

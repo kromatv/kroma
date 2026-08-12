@@ -1,11 +1,11 @@
 // Signing primitives for the push relay. Apple wants an ES256 assertion signed with a `.p8`
 // auth key; Google wants an RS256 assertion traded at its token endpoint for an OAuth2 access
 // token. Both are ordinary JWTs, so the shape lives here once and each transport supplies only
-// its claims. Everything is WebCrypto — no dependencies, because a relay that holds the signing
+// its claims. Everything is WebCrypto: no dependencies, because a relay that holds the signing
 // keys for an entire app's push traffic should have as little code running next to those keys
 // as possible.
 
-/** base64url, no padding — the only encoding a JWT accepts. */
+/** base64url, no padding: the only encoding a JWT accepts. */
 export function b64url(bytes: ArrayBuffer | Uint8Array): string {
   const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   let binary = '';
@@ -46,7 +46,7 @@ function pemBody(pem: string): Uint8Array<ArrayBuffer> {
  * Import an Apple `.p8` auth key.
  *
  * A `.p8` is a PKCS#8 P-256 private key. Apple never expires these, so the
- * import result is worth holding onto for the isolate's lifetime — see the
+ * import result is worth holding onto for the isolate's lifetime; see the
  * caches in `apns.ts` / `fcm.ts`.
  */
 export function importEs256(p8: string): Promise<CryptoKey> {

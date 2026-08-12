@@ -1,8 +1,8 @@
 import { fileURLToPath } from 'node:url';
+import { kromaMdx } from '@kroma/bundler/mdx';
 import { RNW_DEFINE, RNW_OPTIMIZE_INCLUDE, webResolve } from '@kroma/bundler/rnw';
 import { buildDefine } from '@kroma/bundler/shell';
 import { kromaUI } from '@kroma/ui/vite';
-import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type UserConfig } from 'vite';
 
@@ -11,7 +11,10 @@ const shellDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig(
   ({ command }): UserConfig => ({
-    plugins: [kromaUI(), tailwindcss(), react()],
+    // This shell writes its own config rather than taking `tvShellConfig`, so
+    // the workbench's `.docs.mdx` needs compiling here too: without it they
+    // reach the JS parser as prose.
+    plugins: [kromaUI(), kromaMdx(), react()],
     define: { ...buildDefine(repoRoot, shellDir), ...RNW_DEFINE },
     resolve: webResolve({
       '#tv': fileURLToPath(new URL('../../packages/tv/src', import.meta.url)),

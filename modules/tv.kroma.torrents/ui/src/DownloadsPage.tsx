@@ -14,21 +14,34 @@ import {
 } from '@kroma/module-sdk';
 import type { VpnStatusEvent } from '@kroma/module-vpn/schemas';
 import {
+  Box,
   Button,
+  Callout,
   Dialog,
-  DialogActions,
   EmptyState,
+  Grid,
   PageHeader,
+  Row,
   StatCard,
+  Surface,
   TableSkeleton,
+  Text,
 } from '@kroma/ui/kit';
-import { IconShieldCheck, IconShieldX } from '@tabler/icons-react';
-import { type ReactNode, useCallback, useRef, useState } from 'react';
+import { type CSSProperties, useCallback, useRef, useState } from 'react';
 import { useTorrentsApi } from './api';
 import { DownloadClientsSection } from './download-clients';
-import { DownloadRowView, type LiveDl } from './download-row';
+import { DownloadRowView, DownloadTableHead, type LiveDl } from './download-row';
 import { ManualGrabModal } from './manual-grab';
 import type { DownloadCompletedEvent, DownloadProgressEvent, DownloadView } from './schemas';
+
+const WIPE_ROW: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  cursor: 'pointer',
+};
+
+const WIPE_BOX: CSSProperties = { width: 16, height: 16, accentColor: 'var(--kroma-danger)' };
 
 /** The Downloads module page (`/admin/downloads`): the live download queue,
  *  VPN status banner, aggregate stats, and the download-clients section. Default
@@ -112,33 +125,47 @@ export default function DownloadsPage() {
 
   return (
     <>
-      <PageHeader
-        title={t('admin.downloadsTitle')}
-        subtitle={t('admin.downloadsSub')}
-        action={
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.downloadsTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.downloadsSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
           <Button
             variant="primary"
             icon="download"
             label={t('manual.title')}
             onPress={() => setManual(true)}
           />
-        }
-      />
+        </PageHeader.Actions>
+      </PageHeader.Root>
 
       {/* spacer to match the standard PageHeader → content rhythm */}
-      <div className="mt-6" />
+      <Box h={24} />
 
       {vpn ? <VpnBanner vpn={vpn} /> : null}
 
-      <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label={t('downloads.statActive')} value={String(activeRows.length)} />
-        <StatCard label={t('downloads.statDown')} value={`${formatBytes(totalDown)}/s`} />
-        <StatCard label={t('downloads.statUp')} value={`${formatBytes(totalUp)}/s`} />
-        <StatCard label={t('downloads.statHistory')} value={String(doneRows.length)} />
-      </div>
+      <Box mb={20}>
+        <Grid min={200} gap={16}>
+          <StatCard.Root>
+            <StatCard.Label>{t('downloads.statActive')}</StatCard.Label>
+            <StatCard.Value>{String(activeRows.length)}</StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('downloads.statDown')}</StatCard.Label>
+            <StatCard.Value>{`${formatBytes(totalDown)}/s`}</StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('downloads.statUp')}</StatCard.Label>
+            <StatCard.Value>{`${formatBytes(totalUp)}/s`}</StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('downloads.statHistory')}</StatCard.Label>
+            <StatCard.Value>{String(doneRows.length)}</StatCard.Value>
+          </StatCard.Root>
+        </Grid>
+      </Box>
 
       {activeRows.length > 0 ? (
-        <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Row wrap gap={8} mb={12}>
           <Button
             variant="glass"
             size="sm"
@@ -163,17 +190,11 @@ export default function DownloadsPage() {
             onPress={() => act(() => torrents.reannounceAll())}
             disabled={busy}
           />
-        </div>
+        </Row>
       ) : null}
 
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#121216] shadow-[0_10px_28px_rgba(0,0,0,.3)]">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-[#15151A] px-5 py-3 md:grid-cols-[minmax(0,1fr)_190px_120px_110px_84px]">
-          <Head>{t('downloads.colRelease')}</Head>
-          <Head className="max-md:hidden">{t('downloads.colProgress')}</Head>
-          <Head className="max-md:hidden">{t('downloads.colSpeed')}</Head>
-          <Head className="max-md:hidden">{t('downloads.colStatus')}</Head>
-          <span />
-        </div>
+      <Surface elevated pad="none" radius="2xl" border="border" overflow="hidden">
+        <DownloadTableHead />
         {downloads.map((dl) => (
           <DownloadRowView
             key={dl.id}
@@ -192,34 +213,38 @@ export default function DownloadsPage() {
         ))}
         {data === null ? <TableSkeleton rows={6} /> : null}
         {data && downloads.length === 0 ? (
-          <div className="py-6">
-            <EmptyState icon="download" title={t('downloads.empty')} />
-          </div>
+          <Box py={24}>
+            <EmptyState.Root icon="download">
+              <EmptyState.Title>{t('downloads.empty')}</EmptyState.Title>
+            </EmptyState.Root>
+          </Box>
         ) : null}
-      </div>
+      </Surface>
 
       {canSettings ? <DownloadClientsSection /> : null}
 
       {confirm ? (
-        <Dialog
+        <Dialog.Root
           open
           title={t('downloads.removeTitle')}
           onClose={() => setConfirm(null)}
-          width={520}
+          width="sm"
         >
-          <p className="text-[13.5px] leading-relaxed text-white/70">
+          <Text variant="meta" color="text/70">
             {t('downloads.removeBody', { title: confirm.title })}
-          </p>
-          <label className="flex cursor-pointer items-center gap-2.5 text-[13.5px] font-semibold text-white/80">
+          </Text>
+          <label style={WIPE_ROW}>
             <input
               type="checkbox"
               checked={wipeData}
               onChange={(e) => setWipeData(e.target.checked)}
-              className="h-4 w-4 accent-[#E8536A]"
+              style={WIPE_BOX}
             />
-            {t('downloads.removeData')}
+            <Text variant="label" color="text/80">
+              {t('downloads.removeData')}
+            </Text>
           </label>
-          <DialogActions
+          <Dialog.Actions
             onCancel={() => setConfirm(null)}
             cancelLabel={t('common.cancel')}
             onConfirm={() => {
@@ -230,7 +255,7 @@ export default function DownloadsPage() {
             confirmLabel={t('downloads.removeConfirm')}
             busy={busy}
           />
-        </Dialog>
+        </Dialog.Root>
       ) : null}
 
       {manual ? <ManualGrabModal onClose={() => setManual(false)} onAdded={reload} /> : null}
@@ -247,29 +272,14 @@ function VpnBanner({
   else if (vpn.paused) message = t('downloads.vpnBlocked');
   else message = t('downloads.vpnDown');
   return (
-    <div
-      className={`mb-4 flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-[13.5px] font-semibold ${
-        vpn.connected
-          ? 'border-[#46D08D]/30 bg-[#46D08D]/10 text-[#46D08D]'
-          : 'border-[#F4B642]/30 bg-[#F4B642]/10 text-[#F4B642]'
-      }`}
-    >
-      {vpn.connected ? (
-        <IconShieldCheck size={15} stroke={2} />
-      ) : (
-        <IconShieldX size={15} stroke={2} />
-      )}
-      {message}
-    </div>
-  );
-}
-
-function Head({ children, className = '' }: Readonly<{ children: ReactNode; className?: string }>) {
-  return (
-    <span
-      className={`text-[9.5px] font-bold uppercase tracking-[.12em] text-white/40 ${className}`}
-    >
-      {children}
-    </span>
+    <Box mb={16}>
+      <Callout.Root
+        size="sm"
+        tone={vpn.connected ? 'success' : 'accent'}
+        icon={vpn.connected ? 'shield-check' : 'shield-x'}
+      >
+        <Callout.Title>{message}</Callout.Title>
+      </Callout.Root>
+    </Box>
   );
 }

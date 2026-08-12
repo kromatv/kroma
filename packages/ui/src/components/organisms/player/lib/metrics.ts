@@ -133,7 +133,7 @@ function quantize(scale: number): number {
 /**
  * How the control row fits `stageWidth`: draw it as large as the stage allows,
  * and where that would take a circle below the touch-target floor, shed a
- * control and ask again — the row never wraps onto a second line. The returned
+ * control and ask again. The row never wraps onto a second line. The returned
  * `controls` is both what is drawn and what the nav machine steps through, so
  * nothing focusable is ever off screen.
  */

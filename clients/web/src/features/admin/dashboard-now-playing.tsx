@@ -1,17 +1,31 @@
 import { type PlaybackSession, resolveImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, Button, Dialog, Field, Icon, IconButton, Progress, Surface } from '@kroma/ui/kit';
+import {
+  Avatar,
+  Box,
+  type ColorValue,
+  DataField,
+  Dialog,
+  Divider,
+  Field,
+  Icon,
+  IconButton,
+  Progress,
+  Row,
+  Surface,
+  Text,
+} from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
-import { useStoryboard } from '#web/features/playback/use-storyboard';
+import { PillDot } from '#web/features/admin/pill';
+import { TABULAR } from '#web/features/admin/table';
 import { formatMbps, posterGradient, timecode } from '#web/shared/lib/adminFormat';
 import { apiBase, kromaClient } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
+import { useStoryboard } from '#web/shared/lib/use-storyboard';
 import { Image } from '#web/shared/ui';
 
 const THUMB_W = 132;
-
-const C = { accent: '#F4B642', green: '#46D08D', blue: '#5C8DF6' } as const;
 
 // The current storyboard frame when the sheet is ready, else the item poster,
 // else a title-seeded gradient.
@@ -24,10 +38,16 @@ function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
   const poster = kromaClient().posterUrl(s.itemId);
 
   return (
-    <div
-      className="relative aspect-video shrink-0 self-start overflow-hidden rounded-md shadow-[0_8px_20px_rgba(0,0,0,.45)]"
-      style={{ width: THUMB_W, background: posterGradient(s.title) }}
+    <Box
+      w={THUMB_W}
+      aspect={16 / 9}
+      shrink={0}
+      self="flex-start"
+      radius="xs"
+      overflow="hidden"
+      shadow="card"
     >
+      <div style={{ position: 'absolute', inset: 0, background: posterGradient(s.title) }} />
       {posterFailed ? null : (
         <Image src={poster} fit="cover" fill onError={() => setPosterFailed(true)} />
       )}
@@ -35,8 +55,9 @@ function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
           at its scaled size and slid into place (see StoryboardThumb). */}
       {frame ? (
         <div
-          className="absolute inset-0"
           style={{
+            position: 'absolute',
+            inset: 0,
             backgroundImage: `url("${frame.sheet}")`,
             backgroundPosition: `${frame.offsetX}px ${frame.offsetY}px`,
             backgroundSize: `${frame.sheetWidth * frame.scale}px ${frame.sheetHeight * frame.scale}px`,
@@ -44,7 +65,7 @@ function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
           }}
         />
       ) : null}
-    </div>
+    </Box>
   );
 }
 
@@ -63,24 +84,23 @@ export function NowPlayingCard({
   const remux = s.mode === 'remux';
   const lan = s.network === 'LAN';
 
-  let stateColor = 'rgba(244,243,240,.5)';
+  let stateColor: ColorValue = 'text/50';
   let stateLabel = t('admin.paused');
   if (buffering) {
-    stateColor = C.accent;
+    stateColor = 'accent';
     stateLabel = t('admin.buffering');
   } else if (playing) {
-    stateColor = C.green;
+    stateColor = 'success';
     stateLabel = t('admin.playing');
   }
 
-  let pipe: { color: string; bg: string; label: string } = {
-    color: C.green,
-    bg: 'rgba(70,208,141,.14)',
+  let pipe: { ink: ColorValue; bg: ColorValue; label: string } = {
+    ink: 'success',
+    bg: 'success/14',
     label: t('admin.directPlay'),
   };
-  if (transcode)
-    pipe = { color: C.accent, bg: 'rgba(242,180,66,.14)', label: t('admin.audioTranscode') };
-  else if (remux) pipe = { color: C.blue, bg: 'rgba(92,141,246,.14)', label: t('admin.remux') };
+  if (transcode) pipe = { ink: 'accent', bg: 'accentWash/14', label: t('admin.audioTranscode') };
+  else if (remux) pipe = { ink: 'info', bg: 'info/14', label: t('admin.remux') };
   let sub = '';
   if (s.kind === 'episode' && s.season != null)
     sub = t('admin.episodeShort', { season: s.season, episode: s.episode ?? '' });
@@ -90,35 +110,31 @@ export function NowPlayingCard({
     <Surface elevated pad="none" radius={16} border="border" row gap={18} px={20} py={18}>
       <NowPlayingThumb s={s} />
 
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <div className="flex items-start justify-between gap-4.5">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2.5">
-              <h3 className="truncate font-display text-[17px] font-bold leading-[1.1]">
+      <Box flex minW={0} gap={12}>
+        <Box row between align="flex-start" gap={18}>
+          <Box minW={0}>
+            <Row gap={10}>
+              <Text variant="title" accessibilityRole="header" lines={1}>
                 {s.showTitle ? `${s.showTitle}` : s.title}
-              </h3>
-              <span
-                className="inline-flex items-center gap-1.5 text-[10.5px] font-bold"
-                style={{ color: stateColor }}
-              >
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${playing || buffering ? 'animate-[kroma-breathe_2s_ease-in-out_infinite]' : ''}`}
-                  style={{ background: stateColor }}
-                />
-                {stateLabel}
-              </span>
-            </div>
-            <div className="mt-1 text-[12.5px] font-medium text-text/50">
+              </Text>
+              <Row gap={6} shrink={0}>
+                <PillDot tone={stateColor} pulse={playing || buffering} />
+                <Text variant="meta" color={stateColor}>
+                  {stateLabel}
+                </Text>
+              </Row>
+            </Row>
+            <Text variant="meta" color="textDim" mt={4}>
               {[sub, s.videoLabel].filter(Boolean).join(' · ')}
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2.75">
-            <div className="text-right">
-              <div className="text-[14px] font-semibold">{s.username}</div>
-              <div className="text-[12px] font-medium text-text/50">
+            </Text>
+          </Box>
+          <Row shrink={0} gap={11}>
+            <Box align="flex-end">
+              <Text variant="label">{s.username}</Text>
+              <Text variant="meta" color="textDim">
                 {s.player} · {s.device}
-              </div>
-            </div>
+              </Text>
+            </Box>
             <Avatar
               name={s.username}
               src={resolveImageUrl(apiBase(), avatarUrl)}
@@ -128,76 +144,66 @@ export function NowPlayingCard({
             <IconButton control="sm" label={t('admin.stopStream')} onPress={onStop}>
               <Icon name="player-stop-filled" size={15} color="danger" />
             </IconButton>
-          </div>
-        </div>
+          </Row>
+        </Box>
 
-        <div className="flex items-center gap-3">
-          <span className="text-[12px] font-semibold tabular-nums text-text/70">
+        <Row gap={12}>
+          <Text variant="meta" color="textMuted" style={TABULAR}>
             {timecode(s.positionMs)}
-          </span>
-          <div className="flex-1">
+          </Text>
+          <Box flex>
             <Progress value={pct / 100} rounded />
-          </div>
-          <span className="text-[12px] font-semibold tabular-nums text-text/40">
+          </Box>
+          <Text variant="meta" color="textDim" style={TABULAR}>
             {s.durationMs ? timecode(s.durationMs) : '-'}
-          </span>
-        </div>
+          </Text>
+        </Row>
 
-        <div className="flex flex-wrap gap-x-6.5 gap-y-2.5 border-t border-border pt-3">
-          <Stat label={t('admin.statPlayback')}>
-            <span
-              className="inline-flex items-center gap-1.5 rounded-sm px-2.25 py-0.75 text-[13px] font-semibold"
-              style={{ color: pipe.color, background: pipe.bg }}
-            >
-              {pipe.label}
-            </span>
-          </Stat>
-          <Stat label={t('admin.statVideo')}>
-            <span className="text-[13px] font-semibold" style={{ color: C.green }}>
+        <Divider />
+        <Row wrap gapX={26} gapY={10}>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statPlayback')}</DataField.Label>
+            <Row self="flex-start" radius={4} px={9} py={3} bg={pipe.bg}>
+              <Text variant="meta" color={pipe.ink}>
+                {pipe.label}
+              </Text>
+            </Row>
+          </DataField.Root>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statVideo')}</DataField.Label>
+            <Text variant="meta" color="success">
               {s.videoLabel}
-            </span>
-          </Stat>
-          <Stat label={t('admin.statAudioTrack')}>
-            <span
-              className="text-[13px] font-semibold"
-              style={{ color: transcode ? C.accent : C.green }}
-            >
+            </Text>
+          </DataField.Root>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statAudioTrack')}</DataField.Label>
+            <Text variant="meta" color={transcode ? 'accent' : 'success'}>
               {transcode ? `${s.audioLabel} → AAC` : s.audioLabel}
-            </span>
-          </Stat>
-          <Stat label={t('admin.statSubtitles')}>
-            <span className="text-[13px] font-semibold text-text/78">{s.subtitle}</span>
-          </Stat>
-          <Stat label={t('admin.statBitrate')}>
-            <span className="text-[13px] font-semibold tabular-nums text-text/78">
+            </Text>
+          </DataField.Root>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statSubtitles')}</DataField.Label>
+            <Text variant="meta" color="textMuted">
+              {s.subtitle}
+            </Text>
+          </DataField.Root>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statBitrate')}</DataField.Label>
+            <Text variant="meta" color="textMuted" style={TABULAR}>
               {formatMbps(s.bitrate)} Mb/s
-            </span>
-          </Stat>
-          <Stat label={t('admin.statNetwork')}>
-            <span
-              className="inline-flex items-center gap-1.5 rounded-sm px-2.25 py-0.75 text-[13px] font-semibold"
-              style={{
-                color: lan ? C.green : C.blue,
-                background: lan ? 'rgba(70,208,141,.12)' : 'rgba(92,141,246,.12)',
-              }}
-            >
-              {s.network} · {s.ip}
-            </span>
-          </Stat>
-        </div>
-      </div>
+            </Text>
+          </DataField.Root>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statNetwork')}</DataField.Label>
+            <Row self="flex-start" radius={4} px={9} py={3} bg={lan ? 'success/12' : 'info/12'}>
+              <Text variant="meta" color={lan ? 'success' : 'info'}>
+                {s.network} · {s.ip}
+              </Text>
+            </Row>
+          </DataField.Root>
+        </Row>
+      </Box>
     </Surface>
-  );
-}
-
-function Stat({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
-  return (
-    <div>
-      <div className="mb-1 text-[9.5px] font-bold uppercase tracking-[.12em] text-text/38">
-        {label}
-      </div>
-      {children}
-    </div>
   );
 }
 
@@ -221,34 +227,32 @@ export const StopStreamModal = createCallable<{ session: PlaybackSession }, bool
     }
 
     return (
-      <Dialog open title={t('admin.stopStreamTitle')} width={520} onClose={() => call.end(false)}>
-        <p className="text-[13px] text-dim">
+      <Dialog.Root
+        open
+        title={t('admin.stopStreamTitle')}
+        width="md"
+        onClose={() => call.end(false)}
+      >
+        <Text variant="meta" color="textDim">
           {t('admin.stopStreamDesc', { user: session.username })}
-        </p>
-        <Field
-          label={t('admin.stopMessageLabel')}
-          multiline
-          rows={2}
-          value={message}
-          onChange={setMessage}
-          placeholder={t('admin.stopMessagePlaceholder')}
+        </Text>
+        <Field.Root label={t('admin.stopMessageLabel')}>
+          <Field.Textarea
+            rows={2}
+            value={message}
+            onValueChange={setMessage}
+            placeholder={t('admin.stopMessagePlaceholder')}
+          />
+        </Field.Root>
+        <Dialog.Actions
+          onCancel={() => call.end(false)}
+          cancelLabel={t('common.cancel')}
+          onConfirm={() => void stop()}
+          confirmLabel={t('admin.stopStream')}
+          destructive
+          busy={busy}
         />
-        <div className="flex justify-end gap-2.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            label={t('common.cancel')}
-            onPress={() => call.end(false)}
-          />
-          <Button
-            variant="danger"
-            size="sm"
-            label={t('admin.stopStream')}
-            onPress={() => void stop()}
-            loading={busy}
-          />
-        </div>
-      </Dialog>
+      </Dialog.Root>
     );
   },
 );

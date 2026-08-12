@@ -1,20 +1,77 @@
+import { Box, backdropBlur, gradient, Text } from '@kroma/ui/kit';
+import type { CSSProperties } from 'react';
 import { useCrossfade } from '#web/shared/lib/use-crossfade';
 import { Image } from '#web/shared/ui';
 
 /** The browse pages' display title, shared with the routes' pending headers so
  * the skeleton does not jump on settle. */
-export const BROWSE_TITLE =
-  'font-display text-[clamp(36px,4.5vw,56px)] font-bold leading-[.95] tracking-[-.03em]';
+export const BROWSE_TITLE = 'browse-title';
+
+// Bled to the content edges: the gutter is a fluid CSS custom property, which
+// no style number can carry, so the band stays a plain element.
+const BAND: CSSProperties = {
+  position: 'relative',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'flex-end',
+  overflow: 'hidden',
+  marginLeft: 'calc(var(--gutter-web) * -1)',
+  marginRight: 'calc(var(--gutter-web) * -1)',
+  marginTop: -36,
+  minHeight: 'clamp(230px, 26vw, 340px)',
+  paddingLeft: 'var(--gutter-web)',
+  paddingRight: 'var(--gutter-web)',
+  paddingTop: 64,
+  paddingBottom: 20,
+};
+
+const LAYER: CSSProperties = { position: 'absolute', inset: 0 };
 
 // No-artwork fallback: the two-tone amber/violet wash, eased in from the left
 // so nothing hard-clips at the sidebar seam.
-const GLOW =
-  'pointer-events-none absolute inset-0 bg-[radial-gradient(46%_95%_at_12%_0%,rgba(242,180,66,.17),transparent_64%),radial-gradient(42%_85%_at_88%_0%,rgba(96,78,214,.15),transparent_64%)] [mask-image:linear-gradient(90deg,transparent,black_4rem)]';
+const GLOW: CSSProperties = {
+  ...LAYER,
+  pointerEvents: 'none',
+  background: [
+    'radial-gradient(46% 95% at 12% 0%,',
+    'color-mix(in srgb, var(--kroma-accent-wash) 17%, transparent), transparent 64%),',
+    // A violet the palette has no token for; kept as authored.
+    'radial-gradient(42% 85% at 88% 0%, rgba(96, 78, 214, 0.15), transparent 64%)',
+  ].join(' '),
+  maskImage: 'linear-gradient(90deg, transparent, #000 4rem)',
+  WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 4rem)',
+};
 
 // Near-opaque bg at the left and bottom edges: the left hides the sidebar
 // seam, the bottom hands the artwork off to the toolbar and grid below.
-const SCRIM =
-  'pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,var(--kroma-bg)_4%,rgba(10,10,12,.45)_36%,transparent_66%),linear-gradient(0deg,var(--kroma-bg)_6%,rgba(10,10,12,.3)_38%,transparent_64%)]';
+const SCRIM = gradient(
+  [
+    'linear-gradient(90deg, var(--kroma-bg) 4%,',
+    'color-mix(in srgb, var(--kroma-bg) 45%, transparent) 36%, transparent 66%),',
+    'linear-gradient(0deg, var(--kroma-bg) 6%,',
+    'color-mix(in srgb, var(--kroma-bg) 30%, transparent) 38%, transparent 64%)',
+  ].join(' '),
+);
+
+const BREATHE: CSSProperties = {
+  ...LAYER,
+  pointerEvents: 'none',
+  animation: 'kroma-breathe 7s var(--ease-out) infinite',
+  background:
+    'radial-gradient(58% 68% at 76% 28%, color-mix(in srgb, var(--kroma-accent-wash) 13%, transparent), transparent 62%)',
+};
+
+const FADE_IN: CSSProperties = { ...LAYER, animation: 'fade-in .9s var(--ease-out)' };
+
+const CREDIT: CSSProperties = {
+  position: 'absolute',
+  bottom: 12,
+  right: 'var(--gutter-web)',
+  animation: 'fade-in .9s var(--ease-out)',
+};
+
+const COUNT_FROST = backdropBlur(4);
+const TABULAR = { fontVariant: ['tabular-nums' as const] };
 
 export interface BrowseHeroProps {
   heading: string;
@@ -41,39 +98,40 @@ export function BrowseHero({
 }: Readonly<BrowseHeroProps>) {
   const prev = useCrossfade(backdrop);
   return (
-    <section className="relative -mx-(--gutter-web) -mt-9 flex min-h-[clamp(230px,26vw,340px)] flex-col justify-end overflow-hidden px-(--gutter-web) pb-5 pt-16">
+    <section style={BAND}>
       {backdrop ? (
         <>
           {prev ? <Image src={prev} fit="cover" position="center 22%" fill /> : null}
-          <div key={backdrop} className="absolute inset-0 animate-[fade-in_.9s_var(--ease-out)]">
+          <div key={backdrop} style={FADE_IN}>
             <Image src={backdrop} fit="cover" position="center 22%" fill />
           </div>
-          <div className={SCRIM} />
-          <div className="pointer-events-none absolute inset-0 animate-[kroma-breathe_7s_var(--ease-out)_infinite] bg-[radial-gradient(58%_68%_at_76%_28%,rgba(242,180,66,.13),transparent_62%)]" />
+          <Box fill pointerEvents="none" style={SCRIM} />
+          <div style={BREATHE} />
         </>
       ) : (
-        <div className={GLOW} />
+        <div style={GLOW} />
       )}
-      <div className="relative">
-        <div className="mb-2.5 text-[12px] font-bold uppercase tracking-[.22em] text-accent">
+      <Box>
+        <Text variant="overline" color="accent" mb={10}>
           {eyebrow}
-        </div>
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-3">
+        </Text>
+        <Box row wrap align="baseline" gapX={16} gapY={12}>
           <h1 className={BROWSE_TITLE}>{heading}</h1>
           {countText ? (
-            <span className="rounded-full border border-white/10 bg-black/30 px-4 py-1.5 text-[14px] font-semibold tabular-nums text-muted backdrop-blur-sm">
-              {countText}
-            </span>
+            <Box radius="pill" border="white/10" bg="black/30" px={16} py={6} style={COUNT_FROST}>
+              <Text variant="meta" color="textMuted" style={TABULAR}>
+                {countText}
+              </Text>
+            </Box>
           ) : null}
-        </div>
-      </div>
+        </Box>
+      </Box>
       {backdrop && creditTitle ? (
-        <span
-          key={creditTitle}
-          className="absolute bottom-3 right-(--gutter-web) animate-[fade-in_.9s_var(--ease-out)] text-[11px] font-medium text-white/35"
-        >
-          {creditTitle}
-        </span>
+        <div key={creditTitle} style={CREDIT}>
+          <Text variant="meta" color="white/35">
+            {creditTitle}
+          </Text>
+        </div>
       ) : null}
     </section>
   );

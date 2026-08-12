@@ -1,7 +1,5 @@
 export type { KeyboardSize, KeyProps } from './key';
 export { Key, keyRowWidth } from './key';
-export type { OnScreenKeyboardProps } from './keyboard';
-export { OnScreenKeyboard } from './keyboard';
 export type { KeyboardLayout } from './keyboard-layouts';
 export {
   DELETE_KEY,
@@ -10,4 +8,6 @@ export {
   urlRows,
 } from './keyboard-layouts';
 export type { SearchKeyboardProps } from './search-keyboard';
+export { SearchKeyboard } from './search-keyboard';
 export type { UrlKeyboardProps } from './url-keyboard';
+export { UrlKeyboard } from './url-keyboard';

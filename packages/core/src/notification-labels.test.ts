@@ -1,10 +1,12 @@
 import type { Notification } from '@kroma/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  groupNotificationRepeats,
   groupNotificationsByDay,
   NOTIFICATION_CATEGORY_LABEL,
   NOTIFICATION_DAY_LABEL,
   notificationDayOf,
+  notificationRepeatKey,
 } from './notification-labels';
 
 /** A row is only ever read here for its `createdAt`; the rest is shape. */
@@ -21,6 +23,13 @@ function row(createdAt: number, id = String(createdAt)): Notification {
     read: false,
     createdAt,
   } as unknown as Notification;
+}
+
+function said(
+  id: string,
+  words: { event?: string; title?: string; body?: string; read?: boolean },
+): Notification {
+  return { ...row(0, id), event: 'system.job.failed', title: 'Failed', ...words } as Notification;
 }
 
 /** Local-time helper: the grouping is about calendar days, so the tests have to
@@ -99,6 +108,67 @@ describe('grouping the inbox', () => {
 
   it('has nothing to group when the inbox is empty', () => {
     expect(groupNotificationsByDay([])).toEqual([]);
+  });
+});
+
+describe('folding a repeated event', () => {
+  it('collapses rows that say exactly the same thing into one entry', () => {
+    const runs = groupNotificationRepeats([
+      said('a', { body: 'The task Import failed.' }),
+      said('b', { body: 'The task Import failed.' }),
+      said('c', { body: 'The task Import failed.' }),
+    ]);
+
+    expect(runs).toHaveLength(1);
+    expect(runs[0]?.items.map((i) => i.id)).toEqual(['a', 'b', 'c']);
+    expect(runs[0]?.head.id).toBe('a');
+    expect(runs[0]?.unread).toBe(3);
+  });
+
+  it('keeps rows apart when the event or the sentence differs', () => {
+    const runs = groupNotificationRepeats([
+      said('a', { body: 'The task Import failed.' }),
+      said('b', { body: 'The task Scan failed.' }),
+      said('c', { event: 'download.failed', body: 'The task Import failed.' }),
+      said('d', { title: 'Storage almost full', body: 'The task Import failed.' }),
+    ]);
+
+    expect(runs.map((r) => r.items.map((i) => i.id))).toEqual([['a'], ['b'], ['c'], ['d']]);
+  });
+
+  it('anchors a run where its newest member sat, folding later ones up into it', () => {
+    const runs = groupNotificationRepeats([
+      said('a', { body: 'Import failed.' }),
+      said('b', { body: 'Scan failed.' }),
+      said('c', { body: 'Import failed.' }),
+    ]);
+
+    expect(runs.map((r) => r.head.id)).toEqual(['a', 'b']);
+    expect(runs[0]?.items.map((i) => i.id)).toEqual(['a', 'c']);
+  });
+
+  it('counts only the members still unread', () => {
+    const runs = groupNotificationRepeats([
+      said('a', { body: 'Import failed.', read: true }),
+      said('b', { body: 'Import failed.' }),
+      said('c', { body: 'Import failed.', read: true }),
+    ]);
+
+    expect(runs[0]?.unread).toBe(1);
+    expect(runs[0]?.items).toHaveLength(3);
+  });
+
+  it('has nothing to fold when the inbox is empty', () => {
+    expect(groupNotificationRepeats([])).toEqual([]);
+  });
+
+  it('reads the identity off the event and the words, not off the row id', () => {
+    const one = said('a', { body: 'Import failed.' });
+    const other = said('z', { body: 'Import failed.' });
+    expect(notificationRepeatKey(one)).toBe(notificationRepeatKey(other));
+    expect(notificationRepeatKey(said('a', { body: 'Scan failed.' }))).not.toBe(
+      notificationRepeatKey(one),
+    );
   });
 });
 

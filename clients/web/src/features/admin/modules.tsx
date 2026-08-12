@@ -4,8 +4,13 @@
 // and registry management in its own drawer.
 
 import { useT } from '@kroma/ui';
-import { Button, Field, SegmentedControl } from '@kroma/ui/kit';
-import { useMemo, useRef, useState } from 'react';
+import { Box, Button, Field, Row, SegmentedControl, Text } from '@kroma/ui/kit';
+import { type CSSProperties, useMemo, useRef, useState } from 'react';
+
+// The file input is a handle for the upload button, never a control a reader
+// sees; `display: none` has no React Native spelling.
+const OFFSCREEN: CSSProperties = { display: 'none' };
+
 import { installBundle, message, updateModules } from '#web/features/admin/module-api';
 import { useModuleData } from '#web/features/admin/module-data';
 import { ModuleDetailDrawer } from '#web/features/admin/module-detail';
@@ -81,11 +86,11 @@ function ModulesInner() {
 
   return (
     <>
-      <PageHeader
-        title={t('admin.modulesTitle')}
-        subtitle={t('admin.modulesSub')}
-        action={
-          <div className="flex items-center gap-2">
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.modulesTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.modulesSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
+          <Row gap={8}>
             <Button
               variant="glass"
               label={t('admin.modulesRegistries')}
@@ -103,40 +108,41 @@ function ModulesInner() {
               onPress={() => fileRef.current?.click()}
               loading={upload.busy}
             />
-          </div>
-        }
-      />
+          </Row>
+        </PageHeader.Actions>
+      </PageHeader.Root>
       <input
         ref={fileRef}
         type="file"
         accept=".kmod,.tar"
-        className="hidden"
+        style={OFFSCREEN}
         onChange={(e) => {
           onPick(e.target.files?.[0]);
           e.target.value = '';
         }}
       />
       {upload.error && (
-        <p className="mt-3 break-words text-xs font-semibold text-danger">{upload.error}</p>
+        <Text variant="meta" color="danger" mt={12}>
+          {upload.error}
+        </Text>
       )}
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+      <Row wrap between gap={12} mt={24}>
         <SegmentedControl.Root value={tab} options={tabs} onValueChange={setTab} />
         {tab !== 'updates' && (
-          <Field
-            w={256}
-            label={t('admin.modulesSearch')}
-            hideLabel
-            type="search"
-            icon="search"
-            placeholder={t('admin.modulesSearch')}
-            value={query}
-            onChange={setQuery}
-          />
+          <Field.Root w={256} label={t('admin.modulesSearch')} hideLabel>
+            <Field.Input
+              type="search"
+              icon="search"
+              placeholder={t('admin.modulesSearch')}
+              value={query}
+              onValueChange={setQuery}
+            />
+          </Field.Root>
         )}
-      </div>
+      </Row>
 
-      <div className="mt-5">
+      <Box mt={20}>
         {tab === 'discover' && (
           <StoreGrid
             catalog={catalog}
@@ -167,7 +173,7 @@ function ModulesInner() {
             onOpen={openDetail}
           />
         )}
-      </div>
+      </Box>
     </>
   );
 }

@@ -8,9 +8,8 @@ vi.mock('@kroma/ui/kit', () => ({
   webWindow: () => (offWeb.value ? null : window),
 }));
 
-const { memoryRouter, parseView, pathRouter, searchParamsRouter, viewPath } = await import(
-  './router'
-);
+const { memoryRouter, pathRouter, searchParamsRouter } = await import('./router');
+const { parseView, viewIndex, viewPath } = await import('./view');
 
 describe('parseView', () => {
   it('takes the two named views', () => {
@@ -52,6 +51,14 @@ describe('viewPath', () => {
     for (const view of ['matrix', 'scene:0', 'scene:12', 'demo:3'] as const) {
       expect(parseView(viewPath(view))).toBe(view);
     }
+  });
+});
+
+describe('viewIndex', () => {
+  it('names which scene or demo a view is', () => {
+    expect(viewIndex('scene:0')).toBe(0);
+    expect(viewIndex('scene:12')).toBe(12);
+    expect(viewIndex('demo:3')).toBe(3);
   });
 });
 
@@ -135,6 +142,39 @@ describe('pathRouter', () => {
     at('/anything/else?story=card&view=matrix');
     const { result } = renderHook(pathRouter());
     expect(result.current[0]).toMatchObject({ story: 'card', view: 'matrix' });
+  });
+
+  it('reads an article off the root, so /icons is the whole address', () => {
+    at('/icons');
+    const { result } = renderHook(pathRouter());
+    expect(result.current[0]).toMatchObject({ page: 'icons' });
+  });
+
+  // The two ways a root segment is NOT an article, both of which the fallback
+  // above owns: a path with more in it, and one carrying the query the
+  // screenshot runner writes.
+  it('leaves a deeper path and a ?story= query to the fallback', () => {
+    at('/icons?story=card');
+    const { result } = renderHook(pathRouter());
+    expect(result.current[0]).toMatchObject({ story: 'card' });
+    expect(result.current[0].page).toBeUndefined();
+  });
+
+  it('writes an article at the root and a story under story/', () => {
+    const { result } = renderHook(pathRouter());
+    act(() => result.current[1]({ page: 'icons' }));
+    expect(window.location.pathname).toBe('/icons');
+    act(() => result.current[1]({ story: 'button' }));
+    expect(window.location.pathname).toBe('/story/button');
+  });
+
+  it('writes a section as the fragment, and a page the reader can press Back out of', () => {
+    const { result } = renderHook(pathRouter());
+    const start = window.history.length;
+    act(() => result.current[1]({ page: 'icons', section: 'the grid' }, { replace: false }));
+    expect(window.location.pathname).toBe('/icons');
+    expect(window.location.hash).toBe('#the%20grid');
+    expect(window.history).toHaveLength(start + 1);
   });
 
   it('writes a real path, encoding a story name that would otherwise be a segment', () => {

@@ -1,5 +1,7 @@
 // The kit's atoms: each owns one visual idea and knows tokens and focus, not the app.
 
+export type { ArtScrimProps, ArtScrimVariant } from './art-scrim';
+export { ArtScrim, CARD_SCRIM, POSTER_SCRIM } from './art-scrim';
 export type { AvatarProps } from './avatar';
 export {
   AVATAR_GRADIENT,
@@ -28,7 +30,7 @@ export { Focusable } from './focusable';
 export type { FrostBackdropProps, FrostProps } from './frost';
 export { Frost, registerFrost } from './frost';
 export type { GridProps } from './grid';
-export { cellWidth, Grid } from './grid';
+export { cellWidth, columnsFor, Grid } from './grid';
 export type { GroundProps } from './ground';
 export { Ground } from './ground';
 export type { IconName, IconProps } from './icon';
@@ -39,6 +41,8 @@ export type { IconWellProps, IconWellSize, IconWellTone } from './icon-well';
 export { IconWell, iconWellVariants } from './icon-well';
 export type { ImgProps } from './img';
 export { IMG_FADE_MS, Img } from './img';
+export type { KbdProps } from './kbd';
+export { Kbd } from './kbd';
 export type { LogoProps } from './logo';
 export { Logo } from './logo';
 export type { NumberFieldProps } from './number-field';
@@ -65,10 +69,10 @@ export type { SurfacePad, SurfaceProps, SurfaceTone } from './surface';
 export { Surface, surfaceVariants } from './surface';
 export type { SwitchProps, SwitchSize } from './switch';
 export { Switch, SwitchFace, switchVariants } from './switch';
-export type { TxtProps } from './text';
-export { Txt } from './text';
+export type { TextProps } from './text';
+export { Text } from './text';
 // TextArea and TextField are deliberately not exported: every text entry goes
-// through <Field>, which picks between them via `multiline`.
+// through <Field>, whose <Field.Input> and <Field.Textarea> are the two doors.
 export type { TextAreaProps } from './text-area';
 export type { TextFieldProps, TextFieldType } from './text-field';
 export type { WatchedBadgeProps } from './watched-badge';

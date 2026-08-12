@@ -5,7 +5,7 @@ import type { TextStyle, ViewStyle } from 'react-native';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type RadiusToken, type StyleDecl, svFor } from '#ui/core';
 import { keyFace } from '#ui/lib/field-shell';
 
@@ -45,7 +45,7 @@ function keyRowWidth(size: KeyboardSize): number {
 // grid's own: the corner its size carries.
 const face = svFor<{
   root: StyleDecl;
-  glyph: Pick<IconProps, 'color' | 'stroke'>;
+  glyph: Pick<IconProps, 'color' | 'thickness'>;
   label: StyleDecl;
 }>()({
   slots: keyFace,
@@ -97,7 +97,7 @@ function Key({
           {icon ? (
             <Icon name={icon} size={iconSize ?? 24} {...slots.glyph} />
           ) : (
-            <Txt style={[slots.label, textStyle]}>{label}</Txt>
+            <Text style={[slots.label, textStyle]}>{label}</Text>
           )}
         </>
       )}
@@ -106,4 +106,4 @@ function Key({
 }
 
 export type { KeyboardSize, KeyProps };
-export { Key, keyMetrics, keyRowWidth };
+export { face as keyVariants, Key, keyMetrics, keyRowWidth };

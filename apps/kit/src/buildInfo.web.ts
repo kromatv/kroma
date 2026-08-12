@@ -13,6 +13,7 @@ const DEFINED =
 export const BUILD: BuildInfo = DEFINED ?? {
   version: '',
   commit: null,
+  commitFull: null,
   branch: null,
   dirty: false,
   buildDate: null,

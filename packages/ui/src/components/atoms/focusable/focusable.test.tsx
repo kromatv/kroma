@@ -282,3 +282,43 @@ describe('focus visibility', () => {
     expect(ringed('Deux')).toBe(true);
   });
 });
+
+describe('the cursor a browser draws over a control', () => {
+  it('gives a pressable control the hand', () => {
+    screenWith(
+      <FocusRegion>
+        <Focusable label="Press me" onPress={() => {}} />
+      </FocusRegion>,
+    );
+    expect(painted('Press me').style.cursor).toBe('pointer');
+  });
+
+  it('states the arrow on a disabled control rather than inheriting a hand', () => {
+    screenWith(
+      <FocusRegion>
+        <Focusable label="Outer" onPress={() => {}}>
+          <Focusable label="Dead" disabled onPress={() => {}} />
+        </Focusable>
+      </FocusRegion>,
+    );
+    expect(painted('Dead').style.cursor).toBe('default');
+  });
+
+  it('leaves a control that does nothing alone', () => {
+    screenWith(
+      <FocusRegion>
+        <Focusable label="Inert" />
+      </FocusRegion>,
+    );
+    expect(painted('Inert').style.cursor).toBe('');
+  });
+
+  it("keeps a control's own cursor over the hand", () => {
+    screenWith(
+      <FocusRegion>
+        <Focusable label="Seam" onPress={() => {}} style={{ cursor: 'col-resize' } as never} />
+      </FocusRegion>,
+    );
+    expect(painted('Seam').style.cursor).toBe('col-resize');
+  });
+});

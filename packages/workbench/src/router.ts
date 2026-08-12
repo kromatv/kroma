@@ -3,12 +3,16 @@
 
 import { webWindow } from '@kroma/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-type View = 'preview' | 'matrix' | `scene:${number}` | `demo:${number}`;
+import { parseView, type View, viewPath } from './view';
 
 interface WorkbenchLocation {
   story?: string;
   view?: View;
+  /** An article, addressed on its own. A page and a story are never both open. */
+  page?: string;
+  /** A section of the open article, by its slug. Written as the fragment, so a
+   *  link to one is a link anyone can paste. */
+  section?: string;
   shot?: boolean;
 }
 
@@ -19,21 +23,17 @@ type Navigate = (next: WorkbenchLocation, options?: { replace?: boolean }) => vo
 // workbench.
 type WorkbenchRouter = () => readonly [WorkbenchLocation, Navigate];
 
-function parseView(raw: string | null | undefined): View | undefined {
-  if (!raw) return undefined;
-  if (raw === 'matrix' || raw === 'preview') return raw;
-  // A bare number is the legacy spelling of a scene index; old links keep working.
-  if (/^\d+$/.test(raw)) return `scene:${Number(raw)}`;
-  // Both separators parse: `scene:1` in a search param, `scene-1` in a path segment.
-  const at = /^(scene|demo)[:-](\d+)$/.exec(raw);
-  return at ? (`${at[1]}:${Number(at[2])}` as View) : undefined;
-}
-
-// A view as a path segment (`scene-1`), or null when it is the default and should be absent
-// from the URL.
-function viewPath(view: View | undefined): string | null {
-  if (!view || view === 'preview') return null;
-  return view.replace(':', '-');
+// An article and a story are two addresses, not two fields of one: opening
+// either drops the other, so no caller has to remember to clear it.
+function merge(prev: WorkbenchLocation, next: WorkbenchLocation): WorkbenchLocation {
+  const at = { ...prev, ...next };
+  if (next.story !== undefined) return { ...at, page: undefined, section: undefined };
+  // A section belongs to the article it is in, so moving to another page drops
+  // it unless the caller named one in the same breath.
+  if (next.page !== undefined && next.page !== prev.page) {
+    return { ...at, story: undefined, view: undefined, section: next.section };
+  }
+  return at;
 }
 
 // Routing that stays in memory, never reading or writing an address bar: the adapter for a
@@ -41,7 +41,7 @@ function viewPath(view: View | undefined): string | null {
 function memoryRouter(start: WorkbenchLocation = {}): WorkbenchRouter {
   return function useMemoryRoute() {
     const [at, setAt] = useState(start);
-    const go = useCallback<Navigate>((next) => setAt((prev) => ({ ...prev, ...next })), []);
+    const go = useCallback<Navigate>((next) => setAt((prev) => merge(prev, next)), []);
     return [at, go] as const;
   };
 }
@@ -55,7 +55,7 @@ function searchParamsRouter(): WorkbenchRouter {
     // `replaceState`, which fires no event, so there is nothing to subscribe to.
     const [at, setAt] = useState(read);
     const go = useCallback<Navigate>((next) => {
-      setAt((prev) => ({ ...prev, ...next }));
+      setAt((prev) => merge(prev, next));
       write(next);
     }, []);
     return [at, go] as const;
@@ -81,7 +81,7 @@ function pathRouter({ base = '/' }: { base?: string } = {}): WorkbenchRouter {
     const atRef = useRef(at);
     atRef.current = at;
     const go = useCallback<Navigate>((next, options) => {
-      const merged = { ...atRef.current, ...next };
+      const merged = merge(atRef.current, next);
       // A new story is a page; a new view of the same one is not, and neither is
       // re-selecting the story already open.
       const sameStory = next.story === undefined || next.story === atRef.current.story;
@@ -99,10 +99,19 @@ function readPath(prefix: string): WorkbenchLocation {
   const { pathname, search } = win.location;
   const params = new URLSearchParams(search);
   const shot = params.has('shot');
+  const section = decodeURIComponent(win.location.hash.replace(/^#/, '')) || undefined;
   const rest = pathname.startsWith(prefix) ? pathname.slice(prefix.length) : '';
-  const [head, story, view] = rest.split('/');
-  if (head === 'story' && story) {
-    return { story: decodeURIComponent(story), view: parseView(view), shot };
+  const segments = rest.split('/').filter(Boolean);
+  const [head, name, view] = segments;
+  if (head === 'story' && name) {
+    return { story: decodeURIComponent(name), view: parseView(view), shot };
+  }
+  // An article sits at the root - `/icons`, not `/page/icons` - so it is the
+  // ONE segment that is not `story`. Two segments were written by something
+  // else, and a `?story=` means the query is the address, not the path;
+  // reading either as a page id would swallow the fallback below.
+  if (segments.length === 1 && head && head !== 'story' && !params.has('story')) {
+    return { page: decodeURIComponent(head), section, shot };
   }
   // Not a path we wrote: the screenshot runner and older links address a story
   // through `?story=`, so fall back to the query string.
@@ -111,7 +120,15 @@ function readPath(prefix: string): WorkbenchLocation {
 
 function writePath(prefix: string, at: WorkbenchLocation, replace: boolean): void {
   const win = webWindow();
-  if (!win?.history || !at.story) return;
+  if (!win?.history) return;
+  if (at.page) {
+    const fragment = at.section ? `#${encodeURIComponent(at.section)}` : '';
+    const url = `${prefix}${encodeURIComponent(at.page)}${win.location.search}${fragment}`;
+    if (replace) win.history.replaceState(null, '', url);
+    else win.history.pushState(null, '', url);
+    return;
+  }
+  if (!at.story) return;
   const view = viewPath(at.view);
   const suffix = view ? `/${view}` : '';
   const path = `${prefix}story/${encodeURIComponent(at.story)}${suffix}`;
@@ -145,4 +162,4 @@ function write(next: WorkbenchLocation): void {
 }
 
 export type { Navigate, View, WorkbenchLocation, WorkbenchRouter };
-export { memoryRouter, parseView, pathRouter, searchParamsRouter, viewPath };
+export { memoryRouter, pathRouter, searchParamsRouter };

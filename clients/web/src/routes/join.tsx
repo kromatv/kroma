@@ -1,10 +1,11 @@
 import { useT } from '@kroma/ui';
-import { Button, Logo } from '@kroma/ui/kit';
+import { Box, Button, Logo, Text } from '@kroma/ui/kit';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
 import { Spinner } from '#web/features/accounts/auth-gate';
 import { useAuth } from '#web/shared/lib/auth';
+import { PAGE_RADIAL } from '#web/shared/ui';
 
 // Public invitation acceptance page. An admin (with `users.manage`) shares
 // `/join?invite=TOKEN`; the invitee creates their account here. The global
@@ -15,8 +16,6 @@ export const Route = createFileRoute('/join')({
   }),
   component: JoinPage,
 });
-
-const RADIAL = 'radial-gradient(120% 90% at 50% 0%, #15131C, #0A0A0C 70%)';
 
 function JoinPage() {
   const t = useT();
@@ -72,25 +71,24 @@ function JoinPage() {
   }
 
   return (
-    <main
-      className="fixed inset-0 z-100 flex flex-col overflow-y-auto px-6 py-12"
-      style={{ background: RADIAL }}
-    >
+    <main style={{ ...SCREEN, background: PAGE_RADIAL }}>
       {/* Auto margins (not justify-center) so a form taller than a small phone
           viewport scrolls instead of clipping its top. */}
-      <div className="m-auto flex w-full flex-col items-center">
-        <div className="mb-10">
+      <Box w="100%" align="center" m="auto">
+        <Box mb={40}>
           <Logo size={24} />
-        </div>
+        </Box>
 
         {status === 'checking' ? <Spinner /> : null}
         {status === 'invalid' ? (
-          <div className="text-center">
-            <h1 className="mb-2 font-display text-[28px] font-bold">
+          <Box>
+            <Text variant="heading" accessibilityRole="header" textAlign="center" mb={8}>
               {t('auth.inviteInvalidTitle')}
-            </h1>
-            <p className="text-[14px] text-muted">{t('auth.inviteInvalidDesc')}</p>
-          </div>
+            </Text>
+            <Text variant="body" color="textMuted" textAlign="center">
+              {t('auth.inviteInvalidDesc')}
+            </Text>
+          </Box>
         ) : null}
         {status === 'ok' ? (
           <form
@@ -98,13 +96,19 @@ function JoinPage() {
               e.preventDefault();
               void submit();
             }}
-            className="flex w-full max-w-95 flex-col items-center gap-5"
+            style={FORM}
           >
-            <h1 className="font-display text-[28px] font-semibold">{t('auth.joinKroma')}</h1>
+            <Text variant="heading" accessibilityRole="header">
+              {t('auth.joinKroma')}
+            </Text>
 
             <RegisterFields values={values} onChange={setValues} onAvatar={setAvatar} />
 
-            {error ? <p className="text-[13px] font-medium text-danger">{error}</p> : null}
+            {error ? (
+              <Text variant="meta" color="danger">
+                {error}
+              </Text>
+            ) : null}
 
             <Button
               block
@@ -115,7 +119,27 @@ function JoinPage() {
             />
           </form>
         ) : null}
-      </div>
+      </Box>
     </main>
   );
 }
+
+const SCREEN = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 100,
+  display: 'flex',
+  flexDirection: 'column',
+  overflowY: 'auto',
+  paddingInline: 24,
+  paddingBlock: 48,
+} as const;
+
+const FORM = {
+  display: 'flex',
+  width: '100%',
+  maxWidth: 380,
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 20,
+} as const;

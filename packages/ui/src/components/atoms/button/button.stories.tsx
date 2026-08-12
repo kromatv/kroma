@@ -5,7 +5,7 @@ import { Button, buttonVariants } from './button';
 export default story({
   name: 'Button',
   group: 'Actions',
-  docs: "The primary action. It is a **Focusable**, so the same component is a mouse-driven button in a browser and a D-pad target on a television, with the design's amber ring and press scale already wired in.\n\nEach variant carries three coats of feedback, one per input: the ring for the remote, a brightened fill under a finger, and — on the web only — a **hover** step one shade short of the pressed one, which is the only answer a cursor gets on a page that mounts no focus scope.",
+  docs: "The primary action. It is a **Focusable**, so the same component is a mouse-driven button in a browser and a D-pad target on a television, with the design's amber ring and press scale already wired in.\n\nEach variant carries three coats of feedback, one per input: the ring for the remote, a brightened fill under a finger, and (on the web only) a **hover** step one shade short of the pressed one, which is the only answer a cursor gets on a page that mounts no focus scope.",
   usage: `<Button icon="player-play-filled" label="Play" onPress={play} />
 <Button variant="outline" active={inList} label="My list" />`,
   guidelines: {

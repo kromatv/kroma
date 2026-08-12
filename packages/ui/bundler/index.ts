@@ -79,7 +79,15 @@ function iconModules(dir: string, pkg: TablerPkg): Map<string, string> {
   return out;
 }
 
-function* sourceFiles(dir: string): Generator<string> {
+/** One collector over the workspace source: the files it wants by name, what it
+ * takes from each, and the end of the walk that carried it. */
+export interface SourcePass {
+  wants(name: string): boolean;
+  read(source: string): void;
+  done(): void;
+}
+
+function walk(dir: string, passes: readonly SourcePass[]): void {
   let entries: Dirent[];
   try {
     entries = readdirSync(dir, { withFileTypes: true });
@@ -89,12 +97,63 @@ function* sourceFiles(dir: string): Generator<string> {
   for (const e of entries) {
     if (e.name.startsWith('.') || SKIP.has(e.name)) continue;
     const p = join(dir, e.name);
-    if (e.isDirectory()) yield* sourceFiles(p);
-    else if (SOURCE_EXT.test(e.name) && !NOT_SHIPPED.test(e.name)) yield p;
+    if (e.isDirectory()) {
+      walk(p, passes);
+      continue;
+    }
+    if (!SOURCE_EXT.test(e.name)) continue;
+    const wanted = passes.filter((pass) => pass.wants(e.name));
+    if (wanted.length === 0) continue;
+    let source: string;
+    try {
+      source = readFileSync(p, 'utf8');
+    } catch {
+      continue;
+    }
+    for (const pass of wanted) pass.read(source);
   }
 }
 
-const CACHE = new Map<string, { code: string; note: string }>();
+const SOURCE_DIRS = ['packages', 'clients', 'apps', 'modules'];
+
+/** The four workspace directories a scan reads, under `repoRoot`. */
+export function sourceRoots(repoRoot: string): string[] {
+  return SOURCE_DIRS.map((dir) => join(repoRoot, dir));
+}
+
+/** One traversal for every pass that wants it: the directory walk is what the
+ * scan costs, and a second collector only adds a regex over source already
+ * read. */
+export function walkSources(roots: readonly string[], passes: readonly SourcePass[]): void {
+  if (passes.length === 0) return;
+  for (const root of roots) walk(root, passes);
+  for (const pass of passes) pass.done();
+}
+
+/** Whether a walk of `roots` reads that file, so a watcher can place a change
+ * against the scan without walking again. */
+export function walkReaches(roots: readonly string[], file: string): boolean {
+  const root = roots.find((r) => file.startsWith(`${r}${sep}`));
+  if (!root) return false;
+  const parts = file.slice(root.length + 1).split(sep);
+  const name = parts.pop();
+  if (!name || name.startsWith('.') || !SOURCE_EXT.test(name)) return false;
+  return parts.every((part) => !part.startsWith('.') && !SKIP.has(part));
+}
+
+interface Subset {
+  code: string;
+  note: string;
+}
+
+interface IconScan {
+  available: Map<string, string>;
+  used: Set<string>;
+  walked: boolean;
+  subset?: Subset;
+}
+
+const CACHE = new Map<string, IconScan>();
 
 // Not `localeCompare`: this ordering ends up in generated source, so it must be
 // identical on every machine rather than follow the build's locale.
@@ -103,36 +162,61 @@ function byCodeUnit(a: string, b: string): number {
   return a < b ? -1 : 1;
 }
 
-function iconSubset(repoRoot: string, pkg: TablerPkg): { code: string; note: string } {
+function iconScan(repoRoot: string, pkg: TablerPkg): IconScan {
   const key = `${repoRoot}|${pkg}`;
   const hit = CACHE.get(key);
   if (hit) return hit;
+  const fresh: IconScan = {
+    available: iconModules(tablerDir(repoRoot, pkg), pkg),
+    used: new Set(['IconHelpCircle']), // the fallback, always drawn
+    walked: false,
+  };
+  CACHE.set(key, fresh);
+  return fresh;
+}
 
-  const available = iconModules(tablerDir(repoRoot, pkg), pkg);
-
-  const used = new Set(['IconHelpCircle']); // the fallback, always drawn
-  for (const root of ['packages', 'clients', 'apps', 'modules']) {
-    for (const file of sourceFiles(join(repoRoot, root))) {
-      for (const [, slug] of readFileSync(file, 'utf8').matchAll(LITERAL)) {
+function scanPass(scan: IconScan): SourcePass | null {
+  if (scan.walked) return null;
+  return {
+    wants: (name) => !NOT_SHIPPED.test(name),
+    read(source) {
+      for (const [, slug] of source.matchAll(LITERAL)) {
         const name = exportName(slug as string);
-        if (available.has(name)) used.add(name);
+        if (scan.available.has(name)) scan.used.add(name);
       }
-    }
-  }
+    },
+    done() {
+      scan.walked = true;
+    },
+  };
+}
 
-  const names = [...used].sort(byCodeUnit);
+/** The icon scan as one pass, for a caller already walking the workspace for
+ * something else. Null once the answer is known. */
+export function iconPass(repoRoot: string): SourcePass | null {
+  return scanPass(iconScan(repoRoot, '@tabler/icons-react'));
+}
+
+function emit(scan: IconScan): Subset {
+  const names = [...scan.used].sort(byCodeUnit);
   // Per-icon default imports, so the result does not depend on Tabler's barrel
   // being shakeable.
-  const result = {
+  return {
     code: [
-      ...names.map((n) => `import ${n} from ${JSON.stringify(available.get(n))};`),
+      ...names.map((n) => `import ${n} from ${JSON.stringify(scan.available.get(n))};`),
       `export const EXPORTS = { ${names.join(', ')} };`,
       'export const FALLBACK = IconHelpCircle;',
     ].join('\n'),
-    note: `[kroma-ui] ${names.length} of ${available.size} Tabler icons kept`,
+    note: `[kroma-ui] ${names.length} of ${scan.available.size} Tabler icons kept`,
   };
-  CACHE.set(key, result);
-  return result;
+}
+
+function iconSubset(repoRoot: string, pkg: TablerPkg): Subset {
+  const scan = iconScan(repoRoot, pkg);
+  const pass = scanPass(scan);
+  if (pass) walkSources(sourceRoots(repoRoot), [pass]);
+  scan.subset ??= emit(scan);
+  return scan.subset;
 }
 
 // Both adapters match the module by path: a rename would disable the swap

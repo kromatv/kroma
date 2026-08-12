@@ -6,10 +6,9 @@
 // `box-shadow` (the focus ring: blurred and drawn outside the element's box)
 // cost a third of the frame rate on a Samsung LS03D, so the ring does not fade.
 
-import { useCallback, useRef, useState } from 'react';
-import type { LayoutChangeEvent } from 'react-native';
+import { useCallback, useState } from 'react';
 import { motion } from '#ui/core/tokens';
-import { longestSideOf, pressScaleFor } from '#ui/lib/press-dip';
+import { type PressScale, pressScaleFor, useLongestSide } from '#ui/lib/press-dip';
 import { ease } from './ease';
 
 const DURATION = `${motion.duration.base}ms`;
@@ -32,20 +31,9 @@ export function useFocusScale(focused: boolean, to: number): Record<string, unkn
 const DURATION_FAST = `${motion.duration.fast}ms`;
 const SPRING = ease.spring.css;
 
-interface PressScale {
-  pressed: boolean;
-  style: Record<string, unknown>;
-  onLayout: (event: LayoutChangeEvent) => void;
-  onPressIn: () => void;
-  onPressOut: () => void;
-}
-
 export function usePressScale(): PressScale {
   const [pressed, setPressed] = useState(false);
-  const longest = useRef(0);
-  const onLayout = useCallback((event: LayoutChangeEvent) => {
-    longest.current = longestSideOf(event);
-  }, []);
+  const { longest, onLayout } = useLongestSide();
   const onPressIn = useCallback(() => setPressed(true), []);
   const onPressOut = useCallback(() => setPressed(false), []);
   return {

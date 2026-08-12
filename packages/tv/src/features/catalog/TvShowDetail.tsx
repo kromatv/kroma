@@ -11,7 +11,7 @@ import {
   Row,
   Spacer,
   styles,
-  Txt,
+  Text,
   useFocusNav,
 } from '@kroma/ui/kit';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -204,41 +204,42 @@ export function TvShowDetail() {
       <EndsAtHint runtimeMs={playTarget?.durationMs} />
 
       {error ? (
-        <Txt variant="title" color="textMuted" style={s.status}>
+        <Text variant="title" color="textMuted" style={s.status}>
           {t('content.loadEpisodesFailed', { error })}
-        </Txt>
+        </Text>
       ) : null}
       {!detail && !error ? (
-        <Txt variant="title" color="textMuted" style={s.status}>
+        <Text variant="title" color="textMuted" style={s.status}>
           {t('content.loadingEpisodes')}
-        </Txt>
+        </Text>
       ) : null}
 
       {/* Three <FocusSlot>s, always rendered even while empty. The navigator
           orders siblings by registration order, and these three don't arrive
           together (cast comes from the route immediately, seasons/episodes
-          wait on `client.show()`) — without the slots, Down from the actions
+          wait on `client.show()`). Without the slots, Down from the actions
           could land on the cast and then jump back up once seasons appeared
           above it. A slot claims its position at first render regardless. */}
       <FocusSlot>
         {detail && detail.seasons.length > 1 ? (
           <Box row align="center" gap={18} mt={30}>
-            <Txt style={s.seasonLabel} color="textMuted">
+            <Text style={s.seasonLabel} color="textMuted">
               {t('content.seasonsHeader')}
-            </Txt>
-            <Rail inset={12} gap={10}>
+            </Text>
+            <Rail.Root inset={12} gap={10}>
               {detail.seasons.map((entry) => (
                 <Chip
                   key={entry.number}
                   variant="surface"
                   focusScale={1.05}
                   active={entry.number === activeSeason?.number}
+                  pressed={entry.number === activeSeason?.number}
                   label={t('content.season', { number: entry.number })}
                   onPress={() => setSeason(entry.number)}
                   style={s.seasonChip}
                 />
               ))}
-            </Rail>
+            </Rail.Root>
           </Box>
         ) : null}
       </FocusSlot>
@@ -255,21 +256,21 @@ export function TvShowDetail() {
             {/* The design's header line: the label, how far through the season
                 you are, and the remote legend pushed to the column's far edge. */}
             <Row gap={18} wrap maxW={EPISODE_COLUMN_W}>
-              <Txt style={s.episodesLabel} color="rgba(244, 243, 240, 0.55)">
+              <Text style={s.episodesLabel} color="text/55">
                 {t('content.episodesHeader')}
-              </Txt>
-              <Txt style={s.episodesProgress} color="rgba(244, 243, 240, 0.34)">
+              </Text>
+              <Text style={s.episodesProgress} color="text/34">
                 {t('content.episodesWatched', {
                   watched: activeSeason.episodes.filter((ep) => watched.has(ep.id)).length,
                   count: activeSeason.episodes.length,
                 })}
-              </Txt>
+              </Text>
               <Spacer />
               <Hint
                 text={t('content.episodesHint')}
                 size={14}
                 gap={4}
-                color="rgba(244, 243, 240, 0.3)"
+                color="text/30"
                 textStyle={s.episodesHint}
               />
             </Row>

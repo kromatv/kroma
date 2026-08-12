@@ -5,7 +5,7 @@
 //
 // The flip animates on the kit's usual split (see <VirtualRail>): a CSS
 // transition on the browser targets, `Animated` with the real native driver
-// elsewhere. Only compositor-friendly properties move — the thumb is a
+// elsewhere. Only compositor-friendly properties move: the thumb is a
 // `translateX` and the amber is a fill layer crossfading over the off-track,
 // since neither driver can animate a background colour natively.
 
@@ -62,7 +62,7 @@ const switchVariants = sv({
       tv: { w: track.tv.w, h: track.tv.h, p: track.tv.pad },
     },
     /** Styleless on purpose: the checked look is the crossfade layers below,
-     * which a static style can't describe — but `checked` is still the
+     * which a static style can't describe, but `checked` is still the
      * component's axis, and the workbench matrix reads the axes from here. */
     checked: { true: {} },
   },
@@ -74,10 +74,10 @@ type SwitchSize = keyof typeof track;
 interface SwitchProps
   extends Omit<FocusableProps, 'children' | 'onPress' | 'style' | 'role' | 'checked'> {
   /** Present: you own the state (controlled). Absent: the switch runs itself
-   *  from `defaultChecked` and reports through `onChange`. */
+   *  from `defaultChecked` and reports through `onCheckedChange`. */
   checked?: boolean;
   defaultChecked?: boolean;
-  onChange?: (next: boolean) => void;
+  onCheckedChange?: (next: boolean) => void;
   size?: SwitchSize;
   style?: StyleProp<ViewStyle>;
 }
@@ -85,13 +85,13 @@ interface SwitchProps
 function Switch({
   checked: checkedProp,
   defaultChecked = false,
-  onChange,
+  onCheckedChange,
   size = 'sm',
   disabled = false,
   style,
   ...focusProps
 }: Readonly<SwitchProps>) {
-  const [checked, setChecked] = useControllable(checkedProp, defaultChecked, onChange);
+  const [checked, setChecked] = useControllable(checkedProp, defaultChecked, onCheckedChange);
   return (
     <Focusable
       {...focusProps}
@@ -116,7 +116,7 @@ interface SwitchFaceProps {
 
 /**
  * The switch's visuals alone: the track, the amber fill and the sliding
- * thumb, with nothing pressable about them — for surfaces where the switch is
+ * thumb, with nothing pressable about them, for surfaces where the switch is
  * not its own control (a settings row that drives focus through its own list
  * navigation, where a `Focusable` switch would be a second stop the D-pad has
  * to fight past).

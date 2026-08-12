@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { InputGroup } from './input-group';
 
 afterEach(cleanup);
@@ -44,11 +44,11 @@ describe('<InputGroup>', () => {
       <InputGroup.Root label="Amount">
         {/* Deliberately back to front. */}
         <InputGroup.Addon align="inline-end">
-          <Txt>USD</Txt>
+          <Text>USD</Text>
         </InputGroup.Addon>
         <InputGroup.Input placeholder="0.00" physicalKeyboard />
         <InputGroup.Addon>
-          <Txt>$</Txt>
+          <Text>$</Text>
         </InputGroup.Addon>
       </InputGroup.Root>,
     );
@@ -68,7 +68,7 @@ describe('<InputGroup>', () => {
     render(
       <InputGroup.Root label="Search">
         <InputGroup.Addon>
-          <Txt>@</Txt>
+          <Text>@</Text>
         </InputGroup.Addon>
         <InputGroup.Input placeholder="Search" physicalKeyboard />
       </InputGroup.Root>,
@@ -85,7 +85,7 @@ describe('<InputGroup>', () => {
       <InputGroup.Root label="Search">
         <InputGroup.Input placeholder="Search" physicalKeyboard />
         <InputGroup.Addon align="inline-end" onPress={onPress}>
-          <Txt>go</Txt>
+          <Text>go</Text>
         </InputGroup.Addon>
       </InputGroup.Root>,
     );
@@ -93,12 +93,26 @@ describe('<InputGroup>', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('pulls the control at the addon edge back into the shell', () => {
+    render(
+      <InputGroup.Root label="Registry">
+        <InputGroup.Input placeholder="https://" physicalKeyboard />
+        <InputGroup.Addon align="inline-end">
+          <InputGroup.Button label="Test" onPress={() => {}} />
+        </InputGroup.Addon>
+      </InputGroup.Root>,
+    );
+    // By the shell's own padding minus the inset, so a ghost button's fill
+    // stops exactly where the well does.
+    expect(screen.getByLabelText('Test').style.marginRight).toBe('-6px');
+  });
+
   it('refuses a part used outside the Root, rather than rendering something wrong', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() =>
       render(
         <InputGroup.Addon>
-          <Txt>$</Txt>
+          <Text>$</Text>
         </InputGroup.Addon>,
       ),
     ).toThrow(/InputGroup.Addon/);

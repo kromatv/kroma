@@ -12,21 +12,22 @@ import {
   useT,
   WEB_FLAGS,
 } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
+import { Box, Button, backdropBlur, Icon, Text } from '@kroma/ui/kit';
 import type { Ref } from 'react';
 import { useCallback, useMemo, useState } from 'react';
 import type { View } from 'react-native';
-import { castPicker } from '#web/features/playback/cast/cast-picker';
-import { IconStopped } from '#web/features/playback/icons';
 import { Toast } from '#web/features/playback/player-toast';
 import { usePlaybackSession } from '#web/features/playback/use-playback-session';
 import { useResumeProgress } from '#web/features/playback/use-resume-progress';
-import { useStoryboard } from '#web/features/playback/use-storyboard';
 import { useWebController } from '#web/features/playback/use-web-controller';
 import { useWebUpNext } from '#web/features/playback/use-web-upnext';
 import { kromaClient, type MovieView } from '#web/shared/lib/api';
+import { useStoryboard } from '#web/shared/lib/use-storyboard';
+import { castPicker } from '#web/shared/ui/cast-picker';
 
 const PREVIEW_W = 176;
+
+const FROST = backdropBlur(4);
 
 /** Adapts the web engine to the shared unified `<Player>`; layers on web-only
  *  concerns (resume prompt, admin-stop overlay, session heartbeat). */
@@ -120,7 +121,7 @@ export function Player({
   );
 
   return (
-    <UnifiedPlayer
+    <UnifiedPlayer.Root
       controller={controller}
       flags={flags}
       title={item.title}
@@ -139,26 +140,27 @@ export function Player({
       markers={item.markers ?? undefined}
       tileAt={tileAt}
       appearance={appearance}
-      onAppearance={setAppearance}
+      onAppearanceChange={setAppearance}
       subtitleGen={subtitleGen}
       upNext={upNext}
       onPlayItem={(i) => onPlayItem?.(i.id)}
       onPlayNext={onPlayNext}
       nextTitle={nextTitle}
-      intro={
-        intro ? { active: introActive, onSkip: () => pb.seekTo(intro.endMs / 1000) } : undefined
-      }
-      surface={surface}
+      introActive={introActive}
+      onSkipIntro={intro ? () => pb.seekTo(intro.endMs / 1000) : undefined}
       // The shared chrome is typed against React Native, but under
       // react-native-web this ref receives the DOM node (requestFullscreen).
-      rootRef={containerRef as unknown as Ref<View>}
-      terminated={
-        terminated ? (
-          <div className="absolute inset-0 z-80 flex flex-col items-center justify-center gap-5 bg-black/85 px-8 text-center backdrop-blur-sm">
-            <span className="text-[#E8536A]">
-              <IconStopped size={52} />
-            </span>
-            <p className="max-w-115 text-[15px] text-white/80">{terminated}</p>
+      ref={containerRef as unknown as Ref<View>}
+      onClose={onClose}
+    >
+      <UnifiedPlayer.Media>{surface}</UnifiedPlayer.Media>
+      {terminated ? (
+        <UnifiedPlayer.Panel>
+          <Box fill z={80} center gap={20} px={32} bg="black/85" style={FROST}>
+            <Icon name="player-stop-filled" size={52} color="danger" />
+            <Text variant="body" color="white/80" maxW={460} textAlign="center">
+              {terminated}
+            </Text>
             <Button
               variant="primary"
               size="sm"
@@ -166,31 +168,28 @@ export function Player({
               label={t('player.back')}
               onPress={onClose}
             />
-          </div>
-        ) : null
-      }
-      onClose={onClose}
-    >
+          </Box>
+        </UnifiedPlayer.Panel>
+      ) : null}
       {showResume && resumeAt != null ? (
         <Toast
           variant="info"
           onDismiss={() => setShowResume(false)}
           action={
-            <button
-              type="button"
-              onClick={() => {
+            <Button
+              variant="glass"
+              size="sm"
+              label={t('player.restart')}
+              onPress={() => {
                 pb.seekTo(0);
                 setShowResume(false);
               }}
-              className="rounded-md bg-white/10 px-2.5 py-1 text-[12px] font-semibold text-white hover:bg-white/20"
-            >
-              {t('player.restart')}
-            </button>
+            />
           }
         >
           ⏵ {t('player.resumeAt', { time: fmtTime(resumeAt) })}
         </Toast>
       ) : null}
-    </UnifiedPlayer>
+    </UnifiedPlayer.Root>
   );
 }

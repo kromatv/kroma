@@ -1,7 +1,7 @@
-# Modules as `.kmod` — out-of-process module architecture
+# Modules as `.kmod`: out-of-process module architecture
 
 Goal: every module in `modules/*` ships as an installable `.kmod` file and
-runs **out of the base `kroma-server` build** — native, fast, simple to author, and
+runs **out of the base `kroma-server` build**: native, fast, simple to author, and
 easy to fetch from a registry.
 
 ## Why out-of-process (not WASM, not dlopen)
@@ -15,7 +15,7 @@ it, supervises it, and reverse-proxies its HTTP.**
 
 ## The pieces (built)
 
-- **`kroma-module-runtime`** — what a module binary links. `serve(setup, module)`
+- **`kroma-module-runtime`** is what a module binary links. `serve(setup, module)`
   is the whole `main()`: it reads the env the supervisor set, opens the shared
   SQLite directly (WAL = multi-process, so `db()`/auth/session need no IPC),
   builds a `RemoteHost` (the out-of-process `HostCtx`), applies the module's
@@ -23,17 +23,17 @@ it, supervises it, and reverse-proxies its HTTP.**
   module's `admin_routes` + a `/_health` probe on the assigned local port.
   Settings/events/jobs go to the core over a small callback API; everything else
   is local.
-- **`kroma-module-supervisor`** — the core side. `Supervisor` scans
+- **`kroma-module-supervisor`** is the core side. `Supervisor` scans
   `<data>/modules/*`, spawns each enabled module's `module` binary with the
   runtime env (id, free localhost port, core URL, a per-process callback token,
   DB path, data dir), tracks `id -> port`, and stop/spawns them. `proxy_to`
   reverse-proxies a request to a module process. `host_router::<HostCtx>(token)`
   serves `/api/_host/*` (setting / settings / events / job / enabled),
   token-authed, resolved against the core's real state.
-- **Core integration** — `main.rs` builds the supervisor and `spawn_enabled`s
+- **Core integration**: `main.rs` builds the supervisor and `spawn_enabled`s
   installed modules at boot; `api/mod.rs` mounts the callback API and a
   `/api/module/<id>/*` reverse proxy.
-- **`bun run modules:pack`** — builds a module's native binary + stages
+- **`bun run modules:pack`** builds a module's native binary + stages
   `module.json` + `module` (the binary) + `icon` + `fe/` into a zstd `.kmod`
   (per-target via `KMOD_TARGET`; sidecar bundles are suffixed with the triple)
   plus a `.sha256` sidecar.
@@ -66,21 +66,21 @@ generic `ServerModule<S: HostCtx>` behind `RemoteHost`.
 1. ~~**Native install path**~~ shipped: `/api/admin/store/install` (upload) and
    the Store's install-by-id both unpack a native `.kmod` under
    `<data>/modules/<id>/` via the supervisor and spawn it.
-2. **The coupled cluster** — `torrents`, `acquisition`, `indexer`, `torznab`,
+2. **The coupled cluster**: `torrents`, `acquisition`, `indexer`, `torznab`,
    `vpn`, and the two engines are wired by **9 cross-module ports**. Out-of-process
    these become HTTP: the provider exposes `/_port/<name>/<method>`, the consumer
    resolves a client proxy. Boundary types need serde derives. Hard cases:
    - `DownloadClientHost::register_engine(fn(&mut Registry))` is a raw **function
-     pointer** — the engine-plugin model must change to expose the `DownloadClient`
+     pointer**, so the engine-plugin model must change to expose the `DownloadClient`
      trait itself as the RPC surface.
    - `AddTorrentReq`/`DownloadClientCtx` carry borrowed bytes + `Arc<dyn Any>`
-     (the librqbit handle) — need owned, serde mirrors.
+     (the librqbit handle), so they need owned, serde mirrors.
    - the `ports/naming` engine is a **shared compile-time library** (torrents +
-     acquisition) — it stays vendored into each process.
-3. **Core → module direct calls** — `api/requests.rs`, `discover.rs`,
+     acquisition), so it stays vendored into each process.
+3. **Core → module direct calls**: `api/requests.rs`, `discover.rs`,
    `online_subs.rs` call module functions in-process (active downloads, transcribe,
    interactive search); these become proxied/port calls.
-4. **Zero-module base build** — `roster.yaml` and the generated aggregator are
+4. **Zero-module base build**: `roster.yaml` and the generated aggregator are
    empty, and modules now live at `modules/<id>`, each its own cargo workspace
    outside `server/`. Three are still linked into the binary and are what is
    left of this item: `kroma-scene` (a pure library the SDK re-exports) and
@@ -99,7 +99,7 @@ generic `ServerModule<S: HostCtx>` behind `RemoteHost`.
 - Each module binary links its own dep tree; the SDK façade currently re-exports
   `kroma-engine`, so a naive per-module binary duplicates a lot of code (large
   artifacts, slow builds). Making this lean needs splitting the SDK's engine
-  surface into a thin client — a prerequisite for "optimized".
+  surface into a thin client, a prerequisite for "optimized".
 - Cross-module calls that were direct trait calls become localhost HTTP; hot paths
   (e.g. acquisition scoring releases via the scene parser) must stay in-process
   (shared lib) or they get slower, not faster.

@@ -1,4 +1,4 @@
-import { Box, Icon, IconButton, styles, Txt } from '@kroma/ui/kit';
+import { Box, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { useT } from '#mobile/lib/i18n';
 import { useUnreadCount } from '#mobile/lib/notifications';
@@ -12,18 +12,18 @@ export function NotificationBell() {
   return (
     <IconButton
       variant="ghost"
-      size={40}
+      diameter={40}
       glyph={22}
       hitSlop={10}
       label={unread > 0 ? t('notifications.unreadCount', { n: unread }) : t('notifications.title')}
       onPress={() => router.push('/notifications' as never)}
     >
       <Box>
-        <Icon name="bell" size={22} stroke={2} />
+        <Icon name="bell" size={22} thickness={2} />
         {unread > 0 ? (
           <Box style={s.badge}>
             {/* Past nine the pill starts outgrowing the bell. */}
-            <Txt style={s.count}>{unread > 9 ? '9+' : unread}</Txt>
+            <Text style={s.count}>{unread > 9 ? '9+' : unread}</Text>
           </Box>
         ) : null}
       </Box>

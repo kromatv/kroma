@@ -34,7 +34,7 @@ export function useModuleApi(): ModuleApi {
  *  `moduleApiHook(factory)` binds to whichever module the host is rendering
  *  (via `ModuleScope`), so the module never names itself. The `(id, factory)`
  *  form binds an explicit id instead: that is the shape for an API other
- *  packages call — the id others reach the module at, published once, next to
+ *  packages call: the id others reach the module at, published once, next to
  *  the methods it addresses. */
 export function moduleApiHook<T>(factory: (api: ModuleApi) => T): () => T;
 export function moduleApiHook<T>(id: string, factory: (api: ModuleApi) => T): () => T;

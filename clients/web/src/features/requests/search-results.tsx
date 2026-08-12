@@ -4,19 +4,15 @@
 
 import { posterColors, type SearchHit } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, EmptyState, Txt } from '@kroma/ui/kit';
+import { Box, EmptyState, Row, Text } from '@kroma/ui/kit';
 
 import { useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
 import type { DiscoverSearchState } from '#web/features/requests/use-discover-search';
 import { useAuth } from '#web/shared/lib/auth';
-import { SkeletonRow } from '#web/shared/ui';
+import { POSTER_GRID, SkeletonRow } from '#web/shared/ui';
 import { Poster } from '#web/shared/ui/poster';
-
-// Same auto-fill poster grid as the catalogue (see cards.tsx GRID).
-const GRID =
-  'grid grid-cols-[repeat(auto-fill,minmax(min(var(--card-w),100%),1fr))] gap-x-4.5 gap-y-6 *:w-full!';
 
 const COUNT = { fontVariant: ['tabular-nums' as const] };
 
@@ -26,18 +22,24 @@ function Section({
   children,
 }: Readonly<{ title: string; count: number; children: ReactNode }>) {
   return (
-    <section className="mb-9 animate-[fade-in_.25s_var(--ease-out)]">
-      {/* Still an <h2>: <Txt accessibilityRole="header"> can only render an h1. */}
-      <h2 className="mb-4 flex items-baseline gap-2.5">
-        <Txt variant="title">{title}</Txt>
-        <Txt variant="meta" color="textDim" style={COUNT}>
-          {count}
-        </Txt>
+    <section style={BAND}>
+      {/* Still an <h2>: <Text accessibilityRole="header"> can only render an h1. */}
+      <h2 style={HEADING}>
+        <Row align="baseline" gap={10} mb={16}>
+          <Text variant="title">{title}</Text>
+          <Text variant="meta" color="textDim" style={COUNT}>
+            {count}
+          </Text>
+        </Row>
       </h2>
-      <div className={GRID}>{children}</div>
+      <div className={POSTER_GRID}>{children}</div>
     </section>
   );
 }
+
+const BAND = { marginBottom: 36, animation: 'fade-in .25s var(--ease-out)' } as const;
+
+const HEADING = { margin: 0 } as const;
 
 function LocalHit({ hit }: Readonly<{ hit: SearchHit }>) {
   const { client } = useAuth();
@@ -81,11 +83,10 @@ export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }
   const nothing = state.local.length === 0 && state.discover.length === 0;
   if (nothing) {
     return (
-      <EmptyState
-        icon="mood-empty"
-        title={t('discover.noResults')}
-        hint={t('discover.noResultsHint')}
-      />
+      <EmptyState.Root icon="mood-empty">
+        <EmptyState.Title>{t('discover.noResults')}</EmptyState.Title>
+        <EmptyState.Hint>{t('discover.noResultsHint')}</EmptyState.Hint>
+      </EmptyState.Root>
     );
   }
 

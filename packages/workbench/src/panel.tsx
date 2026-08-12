@@ -1,15 +1,28 @@
 // The inspector: what a story says about itself, and what you can change. It is a
 // column beside the canvas, or a dock under it that collapses to its tab row.
 
-import { Box, Focusable, Icon, IconButton, type IconName, styles, sv, Txt } from '@kroma/ui/kit';
+import {
+  Box,
+  CodeBlock,
+  Focusable,
+  Icon,
+  IconButton,
+  type IconName,
+  styles,
+  sv,
+  Text,
+  useResizablePanel,
+} from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE, RULE_TOP, TAB } from './chrome';
-import { CodeBlock, MONO } from './code';
 import { Controls } from './controls';
-import { Guidelines, RichText } from './docs';
+import { Guidelines, StoryProse } from './docs';
+import { Interactions } from './interactions';
 import type { WorkbenchLayout } from './layout';
-import type { PropDoc } from './props';
+import type { PlayRunner } from './play';
+import { PropTable } from './prop-table';
+import { propCount } from './props';
 import type { Story } from './story';
 
 interface PanelProps {
@@ -18,10 +31,12 @@ interface PanelProps {
   onChange: (key: string, value: unknown) => void;
   onReset: () => void;
   showControls: boolean;
+  showReset: boolean;
+  run: PlayRunner;
   layout: WorkbenchLayout;
 }
 
-type TabId = 'adjust' | 'about' | 'props';
+type TabId = 'adjust' | 'about' | 'play' | 'props';
 
 interface Tab {
   id: TabId;
@@ -34,51 +49,16 @@ interface Tab {
 function Section({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
   return (
     <Box gap={10}>
-      <Txt variant="overline" color="accent">
+      <Text variant="overline" color="accent">
         {title}
-      </Txt>
+      </Text>
       {children}
     </Box>
   );
 }
 
-function PropTable({ props }: Readonly<{ props: readonly PropDoc[] }>) {
-  return (
-    <Box>
-      {props.map((prop, at) => (
-        <Box
-          key={prop.name}
-          gap={3}
-          pt={at === 0 ? 0 : 12}
-          pb={12}
-          style={at === props.length - 1 ? undefined : RULE}
-        >
-          <Box row align="baseline" gap={8} wrap>
-            <Txt variant="meta" style={s.propName}>
-              {prop.name}
-            </Txt>
-            {prop.optional ? null : (
-              <Txt variant="meta" color="danger" style={s.propRequired}>
-                required
-              </Txt>
-            )}
-            <Txt variant="meta" color="textDim" style={s.propType} lines={1}>
-              {prop.type}
-            </Txt>
-          </Box>
-          {prop.docs ? (
-            <RichText variant="meta" color="textMuted">
-              {prop.docs}
-            </RichText>
-          ) : null}
-        </Box>
-      ))}
-    </Box>
-  );
-}
-
 /** Only the tabs this story has something to put in; an empty tab is omitted. */
-function tabsFor(story: Story, showControls: boolean): Tab[] {
+function tabsFor(story: Story, showControls: boolean, run: PlayRunner): Tab[] {
   const tabs: Tab[] = [];
   const guided = story.guidelines.do.length > 0 || story.guidelines.dont.length > 0;
 
@@ -100,9 +80,7 @@ function tabsFor(story: Story, showControls: boolean): Tab[] {
         <Box gap={24}>
           {story.docs ? (
             <Section title="What it's for">
-              <RichText variant="meta" color="textMuted">
-                {story.docs}
-              </RichText>
+              <StoryProse docs={story.docs} />
             </Section>
           ) : null}
           {story.usage ? (
@@ -119,41 +97,63 @@ function tabsFor(story: Story, showControls: boolean): Tab[] {
       ),
     });
   }
+  if (run.playable) {
+    tabs.push({
+      id: 'play',
+      name: 'Interactions',
+      glyph: 'player-play',
+      count: run.steps.length,
+      body: (
+        <Interactions
+          steps={run.steps}
+          status={run.status}
+          error={run.error}
+          onReplay={run.replay}
+        />
+      ),
+    });
+  }
   if (story.props.length > 0) {
     tabs.push({
       id: 'props',
       name: 'Props',
       glyph: 'braces',
-      count: story.props.length,
-      body: <PropTable props={story.props} />,
+      count: propCount(story.props),
+      body: <PropTable name={story.name} sections={story.props} />,
     });
   }
   return tabs;
 }
 
-function Panel({ story, args, onChange, onReset, showControls, layout }: Readonly<PanelProps>) {
+function Panel({
+  story,
+  args,
+  onChange,
+  onReset,
+  showControls,
+  showReset,
+  run,
+  layout,
+}: Readonly<PanelProps>) {
   const docked = layout.panel === 'below';
-  const tabs = tabsFor(story, showControls);
+  const tabs = tabsFor(story, showControls, run);
   // A preference, not the truth: the tab persists across stories, and a story
   // without it falls back to its first.
   const [wanted, setWanted] = useState<TabId>('adjust');
   const active = tabs.find((tab) => tab.id === wanted) ?? tabs[0];
 
+  // The region owns the height on a phone, where the dock shuts to its tab row:
+  // the seam above it and the chevron in it are two ways to say the same thing.
+  const region = useResizablePanel();
   const collapsible = docked && layout.mode === 'compact';
-  const [open, setOpen] = useState(false);
-  const shown = !collapsible || open;
-  const resettable = showControls && story.controls.length > 0;
+  const shown = !collapsible || !region.collapsed;
 
   return (
-    <Box
-      bg="surface1"
-      shrink={0}
-      w={docked ? undefined : layout.panelWidth}
-      h={docked && shown ? layout.panelHeight : undefined}
-      style={docked ? RULE_TOP : s.side}
-    >
-      <Box row align="center" style={RULE}>
-        {collapsible ? <Handle open={shown} onPress={() => setOpen((prev) => !prev)} /> : null}
+    <Box flex minH={0} bg="surface1" style={docked ? RULE_TOP : s.side}>
+      <Box row align="center" shrink={0} style={RULE}>
+        {collapsible ? (
+          <Handle open={shown} onPress={() => (shown ? region.collapse() : region.expand())} />
+        ) : null}
         {tabs.map((tab) => (
           <TabButton
             key={tab.id}
@@ -161,7 +161,7 @@ function Panel({ story, args, onChange, onReset, showControls, layout }: Readonl
             active={tab.id === active?.id && shown}
             onPress={() => {
               setWanted(tab.id);
-              setOpen(true);
+              region.expand();
             }}
           />
         ))}
@@ -175,13 +175,13 @@ function Panel({ story, args, onChange, onReset, showControls, layout }: Readonl
               controls={story.controls}
               args={args}
               onChange={onChange}
-              onReset={resettable ? onReset : undefined}
+              onReset={showReset ? onReset : undefined}
             />
           ) : (
             (active?.body ?? (
-              <Txt variant="meta" color="textDim">
+              <Text variant="meta" color="textDim">
                 This story has nothing to adjust.
-              </Txt>
+              </Text>
             ))
           )}
         </ScrollView>
@@ -200,14 +200,14 @@ function TabButton({
       {({ slots }) => (
         <>
           <Icon name={tab.glyph} size={14} color={active ? 'accent' : 'textDim'} />
-          <Txt variant="meta" lines={1} style={slots.label}>
+          <Text variant="meta" lines={1} style={slots.label}>
             {tab.name}
-          </Txt>
+          </Text>
           {tab.count === undefined ? null : (
             <Box px={5} shrink={0} radius="pill" bg={active ? 'accentSoft' : 'surface2'}>
-              <Txt variant="meta" color={active ? 'accent' : 'textDim'} style={s.badge}>
+              <Text variant="meta" color={active ? 'accent' : 'textDim'} style={s.badge}>
                 {tab.count}
-              </Txt>
+              </Text>
             </Box>
           )}
         </>
@@ -220,7 +220,7 @@ function Handle({ open, onPress }: Readonly<{ open: boolean; onPress: () => void
   return (
     <IconButton
       variant="ghost"
-      size={35}
+      diameter={35}
       radius={0}
       label={open ? 'Hide the inspector' : 'Show the inspector'}
       ring={false}
@@ -240,10 +240,7 @@ const s = styles({
   dockBody: { px: 20, py: 18, pb: 32 },
   // Fills the height of the tab row beside it.
   handle: { h: 37 },
-  badge: { fontSize: 10.5, fontFamily: MONO, lineHeight: 16 },
-  propName: { fontFamily: MONO, fontSize: 12.5, fontWeight: '700' },
-  propType: { fontFamily: MONO, fontSize: 11.5, shrink: 1 },
-  propRequired: { fontSize: 10, letterSpacing: 0.3, textTransform: 'uppercase' },
+  badge: { fontSize: 10.5, font: 'mono', lineHeight: 16 },
 });
 // `minW: 0` is what lets the label truncate; without it a flex item refuses to
 // shrink below its content and the row spills.
@@ -268,5 +265,4 @@ const tabButton = sv({
   defaults: { active: false },
 });
 
-export type { PanelProps, TabId };
-export { Panel, tabsFor };
+export { Panel };

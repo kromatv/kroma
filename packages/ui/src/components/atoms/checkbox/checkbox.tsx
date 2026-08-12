@@ -47,13 +47,13 @@ const checkboxVariants = sv({
 interface CheckboxProps
   extends Omit<FocusableProps, 'children' | 'onPress' | 'role' | 'checked' | 'style'> {
   /** Present: you own the state (controlled). Absent: it runs itself from
-   *  `defaultChecked` and reports through `onChange`. */
+   *  `defaultChecked` and reports through `onCheckedChange`. */
   checked?: boolean;
   defaultChecked?: boolean;
   /** Some of the things under this one are checked. Announced as `mixed`, and
    *  a press from here checks them all. */
   indeterminate?: boolean;
-  onChange?: (next: boolean) => void;
+  onCheckedChange?: (next: boolean) => void;
   size?: CheckboxSize;
 }
 
@@ -61,12 +61,12 @@ function Checkbox({
   checked: checkedProp,
   defaultChecked = false,
   indeterminate = false,
-  onChange,
+  onCheckedChange,
   size = 'sm',
   disabled = false,
   ...focusProps
 }: Readonly<CheckboxProps>) {
-  const [checked, setChecked] = useControllable(checkedProp, defaultChecked, onChange);
+  const [checked, setChecked] = useControllable(checkedProp, defaultChecked, onCheckedChange);
   const on = checked || indeterminate;
   return (
     <Focusable
@@ -116,7 +116,7 @@ function CheckboxMark({
     <Icon
       name={indeterminate && !checked ? 'minus' : 'check'}
       size={Math.round(BOX[size] * 0.7)}
-      stroke={3}
+      thickness={3}
       color="accentInk"
     />
   );

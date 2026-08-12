@@ -10,7 +10,7 @@ import {
   listRowVariants,
   Skeleton,
   styles,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import type { ServerProbe } from '#tv/app/useServersHealth';
 import { ServerStatusPill } from '#tv/features/accounts/ServerStatus';
@@ -39,39 +39,33 @@ export function ServerRow({
   const name = probe?.name || fallbackName;
   const meta = metaOf(probe, t);
 
-  // A <ListRow> with its middle column written out: the arrangement this row
-  // needs (a badge beside the title, two sub-lines) is more than `label`/`hint`
-  // can say, but the shell, the blur, the lift and the focus ring are the kit's
-  // - a row that drew its own arrived in a different colour with a different
-  // focus every time either side was touched.
+  // A <ListRow.Root> with its middle column written out: the arrangement this
+  // row needs (a badge beside the title, two sub-lines) is more than
+  // `label`/`hint` can say, but the shell, the blur, the lift and the focus ring
+  // are the kit's - a row that drew its own arrived in a different colour with a
+  // different focus every time either side was touched.
   return (
-    <ListRow
-      label={name}
-      onPress={onPress}
-      autoFocus={autoFocus}
-      leading={<IconWell name="server-2" />}
-      trailing={
-        <>
-          <ServerStatusPill probe={probe} />
-          <Icon name="chevron-right" size={22} color="textDim" />
-        </>
-      }
-    >
+    <ListRow.Root onPress={onPress} autoFocus={autoFocus}>
+      <ListRow.Leading>
+        <IconWell name="server-2" />
+      </ListRow.Leading>
       <Box row align="center" gap={9}>
-        <Txt lines={1} style={s.title}>
-          {name}
-        </Txt>
+        <ListRow.Label>{name}</ListRow.Label>
         {isNew ? <Badge tone="info">{t('addProfile.new')}</Badge> : null}
       </Box>
-      <Txt lines={1} style={s.sub} color="textDim">
+      <Text variant="leadTv" lines={1} color="textDim">
         {address}
-      </Txt>
+      </Text>
       {/* Fixed height: the meta line arrives one probe late, and the list must
           not reflow under the focused row when it does. */}
       <Box h={16} justify="center">
         <MetaLine meta={meta} pending={probe === undefined} />
       </Box>
-    </ListRow>
+      <ListRow.Trailing>
+        <ServerStatusPill probe={probe} />
+        <Icon name="chevron-right" size={22} color="textDim" />
+      </ListRow.Trailing>
+    </ListRow.Root>
   );
 }
 
@@ -89,14 +83,19 @@ export function ActionRow({
   autoFocus?: boolean;
   onPress: () => void;
 }>) {
-  return <ListRow icon={icon} label={title} hint={sub} autoFocus={autoFocus} onPress={onPress} />;
+  return (
+    <ListRow.Root icon={icon} autoFocus={autoFocus} onPress={onPress}>
+      <ListRow.Label>{title}</ListRow.Label>
+      <ListRow.Hint>{sub}</ListRow.Hint>
+    </ListRow.Root>
+  );
 }
 
 /** Placeholder shown while LAN discovery is still looking. Deliberately not
  * focusable, so the remote walks straight past it. */
 export function ServerRowSkeleton() {
   return (
-    <Box style={[listRowVariants().root, s.ghost]}>
+    <Box style={[listRowVariants({ size: 'tv' }).root, s.ghost]}>
       <Skeleton w={42} h={42} radius="xl" />
       <Box flex minW={0} gap={8}>
         <Skeleton w={172} h={13} radius="pill" />
@@ -110,9 +109,9 @@ export function ServerRowSkeleton() {
 function MetaLine({ meta, pending }: Readonly<{ meta: string | null; pending: boolean }>) {
   if (meta) {
     return (
-      <Txt lines={1} style={s.meta} color="rgba(244, 243, 240, 0.42)">
+      <Text lines={1} style={s.meta} color="text/42">
         {meta}
-      </Txt>
+      </Text>
     );
   }
   return pending ? <Skeleton w={130} h={8} radius="pill" /> : null;
@@ -128,8 +127,6 @@ function metaOf(probe: ServerProbe | undefined, t: Translate): string | null {
 }
 
 const s = styles({
-  title: { fontSize: 19, fontWeight: '700' },
-  sub: { fontSize: 14, fontWeight: '500' },
   meta: { fontSize: 12.5, fontWeight: '600', letterSpacing: 0.2 },
   ghost: { opacity: 0.55 },
 });

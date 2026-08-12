@@ -46,7 +46,7 @@ not by convention or a CI grep. The binary is a thin HTTP shell over the engine:
 
 ```
 server/
-  src/                 kroma-server BINARY — main.rs + api/ (router + handlers), 8k LOC
+  src/                 kroma-server BINARY: main.rs + api/ (router + handlers), 8k LOC
   crates/
     kroma-engine/       infra + services + state + i18n + model  (the business logic, 20k LOC)
     kroma-db/           all SQL, one shared Pool                 (persistence, 7k LOC)
@@ -82,8 +82,8 @@ kroma-server(bin) → kroma-engine → { kroma-db, kroma-whisper, kroma-vector, 
 ## Frontend (React) feature slices
 
 ```
-apps/tv/src/   app/(shell + providers + router)  features/{catalog,playback,accounts}/  shared/
-apps/web/src/  features/{catalog,playback,admin}/  routes/ = thin re-exports
+packages/tv/src/  app/(shell + providers + router)  features/{catalog,playback,accounts}/  shared/
+clients/web/src/  features/{catalog,playback,admin}/  routes/ = thin re-exports
 ```
 
 **Dependency rule:** `features/* → shared/* → @kroma/ui → @kroma/core`.
@@ -103,12 +103,16 @@ lockfiles, `*.gen.ts`, irreducible adapters (ffmpeg flag-builders).
 | # | Phase | Status |
 |---|-------|--------|
 | 0 | Guardrails (CI: domain-purity guard; zod schemas are the wire-type source of truth) | in progress |
-| 1 | Server god-file split by domain (`db.rs`, `model.rs` → `db/`, `domain/`) | pending |
-| 2 | Server layering (`infra/` + `services/` + `api/` column + `extract.rs`) | pending |
-| 3 | Monorepo move (`packages/tv→apps/tv`, `clients/web→apps/web`, `server→apps/server`) | pending |
-| 4 | Frontend feature slices (TV then web) | pending |
-| 5 | Hardening (`api.ts` per-domain sub-clients) | pending |
-| 6 | Server workspace split — 14 crates (1 bin + 13 libs), binary is a thin `api` shell over `kroma-engine`; layers compiler-enforced | ✓ done |
+| 1 | Server god-file split by domain (`db.rs`, `model.rs` → `db/`, `domain/`) | ✓ done |
+| 2 | Server layering (`infra/` + `services/` + `api/` column + `extract.rs`) | ✓ done |
+| 3 | Monorepo move (`packages/tv→apps/tv`, `clients/web→apps/web`, `server→apps/server`) | abandoned |
+| 4 | Frontend feature slices (TV then web) | ✓ done |
+| 5 | Hardening (`api.ts` per-domain sub-clients, `packages/client/src/client/`) | ✓ done |
+| 6 | Server workspace split into 14 crates (1 bin + 13 libs), binary is a thin `api` shell over `kroma-engine`; layers compiler-enforced | ✓ done |
 
-Each phase is independently shippable and verified (`cargo test` · `bun run typecheck`/`build` ·
-for Phase 3, a full `.spk` build that serves the SPA).
+Phase 3 was dropped: the layering it was after came from phase 6's crates instead,
+and `apps/` has since been claimed for the web properties (kit, www, modules,
+packages), so the names it wanted are taken. The product's shells stay in
+`clients/`, the libraries in `packages/`. See CLAUDE.md.
+
+Each phase is independently shippable and verified (`cargo test` · `bun run typecheck`/`build`).

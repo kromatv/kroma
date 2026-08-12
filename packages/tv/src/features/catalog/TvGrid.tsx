@@ -9,13 +9,14 @@ import {
   sortTitles,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, Text, useFocusNav } from '@kroma/ui/kit';
 import { useEffect, useMemo, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';
 import {
+  AMBIENT_FALLBACK,
   AmbientBackdrop,
   type CatalogEntry as Entry,
   entryBackdrop,
@@ -111,10 +112,10 @@ export function TvGrid() {
   const empty = kind === 'mylist' && cards.length === 0;
 
   return (
-    <Box fill bg="bg" overflow="hidden" style={{ isolation: 'isolate' }}>
+    <Box fill bg="bg" overflow="hidden" isolate>
       <AmbientBackdrop
         src={entryBackdrop(client, focused)}
-        colors={focused ? posterColors(focused.item.id) : ['#1c1c22', '#0a0a0c']}
+        colors={focused ? posterColors(focused.item.id) : AMBIENT_FALLBACK}
       />
 
       <BrowseHeader
@@ -136,9 +137,9 @@ export function TvGrid() {
 
       {empty ? (
         <Box flex center px={64}>
-          <Txt style={EMPTY} color="textDim">
+          <Text style={EMPTY} color="textDim">
             {t('content.myListEmpty')}
-          </Txt>
+          </Text>
         </Box>
       ) : (
         <PosterGrid cards={cards} />

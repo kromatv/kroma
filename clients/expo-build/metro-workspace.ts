@@ -4,7 +4,7 @@
 // `react-native` is pinned to the client's own copy for every module in the
 // graph: third-party native packages declare a `react-native` peer, which an
 // install satisfies with mainline React Native rather than the
-// `npm:react-native-tvos` alias this repo pins. Nothing errors — the bundle just
+// `npm:react-native-tvos` alias this repo pins. Nothing errors: the bundle just
 // behaves as if the TV never existed.
 
 const path = require('node:path');
@@ -33,6 +33,21 @@ function expoWorkspaceConfig(projectRoot, aliases = {}, ui = {}) {
   // The workbench discovers its stories with `require.context`; stated rather
   // than left to Metro's default so it cannot break silently.
   config.transformer.unstable_allowRequireContext = true;
+
+  // MDX. `sourceExts` is what puts a `.mdx` in Metro's file map at all (and so
+  // within reach of a `require.context`); the transformer is what compiles it
+  // to a component. Appended last, so it can never win a resolution a `.ts` or
+  // a `.tsx` was going to.
+  //
+  // The transformer lives in @kroma/bundler because `@mdx-js/mdx` is ESM-only
+  // and resolves from the file importing it, and this directory is not a
+  // package. Reached by path rather than by specifier for the same reason.
+  config.resolver.sourceExts = [...config.resolver.sourceExts, 'mdx'];
+  process.env.KROMA_METRO_BABEL_TRANSFORMER = config.transformer.babelTransformerPath;
+  config.transformer.babelTransformerPath = path.join(
+    workspaceRoot,
+    'packages/bundler/src/mdx-transformer.cjs',
+  );
 
   const reactNative = path.resolve(projectRoot, 'node_modules/react-native');
   assertReactNativeMatches(projectRoot, reactNative);

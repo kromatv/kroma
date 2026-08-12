@@ -1,0 +1,54 @@
+A modal box. It declares a focus SCOPE, which keeps the D-pad from wandering
+back into the page left behind: that is the difference between an overlay and a
+true modal on a television.
+
+## Three bands, one scroller
+
+The panel is made of three bands, and only the middle one scrolls:
+
+| Band | Scrolls | Holds |
+| --- | --- | --- |
+| `Dialog.Header` | no | the title and the description |
+| `Dialog.Panel` | yes | the body, however long it gets |
+| `Dialog.Footer` | no | a shelf for `Dialog.Actions` |
+
+So a long form never scrolls its own title away or its actions out of reach.
+**Dialog.Actions** is the row of controls itself - one focus group,
+right-aligned - so a footer is a shelf holding an actions row rather than a
+second row competing with it.
+
+Every band is what the caller composed and nothing more. A footer holding
+nothing draws no shelf, and an actions row draws each of `onCancel` and
+`onConfirm` only where it was given one: a panel whose only action is to close
+writes `<Dialog.Actions onCancel={close} cancelLabel="Fermer" />` and grows no
+"Save" it never had anything to save.
+
+## How wide it is, in words
+
+`width` is a step on the kit's one overlay ladder, never a number. The step is
+named for the densest thing the panel holds, so two panels holding the same
+kind of thing are the same width without anyone comparing them:
+
+| Step | px | What it is for |
+| --- | --- | --- |
+| `xs` | 320 | a rail: a column of destinations |
+| `sm` | 440 | a question and its answer |
+| `md` | 600 | a form: fields stacked, one control per line |
+| `lg` | 760 | rows that each carry a hint, or a form beside a list |
+| `xl` | 960 | a grid, or a browser |
+
+`md` is the default, `maxW: 100%` keeps every step honest on a handset, and
+`SURFACE_WIDTH` is exported for the rare panel that has to measure a child
+against itself. **Drawer** reads the same ladder.
+
+## Naming it, then arranging it
+
+`title` and `description` name the panel to assistive tech, and draw the
+ordinary header when nothing else does. Everything else is a band you write.
+
+```tsx
+<Dialog.Root open={open} onClose={close} title="Delete this profile?">
+  <Text>This cannot be undone.</Text>
+  <Dialog.Footer>{actions}</Dialog.Footer>
+</Dialog.Root>
+```

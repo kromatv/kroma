@@ -9,7 +9,18 @@ import {
   type ReportSubjectKind,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Field, IconButton } from '@kroma/ui/kit';
+import {
+  Box,
+  Callout,
+  color,
+  Dialog,
+  Field,
+  Focusable,
+  IconButton,
+  Row,
+  sv,
+  Text,
+} from '@kroma/ui/kit';
 import {
   IconCheck,
   IconDotsCircleHorizontal,
@@ -22,14 +33,32 @@ import { type ComponentType, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAuth } from '#web/shared/lib/auth';
 
-// Shares the row like the old `flex-1` CTAs.
-const FLEX_1 = { flex: 1 } as const;
+const categoryRow = sv({
+  base: {
+    row: true,
+    align: 'flex-start',
+    gap: 12,
+    radius: 'xl',
+    px: 14,
+    py: 12,
+    border: 'white/8',
+    bg: 'surface1',
+    _hover: { bg: 'surface2' },
+  },
+  variants: {
+    on: {
+      true: { border: 'accent/45', bg: 'accent/12', _hover: { bg: 'accent/12' } },
+      false: {},
+    },
+  },
+  defaults: { on: false },
+});
 
 interface CategoryMeta {
   key: ReportCategory;
   labelKey: MessageKey;
   descKey: MessageKey;
-  Icon: ComponentType<{ size?: number; stroke?: number }>;
+  Icon: ComponentType<{ size?: number; stroke?: number; color?: string }>;
 }
 
 // `metadata` = a wrong fiche.
@@ -91,105 +120,103 @@ export const ReportDialog = createCallable<
   };
 
   return (
-    <>
-      <button
-        type="button"
-        aria-label={t('common.close')}
-        onClick={() => call.end()}
-        className="fixed inset-0 z-60 bg-[rgba(4,4,6,.66)] backdrop-blur-[3px]"
-      />
-      <div className="pointer-events-none fixed inset-0 z-61 flex items-center justify-center p-4">
-        <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0E0E12] shadow-[0_30px_90px_rgba(0,0,0,.6)]">
-          <header className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-7 py-5">
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
-                {t('report.title')}
-              </div>
-              <h2 className="mt-1 truncate font-display text-[20px] font-bold">{subjectTitle}</h2>
-            </div>
-            <IconButton
-              control="sm"
-              icon="x"
-              label={t('common.close')}
-              onPress={() => call.end()}
-            />
-          </header>
+    <Dialog.Root open title={subjectTitle} width="md" onClose={() => call.end()}>
+      <Dialog.Header>
+        <Row between align="flex-start" gap={16}>
+          <Box minW={0}>
+            <Text variant="overline" color="white/40">
+              {t('report.title')}
+            </Text>
+            <Text variant="title" mt={4} lines={1}>
+              {subjectTitle}
+            </Text>
+          </Box>
+          <IconButton control="sm" icon="x" label={t('common.close')} onPress={() => call.end()} />
+        </Row>
+      </Dialog.Header>
 
-          {sent ? (
-            <div className="flex flex-col items-center gap-4 px-7 py-12 text-center">
-              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#46D08D]/15 text-[#46D08D]">
-                <IconCheck size={30} stroke={2.4} />
-              </span>
-              <p className="text-[15px] font-semibold text-white/85">{t('report.submitted')}</p>
-              <Button size="sm" label={t('common.close')} onPress={() => call.end()} />
-            </div>
-          ) : (
-            <div className="flex-1 space-y-5 overflow-y-auto px-7 py-5">
-              <div>
-                <div className="mb-2.5 text-[10px] font-bold uppercase tracking-[.12em] text-white/40">
-                  {t('report.category')}
-                </div>
-                <div className="grid gap-2">
-                  {CATEGORIES.map((c) => {
-                    const on = c.key === category;
-                    return (
-                      <button
-                        key={c.key}
-                        type="button"
-                        onClick={() => setCategory(c.key)}
-                        aria-pressed={on}
-                        className={`flex items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors ${
-                          on
-                            ? 'border-accent/45 bg-accent/[0.12]'
-                            : 'border-white/8 bg-[#15151A] hover:bg-[#1a1a20]'
-                        }`}
-                      >
-                        <span className={`mt-0.5 shrink-0 ${on ? 'text-accent' : 'text-white/45'}`}>
-                          <c.Icon size={19} stroke={1.9} />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-[13.5px] font-semibold text-white">
-                            {t(c.labelKey)}
-                          </span>
-                          <span className="mt-0.5 block text-[12px] font-medium leading-snug text-white/45">
-                            {t(c.descKey)}
-                          </span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+      <Dialog.Panel>
+        {sent ? (
+          <Box align="center" gap={16} py={32}>
+            <Box center w={56} h={56} radius="circle" bg="success/15">
+              <IconCheck size={30} stroke={2.4} color={color('success')} />
+            </Box>
+            <Text variant="label" color="white/85" textAlign="center">
+              {t('report.submitted')}
+            </Text>
+          </Box>
+        ) : (
+          <>
+            <Box>
+              <Text variant="overline" color="white/40" mb={10}>
+                {t('report.category')}
+              </Text>
+              <Box gap={8}>
+                {CATEGORIES.map((c) => {
+                  const on = c.key === category;
+                  return (
+                    <Focusable
+                      key={c.key}
+                      sv={categoryRow}
+                      vars={{ on }}
+                      role="radio"
+                      checked={on}
+                      label={t(c.labelKey)}
+                      onPress={() => setCategory(c.key)}
+                    >
+                      <Box mt={2} shrink={0}>
+                        <c.Icon size={19} stroke={1.9} color={color(on ? 'accent' : 'white/45')} />
+                      </Box>
+                      <Box minW={0}>
+                        <Text variant="label" color="white">
+                          {t(c.labelKey)}
+                        </Text>
+                        <Text variant="meta" color="white/45" mt={2}>
+                          {t(c.descKey)}
+                        </Text>
+                      </Box>
+                    </Focusable>
+                  );
+                })}
+              </Box>
+            </Box>
 
-              <div>
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-[.12em] text-white/40">
-                  {t('report.message')}
-                </div>
-                <Field
-                  label={t('report.message')}
-                  hideLabel
-                  multiline
+            <Box>
+              <Text variant="overline" color="white/40" mb={8}>
+                {t('report.message')}
+              </Text>
+              <Field.Root label={t('report.message')} hideLabel>
+                <Field.Textarea
                   rows={3}
                   value={message}
-                  onChange={(v) => setMessage(v.slice(0, 2000))}
+                  onValueChange={(v) => setMessage(v.slice(0, 2000))}
                   placeholder={t('report.messagePlaceholder')}
                 />
-              </div>
+              </Field.Root>
+            </Box>
 
-              {error ? (
-                <div className="rounded-lg border border-[#E8536A]/18 bg-[#E8536A]/8 px-3.5 py-2.5 text-[12.5px] font-semibold text-[#EF8091]">
-                  {error}
-                </div>
-              ) : null}
+            {error ? (
+              <Callout.Root tone="danger">
+                <Callout.Title>{error}</Callout.Title>
+              </Callout.Root>
+            ) : null}
+          </>
+        )}
+      </Dialog.Panel>
 
-              <div className="flex gap-2.5">
-                <Button label={t('report.submit')} onPress={submit} loading={busy} style={FLEX_1} />
-                <Button variant="glass" label={t('common.cancel')} onPress={() => call.end()} />
-              </div>
-            </div>
-          )}
-        </section>
-      </div>
-    </>
+      <Dialog.Footer>
+        {sent ? (
+          <Dialog.Actions onCancel={() => call.end()} cancelLabel={t('common.close')} />
+        ) : (
+          <Dialog.Actions
+            onCancel={() => call.end()}
+            cancelLabel={t('common.cancel')}
+            onConfirm={submit}
+            confirmLabel={t('report.submit')}
+            busy={busy}
+          />
+        )}
+      </Dialog.Footer>
+    </Dialog.Root>
   );
 });

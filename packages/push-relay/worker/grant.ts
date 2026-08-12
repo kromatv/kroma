@@ -14,7 +14,7 @@ export type { Transport };
  * What a sealed grant contains.
  *
  * A schema rather than an interface because the plaintext is only trusted once
- * GCM has vouched for it — and even then it may be a grant from an older format
+ * GCM has vouched for it, and even then it may be a grant from an older format
  * version. Parsing is what makes the fields below safe to read.
  */
 export const GrantPayload = z.object({
@@ -100,7 +100,7 @@ export async function seal(secret: string, payload: GrantPayload): Promise<strin
 /**
  * Open a grant, or `null` when it is not one.
  *
- * Every failure — wrong prefix, truncated blob, forged tag, expired payload —
+ * Every failure (wrong prefix, truncated blob, forged tag, expired payload)
  * returns `null` rather than throwing or distinguishing itself, because the
  * caller answers all of them with the same 401. GCM's tag check does the real
  * work: a single flipped bit fails to decrypt at all.

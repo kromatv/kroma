@@ -1,7 +1,7 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MediaItem } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { Box, Button, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Icon, styles, Text } from '@kroma/ui/kit';
 import { useRef } from 'react';
 import { Alert, Pressable } from 'react-native';
 import { CastSheet } from '#mobile/components/cast/CastSheet';
@@ -36,14 +36,14 @@ function downloadBarLabel(
 
 function barIcon(state: DownloadState) {
   if (state.status === 'done')
-    return <Icon name="check" size={20} stroke={2.4} color="accentText" />;
+    return <Icon name="check" size={20} thickness={2.4} color="accentText" />;
   if (state.status === 'paused')
     return <Icon name="player-pause-filled" size={18} color="textMuted" />;
   return (
     <Icon
       name="download"
       size={20}
-      stroke={2}
+      thickness={2}
       color={state.status === 'downloading' ? 'accent' : 'text'}
     />
   );
@@ -115,7 +115,7 @@ export function DetailActions({
           />
         ) : null}
         {barIcon(state)}
-        <Txt style={[s.downloadBarLabel, bar.done && s.downloadBarLabelDone]}>{bar.label}</Txt>
+        <Text style={[s.downloadBarLabel, bar.done && s.downloadBarLabelDone]}>{bar.label}</Text>
       </Pressable>
       <Box style={s.secondaryRow}>
         <Pressable
@@ -123,13 +123,13 @@ export function DetailActions({
           style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
         >
           {inList ? (
-            <Icon name="check" size={24} stroke={2.4} color="accentText" />
+            <Icon name="check" size={24} thickness={2.4} color="accentText" />
           ) : (
-            <Icon name="plus" size={24} stroke={2.2} />
+            <Icon name="plus" size={24} thickness={2.2} />
           )}
-          <Txt lines={1} style={[s.secondaryLabel, inList && s.secondaryActive]}>
+          <Text lines={1} style={[s.secondaryLabel, inList && s.secondaryActive]}>
             {t('nav.myList')}
-          </Txt>
+          </Text>
         </Pressable>
         {onToggleWatched ? (
           <Pressable
@@ -137,33 +137,33 @@ export function DetailActions({
             style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
           >
             {watched ? (
-              <Icon name="eye-check" size={24} stroke={1.8} color="accentText" />
+              <Icon name="eye-check" size={24} thickness={1.8} color="accentText" />
             ) : (
-              <Icon name="eye" size={24} stroke={1.8} />
+              <Icon name="eye" size={24} thickness={1.8} />
             )}
-            <Txt lines={1} style={[s.secondaryLabel, watched && s.secondaryActive]}>
+            <Text lines={1} style={[s.secondaryLabel, watched && s.secondaryActive]}>
               {t('content.watched')}
-            </Txt>
+            </Text>
           </Pressable>
         ) : null}
         <Pressable
           onPress={() => devices.current?.present()}
           style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
         >
-          <Icon name="cast" size={24} stroke={1.8} />
-          <Txt lines={1} style={s.secondaryLabel}>
+          <Icon name="cast" size={24} thickness={1.8} />
+          <Text lines={1} style={s.secondaryLabel}>
             {t('cast.title')}
-          </Txt>
+          </Text>
         </Pressable>
         {onReport ? (
           <Pressable
             onPress={onReport}
             style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
           >
-            <Icon name="flag" size={24} stroke={1.8} />
-            <Txt lines={1} style={s.secondaryLabel}>
+            <Icon name="flag" size={24} thickness={1.8} />
+            <Text lines={1} style={s.secondaryLabel}>
               {t('reports.sheet')}
-            </Txt>
+            </Text>
           </Pressable>
         ) : null}
       </Box>

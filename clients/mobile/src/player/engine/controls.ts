@@ -100,7 +100,7 @@ export function useEngineControls(deps: ControlDeps): Controls {
 
   // Online, audio selection rides the master (path-param rendition),
   // re-anchored in place; a direct file switches modes to do it. Offline the
-  // file carries every track, so selection is IN PLACE on the native player —
+  // file carries every track, so selection is IN PLACE on the native player,
   // no reload at all.
   const setAudio = useCallback(
     (index: number) => {

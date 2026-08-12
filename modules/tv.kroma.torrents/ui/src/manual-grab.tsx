@@ -18,19 +18,79 @@ import type {
   TorrentFileView,
 } from '@kroma/module-acquisition/schemas';
 import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import { Button, Dialog, DialogActions, Field, SegmentedControl } from '@kroma/ui/kit';
-import { IconDownload } from '@tabler/icons-react';
-import { useState } from 'react';
+import {
+  Box,
+  Button,
+  color,
+  Dialog,
+  Field,
+  Focusable,
+  Icon,
+  Row,
+  SegmentedControl,
+  styles,
+  sv,
+  Text,
+} from '@kroma/ui/kit';
+import { type CSSProperties, useState } from 'react';
 
 type Kind = 'movie' | 'episode' | 'season';
 
-const KIND_COLOR: Record<string, string> = {
-  movie: '#F4B642',
-  episode: '#86A8FF',
-  season: '#C792EA',
-  series: '#C792EA',
-  unknown: 'rgba(244,243,240,.55)',
+const KIND_TONE: Record<string, string> = {
+  movie: 'accent',
+  episode: 'info',
+  season: 'hdr',
+  series: 'hdr',
+  unknown: 'text/55',
 };
+
+const kindInk = (kind: string) => color(KIND_TONE[kind] ?? 'text/55');
+
+const FILE_LIST: CSSProperties = { maxHeight: 208, overflowY: 'auto' };
+
+const RESULT_LIST: CSSProperties = {
+  marginTop: 8,
+  maxHeight: 176,
+  overflowY: 'auto',
+  borderRadius: 'var(--radius-xl)',
+  border: '1px solid color-mix(in srgb, var(--kroma-tint) 7%, transparent)',
+  background: 'var(--kroma-bg)',
+};
+
+const FILE_ROW: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  padding: '6px 8px',
+  borderRadius: 'var(--radius-sm)',
+  cursor: 'pointer',
+};
+
+const FILE_ROW_LOCKED: CSSProperties = { ...FILE_ROW, cursor: 'default', opacity: 0.45 };
+
+const FILE_BOX: CSSProperties = { width: 14, height: 14, accentColor: 'var(--kroma-accent)' };
+
+const s = styles({
+  tabular: { fontVariant: ['tabular-nums'] },
+});
+
+const resultRow = sv({
+  base: {
+    row: true,
+    align: 'center',
+    w: '100%',
+    gap: 12,
+    px: 12,
+    py: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'tint/4',
+    _hover: { bg: 'tint/3' },
+  },
+  variants: {
+    last: { true: { borderBottomWidth: 0 } },
+  },
+  defaults: { last: false },
+});
 
 /** Derive the pre-filled target from the detected content. Absent `season` /
  * `episode` keys mean "leave the current value untouched". */
@@ -206,7 +266,7 @@ export function ManualGrabModal({
   const canAdd = magnet.trim().length > 0 && title.trim().length > 0;
 
   return (
-    <Dialog open title={t('manual.title')} onClose={onClose} width={520}>
+    <Dialog.Root open title={t('manual.title')} onClose={onClose} width="lg">
       {/* search sub-panel */}
       <SearchPanel
         query={query}
@@ -219,29 +279,36 @@ export function ManualGrabModal({
       />
 
       {/* magnet + analyze */}
-      <Field
+      <Field.Root
         label={t('manual.magnet')}
-        hint={t('manual.magnetHint')}
         value={magnet}
-        onChange={(v) => {
+        onValueChange={(v) => {
           setMagnet(v);
           setDetailsUrl(null);
           resetAnalysis();
         }}
-        placeholder="magnet:?xt=urn:btih:..."
-        trailing={
-          <Button
-            variant="glass"
-            size="sm"
-            icon="wand"
-            label={t('manual.analyze')}
-            onPress={analyze}
-            disabled={!magnet.trim()}
-            loading={analyzing}
-          />
-        }
-      />
-      {analyzeErr ? <p className="text-[12px] font-semibold text-[#EF8091]">{analyzeErr}</p> : null}
+      >
+        <Field.Input
+          placeholder="magnet:?xt=urn:btih:..."
+          trailing={
+            <Button
+              variant="glass"
+              size="sm"
+              icon="wand"
+              label={t('manual.analyze')}
+              onPress={analyze}
+              disabled={!magnet.trim()}
+              loading={analyzing}
+            />
+          }
+        />
+        <Field.Hint>{t('manual.magnetHint')}</Field.Hint>
+      </Field.Root>
+      {analyzeErr ? (
+        <Text variant="meta" color="dangerHover">
+          {analyzeErr}
+        </Text>
+      ) : null}
 
       {/* analysis result: detected kind + file selection */}
       {analysis ? (
@@ -256,7 +323,7 @@ export function ManualGrabModal({
       ) : null}
 
       {/* target form */}
-      <Field label={t('manual.kind')}>
+      <Field.Root label={t('manual.kind')}>
         <SegmentedControl.Root
           value={kind}
           onValueChange={setKind}
@@ -267,33 +334,55 @@ export function ManualGrabModal({
             { value: 'season' as const, label: t('manual.kindSeason') },
           ]}
         />
-      </Field>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_100px]">
-        <Field
+      </Field.Root>
+      <Box row={{ base: false, md: true }} gap={16}>
+        <Field.Root
           label={t('manual.titleLabel')}
-          hint={t('manual.titleHint')}
           value={title}
-          onChange={setTitle}
-          placeholder="The Matrix"
-        />
-        <Field label={t('manual.year')} value={year} onChange={setYear} placeholder="1999" />
-      </div>
+          onValueChange={setTitle}
+          flex={{ base: 0, md: 1 }}
+        >
+          <Field.Input placeholder="The Matrix" />
+          <Field.Hint>{t('manual.titleHint')}</Field.Hint>
+        </Field.Root>
+        <Field.Root
+          label={t('manual.year')}
+          value={year}
+          onValueChange={setYear}
+          w={{ base: '100%', md: 100 }}
+        >
+          <Field.Input placeholder="1999" />
+        </Field.Root>
+      </Box>
       {kind !== 'movie' ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label={t('manual.season')} value={season} onChange={setSeason} placeholder="1" />
+        <Box row={{ base: false, md: true }} gap={16}>
+          <Field.Root
+            label={t('manual.season')}
+            value={season}
+            onValueChange={setSeason}
+            flex={{ base: 0, md: 1 }}
+          >
+            <Field.Input placeholder="1" />
+          </Field.Root>
           {kind === 'episode' ? (
-            <Field
+            <Field.Root
               label={t('manual.episode')}
               value={episode}
-              onChange={setEpisode}
-              placeholder="1"
-            />
+              onValueChange={setEpisode}
+              flex={{ base: 0, md: 1 }}
+            >
+              <Field.Input placeholder="1" />
+            </Field.Root>
           ) : null}
-        </div>
+        </Box>
       ) : null}
 
-      {error ? <p className="text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
-      <DialogActions
+      {error ? (
+        <Text variant="meta" color="dangerHover">
+          {error}
+        </Text>
+      ) : null}
+      <Dialog.Actions
         onCancel={onClose}
         cancelLabel={t('common.cancel')}
         onConfirm={add}
@@ -301,7 +390,7 @@ export function ManualGrabModal({
         busy={busy}
         disabled={!canAdd}
       />
-    </Dialog>
+    </Dialog.Root>
   );
 }
 
@@ -321,21 +410,25 @@ function AnalysisPanel({
   onToggleFile: (i: number) => void;
 }>) {
   const t = useT();
-  const seasonTags = analysis.seasons.map((s) => `S${s}`).join(' ');
+  const seasonTags = analysis.seasons.map((season) => `S${season}`).join(' ');
   const seasonsLabel = analysis.seasons.length > 0 ? ` · ${seasonTags}` : '';
+  const ink = kindInk(analysis.kind);
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-[#0F0F13] p-3">
-      <div className="mb-2 flex items-center justify-between">
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold uppercase tracking-[.06em]"
-          style={{
-            color: KIND_COLOR[analysis.kind],
-            background: `${KIND_COLOR[analysis.kind]}1f`,
-          }}
+    <Box radius="xl" border="tint/7" bg="bg" p={12}>
+      <Row between mb={8}>
+        <Row
+          self="flex-start"
+          gap={6}
+          px={10}
+          py={4}
+          radius="pill"
+          style={{ backgroundColor: `color-mix(in srgb, ${ink} 12%, transparent)` }}
         >
-          {t(`manual.detected.${analysis.kind}` as Parameters<typeof t>[0])}
-          {seasonsLabel}
-        </span>
+          <Text variant="overline" color={ink}>
+            {t(`manual.detected.${analysis.kind}` as Parameters<typeof t>[0])}
+            {seasonsLabel}
+          </Text>
+        </Row>
         {videoFiles.length > 1 ? (
           <Button
             variant="ghost"
@@ -346,8 +439,8 @@ function AnalysisPanel({
             }
           />
         ) : null}
-      </div>
-      <div className="max-h-52 overflow-y-auto">
+      </Row>
+      <div style={FILE_LIST}>
         {analysis.files.map((f) => (
           <FileRow
             key={f.index}
@@ -358,14 +451,14 @@ function AnalysisPanel({
         ))}
       </div>
       {videoFiles.length > 1 ? (
-        <div className="mt-2 text-[11.5px] font-medium text-dim">
+        <Text variant="meta" color="textDim" mt={8}>
           {t('manual.selectedCount', {
             n: String(selected.size),
             total: String(videoFiles.length),
           })}
-        </div>
+        </Text>
       ) : null}
-    </div>
+    </Box>
   );
 }
 
@@ -379,26 +472,25 @@ function FileRow({
       ? `S${String(f.season ?? 0).padStart(2, '0')}E${String(f.episode).padStart(2, '0')}`
       : null;
   return (
-    <label
-      className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 ${f.isVideo ? 'cursor-pointer hover:bg-white/3' : 'opacity-45'}`}
-    >
+    <label style={f.isVideo ? FILE_ROW : FILE_ROW_LOCKED} title={f.path}>
       <input
         type="checkbox"
         checked={checked}
         disabled={!f.isVideo}
         onChange={onToggle}
-        className="h-3.5 w-3.5 accent-(--kroma-accent)"
+        style={FILE_BOX}
       />
-      <span
-        className="min-w-0 flex-1 truncate text-[12px] font-medium text-white/75"
-        title={f.path}
-      >
+      <Text variant="meta" color="text/75" flex minW={0} lines={1}>
         {f.path.split('/').pop()}
-      </span>
+      </Text>
       {label ? (
-        <span className="shrink-0 text-[11px] font-bold text-[#86A8FF]">{label}</span>
+        <Text variant="meta" color="info" shrink={0}>
+          {label}
+        </Text>
       ) : null}
-      <span className="shrink-0 text-[11px] tabular-nums text-dim">{formatBytes(f.sizeBytes)}</span>
+      <Text variant="meta" color="textDim" shrink={0} style={s.tabular}>
+        {formatBytes(f.sizeBytes)}
+      </Text>
     </label>
   );
 }
@@ -422,18 +514,21 @@ function SearchPanel({
 }>) {
   const t = useT();
   return (
-    <div>
-      <div className="flex gap-2">
-        <Field
+    <Box>
+      <Box row gap={8}>
+        <Field.Root
           label={t('manual.search')}
           hideLabel
-          icon="search"
           flex
           value={query}
-          onChange={setQuery}
-          onSubmit={onSearch}
-          placeholder={t('manual.searchPlaceholder')}
-        />
+          onValueChange={setQuery}
+        >
+          <Field.Input
+            icon="search"
+            onSubmit={onSearch}
+            placeholder={t('manual.searchPlaceholder')}
+          />
+        </Field.Root>
         <Button
           variant="primary"
           size="sm"
@@ -442,55 +537,82 @@ function SearchPanel({
           disabled={!query.trim()}
           loading={searching}
         />
-      </div>
+      </Box>
       {searchErr ? (
-        <p className="mt-1.5 text-[12px] font-semibold text-[#F4B642]">{searchErr}</p>
+        <Text variant="meta" color="accentText" mt={6}>
+          {searchErr}
+        </Text>
       ) : null}
       {results ? (
-        <div className="mt-2 max-h-44 overflow-y-auto rounded-xl border border-white/[0.07] bg-[#0F0F13]">
+        <div style={RESULT_LIST}>
           {results.length === 0 ? (
-            <div className="px-3 py-4 text-center text-[12.5px] font-medium text-dim">
-              {t('manual.noResults')}
-            </div>
+            <Box px={12} py={16}>
+              <Text variant="meta" color="textDim" textAlign="center">
+                {t('manual.noResults')}
+              </Text>
+            </Box>
           ) : (
-            results.map((r) => (
-              <ResultRow key={`${r.indexerName}-${r.guid}`} r={r} onPick={() => onPick(r)} />
+            results.map((r, index) => (
+              <ResultRow
+                key={`${r.indexerName}-${r.guid}`}
+                r={r}
+                last={index === results.length - 1}
+                onPick={() => onPick(r)}
+              />
             ))
           )}
         </div>
       ) : null}
-    </div>
+    </Box>
   );
 }
 
-function ResultRow({ r, onPick }: Readonly<{ r: ManualReleaseView; onPick: () => void }>) {
+function ResultRow({
+  r,
+  last,
+  onPick,
+}: Readonly<{ r: ManualReleaseView; last: boolean; onPick: () => void }>) {
   const t = useT();
   return (
-    <button
-      type="button"
-      onClick={onPick}
-      className="flex w-full items-center gap-3 border-b border-white/4 px-3 py-2 text-left last:border-0 hover:bg-white/3"
-    >
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-[12.5px] font-semibold" title={r.title}>
+    <Focusable sv={resultRow} vars={{ last }} label={r.title} onPress={onPick}>
+      <Box minW={0} flex>
+        <Text variant="meta" lines={1}>
           {r.title}
-        </div>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11px] font-semibold text-dim">
-          <span>{r.indexerName}</span>
-          {r.resolution ? <span className="text-[#86A8FF]">{r.resolution}</span> : null}
-          {r.codec ? <span className="text-[#C792EA]">{r.codec}</span> : null}
-          {r.sizeBytes != null ? <span>{formatBytes(r.sizeBytes)}</span> : null}
+        </Text>
+        <Row wrap gapX={10} mt={2}>
+          <Text variant="meta" color="textDim">
+            {r.indexerName}
+          </Text>
+          {r.resolution ? (
+            <Text variant="meta" color="info">
+              {r.resolution}
+            </Text>
+          ) : null}
+          {r.codec ? (
+            <Text variant="meta" color="hdr">
+              {r.codec}
+            </Text>
+          ) : null}
+          {r.sizeBytes != null ? (
+            <Text variant="meta" color="textDim">
+              {formatBytes(r.sizeBytes)}
+            </Text>
+          ) : null}
           {r.seeders != null ? (
-            <span className="text-[#46D08D]">
+            <Text variant="meta" color="success">
               {t('requests.seedersN', { n: String(r.seeders) })}
-            </span>
+            </Text>
           ) : null}
           {r.detailsUrl ? (
-            <span className="text-white/30">· {t('downloads.hasTrackerPage')}</span>
+            <Text variant="meta" color="text/30">
+              · {t('downloads.hasTrackerPage')}
+            </Text>
           ) : null}
-        </div>
-      </div>
-      <IconDownload size={15} stroke={2.2} className="shrink-0 text-accent" />
-    </button>
+        </Row>
+      </Box>
+      <Box shrink={0}>
+        <Icon name="download" size={15} thickness={2.2} color="accent" />
+      </Box>
+    </Focusable>
   );
 }

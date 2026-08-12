@@ -1,9 +1,9 @@
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Text } from '@kroma/ui/kit/atoms/text';
 import { ChannelBadge } from '#site/components/channel-badge';
 import { NotesAction } from '#site/components/notes-action';
 import type { Release } from '#site/lib/release';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Txt } from '#ui/components/atoms/text';
 
 export interface ReleaseHeadlineProps {
   label: string;
@@ -16,18 +16,18 @@ export function ReleaseHeadline({ label, release }: Readonly<ReleaseHeadlineProp
       <Column gap={10}>
         <Row gap={8} between>
           <Box shrink={1} minW={0}>
-            <Txt variant="overline" color="textDim" lines={1}>
+            <Text variant="overline" color="textDim" lines={1}>
               {label}
-            </Txt>
+            </Text>
           </Box>
           <ChannelBadge channel={release.channel} />
         </Row>
-        <Txt variant="h2" font="mono" lines={1}>
+        <Text variant="h2" font="mono" lines={1}>
           {release.version}
-        </Txt>
-        <Txt color="textMuted" variant="meta">
+        </Text>
+        <Text color="textMuted" variant="meta">
           {release.day} · {release.size}
-        </Txt>
+        </Text>
         <Row gap={8} mt={4} wrap>
           <Button variant="primary" size="sm" icon="download" href={release.spk} label="Download" />
           <NotesAction release={release} />

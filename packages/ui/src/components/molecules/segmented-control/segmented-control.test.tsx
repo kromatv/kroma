@@ -3,6 +3,8 @@
 import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Badge } from '#ui/components/atoms/badge';
+import { Text } from '#ui/components/atoms/text';
 import { onScreen } from '#ui/testing';
 import { SegmentedControl } from './segmented-control';
 
@@ -69,9 +71,27 @@ describe('SegmentedControl', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(() => render(<SegmentedControl.Item value="a" label="A" />)).toThrow(
-      '<SegmentedControl.Item> must be used inside its Root',
+      '<SegmentedControl.Item> must be used inside <SegmentedControl.Root>',
     );
 
     vi.restoreAllMocks();
+  });
+});
+
+describe('a segment that holds more than a string', () => {
+  it('draws the children and still answers to the label', () => {
+    render(
+      <SegmentedControl.Root value="unread" onValueChange={() => {}} label="Filter">
+        <SegmentedControl.Item value="all" label="All" />
+        <SegmentedControl.Item value="unread" label="Unread, 2">
+          <Text>Unread</Text>
+          <Badge tone="neutral">2</Badge>
+        </SegmentedControl.Item>
+      </SegmentedControl.Root>,
+    );
+    // What is drawn is the composition; what is heard is the label.
+    expect(screen.getByText('Unread')).toBeTruthy();
+    expect(screen.getByText('2')).toBeTruthy();
+    expect(screen.getByLabelText('Unread, 2')).toBeTruthy();
   });
 });

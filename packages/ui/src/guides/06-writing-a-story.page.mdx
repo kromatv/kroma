@@ -1,0 +1,98 @@
+export const title = 'Writing a story';
+export const summary = 'One story per component, and the four things it can show: a preview the controls drive, a scene, a worked demo, and prose.';
+export const width = 'wide';
+
+A component has exactly one story. Everything else you see across the tabs of
+that story is a different **kind of answer to a different question**, which is
+why they are not all the same thing and why one story full of examples would be
+worse than what is here.
+
+| Tab | Written as | Answers |
+| --- | --- | --- |
+| Preview | the story's `render`, or its `component` | What does this do when I change a prop? |
+| A scene | `scenes: [{ name, render }]` | What does it look like arranged THIS way? |
+| A scene | `scenes: [{ name, example }]` | Here is a composition worth copying. |
+| A demo | a `*.demo.tsx` file beside the component | Here is a whole worked screen. |
+| Docs | `docs`, `usage`, `guidelines`, `*.docs.mdx` | Why does it exist and when do I reach for it? |
+
+Only the preview and a `render` scene are driven by the Controls tab. That is
+the whole distinction, and everything below follows from it.
+
+## `render` or `example`
+
+A scene is written one of two ways, and writing both is a type error.
+
+**`render` reads the live args**, so the controls keep driving it. Use it when
+the scene is the same component under a different arrangement and a reader would
+still want to push its props around: a row inside a group, a card at three
+widths, a control in an error state.
+
+```tsx
+scenes: [
+  {
+    name: 'A list',
+    render: ({ icon, label }) => (
+      <Box gap={10}>
+        <ListRow.Root icon={icon}>
+          <ListRow.Label>{label}</ListRow.Label>
+        </ListRow.Root>
+        <ListRow.Root icon="language">
+          <ListRow.Label>Audio</ListRow.Label>
+        </ListRow.Root>
+      </Box>
+    ),
+  },
+]
+```
+
+**`example` is a fixed composition**, and the controls step aside rather than
+sitting there moving nothing. Use it when the point of the scene is the
+arrangement itself and the args would be meaningless against it: media at the
+head of a row, a group of three specific members, a shape assembled from parts
+the story's args never mention.
+
+```tsx
+scenes: [
+  {
+    name: 'Media at the head',
+    example: () => (
+      <ListRow.Root>
+        <ListRow.Leading>
+          <Avatar name="Maxime" size={34} circle />
+        </ListRow.Leading>
+        <ListRow.Label>Maxime</ListRow.Label>
+      </ListRow.Root>
+    ),
+  },
+]
+```
+
+**Writing neither** reuses the story's own render with the scene's `args` merged
+in, which is the shortest way to say "the same thing, with these values".
+
+The test is not how complicated the markup is. It is: *would a reader want the
+controls to reach this?* If yes, `render`. If the controls would be dead
+furniture beside it, `example`.
+
+## A scene or a demo
+
+A scene lives inside the story file and shows the component. A demo is a whole
+`*.demo.tsx` file beside the component, discovered by its name, and shows a
+screen built out of it: the surrounding layout, the state, the handlers, the
+other components it sits with.
+
+Reach for a demo when the thing worth showing is bigger than the component: a
+sign-up form rather than a field, a settings panel rather than a row. A demo
+opens with its source already showing, because its whole purpose is to be read
+and copied. A scene is a take on the component; a demo is a use of it.
+
+## Why not one story with a dozen examples
+
+Because the controls would have nothing to drive, and the Props and Interactions
+tabs would have no single subject. The story is the unit that carries a
+component's identity: its variants, its args, its props table, its git history,
+its link to source. A page of unrelated examples is a page, and this workbench
+has those too, written as `*.page.mdx` and filed under Guides.
+
+So: one story per component, scenes for takes on it, demos for screens built out
+of it, and a page when the subject is not a component at all.

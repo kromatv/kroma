@@ -5,8 +5,7 @@
 
 import type { MediaFile, MediaItem } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconButton } from '@kroma/ui/kit';
-import { IconLoader2 } from '@tabler/icons-react';
+import { Box, Dialog, IconButton, Row, Spinner, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { createCallable } from 'react-call';
 import { FileCard } from '#web/features/catalog/media-info-card';
@@ -22,48 +21,42 @@ export const MediaInfoModal = createCallable<{ id: string; title: string }, void
     const files = item ? filesOf(item) : [];
 
     return (
-      <>
-        <button
-          type="button"
-          aria-label={t('common.close')}
-          onClick={() => call.end()}
-          className="fixed inset-0 z-60 bg-[rgba(4,4,6,.66)] backdrop-blur-[3px]"
-        />
-        <div className="pointer-events-none fixed inset-0 z-61 flex items-center justify-center p-4">
-          <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0E0E12] shadow-[0_30px_90px_rgba(0,0,0,.6)]">
-            <header className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-7 py-5">
-              <div className="min-w-0">
-                <div className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
-                  {t('mediaInfo.title')}
-                </div>
-                <h2 className="mt-1 truncate font-display text-[20px] font-bold">{title}</h2>
-              </div>
-              <IconButton
-                control="sm"
-                icon="x"
-                label={t('common.close')}
-                onPress={() => call.end()}
-              />
-            </header>
+      <Dialog.Root open title={title} width="lg" onClose={() => call.end()}>
+        <Dialog.Header>
+          <Row between align="flex-start" gap={16}>
+            <Box minW={0}>
+              <Text variant="overline" color="white/40">
+                {t('mediaInfo.title')}
+              </Text>
+              <Text variant="title" mt={4} lines={1}>
+                {title}
+              </Text>
+            </Box>
+            <IconButton
+              control="sm"
+              icon="x"
+              label={t('common.close')}
+              onPress={() => call.end()}
+            />
+          </Row>
+        </Dialog.Header>
 
-            <div className="flex-1 space-y-5 overflow-y-auto px-7 py-5">
-              {isPending ? (
-                <div className="flex justify-center py-16 text-white/40">
-                  <IconLoader2 size={26} stroke={2.2} className="animate-spin" />
-                </div>
-              ) : null}
-              {!isPending && files.length === 0 ? (
-                <p className="py-16 text-center text-[13px] text-white/40">
-                  {t('mediaInfo.noFile')}
-                </p>
-              ) : null}
-              {files.map((f, i) => (
-                <FileCard key={f.id} file={f} index={i} multi={files.length > 1} />
-              ))}
-            </div>
-          </section>
-        </div>
-      </>
+        <Dialog.Panel>
+          {isPending ? (
+            <Box align="center" py={64}>
+              <Spinner size={26} color="white/40" />
+            </Box>
+          ) : null}
+          {!isPending && files.length === 0 ? (
+            <Text variant="meta" color="white/40" textAlign="center" py={64}>
+              {t('mediaInfo.noFile')}
+            </Text>
+          ) : null}
+          {files.map((f, i) => (
+            <FileCard key={f.id} file={f} index={i} multi={files.length > 1} />
+          ))}
+        </Dialog.Panel>
+      </Dialog.Root>
     );
   },
 );

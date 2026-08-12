@@ -1,18 +1,19 @@
+/* The kit in parts rather than through `@kroma/ui/css`: that aggregate carries
+   the shared RESET, and a reset is exactly what Tailwind's preflight already
+   is. Two of them is not redundancy but a fight, because the kit's is unlayered
+   and every utility is layered - an unlayered `h1 { font-size: inherit }` or
+   `p { margin: 0 }` silently outranks the `text-4xl` and `mt-4` written on the
+   element. This site styles bare elements with utilities, so it takes the page
+   furniture (body, focus ring, scrollbars) and leaves the reset to preflight. */
 @import "tailwindcss";
-@import "@kroma/ui/css";
+@import "@kroma/ui/css/fonts";
+@import "@kroma/ui/css/tokens";
+@import "@kroma/ui/css/motion";
+@import "@kroma/ui/css/page";
 @import "@kroma/ui/css/theme";
 
 /* Tailwind v4 scans this app's own sources automatically; nothing outside
    apps/www contributes class names, so no extra @source is needed. */
-
-/* @kroma/ui ships an UNLAYERED `a { color: inherit }` (for the app shell),
-   which outranks Tailwind's layered text-color utilities. This site colours
-   links with utilities, so any link carrying a class must defer to the value
-   its utility set; class-less links still inherit. `revert-layer` is the
-   precise tool for an unlayered-vs-layered conflict. */
-a[class] {
-  color: revert-layer;
-}
 
 /* Site-only animations, layered on top of the shared theme. */
 @theme {
@@ -93,8 +94,8 @@ a[class] {
 @utility glow-amber {
   background: radial-gradient(
     60% 60% at 50% 40%,
-    rgba(242, 180, 66, 0.18),
-    rgba(242, 180, 66, 0) 70%
+    color-mix(in srgb, var(--kroma-accent-wash) 18%, transparent),
+    transparent 70%
   );
 }
 
@@ -145,13 +146,13 @@ a[class] {
 }
 .prose-kroma p,
 .prose-kroma li {
-  color: rgba(244, 243, 240, 0.82);
+  color: color-mix(in srgb, var(--kroma-text) 82%, transparent);
 }
 .prose-kroma a {
   color: var(--kroma-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(242, 180, 66, 0.4);
+  text-decoration-color: color-mix(in srgb, var(--kroma-accent-wash) 40%, transparent);
   transition: text-decoration-color 0.2s;
 }
 .prose-kroma a:hover {

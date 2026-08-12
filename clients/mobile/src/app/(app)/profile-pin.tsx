@@ -2,7 +2,7 @@
 // Face ID / Touch ID.
 
 import { apiErrorText } from '@kroma/core';
-import { Box, Button, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, styles, Text } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { PageHeader } from '#mobile/components/PageHeader';
@@ -238,7 +238,7 @@ export default function ProfilePin() {
             </LockCard>
           ) : null}
 
-          {saved ? <Txt style={s.saved}>{t('account.profileSaved')}</Txt> : null}
+          {saved ? <Text style={s.saved}>{t('account.profileSaved')}</Text> : null}
           <ErrorBanner message={error} />
         </Box>
       ) : (

@@ -19,7 +19,10 @@ function NotificationsPage() {
 
   return (
     <>
-      <PageHeader title={t('admin.notificationsTitle')} subtitle={t('admin.notificationsSub')} />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.notificationsTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.notificationsSub')}</PageHeader.Subtitle>
+      </PageHeader.Root>
       <NotificationBench />
     </>
   );

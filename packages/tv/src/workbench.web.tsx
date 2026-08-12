@@ -16,7 +16,9 @@ import { defineWorkbench, discoverVite, type GlobHost, searchParamsRouter } from
 // No prop docs: those come from a Vite plugin (`propDocs` in clients/tv-build)
 // that `shell.ts` does not load, so the Props tab is empty here.
 const STORIES = discoverVite(
-  (import.meta as unknown as GlobHost).glob('#ui/**/*.{stories,demo}.tsx', { eager: true }),
+  (import.meta as unknown as GlobHost).glob('#ui/**/*.{stories.tsx,demo.tsx,docs.mdx}', {
+    eager: true,
+  }),
   (import.meta as unknown as GlobHost).glob('#ui/**/*.demo.tsx', {
     eager: true,
     query: '?raw',

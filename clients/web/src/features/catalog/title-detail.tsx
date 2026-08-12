@@ -6,10 +6,10 @@
 
 import { apiErrorText, type EpisodeRef, formatRuntime, type ItemId } from '@kroma/core';
 import { useCast, useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
+import { Button, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { AiSuggestRail } from '#web/features/catalog/ai-suggest-rail';
 import {
   audioFlagLabel,
@@ -25,13 +25,22 @@ import {
 import { SeasonSection } from '#web/features/catalog/episode-list';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { TreatmentsPanel } from '#web/features/catalog/treatments-panel';
-import { RequestStatusChip } from '#web/features/requests/request-status-chip';
-import { SeasonPicker } from '#web/features/requests/season-picker';
 import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
 import { userQueries } from '#web/shared/lib/queries';
 import { type TitleView, tmdbMetaLine } from '#web/shared/lib/titleView';
 import { useWatched } from '#web/shared/lib/watched';
+import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
+import { SeasonPicker } from '#web/shared/ui/season-picker';
+
+// The page gutter is a fluid CSS custom property, which no style number can
+// carry, so anything indented by it stays a plain element.
+const GUTTER: CSSProperties = {
+  paddingLeft: 'var(--gutter-web)',
+  paddingRight: 'var(--gutter-web)',
+};
+
+const PAGE: CSSProperties = { minWidth: 0, paddingBottom: 80, animation: 'fade-in .4s ease' };
 
 type ProgressEntry = { itemId: string; positionMs: number; durationMs?: number | null };
 
@@ -199,7 +208,11 @@ function TitleBody({
   return (
     <>
       {error ? (
-        <p className="mt-2 px-(--gutter-web) text-[13.5px] font-semibold text-[#EF8091]">{error}</p>
+        <div style={GUTTER}>
+          <Text variant="label" color="dangerHover" mt={8}>
+            {error}
+          </Text>
+        </div>
       ) : null}
 
       {owned && localId ? (
@@ -319,7 +332,7 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
   }));
 
   return (
-    <main className="min-w-0 animate-[fade-in_.4s_ease] pb-20">
+    <main style={PAGE}>
       <TitleHero
         view={view}
         owned={owned}

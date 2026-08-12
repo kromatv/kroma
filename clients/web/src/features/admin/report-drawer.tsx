@@ -4,46 +4,43 @@
 
 import type { Report, ReportStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, Button, Drawer, IconButton } from '@kroma/ui/kit';
+import { Avatar, Box, Button, color, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
+import { Pill } from '#web/features/admin/pill';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
 
 // Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;
 
-function Header({ report, onClose }: Readonly<{ report: Report; onClose: () => void }>) {
+function Identity({ report }: Readonly<{ report: Report }>) {
   const t = useT();
   const cat = categoryMeta(report.category);
   const st = statusMeta(report.status);
   return (
-    <div className="border-b border-white/[0.07] px-6 py-5">
-      <div className="mb-4 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+    <>
+      <Row between mb={16}>
+        <Text variant="overline" color="textDim">
           {t('reports.sheet')}
-        </span>
-        <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={onClose} />
-      </div>
-      <div className="mb-2.5 flex flex-wrap items-center gap-2">
-        <span
-          className="rounded-full px-[9px] py-[3px] text-[9.5px] font-bold uppercase tracking-widest"
-          style={{ color: cat.color, background: soft(cat.color) }}
-        >
+        </Text>
+        <Drawer.Close />
+      </Row>
+      <Row wrap gap={8} mb={10}>
+        <Pill ink={cat.color} bg={soft(cat.color)} variant="overline">
           {t(cat.labelKey)}
-        </span>
-        <span
-          className="rounded-full px-[9px] py-[3px] text-[9.5px] font-bold uppercase tracking-widest"
-          style={{ color: st.color, background: soft(st.color) }}
-        >
+        </Pill>
+        <Pill ink={st.color} bg={soft(st.color)} variant="overline">
           {t(st.labelKey)}
-        </span>
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
+        </Pill>
+        <Text variant="overline" color="textDim">
           {t(kindLabelKey(report.subjectKind))}
-        </span>
-      </div>
-      <h2 className="font-display text-[21px] font-bold leading-[1.15]">{report.subjectTitle}</h2>
-    </div>
+        </Text>
+      </Row>
+      <Text variant="h2" accessibilityRole="header">
+        {report.subjectTitle}
+      </Text>
+    </>
   );
 }
 
@@ -91,98 +88,107 @@ export const ReportDrawer = createCallable<
       : null;
 
   return (
-    <Drawer
+    <Drawer.Root
       open={!call.ended}
       onClose={close}
-      title={t('reports.sheet')}
-      width={460}
+      title={report.subjectTitle}
       panelStyle={DRAWER_FILL}
     >
-      <Header report={report} onClose={close} />
+      <Drawer.Header>
+        <Identity report={report} />
+      </Drawer.Header>
 
-      <div className="flex-1 overflow-y-auto px-6 py-5">
-        <div className="mb-3 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
-          {t('reports.reportedBy')}
-        </div>
-        <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5">
-          <Avatar name={report.reportedByName ?? '?'} size={34} circle shadow={false} />
-          <div className="min-w-0">
-            <div className="truncate text-[14px] font-bold">
-              {report.reportedByName ?? t('reports.unknownUser')}
-            </div>
-            <div className="text-[12px] font-medium text-white/45">
-              {new Date(report.createdAt).toLocaleDateString()}{' '}
-              {new Date(report.createdAt).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </div>
-          </div>
-        </div>
+      <Drawer.Panel>
+        <Box>
+          <Text variant="overline" color="textDim" mb={12}>
+            {t('reports.reportedBy')}
+          </Text>
+          <Row gap={12} px={16} py={14} radius="lg" bg="surface1" border="tint/7">
+            <Avatar name={report.reportedByName ?? '?'} size={34} circle shadow={false} />
+            <Box minW={0}>
+              <Text variant="label" lines={1}>
+                {report.reportedByName ?? t('reports.unknownUser')}
+              </Text>
+              <Text variant="meta" color="textDim">
+                {new Date(report.createdAt).toLocaleDateString()}{' '}
+                {new Date(report.createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            </Box>
+          </Row>
 
-        {report.message ? (
-          <div className="mt-4 whitespace-pre-wrap rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5 text-[13.5px] leading-[1.5] text-white/80">
-            {report.message}
-          </div>
-        ) : (
-          <p className="mt-4 text-[13px] italic text-white/35">{t('reports.noMessage')}</p>
-        )}
+          {report.message ? (
+            <Box mt={16} px={16} py={14} radius="lg" bg="surface1" border="tint/7">
+              <Text variant="meta" color="textMuted">
+                {report.message}
+              </Text>
+            </Box>
+          ) : (
+            <Text variant="meta" color="textDim" mt={16}>
+              {t('reports.noMessage')}
+            </Text>
+          )}
 
-        {ficheTo ? (
-          <div className="mt-4 flex">
-            <Button
-              variant="glass"
-              size="sm"
-              icon="external-link"
-              label={t('reports.viewTitle')}
-              onPress={() => navigate({ to: ficheTo, params: { id: report.subjectId } })}
-            />
-          </div>
-        ) : null}
-      </div>
-
-      {canManage ? (
-        <div className="flex gap-2.5 border-t border-white/[0.07] px-6 py-4.5">
-          {report.status === 'open' ? (
-            <>
-              <Button
-                icon="check"
-                label={t('reports.actionResolve')}
-                onPress={() => run(onResolve, 'resolved')}
-                loading={busy}
-                style={FLEX_1}
-              />
+          {ficheTo ? (
+            <Row mt={16} self="flex-start">
               <Button
                 variant="glass"
-                icon="x"
-                label={t('reports.actionDismiss')}
-                onPress={() => run(onDismiss, 'dismissed')}
+                size="sm"
+                icon="external-link"
+                label={t('reports.viewTitle')}
+                onPress={() => navigate({ to: ficheTo, params: { id: report.subjectId } })}
+              />
+            </Row>
+          ) : null}
+        </Box>
+      </Drawer.Panel>
+
+      {canManage ? (
+        <Drawer.Footer>
+          <Row gap={10}>
+            {report.status === 'open' ? (
+              <>
+                <Button
+                  icon="check"
+                  label={t('reports.actionResolve')}
+                  onPress={() => run(onResolve, 'resolved')}
+                  loading={busy}
+                  style={FLEX_1}
+                />
+                <Button
+                  variant="glass"
+                  icon="x"
+                  label={t('reports.actionDismiss')}
+                  onPress={() => run(onDismiss, 'dismissed')}
+                  disabled={busy}
+                  style={FLEX_1}
+                />
+              </>
+            ) : (
+              <Button
+                variant="glass"
+                icon="arrow-back-up"
+                label={t('reports.actionReopen')}
+                onPress={() => run(onReopen, 'open')}
                 disabled={busy}
                 style={FLEX_1}
               />
-            </>
-          ) : (
-            <Button
-              variant="glass"
-              icon="arrow-back-up"
-              label={t('reports.actionReopen')}
-              onPress={() => run(onReopen, 'open')}
+            )}
+            <IconButton
+              control="md"
+              icon="trash"
+              label={t('reports.actionDelete')}
+              onPress={del}
               disabled={busy}
-              style={FLEX_1}
             />
-          )}
-          <IconButton
-            control="md"
-            icon="trash"
-            label={t('reports.actionDelete')}
-            onPress={del}
-            disabled={busy}
-          />
-        </div>
+          </Row>
+        </Drawer.Footer>
       ) : null}
-    </Drawer>
+    </Drawer.Root>
   );
 }, 400);
 
 // The drawers' darker fill, kept from the hand-rolled asides they replace.
-const DRAWER_FILL = { backgroundColor: '#0E0E12' } as const;
+const DRAWER_FILL = { backgroundColor: color('bg') } as const;

@@ -2,12 +2,10 @@
 // self-service change is how an account rotates its own password.
 
 import { useT } from '@kroma/ui';
-import { Button, Field } from '@kroma/ui/kit';
+import { Box, Button, Field, Progress, Row, Surface, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
-import { Panel, passwordStrength, StatusText, useSave } from '#web/features/accounts/account/ui';
+import { passwordStrength, StatusText, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
-
-const NEW_PASSWORD_ENTRY = { autoComplete: 'new-password' } as const;
 
 export function SecurityCard() {
   const t = useT();
@@ -33,72 +31,85 @@ export function SecurityCard() {
   };
 
   return (
-    <Panel className="p-5.5">
-      <div className="mb-1 font-display text-[15px] font-bold text-text">
+    <Surface elevated pad="none" p={22} radius="lg" border="border">
+      <Text variant="label" font="display">
         {t('account.updatePassword')}
-      </div>
-      <div className="mb-4.5 text-[12.5px] text-muted">{t('auth.passwordHint')}</div>
+      </Text>
+      <Text variant="meta" color="textMuted" mt={4} mb={18}>
+        {t('auth.passwordHint')}
+      </Text>
 
-      <form onSubmit={submit} className="grid grid-cols-1 gap-4.5 sm:grid-cols-2">
-        <div className="sm:col-span-2 sm:max-w-[calc(50%-0.5625rem)]">
-          <Field
-            label={t('account.currentPassword')}
-            type="password"
-            placeholder="••••••••"
-            value={current}
-            onChange={setCurrent}
-          />
-        </div>
-
-        <div className="flex flex-col gap-2.5">
-          <Field
-            label={t('account.newPassword')}
-            type="password"
-            placeholder="••••••••"
-            value={next}
-            onChange={setNext}
-            entry={NEW_PASSWORD_ENTRY}
-          />
-          <div className="flex items-center gap-2.5">
-            <div className="h-[5px] flex-1 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full transition-[width,background-color] duration-200"
-                style={{ width: strength.width, background: strength.color }}
+      <form onSubmit={submit}>
+        <Box gap={18}>
+          <Box maxW={{ base: '100%', md: '50%' }}>
+            <Field.Root label={t('account.currentPassword')}>
+              <Field.Input
+                type="password"
+                placeholder="••••••••"
+                value={current}
+                onValueChange={setCurrent}
               />
-            </div>
-            {strength.labelKey ? (
-              <span
-                className="min-w-[54px] text-right text-[11px] font-bold"
-                style={{ color: strength.color }}
+            </Field.Root>
+          </Box>
+
+          <Box row={{ base: false, md: true }} gap={18}>
+            <Box flex gap={10}>
+              <Field.Root label={t('account.newPassword')}>
+                <Field.Input
+                  type="password"
+                  placeholder="••••••••"
+                  value={next}
+                  onValueChange={setNext}
+                  autoComplete="new-password"
+                />
+              </Field.Root>
+              <Row gap={10}>
+                <Box flex>
+                  <Progress
+                    value={strength.value}
+                    color={strength.color}
+                    trackColor="tint/10"
+                    thickness={5}
+                    rounded
+                  />
+                </Box>
+                {strength.labelKey ? (
+                  <Text variant="meta" color={strength.color} minW={54} textAlign="right">
+                    {t(strength.labelKey)}
+                  </Text>
+                ) : null}
+              </Row>
+            </Box>
+
+            <Box flex>
+              <Field.Root
+                label={t('account.confirmPassword')}
+                error={mismatch ? t('account.passwordMismatch') : undefined}
               >
-                {t(strength.labelKey)}
-              </span>
-            ) : null}
-          </div>
-        </div>
+                <Field.Input
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirm}
+                  onValueChange={setConfirm}
+                  autoComplete="new-password"
+                />
+              </Field.Root>
+            </Box>
+          </Box>
 
-        <Field
-          label={t('account.confirmPassword')}
-          type="password"
-          placeholder="••••••••"
-          value={confirm}
-          onChange={setConfirm}
-          error={mismatch ? t('account.passwordMismatch') : undefined}
-          entry={NEW_PASSWORD_ENTRY}
-        />
-
-        <div className="flex items-center gap-3 sm:col-span-2">
-          <Button
-            size="sm"
-            icon="device-floppy"
-            label={save.status === 'saving' ? t('common.saving') : t('account.updatePassword')}
-            onPress={submit}
-            loading={save.status === 'saving'}
-            disabled={!valid}
-          />
-          <StatusText status={save.status} error={save.error} />
-        </div>
+          <Row gap={12}>
+            <Button
+              size="sm"
+              icon="device-floppy"
+              label={save.status === 'saving' ? t('common.saving') : t('account.updatePassword')}
+              onPress={submit}
+              loading={save.status === 'saving'}
+              disabled={!valid}
+            />
+            <StatusText status={save.status} error={save.error} />
+          </Row>
+        </Box>
       </form>
-    </Panel>
+    </Surface>
   );
 }

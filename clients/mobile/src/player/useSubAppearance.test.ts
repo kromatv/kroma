@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // Subtitle appearance on the phone: same contract as web/TV, but hydrated
-// async (React Native has no synchronous storage) — starts from defaults,
+// async (React Native has no synchronous storage): starts from defaults,
 // then a stored preference is MERGED over them rather than replacing them,
 // and a value that will not parse falls back to defaults quietly.
 
@@ -66,7 +66,7 @@ describe('hydrating', () => {
 
   // A phone used before the renderer took on CEA-708 may have `box` or
   // `outline` on disk; spread raw, those reach the cue's edge table as
-  // `undefined` and throw inside render — with no ErrorBoundary here, the
+  // `undefined` and throw inside render; with no ErrorBoundary here, the
   // player unmounts and repeats the crash on every re-entry.
   it('migrates a preference written before CEA-708 instead of crashing on it', async () => {
     loadPref.mockResolvedValue(JSON.stringify({ edge: 'outline', font: 'serif', size: 'lg' }));

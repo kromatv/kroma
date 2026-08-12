@@ -10,7 +10,7 @@ export default story({
   usage: `<Chip label="Sci-Fi" active={selected} onPress={toggle} />
 
 // A filter row that counts: the dot is the status colour, the count trails it.
-<Chip label="En cours" dot={colors.accent} count={7}
+<Chip label="Running" dot={colors.accent} count={7}
       active={bucket === 'active'} onPress={() => setBucket('active')} />`,
   guidelines: {
     do: [
@@ -31,19 +31,19 @@ export default story({
     {
       name: 'A counting filter row',
       docs: 'The row the console filters are made of. Note the second chip: its status colour IS the accent, so on the active fill a dot of its own colour would be invisible and a pale one would wash out. An active chip paints the dot in ink with the rest of its content, and the fill is what says which filter is on.',
-      render: () => (
+      example: () => (
         <Box gap={14}>
           <Box row gap={10} wrap>
-            <Chip label="En attente" dot="rgba(244, 243, 240, 0.45)" count={0} active />
-            <Chip label="En cours" dot="#F4B642" count={7} />
-            <Chip label="Disponibles" dot="#46D08D" count={1} />
-            <Chip label="Closes" dot="#E8536A" count={12} />
+            <Chip label="Queued" dot="rgba(244, 243, 240, 0.45)" count={0} active />
+            <Chip label="Running" dot="#F4B642" count={7} />
+            <Chip label="Available" dot="#46D08D" count={1} />
+            <Chip label="Closed" dot="#E8536A" count={12} />
           </Box>
           <Box row gap={10} wrap>
-            <Chip label="En attente" dot="rgba(244, 243, 240, 0.45)" count={0} />
-            <Chip label="En cours" dot="#F4B642" count={7} active />
-            <Chip label="Disponibles" dot="#46D08D" count={1} />
-            <Chip label="Closes" dot="#E8536A" count={12} />
+            <Chip label="Queued" dot="rgba(244, 243, 240, 0.45)" count={0} />
+            <Chip label="Running" dot="#F4B642" count={7} active />
+            <Chip label="Available" dot="#46D08D" count={1} />
+            <Chip label="Closed" dot="#E8536A" count={12} />
           </Box>
         </Box>
       ),

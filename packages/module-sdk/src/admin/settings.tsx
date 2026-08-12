@@ -15,7 +15,7 @@ import {
   Select,
   Surface,
   Switch,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { useAdminHost } from './context';
@@ -94,27 +94,27 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
   return (
     <Box gap={embedded ? 0 : 24}>
       {embedded ? null : (
-        <PageHeader
-          title={t(titleKey)}
-          subtitle={t(subtitleKey)}
-          action={
-            saved ? (
-              <Txt variant="meta" color="success">
+        <PageHeader.Root>
+          <PageHeader.Title>{t(titleKey)}</PageHeader.Title>
+          <PageHeader.Subtitle>{t(subtitleKey)}</PageHeader.Subtitle>
+          {saved ? (
+            <PageHeader.Actions>
+              <Text variant="meta" color="success">
                 {t('admin.saved')}
-              </Txt>
-            ) : undefined
-          }
-        />
+              </Text>
+            </PageHeader.Actions>
+          ) : null}
+        </PageHeader.Root>
       )}
       <Box gap={22}>
         {groups.map((g) => (
           <Surface key={g.title} pad="none" overflow="hidden">
             <Box px={22} py={17} gap={3}>
-              <Txt variant="title">{g.title}</Txt>
+              <Text variant="title">{g.title}</Text>
               {g.desc ? (
-                <Txt variant="meta" color="textDim">
+                <Text variant="meta" color="textDim">
                   {g.desc}
-                </Txt>
+                </Text>
               ) : null}
             </Box>
             <Divider spacing={0} />
@@ -134,18 +134,18 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
 function Row({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: unknown) => void }>) {
   const t = useT();
   return (
-    <Box row wrap align="center" justify="space-between" gap={20} px={22} py={16}>
+    <Box row align="center" justify="space-between" gap={20} px={22} py={16}>
       <Box shrink={1} style={{ minWidth: 0 }}>
-        <Txt variant="label">{row.label}</Txt>
+        <Text variant="label">{row.label}</Text>
         {row.desc ? (
-          <Txt variant="meta" color="textDim" style={{ marginTop: 3 }}>
+          <Text variant="meta" color="textDim" style={{ marginTop: 3 }}>
             {row.desc}
-          </Txt>
+          </Text>
         ) : null}
         {!row.applied && row.kind !== 'value' ? (
-          <Txt variant="overline" color="text/30" style={{ marginTop: 4 }}>
+          <Text variant="overline" color="text/30" style={{ marginTop: 4 }}>
             {t('admin.prefSaved')}
-          </Txt>
+          </Text>
         ) : null}
       </Box>
       <Control row={row} onChange={onChange} />
@@ -163,7 +163,7 @@ function asText(v: unknown): string {
 
 function Control({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: unknown) => void }>) {
   if (row.kind === 'toggle') {
-    return <Switch checked={Boolean(row.value)} onChange={onChange} label={row.label} />;
+    return <Switch checked={Boolean(row.value)} onCheckedChange={onChange} label={row.label} />;
   }
   if (row.kind === 'select') {
     return (
@@ -183,9 +183,9 @@ function Control({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: un
   }
   // value (read-only)
   return (
-    <Txt variant="meta" color="text/60">
+    <Text variant="meta" color="text/60">
       {asText(row.value)}
-    </Txt>
+    </Text>
   );
 }
 
@@ -204,12 +204,14 @@ function SettingSelect({
 }>) {
   const all = value && !options.includes(value) ? [value, ...options] : options;
   return (
-    <Select
-      label={label}
-      value={value}
-      onChange={onChange}
-      options={all.map((o) => ({ value: o, label: o }))}
-    />
+    <Select.Root label={label} value={value} onValueChange={onChange}>
+      <Select.Trigger />
+      {all.map((o) => (
+        <Select.Item key={o} value={o}>
+          {o}
+        </Select.Item>
+      ))}
+    </Select.Root>
   );
 }
 
@@ -225,29 +227,29 @@ function SecretInput({
   const [v, setV] = useState('');
   return (
     <Box align="flex-end" gap={6}>
-      <Field
+      <Field.Root
         label={t(configured ? 'admin.secretReplace' : 'admin.secretUnset')}
         hideLabel
-        multiline
-        rows={3}
         value={v}
-        onChange={setV}
-        placeholder={configured ? t('admin.secretReplace') : undefined}
-        entry={{
-          onBlur: () => {
+        onValueChange={setV}
+      >
+        <Field.Textarea
+          rows={3}
+          placeholder={configured ? t('admin.secretReplace') : undefined}
+          minW={280}
+          onBlur={() => {
             if (!v.trim()) return;
             onCommit(v);
             setV('');
-          },
-          minW: 280,
-        }}
-      />
+          }}
+        />
+      </Field.Root>
       <Box row align="center" gap={10}>
-        <Txt variant="overline" color={configured ? 'success' : 'text/30'}>
+        <Text variant="overline" color={configured ? 'success' : 'text/30'}>
           {configured ? t('admin.secretSet') : t('admin.secretUnset')}
-        </Txt>
+        </Text>
         {configured ? (
-          // A Focusable, not a pressable Txt: react-native-web wires Text
+          // A Focusable, not a pressable Text: react-native-web wires Text
           // onPress as click only, so Enter/Space on the tabbed control would
           // do nothing.
           <Focusable
@@ -257,9 +259,9 @@ function SecretInput({
               onCommit('');
             }}
           >
-            <Txt variant="overline" color="text/40">
+            <Text variant="overline" color="text/40">
               {t('admin.secretClear')}
-            </Txt>
+            </Text>
           </Focusable>
         ) : null}
       </Box>
@@ -275,17 +277,13 @@ function EditableText({
   const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
   return (
-    <Field
-      label={label}
-      hideLabel
-      value={v}
-      onChange={setV}
-      entry={{
-        onBlur: () => {
+    <Field.Root label={label} hideLabel value={v} onValueChange={setV}>
+      <Field.Input
+        minW={200}
+        onBlur={() => {
           if (v !== value) onCommit(v);
-        },
-        minW: 200,
-      }}
-    />
+        }}
+      />
+    </Field.Root>
   );
 }

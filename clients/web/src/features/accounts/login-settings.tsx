@@ -1,32 +1,68 @@
 import buildInfo from 'virtual:build-info';
 import { type Health, LOCALES } from '@kroma/core';
 import { useLocale, useSetLocale, useT } from '@kroma/ui';
-import { IconButton, Select } from '@kroma/ui/kit';
+import { Box, Divider, IconButton, Row, Select, StatusDot, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { type ReactNode, useState } from 'react';
-import { CapabilityChip } from '#web/features/accounts/capability-chip';
+import { type CSSProperties, type ReactNode, useState } from 'react';
 import { serverQueries } from '#web/shared/lib/queries';
+import { MODAL_SCRIM } from '#web/shared/ui';
+import { CapabilityChip } from '#web/shared/ui/capability-chip';
 
-function SectionHead({ children }: Readonly<{ children: ReactNode }>) {
+// The three web-only frames of this sheet: a safe-area inset, a fixed overlay
+// and a scroll container, none of which the kit's vocabulary can spell.
+const GEAR: CSSProperties = {
+  position: 'absolute',
+  right: 16,
+  top: 'max(1rem, env(safe-area-inset-top))',
+  zIndex: 20,
+};
+
+const LAYER: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 61,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 16,
+  pointerEvents: 'none',
+};
+
+const BODY: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  overflowY: 'auto',
+  padding: '16px 24px',
+};
+
+const s = styles({
+  panel: { pointerEvents: 'auto' },
+  value: { fontVariant: ['tabular-nums'], fontWeight: '600' },
+});
+
+function SectionHead({ title, children }: Readonly<{ title: string; children?: ReactNode }>) {
   return (
-    <div className="flex items-center gap-2 pt-3 pb-1 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+    <Row gap={8} pt={12} pb={4}>
+      <Text variant="overline" color="text/40">
+        {title}
+      </Text>
       {children}
-    </div>
+    </Row>
   );
 }
 
 function InfoRow({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
   return (
-    <div className="flex items-center justify-between gap-4 py-2">
-      <span className="shrink-0 text-[13px] font-medium text-muted">{label}</span>
-      <span className="min-w-0 truncate text-right text-[13px] font-semibold tabular-nums text-text">
+    <Row between gap={16} py={8}>
+      <Text variant="meta" color="textMuted" shrink={0}>
+        {label}
+      </Text>
+      <Text variant="meta" lines={1} minW={0} shrink={1} textAlign="right" style={s.value}>
         {value}
-      </span>
-    </div>
+      </Text>
+    </Row>
   );
 }
-
-const DIVIDER = 'my-1.5 border-t border-white/[0.07]';
 
 /** The gate's corner gear: UI language (this device, applies immediately) and
  * a fuller report than the app sidebar's one-liner: client version, commit,
@@ -54,11 +90,11 @@ export function LoginSettings() {
 
   return (
     <>
-      <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] z-20">
+      <div style={GEAR}>
         <IconButton
           icon="settings"
           variant="ghost"
-          size={40}
+          diameter={40}
           label={t('nav.settings')}
           onPress={() => setOpen(true)}
         />
@@ -69,61 +105,71 @@ export function LoginSettings() {
             type="button"
             aria-label={t('common.close')}
             onClick={() => setOpen(false)}
-            className="fixed inset-0 z-60 bg-[rgba(4,4,6,.66)] backdrop-blur-[3px]"
+            className={MODAL_SCRIM}
           />
-          <div className="pointer-events-none fixed inset-0 z-61 flex items-center justify-center p-4">
-            <section className="pointer-events-auto flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0E0E12] shadow-[0_30px_90px_rgba(0,0,0,.6)]">
-              <header className="flex items-center justify-between gap-4 border-b border-white/[0.07] px-6 py-4">
-                <h2 className="font-display text-[19px] font-bold">{t('nav.settings')}</h2>
+          <div style={LAYER}>
+            <Box
+              role="region"
+              w="100%"
+              maxW={448}
+              maxH="88%"
+              overflow="hidden"
+              radius="xl"
+              border="white/10"
+              bg="bg"
+              shadow="pop"
+              style={s.panel}
+            >
+              <Row between gap={16} px={24} py={16}>
+                <Text variant="title">{t('nav.settings')}</Text>
                 <IconButton
                   control="sm"
                   icon="x"
                   label={t('common.close')}
                   onPress={() => setOpen(false)}
                 />
-              </header>
-              <div className="flex flex-col overflow-y-auto px-6 py-4">
-                <div className="flex items-center justify-between gap-4 py-2">
-                  <span className="text-[13px] font-medium text-muted">
+              </Row>
+              <Divider />
+              <div style={BODY}>
+                <Row between gap={16} py={8}>
+                  <Text variant="meta" color="textMuted">
                     {t('account.uiLanguage')}
-                  </span>
-                  <Select
+                  </Text>
+                  <Select.Root
                     label={t('account.uiLanguage')}
-                    size="sm"
                     value={locale}
-                    onChange={(v) => setLocale(v as (typeof LOCALES)[number]['code'])}
-                    options={LOCALES.map((l) => ({ value: l.code, label: t(l.labelKey) }))}
-                  />
-                </div>
+                    onValueChange={(v) => setLocale(v as (typeof LOCALES)[number]['code'])}
+                  >
+                    <Select.Trigger size="sm" />
+                    {LOCALES.map((l) => (
+                      <Select.Item key={l.code} value={l.code} label={t(l.labelKey)} />
+                    ))}
+                  </Select.Root>
+                </Row>
 
-                <div className={DIVIDER} />
-                <SectionHead>{t('nav.versionClient')}</SectionHead>
+                <Divider spacing={6} />
+                <SectionHead title={t('nav.versionClient')} />
                 <InfoRow label={t('settings.version')} value={`v${buildInfo.version}`} />
                 <InfoRow
                   label={t('settings.commit')}
                   value={
-                    <span className="font-mono text-[12px]" title={buildInfo.commitFull}>
+                    <Text variant="meta" font="mono">
                       {buildInfo.commit}
                       {buildInfo.dirty ? '-dirty' : ''} · {buildInfo.branch}
-                    </span>
+                    </Text>
                   }
                 />
                 <InfoRow label={t('settings.builtAt')} value={builtAt} />
 
-                <div className={DIVIDER} />
-                <SectionHead>
-                  {t('nav.versionServer')}
+                <Divider spacing={6} />
+                <SectionHead title={t('nav.versionServer')}>
                   {health ? (
-                    <span className="flex min-w-0 items-center gap-1.5 normal-case tracking-normal">
-                      <span
-                        className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                          health.status === 'ok' ? 'bg-[#46D08D]' : 'bg-danger'
-                        }`}
-                      />
-                      <span className="truncate text-[11px] font-semibold text-white/70">
+                    <Row minW={0} gap={6}>
+                      <StatusDot online={health.status === 'ok'} size={6} />
+                      <Text variant="meta" color="text/70" lines={1}>
                         {health.name}
-                      </span>
-                    </span>
+                      </Text>
+                    </Row>
                   ) : null}
                 </SectionHead>
                 <InfoRow
@@ -132,13 +178,15 @@ export function LoginSettings() {
                 />
                 <InfoRow label={t('settings.content')} value={health ? contentLine(health) : '…'} />
 
-                <div className={DIVIDER} />
-                <div className="flex items-center justify-between gap-4 py-2">
-                  <span className="text-[13px] font-medium text-muted">{t('nav.thisDevice')}</span>
+                <Divider spacing={6} />
+                <Row between gap={16} py={8}>
+                  <Text variant="meta" color="textMuted">
+                    {t('nav.thisDevice')}
+                  </Text>
                   <CapabilityChip />
-                </div>
+                </Row>
               </div>
-            </section>
+            </Box>
           </div>
         </>
       ) : null}

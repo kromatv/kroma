@@ -14,9 +14,11 @@ import {
   Icon,
   IconButton,
   type IconName,
+  SHADE,
   Spinner,
+  shade,
   styles,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet } from 'react-native';
@@ -78,7 +80,7 @@ export function ControlsLayer({
         pointerEvents="none"
       />
       <LinearGradient
-        colors={['rgba(10,10,12,0)', 'rgba(10,10,12,0.85)']}
+        colors={[SHADE.transparent, shade(0.85)]}
         style={s.scrimBottom}
         pointerEvents="none"
       />
@@ -93,24 +95,24 @@ export function ControlsLayer({
         ]}
         pointerEvents="box-none"
       >
-        <BackButton size={42} onPress={onBack} label={t('common.back')} />
+        <BackButton diameter={42} onPress={onBack} label={t('common.back')} />
         {/* Beside the back button, like the TV bar: the title reads from the
             corner, not the centre of the picture. */}
         <Box style={s.titleBox}>
-          <Txt lines={1} style={s.title}>
+          <Text lines={1} style={s.title}>
             {title}
-          </Txt>
+          </Text>
           {sub ? (
-            <Txt lines={1} style={s.subtitle}>
+            <Text lines={1} style={s.subtitle}>
               {sub}
-            </Txt>
+            </Text>
           ) : null}
         </Box>
       </Box>
 
       <Box style={s.centerRow} pointerEvents="box-none">
         <IconButton
-          size={56}
+          diameter={56}
           icon="rewind-backward-10"
           glyph={28}
           onPress={() => {
@@ -123,7 +125,7 @@ export function ControlsLayer({
             spinner floating behind the cluster read as two half-drawn
             controls fighting over the same centre. */}
         <IconButton
-          size={72}
+          diameter={72}
           variant="primary"
           onPress={() => {
             engine.togglePlay();
@@ -138,7 +140,7 @@ export function ControlsLayer({
           })()}
         </IconButton>
         <IconButton
-          size={56}
+          diameter={56}
           icon="rewind-forward-10"
           glyph={28}
           onPress={() => {
@@ -218,7 +220,7 @@ function RowShortcut({
   label,
   onPress,
 }: Readonly<{ icon: IconName; label: string; onPress(): void }>) {
-  return <IconButton size={40} icon={icon} glyph={20} onPress={onPress} label={label} />;
+  return <IconButton diameter={40} icon={icon} glyph={20} onPress={onPress} label={label} />;
 }
 
 function ScrubRow({
@@ -247,8 +249,8 @@ function ScrubRow({
         }}
       />
       <Box style={s.timeRow}>
-        <Txt style={s.time}>{formatTimecode(engine.cur)}</Txt>
-        <Txt style={s.time}>{formatTimecode(engine.dur)}</Txt>
+        <Text style={s.time}>{formatTimecode(engine.cur)}</Text>
+        <Text style={s.time}>{formatTimecode(engine.dur)}</Text>
       </Box>
     </Box>
   );

@@ -21,8 +21,8 @@ describe('fmtDur', () => {
 
 describe('statusMeta', () => {
   it('resolves the known per-treatment statuses', () => {
-    expect(statusMeta('done').dot).toBe('#46D08D');
-    expect(statusMeta('failed').dot).toBe('#E8536A');
+    expect(statusMeta('done').dot).toBe('success');
+    expect(statusMeta('failed').dot).toBe('danger');
     expect(statusMeta('running').pulse).toBe(true);
   });
 
@@ -36,9 +36,9 @@ describe('statusMeta', () => {
 
 describe('overallMeta', () => {
   it('resolves the known roll-up states', () => {
-    expect(overallMeta('ok').dot).toBe('#46D08D');
+    expect(overallMeta('ok').dot).toBe('success');
     expect(overallMeta('running').pulse).toBe(true);
-    expect(overallMeta('failed').color).toBe('#E8536A');
+    expect(overallMeta('failed').color).toBe('danger');
   });
 
   it('falls back to the pending roll-up for unknown states', () => {

@@ -1,6 +1,6 @@
+import { setEntryDefaults } from '@kroma/ui/kit';
 import { createRouter as createTanStackRouter } from '@tanstack/react-router';
 import { routeTree } from '#site/routeTree.gen';
-import { setEntryDefaults } from '#ui/lib/field-shell';
 
 setEntryDefaults({ physicalKeyboard: true });
 

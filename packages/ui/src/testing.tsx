@@ -13,7 +13,8 @@
 //
 // Kept out of the kit's public surface: this is for tests, not for screens.
 
-import type { ReactElement } from 'react';
+import { act, type ReactElement } from 'react';
+import type { LayoutChangeEvent, LayoutRectangle } from 'react-native';
 import { FocusScope } from './lib/focus-scope';
 import { I18nProvider } from './services/i18n';
 
@@ -31,4 +32,20 @@ export function onScreen(ui: ReactElement): ReactElement {
       <FocusScope>{ui}</FocusScope>
     </I18nProvider>
   );
+}
+
+/** Hand a rendered node the box a browser would have measured, firing the
+ * `onLayout` it was given. react-native-web reports layout through a
+ * ResizeObserver, which jsdom does not implement, so nothing a component
+ * computes from its own size happens in a test until this says it did. */
+export function layout(node: Element, box: Partial<LayoutRectangle>): void {
+  const fire = (node as { __reactLayoutHandler?: (event: LayoutChangeEvent) => void })
+    .__reactLayoutHandler;
+  if (!fire) throw new Error('this node has no onLayout');
+  act(() => {
+    fire({
+      nativeEvent: { layout: { x: 0, y: 0, width: 0, height: 0, ...box } },
+      timeStamp: Date.now(),
+    } as LayoutChangeEvent);
+  });
 }

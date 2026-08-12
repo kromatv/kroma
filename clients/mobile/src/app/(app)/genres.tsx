@@ -9,7 +9,7 @@ import {
   type Show,
   sizedImageUrl,
 } from '@kroma/core';
-import { Box, styles, Txt } from '@kroma/ui/kit';
+import { Box, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -93,12 +93,12 @@ export default function Genres() {
                 style={StyleSheet.absoluteFill}
               />
               <Box style={s.tileCountPill}>
-                <Txt style={s.tileCountText}>{tile.count}</Txt>
+                <Text style={s.tileCountText}>{tile.count}</Text>
               </Box>
               <Box style={s.tileText}>
-                <Txt lines={1} style={s.tileName}>
+                <Text lines={1} style={s.tileName}>
                   {tile.name}
-                </Txt>
+                </Text>
               </Box>
             </Box>
           </Pressable>

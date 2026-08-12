@@ -1,7 +1,8 @@
 import { story } from '@kroma/workbench/story';
 import { useState } from 'react';
-import { Box } from '#ui/components/atoms/box';
+import type { ControlSize } from '#ui/lib/field-shell';
 import { SegmentedControl } from './segmented-control';
+import { segmentedControlVariants } from './segmented-control-segment';
 
 const MODES = [
   { value: 'auto', label: 'Auto', desc: 'Recommended' },
@@ -9,13 +10,14 @@ const MODES = [
   { value: 'transcode', label: 'Transcode', desc: 'CPU heavy' },
 ] as const;
 
-function Demo({ withDescs }: Readonly<{ withDescs: boolean }>) {
+function Demo({ withDescs, size }: Readonly<{ withDescs?: boolean; size?: ControlSize }>) {
   const [mode, setMode] = useState<string>('auto');
   const options = withDescs ? MODES : MODES.map(({ value, label }) => ({ value, label }));
   return (
     <SegmentedControl.Root
       label="Playback mode"
       value={mode}
+      size={size}
       options={options}
       onValueChange={setMode}
     />
@@ -45,11 +47,9 @@ export default story({
       "Don't use it for an on/off pair - that is a <Switch>.",
     ],
   },
+  variants: segmentedControlVariants,
+  omit: ['active'],
   matrix: false,
+  component: Demo,
   args: { withDescs: true },
-  render: ({ withDescs }) => (
-    <Box gap={16}>
-      <Demo withDescs={withDescs} />
-    </Box>
-  ),
 });

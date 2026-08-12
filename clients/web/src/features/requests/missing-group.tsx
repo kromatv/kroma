@@ -7,11 +7,26 @@
 
 import { type CalendarEntry, episodeTag, posterColors, sizedImageUrl } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Badge, Button, Checkbox, CheckboxFace, Icon, IconButton, Spinner } from '@kroma/ui/kit';
+import {
+  Badge,
+  Box,
+  Button,
+  Checkbox,
+  CheckboxFace,
+  Divider,
+  Focusable,
+  Icon,
+  IconButton,
+  Img,
+  Row,
+  Spinner,
+  Surface,
+  styles,
+  Text,
+} from '@kroma/ui/kit';
 import { useState } from 'react';
-import { relativeAirDate } from '#web/features/requests/airdate';
+import { relativeAirDate, sentenceCase } from '#web/features/requests/airdate';
 import { epKey, type MissingGroup } from '#web/features/requests/missing-model';
-import { Image } from '#web/shared/ui';
 
 // Episode lists longer than this collapse behind a "show more" toggle.
 const COLLAPSE_OVER = 12;
@@ -58,36 +73,38 @@ export function MissingGroupCard({
   const canAct = group.requestId ? canManage : true;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-surface-1">
-      <div className="flex items-center gap-3.5 border-b border-white/6 p-3.5 last:border-b-0">
+    <Surface pad="none" radius="2xl" border="border" overflow="hidden" role="region">
+      <Row gap={14} p={14}>
         {canAct ? (
           <Checkbox
             checked={allPicked}
             indeterminate={pickedCount > 0 && !allPicked}
-            onChange={onToggleGroup}
+            onCheckedChange={onToggleGroup}
             label={t('requests.select')}
           />
         ) : (
-          <span className="w-5" />
+          <Box w={20} />
         )}
-        <button
-          type="button"
-          onClick={onOpen}
-          className="group/head flex min-w-0 flex-1 items-center gap-3.5 text-left"
-        >
-          <div
-            className="relative h-[52px] w-[36px] flex-[0_0_36px] overflow-hidden rounded-md"
-            style={{ background: `linear-gradient(158deg, ${c1}, ${c2})` }}
-          >
-            <Image src={poster} fit="cover" fill />
-          </div>
-          <div className="min-w-0">
-            <div className="truncate text-[15px] font-bold transition-colors group-hover/head:text-accent">
-              {group.title}
-            </div>
-            <GroupMeta group={group} episodeCount={episodes.length} />
-          </div>
-        </button>
+        <Focusable onPress={onOpen} label={group.title} style={s.head}>
+          {(state) => (
+            <>
+              <Box w={36} h={52} shrink={0}>
+                <Img
+                  src={poster}
+                  background={`linear-gradient(158deg, ${c1}, ${c2})`}
+                  radius="md"
+                  fill
+                />
+              </Box>
+              <Box minW={0} shrink={1}>
+                <Text variant="label" lines={1} color={state.hovered ? 'accent' : 'text'}>
+                  {group.title}
+                </Text>
+                <GroupMeta group={group} episodeCount={episodes.length} />
+              </Box>
+            </>
+          )}
+        </Focusable>
         {canAct ? (
           <GroupSearchButton
             busy={groupBusy}
@@ -95,7 +112,8 @@ export function MissingGroupCard({
             onPress={() => onSearch(group.items)}
           />
         ) : null}
-      </div>
+      </Row>
+      {episodes.length > 0 ? <Divider color="tint/6" /> : null}
       <EpisodeList
         entries={episodes}
         canAct={canAct}
@@ -105,9 +123,15 @@ export function MissingGroupCard({
         onToggleRow={onToggleRow}
         onSearch={onSearch}
       />
-    </section>
+    </Surface>
   );
 }
+
+const s = styles({
+  head: { row: true, align: 'center', gap: 14, flex: true, minW: 0 },
+  episode: { row: true, align: 'center', gap: 14, flex: true, minW: 0, py: 10, pl: 14 },
+  tag: { w: 62, shrink: 0, fontWeight: '700', fontVariant: ['tabular-nums'] },
+});
 
 function GroupMeta({
   group,
@@ -118,13 +142,21 @@ function GroupMeta({
   const movie = group.kind === 'movie';
   const rel = movie ? relativeAirDate(group.items[0]?.airDate ?? null, locale) : '';
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] font-semibold text-dim">
+    <Row wrap gapX={8} gapY={4} mt={4}>
       <Badge tone="warning">
         {movie ? t('requests.missingMovie') : t('requests.missingCount', { count: episodeCount })}
       </Badge>
-      {group.year ? <span>{group.year}</span> : null}
-      {rel ? <span className="first-letter:uppercase">{rel}</span> : null}
-    </div>
+      {group.year ? (
+        <Text variant="meta" color="textDim">
+          {group.year}
+        </Text>
+      ) : null}
+      {rel ? (
+        <Text variant="meta" color="textDim">
+          {sentenceCase(rel, locale)}
+        </Text>
+      ) : null}
+    </Row>
   );
 }
 
@@ -175,11 +207,12 @@ function EpisodeList({
   const collapsed = !expanded && entries.length > COLLAPSE_OVER;
   const visible = collapsed ? entries.slice(0, COLLAPSED_ROWS) : entries;
   return (
-    <ul className="divide-y divide-white/4">
-      {visible.map((e) => (
+    <ul style={LIST}>
+      {visible.map((e, index) => (
         <EpisodeRow
           key={epKey(e)}
           entry={e}
+          ruled={index > 0}
           canAct={canAct}
           busy={busyKeys.has(epKey(e))}
           done={doneKeys.has(epKey(e))}
@@ -189,26 +222,34 @@ function EpisodeList({
         />
       ))}
       {entries.length > COLLAPSE_OVER ? (
-        <li className="px-1.5 py-1.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            iconRight={collapsed ? 'chevron-down' : 'chevron-up'}
-            label={
-              collapsed
-                ? t('requests.showMore', { count: entries.length - COLLAPSED_ROWS })
-                : t('requests.showLess')
-            }
-            onPress={() => setExpanded((v) => !v)}
-          />
+        <li style={LIST_ITEM}>
+          <Divider color="tint/4" />
+          <Box px={6} py={6} self="flex-start">
+            <Button
+              variant="ghost"
+              size="sm"
+              iconRight={collapsed ? 'chevron-down' : 'chevron-up'}
+              label={
+                collapsed
+                  ? t('requests.showMore', { count: entries.length - COLLAPSED_ROWS })
+                  : t('requests.showLess')
+              }
+              onPress={() => setExpanded((v) => !v)}
+            />
+          </Box>
         </li>
       ) : null}
     </ul>
   );
 }
 
+const LIST = { margin: 0, padding: 0, listStyle: 'none' } as const;
+
+const LIST_ITEM = { display: 'block' } as const;
+
 function EpisodeRow({
   entry,
+  ruled,
   canAct,
   busy,
   done,
@@ -217,6 +258,7 @@ function EpisodeRow({
   onSearch,
 }: Readonly<{
   entry: CalendarEntry;
+  ruled: boolean;
   canAct: boolean;
   busy: boolean;
   done: boolean;
@@ -225,24 +267,36 @@ function EpisodeRow({
   onSearch: () => void;
 }>) {
   const cells = <EpisodeCells entry={entry} />;
+  const rule = ruled ? <Divider color="tint/4" /> : null;
 
   if (!canAct) {
-    return <li className="flex items-center gap-3.5 py-2.5 pl-12 pr-3.5">{cells}</li>;
+    return (
+      <li style={LIST_ITEM}>
+        {rule}
+        <Row gap={14} py={10} pl={48} pr={14}>
+          {cells}
+        </Row>
+      </li>
+    );
   }
   return (
-    <li className="flex items-center transition-colors hover:bg-white/3">
-      <button
-        type="button"
-        aria-pressed={picked}
-        onClick={onToggle}
-        className="flex min-w-0 flex-1 items-center gap-3.5 py-2.5 pl-3.5 text-left"
-      >
-        <CheckboxFace checked={picked} />
-        {cells}
-      </button>
-      <span className="px-2">
-        <RowAction busy={busy} done={done} onSearch={onSearch} />
-      </span>
+    <li style={LIST_ITEM}>
+      {rule}
+      <Row minW={0}>
+        <Focusable
+          role="checkbox"
+          checked={picked}
+          onPress={onToggle}
+          label={episodeTag(entry)}
+          style={s.episode}
+        >
+          <CheckboxFace checked={picked} />
+          {cells}
+        </Focusable>
+        <Box px={8} justify="center">
+          <RowAction busy={busy} done={done} onSearch={onSearch} />
+        </Box>
+      </Row>
     </li>
   );
 }
@@ -253,19 +307,23 @@ function EpisodeCells({ entry }: Readonly<{ entry: CalendarEntry }>) {
   const rel = relativeAirDate(entry.airDate, locale);
   return (
     <>
-      <span className="w-[62px] flex-[0_0_62px] font-mono text-[13px] font-bold text-accent tabular-nums">
+      <Text variant="meta" font="mono" color="accent" style={s.tag}>
         {episodeTag(entry)}
-      </span>
-      <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-dim">
-        {rel ? (
-          <span className="inline-block first-letter:uppercase">{rel}</span>
-        ) : (
-          <span className="italic text-white/35">{t('requests.noDate')}</span>
-        )}
-      </span>
+      </Text>
+      {rel ? (
+        <Text variant="meta" color="textDim" lines={1} flex minW={0}>
+          {sentenceCase(rel, locale)}
+        </Text>
+      ) : (
+        <Text variant="meta" color="white/35" lines={1} flex minW={0} style={ITALIC}>
+          {t('requests.noDate')}
+        </Text>
+      )}
     </>
   );
 }
+
+const ITALIC = { fontStyle: 'italic' } as const;
 
 function RowAction({
   busy,

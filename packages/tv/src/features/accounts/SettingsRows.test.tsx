@@ -22,8 +22,8 @@ function show(items: readonly SettingsEntry[]) {
 }
 
 afterEach(cleanup);
-// The press guard lives at module scope, so it survives unmounting — and a
-// test — unless dropped here.
+// The press guard lives at module scope, so it survives unmounting (and a
+// test) unless dropped here.
 afterEach(clearPressGuard);
 
 describe('SettingsRows', () => {
@@ -90,7 +90,9 @@ describe('SettingsRows', () => {
     // The dialog's OK guard arms on mount and would otherwise swallow this
     // press in a real test-clock window.
     clearPressGuard();
-    fireEvent.click(screen.getByRole('button', { name: 'Swedish' }));
+    // An option of the list, not a button: the picker is a one-of-N choice and
+    // says so, with the chosen row carrying the selection.
+    fireEvent.click(screen.getByRole('option', { name: 'Swedish' }));
     expect(set).toHaveBeenCalledWith('sv');
   });
 
@@ -107,11 +109,13 @@ describe('SettingsRows', () => {
       }),
       actionItem({ id: 'quit', label: 'profileMenu.quitApp', icon: 'check', run }),
     ]);
-    const [toggle, action] = screen.getAllByRole('button');
-    if (!toggle || !action) throw new Error('expected a toggle and an action row');
+    // A row that turns something on and off is a switch, and says which way it
+    // is set; a row that runs something stays a button.
+    const toggle = screen.getByRole('switch');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
     fireEvent.click(toggle);
     expect(setToggle).toHaveBeenCalledWith(true);
-    fireEvent.click(action);
+    fireEvent.click(screen.getByRole('button'));
     expect(run).toHaveBeenCalledTimes(1);
   });
 

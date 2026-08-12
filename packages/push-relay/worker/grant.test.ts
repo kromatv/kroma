@@ -52,7 +52,7 @@ describe('grants', () => {
 
     // Flip a bit in the CIPHERTEXT, not in the base64 text. The trailing
     // base64url character carries fewer than six significant bits, so altering
-    // it can re-encode to the very same bytes — a test that did that would pass
+    // it can re-encode to the very same bytes; a test that did that would pass
     // without GCM ever being asked to reject anything, and only on some runs,
     // since the IV is random.
     for (const at of [IV_BYTES, bytes.length - 1]) {

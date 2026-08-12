@@ -9,7 +9,6 @@ import { FocusScope } from '#ui/lib/focus-scope';
 import { OverlayHost } from '#ui/lib/overlay-host';
 import { clearPressGuard } from '#ui/lib/press-guard';
 import { Dialog } from './dialog';
-import { DialogFooter } from './dialog-actions';
 
 beforeAll(() => configureRemote());
 
@@ -36,12 +35,12 @@ function Screen({ open, onConfirm }: Readonly<{ open: boolean; onConfirm?: () =>
     <FocusScope>
       <Focusable label="Derriere" autoFocus />
       <Focusable label="Voisin" />
-      <Dialog open={open} title="Supprimer">
-        <DialogFooter>
+      <Dialog.Root open={open} title="Supprimer">
+        <Dialog.Actions>
           <Focusable label="Annuler" />
           <Focusable label="Confirmer" autoFocus onPress={onConfirm} />
-        </DialogFooter>
-      </Dialog>
+        </Dialog.Actions>
+      </Dialog.Root>
     </FocusScope>
   );
 }
@@ -75,11 +74,11 @@ describe('a dialog over a navigated screen', () => {
     render(
       <FocusScope>
         <Focusable label="Derriere" autoFocus onPress={behind} />
-        <Dialog open title="Supprimer">
-          <DialogFooter>
+        <Dialog.Root open title="Supprimer">
+          <Dialog.Actions>
             <Focusable label="Confirmer" autoFocus onPress={confirm} />
-          </DialogFooter>
-        </Dialog>
+          </Dialog.Actions>
+        </Dialog.Root>
       </FocusScope>,
     );
 
@@ -99,12 +98,12 @@ describe('a dialog over a navigated screen', () => {
       <OverlayHost>
         <FocusScope>
           <Focusable label="Derriere" autoFocus />
-          <Dialog open title="Supprimer">
-            <DialogFooter>
+          <Dialog.Root open title="Supprimer">
+            <Dialog.Actions>
               <Focusable label="Annuler" />
               <Focusable label="Confirmer" autoFocus />
-            </DialogFooter>
-          </Dialog>
+            </Dialog.Actions>
+          </Dialog.Root>
         </FocusScope>
       </OverlayHost>,
     );
@@ -121,11 +120,11 @@ describe('a dialog over a navigated screen', () => {
   it('keeps using a modal where no host is mounted (the web app, a phone)', () => {
     const { container } = render(
       <FocusScope>
-        <Dialog open title="Supprimer">
-          <DialogFooter>
+        <Dialog.Root open title="Supprimer">
+          <Dialog.Actions>
             <Focusable label="Confirmer" autoFocus />
-          </DialogFooter>
-        </Dialog>
+          </Dialog.Actions>
+        </Dialog.Root>
       </FocusScope>,
     );
     expect(lit('Confirmer')).toBe(true);
@@ -139,11 +138,11 @@ describe('a dialog over a navigated screen', () => {
       <OverlayHost>
         <FocusScope>
           <Focusable label="Derriere" autoFocus />
-          <Dialog open title="Supprimer">
-            <DialogFooter>
+          <Dialog.Root open title="Supprimer">
+            <Dialog.Actions>
               <Focusable label="Confirmer" autoFocus />
-            </DialogFooter>
-          </Dialog>
+            </Dialog.Actions>
+          </Dialog.Root>
         </FocusScope>
       </OverlayHost>,
     );
@@ -153,11 +152,11 @@ describe('a dialog over a navigated screen', () => {
       <OverlayHost>
         <FocusScope>
           <Focusable label="Derriere" autoFocus />
-          <Dialog open={false} title="Supprimer">
-            <DialogFooter>
+          <Dialog.Root open={false} title="Supprimer">
+            <Dialog.Actions>
               <Focusable label="Confirmer" autoFocus />
-            </DialogFooter>
-          </Dialog>
+            </Dialog.Actions>
+          </Dialog.Root>
         </FocusScope>
       </OverlayHost>,
     );

@@ -3,21 +3,21 @@ import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { IconButton } from '#ui/components/atoms/icon-button';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { SegmentedControl } from '#ui/components/molecules/segmented-control';
 import { Select } from '#ui/components/molecules/select';
 import { CONTROL, type ControlSize } from '#ui/lib/field-shell';
 
 const LEVELS = [
-  { value: 'all', label: 'Tout' },
+  { value: 'all', label: 'All' },
   { value: 'info', label: 'Info' },
-  { value: 'warn', label: 'Avertissements' },
-  { value: 'error', label: 'Erreurs' },
+  { value: 'warn', label: 'Warnings' },
+  { value: 'error', label: 'Errors' },
 ] as const;
 
 const SOURCES = [
-  { value: 'all', label: 'Toutes les sources' },
+  { value: 'all', label: 'Every source' },
   { value: 'server', label: 'kroma_server' },
   { value: 'torrents', label: 'tv.kroma.torrents' },
 ];
@@ -30,24 +30,25 @@ function Row({ size }: Readonly<{ size: ControlSize }>) {
     <Box row align="center" gap={12} wrap>
       <SegmentedControl.Root
         size={size}
-        label="Niveau"
+        label="Level"
         value={level}
         options={LEVELS}
         onValueChange={setLevel}
       />
-      <Select size={size} label="Source" value={source} options={SOURCES} onChange={setSource} />
-      <Field
-        label="Filtrer les lignes"
-        hideLabel
-        icon="search"
-        placeholder="Filtrer les lignes…"
-        size={size}
-        // The console row is a browser page: a real input, not the TV caret form.
-        entry={{ physicalKeyboard: true }}
-        w={240}
-      />
-      <Button size={size} variant="glass" icon="refresh" label="Rafraîchir" />
-      <IconButton control={size} variant="glass" icon="dots-vertical" label="Plus" />
+      <Select.Root label="Source" value={source} onValueChange={setSource}>
+        <Select.Trigger size={size} />
+        {SOURCES.map((option) => (
+          <Select.Item key={option.value} value={option.value}>
+            {option.label}
+          </Select.Item>
+        ))}
+      </Select.Root>
+      <Field.Root label="Filter the lines" hideLabel size={size} w={240}>
+        {/* The console row is a browser page: a real input, not the TV caret form. */}
+        <Field.Input icon="search" placeholder="Filter the lines…" physicalKeyboard />
+      </Field.Root>
+      <Button size={size} variant="glass" icon="refresh" label="Refresh" />
+      <IconButton control={size} variant="glass" icon="dots-vertical" label="More" />
     </Box>
   );
 }
@@ -56,9 +57,9 @@ function Sized({ size }: Readonly<{ size: ControlSize }>) {
   const m = CONTROL[size];
   return (
     <Box gap={10}>
-      <Txt variant="overline" color="textDim">
+      <Text variant="overline" color="textDim">
         {`${size} · corner ${m.radius} · pad ${m.px}/${m.py} · line ${m.line}`}
-      </Txt>
+      </Text>
       <Row size={size} />
     </Box>
   );
@@ -72,9 +73,16 @@ export default story({
 setEntryDefaults({ physicalKeyboard: true, size: 'sm' });
 
 // ...and every control follows, or says so itself.
-<SegmentedControl.Root label="Niveau" value={level} options={LEVELS} onValueChange={setLevel} />
-<Select label="Source" value={source} options={SOURCES} onChange={setSource} />
-<Field label="Filtrer" hideLabel icon="search" placeholder="Filtrer les lignes…" />`,
+<SegmentedControl.Root label="Level" value={level} options={LEVELS} onValueChange={setLevel} />
+
+<Select.Root label="Source" value={source} onValueChange={setSource}>
+  <Select.Trigger />
+  <Select.Item value="server">kroma_server</Select.Item>
+</Select.Root>
+
+<Field.Root label="Filter" hideLabel>
+  <Field.Input icon="search" placeholder="Filter the lines…" />
+</Field.Root>`,
   guidelines: {
     do: [
       'Let the shell decide the height: pin a width if you must, never an `h-*`.',
@@ -87,14 +95,14 @@ setEntryDefaults({ physicalKeyboard: true, size: 'sm' });
   },
   matrix: false,
   width: 'fill',
+  component: Row,
   args: { size: 'sm' as ControlSize },
   controls: { size: ['sm', 'md', 'tv'] },
-  render: ({ size }) => <Row size={size} />,
   scenes: [
     {
       name: 'Both sizes',
       docs: 'The console density and the ten-foot one, each internally consistent.',
-      render: () => (
+      example: () => (
         <Box gap={28}>
           <Sized size="sm" />
           <Sized size="md" />

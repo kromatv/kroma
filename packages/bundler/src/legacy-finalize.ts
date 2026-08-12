@@ -2,20 +2,17 @@
 // after the modern one - see the shell's package.json):
 //
 //  1. Post-processes <dist>/legacy/style.css: the kroma-legacy-css shims, then
-//     @csstools/postcss-cascade-layers (compiles @layer away - old engines drop
-//     unknown at-rules wholesale), then Lightning CSS down-level + minify for
-//     the target Chrome floor. Done here, on the emitted file, so the
-//     transforms always see Tailwind's final output regardless of plugin order.
+//     Lightning CSS down-level + minify for the target Chrome floor. Done here,
+//     on the emitted file, so the transforms always see the final stylesheet
+//     regardless of plugin order.
 //
-//  2. Rewrites <dist>/index.html into an engine-gated loader: Chrome 99+ (has
-//     CSSLayerBlockRule, the modern tier's real floor - Tailwind v4 keeps its
-//     cascade layers there) loads the untouched ESM bundle; anything older
+//  2. Rewrites <dist>/index.html into an engine-gated loader: Chrome 99+ (probed
+//     through CSSLayerBlockRule) loads the untouched ESM bundle; anything older
 //     loads the flattened ES2015 IIFE bundle. One package serves every
 //     generation.
 
 import { existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import cascadeLayers from '@csstools/postcss-cascade-layers';
 import { kromaLegacyCss } from '@kroma/bundler/legacy-css';
 import { transform } from 'lightningcss';
 import postcss from 'postcss';
@@ -24,7 +21,7 @@ import type { Plugin } from 'vite';
 async function downlevelCss(distDir: string, chrome: number): Promise<void> {
   const path = join(distDir, 'legacy', 'style.css');
   const raw = readFileSync(path, 'utf8');
-  const shimmed = await postcss([kromaLegacyCss(), cascadeLayers()]).process(raw, {
+  const shimmed = await postcss([kromaLegacyCss()]).process(raw, {
     from: path,
     map: false,
   });

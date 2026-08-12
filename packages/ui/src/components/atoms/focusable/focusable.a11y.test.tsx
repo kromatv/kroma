@@ -53,4 +53,34 @@ describe('accessibility state reaches the DOM', () => {
     expect(el.getAttribute('aria-selected')).toBeNull();
     expect(el.getAttribute('aria-expanded')).toBeNull();
   });
+
+  it('keeps the state of a control that is disabled as well as checked', () => {
+    render(<Switch label="Suivre" checked disabled />);
+    const el = screen.getByLabelText('Suivre');
+    expect(el.getAttribute('aria-disabled')).toBe('true');
+    expect(el.getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('announces a toggle button as pressed, not as selected', () => {
+    render(<Focusable label="Ma liste" pressed />);
+    const el = screen.getByLabelText('Ma liste');
+    expect(el.getAttribute('aria-pressed')).toBe('true');
+    expect(el.getAttribute('aria-selected')).toBeNull();
+  });
+
+  it('announces a control that is working', () => {
+    render(<Focusable label="Envoyer" busy />);
+    expect(screen.getByLabelText('Envoyer').getAttribute('aria-busy')).toBe('true');
+  });
+
+  it('gives an adjustable control the value it adjusts', () => {
+    render(
+      // biome-ignore lint/a11y/useValidAriaRole: React Native's vocabulary, not ARIA's - react-native-web renders `adjustable` as the ARIA `slider`.
+      <Focusable label="Seam" role="adjustable" value={{ min: 0, max: 100, now: 40 }} />,
+    );
+    const el = screen.getByLabelText('Seam');
+    expect(el.getAttribute('role')).toBe('slider');
+    expect(el.getAttribute('aria-valuenow')).toBe('40');
+    expect(el.getAttribute('aria-valuemax')).toBe('100');
+  });
 });

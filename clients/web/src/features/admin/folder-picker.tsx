@@ -3,19 +3,22 @@
 // `onCancel` adds a cancel button for callers that show the browser on demand.
 import type { AdminFsList } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, IconButton } from '@kroma/ui/kit';
-import { IconChevronRight, IconFolder } from '@tabler/icons-react';
-import { type ReactNode, useEffect, useState } from 'react';
+import { Box, Button, color, Divider, Icon, IconButton, ListRow, Row, Text } from '@kroma/ui/kit';
+import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { kromaClient } from '#web/shared/lib/api';
 
+// A capped, scrolling list: `overflow-y` and `max-height` have no React Native
+// spelling, so the list stays a real element.
+const LIST_PANE: CSSProperties = { maxHeight: 208, overflowY: 'auto' };
+
 const SELECTED_FILL = {
-  backgroundColor: 'rgba(70, 208, 141, 0.15)',
-  borderColor: 'rgba(70, 208, 141, 0.35)',
+  backgroundColor: color('success/15'),
+  borderColor: color('success/35'),
 } as const;
 
 const DASHED = {
   borderWidth: 1,
-  borderColor: 'rgba(255, 255, 255, 0.2)',
+  borderColor: color('tint/20'),
   borderStyle: 'dashed',
 } as const;
 
@@ -56,32 +59,34 @@ export function FolderPicker({
   let listBody: ReactNode;
   if (loading && entries.length === 0) {
     listBody = (
-      <div className="px-3 py-6 text-center text-[12.5px] text-dim">{t('common.loading')}</div>
+      <Text variant="meta" color="textDim" textAlign="center" px={12} py={24}>
+        {t('common.loading')}
+      </Text>
     );
   } else if (entries.length === 0) {
     listBody = (
-      <div className="px-3 py-6 text-center text-[12.5px] text-dim">{t('admin.noSubfolders')}</div>
+      <Text variant="meta" color="textDim" textAlign="center" px={12} py={24}>
+        {t('admin.noSubfolders')}
+      </Text>
     );
   } else {
-    listBody = entries.map((e) => (
-      <button
-        key={e.path}
-        type="button"
-        onClick={() => setPath(e.path)}
-        className="flex w-full items-center gap-2.5 px-3 py-2.25 text-left hover:bg-white/5"
-      >
-        <IconFolder size={16} stroke={1.8} className="shrink-0 text-accent" />
-        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-text/78">
-          {e.name}
-        </span>
-        <IconChevronRight size={14} stroke={2} className="shrink-0 text-text/35" />
-      </button>
-    ));
+    listBody = (
+      <ListRow.Group size="sm">
+        {entries.map((e) => (
+          <ListRow.Root key={e.path} size="sm" onPress={() => setPath(e.path)}>
+            <ListRow.Leading>
+              <Icon name="folder" size={16} thickness={1.8} color="accent" />
+            </ListRow.Leading>
+            <ListRow.Label>{e.name}</ListRow.Label>
+          </ListRow.Root>
+        ))}
+      </ListRow.Group>
+    );
   }
 
   return (
-    <div className="overflow-hidden rounded-md border border-border-strong bg-[#0F0F13]">
-      <div className="flex items-center gap-2 border-b border-white/6 px-3 py-2.5">
+    <Box radius="xs" bg="bg" border="borderStrong" overflow="hidden">
+      <Row gap={8} px={12} py={10}>
         <IconButton
           variant="ghost"
           control="sm"
@@ -90,18 +95,20 @@ export function FolderPicker({
           onPress={() => list?.parent != null && setPath(list.parent)}
           disabled={list?.parent == null}
         />
-        <IconFolder size={15} stroke={1.8} className="shrink-0 text-accent" />
-        <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-text/80">
+        <Icon name="folder" size={15} thickness={1.8} color="accent" />
+        <Text variant="meta" color="textMuted" lines={1} flex={1} minW={0}>
           {atRoot ? t('admin.volumes') : path}
-        </span>
-      </div>
+        </Text>
+      </Row>
+      <Divider color="tint/6" />
 
-      <div className="max-h-52 overflow-y-auto">{listBody}</div>
+      <div style={LIST_PANE}>{listBody}</div>
 
-      <div className="flex items-center justify-between gap-2 border-t border-white/6 px-3 py-2.5">
-        <span className="min-w-0 flex-1 truncate text-[11.5px] font-semibold text-dim">
+      <Divider color="tint/6" />
+      <Row between gap={8} px={12} py={10}>
+        <Text variant="meta" color="textDim" lines={1} flex={1} minW={0}>
           {value || ''}
-        </span>
+        </Text>
         {onCancel ? (
           <Button size="sm" variant="ghost" label={t('common.cancel')} onPress={onCancel} />
         ) : null}
@@ -114,8 +121,8 @@ export function FolderPicker({
           disabled={!canSelect}
           style={isSelected ? SELECTED_FILL : null}
         />
-      </div>
-    </div>
+      </Row>
+    </Box>
   );
 }
 
@@ -161,14 +168,14 @@ export function FolderField({
     );
   }
   return (
-    <div className="flex items-center gap-2.5 rounded-md border border-border bg-[#0F0F13] px-3 py-2">
-      <IconFolder size={16} stroke={1.8} className="shrink-0 text-accent" />
-      <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-text/78">
+    <Row gap={10} px={12} py={8} radius="xs" bg="bg" border="border">
+      <Icon name="folder" size={16} thickness={1.8} color="accent" />
+      <Text variant="meta" color="textMuted" lines={1} flex={1} minW={0}>
         {value}
-      </span>
+      </Text>
       <IconButton
         variant="ghost"
-        size={26}
+        diameter={26}
         glyph={15}
         icon="pencil"
         label={t('admin.changeFolder')}
@@ -177,13 +184,13 @@ export function FolderField({
       {onClear ? (
         <IconButton
           variant="ghost"
-          size={26}
+          diameter={26}
           glyph={15}
           icon="x"
           label={t('admin.removeFolder')}
           onPress={onClear}
         />
       ) : null}
-    </div>
+    </Row>
   );
 }

@@ -11,7 +11,7 @@ import {
   Rail,
   Skeleton,
   Spinner,
-  Txt,
+  Text,
   useGrowingCount,
 } from '@kroma/ui/kit';
 import { createRoot } from 'react-dom/client';
@@ -68,7 +68,8 @@ function Bench() {
           {GRID.slice(0, count).map((rail, row) => (
             <FocusSlot key={rail.id} onActive={isNearEnd(row) ? grow : undefined}>
               <Box mb={8} mt={18}>
-                <Rail title={rail.title}>
+                <Rail.Root>
+                  <Rail.Title>{rail.title}</Rail.Title>
                   {rail.tiles.map((tile) => (
                     <MediaCard
                       key={tile.id}
@@ -81,12 +82,12 @@ function Bench() {
                       onPress={() => {}}
                     />
                   ))}
-                </Rail>
+                </Rail.Root>
               </Box>
             </FocusSlot>
           ))}
           <Loaders count={LOADERS} />
-          <Txt color="textDim">{`${RAILS} rows x ${TILES} tiles`}</Txt>
+          <Text color="textDim">{`${RAILS} rows x ${TILES} tiles`}</Text>
         </FocusScroll>
       </Box>
     </FocusScope>

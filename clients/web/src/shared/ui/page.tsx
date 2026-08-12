@@ -1,9 +1,27 @@
 // The single layout dialect for every page in the app, catalogue and admin
-// console alike.
+// console alike. These are class names rather than <Box> props because neither
+// shape has a React Native spelling - a landmark element, a fluid clamp(), a
+// fixed position, a backdrop filter - so the rules live in `../../styles.css`
+// and this file names them.
 
-export const PAGE_MAIN = 'min-w-0 px-(--gutter-web) pb-20 pt-9';
+/** The frame every screen's `<main>` sits in: the fluid `--gutter-web` side
+ *  padding and the app's vertical rhythm. */
+export const PAGE_MAIN = 'page-main';
 
-export const PAGE_TITLE =
-  'font-display text-[clamp(26px,5vw,32px)] font-bold leading-tight tracking-[-.02em]';
+/** The auto-filled poster grid every catalogue listing and result page renders
+ *  into: cells as wide as the fluid `--card-w`, as many as the row holds. */
+export const POSTER_GRID = 'poster-grid';
 
-export const PAGE_SUBTITLE = 'mt-1.5 text-[14.5px] font-medium text-dim max-sm:text-[15.5px]';
+/**
+ * The scrim a modal drops over the page.
+ *
+ * Its ink is the one colour in the app deeper than the page ground, and
+ * deliberately not a token: a dialog has to read as sitting IN FRONT of the
+ * page, which it cannot do while painted in the page's own colour.
+ */
+export const MODAL_SCRIM = 'modal-scrim';
+
+/** The ground the signed-out screens paint on: the gate, `/join` and the error
+ *  page, which are one surface a reader meets in three places. */
+export const PAGE_RADIAL =
+  'radial-gradient(120% 90% at 50% 0%, var(--kroma-surface-1), var(--kroma-bg) 70%)';

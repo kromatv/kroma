@@ -21,7 +21,7 @@ const TABS = [
 const SCREENS = TABS.map((tab) => ({
   ...tab,
   tabBarIcon: ({ color }: { color: ColorValue }) => (
-    <Icon name={tab.icon} size={24} stroke={1.8} color={String(color)} />
+    <Icon name={tab.icon} size={24} thickness={1.8} color={String(color)} />
   ),
 }));
 

@@ -21,7 +21,8 @@ export interface TvFrameOptions {
  * desktop Chrome ignores the `<meta name="viewport">` a real TV webview reads
  * for its exact canvas. A `transform` on `#root` becomes the containing block
  * for the app's `position: fixed` full-screen layers, and the injected rules
- * are unlayered so they beat tv.css's `@layer base` without `!important`.
+ * outrank tv.css's own html/body/#root rules on specificity, without
+ * `!important`.
  *
  * Never runs in `vite build` (`apply: 'serve'`). Press ` (backtick) to toggle
  * framed / full-window; the choice is remembered in localStorage.

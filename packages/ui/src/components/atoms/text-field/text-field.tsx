@@ -8,7 +8,7 @@ import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { color, styles, useTheme } from '#ui/core';
 import { Caret } from '#ui/lib/caret';
 import {
@@ -33,10 +33,10 @@ const TYPE_PROPS: Record<TextFieldType, Partial<TextInputProps>> = {
   number: { keyboardType: 'numeric', inputMode: 'numeric' },
 };
 
-interface TextFieldProps extends Omit<BoxProps, 'children' | 'onChange' | 'ring'> {
+interface TextFieldProps extends Omit<BoxProps, 'children' | 'ring'> {
   value?: string;
   defaultValue?: string;
-  onChange?: (next: string) => void;
+  onValueChange?: (next: string) => void;
   type?: TextFieldType;
   onSubmit?: () => void;
   /** After the entry takes focus. A shell drawn AROUND this field (see
@@ -78,7 +78,7 @@ interface TextFieldProps extends Omit<BoxProps, 'children' | 'onChange' | 'ring'
 function TextField({
   value: valueProp,
   defaultValue = '',
-  onChange,
+  onValueChange,
   type = 'text',
   onSubmit,
   onFocus,
@@ -107,7 +107,7 @@ function TextField({
   const group = useGroupMember(onFocus, onBlur);
   const metrics = controlMetrics(size ?? group.size ?? undefined);
   const CONTENT = metrics.line;
-  const [value, setValue] = useControllable(valueProp, defaultValue, onChange);
+  const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const own = useRef<TextInput>(null);
@@ -146,7 +146,7 @@ function TextField({
           never set the row height. */}
       {icon ? (
         <Box w={CONTENT} h={CONTENT} center>
-          <Icon name={icon} size={20} stroke={1.8} color="text/50" />
+          <Icon name={icon} size={20} thickness={1.8} color="text/50" />
         </Box>
       ) : null}
       {physicalKeyboard ? (
@@ -216,7 +216,7 @@ function TextField({
 }
 
 // The TV spelling of the same field, so it must measure the same: the shell's
-// font size (not <Txt>'s `body` role, which is a different size at `sm`), and a
+// font size (not <Text>'s `body` role, which is a different size at `sm`), and a
 // line box exactly the content row - native CLIPS text whose lineHeight
 // overflows its box, where the web merely spills, so an inherited 1.55 ratio
 // mis-seats the value on tvOS alone.
@@ -238,13 +238,13 @@ function SoftValue({
   const shown = masked ? '•'.repeat(value.length) : value;
   return (
     <Box row align="center" flex gap={2} h={content}>
-      <Txt
+      <Text
         lines={1}
         style={[s.tvValue, { fontSize, lineHeight: content }, textStyle]}
         color={value ? 'text' : PLACEHOLDER}
       >
         {shown || placeholder || ''}
-      </Txt>
+      </Text>
       <Caret height={content} />
     </Box>
   );
@@ -264,7 +264,12 @@ function RevealButton({
         style={s.reveal}
         states={REVEAL_STATES}
       >
-        <Icon name={revealed ? 'eye-off' : 'eye'} size={REVEAL_SIZE} stroke={1.8} color="text/50" />
+        <Icon
+          name={revealed ? 'eye-off' : 'eye'}
+          size={REVEAL_SIZE}
+          thickness={1.8}
+          color="text/50"
+        />
       </Focusable>
     </Box>
   );

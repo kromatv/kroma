@@ -2,80 +2,31 @@
 // its own view controller - the remote is confined to the options, and a
 // popover anchored to the trigger would be clipped inside a ScrollView.
 
-import { Box } from '#ui/components/atoms/box';
-import { Focusable } from '#ui/components/atoms/focusable';
-import { Icon } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
 import { Dialog } from '#ui/components/organisms/dialog';
-import { sv } from '#ui/core';
 import { FocusColumn } from '#ui/lib/focus-scope';
+import { pointerDriving } from '#ui/lib/input-source';
+import { DIALOG_ROW, type SelectDismissReason, SelectRowContext } from './select-context';
 import type { SelectSurfaceProps } from './select-surface';
 
-const optionVariants = sv({
-  slots: {
-    root: {
-      row: true,
-      align: 'center',
-      gap: 12,
-      px: 14,
-      py: 12,
-      radius: 'md',
-      _hover: { bg: 'tint/8' },
-    },
-    ink: { shrink: 1 },
-  },
-  variants: {
-    chosen: { true: { ink: { color: 'text' } }, false: { ink: { color: 'textMuted' } } },
-  },
-  defaults: { chosen: false },
-});
+// The dialog's two ways out, and it is handed neither: the backdrop belongs to
+// a pointer, and everything else here is Back - a remote's button, a phone's
+// system gesture, the key a browser TV shell sends.
+function dismissReason(): SelectDismissReason {
+  return pointerDriving() ? 'outside' : 'back';
+}
 
-function SelectOptionsDialog({
-  open,
-  onClose,
-  label,
-  options,
-  value,
-  onPick,
-}: Readonly<SelectSurfaceProps>) {
+function SelectOptionsDialog({ open, onDismiss, label, items }: Readonly<SelectSurfaceProps>) {
   return (
-    <Dialog open={open} onClose={onClose} title={label} width={560}>
+    <Dialog.Root open={open} onClose={() => onDismiss(dismissReason())} title={label} width="md">
       <FocusColumn>
-        {options.map((option) => (
-          <Focusable
-            key={option.value}
-            role="option"
-            selected={option.value === value}
-            label={option.label}
-            disabled={option.disabled}
-            onPress={() => onPick(option.value)}
-            sv={optionVariants}
-            vars={{ chosen: option.value === value }}
-          >
-            {(state) => (
-              <>
-                {option.icon ? <Icon name={option.icon} size={18} color="textMuted" /> : null}
-                <Txt variant="body" lines={1} style={state.slots.ink}>
-                  {option.label}
-                </Txt>
-                <Box flex />
-                {option.note ? (
-                  <Txt variant="meta" color="textDim">
-                    {option.note}
-                  </Txt>
-                ) : null}
-                <Box w={18} align="center">
-                  {option.value === value ? (
-                    <Icon name="check" size={16} color="accentText" />
-                  ) : null}
-                </Box>
-              </>
-            )}
-          </Focusable>
+        {items.map((item) => (
+          <SelectRowContext.Provider key={item.key} value={DIALOG_ROW}>
+            {item}
+          </SelectRowContext.Provider>
         ))}
       </FocusColumn>
-    </Dialog>
+    </Dialog.Root>
   );
 }
 
-export { optionVariants, SelectOptionsDialog };
+export { SelectOptionsDialog };

@@ -5,8 +5,7 @@
 
 import { formatBytes, type StoreModule } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, EmptyState, Surface } from '@kroma/ui/kit';
-import { IconArrowRight } from '@tabler/icons-react';
+import { Box, Button, EmptyState, Icon, ListRow, Row, Text } from '@kroma/ui/kit';
 import type { OpModule } from '#web/features/admin/module-ops';
 import { OpProgress } from '#web/features/admin/module-store';
 import { Image } from '#web/shared/ui';
@@ -26,41 +25,41 @@ function UpdateRow({
 }>) {
   const t = useT();
   return (
-    <div className="flex items-center gap-3.5 border-b border-white/4 px-5 py-3.5 last:border-b-0">
-      <button type="button" onClick={onOpen} aria-label={m.name} className="shrink-0">
-        {m.icon ? (
-          <Image src={m.icon} fit="cover" className="h-9 w-9 rounded-lg" />
+    <ListRow.Root size="md" onPress={onOpen}>
+      <ListRow.Leading>
+        <Box w={36} h={36} radius="sm" overflow="hidden" bg={m.icon ? undefined : 'tint/5'}>
+          {m.icon ? <Image src={m.icon} fit="cover" fill /> : null}
+        </Box>
+      </ListRow.Leading>
+      <ListRow.Label>{m.name}</ListRow.Label>
+      <Row gap={6}>
+        <Text variant="meta" color="textDim">
+          v{m.installedVersion}
+        </Text>
+        <Icon name="arrow-right" size={12} thickness={2.2} color="textDim" />
+        <Text variant="meta" color="accentText">
+          v{m.version}
+        </Text>
+        {m.size ? (
+          <Text variant="meta" color="textDim">
+            · {formatBytes(m.size)}
+          </Text>
+        ) : null}
+      </Row>
+      <ListRow.Trailing>
+        {op ? (
+          <OpProgress op={op} />
         ) : (
-          <div className="h-9 w-9 rounded-lg bg-white/5" />
+          <Button
+            variant="glass"
+            size="sm"
+            label={t('admin.modulesUpdate')}
+            onPress={onUpdate}
+            disabled={busy}
+          />
         )}
-      </button>
-      <div className="min-w-0 flex-1">
-        <button
-          type="button"
-          onClick={onOpen}
-          className="block max-w-full truncate text-left text-[14px] font-bold text-text transition-colors hover:text-accent"
-        >
-          {m.name}
-        </button>
-        <div className="flex items-center gap-1.5 text-[12px] font-medium text-dim">
-          <span>v{m.installedVersion}</span>
-          <IconArrowRight size={12} stroke={2.2} />
-          <span className="font-semibold text-accent">v{m.version}</span>
-          {m.size ? <span>· {formatBytes(m.size)}</span> : null}
-        </div>
-      </div>
-      {op ? (
-        <OpProgress op={op} />
-      ) : (
-        <Button
-          variant="glass"
-          size="sm"
-          label={t('admin.modulesUpdate')}
-          onPress={onUpdate}
-          disabled={busy}
-        />
-      )}
-    </div>
+      </ListRow.Trailing>
+    </ListRow.Root>
   );
 }
 
@@ -84,22 +83,25 @@ export function UpdatesList({
   const t = useT();
   if (updates.length === 0) {
     return (
-      <EmptyState
-        icon="circle-check"
-        title={t('admin.modulesUpToDate')}
-        hint={t('admin.modulesUpToDateHint')}
-      />
+      <EmptyState.Root icon="circle-check">
+        <EmptyState.Title>{t('admin.modulesUpToDate')}</EmptyState.Title>
+        <EmptyState.Hint>{t('admin.modulesUpToDateHint')}</EmptyState.Hint>
+      </EmptyState.Root>
     );
   }
   const totalSize = updates.reduce((sum, m) => sum + (m.size ?? 0), 0);
   return (
-    <div className="flex flex-col gap-3">
-      {error && <p className="text-xs font-semibold text-danger">{error}</p>}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="text-[13px] font-semibold text-muted">
+    <Box gap={12}>
+      {error && (
+        <Text variant="meta" color="danger">
+          {error}
+        </Text>
+      )}
+      <Row wrap between gap={12}>
+        <Text variant="meta" color="textMuted">
           {t('admin.modulesUpdatesCount', { count: updates.length })}
-          {totalSize > 0 && <span className="text-dim"> · {formatBytes(totalSize)}</span>}
-        </span>
+          {totalSize > 0 && <Text color="textDim"> · {formatBytes(totalSize)}</Text>}
+        </Text>
         <Button
           variant="primary"
           size="sm"
@@ -108,8 +110,8 @@ export function UpdatesList({
           loading={busy}
           disabled={busy}
         />
-      </div>
-      <Surface elevated pad="none" radius={16} overflow="hidden">
+      </Row>
+      <ListRow.Group size="md">
         {updates.map((m) => (
           <UpdateRow
             key={m.id}
@@ -120,7 +122,7 @@ export function UpdatesList({
             onOpen={() => onOpen(m.id)}
           />
         ))}
-      </Surface>
-    </div>
+      </ListRow.Group>
+    </Box>
   );
 }

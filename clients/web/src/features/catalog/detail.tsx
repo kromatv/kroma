@@ -1,5 +1,4 @@
 import {
-  type CastMember,
   canDirectPlay,
   channelLabel,
   codecLabel,
@@ -11,13 +10,29 @@ import {
   type VideoTrack,
 } from '@kroma/core';
 import { useT, useThemeAudio } from '@kroma/ui';
-import { BackButton, Badge, Button, Ground, IconButton } from '@kroma/ui/kit';
+import {
+  BackButton,
+  Badge,
+  Box,
+  Button,
+  color,
+  DataField,
+  Ground,
+  gradient,
+  IconButton,
+  Text,
+  useBreakpoint,
+} from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { HeroBackdrop } from '#web/features/catalog/hero-backdrop';
-import { CastButton } from '#web/features/playback/cast/cast-button';
-import { imageUrl } from '#web/shared/lib/api';
-import { Image, Poster, PosterRail } from '#web/shared/ui';
+import { Image } from '#web/shared/ui';
+import { CastButton } from '#web/shared/ui/cast-button';
+
+export type { SimilarItem } from '#web/features/catalog/detail-rails';
+// Re-exported so existing importers (the person route, AvDrawer, the movie
+// route) keep their `#web/features/catalog/detail` path.
+export { CastRail, initials, SimilarRail } from '#web/features/catalog/detail-rails';
 
 export type QualityTone = '4K' | 'HDR' | 'H.265';
 
@@ -65,16 +80,45 @@ export function subString(t: Translate, item: Pick<MediaItem, 'subtitles'>): str
   return langs.length ? langs.join(', ') : t('subtitle.none');
 }
 
-function Field({ label, value }: Readonly<{ label: string; value: string }>) {
-  return (
-    <div>
-      <div className="mb-1.75 text-[11px] font-semibold uppercase tracking-widest text-white/45">
-        {label}
-      </div>
-      <div className="text-[14px] font-medium text-white/85 max-sm:text-[15px]">{value}</div>
-    </div>
-  );
-}
+// `62vh`, the fluid gutter and an inherited `text-shadow` are all browser-only,
+// so the hero's frame and its text column stay plain elements.
+const HERO_FRAME: CSSProperties = { position: 'relative', minHeight: '62vh' };
+
+const GUTTER: CSSProperties = {
+  paddingLeft: 'var(--gutter-web)',
+  paddingRight: 'var(--gutter-web)',
+};
+
+// A column, stated: this is an element rather than a <Box> because `textShadow`
+// has no React Native spelling, and a plain block leaves react-native-web's
+// <Text> at its own `display: inline`. Three of them in a row then run together
+// as one paragraph with their margins dropped, which is what put the director,
+// the tagline and the overview on the same line.
+const HERO_TEXT: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  flex: 1,
+  maxWidth: 680,
+  textShadow: `0 1px 3px ${color('black/50')}, 0 2px 16px ${color('black/55')}`,
+};
+
+const HERO_TITLE: CSSProperties = {
+  textShadow: [
+    `0 0 2px ${color('black/55')}`,
+    `0 2px 8px ${color('black/55')}`,
+    `0 8px 30px ${color('black/60')}`,
+  ].join(', '),
+};
+
+const CORNER_LEFT = { base: 16, md: 32 } as const;
+const CORNER_TOP = { base: 16, md: 26 } as const;
+const HERO_GAP = { base: 24, md: 40 } as const;
+const HERO_PAD_TOP = { base: 48, md: 90 } as const;
+const POSTER_W = { base: 192, lg: 240 } as const;
+const FIELD_GAP_X = { base: 24, md: 44 } as const;
+const NO_CAPS = { textTransform: 'none' } as const;
+const ITALIC = { fontStyle: 'italic' } as const;
+const RULE = { borderTopWidth: 1, borderTopColor: color('white/8') } as const;
 
 export interface DetailHeroProps {
   art: { id: string; backdrop: string | null; poster: string };
@@ -137,6 +181,9 @@ export function DetailHero({
   const [c1, c2] = posterColors(art.id);
   const heroGradient = `linear-gradient(135deg, ${c1}, ${c2})`;
   const theme = useThemeAudio(themeUrl);
+  // A side column would crush the text into a sliver on a phone, so it is not
+  // rendered there rather than hidden with its artwork still fetched.
+  const wide = useBreakpoint() !== 'base';
 
   // Direct-play depends on the runtime's codecs (navigator/MediaSource), so it
   // must stay client-only, or SSR would compute a mismatched hydration value.
@@ -148,80 +195,100 @@ export function DetailHero({
   }, [playable, t]);
 
   return (
-    <div className="relative min-h-[62vh]">
+    <div style={HERO_FRAME}>
       <HeroBackdrop backdrop={art.backdrop} gradient={heroGradient} />
 
-      <div className="absolute left-4 top-4 z-3 sm:left-8 sm:top-6.5">
+      <Box absolute z={3} left={CORNER_LEFT} top={CORNER_TOP}>
         <Ground tone="dark">
-          <BackButton size={42} label={t('common.back')} onPress={onBack} />
+          <BackButton diameter={42} label={t('common.back')} onPress={onBack} />
         </Ground>
-      </div>
+      </Box>
 
       <ThemeToggle theme={theme} />
 
-      <div className="relative flex flex-wrap items-end gap-6 px-(--gutter-web) pb-9 pt-12 sm:gap-10 sm:pt-22.5">
-        {/* Hidden on phones: a side column would crush the text into a sliver. */}
-        <div
-          className="relative hidden aspect-2/3 shrink-0 overflow-hidden rounded-lg shadow-hero sm:block sm:w-48 md:w-60"
-          style={{ background: `linear-gradient(158deg, ${c1}, ${c2})` }}
-        >
-          <Image src={art.poster} fit="cover" fill />
-        </div>
+      <div style={GUTTER}>
+        <Box row wrap align="flex-end" gap={HERO_GAP} pb={36} pt={HERO_PAD_TOP}>
+          {wide ? (
+            <Box
+              w={POSTER_W}
+              aspect={2 / 3}
+              shrink={0}
+              overflow="hidden"
+              radius="lg"
+              shadow="hero"
+              style={gradient(`linear-gradient(158deg, ${c1}, ${c2})`)}
+            >
+              <Image src={art.poster} fit="cover" fill />
+            </Box>
+          ) : null}
 
-        <div className="max-w-170 flex-1 [text-shadow:0_1px_3px_rgba(0,0,0,.5),0_2px_16px_rgba(0,0,0,.55)]">
-          <div className="mb-3 text-[12px] font-semibold tracking-[.18em] text-accent">
-            {overline}
-          </div>
-          <h1 className="mb-4 font-display text-[clamp(30px,5.5vw,56px)] font-bold leading-none tracking-[-.02em] [text-shadow:0_0_2px_rgba(0,0,0,.55),0_2px_8px_rgba(0,0,0,.55),0_8px_30px_rgba(0,0,0,.6)]">
-            {title}
-          </h1>
+          <div style={HERO_TEXT}>
+            <Text variant="overline" color="accent" mb={12} style={NO_CAPS}>
+              {overline}
+            </Text>
+            <h1 style={HERO_TITLE}>
+              <Text variant="h1" mb={16}>
+                {title}
+              </Text>
+            </h1>
 
-          <div className="mb-4.5 flex flex-wrap items-center gap-2.5">
-            {rating ? (
-              <>
-                <span className="text-[14px] font-bold text-accent">{rating.toFixed(1)}★</span>
-                <span className="text-white/40">·</span>
-              </>
+            <Box row wrap align="center" gap={10} mb={18}>
+              {rating ? (
+                <>
+                  <Text variant="label" color="accent">{`${rating.toFixed(1)}★`}</Text>
+                  <Text variant="meta" color="white/40">
+                    ·
+                  </Text>
+                </>
+              ) : null}
+              <Text variant="meta" color="white/72">
+                {meta}
+              </Text>
+              {badges.map((b) => (
+                <Badge key={b} tone={b}>
+                  {b}
+                </Badge>
+              ))}
+              {audioFlag ? <Badge tone="warning">{audioFlag}</Badge> : null}
+            </Box>
+
+            <DirectorsLine directors={directors} />
+
+            {tagline ? (
+              <Text variant="meta" color="white/50" mb={12} style={ITALIC}>
+                {tagline}
+              </Text>
             ) : null}
-            <span className="text-[14px] font-medium text-white/72 max-sm:text-[15px]">{meta}</span>
-            {badges.map((b) => (
-              <Badge key={b} tone={b}>
-                {b}
-              </Badge>
-            ))}
-            {audioFlag ? <Badge tone="warning">{audioFlag}</Badge> : null}
+            {overview ? (
+              <Text variant="body" color="white/82" mb={22} lines={wide ? undefined : 4}>
+                {overview}
+              </Text>
+            ) : null}
+
+            <Box row wrap align="center" gap={14} mb={26}>
+              {primaryAction ??
+                (onPlay ? (
+                  <Button
+                    icon="player-play-filled"
+                    label={playLabel ?? t('content.play')}
+                    onPress={onPlay}
+                  />
+                ) : null)}
+              {castItemId ? <CastButton itemId={castItemId} /> : null}
+              <WatchedButton watched={watched} onToggle={onToggleWatched} />
+              <ListButton inList={inList} onToggle={onToggleList} />
+              <ReportButton onReport={onReport} />
+              {adminAction}
+            </Box>
+
+            <HeroFields audio={audio} subtitles={subtitles} />
+            {unsupported ? (
+              <Text variant="meta" color="textMuted" mt={14}>
+                {unsupported}
+              </Text>
+            ) : null}
           </div>
-
-          <DirectorsLine directors={directors} />
-
-          {tagline ? (
-            <p className="mb-3 text-[14px] italic text-white/50 max-sm:text-[15px]">{tagline}</p>
-          ) : null}
-          {overview ? (
-            <p className="mb-5.5 text-[16px] leading-[1.6] text-white/82 max-sm:line-clamp-4 max-sm:text-[17px]">
-              {overview}
-            </p>
-          ) : null}
-
-          <div className="mb-6.5 flex flex-wrap items-center gap-3.5">
-            {primaryAction ??
-              (onPlay ? (
-                <Button
-                  icon="player-play-filled"
-                  label={playLabel ?? t('content.play')}
-                  onPress={onPlay}
-                />
-              ) : null)}
-            {castItemId ? <CastButton itemId={castItemId} /> : null}
-            <WatchedButton watched={watched} onToggle={onToggleWatched} />
-            <ListButton inList={inList} onToggle={onToggleList} />
-            <ReportButton onReport={onReport} />
-            {adminAction}
-          </div>
-
-          <HeroFields audio={audio} subtitles={subtitles} />
-          {unsupported ? <p className="mt-3.5 text-[13px] text-muted">{unsupported}</p> : null}
-        </div>
+        </Box>
       </div>
     </div>
   );
@@ -231,28 +298,46 @@ function ThemeToggle({ theme }: Readonly<{ theme: ReturnType<typeof useThemeAudi
   const t = useT();
   if (!theme.active) return null;
   return (
-    <div className="absolute right-4 top-4 z-3 sm:right-8 sm:top-6.5">
+    <Box absolute z={3} right={CORNER_LEFT} top={CORNER_TOP}>
       <Ground tone="dark">
         <IconButton
           variant="scrim"
-          size={42}
+          diameter={42}
           glyph={19}
           icon={theme.muted ? 'volume-off' : 'volume'}
           label={theme.muted ? t('content.unmuteTheme') : t('content.muteTheme')}
           onPress={theme.toggle}
         />
       </Ground>
-    </div>
+    </Box>
   );
 }
+
+// A run of inline links inside one paragraph: the kit lays a control out as a
+// block, so these stay <button>s and carry a standing underline rather than a
+// hover-only one.
+const DIRECTOR_LINK: CSSProperties = {
+  background: 'none',
+  border: 0,
+  padding: 0,
+  font: 'inherit',
+  color: 'inherit',
+  textDecoration: 'underline',
+  textUnderlineOffset: 2,
+  cursor: 'pointer',
+};
+
+const BOLD = { fontWeight: '600' } as const;
 
 function DirectorsLine({ directors }: Readonly<{ directors?: string[] }>) {
   const t = useT();
   const navigate = useNavigate();
   if (!directors || directors.length === 0) return null;
   return (
-    <div className="mb-3 text-[13.5px] text-white/60 max-sm:text-[15px]">
-      <span className="font-semibold text-white/80">{t('content.directedBy')}</span>{' '}
+    <Text variant="meta" color="white/60" mb={12}>
+      <Text variant="meta" color="white/80" style={BOLD}>
+        {t('content.directedBy')}
+      </Text>{' '}
       {directors.map((d, i) => (
         <span key={d}>
           {i > 0 ? ', ' : ''}
@@ -260,13 +345,13 @@ function DirectorsLine({ directors }: Readonly<{ directors?: string[] }>) {
             type="button"
             onClick={() => navigate({ to: '/person/$name', params: { name: d } })}
             aria-label={t('person.viewWorks', { name: d })}
-            className="cursor-pointer bg-transparent p-0 text-inherit underline-offset-2 transition-colors hover:text-accent hover:underline"
+            style={DIRECTOR_LINK}
           >
             {d}
           </button>
         </span>
       ))}
-    </div>
+    </Text>
   );
 }
 
@@ -292,7 +377,7 @@ function ListButton({ inList, onToggle }: Readonly<{ inList?: boolean; onToggle?
   if (!onToggle) return null;
   return (
     <IconButton
-      size={50}
+      diameter={50}
       glyph={20}
       radius="md"
       active={inList ?? false}
@@ -308,7 +393,7 @@ function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) {
   if (!onReport) return null;
   return (
     <IconButton
-      size={50}
+      diameter={50}
       glyph={19}
       radius="md"
       icon="flag"
@@ -322,117 +407,19 @@ function HeroFields({ audio, subtitles }: Readonly<{ audio?: string; subtitles?:
   const t = useT();
   if (audio == null && subtitles == null) return null;
   return (
-    <div className="flex flex-wrap gap-x-6 gap-y-4 border-t border-white/8 py-4.5 sm:gap-x-11">
-      {audio != null ? <Field label={t('content.fieldAudio')} value={audio} /> : null}
-      {subtitles != null ? <Field label={t('content.fieldSubtitles')} value={subtitles} /> : null}
-    </div>
-  );
-}
-
-export interface SimilarItem {
-  id: string;
-  title: string;
-  genre: string;
-  seasonCount?: number;
-  badge: string | null;
-  poster: string;
-}
-
-/** First + last initials, e.g. "George MacKay" → "GM". */
-export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  const first = parts[0]?.[0] ?? '';
-  const last = parts.length > 1 ? (parts.at(-1)?.[0] ?? '') : '';
-  return (first + last).toUpperCase();
-}
-
-/** "Distribution" horizontal rail of initials avatars (matches the design;
- * the reference uses gradient initials, not photos). */
-export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
-  const t = useT();
-  const navigate = useNavigate();
-  if (cast.length === 0) return null;
-  return (
-    <section className="mt-10">
-      <h2 className="mb-4.5 px-(--gutter-web) font-display text-[22px] font-bold tracking-[-.02em]">
-        {t('content.cast')}
-      </h2>
-      {/* A named <section> for assistive tech. */}
-      <section
-        aria-label={t('content.cast')}
-        className="flex gap-5.5 overflow-x-auto px-(--gutter-web) py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {cast.map((p) => {
-          const [g1, g2] = posterColors(p.name);
-          const photo = imageUrl(p.profileUrl);
-          return (
-            <button
-              key={`${p.name}-${p.character ?? ''}`}
-              type="button"
-              onClick={() => navigate({ to: '/person/$name', params: { name: p.name } })}
-              aria-label={t('person.viewWorks', { name: p.name })}
-              className="group w-24 shrink-0 cursor-pointer bg-transparent p-0 text-center outline-none transition-transform duration-200 hover:scale-[1.06] focus-visible:scale-[1.06] sm:w-28"
-            >
-              <Image
-                className="mb-2.75 h-24 w-24 rounded-full sm:h-28 sm:w-28 shadow-[0_8px_22px_rgba(0,0,0,.45)] ring-accent transition-shadow duration-200 group-hover:ring-4 group-focus-visible:ring-4"
-                src={photo}
-                alt={p.name}
-                placeholder={<CastInitials name={p.name} g1={g1} g2={g2} />}
-                fallback={<CastInitials name={p.name} g1={g1} g2={g2} />}
-              />
-              <div className="truncate text-[14px] font-semibold transition-colors group-hover:text-accent group-focus-visible:text-accent">
-                {p.name}
-              </div>
-              {p.character ? (
-                <div className="truncate text-[12px] font-medium text-white/45">{p.character}</div>
-              ) : null}
-            </button>
-          );
-        })}
-      </section>
-    </section>
-  );
-}
-
-/** Horizontal "Titres similaires" rail of poster tiles. */
-export function SimilarRail({
-  title,
-  items,
-  onOpen,
-}: Readonly<{ title: string; items: SimilarItem[]; onOpen: (id: string) => void }>) {
-  if (items.length === 0) return null;
-  return (
-    <section className="mt-11">
-      <h2 className="mb-4 px-(--gutter-web) font-display text-[22px] font-bold tracking-[-.02em]">
-        {title}
-      </h2>
-      <div className="px-(--gutter-web)">
-        <PosterRail
-          data={items}
-          renderItem={(m) => (
-            <Poster
-              title={m.title}
-              genre={m.genre}
-              colors={posterColors(m.id)}
-              poster={m.poster}
-              onClick={() => onOpen(m.id)}
-            />
-          )}
-        />
-      </div>
-    </section>
-  );
-}
-
-function CastInitials({ name, g1, g2 }: Readonly<{ name: string; g1: string; g2: string }>) {
-  return (
-    <span
-      className="relative flex h-full w-full items-center justify-center font-display text-[36px] font-bold text-white/90"
-      style={{ background: `linear-gradient(158deg, ${g1}, ${g2})` }}
-    >
-      <span className="absolute inset-0 bg-[radial-gradient(70%_60%_at_50%_22%,rgba(255,255,255,.2),transparent_60%)]" />
-      <span className="relative">{initials(name)}</span>
-    </span>
+    <Box row wrap gapX={FIELD_GAP_X} gapY={16} py={18} style={RULE}>
+      {audio != null ? (
+        <DataField.Root size="md">
+          <DataField.Label>{t('content.fieldAudio')}</DataField.Label>
+          <DataField.Value>{audio}</DataField.Value>
+        </DataField.Root>
+      ) : null}
+      {subtitles != null ? (
+        <DataField.Root size="md">
+          <DataField.Label>{t('content.fieldSubtitles')}</DataField.Label>
+          <DataField.Value>{subtitles}</DataField.Value>
+        </DataField.Root>
+      ) : null}
+    </Box>
   );
 }

@@ -2,7 +2,7 @@
 // since a TV or phone has no git and no filesystem to read at runtime.
 //
 // Loaded by an Expo `app.config.ts` via Node's own type stripping, not Expo's
-// TypeScript path — keep this file erasable-syntax-only: no enums, no namespaces,
+// TypeScript path. Keep this file erasable-syntax-only: no enums, no namespaces,
 // no parameter properties.
 
 import { execSync } from 'node:child_process';

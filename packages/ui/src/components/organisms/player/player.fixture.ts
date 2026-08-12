@@ -6,6 +6,7 @@ import type { AudioTrack } from '@kroma/core';
 import type { StoryboardTile } from '#ui/services/storyboard';
 import type {
   AudioFilterMode,
+  Chapter,
   PlayerController,
   PlayerQuality,
   PlayerStats,
@@ -225,8 +226,17 @@ function fakeTileAt(sheets: readonly string[], width = 220) {
   };
 }
 
+const CHAPTERS: Chapter[] = [
+  { startMs: 0, endMs: 96_000, title: 'Cold open', kind: 'intro' },
+  { startMs: 96_000, endMs: 2_760_000, title: 'Act one', kind: 'chapter' },
+  { startMs: 2_760_000, endMs: 5_940_000, title: 'Act two', kind: 'chapter' },
+  { startMs: 5_940_000, endMs: 9_180_000, title: 'Act three', kind: 'chapter' },
+  { startMs: 9_180_000, endMs: 9_840_000, title: 'Credits', kind: 'credits' },
+];
+
 export {
   AUDIO_TRACKS,
+  CHAPTERS,
   fakeController,
   fakeTileAt,
   fullStats,

@@ -10,7 +10,7 @@ import {
   NOTIFICATION_CATEGORY_LABEL,
   PUSH_BLOCKER_LABEL,
 } from '@kroma/core';
-import { Box, color, Switch, styles, Txt } from '@kroma/ui/kit';
+import { Box, color, Switch, styles, Text } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView } from 'react-native';
@@ -78,8 +78,8 @@ export default function NotificationSettings() {
         <Box style={s.card}>
           <Box style={s.pushRow}>
             <Box style={s.pushText}>
-              <Txt style={s.rowLabel}>{t('push.title')}</Txt>
-              <Txt style={s.hint}>{t('push.description')}</Txt>
+              <Text style={s.rowLabel}>{t('push.title')}</Text>
+              <Text style={s.hint}>{t('push.description')}</Text>
             </Box>
             {blocker ? null : (
               <Pressable
@@ -90,35 +90,38 @@ export default function NotificationSettings() {
                 {toggle.isPending ? (
                   <ActivityIndicator color={color('text')} size="small" />
                 ) : (
-                  <Txt style={s.actionLabel}>
+                  <Text style={s.actionLabel}>
                     {subscribed ? t('push.disable') : t('push.enable')}
-                  </Txt>
+                  </Text>
                 )}
               </Pressable>
             )}
           </Box>
-          {blocker ? <Txt style={s.notice}>{t(PUSH_BLOCKER_LABEL[blocker])}</Txt> : null}
-          {error ? <Txt style={s.error}>{error}</Txt> : null}
+          {blocker ? <Text style={s.notice}>{t(PUSH_BLOCKER_LABEL[blocker])}</Text> : null}
+          {error ? <Text style={s.error}>{error}</Text> : null}
         </Box>
 
-        <Txt style={s.group}>{t('notifications.settings')}</Txt>
+        <Text style={s.group}>{t('notifications.settings')}</Text>
         <Box style={s.card}>
           <Box style={s.headerRow}>
-            <Txt style={s.headerSpacer} />
-            <Txt style={s.headerCell}>{t('notifications.channelInApp')}</Txt>
-            <Txt style={s.headerCell}>{t('notifications.channelPush')}</Txt>
+            <Text style={s.headerSpacer} />
+            <Text style={s.headerCell}>{t('notifications.channelInApp')}</Text>
+            <Text style={s.headerCell}>{t('notifications.channelPush')}</Text>
           </Box>
           {prefs.data?.categories.map((pref) => (
             <Box key={pref.category} style={s.row}>
-              <Txt style={s.rowLabel}>{t(NOTIFICATION_CATEGORY_LABEL[pref.category])}</Txt>
+              <Text style={s.rowLabel}>{t(NOTIFICATION_CATEGORY_LABEL[pref.category])}</Text>
               <Box style={s.cell}>
                 <Switch
                   checked={pref.inApp}
-                  onChange={(inApp) => setPref(pref.category, { inApp })}
+                  onCheckedChange={(inApp) => setPref(pref.category, { inApp })}
                 />
               </Box>
               <Box style={s.cell}>
-                <Switch checked={pref.push} onChange={(push) => setPref(pref.category, { push })} />
+                <Switch
+                  checked={pref.push}
+                  onCheckedChange={(push) => setPref(pref.category, { push })}
+                />
               </Box>
             </Box>
           ))}
@@ -143,7 +146,7 @@ const s = styles({
   pushText: { flex: true, gap: 2 },
   hint: { ...type.small, color: 'textDim' },
   notice: { ...type.small, mt: spacing.sm, color: 'textDim', lineHeight: 18 },
-  error: { ...type.small, mt: spacing.sm, color: '#ff8080' },
+  error: { ...type.small, mt: spacing.sm, color: 'dangerHover' },
   action: { align: 'center', minW: 88, px: 14, py: 8, bg: 'accentSoft', radius: radius.md },
   actionPressed: { opacity: 0.7 },
   actionLabel: { ...type.small, color: 'accentText', fontWeight: '600' },

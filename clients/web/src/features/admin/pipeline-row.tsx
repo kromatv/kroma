@@ -4,7 +4,8 @@
 
 import type { ElementRow, MessageKey, Translate, Treatment } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { IconCheck, IconLoader2, IconRefresh, IconX } from '@tabler/icons-react';
+import { Box, type ColorValue, Icon, Row, Spinner, Text, Tooltip } from '@kroma/ui/kit';
+import { Pill, PillDot } from '#web/features/admin/pill';
 import {
   fmtDur,
   kindMeta,
@@ -12,10 +13,11 @@ import {
   posterGrad,
   statusMeta,
 } from '#web/features/admin/pipeline-meta';
+import { Table } from '#web/features/admin/table';
 import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
 
-function subLine(t: Translate, el: ElementRow): { text: string; color: string } {
+function subLine(t: Translate, el: ElementRow): { text: string; color: ColorValue } {
   const names = (pred: (x: Treatment) => boolean) =>
     el.treatments
       .filter(pred)
@@ -24,13 +26,13 @@ function subLine(t: Translate, el: ElementRow): { text: string; color: string } 
   if (el.overall === 'failed') {
     return {
       text: `${t('pipeline.st.failed')} : ${names((x) => x.status === 'failed')}`,
-      color: '#EF8091',
+      color: 'dangerHover',
     };
   }
   if (el.overall === 'running') {
     return {
       text: `${t('pipeline.st.running')} : ${names((x) => x.status === 'running')}`,
-      color: 'rgba(244,243,240,.6)',
+      color: 'text/60',
     };
   }
   const dur = fmtDur(el.durationMs);
@@ -44,7 +46,7 @@ function subLine(t: Translate, el: ElementRow): { text: string; color: string } 
   } else {
     text = [el.year ? String(el.year) : '', el.genre, dur].filter(Boolean).join(' · ');
   }
-  return { text, color: 'rgba(244,243,240,.5)' };
+  return { text, color: 'text/50' };
 }
 
 function Poster({
@@ -60,50 +62,65 @@ function Poster({
     (poster ? client.resolveArt(poster) : null) ??
     (kind === 'series' ? client.showPosterUrl(id) : client.posterUrl(id));
   return (
-    <div
-      style={{ background: posterGrad(seed) }}
-      className="relative h-[46px] w-8 flex-[0_0_32px] overflow-hidden rounded-sm shadow-[0_5px_14px_rgba(0,0,0,.45)]"
-    >
+    <Box w={32} h={46} shrink={0} radius={4} overflow="hidden" shadow="card">
+      <div style={{ position: 'absolute', inset: 0, background: posterGrad(seed) }} />
       <Image src={src} fit="cover" fill />
-    </div>
+    </Box>
+  );
+}
+
+function FlowDot({ treatment }: Readonly<{ treatment: Treatment }>) {
+  const t = useT();
+  const m = statusMeta(treatment.status);
+  const name = t(`pipeline.t.${treatment.key}` as MessageKey);
+  const state = t(`pipeline.st.${treatment.status}` as MessageKey);
+  return (
+    <Tooltip label={`${name} - ${state}`}>
+      <Row
+        center
+        w={19}
+        h={19}
+        shrink={0}
+        radius="circle"
+        bg={m.bg}
+        border={m.ring}
+        accessibilityLabel={`${name} - ${state}`}
+      >
+        {treatment.status === 'done' ? (
+          <Icon name="check" size={11} thickness={3.2} color={m.color} />
+        ) : null}
+        {treatment.status === 'failed' ? (
+          <Icon name="x" size={10} thickness={3.4} color={m.color} />
+        ) : null}
+        {treatment.status === 'running' ? (
+          <Spinner size={11} thickness={2} color={m.color} />
+        ) : null}
+        {treatment.status === 'pending' || treatment.status === 'missing' ? (
+          <PillDot tone={m.color} />
+        ) : null}
+      </Row>
+    </Tooltip>
   );
 }
 
 function FlowDots({ treatments }: Readonly<{ treatments: Treatment[] }>) {
-  const t = useT();
   return (
-    <div className="flex items-center max-md:hidden">
-      {treatments.map((tr, i) => {
-        const m = statusMeta(tr.status);
-        const prevDone = i > 0 && treatments[i - 1]?.status === 'done';
-        const treatmentName = t(`pipeline.t.${tr.key}` as MessageKey);
-        const treatmentState = t(`pipeline.st.${tr.status}` as MessageKey);
-        return (
-          <span key={tr.key} className="flex items-center">
-            {i > 0 ? (
-              <span
-                className="h-0.5 w-3 flex-[0_0_12px] rounded-full"
-                style={{ background: prevDone ? '#46D08D' : 'rgba(255,255,255,.12)' }}
-              />
-            ) : null}
-            <span
-              title={`${treatmentName} - ${treatmentState}`}
-              className="flex h-[19px] w-[19px] flex-[0_0_19px] items-center justify-center rounded-full border"
-              style={{ background: m.bg, borderColor: m.ring, color: m.color }}
-            >
-              {tr.status === 'done' ? <IconCheck size={11} stroke={3.2} /> : null}
-              {tr.status === 'failed' ? <IconX size={10} stroke={3.4} /> : null}
-              {tr.status === 'running' ? (
-                <IconLoader2 size={11} stroke={2.8} className="animate-spin" />
-              ) : null}
-              {tr.status === 'pending' || tr.status === 'missing' ? (
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: 'currentColor' }} />
-              ) : null}
-            </span>
-          </span>
-        );
-      })}
-    </div>
+    <Table.Cell wide row>
+      {treatments.map((tr, i) => (
+        <Row key={tr.key}>
+          {i > 0 ? (
+            <Box
+              w={12}
+              h={2}
+              shrink={0}
+              radius="pill"
+              bg={treatments[i - 1]?.status === 'done' ? 'success' : 'tint/12'}
+            />
+          ) : null}
+          <FlowDot treatment={tr} />
+        </Row>
+      ))}
+    </Table.Cell>
   );
 }
 
@@ -118,66 +135,40 @@ export function ElementRowView({
   const sub = subLine(t, el);
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-white/4 px-5 py-3 text-left transition-colors hover:bg-white/[0.028] md:grid-cols-[minmax(0,1fr)_150px_132px_46px]"
-    >
-      <div className="flex min-w-0 items-center gap-3.5">
+    <Table.Row onPress={onOpen}>
+      <Table.Cell row gap={14}>
         <Poster id={el.id} kind={el.kind} seed={el.title} poster={el.poster} />
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
-            <span className="truncate text-[14.5px] font-bold">{el.title}</span>
-            <span
-              className="flex-[0_0_auto] rounded-full px-[7px] py-0.5 text-[8px] font-bold uppercase tracking-[.08em]"
-              style={{ color: km.color, background: km.bg }}
-            >
+        <Box minW={0}>
+          <Row gap={10}>
+            <Text variant="label" lines={1}>
+              {el.title}
+            </Text>
+            <Pill ink={km.color} bg={km.bg} variant="overline">
               {t(`pipeline.type.${km.typeKey}` as MessageKey)}
-            </span>
-          </div>
-          <div className="mt-[3px] truncate text-[12px] font-medium" style={{ color: sub.color }}>
+            </Pill>
+          </Row>
+          <Text variant="meta" color={sub.color} lines={1} mt={3}>
             {sub.text}
-          </div>
-        </div>
-      </div>
+          </Text>
+        </Box>
+      </Table.Cell>
 
       <FlowDots treatments={el.treatments} />
 
-      <div className="max-md:hidden">
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full px-[11px] py-[5px] text-[11.5px] font-bold"
-          style={{ color: om.color, background: om.bg }}
-        >
-          <span
-            className={`h-1.5 w-1.5 rounded-full ${om.pulse ? 'animate-pulse' : ''}`}
-            style={{ background: om.dot }}
-          />
+      <Table.Cell wide>
+        <Pill ink={om.color} bg={om.bg} leading={<PillDot tone={om.dot} pulse={om.pulse} />}>
           {t(`pipeline.overall.${el.overall}` as MessageKey)}
-        </span>
-      </div>
+        </Pill>
+      </Table.Cell>
 
-      <div className="flex justify-end">
-        {/* biome-ignore lint/a11y/useSemanticElements: cannot be a native <button> because it lives inside the row's <button> */}
-        <span
-          role="button"
-          tabIndex={-1}
-          onClick={(e) => {
-            e.stopPropagation();
-            onReprocess();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              e.stopPropagation();
-              onReprocess();
-            }
-          }}
-          title={t('pipeline.reprocessItem')}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-accent/25 bg-accent/10 text-accent transition-colors hover:bg-accent/20"
-        >
-          <IconRefresh size={14} stroke={2.3} />
-        </span>
-      </div>
-    </button>
+      <Table.Cell row justify="flex-end">
+        <Table.Action
+          tone="accent"
+          icon="refresh"
+          label={t('pipeline.reprocessItem')}
+          onPress={onReprocess}
+        />
+      </Table.Cell>
+    </Table.Row>
   );
 }

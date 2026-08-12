@@ -33,10 +33,11 @@ export const mobileSpace = {
   xl: 32,
 } as const;
 
-/** Type roles for a phone. Same families and the same weights as the 10-foot
- * ramp, at the sizes a hand-held screen wants. Colour is applied by the
- * component, not baked in, so a role can be reused on any surface. */
 /**
+ * Type roles for a phone: the same families and weights as the 10-foot ramp, at
+ * the sizes a hand-held screen wants. Colour is applied by the component, not
+ * baked in, so a role can be reused on any surface.
+ *
  * Authored as SPECS, not as finished styles, for the same reason the 10-foot
  * ramp is: a spec carries the line-height ratio and the tracking in em, so a
  * role keeps its proportions at whatever size a call site asks for, and a theme
@@ -65,7 +66,7 @@ type MobileRoleStyle = Pick<
 >;
 
 /** The finished phone roles, derived from the specs above exactly as the
- *  10-foot ones are (see `toType`) — so they carry a line height rather than
+ *  10-foot ones are (see `toType`), so they carry a line height rather than
  *  leaving each platform's default leading to decide. */
 export const mobileType = toType(mobileTypeSpec, fonts) as Record<MobileTypeRole, MobileRoleStyle>;
 

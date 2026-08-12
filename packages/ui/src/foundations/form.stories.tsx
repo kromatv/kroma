@@ -3,9 +3,8 @@ import { z } from 'zod';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Switch } from '#ui/components/atoms/switch';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
-import { Select } from '#ui/components/molecules/select';
 import { msg, useForm } from '#ui/lib/form';
 import { useT } from '#ui/services/i18n';
 
@@ -24,78 +23,34 @@ function SignIn() {
     defaultValues: { email: '', password: '', remember: true },
     t: useT(),
   });
+  const email = form.field('email');
+  const password = form.field('password');
   return (
     <Box gap={18}>
-      <Field
-        label="Email"
-        type="email"
-        icon="message"
-        placeholder="you@example.org"
-        physicalKeyboard
-        {...form.field('email')}
-      />
-      <Field label="Password" type="password" physicalKeyboard {...form.field('password')} />
+      <Field.Root label="Email" {...email.root}>
+        <Field.Input
+          type="email"
+          icon="message"
+          placeholder="you@example.org"
+          physicalKeyboard
+          {...email.input}
+        />
+      </Field.Root>
+      <Field.Root label="Password" {...password.root}>
+        <Field.Input type="password" physicalKeyboard {...password.input} />
+      </Field.Root>
       <Box row align="center" gap={14}>
         <Switch {...form.toggle('remember')} />
-        <Txt variant="meta" color="textMuted">
+        <Text variant="meta" color="textMuted">
           Keep me signed in
-        </Txt>
+        </Text>
       </Box>
       <Button label="Sign in" block loading={form.submitting} onPress={form.submit} />
       {form.submitted ? (
-        <Txt variant="meta" color="success">
+        <Text variant="meta" color="success">
           Signed in. Nothing was sent anywhere.
-        </Txt>
+        </Text>
       ) : null}
-    </Box>
-  );
-}
-
-const QUALITY = [
-  { value: 'original', label: 'Original' },
-  { value: '1080p', label: '1080p' },
-  { value: '720p', label: '720p' },
-];
-
-const Server = z.object({
-  address: z.string().min(1, msg('form.required')),
-  quality: z.string().min(1, msg('form.required')),
-  transcode: z.boolean(),
-  notes: z.string().max(120, msg('form.tooLong', { max: 120 })),
-});
-
-function EveryControl() {
-  const form = useForm({
-    schema: Server,
-    defaultValues: { address: '', quality: '', transcode: false, notes: '' },
-    t: useT(),
-  });
-  return (
-    <Box gap={18}>
-      <Field
-        label="Server address"
-        icon="server"
-        placeholder="kroma.local:4040"
-        physicalKeyboard
-        {...form.field('address')}
-      />
-      <Field label="Quality" error={form.errors.quality}>
-        <Select
-          label="Quality"
-          options={QUALITY}
-          value={form.values.quality}
-          onChange={(next) => form.setValue('quality', next)}
-          invalid={Boolean(form.errors.quality)}
-        />
-      </Field>
-      <Box row align="center" gap={14}>
-        <Switch {...form.toggle('transcode')} />
-        <Txt variant="meta" color="textMuted">
-          Transcode on the fly
-        </Txt>
-      </Box>
-      <Field label="Notes" multiline rows={2} physicalKeyboard {...form.field('notes')} />
-      <Button label="Save" block loading={form.submitting} onPress={form.submit} />
     </Box>
   );
 }
@@ -113,15 +68,21 @@ function CrossField() {
     defaultValues: { password: '', confirm: '' },
     t: useT(),
   });
+  const password = form.field('password');
+  const confirm = form.field('confirm');
   return (
     <Box gap={18}>
-      <Field label="New password" type="password" physicalKeyboard {...form.field('password')} />
-      <Field label="Repeat it" type="password" physicalKeyboard {...form.field('confirm')} />
+      <Field.Root label="New password" {...password.root}>
+        <Field.Input type="password" physicalKeyboard {...password.input} />
+      </Field.Root>
+      <Field.Root label="Repeat it" {...confirm.root}>
+        <Field.Input type="password" physicalKeyboard {...confirm.input} />
+      </Field.Root>
       <Button label="Change password" block onPress={form.submit} />
       {form.error ? (
-        <Txt variant="meta" color="danger">
+        <Text variant="meta" color="danger">
           {form.error}
-        </Txt>
+        </Text>
       ) : null}
     </Box>
   );
@@ -141,14 +102,17 @@ function FailingSubmit() {
       throw new Error('connect.invalidCode');
     },
   });
+  const code = form.field('code');
   return (
     <Box gap={18}>
-      <Field label="Pairing code" placeholder="XY7-42Q" physicalKeyboard {...form.field('code')} />
+      <Field.Root label="Pairing code" {...code.root}>
+        <Field.Input placeholder="XY7-42Q" physicalKeyboard {...code.input} />
+      </Field.Root>
       <Button label="Pair" block loading={form.submitting} onPress={form.submit} />
       {form.error ? (
-        <Txt variant="meta" color="danger">
+        <Text variant="meta" color="danger">
           {form.error}
-        </Txt>
+        </Text>
       ) : null}
     </Box>
   );
@@ -163,9 +127,12 @@ const Note = z.object({
 
 function NoCatalog() {
   const form = useForm({ schema: Note, defaultValues: { note: '' } });
+  const note = form.field('note');
   return (
     <Box gap={18}>
-      <Field label="Note" multiline rows={2} physicalKeyboard {...form.field('note')} />
+      <Field.Root label="Note" {...note.root}>
+        <Field.Textarea rows={2} physicalKeyboard {...note.input} />
+      </Field.Root>
       <Button label="Post" block onPress={form.submit} />
     </Box>
   );
@@ -174,7 +141,7 @@ function NoCatalog() {
 export default story({
   name: 'Form',
   group: 'Foundations',
-  docs: "Not a component: `useForm` is the kit's way of wiring a form. Give it a schema - anything speaking [Standard Schema](https://standardschema.dev), which here means zod - and it holds the values, runs the validator and hands each control the props it needs. `form.field(name)` returns exactly what `<Field>` takes, `form.toggle(name)` what `<Switch>` takes, and both are typed off the schema: a name it does not have will not compile. Errors stay quiet until the first submit, then track every keystroke, so nothing is flagged before it was asked for and a fixed field clears as it is typed. Submit any of these empty to watch it happen, then flip the language lens in the toolbar - the messages are catalog keys, so they follow.",
+  docs: "Not a component: `useForm` is the kit's way of wiring a form. Give it a schema - anything speaking [Standard Schema](https://standardschema.dev), which here means zod - and it holds the values, runs the validator and hands each control the props it needs. `form.field(name)` returns one bag per element, because `<Field>` is two of them: `root` is the value and the message `<Field.Root>` owns, `input` is the return key `<Field.Input>` or `<Field.Textarea>` wires to submit. `form.toggle(name)` is a single bag, because `<Switch>` is a single element. All of them are typed off the schema: a name it does not have will not compile. Errors stay quiet until the first submit, then track every keystroke, so nothing is flagged before it was asked for and a fixed field clears as it is typed. Submit any of these empty to watch it happen, then flip the language lens in the toolbar - the messages are catalog keys, so they follow.",
   usage: `const Credentials = z.object({
   email: z.string().min(1, msg('form.required')).pipe(z.email(msg('form.email'))),
   password: z.string().min(8, msg('form.tooShort', { min: 8 })),
@@ -186,14 +153,20 @@ const form = useForm({
   t: useT(),
   onSubmit: (credentials) => signIn(credentials),
 });
+const email = form.field('email');
 
-<Field label="Email" type="email" {...form.field('email')} />
-<Field label="Password" type="password" {...form.field('password')} />
+<Field.Root label="Email" {...email.root}>
+  <Field.Input type="email" {...email.input} />
+</Field.Root>
+
+// Nothing to say to the entry? The Root renders it, and the field is one line.
+<Field.Root label="Name" {...form.field('name').root} />
+
 <Button label="Sign in" block loading={form.submitting} onPress={form.submit} />`,
   guidelines: {
     do: [
       "Write the rule once, in the schema. The message it carries is a catalog key, so `msg('form.tooShort', { min: 8 })` is translated wherever it is shown.",
-      'Spread the binding: `{...form.field(name)}` also wires the return key to submit.',
+      'Spread both bags: `root` on `<Field.Root>`, `input` on the entry, and the return key submits.',
       'Pass `t: useT()`. Without it a message is shown exactly as the schema wrote it, which is right for a one-off and wrong for a shipped screen.',
       'Let a check that spans two fields have no path - it lands on `form.error` instead of picking a field to blame.',
       "Throw from `onSubmit` to report a server refusal; the message goes through the same lookup, so `throw new Error('connect.invalidCode')` is translated too.",
@@ -209,24 +182,19 @@ const form = useForm({
   render: () => <SignIn />,
   scenes: [
     {
-      name: 'Every control',
-      docs: 'One schema over four kinds of input. `field()` spreads onto a text entry and a multiline one; `toggle()` onto a `<Switch>`. Anything else - a `<Select>` here - reads `form.values` and reports through `form.setValue`, and still wears the label and error by sitting inside a `<Field>`.',
-      render: () => <EveryControl />,
-    },
-    {
       name: 'A check with no field to blame',
       docs: 'Two passwords that have to match is a rule about the OBJECT, not about either entry, so zod gives its issue no path and it lands on `form.error` rather than being pinned on the second field or dropped.',
-      render: () => <CrossField />,
+      example: () => <CrossField />,
     },
     {
       name: 'When the submit fails',
       docs: 'While `onSubmit` runs the button spins and presses are ignored. A throw becomes `form.error`, resolved the same way a schema message is - this one throws the catalog key `connect.invalidCode`, so it reads in whichever language the toolbar is set to.',
-      render: () => <FailingSubmit />,
+      example: () => <FailingSubmit />,
     },
     {
       name: 'Without a catalog',
       docs: 'No `t`, and messages written as sentences: they show exactly as the schema wrote them, and `msg()` still fills in the vars. What a throwaway form or a one-language app looks like - nothing has to be added to a catalog first.',
-      render: () => <NoCatalog />,
+      example: () => <NoCatalog />,
     },
   ],
 });

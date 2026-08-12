@@ -1,43 +1,33 @@
-// The story format: one plain object per component describing how to render it
-// and what about it is worth changing. A component's `sv` supplies the controls.
+// The story format: one plain object per component describing how to render it,
+// what about it is worth changing, and which of its views actually read that.
 
 import type { VariantSource } from '@kroma/ui/kit';
-import type { ReactNode } from 'react';
-import type { PropDoc } from './props';
-
-type AnySv = VariantSource;
-
-type Args = Record<string, unknown>;
-
-/** An array is a set of choices; an object is a numeric range. */
-type ControlSpec =
-  | 'text'
-  | 'boolean'
-  | 'number'
-  | 'icon'
-  | readonly string[]
-  | { min: number; max: number; step?: number };
-
-type Control =
-  | { kind: 'text' }
-  | { kind: 'boolean' }
-  | { kind: 'number'; min: number; max: number; step: number }
-  | { kind: 'select'; options: string[] };
-
-interface ResolvedControl {
-  key: string;
-  control: Control;
-  variant: boolean;
-}
-
-interface MatrixRow {
-  group: string;
-  options: unknown[];
-}
+import { type ComponentType, createElement, type ReactNode } from 'react';
+import {
+  type Args,
+  argControls,
+  type ControlSpec,
+  type MatrixRow,
+  type ResolvedControl,
+  variantControls,
+} from './derive';
+import type { PlayFunction } from './play-types';
+import type { PropSection } from './props';
+import { slug } from './registry';
+import { type View, viewIndex } from './view';
 
 /** How much width the canvas gives a story: a fixed width, the whole stage, or
  * the stage clamped. Omit it for a component sized by its own content. */
 type StoryWidth = number | 'fill' | { min?: number; max?: number };
+
+/** A `<story>.docs.mdx` compiled to a component. `components` is the element
+ * map the workbench hands it (`MDX_COMPONENTS`); MDX types it loosely because
+ * every host maps a different set. */
+type DocComponent = ComponentType<{ components?: Record<string, unknown> }>;
+
+/** A story's prose: the inline `docs:` string, or the sibling `.docs.mdx` that
+ * replaces it. */
+type StoryDocs = string | DocComponent;
 
 type Widen<T> = T extends string
   ? string
@@ -47,12 +37,24 @@ type Widen<T> = T extends string
       ? boolean
       : T;
 
-interface SceneDef<A extends Args> {
+interface SceneCommon {
   name: string;
   docs?: string;
-  render?: (args: A) => ReactNode;
-  args?: { [K in keyof A]?: Widen<A[K]> };
+  play?: PlayFunction;
 }
+
+/** One named take on a component, and the two ways to write one. `render` reads
+ * the live args, so the controls keep driving it; `example` is a fixed
+ * composition, and the controls step aside rather than moving nothing. Writing
+ * both is a type error; writing neither reuses the story's own render with the
+ * scene's `args` merged in. */
+type SceneDef<A extends Args> =
+  | (SceneCommon & {
+      render?: (args: A) => ReactNode;
+      example?: never;
+      args?: { [K in keyof A]?: Widen<A[K]> };
+    })
+  | (SceneCommon & { example: () => ReactNode; render?: never; args?: never });
 
 /** A worked example, written as an ordinary component. Produced by `demos.ts`
  * from the `*.demo.tsx` files beside a component, never authored by hand. */
@@ -64,14 +66,16 @@ interface DemoDef {
   render: () => ReactNode;
 }
 
-interface StoryDef<A extends Args> {
+interface StoryCommon<A extends Args> {
   name: string;
   group: string;
   docs?: string;
-  variants?: AnySv;
-  args?: A;
+  variants?: VariantSource;
+  /** Variant groups to leave out of the derived controls, for a recipe that
+   *  belongs to a PART while the story renders the Root: the Root cannot take
+   *  them, so a control for one moves nothing and reads as broken. */
+  omit?: readonly string[];
   controls?: { [K in keyof A]?: ControlSpec };
-  render: (args: A) => ReactNode;
   scenes?: readonly SceneDef<A>[];
   matrix?: false;
   pad?: number;
@@ -79,30 +83,65 @@ interface StoryDef<A extends Args> {
   viewport?: 'fit' | 'tv' | 'phone' | 'tablet';
   usage?: string;
   guidelines?: { do?: readonly string[]; dont?: readonly string[] };
+  play?: PlayFunction;
 }
+
+/** A story, either way round: name the `component` and the workbench renders it
+ * with the live args, so a control that moves nothing cannot be written; or
+ * write a `render` that composes whatever the component needs around it, and
+ * take the args as its argument. */
+type StoryDef<A extends Args, P extends object = A> =
+  | (StoryCommon<A> & { render: (args: A) => ReactNode; component?: never; args?: A })
+  | (StoryCommon<A> & {
+      component: ComponentType<P>;
+      render?: (args: A) => ReactNode;
+      // `A` is inferred FROM `args`, so `A & Partial<P>` alone accepts any key
+      // at all: a misspelt prop simply widens `A`. Naming the keys `P` does not
+      // have and giving them `never` is what makes the component the authority.
+      args?: A & Partial<P> & { [K in Exclude<keyof A, keyof P>]: never };
+    });
 
 interface Scene {
   name: string;
   docs?: string;
+  live: boolean;
+  /** The JSX the scene was written as. Absent on Metro, which cannot hand a
+   * module its own text. */
+  code?: string;
   render: (args: Args) => ReactNode;
+  play?: PlayFunction;
 }
 
 /** A story after compilation: everything the workbench needs, nothing it has to
- * derive again at render time. */
+ * derive again at render time, including `live`, which says whether the args
+ * reach what is on the canvas, because after compilation every render takes one
+ * argument whether or not its author read it. */
 interface Story {
   id: string;
   name: string;
   group: string;
   tier: string;
-  docs?: string;
+  /** Absent until the registry attaches the file the story was discovered at. */
+  path?: string;
+  docs?: StoryDocs;
   args: Args;
   controls: ResolvedControl[];
   matrix: MatrixRow[];
   scenes: Scene[];
   demos: readonly DemoDef[];
-  /** Empty on Metro, which cannot hand a module its own text. */
-  props: readonly PropDoc[];
+  /** The story's own `render`, as it was written. Absent on Metro, and for a
+   * story that names a `component` rather than composing one. */
+  code?: string;
+  /** Whether the story NAMED its component rather than composing a render. Such
+   * a story has no source to read, and the call site the workbench draws it
+   * from is exactly the generated one, so that is what its code panel shows. */
+  named: boolean;
+  /** One section per part of a compound component, or one unnamed section for a
+   * plain one. Empty on Metro, which has no build-time reader. */
+  props: readonly PropSection[];
   render: (args: Args) => ReactNode;
+  live: boolean;
+  play?: PlayFunction;
   pad: number;
   width?: StoryWidth;
   viewport?: 'fit' | 'tv' | 'phone' | 'tablet';
@@ -110,85 +149,60 @@ interface Story {
   guidelines: { do: readonly string[]; dont: readonly string[] };
 }
 
-// A group of these is the `sv` spelling of a boolean prop, so it is surfaced as
-// a boolean rather than a dropdown of strings. Usually just `true`: a recipe
-// only declares the option that paints something, and off is the base look.
-const BOOLEAN_OPTIONS = new Set(['true', 'false']);
-
-function isBooleanGroup(options: readonly string[]): boolean {
-  return options.length > 0 && options.every((option) => BOOLEAN_OPTIONS.has(option));
+interface OwnView<A extends Args> {
+  render: (args: A) => ReactNode;
+  live: boolean;
+  /** The story named a component rather than composing a render. */
+  named: boolean;
 }
 
-function resolveSpec(spec: ControlSpec): Control {
-  if (spec === 'text') return { kind: 'text' };
-  if (spec === 'boolean') return { kind: 'boolean' };
-  if (spec === 'number') return { kind: 'number', min: 0, max: 100, step: 1 };
-  // Thousands of Tabler names resolve, so this is a field you type, not a list
-  // you step through. An unknown name draws the fallback glyph.
-  if (spec === 'icon') return { kind: 'text' };
-  if (Array.isArray(spec)) return { kind: 'select', options: [...spec] };
-  const range = spec as { min: number; max: number; step?: number };
-  return { kind: 'number', min: range.min, max: range.max, step: range.step ?? 1 };
+// The author's own arity, read BEFORE anything wraps it: a compiled render
+// always takes the args, so this is the last point at which "reads them" and
+// "ignores them" are still two different functions.
+function ownView<A extends Args, P extends object>(def: StoryDef<A, P>): OwnView<A> {
+  if (def.render) return { render: def.render, live: def.render.length > 0, named: false };
+  const component = def.component as ComponentType<Args> | undefined;
+  if (!component) return { render: () => null, live: false, named: false };
+  return { render: (args) => createElement(component, args), live: true, named: true };
 }
 
-function inferSpec(value: unknown): Control | null {
-  if (typeof value === 'string') return { kind: 'text' };
-  if (typeof value === 'boolean') return { kind: 'boolean' };
-  if (typeof value === 'number') return { kind: 'number', min: 0, max: 100, step: 1 };
-  return null;
+function sceneLive<A extends Args>(scene: SceneDef<A>, own: boolean): boolean {
+  if (scene.example) return false;
+  if (scene.render) return scene.render.length > 0;
+  return own;
 }
 
-function slug(name: string): string {
-  return (
-    name
-      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-      // Strip diacritics before the alphanumeric filter: "Icônes" must
-      // deep-link as ?story=icones, not ?story=ic-nes.
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-  );
+function sceneRender<A extends Args>(
+  scene: SceneDef<A>,
+  own: (args: A) => ReactNode,
+): (args: Args) => ReactNode {
+  const { example, render = own, args } = scene;
+  if (example) return example;
+  return (current) => render({ ...current, ...args } as unknown as A);
+}
+
+function resolveScenes<A extends Args>(scenes: readonly SceneDef<A>[], own: OwnView<A>): Scene[] {
+  return scenes.map((scene) => ({
+    name: scene.name,
+    docs: scene.docs,
+    play: scene.play,
+    live: sceneLive(scene, own.live),
+    render: sceneRender(scene, own.render),
+  }));
 }
 
 // `const A`: without it `args: { icon: 'volume' }` infers `string` and every
 // story feeding a union-typed prop stops compiling.
-function story<const A extends Args = Record<string, never>>(def: StoryDef<A>): Story {
+function story<const A extends Args = Record<string, never>, P extends object = A>(
+  def: StoryDef<A, P>,
+): Story {
+  const variants = variantControls(def.variants, def.omit);
+
   const args: Args = { ...def.args };
-  const controls: ResolvedControl[] = [];
-  const matrix: MatrixRow[] = [];
+  for (const [group, value] of Object.entries(variants.defaults)) args[group] ??= value;
 
-  for (const [group, raw] of Object.entries(def.variants?.options ?? {})) {
-    const options = raw.map(String);
-    const fallback = def.variants?.defaults?.[group];
-    if (isBooleanGroup(options)) {
-      controls.push({ key: group, control: { kind: 'boolean' }, variant: true });
-      matrix.push({ group, options: [false, true] });
-      args[group] ??= String(fallback) === 'true';
-    } else {
-      controls.push({ key: group, control: { kind: 'select', options }, variant: true });
-      matrix.push({ group, options });
-      args[group] ??= fallback === undefined ? options[0] : String(fallback);
-    }
-  }
-
-  for (const [key, value] of Object.entries(def.args ?? {})) {
-    // A prop that is also a variant already has its control from the `sv`.
-    if (controls.some((existing) => existing.key === key)) continue;
-    const spec = def.controls?.[key as keyof A];
-    const control = spec ? resolveSpec(spec) : inferSpec(value);
-    if (control) controls.push({ key, control, variant: false });
-  }
-
-  const scenes: Scene[] = (def.scenes ?? []).map((scene) => ({
-    name: scene.name,
-    docs: scene.docs,
-    render: (current: Args) => {
-      const merged = { ...current, ...scene.args } as unknown as A;
-      return (scene.render ?? def.render)(merged);
-    },
-  }));
+  const variantKeys = new Set(variants.controls.map((control) => control.key));
+  const own = ownView(def);
 
   return {
     id: slug(def.name),
@@ -198,12 +212,18 @@ function story<const A extends Args = Record<string, never>>(def: StoryDef<A>): 
     tier: 'Other',
     docs: def.docs,
     args,
-    controls,
-    matrix: def.matrix === false ? [] : matrix,
-    scenes,
+    controls: [
+      ...variants.controls,
+      ...argControls(def.args ?? {}, def.controls ?? {}, variantKeys),
+    ],
+    matrix: def.matrix === false ? [] : variants.matrix,
+    scenes: resolveScenes(def.scenes ?? [], own),
     demos: [],
     props: [],
-    render: (current: Args) => def.render(current as unknown as A),
+    render: (current: Args) => own.render(current as unknown as A),
+    live: own.live,
+    named: own.named,
+    play: def.play,
     pad: def.pad ?? 0,
     width: def.width,
     viewport: def.viewport,
@@ -212,97 +232,34 @@ function story<const A extends Args = Record<string, never>>(def: StoryDef<A>): 
   };
 }
 
-/** Case-insensitive match on the story's name, group or atomic level. */
-function matches(story: Story, query: string): boolean {
-  if (!query) return true;
-  const needle = query.toLowerCase();
-  return (
-    story.name.toLowerCase().includes(needle) ||
-    story.group.toLowerCase().includes(needle) ||
-    (story.tier ?? '').toLowerCase().includes(needle)
-  );
+interface ControlsRole {
+  show: boolean;
+  reset: boolean;
 }
 
-/** Sidebar order; any group not listed follows alphabetically. One flat list
- * of FUNCTIONAL groups: what a component is for, never which atomic level it
- * happens to live at - the levels are for the people editing the kit, and a
- * tree that nested them made every kind of input land in three places. */
-const GROUP_ORDER = [
-  'Foundations',
-  'Layout',
-  'Actions',
-  'Input',
-  'Overlays',
-  'Feedback',
-  'Media',
-  'Player',
-  'Brand',
-];
-
-const TIER_ORDER = ['Foundations', 'Atoms', 'Molecules', 'Organisms', 'Templates'];
-
-/** Which atomic level a story belongs to, read from where its file sits. */
-function tierFor(path: string): string {
-  const at = /\/components\/(atoms|molecules|organisms|templates)\//.exec(path);
-  if (at?.[1]) return `${at[1].charAt(0).toUpperCase()}${at[1].slice(1)}`;
-  if (path.includes('/foundations/')) return 'Foundations';
-  return 'Other';
+function viewIsLive(story: Story, view: View): boolean {
+  if (view.startsWith('demo:')) return false;
+  if (!view.startsWith('scene:')) return story.live;
+  return story.scenes[viewIndex(view)]?.live ?? false;
 }
 
-/** The distinct values of `key` with the items that carry them, in encounter
- * order — which, after `orderStories`, is already the sorted order. */
-function groupBy<T, K>(items: readonly T[], key: (item: T) => K): { key: K; items: T[] }[] {
-  const out = new Map<K, T[]>();
-  for (const item of items) {
-    const at = key(item);
-    const bucket = out.get(at);
-    if (bucket) bucket.push(item);
-    else out.set(at, [item]);
-  }
-  return [...out].map(([at, entries]) => ({ key: at, items: entries }));
-}
-
-/** Attach the level each story's file implies. */
-function attachTiers(stories: readonly Story[], paths: readonly string[]): Story[] {
-  return stories.map((entry, at) => ({ ...entry, tier: tierFor(paths[at] ?? '') }));
-}
-
-/** Sorts the registry for display: by functional group, then name. The atomic
- * level stays attached (search matches it, the palette shows it) but never
- * drives the order a reader scans. */
-function orderStories(stories: readonly Story[]): Story[] {
-  const rankOf = (order: readonly string[], value: string) => {
-    const at = order.indexOf(value);
-    return at === -1 ? order.length : at;
-  };
-  return [...stories].sort(
-    (a, b) =>
-      rankOf(GROUP_ORDER, a.group) - rankOf(GROUP_ORDER, b.group) ||
-      a.group.localeCompare(b.group) ||
-      a.name.localeCompare(b.name),
-  );
+/** What the panel's controls can do on the view being shown. A scene that
+ * ignores the args, and every demo, is a fixed picture: the controls are hidden
+ * rather than left there moving nothing, and Reset with them. */
+function controlsRole(story: Story, view: View): ControlsRole {
+  const show = viewIsLive(story, view);
+  return { show, reset: show && story.controls.length > 0 };
 }
 
 export type {
-  Control,
-  ControlSpec,
+  ControlsRole,
   DemoDef,
-  MatrixRow,
-  ResolvedControl,
+  DocComponent,
   Scene,
+  SceneDef,
   Story,
   StoryDef,
+  StoryDocs,
   StoryWidth,
 };
-export {
-  attachTiers,
-  GROUP_ORDER,
-  groupBy,
-  isBooleanGroup,
-  matches,
-  orderStories,
-  slug,
-  story,
-  TIER_ORDER,
-  tierFor,
-};
+export { controlsRole, story };

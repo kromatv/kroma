@@ -11,15 +11,19 @@ import { useT } from '@kroma/ui';
 import {
   armEscapeGuard,
   Box,
+  color,
+  Divider,
   entryDefaultSize,
   Focusable,
   Icon,
+  Row,
   selectTriggerVariants,
-  Txt,
+  Text,
   useAnchoredPlacement,
+  useTheme,
 } from '@kroma/ui/kit';
-import { IconCheck, IconSearch } from '@tabler/icons-react';
 import {
+  type CSSProperties,
   type KeyboardEvent,
   type RefObject,
   useEffect,
@@ -29,6 +33,39 @@ import {
   useState,
 } from 'react';
 import type { StyleProp, View, ViewStyle } from 'react-native';
+
+// A popup is `position: fixed` and its list scrolls on one axis, neither of
+// which React Native has, so the panel stays real CSS. Every value in it still
+// comes from a token.
+const BACKDROP: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 50,
+  margin: 0,
+  padding: 0,
+  border: 0,
+  background: 'none',
+  cursor: 'default',
+};
+
+const LIST: CSSProperties = { maxHeight: 256, overflowY: 'auto', padding: 6 };
+
+const OPTION: CSSProperties = {
+  position: 'relative',
+  display: 'flex',
+  width: '100%',
+  alignItems: 'center',
+  margin: 0,
+  padding: '8px 32px 8px 12px',
+  border: 0,
+  borderRadius: 4,
+  textAlign: 'left',
+  cursor: 'pointer',
+  outline: 'none',
+  userSelect: 'none',
+};
+
+const FOCUS_RING_OFF = { focusRing: 'off' } as const;
 
 export function SearchSelect({
   value,
@@ -69,9 +106,9 @@ export function SearchSelect({
       >
         {(state) => (
           <>
-            <Txt variant="body" lines={1} style={state.slots.ink}>
+            <Text variant="body" lines={1} style={state.slots.ink}>
               {label}
-            </Txt>
+            </Text>
             <Box flex />
             <Icon name="chevron-down" size={16} color="textDim" />
           </>
@@ -116,6 +153,28 @@ function SearchPanel({
   const list = useRef<HTMLDivElement>(null);
   const t = useT();
   const at = useAnchoredPlacement(anchor, { minWidth: 240, matchWidth: true, maxHeight: 320 });
+  const theme = useTheme();
+  const panel: CSSProperties = {
+    position: 'fixed',
+    zIndex: 50,
+    minWidth: 240,
+    overflow: 'hidden',
+    borderRadius: theme.radius.xs,
+    border: `1px solid ${theme.colors.borderStrong}`,
+    background: theme.colors.surface1,
+    boxShadow: theme.shadow.pop,
+  };
+  // The role carries the face and the size; only the reset around it is stated.
+  const entry: CSSProperties = {
+    ...(theme.type.meta as CSSProperties),
+    width: '100%',
+    margin: 0,
+    padding: 0,
+    border: 0,
+    background: 'transparent',
+    color: theme.colors.text,
+    outline: 'none',
+  };
 
   // Keep the current value selectable even if it's not in the loaded list.
   const all = useMemo(
@@ -168,18 +227,20 @@ function SearchPanel({
         aria-label={t('common.close')}
         tabIndex={-1}
         onClick={onClose}
-        className="fixed inset-0 z-50 cursor-default"
+        style={BACKDROP}
       />
       <div
-        className="fixed z-50 min-w-60 overflow-hidden rounded-md border border-border-strong bg-[#121216] shadow-pop"
-        style={{ left: at.left, top: at.top, bottom: at.bottom, width: at.width }}
+        style={{
+          ...panel,
+          left: at.left,
+          top: at.top,
+          bottom: at.bottom,
+          width: at.width,
+        }}
       >
         {/* The popup itself is the box, so this row takes no field ring (see styles.css). */}
-        <div
-          data-focus-ring="off"
-          className="flex items-center gap-2 border-b border-border px-3 py-2.5"
-        >
-          <IconSearch size={14} className="shrink-0 text-dim" />
+        <Row gap={8} px={12} py={10} dataSet={FOCUS_RING_OFF}>
+          <Icon name="search" size={14} color="textDim" />
           <input
             ref={input}
             role="combobox"
@@ -191,12 +252,15 @@ function SearchPanel({
             onKeyDown={onKeyDown}
             placeholder={searchPlaceholder}
             data-focus-ring="off"
-            className="w-full bg-transparent text-[13px] font-medium text-text outline-none placeholder:text-dim"
+            style={entry}
           />
-        </div>
-        <div ref={list} id={listId} role="listbox" className="max-h-64 overflow-y-auto p-1.5">
+        </Row>
+        <Divider />
+        <div ref={list} id={listId} role="listbox" style={LIST}>
           {filtered.length === 0 ? (
-            <div className="px-3 py-4 text-center text-[12.5px] text-dim">-</div>
+            <Text variant="meta" color="textDim" textAlign="center" px={12} py={16}>
+              -
+            </Text>
           ) : (
             filtered.map((o, i) => (
               // A real button, not a div: the row is a pointer target, and the
@@ -213,11 +277,18 @@ function SearchPanel({
                 onMouseEnter={() => setActive(i)}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onPick(o)}
-                className={`relative flex w-full cursor-pointer select-none items-center rounded-[4px] py-2 pl-3 pr-8 text-left text-[13px] font-medium outline-none ${i === active ? 'bg-white/6' : ''} ${o === value ? 'text-accent' : 'text-text'}`}
+                style={{
+                  ...OPTION,
+                  background: i === active ? color('tint/6') : 'transparent',
+                }}
               >
-                {o}
+                <Text variant="meta" color={o === value ? 'accentText' : 'text'}>
+                  {o}
+                </Text>
                 {o === value ? (
-                  <IconCheck size={14} stroke={2.4} className="absolute right-2.5" />
+                  <Box absolute right={10}>
+                    <Icon name="check" size={14} thickness={2.4} color="accentText" />
+                  </Box>
                 ) : null}
               </button>
             ))

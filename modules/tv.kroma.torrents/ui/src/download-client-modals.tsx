@@ -5,7 +5,7 @@
 // engine has no form (configured from the Acquisition settings page).
 
 import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import { Dialog, DialogActions, Field } from '@kroma/ui/kit';
+import { Box, Button, Dialog, Field, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useTorrentsApi } from './api';
@@ -51,43 +51,53 @@ export const DownloadClientModal = createCallable<
     );
 
   return (
-    <Dialog open title={t('dlclients.edit')} onClose={() => call.end(false)} width={520}>
-      <Field
-        label={t('dlclients.name')}
-        value={name}
-        onChange={setName}
-        placeholder={client.kind}
-      />
-      <Field
-        label={t('dlclients.url')}
-        hint={t('dlclients.urlHint')}
-        value={url}
-        onChange={setUrl}
-      />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label={t('dlclients.username')} value={username} onChange={setUsername} />
-        <Field
-          label={t('dlclients.password')}
-          hint={client.hasPassword ? t('dlclients.passwordKept') : undefined}
-          value={password}
-          onChange={setPassword}
-          type="password"
+    <Dialog.Root open title={t('dlclients.edit')} onClose={() => call.end(false)} width="md">
+      <Field.Root label={t('dlclients.name')} value={name} onValueChange={setName}>
+        <Field.Input placeholder={client.kind} />
+      </Field.Root>
+      <Field.Root label={t('dlclients.url')} value={url} onValueChange={setUrl}>
+        <Field.Hint>{t('dlclients.urlHint')}</Field.Hint>
+      </Field.Root>
+      <Box row={{ base: false, md: true }} gap={16}>
+        <Field.Root
+          label={t('dlclients.username')}
+          value={username}
+          onValueChange={setUsername}
+          flex={{ base: 0, md: 1 }}
         />
-      </div>
-      {error ? <p className="text-[13px] font-semibold text-[#EF8091]">{error}</p> : null}
-      <DialogActions
+        <Field.Root
+          label={t('dlclients.password')}
+          value={password}
+          onValueChange={setPassword}
+          flex={{ base: 0, md: 1 }}
+        >
+          <Field.Input type="password" />
+          {client.hasPassword ? <Field.Hint>{t('dlclients.passwordKept')}</Field.Hint> : null}
+        </Field.Root>
+      </Box>
+      {error ? (
+        <Text variant="meta" color="dangerHover">
+          {error}
+        </Text>
+      ) : null}
+      <Dialog.Actions
         onCancel={() => call.end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={save}
         confirmLabel={busy ? t('common.saving') : t('common.save')}
         busy={busy}
         disabled={!url.trim()}
-        destructive={
-          client.builtin
-            ? undefined
-            : { label: t('dlclients.delete'), onPress: remove, disabled: busy }
-        }
-      />
-    </Dialog>
+      >
+        {client.builtin ? null : (
+          <Button
+            variant="dangerGhost"
+            size="sm"
+            label={t('dlclients.delete')}
+            onPress={remove}
+            disabled={busy}
+          />
+        )}
+      </Dialog.Actions>
+    </Dialog.Root>
   );
 });

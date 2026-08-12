@@ -5,18 +5,14 @@
 
 import { apiErrorText, type PasskeyInfo } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Txt } from '@kroma/ui/kit';
-import { IconKey, IconShieldLock } from '@tabler/icons-react';
+import { Box, Button, Icon, IconWell, ListRow, Text } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Panel } from '#web/features/accounts/account/ui';
 import { relativeSeen } from '#web/shared/lib/adminFormat';
 import { kromaClient } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
 import { userQueries } from '#web/shared/lib/queries';
 import { createPasskey, passkeysSupported } from '#web/shared/lib/webauthn';
-
-const DANGER_LABEL = { fontSize: 13, fontWeight: '600' } as const;
 
 function isCancel(e: unknown): boolean {
   return e instanceof DOMException && (e.name === 'NotAllowedError' || e.name === 'AbortError');
@@ -47,24 +43,24 @@ function PasskeyRow({
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 px-5.5 py-3.5">
-      <div className="flex min-w-0 items-center gap-3.5">
-        <span className="flex size-9.5 flex-none items-center justify-center rounded-md border border-border bg-surface-2 text-success">
-          <IconKey size={18} stroke={1.7} />
-        </span>
-        <div className="min-w-0">
-          <div className="truncate text-[14px] font-bold text-text">{passkey.name}</div>
-          <div className="mt-0.5 truncate text-[12.5px] text-muted">
-            {passkey.lastUsed ? relativeSeen(passkey.lastUsed) : t('account.passkeyNeverUsed')}
-          </div>
-        </div>
-      </div>
-      <Button variant="ghost" size="sm" onPress={remove} loading={removing}>
-        <Txt color="danger" style={DANGER_LABEL}>
-          {removing ? t('common.saving') : t('common.delete')}
-        </Txt>
-      </Button>
-    </div>
+    <ListRow.Root>
+      <ListRow.Label>{passkey.name}</ListRow.Label>
+      <ListRow.Hint>
+        {passkey.lastUsed ? relativeSeen(passkey.lastUsed) : t('account.passkeyNeverUsed')}
+      </ListRow.Hint>
+      <ListRow.Leading>
+        <Box center w={38} h={38} radius="xs" border="border" bg="surface2">
+          <Icon name="key" size={18} thickness={1.7} color="success" />
+        </Box>
+      </ListRow.Leading>
+      <ListRow.Trailing>
+        <Button variant="ghost" size="sm" onPress={remove} loading={removing}>
+          <Text variant="meta" color="danger">
+            {removing ? t('common.saving') : t('common.delete')}
+          </Text>
+        </Button>
+      </ListRow.Trailing>
+    </ListRow.Root>
   );
 }
 
@@ -98,57 +94,54 @@ export function PasskeysCard() {
     }
   };
 
+  const note = noteOf(supported, keys, t);
   return (
-    <Panel className="overflow-hidden">
-      <div className="flex items-center justify-between gap-4 border-b border-border px-5.5 py-4">
-        <div className="flex min-w-0 items-center gap-3.5">
-          <span className="flex size-10 flex-none items-center justify-center rounded-md bg-accent-soft text-accent">
-            <IconShieldLock size={20} stroke={1.7} />
-          </span>
-          <div className="min-w-0">
-            <div className="font-display text-[15px] font-bold text-text">
-              {t('account.passkeys')}
-            </div>
-            <div className="mt-0.5 text-[12.5px] text-muted">{t('account.passkeysDesc')}</div>
-          </div>
-        </div>
+    <ListRow.Group size="md">
+      <ListRow.Root>
+        <ListRow.Label>{t('account.passkeys')}</ListRow.Label>
+        <ListRow.Hint>{t('account.passkeysDesc')}</ListRow.Hint>
+        <ListRow.Leading>
+          <IconWell name="shield-lock" size="sm" tone="accent" />
+        </ListRow.Leading>
         {supported ? (
-          <Button
-            size="sm"
-            icon="plus"
-            label={busy ? t('common.saving') : t('account.passkeyAdd')}
-            onPress={add}
-            loading={busy}
-          />
+          <ListRow.Trailing>
+            <Button
+              size="sm"
+              icon="plus"
+              label={busy ? t('common.saving') : t('account.passkeyAdd')}
+              onPress={add}
+              loading={busy}
+            />
+          </ListRow.Trailing>
         ) : null}
-      </div>
-
+      </ListRow.Root>
       {error ? (
-        <div className="px-5.5 py-3 text-[12.5px] font-semibold text-danger">{error}</div>
+        <ListRow.Root>
+          <Text variant="meta" color="danger">
+            {error}
+          </Text>
+        </ListRow.Root>
       ) : null}
-
-      <PasskeysBody supported={supported} keys={keys} onChanged={() => void invalidate()} />
-    </Panel>
+      {note ? (
+        <ListRow.Root>
+          <Text variant="meta" color="textMuted">
+            {note}
+          </Text>
+        </ListRow.Root>
+      ) : null}
+      {(keys ?? []).map((k) => (
+        <PasskeyRow key={k.id} passkey={k} onRemoved={() => void invalidate()} />
+      ))}
+    </ListRow.Group>
   );
 }
 
-function PasskeysBody({
-  supported,
-  keys,
-  onChanged,
-}: Readonly<{ supported: boolean; keys: PasskeyInfo[] | undefined; onChanged: () => void }>) {
-  const t = useT();
-  if (!supported)
-    return (
-      <div className="px-5.5 py-5 text-[13px] text-muted">{t('account.passkeysInsecure')}</div>
-    );
-  if (!keys || keys.length === 0)
-    return <div className="px-5.5 py-5 text-[13px] text-muted">{t('account.passkeysEmpty')}</div>;
-  return (
-    <div className="divide-y divide-border/70">
-      {keys.map((k) => (
-        <PasskeyRow key={k.id} passkey={k} onRemoved={onChanged} />
-      ))}
-    </div>
-  );
+function noteOf(
+  supported: boolean,
+  keys: PasskeyInfo[] | undefined,
+  t: ReturnType<typeof useT>,
+): string | null {
+  if (!supported) return t('account.passkeysInsecure');
+  if (!keys || keys.length === 0) return t('account.passkeysEmpty');
+  return null;
 }

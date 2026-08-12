@@ -8,7 +8,7 @@ import type { ColorToken } from '#ui/core';
 import type { ReactNode } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 
 const KEYS = {
   left: 'chevron-left',
@@ -52,9 +52,9 @@ function Hint({ text, size = 15, color = 'textDim', textStyle, ...box }: Readonl
       {parts.map((part, index) =>
         typeof part === 'string' && !(part in KEYS) ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: the parts of one line are a fixed, ordered split; there is no stable id to key on.
-          <Txt key={index} color={color} style={[{ fontSize: size }, textStyle]}>
+          <Text key={index} color={color} style={[{ fontSize: size }, textStyle]}>
             {part}
-          </Txt>
+          </Text>
         ) : (
           // biome-ignore lint/suspicious/noArrayIndexKey: same fixed split.
           <Icon key={index} name={KEYS[part as HintKey]} size={size + 3} color={color} />

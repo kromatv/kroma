@@ -8,7 +8,7 @@
 // one audio track).
 //
 // mpv renders to its own native window behind the transparent Tauri UI
-// window, the same "plane behind the page" model AVPlay uses on Tizen — so
+// window, the same "plane behind the page" model AVPlay uses on Tizen, so
 // this backend shows no in-page media element (surface: 'mpv').
 
 import type { AudioFilterMode, PlaneRect } from '@kroma/ui';
@@ -92,7 +92,7 @@ export class MpvEngine extends BaseTvEngine {
       on('mpv://exited', () => this.fatal()),
     ]);
     // mpv may have died (or never launched) before this engine subscribed, in
-    // which case no event ever arrives — probe once so a dead process fails
+    // which case no event ever arrives. Probe once so a dead process fails
     // fast instead of leaving an endless spinner.
     const status = await this.bridge.core.invoke('mpv_status').catch(() => null);
     if (status === 'dead') this.fatal();

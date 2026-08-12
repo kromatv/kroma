@@ -1,7 +1,14 @@
 import { type GenreCount, type MessageKey, SORT_MODES, type SortMode } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Chip, type IconName, Select } from '@kroma/ui/kit';
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { Box, Chip, color, type IconName, Row, Select, useBreakpoint } from '@kroma/ui/kit';
+import {
+  type CSSProperties,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 const SORT_LABEL_KEY: Record<SortMode, MessageKey> = {
   added: 'browse.sort.added',
@@ -17,9 +24,50 @@ const SORT_ICON: Record<SortMode, IconName> = {
   rating: 'star',
 };
 
-// Matches the mobile topbar's height, so the pinned bar docks under it below lg.
-const BAR_POSITION =
-  'sticky top-0 z-30 max-lg:top-[calc(max(0.625rem,env(safe-area-inset-top))+2.75rem)]';
+// Matches the mobile topbar's height, so the pinned bar docks under it below lg
+// and flush with the window at lg, where that topbar is not rendered.
+const DOCK_TOP = 'calc(max(0.625rem, env(safe-area-inset-top)) + 2.75rem)';
+
+// `position: sticky` and `env()` have no React Native spelling, so the bar's own
+// box stays CSS; everything it contains is the kit's.
+const BAR: CSSProperties = {
+  position: 'sticky',
+  zIndex: 30,
+  marginLeft: 'calc(var(--gutter-web) * -1)',
+  marginRight: 'calc(var(--gutter-web) * -1)',
+  marginTop: 24,
+  marginBottom: 24,
+  paddingLeft: 'var(--gutter-web)',
+  paddingRight: 'var(--gutter-web)',
+  paddingTop: 10,
+  paddingBottom: 10,
+  borderBottomWidth: 1,
+  borderBottomStyle: 'solid',
+  borderBottomColor: 'transparent',
+  transition: 'background-color .3s, border-color .3s, box-shadow .3s',
+};
+
+const BAR_STUCK: CSSProperties = {
+  ...BAR,
+  borderBottomColor: color('white/6'),
+  background: 'color-mix(in srgb, var(--kroma-bg) 72%, transparent)',
+  backdropFilter: 'blur(24px)',
+  WebkitBackdropFilter: 'blur(24px)',
+  boxShadow: `0 16px 32px -20px ${color('black/85')}`,
+};
+
+// `scrollbar-width` only; the legacy `::-webkit-scrollbar` rule it used to pair
+// with needs a stylesheet, which an inline style has no way to reach.
+const STRIP: CSSProperties = {
+  display: 'flex',
+  minWidth: 0,
+  flex: 1,
+  gap: 8,
+  overflowX: 'auto',
+  paddingTop: 2,
+  paddingBottom: 2,
+  scrollbarWidth: 'none',
+};
 
 // The "no genre picked" sentinel: Select treats '' as nothing-picked.
 const ALL_GENRES = '*';
@@ -28,11 +76,8 @@ const ALL_GENRES = '*';
 // tag row.
 const CHIP_PAD = { paddingVertical: 8, paddingHorizontal: 18 } as const;
 
-const BAR_SKIN: Record<'floating' | 'stuck', string> = {
-  floating: 'border-transparent',
-  stuck:
-    'border-white/6 bg-[color-mix(in_srgb,var(--kroma-bg)_72%,transparent)] backdrop-blur-xl shadow-[0_16px_32px_-20px_rgba(0,0,0,.85)]',
-};
+const GENRE_TRIGGER = { flexShrink: 0, minWidth: 150 } as const;
+const SORT_TRIGGER = { flexShrink: 0, minWidth: 196 } as const;
 
 /** True once a `position: sticky` element has docked at its `top` offset. */
 function useStuck(bar: RefObject<HTMLDivElement | null>): boolean {
@@ -120,6 +165,8 @@ export function BrowseBar({
   const bar = innerRef ?? fallbackRef;
   const strip = useRef<HTMLDivElement>(null);
   const stuck = useStuck(bar);
+  const step = useBreakpoint();
+  const wide = step === 'lg' || step === 'tv';
   const inline = genres.slice(0, INLINE_GENRES);
   if (genre && !inline.some((g) => g.name === genre)) {
     const extra = genres.find((g) => g.name === genre);
@@ -141,17 +188,13 @@ export function BrowseBar({
   }, [genre]);
 
   return (
-    <div
-      ref={bar}
-      className={`${BAR_POSITION} -mx-(--gutter-web) mb-6 mt-6 border-b px-(--gutter-web) py-2.5 transition-[background-color,border-color,box-shadow] duration-300 ${BAR_SKIN[stuck ? 'stuck' : 'floating']}`}
-    >
-      <div className="flex items-center gap-3">
+    <div ref={bar} style={{ ...(stuck ? BAR_STUCK : BAR), top: wide ? 0 : DOCK_TOP }}>
+      <Row gap={12}>
         {genres.length > 0 ? (
           <div
             ref={strip}
             onScroll={update}
-            className="flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            style={{ maskImage: mask, WebkitMaskImage: mask }}
+            style={{ ...STRIP, maskImage: mask, WebkitMaskImage: mask }}
           >
             <Chip
               active={!genre}
@@ -172,35 +215,38 @@ export function BrowseBar({
             ))}
           </div>
         ) : (
-          <div className="flex-1" />
+          <Box flex />
         )}
         {genres.length > 0 ? (
-          <Select
+          <Select.Root
             label={t('browse.genres')}
             placeholder={t('browse.genres')}
             value={genre ?? ALL_GENRES}
-            size="sm"
-            onChange={(v) => onGenre(v === ALL_GENRES ? undefined : v)}
-            options={[
-              { value: ALL_GENRES, label: t('browse.allGenres') },
-              ...genres.map((g) => ({ value: g.name, label: g.name, note: String(g.count) })),
-            ]}
-            style={{ flexShrink: 0, minWidth: 150 }}
-          />
+            onValueChange={(v) => onGenre(v === ALL_GENRES ? undefined : v)}
+          >
+            <Select.Trigger size="sm" style={GENRE_TRIGGER} />
+            <Select.Item value={ALL_GENRES} label={t('browse.allGenres')} />
+            {genres.map((g) => (
+              <Select.Item key={g.name} value={g.name} label={g.name} note={String(g.count)} />
+            ))}
+          </Select.Root>
         ) : null}
-        <Select
+        <Select.Root
           label={t('browse.sortBy')}
           value={sort}
-          size="sm"
-          onChange={(v) => onSort(v as SortMode)}
-          options={SORT_MODES.map((mode) => ({
-            value: mode,
-            label: t(SORT_LABEL_KEY[mode]),
-            icon: SORT_ICON[mode],
-          }))}
-          style={{ flexShrink: 0, minWidth: 196 }}
-        />
-      </div>
+          onValueChange={(v) => onSort(v as SortMode)}
+        >
+          <Select.Trigger size="sm" style={SORT_TRIGGER} />
+          {SORT_MODES.map((mode) => (
+            <Select.Item
+              key={mode}
+              value={mode}
+              label={t(SORT_LABEL_KEY[mode])}
+              icon={SORT_ICON[mode]}
+            />
+          ))}
+        </Select.Root>
+      </Row>
     </div>
   );
 }

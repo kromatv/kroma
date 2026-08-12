@@ -4,7 +4,7 @@
 
 import { formatTimecode } from '@kroma/core';
 import { seekBar } from '@kroma/ui';
-import { Box, styles, Txt } from '@kroma/ui/kit';
+import { Box, styles, Text } from '@kroma/ui/kit';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
@@ -97,7 +97,7 @@ export function ScrubBar({
               </Box>
             ) : null}
             <Box style={s.bubble}>
-              <Txt style={s.bubbleText}>{formatTimecode(shown)}</Txt>
+              <Text style={s.bubbleText}>{formatTimecode(shown)}</Text>
             </Box>
           </Box>
         ) : null}

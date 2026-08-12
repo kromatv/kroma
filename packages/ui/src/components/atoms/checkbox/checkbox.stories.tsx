@@ -1,10 +1,10 @@
 import { story } from '@kroma/workbench/story';
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Checkbox, checkboxVariants } from './checkbox';
 
-function Demo({ size }: Readonly<{ size: 'sm' | 'tv' }>) {
+function Demo({ size }: Readonly<{ size?: 'sm' | 'tv' }>) {
   const [subs, setSubs] = useState(true);
   const [audio, setAudio] = useState(false);
   const all = subs && audio;
@@ -14,27 +14,27 @@ function Demo({ size }: Readonly<{ size: 'sm' | 'tv' }>) {
       <Box row align="center" gap={10}>
         <Checkbox
           size={size}
-          label="Tout sélectionner"
+          label="Select all"
           checked={all}
           indeterminate={some && !all}
-          onChange={(next) => {
+          onCheckedChange={(next) => {
             setSubs(next);
             setAudio(next);
           }}
         />
-        <Txt variant="body">Tout sélectionner</Txt>
+        <Text variant="body">Select all</Text>
       </Box>
       <Box row align="center" gap={10} ml={22}>
-        <Checkbox size={size} label="Sous-titres" checked={subs} onChange={setSubs} />
-        <Txt variant="body" color="textMuted">
-          Sous-titres
-        </Txt>
+        <Checkbox size={size} label="Subtitles" checked={subs} onCheckedChange={setSubs} />
+        <Text variant="body" color="textMuted">
+          Subtitles
+        </Text>
       </Box>
       <Box row align="center" gap={10} ml={22}>
-        <Checkbox size={size} label="Pistes audio" checked={audio} onChange={setAudio} />
-        <Txt variant="body" color="textMuted">
-          Pistes audio
-        </Txt>
+        <Checkbox size={size} label="Audio tracks" checked={audio} onCheckedChange={setAudio} />
+        <Text variant="body" color="textMuted">
+          Audio tracks
+        </Text>
       </Box>
     </Box>
   );
@@ -44,11 +44,11 @@ export default story({
   name: 'Checkbox',
   group: 'Input',
   docs: 'The many-of-N control: a <Switch> says "this is on", a checkbox says "this one is included", which is why a list of them is a selection and a list of switches is a settings page. Announced as `checkbox` with its checked state, and as **mixed** when `indeterminate` - the parent of a partly selected group, which fills amber like a checked one because it has been acted on either way. A press from mixed checks everything under it.',
-  usage: `<Checkbox label="Sous-titres" checked={subs} onChange={setSubs} />
-<Checkbox label="Tout" checked={all} indeterminate={some && !all} onChange={setAll} />`,
+  usage: `<Checkbox label="Subtitles" checked={subs} onCheckedChange={setSubs} />
+<Checkbox label="All" checked={all} indeterminate={some && !all} onCheckedChange={setAll} />`,
   guidelines: {
     do: [
-      'Give it a `label`: it is the accessible name, even when a <Txt> beside it carries the visible one.',
+      'Give it a `label`: it is the accessible name, even when a <Text> beside it carries the visible one.',
       'Use `indeterminate` for a parent row rather than leaving it unchecked, which claims nothing under it is picked.',
     ],
     dont: [
@@ -58,7 +58,5 @@ export default story({
   },
   variants: checkboxVariants,
   matrix: false,
-  args: { size: 'sm' as 'sm' | 'tv' },
-  controls: { size: ['sm', 'tv'] },
-  render: ({ size }) => <Demo size={size} />,
+  component: Demo,
 });

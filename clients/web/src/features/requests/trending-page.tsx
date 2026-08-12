@@ -3,8 +3,7 @@
 
 import { hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, EmptyState, Icon, Row, Txt } from '@kroma/ui/kit';
-import { IconArrowLeft } from '@tabler/icons-react';
+import { Box, Button, EmptyState, Icon, PageHeader, Row, Text } from '@kroma/ui/kit';
 import { Link } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
@@ -13,13 +12,18 @@ import {
   useTrendingPage,
 } from '#web/features/requests/use-discover-search';
 import { useAuth } from '#web/shared/lib/auth';
-import { PAGE_MAIN, SkeletonRow } from '#web/shared/ui';
-
-// Same auto-fill poster grid as the catalogue (see cards.tsx GRID).
-const GRID =
-  'mt-8 grid grid-cols-[repeat(auto-fill,minmax(min(var(--card-w),100%),1fr))] gap-x-4.5 gap-y-6 *:w-full!';
+import { PAGE_MAIN, POSTER_GRID, SkeletonRow } from '#web/shared/ui';
 
 const PAGE_COUNT = { fontVariant: ['tabular-nums' as const] };
+
+const BACK_LINK = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  alignSelf: 'flex-start',
+  gap: 6,
+  marginBottom: 24,
+  textDecoration: 'none',
+} as const;
 
 export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
   const t = useT();
@@ -39,22 +43,21 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
 
   return (
     <main ref={topRef} className={PAGE_MAIN}>
-      <Link
-        to="/search"
-        className="mb-6 inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-dim transition-colors hover:text-text"
-      >
-        <IconArrowLeft size={16} stroke={2.2} />
-        {t('discover.back')}
+      <Link to="/search" style={BACK_LINK}>
+        <Icon name="arrow-left" size={16} thickness={2.2} color="textDim" />
+        <Text variant="meta" color="textDim">
+          {t('discover.back')}
+        </Text>
       </Link>
 
-      {/* Not <PageHeader>: it has no slot for a glyph inside the title. */}
-      <h1 className="flex items-center gap-2.5">
-        <Icon name="flame" size={26} stroke={2} color="accent" />
-        <Txt variant="h1">{title}</Txt>
-      </h1>
+      <PageHeader.Root>
+        <PageHeader.Title icon="flame">{title}</PageHeader.Title>
+      </PageHeader.Root>
 
       {!canDiscover ? (
-        <EmptyState icon="mood-empty" title={t('discover.empty')} />
+        <EmptyState.Root icon="mood-empty">
+          <EmptyState.Title>{t('discover.empty')}</EmptyState.Title>
+        </EmptyState.Root>
       ) : (
         <>
           <Body state={state} />
@@ -76,14 +79,20 @@ function Body({ state }: Readonly<{ state: TrendingPageState }>) {
     );
   }
   if (state.entries.length === 0) {
-    return <EmptyState icon="mood-empty" title={t('discover.noResults')} />;
+    return (
+      <EmptyState.Root icon="mood-empty">
+        <EmptyState.Title>{t('discover.noResults')}</EmptyState.Title>
+      </EmptyState.Root>
+    );
   }
   return (
-    <div className={GRID}>
-      {state.entries.map((entry) => (
-        <DiscoverCard key={`${entry.kind}-${entry.tmdbId}`} entry={entry} />
-      ))}
-    </div>
+    <Box mt={32}>
+      <div className={POSTER_GRID}>
+        {state.entries.map((entry) => (
+          <DiscoverCard key={`${entry.kind}-${entry.tmdbId}`} entry={entry} />
+        ))}
+      </div>
+    </Box>
   );
 }
 
@@ -104,9 +113,9 @@ function Pager({
         onPress={() => onGo(page - 1)}
         disabled={page <= 1}
       />
-      <Txt variant="meta" color="textDim" style={PAGE_COUNT}>
+      <Text variant="meta" color="textDim" style={PAGE_COUNT}>
         {t('discover.pageOf', { page: String(page), total: String(totalPages) })}
-      </Txt>
+      </Text>
       <Button
         variant="glass"
         size="sm"

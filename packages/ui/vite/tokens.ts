@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { sourceRoots } from '../bundler/index.ts';
 import { colors, lightColors, splitAlpha, withAlpha } from '../src/core/tokens/colors.ts';
 import { cssName, cssVar } from '../src/core/tokens/css-var.ts';
 import {
@@ -14,7 +14,7 @@ import {
 } from '../src/core/tokens/effects.ts';
 import { gutter, radius, rhythm, space } from '../src/core/tokens/layout.ts';
 import { fonts, SELF_HOSTED, tracking, typeSpec } from '../src/core/tokens/typography.ts';
-import { scanAlphas } from './alpha-scan.ts';
+import { foldAlphas, scanAlphas } from './alpha-scan.ts';
 
 type ColorToken = keyof typeof colors;
 
@@ -38,9 +38,7 @@ export const KNOWN_COLOR_NAMES: ReadonlySet<string> = new Set(Object.keys(colors
 // Anchored to the repo, not to the working directory: a build runs from the app it builds.
 const REPO = fileURLToPath(new URL('../../..', import.meta.url));
 
-export const SOURCE_ROOTS = ['packages', 'apps', 'clients', 'modules'].map((dir) =>
-  join(REPO, dir),
-);
+export const SOURCE_ROOTS = sourceRoots(REPO);
 
 // Derived from the accent wash at runtime, so no source spells them out for the scan.
 const DERIVED = Object.values(WASH_ALPHA).map((step) => `accentWash/${step}`);
@@ -110,8 +108,7 @@ const effects = () => [
 
 /** Every design token as CSS custom properties, grounded by `data-theme`. */
 export function tokensCss(roots: readonly string[] = SOURCE_ROOTS): string {
-  const alphas = scanAlphas(roots, KNOWN_COLOR_NAMES);
-  for (const combo of DERIVED) alphas.add(combo);
+  const alphas = new Set([...scanAlphas(roots, KNOWN_COLOR_NAMES), ...DERIVED]);
 
   const ground = (p: Record<ColorToken, string>, elevation: Record<string, string>) => [
     ...palette(p),
@@ -157,6 +154,20 @@ const SUBSETS = {
 
 const FONT_DIR = fileURLToPath(new URL('../src/assets/fonts/', import.meta.url));
 
+const slug = (family: string) => family.toLowerCase().replace(/\s+/g, '-');
+
+const fontFile = (family: string, subset: string) => `${FONT_DIR}${slug(family)}-${subset}.woff2`;
+
+/**
+ * The woff2 a first paint cannot start without, absolute on disk: the latin
+ * subset of each self-hosted family. `latin-ext` is left out because nothing on
+ * a first screen is written in it, and a preload the page does not use is a
+ * console warning and wasted bytes on a television's link.
+ */
+export const FIRST_PAINT_FONTS: readonly string[] = SELF_HOSTED.map((family) =>
+  fontFile(family, 'latin'),
+);
+
 /**
  * The two typefaces, self-hosted: a KROMA install can have no route to a CDN.
  *
@@ -164,7 +175,6 @@ const FONT_DIR = fileURLToPath(new URL('../src/assets/fonts/', import.meta.url))
  * stylesheet lives.
  */
 export function fontsCss(): string {
-  const slug = (family: string) => family.toLowerCase().replace(/\s+/g, '-');
   return SELF_HOSTED.flatMap((family) =>
     Object.entries(SUBSETS).map(([subset, range]) =>
       rule('@font-face', [
@@ -172,9 +182,11 @@ export function fontsCss(): string {
         'font-style: normal;',
         'font-weight: 400 800;',
         // `optional`, not `swap`: swapping the face after first paint moved the
-        // whole column (0.78 CLS). The shells preload so it lands in time.
+        // whole column (0.78 CLS). `optional` has no swap period at all, so the
+        // face only ever lands because kromaFontPreload() puts a matching
+        // <link rel=preload> in the document head (see font-preload.ts).
         'font-display: optional;',
-        `src: url("${FONT_DIR}${slug(family)}-${subset}.woff2") format("woff2");`,
+        `src: url("${fontFile(family, subset)}") format("woff2");`,
         `unicode-range: ${range};`,
       ]),
     ),
@@ -187,9 +199,18 @@ const readCss = (name: string) =>
 /** Keyframes the components animate with, on every browser target. */
 export const motionCss = () => readCss('motion');
 
-/** The reset and page furniture a browser target wants. A TV shell supplies its
- *  own, so this is not in the `tokens` half every target shares. */
-export const baseCss = () => readCss('base');
+/** The UA stylesheet undone, and nothing that assumes a page: what a target
+ *  needs whatever chrome it goes on to supply itself. */
+export const resetCss = () => readCss('reset');
+
+/** The page furniture on top of a reset: the grounded body, the focus ring and
+ *  the scrollbars. Taken alone by a target that brings its own reset - a
+ *  Tailwind app has preflight, and two unlayered resets would fight. */
+export const pageCss = () => readCss('base');
+
+/** The reset and page furniture a browser target wants. A TV shell takes the
+ *  reset alone, so this is not in the `tokens` half every target shares. */
+export const baseCss = () => [resetCss(), pageCss()].join('\n\n');
 
 /** The whole design system, framework-free: type, tokens, motion and the reset.
  *  A Tailwind app adds `@import "tailwindcss"` and `@kroma/ui/css/theme`. */
@@ -207,6 +228,8 @@ const EXPANSION: Record<string, () => string> = {
   '/theme': themeCss,
   '/fonts': fontsCss,
   '/motion': motionCss,
+  '/reset': resetCss,
+  '/page': pageCss,
   '/base': baseCss,
 };
 
@@ -233,12 +256,41 @@ interface PluginContext {
   addWatchFile?: (id: string) => void;
 }
 
+interface DevModule {
+  id: string | null;
+}
+
+interface DevEnvironment {
+  moduleGraph: { getModuleById(id: string): DevModule | undefined };
+  reloadModule?(module: DevModule): unknown;
+}
+
+interface FileChange {
+  file: string;
+  read(): string | Promise<string>;
+}
+
+interface PluginList {
+  plugins: readonly { name: string }[];
+}
+
 interface CssPlugin {
   name: string;
   enforce: 'pre';
+  configResolved(config: PluginList): void;
   transform(this: PluginContext, code: string, id: string): { code: string; map: null } | null;
+  hotUpdate(this: { environment?: DevEnvironment }, change: FileChange): Promise<void>;
   generateBundle(options: unknown, bundle: Record<string, BundleFile>): void;
 }
+
+const NAME = 'kroma-tokens';
+
+const TAILWIND = '@tailwindcss/vite:generate';
+
+const OUT_OF_ORDER =
+  `[kroma-ui] kromaUI() must come before tailwindcss() in the Vite plugin list. ` +
+  `Tailwind resolves @import itself, so from there it swallows "@kroma/ui/css" and ` +
+  `the build ships every custom property undefined.`;
 
 // Watched, or the dev server keeps serving the CSS it generated at startup.
 const SOURCES = [
@@ -248,6 +300,7 @@ const SOURCES = [
   '../src/core/tokens/layout.ts',
   '../src/core/tokens/typography.ts',
   '../src/styles/base.css',
+  '../src/styles/reset.css',
   '../src/styles/motion.css',
 ].map((path) => fileURLToPath(new URL(path, import.meta.url)));
 
@@ -257,17 +310,38 @@ const SOURCES = [
  *
  * Two hooks: Vite inlines nested CSS `@import`s inside its own plugin, so those
  * never reach `transform` and `generateBundle` sweeps the emitted assets.
+ *
+ * A source file that names an alpha step for the first time reopens the scan
+ * and reloads the stylesheets that carry it, so a dev session does not have to
+ * be restarted for `accent/45` to exist.
  */
 export function kromaTokens(): CssPlugin {
+  const expanded = new Set<string>();
   return {
-    name: 'kroma-tokens',
+    name: NAME,
     enforce: 'pre',
+    configResolved({ plugins }) {
+      const mine = plugins.findIndex((plugin) => plugin.name === NAME);
+      const tailwind = plugins.findIndex((plugin) => plugin.name.startsWith(TAILWIND));
+      if (mine === -1 || tailwind === -1 || tailwind > mine) return;
+      throw new Error(OUT_OF_ORDER);
+    },
     transform(code, id) {
       if (!id.includes('.css')) return null;
       DIRECTIVE.lastIndex = 0;
       if (!DIRECTIVE.test(code)) return null;
       for (const file of SOURCES) this.addWatchFile?.(file);
+      expanded.add(id);
       return { code: expand(code), map: null };
+    },
+    async hotUpdate({ file, read }) {
+      if (!(await foldAlphas(SOURCE_ROOTS, KNOWN_COLOR_NAMES, file, read))) return;
+      const environment = this.environment;
+      if (!environment?.reloadModule) return;
+      const stale = [...expanded]
+        .map((id) => environment.moduleGraph.getModuleById(id))
+        .filter((module) => module !== undefined);
+      await Promise.all(stale.map((module) => environment.reloadModule?.(module)));
     },
     generateBundle(_options, bundle) {
       for (const file of Object.values(bundle)) {

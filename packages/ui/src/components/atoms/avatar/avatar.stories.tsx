@@ -1,6 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { Avatar } from './avatar';
 
 const NAMES = ['Marie Curie', 'jean.dupont', 'ada_lovelace', 'Alan Turing'];
@@ -32,6 +32,7 @@ export default story({
     ],
   },
   matrix: false,
+  component: Avatar,
   args: {
     name: 'Marie Curie',
     seed: 'a',
@@ -45,7 +46,6 @@ export default story({
     size: { min: 32, max: 200, step: 8 },
     roundness: { min: 0, max: 0.5, step: 0.02 },
   },
-  render: (props) => <Avatar {...props} />,
   scenes: [
     {
       name: 'A team',
@@ -65,9 +65,9 @@ export default story({
           {SHAPES.map((shape) => (
             <Box key={shape.label} align="center" gap={10}>
               <Avatar name={name} seed={seed} size={size} locked {...shape.props} />
-              <Txt variant="meta" color="textDim">
+              <Text variant="meta" color="textDim">
                 {shape.label}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>
@@ -81,9 +81,9 @@ export default story({
           {SIZES.map((size) => (
             <Box key={size} align="center" gap={10}>
               <Avatar name={name} seed={seed} size={size} roundness={roundness} />
-              <Txt variant="meta" color="textDim">
+              <Text variant="meta" color="textDim">
                 {size}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>

@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Button, OtpField } from '@kroma/ui/kit';
+import { Box, Button, OtpField, Text } from '@kroma/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { NearbyTvs } from '#web/features/accounts/nearby-tvs';
@@ -39,58 +39,78 @@ function ConnectPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-6 py-16">
-      <div className="w-full max-w-105 rounded-2xl border border-border bg-surface-1 p-8 text-center shadow-card">
-        <h1 className="mb-2 font-display text-[26px] font-bold">{t('connect.title')}</h1>
+    <main style={SCREEN}>
+      <Box flex center px={24} py={64}>
+        <Box w="100%" maxW={420} radius="xl" border="border" bg="surface1" p={32} shadow="card">
+          <Text variant="subheading" accessibilityRole="header" textAlign="center" mb={8}>
+            {t('connect.title')}
+          </Text>
 
-        <NearbyTvs />
+          <NearbyTvs />
 
-        <p className="mb-7 text-[14px] leading-relaxed text-muted">
-          {user ? t('connect.codePromptForUser', { name: user.username }) : t('connect.codePrompt')}
-        </p>
+          <Text variant="body" color="textMuted" textAlign="center" mb={28}>
+            {user
+              ? t('connect.codePromptForUser', { name: user.username })
+              : t('connect.codePrompt')}
+          </Text>
 
-        {status === 'ok' ? (
-          <div className="rounded-xl border border-success/40 bg-success/10 px-4 py-6">
-            <div className="mb-1 text-[40px]">✓</div>
-            <div className="font-display text-[18px] font-bold text-text">
-              {t('connect.connected')}
-            </div>
-            <p className="mt-1 text-[13px] text-muted">{t('connect.willConnectSoon')}</p>
-          </div>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void submit();
-            }}
-            className="flex flex-col items-center gap-4"
-          >
-            <OtpField
-              maxLength={4}
-              value={code}
-              onChange={(v) => {
-                setCode(v);
-                setStatus('idle');
+          {status === 'ok' ? (
+            <Box radius="lg" border="success/40" bg="success/10" px={16} py={24}>
+              <Text variant="h1" textAlign="center" mb={4}>
+                ✓
+              </Text>
+              <Text variant="title" textAlign="center">
+                {t('connect.connected')}
+              </Text>
+              <Text variant="meta" color="textMuted" textAlign="center" mt={4}>
+                {t('connect.willConnectSoon')}
+              </Text>
+            </Box>
+          ) : (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void submit();
               }}
-              onComplete={(v) => void submit(v)}
-              physicalKeyboard
-              autoFocus
-              disabled={busy}
-              label={t('connect.title')}
-            />
-            {status === 'err' ? (
-              <p className="text-[13px] font-medium text-danger">{t('connect.invalidCode')}</p>
-            ) : null}
-            <Button
-              block
-              label={busy ? t('auth.loggingIn') : t('connect.authorize')}
-              onPress={() => void submit()}
-              loading={busy}
-              disabled={code.trim().length < 4}
-            />
-          </form>
-        )}
-      </div>
+              style={FORM}
+            >
+              <OtpField.Root
+                maxLength={4}
+                value={code}
+                onValueChange={(v) => {
+                  setCode(v);
+                  setStatus('idle');
+                }}
+                onComplete={(v) => void submit(v)}
+                physicalKeyboard
+                autoFocus
+                disabled={busy}
+                label={t('connect.title')}
+              />
+              {status === 'err' ? (
+                <Text variant="meta" color="danger" textAlign="center">
+                  {t('connect.invalidCode')}
+                </Text>
+              ) : null}
+              <Button
+                block
+                label={busy ? t('auth.loggingIn') : t('connect.authorize')}
+                onPress={() => void submit()}
+                loading={busy}
+                disabled={code.trim().length < 4}
+              />
+            </form>
+          )}
+        </Box>
+      </Box>
     </main>
   );
 }
+
+const SCREEN = { minHeight: '100vh', display: 'flex' } as const;
+const FORM = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 16,
+} as const;

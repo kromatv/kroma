@@ -1,5 +1,5 @@
 // `gen-catalog.ts` is a top-level script: it reads env + a .spk and writes the repository DSM
-// points at. Nothing imported it, so it sat at 0% — and the things it gets right are the kind
+// points at. Nothing imported it, so it sat at 0%, and the things it gets right are the kind
 // DSM punishes silently, by hiding the row rather than reporting an error. The fixtures are
 // real .spk files (tar archives) built here with `tar`, the same tool `extractFromSpk` shells
 // out to, so nothing binary is checked in.

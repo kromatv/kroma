@@ -11,7 +11,7 @@ import {
   type Show,
   sizedImageUrl,
 } from '@kroma/core';
-import { Box, styles, Txt, VirtualRail } from '@kroma/ui/kit';
+import { Box, styles, Text, VirtualRail } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';
 import { Pressable, useWindowDimensions } from 'react-native';
@@ -131,10 +131,10 @@ export function ContinueCard({
           <Box style={[s.progressFill, { width: `${frac * 100}%` }]} />
         </Box>
       </Box>
-      <Txt lines={1} style={s.cardTitle}>
+      <Text lines={1} style={s.cardTitle}>
         {item.showTitle ?? item.metadata?.title ?? item.title}
-      </Txt>
-      {tag ? <Txt style={s.cardSub}>{tag}</Txt> : null}
+      </Text>
+      {tag ? <Text style={s.cardSub}>{tag}</Text> : null}
     </Pressable>
   );
 }

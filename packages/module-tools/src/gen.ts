@@ -10,7 +10,7 @@
 //   - ```locale.en / ```locale.fr : OPTIONAL message catalogs -> locales/*.json.
 //
 // Expanded into `modules/<id>/{module.json, icon.svg, server/*, ui/*,
-// locales/*}` — the source file and the module it expands to sit side by side
+// locales/*}`: the source file and the module it expands to sit side by side
 // under modules/, and maintains two aggregator rosters so modules register with
 // zero manual wiring: crate `kroma-modules-generated` and package
 // `@kroma/modules-generated`.

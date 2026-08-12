@@ -8,7 +8,7 @@ import {
   StatsPanel,
   type SubtitleAppearance,
 } from '@kroma/ui';
-import { Box, styles, Txt } from '@kroma/ui/kit';
+import { Box, styles, Text } from '@kroma/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
@@ -216,7 +216,7 @@ export function PlayerChrome({
 
         {(zoomNote ?? notice) ? (
           <Box style={[s.zoomNote, { top: insets.top + 18 }]} pointerEvents="none">
-            <Txt style={s.zoomNoteText}>{zoomNote ?? notice}</Txt>
+            <Text style={s.zoomNoteText}>{zoomNote ?? notice}</Text>
           </Box>
         ) : null}
 

@@ -12,7 +12,7 @@ configured registry and shows the union.
 | **Added** | Any number of operator-added registries (`moduleRegistries`), each with a name, an https URL and an enabled flag. |
 
 **Official always wins.** When two registries publish the same module id, the
-higher-precedence one supplies it and the other's copy is hidden — reported per
+higher-precedence one supplies it and the other's copy is hidden, reported per
 registry as `shadowed`. Precedence is official first, then the configured order.
 A third-party registry therefore cannot take over an official module id, not
 even by publishing a higher version.
@@ -22,13 +22,13 @@ even by publishing a higher version.
 Adding a registry only makes its modules **appear in the list**. It is not a
 trust grant. Every install still goes through the same gate:
 
-- an added registry's catalog URL must be **https** — the catalog is what names
+- an added registry's catalog URL must be **https**: the catalog is what names
   the artifact URL *and* the checksum to check it against, so fetching it over
   cleartext would hand a MITM both halves and make the verification worthless.
   (The official slot still accepts any scheme: it is one deliberate override and
   predates the list.)
 - the artifact URL must be **https**,
-- the catalog must publish a **sha256**, and the downloaded bytes must match it —
+- the catalog must publish a **sha256**, and the downloaded bytes must match it;
   a module with no checksum is refused,
 - `minServer` is enforced at install **and** at spawn,
 - the catalog fetch is bounded by a timeout and a size cap, and an entry's
@@ -66,7 +66,7 @@ same link get a browsable page. A static host can offer the same by serving an
 ## Publishing one
 
 `bun run modules registry` turns the packed `.kmod` files into a publishable
-tree — the catalog plus the bundles it points at:
+tree: the catalog plus the bundles it points at:
 
 ```bash
 bun run modules:pack                                             # -> dist/modules/*.kmod
@@ -74,7 +74,7 @@ bun run modules registry --base https://mods.example.com         # -> dist/regis
 ```
 
 `--base` is the URL the files will be served from; it becomes each artifact's
-`url`. Output is `dist/registry/{catalog.json, <id>[-<target>].kmod, …}` — upload
+`url`. Output is `dist/registry/{catalog.json, <id>[-<target>].kmod, …}`. Upload
 that directory as-is and point the registry entry at its `catalog.json`.
 
 Schema 2, one entry per module, with per-target artifacts. `optionalDependsOn`
@@ -114,11 +114,11 @@ offered alongside):
 `target` is the Rust triple the binary was built for; omit it only for a library
 module (manifest + frontend, no native binary), which runs anywhere. The server
 picks an exact target match first, then a platform-independent bundle, then a
-musl build of the same architecture — static, so it also runs on glibc.
+musl build of the same architecture, which is static, so it also runs on glibc.
 
 Schema 1 (a flat `url` / `size` / `sha256` per module, no target) still parses as
 a single platform-independent artifact.
 
-Host `modules.json` and the `.kmod` files anywhere that serves them over https —
-GitHub Releases, GitHub Pages, an S3 bucket, a NAS — then add the URL under
+Host `modules.json` and the `.kmod` files anywhere that serves them over https
+(GitHub Releases, GitHub Pages, an S3 bucket, a NAS), then add the URL under
 Admin → Modules → Registries.

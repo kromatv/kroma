@@ -34,7 +34,7 @@ use crate::state::SharedState;
 const MAX_BUNDLE_BYTES: usize = kroma_module_supervisor::MAX_BUNDLE_BYTES as usize;
 
 // Default module registry: the first-party catalog worker (see
-// packages/module-registry). It reads `modules.json` off the latest GitHub
+// apps/modules). It reads `modules.json` off the latest GitHub
 // Release, edge-caches it with a stale fallback, and serves a browsable page
 // at the bare origin. Overridable via the `moduleRegistryUrl` setting.
 const DEFAULT_REGISTRY: &str = "https://modules.kroma.tv/modules.json";

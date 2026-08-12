@@ -4,11 +4,14 @@
 import { KROMA_WORKBENCH } from '@kroma/ui/workbench-config';
 import { defineWorkbench, memoryRouter } from '@kroma/workbench';
 import { BuildStamp } from './BuildStamp';
-import { STORIES } from './stories';
+import { SOURCE } from './source';
+import { PAGES, STORIES } from './stories';
 
 export const Kit = defineWorkbench({
   ...KROMA_WORKBENCH,
   stories: STORIES,
+  pages: PAGES,
   router: memoryRouter(),
+  source: SOURCE,
   footer: <BuildStamp />,
 });

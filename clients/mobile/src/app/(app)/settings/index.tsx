@@ -2,7 +2,7 @@
 // identity, and what build of the app this actually is.
 
 import { formatBuildDate, LOCALES } from '@kroma/core';
-import { Box, Icon, type IconName, styles, ThemeSwitch, Txt } from '@kroma/ui/kit';
+import { Box, Icon, type IconName, styles, Text, ThemeSwitch } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
@@ -33,7 +33,7 @@ export default function Settings() {
       <ScrollView contentContainerStyle={s.body}>
         <Box style={s.card}>
           <Box style={s.row}>
-            <Txt style={s.rowLabel}>{t('appearance.title')}</Txt>
+            <Text style={s.rowLabel}>{t('appearance.title')}</Text>
             <ThemeSwitch
               label={t('appearance.title')}
               labels={{
@@ -57,14 +57,14 @@ export default function Settings() {
           />
         </Box>
 
-        <Txt style={s.group}>{t('nav.server')}</Txt>
+        <Text style={s.group}>{t('nav.server')}</Text>
         <Box style={s.card}>
           <Row label={t('nav.server')} value={serverUrl?.replace(/^https?:\/\//, '')} />
           {/* Plain "Version": the group heading above already says which side. */}
           <Row label={t('about.version')} value={health.data ? `v${health.data.version}` : '…'} />
         </Box>
 
-        <Txt style={s.group}>{t('about.title')}</Txt>
+        <Text style={s.group}>{t('about.title')}</Text>
         <Box style={s.card}>
           <Row label={t('about.version')} value={`v${buildInfo.version}`} />
           {/* Git-derived fields are absent in a build made outside a checkout
@@ -100,12 +100,12 @@ function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
   if (!value) return null;
   const body: ReactNode = (
     <>
-      <Txt style={s.rowLabel}>{label}</Txt>
+      <Text style={s.rowLabel}>{label}</Text>
       <Box style={s.rowRight}>
-        <Txt lines={1} style={mono ? s.rowValueMono : s.rowValue}>
+        <Text lines={1} style={mono ? s.rowValueMono : s.rowValue}>
           {value}
-        </Txt>
-        {icon ? <Icon name={icon} size={16} stroke={2.2} color="textDim" /> : null}
+        </Text>
+        {icon ? <Icon name={icon} size={16} thickness={2.2} color="textDim" /> : null}
       </Box>
     </>
   );

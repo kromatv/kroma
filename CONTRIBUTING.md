@@ -13,8 +13,7 @@ KROMA is a [Bun](https://bun.sh) workspace monorepo with a Rust server alongside
 kroma/
 ├─ server/      Rust media server (axum) scan, SQLite, range streaming
 ├─ packages/    @kroma/core · @kroma/ui · @kroma/tv  (shared logic, UI, 10-foot experience)
-├─ clients/     @kroma/web · @kroma/tizen · @kroma/webos  (thin platform shells)
-└─ design/      imported design source (tokens, components, guidelines)
+└─ clients/     @kroma/web · @kroma/tizen · @kroma/webos  (thin platform shells)
 ```
 
 See the [root README](README.md) for the full architecture and each package's
@@ -48,12 +47,13 @@ bun run build              # all frontends
 cd server && cargo build   # server (use `cargo clippy` if you have it)
 ```
 
-- Read [`CODE_STYLE.md`](CODE_STYLE.md) — how code is written here, and in
+- Read [`CODE_STYLE.md`](CODE_STYLE.md) for how code is written here, and in
   particular when a comment is allowed to exist. The default is none.
 - Keep clients **thin** UI belongs in `@kroma/ui`, logic in `@kroma/core`, and the
   shared TV experience in `@kroma/tv`. Write platform code once.
 - Match the existing style: the design language (deep-charcoal + amber, French
-  copy, no emoji) is documented in [`design/readme.md`](design/readme.md).
+  copy, no emoji) is documented in
+  [`packages/ui/README.md`](packages/ui/README.md).
 - Keep the server's dependency graph **lean and Rust 1.81-friendly** (see the
   notes in [`server/Cargo.toml`](server/Cargo.toml)).
 - Write clear commit messages and describe the *why* in your PR.

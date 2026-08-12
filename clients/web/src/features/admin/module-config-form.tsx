@@ -5,7 +5,17 @@
 
 import type { ConfigField } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Button, Field, NumberField, Select, Switch } from '@kroma/ui/kit';
+import {
+  Box,
+  Button,
+  Divider,
+  Field,
+  ListRow,
+  NumberField,
+  Row,
+  Select,
+  Switch,
+} from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { adminApi } from '#web/features/admin/module-api';
 
@@ -63,21 +73,28 @@ export function ModuleConfigForm({
   };
 
   return (
-    <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-      {fields.map((f) => (
-        <ConfigRow key={f.key} field={f} value={draft[f.key]} onChange={(v) => set(f.key, v)} />
-      ))}
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          active
-          size="sm"
-          label={t('common.save')}
-          onPress={() => void save()}
-          loading={saving}
-        />
-      </div>
-    </div>
+    <>
+      <Box mt={12}>
+        <Divider />
+      </Box>
+      <Box gap={8} pt={12}>
+        <ListRow.Group size="sm">
+          {fields.map((f) => (
+            <ConfigRow key={f.key} field={f} value={draft[f.key]} onChange={(v) => set(f.key, v)} />
+          ))}
+        </ListRow.Group>
+        <Row justify="flex-end">
+          <Button
+            variant="outline"
+            active
+            size="sm"
+            label={t('common.save')}
+            onPress={() => void save()}
+            loading={saving}
+          />
+        </Row>
+      </Box>
+    </>
   );
 }
 
@@ -92,44 +109,42 @@ function ConfigRow({
 }>) {
   let control: ReactNode;
   if (field.type === 'bool') {
-    control = <Switch checked={value === true} onChange={onChange} label={field.label} />;
+    control = <Switch checked={value === true} onCheckedChange={onChange} label={field.label} />;
   } else if (field.type === 'select') {
     control = (
-      <Select
-        label={field.label}
-        options={(field.options ?? []).map((opt) => ({ value: opt, label: opt }))}
-        value={String(value ?? '')}
-        onChange={onChange}
-        style={SELECT_STYLE}
-      />
+      <Select.Root label={field.label} value={String(value ?? '')} onValueChange={onChange}>
+        <Select.Trigger style={SELECT_STYLE} />
+        {(field.options ?? []).map((opt) => (
+          <Select.Item key={opt} value={opt} label={opt} />
+        ))}
+      </Select.Root>
     );
   } else if (field.type === 'number') {
     control = (
       <NumberField
         label={field.label}
         value={typeof value === 'number' ? value : 0}
-        onChange={onChange}
+        onValueChange={onChange}
         w={CONTROL_WIDTH}
       />
     );
   } else {
     control = (
-      <Field
-        label={field.label}
-        hideLabel
-        type={field.secret ? 'password' : 'text'}
-        placeholder={field.placeholder}
-        value={String(value ?? '')}
-        onChange={onChange}
-        w={CONTROL_WIDTH}
-      />
+      <Field.Root label={field.label} hideLabel w={CONTROL_WIDTH}>
+        <Field.Input
+          type={field.secret ? 'password' : 'text'}
+          placeholder={field.placeholder}
+          value={String(value ?? '')}
+          onValueChange={onChange}
+        />
+      </Field.Root>
     );
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 text-xs">
-      <span className="text-muted">{field.label}</span>
-      {control}
-    </div>
+    <ListRow.Root size="sm">
+      <ListRow.Label>{field.label}</ListRow.Label>
+      <ListRow.Trailing>{control}</ListRow.Trailing>
+    </ListRow.Root>
   );
 }

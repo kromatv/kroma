@@ -1,4 +1,4 @@
-// This module's wire types. `@kroma/core` does not model remote access — a
+// This module's wire types. `@kroma/core` does not model remote access: a
 // module owns the shape of its own API.
 
 /** Live state of the supervised `cloudflared` child; never carries the token. */

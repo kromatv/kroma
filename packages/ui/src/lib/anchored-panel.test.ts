@@ -4,9 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   type ListKeysAt,
   type PanelKeyEvent,
+  useActiveDescendant,
   useAnchoredPlacement,
   useListKeys,
   useTriggerFocus,
+  useTriggerKeys,
 } from './anchored-panel';
 
 function keyEvent(key: string) {
@@ -209,6 +211,55 @@ describe('useTriggerFocus', () => {
 
   it('does not throw when there is no trigger yet', () => {
     expect(() => renderHook(() => useTriggerFocus({ current: null }))).not.toThrow();
+  });
+});
+
+describe('wiring the trigger to a panel it does not contain', () => {
+  it('sends the trigger keys to the panel keyboard, and says what it opens', () => {
+    const trigger = document.createElement('button');
+    document.body.append(trigger);
+    const onKeyDown = vi.fn();
+    const { unmount } = renderHook(() =>
+      useTriggerKeys({ current: trigger }, { listId: 'panel-list', haspopup: 'menu', onKeyDown }),
+    );
+    expect(trigger.getAttribute('aria-controls')).toBe('panel-list');
+    expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
+
+    trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    expect(onKeyDown.mock.calls[0]?.[0].nativeEvent.key).toBe('ArrowDown');
+
+    unmount();
+    expect(trigger.getAttribute('aria-controls')).toBeNull();
+    expect(trigger.getAttribute('aria-haspopup')).toBeNull();
+    trigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+    expect(onKeyDown).toHaveBeenCalledTimes(1);
+    trigger.remove();
+  });
+
+  it('names the active row on the trigger, and drops the name with the panel', () => {
+    const trigger = document.createElement('button');
+    document.body.append(trigger);
+    const { rerender, unmount } = renderHook(
+      (rowId: string) => useActiveDescendant({ current: trigger }, rowId),
+      { initialProps: 'panel-0' },
+    );
+    expect(trigger.getAttribute('aria-activedescendant')).toBe('panel-0');
+    rerender('panel-2');
+    expect(trigger.getAttribute('aria-activedescendant')).toBe('panel-2');
+    unmount();
+    expect(trigger.getAttribute('aria-activedescendant')).toBeNull();
+    trigger.remove();
+  });
+
+  it('both stand down when the trigger has not attached yet', () => {
+    const onKeyDown = vi.fn();
+    expect(() =>
+      renderHook(() =>
+        useTriggerKeys({ current: null }, { listId: 'x', haspopup: 'menu', onKeyDown }),
+      ),
+    ).not.toThrow();
+    expect(() => renderHook(() => useActiveDescendant({ current: null }, 'x-0'))).not.toThrow();
   });
 });
 

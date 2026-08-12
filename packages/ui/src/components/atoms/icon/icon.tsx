@@ -25,10 +25,10 @@ function fade(opacity: number | string): ViewStyle {
 }
 
 function Icon(props: Readonly<IconProps>) {
-  const { Glyph, size, color, opacity, stroke } = resolveIcon(props);
+  const { Glyph, size, color, opacity, thickness } = resolveIcon(props);
   // Spread rather than a literal prop: the key is decided per platform, and a
   // computed key cannot be written inline without losing the type of the rest.
-  const weight = { [STROKE_PROP]: stroke };
+  const weight = { [STROKE_PROP]: thickness };
   const glyph = <Glyph size={size} color={color} {...weight} />;
   // A translucent colour (`textDim`, `textMuted`) fades the FINISHED glyph, in
   // one composite, rather than each of its strokes - see `splitAlpha`. The

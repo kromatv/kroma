@@ -5,7 +5,7 @@ import {
   type BottomSheetBackdropProps,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
-import { styles, Txt } from '@kroma/ui/kit';
+import { styles, Text } from '@kroma/ui/kit';
 import { type ReactNode, useMemo } from 'react';
 import { type StyleProp, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,7 +26,7 @@ export function SheetBackdrop(props: Readonly<BottomSheetBackdropProps>) {
 
 /**
  * The style must stay flattened: `<BottomSheetView>` passes an array to
- * `StyleSheet.compose`, which takes two arguments and silently drops a third —
+ * `StyleSheet.compose`, which takes two arguments and silently drops a third:
  * the caller's `style` override.
  */
 export function SheetBody({
@@ -44,7 +44,7 @@ export function SheetBody({
 }
 
 export function SheetTitle({ children }: Readonly<{ children: ReactNode }>) {
-  return <Txt style={s.title}>{children}</Txt>;
+  return <Text style={s.title}>{children}</Text>;
 }
 
 const s = styles({

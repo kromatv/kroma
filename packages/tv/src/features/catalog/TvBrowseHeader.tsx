@@ -8,7 +8,7 @@ import {
   type SortMode,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Badge, Box, Chip, Divider, qualityTone, Rail, styles, Txt } from '@kroma/ui/kit';
+import { Badge, Box, Chip, Divider, qualityTone, Rail, styles, Text } from '@kroma/ui/kit';
 import { memo } from 'react';
 import type { CatalogEntry } from '#tv/features/catalog/home/AmbientBackdrop';
 
@@ -52,11 +52,11 @@ export function BrowseHeader({
     // `zIndex`: the poster grid is a LATER sibling and its clip box bleeds
     // FOCUS_BLEED (32px) past its bounds to clear a focused tile's ring
     // (organisms/virtual/clip.ts), which would otherwise paint over this chrome.
-    <Box h={208} shrink={0} justify="flex-end" px={64} pb={8} style={{ zIndex: 1 }}>
-      <Txt variant="overlineTv" color="accentText">
+    <Box h={208} shrink={0} justify="flex-end" px={64} pb={8} z={1}>
+      <Text variant="overlineTv" color="accentText">
         {label}
-        {hasItems ? <Txt variant="overlineTv" color="textDim">{` · ${count}`}</Txt> : null}
-      </Txt>
+        {hasItems ? <Text variant="overlineTv" color="textDim">{` · ${count}`}</Text> : null}
+      </Text>
       {focused ? <FocusEcho entry={focused} /> : null}
     </Box>
   );
@@ -70,18 +70,18 @@ function FocusEcho({ entry }: Readonly<{ entry: CatalogEntry }>) {
     entry.kind === 'show' ? t('content.seasonCount', { count: entry.item.seasonCount }) : null;
   return (
     <Box mt={8} gap={6}>
-      <Txt variant="hero" style={[s.echoTitle, { maxWidth: 960 }]} lines={1}>
+      <Text variant="hero" style={[s.echoTitle, { maxWidth: 960 }]} lines={1}>
         {entry.item.title}
-      </Txt>
+      </Text>
       <Box row align="center" gap={10}>
         {rating ? (
-          <Txt style={{ fontSize: 15, fontWeight: '700' }} color="accentText">
+          <Text variant="strongTv" color="accentText">
             {`${rating.toFixed(1)}★`}
-          </Txt>
+          </Text>
         ) : null}
-        <Txt style={{ fontSize: 15, fontWeight: '600' }} color="textMuted">
+        <Text variant="labelTv" color="textMuted">
           {entryLine(entry, seasons)}
-        </Txt>
+        </Text>
         {badge ? <Badge tone={qualityTone(badge)}>{badge}</Badge> : null}
       </Box>
     </Box>
@@ -102,26 +102,27 @@ const BrowseFiltersImpl = function BrowseFilters({
   onGenre: (name: string | undefined) => void;
 }>) {
   const t = useT();
-  // A <Rail> rather than a ScrollView: it scrolls to FOLLOW focus. The children
+  // A <Rail.Root> rather than a ScrollView: it scrolls to FOLLOW focus. The children
   // must stay a FLAT list - a fragment reaches the rail as ONE tile and swallows
   // the genre chips into a single navigator node.
   return (
     // `grow={false}`: a growing rail showed only this strip's first eight chips.
-    <Box style={{ zIndex: 1 }}>
-      <Rail gap={8} inset={64} grow={false}>
+    <Box z={1}>
+      <Rail.Root gap={8} inset={64} grow={false}>
         {SORT_MODES.map((mode) => (
           <Chip
             key={mode}
             variant="subtle"
             focusScale={1.06}
             active={mode === sort}
+            pressed={mode === sort}
             label={t(SORT_LABEL_KEY[mode])}
             onPress={() => onSort(mode)}
           />
         ))}
         {genres.length > 0 ? (
           <Box key="divider" mx={4}>
-            <Divider vertical size={1} color="rgba(255, 255, 255, 0.14)" />
+            <Divider vertical thickness={1} color="borderStrong" />
           </Box>
         ) : null}
         {genres.length > 0 ? (
@@ -130,6 +131,7 @@ const BrowseFiltersImpl = function BrowseFilters({
             variant="subtle"
             focusScale={1.06}
             active={!genre}
+            pressed={!genre}
             label={t('browse.allGenres')}
             onPress={() => onGenre(undefined)}
           />
@@ -141,12 +143,13 @@ const BrowseFiltersImpl = function BrowseFilters({
                 variant="subtle"
                 focusScale={1.06}
                 active={g.name === genre}
+                pressed={g.name === genre}
                 label={g.name}
                 onPress={() => onGenre(g.name)}
               />
             ))
           : null}
-      </Rail>
+      </Rail.Root>
     </Box>
   );
 };

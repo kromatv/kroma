@@ -5,7 +5,7 @@ import { createContext, type ReactNode, useContext } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { styles } from '#ui/core';
-import { FocusRegion } from '#ui/lib/focus-scope';
+import { DIALOG_PAD } from '#ui/lib/surface-shell';
 
 interface Shell {
   pad: number;
@@ -13,7 +13,11 @@ interface Shell {
   hasFooter: boolean;
 }
 
-const ShellContext = createContext<Shell>({ pad: 40, hasHeader: false, hasFooter: false });
+const ShellContext = createContext<Shell>({
+  pad: DIALOG_PAD,
+  hasHeader: false,
+  hasFooter: false,
+});
 
 const useShell = () => useContext(ShellContext);
 
@@ -30,12 +34,12 @@ function Header({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 /** The scrolling middle, and the only part of the panel that scrolls. */
-function Content({ children }: Readonly<{ children: ReactNode }>) {
+function Panel({ children }: Readonly<{ children: ReactNode }>) {
   const { pad, hasHeader, hasFooter } = useShell();
   const gap = pad > 0 ? GAP : 0;
   return (
     <ScrollView
-      style={s.content}
+      style={s.panel}
       // No vertical padding against a pinned neighbour: it would scroll away.
       contentContainerStyle={{
         paddingHorizontal: pad,
@@ -49,21 +53,8 @@ function Content({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-/** The pinned bottom, where the actions live. */
+/** The pinned bottom: a shelf, not a row. Put a <Dialog.Actions> in it. */
 function Footer({ children }: Readonly<{ children: ReactNode }>) {
-  const { pad } = useShell();
-  return (
-    <FocusRegion style={s.footerPinned}>
-      <Box row justify="flex-end" gap={12} px={pad} pt={pad > 0 ? GAP : 0} pb={pad}>
-        {children}
-      </Box>
-    </FocusRegion>
-  );
-}
-
-// The `footer` prop's home: a plain shelf, since what a caller passes is already
-// a <DialogFooter> or <DialogActions> and would nest a second focus region.
-function FooterSlot({ children }: Readonly<{ children: ReactNode }>) {
   const { pad } = useShell();
   return (
     <Box shrink={0} px={pad} pt={pad > 0 ? GAP : 0} pb={pad}>
@@ -73,9 +64,8 @@ function FooterSlot({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 const s = styles({
-  content: { shrink: 1 },
-  footerPinned: { shrink: 0 },
+  panel: { shrink: 1 },
 });
 
 export type { Shell };
-export { Content, Footer, FooterSlot, Header, ShellContext };
+export { Footer, Header, Panel, ShellContext };

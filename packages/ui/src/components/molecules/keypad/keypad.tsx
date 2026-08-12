@@ -8,7 +8,7 @@
 // expects it.
 //
 // Each row is its own <FocusRegion> inside a grid <FocusColumn>, which keeps
-// the column on a vertical press — without it the navigator lands on a row's
+// the column on a vertical press. Without it the navigator lands on a row's
 // own remembered key, so Down from 3 went to 4 and every vertical press read
 // as a diagonal.
 
@@ -17,8 +17,9 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type RadiusToken, type StyleDecl, styles, svFor } from '#ui/core';
+import { HAND } from '#ui/lib/cursor';
 import { keyFace } from '#ui/lib/field-shell';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
@@ -58,8 +59,8 @@ const keypadVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
   },
   variants: {
     kind: {
-      digit: { label: { fontSize: 28 } },
-      delete: { label: { fontSize: 22 } },
+      digit: { label: { text: 'subheading' } },
+      delete: {},
     },
     size: {
       // A remote's key, sized for the far end of a room.
@@ -68,7 +69,7 @@ const keypadVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
       // viewfinder above them on the shortest phone. Sized against that budget
       // rather than picked - a remote's 88x72 overflows, and anything under
       // this is small for a thumb without buying room anything else needs.
-      compact: { root: { w: 80, h: 64 }, label: { fontSize: 26 } },
+      compact: { root: { w: 80, h: 64 } },
     },
   },
   defaults: { kind: 'digit', size: 'tv' },
@@ -120,16 +121,16 @@ function Keypad({
               through: the pad reads as glass over the artwork behind it. */}
           <Frost radius={KEY_RADIUS} />
           {kind === 'delete' ? (
-            <Icon name="backspace" size={30} stroke={1.8} color="textMuted" />
+            <Icon name="backspace" size={30} thickness={1.8} color="textMuted" />
           ) : (
-            <Txt style={state.slots.label}>{label}</Txt>
+            <Text style={state.slots.label}>{label}</Text>
           )}
         </>
       )}
     </Focusable>
   );
   return (
-    <FocusColumn grid style={[s.pad, { gap: GAP[size] }]}>
+    <FocusColumn grid style={[HAND, s.pad, { gap: GAP[size] }]}>
       {ROWS.map((row) => (
         <FocusRegion key={row.join('')} style={[s.padRow, { gap: GAP[size] }]}>
           {row.map((d) =>
@@ -177,4 +178,4 @@ const s = styles({
 });
 
 export type { KeypadProps };
-export { Keypad };
+export { Keypad, keypadVariants };

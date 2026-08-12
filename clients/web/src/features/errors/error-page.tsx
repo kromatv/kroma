@@ -5,9 +5,10 @@
 
 import { apiErrorText, KromaApiError, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Disclosure, Logo } from '@kroma/ui/kit';
+import { Box, Button, color, Disclosure, EmptyState, Logo, Row, Text } from '@kroma/ui/kit';
 import { useNavigate, useRouter, useRouterState } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
+import { PAGE_RADIAL } from '#web/shared/ui';
 
 type Kind = 'notFound' | 'unauthorized' | 'forbidden' | 'server';
 
@@ -25,8 +26,6 @@ function kindOf(error: unknown): Kind {
   if (status === 403) return 'forbidden';
   return 'server';
 }
-
-const RADIAL = 'radial-gradient(120% 90% at 50% 0%, #15131C, #0A0A0C 70%)';
 
 function ErrorScreen({
   kind,
@@ -46,62 +45,80 @@ function ErrorScreen({
   const { code, title, body } = COPY[kind];
 
   return (
-    <main
-      className="flex min-h-screen w-full flex-col items-center justify-center px-6 py-16 text-center"
-      style={{ background: RADIAL }}
-    >
-      <div className="flex w-full max-w-[440px] flex-col items-center">
-        <div className="mb-8 opacity-90">
-          <Logo size={20} />
-        </div>
+    <main style={SCREEN}>
+      <Box flex w="100%" maxW={440}>
+        <EmptyState.Root size="md" layout="fill">
+          <Box mb={22} opacity={0.9}>
+            <Logo size={20} />
+          </Box>
 
-        <div
-          className="font-display text-[104px] font-extrabold leading-none tracking-[-.04em] text-transparent"
-          style={{
-            backgroundImage: 'linear-gradient(180deg, #F4F3F0 0%, rgba(244,243,240,.28) 100%)',
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-          }}
-        >
-          {code}
-        </div>
+          <EmptyState.Media variant="plain">
+            <div style={NUMERAL}>{code}</div>
+          </EmptyState.Media>
 
-        <h1 className="mt-6 font-display text-[24px] font-bold tracking-[-.02em]">{t(title)}</h1>
-        <p className="mt-3 max-w-[380px] text-[14.5px] leading-relaxed text-muted">{t(body)}</p>
+          <Text variant="h2" accessibilityRole="header" textAlign="center">
+            {t(title)}
+          </Text>
+          <EmptyState.Hint>{t(body)}</EmptyState.Hint>
 
-        {detail ? (
-          <p className="mt-4 max-w-[380px] wrap-break-word rounded-md border border-border bg-surface-1 px-3.5 py-2.5 text-[12.5px] font-medium text-dim">
-            {detail}
-          </p>
-        ) : null}
+          {detail ? <EmptyState.Detail>{detail}</EmptyState.Detail> : null}
 
-        {trace ? <Trace trace={trace} /> : null}
+          {trace ? <Trace trace={trace} /> : null}
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          {onRetry ? (
-            <Button
-              variant="glass"
-              size="sm"
-              icon="refresh"
-              label={t('error.retry')}
-              onPress={onRetry}
-            />
-          ) : null}
-          {onSignIn ? (
-            <Button size="sm" icon="login" label={t('auth.login')} onPress={onSignIn} />
-          ) : null}
-          <Button
-            variant={onSignIn ? 'glass' : 'primary'}
-            size="sm"
-            icon="home"
-            label={t('error.home')}
-            onPress={() => void router.navigate({ to: '/' })}
-          />
-        </div>
-      </div>
+          <EmptyState.Actions>
+            <Row wrap justify="center" gap={12}>
+              {onRetry ? (
+                <Button
+                  variant="glass"
+                  size="sm"
+                  icon="refresh"
+                  label={t('error.retry')}
+                  onPress={onRetry}
+                />
+              ) : null}
+              {onSignIn ? (
+                <Button size="sm" icon="login" label={t('auth.login')} onPress={onSignIn} />
+              ) : null}
+              <Button
+                variant={onSignIn ? 'glass' : 'primary'}
+                size="sm"
+                icon="home"
+                label={t('error.home')}
+                onPress={() => void router.navigate({ to: '/' })}
+              />
+            </Row>
+          </EmptyState.Actions>
+        </EmptyState.Root>
+      </Box>
     </main>
   );
 }
+
+const SCREEN = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  minHeight: '100vh',
+  paddingLeft: 24,
+  paddingRight: 24,
+  background: PAGE_RADIAL,
+} as const;
+
+// The status numeral is a gradient clipped to its own glyphs, which is a
+// browser text effect with no React Native spelling, so it stays CSS rather
+// than becoming a type role: the ramp tops out at `hero` 66 and a step this
+// far above it would open a gap wider than the ramp allows.
+const NUMERAL = {
+  fontFamily: 'var(--font-display)',
+  fontSize: 104,
+  fontWeight: 800,
+  lineHeight: 1,
+  letterSpacing: '-0.04em',
+  color: 'transparent',
+  backgroundImage: `linear-gradient(180deg, ${color('text')} 0%, ${color('text/28')} 100%)`,
+  WebkitBackgroundClip: 'text',
+  backgroundClip: 'text',
+} as const;
 
 /** Router `defaultErrorComponent`: a thrown error (loader/component). Picks the
  * variant from the error's status and offers a retry that re-runs the route. */
@@ -158,13 +175,24 @@ function Trace({ trace }: Readonly<{ trace: string }>) {
     }
   }, [trace]);
   return (
-    <div className="mt-5 w-full text-left">
-      <Disclosure title={t('error.technicalDetails')}>
-        <div className="flex flex-col gap-2.5">
-          <pre className="max-h-56 overflow-auto whitespace-pre-wrap wrap-break-word rounded-md border border-border bg-surface-1 px-3.5 py-3 font-mono text-[11.5px] leading-relaxed text-dim">
-            {trace}
-          </pre>
-          <div className="self-end">
+    <Box mt={20} w="100%">
+      <Disclosure.Root>
+        <Disclosure.Trigger>{t('error.technicalDetails')}</Disclosure.Trigger>
+        <Box gap={10}>
+          <Box
+            bg="surface1"
+            border="border"
+            radius="md"
+            px={14}
+            py={12}
+            maxH={224}
+            overflow="scroll"
+          >
+            <Text variant="meta" font="mono" color="textDim">
+              {trace}
+            </Text>
+          </Box>
+          <Box self="flex-end">
             <Button
               variant="ghost"
               size="sm"
@@ -172,10 +200,10 @@ function Trace({ trace }: Readonly<{ trace: string }>) {
               label={copied ? t('common.copied') : t('common.copy')}
               onPress={() => void copy()}
             />
-          </div>
-        </div>
-      </Disclosure>
-    </div>
+          </Box>
+        </Box>
+      </Disclosure.Root>
+    </Box>
   );
 }
 

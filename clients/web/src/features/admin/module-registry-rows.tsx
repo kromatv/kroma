@@ -4,10 +4,21 @@
 
 import type { StoreRegistry, StoreRegistryPreview } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Field, IconButton, Surface, Switch } from '@kroma/ui/kit';
+import {
+  Button,
+  Callout,
+  Field,
+  IconButton,
+  Row,
+  Spacer,
+  Surface,
+  Switch,
+  Text,
+} from '@kroma/ui/kit';
 import { useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
 import { adminApi, message, previewRegistry } from '#web/features/admin/module-api';
+import { Pill } from '#web/features/admin/pill';
 
 /** One operator-added registry, as stored in the `moduleRegistries` setting. */
 export interface ExtraRegistry {
@@ -20,17 +31,26 @@ const HTTPS = /^https:\/\/\S+$/;
 
 export function StatusLine({ status }: Readonly<{ status: StoreRegistry }>) {
   const t = useT();
-  if (status.skipped) return <p className="text-xs text-dim">{status.skipped}</p>;
+  if (status.skipped)
+    return (
+      <Text variant="meta" color="textDim">
+        {status.skipped}
+      </Text>
+    );
   if (status.error) {
-    return <p className="break-all text-xs text-danger">{status.error}</p>;
+    return (
+      <Text variant="meta" color="danger">
+        {status.error}
+      </Text>
+    );
   }
   return (
-    <p className="text-xs text-muted">
+    <Text variant="meta" color="textMuted">
       {t('admin.registriesModuleCount', { count: status.moduleCount })}
       {status.shadowed.length > 0 && (
         <> · {t('admin.registriesShadowed', { count: status.shadowed.length })}</>
       )}
-    </p>
+    </Text>
   );
 }
 
@@ -54,26 +74,26 @@ export function OfficialRow({
       onSaved();
     }, message);
   return (
-    <Surface elevated pad="none" radius={16} p={16} gap={8}>
-      <div className="flex items-center gap-2">
-        <span className="font-semibold text-text">{t('admin.registriesOfficial')}</span>
-        <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10px] font-bold text-accent">
+    <Surface elevated pad="none" radius="xl" p={16} gap={8}>
+      <Row gap={8}>
+        <Text variant="label">{t('admin.registriesOfficial')}</Text>
+        <Pill ink="accentText" bg="accentSoft" variant="overline">
           {t('admin.registriesOfficialPinned')}
-        </span>
-      </div>
-      <p className="text-xs text-muted">{t('admin.registriesOfficialDesc')}</p>
-      <div className="flex flex-wrap items-center gap-2">
-        <Field
-          label="URL"
-          hideLabel
-          type="url"
-          icon="world"
-          value={value}
-          onChange={setValue}
-          placeholder="https://.../modules.json"
-          flex={1}
-          minW={0}
-        />
+        </Pill>
+      </Row>
+      <Text variant="meta" color="textMuted">
+        {t('admin.registriesOfficialDesc')}
+      </Text>
+      <Row wrap gap={8}>
+        <Field.Root label="URL" hideLabel flex={1} minW={0}>
+          <Field.Input
+            type="url"
+            icon="world"
+            value={value}
+            onValueChange={setValue}
+            placeholder="https://.../modules.json"
+          />
+        </Field.Root>
         <Button
           variant="glass"
           size="sm"
@@ -82,8 +102,12 @@ export function OfficialRow({
           loading={busy}
           disabled={!dirty}
         />
-      </div>
-      {error && <p className="text-xs font-semibold text-danger">{error}</p>}
+      </Row>
+      {error && (
+        <Text variant="meta" color="danger">
+          {error}
+        </Text>
+      )}
       <StatusLine status={status} />
     </Surface>
   );
@@ -104,42 +128,41 @@ export function ExtraRow({
 }>) {
   const t = useT();
   return (
-    <Surface elevated pad="none" radius={16} p={16} gap={8}>
-      <div className="flex flex-wrap items-center gap-2">
-        <Field
-          label={t('admin.registriesName')}
-          hideLabel
-          icon="tag"
-          value={registry.name}
-          onChange={(name) => onChange({ ...registry, name })}
-          placeholder={t('admin.registriesName')}
-          w={176}
-        />
+    <Surface elevated pad="none" radius="xl" p={16} gap={8}>
+      <Row wrap gap={8}>
+        <Field.Root label={t('admin.registriesName')} hideLabel w={176}>
+          <Field.Input
+            icon="tag"
+            value={registry.name}
+            onValueChange={(name) => onChange({ ...registry, name })}
+            placeholder={t('admin.registriesName')}
+          />
+        </Field.Root>
         <Switch
           checked={registry.enabled}
-          onChange={(enabled) => onChange({ ...registry, enabled })}
+          onCheckedChange={(enabled) => onChange({ ...registry, enabled })}
           label={registry.name || registry.url}
         />
-        <span className="text-xs text-dim">
+        <Text variant="meta" color="textDim">
           {registry.enabled ? t('admin.modulesEnabled') : t('admin.modulesDisabled')}
-        </span>
-        <div className="flex-1" />
+        </Text>
+        <Spacer />
         <IconButton
           variant="ghost"
           icon="trash"
           label={t('admin.registriesRemove')}
           onPress={busy ? () => {} : onRemove}
         />
-      </div>
-      <Field
-        label="URL"
-        hideLabel
-        type="url"
-        icon="world"
-        value={registry.url}
-        onChange={(url) => onChange({ ...registry, url })}
-        placeholder="https://.../modules.json"
-      />
+      </Row>
+      <Field.Root label="URL" hideLabel>
+        <Field.Input
+          type="url"
+          icon="world"
+          value={registry.url}
+          onValueChange={(url) => onChange({ ...registry, url })}
+          placeholder="https://.../modules.json"
+        />
+      </Field.Root>
       <StatusLine status={status} />
     </Surface>
   );
@@ -149,23 +172,23 @@ function PreviewResult({ preview }: Readonly<{ preview: StoreRegistryPreview }>)
   const t = useT();
   if (preview.ok) {
     return (
-      <div className="rounded-lg border border-[rgba(70,208,141,.25)] bg-[rgba(70,208,141,.07)] px-3 py-2.5">
-        <p className="text-xs font-semibold text-success">
+      <Callout.Root tone="success">
+        <Callout.Title>
           {t('admin.registriesPreviewOk', { count: preview.moduleCount })}
-        </p>
-        {preview.modules.length > 0 && (
-          <p className="mt-1 text-[11px] text-muted">
+        </Callout.Title>
+        {preview.modules.length > 0 ? (
+          <Callout.Detail>
             {preview.modules.map((m) => `${m.name} v${m.version}`).join(' · ')}
-          </p>
-        )}
-      </div>
+          </Callout.Detail>
+        ) : null}
+      </Callout.Root>
     );
   }
   return (
-    <div className="rounded-lg border border-danger/25 bg-danger/8 px-3 py-2.5">
-      <p className="text-xs font-semibold text-danger">{t('admin.registriesPreviewFail')}</p>
-      {preview.error && <p className="mt-1 break-all text-[11px] text-muted">{preview.error}</p>}
-    </div>
+    <Callout.Root tone="danger">
+      <Callout.Title>{t('admin.registriesPreviewFail')}</Callout.Title>
+      {preview.error ? <Callout.Detail>{preview.error}</Callout.Detail> : null}
+    </Callout.Root>
   );
 }
 
@@ -198,40 +221,43 @@ export function AddRegistry({
     setPreview(null);
   };
   return (
-    <Surface elevated pad="none" radius={16} p={16} gap={10}>
-      <span className="font-semibold text-text">{t('admin.registriesAdd')}</span>
-      <div className="flex flex-wrap items-center gap-2">
-        <Field
-          label={t('admin.registriesName')}
-          hideLabel
-          icon="tag"
-          value={name}
-          onChange={setName}
-          placeholder={t('admin.registriesName')}
-          w={176}
-        />
-        <Field
-          label="URL"
-          hideLabel
-          type="url"
-          icon="world"
-          value={url}
-          onChange={setUrl}
-          placeholder="https://.../modules.json"
-          flex={1}
-          minW={0}
-        />
-      </div>
+    <Surface elevated pad="none" radius="xl" p={16} gap={10}>
+      <Text variant="label">{t('admin.registriesAdd')}</Text>
+      <Row wrap gap={8}>
+        <Field.Root label={t('admin.registriesName')} hideLabel w={176}>
+          <Field.Input
+            icon="tag"
+            value={name}
+            onValueChange={setName}
+            placeholder={t('admin.registriesName')}
+          />
+        </Field.Root>
+        <Field.Root label="URL" hideLabel flex={1} minW={0}>
+          <Field.Input
+            type="url"
+            icon="world"
+            value={url}
+            onValueChange={setUrl}
+            placeholder="https://.../modules.json"
+          />
+        </Field.Root>
+      </Row>
       {url.trim() !== '' && !valid && (
-        <p className="text-xs text-danger">{t('admin.registriesHttps')}</p>
+        <Text variant="meta" color="danger">
+          {t('admin.registriesHttps')}
+        </Text>
       )}
-      {check.error && <p className="break-all text-xs text-danger">{check.error}</p>}
+      {check.error && (
+        <Text variant="meta" color="danger">
+          {check.error}
+        </Text>
+      )}
       {preview?.url === url.trim() && <PreviewResult preview={preview.result} />}
-      <div className="flex items-center justify-between gap-2">
-        <p className="flex-1 text-[11px] leading-relaxed text-dim">
+      <Row between gap={8}>
+        <Text variant="meta" color="textDim" flex={1}>
           {t('admin.registriesTrustNote')}
-        </p>
-        <div className="flex shrink-0 items-center gap-2">
+        </Text>
+        <Row shrink={0} gap={8}>
           <Button
             variant="glass"
             size="sm"
@@ -247,8 +273,8 @@ export function AddRegistry({
             onPress={add}
             disabled={busy || !verified}
           />
-        </div>
-      </div>
+        </Row>
+      </Row>
     </Surface>
   );
 }

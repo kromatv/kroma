@@ -4,18 +4,18 @@
 
 import { KromaEvents, type MediaRequest, type RequestStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState } from '@kroma/ui/kit';
+import { Box, EmptyState, Row } from '@kroma/ui/kit';
 
 import { useEffect, useState } from 'react';
 import { RequestDrawer } from '#web/features/admin/request-drawer';
 import { RequestRowView } from '#web/features/admin/request-row';
 import { PageHeader, useCap, usePoll } from '#web/features/admin/shell';
+import { Table } from '#web/features/admin/table';
 import {
   Chip,
   ConsoleSearch,
   ConsoleSummary,
   ConsoleToast,
-  Head,
   useConsoleToast,
   useThrottledReload,
 } from '#web/features/admin/table-console';
@@ -104,12 +104,12 @@ export function RequestsQueuePage() {
 
   return (
     <>
-      <PageHeader
-        title={t('admin.requestsTitle')}
-        action={
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.requestsTitle')}</PageHeader.Title>
+        <PageHeader.Actions>
           <ConsoleSearch value={q} onChange={setQ} placeholder={t('requests.searchPlaceholder')} />
-        }
-      />
+        </PageHeader.Actions>
+      </PageHeader.Root>
       <ConsoleSummary
         total={c?.total ?? 0}
         totalLabel={t('requests.totalLabel')}
@@ -117,32 +117,32 @@ export function RequestsQueuePage() {
         accentLabel={t('requests.pendingLabel')}
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2.5">
+      <Row wrap gap={10} mb={16}>
         <Chip
           label={t('requests.filter.pending')}
           count={c?.pending}
-          dot="rgba(244,243,240,.45)"
+          dot="text/45"
           on={bucket === 'pending'}
           onClick={() => setBucket('pending')}
         />
         <Chip
           label={t('requests.filter.active')}
           count={c?.active}
-          dot="#F4B642"
+          dot="accent"
           on={bucket === 'active'}
           onClick={() => setBucket('active')}
         />
         <Chip
           label={t('requests.filter.available')}
           count={c?.available}
-          dot="#46D08D"
+          dot="success"
           on={bucket === 'available'}
           onClick={() => setBucket('available')}
         />
         <Chip
           label={t('requests.filter.closed')}
           count={(c?.denied ?? 0) + (c?.failed ?? 0)}
-          dot="#E8536A"
+          dot="danger"
           on={bucket === 'closed'}
           onClick={() => setBucket('closed')}
         />
@@ -152,16 +152,16 @@ export function RequestsQueuePage() {
           on={bucket === 'all'}
           onClick={() => setBucket('all')}
         />
-      </div>
+      </Row>
 
-      <div className="overflow-hidden rounded-2xl border border-white/8 bg-[#121216] shadow-[0_10px_28px_rgba(0,0,0,.3)]">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 border-b border-white/6 bg-[#15151A] px-5 py-3 md:grid-cols-[minmax(0,1fr)_190px_110px_132px_76px]">
-          <Head>{t('requests.colTitle')}</Head>
-          <Head className="max-md:hidden">{t('requests.colRequester')}</Head>
-          <Head className="max-md:hidden">{t('requests.colDate')}</Head>
-          <Head className="max-md:hidden">{t('requests.colStatus')}</Head>
-          <span />
-        </div>
+      <Table.Root columns="minmax(0,1fr) 190px 110px 132px 76px">
+        <Table.Header>
+          <Table.Column>{t('requests.colTitle')}</Table.Column>
+          <Table.Column wide>{t('requests.colRequester')}</Table.Column>
+          <Table.Column wide>{t('requests.colDate')}</Table.Column>
+          <Table.Column wide>{t('requests.colStatus')}</Table.Column>
+          <Table.Cell />
+        </Table.Header>
 
         {rows.map((r) => (
           <RequestRowView
@@ -177,14 +177,15 @@ export function RequestsQueuePage() {
         {data === null ? <TableSkeleton rows={8} /> : null}
 
         {data && rows.length === 0 ? (
-          <div className="py-6">
-            <EmptyState
-              icon="inbox"
-              title={all.length === 0 ? t('requests.empty') : t('requests.noMatch')}
-            />
-          </div>
+          <Box py={24}>
+            <EmptyState.Root icon="inbox">
+              <EmptyState.Title>
+                {all.length === 0 ? t('requests.empty') : t('requests.noMatch')}
+              </EmptyState.Title>
+            </EmptyState.Root>
+          </Box>
         ) : null}
-      </div>
+      </Table.Root>
 
       <ConsoleToast toast={toast} />
     </>

@@ -5,7 +5,7 @@ export default story({
   name: 'Switch',
   group: 'Input',
   docs: 'The on/off switch. A television has no gestures: this is not a thumb you slide but a **Focusable** that toggles on Select, and the track fills with amber so the state reads from ten feet away. Pass `checked` to own the state, or just `defaultChecked` and it runs itself.',
-  usage: `<Switch checked={subtitles} onChange={setSubtitles} />
+  usage: `<Switch checked={subtitles} onCheckedChange={setSubtitles} />
 <Switch defaultChecked />`,
   guidelines: {
     do: ['Use the `tv` size on a settings row read from the sofa.'],

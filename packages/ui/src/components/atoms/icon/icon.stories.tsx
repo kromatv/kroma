@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
-import { DEFAULT_ICON_SIZE, DEFAULT_ICON_STROKE, hasGlyph, type IconName } from '#ui/lib/glyph';
+import { Text } from '#ui/components/atoms/text';
+import { DEFAULT_ICON_SIZE, DEFAULT_ICON_THICKNESS, hasGlyph, type IconName } from '#ui/lib/glyph';
 import { Icon } from './icon';
 
 // The glyphs the apps actually reach for, so the sheet below is a tour of the
@@ -50,7 +50,7 @@ export default story({
   docs: 'Any Tabler glyph (`tabler.io/icons`), by name. There is no registry to add to and no generated file: `wave-sine` draws because Tabler exports `IconWaveSine`, and the name is translated into the export. A name the package does not have draws `help-circle` instead of crashing, which is what makes it safe to take an icon name from **data** - a server-installed module names its glyph in its own manifest, and no list could ever be complete.\n\nThis story is the component: sizes, weight, colour, and what an unknown name does. For **which glyphs exist**, the searchable catalogue is `Foundations / Icons`.',
   usage: `<Icon name="player-play" />
 <Icon name="volume" size={20} color="textDim" />
-<Icon name="settings" stroke={1.8} />`,
+<Icon name="settings" thickness={1.8} />`,
   guidelines: {
     do: [
       'Pass a palette token to `color`: a glyph is told its colour explicitly, because React Native has no `currentColor` to inherit.',
@@ -69,17 +69,17 @@ export default story({
   args: {
     name: 'player-play',
     size: DEFAULT_ICON_SIZE,
-    stroke: DEFAULT_ICON_STROKE,
+    thickness: DEFAULT_ICON_THICKNESS,
     color: 'text',
   },
   controls: {
     name: 'icon',
     size: { min: 12, max: 64, step: 2 },
-    stroke: { min: 1, max: 3, step: 0.1 },
+    thickness: { min: 1, max: 3, step: 0.1 },
     color: ['text', 'textDim', 'accent', 'danger', 'success'],
   },
-  render: ({ name, size, stroke, color }) => (
-    <Icon name={asName(name, 'player-play')} size={size} stroke={stroke} color={color} />
+  render: ({ name, size, thickness, color }) => (
+    <Icon name={asName(name, 'player-play')} size={size} thickness={thickness} color={color} />
   ),
   scenes: [
     {
@@ -90,9 +90,9 @@ export default story({
           {IN_USE.map((name) => (
             <Box key={name} align="center" gap={6} w={76}>
               <Icon name={name} size={size} color={color} />
-              <Txt variant="overline" color="textDim">
+              <Text variant="overline" color="textDim">
                 {name}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>
@@ -101,14 +101,14 @@ export default story({
     {
       name: 'Sizes',
       docs: `The outline weight is a prop rather than a scaled stroke, so a glyph keeps the same optical weight at every size. ${DEFAULT_ICON_SIZE} is the default.`,
-      render: ({ color, stroke }) => (
+      render: ({ color, thickness }) => (
         <Box row gap={24} align="flex-end">
           {SIZES.map((size) => (
             <Box key={size} align="center" gap={8}>
-              <Icon name="player-play" size={size} stroke={stroke} color={color} />
-              <Txt variant="meta" color="textDim">
+              <Icon name="player-play" size={size} thickness={thickness} color={color} />
+              <Text variant="meta" color="textDim">
                 {size}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>
@@ -117,14 +117,19 @@ export default story({
     {
       name: 'A name it does not have',
       docs: 'An unknown name draws the fallback rather than throwing, so a glyph named by data can never take a screen down. The two on the left are real; the two on the right are not, and both land on `help-circle`.',
-      render: ({ stroke }) => (
+      render: ({ thickness }) => (
         <Box row gap={26} align="flex-start">
           {[...IN_USE.slice(0, 2), ...UNKNOWN].map((name, at) => (
             <Box key={name} align="center" gap={8} w={140}>
-              <Icon name={name} size={34} stroke={stroke} color={at < 2 ? 'text' : 'textDim'} />
-              <Txt variant="meta" color={at < 2 ? 'textDim' : 'danger'}>
+              <Icon
+                name={name}
+                size={34}
+                thickness={thickness}
+                color={at < 2 ? 'text' : 'textDim'}
+              />
+              <Text variant="meta" color={at < 2 ? 'textDim' : 'danger'}>
                 {name}
-              </Txt>
+              </Text>
             </Box>
           ))}
         </Box>

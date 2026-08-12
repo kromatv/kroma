@@ -2,8 +2,18 @@
 // sections and taste profiles. Backed by /api/admin/llm*.
 import type { LlmAdminConfig } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Badge, Button, EmptyState, Section, Surface, Switch } from '@kroma/ui/kit';
-import { IconSparkles } from '@tabler/icons-react';
+import {
+  Badge,
+  Box,
+  Button,
+  EmptyState,
+  Icon,
+  Row,
+  Section,
+  Surface,
+  Switch,
+  Text,
+} from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { ProviderCard, type ProviderForm } from '#web/features/admin/ai-providers';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
@@ -11,8 +21,8 @@ import { useAuth } from '#web/shared/lib/auth';
 
 // `id` is the server's (blank until saved); `key` is a client-only handle. The
 // client never mints provider ids.
-type Row = ProviderForm & { key: string };
-type Config = { enabled: boolean; defaultKey: string; providers: Row[] };
+type ProviderRow = ProviderForm & { key: string };
+type Config = { enabled: boolean; defaultKey: string; providers: ProviderRow[] };
 
 let keySeq = 0;
 function nextKey(): string {
@@ -20,7 +30,7 @@ function nextKey(): string {
   return `row-${keySeq}`;
 }
 
-function emptyProvider(): Row {
+function emptyProvider(): ProviderRow {
   return {
     key: nextKey(),
     id: '',
@@ -37,7 +47,7 @@ function emptyProvider(): Row {
 }
 
 function toConfig(c: LlmAdminConfig): Config {
-  const providers: Row[] = c.providers.map((p) => ({ ...p, key: nextKey(), apiKey: '' }));
+  const providers: ProviderRow[] = c.providers.map((p) => ({ ...p, key: nextKey(), apiKey: '' }));
   const def = providers.find((p) => p.id === c.defaultId) ?? providers[0];
   return { enabled: c.enabled, defaultKey: def?.key ?? '', providers };
 }
@@ -68,7 +78,7 @@ export function AiPage() {
     setConfig((c) => (c ? { ...c, ...patch } : c));
     setSaved(false);
   };
-  const patchProvider = (key: string, patch: Partial<Row>) =>
+  const patchProvider = (key: string, patch: Partial<ProviderRow>) =>
     update({ providers: cfg.providers.map((p) => (p.key === key ? { ...p, ...patch } : p)) });
 
   const addProvider = () => {
@@ -124,16 +134,18 @@ export function AiPage() {
 
   return (
     <>
-      <PageHeader
-        title={t('admin.aiTitle')}
-        subtitle={t('admin.aiSub')}
-        action={<StatusChip enabled={cfg.enabled} />}
-      />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.aiTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.aiSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
+          <StatusChip enabled={cfg.enabled} />
+        </PageHeader.Actions>
+      </PageHeader.Root>
 
       <Surface
         elevated
         pad="none"
-        radius={16}
+        radius="xl"
         border="border"
         row
         align="center"
@@ -143,41 +155,44 @@ export function AiPage() {
         py={18}
         mt={24}
       >
-        <div className="flex items-center gap-3.5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent">
-            <IconSparkles size={20} stroke={1.8} />
-          </span>
-          <div>
-            <div className="text-[15px] font-bold">{t('admin.aiEnabled')}</div>
-            <div className="mt-0.5 text-[12.5px] text-dim">{t('admin.aiEnabledHint')}</div>
-          </div>
-        </div>
+        <Row gap={14}>
+          <Row center w={40} h={40} shrink={0} radius="xs" bg="accentSoft">
+            <Icon name="sparkles" size={20} thickness={1.8} color="accentText" />
+          </Row>
+          <Box>
+            <Text variant="label">{t('admin.aiEnabled')}</Text>
+            <Text variant="meta" color="textDim" mt={2}>
+              {t('admin.aiEnabledHint')}
+            </Text>
+          </Box>
+        </Row>
         <Switch
           checked={cfg.enabled}
-          onChange={(v) => update({ enabled: v })}
+          onCheckedChange={(v) => update({ enabled: v })}
           label={t('admin.aiEnabled')}
         />
       </Surface>
 
-      <Section
-        title={t('admin.aiProviders')}
-        mt={28}
-        action={
-          <Button
-            variant="glass"
-            size="sm"
-            icon="plus"
-            label={t('admin.aiAddProvider')}
-            onPress={addProvider}
-          />
-        }
-      >
-        <p className="-mt-2 mb-4 text-[12.5px] text-dim">{t('admin.aiProvidersHint')}</p>
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.aiProviders')}</Section.Title>
+          <Section.Actions>
+            <Button
+              variant="glass"
+              size="sm"
+              icon="plus"
+              label={t('admin.aiAddProvider')}
+              onPress={addProvider}
+            />
+          </Section.Actions>
+        </Section.Header>
+        <Text variant="meta" color="textDim" mt={-8} mb={16}>
+          {t('admin.aiProvidersHint')}
+        </Text>
         {cfg.providers.length === 0 ? (
-          <EmptyState
-            icon="sparkles"
-            title={t('admin.aiNoProviders')}
-            action={
+          <EmptyState.Root icon="sparkles">
+            <EmptyState.Title>{t('admin.aiNoProviders')}</EmptyState.Title>
+            <EmptyState.Actions>
               <Button
                 variant="glass"
                 size="sm"
@@ -185,10 +200,10 @@ export function AiPage() {
                 label={t('admin.aiAddProvider')}
                 onPress={addProvider}
               />
-            }
-          />
+            </EmptyState.Actions>
+          </EmptyState.Root>
         ) : (
-          <div className="flex flex-col gap-3">
+          <Box gap={12}>
             {cfg.providers.map((p) => (
               <ProviderCard
                 key={p.key}
@@ -202,11 +217,11 @@ export function AiPage() {
                 client={client}
               />
             ))}
-          </div>
+          </Box>
         )}
-      </Section>
+      </Section.Root>
 
-      <div className="mt-6 flex flex-wrap items-center gap-3">
+      <Row wrap gap={12} mt={24}>
         <Button
           label={busy === 'save' ? t('admin.aiSaving') : t('common.save')}
           icon="device-floppy"
@@ -215,10 +230,16 @@ export function AiPage() {
           disabled={busy !== 'idle'}
         />
         {saved ? (
-          <span className="text-[13px] font-semibold text-success">{t('admin.aiSaved')}</span>
+          <Text variant="meta" color="success">
+            {t('admin.aiSaved')}
+          </Text>
         ) : null}
-        {error ? <span className="text-[13px] font-semibold text-danger">{error}</span> : null}
-      </div>
+        {error ? (
+          <Text variant="meta" color="danger">
+            {error}
+          </Text>
+        ) : null}
+      </Row>
     </>
   );
 }

@@ -22,7 +22,7 @@ function WatchedBadge({ size = 28 }: Readonly<WatchedBadgeProps>) {
       bg="accent"
       shadow="card"
     >
-      <Icon name="check" size={Math.round(size * 0.6)} color="accentInk" stroke={3} />
+      <Icon name="check" size={Math.round(size * 0.6)} color="accentInk" thickness={3} />
     </Box>
   );
 }

@@ -2,8 +2,8 @@
 
 // The browser app mounts no spatial navigator at all: it is a mouse-and-
 // keyboard page, not a 10-foot screen. Every kit overlay still has to render
-// there, so the focus GROUPS a dialog carries (DialogFooter, DialogActions)
-// degrade to plain views instead of asking a navigator that does not exist.
+// there, so the focus GROUP a dialog carries (Dialog.Actions) degrades to a
+// plain view instead of asking a navigator that does not exist.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -11,7 +11,6 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
 import { clearPressGuard } from '#ui/lib/press-guard';
 import { Dialog } from './dialog';
-import { DialogActions, DialogFooter } from './dialog-actions';
 
 afterEach(cleanup);
 
@@ -25,14 +24,14 @@ describe('outside a focus scope', () => {
   it('renders a dialog whose actions are a focus group', () => {
     const onConfirm = vi.fn();
     render(
-      <Dialog open title="Supprimer le compte">
-        <DialogActions
+      <Dialog.Root open title="Supprimer le compte">
+        <Dialog.Actions
           cancelLabel="Annuler"
           onCancel={() => {}}
           confirmLabel="Supprimer"
           onConfirm={onConfirm}
         />
-      </Dialog>,
+      </Dialog.Root>,
     );
     expect(screen.getByText('Supprimer le compte')).toBeTruthy();
     settled();
@@ -40,14 +39,14 @@ describe('outside a focus scope', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
-  it('renders a DialogFooter, and the controls in it still press', () => {
+  it('renders a row of its own controls, and they still press', () => {
     const onPress = vi.fn();
     render(
-      <Dialog open title="Titre">
-        <DialogFooter>
+      <Dialog.Root open title="Titre">
+        <Dialog.Actions>
           <Focusable label="Annuler" onPress={onPress} />
-        </DialogFooter>
-      </Dialog>,
+        </Dialog.Actions>
+      </Dialog.Root>,
     );
     settled();
     fireEvent.click(screen.getByLabelText('Annuler'));

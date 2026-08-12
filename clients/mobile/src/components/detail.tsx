@@ -1,6 +1,6 @@
 import type { CastMember } from '@kroma/core';
 import { posterColors, sizedImageUrl } from '@kroma/core';
-import { BackButton, Box, PersonCard, styles, Txt, tintGradient } from '@kroma/ui/kit';
+import { BackButton, Box, PersonCard, styles, Text, tintGradient } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
@@ -19,7 +19,7 @@ export { DetailActions } from './DetailActions';
 export function MetaBadge({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <Box style={s.badge}>
-      <Txt style={s.badgeText}>{children}</Txt>
+      <Text style={s.badgeText}>{children}</Text>
     </Box>
   );
 }
@@ -71,17 +71,17 @@ export function DetailHero({
       </Animated.View>
       <Box style={[s.back, { top: insets.top + 6, left: gutters.left }]}>
         <BackButton
-          size={40}
+          diameter={40}
           hitSlop={12}
           label={t('common.back')}
           onPress={() => goBack(router)}
         />
       </Box>
       <Box style={[s.heroText, { left: gutters.left, right: gutters.right }]}>
-        {context ? <Txt style={s.context}>{context}</Txt> : null}
-        <Txt lines={2} style={s.heroTitle}>
+        {context ? <Text style={s.context}>{context}</Text> : null}
+        <Text lines={2} style={s.heroTitle}>
           {title}
-        </Txt>
+        </Text>
         {meta ? <Box style={s.metaRow}>{meta}</Box> : null}
       </Box>
     </Box>

@@ -1,17 +1,19 @@
 export type { AddTileProps, AddTileSize } from './add-tile';
 export { AddTile, addTileVariants } from './add-tile';
-export type { AlphabetRailProps, LetterRange } from './alphabet-rail';
+export type { AlphabetItemProps, AlphabetRailRootProps, LetterRange } from './alphabet-rail';
 export { AlphabetRail } from './alphabet-rail';
 export type { BackButtonProps } from './back-button';
 export { BackButton } from './back-button';
 export type {
+  ButtonGroupAddonProps,
   ButtonGroupRootProps,
-  ButtonGroupTextProps,
   GroupMember,
   GroupOrientation,
   GroupPosition,
 } from './button-group';
 export { ButtonGroup, useGroupMember, useGroupShape } from './button-group';
+export type { CalloutRootProps, CalloutTone } from './callout';
+export { Callout } from './callout';
 export type { CategoryTileProps, CategoryTileSize } from './category-tile';
 export { CategoryTile, categoryTileVariants } from './category-tile';
 export type {
@@ -23,11 +25,13 @@ export type {
 export { ChoiceList } from './choice-list';
 export type { CopyButtonProps } from './copy-button';
 export { CopyButton } from './copy-button';
-export type { DisclosureProps } from './disclosure';
+export type { DataFieldRootProps, DataFieldValueProps } from './data-field';
+export { DataField } from './data-field';
+export type { DisclosureRootProps, DisclosureTriggerProps } from './disclosure';
 export { Disclosure } from './disclosure';
-export type { EmptyStateProps } from './empty-state';
+export type { EmptyStateLayout, EmptyStateRootProps, EmptyStateSize } from './empty-state';
 export { EmptyState } from './empty-state';
-export type { FieldProps } from './field';
+export type { FieldInputProps, FieldRootProps, FieldTextareaProps } from './field';
 export { Field } from './field';
 export type { HintKey, HintProps } from './hint';
 export { HINT_KEYS, Hint } from './hint';
@@ -35,21 +39,32 @@ export type { InputGroupAddonProps, InputGroupRootProps } from './input-group';
 export { InputGroup } from './input-group';
 export type { KeypadProps } from './keypad';
 export { Keypad } from './keypad';
-export type { ListGroupProps, ListRowProps, ListRowSize } from './list-row';
-export { ListGroup, ListRow, listRowVariants } from './list-row';
+export type { LegendItemProps, LegendRootProps } from './legend';
+export { Legend } from './legend';
+export type { ListItemProps, ListRootProps } from './list';
+export { List } from './list';
+export type { ListGroupProps, ListRowRootProps, ListRowSize } from './list-row';
+export { ListRow, listRowVariants } from './list-row';
 export type { MediaCardProps } from './media-card';
-export { CARD_SCRIM, MediaCard, tintGradient } from './media-card';
-export type { NavPillItemProps, NavPillLabels, NavPillProps, NavPillSize } from './nav-pill';
-export { NavPill, NavPillItem } from './nav-pill';
-export type { OtpFieldProps, OtpSize, OtpSlot } from './otp-field';
+export { MediaCard, tintGradient } from './media-card';
+export type {
+  NavPillIcon,
+  NavPillItemProps,
+  NavPillLabels,
+  NavPillRootProps,
+  NavPillSize,
+} from './nav-pill';
+export { NavPill } from './nav-pill';
+export type { OtpFieldRootProps, OtpGroupProps, OtpSize, OtpSlot } from './otp-field';
 export {
   OtpField,
   otpVariants,
   REGEXP_ONLY_CHARS,
   REGEXP_ONLY_DIGITS,
   REGEXP_ONLY_DIGITS_AND_CHARS,
+  useOtpSlot,
 } from './otp-field';
-export type { PageHeaderProps } from './page-header';
+export type { PageHeaderRootProps, PageHeaderTitleProps } from './page-header';
 export { PageHeader } from './page-header';
 export type {
   PageSlot,
@@ -64,16 +79,27 @@ export { PersonCard, personCardVariants } from './person-card';
 export type { PinFieldProps } from './pin-field';
 export { PinField } from './pin-field';
 export type { PosterCardProps } from './poster-card';
-export { POSTER_SCRIM, PosterCard } from './poster-card';
-export type { SectionProps } from './section';
+export { PosterCard } from './poster-card';
+export type { SectionRootProps } from './section';
 export { Section } from './section';
 export type { SegmentedOption, SegmentedRootProps } from './segmented-control';
 export { SegmentedControl, segmentedControlVariants } from './segmented-control';
-export type { SelectOption, SelectProps } from './select';
+export type {
+  SelectDismissReason,
+  SelectItemProps,
+  SelectOpenDetails,
+  SelectOpenReason,
+  SelectOption,
+  SelectRootProps,
+  SelectTriggerProps,
+  SelectValueDetails,
+} from './select';
 export { Select, selectTriggerVariants } from './select';
-export type { StatCardProps } from './stat-card';
+export type { StatCardRootProps, StatCardValueProps } from './stat-card';
 export { StatCard } from './stat-card';
 export type { ThemeSwitchProps } from './theme-switch';
 export { ThemeSwitch } from './theme-switch';
+export type { TimelineItemProps, TimelineRootProps, TimelineTone } from './timeline';
+export { Timeline } from './timeline';
 export type { TooltipProps } from './tooltip';
 export { Tooltip } from './tooltip';

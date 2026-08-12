@@ -3,7 +3,7 @@
 // system's, so a phone's server list is the same object as the TV's and the
 // console's. What stays here is the section header and hint that frame it.
 
-import { Box, ListRow, Spinner, styles, Txt } from '@kroma/ui/kit';
+import { Box, ListRow, Spinner, styles, Text } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import { spacing, type } from '#mobile/lib/theme';
 
@@ -26,15 +26,16 @@ export function ServerRow({
   onPress(): void;
 }>) {
   return (
-    <ListRow
+    <ListRow.Root
       size="sm"
-      label={name}
-      hint={host ?? undefined}
-      leading={icon}
       disabled={disabled}
       onPress={onPress}
       style={dimmed ? s.dimmed : undefined}
-    />
+    >
+      <ListRow.Label>{name}</ListRow.Label>
+      {host ? <ListRow.Hint>{host}</ListRow.Hint> : null}
+      <ListRow.Leading>{icon}</ListRow.Leading>
+    </ListRow.Root>
   );
 }
 
@@ -45,14 +46,14 @@ export function ServerSectionHeader({
 }: Readonly<{ title: string; loading?: boolean }>) {
   return (
     <Box style={s.sectionHeader}>
-      <Txt style={s.sectionTitle}>{title}</Txt>
+      <Text style={s.sectionTitle}>{title}</Text>
       {loading ? <Spinner size={18} color="textDim" /> : null}
     </Box>
   );
 }
 
 export function ServerSectionHint({ children }: Readonly<{ children: string }>) {
-  return <Txt style={s.sectionHint}>{children}</Txt>;
+  return <Text style={s.sectionHint}>{children}</Text>;
 }
 
 const s = styles({
@@ -62,5 +63,3 @@ const s = styles({
   sectionTitle: { ...type.small, textTransform: 'uppercase', letterSpacing: 1.2 },
   sectionHint: { ...type.small, px: spacing.xs },
 });
-
-export type { ListRowProps as ServerRowProps } from '@kroma/ui/kit';

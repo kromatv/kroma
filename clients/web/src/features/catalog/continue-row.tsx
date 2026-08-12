@@ -7,11 +7,10 @@ import { useT } from '@kroma/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { Suspense } from 'react';
+import { SectionHeading } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
 import { Poster, PosterRail, RailSkeleton } from '#web/shared/ui';
-
-const SECTION_TITLE = 'mb-5 mt-10 font-display text-[22px] font-bold tracking-[-.02em] text-text';
 
 export function ContinueRow() {
   const { user, ready } = useAuth();
@@ -35,7 +34,7 @@ function ContinueRail() {
 
   return (
     <section>
-      <h2 className={SECTION_TITLE}>{t('content.continueWatching')}</h2>
+      <SectionHeading>{t('content.continueWatching')}</SectionHeading>
       <PosterRail
         data={items}
         renderItem={({ item, positionMs, durationMs }) => {

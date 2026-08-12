@@ -153,6 +153,100 @@ async fn marking_read_cannot_reach_another_users_notification() {
 }
 
 #[tokio::test]
+async fn marking_one_unread_puts_it_back_in_the_badge() {
+    let t = test_app();
+    let (ana_id, ana) = member(&t, "ana11");
+    notify_user(&t, &ana_id, "Dune");
+    notify_user(&t, &ana_id, "Arrival");
+    send(&t.app, "POST", "/api/notifications/read", Some(&ana), Some(json!({}))).await;
+
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
+    let first = inbox["notifications"][0]["id"].as_str().unwrap().to_string();
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/notifications/unread",
+        Some(&ana),
+        Some(json!({ "ids": [first.clone()] })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["unread"], json!(1));
+
+    let (_, back) = get(&t.app, "/api/notifications", Some(&ana)).await;
+    assert_eq!(back["unread"], json!(1));
+    let row = back["notifications"].as_array().unwrap().iter().find(|n| n["id"] == json!(first));
+    assert_eq!(row.unwrap()["read"], json!(false));
+}
+
+#[tokio::test]
+async fn a_row_survives_being_walked_back_and_forth_across_a_refetch() {
+    // The bug this pins is the one a client cannot tell from a broken toggle:
+    // the state flips, the inbox is refetched, and the row comes back the way it
+    // was. So every step here re-reads the whole inbox rather than trusting the
+    // count the write returned.
+    let t = test_app();
+    let (ana_id, ana) = member(&t, "ana14");
+    notify_user(&t, &ana_id, "Dune");
+
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
+    let id = inbox["notifications"][0]["id"].as_str().unwrap().to_string();
+    assert_eq!(inbox["notifications"][0]["read"], json!(false));
+
+    for (route, read, unread) in [
+        ("/api/notifications/read", true, 0),
+        ("/api/notifications/unread", false, 1),
+        ("/api/notifications/read", true, 0),
+    ] {
+        let (status, _) =
+            send(&t.app, "POST", route, Some(&ana), Some(json!({ "ids": [id.clone()] }))).await;
+        assert_eq!(status, StatusCode::OK, "{route}");
+
+        let (_, after) = get(&t.app, "/api/notifications", Some(&ana)).await;
+        assert_eq!(after["notifications"][0]["read"], json!(read), "{route}");
+        assert_eq!(after["unread"], json!(unread), "{route}");
+    }
+}
+
+#[tokio::test]
+async fn marking_unread_cannot_reach_another_users_notification() {
+    let t = test_app();
+    let (ana_id, ana) = member(&t, "ana12");
+    let (_bo_id, bo) = member(&t, "bo12");
+    notify_user(&t, &ana_id, "Dune");
+    send(&t.app, "POST", "/api/notifications/read", Some(&ana), Some(json!({}))).await;
+
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
+    let ana_row = inbox["notifications"][0]["id"].as_str().unwrap().to_string();
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/notifications/unread",
+        Some(&bo),
+        Some(json!({ "ids": [ana_row] })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (_, ana_inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
+    assert_eq!(ana_inbox["unread"], json!(0), "Bo must not be able to unread Ana's mail");
+}
+
+#[tokio::test]
+async fn a_list_longer_than_an_inbox_can_be_is_refused() {
+    let t = test_app();
+    let (_ana_id, ana) = member(&t, "ana13");
+    let ids: Vec<String> = (0..1_000).map(|n| format!("n{n}")).collect();
+
+    for route in ["/api/notifications/read", "/api/notifications/unread"] {
+        let (status, _) = send(&t.app, "POST", route, Some(&ana), Some(json!({ "ids": ids }))).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{route}");
+    }
+}
+
+#[tokio::test]
 async fn deleting_is_scoped_to_the_owner() {
     let t = test_app();
     let (ana_id, ana) = member(&t, "ana6");

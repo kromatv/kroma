@@ -9,20 +9,21 @@
 //
 // `moreLabel` is a prop, not a translation call: the kit knows no app's
 // i18n, so the host names the affordance the same way it names a Focusable.
-// A television build simply renders it clamped — the press is a pointer's or
+// A television build simply renders it clamped: the press is a pointer's or
 // a thumb's gesture, and a D-pad synopsis wants a screen of its own.
 
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
-import { Txt, type TxtProps } from '#ui/components/atoms/text';
+import { Text, type TextProps } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { motion } from '#ui/core/tokens';
+import { a11yState } from '#ui/lib/a11y';
 import { ease } from '#ui/lib/ease';
 
 const WEB = Platform.OS === 'web';
 const GROW_MS = motion.duration.base;
 
-interface ExpandableTextProps extends Pick<TxtProps, 'variant' | 'color' | 'style'> {
+interface ExpandableTextProps extends Pick<TextProps, 'variant' | 'color' | 'style'> {
   children: string;
   /** How many lines the collapsed state shows. */
   lines?: number;
@@ -84,10 +85,10 @@ function ExpandableText({
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       accessibilityRole={clampable ? 'button' : undefined}
-      aria-expanded={clampable ? expanded : undefined}
+      {...(clampable ? a11yState({ expanded }) : null)}
     >
       <Grow height={box}>
-        <Txt
+        <Text
           variant={variant}
           color={color}
           style={style}
@@ -99,27 +100,30 @@ function ExpandableText({
           }}
         >
           {children}
-        </Txt>
+        </Text>
       </Grow>
-      {/* The measuring ghost: unclamped, invisible, untouchable. */}
-      <Txt
+      {/* The measuring ghost: unclamped, invisible, untouchable. `aria-hidden`
+          as well as `accessible={false}`, which react-native-web does not
+          implement - without it the paragraph is in the tree twice. */}
+      <Text
         accessible={false}
+        aria-hidden
         variant={variant}
         style={[style, s.ghost]}
         onLayout={(event) => setFull(event.nativeEvent.layout.height)}
       >
         {children}
-      </Txt>
+      </Text>
       {/* The affordance answers the cursor by going amber: it is the one part
           of the paragraph that does anything, and on the web that has to read
           BEFORE the click. The hover callbacks fire on the browser targets
           alone, so the phone and the TV keep the plain label. */}
       {clampable && !expanded ? (
-        <Txt
+        <Text
           variant="meta"
           color={hovered ? 'accent' : 'text'}
           style={s.more}
-        >{`… ${moreLabel}`}</Txt>
+        >{`… ${moreLabel}`}</Text>
       ) : null}
     </Pressable>
   );

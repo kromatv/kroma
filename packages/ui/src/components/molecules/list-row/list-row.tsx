@@ -1,163 +1,177 @@
 // <ListRow>: one focusable row of a menu or a settings list.
 //
-// This shape was written three times before it moved here: the TV profile menu,
-// the signed-out device settings, and the admin lists. It is a molecule rather
-// than a primitive because it composes four of them (Focusable, Icon, Txt and
-// whatever sits at the end) into the one arrangement the design specifies:
-// a round glyph well, the label taking the slack, and a trailing affordance.
-//
-// The well itself is <IconWell>, because the TV's server list needed the same
-// mark on a row this component cannot draw (a badge beside the title, two
-// sub-lines) and was drawing its own, four points larger.
+// Yoga has no `order` and there is no `:has()` selector, so the Root sorts its
+// direct children into the head, middle and tail slots once and publishes what
+// it learned through context - the same shape <InputGroup> takes.
 
-import type { ReactNode } from 'react';
+import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
-import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
-import { IconWell } from '#ui/components/atoms/icon-well';
-import { Txt } from '#ui/components/atoms/text';
-import { type StyleDecl, svFor } from '#ui/core';
-import { CONTROL } from '#ui/lib/field-shell';
-import { ListGroup, useInListGroup } from './list-group';
+import { Icon, type IconName } from '#ui/components/atoms/icon';
+import { IconWell, type IconWellSize } from '#ui/components/atoms/icon-well';
+import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { ListGroup, useListGroup } from './list-group';
+import { ListRowContext } from './list-row-context';
+import { Hint, Label, Leading, Trailing } from './list-row-parts';
+import { listRowVariants } from './list-row-variants';
 
-type ListRowSize = 'sm' | 'tv';
+// The well has two steps to the shell's three, and a phone's row takes the
+// pointer-sized one.
+const WELL: Record<ControlSize, IconWellSize> = { sm: 'sm', md: 'sm', tv: 'tv' };
 
-const listRowVariants = svFor<{
-  root: StyleDecl;
-  label: StyleDecl;
-  hint: StyleDecl;
-  chevron: Pick<IconProps, 'color' | 'size'>;
-}>()({
-  slots: {
-    root: { w: '100%', row: true, align: 'center' },
-    label: { fontWeight: '700' },
-    hint: {},
-    chevron: { color: 'textDim' },
-  },
-  variants: {
-    size: {
-      sm: {
-        root: { gap: 12, px: 14, py: 11 },
-        label: { fontSize: 15 },
-        hint: { fontSize: 13 },
-        chevron: { size: 17 },
-      },
-      tv: {
-        root: { gap: 16, px: 20, py: 16 },
-        label: { fontSize: 18 },
-        hint: { fontSize: 15 },
-        chevron: { size: 20 },
-      },
-    },
-    /** Its own object, or one member of a <ListRow.Group>'s single card. A
-     *  member draws no surface: the group carries the well, the blur, the
-     *  edge and the lift for the whole list. */
-    standalone: {
-      true: {
-        root: {
-          radius: 'xl',
-          border: 'border',
-          // THE SAME WELL A FIELD SITS IN, taken from the one table
-          // (lib/field-shell) so a row and an input can never drift apart.
-          // Translucent, so <Frost> blurs what shows through and the lift
-          // keeps the row off the artwork behind it.
-          bg: CONTROL.md.bg,
-          shadow: 'card',
-        },
-      },
-      // A member is flush with the card that clips it, so its ring is drawn
-      // INWARD - the same width, ink and gap, on the only side there is.
-      false: { root: { _focus: { bg: 'accentSoft', ring: 'focusInset' } } },
-    },
-    /** Whether the row leads anywhere. The step before the amber edge, and only
-     *  a row that does something on press takes it: a settings list is full of
-     *  rows that only display. */
-    pressable: {
-      true: { root: { _hover: { bg: 'surface3' } } },
-    },
-  },
-  defaults: { size: 'tv', pressable: false, standalone: true },
-});
+interface Sorted {
+  leading: ReactNode[];
+  content: ReactNode[];
+  trailing: ReactNode[];
+}
 
-interface ListRowProps extends Omit<FocusableProps, 'children' | 'style' | 'label'> {
-  /** Leading glyph. Omit it and the row starts at the label. */
+// An end slot that renders nothing does not claim its slot: a caller writing
+// `<ListRow.Leading>{maybe}</ListRow.Leading>` for a value that turned out
+// undefined gets the `icon` sugar back, rather than a row with a hole in it.
+function filled(child: ReactNode): boolean {
+  if (!isValidElement(child)) return false;
+  return Children.toArray((child.props as { children?: ReactNode }).children).length > 0;
+}
+
+function sort(children: ReactNode): Sorted {
+  const at: Sorted = { leading: [], content: [], trailing: [] };
+  for (const child of Children.toArray(children)) {
+    const part = isValidElement(child) ? child.type : null;
+    if (part === Leading) {
+      if (filled(child)) at.leading.push(child);
+    } else if (part === Trailing) {
+      if (filled(child)) at.trailing.push(child);
+    } else at.content.push(child);
+  }
+  return at;
+}
+
+// The first plain text in the middle column, at whatever depth it sits. Not
+// `child.type === Label`: a component composing the row writes a label part of
+// its own (<ChoiceList.Label>), and the row still has to name itself.
+function nameOf(node: ReactNode): string | undefined {
+  if (typeof node === 'string') return node || undefined;
+  if (Array.isArray(node)) {
+    for (const child of node as ReactNode[]) {
+      const found = nameOf(child);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  }
+  if (!isValidElement(node)) return undefined;
+  return nameOf((node.props as { children?: ReactNode }).children);
+}
+
+function iconWell(name: IconName | undefined, size: ControlSize): ReactNode {
+  if (name === undefined) return null;
+  return (
+    <Leading>
+      <IconWell name={name} size={WELL[size]} />
+    </Leading>
+  );
+}
+
+interface ListRowRootProps extends Omit<FocusableProps, 'children' | 'style' | 'label'> {
+  /** Leading glyph, sunk into the kit's icon well. Media that is not a glyph
+   *  goes through <ListRow.Leading>. */
   icon?: IconName;
-  /** Something other than a glyph in the leading slot - an <Avatar>, say, on a
-   *  row that is about a PERSON. Wins over `icon`. */
-  leading?: ReactNode;
-  label: string;
-  /** A second line under the label, for the rows that need explaining. */
-  hint?: string;
-  size?: ListRowSize;
-  /** Trailing content: a value, a Switch, a Badge. Defaults to a chevron when
-   *  the row leads somewhere, and to nothing when it does not. */
-  trailing?: ReactNode;
-  /** The row's middle column, written by the caller instead of derived from
-   *  `label`/`hint`. `label` is still required: it stays the accessible name
-   *  however the row is arranged. */
+  /** Names the row to assistive tech. It draws NOTHING: the title is
+   *  <ListRow.Label>, whose plain text already names the row. Reach for it only
+   *  where the middle column is a component that says its words through props
+   *  and so has none for the row to read. */
+  label?: string;
+  /** The control shell's size, defaulting to the group's, then to the app's
+   *  (`setEntryDefaults`). */
+  size?: ControlSize;
+  /** Whether the row draws the disclosure chevron. Defaults to true for a
+   *  pressable row with no <ListRow.Trailing>. Set false for a row that acts in
+   *  place: a choice, a toggle, anything that goes nowhere. */
+  chevron?: boolean;
+  /** The row's parts. Only a DIRECT <ListRow.Leading> or <ListRow.Trailing>
+   *  child is sorted into its slot, so those two may be written anywhere;
+   *  everything else is the middle column, in the order it was written. The
+   *  first plain text in that column is the row's accessible name. */
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }
 
-function ListRow({
+function Root({
   icon,
-  leading,
   label,
-  hint,
-  size = 'tv',
-  trailing,
+  size,
+  chevron: wantsChevron,
   children,
   onPress,
+  href,
+  role,
+  selected,
   style,
   ...focusProps
-}: Readonly<ListRowProps>) {
-  // A member of a <ListRow.Group> sits in the group's card, so it draws no
-  // surface of its own.
-  const standalone = !useInListGroup();
+}: Readonly<ListRowRootProps>) {
+  const group = useListGroup();
+  const standalone = group === null;
+  const shell = size ?? group?.size ?? entryDefaultSize();
+  const metrics = CONTROL[shell];
+  const pressable = onPress !== undefined;
+
+  const at = useMemo(() => sort(children), [children]);
+  // The row only CLAIMS a selection where the caller gave it one: a plain
+  // settings row that announced `selected: false` would be reported as one
+  // option among several by every screen reader that walked it.
+  const lit = selected ?? false;
+  const slots = listRowVariants({ size: shell, standalone, pressable, selected: lit });
+  const ctx = useMemo(() => ({ size: shell, metrics, slots }), [shell, metrics, slots]);
+
+  const leading = at.leading.length > 0 ? at.leading : iconWell(icon, shell);
+  const chevron = (wantsChevron ?? pressable) && at.trailing.length === 0;
+
   return (
-    <Focusable
-      {...focusProps}
-      onPress={onPress}
-      label={label}
-      focusScale={1.02}
-      sv={listRowVariants}
-      vars={{ size, pressable: onPress !== undefined, standalone }}
-      style={style}
-    >
-      {(state) => (
-        <>
-          {/* Blur what shows through the translucent fill: the row reads as
-              one glass surface rather than a window on the artwork. A member
-              of a group is inside the card that already did this. */}
-          {standalone ? <Frost radius="xl" /> : null}
-          {leading ?? (icon ? <IconWell name={icon} size={size} /> : null)}
-          {/* minW 0: without it a long label pushes the trailing slot off the
-              row instead of ellipsing, which is the one thing a row of a
-              settings list must never do. */}
-          <Box flex minW={0} gap={2}>
-            {children ?? (
-              <>
-                <Txt style={state.slots.label}>{label}</Txt>
-                {hint ? (
-                  <Txt color="textDim" style={state.slots.hint}>
-                    {hint}
-                  </Txt>
-                ) : null}
-              </>
-            )}
-          </Box>
-          {trailing ?? (onPress ? <Icon name="chevron-right" {...state.slots.chevron} /> : null)}
-        </>
-      )}
-    </Focusable>
+    <ListRowContext.Provider value={ctx}>
+      <Focusable
+        {...focusProps}
+        onPress={onPress}
+        href={href}
+        // A row that does nothing is not a button. Left to the default it would
+        // announce as one and then refuse to activate.
+        role={role ?? (pressable || href !== undefined ? undefined : 'none')}
+        selected={selected}
+        label={label ?? nameOf(at.content)}
+        // A row of its own may grow a little; a member of a group may not. The
+        // group is one card and the row is flush with the edge that clips it, so
+        // a member that scales pushes past that edge and shoves the rule between
+        // it and its neighbour. The wash and the ring say the same thing without
+        // moving anything.
+        focusScale={standalone ? 1.02 : 1}
+        sv={listRowVariants}
+        vars={{ size: shell, pressable, standalone, selected: lit }}
+        style={style}
+      >
+        {(state) => (
+          <>
+            {/* Blur what shows through the translucent fill: the row reads as
+                one glass surface rather than a window on the artwork. A member
+                of a group is inside the card that already did this. */}
+            {standalone ? <Frost radius={metrics.radius} /> : null}
+            {leading}
+            {/* minW 0: without it a long label pushes the trailing slot off the
+                row instead of ellipsing, which is the one thing a row of a
+                settings list must never do. */}
+            <Box flex minW={0} gap={2}>
+              {at.content}
+            </Box>
+            {at.trailing}
+            {chevron ? <Icon name="chevron-right" {...state.slots.chevron} /> : null}
+          </>
+        )}
+      </Focusable>
+    </ListRowContext.Provider>
   );
 }
 
-// Radix's shape: the row is the common case and stays one line, and the
-// grouped list is reached by name (see components/README.md).
-const ListRowNamespace = Object.assign(ListRow, { Group: ListGroup });
+const ListRow = { Root, Leading, Label, Hint, Trailing, Group: ListGroup };
 
-export type { ListRowProps, ListRowSize };
-export { ListRowNamespace as ListRow, listRowVariants };
+export type { ListRowSize } from './list-row-variants';
+export type { ListRowRootProps };
+export { ListRow, listRowVariants };

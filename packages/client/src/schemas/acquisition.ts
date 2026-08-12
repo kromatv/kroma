@@ -1,6 +1,6 @@
 // What the core request flow needs to grab a release: the interactive search
 // results and the grab body. How an indexer or a download client is CONFIGURED
-// belongs to the modules that own those, not here — an indexer id is carried as
+// belongs to the modules that own those, not here: an indexer id is carried as
 // an opaque brand, nothing more.
 
 import { z } from 'zod';

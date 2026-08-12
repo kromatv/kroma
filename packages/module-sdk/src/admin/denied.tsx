@@ -2,17 +2,17 @@
 // a capability.
 
 import { useT } from '@kroma/ui';
-import { Box, Surface, Txt } from '@kroma/ui/kit';
+import { Box, Surface, Text } from '@kroma/ui/kit';
 
 export function Denied() {
   const t = useT();
   return (
     <Box center px={24} style={{ minHeight: '60vh' as unknown as number }}>
       <Surface pad="lg" elevated align="center" gap={8}>
-        <Txt variant="h2">{t('admin.accessDenied')}</Txt>
-        <Txt variant="body" color="textDim">
+        <Text variant="h2">{t('admin.accessDenied')}</Text>
+        <Text variant="body" color="textDim">
           {t('admin.sectionDenied')}
-        </Txt>
+        </Text>
       </Surface>
     </Box>
   );

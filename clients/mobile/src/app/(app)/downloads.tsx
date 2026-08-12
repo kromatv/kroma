@@ -2,7 +2,7 @@
 // ones are swipe-to-delete rows.
 
 import { episodeTag, formatRuntime, type MediaItem } from '@kroma/core';
-import { Box, type ColorValue, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, type ColorValue, Icon, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useRouter } from 'expo-router';
@@ -58,8 +58,8 @@ function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
           }}
           style={s.deleteAction}
         >
-          <Icon name="trash" size={22} stroke={2} />
-          <Txt style={s.deleteLabel}>{t('common.delete')}</Txt>
+          <Icon name="trash" size={22} thickness={2} />
+          <Text style={s.deleteLabel}>{t('common.delete')}</Text>
         </Pressable>
       )}
     >
@@ -69,12 +69,12 @@ function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
       >
         <RowArt uri={entry.backdropUrl ?? entry.posterUrl} seed={item.id} />
         <Box style={s.text}>
-          <Txt lines={2} style={s.rowTitle}>
+          <Text lines={2} style={s.rowTitle}>
             {item.showTitle ?? item.metadata?.title ?? item.title}
-          </Txt>
-          <Txt lines={1} style={s.rowSub}>
+          </Text>
+          <Text lines={1} style={s.rowSub}>
             {sub}
-          </Txt>
+          </Text>
         </Box>
       </Pressable>
     </ReanimatedSwipeable>
@@ -138,12 +138,12 @@ function ActiveRow({
     <Pressable onPress={showOptions} style={s.row}>
       <RowArt uri={client.backdropFor(item) ?? client.posterFor(item)} seed={item.id} />
       <Box style={s.text}>
-        <Txt lines={2} style={s.rowTitle}>
+        <Text lines={2} style={s.rowTitle}>
           {item.showTitle ?? item.metadata?.title ?? item.title}
-        </Txt>
-        <Txt lines={1} style={s.rowSub}>
+        </Text>
+        <Text lines={1} style={s.rowSub}>
           {activeLabel(t, progress, mode)}
-        </Txt>
+        </Text>
       </Box>
       <Box style={s.ringBox}>
         {mode === 'paused' ? (
@@ -165,7 +165,7 @@ function LegendItem({ tint, label }: Readonly<{ tint?: ColorValue; label: string
   return (
     <Box style={s.legendItem}>
       <Box bg={tint} style={[s.legendDot, !tint && s.legendDotOutlined]} />
-      <Txt style={s.legendText}>{label}</Txt>
+      <Text style={s.legendText}>{label}</Text>
     </Box>
   );
 }
@@ -252,7 +252,7 @@ export default function Downloads() {
         />
       ) : (
         <EmptyState
-          icon={<Icon name="download" size={34} stroke={2} color="textMuted" />}
+          icon={<Icon name="download" size={34} thickness={2} color="textMuted" />}
           title={t('offline.downloads')}
           hint={t('offline.empty')}
         />

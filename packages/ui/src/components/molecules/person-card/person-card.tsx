@@ -7,7 +7,7 @@
 import { Avatar, type AvatarProps } from '#ui/components/atoms/avatar';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { Txt, type TxtProps } from '#ui/components/atoms/text';
+import { Text, type TextProps } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
 
 type PersonCardSize = 'sm' | 'tv';
@@ -20,7 +20,7 @@ const personCardVariants = svFor<{
   // Required, or a props slot whose keys are all optional collapses back into a
   // style slot; the base carries the `tv` metrics every option inherits.
   photo: Required<Pick<AvatarProps, 'size'>>;
-  caption: Required<Pick<TxtProps, 'lines'>>;
+  caption: Required<Pick<TextProps, 'lines'>>;
 }>()({
   slots: {
     root: { align: 'center', shrink: 0, _press: { opacity: 0.7 } },
@@ -94,13 +94,13 @@ function PersonCard({
               {...state.slots.photo}
             />
           </Box>
-          <Txt style={state.slots.name} {...state.slots.caption}>
+          <Text style={state.slots.name} {...state.slots.caption}>
             {name}
-          </Txt>
+          </Text>
           {role ? (
-            <Txt lines={1} style={state.slots.role} color="textDim">
+            <Text lines={1} style={state.slots.role} color="textDim">
               {role}
-            </Txt>
+            </Text>
           ) : null}
         </>
       )}

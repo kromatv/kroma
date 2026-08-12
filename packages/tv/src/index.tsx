@@ -1,5 +1,5 @@
 // The shared 10-foot experience, as every shell sees it. Renderer-agnostic on
-// purpose, so nothing here may import `react-dom` — see `mount.web.tsx`.
+// purpose, so nothing here may import `react-dom`; see `mount.web.tsx`.
 
 export type { BuildInfo } from '#tv/app/clientBuild';
 export { setBuildInfo } from '#tv/app/clientBuild';

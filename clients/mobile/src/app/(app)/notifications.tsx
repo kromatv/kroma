@@ -6,7 +6,7 @@
 
 import type { Notification, NotificationEvent } from '@kroma/core';
 import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kroma/core';
-import { Box, color, Icon, IconButton, type IconName, styles, Txt } from '@kroma/ui/kit';
+import { Box, color, Icon, IconButton, type IconName, styles, Text } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, RefreshControl, SectionList } from 'react-native';
@@ -60,14 +60,14 @@ export default function NotificationsScreen() {
           unread > 0 ? (
             <IconButton
               variant="ghost"
-              size={40}
+              diameter={40}
               glyph={22}
               hitSlop={10}
               disabled={busy}
               label={t('notifications.markAllRead')}
               onPress={() => void markAll()}
             >
-              <Icon name="checks" size={22} stroke={2} color="accentText" />
+              <Icon name="checks" size={22} thickness={2} color="accentText" />
             </IconButton>
           ) : null
         }
@@ -75,7 +75,7 @@ export default function NotificationsScreen() {
 
       {rows.length === 0 && !isPending ? (
         <EmptyState
-          icon={<Icon name="bell" size={34} stroke={1.4} color="textMuted" />}
+          icon={<Icon name="bell" size={34} thickness={1.4} color="textMuted" />}
           title={t('notifications.empty')}
           hint={t('notifications.emptyHint')}
         />
@@ -92,7 +92,7 @@ export default function NotificationsScreen() {
               tintColor={color('textMuted')}
             />
           }
-          renderSectionHeader={({ section }) => <Txt style={s.dayLabel}>{section.title}</Txt>}
+          renderSectionHeader={({ section }) => <Text style={s.dayLabel}>{section.title}</Text>}
           renderItem={({ item }) => <NotificationRow row={item} />}
         />
       )}
@@ -142,7 +142,7 @@ function NotificationRow({ row }: Readonly<{ row: Notification }>) {
           accessibilityRole="button"
           accessibilityLabel={t('common.delete')}
         >
-          <Icon name="trash" size={20} stroke={2} color="#FFFFFF" />
+          <Icon name="trash" size={20} thickness={2} color="white" />
         </Pressable>
       )}
     >
@@ -157,20 +157,20 @@ function NotificationRow({ row }: Readonly<{ row: Notification }>) {
           <FadeImage uri={poster} seed={row.id} radius={radius.md} style={s.tile} />
         ) : (
           <Box style={[s.tile, s.tilePlate]}>
-            <Icon name={glyph.name} size={20} stroke={1.8} color={glyph.color} />
+            <Icon name={glyph.name} size={20} thickness={1.8} color={glyph.color} />
           </Box>
         )}
 
         <Box style={s.body}>
           <Box style={s.titleRow}>
-            <Txt lines={1} style={[s.title, !unread && s.titleRead]}>
+            <Text lines={1} style={[s.title, !unread && s.titleRead]}>
               {row.title}
-            </Txt>
-            <Txt style={s.time}>{sinceLabel(t, row.createdAt)}</Txt>
+            </Text>
+            <Text style={s.time}>{sinceLabel(t, row.createdAt)}</Text>
           </Box>
-          <Txt lines={2} style={s.text}>
+          <Text lines={2} style={s.text}>
             {row.body}
-          </Txt>
+          </Text>
         </Box>
       </Pressable>
     </ReanimatedSwipeable>
@@ -193,8 +193,8 @@ function destinationOf(row: Notification): string | null {
 }
 
 // The palette's `danger` is a signal red meant for fills; as a 20pt outline on
-// a near-black screen it goes muddy, so it's lightened here.
-const DANGER_INK = '#F87171';
+// a near-black screen it goes muddy, so its lit step carries the glyph.
+const DANGER_INK = 'dangerHover';
 
 const EVENT_GLYPH: Record<string, { name: IconName; color: string }> = {
   'request.submitted': { name: 'inbox', color: 'accentText' },

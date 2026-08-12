@@ -1,6 +1,6 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { PerfHud } from './perf-hud';
 
 export default story({
@@ -31,11 +31,11 @@ export default story({
     // have somewhere to land.
     <Box minH={320} bg="surface1" radius="lg" overflow="hidden">
       <Box p={20}>
-        <Txt variant="meta" color="textDim">
+        <Text variant="meta" color="textDim">
           {enabled
             ? 'Sampling. The numbers are this machine, not a television.'
             : 'Disabled: nothing is sampled and nothing renders.'}
-        </Txt>
+        </Text>
       </Box>
       <PerfHud enabled={enabled} />
     </Box>

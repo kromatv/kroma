@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { boxStyle, color, createTheme, KROMA, setTheme } from '#ui/core';
+import {
+  boxStyle,
+  color,
+  createTheme,
+  KROMA,
+  setTheme,
+  splitShorthand,
+  TEXT_STYLE_PROPS,
+} from '#ui/core';
 import { CIRCLE_RADIUS, radius } from '#ui/core/tokens';
 
 afterEach(() => setTheme(KROMA));
@@ -108,6 +116,36 @@ describe('boxStyle position', () => {
   });
 });
 
+describe('the text half of the vocabulary', () => {
+  it('claims the layout rows and leaves the container rows to <Box>', () => {
+    const { shorthand, rest } = splitShorthand(
+      { mt: 24, maxW: 640, textAlign: 'center', row: true, bg: 'accent', onPress: 1 },
+      TEXT_STYLE_PROPS,
+    );
+    expect(shorthand).toEqual({ mt: 24, maxW: 640, textAlign: 'center' });
+    expect(rest).toEqual({ row: true, bg: 'accent', onPress: 1 });
+  });
+
+  it('resolves through the same table <Box> reads', () => {
+    expect(boxStyle({ textAlign: 'center' } as never)).toEqual({ textAlign: 'center' });
+    expect(boxStyle({ isolate: true })).toEqual({ isolation: 'isolate' });
+    expect(boxStyle({ isolate: false })).toEqual({});
+  });
+});
+
+describe('splitShorthand keys', () => {
+  it('answers the same key whatever order the props were written in', () => {
+    expect(splitShorthand({ row: true, gap: 4 }).key).toBe(
+      splitShorthand({ gap: 4, row: true }).key,
+    );
+  });
+
+  it('answers an empty key when nothing needs resolving', () => {
+    expect(splitShorthand({ onLayout: 1 }).key).toBe('');
+    expect(splitShorthand({ gap: undefined }).key).toBe('');
+  });
+});
+
 describe('color() alpha syntax', () => {
   it("reads Tailwind's /NN as a percentage of opacity", () => {
     expect(color('white/12')).toBe('rgba(255, 255, 255, 0.12)');
@@ -116,7 +154,7 @@ describe('color() alpha syntax', () => {
   });
 
   it('applies it to palette tokens too', () => {
-    // bg is #0A0A0C — the scrim wash the player already used, spelled once.
+    // bg is #0A0A0C: the scrim wash the player already used, spelled once.
     expect(color('bg/55')).toBe('var(--kroma-bg-55)');
     expect(color('accent/45')).toBe('var(--kroma-accent-45)');
   });

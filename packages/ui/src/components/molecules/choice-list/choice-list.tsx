@@ -13,42 +13,34 @@
 // thing a reader is aiming at. The indicator is drawn as a face and the ROW
 // carries `radio`/`checkbox` with its state to assistive tech.
 
-import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { CheckboxFace } from '#ui/components/atoms/checkbox';
+import { CheckboxFace, type CheckboxSize } from '#ui/components/atoms/checkbox';
 import { RadioFace } from '#ui/components/atoms/radio';
-import { Txt } from '#ui/components/atoms/text';
-import { ListRow, type ListRowSize } from '#ui/components/molecules/list-row';
+import { Text } from '#ui/components/atoms/text';
+import { ListRow } from '#ui/components/molecules/list-row';
+import type { ControlSize } from '#ui/lib/field-shell';
+import { partContext } from '#ui/lib/part-context';
+
+const FACE: Record<ControlSize, CheckboxSize> = { sm: 'sm', md: 'sm', tv: 'tv' };
 
 interface ChoiceContext {
   mode: 'single' | 'multiple';
-  size: ListRowSize;
+  size: ControlSize;
   picked: (value: string) => boolean;
   toggle: (value: string) => void;
 }
 
-const Context = createContext<ChoiceContext | null>(null);
-
-function useChoice(part: string): ChoiceContext {
-  const ctx = useContext(Context);
-  if (!ctx) throw new Error(`<ChoiceList.${part}> must be used inside <ChoiceList.Root>`);
-  return ctx;
-}
+const [Context, useChoice] = partContext<ChoiceContext>('ChoiceList.Root');
 
 // One item's own value, so the parts under it need no prop of their own.
-const ItemContext = createContext<{ value: string; on: boolean } | null>(null);
-
-function useItem(part: string): { value: string; on: boolean } {
-  const ctx = useContext(ItemContext);
-  if (!ctx) throw new Error(`<ChoiceList.${part}> must be used inside <ChoiceList.Item>`);
-  return ctx;
-}
+const [ItemContext, useItem] = partContext<{ value: string; on: boolean }>('ChoiceList.Item');
 
 interface RootBase {
   /** Names the group to assistive tech: what the choices are choices OF. */
   label: string;
-  size?: ListRowSize;
+  size?: ControlSize;
   gap?: number;
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
@@ -112,35 +104,33 @@ function Root(props: Readonly<ChoiceRootProps>) {
 interface ItemProps {
   value: string;
   disabled?: boolean;
-  /** The row's content. Omit it and the item renders `label`/`hint` for you,
-   *  which is what most lists want. */
+  /** The row: a <ChoiceList.Label>, and a <ChoiceList.Hint> under it. The
+   *  label's plain text is also the row's accessible name. */
   children?: ReactNode;
-  /** Sugar for the common row, equivalent to `<Indicator/><Label/><Hint/>`. */
-  label?: string;
-  hint?: string;
   /** Trailing controls (an edit or delete button); they keep their own focus. */
   actions?: ReactNode;
 }
 
-function Item({ value, disabled, children, label, hint, actions }: Readonly<ItemProps>) {
+function Item({ value, disabled, children, actions }: Readonly<ItemProps>) {
   const { mode, size, picked, toggle } = useChoice('Item');
   const on = picked(value);
   const item = useMemo(() => ({ value, on }), [value, on]);
   return (
     <ItemContext.Provider value={item}>
-      <ListRow
+      <ListRow.Root
         size={size}
-        label={label ?? value}
-        hint={children ? undefined : hint}
         disabled={disabled}
         role={mode === 'multiple' ? 'checkbox' : 'radio'}
         checked={on}
+        chevron={false}
         onPress={() => toggle(value)}
-        leading={<Indicator />}
-        trailing={actions}
       >
+        <ListRow.Leading>
+          <Indicator />
+        </ListRow.Leading>
         {children}
-      </ListRow>
+        {actions ? <ListRow.Trailing>{actions}</ListRow.Trailing> : null}
+      </ListRow.Root>
     </ItemContext.Provider>
   );
 }
@@ -151,9 +141,9 @@ function Indicator() {
   const { mode, size } = useChoice('Indicator');
   const { on } = useItem('Indicator');
   return mode === 'multiple' ? (
-    <CheckboxFace checked={on} size={size} />
+    <CheckboxFace checked={on} size={FACE[size]} />
   ) : (
-    <RadioFace checked={on} size={size} />
+    <RadioFace checked={on} size={FACE[size]} />
   );
 }
 
@@ -161,9 +151,9 @@ function Indicator() {
 function Label({ children }: Readonly<{ children: ReactNode }>) {
   const { size } = useChoice('Label');
   return (
-    <Txt variant={size === 'tv' ? 'title' : 'label'} lines={1}>
+    <Text variant={size === 'tv' ? 'title' : 'label'} lines={1}>
       {children}
-    </Txt>
+    </Text>
   );
 }
 
@@ -171,9 +161,9 @@ function Label({ children }: Readonly<{ children: ReactNode }>) {
 function Hint({ children }: Readonly<{ children: ReactNode }>) {
   const { size } = useChoice('Hint');
   return (
-    <Txt variant={size === 'tv' ? 'body' : 'meta'} color="textDim" lines={2}>
+    <Text variant={size === 'tv' ? 'body' : 'meta'} color="textDim" lines={2}>
       {children}
-    </Txt>
+    </Text>
   );
 }
 

@@ -1,7 +1,7 @@
 // Account tab: identity, one card of destination rows, sign-out. Everything
 // else lives in dedicated pages.
 
-import { Box, Button, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Icon, styles, Text } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,15 +27,15 @@ function Row({
     <Pressable onPress={onPress} style={({ pressed }) => [s.row, pressed && s.rowPressed]}>
       <Box style={s.rowIconLabel}>
         <Box style={s.rowIconBox}>{icon}</Box>
-        <Txt style={s.rowLabel}>{label}</Txt>
+        <Text style={s.rowLabel}>{label}</Text>
       </Box>
       <Box style={s.rowRight}>
         {value ? (
-          <Txt lines={1} style={s.rowValue}>
+          <Text lines={1} style={s.rowValue}>
             {value}
-          </Txt>
+          </Text>
         ) : null}
-        <Icon name="chevron-right" size={16} stroke={2.2} color="textDim" />
+        <Icon name="chevron-right" size={16} thickness={2.2} color="textDim" />
       </Box>
     </Pressable>
   );
@@ -64,37 +64,37 @@ export default function Profile() {
         <Box>
           <Avatar uri={avatar} name={user?.username} size={96} />
           <Box style={s.editBadge}>
-            <Icon name="pencil" size={13} stroke={1.8} color="accentInk" />
+            <Icon name="pencil" size={13} thickness={1.8} color="accentInk" />
           </Box>
         </Box>
-        <Txt style={s.username}>{user?.username}</Txt>
-        {user?.email ? <Txt style={s.email}>{user.email}</Txt> : null}
+        <Text style={s.username}>{user?.username}</Text>
+        {user?.email ? <Text style={s.email}>{user.email}</Text> : null}
       </Pressable>
 
       <Box style={s.card}>
         <Row
-          icon={<Icon name="users" size={19} stroke={2} color="accentText" />}
+          icon={<Icon name="users" size={19} thickness={2} color="accentText" />}
           label={t('nav.changeProfile')}
           onPress={() => switchProfile()}
         />
         <Row
-          icon={<Icon name="lock" size={19} stroke={2.2} color="accentText" />}
+          icon={<Icon name="lock" size={19} thickness={2.2} color="accentText" />}
           label={t('account.profileLock')}
           onPress={() => router.push('/profile-pin' as never)}
         />
         <Row
-          icon={<Icon name="download" size={19} stroke={2} color="accentText" />}
+          icon={<Icon name="download" size={19} thickness={2} color="accentText" />}
           label={t('offline.downloads')}
           value={downloads.entries.length > 0 ? formatBytes(downloads.totalBytes) : undefined}
           onPress={() => router.push('/downloads' as never)}
         />
         <Row
-          icon={<Icon name="device-tv" size={19} stroke={1.8} color="accentText" />}
+          icon={<Icon name="device-tv" size={19} thickness={1.8} color="accentText" />}
           label={t('connect.title')}
           onPress={() => router.push('/connect-device' as never)}
         />
         <Row
-          icon={<Icon name="settings" size={19} stroke={1.8} color="accentText" />}
+          icon={<Icon name="settings" size={19} thickness={1.8} color="accentText" />}
           label={t('nav.settings')}
           onPress={() => router.push('/settings' as never)}
         />
@@ -102,10 +102,10 @@ export default function Profile() {
 
       {/* The kit ghost inks text-colored; the danger reading comes via children. */}
       <Button variant="ghost" style={s.signOut} onPress={() => void signOut()}>
-        <Icon name="logout" size={18} stroke={1.8} color="danger" />
-        <Txt color="danger" style={s.signOutText}>
+        <Icon name="logout" size={18} thickness={1.8} color="danger" />
+        <Text color="danger" style={s.signOutText}>
           {t('auth.logout')}
-        </Txt>
+        </Text>
       </Button>
     </ScrollView>
   );
@@ -147,6 +147,6 @@ const s = styles({
   rowValue: { ...type.caption, shrink: 1 },
   signOut: { mt: spacing.sm },
   // No `...type.body` here: the app ramp bakes the default ink, which would
-  // sit after Txt's own danger colour and win.
+  // sit after Text's own danger colour and win.
   signOutText: { fontWeight: '700' },
 });

@@ -55,7 +55,7 @@ const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, en
 const jwt = `${input}.${b64url(sig)}`;
 
 // curl, not fetch: APNs refuses HTTP/1.1 outright and Bun's fetch cannot speak
-// HTTP/2 — the same reason the server uses kroma-http rather than a Rust client.
+// HTTP/2, the same reason the server uses kroma-http rather than a Rust client.
 for (const [label, host] of [
   ['production', 'https://api.push.apple.com'],
   ['sandbox', 'https://api.sandbox.push.apple.com'],

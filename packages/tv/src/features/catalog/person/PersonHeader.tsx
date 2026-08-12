@@ -1,7 +1,7 @@
 import type { PersonDetail } from '@kroma/core';
 import { personFacts } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Avatar, Box, Chip, styles, Txt } from '@kroma/ui/kit';
+import { Avatar, Box, Chip, DataField, styles, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { TITLE } from '#tv/features/catalog/screenStyle';
 
@@ -40,46 +40,45 @@ export function PersonHeader({
   return (
     <Box row gap={32} px={64} pt={112} pb={20}>
       <Avatar name={name} src={photo} size={132} circle />
-      <Box style={{ minWidth: 0, flex: 1 }} gap={8}>
+      <Box minW={0} flex gap={8}>
         {roles.length ? (
-          <Txt variant="overlineTv" color="accentText">
+          <Text variant="overlineTv" color="accentText">
             {roles.join(' · ')}
-          </Txt>
+          </Text>
         ) : null}
-        <Txt variant="hero" style={TITLE}>
+        <Text variant="hero" style={TITLE}>
           {name}
-        </Txt>
-        <Txt style={{ fontSize: 16, fontWeight: '600' }} color="textMuted">
+        </Text>
+        <Text variant="labelTv" color="textMuted">
           {t('person.titleCount', { count: titleCount })}
-        </Txt>
+        </Text>
 
         {facts.length ? (
           <Box row wrap gap={40} mt={6}>
             {facts.map((f) => (
-              <Box key={f.key} gap={3}>
-                <Txt variant="overlineTv" style={s.factLabel} color="rgba(244, 243, 240, 0.45)">
-                  {f.label}
-                </Txt>
-                <Txt style={s.factValue}>{f.value}</Txt>
-              </Box>
+              <DataField.Root key={f.key} size="tv">
+                <DataField.Label>{f.label}</DataField.Label>
+                <DataField.Value>{f.value}</DataField.Value>
+              </DataField.Root>
             ))}
           </Box>
         ) : null}
 
         {biography ? (
-          <Box gap={10} mt={6} style={{ maxWidth: 1180 }}>
-            <Txt
+          <Box gap={10} mt={6} maxW={1180}>
+            <Text
               lines={expanded ? EXPANDED_LINES : CLAMP_LINES}
               style={s.biography}
-              color="rgba(244, 243, 240, 0.78)"
+              color="text/78"
             >
               {biography}
-            </Txt>
+            </Text>
             {expandable ? (
               <Box row>
                 <Chip
                   variant="surface"
                   focusScale={1.05}
+                  expanded={expanded}
                   label={expanded ? t('person.readLess') : t('person.readMore')}
                   onPress={() => setExpanded((v) => !v)}
                 />
@@ -93,7 +92,5 @@ export function PersonHeader({
 }
 
 const s = styles({
-  factLabel: { fontSize: 12 },
-  factValue: { fontSize: 17, fontWeight: '600' },
   biography: { fontSize: 18, lineHeight: 27 },
 });

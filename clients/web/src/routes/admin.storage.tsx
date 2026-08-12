@@ -1,18 +1,23 @@
 import type { Volume } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
+  Box,
   Button,
   confirm,
   EmptyState,
+  Grid,
+  Icon,
+  ListRow,
   Progress,
   Section,
   Select,
   StatCard,
   Surface,
+  Text,
 } from '@kroma/ui/kit';
-import { IconDatabase } from '@tabler/icons-react';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
+import type { TextStyle } from 'react-native';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
 import { formatBytes } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
@@ -62,73 +67,99 @@ function StoragePage() {
 
   return (
     <>
-      <PageHeader title={t('admin.storageTitle')} subtitle={t('admin.storageSub')} />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.storageTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.storageSub')}</PageHeader.Subtitle>
+      </PageHeader.Root>
 
-      <div className="mt-6 grid grid-cols-3 gap-4">
-        <StatCard label={t('admin.totalCapacity')} value={formatBytes(data?.totalBytes ?? 0)} />
-        <StatCard
-          label={t('admin.used')}
-          value={formatBytes(data?.usedBytes ?? 0)}
-          unit={`${pctUsed}%`}
-          color="accent"
-        />
-        <StatCard
-          label={t('admin.available')}
-          value={formatBytes(data?.availableBytes ?? 0)}
-          color="success"
-        />
-      </div>
+      <Box mt={24}>
+        <Grid columns={3} gap={16}>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.totalCapacity')}</StatCard.Label>
+            <StatCard.Value>{formatBytes(data?.totalBytes ?? 0)}</StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.used')}</StatCard.Label>
+            <StatCard.Value unit={`${pctUsed}%`} color="accent">
+              {formatBytes(data?.usedBytes ?? 0)}
+            </StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.available')}</StatCard.Label>
+            <StatCard.Value color="success">
+              {formatBytes(data?.availableBytes ?? 0)}
+            </StatCard.Value>
+          </StatCard.Root>
+        </Grid>
+      </Box>
 
-      <Section title={t('admin.volumes')} mt={28}>
-        <div className="flex flex-col gap-3.5">
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.volumes')}</Section.Title>
+        </Section.Header>
+        <Box gap={14}>
           {(data?.volumes ?? []).map((v) => (
             <VolumeCard key={v.mount} v={v} />
           ))}
           {data?.volumes.length === 0 ? (
-            <EmptyState icon="database" title={t('admin.noVolumes')} />
+            <EmptyState.Root icon="database">
+              <EmptyState.Title>{t('admin.noVolumes')}</EmptyState.Title>
+            </EmptyState.Root>
           ) : null}
-        </div>
-      </Section>
+        </Box>
+      </Section.Root>
 
-      <Section title={t('admin.cacheContent')} mt={28}>
-        <div className="grid grid-cols-4 gap-4">
-          <StatCard
-            label={t('admin.transcodeCacheSize')}
-            value={formatBytes(cache?.transcodeBytes ?? 0)}
-            unit={t('admin.transcodeCacheBudget', { limit: cache?.transcodeLimit ?? '20 Go' })}
-            color="accent"
-          />
-          <StatCard
-            label={t('admin.cachedImages')}
-            value={(cache?.imagesCount ?? 0).toLocaleString()}
-            unit={formatBytes(cache?.imagesBytes ?? 0)}
-            color="accent"
-          />
-          <StatCard
-            label={t('admin.enrichedTitles')}
-            value={enriched.toLocaleString()}
-            unit={t('admin.enrichedBreakdown', {
-              movies: cache?.enrichedItems ?? 0,
-              shows: cache?.enrichedShows ?? 0,
-            })}
-            color="success"
-          />
-          <StatCard
-            label={t('admin.cacheEmbeddings')}
-            value={(cache?.embeddings ?? 0).toLocaleString()}
-          />
-        </div>
-      </Section>
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.cacheContent')}</Section.Title>
+        </Section.Header>
+        <Grid columns={4} gap={16}>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.transcodeCacheSize')}</StatCard.Label>
+            <StatCard.Value
+              unit={t('admin.transcodeCacheBudget', { limit: cache?.transcodeLimit ?? '20 Go' })}
+              color="accent"
+            >
+              {formatBytes(cache?.transcodeBytes ?? 0)}
+            </StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.cachedImages')}</StatCard.Label>
+            <StatCard.Value unit={formatBytes(cache?.imagesBytes ?? 0)} color="accent">
+              {(cache?.imagesCount ?? 0).toLocaleString()}
+            </StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.enrichedTitles')}</StatCard.Label>
+            <StatCard.Value
+              unit={t('admin.enrichedBreakdown', {
+                movies: cache?.enrichedItems ?? 0,
+                shows: cache?.enrichedShows ?? 0,
+              })}
+              color="success"
+            >
+              {enriched.toLocaleString()}
+            </StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.cacheEmbeddings')}</StatCard.Label>
+            <StatCard.Value>{(cache?.embeddings ?? 0).toLocaleString()}</StatCard.Value>
+          </StatCard.Root>
+        </Grid>
+      </Section.Root>
 
-      <Section title={t('admin.cacheMaintenance')} mt={28}>
-        <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.cacheMaintenance')}</Section.Title>
+        </Section.Header>
+        <ListRow.Group size="md">
           <MaintRow
             title={t('admin.transcodeCacheFolder')}
             desc={t('admin.transcodeCacheFolderDesc')}
             right={
-              <span className="rounded-md border border-border-strong bg-surface-2 px-3 py-2 text-[13px] font-semibold text-text">
-                {data?.cache.dir ?? '-'}
-              </span>
+              <Box radius="xs" border="borderStrong" bg="surface2" px={12} py={8}>
+                <Text variant="meta">{data?.cache.dir ?? '-'}</Text>
+              </Box>
             }
           />
           <MaintRow
@@ -171,7 +202,6 @@ function StoragePage() {
           <MaintRow
             title={t('admin.resetMetadata')}
             desc={t('admin.resetMetadataDesc')}
-            border={false}
             right={
               <Button
                 variant="danger"
@@ -182,8 +212,8 @@ function StoragePage() {
               />
             }
           />
-        </Surface>
-      </Section>
+        </ListRow.Group>
+      </Section.Root>
     </>
   );
 }
@@ -201,12 +231,12 @@ function LimitSelect({
 }>) {
   const all = options.includes(value) ? options : [value, ...options];
   return (
-    <Select
-      label={label}
-      value={value}
-      options={all.map((o) => ({ value: o, label: o }))}
-      onChange={onChange}
-    />
+    <Select.Root label={label} value={value} onValueChange={onChange}>
+      <Select.Trigger />
+      {all.map((o) => (
+        <Select.Item key={o} value={o} label={o} />
+      ))}
+    </Select.Root>
   );
 }
 
@@ -216,53 +246,48 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
   const nearFull = pct >= 80;
   return (
     <Surface elevated pad="none" radius={16} border="border" px={22} py={18}>
-      <div className="mb-3 flex items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-3.5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent-soft text-accent">
-            <IconDatabase size={20} stroke={1.8} />
-          </span>
-          <div className="min-w-0">
-            <div className="font-display text-[16px] font-bold">{v.name || v.mount}</div>
-            <div className="truncate text-[12.5px] font-semibold text-text/45">
+      <Box row align="center" justify="space-between" gap={16} mb={12}>
+        <Box row align="center" gap={14} minW={0}>
+          <Box w={40} h={40} shrink={0} center radius="xs" bg="accentSoft">
+            <Icon name="database" size={20} thickness={1.8} color="accent" />
+          </Box>
+          <Box minW={0}>
+            <Text variant="cardTitle">{v.name || v.mount}</Text>
+            <Text variant="meta" color="text/45" lines={1}>
               {v.mount} · {v.fs}
-            </div>
-          </div>
-        </div>
-        <div className="shrink-0 text-right">
-          <div className="text-[15px] font-bold tabular-nums">
+            </Text>
+          </Box>
+        </Box>
+        <Box shrink={0} align="flex-end">
+          <Text variant="label" style={FIGURES}>
             {formatBytes(v.usedBytes)}{' '}
-            <span className="font-medium text-text/40">/ {formatBytes(v.totalBytes)}</span>
-          </div>
-          <div className={`text-[12px] font-semibold ${nearFull ? 'text-danger' : 'text-accent'}`}>
+            <Text variant="label" color="text/40" style={QUIET}>
+              / {formatBytes(v.totalBytes)}
+            </Text>
+          </Text>
+          <Text variant="meta" color={nearFull ? 'danger' : 'accent'}>
             {t('admin.pctUsed', { pct })}
-          </div>
-        </div>
-      </div>
-      <Progress value={pct / 100} color={nearFull ? 'danger' : 'accent'} size={9} rounded />
+          </Text>
+        </Box>
+      </Box>
+      <Progress value={pct / 100} color={nearFull ? 'danger' : 'accent'} thickness={9} rounded />
     </Surface>
   );
 }
+
+const FIGURES: TextStyle = { fontVariant: ['tabular-nums'] };
+const QUIET = { fontWeight: '500' } as const;
 
 function MaintRow({
   title,
   desc,
   right,
-  border = true,
-}: Readonly<{
-  title: string;
-  desc: string;
-  right: React.ReactNode;
-  border?: boolean;
-}>) {
+}: Readonly<{ title: string; desc: string; right: React.ReactNode }>) {
   return (
-    <div
-      className={`flex items-center justify-between gap-4.5 px-5.5 py-4 ${border ? 'border-b border-border' : ''}`}
-    >
-      <div>
-        <div className="text-[14.5px] font-bold">{title}</div>
-        <div className="mt-0.75 text-[12.5px] text-dim">{desc}</div>
-      </div>
-      <div className="shrink-0">{right}</div>
-    </div>
+    <ListRow.Root>
+      <ListRow.Label>{title}</ListRow.Label>
+      <ListRow.Hint>{desc}</ListRow.Hint>
+      <ListRow.Trailing>{right}</ListRow.Trailing>
+    </ListRow.Root>
   );
 }

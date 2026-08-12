@@ -2,7 +2,7 @@
 //
 // The report screen inside the app it actually runs in: the memory router,
 // the navigation guard, and the detail screen that opens it. Mounted this
-// way on purpose — the screen itself was never what closed it, the routing
+// way on purpose: the screen itself was never what closed it, the routing
 // around it was, and only a test that includes the routing can catch that.
 
 import type { KromaClient } from '@kroma/core';
@@ -27,6 +27,9 @@ import { TvReport } from '#tv/features/reports/TvReport';
 afterEach(() => {
   cleanup();
   clearPressGuard();
+  // The router mirrors its stack to sessionStorage under a dev build, which the
+  // runner is; without this each mount resumes the previous test's stack.
+  sessionStorage.clear();
 });
 
 // Every screen we do not exercise renders its own name, so a stray redirect
@@ -143,5 +146,96 @@ describe('TvReport in the app', () => {
     clearPressGuard();
     fireEvent.click(screen.getByText('Send report'));
     expect(app.createReport).not.toHaveBeenCalled();
+  });
+
+  it('says why a report the server refused did not go', async () => {
+    const app = mountApp({ createReport: vi.fn().mockRejectedValue(new Error('offline')) });
+    openReport(app);
+
+    clearPressGuard();
+    fireEvent.click(screen.getByText('Audio problem'));
+    fireEvent.click(screen.getByText('Send report'));
+
+    expect(await screen.findByText('Could not send the report.')).toBeTruthy();
+    // Still the form, so the same press can be tried again.
+    expect(screen.getByText('Send report')).toBeTruthy();
+  });
+});
+
+// The keyboard needs the whole screen, so the details are a step rather than a
+// field on the form.
+describe('the details step', () => {
+  function openTyping(app: ReturnType<typeof mountApp>) {
+    openReport(app);
+    clearPressGuard();
+    fireEvent.click(screen.getByText('Add details'));
+    clearPressGuard();
+  }
+
+  it('replaces the form rather than sharing the screen with it', () => {
+    const app = mountApp();
+    openTyping(app);
+
+    expect(screen.queryByText('Send report')).toBeNull();
+    expect(screen.getByLabelText('Done')).toBeTruthy();
+  });
+
+  it('comes back to the form on Back, and only then leaves the screen', () => {
+    const app = mountApp();
+    openTyping(app);
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.getByText('Send report')).toBeTruthy();
+    expect(app.nav().route.name).toBe('report');
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(app.nav().route.name).not.toBe('report');
+  });
+
+  it('returns to the form when the field is submitted, carrying what was typed', () => {
+    const app = mountApp();
+    openTyping(app);
+
+    const field = screen.getByLabelText('Details (optional)');
+    fireEvent.change(field, { target: { value: 'no sound after ten minutes' } });
+    fireEvent.keyDown(field, { key: 'Enter' });
+
+    expect(screen.getByText('Send report')).toBeTruthy();
+    expect(screen.getByText('no sound after ten minutes')).toBeTruthy();
+  });
+
+  it('returns to the form from the keyboard’s own Done', () => {
+    const app = mountApp();
+    openTyping(app);
+
+    fireEvent.change(screen.getByLabelText('Details (optional)'), {
+      target: { value: 'subtitles are late' },
+    });
+    fireEvent.click(screen.getByLabelText('Done'));
+
+    expect(screen.getByText('Send report')).toBeTruthy();
+    expect(screen.getByText('subtitles are late')).toBeTruthy();
+  });
+
+  it('sends the details along with the report', async () => {
+    const app = mountApp();
+    openTyping(app);
+
+    fireEvent.change(screen.getByLabelText('Details (optional)'), {
+      target: { value: '  it stutters  ' },
+    });
+    fireEvent.click(screen.getByLabelText('Done'));
+
+    clearPressGuard();
+    fireEvent.click(screen.getByText('Audio problem'));
+    fireEvent.click(screen.getByText('Send report'));
+
+    expect(app.createReport).toHaveBeenCalledWith({
+      subjectKind: 'movie',
+      subjectId: 'm1',
+      category: 'audio',
+      message: 'it stutters',
+    });
+    expect(await screen.findByText('Thanks, your report has been sent.')).toBeTruthy();
   });
 });

@@ -40,21 +40,24 @@ export default function Connect() {
     <OnboardingScreen onBack={router.canGoBack() ? () => router.back() : undefined}>
       <OnboardingBox>
         <OnboardingTitle title={t('connect.addServerTitle')} />
-        <Field
+        <Field.Root
           label={t('connect.serverPlaceholder')}
           hideLabel
-          icon="server-2"
           value={url}
-          onChange={(v) => {
-            setUrl(v);
+          onValueChange={(next) => {
+            setUrl(next);
             if (error) setError(null);
           }}
-          placeholder={t('connect.serverPlaceholder')}
-          keyboardType="url"
-          autoFocus
-          onSubmit={() => void submit()}
-          entry={{ autoComplete: 'url' }}
-        />
+        >
+          <Field.Input
+            icon="server-2"
+            placeholder={t('connect.serverPlaceholder')}
+            keyboardType="url"
+            autoComplete="url"
+            autoFocus
+            onSubmit={() => void submit()}
+          />
+        </Field.Root>
         <ErrorBanner message={error} />
         <Button
           label={busy ? t('connect.connectingServer') : t('connect.connect')}

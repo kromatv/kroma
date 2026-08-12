@@ -10,17 +10,17 @@ export default story({
   // It takes whatever width it is given, so a range rather than the one width
   // that would hide a bug at any other.
   width: { min: 240, max: 640 },
-  args: { value: 0.42, size: 4, rounded: false, indeterminate: false },
-  controls: { value: { min: 0, max: 1, step: 0.05 }, size: { min: 2, max: 16, step: 1 } },
-  render: (props) => <Progress {...props} />,
+  component: Progress,
+  args: { value: 0.42, thickness: 4, rounded: false, indeterminate: false },
+  controls: { value: { min: 0, max: 1, step: 0.05 }, thickness: { min: 2, max: 16, step: 1 } },
   scenes: [
     {
       name: 'Determinate and indeterminate',
       docs: 'The same bar answering a known share, and answering "still working".',
-      render: ({ value, size, rounded }) => (
+      render: ({ value, thickness, rounded }) => (
         <Box gap={24} self="stretch">
-          <Progress value={value} size={size} rounded={rounded} />
-          <Progress size={size} rounded={rounded} indeterminate />
+          <Progress value={value} thickness={thickness} rounded={rounded} />
+          <Progress thickness={thickness} rounded={rounded} indeterminate />
         </Box>
       ),
     },

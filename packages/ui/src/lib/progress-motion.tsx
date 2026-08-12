@@ -45,7 +45,7 @@ function useSettling(to: number): Animated.Value {
 export function ProgressArc({
   centre,
   radius,
-  stroke,
+  thickness,
   fill,
   circumference,
   dashOffset,
@@ -59,7 +59,7 @@ export function ProgressArc({
       r={radius}
       fill="none"
       stroke={fill}
-      strokeWidth={stroke}
+      strokeWidth={thickness}
       strokeLinecap="round"
       strokeDasharray={circumference}
       strokeDashoffset={offset}

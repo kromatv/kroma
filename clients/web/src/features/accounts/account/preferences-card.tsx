@@ -3,12 +3,11 @@
 
 import { LANG_NO_PREF, LOCALES, langName, langOptions } from '@kroma/core';
 import { useLocale, useSetLocale, useT } from '@kroma/ui';
-import { Select } from '@kroma/ui/kit';
-import { IconBadgeCc, IconLanguage, IconVolume } from '@tabler/icons-react';
+import { ListRow, Select } from '@kroma/ui/kit';
 import { useMemo } from 'react';
 import { PrefRow } from '#web/features/accounts/account/ui';
 
-// Radix Select forbids an empty value, so "no preference" uses this sentinel
+// '' means "nothing picked" to <Select>, so "no preference" uses this sentinel
 // and is mapped back to `null` on the way to the server.
 export const NONE = LANG_NO_PREF;
 
@@ -41,53 +40,60 @@ export function PreferencesCard({
       : [...opts, { value, label: langName(t, value) ?? value.toUpperCase() }];
 
   return (
-    <div className="divide-y divide-border/70 overflow-visible rounded-xl border border-border bg-surface-1 shadow-card">
+    <ListRow.Group size="md">
       <PrefRow
-        icon={<IconLanguage size={18} stroke={1.7} />}
+        icon="language"
         label={t('account.uiLanguage')}
         desc={t('account.uiLanguageDesc')}
         control={
-          <Select
+          <Select.Root
             label={t('account.uiLanguage')}
             value={locale}
-            onChange={(v) => setLocale(v as (typeof LOCALES)[number]['code'])}
-            options={LOCALES.map((l) => ({ value: l.code, label: t(l.labelKey) }))}
-          />
+            onValueChange={(v) => setLocale(v as (typeof LOCALES)[number]['code'])}
+          >
+            <Select.Trigger />
+            {LOCALES.map((l) => (
+              <Select.Item key={l.code} value={l.code} label={t(l.labelKey)} />
+            ))}
+          </Select.Root>
         }
       />
       <PrefRow
-        icon={<IconVolume size={18} stroke={1.7} />}
+        icon="volume"
         label={t('account.audioLanguage')}
         desc={t('account.audioDesc')}
         control={
-          <Select
-            label={t('account.audioLanguage')}
-            value={audio}
-            onChange={onAudio}
-            options={withCurrent(audio, [
-              { value: NONE, label: t('account.noPreference') },
-              ...langs,
-            ])}
-          />
+          <Select.Root label={t('account.audioLanguage')} value={audio} onValueChange={onAudio}>
+            <Select.Trigger />
+            {withCurrent(audio, [{ value: NONE, label: t('account.noPreference') }, ...langs]).map(
+              (o) => (
+                <Select.Item key={o.value} value={o.value} label={o.label} />
+              ),
+            )}
+          </Select.Root>
         }
       />
       <PrefRow
-        icon={<IconBadgeCc size={18} stroke={1.7} />}
+        icon="badge-cc"
         label={t('account.subtitleLanguage')}
         desc={t('account.subtitleDesc')}
         control={
-          <Select
+          <Select.Root
             label={t('account.subtitleLanguage')}
             value={subtitle}
-            onChange={onSubtitle}
-            options={withCurrent(subtitle, [
+            onValueChange={onSubtitle}
+          >
+            <Select.Trigger />
+            {withCurrent(subtitle, [
               { value: NONE, label: t('account.noPreference') },
               { value: 'off', label: t('player.subtitlesOff') },
               ...langs,
-            ])}
-          />
+            ]).map((o) => (
+              <Select.Item key={o.value} value={o.value} label={o.label} />
+            ))}
+          </Select.Root>
         }
       />
-    </div>
+    </ListRow.Group>
   );
 }

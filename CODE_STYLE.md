@@ -22,7 +22,7 @@ Before writing a comment, try to delete the need for it:
 | Explaining an invariant                  | Encode it in the type, or assert it            |
 | Explaining what a test checks            | Name the test after what it checks             |
 
-If, after that, the code still cannot say it — say it in a comment. That comment
+If, after that, the code still cannot say it, say it in a comment. That comment
 is now worth reading, because it is rare.
 
 ## What a comment is for
@@ -38,15 +38,15 @@ Only two things:
 Everything else is noise.
 
 ```ts
-// Bad — restates the code
+// Bad: restates the code
 // Increment the retry counter
 retries += 1;
 
-// Bad — narrates the author's session
+// Bad: narrates the author's session
 // I first tried a Set here but it turned out that ordering matters, so
 // now we use an array and dedupe at the end.
 
-// Good — a constraint the reader cannot see
+// Good: a constraint the reader cannot see
 // Tizen 6 rejects a range request whose end is past EOF; clamp before sending.
 const end = Math.min(requestedEnd, size - 1);
 ```
@@ -56,13 +56,33 @@ const end = Math.min(requestedEnd, size - 1);
 - **Exported / `pub` functions, types, components, hooks, and modules** get a doc
   comment (`/** … */`, `///`) when their contract is not obvious from the
   signature. One or two sentences. Say what it guarantees and what it costs the
-  caller — not how it is implemented.
+  caller, not how it is implemented.
 - **Private functions get no doc comment.** They are read together with their
   only caller. If a private function needs explaining, its name is wrong or it is
   doing two things.
-- **Properties, fields, struct members, interface members, enum variants,
-  constants, and props get no doc comment.** Name them so they do not need one.
-  A field called `expiresAtMs` does not need `/** Expiry timestamp in ms. */`.
+- **Properties, fields, struct members, interface members, enum variants and
+  constants get no doc comment.** Name them so they do not need one. A field
+  called `expiresAtMs` does not need `/** Expiry timestamp in ms. */`.
+- **One exception: a kit component's props.** The props of a component exported
+  from `@kroma/ui` ARE its public API: a caller outside the file reads nothing
+  else, and the workbench renders them as the component's help. So a prop gets
+  ONE line when the contract is not visible from its name and its type: a
+  default, a unit, a fallback chain, or how it interacts with another prop.
+  A prop whose name and type already say it gets nothing.
+
+```ts
+// Good - states a fallback chain the type cannot
+/** The size members fall back to, defaulting to the shell's. A member's own
+ *  `size` still wins. */
+size?: ControlSize;
+
+// Bad - restates the name and the type and adds nothing
+/** Whether the control is disabled. */
+disabled?: boolean;
+```
+
+  This exception is for the kit only. Props on an app-level component, and every
+  other interface member anywhere, follow the rule above.
 - **No `@param` / `@returns` / `@type`.** TypeScript and Rust already state the
   types, and the duplicate rots the moment a signature changes. Mention a
   parameter in prose only when its meaning is genuinely surprising.
@@ -76,10 +96,10 @@ const end = Math.min(requestedEnd, size - 1);
  */
 export function formatDuration(ms: number): string
 
-// Good — nothing to add, the signature says it all
+// Good: nothing to add, the signature says it all
 export function formatDuration(ms: number): string
 
-// Good — states something the signature cannot
+// Good: states something the signature cannot
 /** Rounds to whole minutes; a duration under 30s formats as `0 min`, not `< 1 min`. */
 export function formatDuration(ms: number): string
 ```
@@ -103,12 +123,12 @@ export function formatDuration(ms: number): string
 - **Apologies and hedging.** `// hacky but works`, `// not sure why this is
   needed`. Either find out and write the reason, or delete the comment.
 - **Comments in a language other than English.** Code, comments, identifiers and
-  commit messages are English. (User-facing copy is French — that is content, not
+  commit messages are English. (User-facing copy is French. That is content, not
   code.)
 
 ## When a comment is worth it
 
-Keep — and write — comments in these cases, because the code cannot carry them:
+Keep (and write) comments in these cases, because the code cannot carry them:
 
 - A **workaround** for a platform, browser, or vendor bug: name the platform and
   what breaks without it.
@@ -120,8 +140,8 @@ Keep — and write — comments in these cases, because the code cannot carry th
   ordering matters, why this must not be logged.
 - A **deliberate deviation** from what the reader would otherwise assume is a
   bug.
-- `SAFETY:` on `unsafe` blocks in Rust — always required.
-- `TODO(owner):` / `FIXME(owner):` — only with a name and, ideally, an issue.
+- `SAFETY:` on `unsafe` blocks in Rust, always required.
+- `TODO(owner):` / `FIXME(owner):`, only with a name and, ideally, an issue.
   An unowned TODO is deleted on sight.
 
 Keep them **short**. One or two lines. A comment that runs a paragraph is either
@@ -145,7 +165,7 @@ The same instinct applies to the code:
   names are fine only for a short life (`i`, `f`, `ok` inside a five-line block).
 - **Small functions with one job**, named after the job.
 - **Return early**; do not nest to describe control flow.
-- **Types over checks** — see [`CONVENTIONS.md`](CONVENTIONS.md) for validating
+- **Types over checks.** See [`CONVENTIONS.md`](CONVENTIONS.md) for validating
   untrusted input with zod rather than by hand.
 - **No dead code, no unused exports.** `bun run deadcode` catches them.
 - Follow `biome.json` for formatting and lint; run `bun run check` before a PR.
@@ -160,7 +180,7 @@ If you are an AI agent working in this repository, these are hard rules:
    a source file.
 2. **Do not add a comment to explain a change.** The diff explains the change.
 3. **Adding a comment is a decision you must justify.** If asked why a comment
-   exists, "for clarity" is not an answer — name the specific thing a reader
+   exists, "for clarity" is not an answer: name the specific thing a reader
    cannot get from the code.
 4. **Do not add doc comments to private functions, fields, or properties**, even
    when writing new code and even when the surrounding file has them.

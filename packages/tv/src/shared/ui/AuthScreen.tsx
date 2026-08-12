@@ -11,7 +11,7 @@ import {
   type SplashCover,
   space,
   styles,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { memo, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { AUTH_SCREENS } from '#tv/app/navPolicy';
@@ -149,9 +149,9 @@ function BeaconMark() {
   if (!beacon) return null;
   return (
     <Box style={s.beacon} pointerEvents="none">
-      <Txt variant="label" color="textDim">
+      <Text variant="label" color="textDim">
         {t('handoff.tvBeacon', { name: beacon.name })}
-      </Txt>
+      </Text>
       <Badge tone="neutral" size="tv">
         {t('handoff.tvCheck', { check: beacon.check })}
       </Badge>

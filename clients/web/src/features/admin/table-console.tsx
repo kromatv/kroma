@@ -3,8 +3,17 @@
 // chips, column heads, a count summary, a floating toast and an event-driven,
 // throttled reload. These live here once instead of being copy/pasted per page.
 
-import { type ColorValue, Field, IconButton, Chip as KitChip } from '@kroma/ui/kit';
-import { type ReactNode, useCallback, useRef, useState } from 'react';
+import {
+  Box,
+  type ColorValue,
+  color,
+  Field,
+  IconButton,
+  Chip as KitChip,
+  Row,
+  Text,
+} from '@kroma/ui/kit';
+import { type CSSProperties, useCallback, useRef, useState } from 'react';
 
 /** Coalesce event-driven reloads to at most one call per 1.5 s. */
 export function useThrottledReload(reload: () => void): () => void {
@@ -37,28 +46,28 @@ export function ConsoleSearch({
   placeholder,
 }: Readonly<{ value: string; onChange: (v: string) => void; placeholder: string }>) {
   return (
-    <div className="w-80 max-w-full">
-      <Field
-        label={placeholder}
-        hideLabel
-        type="search"
-        icon="search"
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        trailing={
-          value ? (
-            <IconButton
-              variant="ghost"
-              size={28}
-              glyph={16}
-              icon="x"
-              onPress={() => onChange('')}
-            />
-          ) : null
-        }
-      />
-    </div>
+    <Box w={320} maxW="100%">
+      <Field.Root label={placeholder} hideLabel>
+        <Field.Input
+          type="search"
+          icon="search"
+          placeholder={placeholder}
+          value={value}
+          onValueChange={onChange}
+          trailing={
+            value ? (
+              <IconButton
+                variant="ghost"
+                diameter={28}
+                glyph={16}
+                icon="x"
+                onPress={() => onChange('')}
+              />
+            ) : null
+          }
+        />
+      </Field.Root>
+    </Box>
   );
 }
 
@@ -70,28 +79,17 @@ export function ConsoleSummary({
   accentLabel,
 }: Readonly<{ total: number; totalLabel: string; accent: number; accentLabel: string }>) {
   return (
-    <p className="mb-5 mt-1.5 text-[14.5px] font-medium text-dim">
-      <span className="font-bold text-white">{total.toLocaleString()}</span> {totalLabel} ·{' '}
-      <span className="font-bold text-accent">{accent.toLocaleString()}</span> {accentLabel}
-    </p>
+    <Text variant="label" color="textDim" mt={6} mb={20}>
+      <Text variant="label">{total.toLocaleString()}</Text> {totalLabel} ·{' '}
+      <Text variant="label" color="accentText">
+        {accent.toLocaleString()}
+      </Text>{' '}
+      {accentLabel}
+    </Text>
   );
 }
 
-/** Column heading cell for the table header row. */
-export function Head({
-  children,
-  className = '',
-}: Readonly<{ children: ReactNode; className?: string }>) {
-  return (
-    <span
-      className={`text-[9.5px] font-bold uppercase tracking-[.12em] text-white/40 ${className}`}
-    >
-      {children}
-    </span>
-  );
-}
-
-const BLUE_ACTIVE = { backgroundColor: '#86A8FF' } as const;
+const BLUE_ACTIVE = { backgroundColor: color('info') } as const;
 
 /** A filter chip on the kit pill. `tone` picks the active fill (defaults to the
  * amber accent; `blue` keeps the console's type-filter family). */
@@ -122,20 +120,31 @@ export function Chip({
   );
 }
 
+// `position: fixed` and a translate have no React Native spelling, so the
+// anchor stays a real element and only its contents speak the kit.
+const TOAST_ANCHOR: CSSProperties = {
+  position: 'fixed',
+  bottom: 24,
+  left: '50%',
+  zIndex: 80,
+  pointerEvents: 'none',
+  transition: 'opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out)',
+};
+
 /** The floating bottom-center toast, driven by `useConsoleToast`. */
 export function ConsoleToast({ toast }: Readonly<{ toast: { text: string; on: boolean } }>) {
   return (
     <div
-      className="pointer-events-none fixed bottom-6 left-1/2 z-80 -translate-x-1/2 transition-all duration-200"
       style={{
+        ...TOAST_ANCHOR,
         opacity: toast.on ? 1 : 0,
         transform: `translateX(-50%) translateY(${toast.on ? 0 : 12}px)`,
       }}
     >
-      <div className="inline-flex items-center gap-2.5 rounded-full border border-white/12 bg-[#1C1C22] px-[18px] py-2.5 shadow-pop">
-        <span className="h-2 w-2 flex-[0_0_8px] rounded-full bg-accent" />
-        <span className="text-[13.5px] font-semibold text-white">{toast.text}</span>
-      </div>
+      <Row gap={10} px={18} py={10} radius="pill" bg="surface2" border="borderStrong" shadow="pop">
+        <Box w={8} h={8} shrink={0} radius="circle" bg="accent" />
+        <Text variant="label">{toast.text}</Text>
+      </Row>
     </div>
   );
 }

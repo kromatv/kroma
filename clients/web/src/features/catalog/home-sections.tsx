@@ -4,12 +4,10 @@
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { SectionPoster } from '#web/features/catalog/cards';
+import { SectionHeading, SectionPoster } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
 import { PosterRail, RailSkeleton } from '#web/shared/ui';
-
-const SECTION_TITLE = 'mb-5 mt-10 font-display text-[22px] font-bold tracking-[-.02em] text-text';
 
 export function HomeSections({ excludeId }: Readonly<{ excludeId?: string | null }>) {
   const { user, ready } = useAuth();
@@ -44,7 +42,7 @@ function Sections({ excludeId }: Readonly<{ excludeId?: string | null }>) {
         if (items.length === 0) return null;
         return (
           <section key={section.id}>
-            <h2 className={SECTION_TITLE}>{section.title}</h2>
+            <SectionHeading>{section.title}</SectionHeading>
             <PosterRail data={items} renderItem={(entry) => <SectionPoster entry={entry} />} />
           </section>
         );

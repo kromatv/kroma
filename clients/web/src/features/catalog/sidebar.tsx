@@ -1,7 +1,6 @@
-import buildInfo from 'virtual:build-info';
 import { hasPermission, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Drawer, Logo, Menu, type MenuEntry } from '@kroma/ui/kit';
+import { Box, color, Drawer, IconButton, Logo, Row, Text, useBreakpoint } from '@kroma/ui/kit';
 import {
   IconAlertTriangle,
   IconCalendarClock,
@@ -11,27 +10,69 @@ import {
   IconHome,
   IconInbox,
   IconListDetails,
-  IconMenu2,
   IconMovie,
   IconSearch,
   IconSettings,
   IconUserPlus,
-  IconX,
   type TablerIcon,
 } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
-import { type ComponentProps, useEffect, useState } from 'react';
-import { CapabilityChip } from '#web/features/accounts/capability-chip';
-import { UserAvatar } from '#web/features/accounts/user-avatar';
-import { NotificationBell } from '#web/features/notifications/panel';
+import { Link, useRouterState } from '@tanstack/react-router';
+import { type CSSProperties, useEffect, useState } from 'react';
+import type { ViewStyle } from 'react-native';
+import { UserChip, VersionInfo } from '#web/features/catalog/sidebar-account';
 import { useModuleNav } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
-import { serverQueries } from '#web/shared/lib/queries';
+import { CapabilityChip } from '#web/shared/ui/capability-chip';
+import { useNavActions } from '#web/shared/ui/nav-actions';
+import { SideNav } from '#web/shared/ui/side-nav';
+import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
-const itemCls =
-  'flex items-center gap-3.5 rounded-md px-3.5 py-3 text-[15px] max-lg:text-[16px] font-semibold text-muted no-underline transition-colors duration-200 hover:bg-white/4 hover:text-text aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent';
+// `position: sticky`, `100vh`, `overflow-y` and `env()` have no React Native
+// spelling, so the shell's own frames stay CSS around kit content.
+const SIDEBAR: CSSProperties = {
+  position: 'sticky',
+  top: 0,
+  height: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+  alignSelf: 'flex-start',
+  borderRightWidth: 1,
+  borderRightStyle: 'solid',
+  borderRightColor: 'var(--kroma-border)',
+  background: 'var(--kroma-bg)',
+};
+
+const TOPBAR: CSSProperties = {
+  position: 'sticky',
+  top: 0,
+  zIndex: 40,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  borderBottomWidth: 1,
+  borderBottomStyle: 'solid',
+  borderBottomColor: 'var(--kroma-border)',
+  background: 'color-mix(in srgb, var(--kroma-bg) 95%, transparent)',
+  paddingLeft: 16,
+  paddingRight: 16,
+  paddingBottom: 10,
+  paddingTop: 'max(0.625rem, env(safe-area-inset-top))',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+};
+
+// `env()` has no React Native spelling, so the sheet's own insets stay CSS.
+const DRAWER_HEAD = {
+  paddingLeft: SIDE_NAV_GUTTER,
+  paddingRight: SIDE_NAV_GUTTER,
+  paddingTop: 'max(1.75rem, env(safe-area-inset-top))',
+  paddingBottom: 8,
+} as unknown as ViewStyle;
+
+const LOGO_LINK: CSSProperties = { display: 'block', color: 'inherit', textDecoration: 'none' };
+
+const NAV_FILL = { backgroundColor: color('bg') } as const;
 
 const NAV: { labelKey: MessageKey; to: string; icon: TablerIcon; exact?: boolean }[] = [
   { labelKey: 'nav.home', to: '/', icon: IconHome, exact: true },
@@ -43,126 +84,122 @@ const NAV: { labelKey: MessageKey; to: string; icon: TablerIcon; exact?: boolean
 ];
 
 export function Sidebar() {
+  const step = useBreakpoint();
+  if (step !== 'lg' && step !== 'tv') return null;
   return (
-    <aside className="sticky top-0 hidden h-screen flex-col self-start border-r border-border bg-[#0C0C0E] lg:flex">
-      <div className="shrink-0 px-4.5 pb-2 pt-7">
-        <div className="flex items-center justify-between px-2 pb-2">
-          <Logo size={24} />
-          <NotificationBell />
-        </div>
-      </div>
+    <aside style={SIDEBAR}>
+      <SideNav.Header>
+        <Logo size={24} />
+      </SideNav.Header>
       <SidebarBody />
     </aside>
   );
 }
 
-// Account/device block is pinned to the bottom via mt-auto: it reads as a fixed
-// footer on a normal window, and scrolls (rather than clipping) when too short.
+// The desktop aside's own scroll frame. In the phone sheet the frame is the
+// drawer's <Drawer.Panel>, which is why the two are separate.
 function SidebarBody() {
+  return (
+    <div style={SIDE_NAV_FRAME}>
+      <SidebarNav />
+    </div>
+  );
+}
+
+function SidebarNav() {
   const t = useT();
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4.5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-1">
-      <nav className="flex flex-col gap-0.5">
-        {NAV.map((item) => (
-          <Link
-            key={item.to}
-            to={item.to}
-            className={itemCls}
-            activeOptions={{ exact: item.exact ?? false }}
-          >
-            <item.icon size={18} />
-            {t(item.labelKey)}
-          </Link>
-        ))}
-        <RequestsLink />
-        <ComingSoonLink />
-        <MissingLink />
-        <ModuleNavLinks />
-      </nav>
-      <div className="mt-auto flex flex-col gap-2.5 pt-6">
+    <SideNav.Root>
+      {NAV.map((item) => (
+        <SideNav.Item key={item.to} to={item.to} exact={item.exact} icon={item.icon}>
+          <SideNav.Label>{t(item.labelKey)}</SideNav.Label>
+        </SideNav.Item>
+      ))}
+      <RequestsLink />
+      <ComingSoonLink />
+      <MissingLink />
+      <ModuleNavLinks />
+      <SideNav.Footer>
         <InviteLink />
-        <Link to="/connect" className={itemCls}>
-          <IconDeviceDesktop size={18} />
-          {t('nav.connectDevice')}
-        </Link>
+        <SideNav.Item to="/connect" icon={IconDeviceDesktop}>
+          <SideNav.Label>{t('nav.connectDevice')}</SideNav.Label>
+        </SideNav.Item>
         <AdminLink />
         <UserChip />
-        <div className="flex flex-col gap-2 px-2 pt-1">
-          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-dim">
+        <Box gap={8} px={8} pt={4}>
+          <Box row wrap align="center" between gapX={8} gapY={6}>
+            <Text variant="overline" color="textDim">
               {t('nav.thisDevice')}
-            </span>
+            </Text>
             <CapabilityChip />
-          </div>
+          </Box>
           <VersionInfo />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </SideNav.Footer>
+    </SideNav.Root>
   );
 }
 
 export function MobileTopbar() {
   const t = useT();
+  const actions = useNavActions();
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const step = useBreakpoint();
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; pathname closes the drawer on navigation
   useEffect(() => setOpen(false), [pathname]);
+  if (step === 'lg' || step === 'tv') return null;
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-[#0C0C0E]/95 px-4 pb-2.5 pt-[max(0.625rem,env(safe-area-inset-top))] backdrop-blur lg:hidden">
-      <Link to="/" aria-label="KROMA">
+    <header style={TOPBAR}>
+      <Link to="/" aria-label="KROMA" style={LOGO_LINK}>
         <Logo size={20} />
       </Link>
-      <div className="flex items-center gap-0.5">
-        <NotificationBell />
-        <button
-          type="button"
-          aria-label={t('nav.menu')}
-          aria-expanded={open}
-          onClick={() => setOpen(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/4 hover:text-text"
-        >
-          <IconMenu2 size={22} />
-        </button>
-        <Drawer
+      <Box row align="center" gap={2}>
+        {actions}
+        <IconButton
+          diameter={40}
+          glyph={22}
+          radius="md"
+          icon="menu-2"
+          label={t('nav.menu')}
+          expanded={open}
+          onPress={() => setOpen(true)}
+        />
+        <Drawer.Root
           open={open}
           onClose={() => setOpen(false)}
           title="KROMA"
           side="left"
-          width={304}
+          width="xs"
           fullBelow={640}
+          pad={0}
           panelStyle={NAV_FILL}
         >
-          <div className="flex shrink-0 items-center justify-between px-4.5 pb-2 pt-[max(1.75rem,env(safe-area-inset-top))]">
-            <div className="px-2 pb-2">
-              <Logo size={24} />
-            </div>
-            <button
-              type="button"
-              aria-label={t('common.close')}
-              onClick={() => setOpen(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/4 hover:text-text"
-            >
-              <IconX size={20} />
-            </button>
-          </div>
-          <SidebarBody />
-        </Drawer>
-      </div>
+          <Drawer.Header style={DRAWER_HEAD}>
+            <Row between>
+              <Box px={8} pb={8}>
+                <Logo size={24} />
+              </Box>
+              <Drawer.Close variant="glass" diameter={40} glyph={20} radius="md" />
+            </Row>
+          </Drawer.Header>
+          <Drawer.Panel>
+            <SidebarNav />
+          </Drawer.Panel>
+        </Drawer.Root>
+      </Box>
     </header>
   );
 }
-
-const NAV_FILL = { backgroundColor: '#0C0C0E' } as const;
 
 function RequestsLink() {
   const t = useT();
   const { user } = useAuth();
   if (!user || !hasPermission(user, 'requests.create')) return null;
   return (
-    <Link to="/requests" className={itemCls}>
-      <IconInbox size={18} />
-      {t('nav.requests')}
-    </Link>
+    <SideNav.Item to="/requests" icon={IconInbox}>
+      <SideNav.Label>{t('nav.requests')}</SideNav.Label>
+    </SideNav.Item>
   );
 }
 
@@ -171,10 +208,9 @@ function ComingSoonLink() {
   const { user } = useAuth();
   if (!user || !hasPermission(user, 'requests.create')) return null;
   return (
-    <Link to="/coming-soon" className={itemCls}>
-      <IconCalendarClock size={18} />
-      {t('nav.comingSoon')}
-    </Link>
+    <SideNav.Item to="/coming-soon" icon={IconCalendarClock}>
+      <SideNav.Label>{t('nav.comingSoon')}</SideNav.Label>
+    </SideNav.Item>
   );
 }
 
@@ -183,30 +219,9 @@ function MissingLink() {
   const { user } = useAuth();
   if (!user || !hasPermission(user, 'requests.create')) return null;
   return (
-    <Link to="/missing" className={itemCls}>
-      <IconAlertTriangle size={18} />
-      {t('nav.missing')}
-    </Link>
-  );
-}
-
-// Client version + commit come from the build-time `virtual:build-info` module;
-// the server version is the public `/api/health` endpoint.
-function VersionInfo() {
-  const t = useT();
-  const { data: health } = useQuery(serverQueries.health());
-  const clientTitle = `${buildInfo.commit}${buildInfo.dirty ? '-dirty' : ''} · ${buildInfo.branch} · ${buildInfo.buildDate}`;
-  return (
-    <div className="flex items-center gap-1.5 px-0.5 text-[10px] font-medium text-dim">
-      <span title={clientTitle}>
-        {t('nav.versionClient')} <span className="tabular-nums">v{buildInfo.version}</span>
-      </span>
-      <span className="opacity-40">·</span>
-      <span>
-        {t('nav.versionServer')}{' '}
-        <span className="tabular-nums">{health ? `v${health.version}` : '…'}</span>
-      </span>
-    </div>
+    <SideNav.Item to="/missing" icon={IconAlertTriangle}>
+      <SideNav.Label>{t('nav.missing')}</SideNav.Label>
+    </SideNav.Item>
   );
 }
 
@@ -215,10 +230,9 @@ function InviteLink() {
   const { user } = useAuth();
   if (!user || !hasPermission(user, 'users.manage')) return null;
   return (
-    <Link to="/invite" className={itemCls}>
-      <IconUserPlus size={18} />
-      {t('nav.inviteUser')}
-    </Link>
+    <SideNav.Item to="/invite" icon={IconUserPlus}>
+      <SideNav.Label>{t('nav.inviteUser')}</SideNav.Label>
+    </SideNav.Item>
   );
 }
 
@@ -231,19 +245,10 @@ function AdminLink() {
       hasPermission(user, 'library.manage') ||
       hasPermission(user, 'settings.manage') ||
       hasPermission(user, 'requests.manage'));
-  if (!isAdmin) {
-    return (
-      <div className={`${itemCls} cursor-default opacity-50`}>
-        <IconSettings size={18} />
-        {t('nav.settings')}
-      </div>
-    );
-  }
   return (
-    <Link to="/admin" className={itemCls}>
-      <IconSettings size={18} />
-      {t('nav.server')}
-    </Link>
+    <SideNav.Item to="/admin" icon={IconSettings} dim={!isAdmin}>
+      <SideNav.Label>{t(isAdmin ? 'nav.server' : 'nav.settings')}</SideNav.Label>
+    </SideNav.Item>
   );
 }
 
@@ -251,92 +256,11 @@ function ModuleNavLinks() {
   const items = useModuleNav('library');
   return (
     <>
-      {items.map((n) => {
-        const Icon = resolveModuleIcon(n.icon);
-        return (
-          <Link key={`${n.moduleId}:${n.to}`} to={n.to} className={itemCls}>
-            <Icon size={18} />
-            {n.label}
-          </Link>
-        );
-      })}
+      {items.map((n) => (
+        <SideNav.Item key={`${n.moduleId}:${n.to}`} to={n.to} icon={resolveModuleIcon(n.icon)}>
+          <SideNav.Label>{n.label}</SideNav.Label>
+        </SideNav.Item>
+      ))}
     </>
-  );
-}
-
-function UserChip() {
-  const t = useT();
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  // Return to the current page after switching profile.
-  const href = useRouterState({ select: (s) => s.location.href });
-  if (!user) return null;
-  const items: MenuEntry[] = [
-    {
-      icon: 'user-circle',
-      label: t('nav.accountSettings'),
-      onSelect: () => void navigate({ to: '/account' }),
-    },
-    {
-      icon: 'users',
-      label: t('nav.changeProfile'),
-      onSelect: () => void navigate({ to: '/login', search: { redirect: href } }),
-    },
-    'separator',
-    { icon: 'logout', label: t('auth.logout'), onSelect: () => void logout(), danger: true },
-  ];
-  return (
-    <Menu
-      label={t('nav.account')}
-      align="start"
-      items={items}
-      trigger={userChipTrigger(user, t('nav.account'))}
-    />
-  );
-}
-
-type MenuTriggerBind = Parameters<NonNullable<ComponentProps<typeof Menu>['trigger']>>[0];
-
-// Built out here rather than inline in <UserChip>: a render prop is still a
-// function returning elements, and one written inside the parent remounts its
-// subtree on every render of it.
-const userChipTrigger = (user: ChipUser, label: string) => (bind: MenuTriggerBind) => (
-  <UserChipTrigger bind={bind} user={user} label={label} />
-);
-
-interface ChipUser {
-  id: string;
-  username: string;
-  avatarUrl?: string | null;
-}
-
-function UserChipTrigger({
-  bind,
-  user,
-  label,
-}: Readonly<{ bind: MenuTriggerBind; user: ChipUser; label: string }>) {
-  const { ref, expanded, open } = bind;
-  return (
-    <button
-      ref={ref as unknown as React.Ref<HTMLButtonElement>}
-      type="button"
-      aria-haspopup="menu"
-      aria-expanded={expanded}
-      onClick={open}
-      className={`mt-2 flex items-center gap-3 rounded-md p-2.5 text-left transition-colors hover:bg-white/4 focus:outline-none ${expanded ? 'bg-white/4' : ''}`}
-      title={label}
-    >
-      <UserAvatar
-        name={user.username}
-        avatarUrl={user.avatarUrl}
-        seed={user.id}
-        size={36}
-        radius={10}
-      />
-      <div className="min-w-0">
-        <div className="truncate text-[14px] font-semibold text-text">{user.username}</div>
-        <div className="truncate text-[11px] font-medium text-dim">{label}</div>
-      </div>
-    </button>
   );
 }

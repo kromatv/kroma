@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { SplashBackdrop } from './splash-backdrop';
 
 // Real photographs from the workbench's sample art (see lib/sample-art): the
@@ -11,13 +11,13 @@ const SPLASH_ART = 'https://picsum.photos/seed';
 const COVERS = [
   {
     url: `${SPLASH_ART}/kroma-splash-1/1280/720`,
-    caption: 'Grand large · 2024',
+    caption: 'Open Water · 2024',
     eyebrow: 'Film',
   },
   {
     url: `${SPLASH_ART}/kroma-splash-2/1280/720`,
-    caption: 'Contre-jour · 2022',
-    eyebrow: 'Série',
+    caption: 'Backlight · 2022',
+    eyebrow: 'Series',
   },
 ];
 
@@ -60,7 +60,7 @@ export default story({
     >
       <SplashBackdrop covers={COVERS} holdMs={6000} />
       <Box absolute top={0} right={0} bottom={0} left={0} center>
-        <Txt variant="h1">Qui regarde ?</Txt>
+        <Text variant="h1">Who is watching?</Text>
       </Box>
     </Ground>
   ),

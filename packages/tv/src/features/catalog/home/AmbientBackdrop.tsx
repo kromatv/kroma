@@ -1,5 +1,5 @@
 import { type KromaClient, type MediaItem, type Show, sizedImageUrl } from '@kroma/core';
-import { Box, gradient, Img, promote, SHADE, shade, tintGradient } from '@kroma/ui/kit';
+import { Box, colors, gradient, Img, promote, SHADE, shade, tintGradient } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 
 // `value`, but only after it has held still for `delayMs`, so a fast D-pad
@@ -54,6 +54,11 @@ export function AmbientBackdrop({
 
 const VEIL_H = [gradient(VEIL_HORIZONTAL), promote()];
 const VEIL_V = [gradient(VEIL_VERTICAL), promote()];
+
+/** The tint a browse screen shows while nothing is focused: the raised surface
+ *  fading into the page ground, so the veils have the same shape they will have
+ *  once a poster's own colours arrive. */
+export const AMBIENT_FALLBACK: [string, string] = [colors.surface2, colors.bg];
 
 export type CatalogEntry = { kind: 'movie'; item: MediaItem } | { kind: 'show'; item: Show };
 

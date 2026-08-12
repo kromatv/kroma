@@ -21,7 +21,7 @@ export type Action = z.infer<typeof Action>;
 /**
  * What a server may ask the relay to deliver: structure, not a finished Apple or
  * Google payload. The topic, push type, priority and collapse key are the
- * relay's to set — a caller that could supply them could address another app or
+ * relay's to set: a caller that could supply them could address another app or
  * promote a digest to a radio-waking alert.
  */
 export const Notification = z.object({
@@ -37,7 +37,7 @@ export const Notification = z.object({
 });
 export type Notification = z.infer<typeof Notification>;
 
-/** `POST /v1/grant` — the app trades its device token for a capability. */
+/** `POST /v1/grant`: the app trades its device token for a capability. */
 export const GrantRequest = z.object({
   transport: Transport,
   // Bounded: a real token is far shorter, and an unbounded string is a free
@@ -46,7 +46,7 @@ export const GrantRequest = z.object({
 });
 export type GrantRequest = z.infer<typeof GrantRequest>;
 
-/** `POST /v1/push` — a server spends a grant. */
+/** `POST /v1/push`: a server spends a grant. */
 export const PushRequest = z.object({
   grant: z.string().min(1).max(4096),
   notification: Notification,
@@ -64,7 +64,7 @@ export interface Delivery {
 
 /**
  * The first problem zod found, naming the offending field and nothing else.
- * Deliberately not `z.treeifyError` or the raw issue list — those echo the
+ * Deliberately not `z.treeifyError` or the raw issue list: those echo the
  * received value back, reflecting an attacker's payload into a response.
  *
  * Typed structurally rather than as `z.ZodError` because `@hono/zod-validator`

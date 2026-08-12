@@ -1,14 +1,14 @@
+import { Box, Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Icon } from '@kroma/ui/kit/atoms/icon';
+import { Text } from '@kroma/ui/kit/atoms/text';
+import { CopyButton } from '@kroma/ui/kit/molecules/copy-button';
+import { Tooltip } from '@kroma/ui/kit/molecules/tooltip';
 import { useState } from 'react';
 import { ChannelBadge } from '#site/components/channel-badge';
 import { NotesAction } from '#site/components/notes-action';
 import type { Release } from '#site/lib/release';
 import { shortHash } from '#site/lib/ui';
-import { Box, Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Icon } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
-import { CopyButton } from '#ui/components/molecules/copy-button';
-import { Tooltip } from '#ui/components/molecules/tooltip';
 
 export interface ReleaseRowProps {
   release: Release;
@@ -31,23 +31,23 @@ export function ReleaseRow({ release, current = false }: Readonly<ReleaseRowProp
     >
       <Row gap={10} minW={0} grow={1} basis={200}>
         <Box grow={1} minW={0}>
-          <Txt variant="label" font="mono" lines={1}>
+          <Text variant="label" font="mono" lines={1}>
             {release.version}
-          </Txt>
+          </Text>
         </Box>
         <ChannelBadge channel={release.channel} current={current} />
       </Row>
       <Row gap={16} shrink={1} minW={0} wrap>
         {release.md5 ? <Checksum md5={release.md5} /> : null}
         <Box minW={92}>
-          <Txt variant="meta" color="textDim" font="mono" lines={1}>
+          <Text variant="meta" color="textDim" font="mono" lines={1}>
             {release.day}
-          </Txt>
+          </Text>
         </Box>
         <Box minW={76} align="flex-end">
-          <Txt variant="meta" color="textDim" font="mono" lines={1}>
+          <Text variant="meta" color="textDim" font="mono" lines={1}>
             {release.size}
-          </Txt>
+          </Text>
         </Box>
         <Row gap={8} shrink={0}>
           <NotesAction release={release} />
@@ -64,9 +64,9 @@ function Checksum({ md5 }: Readonly<{ md5: string }>) {
       <Icon name="fingerprint" size={14} color="textDim" />
       <Tooltip label={md5}>
         <Box shrink={1} minW={0}>
-          <Txt color="textDim" variant="meta" font="mono" lines={1}>
+          <Text color="textDim" variant="meta" font="mono" lines={1}>
             MD5 {shortHash(md5)}
-          </Txt>
+          </Text>
         </Box>
       </Tooltip>
       <Box shrink={0}>

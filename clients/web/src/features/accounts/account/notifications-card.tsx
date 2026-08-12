@@ -11,14 +11,27 @@ import {
   type PushBlocker,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
-import { IconBell, IconBellOff } from '@tabler/icons-react';
+import {
+  Box,
+  Button,
+  Callout,
+  Icon,
+  ListRow,
+  Row,
+  Skeleton,
+  Surface,
+  Switch,
+  Text,
+} from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { Panel } from '#web/features/accounts/account/ui';
 import { kromaClient } from '#web/shared/lib/api';
 import { pushBlocker, webPush } from '#web/shared/lib/push';
 import { userQueries } from '#web/shared/lib/queries';
+
+// The two channel columns must line up with the switches under them, and a
+// switch is one shell step wide.
+const CHANNEL_COLUMN = 46;
 
 export function NotificationsCard() {
   return (
@@ -70,15 +83,17 @@ function PushPanel() {
   };
 
   return (
-    <Panel className="flex flex-col gap-3 p-5.5">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="flex items-center gap-2 text-[14px] font-semibold text-text">
-            {subscribed ? <IconBell size={16} /> : <IconBellOff size={16} />}
-            {t('push.title')}
-          </p>
-          <p className="mt-1 text-[12.5px] leading-snug text-muted">{t('push.description')}</p>
-        </div>
+    <Surface elevated pad="none" p={22} radius="lg" border="border" gap={12}>
+      <Box row align="flex-start" between gap={16}>
+        <Box minW={0}>
+          <Row gap={8}>
+            <Icon name={subscribed ? 'bell' : 'bell-off'} size={16} />
+            <Text variant="label">{t('push.title')}</Text>
+          </Row>
+          <Text variant="meta" color="textMuted" mt={4}>
+            {t('push.description')}
+          </Text>
+        </Box>
         {blocker ? null : (
           <Button
             variant={subscribed ? 'ghost' : 'primary'}
@@ -88,17 +103,21 @@ function PushPanel() {
             loading={busy}
           />
         )}
-      </div>
+      </Box>
 
-      {blocker && (
-        <p className="rounded-lg bg-white/4 px-3 py-2 text-[12.5px] text-muted">
-          {t(PUSH_BLOCKER_LABEL[blocker])}
-        </p>
-      )}
-      {error && <p className="text-[12.5px] text-red-300">{error}</p>}
+      {blocker ? (
+        <Callout.Root size="sm">
+          <Callout.Title>{t(PUSH_BLOCKER_LABEL[blocker])}</Callout.Title>
+        </Callout.Root>
+      ) : null}
+      {error ? (
+        <Text variant="meta" color="danger">
+          {error}
+        </Text>
+      ) : null}
 
-      {subscribed && !blocker && (
-        <div className="flex items-center gap-3">
+      {subscribed && !blocker ? (
+        <Row gap={12}>
           <Button
             variant="ghost"
             size="sm"
@@ -106,14 +125,14 @@ function PushPanel() {
             onPress={sendTest}
             loading={busy}
           />
-          {tested !== null && (
-            <span className="text-[12.5px] text-muted">
+          {tested !== null ? (
+            <Text variant="meta" color="textMuted">
               {tested > 0 ? t('push.testSent') : t('push.testFailed')}
-            </span>
-          )}
-        </div>
-      )}
-    </Panel>
+            </Text>
+          ) : null}
+        </Row>
+      ) : null}
+    </Surface>
   );
 }
 
@@ -139,67 +158,53 @@ function CategoryMatrix() {
 
   if (isPending || !data) {
     return (
-      <Panel className="p-5.5">
-        <div className="h-32 animate-pulse rounded-lg bg-white/4" />
-      </Panel>
+      <Surface elevated pad="none" p={22} radius="lg" border="border">
+        <Skeleton h={128} radius="sm" />
+      </Surface>
     );
   }
 
   return (
-    <Panel className="p-5.5">
-      <div className="mb-3 flex items-center justify-between gap-4">
-        <p className="text-[14px] font-semibold text-text">{t('notifications.settings')}</p>
-        <div className="flex shrink-0 gap-4 text-[11px] font-semibold uppercase tracking-wide text-dim">
-          <span className="w-10 text-center">{t('notifications.channelInApp')}</span>
-          <span className="w-10 text-center">{t('notifications.channelPush')}</span>
-        </div>
-      </div>
-      <div className="flex flex-col divide-y divide-border">
-        {data.categories.map((pref) => (
-          <div key={pref.category} className="flex items-center justify-between gap-4 py-2.5">
-            <span className="min-w-0 truncate text-[13.5px] text-text">
-              {t(NOTIFICATION_CATEGORY_LABEL[pref.category])}
-            </span>
-            <div className="flex shrink-0 gap-4">
-              <Toggle
+    <ListRow.Group size="md">
+      <ListRow.Root>
+        <ListRow.Label>{t('notifications.settings')}</ListRow.Label>
+        <ListRow.Trailing>
+          <ChannelHead label={t('notifications.channelInApp')} />
+          <ChannelHead label={t('notifications.channelPush')} />
+        </ListRow.Trailing>
+      </ListRow.Root>
+      {data.categories.map((pref) => {
+        const name = t(NOTIFICATION_CATEGORY_LABEL[pref.category]);
+        return (
+          <ListRow.Root key={pref.category}>
+            <ListRow.Label>{name}</ListRow.Label>
+            <ListRow.Trailing>
+              <Switch
+                label={`${name} · ${t('notifications.channelInApp')}`}
                 checked={pref.inApp}
-                busy={saving === pref.category}
-                onChange={(inApp) => update(pref.category, { inApp })}
+                disabled={saving === pref.category}
+                onCheckedChange={(inApp) => update(pref.category, { inApp })}
               />
-              <Toggle
+              <Switch
+                label={`${name} · ${t('notifications.channelPush')}`}
                 checked={pref.push}
-                busy={saving === pref.category}
-                onChange={(push) => update(pref.category, { push })}
+                disabled={saving === pref.category}
+                onCheckedChange={(push) => update(pref.category, { push })}
               />
-            </div>
-          </div>
-        ))}
-      </div>
-    </Panel>
+            </ListRow.Trailing>
+          </ListRow.Root>
+        );
+      })}
+    </ListRow.Group>
   );
 }
 
-function Toggle({
-  checked,
-  busy,
-  onChange,
-}: Readonly<{ checked: boolean; busy: boolean; onChange: (next: boolean) => void }>) {
+function ChannelHead({ label }: Readonly<{ label: string }>) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={busy}
-      onClick={() => onChange(!checked)}
-      className={`flex h-6 w-10 items-center rounded-full px-0.5 transition-colors disabled:opacity-50 ${
-        checked ? 'bg-accent' : 'bg-white/12'
-      }`}
-    >
-      <span
-        className={`h-5 w-5 rounded-full bg-white transition-transform ${
-          checked ? 'translate-x-4' : 'translate-x-0'
-        }`}
-      />
-    </button>
+    <Box w={CHANNEL_COLUMN} align="center">
+      <Text variant="overline" color="textDim" textAlign="center">
+        {label}
+      </Text>
+    </Box>
   );
 }

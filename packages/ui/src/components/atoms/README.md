@@ -1,6 +1,6 @@
 # Atoms
 
-Level 2. The indivisible controls: `Button`, `Txt`, `Icon`, `Switch`, `Img`,
+Level 2. The indivisible controls: `Button`, `Text`, `Icon`, `Switch`, `Img`,
 `Focusable`. Take one apart and you do not get smaller components, you get
 nothing usable.
 
@@ -14,7 +14,7 @@ nothing usable.
 
 **What does not**
 
-- Anything that arranges two atoms into a shape the design has a name for — that
+- Anything that arranges two atoms into a shape the design has a name for. That
   is a [molecule](../molecules).
 - Anything that owns real behaviour: scrolling, windowing, sampling frames. That
   is an [organism](../organisms).
@@ -24,7 +24,7 @@ system is one, which is why a single component can be a mouse button in a browse
 and a D-pad target on a television, and why the amber ring looks identical
 everywhere.
 
-Variants are declared once per file with `sv` (see [`lib/sv.ts`](../../lib/sv.ts)),
+Variants are declared once per file with `sv` (see [`core/recipe.ts`](../../core/recipe.ts)),
 so a component's design is a table at the top of its file rather than conditionals
-sprinkled through its JSX — and the workbench derives its controls and its variant
+sprinkled through its JSX, and the workbench derives its controls and its variant
 matrix from that same table, which is why neither can drift.

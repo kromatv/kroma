@@ -1,6 +1,16 @@
 import type { AdminLibrary } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { confirm, Dialog, DialogActions, Field, SegmentedControl, Switch } from '@kroma/ui/kit';
+import {
+  Box,
+  Button,
+  confirm,
+  Dialog,
+  Field,
+  Row,
+  SegmentedControl,
+  Switch,
+  Text,
+} from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { FolderField } from '#web/features/admin/folder-picker';
@@ -43,7 +53,7 @@ function FolderListEditor({
 }: Readonly<{ folders: string[]; onChange: (folders: string[]) => void }>) {
   const t = useT();
   return (
-    <div className="flex flex-col gap-2">
+    <Box gap={8}>
       {folders.map((path) => (
         <FolderField
           key={path}
@@ -60,7 +70,7 @@ function FolderListEditor({
           if (!folders.includes(path)) onChange([...folders, path]);
         }}
       />
-    </div>
+    </Box>
   );
 }
 
@@ -85,26 +95,27 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
   };
 
   return (
-    <Dialog open title={t('admin.addLibrary')} width={600} onClose={() => call.end(false)}>
-      <Field
-        label={t('admin.name')}
-        icon="tag"
-        value={name}
-        onChange={setName}
-        placeholder={t('admin.kindMovies')}
-      />
-      <Field label={t('admin.libraryType')}>
+    <Dialog.Root open title={t('admin.addLibrary')} width="md" onClose={() => call.end(false)}>
+      <Field.Root label={t('admin.name')}>
+        <Field.Input
+          icon="tag"
+          value={name}
+          onValueChange={setName}
+          placeholder={t('admin.kindMovies')}
+        />
+      </Field.Root>
+      <Field.Root label={t('admin.libraryType')}>
         <LibraryTypeSelect value={kind} onChange={setKind} />
-      </Field>
-      <Field label={t('admin.firstFolder')}>
+      </Field.Root>
+      <Field.Root label={t('admin.firstFolder')}>
         <FolderField
           value={folder}
           onChange={setFolder}
           placeholder={t('admin.chooseFolder')}
           onClear={() => setFolder('')}
         />
-      </Field>
-      <DialogActions
+      </Field.Root>
+      <Dialog.Actions
         onCancel={() => call.end(false)}
         cancelLabel={t('common.cancel')}
         onConfirm={() => {
@@ -114,7 +125,7 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
         busy={busy}
         disabled={!name.trim()}
       />
-    </Dialog>
+    </Dialog.Root>
   );
 });
 
@@ -149,27 +160,31 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
     };
 
     return (
-      <Dialog
+      <Dialog.Root
         open
         title={t('admin.manageLibrary', { name: lib.name })}
-        width={600}
+        width="lg"
         onClose={() => call.end(false)}
       >
-        <Field label={t('admin.name')} icon="tag" value={name} onChange={setName} />
-        <Field label={t('admin.libraryType')}>
+        <Field.Root label={t('admin.name')}>
+          <Field.Input icon="tag" value={name} onValueChange={setName} />
+        </Field.Root>
+        <Field.Root label={t('admin.libraryType')}>
           <LibraryTypeSelect value={kind} onChange={setKind} />
-        </Field>
-        <Field label={t('admin.scannedFolders')}>
+        </Field.Root>
+        <Field.Root label={t('admin.scannedFolders')}>
           <FolderListEditor folders={folders} onChange={setFolders} />
-        </Field>
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[14px] font-bold">{t('admin.autoScan')}</div>
-            <div className="mt-0.5 text-[12.5px] text-dim">{t('admin.autoScanHint')}</div>
-          </div>
-          <Switch checked={autoScan} onChange={setAutoScan} label={t('admin.autoScan')} />
-        </div>
-        <DialogActions
+        </Field.Root>
+        <Row between gap={16}>
+          <Box>
+            <Text variant="label">{t('admin.autoScan')}</Text>
+            <Text variant="meta" color="textDim" mt={2}>
+              {t('admin.autoScanHint')}
+            </Text>
+          </Box>
+          <Switch checked={autoScan} onCheckedChange={setAutoScan} label={t('admin.autoScan')} />
+        </Row>
+        <Dialog.Actions
           onCancel={() => call.end(false)}
           cancelLabel={t('common.cancel')}
           onConfirm={() => {
@@ -178,14 +193,18 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
           confirmLabel={busy ? t('common.saving') : t('common.save')}
           busy={busy}
           disabled={!name.trim()}
-          destructive={{
-            label: t('common.delete'),
-            onPress: () => {
+        >
+          <Button
+            variant="dangerGhost"
+            size="sm"
+            label={t('common.delete')}
+            onPress={() => {
               void remove();
-            },
-          }}
-        />
-      </Dialog>
+            }}
+            disabled={busy}
+          />
+        </Dialog.Actions>
+      </Dialog.Root>
     );
   },
 );

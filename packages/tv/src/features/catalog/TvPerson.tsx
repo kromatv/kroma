@@ -1,7 +1,7 @@
 import type { Metadata } from '@kroma/core';
 import { creditsPerson, personInvolvement, posterColors, roleLabels } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, Text, useFocusNav } from '@kroma/ui/kit';
 import { useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -77,9 +77,9 @@ export function TvPerson() {
         <PosterGrid cards={cards} />
       ) : (
         <Box flex center px={64}>
-          <Txt style={EMPTY} color="textDim">
+          <Text style={EMPTY} color="textDim">
             {t('person.empty')}
-          </Txt>
+          </Text>
         </Box>
       )}
     </Box>

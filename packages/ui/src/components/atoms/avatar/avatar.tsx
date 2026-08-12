@@ -6,7 +6,7 @@ import { hashString } from '@kroma/core';
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { Img } from '#ui/components/atoms/img';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type CornerValue, styles, useTheme } from '#ui/core';
 
 const AVATAR_GRADIENTS = [
@@ -120,7 +120,7 @@ function Avatar({
   // still loading, or a stored URL that 404s - a profile is never a blank disc.
   const initials = (
     <Box fill center>
-      <Txt
+      <Text
         style={{
           fontFamily: fonts.display,
           fontWeight: '700',
@@ -130,7 +130,7 @@ function Avatar({
         }}
       >
         {initialsOf(name)}
-      </Txt>
+      </Text>
     </Box>
   );
   return (

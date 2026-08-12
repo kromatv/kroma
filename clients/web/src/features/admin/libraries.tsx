@@ -1,30 +1,35 @@
 import type { AdminLibrary } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, EmptyState, Surface } from '@kroma/ui/kit';
 import {
-  IconDeviceTv,
-  IconFolder,
-  IconMovie,
-  IconMusic,
-  IconPhoto,
-  type TablerIcon,
-} from '@tabler/icons-react';
+  Box,
+  Button,
+  DataField,
+  Divider,
+  EmptyState,
+  Grid,
+  Icon,
+  type IconName,
+  Row,
+  Surface,
+  Text,
+} from '@kroma/ui/kit';
 import { useState } from 'react';
 import {
   AddLibraryModal,
   ManageLibraryModal,
   normalizeLibKind,
 } from '#web/features/admin/libraries-modals';
+import { Pill } from '#web/features/admin/pill';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
 import { formatBytes, relativeSeen } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
-const ICONS: Record<string, TablerIcon> = {
-  film: IconMovie,
-  tv: IconDeviceTv,
-  music: IconMusic,
-  photo: IconPhoto,
+const ICONS: Record<string, IconName> = {
+  film: 'movie',
+  tv: 'device-tv',
+  music: 'music',
+  photo: 'photo',
 };
 
 const KIND_LABEL = {
@@ -55,41 +60,42 @@ function LibrariesPageInner() {
 
   return (
     <>
-      <PageHeader
-        title={t('admin.librariesTitle')}
-        subtitle={t('admin.librariesSub')}
-        action={
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.librariesTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.librariesSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
           <Button
             variant="primary"
             icon="plus"
             label={t('admin.addLibrary')}
             onPress={() => void openAdd()}
           />
-        }
-      />
+        </PageHeader.Actions>
+      </PageHeader.Root>
 
       {data === null ? <TableSkeleton rows={4} /> : null}
 
       {libraries.length > 0 ? (
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {libraries.map((l) => (
-            <LibraryCard key={l.id} lib={l} onManage={() => void openManage(l)} />
-          ))}
-        </div>
+        <Box mt={24}>
+          <Grid min={360} gap={16}>
+            {libraries.map((l) => (
+              <LibraryCard key={l.id} lib={l} onManage={() => void openManage(l)} />
+            ))}
+          </Grid>
+        </Box>
       ) : null}
       {data && libraries.length === 0 ? (
-        <EmptyState
-          icon="library"
-          title={t('admin.noLibraries')}
-          action={
+        <EmptyState.Root icon="library">
+          <EmptyState.Title>{t('admin.noLibraries')}</EmptyState.Title>
+          <EmptyState.Actions>
             <Button
               variant="primary"
               icon="plus"
               label={t('admin.addLibrary')}
               onPress={() => void openAdd()}
             />
-          }
-        />
+          </EmptyState.Actions>
+        </EmptyState.Root>
       ) : null}
     </>
   );
@@ -105,7 +111,6 @@ function LibraryCard({
   const t = useT();
   const { client } = useAuth();
   const [scanning, setScanning] = useState(false);
-  const accent = '#84CE7E';
 
   async function scan() {
     setScanning(true);
@@ -116,59 +121,58 @@ function LibraryCard({
     }
   }
 
-  const LibIcon = ICONS[lib.kind] ?? IconMovie;
+  const glyph = ICONS[lib.kind] ?? 'movie';
 
   return (
-    <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
-      <div
-        className="flex items-center gap-3.5 border-b border-white/5 px-5 py-4.5"
-        style={{ background: 'rgba(132,206,126,.07)' }}
-      >
-        <span
-          className="flex h-11.5 w-11.5 shrink-0 items-center justify-center rounded-xl"
-          style={{ background: 'rgba(132,206,126,.16)', color: accent }}
-        >
-          <LibIcon size={22} stroke={1.8} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="font-display text-[18px] font-bold">{lib.name}</div>
-          <div className="text-[12px] font-semibold text-text/45">
+    <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
+      <Row gap={14} px={20} py={18} bg="success/7">
+        <Row center w={46} h={46} shrink={0} radius="lg" bg="success/16">
+          <Icon name={glyph} size={22} thickness={1.8} color="success" />
+        </Row>
+        <Box flex minW={0}>
+          <Text variant="title">{lib.name}</Text>
+          <Text variant="meta" color="textDim">
             {t(KIND_LABEL[normalizeLibKind(lib.kind)])} ·{' '}
             {t('admin.itemsCount', { count: lib.itemCount })}
-          </div>
-        </div>
+          </Text>
+        </Box>
         {lib.autoScan ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-success/13 px-2.5 py-1 text-[11.5px] font-semibold text-success">
+          <Pill ink="success" bg="success/13">
             {t('admin.autoScanBadge')}
-          </span>
+          </Pill>
         ) : null}
-      </div>
+      </Row>
+      <Divider color="tint/5" />
 
-      <div className="flex items-stretch border-b border-white/5">
+      <Box row align="stretch">
         <Stat label={t('admin.statSize')} value={formatBytes(lib.sizeBytes)} border />
         <Stat label={t('admin.statLastScan')} value={relativeSeen(lib.lastScan)} />
-      </div>
+      </Box>
+      <Divider color="tint/5" />
 
-      <div className="border-b border-white/5 px-5 pb-4 pt-3.5">
-        <div className="mb-2 text-[9.5px] font-bold uppercase tracking-[.12em] text-text/38">
+      <Box px={20} pt={14} pb={16}>
+        <Text variant="overline" color="textDim" mb={8}>
           {t('admin.scannedFolders')}
-        </div>
-        <div className="flex flex-col gap-1.5">
+        </Text>
+        <Box gap={6}>
           {lib.folders.map((path) => (
-            <div key={path} className="flex items-center gap-2">
-              <IconFolder size={15} stroke={1.8} color={accent} className="shrink-0" />
-              <span className="min-w-0 truncate text-[13px] font-semibold text-text/70">
+            <Row key={path} gap={8}>
+              <Icon name="folder" size={15} thickness={1.8} color="success" />
+              <Text variant="meta" color="textMuted" lines={1} minW={0}>
                 {path}
-              </span>
-            </div>
+              </Text>
+            </Row>
           ))}
           {lib.folders.length === 0 ? (
-            <span className="text-[12.5px] text-dim">{t('admin.noFolders')}</span>
+            <Text variant="meta" color="textDim">
+              {t('admin.noFolders')}
+            </Text>
           ) : null}
-        </div>
-      </div>
+        </Box>
+      </Box>
+      <Divider color="tint/5" />
 
-      <div className="flex gap-2.5 px-5 py-3.5">
+      <Row gap={10} px={20} py={14}>
         <Button
           size="sm"
           icon="refresh"
@@ -177,7 +181,7 @@ function LibraryCard({
           loading={scanning}
         />
         <Button variant="glass" size="sm" label={t('common.manage')} onPress={onManage} />
-      </div>
+      </Row>
     </Surface>
   );
 }
@@ -188,11 +192,14 @@ function Stat({
   border,
 }: Readonly<{ label: string; value: string; border?: boolean }>) {
   return (
-    <div className={`flex-1 px-5 py-3.5 ${border ? 'border-r border-white/5' : ''}`}>
-      <div className="mb-1.5 text-[9.5px] font-bold uppercase tracking-[.12em] text-text/38">
-        {label}
-      </div>
-      <div className="text-[14px] font-semibold text-text/78">{value}</div>
-    </div>
+    <>
+      <Box flex px={20} py={14}>
+        <DataField.Root size="sm">
+          <DataField.Label>{label}</DataField.Label>
+          <DataField.Value>{value}</DataField.Value>
+        </DataField.Root>
+      </Box>
+      {border ? <Divider vertical color="tint/5" /> : null}
+    </>
   );
 }

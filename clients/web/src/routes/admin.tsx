@@ -1,5 +1,6 @@
 import { hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
+import { Box, Text } from '@kroma/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { GateLoading } from '#web/features/accounts/auth-gate';
 import { AdminLayout } from '#web/features/admin/shell';
@@ -27,8 +28,12 @@ function AdminRoute() {
 
   if (!allowed) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-6">
-        <p className="text-[15px] text-muted">{t('admin.noAdminAccess')}</p>
+      <main style={SCREEN}>
+        <Box flex center px={24}>
+          <Text variant="body" color="textMuted">
+            {t('admin.noAdminAccess')}
+          </Text>
+        </Box>
       </main>
     );
   }
@@ -39,3 +44,5 @@ function AdminRoute() {
     </AdminLayout>
   );
 }
+
+const SCREEN = { minHeight: '100vh', display: 'flex' } as const;

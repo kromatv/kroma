@@ -1,11 +1,11 @@
 import { story } from '@kroma/workbench/story';
 import { type TypeRole, type as typeRoles } from '#ui/core/tokens';
-import { Txt } from './text';
+import { Text } from './text';
 
 const ROLES = Object.keys(typeRoles) as TypeRole[];
 
 export default story({
-  name: 'Txt',
+  name: 'Text',
   group: 'Foundations',
   docs: 'All text in the kit goes through here. The variant names a design ROLE, not a size: that is what makes the type ramp adjustable in a single place.',
   matrix: false,
@@ -21,8 +21,8 @@ export default story({
     lines: { min: 0, max: 4, step: 1 },
   },
   render: ({ children, lines, ...props }) => (
-    <Txt {...props} lines={lines || undefined}>
+    <Text {...props} lines={lines || undefined}>
       {children}
-    </Txt>
+    </Text>
   ),
 });

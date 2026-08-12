@@ -1,5 +1,5 @@
 // Mounted at the root: how an arriving push behaves and where a tap routes.
-// Must survive a build with no native push module (see `./native`) — nothing
+// Must survive a build with no native push module (see `./native`): nothing
 // here imports `expo-notifications` at module scope.
 
 import type * as Notifications from 'expo-notifications';
@@ -30,7 +30,7 @@ export function usePushLabels(): void {
 
 /**
  * Re-mints this device's relay grant before it expires. Only the app can
- * replace one — the server holds a sealed blob with no idea which device is
+ * replace one: the server holds a sealed blob with no idea which device is
  * behind it. Only runs when a grant already exists; failures are silent since
  * the existing grant stays valid for weeks yet.
  */
@@ -109,7 +109,7 @@ export function usePushTaps(): void {
       };
 
       // `getLastNotificationResponse` is STICKY for the life of the JS context,
-      // and this effect re-runs on a profile switch — without this guard the
+      // and this effect re-runs on a profile switch; without this guard the
       // launch tap would replay under the new account.
       if (!coldStartConsumed) {
         coldStartConsumed = true;

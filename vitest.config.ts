@@ -1,6 +1,9 @@
 import { fileURLToPath } from 'node:url';
+import { gitHistory } from '@kroma/bundler/git-history';
+import { kromaMdx } from '@kroma/bundler/mdx';
 import { propDocs } from '@kroma/bundler/props-docs';
 import { WEB_EXTENSIONS } from '@kroma/bundler/rnw';
+import { storyCode } from '@kroma/bundler/story-code';
 import { kromaModule } from '@kroma/module-sdk/vite';
 import { configDefaults, defineConfig } from 'vitest/config';
 
@@ -10,6 +13,13 @@ const plugins = () => [
   // Real prop docs (not a stub) - the only way stories.web.ts can be imported
   // under the runner at all.
   propDocs({ tsconfig: dir('./packages/ui/tsconfig.json') }),
+  storyCode({ tsconfig: dir('./packages/ui/tsconfig.json'), repo: dir('.') }),
+  // Real history too, for the same reason: the kit's own source binding imports
+  // the virtual module the plugin serves.
+  gitHistory({ repo: dir('.'), root: 'packages/ui/src' }),
+  // A story's prose is a `.docs.mdx`, which the runner has to compile like a
+  // shell does.
+  kromaMdx(),
   // Without this, `defineModule({ ... })` throws "no manifest" on import: a
   // module's entry file imports neither its manifest nor its locales.
   kromaModule(),
@@ -126,6 +136,16 @@ export default defineConfig({
       provider: 'istanbul',
       reporter: ['text', 'lcov'],
       reportsDirectory: './coverage',
+      // Without this, a file no test imports is absent from the report rather
+      // than reported at zero, so the local number reads far higher than the
+      // one Sonar computes over the same tree. `.tsx` is left out because
+      // sonar.coverage.exclusions leaves it out, and the two must agree.
+      // Deliberately no `all`: the report covers what the tests loaded, and
+      // SONAR is what measures the tree. Instrumenting every file here produces
+      // a third number that matches neither this one nor Sonar's, because
+      // Sonar's scope is `sonar.sources` minus `sonar.exclusions`, a far larger
+      // list than the coverage exclusions and one that would have to be
+      // duplicated here to agree.
     },
   },
 });

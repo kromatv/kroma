@@ -1,10 +1,10 @@
-// <AddTile>: the "one more" slot at the end of a row of tiles — add a profile,
+// <AddTile>: the "one more" slot at the end of a row of tiles: add a profile,
 // add a server. A dashed square with a plus, and a LABEL under it, because the
 // two together are one control: one focus stop, one hit area, one thing a
 // screen reader announces.
 //
 // It is a real glass tile rather than a ghost outline. These rows sit over the
-// sign-in artwork, and a bare dashed border disappears against a bright frame —
+// sign-in artwork, and a bare dashed border disappears against a bright frame,
 // so the well carries the same translucent fill and blur every other control
 // wears (see lib/field-shell, <Frost>), and the dashes read against it instead
 // of against whatever the splash happens to be showing.
@@ -15,7 +15,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconProps } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
 
@@ -33,7 +33,7 @@ function corner(size: AddTileSize): number {
 const addTileVariants = svFor<{
   root: StyleDecl;
   well: StyleDecl;
-  glyph: Pick<IconProps, 'color' | 'size' | 'stroke'>;
+  glyph: Pick<IconProps, 'color' | 'size' | 'thickness'>;
   label: StyleDecl;
 }>()({
   slots: {
@@ -120,9 +120,9 @@ function AddTile({ label, size = 'tv', icon = 'plus', style, ...focus }: Readonl
             {/* The fill is translucent, so blur what shows through: the tile
                 reads as glass over the artwork rather than a hole in it. */}
             <Frost radius={radius} />
-            <Icon name={icon} stroke={1.6} {...slots.glyph} />
+            <Icon name={icon} thickness={1.6} {...slots.glyph} />
           </Box>
-          <Txt style={slots.label}>{label}</Txt>
+          <Text style={slots.label}>{label}</Text>
         </>
       )}
     </Focusable>

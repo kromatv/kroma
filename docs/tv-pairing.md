@@ -69,11 +69,11 @@ proof can only push *their own* account onto a television, never take one.
 
 | shell | publishes | browses | via |
 | --- | --- | --- | --- |
-| tv-native (Apple TV, Android TV) | yes | — | `@kroma/lan-beacon` (the platform's own DNS-SD) |
-| webos | yes | — | `@kroma/mdns-beacon`, hosted by the JS Service beside the app |
-| mobile (iOS, Android) | — | yes | `@kroma/lan-beacon` |
-| web, tv-web, desktop | — | — | server source only |
-| tizen | cannot | — | server source only, and confirmed by the check string, see [below](#who-may-raise-a-beacon) |
+| tv-native (Apple TV, Android TV) | yes | no | `@kroma/lan-beacon` (the platform's own DNS-SD) |
+| webos | yes | no | `@kroma/mdns-beacon`, hosted by the JS Service beside the app |
+| mobile (iOS, Android) | no | yes | `@kroma/lan-beacon` |
+| web, tv-web, desktop | no | no | server source only |
+| tizen | cannot | no | server source only, and confirmed by the check string, see [below](#who-may-raise-a-beacon) |
 
 A browser has no DNS-SD API, so neither television shell can raise the record
 from its UI. webOS can host one anyway: it lets an app ship a **JS Service**

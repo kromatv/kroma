@@ -71,8 +71,8 @@ export async function registerCategories(): Promise<void> {
   );
 }
 
-/** Android requires every notification to name a channel, which — not the
- * payload — owns importance and sound; one per category so a user can silence
+/** Android requires every notification to name a channel, which (not the
+ * payload) owns importance and sound; one per category so a user can silence
  * one kind of alert while keeping another loud. */
 export async function registerAndroidChannels(): Promise<void> {
   if (Platform.OS !== 'android') return;
@@ -141,8 +141,8 @@ export const nativePush: PushCapability = {
     const transport = transportFor(token.type);
     if (!transport) throw new Error('unsupported');
 
-    // The raw token stops here; the server gets a grant instead (see ./relay)
-    // — a self-hosted server holds no Apple/Google credential to spend it.
+    // The raw token stops here; the server gets a grant instead (see ./relay):
+    // a self-hosted server holds no Apple/Google credential to spend it.
     return {
       transport: 'relay',
       endpoint: await grantFor(transport, String(token.data)),

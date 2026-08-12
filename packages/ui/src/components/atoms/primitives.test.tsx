@@ -23,7 +23,7 @@ import { Icon } from './icon';
 import { IconButton } from './icon-button';
 import { clamp01, Progress } from './progress';
 import { Skeleton } from './skeleton';
-import { Txt } from './text';
+import { Text } from './text';
 import { TextArea } from './text-area';
 import { TextField } from './text-field';
 
@@ -111,6 +111,23 @@ describe('Button', () => {
     expect(onPress).not.toHaveBeenCalled();
   });
 
+  it('says it is working while it loads, and says on or off where it toggles', () => {
+    render(
+      <>
+        <Button label="Envoyer" loading onPress={vi.fn()} />
+        <Button label="Ma liste" variant="outline" active pressed onPress={vi.fn()} />
+        <Button label="Vu" variant="outline" pressed={false} onPress={vi.fn()} />
+        {/* The active coat is paint: a button that toggles nothing claims
+            nothing, however it is drawn. */}
+        <Button label="Lire" variant="outline" active onPress={vi.fn()} />
+      </>,
+    );
+    expect(inner('Envoyer').getAttribute('aria-busy')).toBe('true');
+    expect(inner('Ma liste').getAttribute('aria-pressed')).toBe('true');
+    expect(inner('Vu').getAttribute('aria-pressed')).toBe('false');
+    expect(inner('Lire').getAttribute('aria-pressed')).toBeNull();
+  });
+
   it('steps its fill up under the pointer, and back down when it leaves', () => {
     render(
       <>
@@ -176,6 +193,19 @@ describe('Badge and Chip', () => {
     expect(css(inner('EN')).backgroundColor).not.toBe('var(--kroma-accent)');
   });
 
+  it('says a filter chip is on where it is a filter, and nothing where it reports', () => {
+    render(
+      <>
+        <Chip label="FR" active pressed onPress={vi.fn()} />
+        <Chip label="EN" pressed={false} onPress={vi.fn()} />
+        <Chip label="HDR" active />
+      </>,
+    );
+    expect(inner('FR').getAttribute('aria-pressed')).toBe('true');
+    expect(inner('EN').getAttribute('aria-pressed')).toBe('false');
+    expect(inner('HDR').getAttribute('aria-pressed')).toBeNull();
+  });
+
   it('lifts a chip under the pointer, up its own ladder either way', () => {
     render(
       <>
@@ -192,6 +222,17 @@ describe('Badge and Chip', () => {
 });
 
 describe('IconButton', () => {
+  it('says an icon-only toggle is on', () => {
+    render(
+      <>
+        <IconButton icon="eye" label="Vu" active pressed onPress={vi.fn()} />
+        <IconButton icon="x" label="Fermer" onPress={vi.fn()} />
+      </>,
+    );
+    expect(inner('Vu').getAttribute('aria-pressed')).toBe('true');
+    expect(inner('Fermer').getAttribute('aria-pressed')).toBeNull();
+  });
+
   it('brightens its fill under the pointer, and an active one stays amber', () => {
     render(
       <>
@@ -216,7 +257,7 @@ describe('TextField', () => {
     render(
       <TextField
         value=""
-        onChange={() => {}}
+        onValueChange={() => {}}
         icon="search"
         physicalKeyboard
         autoFocus={false}
@@ -247,7 +288,11 @@ describe('TextField', () => {
 describe('TextArea', () => {
   it('is a real multi-line entry, named by its field, reporting what is typed', () => {
     const onChange = vi.fn();
-    render(<Field label="Message" multiline rows={3} physicalKeyboard onChange={onChange} />);
+    render(
+      <Field.Root label="Message">
+        <Field.Textarea rows={3} physicalKeyboard onValueChange={onChange} />
+      </Field.Root>,
+    );
     const entry = screen.getByLabelText('Message');
     expect(entry.tagName).toBe('TEXTAREA');
     // `rows` is a floor in the kit's own line box, not a DOM rows attribute:
@@ -359,6 +404,20 @@ describe('Progress', () => {
     expect(css(fill).left).toBe('0px');
     expect(css(fill).right).toBe('75%');
   });
+
+  it('announces the value it draws, and says it is working when it has none', () => {
+    const { container } = render(<Progress value={0.25} label="Import" />);
+    const bar = container.querySelector('[role="progressbar"]') as HTMLElement;
+    expect(bar.getAttribute('aria-label')).toBe('Import');
+    expect(bar.getAttribute('aria-valuenow')).toBe('25');
+    expect(bar.getAttribute('aria-valuemax')).toBe('100');
+
+    cleanup();
+    const sweeping = render(<Progress indeterminate />).container;
+    const busy = sweeping.querySelector('[role="progressbar"]') as HTMLElement;
+    expect(busy.getAttribute('aria-busy')).toBe('true');
+    expect(busy.getAttribute('aria-valuenow')).toBeNull();
+  });
 });
 
 describe('Skeleton', () => {
@@ -415,12 +474,12 @@ describe('Skeleton', () => {
   });
 });
 
-describe('Txt', () => {
+describe('Text', () => {
   it('applies the design type role and palette colour', () => {
     render(
-      <Txt variant="h1" color="accent">
+      <Text variant="h1" color="accent">
         Films
-      </Txt>,
+      </Text>,
     );
     const el = screen.getByText('Films');
     expect(css(el).fontSize).toBe('38px');
@@ -429,12 +488,12 @@ describe('Txt', () => {
 
   it('rescales the line height when a style overrides the font size', () => {
     // Keeping the role's absolute line height would clip the glyph on native.
-    render(<Txt style={{ fontSize: 28 }}>1</Txt>);
+    render(<Text style={{ fontSize: 28 }}>1</Text>);
     expect(css(screen.getByText('1')).lineHeight).toBe('43px');
   });
 
   it('leaves an explicit line height alone', () => {
-    render(<Txt style={{ fontSize: 28, lineHeight: 30 }}>2</Txt>);
+    render(<Text style={{ fontSize: 28, lineHeight: 30 }}>2</Text>);
     expect(css(screen.getByText('2')).lineHeight).toBe('30px');
   });
 
@@ -442,34 +501,63 @@ describe('Txt', () => {
     // The overline is authored in em; keeping 13px's absolute tracking at 14px
     // is the drift that had every 10-foot screen writing the style by hand.
     render(
-      <Txt variant="overlineTv" style={{ fontSize: 14 }}>
+      <Text variant="overlineTv" style={{ fontSize: 14 }}>
         3
-      </Txt>,
+      </Text>,
     );
     expect(css(screen.getByText('3')).letterSpacing).toBe('3.08px');
   });
 
   it('leaves an explicit tracking alone', () => {
     render(
-      <Txt variant="overlineTv" style={{ fontSize: 14, letterSpacing: 1 }}>
+      <Text variant="overlineTv" style={{ fontSize: 14, letterSpacing: 1 }}>
         4
-      </Txt>,
+      </Text>,
     );
     expect(css(screen.getByText('4')).letterSpacing).toBe('1px');
+  });
+
+  it('lays a string out from the shorthand vocabulary', () => {
+    render(
+      <Text mt={24} px={8} maxW={640} textAlign="center">
+        Sur le vif
+      </Text>,
+    );
+    const el = screen.getByText('Sur le vif');
+    expect(css(el).marginTop).toBe('24px');
+    expect(css(el).paddingLeft).toBe('8px');
+    expect(css(el).maxWidth).toBe('640px');
+    expect(css(el).textAlign).toBe('center');
+  });
+
+  it('keeps the shorthands off the host element', () => {
+    render(<Text maxW={200}>Rien</Text>);
+    const el = screen.getByText('Rien');
+    expect(el.getAttribute('maxW')).toBeNull();
+    expect(el.getAttribute('textAlign')).toBeNull();
+  });
+
+  it('still lets `style` win over a shorthand', () => {
+    render(
+      <Text mt={24} style={{ marginTop: 4 }}>
+        Dernier mot
+      </Text>,
+    );
+    expect(css(screen.getByText('Dernier mot')).marginTop).toBe('4px');
   });
 });
 
 describe('Dialog', () => {
   it('renders nothing while closed', () => {
-    render(<Dialog open={false} title="Supprimer" />);
+    render(<Dialog.Root open={false} title="Supprimer" />);
     expect(screen.queryByText('Supprimer')).toBeNull();
   });
 
   it('declares a focus scope so the D-pad cannot leave the panel', () => {
     render(
-      <Dialog open title="Supprimer">
+      <Dialog.Root open title="Supprimer">
         <Button label="OK" />
-      </Dialog>,
+      </Dialog.Root>,
     );
     const panel = document.querySelector('[data-focus-scope]');
     expect(panel).not.toBeNull();
@@ -478,7 +566,7 @@ describe('Dialog', () => {
   });
 
   it('rounds the panel with the design radius', () => {
-    render(<Dialog open title="Titre" />);
+    render(<Dialog.Root open title="Titre" />);
     const panel = document.querySelector('[data-focus-scope]') as HTMLElement;
     expect(css(panel).borderTopLeftRadius).toBe(`${radius['2xl']}px`);
   });

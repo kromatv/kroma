@@ -3,7 +3,7 @@
 
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { sv, type Variant } from '#ui/core';
 
 type BadgeTone = Variant<typeof badgeVariants, 'tone'>;
@@ -14,7 +14,7 @@ const badgeVariants = sv({
     label: { font: 'ui', fontWeight: '700' },
   },
   variants: {
-    /** Each tone is a tinted wash of its own hue at 16% — the `/NN` alpha
+    /** Each tone is a tinted wash of its own hue at 16%: the `/NN` alpha
      * suffix, resolved at declaration time because no target can compute
      * color-mix() (old webOS cannot, React Native cannot). */
     tone: {
@@ -56,7 +56,7 @@ function Badge({ tone = '4K', size = 'sm', children }: Readonly<BadgeProps>) {
   const s = badgeVariants({ tone: known, size });
   return (
     <Box style={s.root}>
-      <Txt style={s.label}>{children ?? tone}</Txt>
+      <Text style={s.label}>{children ?? tone}</Text>
     </Box>
   );
 }

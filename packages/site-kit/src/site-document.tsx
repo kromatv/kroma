@@ -2,16 +2,7 @@ import bricolageLatin from '@kroma/ui/src/assets/fonts/bricolage-grotesque-latin
 import hankenLatin from '@kroma/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
 import { HeadContent, Scripts } from '@tanstack/react-router';
 import type { JSX, ReactNode } from 'react';
-
-// `crossOrigin` is load-bearing: a font fetched without it does not match the
-// preload and is requested twice.
-const FONT_PRELOAD = [hankenLatin, bricolageLatin].map((href) => ({
-  rel: 'preload',
-  href,
-  as: 'font',
-  type: 'font/woff2',
-  crossOrigin: 'anonymous' as const,
-}));
+import { preload } from 'react-dom';
 
 /**
  * The `<head>` every KROMA site shares - font preloads, stylesheet and favicon -
@@ -37,7 +28,9 @@ export function siteHead({
       { name: 'description', content: description },
     ],
     links: [
-      ...FONT_PRELOAD,
+      // The faces are preloaded from <SiteDocument> instead, which is the only
+      // way they land ahead of the stylesheet; stated here as well they emit a
+      // second, duplicate pair of tags.
       { rel: 'stylesheet', href: appCss },
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
       ...links,
@@ -47,6 +40,15 @@ export function siteHead({
 
 /** The `<html>` shell every KROMA site renders into. */
 export function SiteDocument({ children }: Readonly<{ children: ReactNode }>) {
+  // React hoists a `data-precedence` stylesheet to the top of the head, and a
+  // <link rel="preload"> rendered through <HeadContent> is not hoisted at all,
+  // so `siteHead`'s links land after the stylesheet and every modulepreload.
+  // `preload()` puts the face in React's font bucket, which is emitted first.
+  // `font-display: optional` has no swap period, so arriving late is the same
+  // as never arriving.
+  for (const href of [hankenLatin, bricolageLatin]) {
+    preload(href, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
+  }
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

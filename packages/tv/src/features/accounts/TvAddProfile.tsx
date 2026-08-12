@@ -1,6 +1,6 @@
 import { normalizeServerUrl as norm } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, FocusColumn, Hint, Spinner, styles, Txt, useFocusNav } from '@kroma/ui/kit';
+import { Box, FocusColumn, Hint, Spinner, styles, Text, useFocusNav } from '@kroma/ui/kit';
 import { useEffect, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
@@ -68,29 +68,23 @@ export function TvAddProfile() {
   return (
     <AuthScreen>
       <Box w="100%" maxW={720}>
-        <Txt
-          variant="h1"
-          style={{ fontSize: 40, fontWeight: '600', textAlign: 'center', marginBottom: 6 }}
-        >
+        <Text variant="titleTv" textAlign="center" mb={6}>
           {t('addProfile.title')}
-        </Txt>
-        <Txt
-          style={{ fontSize: 16, fontWeight: '500', textAlign: 'center', marginBottom: 36 }}
-          color="textDim"
-        >
+        </Text>
+        <Text variant="leadTv" textAlign="center" mb={36} color="textDim">
           {t('addProfile.subtitle')}
-        </Txt>
+        </Text>
 
         <Box row align="center" gap={10} mb={12}>
-          <Txt variant="overlineTv" style={s.section} color="rgba(244, 243, 240, 0.42)">
+          <Text variant="overlineTv" style={s.section} color="text/42">
             {t('addProfile.availableServers')}
-          </Txt>
+          </Text>
           {discovering ? <Spinner size={13} thickness={2} /> : null}
         </Box>
         <Box gap={12}>
           {/* The navigator orders a group's children by registration order, not
               position, so this group holds the servers' place above "Ajouter
-              manuellement" — keys are list positions for the same reason. */}
+              manuellement"; keys are list positions for the same reason. */}
           <FocusColumn style={s.list}>
             {entries.map((e, index) => {
               const probe = health[e.url];
@@ -124,7 +118,7 @@ export function TvAddProfile() {
           gap={4}
           justify="center"
           mt={28}
-          color="rgba(244, 243, 240, 0.4)"
+          color="text/40"
           textStyle={{ fontWeight: '500' }}
         />
       </Box>

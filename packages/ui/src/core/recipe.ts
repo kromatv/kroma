@@ -4,6 +4,7 @@
 //
 // See packages/ui/README.md for the authoring guide.
 
+import { breakpointStep } from '#ui/core/breakpoint';
 import { type Split, split, stabilise } from '#ui/core/normalize';
 import { maskOf, SV_STATES, type SvState, type SvStateName, stateSuffix } from '#ui/core/states';
 import { themeVersion } from '#ui/core/theme';
@@ -29,6 +30,7 @@ interface Compiled {
   options: Record<string, Record<string, (Split | undefined)[]>>;
   rules: { when: [string, PropertyKey | undefined][]; layers: (Split | undefined)[] }[];
   mask: number;
+  breakpoints: number;
   cache: Map<string, Record<string, object>>;
 }
 
@@ -104,11 +106,13 @@ export function sv(
   // also what drops the old theme's cache.
   const build = (): Compiled => {
     const declared = new Set<SvStateName>();
+    let breakpoints = 0;
     const layersOf = (layer: unknown): (Split | undefined)[] => {
       const wrapped = wrap(layer);
       return names.map((name) => {
         const piece = split(wrapped[name] as Record<string, unknown>);
         for (const state of piece?.declared ?? []) declared.add(state);
+        breakpoints |= piece?.breakpoints ?? 0;
         return piece;
       });
     };
@@ -116,6 +120,7 @@ export function sv(
     const bases = names.map((name) => {
       const piece = split(slots[name] as Record<string, unknown>) as Split;
       for (const state of piece.declared) declared.add(state);
+      breakpoints |= piece.breakpoints;
       return piece;
     });
 
@@ -134,17 +139,28 @@ export function sv(
 
     // A recipe declaring no states pays nothing for the axis: one cache entry
     // per variant combination, and no sweep.
-    return { bases, options, rules, mask: maskOf(declared), cache: new Map() };
+    return { bases, options, rules, mask: maskOf(declared), breakpoints, cache: new Map() };
   };
 
   let compiled: Compiled | undefined;
   let builtAt = -1;
+  let builtStep = 0;
 
+  // The theme and the breakpoint are both compiled IN, so both invalidate the
+  // same way. A recipe naming no breakpoint has `breakpoints === 0` and its step
+  // is 0 forever, which is why crossing one costs it nothing - not a rebuild,
+  // not a wider cache key.
   const fn = ((picks?: Record<string, PropertyKey | undefined>, state?: SvState) => {
     const at = themeVersion();
-    if (builtAt !== at) {
+    const stale =
+      builtAt !== at ||
+      (compiled !== undefined &&
+        compiled.breakpoints !== 0 &&
+        breakpointStep(compiled.breakpoints) !== builtStep);
+    if (stale) {
       compiled = build();
       builtAt = at;
+      builtStep = breakpointStep(compiled.breakpoints);
     }
     const active = compiled as Compiled;
     const pickOf: PickOf = (group) => picks?.[group] ?? defaults[group];
@@ -190,6 +206,3 @@ export function svFor<P extends SlotShapes>() {
     config: SvConfig<P, V>,
   ): SvFn<P, V> => sv(config as never) as SvFn<P, V>;
 }
-
-export type { Layer } from '#ui/core/types';
-export type { SvConfig, SvFlatConfig, SvFn };

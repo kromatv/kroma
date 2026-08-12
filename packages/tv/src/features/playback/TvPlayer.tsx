@@ -13,7 +13,7 @@ import {
   useSubtitleAppearance,
   useT,
 } from '@kroma/ui';
-import { Box, Button, Icon, Txt } from '@kroma/ui/kit';
+import { Box, Button, Icon, Text } from '@kroma/ui/kit';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -137,9 +137,7 @@ export function TvPlayer() {
       }
     : null;
 
-  const surface = <PlayerSurface pb={pb} title={item.title} />;
-
-  // Targets exactly what is playing — for a series, the episode, not the show.
+  // Targets exactly what is playing: for a series, the episode, not the show.
   const onReport = useCallback(
     async (category: ReportCategory) => {
       await client.createReport({
@@ -153,7 +151,7 @@ export function TvPlayer() {
   );
 
   return (
-    <Player
+    <Player.Root
       controller={controller}
       flags={playerFlags}
       title={item.title}
@@ -162,31 +160,30 @@ export function TvPlayer() {
       markers={item.markers ?? undefined}
       tileAt={tileAt}
       appearance={appearance}
-      onAppearance={setAppearance}
+      onAppearanceChange={setAppearance}
       subtitleGen={subtitleGen}
       onReport={onReport}
       upNext={up.data}
       onPlayItem={onPlayItem}
       onPlayNext={next ? goNext : undefined}
       nextTitle={nextTitle}
-      intro={
-        intro ? { active: introActive, onSkip: () => pb.seekTo(intro.endMs / 1000) } : undefined
-      }
-      surface={surface}
+      introActive={introActive}
+      onSkipIntro={intro ? () => pb.seekTo(intro.endMs / 1000) : undefined}
       onClose={nav.back}
-      terminated={
-        pb.terminated != null ? (
-          <Box fill z={80} center gap={24} px={64} bg="rgba(0, 0, 0, 0.92)">
-            <Icon name="player-stop-filled" size={64} color="#E8536A" />
-            <Txt variant="h1" style={{ fontSize: 30, textAlign: 'center' }} color="#FFFFFF">
+    >
+      <Player.Media>
+        <PlayerSurface pb={pb} title={item.title} />
+      </Player.Media>
+      {pb.terminated != null ? (
+        <Player.Panel>
+          <Box fill z={80} center gap={24} px={64} bg="black/92">
+            <Icon name="player-stop-filled" size={64} color="danger" />
+            <Text variant="headingTv" textAlign="center" color="white">
               {t('player.stoppedTitle')}
-            </Txt>
-            <Txt
-              style={{ fontSize: 18, lineHeight: 27, textAlign: 'center', maxWidth: 672 }}
-              color="rgba(244, 243, 240, 0.72)"
-            >
+            </Text>
+            <Text variant="bodyTv" textAlign="center" maxW={672} color="text/72">
               {pb.terminated || t('player.stoppedDefault')}
-            </Txt>
+            </Text>
             <Button
               icon="chevron-left"
               label={t('player.back')}
@@ -195,8 +192,8 @@ export function TvPlayer() {
               autoFocus
             />
           </Box>
-        ) : null
-      }
-    />
+        </Player.Panel>
+      ) : null}
+    </Player.Root>
   );
 }

@@ -1,6 +1,6 @@
 // Where a notification's link goes on a phone. The server writes links for
 // the WEB app's routes, and the two clients don't name their screens alike,
-// so an unmapped route must be recognisable as such — the row hides its
+// so an unmapped route must be recognisable as such: the row hides its
 // buttons rather than leaving a dead tap.
 
 import { describe, expect, it } from 'vitest';

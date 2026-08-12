@@ -1,4 +1,4 @@
-import { isAbsolute, sep } from 'node:path';
+import { isAbsolute, join, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { colors, lightColors } from '../src/core/tokens/colors';
 import { WASH_ALPHA } from '../src/core/tokens/effects';
@@ -144,6 +144,13 @@ describe('the plugin', () => {
     expect(transform('@import "@kroma/ui/css/base";')).toBe(baseCss());
   });
 
+  it('leaves the reset out of the page furniture, for a target with its own', () => {
+    const page = transform('@import "@kroma/ui/css/page";') ?? '';
+    expect(page).toContain('::-webkit-scrollbar');
+    expect(page).not.toContain('font-size: inherit');
+    expect(transform('@import "@kroma/ui/css/base";')).toContain('font-size: inherit');
+  });
+
   it('accepts single quotes and stray whitespace', () => {
     expect(transform("@import '@kroma/ui/css/tokens' ;")).toBe(tokensCss());
   });
@@ -187,6 +194,103 @@ describe('the plugin', () => {
     plugin.generateBundle({}, bundle);
     expect(bundle['c.css'].source).toBe('body { color: red; }');
     expect(bundle['d.css'].source).toBe(binary);
+  });
+});
+
+describe('the plugin order', () => {
+  const resolved = (...names: string[]) => ({ plugins: names.map((name) => ({ name })) });
+
+  it('fails the build when Tailwind would reach the stylesheet first', () => {
+    expect(() =>
+      kromaTokens().configResolved(
+        resolved('@tailwindcss/vite:scan', '@tailwindcss/vite:generate:build', 'kroma-tokens'),
+      ),
+    ).toThrow(/must come before tailwindcss/);
+  });
+
+  it('says nothing when it runs first, or where Tailwind is not installed', () => {
+    expect(() =>
+      kromaTokens().configResolved(resolved('kroma-tokens', '@tailwindcss/vite:generate:serve')),
+    ).not.toThrow();
+    expect(() => kromaTokens().configResolved(resolved('vite:css', 'kroma-tokens'))).not.toThrow();
+  });
+});
+
+describe('a step written mid-session', () => {
+  const STYLES = '/app/src/styles.css';
+  const under = (name: string) => join(SOURCE_ROOTS[0] ?? '', 'ui', 'src', 'components', name);
+
+  function devServer() {
+    const module = { id: STYLES };
+    const reloaded: unknown[] = [];
+    return {
+      module,
+      reloaded,
+      ctx: {
+        environment: {
+          moduleGraph: { getModuleById: (id: string) => (id === STYLES ? module : undefined) },
+          reloadModule: (target: { id: string | null }) => {
+            reloaded.push(target);
+          },
+        },
+      },
+    };
+  }
+
+  const expand = (plugin: ReturnType<typeof kromaTokens>) =>
+    plugin.transform.call({}, '@import "@kroma/ui/css/tokens";', STYLES)?.code ?? '';
+
+  it('reaches the stylesheet, and the page, without a dev server restart', async () => {
+    const plugin = kromaTokens();
+    expect(expand(plugin)).not.toContain('--kroma-accent-43:');
+
+    const server = devServer();
+    await plugin.hotUpdate.call(server.ctx, {
+      file: under('made-up.tsx'),
+      read: () => '<Box bg="accent/43" />',
+    });
+
+    expect(server.reloaded).toEqual([server.module]);
+    expect(expand(plugin)).toContain('--kroma-accent-43:');
+  });
+
+  it('leaves the page alone for a change that names no new step', async () => {
+    const plugin = kromaTokens();
+    expand(plugin);
+
+    const server = devServer();
+    await plugin.hotUpdate.call(server.ctx, {
+      file: under('made-up.tsx'),
+      read: () => '<Box bg="accent/43" />',
+    });
+
+    expect(server.reloaded).toEqual([]);
+  });
+
+  it('ignores a step only a test spells, which no build would emit', async () => {
+    const plugin = kromaTokens();
+    expand(plugin);
+
+    const server = devServer();
+    await plugin.hotUpdate.call(server.ctx, {
+      file: under('made-up.test.tsx'),
+      read: () => '<Box bg="accent/44" />',
+    });
+
+    expect(server.reloaded).toEqual([]);
+    expect(expand(plugin)).not.toContain('--kroma-accent-44:');
+  });
+
+  it('still folds the step in where there is no dev server to reload', async () => {
+    const plugin = kromaTokens();
+    expect(expand(plugin)).not.toContain('--kroma-accent-47:');
+
+    await plugin.hotUpdate.call(
+      {},
+      { file: under('made-up.tsx'), read: () => '<Box bg="accent/47" />' },
+    );
+
+    expect(expand(plugin)).toContain('--kroma-accent-47:');
   });
 });
 

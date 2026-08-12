@@ -1,287 +1,124 @@
-// Admin-dashboard charts, rendered with Chart.js (react-chartjs-2): a reusable
-// multi-series line/area chart (Débit / CPU / RAM) and the stacked films-vs-TV
-// history bars. Chart.js owns the plot, axes, grid and tooltips; the legend and
-// footer are kept as bespoke React to match the "Admin Serveur" design.
+// The dashboard's two plots, composed out of the kit's <Chart>: the shared
+// metrics chart (throughput / CPU / RAM) and the stacked films-vs-TV history.
+// What stays here is product policy - the time axis counts back from now, and
+// the captions are the admin's own copy.
 
 import type { HistoryBucket } from '@kroma/core';
-import {
-  BarElement,
-  CategoryScale,
-  Chart as ChartJS,
-  type ChartOptions,
-  Filler,
-  LinearScale,
-  LineElement,
-  PointElement,
-  type ScriptableContext,
-  Tooltip,
-} from 'chart.js';
+import { Chart, type ChartPoint, type ColorValue } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
-import { Bar, Line } from 'react-chartjs-2';
+import { CHART_SERIES } from '#web/features/admin/chart-palette';
 import { formatHours } from '#web/shared/lib/adminFormat';
-
-const C = { films: '#84CE7E', tv: '#E8536A' } as const;
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Filler,
-  Tooltip,
-);
-
-ChartJS.defaults.font.family =
-  'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
 
 // Fallback only; the server is authoritative via `sampleIntervalMs`
 // (see server/crates/kroma-engine/src/infra/metrics.rs).
 const DEFAULT_SAMPLE_SEC = 3;
 
-const GRID = 'rgba(255,255,255,.05)';
-
-function withAlpha(hex: string, a: number): string {
-  const n = Number.parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
-}
-
-function areaFill(color: string) {
-  return (ctx: ScriptableContext<'line'>) => {
-    const { chart } = ctx;
-    const { ctx: canvas, chartArea } = chart;
-    if (!chartArea) return withAlpha(color, 0.18);
-    const g = canvas.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-    g.addColorStop(0, withAlpha(color, 0.35));
-    g.addColorStop(1, withAlpha(color, 0));
-    return g;
-  };
-}
+const METRICS_HEIGHT = 208;
+const HISTORY_HEIGHT = 256;
 
 function timeAgo(secondsAgo: number): string {
   if (secondsAgo <= 0) return 'MAINTENANT';
   const total = Math.round(secondsAgo);
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  if (m === 0) return `${s}s`;
-  return s === 0 ? `${m}m` : `${m}m ${s}s`;
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  if (minutes === 0) return `${seconds}s`;
+  return seconds === 0 ? `${minutes}m` : `${minutes}m ${seconds}s`;
 }
 
-function timeLabels(n: number, sampleSec: number): string[] {
-  return Array.from({ length: n }, (_, i) => {
-    const tickEvery = (n - 1) / 6;
-    const onTick = n <= 7 || Math.abs(i % tickEvery) < 0.5 || i === n - 1;
-    return onTick ? timeAgo((n - 1 - i) * sampleSec) : '';
-  });
-}
-
-interface SeriesDef {
+interface MetricsSeries {
+  /** The field each sample carries this series under. */
+  id: string;
   label: string;
   data: number[];
-  color: string;
+  color: ColorValue;
   fill?: boolean;
 }
 
-/** A multi-series line/area chart with a left y-axis, legend and footer. */
+// The server's columns, zipped into one point per sample and named by how long
+// ago it was taken.
+function samplesOf(series: readonly MetricsSeries[], sampleSec: number): ChartPoint[] {
+  const count = Math.max(0, ...series.map((one) => one.data.length));
+  return Array.from({ length: count }, (_, at) => {
+    const point: ChartPoint = { at: timeAgo((count - 1 - at) * sampleSec) };
+    for (const one of series) point[one.id] = one.data[at] ?? null;
+    return point;
+  });
+}
+
+/** A multi-series line/area plot with a left scale, a key and a caption. */
 export function MetricsChart({
   series,
   max,
   formatValue,
-  legend,
+  label,
   footer,
   sampleSec = DEFAULT_SAMPLE_SEC,
 }: Readonly<{
-  series: SeriesDef[];
+  series: MetricsSeries[];
   max: number;
-  formatValue: (v: number) => string;
-  legend: { label: string; color: string }[];
+  formatValue: (value: number) => string;
+  label: string;
   footer?: ReactNode;
   sampleSec?: number;
 }>) {
-  const n = Math.max(0, ...series.map((s) => s.data.length));
-  const labels = timeLabels(n, sampleSec);
-
-  const data = {
-    labels,
-    datasets: series.map((s) => ({
-      label: s.label,
-      data: s.data,
-      borderColor: s.color,
-      backgroundColor: s.fill ? areaFill(s.color) : 'transparent',
-      fill: s.fill ? 'origin' : false,
-      borderWidth: 2.6,
-      tension: 0.35,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      pointHoverBackgroundColor: s.color,
-      pointHoverBorderColor: '#fff',
-    })),
-  };
-
-  const options: ChartOptions<'line'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    interaction: { mode: 'index', intersect: false },
-    scales: {
-      x: {
-        grid: { display: false },
-        border: { display: false },
-        ticks: {
-          color: (c) => (c.tick.label === 'MAINTENANT' ? '#9b9893' : '#6f6c67'),
-          autoSkip: false,
-          maxRotation: 0,
-          font: { size: 11, weight: 500 },
-        },
-      },
-      y: {
-        min: 0,
-        max,
-        grid: { color: GRID },
-        border: { display: false },
-        ticks: {
-          color: '#6f6c67',
-          count: 6,
-          font: { size: 11, weight: 500 },
-          callback: (v) => formatValue(Number(v)),
-        },
-      },
-    },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(18,18,22,.95)',
-        borderColor: 'rgba(255,255,255,.1)',
-        borderWidth: 1,
-        padding: 10,
-        cornerRadius: 9,
-        titleColor: '#9b9893',
-        bodyColor: '#f4f3f0',
-        usePointStyle: true,
-        callbacks: {
-          title: (items) => {
-            const i = items[0]?.dataIndex ?? 0;
-            return timeAgo((n - 1 - i) * sampleSec);
-          },
-          label: (item) => ` ${item.dataset.label}: ${formatValue(item.parsed.y ?? 0)}`,
-        },
-      },
-    },
-  };
-
   return (
-    <div>
-      <div className="h-52">
-        <Line data={data} options={options} />
-      </div>
-      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-4">
-        <Legend items={legend} />
-        {footer ? <span className="text-[12.5px] text-dim">{footer}</span> : null}
-      </div>
-    </div>
+    <Chart.Root
+      data={samplesOf(series, sampleSec)}
+      x="at"
+      height={METRICS_HEIGHT}
+      min={0}
+      max={max}
+      format={formatValue}
+      label={label}
+    >
+      <Chart.Grid />
+      {series.map((one) =>
+        one.fill ? (
+          <Chart.Area key={one.id} series={one.id} label={one.label} color={one.color} />
+        ) : (
+          <Chart.Line key={one.id} series={one.id} label={one.label} color={one.color} />
+        ),
+      )}
+      <Chart.Axis edge="left" />
+      <Chart.Axis edge="bottom" />
+      <Chart.Tooltip />
+      <Chart.Legend />
+      {footer ? <Chart.Footer>{footer}</Chart.Footer> : null}
+    </Chart.Root>
   );
 }
 
 /** Stacked weekly bars: films (green) + TV (red). */
-export function HistoryBars({ buckets }: Readonly<{ buckets: HistoryBucket[] }>) {
-  const totalFilms = buckets.reduce((a, b) => a + b.filmsMs, 0);
-  const totalTv = buckets.reduce((a, b) => a + b.tvMs, 0);
-
-  const data = {
-    labels: buckets.map((b) => b.label),
-    datasets: [
-      {
-        label: 'FILMS',
-        data: buckets.map((b) => b.filmsMs),
-        backgroundColor: C.films,
-        borderRadius: { topLeft: 6, topRight: 6 },
-        borderSkipped: false as const,
-      },
-      {
-        label: 'TV',
-        data: buckets.map((b) => b.tvMs),
-        backgroundColor: C.tv,
-        borderRadius: { topLeft: 6, topRight: 6 },
-        borderSkipped: false as const,
-      },
-    ],
-  };
-
-  const options: ChartOptions<'bar'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    interaction: { mode: 'index', intersect: false },
-    scales: {
-      x: {
-        stacked: true,
-        grid: { display: false },
-        border: { color: GRID },
-        ticks: { color: '#6f6c67', font: { size: 12, weight: 500 } },
-      },
-      y: {
-        stacked: true,
-        beginAtZero: true,
-        grid: { color: GRID },
-        border: { display: false },
-        ticks: {
-          color: '#6f6c67',
-          count: 6,
-          font: { size: 11, weight: 500 },
-          callback: (v) => formatHours(Number(v)),
-        },
-      },
-    },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(18,18,22,.95)',
-        borderColor: 'rgba(255,255,255,.1)',
-        borderWidth: 1,
-        padding: 10,
-        cornerRadius: 9,
-        titleColor: '#9b9893',
-        bodyColor: '#f4f3f0',
-        usePointStyle: true,
-        callbacks: {
-          label: (item) => ` ${item.dataset.label}: ${formatHours(item.parsed.y ?? 0)}`,
-        },
-      },
-    },
-  };
-
+export function HistoryBars({
+  buckets,
+  label,
+}: Readonly<{ buckets: HistoryBucket[]; label: string }>) {
+  const totalFilms = buckets.reduce((sum, bucket) => sum + bucket.filmsMs, 0);
+  const totalTv = buckets.reduce((sum, bucket) => sum + bucket.tvMs, 0);
+  const data = buckets.map((bucket) => ({
+    at: bucket.label,
+    films: bucket.filmsMs,
+    tv: bucket.tvMs,
+  }));
   return (
-    <div>
-      <div className="h-64">
-        <Bar data={data} options={options} />
-      </div>
-      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-4">
-        <Legend
-          items={[
-            { label: 'FILMS', color: C.films },
-            { label: 'TV', color: C.tv },
-          ]}
-        />
-        <span className="text-[12.5px] text-dim">
-          Totaux : Films {formatHours(totalFilms)} · TV {formatHours(totalTv)}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function Legend({ items }: Readonly<{ items: { label: string; color: string }[] }>) {
-  return (
-    <div className="flex flex-wrap gap-4.5">
-      {items.map((l) => (
-        <span
-          key={l.label}
-          className="inline-flex items-center gap-1.75 text-[12px] font-semibold tracking-[.06em] text-muted"
-        >
-          <span className="h-2.25 w-2.25 rounded-full" style={{ background: l.color }} />
-          {l.label}
-        </span>
-      ))}
-    </div>
+    <Chart.Root
+      data={data}
+      x="at"
+      height={HISTORY_HEIGHT}
+      format={formatHours}
+      label={label}
+      min={0}
+    >
+      <Chart.Grid />
+      <Chart.Bar series="films" label="FILMS" color={CHART_SERIES.films} />
+      <Chart.Bar series="tv" label="TV" color={CHART_SERIES.tv} stack />
+      <Chart.Axis edge="left" />
+      <Chart.Axis edge="bottom" />
+      <Chart.Tooltip />
+      <Chart.Legend />
+      <Chart.Footer>
+        Totaux : Films {formatHours(totalFilms)} · TV {formatHours(totalTv)}
+      </Chart.Footer>
+    </Chart.Root>
   );
 }

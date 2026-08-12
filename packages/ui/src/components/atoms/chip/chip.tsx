@@ -7,7 +7,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type ColorValue, type StyleDecl, svFor } from '#ui/core';
 import { useLocaleDefault } from '#ui/services/i18n';
 
@@ -82,6 +82,8 @@ const chipVariants = svFor<{
 });
 
 interface ChipProps extends Omit<FocusableProps, 'children' | 'style' | 'label'> {
+  /** The accent fill. It is paint and nothing else: a chip that turns a filter
+   *  on and off says so with `pressed`, which is what assistive tech hears. */
   active?: boolean;
   size?: 'sm' | 'tv';
   variant?: 'solid' | 'subtle' | 'surface';
@@ -120,11 +122,11 @@ function Chip({
     >
       {(state) => (
         <>
-          {icon ? <Icon name={icon} stroke={2} {...state.slots.icon} /> : null}
+          {icon ? <Icon name={icon} thickness={2} {...state.slots.icon} /> : null}
           {dot ? <Box bg={active ? undefined : dot} style={state.slots.dot} /> : null}
-          {label === undefined ? null : <Txt style={state.slots.label}>{label}</Txt>}
+          {label === undefined ? null : <Text style={state.slots.label}>{label}</Text>}
           {count === undefined ? null : (
-            <Txt style={state.slots.count}>{count.toLocaleString(locale)}</Txt>
+            <Text style={state.slots.count}>{count.toLocaleString(locale)}</Text>
           )}
           {children}
         </>

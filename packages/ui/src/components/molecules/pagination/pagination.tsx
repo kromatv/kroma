@@ -1,12 +1,14 @@
-import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { Platform, type StyleProp, type ViewStyle } from 'react-native';
 import { Box, type BoxProps, Row } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
+import { HAND } from '#ui/lib/cursor';
 import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
+import { partContext } from '#ui/lib/part-context';
 import { clamp, pageWindow } from './paging';
 
 const WEB = Platform.OS === 'web';
@@ -49,13 +51,7 @@ interface PaginationContext {
   pageLabel: (page: number) => string;
 }
 
-const Context = createContext<PaginationContext | null>(null);
-
-function usePagination(part: string): PaginationContext {
-  const ctx = useContext(Context);
-  if (!ctx) throw new Error(`<Pagination.${part}> must be used inside <Pagination.Root>`);
-  return ctx;
-}
+const [Context, usePagination] = partContext<PaginationContext>('Pagination.Root');
 
 function numberedPage(page: number): string {
   return `Page ${page}`;
@@ -125,7 +121,7 @@ function Root({
   return (
     <Context.Provider value={ctx}>
       <FocusRegion>
-        <Row role="navigation" accessibilityLabel={label} gap={gap} style={style}>
+        <Row role="navigation" accessibilityLabel={label} gap={gap} style={[HAND, style]}>
           {children ?? (
             <>
               <Previous />
@@ -209,7 +205,7 @@ function Item({ page }: Readonly<PaginationItemProps>) {
         sv={paginationVariants}
         vars={{ size, current: on }}
       >
-        {(state) => <Txt style={state.slots.label}>{page}</Txt>}
+        {(state) => <Text style={state.slots.label}>{page}</Text>}
       </Focusable>
     </Box>
   );
@@ -235,9 +231,9 @@ interface PaginationStatusProps {
 function Status({ format = pageOfCount }: Readonly<PaginationStatusProps>) {
   const { page, pageCount, size } = usePagination('Status');
   return (
-    <Txt variant={size === 'tv' ? 'body' : 'meta'} color="textDim">
+    <Text variant={size === 'tv' ? 'body' : 'meta'} color="textDim">
       {format(page, pageCount)}
-    </Txt>
+    </Text>
   );
 }
 

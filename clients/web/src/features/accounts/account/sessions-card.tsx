@@ -1,24 +1,17 @@
 import type { SessionInfo } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
-import {
-  IconDeviceDesktop,
-  IconDeviceMobile,
-  IconDeviceTv,
-  IconLoader2,
-} from '@tabler/icons-react';
+import { Badge, Box, Button, Icon, type IconName, ListRow, Row, Text } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Panel } from '#web/features/accounts/account/ui';
 import { relativeSeen } from '#web/shared/lib/adminFormat';
 import { kromaClient } from '#web/shared/lib/api';
 import { type DeviceKind, deviceInfo } from '#web/shared/lib/device';
 import { userQueries } from '#web/shared/lib/queries';
 
-const DEVICE_ICON: Record<DeviceKind, typeof IconDeviceDesktop> = {
-  tv: IconDeviceTv,
-  mobile: IconDeviceMobile,
-  desktop: IconDeviceDesktop,
+const DEVICE_ICON: Record<DeviceKind, IconName> = {
+  tv: 'device-tv',
+  mobile: 'device-mobile',
+  desktop: 'device-desktop',
 };
 
 function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
@@ -26,7 +19,6 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
   const qc = useQueryClient();
   const [revoking, setRevoking] = useState(false);
   const { label, kind } = deviceInfo(session.userAgent, t('account.unknownDevice'));
-  const Icon = DEVICE_ICON[kind];
 
   const revoke = async () => {
     setRevoking(true);
@@ -39,73 +31,63 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 px-5.5 py-3.5">
-      <div className="flex min-w-0 items-center gap-3.5">
-        <span className="flex size-9.5 flex-none items-center justify-center rounded-md border border-border bg-surface-2 text-muted">
-          <Icon size={19} stroke={1.7} />
-        </span>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5 text-[14px] font-bold text-text">
-            <span className="truncate">{label}</span>
-            {session.current ? (
-              <span className="flex-none rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-bold text-success">
-                {t('account.thisDevice')}
-              </span>
-            ) : null}
-          </div>
-          <div className="mt-0.5 truncate text-[12.5px] text-muted">
-            {relativeSeen(session.lastSeen)}
-          </div>
-        </div>
-      </div>
-      {session.current ? (
-        <span className="flex-none text-[12.5px] font-semibold text-dim">
-          {t('account.sessionActive')}
-        </span>
-      ) : (
-        <Button
-          variant="ghost"
-          size="sm"
-          label={revoking ? t('common.saving') : t('account.signOutDevice')}
-          onPress={revoke}
-          loading={revoking}
-        />
-      )}
-    </div>
+    <ListRow.Root>
+      <ListRow.Leading>
+        <Box center w={38} h={38} radius="xs" border="border" bg="surface2">
+          <Icon name={DEVICE_ICON[kind]} size={19} thickness={1.7} color="textMuted" />
+        </Box>
+      </ListRow.Leading>
+      <Row gap={10}>
+        <ListRow.Label>{label}</ListRow.Label>
+        {session.current ? <Badge tone="success">{t('account.thisDevice')}</Badge> : null}
+      </Row>
+      <ListRow.Hint>{relativeSeen(session.lastSeen)}</ListRow.Hint>
+      <ListRow.Trailing>
+        {session.current ? (
+          <Text variant="meta" color="textDim">
+            {t('account.sessionActive')}
+          </Text>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            label={revoking ? t('common.saving') : t('account.signOutDevice')}
+            onPress={revoke}
+            loading={revoking}
+          />
+        )}
+      </ListRow.Trailing>
+    </ListRow.Root>
   );
 }
 
 export function SessionsCard() {
   const t = useT();
   const { data: sessions, isPending } = useQuery(userQueries.sessions());
+  const note = isPending ? t('common.loading') : sessionsNote(sessions, t);
 
   return (
-    <Panel className="divide-y divide-border/70 overflow-hidden">
-      <div className="px-5.5 py-4 text-[14.5px] font-bold text-text">{t('account.sessions')}</div>
-      <SessionsBody isPending={isPending} sessions={sessions} />
-    </Panel>
+    <ListRow.Group size="md">
+      <ListRow.Root>
+        <ListRow.Label>{t('account.sessions')}</ListRow.Label>
+      </ListRow.Root>
+      {note ? (
+        <ListRow.Root>
+          <Text variant="meta" color="textMuted">
+            {note}
+          </Text>
+        </ListRow.Root>
+      ) : null}
+      {(sessions ?? []).map((s) => (
+        <SessionRow key={s.id} session={s} />
+      ))}
+    </ListRow.Group>
   );
 }
 
-function SessionsBody({
-  isPending,
-  sessions,
-}: Readonly<{ isPending: boolean; sessions: SessionInfo[] | undefined }>) {
-  const t = useT();
-  if (isPending)
-    return (
-      <div className="flex items-center gap-2.5 px-5.5 py-5 text-[13px] text-muted">
-        <IconLoader2 size={16} className="animate-spin" />
-        {t('common.loading')}
-      </div>
-    );
-  if (!sessions || sessions.length === 0)
-    return <div className="px-5.5 py-5 text-[13px] text-muted">{t('account.sessionsEmpty')}</div>;
-  return (
-    <>
-      {sessions.map((s) => (
-        <SessionRow key={s.id} session={s} />
-      ))}
-    </>
-  );
+function sessionsNote(
+  sessions: SessionInfo[] | undefined,
+  t: ReturnType<typeof useT>,
+): string | null {
+  return !sessions || sessions.length === 0 ? t('account.sessionsEmpty') : null;
 }

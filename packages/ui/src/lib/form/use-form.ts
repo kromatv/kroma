@@ -9,15 +9,15 @@ type BooleanKeys<V> = { [K in keyof V]-?: V[K] extends boolean ? K : never }[key
 type FieldErrors<V> = Partial<Record<keyof V & string, string>>;
 
 interface TextBinding<T> {
-  value: T;
-  onChange: (next: T) => void;
-  error: string | undefined;
-  onSubmit: () => void;
+  /** Spread onto `<Field.Root>`: the value it holds and the message it shows. */
+  root: { value: T; onValueChange: (next: T) => void; error: string | undefined };
+  /** Spread onto `<Field.Input>` or `<Field.Textarea>`: the return key submits. */
+  input: { onSubmit: () => void };
 }
 
 interface ToggleBinding<T> {
   checked: T;
-  onChange: (next: T) => void;
+  onCheckedChange: (next: T) => void;
 }
 
 interface FormOptions<Values, Output> {
@@ -124,8 +124,8 @@ function useForm<Values extends Record<string, unknown>, Output>({
   };
 
   const setValue = <K extends keyof Values & string>(name: K, next: Values[K]) => {
-    // Updater form, so two writes dispatched in one batch — a browser autofill
-    // filling e-mail and password together — do not lose the first.
+    // Updater form, so two writes dispatched in one batch (a browser autofill
+    // filling e-mail and password together) do not lose the first.
     setValues((current) => ({ ...current, [name]: next }));
     setSubmitted(false);
     if (live.current) void settle({ ...values, [name]: next });
@@ -154,14 +154,16 @@ function useForm<Values extends Record<string, unknown>, Output>({
     submitting,
     submitted,
     field: (name) => ({
-      value: values[name],
-      onChange: (next) => setValue(name, next),
-      error: errors[name],
-      onSubmit: submit,
+      root: {
+        value: values[name],
+        onValueChange: (next) => setValue(name, next),
+        error: errors[name],
+      },
+      input: { onSubmit: submit },
     }),
     toggle: (name) => ({
       checked: values[name],
-      onChange: (next) => setValue(name, next),
+      onCheckedChange: (next) => setValue(name, next),
     }),
     setValue,
     setError: (name, message) =>

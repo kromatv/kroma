@@ -7,17 +7,29 @@ import {
 } from '@kroma/core';
 import type { DownloadProgressEvent } from '@kroma/module-torrents/schemas';
 import { useLocale, useT } from '@kroma/ui';
-import { Button, EmptyState, IconButton } from '@kroma/ui/kit';
-import { IconCalendarClock } from '@tabler/icons-react';
+import {
+  Box,
+  Button,
+  EmptyState,
+  Focusable,
+  Icon,
+  IconButton,
+  Img,
+  PageHeader,
+  Row,
+  Surface,
+  styles,
+  Text,
+} from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
-import { RequestStatusChip } from '#web/features/requests/request-status-chip';
-import { seasonsSummary } from '#web/features/requests/status';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
-import { Image, PAGE_MAIN, PAGE_SUBTITLE, PAGE_TITLE, Skeleton } from '#web/shared/ui';
+import { seasonsSummary } from '#web/shared/lib/request-status';
+import { PAGE_MAIN, Skeleton } from '#web/shared/ui';
+import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 export function MyRequestsPage() {
   const t = useT();
@@ -63,33 +75,34 @@ export function MyRequestsPage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <h1 className={PAGE_TITLE}>{t('requests.myTitle')}</h1>
-      <p className={PAGE_SUBTITLE}>{t('requests.mySubtitle')}</p>
+      <PageHeader.Root>
+        <PageHeader.Title>{t('requests.myTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('requests.mySubtitle')}</PageHeader.Subtitle>
+      </PageHeader.Root>
 
       {isPending ? (
-        <div className="mt-6 flex flex-col gap-2.5">
+        <Box mt={24} gap={10}>
           {Array.from({ length: 4 }, (_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length placeholder rows
             <Skeleton key={i} h={92} radius={16} />
           ))}
-        </div>
+        </Box>
       ) : null}
 
       {requests?.length === 0 ? (
-        <EmptyState
-          icon="inbox"
-          title={t('requests.myEmpty')}
-          action={
+        <EmptyState.Root icon="inbox">
+          <EmptyState.Title>{t('requests.myEmpty')}</EmptyState.Title>
+          <EmptyState.Actions>
             <Button
               size="sm"
               label={t('requests.myEmptyCta')}
               onPress={() => navigate({ to: '/search' })}
             />
-          }
-        />
+          </EmptyState.Actions>
+        </EmptyState.Root>
       ) : null}
 
-      <div className="mt-6 flex flex-col gap-2.5">
+      <Box mt={24} gap={10}>
         {(requests ?? []).map((req) => (
           <RequestRow
             key={req.id}
@@ -112,7 +125,7 @@ export function MyRequestsPage() {
             }}
           />
         ))}
-      </div>
+      </Box>
     </main>
   );
 }
@@ -145,39 +158,38 @@ function RequestRow({
       : null;
 
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface-1 p-3.5">
-      <button
-        type="button"
-        onClick={onOpen}
-        className="flex min-w-0 flex-1 items-center gap-4 text-left"
-      >
-        <div
-          className="relative h-[68px] w-[46px] flex-[0_0_46px] overflow-hidden rounded-lg"
-          style={{ background: `linear-gradient(158deg, ${c1}, ${c2})` }}
-        >
-          <Image src={poster} fit="cover" fill />
-        </div>
-        <div className="min-w-0">
-          <div className="truncate text-[15px] font-bold">{req.title}</div>
-          <div className="mt-0.5 text-[12.5px] font-medium text-dim">
+    <Surface pad="none" p={14} radius="2xl" border="border" row align="center" gap={16}>
+      <Focusable onPress={onOpen} label={req.title} style={s.head}>
+        <Box w={46} h={68} shrink={0}>
+          <Img src={poster} background={`linear-gradient(158deg, ${c1}, ${c2})`} radius="lg" fill />
+        </Box>
+        <Box minW={0} shrink={1}>
+          <Text variant="label" lines={1}>
+            {req.title}
+          </Text>
+          <Text variant="meta" color="textDim" mt={2}>
             {[
               req.year ? String(req.year) : '',
               req.kind === 'show' ? (seasons ?? t('requests.allSeasons')) : '',
             ]
               .filter(Boolean)
               .join(' · ')}
-          </div>
+          </Text>
           {upcoming ? (
-            <div className="mt-1 inline-flex items-center gap-1 text-[12px] font-semibold text-accent">
-              <IconCalendarClock size={13} stroke={1.9} />
-              {upcoming}
-            </div>
+            <Row gap={4} mt={4}>
+              <Icon name="calendar-clock" size={13} thickness={1.9} color="accent" />
+              <Text variant="meta" color="accent">
+                {upcoming}
+              </Text>
+            </Row>
           ) : null}
           {req.note ? (
-            <div className="mt-1 text-[12px] font-semibold text-[#EF8091]">{req.note}</div>
+            <Text variant="meta" color="dangerHover" mt={4}>
+              {req.note}
+            </Text>
           ) : null}
-        </div>
-      </button>
+        </Box>
+      </Focusable>
       <RequestStatusChip status={req.status} progress={progress ?? req.progress ?? null} />
       {req.status === 'pending' ? (
         <IconButton
@@ -188,6 +200,10 @@ function RequestRow({
           disabled={busy}
         />
       ) : null}
-    </div>
+    </Surface>
   );
 }
+
+const s = styles({
+  head: { row: true, align: 'center', gap: 16, flex: true, minW: 0 },
+});

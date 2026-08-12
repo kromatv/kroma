@@ -1,6 +1,6 @@
 // The device's half of the relay contract: what leaves the phone, what is
 // kept, and what happens when the network refuses. The security claim is the
-// first test's — the raw APNs/FCM token goes to the relay and NOWHERE else;
+// first test's: the raw APNs/FCM token goes to the relay and NOWHERE else;
 // everything else here protects the stored grant, the only thing that can
 // unregister this device.
 

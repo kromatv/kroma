@@ -3,7 +3,7 @@
 // flow (POST /api/reports).
 
 import type { ReportCategory, ReportSubjectKind } from '@kroma/core';
-import { Box, Button, Field, Icon, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, Field, Icon, styles, Text } from '@kroma/ui/kit';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView } from 'react-native';
@@ -62,9 +62,9 @@ function ReportProblem({ id }: Readonly<{ id: string }>) {
       {state === 'done' ? (
         <Box style={s.done}>
           <Box style={s.doneBadge}>
-            <Icon name="check" size={30} stroke={2.4} color="accentInk" />
+            <Icon name="check" size={30} thickness={2.4} color="accentInk" />
           </Box>
-          <Txt style={s.doneText}>{t('report.submitted')}</Txt>
+          <Text style={s.doneText}>{t('report.submitted')}</Text>
         </Box>
       ) : (
         <KeyboardAvoidingView
@@ -74,14 +74,14 @@ function ReportProblem({ id }: Readonly<{ id: string }>) {
           <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
             {title ? (
               <Box style={s.subjectRow}>
-                <Icon name="flag" size={16} stroke={1.8} color="accentText" />
-                <Txt lines={1} style={s.subject}>
+                <Icon name="flag" size={16} thickness={1.8} color="accentText" />
+                <Text lines={1} style={s.subject}>
                   {title}
-                </Txt>
+                </Text>
               </Box>
             ) : null}
 
-            <Txt style={s.group}>{t('report.category')}</Txt>
+            <Text style={s.group}>{t('report.category')}</Text>
             <Box style={s.cards}>
               {CATEGORIES.map((c) => {
                 const active = category === c.key;
@@ -96,32 +96,30 @@ function ReportProblem({ id }: Readonly<{ id: string }>) {
                     ]}
                   >
                     <Box style={s.cardText}>
-                      <Txt style={[s.cardLabel, active && s.cardLabelActive]}>
+                      <Text style={[s.cardLabel, active && s.cardLabelActive]}>
                         {t(c.label as never)}
-                      </Txt>
-                      <Txt style={s.cardHint}>{t(c.hint as never)}</Txt>
+                      </Text>
+                      <Text style={s.cardHint}>{t(c.hint as never)}</Text>
                     </Box>
                     {active ? (
-                      <Icon name="check" size={18} stroke={2.4} color="accentText" />
+                      <Icon name="check" size={18} thickness={2.4} color="accentText" />
                     ) : null}
                   </Pressable>
                 );
               })}
             </Box>
 
-            <Txt style={s.group}>{t('report.message')}</Txt>
-            <Field
+            <Text style={s.group}>{t('report.message')}</Text>
+            <Field.Root
               label={t('report.messagePlaceholder')}
               hideLabel
-              icon="message-2"
               value={message}
-              onChange={setMessage}
-              placeholder={t('report.messagePlaceholder')}
-              multiline
-              rows={4}
+              onValueChange={setMessage}
               style={s.message}
-            />
-            {error ? <Txt style={s.error}>{error}</Txt> : null}
+            >
+              <Field.Textarea placeholder={t('report.messagePlaceholder')} rows={4} />
+            </Field.Root>
+            {error ? <Text style={s.error}>{error}</Text> : null}
             <Button
               label={t('report.submit')}
               onPress={() => void submit()}

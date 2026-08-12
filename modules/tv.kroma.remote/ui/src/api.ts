@@ -1,5 +1,5 @@
 // This module's own admin API, served by its sidecar under the mount the host
-// derives from its id — `moduleApiHook` binds it, so the id is never repeated
+// derives from its id; `moduleApiHook` binds it, so the id is never repeated
 // here.
 
 import { moduleApiHook } from '@kroma/module-sdk';

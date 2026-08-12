@@ -1,7 +1,8 @@
 import type { ElementRow, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button, Drawer, IconButton } from '@kroma/ui/kit';
+import { Box, Button, Callout, color, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
 import { createCallable } from 'react-call';
+import { Pill, PillDot } from '#web/features/admin/pill';
 import { fmtDur, kindMeta, posterGrad, statusMeta } from '#web/features/admin/pipeline-meta';
 import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
@@ -12,12 +13,10 @@ function DrawerPoster({ el }: Readonly<{ el: ElementRow }>) {
     (el.poster ? client.resolveArt(el.poster) : null) ??
     (el.kind === 'series' ? client.showPosterUrl(el.id) : client.posterUrl(el.id));
   return (
-    <div
-      className="relative h-[104px] w-[70px] flex-[0_0_70px] overflow-hidden rounded-md shadow-[0_10px_24px_rgba(0,0,0,.5)]"
-      style={{ background: posterGrad(el.title) }}
-    >
+    <Box w={70} h={104} shrink={0} radius="xs" overflow="hidden" shadow="pop">
+      <div style={{ position: 'absolute', inset: 0, background: posterGrad(el.title) }} />
       <Image src={src} fit="cover" fill />
-    </div>
+    </Box>
   );
 }
 
@@ -49,65 +48,55 @@ export const PipelineDrawer = createCallable<
   const eps = el.epStats;
 
   return (
-    <Drawer
+    <Drawer.Root
       open={!call.ended}
       onClose={close}
       title={t('pipeline.elementSheet')}
-      width={460}
       panelStyle={DRAWER_FILL}
     >
-      <div className="border-b border-white/[0.07] px-6 py-5">
-        <div className="mb-4 flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+      <Drawer.Header>
+        <Row between mb={16}>
+          <Text variant="overline" color="textDim">
             {t('pipeline.elementSheet')}
-          </span>
-          <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={close} />
-        </div>
-        <div className="flex gap-4">
+          </Text>
+          <Drawer.Close />
+        </Row>
+        <Box row gap={16}>
           <DrawerPoster el={el} />
-          <div className="min-w-0 pt-1">
-            <span
-              className="rounded-full px-[9px] py-[3px] text-[9.5px] font-bold uppercase tracking-widest"
-              style={{ color: km.color, background: km.bg }}
-            >
+          <Box minW={0} pt={4} align="flex-start">
+            <Pill ink={km.color} bg={km.bg} variant="overline">
               {t(`pipeline.type.${km.typeKey}` as MessageKey)}
-            </span>
-            <h2 className="mt-2.5 font-display text-[21px] font-bold leading-[1.12]">{el.title}</h2>
-            <div className="mt-1.5 text-[12.5px] font-medium text-white/50">
+            </Pill>
+            <Text variant="h2" accessibilityRole="header" mt={10}>
+              {el.title}
+            </Text>
+            <Text variant="meta" color="textDim" mt={6}>
               {baseSub(el, dur, t('pipeline.seasons'))}
-            </div>
-          </div>
-        </div>
-      </div>
+            </Text>
+          </Box>
+        </Box>
+      </Drawer.Header>
 
-      <div className="flex-1 overflow-y-auto px-6 py-5">
-        <div className="mb-3 text-[10px] font-bold uppercase tracking-[.14em] text-white/40">
+      <Drawer.Panel>
+        <Text variant="overline" color="textDim" mb={12}>
           {t('pipeline.treatments')}
-        </div>
-        <div className="flex flex-col gap-2.5">
+        </Text>
+        <Box gap={10}>
           {el.treatments.map((tr) => {
             const m = statusMeta(tr.status);
             const failed = tr.status === 'failed';
             return (
-              <div
-                key={tr.key}
-                className="rounded-xl border border-white/[0.07] bg-[#121216] px-4 py-3.5"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[14px] font-bold">
-                    {t(`pipeline.t.${tr.key}` as MessageKey)}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="inline-flex items-center gap-1.5 rounded-full px-[11px] py-1 text-[11.5px] font-bold"
-                      style={{ color: m.color, background: m.bg }}
+              <Box key={tr.key} px={16} py={14} radius="lg" bg="surface1" border="tint/7">
+                <Row between gap={12}>
+                  <Text variant="label">{t(`pipeline.t.${tr.key}` as MessageKey)}</Text>
+                  <Row gap={8}>
+                    <Pill
+                      ink={m.color}
+                      bg={m.bg}
+                      leading={<PillDot tone={m.dot} pulse={m.pulse} />}
                     >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${m.pulse ? 'animate-pulse' : ''}`}
-                        style={{ background: m.dot }}
-                      />
                       {t(`pipeline.st.${tr.status}` as MessageKey)}
-                    </span>
+                    </Pill>
                     {/* Run just this stage now, at top priority (also acts as a retry on failure). */}
                     <IconButton
                       control="sm"
@@ -117,36 +106,38 @@ export const PipelineDrawer = createCallable<
                       onPress={() => onRetryStage(tr.key)}
                       disabled={busy}
                     />
-                  </div>
-                </div>
+                  </Row>
+                </Row>
                 {failed && tr.error ? (
-                  <div className="mt-2.5 rounded-lg border border-[#E8536A]/18 bg-[#E8536A]/8 px-[11px] py-2.5 text-[12px] leading-[1.4] text-[#EF8091]">
-                    {tr.error}
-                  </div>
+                  <Box mt={10}>
+                    <Callout.Root tone="danger">
+                      <Callout.Title>{tr.error}</Callout.Title>
+                    </Callout.Root>
+                  </Box>
                 ) : null}
-              </div>
+              </Box>
             );
           })}
-        </div>
+        </Box>
 
         {el.kind === 'series' && eps ? (
-          <div className="mt-5 rounded-xl border border-white/[0.07] bg-[#0F0F13] px-4 py-3.5">
-            <div className="mb-2 text-[10px] font-bold uppercase tracking-[.12em] text-white/40">
+          <Box mt={20} px={16} py={14} radius="lg" bg="bg" border="tint/7">
+            <Text variant="overline" color="textDim" mb={8}>
               {t('pipeline.epsAggregated')}
-            </div>
-            <div className="text-[12.5px] font-semibold leading-normal text-white/70">
+            </Text>
+            <Text variant="meta" color="textMuted">
               {eps.episodes} {t('pipeline.episodesWord')} · {t('pipeline.t.probe')} {eps.probed}/
               {eps.episodes} · {t('pipeline.t.storyboard')} {eps.storyboarded}/{eps.episodes} ·{' '}
               {t('pipeline.t.markers')} {eps.markerSeasons}/{eps.seasons}
-            </div>
-            <div className="mt-1.5 text-[11.5px] font-medium text-white/42">
+            </Text>
+            <Text variant="meta" color="textDim" mt={6}>
               {t('pipeline.epsNote')}
-            </div>
-          </div>
+            </Text>
+          </Box>
         ) : null}
-      </div>
+      </Drawer.Panel>
 
-      <div className="border-t border-white/[0.07] px-6 py-4.5">
+      <Drawer.Footer>
         <Button
           block
           icon="refresh"
@@ -154,13 +145,13 @@ export const PipelineDrawer = createCallable<
           onPress={onReprocess}
           loading={busy}
         />
-        <div className="mt-2.5 text-center text-[11.5px] font-medium text-white/42">
+        <Text variant="meta" color="textDim" textAlign="center" mt={10}>
           {t('pipeline.reprocessNote')}
-        </div>
-      </div>
-    </Drawer>
+        </Text>
+      </Drawer.Footer>
+    </Drawer.Root>
   );
 }, 400);
 
 // The drawers' darker fill, kept from the hand-rolled asides they replace.
-const DRAWER_FILL = { backgroundColor: '#0E0E12' } as const;
+const DRAWER_FILL = { backgroundColor: color('bg') } as const;

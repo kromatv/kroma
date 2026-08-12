@@ -4,7 +4,7 @@
 
 KROMA is a client for a media server **you** run. It is not a streaming service:
 we host no catalogue, we hold no account for you, and the films and series you
-watch are on hardware you control. This policy describes the KROMA apps — the TV
+watch are on hardware you control. This policy describes the KROMA apps: the TV
 apps for LG webOS and Samsung Tizen, the Apple TV and Android TV apps, the mobile
 and desktop apps, and the web client.
 
@@ -13,13 +13,13 @@ and desktop apps, and the web client.
 **We do not collect anything.** KROMA contains no analytics, no telemetry, no
 crash reporting, no advertising and no tracking of any kind. There is no KROMA
 account to create, so there is nothing for us to hold. The app talks to the
-server you point it at, and — unless you sign in — to nothing else at all.
+server you point it at, and (unless you sign in) to nothing else at all.
 
 ## What the app connects to
 
 **1. Your KROMA server.** The address you type on the connection screen, or one
 the app finds by looking for a server on your own local network. Everything the
-app shows you — your libraries, your profiles, your viewing progress — comes from
+app shows you (your libraries, your profiles, your viewing progress) comes from
 there and goes back there. That server is yours; how it handles your data is
 governed by whoever operates it, which is normally you.
 
@@ -57,7 +57,7 @@ None of this is transmitted to us. Uninstalling the app removes all of it.
 ## Notifications (mobile app only)
 
 If you enable notifications in the mobile app, it exchanges the push token issued
-by Apple or Google for a **grant** at `push.kroma.tv` — a sealed capability that
+by Apple or Google for a **grant** at `push.kroma.tv`, a sealed capability that
 names one device and can do exactly one thing: deliver a notification to it. Your
 server is given the grant, never the token, so a KROMA server never learns your
 device's push address, and neither the grant nor our rate-limit records can be
@@ -74,7 +74,7 @@ see is decided on your server, which supports per-profile PIN locks.
 
 Your data is in two places, both of which you control: this device, and your
 server. Uninstalling the app clears the first. For the second, the operator of
-that server — normally you — decides what is kept and can delete it. We hold
+that server (normally you) decides what is kept and can delete it. We hold
 nothing about you to disclose, correct or erase.
 
 ## Changes to this policy

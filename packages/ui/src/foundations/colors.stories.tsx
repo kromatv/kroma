@@ -2,7 +2,7 @@
 
 import { story } from '@kroma/workbench/story';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { readMode, resolveMode } from '#ui/core';
 import { colors, lightColors } from '#ui/core/tokens/colors';
 
@@ -19,12 +19,12 @@ export default story({
         {(Object.keys(colors) as (keyof typeof colors)[]).map((token) => (
           <Box key={token} gap={8} w={150}>
             <Box h={56} radius="md" bg={token} border="border" />
-            <Txt variant="meta" color="textMuted">
+            <Text variant="meta" color="textMuted">
               {token}
-            </Txt>
-            <Txt variant="meta" color="textDim" font="mono">
+            </Text>
+            <Text variant="meta" color="textDim" font="mono">
               {palette[token]}
-            </Txt>
+            </Text>
           </Box>
         ))}
       </Box>

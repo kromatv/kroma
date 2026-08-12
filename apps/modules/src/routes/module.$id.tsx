@@ -1,3 +1,12 @@
+import { PageMain } from '@kroma/ui/kit';
+import { Badge } from '@kroma/ui/kit/atoms/badge';
+import { Box, Column, Row } from '@kroma/ui/kit/atoms/box';
+import { Button } from '@kroma/ui/kit/atoms/button';
+import { Icon } from '@kroma/ui/kit/atoms/icon';
+import { Img } from '@kroma/ui/kit/atoms/img';
+import { Text } from '@kroma/ui/kit/atoms/text';
+import { CopyButton } from '@kroma/ui/kit/molecules/copy-button';
+import { EmptyState } from '@kroma/ui/kit/molecules/empty-state';
 import { createFileRoute } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import type { ModuleEntry } from '#site/catalog';
@@ -11,15 +20,6 @@ import { downloads } from '#site/lib/artifacts';
 import { depEntries } from '#site/lib/deps';
 import { getCatalog } from '#site/lib/get-catalog';
 import { getModuleHistory } from '#site/lib/get-module';
-import { Badge } from '#ui/components/atoms/badge';
-import { Box, Column, Row } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Icon } from '#ui/components/atoms/icon';
-import { Img } from '#ui/components/atoms/img';
-import { Txt } from '#ui/components/atoms/text';
-import { CopyButton } from '#ui/components/molecules/copy-button';
-import { EmptyState } from '#ui/components/molecules/empty-state';
-import { PageMain } from '#ui/lib/landmark';
 
 export const Route = createFileRoute('/module/$id')({
   loader: async ({ params }) => {
@@ -70,37 +70,37 @@ function Hero({ module: m }: Readonly<{ module: ModuleEntry }>) {
       </Box>
       <Column gap={10} grow={1} shrink={1} basis={320} minW={0}>
         <Row gap={10} align="baseline" wrap>
-          <Txt variant="h1">{m.name}</Txt>
+          <Text variant="h1">{m.name}</Text>
           <Badge tone="neutral">v{m.version}</Badge>
           {m.library ? <Badge tone="info">Library</Badge> : null}
         </Row>
         <Row gap={8}>
           <Box shrink={1} minW={0}>
-            <Txt color="textDim" font="mono" lines={1}>
+            <Text color="textDim" font="mono" lines={1}>
               {m.id}
-            </Txt>
+            </Text>
           </Box>
           <Box shrink={0}>
             <CopyButton value={m.id} label="Copy id" iconOnly />
           </Box>
         </Row>
-        {m.description ? <Txt color="textMuted">{m.description}</Txt> : null}
+        {m.description ? <Text color="textMuted">{m.description}</Text> : null}
         {m.minServer || deps.length > 0 ? (
           <Row gap={12} wrap align="center">
             {m.minServer ? (
               <Row gap={6}>
                 <Icon name="server" size={14} color="textDim" />
-                <Txt color="textDim" variant="meta">
+                <Text color="textDim" variant="meta">
                   KROMA {m.minServer}+
-                </Txt>
+                </Text>
               </Row>
             ) : null}
             {deps.map((dep) => (
               <Row gap={6} key={dep.id}>
                 <Icon name="packages" size={14} color="textDim" />
-                <Txt color="textDim" variant="meta">
+                <Text color="textDim" variant="meta">
                   {dep.range ? `${dep.id} ${dep.range}` : dep.id}
-                </Txt>
+                </Text>
               </Row>
             ))}
           </Row>
@@ -117,11 +117,10 @@ function ModulePage() {
   if (!module) {
     return (
       <Page registry={registry}>
-        <EmptyState
-          icon="package-off"
-          title="No such module"
-          hint={`The registry does not list ${id}.`}
-        />
+        <EmptyState.Root icon="package-off">
+          <EmptyState.Title>No such module</EmptyState.Title>
+          <EmptyState.Hint>{`The registry does not list ${id}.`}</EmptyState.Hint>
+        </EmptyState.Root>
       </Page>
     );
   }

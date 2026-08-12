@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // Mounting native push at the app root: keeping the grant alive, and routing a
 // tap exactly once. The hooks run unconditionally on every launch, so what
-// matters is what they do NOT do — re-register a grant the server never took,
+// matters is what they do NOT do: re-register a grant the server never took,
 // or replay the launch tap when the reader switches profile.
 
 import { renderHook } from '@testing-library/react';

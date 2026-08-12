@@ -1,7 +1,7 @@
 // The player chrome's opt-out from platform focus, on each platform (see
 // virtual-focus.ts for why it exists). react-native-tvos gates a Pressable on
 // exactly `focusable !== false && isTVSelectable !== false`, so BOTH keys must
-// be false. The web half is empty — there's no OS focus engine to opt out of.
+// be false. The web half is empty: there's no OS focus engine to opt out of.
 
 import { describe, expect, it } from 'vitest';
 import { UNFOCUSABLE } from '#ui/lib/focus-types';

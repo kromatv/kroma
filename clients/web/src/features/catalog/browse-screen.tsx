@@ -10,7 +10,7 @@ import {
   titleLetter,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { EmptyState, type IconName } from '@kroma/ui/kit';
+import { Box, EmptyState, type IconName } from '@kroma/ui/kit';
 import {
   type ReactElement,
   type RefObject,
@@ -24,15 +24,18 @@ import {
 import { AlphabetRail, type LetterRange } from '#web/features/catalog/alphabet-rail';
 import { BrowseBar } from '#web/features/catalog/browse-bar';
 import { BrowseHero } from '#web/features/catalog/browse-hero';
+import { tileAt } from '#web/features/catalog/tile-grid';
 import { PAGE_MAIN } from '#web/shared/ui';
 
 // Below this the whole grid fits a couple of screens and the rail is noise.
 const RAIL_MIN_ITEMS = 24;
 
-const tileOf = (gridWrap: RefObject<HTMLDivElement | null>, index: number): HTMLElement | null => {
-  const tile = gridWrap.current?.firstElementChild?.children[index];
-  return tile instanceof HTMLElement ? tile : null;
-};
+// The rail's footprint plus breathing room on the right, whatever the fluid
+// gutter currently is. Nothing to reserve where the rail does not render.
+const RAIL_RESERVE = { base: 0, md: 48, lg: 32, tv: 24 } as const;
+
+const tileOf = (gridWrap: RefObject<HTMLDivElement | null>, index: number): HTMLElement | null =>
+  tileAt(gridWrap.current, index);
 
 // Docked bar bottom edge + breathing room = where a jumped-to row should land.
 const jumpOffset = (bar: RefObject<HTMLDivElement | null>): number => {
@@ -208,7 +211,9 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
         creditTitle={featured?.title}
       />
       {items.length === 0 ? (
-        <EmptyState icon={emptyIcon} title={emptyTitle} />
+        <EmptyState.Root icon={emptyIcon}>
+          <EmptyState.Title>{emptyTitle}</EmptyState.Title>
+        </EmptyState.Root>
       ) : (
         <>
           <BrowseBar
@@ -220,16 +225,13 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
             onGenre={onGenre}
           />
           {view.length === 0 ? (
-            <EmptyState icon={emptyIcon} title={t('search.noResults')} />
+            <EmptyState.Root icon={emptyIcon}>
+              <EmptyState.Title>{t('search.noResults')}</EmptyState.Title>
+            </EmptyState.Root>
           ) : (
-            // Reserves the rail's footprint plus breathing room on the right,
-            // whatever the fluid gutter currently is.
-            <div
-              ref={gridWrap}
-              className={showRail ? 'sm:pr-[max(0px,calc(5rem-var(--gutter-web)))]' : undefined}
-            >
-              {renderGrid(view)}
-            </div>
+            <Box pr={showRail ? RAIL_RESERVE : undefined}>
+              <div ref={gridWrap}>{renderGrid(view)}</div>
+            </Box>
           )}
           {showRail ? (
             <AlphabetRail available={letters} range={visibleLetters} onJump={jump} />

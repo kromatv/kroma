@@ -1,31 +1,36 @@
+// The shell: what is selected, where that lives in the URL, and where the three
+// regions go. One story on the canvas is `story-view.tsx`.
+
 import {
   Box,
   configureRemote,
   Focusable,
   FocusScope,
-  setTheme,
+  Resizable,
   styles,
-  sv,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import type { ColorToken } from '@kroma/ui/tokens';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView } from 'react-native';
-import { Matrix, stageWidth, ViewportFrame, type ViewportName } from './canvas';
-import { RULE, RULE_TOP, TAB } from './chrome';
-import { CodeBlock } from './code';
+import { RULE } from './chrome';
 import { CommandPalette, useCommandKey } from './command';
-import { RichText, snippet } from './docs';
-import { useLayout, type WorkbenchLayout } from './layout';
+import { DOCK_COLLAPSED, MIN_CANVAS, REGION_MIN, useLayout } from './layout';
+import type { Page } from './page';
+import { PageView } from './page-view';
 import { Panel } from './panel';
+import { usePlay } from './play';
 import { pathRouter, type View, type WorkbenchRouter } from './router';
 import { Sidebar } from './sidebar';
-import type { Story } from './story';
-import { PREVIEW_THEMES } from './themes';
-import { Toolbar, type ToolbarLens } from './toolbar';
+import { controlsRole, type Story } from './story';
+import { playFor, renderBody, StoryCanvas, useStageView } from './story-view';
+import type { ToolbarLens } from './toolbar';
+import { IconTool } from './toolbar-menu';
+import { stageWidth } from './viewport';
 
 interface WorkbenchProps {
   stories: readonly Story[];
+  /** Standalone articles, addressed at `page/<id>` and listed above the tree. */
+  pages?: readonly Page[];
   brand?: ReactNode;
   title?: string;
   footer?: ReactNode;
@@ -55,7 +60,7 @@ function shotStage(at: {
   width: number;
 }): ReactNode {
   if (at.listOnly) {
-    return <Txt>{`KROMA_STORY_IDS:${at.stories.map((entry) => entry.id).join(',')}`}</Txt>;
+    return <Text>{`KROMA_STORY_IDS:${at.stories.map((entry) => entry.id).join(',')}`}</Text>;
   }
   // A story that declares a width measures itself and has to be given one;
   // measured against the window, because a shot has no stage card.
@@ -67,50 +72,9 @@ function shotStage(at: {
   );
 }
 
-function useStageView(story: Story | undefined) {
-  const [viewport, setViewport] = useState<ViewportName>('fit');
-  const [rotate, setRotate] = useState(false);
-  const [surface, setSurface] = useState<ColorToken>('bg');
-  const [full, setFull] = useState(false);
-  const [theme, setThemeId] = useState('kroma');
-
-  // The state change is also the re-render that makes every style re-resolve.
-  const pickTheme = useCallback((next: string) => {
-    const chosen = PREVIEW_THEMES.find((candidate) => candidate.id === next);
-    if (!chosen) return;
-    setTheme(chosen.theme);
-    setThemeId(chosen.id);
-  }, []);
-
-  // An effect rather than derived state so switching frame by hand is not
-  // undone on the next render.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the story, not on the frame the user may have chosen since
-  useEffect(() => {
-    setViewport(story?.viewport ?? 'fit');
-    setRotate(false);
-  }, [story?.id]);
-
-  const pickViewport = useCallback((next: ViewportName) => {
-    setViewport(next);
-    setRotate(false);
-  }, []);
-
-  return {
-    viewport,
-    rotate,
-    surface,
-    full,
-    theme,
-    setRotate,
-    setSurface,
-    setFull,
-    pickViewport,
-    pickTheme,
-  };
-}
-
 function WorkbenchShell({
   stories,
+  pages,
   brand,
   title,
   footer,
@@ -136,12 +100,16 @@ function WorkbenchShell({
     if (!drawer) setNavOpen(false);
   }, [drawer]);
 
+  // A bare address opens the first article rather than the first component: the
+  // guides say how to use the kit, and landing on an arbitrary component asks
+  // the reader to already know their way around. Naming either in the URL wins.
+  const landing = !at.story && !at.page ? pages?.[0] : undefined;
+  const page = landing ?? pages?.find((entry) => entry.id === at.page);
   const story = stories.find((candidate) => candidate.id === selected) ?? stories[0];
   const args = useMemo(() => ({ ...story?.args, ...edits[story?.id ?? ''] }), [story, edits]);
 
   const stage = useStageView(story);
-  const { viewport, rotate, surface, full, theme, setRotate, setSurface, setFull, pickViewport } =
-    stage;
+  const run = usePlay(story ? playFor(story, view) : undefined);
 
   const select = useCallback(
     (id: string) => {
@@ -153,6 +121,16 @@ function WorkbenchShell({
 
   const show = useCallback((next: View) => go({ view: next }), [go]);
 
+  const openPage = useCallback(
+    (id: string) => {
+      go({ page: id });
+      setNavOpen(false);
+    },
+    [go],
+  );
+
+  const openSection = useCallback((id: string) => go({ section: id }), [go]);
+
   const change = useCallback(
     (key: string, value: unknown) => {
       const id = story?.id ?? '';
@@ -163,14 +141,22 @@ function WorkbenchShell({
 
   if (!story) return null;
 
-  const body = renderBody(story, view, args);
-  const docs = viewDocs(story, view);
-  const code = viewCode(story, view, args);
-  const showControls = !view.startsWith('demo:');
+  const controls = controlsRole(story, view);
 
   if (at.shot) {
-    return shotStage({ listOnly: !at.story, stories, story, body, surface, width: layout.width });
+    return shotStage({
+      listOnly: !at.story,
+      stories,
+      story,
+      body: renderBody(story, view, args),
+      surface: stage.surface,
+      width: layout.width,
+    });
   }
+
+  const column = !drawer && !stage.full;
+  const inspector = !page && !stage.full;
+  const compact = layout.mode === 'compact';
 
   const panel = (
     <Panel
@@ -178,10 +164,59 @@ function WorkbenchShell({
       args={args}
       onChange={change}
       onReset={() => setEdits((prev) => ({ ...prev, [story.id]: {} }))}
-      showControls={showControls}
+      showControls={controls.show}
+      showReset={controls.reset}
+      run={run}
       layout={layout}
     />
   );
+
+  // An article renders instead of the canvas, and the canvas is where the
+  // toolbar lives, so on a phone a page would otherwise carry no way at all to
+  // reach the tree behind the drawer.
+  const main = page ? (
+    <Box flex minW={0}>
+      {drawer && !stage.full ? (
+        <Box row align="center" px={layout.gutter - 8} py={5} bg="bg" z={2} style={RULE}>
+          <IconTool glyph="list" label="Browse components" onPress={() => setNavOpen(true)} />
+        </Box>
+      ) : null}
+      <PageView page={page} layout={layout} section={at.section} onSection={openSection} />
+    </Box>
+  ) : (
+    <StoryCanvas
+      story={story}
+      view={view}
+      onView={show}
+      args={args}
+      run={run}
+      stage={stage}
+      lenses={lenses}
+      layout={layout}
+      onMenu={drawer && !stage.full ? () => setNavOpen(true) : undefined}
+    />
+  );
+
+  // Docked under the canvas rather than beside it, the inspector is a row of
+  // the same column: a group of its own, and on a phone a collapsible one, so
+  // shutting it gives the whole window back to the stage.
+  const centre =
+    inspector && layout.panel === 'below' ? (
+      <Resizable.Root orientation="vertical" autoSaveId={DOCK_STORE}>
+        <Resizable.Panel minSize={`${MIN_CANVAS.height}px`}>{main}</Resizable.Panel>
+        <Resizable.Handle label="Resize the inspector" />
+        <Resizable.Panel
+          defaultSize={compact ? `${DOCK_COLLAPSED}px` : `${layout.panelHeight}px`}
+          minSize={`${REGION_MIN.dock}px`}
+          collapsible={compact}
+          collapsedSize={`${DOCK_COLLAPSED}px`}
+        >
+          {panel}
+        </Resizable.Panel>
+      </Resizable.Root>
+    ) : (
+      main
+    );
 
   const tree = (
     <Sidebar
@@ -189,7 +224,9 @@ function WorkbenchShell({
       brand={brand}
       title={title}
       footer={footer}
-      selected={story.id}
+      pages={pages}
+      onOpenPage={openPage}
+      selected={page ? page.id : story.id}
       onSelect={select}
       onSearch={openSearch}
       layout={layout}
@@ -199,71 +236,36 @@ function WorkbenchShell({
 
   return (
     <Box flex bg="bg">
-      <Box flex row>
-        {drawer || full ? null : tree}
-
-        {/* `minW={0}` stops a wide story from pushing the column past the
-            window instead of scrolling inside it. */}
-        <Box flex minW={0}>
-          <Box flex minW={0}>
-            <Toolbar
-              lenses={lenses}
-              viewport={viewport}
-              onViewport={pickViewport}
-              surface={surface}
-              onSurface={setSurface}
-              theme={theme}
-              onTheme={stage.pickTheme}
-              rotate={rotate}
-              onRotate={setRotate}
-              full={full}
-              onFull={setFull}
-              onMenu={drawer && !full ? () => setNavOpen(true) : undefined}
-              layout={layout}
-            />
-            <StoryHeading story={story} layout={layout} />
-            <Tabs story={story} view={view} onView={show} layout={layout} />
-            {docs ? (
-              <Box px={layout.gutter} pt={14}>
-                <RichText variant="meta" color="textDim">
-                  {docs}
-                </RichText>
-              </Box>
-            ) : null}
-            <ViewportFrame
-              viewport={viewport}
-              surface={surface}
-              pad={story.pad}
-              width={story.width}
-              rotate={rotate}
-              inset={layout.stagePad}
-            >
-              {body}
-            </ViewportFrame>
-            {code ? (
-              <CodeBar
-                key={view}
-                code={code}
-                defaultOpen={view.startsWith('demo:') && layout.mode !== 'compact'}
-                layout={layout}
-              />
-            ) : null}
-          </Box>
-          {layout.panel === 'below' && !full ? panel : null}
-        </Box>
-
-        {layout.panel === 'side' && !full ? panel : null}
-      </Box>
+      {/* Each part is its own expression rather than a fragment holding the
+          pair: a group reads its DIRECT children to learn where its panels and
+          seams are, and a fragment would hide both from it. */}
+      <Resizable.Root autoSaveId={COLUMN_STORE}>
+        {column ? (
+          <Resizable.Panel defaultSize={`${layout.navWidth}px`} minSize={`${REGION_MIN.nav}px`}>
+            {tree}
+          </Resizable.Panel>
+        ) : null}
+        {column ? <Resizable.Handle label="Resize the component list" /> : null}
+        <Resizable.Panel minSize={`${MIN_CANVAS.width}px`}>{centre}</Resizable.Panel>
+        {inspector && layout.panel === 'side' ? (
+          <Resizable.Handle label="Resize the inspector" />
+        ) : null}
+        {inspector && layout.panel === 'side' ? (
+          <Resizable.Panel defaultSize={`${layout.panelWidth}px`} minSize={`${REGION_MIN.panel}px`}>
+            {panel}
+          </Resizable.Panel>
+        ) : null}
+      </Resizable.Root>
 
       {drawer && navOpen ? <NavDrawer onClose={() => setNavOpen(false)}>{tree}</NavDrawer> : null}
 
       {searchOpen ? (
         <CommandPalette
           stories={stories}
-          selected={story.id}
-          onSelect={select}
+          pages={pages}
+          selected={page ? page.id : story.id}
+          onSelect={(id, isPage) => (isPage ? openPage(id) : select(id))}
           onClose={() => setSearchOpen(false)}
-          width={layout.width}
         />
       ) : null}
     </Box>
@@ -282,160 +284,12 @@ function NavDrawer({ onClose, children }: Readonly<{ onClose: () => void; childr
   );
 }
 
-function StoryHeading({ story, layout }: Readonly<{ story: Story; layout: WorkbenchLayout }>) {
-  return (
-    <Box px={layout.gutter} pt={layout.mode === 'compact' ? 16 : 22} gap={4}>
-      <Txt variant="overline" color="accent">
-        {story.group}
-      </Txt>
-      <Txt variant="title" style={layout.mode === 'compact' ? s.titleCompact : s.title} lines={1}>
-        {story.name}
-      </Txt>
-    </Box>
-  );
-}
-
-function renderBody(story: Story, view: View, args: Record<string, unknown>): ReactNode {
-  if (view === 'matrix') return <Matrix rows={story.matrix} args={args} render={story.render} />;
-  if (view === 'preview') return story.render(args);
-  const at = Number(view.slice(view.indexOf(':') + 1));
-  return view.startsWith('demo:') ? story.demos[at]?.render() : story.scenes[at]?.render(args);
-}
-
-function viewDocs(story: Story, view: View): string | undefined {
-  if (view === 'preview' || view === 'matrix') return undefined;
-  const at = Number(view.slice(view.indexOf(':') + 1));
-  return view.startsWith('demo:') ? story.demos[at]?.docs : story.scenes[at]?.docs;
-}
-
-function viewCode(story: Story, view: View, args: Record<string, unknown>): string | null {
-  if (view.startsWith('demo:')) {
-    const at = Number(view.slice(view.indexOf(':') + 1));
-    return story.demos[at]?.code ?? null;
-  }
-  if (view !== 'preview') return null;
-  return story.controls.some((control) => control.variant) ? snippet(story, args) : null;
-}
-
-function Tabs({
-  story,
-  view,
-  onView,
-  layout,
-}: Readonly<{
-  story: Story;
-  view: View;
-  onView: (next: View) => void;
-  layout: WorkbenchLayout;
-}>) {
-  const tabs: { name: string; target: View; demo?: boolean }[] = [
-    { name: 'Preview', target: 'preview' },
-    ...(story.matrix.length > 0 ? [{ name: 'Matrix', target: 'matrix' as View }] : []),
-    ...story.scenes.map((scene, index) => ({
-      name: scene.name,
-      target: `scene:${index}` as View,
-    })),
-    ...story.demos.map((entry, index) => ({
-      name: entry.name,
-      target: `demo:${index}` as View,
-      demo: true,
-    })),
-  ];
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={s.tabRow}
-      contentContainerStyle={s.tabRowBody}
-    >
-      <Box row grow={1} gap={4} px={Math.max(0, layout.gutter - 12)} mt={14} style={RULE}>
-        {tabs.map((tab) => {
-          const active = view === tab.target;
-          return (
-            <Focusable
-              key={tab.target}
-              label={tab.name}
-              ring={false}
-              onPress={() => onView(tab.target)}
-              sv={canvasTab}
-              vars={{ active }}
-            >
-              {({ focused }) => (
-                <Box row align="center" gap={7}>
-                  {tab.demo ? (
-                    <Box w={5} h={5} radius="pill" bg={tabInk(active, focused, 'accent')} />
-                  ) : null}
-                  <Txt variant="meta" color={tabInk(active, focused, 'text')} style={s.tabLabel}>
-                    {tab.name}
-                  </Txt>
-                </Box>
-              )}
-            </Focusable>
-          );
-        })}
-      </Box>
-    </ScrollView>
-  );
-}
-
-function CodeBar({
-  code,
-  defaultOpen,
-  layout,
-}: Readonly<{ code: string; defaultOpen: boolean; layout: WorkbenchLayout }>) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <Box style={[RULE_TOP, s.codeBar]}>
-      <Focusable
-        label={open ? 'Hide code' : 'Show code'}
-        ring={false}
-        onPress={() => setOpen((prev) => !prev)}
-        sv={codeToggle}
-        style={{ paddingHorizontal: layout.gutter }}
-      >
-        <Box row align="center" gap={8}>
-          <Txt variant="overline" color={open ? 'accent' : 'textDim'}>
-            Code
-          </Txt>
-          <Txt variant="meta" color="textDim" style={s.codeHint}>
-            {open ? '▾' : '▸'}
-          </Txt>
-        </Box>
-      </Focusable>
-      {/* No scroller of its own: <CodeBlock> owns both axes. */}
-      {open ? (
-        <Box px={layout.gutter} pb={18}>
-          <CodeBlock code={code} copy maxHeight={layout.mode === 'compact' ? 180 : 260} />
-        </Box>
-      ) : null}
-    </Box>
-  );
-}
-
-function tabInk(active: boolean, focused: boolean, selected: ColorToken): ColorToken {
-  if (active) return selected;
-  return focused ? 'textMuted' : 'textDim';
-}
-
 const SHOT_PAD = 32;
-const s = styles({
-  title: { fontSize: 24 },
-  titleCompact: { fontSize: 20 },
-  scrim: { flex: true, bg: 'bg/60' },
-  tabRow: { grow: 0, shrink: 0 },
-  // `flexGrow` keeps the rule under the tabs running the full width of the
-  // canvas when the tabs themselves do not fill it.
-  tabRowBody: { grow: 1 },
-  tabLabel: { fontSize: 13.5, fontWeight: '600' },
-  codeBar: { maxH: 320 },
-  codeHint: { fontSize: 10 },
-});
-const canvasTab = sv({
-  base: { ...TAB, _focus: { bg: 'white/6' } },
-  variants: { active: { true: { borderBottomColor: 'accent' } } },
-  defaults: { active: false },
-});
-const codeToggle = sv({ base: { py: 12, _focus: { bg: 'white/6' } } });
+// One key per group: the columns and the dock under the canvas are two
+// arrangements, and each is stored per panel count anyway.
+const COLUMN_STORE = 'kroma:workbench-columns';
+const DOCK_STORE = 'kroma:workbench-dock';
+const s = styles({ scrim: { flex: true, bg: 'bg/60' } });
 
 // Built once: an adapter is a hook, and a fresh one per render would remount
 // its state.

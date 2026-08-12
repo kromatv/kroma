@@ -23,7 +23,14 @@ import type { DiscoveredTv, GrantResult } from '@kroma/core';
 import { HANDOFF_CHECK_LENGTH } from '@kroma/core';
 import { useCheckPrompt, useHandoffPicker, useNearbyTvs } from '@kroma/core/react';
 import { useT } from '@kroma/ui';
-import { Button, NearbyTvList, OtpField, REGEXP_ONLY_DIGITS_AND_CHARS, Txt } from '@kroma/ui/kit';
+import {
+  Box,
+  Button,
+  NearbyTvList,
+  OtpField,
+  REGEXP_ONLY_DIGITS_AND_CHARS,
+  Text,
+} from '@kroma/ui/kit';
 import { useAuth } from '#web/shared/lib/auth';
 
 export function NearbyTvs() {
@@ -38,9 +45,13 @@ export function NearbyTvs() {
   if (rows.length === 0 && !asking) return null;
 
   return (
-    <section className="mb-8 text-left">
-      <h2 className="mb-1 font-display text-[15px] font-bold">{t('handoff.nearbyTitle')}</h2>
-      <p className="mb-4 text-[13px] leading-relaxed text-muted">{t('handoff.nearbySub')}</p>
+    <Box role="region" mb={32}>
+      <Text variant="label" font="display" textAlign="left" mb={4}>
+        {t('handoff.nearbyTitle')}
+      </Text>
+      <Text variant="meta" color="textMuted" textAlign="left" mb={16}>
+        {t('handoff.nearbySub')}
+      </Text>
 
       {asking ? (
         <CheckPrompt device={asking} onGrant={grant} onCancel={stopAsking} />
@@ -54,10 +65,10 @@ export function NearbyTvs() {
         />
       )}
 
-      <Txt style={{ fontSize: 12, marginTop: 18, textAlign: 'center' }} color="textDim">
+      <Text variant="meta" color="textDim" textAlign="center" mt={18}>
         {t('handoff.otherWays')}
-      </Txt>
-    </section>
+      </Text>
+    </Box>
   );
 }
 
@@ -78,12 +89,14 @@ function CheckPrompt({
   const asked = t('handoff.checkPrompt', { name: device.name });
 
   return (
-    <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-surface-2 px-4 py-6">
-      <p className="text-center font-display text-[15px] font-bold">{asked}</p>
-      <OtpField
+    <Box align="center" gap={16} radius="lg" border="border" bg="surface2" px={16} py={24}>
+      <Text variant="label" font="display" textAlign="center">
+        {asked}
+      </Text>
+      <OtpField.Root
         maxLength={HANDOFF_CHECK_LENGTH}
         value={code}
-        onChange={setCode}
+        onValueChange={setCode}
         onComplete={(value) => void submit(value)}
         pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
         physicalKeyboard
@@ -92,12 +105,10 @@ function CheckPrompt({
         invalid={refused !== null}
         label={asked}
       />
-      <p
-        className={`text-center text-[13px] ${refused ? 'font-medium text-danger' : 'text-muted'}`}
-      >
+      <Text variant="meta" color={refused ? 'danger' : 'textMuted'} textAlign="center">
         {refused ? t(`handoff.${refused}`) : t('handoff.checkHint')}
-      </p>
+      </Text>
       <Button variant="ghost" size="sm" label={t('common.cancel')} onPress={onCancel} />
-    </div>
+    </Box>
   );
 }

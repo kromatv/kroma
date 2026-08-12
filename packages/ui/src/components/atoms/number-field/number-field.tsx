@@ -16,9 +16,9 @@ import { bySize, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell'
 import { useTDefault } from '#ui/services/i18n';
 
 interface NumberFieldProps
-  extends Omit<TextFieldProps, 'value' | 'defaultValue' | 'onChange' | 'type' | 'trailing'> {
+  extends Omit<TextFieldProps, 'value' | 'defaultValue' | 'onValueChange' | 'type' | 'trailing'> {
   value: number;
-  onChange: (next: number) => void;
+  onValueChange: (next: number) => void;
   min?: number;
   max?: number;
   step?: number;
@@ -39,7 +39,7 @@ function snapTo(n: number, step: number): number {
 
 function NumberField({
   value,
-  onChange,
+  onValueChange,
   min,
   max,
   step,
@@ -58,7 +58,7 @@ function NumberField({
 
   const commit = (n: number) => {
     seen.current = n;
-    if (n !== value) onChange(n);
+    if (n !== value) onValueChange(n);
   };
 
   const edit = (raw: string) => {
@@ -93,7 +93,7 @@ function NumberField({
       type="number"
       autoFocus={autoFocus}
       value={text}
-      onChange={edit}
+      onValueChange={edit}
       onBlur={settle}
       textStyle={TABULAR}
       trailing={
@@ -148,7 +148,7 @@ function Step({
       style={[s.step, s[size ?? entryDefaultSize()]]}
       states={STEP_STATES}
     >
-      <Icon name={icon} size={12} stroke={2.6} color={disabled ? 'text/25' : 'textMuted'} />
+      <Icon name={icon} size={12} thickness={2.6} color={disabled ? 'text/25' : 'textMuted'} />
     </Focusable>
   );
 }

@@ -1,5 +1,5 @@
 // Profile / cast avatar, from the design system. Seeds its gradient from
-// `posterColors(name)` — the per-title palette used for artwork placeholders,
+// `posterColors(name)`, the per-title palette used for artwork placeholders,
 // not the five-way profile palette the TV pickers use.
 
 import { posterColors } from '@kroma/core';

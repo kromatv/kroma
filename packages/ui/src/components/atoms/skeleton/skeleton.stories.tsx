@@ -1,7 +1,7 @@
 import { story } from '@kroma/workbench/story';
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Txt } from '#ui/components/atoms/text';
+import { Text } from '#ui/components/atoms/text';
 import { CardSkeleton } from './card-skeleton';
 import { PosterSkeleton } from './poster-skeleton';
 import { Skeleton } from './skeleton';
@@ -10,9 +10,9 @@ import { TableSkeleton } from './table-skeleton';
 function Labelled({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
     <Box gap={6}>
-      <Txt variant="overline" color="textDim">
+      <Text variant="overline" color="textDim">
         {label}
-      </Txt>
+      </Text>
       {children}
     </Box>
   );
@@ -29,7 +29,7 @@ export default story({
 <PosterSkeleton />                                   // a whole browse tile`,
   guidelines: {
     do: [
-      'Give a text placeholder the same `variant` as the <Txt> it stands in for: the lines then occupy exactly the height the real text will.',
+      'Give a text placeholder the same `variant` as the <Text> it stands in for: the lines then occupy exactly the height the real text will.',
       'Reach for the layout shorthands (`mt`, `w`, `self`) rather than wrapping a skeleton in a spacer view.',
     ],
     dont: [
@@ -50,7 +50,7 @@ export default story({
     {
       name: 'Every shape',
       docs: 'A block, a paragraph, a circle, and the poster and still ratios.',
-      render: () => (
+      example: () => (
         <Box row gap={32} align="flex-start">
           <Box gap={16} w={240}>
             <Labelled label="block">
@@ -75,7 +75,7 @@ export default story({
     {
       name: 'A poster rail, loading',
       docs: '`<PosterSkeleton>` is the loading twin of `<PosterCard>`: art, then a title and a meta line. It fills its cell like the card does, so a row states the tile width once.',
-      render: () => (
+      example: () => (
         <Box row gap={18}>
           {[0, 1, 2, 3].map((tile) => (
             <PosterSkeleton key={tile} width={140} />
@@ -86,7 +86,7 @@ export default story({
     {
       name: 'Console shells',
       docs: 'The two ready-made console placeholders: `<TableSkeleton rows>` stands in for a list or table, `<CardSkeleton fields>` for a settings form. Both are marked decorative to assistive tech.',
-      render: () => (
+      example: () => (
         <Box row gap={24} align="flex-start" wrap>
           <Box w={420}>
             <TableSkeleton rows={4} />

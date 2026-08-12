@@ -7,7 +7,7 @@ notify a phone.
 
 A KROMA server is self-hosted by anybody. The KROMA app is published by one team.
 Apple and Google only accept credentials **they** issued to the account that owns
-the app — so an operator's own Apple key can never push to `tv.kroma.mobile`, no
+the app, so an operator's own Apple key can never push to `tv.kroma.mobile`, no
 matter what they paste into an admin form. That is why the admin console asks for
 nothing: the question was unanswerable, not merely tedious.
 
@@ -16,16 +16,16 @@ The relay holds the published app's credentials so a server does not have to.
 ## Why it is not an open push service
 
 The server's source is public, so there is no shared secret to authenticate it
-with — anything committed is world-readable the day it lands. Instead the relay
+with. Anything committed is world-readable the day it lands. Instead the relay
 issues **capabilities**:
 
-1. The app trades its raw APNs/FCM token at `POST /v1/grant` for a **grant** —
+1. The app trades its raw APNs/FCM token at `POST /v1/grant` for a **grant**,
    an AES-256-GCM sealed blob naming exactly one device.
 2. The app registers that grant with whatever server the reader signed into.
 3. The server spends it at `POST /v1/push`.
 
 A grant can do one thing: notify its device. It cannot be forged without
-`GRANT_SECRET` (which never leaves the relay), and it cannot be *read* — so a
+`GRANT_SECRET` (which never leaves the relay), and it cannot be *read*, so a
 leaked server database is not a pile of push tokens, because the server never
 learned them. Compromising one server yields grants for that server's own users,
 who already trusted it and whom it could already reach.
@@ -41,7 +41,7 @@ See `worker/grant.ts` for the seal, `worker/index.ts` for the routes.
 |---|---|---|
 | `POST /v1/grant` | `{transport, token}` | `{grant, expiresAt}` |
 | `POST /v1/push` | `{grant, notification}` | `{delivered}` · `410` gone · `401` bad grant |
-| `GET /health` | — | `{ok, apns, fcm}` |
+| `GET /health` | none | `{ok, apns, fcm}` |
 
 `410` is the only status a server acts on: it evicts the subscription. Everything
 else is transient and must not cost a reader their registration.
@@ -55,7 +55,7 @@ bunx wrangler deploy
 
 ## Secrets
 
-None of these may ever be committed — the whole point of the relay is that they
+None of these may ever be committed: the whole point of the relay is that they
 exist in exactly one place.
 
 | Secret | What it is |
@@ -63,7 +63,7 @@ exist in exactly one place.
 | `GRANT_SECRET` | Seals grants. `openssl rand -base64 48`. **Rotating it invalidates every grant in the field**, forcing every device to re-register. |
 | `APNS_KEY_P8` | Contents of `AuthKey_XXXXXXXXXX.p8` |
 | `APNS_KEY_ID` | The ten characters in that filename |
-| `APNS_TEAM_ID` | The Apple team — `29729UWWP2` |
+| `APNS_TEAM_ID` | The Apple team, `29729UWWP2` |
 | `FCM_SERVICE_ACCOUNT` | The whole Firebase service-account JSON |
 
 `APNS_TOPIC` is a plain var in `wrangler.jsonc`, not a secret: it is the app's
@@ -71,7 +71,7 @@ bundle id, `tv.kroma.mobile`. It must change in lockstep with the bundle id.
 
 ### Cloudflare is not a backup
 
-Worker secrets are **write-only** — `wrangler secret list` returns names, never
+Worker secrets are **write-only**: `wrangler secret list` returns names, never
 values. Keep a readable copy of every secret in your own password manager, and
 pipe it in from there so it never lands on disk:
 
@@ -91,9 +91,9 @@ matters most for the APNs `.p8`, which Apple also refuses to re-issue.
 Apple names **two different things** `AuthKey_XXXXXXXXXX.p8`, and both are P-256
 PKCS#8 private keys. The file itself cannot tell you which you have:
 
-- an **APNs auth key** — Developer portal → Certificates, Identifiers & Profiles
+- an **APNs auth key**: Developer portal → Certificates, Identifiers & Profiles
   → **Keys**. This is the one that sends pushes.
-- an **App Store Connect API key** — App Store Connect → Users and Access →
+- an **App Store Connect API key**: App Store Connect → Users and Access →
   **Integrations**. This is for the API and CI. It will *never* send a push.
 
 Using the wrong one gives `403 InvalidProviderToken`, which looks like a
@@ -102,7 +102,7 @@ misconfiguration rather than the wrong file. Always probe before uploading.
 ### Steps
 
 1. <https://developer.apple.com/account/resources/authkeys/list> → **+**
-2. **Key Name** — no `@ & * ' " - .` allowed. e.g. `KROMA Push Relay`
+2. **Key Name**: no `@ & * ' " - .` allowed. e.g. `KROMA Push Relay`
 3. Tick **Apple Push Notifications service (APNs)**, then **Configure**:
 
    | Field | Choose | Why |
@@ -113,7 +113,7 @@ misconfiguration rather than the wrong file. Always probe before uploading.
    **Both settings are irreversible once saved.** Apple says so on the page.
 4. **Continue** → **Register** → **Download**.
 
-   The download happens **once** — Apple deletes its copy. Back the file up
+   The download happens **once**: Apple deletes its copy. Back the file up
    somewhere durable before doing anything else.
 
 ### Verify before uploading
@@ -155,7 +155,7 @@ Android needs **two** things, and only one of them is the relay's. Without the
 first, `getDevicePushTokenAsync()` cannot mint a token at all and the relay never
 gets a chance to matter.
 
-### 1. The app side — `google-services.json`
+### 1. The app side: `google-services.json`
 
 The app must be registered in a Firebase project under the exact package name in
 `expo.android.package`.
@@ -178,12 +178,12 @@ This is a **native** change: `expo prebuild` + `expo run:android`, not a JS
 reload. A build made before this lands cannot register for push no matter what
 the relay holds.
 
-One file can serve several packages — KROMA's carries both `tv.kroma.mobile` and
+One file can serve several packages: KROMA's carries both `tv.kroma.mobile` and
 `tv.kroma.androidtv`. It is safe to commit: the Android API key inside it is
 public by design (it ships inside the APK) and is scoped by package name. FCM
 does **not** need a SHA-1 fingerprint registered; other Firebase products do.
 
-### 2. The relay side — the service account
+### 2. The relay side: the service account
 
 Project settings → **Service accounts** → **Generate new private key**, or reuse
 the existing `firebase-adminsdk` key if you have it.
@@ -194,7 +194,7 @@ bunx wrangler secret put FCM_SERVICE_ACCOUNT < ~/Downloads/<project>-firebase-ad
 ```
 
 The JSON already carries `project_id`, `client_email` and `private_key`, so
-there is nothing else to configure — `worker/fcm.ts` reads all three and trades
+there is nothing else to configure: `worker/fcm.ts` reads all three and trades
 the key for an OAuth2 access token.
 
 ### Verifying
@@ -204,13 +204,13 @@ failure, because two very different things both surface as a non-2xx:
 
 | Relay says | Meaning |
 |---|---|
-| `push service returned 400` | ✅ auth worked. Google authenticated the request and rejected the fake token — `"The registration token is not a valid FCM registration token"` |
-| `upstream push service failed` | ❌ the OAuth2 exchange itself failed — bad or unauthorised service account |
+| `push service returned 400` | ✅ auth worked. Google authenticated the request and rejected the fake token: `"The registration token is not a valid FCM registration token"` |
+| `upstream push service failed` | ❌ the OAuth2 exchange itself failed: bad or unauthorised service account |
 
 `bunx wrangler tail` shows Google's full reply in the `relay.rejected` log line.
 
 Note that FCM answers a bad token with **400 `INVALID_ARGUMENT`**, not 404, and
-`worker/fcm.ts` deliberately does **not** treat that as "device gone" — the same
+`worker/fcm.ts` deliberately does **not** treat that as "device gone": the same
 400 also means *our* payload was malformed, and evicting on that would
 unsubscribe every Android device at once. Only `404`/`UNREGISTERED` evicts;
 everything else is left to the consecutive-failure counter in `push_subs`.
@@ -244,5 +244,5 @@ to the other host, and mapped the verdict. A real device token returns
 bunx vitest run packages/push-relay/worker/
 ```
 
-`grant.test.ts` is the security boundary — forgery, tampering, expiry, IV reuse,
+`grant.test.ts` is the security boundary: forgery, tampering, expiry, IV reuse,
 and that a grant never reveals the token it carries.

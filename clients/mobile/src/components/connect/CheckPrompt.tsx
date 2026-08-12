@@ -12,7 +12,7 @@
 import type { DiscoveredTv, GrantResult } from '@kroma/core';
 import { HANDOFF_CHECK_LENGTH } from '@kroma/core';
 import { useCheckPrompt } from '@kroma/core/react';
-import { Box, Button, OtpField, REGEXP_ONLY_DIGITS_AND_CHARS, styles, Txt } from '@kroma/ui/kit';
+import { Box, Button, OtpField, REGEXP_ONLY_DIGITS_AND_CHARS, styles, Text } from '@kroma/ui/kit';
 import { useT } from '#mobile/lib/i18n';
 import { spacing, type } from '#mobile/lib/theme';
 
@@ -31,11 +31,11 @@ export function CheckPrompt({ device, onGrant, onCancel }: Readonly<CheckPromptP
 
   return (
     <Box style={s.prompt}>
-      <Txt style={s.title}>{asked}</Txt>
-      <OtpField
+      <Text style={s.title}>{asked}</Text>
+      <OtpField.Root
         maxLength={HANDOFF_CHECK_LENGTH}
         value={code}
-        onChange={setCode}
+        onValueChange={setCode}
         onComplete={(value) => void submit(value)}
         pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
         physicalKeyboard
@@ -44,9 +44,9 @@ export function CheckPrompt({ device, onGrant, onCancel }: Readonly<CheckPromptP
         invalid={refused !== null}
         label={asked}
       />
-      <Txt style={[s.hint, refused ? s.error : null]}>
+      <Text style={[s.hint, refused ? s.error : null]}>
         {refused ? t(`handoff.${refused}`) : t('handoff.checkHint')}
-      </Txt>
+      </Text>
       <Button variant="ghost" size="sm" label={t('common.cancel')} onPress={onCancel} />
     </Box>
   );

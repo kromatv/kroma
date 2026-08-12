@@ -1,21 +1,27 @@
-import type { MetricsSnapshot, PlaybackSession, TopUser } from '@kroma/core';
+import type { PlaybackSession, TopUser } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, EmptyState, Section, Select, Surface } from '@kroma/ui/kit';
+import {
+  Avatar,
+  Box,
+  color,
+  Divider,
+  EmptyState,
+  Grid,
+  Row,
+  Section,
+  Select,
+  Surface,
+  Text,
+} from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
-import { HistoryBars, MetricsChart } from '#web/features/admin/charts';
+import { HistoryBars } from '#web/features/admin/charts';
+import { BandwidthSection, CpuSection, RamSection } from '#web/features/admin/dashboard-metrics';
 import { NowPlayingCard, StopStreamModal } from '#web/features/admin/dashboard-now-playing';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, useAdmin, usePoll } from '#web/features/admin/shell';
-import { decimal, formatDuration, formatMbps } from '#web/shared/lib/adminFormat';
+import { TABULAR } from '#web/features/admin/table';
+import { formatDuration } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
-
-const C = {
-  accent: '#F4B642',
-  green: '#46D08D',
-  blue: '#5C8DF6',
-  purple: '#C792EA',
-  cpuRed: '#E5566B',
-} as const;
 
 function RangeSelect({
   value,
@@ -30,28 +36,14 @@ function RangeSelect({
 }>) {
   const t = useT();
   return (
-    <Select
-      label={label}
-      value={String(value)}
-      onChange={(v) => onChange(Number(v))}
-      options={options.map((d) => ({
-        value: String(d),
-        label: t('admin.lastNdays', { count: d }),
-      }))}
-    />
+    <Select.Root label={label} value={String(value)} onValueChange={(v) => onChange(Number(v))}>
+      <Select.Trigger />
+      {options.map((d) => (
+        <Select.Item key={d} value={String(d)} label={t('admin.lastNdays', { count: d })} />
+      ))}
+    </Select.Root>
   );
 }
-
-function LiveLabel() {
-  const t = useT();
-  return (
-    <span className="inline-flex cursor-default items-center gap-1.5 text-[14px] font-semibold text-muted">
-      {t('admin.realtime')}
-    </span>
-  );
-}
-
-const sampleSec = (metrics: MetricsSnapshot | null) => (metrics?.sampleIntervalMs ?? 3000) / 1000;
 
 export function DashboardScreen() {
   const t = useT();
@@ -94,17 +86,25 @@ export function DashboardScreen() {
 
   return (
     <>
-      <PageHeader
-        title={serverInfo?.name ?? 'KROMA'}
-        suffix={t('admin.dashboardSuffix')}
-        action={<RealtimeBadge />}
-      />
+      <PageHeader.Root>
+        <PageHeader.Title suffix={t('admin.dashboardSuffix')}>
+          {serverInfo?.name ?? 'KROMA'}
+        </PageHeader.Title>
+        <PageHeader.Actions>
+          <RealtimeBadge />
+        </PageHeader.Actions>
+      </PageHeader.Root>
 
-      <Section title={t('admin.nowPlaying')} mt={28}>
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.nowPlaying')}</Section.Title>
+        </Section.Header>
         {sessions.length === 0 ? (
-          <EmptyState icon="player-play" title={t('admin.noPlayback')} />
+          <EmptyState.Root icon="player-play">
+            <EmptyState.Title>{t('admin.noPlayback')}</EmptyState.Title>
+          </EmptyState.Root>
         ) : (
-          <div className="flex flex-col gap-3.5">
+          <Box gap={14}>
             {sessions.map((s) => (
               <NowPlayingCard
                 key={s.id}
@@ -113,140 +113,58 @@ export function DashboardScreen() {
                 onStop={() => void askStop(s)}
               />
             ))}
-          </div>
+          </Box>
         )}
-      </Section>
+      </Section.Root>
 
       <BandwidthSection metrics={metrics} />
       <CpuSection metrics={metrics} />
       <RamSection metrics={metrics} />
 
-      <Section
-        title={t('admin.topUsers')}
-        mt={28}
-        action={
-          <RangeSelect
-            label={t('admin.topUsers')}
-            value={topDays}
-            onChange={setTopDays}
-            options={[7, 30, 90]}
-          />
-        }
-      >
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.topUsers')}</Section.Title>
+          <Section.Actions>
+            <RangeSelect
+              label={t('admin.topUsers')}
+              value={topDays}
+              onChange={setTopDays}
+              options={[7, 30, 90]}
+            />
+          </Section.Actions>
+        </Section.Header>
         {top && top.users.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Grid min={200} gap={16}>
             {top.users.slice(0, 3).map((u) => (
               <TopUserCard key={u.username} u={u} />
             ))}
-          </div>
+          </Grid>
         ) : (
-          <EmptyState icon="users" title={t('admin.noHistory')} />
+          <EmptyState.Root icon="users">
+            <EmptyState.Title>{t('admin.noHistory')}</EmptyState.Title>
+          </EmptyState.Root>
         )}
-      </Section>
+      </Section.Root>
 
-      <Section
-        title={t('admin.playHistory')}
-        mt={28}
-        action={
-          <RangeSelect
-            label={t('admin.playHistory')}
-            value={historyDays}
-            onChange={setHistoryDays}
-            options={[30, 90, 180]}
-          />
-        }
-      >
-        {history ? <HistoryBars buckets={history.buckets} /> : null}
-      </Section>
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.playHistory')}</Section.Title>
+          <Section.Actions>
+            <RangeSelect
+              label={t('admin.playHistory')}
+              value={historyDays}
+              onChange={setHistoryDays}
+              options={[30, 90, 180]}
+            />
+          </Section.Actions>
+        </Section.Header>
+        {history ? <HistoryBars buckets={history.buckets} label={t('admin.playHistory')} /> : null}
+      </Section.Root>
     </>
   );
 }
 
-const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
-
-const pct = (v: number) => `${Math.round(v)} %`;
-
-function BandwidthSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) {
-  const t = useT();
-  const local = metrics?.series.bwLocal ?? [];
-  const remote = metrics?.series.bwRemote ?? [];
-  const max = Math.max(1, ...local, ...remote);
-  return (
-    <Section title={t('admin.bandwidth')} mt={28} action={<LiveLabel />}>
-      <MetricsChart
-        max={max}
-        sampleSec={sampleSec(metrics)}
-        formatValue={formatMbps}
-        series={[
-          { label: t('admin.legendRemote'), data: remote, color: C.blue },
-          { label: t('admin.legendLocal'), data: local, color: C.accent, fill: true },
-        ]}
-        legend={[
-          { label: t('admin.legendRemote'), color: C.blue },
-          { label: t('admin.legendLocal'), color: C.accent },
-        ]}
-        footer={t('admin.bwAverages', {
-          remote: formatMbps(avg(remote)),
-          local: formatMbps(avg(local)),
-        })}
-      />
-    </Section>
-  );
-}
-
-function CpuSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) {
-  const t = useT();
-  const kroma = metrics?.series.cpuKroma ?? [];
-  const sys = metrics?.series.cpuSystem ?? [];
-  return (
-    <Section title={t('admin.cpu')} mt={28} action={<LiveLabel />}>
-      <MetricsChart
-        max={100}
-        sampleSec={sampleSec(metrics)}
-        formatValue={pct}
-        series={[
-          { label: t('admin.legendSystem'), data: sys, color: C.cpuRed },
-          { label: t('admin.legendKromaServer'), data: kroma, color: C.green },
-        ]}
-        legend={[
-          { label: t('admin.legendKromaServer'), color: C.green },
-          { label: t('admin.legendSystem'), color: C.cpuRed },
-        ]}
-        footer={t('admin.cpuAverages', {
-          kroma: decimal(avg(kroma), 1),
-          sys: decimal(avg(sys), 1),
-        })}
-      />
-    </Section>
-  );
-}
-
-function RamSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) {
-  const t = useT();
-  const kroma = metrics?.series.ramKroma ?? [];
-  const sys = metrics?.series.ramSystem ?? [];
-  return (
-    <Section title={t('admin.ram')} mt={28} action={<LiveLabel />}>
-      <MetricsChart
-        max={100}
-        sampleSec={sampleSec(metrics)}
-        formatValue={pct}
-        series={[
-          { label: t('admin.legendSystem'), data: sys, color: C.purple },
-          { label: t('admin.legendKromaServer'), data: kroma, color: C.green },
-        ]}
-        legend={[
-          { label: t('admin.legendKromaServer'), color: C.green },
-          { label: t('admin.legendSystem'), color: C.purple },
-        ]}
-        footer={t('admin.ramAverages', {
-          kroma: decimal(avg(kroma), 2),
-          sys: decimal(avg(sys), 2),
-        })}
-      />
-    </Section>
-  );
-}
+const ROW_RULE = { borderBottomWidth: 1, borderBottomColor: color('tint/4') } as const;
 
 function TopUserCard({ u }: Readonly<{ u: TopUser }>) {
   const t = useT();
@@ -255,41 +173,42 @@ function TopUserCard({ u }: Readonly<{ u: TopUser }>) {
     { label: t('admin.tv'), val: formatDuration(u.tvMs), on: u.tvMs > u.filmsMs },
   ];
   return (
-    <Surface elevated pad="none" radius={16} border="border" overflow="hidden">
-      <div className="flex items-center gap-3.5 px-5 py-4.5">
+    <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
+      <Row gap={14} px={20} py={18}>
         <Avatar name={u.username} size={48} circle />
-        <div>
-          <div className="font-display text-[16px] font-bold">
+        <Box>
+          <Text variant="title">
             {u.plays} {u.plays > 1 ? t('admin.plays') : t('admin.play')}
-          </div>
-          <div className="text-[13px] font-medium text-text/55">{formatDuration(u.watchedMs)}</div>
-        </div>
-      </div>
-      <div className="border-y border-white/5 bg-surface-2 px-5 py-2.75 text-[15px] font-bold">
-        {u.username}
-      </div>
-      <div>
+          </Text>
+          <Text variant="meta" color="textMuted">
+            {formatDuration(u.watchedMs)}
+          </Text>
+        </Box>
+      </Row>
+      <Divider color="tint/5" />
+      <Box bg="surface2" px={20} py={11}>
+        <Text variant="label">{u.username}</Text>
+      </Box>
+      <Divider color="tint/5" />
+      <Box>
         {rows.map((r) => (
-          <div
+          <Row
             key={r.label}
-            className="flex items-center justify-between border-b border-white/4 px-5 py-2.75"
-            style={{ background: r.on ? 'rgba(242,180,66,.16)' : 'transparent' }}
+            between
+            px={20}
+            py={11}
+            bg={r.on ? 'accentWash/16' : 'transparent'}
+            style={ROW_RULE}
           >
-            <span
-              className="text-[13.5px] font-semibold"
-              style={{ color: r.on ? C.accent : 'var(--kroma-text-muted)' }}
-            >
+            <Text variant="meta" color={r.on ? 'accentText' : 'textMuted'}>
               {r.label}
-            </span>
-            <span
-              className="text-[13.5px] font-semibold tabular-nums"
-              style={{ color: r.on ? C.accent : 'var(--kroma-text-muted)' }}
-            >
+            </Text>
+            <Text variant="meta" color={r.on ? 'accentText' : 'textMuted'} style={TABULAR}>
               {r.val}
-            </span>
-          </div>
+            </Text>
+          </Row>
         ))}
-      </div>
+      </Box>
     </Surface>
   );
 }

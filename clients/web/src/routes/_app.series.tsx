@@ -1,4 +1,5 @@
 import { useT } from '@kroma/ui';
+import { Box } from '@kroma/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { BROWSE_TITLE } from '#web/features/catalog/browse-hero';
@@ -24,9 +25,9 @@ function SeriesPending() {
   return (
     <main className={PAGE_MAIN}>
       <h1 className={BROWSE_TITLE}>{t('nav.series')}</h1>
-      <div className="mt-6">
+      <Box mt={24}>
         <SkeletonRow count={14} />
-      </div>
+      </Box>
     </main>
   );
 }

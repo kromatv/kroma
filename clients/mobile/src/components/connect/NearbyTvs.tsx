@@ -20,12 +20,12 @@
 //
 // It always says something. Rendering nothing while nothing is found reads as a
 // broken screen rather than an empty network, so "still looking" and "nothing
-// here, and why" are both the kit's <EmptyState> - and the footer that says the
-// looking goes on belongs under a list, never under one of those.
+// here, and why" are both the kit's <EmptyState.Root> - and the footer that
+// says the looking goes on belongs under a list, never under one of those.
 
 import { useHandoffPicker, useNearbyTvs } from '@kroma/core/react';
 import { lanBeacon } from '@kroma/lan-beacon';
-import { Box, EmptyState, NearbyTvList, Spinner, styles, Txt } from '@kroma/ui/kit';
+import { Box, EmptyState, NearbyTvList, Spinner, styles, Text } from '@kroma/ui/kit';
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { CheckPrompt } from '#mobile/components/connect/CheckPrompt';
@@ -89,21 +89,19 @@ export function NearbyTvs() {
     );
   } else if (!settled) {
     body = (
-      <EmptyState
-        icon="device-tv"
-        title={t('handoff.nearbySearching')}
-        action={<Spinner size={18} thickness={2} />}
-        compact
-      />
+      <EmptyState.Root size="sm" icon="device-tv">
+        <EmptyState.Title>{t('handoff.nearbySearching')}</EmptyState.Title>
+        <EmptyState.Actions>
+          <Spinner size={18} thickness={2} />
+        </EmptyState.Actions>
+      </EmptyState.Root>
     );
   } else {
     body = (
-      <EmptyState
-        icon="device-tv"
-        title={t('handoff.nearbyEmpty')}
-        hint={t('handoff.nearbyEmptyHint')}
-        compact
-      />
+      <EmptyState.Root size="sm" icon="device-tv">
+        <EmptyState.Title>{t('handoff.nearbyEmpty')}</EmptyState.Title>
+        <EmptyState.Hint>{t('handoff.nearbyEmptyHint')}</EmptyState.Hint>
+      </EmptyState.Root>
     );
   }
 
@@ -113,7 +111,7 @@ export function NearbyTvs() {
       {rows.length > 0 ? (
         <Box style={s.searching}>
           <Spinner size={14} thickness={2} />
-          <Txt style={s.searchingLabel}>{t('handoff.nearbySearching')}</Txt>
+          <Text style={s.searchingLabel}>{t('handoff.nearbySearching')}</Text>
         </Box>
       ) : null}
     </Box>

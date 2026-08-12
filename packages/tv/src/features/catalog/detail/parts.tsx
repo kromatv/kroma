@@ -9,7 +9,7 @@ import {
   PersonCard,
   Rail,
   styles,
-  Txt,
+  Text,
 } from '@kroma/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
 
@@ -21,10 +21,10 @@ export function EndsAtHint({ runtimeMs }: Readonly<{ runtimeMs?: number | null }
   if (!at) return null;
   return (
     <Box row align="center" gap={9} mt={12}>
-      <Icon name="clock" size={16} stroke={1.8} color="accentText" />
-      <Txt style={s.sectionLabelSm} color="rgba(244, 243, 240, 0.55)">
+      <Icon name="clock" size={16} thickness={1.8} color="accentText" />
+      <Text style={s.sectionLabelSm} color="text/55">
         {t('content.endsAt', { time: at })}
-      </Txt>
+      </Text>
     </Box>
   );
 }
@@ -38,10 +38,10 @@ export function CastRow({ cast }: Readonly<{ cast?: CastMember[] | null }>) {
   if (!cast || cast.length === 0) return null;
   return (
     <Box mt={32} gap={16}>
-      <Txt style={s.sectionLabel} color="rgba(244, 243, 240, 0.55)">
+      <Text style={s.sectionLabel} color="text/55">
         {t('content.cast')}
-      </Txt>
-      <Rail inset={6}>
+      </Text>
+      <Rail.Root inset={6}>
         {cast.slice(0, 16).map((p, i) => (
           <PersonCard
             key={`${p.name}-${p.character ?? ''}`}
@@ -53,7 +53,7 @@ export function CastRow({ cast }: Readonly<{ cast?: CastMember[] | null }>) {
             onPress={() => nav.go('person', { name: p.name })}
           />
         ))}
-      </Rail>
+      </Rail.Root>
     </Box>
   );
 }
@@ -69,6 +69,7 @@ export function ListButton({
       variant="outline"
       size="lg"
       active={inList}
+      pressed={inList}
       icon={inList ? 'check' : 'plus'}
       label={inList ? t('content.inList') : t('content.addToList')}
       onPress={onToggle}
@@ -87,6 +88,7 @@ export function WatchedButton({
       variant="outline"
       size="lg"
       active={watched}
+      pressed={watched}
       icon="check"
       label={watched ? t('content.watched') : t('content.markWatched')}
       onPress={onToggle}
@@ -95,12 +97,12 @@ export function WatchedButton({
 }
 
 /** Opens the report screen for this title. Deliberately the quiet, icon-only
- * control of the action row — reachable, but never what the remote lands on
+ * control of the action row: reachable, but never what the remote lands on
  * next to Play. */
 export function ReportButton({ onPress }: Readonly<{ onPress: () => void }>) {
   const t = useT();
   return (
-    <IconButton icon="flag" glyph={24} size={60} label={t('report.action')} onPress={onPress} />
+    <IconButton icon="flag" glyph={24} diameter={60} label={t('report.action')} onPress={onPress} />
   );
 }
 
@@ -115,7 +117,7 @@ export function ThemeButton({
     <IconButton
       icon={muted ? 'volume-off' : 'volume'}
       glyph={24}
-      size={60}
+      diameter={60}
       label={label}
       onPress={onToggle}
     />

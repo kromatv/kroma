@@ -1,4 +1,4 @@
-import { Box, Chip, color, Icon, IconButton, styles, Txt } from '@kroma/ui/kit';
+import { Box, Chip, color, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { RefreshControl, ScrollView, useWindowDimensions } from 'react-native';
@@ -26,19 +26,19 @@ import { posterWidth, spacing, TAB_BAR_CLEARANCE } from '#mobile/lib/theme';
 function DownloadsGlyph() {
   const downloads = useDownloads();
   const pending = downloads.downloading.length + downloads.queuedItems.length;
-  if (pending === 0) return <Icon name="download" size={22} stroke={2} />;
+  if (pending === 0) return <Icon name="download" size={22} thickness={2} />;
   const progress = downloads.downloading[0]?.progress ?? -1;
   return (
     <Box style={s.dlGlyph}>
-      <ProgressRing progress={progress} size={26} stroke={2.5} />
+      <ProgressRing progress={progress} size={26} thickness={2.5} />
       {progress >= 0 ? (
         <Box pointerEvents="none" style={s.dlArrow}>
-          <Icon name="download" size={12} stroke={2.6} />
+          <Icon name="download" size={12} thickness={2.6} />
         </Box>
       ) : null}
       {pending > 1 ? (
         <Box style={s.dlCount}>
-          <Txt style={s.dlCountText}>{pending}</Txt>
+          <Text style={s.dlCountText}>{pending}</Text>
         </Box>
       ) : null}
     </Box>
@@ -61,7 +61,7 @@ function HomeHeader() {
         <CastIconButton />
         <IconButton
           variant="ghost"
-          size={40}
+          diameter={40}
           glyph={22}
           hitSlop={10}
           onPress={() => router.push('/downloads' as never)}
@@ -71,7 +71,7 @@ function HomeHeader() {
         <NotificationBell />
         <IconButton
           variant="ghost"
-          size={40}
+          diameter={40}
           hitSlop={8}
           onPress={() => router.push('/profile' as never)}
         >
