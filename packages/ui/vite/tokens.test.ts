@@ -280,6 +280,18 @@ describe('a step written mid-session', () => {
     expect(server.reloaded).toEqual([]);
     expect(expand(plugin)).not.toContain('--kroma-accent-44:');
   });
+
+  it('still folds the step in where there is no dev server to reload', async () => {
+    const plugin = kromaTokens();
+    expect(expand(plugin)).not.toContain('--kroma-accent-47:');
+
+    await plugin.hotUpdate.call(
+      {},
+      { file: under('made-up.tsx'), read: () => '<Box bg="accent/47" />' },
+    );
+
+    expect(expand(plugin)).toContain('--kroma-accent-47:');
+  });
 });
 
 describe('kromaCss', () => {

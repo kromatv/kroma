@@ -289,6 +289,31 @@ describe('the workspace walk', () => {
     }
   });
 
+  it('never begins the traversal when every collector already has its answer', () => {
+    const dir = tree();
+    try {
+      // The traversal IS the cost, and the only way to watch it not happen is to
+      // hand the roots over through a getter.
+      let reached = 0;
+      const roots: string[] = [];
+      Object.defineProperty(roots, 0, {
+        enumerable: true,
+        get: () => {
+          reached += 1;
+          return dir;
+        },
+      });
+
+      walkSources(roots, []);
+      expect(reached).toBe(0);
+
+      walkSources(roots, [collector(() => true).pass]);
+      expect(reached).toBe(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('places a changed file against the walk without walking again', () => {
     const roots = sourceRoots('/repo');
     expect(roots).toEqual(

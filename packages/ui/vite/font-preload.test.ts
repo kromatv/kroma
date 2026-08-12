@@ -55,6 +55,14 @@ describe('kromaFontPreload', () => {
     for (const tag of built()) expect(tag.attrs.href).toMatch(/^\.\.\//);
   });
 
+  it('marks that path relative where the html sits above the fonts rather than beside', () => {
+    const [href] = inject({ filename: `${REPO}packages/ui/src/index.html` }).map(
+      (tag) => tag.attrs.href ?? '',
+    );
+
+    expect(href).toBe('./assets/fonts/bricolage-grotesque-latin.woff2');
+  });
+
   it('hands the dev server the /@fs URL its own stylesheet resolves to', () => {
     const hrefs = inject({
       filename: HTML,

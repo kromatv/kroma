@@ -55,7 +55,14 @@ describe('kromaUI', () => {
   });
 
   it('skips the icon scan entirely when every glyph is wanted', () => {
-    expect(() => kromaUI({ icons: 'full', repoRoot: '/no/such/workspace' })).not.toThrow();
+    const plugins = kromaUI({ icons: 'full', repoRoot: '/no/such/workspace' });
+    const scan = plugins.find((plugin) => 'buildStart' in plugin);
+    if (!scan || !('buildStart' in scan)) throw new Error('kromaUI() lost its scan');
+
+    // Reaching Tabler from a root that has none is what the subset would do
+    // here, and the walk carries no icon collector to do it.
+    expect(() => scan.buildStart()).not.toThrow();
+    expect(() => iconPass('/no/such/workspace')).toThrow();
   });
 
   it('walks past a package.json that is not the workspace root', () => {
