@@ -66,8 +66,10 @@ const pending = new Map<number, (result: unknown) => void>();
 socket.addEventListener('message', (event) => {
   const message = JSON.parse(String(event.data)) as { id?: unknown; result?: unknown };
   if (typeof message.id !== 'number') return; // an event, not an answer
-  pending.get(message.id)?.(message.result);
+  const settle = pending.get(message.id);
+  if (!settle) return;
   pending.delete(message.id);
+  settle(message.result);
 });
 
 function send<T = Record<string, unknown>>(method: string, params: unknown = {}): Promise<T> {

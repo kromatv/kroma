@@ -35,16 +35,14 @@
   // still reported is worth looking at.
   "ignoreDependencies": [
     // Aliased, never imported by name: the Vite/Metro configs map
-    // `react-native` onto it (see `clients/tv-build/rnw.ts`), so every RNW
+    // `react-native` onto it (see `packages/bundler/src/rnw.ts`), so every RNW
     // component arrives under the `react-native` specifier instead.
     "react-native-web",
     "react-native",
-    // Imported by `clients/tv-build/shell.ts`, which the TV clients' vite
-    // configs share. Each client rightly declares what its own build needs;
-    // the import just lives in a directory that is not a workspace.
-    "@tailwindcss/vite",
+    // Imported by `packages/bundler/src/shell.ts`, which the TV clients' vite
+    // configs share, and declared there as well; the root copies keep one
+    // version across the workspace.
     "@vitejs/plugin-react",
-    "tailwindcss",
     "lightningcss",
     // React Native peers: the app has to install them, the component library
     // does the importing (`react-native-svg` in packages/ui/src/lib/svg.tsx).
