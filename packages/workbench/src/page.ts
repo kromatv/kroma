@@ -88,7 +88,7 @@ function pageAt(path: string, module: PageModule): Page {
     );
   }
   if (typeof module.default !== 'function') {
-    throw new Error(`"${file}" compiled to no component. A page is an .mdx document.`);
+    throw new TypeError(`"${file}" compiled to no component. A page is an .mdx document.`);
   }
   const own = numbered(base);
   const section = numbered(path.split('/').at(-2) ?? '');

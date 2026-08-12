@@ -17,6 +17,7 @@ import type { WorkbenchLayout } from './layout';
 import type { PlayRunner } from './play';
 import type { PlayFunction } from './play-types';
 import type { Story } from './story';
+import { inlineArgs } from './story-code-inline';
 import { PREVIEW_THEMES } from './themes';
 import { Toolbar, type ToolbarLens } from './toolbar';
 import { type View, viewIndex } from './view';
@@ -185,7 +186,7 @@ function viewDocs(story: Story, view: View): string | undefined {
 // had nothing to show at all.
 function viewCode(story: Story, view: View, args: Record<string, unknown>): string | null {
   if (view.startsWith('demo:')) return story.demos[viewIndex(view)]?.code ?? null;
-  if (view.startsWith('scene:')) return story.scenes[viewIndex(view)]?.code ?? null;
+  if (view.startsWith('scene:')) return inlineArgs(story.scenes[viewIndex(view)]?.code, args);
   if (view !== 'preview') return null;
   if (story.controls.some((control) => control.variant)) return snippet(story, args);
   return story.code ?? null;
