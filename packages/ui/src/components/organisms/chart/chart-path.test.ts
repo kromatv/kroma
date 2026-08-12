@@ -153,3 +153,22 @@ describe('the paths', () => {
     );
   });
 });
+
+describe('the degenerate geometry a real series produces', () => {
+  it('reads two samples at the same x as flat rather than dividing by their gap', () => {
+    // A metric sampled twice inside one tick lands on one x. The secant between
+    // them has no run, and a tangent of infinity would send the curve off-plot.
+    const tangents = tangentsOf([
+      { x: 0, y: 10 },
+      { x: 10, y: 20 },
+      { x: 10, y: 40 },
+      { x: 20, y: 50 },
+    ]);
+    expect(tangents.every(Number.isFinite)).toBe(true);
+  });
+
+  it('draws nothing for a run the curve could not trace', () => {
+    expect(areaPath([], { min: 0, max: 1 }, { width: 100, height: 40 })).toBe('');
+    expect(linePath([], { min: 0, max: 1 }, { width: 100, height: 40 })).toBe('');
+  });
+});

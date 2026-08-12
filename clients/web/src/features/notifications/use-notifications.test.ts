@@ -355,3 +355,18 @@ describe('the panel latch', () => {
     expect(result.current.everOpened).toBe(false);
   });
 });
+
+describe('a press that lands before the inbox does', () => {
+  it('still sends the write, and leaves the empty cache empty', () => {
+    // The bell can be pressed while the first fetch is still in flight, so the
+    // optimistic patch has nothing to patch. It must not write a half view.
+    const key = userQueries.notifications().queryKey;
+    listNotifications.mockReturnValue(new Promise(() => {}));
+    const { result } = render(() => useReadState());
+
+    act(() => result.current.markRead(['a']));
+
+    expect(client.getQueryData<NotificationsView>(key)).toBeUndefined();
+    expect(markNotificationsRead).toHaveBeenCalledWith(['a']);
+  });
+});

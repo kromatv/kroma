@@ -174,3 +174,12 @@ describe('barPath', () => {
     );
   });
 });
+
+describe('a value the wire should never have sent', () => {
+  it('puts a non-finite sample on the floor rather than off the plot', () => {
+    const domain = { min: 0, max: 100 };
+    const box = { width: 200, height: 50 };
+    expect(yAt(Number.NaN, domain, box)).toBe(box.height);
+    expect(yAt(Number.POSITIVE_INFINITY, domain, box)).toBe(box.height);
+  });
+});

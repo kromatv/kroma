@@ -181,9 +181,10 @@ export function areaPath(
   const floor = px(yAt(baselineOf(domain), domain, box));
   return segmentsOf(column)
     .map((segment) => {
+      // A segment always spans at least one index and `pointsOf` drops nothing,
+      // so the trace is never empty here and the points are never missing.
       const points = pointsOf(column, segment, domain, box);
       const trace = curveOf(points, curve);
-      if (!trace) return '';
       const start = px((points[0] as Point).x);
       const end = px((points.at(-1) as Point).x);
       return `${trace}L${end} ${floor}L${start} ${floor}Z`;
