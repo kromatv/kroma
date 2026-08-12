@@ -19,13 +19,65 @@ interface Head {
 
 const NAME = /^[A-Za-z_$][\w$]*$/;
 
+const ARROW_HEAD = /^\s*=>\s*/;
+const SINGLE_PARAM = /^([A-Za-z_$][\w$]*)\s*=>\s*/;
+const LEADING_NAME = /^[A-Za-z_$][\w$]*/;
+
+const WORD_CHAR = new Set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$');
+
+// A parameter without its type: everything before the first `:` or `=`.
+function bare(part: string): string {
+  let cut = part.length;
+  for (let at = 0; at < part.length; at += 1) {
+    const char = part[at];
+    if (char === ':' || char === '=') {
+      cut = at;
+      break;
+    }
+  }
+  return part.slice(0, cut).trim();
+}
+
+interface Conditional {
+  name: string;
+  whenTrue: string;
+  whenFalse: string;
+}
+
+// `name ? a : b`, found by scanning rather than by a pattern: two greedy runs
+// either side of a colon backtrack quadratically over anything that is not one.
+function conditional(inner: string): Conditional | null {
+  const ask = inner.indexOf('?');
+  if (ask < 0) return null;
+  const name = inner.slice(0, ask).trim();
+  if (!NAME.test(name)) return null;
+  let depth = 0;
+  let quote = '';
+  for (let at = ask + 1; at < inner.length; at += 1) {
+    const char = inner[at] as string;
+    if (quote) {
+      if (char === '\\') at += 1;
+      else if (char === quote) quote = '';
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') quote = char;
+    else if (char === '(' || char === '{' || char === '[') depth += 1;
+    else if (char === ')' || char === '}' || char === ']') depth -= 1;
+    else if (char === '?') depth += 1;
+    else if (char === ':' && depth === 0) {
+      return { name, whenTrue: inner.slice(ask + 1, at), whenFalse: inner.slice(at + 1) };
+    }
+  }
+  return null;
+}
+
 // The parameter list, when the source opens with an arrow that takes one. Only
 // the two shapes a story can be written in: a destructured bag, or one name.
 function head(code: string): Head | null {
   if (code.startsWith('(')) {
     const close = matching(code, 0, '(');
     if (close < 0) return null;
-    const arrow = code.slice(close + 1).match(/^\s*=>\s*/);
+    const arrow = ARROW_HEAD.exec(code.slice(close + 1));
     if (!arrow) return null;
     const params = binding(code.slice(1, close));
     return {
@@ -35,7 +87,7 @@ function head(code: string): Head | null {
       end: close + 1 + arrow[0].length,
     };
   }
-  const single = code.match(/^([A-Za-z_$][\w$]*)\s*=>\s*/);
+  const single = SINGLE_PARAM.exec(code);
   if (!single?.[1]) return null;
   return { names: [single[1]], bag: single[1], empty: false, end: single[0].length };
 }
@@ -48,7 +100,7 @@ function binding(params: string): string {
     const close = matching(text, 0, '{');
     return close < 0 ? text : text.slice(0, close + 1);
   }
-  return text.match(/^[A-Za-z_$][\w$]*/)?.[0] ?? text;
+  return LEADING_NAME.exec(text)?.[0] ?? text;
 }
 
 function destructured(params: string): string[] {
@@ -57,7 +109,7 @@ function destructured(params: string): string[] {
   return params
     .slice(1, -1)
     .split(',')
-    .map((part) => part.replace(/[:=][\s\S]*$/, '').trim())
+    .map((part) => bare(part))
     .filter((name) => NAME.test(name));
 }
 
@@ -180,10 +232,9 @@ function resolve(
   }
   // `{flag ? <Thing /> : null}`: the one conditional a story writes, and the
   // canvas has already decided which way it went.
-  const ternary = inner.match(/^([A-Za-z_$][\w$]*)\s*\?([\s\S]+):([\s\S]+)$/);
-  const name = ternary?.[1];
-  if (!name || !names.includes(name)) return null;
-  const taken = ((truthy(args[name]) ? ternary[2] : ternary[3]) as string).trim();
+  const ternary = conditional(inner);
+  if (!ternary || !names.includes(ternary.name)) return null;
+  const taken = (truthy(args[ternary.name]) ? ternary.whenTrue : ternary.whenFalse).trim();
   const empty = taken === 'null' || taken === 'undefined';
   return { text: empty ? '' : taken, nested: !empty };
 }
@@ -240,7 +291,20 @@ function substitute(
 // which is what makes the result code with a free name in it.
 function mentions(inner: string, names: readonly string[], bag: string | null): boolean {
   const all = bag ? [...names, bag] : names;
-  return all.some((name) => new RegExp(`(^|[^\\w$.])${name}([^\\w$]|$)`).test(inner));
+  return all.some((name) => holdsWord(inner, name));
+}
+
+// The name as a WHOLE word, and not as a property of something else: `props` is
+// mentioned by `props.a`, but `a` is not mentioned by `props.a`.
+function holdsWord(text: string, word: string): boolean {
+  for (let at = text.indexOf(word); at !== -1; at = text.indexOf(word, at + 1)) {
+    const before = text[at - 1];
+    const after = text[at + word.length];
+    if (before !== undefined && (WORD_CHAR.has(before) || before === '.')) continue;
+    if (after !== undefined && WORD_CHAR.has(after)) continue;
+    return true;
+  }
+  return false;
 }
 
 // A line left holding nothing after a conditional resolved away, which would

@@ -75,22 +75,29 @@ export function domainOf(
     min = Math.min(min, 0);
     max = Math.max(max, 0);
   }
-  if (!Number.isFinite(min) || !Number.isFinite(max)) {
-    min = 0;
-    max = 1;
-  } else if (min === max) {
-    if (options.baseline || min === 0) {
-      min = Math.min(min, 0);
-      max = Math.max(max, min + 1);
-    } else {
-      min -= 1;
-      max += 1;
-    }
+  const spread = widened({ min, max }, Boolean(options.baseline));
+  return stated(spread, options);
+}
+
+// A domain with no width cannot be divided by. Nothing finite seen at all reads
+// as 0..1; a flat run opens around the value it rests at, or up from the floor
+// where the floor is part of the reading.
+function widened(at: ChartDomain, baseline: boolean): ChartDomain {
+  if (!Number.isFinite(at.min) || !Number.isFinite(at.max)) return { min: 0, max: 1 };
+  if (at.min !== at.max) return at;
+  if (baseline || at.min === 0) {
+    const min = Math.min(at.min, 0);
+    return { min, max: Math.max(at.max, min + 1) };
   }
-  if (options.min !== undefined && Number.isFinite(options.min)) min = options.min;
-  if (options.max !== undefined && Number.isFinite(options.max)) max = options.max;
-  if (max <= min) max = min + 1;
-  return { min, max };
+  return { min: at.min - 1, max: at.max + 1 };
+}
+
+// What the caller asked for wins over what the data says, and the result is
+// still a range rather than a point.
+function stated(at: ChartDomain, options: Readonly<DomainOptions>): ChartDomain {
+  const min = options.min !== undefined && Number.isFinite(options.min) ? options.min : at.min;
+  const max = options.max !== undefined && Number.isFinite(options.max) ? options.max : at.max;
+  return { min, max: max <= min ? min + 1 : max };
 }
 
 /** Sample index to x, first sample on the left edge and last on the right. A

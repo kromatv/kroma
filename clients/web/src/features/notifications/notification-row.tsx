@@ -7,7 +7,12 @@
 // siblings, the way <SelectRow> and its trash button are in the player's
 // subtitles panel, so neither swallows the other's press.
 
-import { type Notification, type NotificationRun, sizedImageUrl } from '@kroma/core';
+import {
+  type Notification,
+  type NotificationRun,
+  sizedImageUrl,
+  type Translate,
+} from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Badge, Box, Icon, IconButton, ListRow, Row, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
@@ -17,6 +22,26 @@ import { useReadState } from '#web/features/notifications/use-notifications';
 import { NotificationCard } from '#web/shared/ui/notification-card';
 
 /** One notification, or the run of repeats folded into it. */
+// What a folded run says beyond its head: how many times, and over what span.
+//
+// Items arrive newest-first, so the run started at the last of them. A burst
+// that fits inside one unit of the format reads "from 7 min ago to 7 min ago",
+// which says less than the count already does, so it says nothing.
+function foldLabels(
+  run: NotificationRun,
+  latest: string,
+  relative: (at: number) => string,
+  t: Translate,
+): { span: string | null; repeat: string | null } {
+  const { head, items } = run;
+  if (items.length <= 1) return { span: null, repeat: null };
+  const oldest = relative(items[items.length - 1]?.createdAt ?? head.createdAt);
+  return {
+    span: oldest === latest ? null : t('notifications.repeatSpan', { first: oldest, last: latest }),
+    repeat: t('notifications.repeatCount', { count: items.length }),
+  };
+}
+
 export function NotificationEntry({
   run,
   onNavigate,
@@ -32,16 +57,7 @@ export function NotificationEntry({
   const unread = run.unread > 0;
   const ids = items.map((n) => n.id);
   const latest = relative(head.createdAt);
-
-  // Items arrive newest-first, so the run started at the last of them. A burst
-  // that fits inside one unit of the format reads "from 7 min ago to 7 min
-  // ago", which says less than the count already does, so it says nothing.
-  const oldest = folded ? relative(items[items.length - 1]?.createdAt ?? head.createdAt) : latest;
-  const span =
-    folded && oldest !== latest
-      ? t('notifications.repeatSpan', { first: oldest, last: latest })
-      : null;
-  const repeat = folded ? t('notifications.repeatCount', { count: items.length }) : null;
+  const { span, repeat } = foldLabels(run, latest, relative, t);
 
   function go(one: Notification) {
     markRead(ids);

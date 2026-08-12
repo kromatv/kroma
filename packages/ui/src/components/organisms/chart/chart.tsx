@@ -13,6 +13,7 @@ import {
   type ReactElement,
   type ReactNode,
   type SetStateAction,
+  useMemo,
   useState,
 } from 'react';
 import type { LayoutChangeEvent, PointerEvent } from 'react-native';
@@ -41,10 +42,10 @@ const round = (value: number) => String(Math.round(value * 100) / 100);
 
 type MarkElement = ReactElement<ChartTraceProps & ChartBarProps>;
 
-const MARKS: readonly unknown[] = [Line, Area, Bar];
+const MARKS: ReadonlySet<unknown> = new Set([Line, Area, Bar]);
 
 function isMark(node: ReactNode): node is MarkElement {
-  return isValidElement(node) && MARKS.includes(node.type);
+  return isValidElement(node) && MARKS.has(node.type);
 }
 
 function isAxis(node: ReactNode): node is ReactElement<ChartAxisProps> {
@@ -166,34 +167,41 @@ function Root({
   const bottom = axes.find((axis) => axis.props.edge === 'bottom');
 
   const room = width ?? measured;
-  const plot = {
-    width: Math.max(0, room - (left ? (left.props.room ?? AXIS_ROOM.left) : 0)),
-    height: Math.max(0, height - (bottom ? (bottom.props.room ?? AXIS_ROOM.bottom) : 0)),
-  };
+  // Held apart as numbers so the box below is a new object only when the box
+  // actually changed, which is what lets the state around it hold still.
+  const plotWidth = Math.max(0, room - (left ? (left.props.room ?? AXIS_ROOM.left) : 0));
+  const plotHeight = Math.max(0, height - (bottom ? (bottom.props.room ?? AXIS_ROOM.bottom) : 0));
+  const plot = useMemo(() => ({ width: plotWidth, height: plotHeight }), [plotWidth, plotHeight]);
 
-  const series = seriesOf(marks, data);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `marks` is rebuilt from `children` on every render, and its content is what matters
+  const series = useMemo(() => seriesOf(marks, data), [children, data]);
   const band = series.some((entry) => entry.mark === 'bar');
   const cursor = kids.some((kid) => isPart(kid, ChartTooltip));
   // The key and the caption share one row, at either end of it.
   const caption = kids.filter((kid) => isPart(kid, ChartLegend) || isPart(kid, ChartFooter));
 
-  const state: ChartState = {
-    data,
-    count: data.length,
-    plot,
-    domain: domainOf(topsOf(series), {
-      min,
-      max,
-      baseline: series.some((entry) => entry.mark !== 'line'),
+  // Memoised: every part below reads this, so a fresh object per render would
+  // redraw every mark, axis and readout whenever anything above the chart did.
+  const state = useMemo<ChartState>(
+    () => ({
+      data,
+      count: data.length,
+      plot,
+      domain: domainOf(topsOf(series), {
+        min,
+        max,
+        baseline: series.some((entry) => entry.mark !== 'line'),
+      }),
+      series,
+      band,
+      labels: data.map((point) => (x ? String(point[x] ?? '') : '')),
+      format,
+      label,
+      active,
+      setActive,
     }),
-    series,
-    band,
-    labels: data.map((point) => (x ? String(point[x] ?? '') : '')),
-    format,
-    label,
-    active,
-    setActive,
-  };
+    [data, plot, series, band, x, format, label, active, setActive, min, max],
+  );
 
   const track = (event: PointerEvent) => {
     const next = indexAtX(event.nativeEvent.offsetX, state.count, plot.width, band);
