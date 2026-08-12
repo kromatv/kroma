@@ -6,8 +6,8 @@
 
 import { Text } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { storyEntries } from './entry';
 import { indexVite } from './lazy';
 import { memoryRouter } from './router';
@@ -81,9 +81,35 @@ describe('a story whose module is still on its way', () => {
   it('draws the component, and stops saying it is busy, when the module lands', async () => {
     const held = show();
     held.release();
-    await waitFor(() => expect(screen.getByText('Press me')).toBeTruthy());
+    expect(await screen.findByText('Press me')).toBeTruthy();
     expect(screen.queryByRole('progressbar', { name: 'Loading Button' })).toBeNull();
     expect(screen.getAllByText('Preview')).toHaveLength(1);
+  });
+});
+
+describe('an article on the canvas', () => {
+  it('fetches no story module, because the bare address opens one', async () => {
+    const module = vi.fn(async () => ({ default: BUTTON_STORY }));
+    render(
+      onScreen(
+        <Workbench
+          stories={indexVite({ modules: { [BUTTON]: module }, codes: CODES })}
+          pages={[
+            {
+              id: 'installing',
+              title: 'Installing the kit',
+              group: 'Guides',
+              path: 'src/guides/01-installing.page.mdx',
+              content: () => <Text>Add it to your app.</Text>,
+            },
+          ]}
+          router={memoryRouter({})}
+        />,
+      ),
+    );
+
+    expect(await screen.findByText('Add it to your app.')).toBeTruthy();
+    expect(module).not.toHaveBeenCalled();
   });
 });
 

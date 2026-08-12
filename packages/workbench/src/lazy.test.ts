@@ -129,6 +129,21 @@ describe('a story, once it is asked for', () => {
     expect((await entryAt(index, AT_BUTTON).load()).docs).toBe('Inline.');
   });
 
+  it('fetches a module again after one attempt failed, rather than keeping the failure', async () => {
+    const loaders = modules();
+    const good = loaders[BUTTON] as () => Promise<unknown>;
+    const button = vi
+      .fn(good)
+      .mockImplementationOnce(() => Promise.reject(new Error('chunk gone')));
+    const index = indexVite({ modules: { ...loaders, [BUTTON]: button }, codes: CODES });
+    const entry = entryAt(index, AT_BUTTON);
+
+    await expect(entry.load()).rejects.toThrow('chunk gone');
+    expect(entry.ready()).toBeUndefined();
+    expect((await entry.load()).name).toBe('Button');
+    expect(button).toHaveBeenCalledTimes(2);
+  });
+
   it('fetches a module once, however many views ask for it', async () => {
     const loaders = modules();
     const button = vi.fn(loaders[BUTTON] as () => Promise<unknown>);

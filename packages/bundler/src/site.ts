@@ -7,6 +7,7 @@ import react from '@vitejs/plugin-react';
 import type { Plugin, UserConfig } from 'vite';
 
 const WORKERD_ONLY = 'cloudflare:workers';
+const OUTSIDE_WORKERD = `${WORKERD_ONLY} is unavailable outside workerd`;
 
 // That module exists only inside workerd. `vite dev` resolves it like any other
 // import, fails the transform, and drops an error overlay over the page which
@@ -19,9 +20,7 @@ const workerdBuiltins = (): Plugin => ({
   apply: 'serve',
   resolveId: (id) => (id === WORKERD_ONLY ? `\0${WORKERD_ONLY}` : undefined),
   load: (id) =>
-    id === `\0${WORKERD_ONLY}`
-      ? `throw new Error(${JSON.stringify(`${WORKERD_ONLY} is unavailable outside workerd`)})`
-      : undefined,
+    id === `\0${WORKERD_ONLY}` ? `throw new Error(${JSON.stringify(OUTSIDE_WORKERD)})` : undefined,
 });
 
 export interface KromaSiteOptions {
