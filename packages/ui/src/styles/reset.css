@@ -56,3 +56,23 @@ textarea {
   letter-spacing: inherit;
   color: inherit;
 }
+
+/* Tailwind's Preflight carried this rule, and taking Tailwind out took it with
+   it: a browser gives a bare <button> no cursor of its own, so every control
+   the shells build from an element rather than from the kit went back to the
+   page's arrow. The kit's own controls state their cursor in `lib/cursor`;
+   this is for the elements around them. `:disabled` and `aria-disabled` say
+   the opposite, since a control that cannot be pressed should not invite one. */
+button:not(:disabled):not([aria-disabled='true']),
+[role='button']:not([aria-disabled='true']),
+summary,
+label[for] {
+  cursor: pointer;
+}
+
+button:disabled,
+button[aria-disabled='true'],
+[role='button'][aria-disabled='true'] {
+  cursor: default;
+}
+
