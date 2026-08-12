@@ -423,16 +423,17 @@ split.
 
 The cost, measured: a namespace import cannot be tree-shaken, so left alone the
 whole set ships, and the kit site went from 258 KB to 741 KB gzipped. A build-time
-subset in `@kroma/ui/bundler` buys it back everywhere except `apps/kit`, which
-opts into `icons: 'full'` because it reflects over the catalogue: 270 of 6,250
-glyphs kept, and `<Icon>` costs 49 KB gzipped instead of 573 KB. `vite dev` is
-not subset (`apply: 'build'`); Metro is, in both `start` and `export`. Lazy
-loading does not
-recover it on the targets that care (Metro has no dynamic import with a
-computed specifier, and the webOS legacy tier inlines every chunk back into one
-IIFE), so it would only help the modern web tier, at the price of thousands of
-chunks and glyphs arriving over the network mid-render. Reverting to a
-hand-written map is a small change, local to `glyphs.ts`.
+subset in `@kroma/ui/bundler` buys it back on every target: 296 of 6,250 glyphs
+kept, and `<Icon>` costs 49 KB gzipped instead of 573 KB. `vite dev` is not
+subset (`apply: 'build'`); Metro is, in both `start` and `export`.
+
+The one app that needs the whole set is the gallery itself, and it fetches it:
+`src/lib/icons/library.ts` merges all of Tabler and Tabler's own catalogue into
+the drawable set when the icons page mounts, which took 2,529 KB of glyphs and
+373 KB of metadata out of the chunk the kit starts from. That door is web-only
+by nature (Metro has no dynamic
+import with a computed specifier, and the webOS legacy tier inlines every chunk
+back into one IIFE), so a Metro workbench still opts into `icons: 'full'`.
 
 ---
 

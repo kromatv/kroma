@@ -79,12 +79,26 @@ outline.
 ## Where the tags come from
 
 The catalogue is `@tabler/icons`' `icons.json`, read at BUILD time by
-`kromaIconCatalog()` (`@kroma/ui/vite/icon-catalog`) and handed to the kit
-through `setIconCatalog()`. Only a workbench adds that plugin: it is a megabyte
-of metadata for one page, and no product bundle - least of all a television's -
-should carry it. Where it is absent the box searches names alone and the
-category picker does not appear, which is what the kit's own phone and TV builds
-do.
+`kromaIconCatalog()` (`@kroma/ui/vite/icon-catalog`) and registered with the kit
+through `setIconCatalogLoader()`. Only a workbench adds that plugin: it is a
+megabyte of metadata for one page, and no product bundle - least of all a
+television's - should carry it. Where it is absent the box searches names alone
+and the category picker does not appear, which is what the kit's own phone and
+TV builds do.
+
+## Both arrive when this page does
+
+A build keeps the glyphs its own sources name and cuts the rest, because a name
+resolved at runtime is a name no bundler can shake: 296 of Tabler's 6,250 for
+this workbench. A gallery needs all of them, so the browser above fetches the
+set and the catalogue as it mounts and spins until they land, two chunks
+(490 KB and 119 KB gzipped) that the workbench does not start with and only this
+page ever asks for. Everywhere else `<Icon>` draws from the scanned set, exactly
+as a client does.
+
+The kit's own phone and TV builds have nothing to fetch: Metro has no dynamic
+import to split a chunk off with, so they carry the whole set outright and the
+browser draws straight away.
 
 ## A page at a time
 

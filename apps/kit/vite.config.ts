@@ -21,7 +21,7 @@ const kitDir = fileURLToPath(new URL('.', import.meta.url));
 export default defineConfig({
   define: { __KROMA_BUILD__: JSON.stringify(collectBuildInfo(kitDir)), ...RNW_DEFINE },
   plugins: [
-    kromaUI({ icons: 'full' }),
+    kromaUI(),
     kromaIconCatalog(),
     // Before react(): a story's `.docs.mdx` has to be JSX before the React
     // transform sees it.

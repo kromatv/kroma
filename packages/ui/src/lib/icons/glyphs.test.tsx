@@ -4,6 +4,7 @@ import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Icon } from '#ui/components/atoms/icon';
 import {
+  addGlyphs,
   exportName,
   FALLBACK,
   glyphFor,
@@ -80,5 +81,20 @@ describe('the icon set', () => {
     // The two Tabler packages disagree on the prop name for the weight (see
     // icons/stroke-prop.ts); either way it must reach the element.
     expect(svg?.getAttribute('stroke-width')).toBe('1.5');
+  });
+
+  it('takes the glyphs a workbench fetched, past the ones the build kept', () => {
+    const named = 'lantern-of-the-workbench';
+    const before = iconNames().length;
+    expect(hasGlyph(named)).toBe(false);
+    // Resolution is memoized, so the fallback this leaves behind is the one the
+    // widened set has to displace.
+    expect(glyphFor(named)).toBe(FALLBACK);
+
+    addGlyphs({ IconLanternOfTheWorkbench: () => null });
+
+    expect(hasGlyph(named)).toBe(true);
+    expect(glyphFor(named)).not.toBe(FALLBACK);
+    expect(iconNames()).toHaveLength(before + 1);
   });
 });

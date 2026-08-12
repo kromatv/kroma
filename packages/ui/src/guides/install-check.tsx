@@ -5,6 +5,7 @@ import { fonts, space } from '#ui/core/tokens';
 import { webDocument, webWindow } from '#ui/lib/dom';
 import { iconNames } from '#ui/lib/glyph';
 import { iconCategories } from '#ui/lib/icon-catalog';
+import { iconLibraryReady } from '#ui/lib/icons/library';
 
 interface Check {
   label: string;
@@ -60,16 +61,20 @@ function glyphs(): Check {
   return {
     label: 'Glyphs',
     found: count > 0,
-    evidence: `${count} names, which is what the icon pass kept`,
+    evidence: `${count} names resolve by slug`,
   };
 }
 
 function catalogue(): Check {
   const count = iconCategories().length;
+  if (count > 0) return { label: 'Icon catalogue', found: true, evidence: `${count} categories` };
+  const deferred = !iconLibraryReady();
   return {
     label: 'Icon catalogue',
-    found: count > 0,
-    evidence: count > 0 ? `${count} categories` : 'absent, which is what a product build wants',
+    found: deferred,
+    evidence: deferred
+      ? 'registered, and fetched by the icons page rather than here'
+      : 'absent, which is what a product build wants',
   };
 }
 

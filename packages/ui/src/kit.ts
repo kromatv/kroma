@@ -95,6 +95,8 @@ export {
 } from './lib/glyph';
 export type { IconCatalog, IconEntry } from './lib/icon-catalog';
 export { iconCategories, iconEntry, setIconCatalog } from './lib/icon-catalog';
+export type { IconCatalogLoader } from './lib/icons/library';
+export { setIconCatalogLoader } from './lib/icons/library';
 export type { ImageBackend, ImageBackendProps } from './lib/image-backend';
 export { imageBackend, reactNativeImage, setImageBackend } from './lib/image-backend';
 export { clearInputHolds, holdInput, inputHeld } from './lib/input-gate';

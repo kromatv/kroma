@@ -43,21 +43,27 @@ icon at runtime while compiling cleanly.
 ## The cost, measured
 
 A namespace import cannot be tree-shaken, so left alone the whole set ships: the
-kit site went from 258 KB to 741 KB gzipped, and it still does, because
-`apps/kit` asks for `icons: 'full'` deliberately (it reflects over the
-catalogue, so `iconNames()` has to answer from whatever shipped). Every other
-target gets the scanned subset from [`@kroma/ui/bundler`](../../../bundler),
-which walks the workspace for slug literals and rewrites this folder's
-`glyph-source.ts` down to the names it found: 270 of 6,250 today. Measured on
-the repo's own Vite, `<Icon>` costs 49 KB gzipped with the subset against 573 KB
-with the full set.
+kit site went from 258 KB to 741 KB gzipped. Every target gets the scanned
+subset from [`@kroma/ui/bundler`](../../../bundler), which walks the workspace
+for slug literals and rewrites this folder's `glyph-source.ts` down to the names
+it found: 296 of 6,250 today. Measured on the repo's own Vite, `<Icon>` costs
+49 KB gzipped with the subset against 573 KB with the full set.
 
 Which paths get it: the Vite half is `apply: 'build'`, so `vite dev` still
 serves all 6,250 and only the built bundle is subset. The Metro half runs at
 config-eval time, so `expo start` and `expo export` both get it.
 
-Lazy loading does not recover the rest (Metro has no
-dynamic import with a computed specifier, and the webOS legacy tier inlines every
-chunk back into one IIFE), so it would only help the modern web tier, at the price
-of thousands of chunks and glyphs arriving over the network mid-render. Reverting
-to a hand-written map is a small change, local to `glyphs.ts`.
+## The gallery, which needs the rest
+
+A workbench browsing the icons is the one app that must answer from the whole
+set, and `every-glyph.web.ts` fetches it as its own chunk: `library.ts` merges
+what arrives into the drawable set through `addGlyphs`, alongside the catalogue
+the workbench registered, and `useIconLibrary()` is what the icon browser waits
+on. That keeps 2,529 KB of glyphs and 373 KB of metadata (490 KB and 119 KB
+gzipped) out of the chunk `apps/kit` starts from, where they were 60% of it.
+
+Native has no such door: Metro cannot split a chunk off, so `every-glyph.ts` is
+`null`, the browser waits for nothing, and a Metro workbench that wants the
+gallery asks for `icons: 'full'` in its config (`apps/kit/metro.config.cjs`
+does). The webOS legacy tier is the other place a chunk buys nothing, since it
+inlines every one of them back into a single IIFE.

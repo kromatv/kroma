@@ -2,6 +2,7 @@ import { type ReactNode, type Ref, useMemo, useRef, useState } from 'react';
 import { Platform, ScrollView, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
+import { Spinner } from '#ui/components/atoms/spinner';
 import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { Pagination, paginate } from '#ui/components/molecules/pagination';
@@ -13,6 +14,7 @@ import { space } from '#ui/core/tokens';
 import { type IconName, iconNames } from '#ui/lib/glyph';
 import { iconCategories } from '#ui/lib/icon-catalog';
 import { type IconHit, searchIcons } from '#ui/lib/icon-search';
+import { useIconLibrary } from '#ui/lib/icons/library';
 
 // Rendering thousands of glyphs at once locks the workbench up for seconds,
 // and far longer on a television.
@@ -42,8 +44,24 @@ const LEAST_GRID = 280;
 const MATCHED_TAGS = 3;
 
 /** Every glyph the kit can draw, searchable by name and - where a workbench has
- * loaded the catalogue (`setIconCatalog`) - by Tabler's own tags and category. */
+ * a catalogue to fetch - by Tabler's own tags and category. Both arrive on
+ * mount, in a chunk the workbench does not start with. */
 function IconBrowser() {
+  return useIconLibrary() ? <Browser /> : <Arriving />;
+}
+
+function Arriving() {
+  return (
+    <Box radius="lg" bg="surface1" style={s.frame} py={space[10]} gap={space[3]} center>
+      <Spinner label="Loading the icon library" />
+      <Text variant="meta" color="textDim">
+        Every glyph and Tabler's own tags, on their way…
+      </Text>
+    </Box>
+  );
+}
+
+function Browser() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(EVERY_CATEGORY);
   const [size, setSize] = useState('26');
