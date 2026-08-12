@@ -69,6 +69,7 @@ export function ListButton({
       variant="outline"
       size="lg"
       active={inList}
+      pressed={inList}
       icon={inList ? 'check' : 'plus'}
       label={inList ? t('content.inList') : t('content.addToList')}
       onPress={onToggle}
@@ -87,6 +88,7 @@ export function WatchedButton({
       variant="outline"
       size="lg"
       active={watched}
+      pressed={watched}
       icon="check"
       label={watched ? t('content.watched') : t('content.markWatched')}
       onPress={onToggle}
@@ -95,7 +97,7 @@ export function WatchedButton({
 }
 
 /** Opens the report screen for this title. Deliberately the quiet, icon-only
- * control of the action row — reachable, but never what the remote lands on
+ * control of the action row: reachable, but never what the remote lands on
  * next to Play. */
 export function ReportButton({ onPress }: Readonly<{ onPress: () => void }>) {
   const t = useT();

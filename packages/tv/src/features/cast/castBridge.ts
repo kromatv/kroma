@@ -25,7 +25,7 @@ let pendingSeek: { itemId: string; positionMs: number } | null = null;
 const listeners = new Set<() => void>();
 let signature = '';
 
-/** Fires only on a material change (title, transport state, track selection) —
+/** Fires only on a material change (title, transport state, track selection),
  * not position, which changes ~4 times a second and senders interpolate from
  * the clock themselves. */
 export function onCastReportChange(listener: () => void): () => void {

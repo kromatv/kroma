@@ -71,12 +71,14 @@ function Live({ focused: focusedArg, playing, muted, volume, ...rest }: Readonly
 export default story({
   name: 'PlayerControls',
   group: 'Player',
-  docs: 'The transport row. Which controls exist is decided by the player (no `next` without a next episode, no `pip` where the platform has none) and handed in through `metrics`, so this draws whatever it is given rather than knowing about episodes or platforms. One `onActivate` serves a mouse click and a D-pad OK alike, and hover moves focus so a pointer and a remote agree on where they are.\n\nIt is drawn for the 1920 stage but not fixed to it: `metrics` (from `chromeMetrics`, which weighs the controls actually present against the width there is) shrinks every circle together, then lets the cluster claim its width from the centring spacer, and when even that would take a button below the size of a fingertip it gives something up — the volume rail first, then one control at a time. What it never does is wrap onto a second line. Nothing is lost by that: every shed control comes back as `metrics.overflow`, which the player lists in the settings panel the gear opens, so a phone-width window trades one tap for two rather than a feature. Switch the viewport to a phone to watch it go.',
+  docs: 'The transport row. Which controls exist is decided by the player (no `next` without a next episode, no `pip` where the platform has none) and handed in through `metrics`, so this draws whatever it is given rather than knowing about episodes or platforms. One `onActivate` serves a mouse click and a D-pad OK alike, and hover moves focus so a pointer and a remote agree on where they are.\n\nIt is drawn for the 1920 stage but not fixed to it: `metrics` (from `chromeMetrics`, which weighs the controls actually present against the width there is) shrinks every circle together, then lets the cluster claim its width from the centring spacer, and when even that would take a button below the size of a fingertip it gives something up: the volume rail first, then one control at a time. What it never does is wrap onto a second line. Nothing is lost by that: every shed control comes back as `metrics.overflow`, which the player lists in the settings panel the gear opens, so a phone-width window trades one tap for two rather than a feature. Switch the viewport to a phone to watch it go.',
   usage: `<ControlCluster
   focused={nav.control}
   playing={playing}
   muted={muted}
   volume={volume}
+  pipActive={pipActive}
+  fullscreen={fullscreen}
   metrics={chromeMetrics(controls, stageWidth)}
   onActivate={run}
   onFocus={nav.focus}

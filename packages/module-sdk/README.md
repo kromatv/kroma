@@ -32,7 +32,7 @@ import { Box, Field, PageHeader } from '@kroma/ui/kit';
 import { Button } from '@kroma/ui/kit/atoms/button';
 ```
 
-**`#ui/*` is the kit's own internal alias and is not for consumers.** The three
+**`#ui/*` is the kit's own internal alias and is not for consumers.** The two
 public doors emit identical bytes (measured: same raw size, gzip within 0.3%), so
 reaching past them buys nothing and couples a module to the kit's file layout.
 

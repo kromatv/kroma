@@ -14,7 +14,7 @@ const badgeVariants = sv({
     label: { font: 'ui', fontWeight: '700' },
   },
   variants: {
-    /** Each tone is a tinted wash of its own hue at 16% — the `/NN` alpha
+    /** Each tone is a tinted wash of its own hue at 16%: the `/NN` alpha
      * suffix, resolved at declaration time because no target can compute
      * color-mix() (old webOS cannot, React Native cannot). */
     tone: {

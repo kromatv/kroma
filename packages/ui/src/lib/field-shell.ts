@@ -45,11 +45,11 @@ interface ControlMetrics {
   gap: number;
 }
 
-/** The shape of every input, per size. Read it rather than re-deriving it:
- *  this table IS the design. */
 const CONTROL_FILL = 'surface2/72' as const;
 type ControlFill = typeof CONTROL_FILL;
 
+/** The shape of every input, per size. Read it rather than re-deriving it:
+ *  this table IS the design. */
 export const CONTROL: Record<ControlSize, ControlMetrics> = {
   sm: {
     bg: CONTROL_FILL,
@@ -97,8 +97,8 @@ export function controlRadius(metrics: ControlMetrics): number {
 /**
  * One slot table per size, built from {@link CONTROL} rather than transcribed.
  * A control that changes shape with `size` writes the mapping ONCE and gets
- * every size, so adding a size is an entry in the table above and nothing else
- * — before this, `sm` and `md` were hand-copied into five recipes and the
+ * every size, so adding a size is an entry in the table above and nothing else.
+ * Before this, `sm` and `md` were hand-copied into five recipes and the
  * fourth size would have been five more clones.
  */
 export function bySize<T>(build: (metrics: ControlMetrics) => T): Record<ControlSize, T> {
@@ -108,7 +108,7 @@ export function bySize<T>(build: (metrics: ControlMetrics) => T): Record<Control
 }
 
 /**
- * The face every KEY wears — the keypad's and the on-screen keyboard's alike.
+ * The face every KEY wears: the keypad's and the on-screen keyboard's alike.
  * A keyboard and a keypad are the same object at two scales, so the well, the
  * edge, the lift, the cursor wash and the amber under focus are declared here
  * once; a copy in each component is how the two grids drifted into a solid
@@ -116,7 +116,7 @@ export function bySize<T>(build: (metrics: ControlMetrics) => T): Record<Control
  * geometry (the keypad's 88x72, the keyboard's per-size box and corner).
  *
  * It lives here rather than beside either component because <Keypad> is a
- * molecule and <Key> an organism, so neither may import the other — the same
+ * molecule and <Key> an organism, so neither may import the other, the same
  * reason lib/group-shape.ts exists.
  */
 export const keyFace = {
@@ -164,7 +164,7 @@ export function fieldRing(): TextStyle {
 
 /**
  * What an entry paints for itself, and what it drops when the shell belongs to
- * something else — the well of an <InputGroup>, the row of a command palette.
+ * something else: the well of an <InputGroup>, the row of a command palette.
  * A flattened entry that kept drawing its own fill, edge, corner, lift and ring
  * paints a second set of all five over the parent's, and its rounded rectangle
  * shows through as the seam where the addons begin and end.
@@ -224,16 +224,6 @@ export function entryDefaultSize(): ControlSize {
 export function controlMetrics(size?: ControlSize): ControlMetrics {
   return CONTROL[size ?? entrySize];
 }
-
-/** The height of a field's content row, independent of what sits in it: the
- * entry never measures shorter than this and the glyph wells never measure
- * taller, so every field in a form lines up regardless of icons. A caller who
- * sets a bigger `textStyle` font still grows the field, which is intended -
- * what must not vary is a field's height against its own neighbours.
- *
- * It is also the unit <TextArea>'s `rows` and `maxRows` count in, which is what
- * makes a one-line TextArea and a TextField the same height. */
-export const CONTENT_LINE = 24;
 
 /** Web only, and `none` rather than width 0: Chrome's own focus ring is
  * `outline-style: auto`, which ignores the width - the field kept its blue

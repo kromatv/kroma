@@ -4,7 +4,7 @@
 //
 // The three buttons are the row's focus stops; the card itself is not
 // focusable. Down lands on play, Left/Right walk the actions, and the card
-// lights up while any of them holds focus — tracked here rather than asked
+// lights up while any of them holds focus, tracked here rather than asked
 // of the navigator, since a blur can arrive after the neighbour's focus.
 
 import { episodeTag, formatRuntime, type MediaItem, posterColors } from '@kroma/core';
@@ -191,6 +191,7 @@ export function EpisodeRow({
             <Button
               variant="outline"
               active={watched}
+              pressed={watched}
               icon="check"
               label={watched ? t('content.watched') : t('content.markWatched')}
               style={s.actionBtn}

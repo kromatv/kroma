@@ -2,7 +2,7 @@
 // on, and the two registers an item joins - the lens's (who owns it) and the
 // slide's (what a finger can land on).
 
-import { createContext, useContext } from 'react';
+import { partContext } from '#ui/lib/part-context';
 
 type NavPillSize = 'sm' | 'tv';
 
@@ -35,13 +35,7 @@ interface NavPillState {
   hover: string | null;
 }
 
-const NavPillContext = createContext<NavPillState | null>(null);
-
-function useNavPill(part: string): NavPillState {
-  const state = useContext(NavPillContext);
-  if (!state) throw new Error(`<NavPill.${part}> must be used inside <NavPill.Root>`);
-  return state;
-}
+const [NavPillContext, useNavPill] = partContext<NavPillState>('NavPill.Root');
 
 export type { LensRect, NavPillLabels, NavPillSize, NavPillState, SlideTarget };
 export { NavPillContext, useNavPill };

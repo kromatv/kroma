@@ -1,5 +1,5 @@
 // This module's wire types. They live here, not in `@kroma/core`, because the
-// core client has no business knowing what a VPN is — a module owns the shape
+// core client has no business knowing what a VPN is: a module owns the shape
 // of its own API. Modules that read this one's status (the downloads module
 // shows it beside the queue) import it from this package by name.
 
@@ -13,7 +13,7 @@ export const VpnStatusView = z.object({
 });
 export type VpnStatusView = z.infer<typeof VpnStatusView>;
 
-/** `POST /test` — a live probe through (and around) the proxy. */
+/** `POST /test`: a live probe through (and around) the proxy. */
 export const VpnTestResult = z.object({
   sealed: z.boolean(),
   proxiedIp: z.string().nullable(),
@@ -22,7 +22,7 @@ export const VpnTestResult = z.object({
 });
 export type VpnTestResult = z.infer<typeof VpnTestResult>;
 
-/** `GET /vpn` — the VPN configuration card's state. */
+/** `GET /vpn`: the VPN configuration card's state. */
 export const VpnAdminView = z.object({
   wgConfigured: z.boolean(),
   bridgeRunning: z.boolean(),

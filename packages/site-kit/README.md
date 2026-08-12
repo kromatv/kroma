@@ -26,9 +26,9 @@ import { Button } from '@kroma/ui/kit/atoms/button';      // one component
 ```
 
 **`#ui/*` is the kit's own internal alias and is not for consumers**, even though
-four resolvers are configured to understand it. The three doors emit identical
-bytes (measured: same raw size, gzip within 0.3%), so reaching past the public
-one buys nothing and couples this package to the kit's internal file layout.
+four resolvers are configured to understand it. The two public doors emit
+identical bytes (measured: same raw size, gzip within 0.3%), so reaching past
+them buys nothing and couples this package to the kit's internal file layout.
 
 ## Styling
 

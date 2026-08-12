@@ -6,6 +6,7 @@
 
 import { createContext, useContext } from 'react';
 import type { GroupOrientation } from '#ui/lib/group-shape';
+import { partContext } from '#ui/lib/part-context';
 import type { PanelLimit, PanelSpec } from './resizable-layout';
 
 /** Why a layout changed, handed to `onLayoutChange` beside the layout itself. */
@@ -40,15 +41,10 @@ interface ResizableGroupState {
   resize: (at: number, size: number) => void;
 }
 
-const ResizableGroupContext = createContext<ResizableGroupState | null>(null);
+const [ResizableGroupContext, useResizableGroup] =
+  partContext<ResizableGroupState>('Resizable.Root');
 const PanelIndexContext = createContext<number | null>(null);
 const SeamIndexContext = createContext<number | null>(null);
-
-function useResizableGroup(part: string): ResizableGroupState {
-  const state = useContext(ResizableGroupContext);
-  if (!state) throw new Error(`<Resizable.${part}> must be used inside <Resizable.Root>`);
-  return state;
-}
 
 function usePanelIndex(): number {
   const at = useContext(PanelIndexContext);

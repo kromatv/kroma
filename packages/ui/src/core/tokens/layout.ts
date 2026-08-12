@@ -63,7 +63,7 @@ export function nestedRadius(outer: number, inset: number): number {
 }
 
 /** Radii a theme adds. Augment it and the name is legal wherever a radius is
- *  written — the `radius:` shorthand, <Box radius> (see `ColorRegistry`). */
+ *  written: the `radius:` shorthand, <Box radius> (see `ColorRegistry`). */
 // biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
 export interface RadiusRegistry {}
 

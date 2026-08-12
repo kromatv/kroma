@@ -3,7 +3,7 @@
 // already use, so a colour never drifts between phone, TV and web.
 //
 // One rename to know: this app's `textDim`/`textFaint` are the design
-// system's `textMuted`/`textDim` swapped — the mapping below keeps the app's
+// system's `textMuted`/`textDim` swapped; the mapping below keeps the app's
 // names but takes the system's values.
 
 import {

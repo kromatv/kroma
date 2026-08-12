@@ -40,7 +40,7 @@ join: if you already did the steps above, you are already a tester for it.
 
 1. On your **iPhone or iPad**, join the beta using the link above. There is no
    way to open a link on an Apple TV, which is why this step happens on a phone.
-2. On the **Apple TV**, open the **TestFlight** app (it is built in — press the
+2. On the **Apple TV**, open the **TestFlight** app (it is built in: press the
    Home button and look for it, or search for it in the App Store).
 3. Sign in with the **same Apple Account** you used on your phone.
 4. KROMA appears in the list. Select it, then **Install**.

@@ -116,7 +116,9 @@ interface IconButtonProps extends Omit<FocusableProps, 'children' | 'focusScale'
   /** Glyph size. Defaults to 40% of the diameter. */
   glyph?: number;
   variant?: IconButtonVariant;
-  /** Pressed state of a toggle: the accent's soft fill, accent glyph. */
+  /** The accent's soft fill and accent glyph. It is paint and nothing else: a
+   *  button that toggles something says so with `pressed`, which is what
+   *  assistive tech hears. */
   active?: boolean;
   /** Fill solid accent while focused and flip the glyph to ink. */
   focusFill?: boolean;

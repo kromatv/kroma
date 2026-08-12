@@ -21,7 +21,7 @@ function PinEntry() {
 export default story({
   name: 'Keypad',
   group: 'Input',
-  docs: "The remote's half of `<PinField>`: a phone dial the D-pad can walk without instructions. There is deliberately **no OK key** — the field completes itself on the last digit, so an OK would be a control that is never the right thing to press. The empty cell under the centre column is what keeps 0 where a hand expects it.",
+  docs: "The remote's half of `<PinField>`: a phone dial the D-pad can walk without instructions. There is deliberately **no OK key**: the field completes itself on the last digit, so an OK would be a control that is never the right thing to press. The empty cell under the centre column is what keeps 0 where a hand expects it.",
   usage: `<PinField value={code} onValueChange={setCode} onComplete={submit} />
 <Keypad onDigit={(d) => setCode(code + d)} onDelete={back} />`,
   guidelines: {

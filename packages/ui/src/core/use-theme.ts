@@ -8,7 +8,7 @@ import { applyMode, readMode } from './theme-mode';
 
 /** The active theme, live: re-renders the caller when it swaps. For reading a
  *  token a STYLE cannot carry (an ActivityIndicator's colour prop, a chart's
- *  series paint) — declarations don't need it, they re-resolve by themselves. */
+ *  series paint). Declarations don't need it, they re-resolve by themselves. */
 export function useTheme(): Theme {
   return useSyncExternalStore(onThemeChange, activeTheme, activeTheme);
 }
@@ -50,7 +50,7 @@ interface ThemeProviderProps {
  * swaps are rare and deliberate; place the provider under whatever state must
  * survive one.
  *
- * There is exactly one active theme per app — this is a switch, not a scope, so
+ * There is exactly one active theme per app: this is a switch, not a scope, so
  * providers do not nest.
  */
 export function ThemeProvider({ theme, children }: Readonly<ThemeProviderProps>) {

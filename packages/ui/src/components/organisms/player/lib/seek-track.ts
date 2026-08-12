@@ -1,5 +1,5 @@
 // The geometry of the segmented seek track: one segment per chapter with a gap
-// between, so a moment doesn't map to a pixel via a single percentage — every
+// between, so a moment doesn't map to a pixel via a single percentage: every
 // converter (playhead, storyboard preview, drag) must agree on the same mapping.
 
 import { clamp01 } from './fmt';

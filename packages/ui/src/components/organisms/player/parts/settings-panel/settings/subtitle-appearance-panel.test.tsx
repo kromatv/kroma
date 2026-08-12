@@ -101,4 +101,18 @@ describe('SubtitleAppearancePanel', () => {
       expect(screen.getAllByLabelText(hex)).toHaveLength(2);
     }
   });
+
+  it('says which size and which colour are the current ones', () => {
+    panel({ size: 'lg' });
+    expect(screen.getByLabelText('L').getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByLabelText('M').getAttribute('aria-selected')).toBe('false');
+    const [chosen] = screen.getAllByLabelText(DEFAULT_SUB_APPEARANCE.color);
+    expect((chosen as HTMLElement).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('names each stepper for the row it steps', () => {
+    panel();
+    expect(screen.getByLabelText('Increase Opacity')).toBeTruthy();
+    expect(screen.getByLabelText('Decrease Size')).toBeTruthy();
+  });
 });

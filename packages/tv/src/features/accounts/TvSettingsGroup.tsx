@@ -7,7 +7,7 @@ import { SettingsRows } from './SettingsRows';
 
 /**
  * One group of settings (route `settingsGroup`): languages, playback, device.
- * The screen holds nothing of its own — the group names a list in the
+ * The screen holds nothing of its own: the group names a list in the
  * registry, keeping each setting declared exactly once.
  */
 export function TvSettingsGroup() {

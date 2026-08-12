@@ -16,10 +16,10 @@ function Caption({ children }: Readonly<{ children: string }>) {
 
 function Split() {
   return (
-    <ButtonGroup.Root label="Abonnement">
-      <Button label="Suivre" />
+    <ButtonGroup.Root label="Subscription">
+      <Button label="Follow" />
       <ButtonGroup.Separator />
-      <IconButton variant="primary" icon="chevron-down" label="Plus d’options" />
+      <IconButton variant="primary" icon="chevron-down" label="More options" />
     </ButtonGroup.Root>
   );
 }
@@ -29,18 +29,18 @@ function Segmented() {
     <Box gap={20}>
       <Box gap={10}>
         <Caption>md</Caption>
-        <ButtonGroup.Root label="Affichage">
-          <Button variant="outline" label="Grille" active />
-          <Button variant="outline" label="Liste" />
-          <Button variant="outline" label="Détail" />
+        <ButtonGroup.Root label="View">
+          <Button variant="outline" label="Grid" active />
+          <Button variant="outline" label="List" />
+          <Button variant="outline" label="Detail" />
         </ButtonGroup.Root>
       </Box>
       <Box gap={10}>
         <Caption>sm</Caption>
-        <ButtonGroup.Root label="Affichage" size="sm">
-          <Button variant="outline" label="Grille" active />
-          <Button variant="outline" label="Liste" />
-          <Button variant="outline" label="Détail" />
+        <ButtonGroup.Root label="View" size="sm">
+          <Button variant="outline" label="Grid" active />
+          <Button variant="outline" label="List" />
+          <Button variant="outline" label="Detail" />
         </ButtonGroup.Root>
       </Box>
     </Box>
@@ -50,15 +50,15 @@ function Segmented() {
 function Chips() {
   return (
     <Box gap={20}>
-      <ButtonGroup.Root label="Adresse du serveur">
+      <ButtonGroup.Root label="Server address">
         <ButtonGroup.Addon>https://</ButtonGroup.Addon>
         <Button variant="glass" label="kroma" />
         <ButtonGroup.Addon>.tv</ButtonGroup.Addon>
       </ButtonGroup.Root>
-      <ButtonGroup.Root label="Débit maximal">
-        <IconButton variant="glass" icon="minus" label="Réduire le débit" />
+      <ButtonGroup.Root label="Maximum bitrate">
+        <IconButton variant="glass" icon="minus" label="Lower the bitrate" />
         <ButtonGroup.Addon>8 Mb/s</ButtonGroup.Addon>
-        <IconButton variant="glass" icon="plus" label="Augmenter le débit" />
+        <IconButton variant="glass" icon="plus" label="Raise the bitrate" />
       </ButtonGroup.Root>
     </Box>
   );
@@ -66,10 +66,10 @@ function Chips() {
 
 function Borderless() {
   return (
-    <ButtonGroup.Root label="Partage">
-      <Button label="Copier le lien" icon="link" />
+    <ButtonGroup.Root label="Sharing">
+      <Button label="Copy link" icon="link" />
       <ButtonGroup.Separator />
-      <Button label="Inviter" icon="user-plus" />
+      <Button label="Invite" icon="user-plus" />
     </ButtonGroup.Root>
   );
 }
@@ -77,14 +77,14 @@ function Borderless() {
 function WithEntry() {
   return (
     <Box gap={20} w={460}>
-      <ButtonGroup.Root label="Adresse du serveur">
+      <ButtonGroup.Root label="Server address">
         <TextField flex={1} minW={0} icon="world-search" placeholder="kroma.local:4040" />
-        <Button label="Connecter" />
+        <Button label="Connect" />
       </ButtonGroup.Root>
-      <ButtonGroup.Root label="Lien de partage" size="sm">
+      <ButtonGroup.Root label="Share link" size="sm">
         <ButtonGroup.Addon>https://</ButtonGroup.Addon>
         <TextField flex={1} minW={0} defaultValue="kroma.tv/i/8f2ad1" readOnly selectOnFocus />
-        <IconButton variant="glass" icon="copy" label="Copier le lien" />
+        <IconButton variant="glass" icon="copy" label="Copy link" />
       </ButtonGroup.Root>
     </Box>
   );
@@ -93,27 +93,27 @@ function WithEntry() {
 function Vertical() {
   return (
     <ButtonGroup.Root orientation="vertical" label="Volume">
-      <IconButton variant="glass" icon="plus" label="Augmenter le volume" />
-      <IconButton variant="glass" icon="minus" label="Baisser le volume" />
-      <IconButton variant="glass" icon="volume-off" label="Couper le son" />
+      <IconButton variant="glass" icon="plus" label="Volume up" />
+      <IconButton variant="glass" icon="minus" label="Volume down" />
+      <IconButton variant="glass" icon="volume-off" label="Mute" />
     </ButtonGroup.Root>
   );
 }
 
 function Toolbar() {
   return (
-    <ButtonGroup.Root label="Barre d’outils">
+    <ButtonGroup.Root label="Toolbar">
       <ButtonGroup.Root label="Zoom">
-        <IconButton variant="glass" icon="zoom-out" label="Dézoomer" />
-        <IconButton variant="glass" icon="zoom-in" label="Zoomer" />
+        <IconButton variant="glass" icon="zoom-out" label="Zoom out" />
+        <IconButton variant="glass" icon="zoom-in" label="Zoom in" />
       </ButtonGroup.Root>
-      <ButtonGroup.Root label="Affichage">
-        <IconButton variant="glass" icon="layout-grid" label="Grille" />
-        <IconButton variant="glass" icon="list" label="Liste" />
-        <IconButton variant="glass" icon="table" label="Tableau" />
+      <ButtonGroup.Root label="View">
+        <IconButton variant="glass" icon="layout-grid" label="Grid" />
+        <IconButton variant="glass" icon="list" label="List" />
+        <IconButton variant="glass" icon="table" label="Table" />
       </ButtonGroup.Root>
-      <ButtonGroup.Root label="Réglages">
-        <IconButton variant="glass" icon="settings" label="Réglages" />
+      <ButtonGroup.Root label="Settings">
+        <IconButton variant="glass" icon="settings" label="Settings" />
       </ButtonGroup.Root>
     </ButtonGroup.Root>
   );
@@ -122,17 +122,17 @@ function Toolbar() {
 export default story({
   name: 'ButtonGroup',
   group: 'Actions',
-  usage: `<ButtonGroup.Root label="Abonnement">
-  <Button label="Suivre" onPress={follow} />
+  usage: `<ButtonGroup.Root label="Subscription">
+  <Button label="Follow" onPress={follow} />
   <ButtonGroup.Separator />
-  <IconButton icon="chevron-down" variant="primary" label="Plus d'options" />
+  <IconButton icon="chevron-down" variant="primary" label="More options" />
 </ButtonGroup.Root>
 
 // A toolbar is a group of groups: the outer one spaces the clusters
 // instead of welding them.
-<ButtonGroup.Root label="Barre d'outils">
+<ButtonGroup.Root label="Toolbar">
   <ButtonGroup.Root label="Zoom">…</ButtonGroup.Root>
-  <ButtonGroup.Root label="Affichage">…</ButtonGroup.Root>
+  <ButtonGroup.Root label="View">…</ButtonGroup.Root>
 </ButtonGroup.Root>`,
   guidelines: {
     do: [

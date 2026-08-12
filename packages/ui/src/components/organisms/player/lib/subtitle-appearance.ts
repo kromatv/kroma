@@ -7,7 +7,7 @@ import { edgeStyle } from './subtitle-edge';
 /**
  * Subtitle appearance (§8): size, colour, edge, font, opacity, background and
  * window, persisted to localStorage. The option sets are CEA-708 (FCC-required,
- * graded by Samsung's TV certification) — trimming one is a certification defect.
+ * graded by Samsung's TV certification). Trimming one is a certification defect.
  */
 
 /** Hold a 0-100 percentage inside its range: an rgba() alpha outside 0..1 is an
@@ -87,7 +87,7 @@ const SIZE_PX: Record<SubSize, number> = { sm: 26, md: 36, lg: 48, xl: 62 };
 const UI_SANS = "'Hanken Grotesk', system-ui, sans-serif";
 
 /** CEA-708's font styles mapped onto stacks a TV browser actually has, falling
- * back through generics — a television ships few fonts. */
+ * back through generics: a television ships few fonts. */
 const FONT_STACK: Record<SubFont, string> = {
   default: UI_SANS,
   monoSerif: "'Courier New', Courier, monospace",
@@ -137,7 +137,7 @@ export function migrateAppearance(raw: unknown): SubtitleAppearance {
   const font = typeof v.font === 'string' ? (LEGACY_FONT[v.font] ?? v.font) : undefined;
 
   // `bgColor` marks the new model; on an old value `bgOpacity` is only real
-  // when the edge was the box that used it — reading it unconditionally would
+  // when the edge was the box that used it. Reading it unconditionally would
   // hand a background to someone who chose a plain drop shadow.
   const stored = typeof v.bgOpacity === 'number' ? v.bgOpacity : undefined;
   const onNewModel = typeof v.bgColor === 'string';
@@ -195,7 +195,7 @@ export function withOpacity(hex: string, pct: number): string {
   return `rgba(${r}, ${g}, ${b}, ${clampPct(pct) / 100})`;
 }
 
-/** The caption window's style — the band the cue block sits in. A ViewStyle,
+/** The caption window's style: the band the cue block sits in. A ViewStyle,
  * not a TextStyle: RN's stricter native typings require it for a container. */
 export function subtitleWindowStyle(style: SubtitleAppearance): ViewStyle {
   if (style.windowOpacity <= 0) return NO_WINDOW;
@@ -208,7 +208,7 @@ export function subtitleWindowStyle(style: SubtitleAppearance): ViewStyle {
 }
 
 // Interned: the default appearance has no window, and the cue re-renders at
-// playback cadence — a fresh `{}` each time defeats Box's own style caching.
+// playback cadence. A fresh `{}` each time defeats Box's own style caching.
 const NO_WINDOW: ViewStyle = Object.freeze({});
 
 /** The text style for a subtitle line, from the viewer's appearance choice.
@@ -219,7 +219,7 @@ export function subtitleStyle(style: SubtitleAppearance): TextStyle {
   const hasBg = clampPct(style.bgOpacity) > 0;
   return {
     // Folded into the colour, not node opacity: the node also carries the
-    // background box, so `opacity` would dim it too — and the window (a
+    // background box, so `opacity` would dim it too, and the window (a
     // separate View) wouldn't dim at all. CEA-708 gives each layer its own opacity.
     color: withOpacity(style.color, Math.max(20, style.opacity)),
     fontSize: size,

@@ -1,7 +1,7 @@
 // The scrub-bar preview thumbnail: a storyboard is ONE sprite sheet, and a
 // thumbnail is a window onto it (position + clip). `background-position`, the
-// obvious approach, draws nothing on Apple TV — RN's
-// `experimental_backgroundImage` only takes gradients, not `url()` — so this
+// obvious approach, draws nothing on Apple TV (RN's
+// `experimental_backgroundImage` only takes gradients, not `url()`), so this
 // uses an offset child in an `overflow: hidden` parent instead, which works on
 // both platforms.
 

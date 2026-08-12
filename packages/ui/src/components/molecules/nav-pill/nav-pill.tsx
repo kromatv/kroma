@@ -59,6 +59,8 @@ function Backdrop({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 interface NavPillRootProps {
+  /** Names the tab strip: what the tabs are tabs OF. */
+  label?: string;
   size?: NavPillSize;
   /** Which items show their label. Container policy, not an item's: it has to
    *  be the same answer for every item or the capsule's geometry jumps as the
@@ -88,6 +90,7 @@ function sort(children: ReactNode): Sorted {
 }
 
 function Root({
+  label,
   size = 'tv',
   labels,
   slide = true,
@@ -216,6 +219,7 @@ function Root({
         ref={capsule}
         {...(slide && !Platform.isTV ? pan.panHandlers : null)}
         accessibilityRole="tablist"
+        accessibilityLabel={label}
         row
         align="center"
         gap={size === 'sm' ? 2 : 4}

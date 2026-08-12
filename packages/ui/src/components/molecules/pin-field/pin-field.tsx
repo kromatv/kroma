@@ -31,6 +31,9 @@ interface PinFieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
   disabled?: boolean;
   /** Paint the empty dots red: the last code was rejected. */
   invalid?: boolean;
+  /** Names the code to assistive tech. The dots are faces with no text to be
+   *  read, so without it the row is an unnamed group. */
+  label?: string;
   /** True when the shell has a real keyboard: digits and Delete are captured
    *  window-wide, so the code can simply be typed. On a TV this never
    *  attaches; the on-screen keypad feeds `onValueChange` instead. */
@@ -45,6 +48,7 @@ function PinField({
   onComplete,
   disabled = false,
   invalid = false,
+  label,
   physicalKeyboard = false,
   ...box
 }: Readonly<PinFieldProps>) {
@@ -59,6 +63,7 @@ function PinField({
       onComplete={onComplete}
       disabled={disabled}
       invalid={invalid}
+      label={label}
       opacity={disabled ? 0.6 : 1}
       {...box}
     >

@@ -100,6 +100,29 @@ describe('the rule', () => {
   });
 });
 
+describe('the trigger', () => {
+  it('names itself from a plain-text heading, and says whether it is open', () => {
+    render(
+      <Disclosure.Root defaultOpen>
+        <Disclosure.Trigger>Advanced</Disclosure.Trigger>
+      </Disclosure.Root>,
+    );
+    const trigger = screen.getByLabelText('Advanced');
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('takes the name a heading richer than a string cannot give it', () => {
+    render(
+      <Disclosure.Root>
+        <Disclosure.Trigger label="Advanced">
+          <Text>Advanced</Text>
+        </Disclosure.Trigger>
+      </Disclosure.Root>,
+    );
+    expect(screen.getByLabelText('Advanced').getAttribute('aria-expanded')).toBe('false');
+  });
+});
+
 describe('a part outside its Root', () => {
   it('says so rather than rendering nothing', () => {
     expect(() => render(<Disclosure.Panel>orphan</Disclosure.Panel>)).toThrow(

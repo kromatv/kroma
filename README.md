@@ -4,10 +4,10 @@
 
 <br/>
 
-**Your own Netflix — everything built in, on hardware you own.**
+**Your own Netflix: everything built in, on hardware you own.**
 Find it, download it, organize it, stream it. One blazing-fast Rust binary:
 indexers · torrent engine · VPN + kill switch · AI · player · web & TV clients.
-No Sonarr, no Radarr, no Jackett, no qBittorrent, no Gluetun — **just KROMA.**
+No Sonarr, no Radarr, no Jackett, no qBittorrent, no Gluetun. **Just KROMA.**
 
 [![License: GPL-2.0](https://img.shields.io/badge/License-GPL--2.0-F4B642.svg?style=flat-square)](LICENSE)
 [![Bun ≥ 1.3](https://img.shields.io/badge/Bun-%E2%89%A5%201.3-0A0A0C.svg?style=flat-square&logo=bun&logoColor=F4B642)](https://bun.sh)
@@ -20,19 +20,19 @@ No Sonarr, no Radarr, no Jackett, no qBittorrent, no Gluetun — **just KROMA.**
 
 ---
 
-KROMA is a self-hosted, multi-platform **media stack that does the whole job** —
+KROMA is a self-hosted, multi-platform **media stack that does the whole job**:
 the *arr suite, your indexer aggregator, your torrent client, your VPN wrapper
 and your media server, collapsed into **one Rust binary**. Request a title and
 KROMA searches your trackers, scores the releases, grabs the best one through its
 built-in torrent engine (tunneled through your VPN, behind a kill switch),
 imports and renames it Plex-style, enriches it from **TMDB**, and direct-play
-streams it to the web, your phone and your living-room TV — wrapped in one calm,
+streams it to the web, your phone and your living-room TV, wrapped in one calm,
 cinematic, amber-on-charcoal design language.
 
 **No moving parts to wire together.** Where a typical setup bolts together
 Sonarr + Radarr + Prowlarr/Jackett + qBittorrent + Gluetun + Jellyfin + Overseerr
 (six containers, six configs, six things that break), KROMA is a single process
-that starts in milliseconds, sips RAM, and has no transcode farm to keep warm —
+that starts in milliseconds, sips RAM, and has no transcode farm to keep warm,
 because Rust is fast and the video is never re-encoded.
 
 ### Everything built in
@@ -43,9 +43,9 @@ because Rust is fast and the video is never re-encoded.
 | ⬇️ **Downloader** | embedded BitTorrent engine (librqbit, in-process) **+** Transmission / qBittorrent | no separate client |
 | 🧠 **Acquisition** | requests, automatic wanted-list, a quality decision-engine that scores + picks releases | no Sonarr/Radarr |
 | 🔒 **VPN + kill switch** | managed WireGuard→SOCKS5 bridge; downloads pause the instant the tunnel drops | no Gluetun |
-| ▶️ **Player** | direct-play, HEVC-first — original files range-streamed, decoded natively | no transcode farm |
+| ▶️ **Player** | direct-play, HEVC-first: original files range-streamed, decoded natively | no transcode farm |
 | 📺 **Clients** | web, mobile-responsive web, Samsung, LG, Android TV, desktop | one codebase |
-| 📱 **Cast** | start a title on the TV from your phone or browser, then drive it — play/pause, seek, tracks, next episode | no Chromecast needed |
+| 📱 **Cast** | start a title on the TV from your phone or browser, then drive it: play/pause, seek, tracks, next episode | no Chromecast needed |
 | ✨ **AI** | on-device recommendations + semantic search, Whisper subtitle generation, optional LLM | no cloud |
 | 👥 **Multi-user** | accounts, profiles, PIN locks, passkeys, invites, per-user permissions | share safely |
 | 📊 **Statistics** | live download/library/watch dashboards over a real-time WebSocket bus | at a glance |
@@ -60,51 +60,14 @@ activity never leave your network.
 > HLS path for browsers that can't decode AC3/EAC3/DTS (video is copied, only the
 > audio is re-encoded to stereo AAC).
 
-<div align="center">
-
-<table>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="design/screenshots/home.jpg" alt="Home cinematic hero + rails" width="100%"><br/>
-      <sub><b>Web home</b> · full-bleed hero + horizontal rails</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="design/screenshots/tv-detail.jpg" alt="TV 10-foot detail page" width="100%"><br/>
-      <sub><b>TV detail</b> · 10-foot, remote-driven spatial focus</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="design/screenshots/films.jpg" alt="Films grid" width="100%"><br/>
-      <sub><b>Films</b> · library grid</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="design/screenshots/spotlight.jpg" alt="Spotlight search" width="100%"><br/>
-      <sub><b>Spotlight</b> · instant search</sub>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="design/screenshots/mobile.jpg" alt="Mobile layout" width="100%"><br/>
-      <sub><b>Mobile</b> · responsive design (client in progress)</sub>
-    </td>
-    <td width="50%" valign="top">
-      <img src="design/screenshots/requests.jpg" alt="Requests" width="100%"><br/>
-      <sub><b>Requests</b> · ask for a title</sub>
-    </td>
-  </tr>
-</table>
-
-</div>
-
 ## Features
 
 - **Blazing fast, single binary** the whole stack is one Rust process (axum +
-  SQLite, embedded torrent engine, in-process ML) — boots in milliseconds, idles
+  SQLite, embedded torrent engine, in-process ML). It boots in milliseconds, idles
   near-zero CPU, no JVM, no container orchestra, no transcode farm to keep warm.
 - **Built-in indexer engine** a native reimplementation of **Cardigann** runs the
-  same community-maintained tracker definitions Jackett/Prowlarr use — fetched at
-  runtime, HTML/JSON/XML scraping, logins, Cloudflare (FlareSolverr) — so you
+  same community-maintained tracker definitions Jackett/Prowlarr use, fetched at
+  runtime, with HTML/JSON/XML scraping, logins and Cloudflare (FlareSolverr), so you
   search real trackers with **no aggregator to install**. Torznab endpoints still
   work side by side.
 - **Built-in torrent engine** an embedded BitTorrent client (librqbit, in-process)
@@ -116,10 +79,10 @@ activity never leave your network.
   library. Manual search + one-click grab (with override) for the picky.
 - **VPN with a real kill switch** paste a WireGuard config and KROMA runs a managed
   WireGuard→SOCKS5 bridge; all torrent traffic is tunneled, and a failed tunnel
-  check **pauses every download instantly** — no leaks, no Gluetun sidecar.
+  check **pauses every download instantly**. No leaks, no Gluetun sidecar.
 - **On-device AI** recommendations and semantic "themed" rows from local content
   embeddings + watch history, typo-tolerant full-text search, and **Whisper**
-  subtitle generation — all on your box, no cloud, no per-user training.
+  subtitle generation. All on your box, no cloud, no per-user training.
 - **Multi-user & private** accounts, profiles, PIN-locked profiles, WebAuthn
   passkeys, invite links, per-user permissions, resume-anywhere and Quick Connect
   QR pairing for TVs.
@@ -162,18 +125,24 @@ detection and the API contract are written once.
 ```
 kroma/
 ├─ server/                 Rust media server (axum) Plex-style scan, SQLite, range streaming
-├─ packages/
+├─ packages/                libraries, reached by @kroma/* name and never by path
 │  ├─ core/   @kroma/core    API client · types · HEVC capability detection · remote map · direct-play
-│  ├─ ui/     @kroma/ui      design-system React components + tokens (from design/)
-│  └─ tv/     @kroma/tv      shared 10-foot experience (spatial focus nav, home, detail, player)
-├─ clients/
+│  ├─ ui/     @kroma/ui      design-system React components + tokens
+│  ├─ tv/     @kroma/tv      shared 10-foot experience (spatial focus nav, home, detail, player)
+│  ├─ workbench/ @kroma/workbench  the component atelier + the story SDK
+│  └─ bundler/ @kroma/bundler      the shared Vite/Metro pipeline
+├─ clients/                 the product's shells, thin
 │  ├─ web/    @kroma/web     desktop browser shell (sidebar) TanStack Start SSR
 │  ├─ tizen/  @kroma/tizen   Samsung TV thin shell + config.xml → .wgt
 │  ├─ webos/  @kroma/webos   LG TV thin shell (modern + legacy tiers) → .ipk
 │  ├─ tv-native/ @kroma/tv-native  Apple TV + Android TV native app (React Native) → .ipa/.apk
 │  ├─ mobile/ @kroma/mobile   iPhone / iPad / Android app (Expo + expo-video) → .ipa/.apk
 │  └─ tv-build/              shared TV-shell build pipeline (tv.target.ts per shell)
-└─ design/                  imported design source (tokens, components, guidelines, KROMA.dc.html)
+└─ apps/                    the web properties, deployed to Cloudflare
+   ├─ www/     @kroma/site            kroma.tv, prerendered marketing + blog
+   ├─ kit/     @kroma/kit             the design system's workbench, as a site and an app
+   ├─ modules/ @kroma/module-registry  the official .kmod catalog
+   └─ packages/ @kroma/package-source  the release listing DSM downloads from
 ```
 
 | Package / app | What it is | README |
@@ -187,7 +156,9 @@ kroma/
 | `@kroma/webos` | LG TV (webOS) shell, modern + legacy (2018+) tiers | [clients/webos/README.md](clients/webos/README.md) |
 | `@kroma/tv-native` | Apple TV + Android TV native app (React Native) | [clients/tv-native](clients/tv-native) |
 | `@kroma/mobile` | iPhone / iPad / Android app (Expo, offline downloads) | [clients/mobile/README.md](clients/mobile/README.md) |
-| `design` | Design system source (tokens, guidelines) | [design/readme.md](design/readme.md) |
+| `@kroma/workbench` | The component atelier and the story SDK | [packages/workbench/README.md](packages/workbench/README.md) |
+| `@kroma/site` | kroma.tv, the showcase site | [apps/www/README.md](apps/www/README.md) |
+| `@kroma/kit` | The design system's workbench, as a site and an app | [apps/kit/README.md](apps/kit/README.md) |
 
 ## Prerequisites
 
@@ -249,7 +220,7 @@ all. `dev:mobile` and `dev:tv-native` start Metro alone, for when the app is
 already installed.
 
 Two Expo apps at once collide on Metro's port: `--port 8083` moves the *server*,
-but a debug build still asks :8081 until you tell that install otherwise —
+but a debug build still asks :8081 until you tell that install otherwise:
 `xcrun simctl spawn <udid> defaults write tv.kroma.mobile RCT_jsLocation localhost:8083`.
 
 Every TV shell is driven by its `tv.target.ts` (platform, dev port, engine
@@ -317,15 +288,15 @@ auto-discovery find it).
 
 ## Design system
 
-`design/` is the imported design source deep-charcoal + amber, Bricolage
-Grotesque / Hanken Grotesk, French copy, no emoji. Its tokens and components are
-ported into `@kroma/ui`; `design/KROMA.dc.html` is the full clickable reference.
+Deep-charcoal + amber, Bricolage Grotesque / Hanken Grotesk, French copy, no
+emoji. There is no separate design source: `packages/ui/src/core/tokens/*.ts` IS
+the design, and the workbench is the clickable reference.
 
 ```bash
-open design/KROMA.dc.html
+bun run dev:kit          # http://localhost:5180
 ```
 
-More in [design/readme.md](design/readme.md).
+More in [packages/ui/README.md](packages/ui/README.md).
 
 ## Contributing
 

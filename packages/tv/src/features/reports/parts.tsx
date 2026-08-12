@@ -35,6 +35,7 @@ export function SubjectRow({
           variant="surface"
           focusScale={1.05}
           active={selectedId === wholeId}
+          pressed={selectedId === wholeId}
           label={t('report.subjectWhole')}
           onPress={() => onSelect(wholeId)}
         />
@@ -44,6 +45,7 @@ export function SubjectRow({
             variant="surface"
             focusScale={1.05}
             active={selectedId === ep.id}
+            pressed={selectedId === ep.id}
             label={ep.label}
             onPress={() => onSelect(ep.id)}
           />
@@ -73,6 +75,8 @@ export function CategoryRows({
             autoFocus={index === 0}
             icon={c.icon}
             chevron={false}
+            role="option"
+            selected={c.key === selected}
             onPress={() => onSelect(c.key)}
           >
             <ListRow.Label>{t(c.labelKey)}</ListRow.Label>

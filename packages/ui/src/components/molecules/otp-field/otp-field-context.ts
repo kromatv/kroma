@@ -2,6 +2,7 @@
 // of it each slot stands for.
 
 import { createContext, useContext } from 'react';
+import { partContext } from '#ui/lib/part-context';
 import type { OtpSize } from './otp-field-variants';
 
 interface OtpPosition {
@@ -27,15 +28,9 @@ interface OtpFieldState {
   at: (index: number) => OtpPosition;
 }
 
-const OtpFieldContext = createContext<OtpFieldState | null>(null);
+const [OtpFieldContext, useOtpField] = partContext<OtpFieldState>('OtpField.Root');
 const OtpGroupStartContext = createContext(0);
 const OtpSlotIndexContext = createContext<number | null>(null);
-
-function useOtpField(part: string): OtpFieldState {
-  const state = useContext(OtpFieldContext);
-  if (!state) throw new Error(`<OtpField.${part}> must be used inside <OtpField.Root>`);
-  return state;
-}
 
 /**
  * The state of the slot the calling component stands for, for a face the kit's

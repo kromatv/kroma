@@ -26,7 +26,7 @@ interface ScreenScopeProps extends FocusScopeProps {
   entryKey?: string | number;
   /**
    * Mount a remote bridge for this scope. Default true; only a scope drawn
-   * INSIDE another one passes `false` — the bridge fans events to every
+   * INSIDE another one passes `false`: the bridge fans events to every
    * registered navigator, so a nested one would double-fire each press. An
    * `<OverlayHost>` dialog reuses the screen's bridge; a `<Modal>`-backed one
    * is in its own view controller and needs its own.
@@ -88,7 +88,7 @@ function useLockFocusBehind(active: boolean): void {
 }
 
 /**
- * A group of controls that belong together on one line — the nav bar, a
+ * A group of controls that belong together on one line: the nav bar, a
  * hero's buttons, a rail. The navigator moves between groups vertically and
  * inside a group horizontally; nothing measures anything, the shape comes
  * from the tree.
@@ -116,7 +116,7 @@ function FocusRegion({ children, style }: Readonly<FocusScopeProps>) {
 }
 
 /**
- * A group of controls stacked one above the other — a list of servers, an
+ * A group of controls stacked one above the other: a list of servers, an
  * on-screen keyboard. `grid` makes a stack of `<FocusRegion>` rows behave as a
  * grid: without it, moving down lands on each row's last-focused key (Down
  * from T lands on A); with it, the navigator keeps the column position.

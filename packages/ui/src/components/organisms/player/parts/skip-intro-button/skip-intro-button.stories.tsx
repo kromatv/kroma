@@ -41,6 +41,6 @@ export default story({
   ),
   scenes: [
     { name: 'Focused', docs: 'What the remote resting on it looks like.', args: { focused: true } },
-    { name: 'Hidden', docs: 'Not styled away — it renders nothing.', args: { visible: false } },
+    { name: 'Hidden', docs: 'Not styled away: it renders nothing.', args: { visible: false } },
   ],
 });

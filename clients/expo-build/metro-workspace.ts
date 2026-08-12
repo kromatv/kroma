@@ -4,7 +4,7 @@
 // `react-native` is pinned to the client's own copy for every module in the
 // graph: third-party native packages declare a `react-native` peer, which an
 // install satisfies with mainline React Native rather than the
-// `npm:react-native-tvos` alias this repo pins. Nothing errors — the bundle just
+// `npm:react-native-tvos` alias this repo pins. Nothing errors: the bundle just
 // behaves as if the TV never existed.
 
 const path = require('node:path');

@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { Platform, type StyleProp, type ViewStyle } from 'react-native';
 import { Box, type BoxProps, Row } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -7,6 +7,7 @@ import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
 import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
+import { partContext } from '#ui/lib/part-context';
 import { clamp, pageWindow } from './paging';
 
 const WEB = Platform.OS === 'web';
@@ -49,13 +50,7 @@ interface PaginationContext {
   pageLabel: (page: number) => string;
 }
 
-const Context = createContext<PaginationContext | null>(null);
-
-function usePagination(part: string): PaginationContext {
-  const ctx = useContext(Context);
-  if (!ctx) throw new Error(`<Pagination.${part}> must be used inside <Pagination.Root>`);
-  return ctx;
-}
+const [Context, usePagination] = partContext<PaginationContext>('Pagination.Root');
 
 function numberedPage(page: number): string {
   return `Page ${page}`;

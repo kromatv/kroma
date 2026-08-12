@@ -6,8 +6,7 @@ export const summary = 'Consuming @kroma/ui as a package: what it ships, and wha
 export const width = 'wide';
 
 `@kroma/ui` is one component library for every screen KROMA runs on: a browser,
-a phone, a television. This page is about getting it into an app of your own -
-the guides after it are about what is inside.
+a phone, a television.
 
 It ships as **source**. Its `build` script is `tsc --noEmit` - it type-checks
 and emits nothing - and the `exports` map points at `.ts` and `.tsx` files, so
@@ -33,7 +32,7 @@ worse, because nothing errors at all.
 | Peer | Range | |
 | --- | --- | --- |
 | `react` | `>=18` | the app's copy, deduped |
-| `react-dom` | `>=18` | only where the target is a browser |
+| `react-dom` | `>=18` | required, though only a browser target loads it |
 | `react-native` | `*` | an alias everywhere here - see below |
 | `expo-video` | `~57.0.1` | optional; only `<Player>` reaches for it |
 
@@ -45,9 +44,9 @@ targets), `react-native-svg` and `react-tv-space-navigation`.
 
 | Specifier | Behind it |
 | --- | --- |
-| `@kroma/ui/kit` | every component, flat: `Button`, `ListRow`, `Rail` |
+| `@kroma/ui/kit` | every component, flat: `Button`, `ListRow`, `Rail` - **and the registrations an app boots with**: `ThemeProvider`, `setTheme`, `applyMode`, `OverlayHost`, `setEntryDefaults`, `setImageBackend` |
 | `@kroma/ui/kit/atoms/button` | one component, for a package that wants one |
-| `@kroma/ui` | the services half: the hooks, the providers and `<Player>` |
+| `@kroma/ui` | the services half: `<Player>`, the service hooks, and `CastProvider` / `I18nProvider` / `LocaleProvider` |
 | `@kroma/ui/tokens` | the raw values, as TypeScript |
 | `@kroma/ui/css` | the same values as CSS custom properties, for a browser |
 | `@kroma/ui/fonts` | `KIT_FONTS`, the Metro asset registrations |
@@ -63,8 +62,8 @@ but no app should ever write it.
 ## A Vite app
 
 What a browser target needs is almost all resolution, and in this repo it lives
-in one shared helper (`webResolve`, `@kroma/bundler/rnw`) so that four shells
-cannot drift into four setups. Written out, it is:
+in one shared helper (`webResolve`, `@kroma/bundler/rnw`) so that no two browser
+shells drift into two setups. Written out, it is:
 
 ```ts
 import { kromaUI } from '@kroma/ui/vite';
@@ -243,6 +242,11 @@ hosts, each one overriding a default the kit already has - this is the mobile
 client's root, condensed:
 
 ```tsx
+import {
+  applyMode, OverlayHost, readMode, registerFrost, setEntryDefaults,
+  setImageBackend, setTheme, ThemeProvider,
+} from '@kroma/ui/kit';
+
 applyMode(readMode());              // the stored ground: dark, light or system
 setTheme(mobileTheme());            // the app's vocabulary: ramp, corners, spacing
 setEntryDefaults({ physicalKeyboard: true, size: 'md' });
@@ -283,12 +287,3 @@ registerFrost(BlurView);            // what a frosted surface blurs with
 - [ ] The app states its form factor with `setEntryDefaults` before the first
       render.
 
-## Where to go next
-
-- **Tokens** - the values everything is made of, and why a token is a plain
-  string rather than something computed.
-- **The six levels** - where a component lives, and the three doors out of the
-  kit.
-- **Composing a component** - the part vocabulary, the rule that a face is
-  written as its part, and the prop names. Read it before writing one.
-- **Icons** - every glyph the kit can draw, searchable.

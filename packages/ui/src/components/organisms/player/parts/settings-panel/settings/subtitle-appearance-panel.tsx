@@ -18,6 +18,7 @@ import {
 } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { styles, useTheme } from '#ui/core';
+import { a11yState } from '#ui/lib/a11y';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
 import { panel, rowStyle } from './panel-style';
@@ -211,13 +212,24 @@ function AppearanceRow({
   onInc: () => void;
   children: ReactNode;
 }>) {
+  const t = useT();
   return (
     <Box onPointerEnter={onFocus} style={rowStyle(panel.valueRow, panel.valueRowOn, focused)}>
       <Box row align="center" between mb={11}>
         <Text style={panel.valueLabel}>{label}</Text>
         <Box row align="center" gap={16}>
-          <Arrow glyph="◀" label="prev" dim={!focused} onPress={onDec} />
-          <Arrow glyph="▶" label="next" dim={!focused} onPress={onInc} />
+          <Arrow
+            glyph="◀"
+            label={`${t('common.decrease')} ${label}`}
+            dim={!focused}
+            onPress={onDec}
+          />
+          <Arrow
+            glyph="▶"
+            label={`${t('common.increase')} ${label}`}
+            dim={!focused}
+            onPress={onInc}
+          />
         </Box>
       </Box>
       {children}
@@ -270,7 +282,8 @@ function Seg<V extends string>({
             key={o.v}
             onPress={() => onPick(o.v)}
             accessibilityRole="button"
-            accessibilityState={{ selected: on }}
+            accessibilityLabel={o.label}
+            {...a11yState({ selected: on })}
             style={[panel.pill, s.segCell, on ? s.segOn : null]}
           >
             <Text style={panel.pillLabel} color={on ? 'accentInk' : 'text/70'}>
@@ -294,6 +307,7 @@ function Swatches({ value, onPick }: Readonly<{ value: string; onPick: (color: s
           onPress={() => onPick(c)}
           accessibilityRole="button"
           accessibilityLabel={c}
+          {...a11yState({ selected: c === value })}
         >
           <Box
             w={32}

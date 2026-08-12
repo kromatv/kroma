@@ -9,7 +9,7 @@
 //
 // `moreLabel` is a prop, not a translation call: the kit knows no app's
 // i18n, so the host names the affordance the same way it names a Focusable.
-// A television build simply renders it clamped — the press is a pointer's or
+// A television build simply renders it clamped: the press is a pointer's or
 // a thumb's gesture, and a D-pad synopsis wants a screen of its own.
 
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -17,6 +17,7 @@ import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
 import { Text, type TextProps } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { motion } from '#ui/core/tokens';
+import { a11yState } from '#ui/lib/a11y';
 import { ease } from '#ui/lib/ease';
 
 const WEB = Platform.OS === 'web';
@@ -84,7 +85,7 @@ function ExpandableText({
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       accessibilityRole={clampable ? 'button' : undefined}
-      aria-expanded={clampable ? expanded : undefined}
+      {...(clampable ? a11yState({ expanded }) : null)}
     >
       <Grow height={box}>
         <Text
@@ -101,9 +102,12 @@ function ExpandableText({
           {children}
         </Text>
       </Grow>
-      {/* The measuring ghost: unclamped, invisible, untouchable. */}
+      {/* The measuring ghost: unclamped, invisible, untouchable. `aria-hidden`
+          as well as `accessible={false}`, which react-native-web does not
+          implement - without it the paragraph is in the tree twice. */}
       <Text
         accessible={false}
+        aria-hidden
         variant={variant}
         style={[style, s.ghost]}
         onLayout={(event) => setFull(event.nativeEvent.layout.height)}

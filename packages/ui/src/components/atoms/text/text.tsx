@@ -1,7 +1,7 @@
 // Typed text. In CSS, `body { color; font-family }` cascades into every
 // descendant; in React Native it does NOT, so a bare <Text> would render as
 // black 14px system font. Every string in the app goes through this component,
-// which resolves a design type role and a palette colour — both off the active
+// which resolves a design type role and a palette colour, both off the active
 // theme, so a swap repaints every string.
 
 import {
@@ -53,8 +53,8 @@ interface TextProps extends Omit<RNTextProps, 'style' | 'role'>, TextLayoutProps
 }
 
 // A style that resizes the text carries two absolutes sized for the role's
-// original font size. `lineHeight` breaks visibly — React Native clips text
-// that overflows it, unlike the web — and `letterSpacing` breaks quietly,
+// original font size. `lineHeight` breaks visibly (React Native clips text
+// that overflows it, unlike the web) and `letterSpacing` breaks quietly,
 // drifting from the role's authored tracking. Both are re-derived from what
 // the role authors (a ratio and an em), only when the caller hasn't stated them.
 function sizeFix(variant: TypeRole, style: StyleProp<TextStyle>): TextStyle | null {

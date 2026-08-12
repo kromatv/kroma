@@ -24,6 +24,12 @@ describe('PinField', () => {
     expect(container.querySelector('input')).toBeNull();
   });
 
+  it('names the row, which is all a code of faces has to be named by', () => {
+    const { container } = render(<PinField maxLength={4} label="Code PIN" />);
+    const group = container.querySelector('[role="group"]') as HTMLElement;
+    expect(group.getAttribute('aria-label')).toBe('Code PIN');
+  });
+
   it('fills a dot per digit held', () => {
     const { container } = render(<PinField maxLength={4} value="12" />);
     const filled = dots(container).map((el) => getComputedStyle(el).backgroundColor);

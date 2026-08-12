@@ -5,7 +5,7 @@ import type { BoxStyleProps, TextStyleProps } from '#ui/core/shorthands';
 import type { SvState, SvStateName } from '#ui/core/states';
 
 // All three, not TextStyle alone: the tvos fork types some properties
-// differently, so a plain TextStyle there satisfies neither a View nor a Text —
+// differently, so a plain TextStyle there satisfies neither a View nor a Text,
 // and a resolved slot is routinely shared between an <Image> and the <View> that
 // stands in for it while it loads. The one property the three disagree on is
 // `overflow`, where the intersection drops `'scroll'`; nothing in the repo sets

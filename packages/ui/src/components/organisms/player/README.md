@@ -13,7 +13,7 @@ guess where something is in a folder you have never opened:
 ```
 player/
   index.ts              the public door: what the rest of the app may import
-  player.tsx            Player.Root — assembles the parts, owns nothing else
+  player.tsx            Player.Root: assembles the parts, owns nothing else
   player-parts.tsx      the slots a host fills: Media, Actions, Panel
   types.ts              the contract shared across the folder (PlayerController)
   player.fixture.ts     a standing-still controller, so the parts have stories
@@ -33,7 +33,7 @@ player/
 
 The rule behind it: **`parts` render, `hooks` remember, `lib` calculates.** If a
 file does none of those it does not belong in the folder. `lib` is where the unit
-tests are, because pure functions are the part worth testing directly — `nav.ts`
+tests are, because pure functions are the part worth testing directly: `nav.ts`
 decides which control the D-pad reaches next, and that is checked as arithmetic
 rather than by clicking a television.
 
@@ -42,7 +42,7 @@ it does not reach for `parts/top-bar`.
 
 ## The two meanings of "part"
 
-`player-parts.tsx` holds the compound's **public** parts — the three slots a host
+`player-parts.tsx` holds the compound's **public** parts, the three slots a host
 fills, in `DESIGN.md`'s vocabulary. `parts/` holds the **private** sub-components
 the chrome draws for itself. Only the first ever appears in a call site:
 
@@ -57,12 +57,12 @@ Each slot renders its children and NOTHING else. `Media` in particular must add
 no element: the injected stylesheet sizes a browser surface through
 `#kroma-player-stage > video`, a direct-child rule a wrapper would break. Only a
 DIRECT child takes its slot; any other child is drawn over the chrome as it
-stands (the web's resume toast). A `<Player.Panel>` also LOCKS the chrome — the
+stands (the web's resume toast). A `<Player.Panel>` also LOCKS the chrome: the
 picture stops taking presses and only Back / OK get through.
 
 Everything else the chrome needs is data, not children: one `PlayerController`,
 the platform `flags`, and the collections that come off the wire (`chapters`,
-`markers`, `upNext`). Those are `DESIGN.md` §3 T2/T3 — the up-next sheet is a
+`markers`, `upNext`). Those are `DESIGN.md` §3 T2/T3: the up-next sheet is a
 virtualiser, and a chapter list is a parsed payload, so neither can be written
 as JSX by a caller.
 
@@ -84,7 +84,7 @@ there.
 
 The design is drawn for a 1920 television. A browser window is whatever the user
 made it, and at 1280 the right-hand cluster used to reach back into the centred
-transport and draw straight through it — the circles do not shrink, so nothing
+transport and draw straight through it: the circles do not shrink, so nothing
 gave way.
 
 `lib/metrics.ts` is what decides instead. It weighs the controls that are
@@ -92,15 +92,15 @@ actually present (a film with no next episode and no live receiver is two
 circles narrower) against the width there is, and returns one `scale` the whole
 chrome is drawn at, in three stages:
 
-1. **it fits** — the design, transport dead centre;
-2. **tight** — everything shrinks together, and the cluster claims its width from
+1. **it fits**: the design, transport dead centre;
+2. **tight**: everything shrinks together, and the cluster claims its width from
    the centring spacer, so the transport drifts left rather than being overdrawn;
-3. **compact** — below the point where a circle would stop being tappable
+3. **compact**: below the point where a circle would stop being tappable
    (56 × 0.78 ≈ 44px), the cluster moves under the transport and wraps.
 
 Nothing is ever dropped to make room: a control removed from the row keeps its
 D-pad stop (see `lib/nav.ts`), so a hidden one would be a trap rather than a
-tidy-up. The same file places the settings panel — its 44% share, a floor below
+tidy-up. The same file places the settings panel: its 44% share, a floor below
 which its rows stop being readable, and the point where it covers the stage
 instead of shrinking the picture into a card beside it.
 

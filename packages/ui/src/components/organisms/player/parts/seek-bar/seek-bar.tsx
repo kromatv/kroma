@@ -4,8 +4,10 @@ import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { styles, sv, themed } from '#ui/core';
+import { a11yValue } from '#ui/lib/a11y';
 import { gradient } from '#ui/lib/css';
 import { suppressSelection } from '#ui/lib/drag-select';
+import { useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard';
 import { useDragTrack } from '../../hooks/use-drag-track';
 import { clamp01 } from '../../lib/fmt';
@@ -57,6 +59,7 @@ export function SeekBar({
   onScrub,
   onScrubCommit,
 }: Readonly<SeekBarProps>) {
+  const t = useT();
   const px = scaler(scale);
   // Built per scale, not per tick: this bar re-renders ~4 Hz and is not memoized,
   // so a fresh array would miss the style cache four times a second.
@@ -175,8 +178,8 @@ export function SeekBar({
         px={px(2)}
         radius="pill"
         accessibilityRole="adjustable"
-        accessibilityLabel="progress"
-        accessibilityValue={{ min: 0, max: Math.round(dur), now: Math.round(shown) }}
+        accessibilityLabel={t('player.seekBar')}
+        {...a11yValue({ min: 0, max: Math.round(dur), now: Math.round(shown), text: elapsed })}
         style={seekTrack(undefined, { focus: focused }).root}
       >
         {/* The varying offset rides the transform via `style`, never a shorthand

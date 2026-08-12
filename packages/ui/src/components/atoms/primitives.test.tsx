@@ -111,6 +111,23 @@ describe('Button', () => {
     expect(onPress).not.toHaveBeenCalled();
   });
 
+  it('says it is working while it loads, and says on or off where it toggles', () => {
+    render(
+      <>
+        <Button label="Envoyer" loading onPress={vi.fn()} />
+        <Button label="Ma liste" variant="outline" active pressed onPress={vi.fn()} />
+        <Button label="Vu" variant="outline" pressed={false} onPress={vi.fn()} />
+        {/* The active coat is paint: a button that toggles nothing claims
+            nothing, however it is drawn. */}
+        <Button label="Lire" variant="outline" active onPress={vi.fn()} />
+      </>,
+    );
+    expect(inner('Envoyer').getAttribute('aria-busy')).toBe('true');
+    expect(inner('Ma liste').getAttribute('aria-pressed')).toBe('true');
+    expect(inner('Vu').getAttribute('aria-pressed')).toBe('false');
+    expect(inner('Lire').getAttribute('aria-pressed')).toBeNull();
+  });
+
   it('steps its fill up under the pointer, and back down when it leaves', () => {
     render(
       <>
@@ -176,6 +193,19 @@ describe('Badge and Chip', () => {
     expect(css(inner('EN')).backgroundColor).not.toBe('var(--kroma-accent)');
   });
 
+  it('says a filter chip is on where it is a filter, and nothing where it reports', () => {
+    render(
+      <>
+        <Chip label="FR" active pressed onPress={vi.fn()} />
+        <Chip label="EN" pressed={false} onPress={vi.fn()} />
+        <Chip label="HDR" active />
+      </>,
+    );
+    expect(inner('FR').getAttribute('aria-pressed')).toBe('true');
+    expect(inner('EN').getAttribute('aria-pressed')).toBe('false');
+    expect(inner('HDR').getAttribute('aria-pressed')).toBeNull();
+  });
+
   it('lifts a chip under the pointer, up its own ladder either way', () => {
     render(
       <>
@@ -192,6 +222,17 @@ describe('Badge and Chip', () => {
 });
 
 describe('IconButton', () => {
+  it('says an icon-only toggle is on', () => {
+    render(
+      <>
+        <IconButton icon="eye" label="Vu" active pressed onPress={vi.fn()} />
+        <IconButton icon="x" label="Fermer" onPress={vi.fn()} />
+      </>,
+    );
+    expect(inner('Vu').getAttribute('aria-pressed')).toBe('true');
+    expect(inner('Fermer').getAttribute('aria-pressed')).toBeNull();
+  });
+
   it('brightens its fill under the pointer, and an active one stays amber', () => {
     render(
       <>
@@ -362,6 +403,20 @@ describe('Progress', () => {
     const fill = container.querySelector('[role="progressbar"] > *') as HTMLElement;
     expect(css(fill).left).toBe('0px');
     expect(css(fill).right).toBe('75%');
+  });
+
+  it('announces the value it draws, and says it is working when it has none', () => {
+    const { container } = render(<Progress value={0.25} label="Import" />);
+    const bar = container.querySelector('[role="progressbar"]') as HTMLElement;
+    expect(bar.getAttribute('aria-label')).toBe('Import');
+    expect(bar.getAttribute('aria-valuenow')).toBe('25');
+    expect(bar.getAttribute('aria-valuemax')).toBe('100');
+
+    cleanup();
+    const sweeping = render(<Progress indeterminate />).container;
+    const busy = sweeping.querySelector('[role="progressbar"]') as HTMLElement;
+    expect(busy.getAttribute('aria-busy')).toBe('true');
+    expect(busy.getAttribute('aria-valuenow')).toBeNull();
   });
 });
 

@@ -1,9 +1,9 @@
 // What the group tells its segments, and the geometry both sides measure against.
 
-import { createContext, useContext } from 'react';
 import type { IconName } from '#ui/components/atoms/icon';
 import { nestedRadius } from '#ui/core/tokens';
 import { CONTROL, type ControlSize, controlRadius } from '#ui/lib/field-shell';
+import { partContext } from '#ui/lib/part-context';
 
 // The group's own padding, and therefore how much smaller a segment's corner
 // is than the group's: concentric corners, not two radii guessed apart.
@@ -37,13 +37,7 @@ interface SegmentedContext {
   forget: (value: string) => void;
 }
 
-const Context = createContext<SegmentedContext | null>(null);
-
-function useSegmented(part: string): SegmentedContext {
-  const ctx = useContext(Context);
-  if (!ctx) throw new Error(`<SegmentedControl.${part}> must be used inside its Root`);
-  return ctx;
-}
+const [Context, useSegmented] = partContext<SegmentedContext>('SegmentedControl.Root');
 
 function segmentRadius(size: ControlSize): number {
   return nestedRadius(controlRadius(CONTROL[size]), GROUP_PAD);

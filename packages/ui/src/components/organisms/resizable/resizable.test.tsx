@@ -114,6 +114,16 @@ describe('Resizable', () => {
     expect(screen.getByText('One')).toBeTruthy();
   });
 
+  it('announces the share it has given the panel before it', async () => {
+    const changed = await show();
+    const seam = screen.getByLabelText('Resize');
+    expect(seam.getAttribute('role')).toBe('slider');
+    expect(seam.getAttribute('aria-valuenow')).toBe('50');
+    drag(-206);
+    expect(lastLayout(changed)).toEqual([30, 70]);
+    expect(screen.getByLabelText('Resize').getAttribute('aria-valuenow')).toBe('30');
+  });
+
   // The first two points of a gesture are still a press, so a drag is measured
   // from where the responder was granted rather than from where the finger
   // landed: 100 across the group moves the seam by the 94 past the slop.
@@ -245,5 +255,21 @@ describe('Resizable', () => {
     expect(lastLayout(changed)).toEqual([0, 100]);
     drag(200);
     expect(lastLayout(changed)).toEqual([30, 70]);
+  });
+
+  it('refuses a panel that is not a direct child of the Root', () => {
+    expect(() =>
+      render(
+        <Resizable.Panel>
+          <Text>Liste</Text>
+        </Resizable.Panel>,
+      ),
+    ).toThrow('<Resizable.Panel> must be a direct child of <Resizable.Root>');
+  });
+
+  it('refuses a handle that is not a direct child of the Root', () => {
+    expect(() => render(<Resizable.Handle label="Resize" />)).toThrow(
+      '<Resizable.Handle> must be a direct child of <Resizable.Root>',
+    );
   });
 });

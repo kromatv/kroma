@@ -139,8 +139,8 @@ export default story({
                 <Text color="textMuted">Three devices are playing this account.</Text>
               </Dialog.Header>
               <Dialog.Panel>
-                <Text>Salon</Text>
-                <Text>iPhone de Maxime</Text>
+                <Text>Living room</Text>
+                <Text>Maxime's iPhone</Text>
                 <Text>MacBook Pro</Text>
               </Dialog.Panel>
               <Dialog.Footer>

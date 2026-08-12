@@ -1,5 +1,5 @@
 // expo-image as <Img>'s decoder on the phone, for its memory + disk cache and
-// its list recycling — what keeps a poster grid smooth on cellular.
+// its list recycling, what keeps a poster grid smooth on cellular.
 
 import type { ImageBackend } from '@kroma/ui/kit';
 import { Image } from 'expo-image';

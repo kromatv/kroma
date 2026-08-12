@@ -62,7 +62,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   }
 
   // `autoplay` is what playback should be doing afterwards, not always
-  // "playing" — starting it unconditionally meant a scrub while paused silently
+  // "playing": starting it unconditionally meant a scrub while paused silently
   // resumed the film.
   private open(url: string, seekSec: number, autoplay: boolean): void {
     this.teardown();

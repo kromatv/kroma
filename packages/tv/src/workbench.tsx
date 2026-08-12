@@ -1,4 +1,4 @@
-// The workbench config for Metro — the native half of `workbench.web.tsx`.
+// The workbench config for Metro: the native half of `workbench.web.tsx`.
 // This file must exist even though only a browser shell ever shows it: Metro
 // would otherwise try to transform `import.meta.glob` and fail the whole
 // bundle. Both halves discover the same files; this one lacks demo sources and

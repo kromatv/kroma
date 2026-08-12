@@ -40,7 +40,7 @@ keys reach `toggle`, and a name that is not in the schema does not compile.
 ## Any validator, no dependency
 
 The `schema` is anything implementing [Standard
-Schema](https://standardschema.dev) — zod, valibot, arktype. The spec is types
+Schema](https://standardschema.dev): zod, valibot, arktype. The spec is types
 only, so `standard-schema.ts` vendors the interface and `@kroma/ui` depends on
 no validator at all. Apps bring their own; this repo uses zod.
 
@@ -63,11 +63,11 @@ The shared keys (`form.required`, `form.email`, `form.tooShort`, …) live in
 
 ## When errors appear
 
-Quiet until the first submit, then live on every keystroke — so nothing is
+Quiet until the first submit, then live on every keystroke, so nothing is
 flagged before it has been asked for, and a fixed field clears as it is typed.
 `reset()` returns the form to quiet.
 
-An issue with no path — zod's `.refine()` on the object, a password confirmation
-— has no field to blame, so it lands on `form.error` rather than being dropped.
+An issue with no path (zod's `.refine()` on the object, a password confirmation)
+has no field to blame, so it lands on `form.error` rather than being dropped.
 A throw from `onSubmit` lands there too, and its message goes through the same
 resolution, so `throw new Error('auth.invalidCredentials')` is translated.

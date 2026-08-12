@@ -206,6 +206,3 @@ export function svFor<P extends SlotShapes>() {
     config: SvConfig<P, V>,
   ): SvFn<P, V> => sv(config as never) as SvFn<P, V>;
 }
-
-export type { Layer } from '#ui/core/types';
-export type { SvConfig, SvFlatConfig, SvFn };

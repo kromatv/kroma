@@ -2,7 +2,7 @@
 //
 // The report screen inside the app it actually runs in: the memory router,
 // the navigation guard, and the detail screen that opens it. Mounted this
-// way on purpose — the screen itself was never what closed it, the routing
+// way on purpose: the screen itself was never what closed it, the routing
 // around it was, and only a test that includes the routing can catch that.
 
 import type { KromaClient } from '@kroma/core';

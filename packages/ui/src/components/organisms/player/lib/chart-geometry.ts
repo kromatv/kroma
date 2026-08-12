@@ -88,7 +88,7 @@ export function seriesPath(data: readonly number[], extent: Extent, box: ChartBo
 }
 
 /**
- * `d` for the closed band between two traces — the headroom between the
+ * `d` for the closed band between two traces: the headroom between the
  * bandwidth a connection is delivering and the bitrate it's asking for. Drawn
  * filled so a closing gap (an impending stall) reads at a glance.
  */

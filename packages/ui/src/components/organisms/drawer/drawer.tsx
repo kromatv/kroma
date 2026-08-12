@@ -5,25 +5,19 @@
 // stays mounted while `open` is false until the exit has played, so callers
 // just flip `open`.
 
-import { Children, isValidElement, type ReactNode, useMemo, useRef } from 'react';
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-  type View,
-  type ViewStyle,
-} from 'react-native';
+import { type ReactNode, useMemo } from 'react';
+import { Modal, StyleSheet, useWindowDimensions, type ViewStyle } from 'react-native';
 import { Box, Row } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
+import { DismissBackdrop } from '#ui/lib/dismiss-backdrop';
 import { useFocusNav } from '#ui/lib/focus-nav';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
 import { useScrollLock } from '#ui/lib/scroll-lock';
-import { useTDefault } from '#ui/services/i18n';
+import { surfaceBands } from '#ui/lib/surface-bands';
 import { Close, Footer, Header, PAD, Panel, type Shell, ShellContext } from './drawer-parts';
 import { type DrawerSide, FADE, SlidePanel, useSlide, WEB } from './drawer-slide';
 
@@ -118,20 +112,16 @@ function DrawerSurface({
   }
 >) {
   useFocusNav({ onBack: onClose });
-  const t = useTDefault();
-  const backdrop = useRef<View>(null);
   const window = useWindowDimensions();
   const full = fullBelow > 0 && window.width < fullBelow;
   const shell = useMemo<Shell>(() => ({ pad, onClose }), [pad, onClose]);
 
-  const kids = Children.toArray(children);
-  const part = (which: unknown) => kids.find((node) => isValidElement(node) && node.type === which);
-  const headerPart = part(Header);
-  const panelPart = part(Panel);
-  const footerPart = part(Footer);
-  const loose = kids.filter(
-    (node) => node !== headerPart && node !== panelPart && node !== footerPart,
-  );
+  const {
+    header: headerPart,
+    panel: panelPart,
+    footer: footerPart,
+    loose,
+  } = surfaceBands(children, { header: Header, panel: Panel, footer: Footer });
 
   const panel = (
     <Box flex style={s.fill}>
@@ -144,19 +134,7 @@ function DrawerSurface({
         ]}
         opacity={shown ? 1 : 0}
       >
-        {/* Web only: on a TV, Back/Menu is the platform's way out and an extra
-            Pressable is one more thing for the D-pad to land on. */}
-        {onClose && WEB ? (
-          <Pressable
-            ref={backdrop}
-            accessibilityLabel={t('common.close')}
-            onPress={onClose}
-            // Never the DOM focus owner: see the same guard in <Dialog>.
-            tabIndex={-1}
-            onFocus={() => (backdrop.current as unknown as HTMLElement | null)?.blur()}
-            style={StyleSheet.absoluteFill}
-          />
-        ) : null}
+        <DismissBackdrop onPress={onClose} />
       </Box>
       <SlidePanel shown={shown} side={side} width={full ? window.width : width}>
         <Box

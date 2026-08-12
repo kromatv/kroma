@@ -16,7 +16,7 @@ export const fonts = {
 export const SELF_HOSTED: readonly string[] = [fonts.display, fonts.ui];
 
 /** Families a theme adds. Augment it and the name is legal wherever a family is
- *  written — a `font:` shorthand, a role's `family` (see `ColorRegistry`). */
+ *  written: a `font:` shorthand, a role's `family` (see `ColorRegistry`). */
 // biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
 export interface FontRegistry {}
 
@@ -132,7 +132,7 @@ export const TV_RAMP = [
 ] as const satisfies readonly (keyof typeof typeSpec)[];
 
 /** Roles a theme adds. Augment it and the name is legal wherever a role is
- *  written — a recipe's `text:` shorthand, <Text variant> (see `ColorRegistry`). */
+ *  written: a recipe's `text:` shorthand, <Text variant> (see `ColorRegistry`). */
 // biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
 export interface TypeRoleRegistry {}
 

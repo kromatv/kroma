@@ -14,8 +14,8 @@ const DONE_MS = 1800;
 
 /**
  * "Signaler un problème" from a television: pick what is affected, pick the
- * kind of problem, optionally say more, send — the same `POST /api/reports`
- * the web and mobile clients use. Typing is a step of its own rather than a
+ * kind of problem, optionally say more, send (the same `POST /api/reports`
+ * the web and mobile clients use). Typing is a step of its own rather than a
  * form field, since the on-screen keyboard needs the whole screen and most
  * viewers have nothing to add.
  */

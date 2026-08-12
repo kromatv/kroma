@@ -52,7 +52,7 @@ function pinSubtitle(intent: 'verify' | 'set' | 'clear', hasFirst: boolean): Mes
   return 'pin.verifySubtitle';
 }
 
-/** PIN entry for the three intents — `verify` (unlock a remembered profile),
+/** PIN entry for the three intents: `verify` (unlock a remembered profile),
  * `set` and `clear`. There is no OK button: the fourth digit submits. */
 export function TvPin() {
   const nav = useNav();
@@ -200,6 +200,7 @@ export function TvPin() {
           }}
           onComplete={(pin) => void submit(pin)}
           disabled={busy}
+          label={t(subtitle)}
           physicalKeyboard={physicalKeyboard}
         />
       </Box>

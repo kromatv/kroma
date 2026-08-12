@@ -8,7 +8,7 @@
 //
 // Run the emitted script from the REPO ROOT (its paths are relative to it), not
 // from server/. That is also what lets a container mounting the repo elsewhere
-// run it unchanged — an absolute host path would write into the container's own
+// run it unchanged: an absolute host path would write into the container's own
 // filesystem and vanish with it.
 
 import { relative } from 'node:path';

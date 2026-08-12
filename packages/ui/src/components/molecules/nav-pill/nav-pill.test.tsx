@@ -81,6 +81,13 @@ describe('NavPill label policy', () => {
     render(bar({ size: 'tv', labels: 'none' }));
     expect(screen.getByLabelText('Home')).toBeTruthy();
   });
+
+  it('names the strip itself, so its tabs are tabs of something', () => {
+    render(bar({ label: 'Menu' }));
+    const strip = screen.getByRole('tablist', { name: 'Menu' });
+    expect(strip).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Search' }).getAttribute('aria-selected')).toBe('true');
+  });
 });
 
 describe('NavPill items', () => {

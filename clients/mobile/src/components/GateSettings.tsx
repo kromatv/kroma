@@ -3,7 +3,7 @@
 // reachable BEFORE anyone can sign in.
 //
 // Interface language only sets the DEVICE override here. Every other client
-// syncs the choice to the account, but there is no account yet at the gate —
+// syncs the choice to the account, but there is no account yet at the gate,
 // and a viewer who cannot read the sign-in screen cannot get to one.
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';

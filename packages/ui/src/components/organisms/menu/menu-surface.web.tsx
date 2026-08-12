@@ -4,19 +4,16 @@
 // keys type ahead, Esc returns to the trigger. DOM focus stays on the panel
 // and `aria-activedescendant` names the active row.
 
-import { type ReactElement, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, type View } from 'react-native';
-import { Box } from '#ui/components/atoms/box';
+import { type ReactElement, useCallback, useId, useMemo, useState } from 'react';
 import {
-  PANEL_BACKDROP,
-  PANEL_SHELL,
+  useActiveDescendant,
   useAnchoredPlacement,
   useListKeys,
   useTriggerFocus,
+  useTriggerKeys,
 } from '#ui/lib/anchored-panel';
+import { AnchoredPopup } from '#ui/lib/anchored-popup';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
-import { Portal } from '#ui/lib/portal';
-import { useTDefault } from '#ui/services/i18n';
 import { MenuRowContext, type MenuRowState } from './menu-context';
 import { type MenuRowSpec, MenuSurfaceDialog, type MenuSurfaceProps } from './menu-surface-dialog';
 
@@ -28,9 +25,6 @@ function MenuSurface(props: Readonly<MenuSurfaceProps>) {
 
 const MIN_WIDTH = 184;
 const MAX_HEIGHT = 400;
-const PANEL_PAD = 6;
-// Concentric with the rows inside it: the row radius plus PANEL_PAD.
-const PANEL_RADIUS = 'xl';
 
 interface PanelEntryProps {
   entry: ReactElement;
@@ -63,9 +57,7 @@ function PanelEntry({
 }
 
 function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<MenuSurfaceProps>) {
-  const t = useTDefault();
   const baseId = useId();
-  const panel = useRef<View>(null);
   const [active, setActive] = useState(() =>
     Math.max(
       0,
@@ -103,84 +95,34 @@ function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<
   });
 
   // The trigger keeps the focus and therefore the keyboard; see <Select>.
-  useEffect(() => {
-    const trigger = anchor.current as HTMLElement | null;
-    if (!trigger) return;
-    const onKey = (event: KeyboardEvent) => {
-      onKeyDown({
-        nativeEvent: { key: event.key },
-        preventDefault: () => event.preventDefault(),
-        stopPropagation: () => event.stopPropagation(),
-      });
-    };
-    trigger.addEventListener('keydown', onKey);
-    trigger.setAttribute('aria-controls', `${baseId}-list`);
-    trigger.setAttribute('aria-haspopup', 'menu');
-    return () => {
-      trigger.removeEventListener('keydown', onKey);
-      trigger.removeAttribute('aria-controls');
-      trigger.removeAttribute('aria-haspopup');
-    };
-  }, [anchor, baseId, onKeyDown]);
-
-  useEffect(() => {
-    const trigger = anchor.current as HTMLElement | null;
-    if (!trigger) return;
-    trigger.setAttribute('aria-activedescendant', `${baseId}-${active}`);
-    return () => trigger.removeAttribute('aria-activedescendant');
-  }, [anchor, baseId, active]);
+  useTriggerKeys(anchor, { listId: `${baseId}-list`, haspopup: 'menu', onKeyDown });
+  useActiveDescendant(anchor, `${baseId}-${active}`);
 
   if (!at) return null;
 
   return (
-    <Portal>
-      <Pressable
-        accessibilityLabel={t('common.close')}
-        tabIndex={-1}
-        onPress={() => onDismiss('outside')}
-        style={PANEL_BACKDROP}
-      />
-      <Box
-        ref={panel}
-        nativeID={`${baseId}-list`}
-        role="menu"
-        accessibilityLabel={label}
-        radius={PANEL_RADIUS}
-        border="borderStrong"
-        bg="surface2"
-        shadow="pop"
-        overflow="hidden"
-        style={[
-          PANEL_SHELL,
-          {
-            left: at.left,
-            top: at.top,
-            bottom: at.bottom,
-            minWidth: at.width,
-            maxWidth: at.maxWidth,
-          },
-        ]}
-      >
-        <ScrollView style={{ maxHeight: at.maxHeight }}>
-          <Box p={PANEL_PAD}>
-            {entries.map((entry, position) => {
-              const index = rows.findIndex((row) => row.at === position);
-              return (
-                <PanelEntry
-                  key={entry.key}
-                  entry={entry}
-                  nativeID={`${baseId}-${index}`}
-                  index={index}
-                  active={index === active}
-                  onActivate={setActive}
-                  onFire={fireAt}
-                />
-              );
-            })}
-          </Box>
-        </ScrollView>
-      </Box>
-    </Portal>
+    <AnchoredPopup
+      at={at}
+      role="menu"
+      label={label}
+      listId={`${baseId}-list`}
+      onDismiss={() => onDismiss('outside')}
+    >
+      {entries.map((entry, position) => {
+        const index = rows.findIndex((row) => row.at === position);
+        return (
+          <PanelEntry
+            key={entry.key}
+            entry={entry}
+            nativeID={`${baseId}-${index}`}
+            index={index}
+            active={index === active}
+            onActivate={setActive}
+            onFire={fireAt}
+          />
+        );
+      })}
+    </AnchoredPopup>
   );
 }
 

@@ -1,8 +1,8 @@
 // Where a row should sit once the selection has moved: the highlight travels
 // freely across the middle of the row, and the row only moves once the
 // highlight comes within `margin` of an edge, keeping that much look-ahead
-// past it. That depends on where the row already is — it is hysteresis, not a
-// formula on the index — which is why this takes the offset as an input as
+// past it. That depends on where the row already is (it is hysteresis, not a
+// formula on the index), which is why this takes the offset as an input as
 // well as returning one.
 
 import type { ViewStyle } from 'react-native';
@@ -77,8 +77,8 @@ function horizontalInset(style: ViewStyle | undefined): number {
 /**
  * The pitch that fits whole tiles into the row: rounds `itemWidth` to the
  * nearest whole count of columns and shares the viewport out between them, so
- * the last tile is never sliced by the edge. Always a whole number of pixels
- * — a fractional pitch puts tile boundaries on sub-pixels, which Chrome
+ * the last tile is never sliced by the edge. Always a whole number of pixels:
+ * a fractional pitch puts tile boundaries on sub-pixels, which Chrome
  * rounds independently into hairline seams.
  */
 function fitPitch(itemWidth: number, viewport: number): number {

@@ -1,10 +1,10 @@
-// <AddTile>: the "one more" slot at the end of a row of tiles — add a profile,
+// <AddTile>: the "one more" slot at the end of a row of tiles: add a profile,
 // add a server. A dashed square with a plus, and a LABEL under it, because the
 // two together are one control: one focus stop, one hit area, one thing a
 // screen reader announces.
 //
 // It is a real glass tile rather than a ghost outline. These rows sit over the
-// sign-in artwork, and a bare dashed border disappears against a bright frame —
+// sign-in artwork, and a bare dashed border disappears against a bright frame,
 // so the well carries the same translucent fill and blur every other control
 // wears (see lib/field-shell, <Frost>), and the dashes read against it instead
 // of against whatever the splash happens to be showing.

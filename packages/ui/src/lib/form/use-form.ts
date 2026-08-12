@@ -124,8 +124,8 @@ function useForm<Values extends Record<string, unknown>, Output>({
   };
 
   const setValue = <K extends keyof Values & string>(name: K, next: Values[K]) => {
-    // Updater form, so two writes dispatched in one batch — a browser autofill
-    // filling e-mail and password together — do not lose the first.
+    // Updater form, so two writes dispatched in one batch (a browser autofill
+    // filling e-mail and password together) do not lose the first.
     setValues((current) => ({ ...current, [name]: next }));
     setSubmitted(false);
     if (live.current) void settle({ ...values, [name]: next });

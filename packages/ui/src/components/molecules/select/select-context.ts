@@ -5,6 +5,7 @@ import type { RefObject } from 'react';
 import { createContext, useContext } from 'react';
 import type { StyleProp, TextStyle, View } from 'react-native';
 import type { IconName } from '#ui/components/atoms/icon';
+import { partContext } from '#ui/lib/part-context';
 
 /** Why the surface closed. `back` is the remote's Back button (and, in a
  *  browser TV shell, the key it arrives as). */
@@ -40,13 +41,7 @@ interface SelectState {
   pick: (value: string) => void;
 }
 
-const SelectContext = createContext<SelectState | null>(null);
-
-function useSelect(part: string): SelectState {
-  const state = useContext(SelectContext);
-  if (!state) throw new Error(`<Select.${part}> must be used inside <Select.Root>`);
-  return state;
-}
+const [SelectContext, useSelect] = partContext<SelectState>('Select.Root');
 
 interface SelectRowState {
   presentation: 'panel' | 'dialog';
@@ -69,13 +64,7 @@ interface SelectItemState {
   chosen: boolean;
 }
 
-const SelectItemContext = createContext<SelectItemState | null>(null);
-
-function useSelectItem(part: string): SelectItemState {
-  const state = useContext(SelectItemContext);
-  if (!state) throw new Error(`<Select.${part}> must be used inside <Select.Item>`);
-  return state;
-}
+const [SelectItemContext, useSelectItem] = partContext<SelectItemState>('Select.Item');
 
 // The trigger's resolved text slot, so <Select.Value> wears the shell's metrics
 // wherever the caller puts it.

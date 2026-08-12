@@ -4,8 +4,8 @@
 //
 // One file for both platforms: the leaf element differs (a real `<img>` on
 // web for `loading`/`fetchpriority`/`object-position`; the registered image
-// backend natively) but everything above it — container, placeholder,
-// cross-fade timing, cover maths — is shared.
+// backend natively) but everything above it (container, placeholder,
+// cross-fade timing, cover maths) is shared.
 
 import { safeImageUrl } from '@kroma/core';
 import {
@@ -63,7 +63,7 @@ export interface ImgProps {
   priority?: boolean;
   /**
    * Skip holding the previous image underneath while the next one loads; just
-   * fade the new one in over the background. Off by default — a full-screen
+   * fade the new one in over the background. Off by default: a full-screen
    * backdrop that swaps on every focus settle would otherwise recomposite two
    * full-size layers for the length of the fade.
    */
@@ -406,7 +406,7 @@ function webLayers(at: Readonly<WebLayersArgs>): ReactNode {
     objectFit: at.fit,
     objectPosition: at.position,
     // Chrome doesn't reliably clip a border-radius on a composited descendant,
-    // and an <img> is exactly that — so the image rounds itself too.
+    // and an <img> is exactly that, so the image rounds itself too.
     borderRadius: at.radius,
   };
   return (

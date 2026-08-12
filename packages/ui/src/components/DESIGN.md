@@ -52,7 +52,7 @@ never an input device, never a boolean spelled as a string.
 | --- | --- | --- |
 | `Root` | Owns state, semantics and context. | Required. Every compound has one. |
 | `Trigger` | The control that opens or toggles the thing. | Required for anything that opens a surface. |
-| `Panel` | A region the surface swaps in: expanding, collapsing, or taking the whole stage over. | Accordion, tabs, collapsible, and a player's stopped-state takeover. Not `Backdrop`, which is the inert scrim and never holds a control. |
+| `Panel` | The region a surface owns rather than pins: the body it scrolls, the region it expands, or the one it hands the whole stage to. | `Dialog`/`Drawer`'s scrolling middle between a pinned header and footer, `Resizable`'s re-proportioned area, `Disclosure`'s expanding region, and the player's stopped-state takeover. Not `Backdrop`, which is the inert scrim and never holds a control. |
 | `Popup` | The floating, styled, animated box. | Mounts itself into the overlay host. |
 | `Backdrop` | The scrim over inert content. | Not `Overlay`, which reads as the popup. |
 | `Item` | One selectable or actionable entry. | Namespaced (`Menu.Item`), never prefixed. |
@@ -201,10 +201,12 @@ The rule is about faces. It does not strip the kit of props.
   parts to write, and T1 in §3 is why.
 - **Identity and behaviour stay props**: `value`, `id`, `disabled`, `selected`,
   `onPress`, and `icon`. §1's table says an icon is a prop and never a part.
-- **The accessible name stays a prop where it is not drawn**: `<ChoiceList.Root
-  label>`, `<InputGroup.Root label>`, `<Dialog.Root title>`. These name the thing
-  to assistive tech; the fact that a Root may also draw a default header from one
-  does not make it a face a part exists for.
+- **The accessible name stays a prop on a Root**: `<ChoiceList.Root label>`,
+  `<InputGroup.Root label>`, `<Dialog.Root title>`, `<Field.Root label>`. These
+  name the thing to assistive tech, and the fact that a Root may ALSO draw a
+  default header or label row from one does not make it a face a part exists for.
+  The test is whether a part exists to write it instead: there is no
+  `Dialog.Title` and no `Field.Label`, and none should be added.
 - **A `data` collection is §3's question, not this one.**
 
 ### The escape-hatch ladder
@@ -313,10 +315,16 @@ Four laws behind the table:
 
 Law 3 is the one this kit has broken worst, and `size` is where. It has meant a
 control size, two different distance scales, a px diameter and a px thickness.
-**`size` means the shell step in
-[`lib/field-shell`](../lib/field-shell.ts) (`sm | md | tv`) and nothing else.** A
-component whose "size" is a raw measurement takes a measurement, named for what
-it measures: `thickness` on `<Divider>` and `<Progress>`, `diameter`, `w`. A
+Two of the four are now spelled for what they measure: `thickness` on
+`<Divider>` and `<Progress>`. The remaining two are the settled meanings, and
+there are exactly two:
+
+- On a control that wears a shell, `size` is the step in
+  [`lib/field-shell`](../lib/field-shell.ts) (`sm | md | tv`).
+- On a round leaf (`<Spinner>`, `<Avatar>`, `<StatusDot>`, `<Icon>`, `<Logo>`),
+  `size` is the diameter in px, because that is the only measurement it has.
+
+**A distance is never `size`** - it takes a name for what it measures. A
 component that genuinely has its own ladder names its own type, but keeps the
 same three words.
 

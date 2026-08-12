@@ -100,7 +100,7 @@ describe('browse chrome', () => {
     expect(focusSettled()).toBe(true);
 
     // The shared scope does not remount, so clearing this can only come from
-    // `entryKey` — otherwise the new screen's `autoFocus` is ignored.
+    // `entryKey`; otherwise the new screen's `autoFocus` is ignored.
     act(() => nav.reset('grid', { kind: 'films' }));
     expect(focusSettled()).toBe(false);
   });

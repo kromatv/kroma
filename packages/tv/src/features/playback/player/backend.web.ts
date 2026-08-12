@@ -1,5 +1,5 @@
 // The web playback backend: which engine to build for an item on a browser
-// target, and how to build it — a bare <video> plus hls.js, Samsung's AVPlay
+// target, and how to build it: a bare <video> plus hls.js, Samsung's AVPlay
 // plane, or mpv on the desktop shell. The hook that drives playback never
 // learns which one it got.
 
@@ -35,7 +35,7 @@ export type { Surface };
 export type Engine = 'mpv' | 'avplay' | 'video-direct' | 'video-remux';
 
 // The backend the user explicitly asked for, or null when the pref is `auto`
-// or names an engine this platform can't run — both fall through to automatic.
+// or names an engine this platform can't run. Both fall through to automatic.
 function manualEngine(pref: EnginePref, tizenNative: boolean): Engine | null {
   if (pref === 'avplay' && tizenNative) return 'avplay';
   if (pref === 'webview') return 'video-direct';
@@ -57,7 +57,7 @@ function autoEngine(env: PlayEnv, tizenNative: boolean, autoDirect: boolean): En
 
 function resolveEngine(pref: EnginePref, env: PlayEnv, autoDirect: boolean): Engine {
   // A stored engine no longer offered on this platform must not strand
-  // playback on a dead engine — degrade it to `auto`.
+  // playback on a dead engine: degrade it to `auto`.
   const wanted = pref !== 'auto' && availableEngines().includes(pref) ? pref : 'auto';
   const tizenNative = env.platform === 'tizen' && avplayAvailable();
   return manualEngine(wanted, tizenNative) ?? autoEngine(env, tizenNative, autoDirect);
@@ -79,7 +79,7 @@ const CONTAINER_MIME: Record<string, string> = {
 };
 
 // Safari / WKWebView has no Matroska or AVI demuxer, so a forced direct-play
-// on one loads forever at HAVE_NOTHING with no error — callers fall back to
+// on one loads forever at HAVE_NOTHING with no error. Callers fall back to
 // the server remux instead.
 function webviewCanDirectPlay(item: MediaItem): boolean {
   if (typeof document === 'undefined') return true;

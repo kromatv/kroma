@@ -6,6 +6,7 @@ import { SwitchFace } from '#ui/components/atoms/switch';
 import { Text } from '#ui/components/atoms/text';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { styles } from '#ui/core';
+import { a11yState } from '#ui/lib/a11y';
 import { panel, rowStyle } from './panel-style';
 
 /**
@@ -47,9 +48,9 @@ export function MenuRow({
       {...VIRTUAL_FOCUS}
       onPress={onActivate}
       onPointerEnter={onFocus}
-      accessibilityRole="button"
+      accessibilityRole={toggle ? 'switch' : 'button'}
       accessibilityLabel={label}
-      accessibilityState={toggle ? { checked: Boolean(on) } : undefined}
+      {...(toggle ? a11yState({ checked: Boolean(on) }) : null)}
       style={[...rowStyle(panel.menuRow, panel.rowOn, focused), style]}
     >
       {icon}

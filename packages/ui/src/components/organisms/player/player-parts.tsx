@@ -41,7 +41,7 @@ interface PlayerPanelProps {
 }
 
 /** A region that takes the stage over: the "an admin stopped this" notice. While
- *  one is mounted the chrome is locked — the picture stops taking presses, the
+ *  one is mounted the chrome is locked: the picture stops taking presses, the
  *  buffering spinner stays down, and only Back / OK get through, both meaning
  *  leave. */
 function Panel({ children }: Readonly<PlayerPanelProps>) {

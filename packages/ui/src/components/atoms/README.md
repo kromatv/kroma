@@ -14,7 +14,7 @@ nothing usable.
 
 **What does not**
 
-- Anything that arranges two atoms into a shape the design has a name for — that
+- Anything that arranges two atoms into a shape the design has a name for. That
   is a [molecule](../molecules).
 - Anything that owns real behaviour: scrolling, windowing, sampling frames. That
   is an [organism](../organisms).
@@ -26,5 +26,5 @@ everywhere.
 
 Variants are declared once per file with `sv` (see [`lib/sv.ts`](../../lib/sv.ts)),
 so a component's design is a table at the top of its file rather than conditionals
-sprinkled through its JSX — and the workbench derives its controls and its variant
+sprinkled through its JSX, and the workbench derives its controls and its variant
 matrix from that same table, which is why neither can drift.

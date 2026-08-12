@@ -101,7 +101,7 @@ function CastReceiver({
     let stopped = false;
     let fallback: ReturnType<typeof setTimeout> | undefined;
     let drift: ReturnType<typeof setInterval> | undefined;
-    // Ack for `cast.hello` — set once the server broadcasts our row back. An
+    // Ack for `cast.hello`: set once the server broadcasts our row back. An
     // older server ignores the hello, so this stays false and the HTTP
     // fallback below takes over.
     let attached = false;

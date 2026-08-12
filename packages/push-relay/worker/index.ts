@@ -1,4 +1,4 @@
-// KROMA push relay — a Cloudflare Worker at push.kroma.tv. Apple and Google only accept
+// KROMA push relay: a Cloudflare Worker at push.kroma.tv. Apple and Google only accept
 // credentials they issued to the account that owns the KROMA app, so an operator's self-hosted
 // server can never push under `tv.kroma.mobile` itself - only this relay, which holds those
 // credentials, can. Since the server's source is public, there is no shared secret to
@@ -17,7 +17,7 @@ import type { Delivery } from './schemas';
 import { firstIssue, GrantRequest, PushRequest } from './schemas';
 
 /** The rate-limit binding's shape. Declared locally rather than pulled from
- * `@cloudflare/workers-types`, which this repo does not install — same approach
+ * `@cloudflare/workers-types`, which this repo does not install; same approach
  * as the module registry's `ExecCtx`. */
 export interface RateLimit {
   limit(options: { key: string }): Promise<{ success: boolean }>;

@@ -49,7 +49,7 @@ function Subtitles() {
         <Select.Item value="en-sdh" note="generated">
           English SDH
         </Select.Item>
-        <Select.Item value="fr">Français</Select.Item>
+        <Select.Item value="fr">French</Select.Item>
       </Select.Root>
       <Field.Hint>Generated tracks are marked.</Field.Hint>
     </Field.Root>
@@ -98,7 +98,7 @@ export default story({
   guidelines: {
     do: [
       'Use a `note` for the fact that settles the choice: a bitrate, a codec, a count.',
-      'Wrap it in `<Field>` for the label row - the select is the control, not the form row.',
+      'Wrap it in `<Field.Root>` for the label row - the select is the control, not the form row.',
       'Give a composed row a `label`: it is what the trigger and assistive tech read.',
     ],
     dont: [

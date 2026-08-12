@@ -10,6 +10,7 @@
 import type { ReactNode } from 'react';
 import type { IconName } from '#ui/components/atoms/icon';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
+import { useTDefault } from '#ui/services/i18n';
 import { Key, type KeyboardSize, keyMetrics, keyRowWidth } from '../key';
 import { type KeyboardLayout, LAYOUT_LETTER_ROWS } from '../keyboard-layouts';
 import { usePhysicalTyping } from '../use-physical-typing';
@@ -50,6 +51,9 @@ function SearchKeyboard({
 }: Readonly<SearchKeyboardProps>) {
   usePhysicalTyping(value, onValueChange, physicalKeyboard);
 
+  // The keyboard is kit chrome: it must not make <I18nProvider> a mount
+  // requirement for every screen that shows a keyboard.
+  const t = useTDefault();
   const metrics = keyMetrics(size);
   const FACE = { height: metrics.height, width: metrics.width, flexShrink: 0 } as const;
   const TEXT = { fontSize: metrics.fontSize } as const;
@@ -67,8 +71,24 @@ function SearchKeyboard({
       textStyle={TEXT}
     />
   );
-  const glyph = (id: string, name: IconName, glyphSize: number, onPress: () => void) => (
-    <Key key={id} size={size} icon={name} iconSize={glyphSize} onPress={onPress} style={FACE} />
+  // A glyph key draws no words, so its `label` is its accessible name alone -
+  // the same split <UrlKeyboard>'s delete key takes.
+  const glyph = (
+    id: string,
+    name: IconName,
+    glyphSize: number,
+    label: string,
+    onPress: () => void,
+  ) => (
+    <Key
+      key={id}
+      size={size}
+      icon={name}
+      iconSize={glyphSize}
+      label={label}
+      onPress={onPress}
+      style={FACE}
+    />
   );
   const letter = (l: string, autoFocus?: boolean) =>
     key(l, l, () => onValueChange(value + l.toLowerCase()), autoFocus);
@@ -99,9 +119,13 @@ function SearchKeyboard({
       {row(
         <>
           {lastRow.map((l) => letter(l))}
-          {glyph('space', 'space', metrics.glyph, () => onValueChange(`${value} `))}
-          {glyph('delete', 'backspace', metrics.glyph - 2, () => onValueChange(value.slice(0, -1)))}
-          {glyph('close', 'x', metrics.glyph - 4, () => onClose?.())}
+          {glyph('space', 'space', metrics.glyph, t('common.space'), () =>
+            onValueChange(`${value} `),
+          )}
+          {glyph('delete', 'backspace', metrics.glyph - 2, t('common.delete'), () =>
+            onValueChange(value.slice(0, -1)),
+          )}
+          {glyph('close', 'x', metrics.glyph - 4, t('common.close'), () => onClose?.())}
         </>,
         'last',
       )}

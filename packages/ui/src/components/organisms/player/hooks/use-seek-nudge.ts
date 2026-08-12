@@ -1,6 +1,6 @@
 // Directional seeking on the scrub bar: a TAP moves exactly TAP_STEP, a HELD
 // press ramps into a continuous scrub, and only one real seek fires once presses
-// stop — each seek re-anchors the HLS master, so coalescing them matters.
+// stop: each seek re-anchors the HLS master, so coalescing them matters.
 
 import { useCallback, useEffect, useRef } from 'react';
 import type { PlayerController } from '../types';

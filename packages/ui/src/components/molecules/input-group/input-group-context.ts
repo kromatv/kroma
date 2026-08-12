@@ -2,6 +2,7 @@
 
 import { createContext, useContext } from 'react';
 import type { ControlMetrics, ControlSize } from '#ui/lib/field-shell';
+import { partContext } from '#ui/lib/part-context';
 
 /** Where an addon sits: `inline` is the control's own row, `block` is a bar
  *  above or below it. */
@@ -22,7 +23,7 @@ interface InputGroupContext {
   focusControl: () => void;
 }
 
-const Context = createContext<InputGroupContext | null>(null);
+const [Context, useInputGroup] = partContext<InputGroupContext>('InputGroup.Root');
 
 /** What an addon tells each control inside it: the side, and whether the
  *  control sits at the addon's outer edge (only that one pulls in). */
@@ -35,12 +36,6 @@ const AddonContext = createContext<AddonSlot | null>(null);
 
 function useAddonSlot(): AddonSlot | null {
   return useContext(AddonContext);
-}
-
-function useInputGroup(part: string): InputGroupContext {
-  const ctx = useContext(Context);
-  if (!ctx) throw new Error(`<InputGroup.${part}> must be used inside <InputGroup.Root>`);
-  return ctx;
 }
 
 /** How far a control inside the shell sits from its edge. */

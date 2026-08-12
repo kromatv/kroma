@@ -1,4 +1,4 @@
-// <IconWell>: a glyph sunk into a rounded, tinted square — the leading mark of a
+// <IconWell>: a glyph sunk into a rounded, tinted square. The leading mark of a
 // settings row, a server in a list, a menu entry.
 
 import { Box } from '#ui/components/atoms/box';

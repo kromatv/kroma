@@ -10,10 +10,6 @@
 > [`@kroma/webos`](../../clients/webos/README.md) clients are thin shells that just
 > mount it; nothing TV-specific is duplicated per platform.
 
-<div align="center">
-  <img src="../../design/screenshots/tv-detail.jpg" alt="KROMA TV 10-foot detail page" width="80%">
-</div>
-
 ## Mount it
 
 ```ts

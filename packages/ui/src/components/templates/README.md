@@ -16,7 +16,7 @@ against, scaled to whatever the platform actually hands over:
 | Android TV | **960x540 dp** at density 2.0 on a 1080p panel |
 
 Without it an Android TV renders the entire design at double size. With it, one
-set of numbers is correct everywhere — which is also why this kit contains no
+set of numbers is correct everywhere, which is also why this kit contains no
 viewport units: where the design says `clamp(42px, 7.6vh, 82px)`, the code says
 `82`, because on a fixed 1080-tall stage that is what it resolves to.
 

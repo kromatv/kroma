@@ -116,7 +116,7 @@ export function CreditsCard({
         </Text>
       ) : null}
       {/* Controlled kit buttons (`focused` is ALWAYS passed) so neither becomes a
-          platform focus target — see ../lib/virtual-focus.ts. No hover handler:
+          platform focus target; see ../lib/virtual-focus.ts. No hover handler:
           the nav machine owns this card's focus. */}
       <Box row gap={px(12)} mt={px(16)}>
         <Button

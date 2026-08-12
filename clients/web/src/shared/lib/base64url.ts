@@ -1,4 +1,4 @@
-// base64url (RFC 4648 §5) — the encoding the Push API's subscription keys and
+// base64url (RFC 4648 §5): the encoding the Push API's subscription keys and
 // WebAuthn's credential fields both travel in.
 //
 // One copy on purpose: three separate ones drifted into three different ways of
@@ -13,7 +13,7 @@ export function bytesToBase64Url(source: Uint8Array | ArrayBuffer): string {
   for (const b of bytes) binary += String.fromCodePoint(b);
   const b64 = btoa(binary).replaceAll('+', '-').replaceAll('/', '_');
   // btoa pads to a multiple of four, so the padding is at most `==` and only
-  // ever trailing — which is what keeps this bounded rather than a backtracking
+  // ever trailing, which is what keeps this bounded rather than a backtracking
   // `=+$` (the same reasoning as stripTrailingSlash in the Synology generator).
   return b64.replace(/={1,2}$/, '');
 }

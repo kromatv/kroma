@@ -5,11 +5,12 @@
 // "Duree / 2 h 04", a library card's "Taille / 1,4 To" and a person's
 // "Naissance / 1974" are all this.
 
-import { createContext, type ReactNode, useContext } from 'react';
+import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import type { TypeRole } from '#ui/core';
 import { type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { partContext } from '#ui/lib/part-context';
 
 interface Shape {
   label: TypeRole;
@@ -26,13 +27,7 @@ const SHAPE: Record<ControlSize, Shape> = {
   tv: { label: 'overlineTv', value: 'labelTv', gap: 6 },
 };
 
-const DataFieldContext = createContext<Shape | null>(null);
-
-function useShape(part: string): Shape {
-  const shape = useContext(DataFieldContext);
-  if (!shape) throw new Error(`<DataField.${part}> must be used inside <DataField.Root>`);
-  return shape;
-}
+const [DataFieldContext, useShape] = partContext<Shape>('DataField.Root');
 
 interface DataFieldRootProps {
   /** How loud the pair reads, defaulting to the app's entry size

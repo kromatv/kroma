@@ -115,6 +115,7 @@ const BrowseFiltersImpl = function BrowseFilters({
             variant="subtle"
             focusScale={1.06}
             active={mode === sort}
+            pressed={mode === sort}
             label={t(SORT_LABEL_KEY[mode])}
             onPress={() => onSort(mode)}
           />
@@ -130,6 +131,7 @@ const BrowseFiltersImpl = function BrowseFilters({
             variant="subtle"
             focusScale={1.06}
             active={!genre}
+            pressed={!genre}
             label={t('browse.allGenres')}
             onPress={() => onGenre(undefined)}
           />
@@ -141,6 +143,7 @@ const BrowseFiltersImpl = function BrowseFilters({
                 variant="subtle"
                 focusScale={1.06}
                 active={g.name === genre}
+                pressed={g.name === genre}
                 label={g.name}
                 onPress={() => onGenre(g.name)}
               />

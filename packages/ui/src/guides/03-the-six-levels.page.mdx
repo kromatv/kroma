@@ -24,8 +24,8 @@ the app.
 | 6. Pages | **not here** | A template filled with real data - see below. |
 
 <Figure row caption="Level 2: a button, an icon button, a badge, a spinner, a status dot. Each one is indivisible - break it down and it stops being useful.">
-  <Button label="Lire" icon="player-play-filled" />
-  <IconButton icon="heart" label="Ajouter aux favoris" variant="ghost" />
+  <Button label="Play" icon="player-play-filled" />
+  <IconButton icon="heart" label="Add to favourites" variant="ghost" />
   <Badge tone="4K" />
   <Spinner />
   <StatusDot online />
@@ -33,12 +33,12 @@ the app.
 
 <Figure row caption="Level 3: a callout and a readout. Neither adds a value of its own - a callout is an icon and two lines of text, a readout is an overline and a line under it - and both are here because the design names the arrangement, not because the pieces were hard to write.">
   <Callout.Root tone="accent" icon="wand">
-    <Callout.Title>Analyse terminee</Callout.Title>
-    <Callout.Detail>128 titres, 4 sans jaquette</Callout.Detail>
+    <Callout.Title>Scan finished</Callout.Title>
+    <Callout.Detail>128 titles, 4 with no artwork</Callout.Detail>
   </Callout.Root>
   <DataField.Root size="md">
-    <DataField.Label>Duree</DataField.Label>
-    <DataField.Value>2 h 04</DataField.Value>
+    <DataField.Label>Runtime</DataField.Label>
+    <DataField.Value>2h 04m</DataField.Value>
   </DataField.Root>
 </Figure>
 
@@ -46,7 +46,8 @@ the app.
 
 A page knows the server, the router and the session, so it belongs to an app,
 not to a design system: `packages/tv/src/features/*` for the 10-foot screens,
-`clients/*/src` for the browser and phone ones. A kit that shipped pages would
+`clients/web/src` and `clients/mobile/src` for the browser and phone ones, and
+`apps/*/src` for the websites. A kit that shipped pages would
 be shipping the product, and every screen would have to be re-approved by the
 design system to change a string.
 
@@ -62,17 +63,15 @@ growing a prop for every arrangement anyone might want.
 <ChoiceList items={items} renderBadge={...} hintPosition="below" showIcons />
 
 // Composed: the caller writes the row, the component owns the behaviour.
-<ChoiceList.Root label="Bibliotheques" value={picked} onValueChange={setPicked}>
+<ChoiceList.Root label="Libraries" value={picked} onValueChange={setPicked}>
   <ChoiceList.Item value={lib.value}>
     <ChoiceList.Label>{lib.label}</ChoiceList.Label>
-    <ChoiceList.Hint>128 titres</ChoiceList.Hint>
+    <ChoiceList.Hint>128 titles</ChoiceList.Hint>
   </ChoiceList.Item>
 </ChoiceList.Root>
 ```
 
-That is the whole of it here. Composing a component owns the rest - the part
-vocabulary, the six tests that decide when a `data` prop beats children, the
-escape ladder, and the checklist a component passes before it is done.
+That is the whole of it here; **Composing a component** owns the rest.
 
 ## A component is a folder
 

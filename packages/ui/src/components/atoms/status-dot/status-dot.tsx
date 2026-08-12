@@ -1,5 +1,5 @@
 // Reachability dot: green up, red down, grey while the first probe is in flight.
-// The third state matters — "not known yet" must not look like "down".
+// The third state matters: "not known yet" must not look like "down".
 
 import { Box } from '#ui/components/atoms/box';
 import { type ColorValue, color } from '#ui/core';

@@ -216,7 +216,7 @@ export function SubtitleRenderer({
     >
       {/* CEA-708 has three layers: text, its background box, and the WINDOW the
           cue sits in. The window is a container, so it only renders when
-          visible — an always-present wrapper would be a node + style array per
+          visible: an always-present wrapper would be a node + style array per
           cue for nothing. */}
       {appearance.windowOpacity > 0 ? (
         <Box style={subtitleWindowStyle(appearance)}>

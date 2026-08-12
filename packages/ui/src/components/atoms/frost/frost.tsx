@@ -6,7 +6,7 @@
 //   2019 TV WebKits ignore the property outright, so legacy Tizen and webOS
 //   keep the plain wash at zero cost instead of compositing a blur on the CPU.
 // - Native renders whatever blur view the app registered at startup
-//   (`registerFrost(BlurView)` from expo-blur in the TV shell) — the same
+//   (`registerFrost(BlurView)` from expo-blur in the TV shell), the same
 //   inversion as the voice-search and launcher backends. A shell that
 //   registers nothing keeps the wash.
 //

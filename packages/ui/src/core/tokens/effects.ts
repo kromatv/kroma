@@ -22,7 +22,7 @@ export const lightShadow: Record<keyof typeof shadow, string> = {
 };
 
 /** Shadows a theme adds. Augment it and the name is legal wherever an elevation
- *  is written — the `shadow:` shorthand, <Box shadow> (see `ColorRegistry`). */
+ *  is written: the `shadow:` shorthand, <Box shadow> (see `ColorRegistry`). */
 // biome-ignore lint/suspicious/noEmptyInterface: an augmentation point is empty by design
 export interface ShadowRegistry {}
 

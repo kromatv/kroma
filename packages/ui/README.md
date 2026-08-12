@@ -4,9 +4,10 @@
   <p><i>The KROMA design system. One component library, every platform.</i></p>
 </div>
 
-> Part of the [KROMA](../../README.md) monorepo. Components and design tokens
-> ported from the [design source](../../design/readme.md): deep charcoal and
-> amber, Bricolage Grotesque / Hanken Grotesk, no emoji.
+> Part of the [KROMA](../../README.md) monorepo. Deep charcoal and amber,
+> Bricolage Grotesque / Hanken Grotesk, no emoji. The design language is not
+> written down anywhere else: `src/core/tokens/*.ts` is the source, and this
+> file is the prose around it.
 
 The kit is authored against **React Native** and renders natively on Apple TV,
 Android TV, iPhone and Android, and through **react-native-web** on Tizen, webOS,
@@ -28,6 +29,7 @@ src/
   lib/                      the focus engine, pure maths, the form runtime
   lib/icons/                the icon set, resolved from Tabler by name (see "Icons")
   foundations/              stories for what has no component: the palette, the type ramp
+  guides/                   the six `.page.mdx` articles the workbench serves as its docs
   services/                 React contexts the shells share (auth, cast, i18n, playback)
   styles/                   the CSS the web targets import, expanded by `kromaUI()`
   assets/                   the fonts and the intro sting
@@ -62,7 +64,7 @@ live in `lib/`.
 
 **Four levels under `components/`**: atoms, molecules, organisms, templates, each
 knowing only the ones below it.
-[`src/components/README.md`](src/components/README.md) owns that hierarchy — what
+[`src/components/README.md`](src/components/README.md) owns that hierarchy: what
 earns a place at each level, and how a component is shaped once it has one. It is
 the document to read before adding anything.
 
@@ -75,10 +77,10 @@ level something is at. The split is for the people editing the kit, not for the
 people using it.
 
 **The design is declared once, at the top of the file, with `sv`.** The whole
-styling engine — the vocabulary, recipes, interaction states, themes — has its
+styling engine (the vocabulary, recipes, interaction states, themes) has its
 own section below ("Styling").
 
-**Props carry their documentation** — the kit's one exception to the repo's
+**Props carry their documentation**, the kit's one exception to the repo's
 no-comment default, because a component's props are the whole of its public API.
 A prop takes ONE line when its contract is not visible from its name and its
 type: a default, a unit, a fallback chain, how it interacts with another prop.
@@ -95,7 +97,7 @@ components take it directly where a host node is useful.
 
 React Native has no `className`, so the kit has its own engine (`src/core`),
 built the way Tailwind 4 builds utilities: **one vocabulary, defined as data,
-resolved against a theme**. Everything below speaks it — `<Box>` props, recipe
+resolved against a theme**. Everything below speaks it: `<Box>` props, recipe
 layers, `styles()` declarations.
 
 ### The vocabulary
@@ -109,11 +111,11 @@ Layout shorthands (`row`, `center`, `gap`, `p/px/pt…`, `w/h`, `absolute`,
 `/NN` alpha suffix (`'accent/45'`, `'white/12'`), or any raw CSS colour;
 `radius` and `shadow` take token names; `ring: 'focusLift'` is the focus
 treatment, derived from the theme's accent; declarations (not `<Box>`, which is
-a View) additionally take `text: 'label'` — a whole type role, spread under the
-layer so longhands beside it win — and `font: 'ui' | 'display'`.
+a View) additionally take `text: 'label'` (a whole type role, spread under the
+layer so longhands beside it win) and `font: 'ui' | 'display'`.
 
-`<Text>` speaks the half of that vocabulary a React Native `Text` honours — the
-spacing, sizing and position rows, plus `textAlign` — so a string is laid out
+`<Text>` speaks the half of that vocabulary a React Native `Text` honours (the
+spacing, sizing and position rows, plus `textAlign`), so a string is laid out
 without a style object either:
 
 ```tsx
@@ -231,7 +233,7 @@ const chipVariants = sv({
   so a typo in a glyph colour is a compile error.
 - **Types derive from the recipe.** `VariantProps<typeof chipVariants>` is the
   props slice (cva-style); `Variant<typeof chipVariants, 'size'>` is one
-  group's union. Add an option and every consumer's type follows — there is no
+  group's union. Add an option and every consumer's type follows: there is no
   second list.
 - **The workbench reads the recipe.** Controls and the variant matrix derive
   from `options`/`defaults`; add a variant and it appears with no story edit.
@@ -239,7 +241,7 @@ const chipVariants = sv({
 **The caller's `style` always wins.** Components place it after the resolved
 `root`, so a one-off tweak at a call site never has to fight the component.
 
-### `styles()` — the rest
+### `styles()`: the rest
 
 For shapes that are not a variant of anything, `styles()` is `StyleSheet.create`
 in the kit's vocabulary: named, registered, theme-aware, one lowercase binding.
@@ -253,7 +255,7 @@ const s = styles({
 
 ### Themes
 
-Every token group — colours, radius, shadows, fonts, type roles, motion — lives
+Every token group (colours, radius, shadows, fonts, type roles, motion) lives
 in one live store. `KROMA` is the default; a theme is created by restating any
 slice of it, and everything derived (type roles from specs + families, the
 focus ring from the accent) re-derives:
@@ -276,8 +278,8 @@ caches on the theme version and rebuild lazily on next use, so a swap costs one
 rebuild per recipe actually rendered.
 
 **New token names stay typed everywhere.** Token unions are `keyof` the base
-table plus an augmentable registry, so a name added once is immediately legal —
-and autocompleted — in `bg`, `border`, `color`, `/NN` alpha, `radius`, `font`:
+table plus an augmentable registry, so a name added once is immediately legal
+(and autocompleted) in `bg`, `border`, `color`, `/NN` alpha, `radius`, `font`:
 
 ```ts
 declare module '@kroma/ui/tokens/colors' {
@@ -291,7 +293,7 @@ same for their groups.) Inside the kit no augmentation is needed: add the value
 to `core/tokens/*` and the union already includes it.
 
 For a token a style cannot carry (an `ActivityIndicator` colour, a chart
-paint), read `useTheme()` in components — it subscribes — or `activeTheme()`
+paint), read `useTheme()` in components (it subscribes) or `activeTheme()`
 at call time elsewhere. Never capture either into a module constant.
 
 ---
@@ -402,11 +404,11 @@ in any screen changes.
 ## Icons
 
 There is nothing to register. `<Icon name="wave-sine" />` works because
-[Tabler](https://tabler.io/icons) has `IconWaveSine`, and `src/icons/glyphs.ts`
+[Tabler](https://tabler.io/icons) has `IconWaveSine`, and `src/lib/icons/glyphs.ts`
 translates one spelling into the other. No slug list, no generator, no generated
 file. A name the package does not have draws the fallback (`help-circle`)
 instead of crashing, which is what makes it safe to take an icon name from
-**data** — a server-installed module names its glyph in a manifest, and no list
+**data**: a server-installed module names its glyph in a manifest, and no list
 could ever be complete.
 
 Tabler ships the same icons twice, with the same export names:
@@ -416,7 +418,8 @@ web bundler aliases that specifier to the DOM one (`packages/bundler/src/rnw.ts`
 the same trick as `react-native` → `react-native-web`). So a browser gets native
 SVG and never loads react-native-svg's runtime; native gets react-native-svg,
 where it is the only way to draw at all. The one prop the two disagree on is the
-outline weight — see `src/icons/stroke-prop.ts`.
+outline weight, which is why `src/lib/icons/stroke-prop.ts` is itself a `.web`
+split.
 
 The cost, measured: a namespace import cannot be tree-shaken, so left alone the
 whole set ships, and the kit site went from 258 KB to 741 KB gzipped. A build-time
@@ -425,9 +428,9 @@ opts into `icons: 'full'` because it reflects over the catalogue: 270 of 6,250
 glyphs kept, and `<Icon>` costs 49 KB gzipped instead of 573 KB. `vite dev` is
 not subset (`apply: 'build'`); Metro is, in both `start` and `export`. Lazy
 loading does not
-recover it on the targets that care — Metro has no dynamic import with a
+recover it on the targets that care (Metro has no dynamic import with a
 computed specifier, and the webOS legacy tier inlines every chunk back into one
-IIFE — so it would only help the modern web tier, at the price of thousands of
+IIFE), so it would only help the modern web tier, at the price of thousands of
 chunks and glyphs arriving over the network mid-render. Reverting to a
 hand-written map is a small change, local to `glyphs.ts`.
 
@@ -440,7 +443,7 @@ also what builds the default theme (see "Styling: Themes"). `kromaUI()`
 (`@kroma/ui/vite`) emits the CSS custom properties the web and desktop clients
 consume from it at build time, so there is no stylesheet copy that can drift.
 
-Components never import token VALUES for styling — the vocabulary carries them
+Components never import token VALUES for styling: the vocabulary carries them
 by name (`bg="accent"`, `radius="lg"`, `text: 'hero'`), which is what lets a
 theme reach every declaration. What legitimately imports from
 `#ui/core/tokens` is the non-style residue: `motion` timings, the `CANVAS`
@@ -470,15 +473,19 @@ as-is, with no stage in between.
 ## The workbench
 
 ```bash
-bun run dev:tizen      # then open http://localhost:5174/?workbench
+bun run dev:kit        # http://localhost:5180
+bun run kit:ios        # the same stories, on a phone
+bun run kit:tv         # and on an Apple TV
 ```
 
 Every component, its live controls, and its variant matrix. This is the kit's
-Storybook, and it is about 700 lines because it is **not a separate
-application**: it is a normal screen built from the kit, so it runs in a browser,
-on an Apple TV and on a phone, with no manager iframe, no builder abstraction and
-no addon protocol to keep alive. It is the only component explorer in the project
-that can show you the design on the device that actually has to render it.
+Storybook, and it is **not a separate application**: it is a normal screen built
+from the kit, so it runs in a browser, on an Apple TV and on a phone, with no
+manager iframe, no builder abstraction and no addon protocol to keep alive. It is
+the only component explorer in the project that can show you the design on the
+device that actually has to render it. It also rides along on the TV shells,
+behind `?workbench` (`bun run dev:tizen`, then
+`http://localhost:5174/?workbench`).
 
 **Writing a story.** One default export, in a `*.stories.tsx` next to the
 component:
@@ -513,8 +520,8 @@ in it - a form that validates, a code screen that rejects a code. It is **one
 file, and it declares nothing**:
 
 ```tsx
-// components/atoms/button.detail-actions.demo.tsx
-import { Box } from './box';
+// components/atoms/button/button.detail-actions.demo.tsx
+import { Box } from '#ui/components/atoms/box';
 import { Button } from './button';
 
 /**
@@ -535,7 +542,7 @@ sample** - read as text by the bundler, so the sample cannot drift from the
 example the way a hand-copied template literal did. Reading a file as text is a
 Vite primitive (`?raw`) that Metro has no answer for, so on Apple TV and Android
 TV a demo renders with no code panel rather than a stale one. See
-`workbench/demos.ts`.
+`packages/workbench/src/demos.ts`.
 
 **Writing the prose.** `docs:` above is a markdown string, which is right for a
 sentence and wrong for a page. A component with more to say puts it in a
@@ -544,7 +551,8 @@ an escaped template literal - and where it can render the component in the middl
 of it:
 
 ```mdx
-// components/molecules/list-row/list-row.docs.mdx
+// components/molecules/list-row/list-row.docs.mdx  (the shipped ones are
+// button-group, otp-field, dialog and drawer)
 import { ListRow } from './list-row'
 
 One **D-pad stop** per row, and a pointer-sized hit area.
@@ -565,25 +573,30 @@ that cannot render it.
 **Stories, demos and docs are discovered, never listed.** Drop a `*.stories.tsx`,
 a `*.demo.tsx` or a `*.docs.mdx` anywhere under `src/` and it is in the
 workbench: there is no registry to regenerate and no generated file to fall
-behind. That needs a bundler
-primitive, and the two bundlers spell it differently, so this is one of the kit's
-`.web` splits: `registry.ts` uses Metro's `require.context`, `registry.web.ts`
-uses Vite's `import.meta.glob`. Every state is a deep link
-(`?workbench&story=button&view=matrix`).
+behind. Discovery needs a bundler primitive, and both bundlers resolve theirs
+relative to the file that writes it, so the glob lives in the HOST, not in the
+kit: `apps/kit/src/stories.web.ts` writes `import.meta.glob`, `stories.ts` beside
+it writes `require.context`, and both hand the result to `@kroma/workbench`.
+Every state is a real path (`/story/button/matrix`).
 
-**The toolbar switches themes.** KROMA plus two accent restatements (Ocean,
-Ember) — a control that stays amber under Ocean is bypassing the vocabulary.
+**The toolbar switches themes.** KROMA plus three restatements (Ocean, Ember,
+Terminal). A control that stays amber under Ocean is bypassing the vocabulary.
 
 **One screen, three widths.** The workbench is also the kit's own responsive
-test: `workbench/layout.ts` is a pure function of the window, and the regions
-*move* rather than shrink. Past 1240pt the list, the canvas and the inspector are
+test: `packages/workbench/src/layout.ts` is a pure function of the window, and
+the regions *move* rather than shrink. Past 1240pt the list, the canvas and the inspector are
 three columns; below that the inspector docks under the canvas as a wrapping row;
 below 880pt the list becomes a drawer over the canvas and the dock collapses to
 its titlebar, so the component keeps the room on a phone.
 
-The workbench is `@kroma/workbench`, a package of its own. This one provides the
-stories and the demos and nothing else: no registry, no config, no mark. Each
-shell configures its own — see `apps/kit/src/config.tsx`.
+The workbench is `@kroma/workbench`, a package of its own, and it knows no design
+system: a host hands it the stories, the wordmark and the app context. This
+package supplies KROMA's half of that in `src/workbench-config.tsx`, which is a
+plain object rather than a call, because calling `defineWorkbench()` here would
+make `@kroma/ui` import `@kroma/workbench`, which imports `@kroma/ui`. Each host
+spreads it and adds its own discovery and router: `apps/kit/src/config{,.web}.tsx`,
+`packages/tv/src/workbench{,.web}.tsx`, `clients/mobile/src/app/workbench.tsx`.
+
 It is a tool, not part of the library, and it drags in every story: an app that
 is not being inspected should not pay for it. The TV entry loads it lazily,
 behind the `?workbench` flag.
@@ -631,4 +644,4 @@ Two things worth knowing when writing them:
 
 - [`@kroma/core`](../core/README.md) the types and logic these components render
 - [`@kroma/tv`](../tv/README.md) the 10-foot experience composed from these
-- [design/readme.md](../../design/readme.md) the full design language
+- [`src/components/DESIGN.md`](src/components/DESIGN.md) how a component's API is shaped

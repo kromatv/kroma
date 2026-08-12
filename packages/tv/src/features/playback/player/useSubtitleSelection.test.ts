@@ -22,7 +22,7 @@ const item = {
 } as unknown as MediaItem;
 
 // The hook fetches generated subtitles in an effect, and the re-render that
-// promise triggers is queued as a macrotask — after vitest tears jsdom down,
+// promise triggers is queued as a macrotask: after vitest tears jsdom down,
 // react-dom reaches for `window`, finds nothing, and throws into an already-
 // passed test (an uncaught exception, not a failure, but it still fails CI).
 // Unmounting cancels the work; the tick lets anything already queued run

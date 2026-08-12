@@ -4,6 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { IconOk } from '#ui/components/organisms/player/parts/icons';
+import { a11yState } from '#ui/lib/a11y';
 import { panel, rowStyle } from './panel-style';
 
 function Line({ node, style }: Readonly<{ node?: ReactNode; style: TextStyle }>) {
@@ -46,7 +47,10 @@ export function SelectRow({
       onPress={onActivate}
       onPointerEnter={onFocus}
       accessibilityRole="button"
-      accessibilityState={{ selected: Boolean(selected) }}
+      // The row's words may arrive as nodes rather than text, and a row named by
+      // nothing is one of a list of identical rows.
+      accessibilityLabel={typeof label === 'string' ? label : undefined}
+      {...a11yState({ selected: Boolean(selected) })}
       style={rowStyle(panel.selectRow, panel.rowOn, focused)}
     >
       {leading}

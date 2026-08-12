@@ -1,5 +1,5 @@
 // Playback-language picker sheet: searches across ~200 languages in a
-// virtualized list. Sized to a fixed screen share, not to content —
+// virtualized list. Sized to a fixed screen share, not to content:
 // @gorhom/bottom-sheet's dynamic sizing measures only the header, so the list
 // would draw over the search field otherwise.
 
@@ -68,7 +68,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
     }, [t, locale, offerOff]);
 
     // Matches the most specific stored value: `fr-CA` ticks "Français (Canada)",
-    // not the base "Français" — comparing on the base would lose the variant.
+    // not the base "Français": comparing on the base would lose the variant.
     const current = value && value !== LANG_OFF ? offeredLang(value) : null;
     const isActive = useCallback(
       (row: Row) => {

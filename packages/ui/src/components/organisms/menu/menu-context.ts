@@ -1,9 +1,9 @@
 // What <Menu>'s parts share: the Root's state, and the per-row plumbing the
 // open surface hands each <Menu.Item>.
 
-import type { RefObject } from 'react';
-import { createContext, useContext } from 'react';
+import { createContext, type RefObject, useContext } from 'react';
 import type { View } from 'react-native';
+import { partContext } from '#ui/lib/part-context';
 
 /** Why the menu closed. `back` is the remote's Back button (and, in a browser
  *  TV shell, the key it arrives as). */
@@ -22,13 +22,7 @@ interface MenuState {
   setOpen: (open: boolean, reason: MenuOpenReason) => void;
 }
 
-const MenuContext = createContext<MenuState | null>(null);
-
-function useMenu(part: string): MenuState {
-  const state = useContext(MenuContext);
-  if (!state) throw new Error(`<Menu.${part}> must be used inside <Menu.Root>`);
-  return state;
-}
+const [MenuContext, useMenu] = partContext<MenuState>('Menu.Root');
 
 interface MenuRowState {
   presentation: 'panel' | 'dialog';

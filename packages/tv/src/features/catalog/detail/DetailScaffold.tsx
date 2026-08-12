@@ -25,7 +25,7 @@ const VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 4%, transparent 60%)`;
  * persistent top nav.
  *
  * `actions` is a prop rather than the first of `children` because the header
- * and its buttons must scroll as one row — a row of their own would let the
+ * and its buttons must scroll as one row: a row of their own would let the
  * scroller align on the buttons and push the title off screen.
  */
 export function TvDetailScaffold({

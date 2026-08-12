@@ -7,13 +7,14 @@
 // last entry to stop drawing, which is the only thing an entry cannot know about
 // itself.
 
-import { Children, createContext, isValidElement, type ReactNode, useContext } from 'react';
+import { Children, isValidElement, type ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type ColorValue, styles, sv, type TypeRole } from '#ui/core';
 import { type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { partContext } from '#ui/lib/part-context';
 
 /** What an entry is: something that happened (`event`), the state the thing is
  * in right now (`current`), or where the sequence began (`origin`). */
@@ -53,13 +54,7 @@ interface Context {
   last: boolean;
 }
 
-const TimelineContext = createContext<Context | null>(null);
-
-function useTimeline(part: string): Context {
-  const at = useContext(TimelineContext);
-  if (!at) throw new Error(`<Timeline.${part}> must be used inside <Timeline.Root>`);
-  return at;
-}
+const [TimelineContext, useTimeline] = partContext<Context>('Timeline.Root');
 
 interface TimelineRootProps {
   /** How loud the entries read, defaulting to the app's entry size
@@ -138,7 +133,7 @@ function Item({
       <Box flex minW={0} ml={shape.gap}>
         {onPress ? (
           <Focusable
-            label={label ?? (typeof title === 'string' ? title : '')}
+            label={label ?? (typeof title === 'string' ? title : undefined)}
             ring={false}
             focusScale={1}
             onPress={onPress}

@@ -12,6 +12,7 @@ import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import type { PlayerSub } from '#ui/components/organisms/player/types';
 import { type ColorValue, sharedStyle, styles } from '#ui/core';
+import { a11yState } from '#ui/lib/a11y';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
 import type { SubtitleGenRequest } from './gen';
@@ -245,7 +246,8 @@ function ModeTab({
       onPress={enabled ? onPress : undefined}
       disabled={!enabled}
       accessibilityRole="button"
-      accessibilityState={{ selected: on, disabled: !enabled }}
+      accessibilityLabel={label}
+      {...a11yState({ selected: on, disabled: !enabled })}
       style={[s.modeTab, tone.box]}
     >
       <Text variant="strongTv" color={tone.ink}>

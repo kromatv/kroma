@@ -17,7 +17,7 @@ const enablePush = () => enable(webPush, kromaClient());
 const disablePush = () => disable(webPush, kromaClient());
 const currentEndpoint = () => webPush.endpoint();
 
-// Getting either conversion wrong doesn't throw — it produces a subscription
+// Getting either conversion wrong doesn't throw: it produces a subscription
 // the server can never encrypt for, and pushes silently vanish.
 describe('base64url conversion', () => {
   it('decodes a real VAPID public key to a 65-byte uncompressed point', () => {

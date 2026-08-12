@@ -12,7 +12,7 @@ const TITLES = Array.from({ length: 400 }, (_, at) => ({ id: at, title: `Title $
 export default story({
   name: 'VirtualRail',
   group: 'Media',
-  docs: "A `Rail` for a library that is thousands of tiles long: it renders only the tiles near the viewport and translates the content instead of mounting all of them. A television has a fraction of a phone's memory and no compositor to hide the cost, so a 2,000-poster row is the difference between a browse screen and a crash. `itemWidth` is the tile **pitch** — its own width plus the gap after it — because that is what the offset maths needs.",
+  docs: "A `Rail` for a library that is thousands of tiles long: it renders only the tiles near the viewport and translates the content instead of mounting all of them. A television has a fraction of a phone's memory and no compositor to hide the cost, so a 2,000-poster row is the difference between a browse screen and a crash. `itemWidth` is the tile **pitch** (its own width plus the gap after it), because that is what the offset maths needs.",
   usage: `<VirtualRail
   data={titles}
   itemWidth={196}

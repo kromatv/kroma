@@ -9,7 +9,7 @@
  * otherwise paint over that side of it.
  *
  * One live set rather than a constant per name: `styles()` re-resolves against
- * the active theme, so the focus ring and the inks follow a swap — a bag of
+ * the active theme, so the focus ring and the inks follow a swap. A bag of
  * module constants would keep the palette of module-load time.
  */
 

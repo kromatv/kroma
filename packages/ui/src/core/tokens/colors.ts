@@ -110,8 +110,8 @@ export const lightColors: Record<keyof typeof colors, string> = {
 
 /**
  * Names a theme adds to the palette, Tailwind-4 style: augment it once and the
- * name is legal everywhere a colour is written — `bg`, `border`, `color`, the
- * `/NN` alpha suffix — with the value supplied through `createTheme`.
+ * name is legal everywhere a colour is written (`bg`, `border`, `color`, the
+ * `/NN` alpha suffix) with the value supplied through `createTheme`.
  *
  *   declare module '@kroma/ui/tokens/colors' {
  *     interface ColorRegistry { brand: string }

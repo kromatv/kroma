@@ -20,7 +20,7 @@ function UrlDemo({
         value={value}
         onValueChange={setValue}
         onSubmit={() => undefined}
-        submitLabel="Connecter"
+        submitLabel="Connect"
         letters={letters}
         size={size}
       />

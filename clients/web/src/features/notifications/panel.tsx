@@ -1,5 +1,5 @@
 // The notification centre: a bell with an unread badge, opening a drawer of
-// notifications. A row is a whole card — the card itself is the only control:
+// notifications. A row is a whole card. The card itself is the only control:
 // opening it marks it read and follows its link. There are no per-row buttons;
 // a notification with Approve/Deny sends you to the queue those decisions
 // belong to, so the drawer stays a list of what happened, not a console.
@@ -214,7 +214,7 @@ function NotificationRow({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Navigation doesn't wait on the read-write — a receipt isn't worth a frame
+  // Navigation doesn't wait on the read-write: a receipt isn't worth a frame
   // of dead click.
   function open() {
     if (!notification.read) {
@@ -267,7 +267,7 @@ const TABULAR = { fontVariantNumeric: 'tabular-nums' } as const;
  * Exported so the admin composer's preview renders the real row markup rather
  * than a hand-copied approximation; the caller supplies the shell and tones. */
 // The notification's own `link`, else its first `link`-kind action. `api`
-// actions (Approve, Deny) have no destination — deliberately not offered here,
+// actions (Approve, Deny) have no destination, deliberately not offered here,
 // since their notification links to the queue where the decision belongs.
 function destinationOf(notification: Notification): string | undefined {
   if (notification.link) return notification.link;

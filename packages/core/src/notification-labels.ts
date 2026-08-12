@@ -31,7 +31,7 @@ function startOfDay(ms: number): number {
   return d.getTime();
 }
 
-/** Calendar days, not elapsed hours — "yesterday" has to mean yesterday at
+/** Calendar days, not elapsed hours: "yesterday" has to mean yesterday at
  * 23:50 too. Stepping back a day through `startOfDay` keeps it right across a
  * DST boundary, where "now minus 24h" is off by an hour. */
 export function notificationDayOf(at: number, now: number): NotificationDay {

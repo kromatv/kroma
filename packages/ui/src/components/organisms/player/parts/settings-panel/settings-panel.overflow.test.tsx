@@ -82,6 +82,15 @@ describe('the player settings panel, holding what the row shed', () => {
     expect(screen.getAllByLabelText('Subtitles')).toHaveLength(1);
   });
 
+  it('announces the toggle rows as switches, with the state they draw', () => {
+    render(panel([]));
+    const stats = screen.getByLabelText('Statistics');
+    expect(stats.getAttribute('role')).toBe('switch');
+    expect(stats.getAttribute('aria-checked')).toBe('false');
+    // A row that opens a sub-view is not a switch and claims no state.
+    expect(screen.getByLabelText('Quality').getAttribute('aria-checked')).toBeNull();
+  });
+
   it('runs the control it was given, by its own id', () => {
     const onControl = vi.fn();
     render(panel(['cast', 'pip'], onControl));

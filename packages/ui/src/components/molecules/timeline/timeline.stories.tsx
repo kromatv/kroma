@@ -8,14 +8,14 @@ export default story({
   group: 'Layout',
   docs: 'A sequence of events down a rail: a history, an activity feed, the steps a job went through. The rail is drawn by the entries themselves, so it never has to be measured; the Root only tells the last one to stop. An entry with an `onPress` is the control in one piece - one D-pad stop, one hit area - rather than a row with a link buried in it.',
   usage: `<Timeline.Root>
-  <Timeline.Item tone="current" title="En cours" detail="depuis 4 min" />
+  <Timeline.Item tone="current" title="Running" detail="for 4 min" />
   <Timeline.Item
     icon="git-commit"
     title="fix: the range request is clamped"
-    detail="9db893fe · hier"
+    detail="9db893fe · yesterday"
     onPress={open}
   />
-  <Timeline.Item tone="origin" title="Cree le 27 juillet" />
+  <Timeline.Item tone="origin" title="Added 27 July" />
 </Timeline.Root>`,
   guidelines: {
     do: [
@@ -68,10 +68,10 @@ export default story({
       docs: 'A glyph replaces the node where the KIND of event is worth reading at a glance.',
       render: ({ size }) => (
         <Timeline.Root size={size}>
-          <Timeline.Item icon="download" title="Telechargement termine" detail="4,2 Go · 12 min" />
-          <Timeline.Item icon="wand" title="Sous-titres generes" detail="whisper · 3 min" />
-          <Timeline.Item icon="search" title="Indexeur interroge" detail="2 resultats" />
-          <Timeline.Item tone="origin" icon="plus" title="Demande ajoutee" />
+          <Timeline.Item icon="download" title="Download finished" detail="4.2 GB · 12 min" />
+          <Timeline.Item icon="wand" title="Subtitles generated" detail="whisper · 3 min" />
+          <Timeline.Item icon="search" title="Indexer queried" detail="2 results" />
+          <Timeline.Item tone="origin" icon="plus" title="Request added" />
         </Timeline.Root>
       ),
     },
@@ -80,12 +80,12 @@ export default story({
       docs: 'Anything the two sugar props have no name for goes in as children, under them.',
       render: ({ size }) => (
         <Timeline.Root size={size}>
-          <Timeline.Item title="Le module a refuse de demarrer" detail="il y a 2 min">
+          <Timeline.Item title="The module refused to start" detail="2 min ago">
             <Text variant="meta" font="mono" color="textDim">
               supervisor: port 41310 already bound
             </Text>
           </Timeline.Item>
-          <Timeline.Item tone="origin" title="Module installe" detail="tv.kroma.torrents" />
+          <Timeline.Item tone="origin" title="Module installed" detail="tv.kroma.torrents" />
         </Timeline.Root>
       ),
     },

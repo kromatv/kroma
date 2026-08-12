@@ -1,6 +1,6 @@
 // Publishes KROMA's rows OUT to the television's home screen (Android TV Watch
-// Next and preview channels, tvOS Top Shelf). With no backend registered — Tizen,
-// webOS, desktop, web — both calls are silent no-ops. Payloads stay JSON strings
+// Next and preview channels, tvOS Top Shelf). With no backend registered (Tizen,
+// webOS, desktop, web), both calls are silent no-ops. Payloads stay JSON strings
 // so a provider's `lastPushed` guard can compare two of them with `===`.
 
 export interface LauncherBackend {

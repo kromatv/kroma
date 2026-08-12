@@ -85,6 +85,18 @@ describe('<Player> as a compound', () => {
     expect(screen.getByText('Play on TV')).toBeTruthy();
   });
 
+  it('gives the two sliders of the chrome a name and the value they hold', () => {
+    render(player(media));
+    const seek = screen.getByLabelText('Seek bar');
+    expect(seek.getAttribute('role')).toBe('slider');
+    expect(seek.getAttribute('aria-valuenow')).toBe('164');
+    expect(seek.getAttribute('aria-valuemax')).toBe('9840');
+
+    const volume = screen.getByLabelText('Volume');
+    expect(volume.getAttribute('aria-valuenow')).toBe('70');
+    expect(volume.getAttribute('aria-valuetext')).toBe('70%');
+  });
+
   it('draws a child that is no part of its own over the chrome', () => {
     render(player([media, <div key="toast">Resume at 12:04</div>]));
     expect(screen.getByText('Resume at 12:04')).toBeTruthy();

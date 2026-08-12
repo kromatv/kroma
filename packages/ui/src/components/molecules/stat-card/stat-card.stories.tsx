@@ -13,8 +13,8 @@ export default story({
 </StatCard.Root>
 
 <StatCard.Root>
-  <StatCard.Label>Stockage</StatCard.Label>
-  <StatCard.Value unit="To" color="accent">1,2</StatCard.Value>
+  <StatCard.Label>Storage</StatCard.Label>
+  <StatCard.Value unit="TB" color="accent">1.2</StatCard.Value>
   <Progress value={0.62} />
 </StatCard.Root>`,
   guidelines: {
@@ -22,7 +22,9 @@ export default story({
       'Keep the label a noun ("Storage", "Sessions") - the value is the sentence.',
       'Use `color` only when the number itself carries state; a wall of tinted stats reads as noise.',
     ],
-    dont: ["Don't put prose in `value`; a StatCard that needs a paragraph is a Section."],
+    dont: [
+      "Don't put prose in `<StatCard.Value>`; a StatCard that needs a paragraph is a Section.",
+    ],
   },
   matrix: false,
   args: { label: 'Sessions', value: '4', unit: '', color: 'text' },
@@ -42,7 +44,7 @@ export default story({
       </StatCard.Root>
       <StatCard.Root w={180}>
         <StatCard.Label>Storage</StatCard.Label>
-        <StatCard.Value unit="To">1,2</StatCard.Value>
+        <StatCard.Value unit="TB">1.2</StatCard.Value>
       </StatCard.Root>
       <StatCard.Root w={180}>
         <StatCard.Label>CPU</StatCard.Label>
@@ -58,9 +60,9 @@ export default story({
       docs: 'The card is a column, so a bar under the value is one more child of it.',
       example: () => (
         <StatCard.Root w={260}>
-          <StatCard.Label>Stockage</StatCard.Label>
-          <StatCard.Value unit="To" color="accent">
-            1,2
+          <StatCard.Label>Storage</StatCard.Label>
+          <StatCard.Value unit="TB" color="accent">
+            1.2
           </StatCard.Value>
           <Progress value={0.62} />
         </StatCard.Root>

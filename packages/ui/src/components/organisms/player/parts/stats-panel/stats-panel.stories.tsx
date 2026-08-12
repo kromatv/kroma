@@ -25,7 +25,7 @@ function Surface({ children }: Readonly<{ children: ReactNode }>) {
 export default story({
   name: 'PlayerStats',
   group: 'Player',
-  docs: 'The playback read-out: what the stream actually is, versus what was asked for. It exists because "is this direct-playing?" is the first question about any TV playback problem, and the answer is not visible anywhere else — so `mode` is the headline, above a wrapping run of the stream\'s fixed identity. ONE layout serves every surface: a native TV plane that reports seven fields and the web engine that reports twenty-seven fill more or fewer of the same columns, at the same type and rhythm, rather than switching to a second design. Live series arrive as `meters`; those sharing a `chart` id are drawn on ONE axis, which is only ever legal when they share a unit.',
+  docs: 'The playback read-out: what the stream actually is, versus what was asked for. It exists because "is this direct-playing?" is the first question about any TV playback problem, and the answer is not visible anywhere else, so `mode` is the headline, above a wrapping run of the stream\'s fixed identity. ONE layout serves every surface: a native TV plane that reports seven fields and the web engine that reports twenty-seven fill more or fewer of the same columns, at the same type and rhythm, rather than switching to a second design. Live series arrive as `meters`; those sharing a `chart` id are drawn on ONE axis, which is only ever legal when they share a unit.',
   usage: `<StatsPanel controller={controller} onClose={() => setStatsOn(false)} />
 
 // Two series on one axis, because the GAP between them is the diagnostic:
@@ -41,14 +41,14 @@ meters: [
   guidelines: {
     do: [
       'Read `mode` first: direct play versus transcode explains most complaints.',
-      'Group two meters on one chart only when they share a unit — the gap between them is then readable as headroom.',
+      'Group two meters on one chart only when they share a unit: the gap between them is then readable as headroom.',
       'Give a meter a `reference` so its trace says whether the value is healthy, not just which way it is moving.',
       'Give an `extra` row a `group` when a platform reports more than a handful.',
       'Leave `color` unset: the panel assigns the validated series palette, which is checked as a set for colourblind separation.',
     ],
     dont: [
       "Don't put two units on one chart. Buffer (seconds) against bandwidth (kb/s) flattens the smaller series to a dead line and invents a crossover that is not in the data.",
-      "Don't report a charted value as an `extra` row as well — the panel drops the duplicate row, and the chart already carries the number plus its history.",
+      "Don't report a charted value as an `extra` row as well: the panel drops the duplicate row, and the chart already carries the number plus its history.",
       "Don't leave it open in a shipped session - it polls, and a TV has nothing to spare.",
     ],
   },
@@ -74,7 +74,7 @@ meters: [
   scenes: [
     {
       name: 'On a television',
-      docs: 'What a native plane (AVPlay, mpv, ExoPlayer) can report: no decode counters, no engine transport, no series to graph. This is the case that used to be a SECOND design — a stacked list, because a dozen rows in three columns looked empty. Now it is the same design with less in it: the same headline, the same wrapping summary, and the columns and charts simply absent. Nothing here is a special case.',
+      docs: 'What a native plane (AVPlay, mpv, ExoPlayer) can report: no decode counters, no engine transport, no series to graph. This is the case that used to be a SECOND design: a stacked list, because a dozen rows in three columns looked empty. Now it is the same design with less in it: the same headline, the same wrapping summary, and the columns and charts simply absent. Nothing here is a special case.',
       example: () => (
         <Surface>
           <StatsPanel
@@ -114,7 +114,7 @@ meters: [
     },
     {
       name: 'Running out of headroom',
-      docs: 'The case the throughput chart exists for. Bandwidth is falling toward the bitrate the stream needs and the buffer is draining toward its floor — a stall in a few seconds. The band between the two traces closing is what says so at a glance; as two separately auto-scaled sparklines, which is what these were, both looked like their usual gentle wobble right up to the freeze.',
+      docs: 'The case the throughput chart exists for. Bandwidth is falling toward the bitrate the stream needs and the buffer is draining toward its floor: a stall in a few seconds. The band between the two traces closing is what says so at a glance; as two separately auto-scaled sparklines, which is what these were, both looked like their usual gentle wobble right up to the freeze.',
       example: () => (
         <Surface>
           <StatsPanel

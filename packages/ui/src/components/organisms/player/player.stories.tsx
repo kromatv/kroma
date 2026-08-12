@@ -7,19 +7,11 @@ import { stillArt } from '#ui/lib/sample-art';
 import { DEFAULT_SUB_APPEARANCE } from './lib/subtitle-appearance';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
 import { Player } from './player';
-import { fakeController } from './player.fixture';
-import type { Chapter, PlayerFlags } from './types';
+import { CHAPTERS, fakeController } from './player.fixture';
+import type { PlayerFlags } from './types';
 
 const WEB: PlayerFlags = { volume: true, pip: true, fullscreen: true, pointer: true };
 const TV: PlayerFlags = { volume: false, pip: false, fullscreen: false, pointer: false };
-
-const CHAPTERS: Chapter[] = [
-  { startMs: 0, endMs: 96_000, title: 'Cold open', kind: 'intro' },
-  { startMs: 96_000, endMs: 2_760_000, title: 'Act one', kind: 'chapter' },
-  { startMs: 2_760_000, endMs: 5_940_000, title: 'Act two', kind: 'chapter' },
-  { startMs: 5_940_000, endMs: 9_180_000, title: 'Act three', kind: 'chapter' },
-  { startMs: 9_180_000, endMs: 9_840_000, title: 'Credits', kind: 'credits' },
-];
 
 const NO_GEN: SubtitleGenBundle = {
   canCreate: false,
@@ -54,7 +46,7 @@ function Surface() {
 export default story({
   name: 'Player',
   group: 'Player',
-  docs: "The whole chrome, assembled. `Player.Root` owns no playback of its own: it is handed a **`PlayerController`** and a `<Player.Media>`, and everything it draws — the top bar, the chapter bar, the transport, the panels, the up-next sheet — reads from that one object. That is what lets the same component draw over four different decoders (an in-page `<video>` on the web; AVPlay, mpv or ExoPlayer rendering to a native plane *behind* a transparent page on the televisions). `flags` is the other half: a TV has no volume slider, no PiP and no fullscreen, so those controls are absent rather than disabled. The three slots are `Media` (the picture), `Actions` (the host's own top-bar controls) and `Panel` (a notice that takes the stage over and locks the chrome); any other child is drawn over the chrome as it stands.",
+  docs: "The whole chrome, assembled. `Player.Root` owns no playback of its own: it is handed a **`PlayerController`** and a `<Player.Media>`, and everything it draws (the top bar, the chapter bar, the transport, the panels, the up-next sheet) reads from that one object. That is what lets the same component draw over four different decoders (an in-page `<video>` on the web; AVPlay, mpv or ExoPlayer rendering to a native plane *behind* a transparent page on the televisions). `flags` is the other half: a TV has no volume slider, no PiP and no fullscreen, so those controls are absent rather than disabled. The three slots are `Media` (the picture), `Actions` (the host's own top-bar controls) and `Panel` (a notice that takes the stage over and locks the chrome); any other child is drawn over the chrome as it stands.",
   usage: `<Player.Root
   controller={controller}
   flags={WEB_FLAGS}
@@ -152,7 +144,7 @@ export default story({
     },
     {
       name: 'Television',
-      docs: 'TV_FLAGS: no volume slider, no PiP, no fullscreen — a TV has none of them.',
+      docs: 'TV_FLAGS: no volume slider, no PiP, no fullscreen. A TV has none of them.',
       args: { tv: true },
     },
     {
@@ -162,12 +154,12 @@ export default story({
     },
     {
       name: 'Skip intro',
-      docs: 'The pill sits on top of the transport, measured against it — including the 150px the up-next peek lifts the whole bottom chrome by. Narrow the frame and it stays clear of the seek bar at every width.',
+      docs: 'The pill sits on top of the transport, measured against it, including the 150px the up-next peek lifts the whole bottom chrome by. Narrow the frame and it stays clear of the seek bar at every width.',
       args: { intro: true },
     },
     {
       name: 'Host actions',
-      docs: 'A <Player.Actions> child lands at the end of the top bar, after the warning pill: the web\'s "play on TV". A television passes none — it is the screen a film is cast TO.',
+      docs: 'A <Player.Actions> child lands at the end of the top bar, after the warning pill: the web\'s "play on TV". A television passes none: it is the screen a film is cast TO.',
       args: { actions: true, warn: 'Transcoding: this device cannot direct-play HEVC' },
     },
     {

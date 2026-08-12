@@ -6,19 +6,13 @@
 // context. `Field.Input` and `Field.Textarea` are the doors to <TextField> and
 // <TextArea>, which is why neither atom is exported.
 
-import {
-  Children,
-  createContext,
-  isValidElement,
-  type ReactNode,
-  useContext,
-  useMemo,
-} from 'react';
+import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
 import type { ControlSize } from '#ui/lib/field-shell';
+import { partContext } from '#ui/lib/part-context';
 import { useControllable } from '#ui/lib/use-controllable';
 
 interface FieldContext {
@@ -30,13 +24,7 @@ interface FieldContext {
   setValue: (next: string) => void;
 }
 
-const Context = createContext<FieldContext | null>(null);
-
-function useField(part: string): FieldContext {
-  const ctx = useContext(Context);
-  if (!ctx) throw new Error(`<Field.${part}> must be used inside <Field.Root>`);
-  return ctx;
-}
+const [Context, useField] = partContext<FieldContext>('Field.Root');
 
 interface FieldRootProps extends Omit<BoxProps, 'children'> {
   /** Names the control to assistive tech, and heads the field unless `hideLabel`. */

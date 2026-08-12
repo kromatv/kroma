@@ -13,7 +13,7 @@
 // thing a reader is aiming at. The indicator is drawn as a face and the ROW
 // carries `radio`/`checkbox` with its state to assistive tech.
 
-import { createContext, type ReactNode, useContext, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { CheckboxFace, type CheckboxSize } from '#ui/components/atoms/checkbox';
@@ -21,6 +21,7 @@ import { RadioFace } from '#ui/components/atoms/radio';
 import { Text } from '#ui/components/atoms/text';
 import { ListRow } from '#ui/components/molecules/list-row';
 import type { ControlSize } from '#ui/lib/field-shell';
+import { partContext } from '#ui/lib/part-context';
 
 const FACE: Record<ControlSize, CheckboxSize> = { sm: 'sm', md: 'sm', tv: 'tv' };
 
@@ -31,22 +32,10 @@ interface ChoiceContext {
   toggle: (value: string) => void;
 }
 
-const Context = createContext<ChoiceContext | null>(null);
-
-function useChoice(part: string): ChoiceContext {
-  const ctx = useContext(Context);
-  if (!ctx) throw new Error(`<ChoiceList.${part}> must be used inside <ChoiceList.Root>`);
-  return ctx;
-}
+const [Context, useChoice] = partContext<ChoiceContext>('ChoiceList.Root');
 
 // One item's own value, so the parts under it need no prop of their own.
-const ItemContext = createContext<{ value: string; on: boolean } | null>(null);
-
-function useItem(part: string): { value: string; on: boolean } {
-  const ctx = useContext(ItemContext);
-  if (!ctx) throw new Error(`<ChoiceList.${part}> must be used inside <ChoiceList.Item>`);
-  return ctx;
-}
+const [ItemContext, useItem] = partContext<{ value: string; on: boolean }>('ChoiceList.Item');
 
 interface RootBase {
   /** Names the group to assistive tech: what the choices are choices OF. */

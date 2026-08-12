@@ -10,14 +10,14 @@ import { Select } from '#ui/components/molecules/select';
 import { CONTROL, type ControlSize } from '#ui/lib/field-shell';
 
 const LEVELS = [
-  { value: 'all', label: 'Tout' },
+  { value: 'all', label: 'All' },
   { value: 'info', label: 'Info' },
-  { value: 'warn', label: 'Avertissements' },
-  { value: 'error', label: 'Erreurs' },
+  { value: 'warn', label: 'Warnings' },
+  { value: 'error', label: 'Errors' },
 ] as const;
 
 const SOURCES = [
-  { value: 'all', label: 'Toutes les sources' },
+  { value: 'all', label: 'Every source' },
   { value: 'server', label: 'kroma_server' },
   { value: 'torrents', label: 'tv.kroma.torrents' },
 ];
@@ -30,7 +30,7 @@ function Row({ size }: Readonly<{ size: ControlSize }>) {
     <Box row align="center" gap={12} wrap>
       <SegmentedControl.Root
         size={size}
-        label="Niveau"
+        label="Level"
         value={level}
         options={LEVELS}
         onValueChange={setLevel}
@@ -43,12 +43,12 @@ function Row({ size }: Readonly<{ size: ControlSize }>) {
           </Select.Item>
         ))}
       </Select.Root>
-      <Field.Root label="Filtrer les lignes" hideLabel size={size} w={240}>
+      <Field.Root label="Filter the lines" hideLabel size={size} w={240}>
         {/* The console row is a browser page: a real input, not the TV caret form. */}
-        <Field.Input icon="search" placeholder="Filtrer les lignes…" physicalKeyboard />
+        <Field.Input icon="search" placeholder="Filter the lines…" physicalKeyboard />
       </Field.Root>
-      <Button size={size} variant="glass" icon="refresh" label="Rafraîchir" />
-      <IconButton control={size} variant="glass" icon="dots-vertical" label="Plus" />
+      <Button size={size} variant="glass" icon="refresh" label="Refresh" />
+      <IconButton control={size} variant="glass" icon="dots-vertical" label="More" />
     </Box>
   );
 }
@@ -73,15 +73,15 @@ export default story({
 setEntryDefaults({ physicalKeyboard: true, size: 'sm' });
 
 // ...and every control follows, or says so itself.
-<SegmentedControl.Root label="Niveau" value={level} options={LEVELS} onValueChange={setLevel} />
+<SegmentedControl.Root label="Level" value={level} options={LEVELS} onValueChange={setLevel} />
 
 <Select.Root label="Source" value={source} onValueChange={setSource}>
   <Select.Trigger />
   <Select.Item value="server">kroma_server</Select.Item>
 </Select.Root>
 
-<Field.Root label="Filtrer" hideLabel>
-  <Field.Input icon="search" placeholder="Filtrer les lignes…" />
+<Field.Root label="Filter" hideLabel>
+  <Field.Input icon="search" placeholder="Filter the lines…" />
 </Field.Root>`,
   guidelines: {
     do: [

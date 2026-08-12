@@ -29,7 +29,7 @@ function show() {
 }
 
 function openPanel() {
-  fireEvent.click(screen.getByLabelText('Remotes'));
+  fireEvent.click(screen.getByLabelText(/^Remotes/));
   // The dialog arms the press guard as it mounts, and would otherwise swallow
   // the test's next press.
   clearPressGuard();
@@ -61,6 +61,9 @@ describe('CastRemotes', () => {
     show();
 
     expect(screen.getByText('2')).toBeTruthy();
+    // The count is drawn INSIDE the chip, which is one control with one name,
+    // so the name has to carry it too.
+    expect(screen.getByLabelText('Remotes (2)').getAttribute('aria-expanded')).toBe('false');
     openPanel();
     expect(screen.getByText('iPhone')).toBeTruthy();
     expect(screen.getByText('Pixel')).toBeTruthy();

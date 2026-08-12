@@ -6,14 +6,7 @@
 // shape <Rail> and <Callout> take - and publishes the open state through
 // context, which is what lets the panel be written anywhere inside the root.
 
-import {
-  Children,
-  createContext,
-  isValidElement,
-  type ReactNode,
-  useContext,
-  useMemo,
-} from 'react';
+import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
@@ -21,6 +14,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
+import { partContext } from '#ui/lib/part-context';
 import { useControllable } from '#ui/lib/use-controllable';
 
 interface DisclosureState {
@@ -28,13 +22,7 @@ interface DisclosureState {
   toggle: () => void;
 }
 
-const DisclosureContext = createContext<DisclosureState | null>(null);
-
-function useDisclosure(part: string): DisclosureState {
-  const state = useContext(DisclosureContext);
-  if (!state) throw new Error(`<Disclosure.${part}> must be used inside <Disclosure.Root>`);
-  return state;
-}
+const [DisclosureContext, useDisclosure] = partContext<DisclosureState>('Disclosure.Root');
 
 interface DisclosureRootProps {
   /** Present: you own the state (controlled). Absent: the disclosure runs
@@ -96,15 +84,18 @@ function Root({
 
 interface DisclosureTriggerProps {
   /** The section's heading. A plain string names the row to assistive tech as
-   *  well; anything richer has to carry its own accessible name. */
+   *  well. */
   children: ReactNode;
+  /** Names the row to assistive tech. It draws NOTHING: reach for it only where
+   *  the heading is richer than a string and so has no plain text to be read. */
+  label?: string;
 }
 
 /** What opens the section, and the rule above it. The whole row is the control:
  *  one D-pad stop, and the chevron is a face rather than a second target. */
-function Trigger({ children }: Readonly<DisclosureTriggerProps>) {
+function Trigger({ children, label }: Readonly<DisclosureTriggerProps>) {
   const { open, toggle } = useDisclosure('Trigger');
-  const name = typeof children === 'string' ? children : undefined;
+  const name = label ?? (typeof children === 'string' ? children : undefined);
   return (
     <>
       <Divider spacing={0} />

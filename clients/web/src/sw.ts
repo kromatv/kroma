@@ -14,7 +14,7 @@ self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim(
 
 // Every field degrades on its own rather than failing the whole payload: a
 // push that shows nothing breaches the "must be user-visible" rule that gets
-// a site's push permission revoked. `catch` is what buys that — absent, wrong
+// a site's push permission revoked. `catch` is what buys that: absent, wrong
 // type and empty all land on `undefined`, and the caller's fallback takes over.
 const text = z.catch(z.optional(z.string().check(z.minLength(1))), undefined);
 
@@ -28,7 +28,7 @@ const Action = z.object({
 
 const actions = z.catch(z.array(Action), []);
 
-// The decrypted push body — what the server builds in `notify/push.rs`.
+// The decrypted push body: what the server builds in `notify/push.rs`.
 const Payload = z.object({
   title: text,
   body: text,
@@ -72,7 +72,7 @@ self.addEventListener('push', (event) => {
     body: data.body ?? '',
     icon: '/apple-touch-icon.png',
     badge: '/favicon-32.png',
-    // The poster, when there is one — a film's artwork is the point.
+    // The poster, when there is one: a film's artwork is the point.
     image: data.imageUrl,
     // Collapse a retried delivery instead of stacking duplicates.
     tag: data.id,
@@ -94,7 +94,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // A tap on the body opens `link`. A tap on an action button either navigates
-// (`kind: 'link'`) or calls the server directly (`kind: 'api'`) — the latter
+// (`kind: 'link'`) or calls the server directly (`kind: 'api'`). The latter
 // is what lets a moderator approve a request from the lock screen without the
 // app ever coming to the foreground.
 async function handleClick(action: PushAction | undefined, link: string | undefined) {

@@ -105,7 +105,7 @@ passing it since `_release-tv.yml`). Vite has already minified the output.
 
 ## Publishing to the LG Content Store
 
-See [STORE.md](./STORE.md) — Seller Lounge account, assets, listing fields, the
+See [STORE.md](./STORE.md) for the Seller Lounge account, assets, listing fields, the
 self-checklist items that need real attention, and what LG's QA needs in order to
 be able to test a client for a server it cannot reach.
 

@@ -81,7 +81,7 @@ export function TvQuickConnect() {
             setQr(qrc.createSvgTag({ cellSize: 6, margin: 1, scalable: true }));
           } catch (cause) {
             // The code on screen still pairs without a QR, so this must not take
-            // the screen down — but it must not be silent either.
+            // the screen down, but it must not be silent either.
             console.warn('[kroma] QR code unavailable:', cause);
           }
         }

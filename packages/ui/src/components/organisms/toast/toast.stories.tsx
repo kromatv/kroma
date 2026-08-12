@@ -101,7 +101,7 @@ toast({ message: 'Link copied', position: 'bottom-center' })`,
         <Screen position="bottom-center">
           <Button
             label="Say it"
-            onPress={() => toast({ message: 'Playing on Salon', icon: 'device-tv' })}
+            onPress={() => toast({ message: 'Playing on the living room TV', icon: 'device-tv' })}
           />
         </Screen>
       ),

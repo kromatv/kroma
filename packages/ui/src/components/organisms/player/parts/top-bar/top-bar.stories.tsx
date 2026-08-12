@@ -6,7 +6,7 @@ import { TopBar } from './top-bar';
 export default story({
   name: 'PlayerTopBar',
   group: 'Player',
-  docs: "The player's own header: what is playing, a way out, and a warning pill when the stream is not what the viewer asked for (a transcode, a missing track). It sits under a scrim rather than a solid bar so the artwork behind it still reads. `backFocused` is passed in rather than owned here because the player's nav machine decides where focus rests — the chrome only draws it.",
+  docs: "The player's own header: what is playing, a way out, and a warning pill when the stream is not what the viewer asked for (a transcode, a missing track). It sits under a scrim rather than a solid bar so the artwork behind it still reads. `backFocused` is passed in rather than owned here because the player's nav machine decides where focus rests. The chrome only draws it.",
   usage: `<TopBar
   title={item.title}
   subtitle={episodeLabel}

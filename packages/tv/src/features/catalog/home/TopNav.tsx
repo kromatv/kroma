@@ -63,7 +63,7 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
             <KromaMark size={28} />
           </Box>
         </FocusSlot>
-        <NavPill.Root size="tv">
+        <NavPill.Root size="tv" label={t('nav.menu')}>
           {/* Platforms without a blur (legacy panels, an unregistered shell)
               keep the pill's solid fill. */}
           <NavPill.Backdrop>

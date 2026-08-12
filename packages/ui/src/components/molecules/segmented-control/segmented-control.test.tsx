@@ -69,7 +69,7 @@ describe('SegmentedControl', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     expect(() => render(<SegmentedControl.Item value="a" label="A" />)).toThrow(
-      '<SegmentedControl.Item> must be used inside its Root',
+      '<SegmentedControl.Item> must be used inside <SegmentedControl.Root>',
     );
 
     vi.restoreAllMocks();

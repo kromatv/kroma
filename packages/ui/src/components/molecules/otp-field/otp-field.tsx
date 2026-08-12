@@ -2,7 +2,7 @@
 // Replaces the web client's `input-otp` (a hidden <input> plus a render prop),
 // a shape that can't exist on Apple TV: one off-screen TextInput owns the text
 // here (so paste, SMS autofill and hardware typing keep working), while on a
-// television there is no hidden input at all — the on-screen keypad feeds
+// television there is no hidden input at all: the on-screen keypad feeds
 // `onValueChange`, as <PinField> does.
 //
 // The parts follow shadcn's InputOTP anatomy (Root / Group / Slot / Separator)
@@ -149,7 +149,16 @@ function Root({
 
   return (
     <OtpFieldContext.Provider value={ctx}>
-      <Box row align="center" gap={SLOT_GAP} {...box}>
+      <Box
+        row
+        align="center"
+        gap={SLOT_GAP}
+        // The name rides the entry where there is one. A keypad shell mounts
+        // none, and the slots are faces, so the row is the only thing left to
+        // carry it.
+        {...(physicalKeyboard ? null : { role: 'group' as const, accessibilityLabel: label })}
+        {...box}
+      >
         {physicalKeyboard ? (
           <>
             {/* Transparent rather than hidden: `display: none` would cost the

@@ -193,6 +193,25 @@ describe('ListRow', () => {
     expect(screen.getByRole('link', { name: 'Notes' })).toBeTruthy();
   });
 
+  it('claims a selection only where the caller gave it one', () => {
+    render(
+      <>
+        <ListRow.Root onPress={vi.fn()}>
+          <ListRow.Label>Comptes</ListRow.Label>
+        </ListRow.Root>
+        <ListRow.Root role="option" selected onPress={vi.fn()}>
+          <ListRow.Label>Français</ListRow.Label>
+        </ListRow.Root>
+        <ListRow.Root role="option" selected={false} onPress={vi.fn()}>
+          <ListRow.Label>English</ListRow.Label>
+        </ListRow.Root>
+      </>,
+    );
+    expect(screen.getByLabelText('Comptes').getAttribute('aria-selected')).toBeNull();
+    expect(screen.getByLabelText('Français').getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByLabelText('English').getAttribute('aria-selected')).toBe('false');
+  });
+
   it('paints the row the list is about, not only announcing it', () => {
     const { container } = render(
       <>

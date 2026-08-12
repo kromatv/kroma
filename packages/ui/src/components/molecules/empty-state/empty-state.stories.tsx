@@ -7,14 +7,14 @@ export default story({
   group: 'Feedback',
   docs: 'The empty screen: a glyph in its well, what is missing, and why, in the same voice as the 404 and 500 pages. Two axes, and they are independent: `size` is how loud it reads (a list inside a section, a page, a page at ten feet), `layout` is where it sits (under what came before, or centred in the whole region it was given).',
   usage: `<EmptyState.Root icon="mood-empty">
-  <EmptyState.Title>Aucun resultat</EmptyState.Title>
-  <EmptyState.Hint>Essayez un autre terme.</EmptyState.Hint>
+  <EmptyState.Title>No results</EmptyState.Title>
+  <EmptyState.Hint>Try another term.</EmptyState.Hint>
 </EmptyState.Root>
 
 <EmptyState.Root size="tv" layout="fill">
   <EmptyState.Media name="mood-empty" />
-  <EmptyState.Title>Aucun resultat</EmptyState.Title>
-  <EmptyState.Actions><Button label="Reessayer" onPress={retry} /></EmptyState.Actions>
+  <EmptyState.Title>No results</EmptyState.Title>
+  <EmptyState.Actions><Button label="Retry" onPress={retry} /></EmptyState.Actions>
 </EmptyState.Root>`,
   guidelines: {
     do: [
@@ -66,11 +66,11 @@ export default story({
       docs: 'The module pages: the state fills the region and centres, the hint says what happened, the chip carries the raw cause, and retry is the one action. The same anatomy as the router error pages, minus the status number.',
       example: () => (
         <EmptyState.Root layout="fill" icon="alert-triangle">
-          <EmptyState.Title>Cette page n'a pas pu etre chargee</EmptyState.Title>
-          <EmptyState.Hint>Le module est installe ; ses donnees n'ont pas repondu.</EmptyState.Hint>
+          <EmptyState.Title>This page could not be loaded</EmptyState.Title>
+          <EmptyState.Hint>The module is installed; its data did not answer.</EmptyState.Hint>
           <EmptyState.Detail>GET /api/module/tv.kroma.remote/remote 502</EmptyState.Detail>
           <EmptyState.Actions>
-            <Button variant="glass" size="sm" icon="refresh" label="Reessayer" />
+            <Button variant="glass" size="sm" icon="refresh" label="Retry" />
           </EmptyState.Actions>
         </EmptyState.Root>
       ),
@@ -81,10 +81,10 @@ export default story({
       render: ({ size }) => (
         <EmptyState.Root size={size}>
           <EmptyState.Media name="mood-empty" />
-          <EmptyState.Title>Aucun resultat</EmptyState.Title>
-          <EmptyState.Hint>Essayez un autre terme.</EmptyState.Hint>
+          <EmptyState.Title>No results</EmptyState.Title>
+          <EmptyState.Hint>Try another term.</EmptyState.Hint>
           <EmptyState.Actions>
-            <Button variant="glass" size="sm" icon="refresh" label="Reessayer" />
+            <Button variant="glass" size="sm" icon="refresh" label="Retry" />
           </EmptyState.Actions>
         </EmptyState.Root>
       ),

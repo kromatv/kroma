@@ -1,7 +1,7 @@
 // The icon subset decides what every client ships; missing a name means the
 // app silently draws a question mark, in production only. So these tests pin
-// the behaviour a broken scan would break — aliases survive, the fallback is
-// always present, a renamed target fails loudly — not the exact icon count.
+// the behaviour a broken scan would break: aliases survive, the fallback is
+// always present, a renamed target fails loudly, not the exact icon count.
 // They run against the real Tabler install and the real repo on purpose.
 import {
   existsSync,
@@ -101,7 +101,7 @@ describe('the vite half', () => {
     // 66 of Tabler's exports are ALIASES with no module of their own
     // (`IconDiscountCheck` lives in `IconRosetteDiscount.mjs`). A directory
     // listing misses them, and because they stay in the .d.ts they typecheck and
-    // draw in a full build — so the subset would fall back to the question mark
+    // draw in a full build, so the subset would fall back to the question mark
     // for them in production only. More known names than icon files is what
     // distinguishes the two sources, whether or not any alias is used today.
     const available = Number(/\d+ of (\d+)/.exec(loadGlyphSource().notes[0] ?? '')?.[1]);

@@ -3,7 +3,7 @@ import { pointerDriving } from '#ui/lib/input-source';
 
 /**
  * Whether the current focus is one the viewer asked for, in the browser's
- * `:focus-visible` sense — true for keys and the remote, false for a cursor that
+ * `:focus-visible` sense: true for keys and the remote, false for a cursor that
  * merely swept past.
  *
  * The spatial navigator focuses on mouse-enter once a pointer has moved and
@@ -17,8 +17,8 @@ import { pointerDriving } from '#ui/lib/input-source';
  * focus owner.
  *
  * `<Focusable>` applies this to its ring and to a recipe's `_focus`. Anything
- * resolving a recipe directly — a control whose focus visuals live on a parent,
- * or on a `<Box>` that is not itself focusable — must ask here too, or `_focus`
+ * resolving a recipe directly (a control whose focus visuals live on a parent,
+ * or on a `<Box>` that is not itself focusable) must ask here too, or `_focus`
  * would mean two different things depending on how it was reached.
  */
 export function useFocusVisible(focus: unknown): boolean {

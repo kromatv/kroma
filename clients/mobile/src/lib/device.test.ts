@@ -1,5 +1,5 @@
 // Contract between this app and the account page: the phone writes a
-// User-Agent, the web client reads it back — both halves asserted together.
+// User-Agent, the web client reads it back; both halves asserted together.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

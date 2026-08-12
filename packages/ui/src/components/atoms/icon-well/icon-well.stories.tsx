@@ -8,7 +8,7 @@ const ROW = ['settings', 'language', 'device-tv', 'server-2', 'download'] as con
 export default story({
   name: 'IconWell',
   group: 'Foundations',
-  docs: 'The leading mark of a row: a glyph sunk into a rounded, tinted square. A well rather than a bare glyph because it gives a column of icons ONE optical weight — a hollow gear and a solid television differ by half their ink, and the wells line them up anyway. `<ListRow>` draws its own; reach for this one when you are building a row the kit does not have.',
+  docs: 'The leading mark of a row: a glyph sunk into a rounded, tinted square. A well rather than a bare glyph because it gives a column of icons ONE optical weight: a hollow gear and a solid television differ by half their ink, and the wells line them up anyway. `<ListRow>` draws its own; reach for this one when you are building a row the kit does not have.',
   usage: `<IconWell name="server-2" />
 <IconWell name="plus" tone="accent" size="sm" />`,
   guidelines: {

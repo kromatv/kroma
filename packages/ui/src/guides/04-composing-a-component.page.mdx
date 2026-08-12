@@ -29,13 +29,15 @@ is `InputGroup` at 4.0 KB gzipped, then `Field` at 0.7 KB, and every other
 compound is under 300 bytes. Do not trade the vocabulary for that.
 
 A part name denotes a **role**, never a position, never an input device, never a
-boolean spelled as a string.
+boolean spelled as a string. These are the ones you will meet most; the complete
+table, and the rule that adding a part means adding a row to it in the same
+commit, live in `packages/ui/src/components/DESIGN.md`.
 
 | Part | Means |
 | --- | --- |
 | `Root` | Owns state, semantics and context. Every compound has one. |
 | `Trigger` | The control that opens or toggles the thing. |
-| `Panel` | A region the surface swaps in: expanding, collapsing, or taking the stage over. |
+| `Panel` | The region a surface owns rather than pins: the body it scrolls, the region it expands, the one it gives the whole stage to. Never the scrim. |
 | `Popup` | The floating, styled, animated box. It mounts itself. |
 | `Backdrop` | The scrim over inert content. Never `Overlay`, which reads as the popup. |
 | `Item` | One selectable or actionable entry, namespaced and never prefixed. |
@@ -127,10 +129,10 @@ for three reasons it paid for first.
 ```tsx
 <Callout.Root tone="danger">
   <Callout.Media name="alert-triangle" />
-  <Callout.Title>Le fichier est introuvable</Callout.Title>
+  <Callout.Title>The file cannot be found</Callout.Title>
   <Callout.Detail>/Volumes/video/Dune.2021.mkv</Callout.Detail>
   <Callout.Actions>
-    <Button label="Reanalyser" size="sm" variant="ghost" />
+    <Button label="Rescan" size="sm" variant="ghost" />
   </Callout.Actions>
 </Callout.Root>
 ```
@@ -156,7 +158,8 @@ The rule is about faces. It does not strip the kit of props.
 | --- | --- |
 | `<Button label>`, `<Chip label>` | A leaf has no parts to write. T1, above. |
 | `value`, `disabled`, `onPress`, `icon` | Identity and behaviour, and a glyph is never a part. |
-| `<ChoiceList.Root label>`, `<Dialog.Root title>` | An accessible name for a thing with no part that draws it. |
+| `<ChoiceList.Root label>`, `<Dialog.Root title>` | It names the thing to assistive tech. That a Root may ALSO draw a default header from it does not make it a face a part exists for. |
+| `<Field.Root label>` | The same, required: there is no `Field.Label` part, and `hideLabel` drops the row while keeping the name. |
 | `<ListRow.Root label>` | Pure semantics: a row whose middle column says its words through props has no text for the row to be named by. |
 
 ### The escape ladder
@@ -209,19 +212,25 @@ same shape for `open`, `checked` and `expanded`.
 | `multiple` | `type="multiple"`, `mode="multi"` |
 | `onValueChange` | `onChange`, `onSelect`, `onUpdate` |
 
-Four laws behind the table: no boolean spelled as a string; no `is` prefix; the
-same role gets the same name in every component; no abbreviations. Law three is
-the one this kit has broken worst, and `size` is where - it has meant a control
-size, two different distance scales, a diameter and a *thickness*. **`size` means
-the shell step in `lib/field-shell` and nothing else.** A component whose "size"
-is a raw measurement takes a measurement, named for what it measures.
+The law with teeth is the third: **the same role gets the same name in every
+component**, or the vocabulary is worthless. `size` is where this kit broke it
+worst - it has meant a control size, two distance scales, a diameter and a
+thickness.
+
+Two of those four are now spelled for what they measure: `thickness` on
+`<Divider>` and `<Progress>`. What is left is deliberate. On a control that wears
+a shell, `size` is the step in `lib/field-shell` (`sm | md | tv`); on a round
+leaf - `<Spinner>`, `<Avatar>`, `<StatusDot>`, `<Icon>` - it is the diameter in
+px, because that is the only measurement the thing has. **A distance is never
+`size`.** A component that genuinely has its own ladder names its own type but
+keeps the same three words.
 
 ## The checklist
 
 Before a component is done:
 
 - [ ] Parts are a namespace object; the bare name renders nothing.
-- [ ] Every part name is in the table above, or the table grew in this commit.
+- [ ] Every part name is in DESIGN.md's table, or the table grew in this commit.
 - [ ] The Root owns state, semantics and behaviour; no indicator is pressable.
 - [ ] A `data` prop, if any, names which of the six tests forced it.
 - [ ] No prop writes a face a part exists for: every `label`, `hint`, `title`,

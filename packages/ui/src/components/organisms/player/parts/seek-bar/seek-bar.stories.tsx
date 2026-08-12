@@ -5,17 +5,8 @@ import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { stillArt } from '#ui/lib/sample-art';
 import { currentChapter } from '../../lib/chapters';
-import { fakeTileAt } from '../../player.fixture';
-import type { Chapter } from '../../types';
+import { CHAPTERS, fakeTileAt } from '../../player.fixture';
 import { SeekBar } from './seek-bar';
-
-const CHAPTERS: Chapter[] = [
-  { startMs: 0, endMs: 96_000, title: 'Cold open', kind: 'intro' },
-  { startMs: 96_000, endMs: 2_760_000, title: 'Act one', kind: 'chapter' },
-  { startMs: 2_760_000, endMs: 5_940_000, title: 'Act two', kind: 'chapter' },
-  { startMs: 5_940_000, endMs: 9_180_000, title: 'Act three', kind: 'chapter' },
-  { startMs: 9_180_000, endMs: 9_840_000, title: 'Credits', kind: 'credits' },
-];
 
 interface ScrubbableProps {
   cur: number;
@@ -89,7 +80,7 @@ function Scrubbable({
 export default story({
   name: 'SeekBar',
   group: 'Player',
-  docs: 'The progress bar, aware of what it is scrubbing through. Each chapter is its OWN segment with its own played fill and buffered zone, so the shape of the film is visible before you touch it — and the intro and credits segments are tinted, which is what makes "skip the recap" a target rather than a guess. With no chapter data it degrades to one continuous segment rather than disappearing. `seekPreview` is the pending scrub position: the bar shows where you are *going*, while playback stays where it is.',
+  docs: 'The progress bar, aware of what it is scrubbing through. Each chapter is its OWN segment with its own played fill and buffered zone, so the shape of the film is visible before you touch it, and the intro and credits segments are tinted, which is what makes "skip the recap" a target rather than a guess. With no chapter data it degrades to one continuous segment rather than disappearing. `seekPreview` is the pending scrub position: the bar shows where you are *going*, while playback stays where it is.',
   usage: `<SeekBar
   cur={controller.cur}
   dur={controller.dur}

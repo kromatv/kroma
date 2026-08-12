@@ -170,6 +170,22 @@ describe('<Menu>', () => {
     expect(screen.getByLabelText('Profil').textContent).toBe('Max · 4K');
   });
 
+  it('leaves a composed row named by its own words rather than by nothing', () => {
+    render(
+      <Menu.Root label="Piste">
+        <Menu.Trigger />
+        <Menu.Item onSelect={() => {}}>
+          <Text>Max · 4K</Text>
+        </Menu.Item>
+      </Menu.Root>,
+    );
+    fireEvent.click(screen.getByLabelText('Piste'));
+    const row = screen.getByRole('menuitem');
+    // An empty name would hide the words the row does draw.
+    expect(row.getAttribute('aria-label')).toBeNull();
+    expect(row.textContent).toBe('Max · 4K');
+  });
+
   it('takes a trigger the caller owns, through render', () => {
     render(
       <Menu.Root label="Account">
@@ -185,5 +201,17 @@ describe('<Menu>', () => {
     );
     fireEvent.click(screen.getByText('Max'));
     expect(screen.getByRole('menu')).toBeTruthy();
+  });
+
+  it('refuses an item that is not a direct child of the Root', () => {
+    expect(() => render(<Menu.Item onSelect={() => {}}>Renommer</Menu.Item>)).toThrow(
+      '<Menu.Item> must be a direct child of <Menu.Root>',
+    );
+  });
+
+  it('refuses a trigger outside a Root', () => {
+    expect(() => render(<Menu.Trigger />)).toThrow(
+      '<Menu.Trigger> must be used inside <Menu.Root>',
+    );
   });
 });

@@ -66,12 +66,12 @@ export default story({
   group: 'Media',
   docs: 'A horizontal scrolling row. `<Rail.Root>` holds a `<Rail.Title>` and the tiles; plain tile children get the growing row, which mounts a screenful and grows as focus nears its end. `<Rail.List>` is the windowed row for a long strip of uniform tiles: given a tile PITCH it runs on `<VirtualRail>`, so the row holds still while the highlight travels and moves only when the selection comes within a tile of either end, a SIDEWAYS wheel pans it without changing the selection (a vertical one is left to the page), and a pointer gets an arrow at each end. Rows whose tiles are not all one width (chips, cast faces) stay on the growing row.',
   usage: `<Rail.Root>
-  <Rail.Title>Reprendre</Rail.Title>
+  <Rail.Title>Continue watching</Rail.Title>
   {cards}
 </Rail.Root>
 
 <Rail.Root>
-  <Rail.Title variant="subheadingTv">Reprendre</Rail.Title>
+  <Rail.Title variant="subheadingTv">Continue watching</Rail.Title>
   <Rail.List pitch={320 + RAIL_GAP} height={180}>
     {cards}
   </Rail.List>

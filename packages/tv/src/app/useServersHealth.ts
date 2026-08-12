@@ -20,8 +20,8 @@ export interface ServerProbe {
 }
 
 /** Probes each `<url>/api/health` on a slow loop for the profile picker; a url
- * is absent until its first probe answers. Meant for the *other* saved servers
- * — the active one already has a live heartbeat driving `connection.online`. */
+ * is absent until its first probe answers. Meant for the *other* saved servers:
+ * the active one already has a live heartbeat driving `connection.online`. */
 export function useServersHealth(urls: string[]): Record<string, ServerProbe> {
   const [map, setMap] = useState<Record<string, ServerProbe>>({});
   // Collapse to a stable primitive so the effect restarts only when the SET of

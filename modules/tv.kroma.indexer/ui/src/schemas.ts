@@ -1,6 +1,6 @@
 // This module's wire types. They live here, not in `@kroma/core`: the core
 // client has no business knowing how an indexer is configured. `IndexerId`
-// stays in core because core's own request/search flow carries release ids —
+// stays in core because core's own request/search flow carries release ids,
 // an opaque brand, not this module's shape.
 
 import { IndexerId } from '@kroma/module-sdk';

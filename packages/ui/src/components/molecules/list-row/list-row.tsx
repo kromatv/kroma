@@ -106,7 +106,7 @@ function Root({
   onPress,
   href,
   role,
-  selected = false,
+  selected,
   style,
   ...focusProps
 }: Readonly<ListRowRootProps>) {
@@ -117,7 +117,11 @@ function Root({
   const pressable = onPress !== undefined;
 
   const at = useMemo(() => sort(children), [children]);
-  const slots = listRowVariants({ size: shell, standalone, pressable, selected });
+  // The row only CLAIMS a selection where the caller gave it one: a plain
+  // settings row that announced `selected: false` would be reported as one
+  // option among several by every screen reader that walked it.
+  const lit = selected ?? false;
+  const slots = listRowVariants({ size: shell, standalone, pressable, selected: lit });
   const ctx = useMemo(() => ({ size: shell, metrics, slots }), [shell, metrics, slots]);
 
   const leading = at.leading.length > 0 ? at.leading : iconWell(icon, shell);
@@ -136,7 +140,7 @@ function Root({
         label={label ?? nameOf(at.content)}
         focusScale={1.02}
         sv={listRowVariants}
-        vars={{ size: shell, pressable, standalone, selected }}
+        vars={{ size: shell, pressable, standalone, selected: lit }}
         style={style}
       >
         {(state) => (

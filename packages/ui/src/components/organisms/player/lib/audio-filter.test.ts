@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // The volume normalizer (§7): a Web Audio compressor behind the player's
-// <video>. The tuning is the substance — `night` must sit BELOW unity gain,
+// <video>. The tuning is the substance: `night` must sit BELOW unity gain,
 // or the quietest mode ends up louder than the others.
 
 import { act, renderHook } from '@testing-library/react';

@@ -27,8 +27,9 @@ module manifest, a catalogue row.
 
 The slug is Tabler's own export, kebab-cased: `IconPlayerPauseFilled` is
 `player-pause-filled`, `IconVolume2` is `volume-2`. `IconName` is a strict
-union, so a typo fails to compile; a name arriving from data crosses the border
-through `hasGlyph`.
+union, so a typo fails to compile in a `.tsx` - this page is MDX, which is not
+typechecked, which is the only reason the specimen above could name a glyph that
+does not exist. A name arriving from data crosses the border through `hasGlyph`.
 
 ```tsx
 <Icon name="player-play-filled" size={24} color="accentText" />
@@ -96,8 +97,3 @@ bar, the count and the pager stay where they are while a page is read, and a new
 page starts at the top of the grid instead of wherever the last one was left. A
 television gets the flat grid instead: the tiles take no focus, so a nested
 scroller is one the D-pad could never move.
-
-Everything above is the kit's own: a `Field` for the box, a `Select` for the
-categories, a `SegmentedControl` for the size, a `Pagination` row under the
-grid, and on a television a `SearchKeyboard` under the box - so the glyph
-browser is walked with the D-pad like any other screen.

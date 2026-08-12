@@ -82,6 +82,8 @@ const chipVariants = svFor<{
 });
 
 interface ChipProps extends Omit<FocusableProps, 'children' | 'style' | 'label'> {
+  /** The accent fill. It is paint and nothing else: a chip that turns a filter
+   *  on and off says so with `pressed`, which is what assistive tech hears. */
   active?: boolean;
   size?: 'sm' | 'tv';
   variant?: 'solid' | 'subtle' | 'surface';

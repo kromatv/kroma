@@ -320,6 +320,11 @@ describe('the parts', () => {
 
     press(screen.getByRole('combobox'));
     expect(screen.getByText('kroma')).toBeTruthy();
+    // The row draws one thing and is named another, so the listbox announces
+    // the option rather than whatever the caller's markup happened to expose.
+    expect(screen.getByRole('option', { name: 'kroma_server' }).getAttribute('aria-selected')).toBe(
+      'true',
+    );
   });
 
   it('draws the tick on the picked row through <Select.Indicator>', () => {

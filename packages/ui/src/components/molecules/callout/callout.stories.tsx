@@ -13,10 +13,10 @@ export default story({
 </Callout.Root>
 
 <Callout.Root tone="accent" icon="info-circle">
-  <Callout.Title>Le pipeline est en pause</Callout.Title>
-  <Callout.Detail>Aucune etape ne demarrera.</Callout.Detail>
+  <Callout.Title>The pipeline is paused</Callout.Title>
+  <Callout.Detail>No step will start.</Callout.Detail>
   <Callout.Actions>
-    <Button size="sm" label="Reprendre" />
+    <Button size="sm" label="Resume" />
   </Callout.Actions>
 </Callout.Root>`,
   guidelines: {
@@ -46,7 +46,7 @@ export default story({
   },
   render: ({ tone, size, icon }) => (
     <Callout.Root tone={tone} size={size} icon={icon}>
-      <Callout.Title>Le module a refuse de demarrer</Callout.Title>
+      <Callout.Title>The module refused to start</Callout.Title>
       <Callout.Detail>GET /api/module/tv.kroma.remote/remote 502</Callout.Detail>
     </Callout.Root>
   ),
@@ -57,16 +57,16 @@ export default story({
       render: ({ size }) => (
         <>
           <Callout.Root size={size} tone="neutral">
-            <Callout.Title>Aucun indexeur configure.</Callout.Title>
+            <Callout.Title>No indexer configured.</Callout.Title>
           </Callout.Root>
           <Callout.Root size={size} tone="accent" icon="player-pause">
-            <Callout.Title>Pipeline en pause.</Callout.Title>
+            <Callout.Title>Pipeline paused.</Callout.Title>
           </Callout.Root>
           <Callout.Root size={size} tone="success">
-            <Callout.Title>Catalogue joignable, 12 modules.</Callout.Title>
+            <Callout.Title>Catalogue reachable, 12 modules.</Callout.Title>
           </Callout.Root>
           <Callout.Root size={size} tone="danger">
-            <Callout.Title>Echec de l'installation.</Callout.Title>
+            <Callout.Title>The install failed.</Callout.Title>
           </Callout.Root>
         </>
       ),
@@ -76,9 +76,9 @@ export default story({
       docs: 'The action is pinned to the end of the row rather than under the text, so a one-line block stays one line.',
       render: ({ size, tone }) => (
         <Callout.Root size={size} tone={tone} icon="alert-triangle">
-          <Callout.Title>La recherche n'a rien renvoye</Callout.Title>
+          <Callout.Title>The search came back empty</Callout.Title>
           <Callout.Actions>
-            <Button variant="glass" size="sm" icon="refresh" label="Reessayer" />
+            <Button variant="glass" size="sm" icon="refresh" label="Retry" />
           </Callout.Actions>
         </Callout.Root>
       ),
@@ -89,7 +89,7 @@ export default story({
       render: ({ size, tone }) => (
         <Callout.Root size={size} tone={tone}>
           <Callout.Media name="alert-triangle" />
-          <Callout.Title>Le module a refuse de demarrer</Callout.Title>
+          <Callout.Title>The module refused to start</Callout.Title>
           <Callout.Detail>GET /api/module/tv.kroma.remote/remote 502</Callout.Detail>
           <Text variant="meta" font="mono" color="textDim">
             supervisor: port 41310 already bound

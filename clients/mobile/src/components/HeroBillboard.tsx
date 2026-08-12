@@ -30,7 +30,7 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
   const genres = media.metadata?.genres?.slice(0, 3) ?? [];
   const detailRoute = entry.type === 'movie' ? `/item/${id}` : `/show/${id}`;
   // Narrow portrait windows get the tall poster card; wide or landscape ones
-  // get a backdrop (a landscape phone is wide but short — a poster would tower past it).
+  // get a backdrop (a landscape phone is wide but short; a poster would tower past it).
   const wide = useIsWide();
   const backdrop = wide || width > height;
   const poster =

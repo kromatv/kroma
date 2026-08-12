@@ -1,7 +1,7 @@
 // The player's panel: the shell every sheet inside the player is drawn in.
 //
 // Not the app's bottom sheet: the player is a native fullScreenModal, and
-// @gorhom's sheet renders into a host mounted at the app root — behind that,
+// @gorhom's sheet renders into a host mounted at the app root (behind that),
 // so it would be invisible. A plain <Modal> gets its own window instead, and
 // in landscape (where the film is) slides in from the side rather than
 // letterboxing as a bottom sheet.
@@ -93,7 +93,7 @@ const s = styles({
   overlayRow: { flex: true, row: true },
   overlayColumn: { flex: true, justify: 'flex-end', flexDirection: 'column' },
   backdrop: { flex: true, bg: 'black/45' },
-  // Applied to the panel and to the blur inside it — see the file note above.
+  // Applied to the panel and to the blur inside it; see the file note above.
   leftCorners: {
     overflow: 'hidden',
     borderTopLeftRadius: radius.xl,

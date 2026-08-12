@@ -5,7 +5,7 @@
 //
 // Every series in one chart shares one y-axis, so grouping is a caller decision
 // and only legal for series that share a unit (see PlayerMeter.chart). Identity
-// is never colour alone — each series is direct-labelled with its own value
+// is never colour alone: each series is direct-labelled with its own value
 // beside a colour key, so the chart still reads in greyscale.
 
 import { Box } from '#ui/components/atoms/box';
@@ -81,7 +81,7 @@ export function StatsChart({ meters, history, width, slot }: Readonly<StatsChart
   const reference = meters.find((m) => m.reference)?.reference;
 
   // Deliberately unmemoised: three series' worth of path-building measures at
-  // ~44us, which at the panel's 2Hz poll is 0.09ms/s of wall clock — not worth a
+  // ~44us, which at the panel's 2Hz poll is 0.09ms/s of wall clock: not worth a
   // memo, which would add code and a staleness bug risk for no measurable gain.
   const drawn = draw(series, box, reference?.value);
 
@@ -200,7 +200,7 @@ function draw(series: readonly Resolved[], box: ChartBox, reference?: number) {
 }
 
 // Closes an open trace down to the baseline so one path can be filled as an
-// area — cheaper, and exactly aligned with the line it sits under.
+// area: cheaper, and exactly aligned with the line it sits under.
 function closeToBaseline(d: string, box: ChartBox): string {
   const first = /^M([\d.]+) /.exec(d);
   if (!first) return '';

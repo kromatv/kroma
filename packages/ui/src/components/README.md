@@ -11,7 +11,7 @@ level without reading the app.
 | 3. Molecules | [`molecules/`](./molecules) | A few atoms bonded into one arrangement the design names. |
 | 4. Organisms | [`organisms/`](./organisms) | A whole region of a screen, usually owning behaviour. |
 | 5. Templates | [`templates/`](./templates) | A page skeleton: where things go, with no data. |
-| 6. Pages | **not here** | A template filled with real data — see below. |
+| 6. Pages | **not here** | A template filled with real data. See below. |
 
 ## Pages are not in the kit
 
@@ -41,7 +41,7 @@ growing a prop for every arrangement anyone might want.
 </ChoiceList.Root>
 ```
 
-That is the whole of it here. **[`DESIGN.md`](./DESIGN.md) owns the rest** — the
+That is the whole of it here. **[`DESIGN.md`](./DESIGN.md) owns the rest**: the
 part vocabulary and what each name means, the six tests that decide when a `data`
 prop beats children, the controlled/uncontrolled signature, why a face a part
 exists for is never also a prop, the escape-hatch ladder (and why this kit has no
@@ -74,7 +74,7 @@ import { colors } from '#ui/core/tokens';                      // 3. inside the 
 ```
 
 1. **`@kroma/ui/kit`** re-exports all four component levels flat. App code should
-   use this and never learn which level something is at — the levels are for the
+   use this and never learn which level something is at: the levels are for the
    people editing the kit.
 2. **`@kroma/ui/kit/<level>/<name>`** is one component, for a package that wants
    `Button` and nothing else. It is a single wildcard in `package.json`, so no
@@ -84,7 +84,7 @@ import { colors } from '#ui/core/tokens';                      // 3. inside the 
    files never climb `../../..`. It is NOT for consumers. Four resolvers have to
    be told about it separately, because none of them reads the others' config:
    `tsconfig.base.json`, `vitest.config.ts`, `packages/bundler/src/rnw.ts` (every web
-   target) and `clients/expo-build/metro-workspace.js` (Metro).
+   target) and `clients/expo-build/metro-workspace.ts` (Metro).
 
 Doors 1 and 2 cost the same, which is why door 1 can be the default. Measured
 with the repo's own Vite, `import { Button } from '@kroma/ui/kit'` and
@@ -99,6 +99,6 @@ runs at import time, so the field is true; do not "tidy" it away.
 
 ## Moving a component between levels
 
-Move the folder, fix the two barrels, and that is all — the workbench follows on
+Move the folder, fix the two barrels, and that is all: the workbench follows on
 its own, because it reads the level from the file's path rather than from a field
 anything could get wrong. See `tierFor` in `@kroma/workbench`.

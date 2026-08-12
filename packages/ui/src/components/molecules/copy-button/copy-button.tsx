@@ -53,7 +53,9 @@ export function CopyButton({
         size={GLYPH_FACE}
         glyph={GLYPH}
         icon={copied ? 'check' : 'copy'}
-        label={label}
+        // The glyph is the whole confirmation here, so the name has to carry it
+        // too or the press reads as having done nothing.
+        label={copied ? copiedLabel : label}
         onPress={copy}
       />
     );

@@ -7,7 +7,9 @@
 
 import { StyleSheet, type ViewStyle } from 'react-native';
 import { type BoxStyleProps, boxStyle } from '#ui/core/shorthands';
-import { themeVersion } from '#ui/core/theme';
+import { themedCache } from '#ui/core/theme';
+
+const shared = themedCache<ViewStyle>(4096);
 
 /**
  * The same style, by identity, for the same shorthand props.
@@ -19,29 +21,9 @@ import { themeVersion } from '#ui/core/theme';
  * back the same object makes it a hit, and going through `StyleSheet.create`
  * compiles it to atomic classes rather than re-walking the declarations.
  *
- * Capped: `w={someMeasuredNumber}` would otherwise mint an entry forever. Past
- * the cap it stops caching and behaves exactly as before. A theme swap clears
- * it - token values resolve inside `boxStyle` - and the fresh identities are
- * what make styleq recompile.
- *
  * The engine's `sharedStyle` is the same thing for a declaration in the kit's
  * own vocabulary; this one takes <Box>'s prop bag.
  */
-const shared = new Map<string, ViewStyle>();
-
-const SHARED_LIMIT = 4096;
-
-let sharedAt = -1;
-
 export function sharedBoxStyle(key: string, p: Readonly<BoxStyleProps>): ViewStyle {
-  const at = themeVersion();
-  if (sharedAt !== at) {
-    shared.clear();
-    sharedAt = at;
-  }
-  const hit = shared.get(key);
-  if (hit) return hit;
-  const made = StyleSheet.create({ box: boxStyle(p) }).box as ViewStyle;
-  if (shared.size < SHARED_LIMIT) shared.set(key, made);
-  return made;
+  return shared(key, () => StyleSheet.create({ box: boxStyle(p) }).box as ViewStyle);
 }

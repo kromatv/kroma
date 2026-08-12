@@ -36,7 +36,7 @@ export default story({
     ],
   },
   variants: addTileVariants,
-  args: { label: 'Ajouter un profil', icon: 'plus' as 'plus' | 'server' | 'device-tv' },
+  args: { label: 'Add a profile', icon: 'plus' as 'plus' | 'server' | 'device-tv' },
   controls: { icon: ['plus', 'server', 'device-tv'] },
   render: (props) => (
     <OverArt>

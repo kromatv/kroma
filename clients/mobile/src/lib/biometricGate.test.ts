@@ -1,5 +1,5 @@
 // The standalone biometric lock, at boot: a SECURITY decision, not a
-// convenience — this function returning false is the only thing standing
+// convenience: this function returning false is the only thing standing
 // between someone holding the phone and someone else's profile.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';

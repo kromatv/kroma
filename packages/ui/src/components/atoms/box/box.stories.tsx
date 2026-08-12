@@ -5,7 +5,7 @@ import { Box } from './box';
 export default story({
   name: 'Box',
   group: 'Layout',
-  docs: "The layout atom, and the most-used component in the kit. React Native has no `className`, and a screen written as a StyleSheet lookup table reads terribly, so `<Box>` takes the design's vocabulary as props instead. Sizes are plain **numbers** on purpose: every TV screen is authored against the fixed 1920x1080 stage, so a number IS the design's px value. Only what genuinely is a token — colour, radius, elevation — takes a token name.",
+  docs: "The layout atom, and the most-used component in the kit. React Native has no `className`, and a screen written as a StyleSheet lookup table reads terribly, so `<Box>` takes the design's vocabulary as props instead. Sizes are plain **numbers** on purpose: every TV screen is authored against the fixed 1920x1080 stage, so a number IS the design's px value. Only what genuinely is a token (colour, radius, elevation) takes a token name.",
   usage: `<Box row center gap={12} px={64} py={24} bg="surface1" radius="lg" flex>
   <Text>Anything</Text>
 </Box>`,

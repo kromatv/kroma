@@ -12,7 +12,7 @@ import {
 //
 // Paraglide runs with `strategy: ['url']` (see vite.config): the locale is a
 // pure function of the pathname, which is what a prerendered static site
-// needs — one language per URL, decided at build time.
+// needs: one language per URL, decided at build time.
 
 export type Lang = (typeof locales)[number];
 
@@ -57,7 +57,7 @@ export function useLang(): Lang {
   return getLocale();
 }
 
-/** The current pathname without its locale prefix, for the language switcher —
+/** The current pathname without its locale prefix, for the language switcher:
  *  it has to swap the prefix while keeping the reader on the same page. */
 export function useCanonicalPath(): string {
   return useRouterState({ select: (s) => canonicalPath(s.location.pathname) });

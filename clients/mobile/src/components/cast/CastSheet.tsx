@@ -1,5 +1,5 @@
 // The device picker, as the app's chrome shows it: a bottom sheet, sized to
-// its content — a household has a handful of TVs, not a hundred languages.
+// its content: a household has a handful of TVs, not a hundred languages.
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { styles } from '@kroma/ui/kit';

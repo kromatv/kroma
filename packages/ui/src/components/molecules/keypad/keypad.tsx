@@ -8,7 +8,7 @@
 // expects it.
 //
 // Each row is its own <FocusRegion> inside a grid <FocusColumn>, which keeps
-// the column on a vertical press — without it the navigator lands on a row's
+// the column on a vertical press. Without it the navigator lands on a row's
 // own remembered key, so Down from 3 went to 4 and every vertical press read
 // as a diagonal.
 

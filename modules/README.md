@@ -1,7 +1,7 @@
 # Modules
 
-KROMA's core is playback + catalog. Everything else — downloads, indexers,
-acquisition, VPN, transcription, embeddings, discovery, remote access — is a
+KROMA's core is playback + catalog. Everything else (downloads, indexers,
+acquisition, VPN, transcription, embeddings, discovery, remote access) is a
 **module**: a separate program with a reverse-DNS id (`tv.kroma.torrents`) that
 the server installs, spawns and reverse-proxies.
 
@@ -11,15 +11,15 @@ installed from Admin → Modules, either from a registry or by upload.
 
 ## Layout
 
-Every module is one directory here, and it is **its own cargo workspace** — it
+Every module is one directory here, and it is **its own cargo workspace**: it
 builds standalone, with its own `Cargo.lock`, outside the server tree:
 
 ```
 modules/<id>/
   module.json      manifest: id, version, minServer, dependsOn, provides, config
-  server/          the Rust backend — a [[bin]] makes it a spawned sidecar
+  server/          the Rust backend: a [[bin]] makes it a spawned sidecar
   ui/              the React frontend (a KromaModule: pages, nav, settings)
-  locales/         en.json, fr.json — this module's own catalog
+  locales/         en.json, fr.json, this module's own catalog
   icon.svg
   README.md
 ```
@@ -34,7 +34,7 @@ consulted:
 
 ```bash
 cd modules/tv.kroma.remote/server
-cargo build            # or check / test / clippy — a normal, standalone crate
+cargo build            # or check / test / clippy, a normal standalone crate
 ```
 
 To produce the installable bundle, from the repo root:
@@ -51,7 +51,7 @@ is one, and packs `module.json` + the `module` binary + the icon + `fe/` into a
 zstd tarball.
 
 Every module workspace shares one build directory (`target/kmod`), so the
-dependency graph they have in common — axum, tokio, candle, librqbit — compiles
+dependency graph they have in common (axum, tokio, candle, librqbit) compiles
 once rather than once per module. Cargo holds an exclusive lock on it, so module
 builds run in sequence.
 
@@ -63,7 +63,7 @@ KMOD_TARGET=x86_64-unknown-linux-musl bun run modules:pack
 ```
 
 Declare cargo features the bundle needs in the manifest, not on the command
-line — `modules:pack` reads them:
+line, because `modules:pack` reads them:
 
 ```toml
 [package.metadata.kmod]
@@ -90,7 +90,7 @@ bun run modules:gen                    # expands it into modules/tv.kroma.notes/
 The file is YAML frontmatter (the manifest) plus fenced blocks: ` ```tsx ` the
 page (required), ` ```rust ` extra backend items, ` ```sql ` migrations,
 ` ```svg ` the icon, ` ```locale.en `/` ```locale.fr ` the catalogs. The registry
-entry `pub const MODULE` is generated — do not write one.
+entry `pub const MODULE` is generated: do not write one.
 
 **Generated output is committed.** Re-run `modules:gen` after editing the source
 and commit the result; never hand-edit a generated file. `modules:check` fails on
@@ -107,7 +107,7 @@ use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 ```
 
-A sidecar's whole `main()` is one `serve` call — the runtime opens the shared
+A sidecar's whole `main()` is one `serve` call: the runtime opens the shared
 SQLite, builds the out-of-process host, applies migrations, runs `on_enable` and
 serves the module's admin routes on the port the supervisor assigned:
 
@@ -122,7 +122,7 @@ async fn main() -> anyhow::Result<()> {
 }
 ```
 
-Depend on **`kroma-module-sdk`** and, for a sidecar, **`kroma-module-runtime`** —
+Depend on **`kroma-module-sdk`** and, for a sidecar, **`kroma-module-runtime`**,
 never on core crates directly. The SDK re-exports the surface a module is allowed
 to touch, plus pure library modules like `kroma_module_sdk::scene`. In this repo
 they are path deps back into `server/crates/`.
@@ -162,12 +162,12 @@ A module opens the shared SQLite **directly** (WAL, so multi-process is fine) an
 calls back into the core over the token-authed `/api/_host/*` API for settings,
 events and jobs. It owns its own tables.
 
-- **`dependsOn`** — hard dependency: a bare id, `"id@^1.0"`, or `{ id, version }`.
+- **`dependsOn`** is a hard dependency: a bare id, `"id@^1.0"`, or `{ id, version }`.
   Enforced on the backend; the Store installs missing ones automatically.
-- **`optionalDependsOn`** — ordered first when present, not required.
-- **`requires: [{ kind, id? }]`** — a *capability* dependency, satisfied by any
+- **`optionalDependsOn`** is ordered first when present, not required.
+- **`requires: [{ kind, id? }]`** is a *capability* dependency, satisfied by any
   module whose `provides` declares that kind.
-- **`minServer`** — a bare version or a range, enforced at install **and** at
+- **`minServer`** is a bare version or a range, enforced at install **and** at
   spawn, so a stale bundle fails with a clear message instead of proxy errors.
 
 `provides` is a declaration for introspection and capability deps; the concrete
@@ -175,7 +175,7 @@ dispatch is a sub-engine registry (`DownloadClientRegistry` and friends).
 
 ## Publish one
 
-`bun run modules:pack` output is directly installable — upload the `.kmod` in
+`bun run modules:pack` output is directly installable: upload the `.kmod` in
 Admin → Modules.
 
 To serve modules to others, host a catalog: `bun run modules registry` emits a

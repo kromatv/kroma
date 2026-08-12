@@ -29,7 +29,7 @@ assembles the `.spk`. Re-run faster with `SKIP_WEB=1` / `SKIP_RUST=1`.
 ## Install via the package source (recommended, auto-updates)
 
 KROMA runs a **dynamic package source** (SynoCommunity-style: a Cloudflare Worker,
-`apps/packages/worker`) that answers DSM directly and lists EVERY
+`apps/packages`) that answers DSM directly and lists EVERY
 release, both channels, live from the GitHub Releases API - nothing is rebuilt
 or redeployed when a release ships. The `.spk` itself is hosted on the GitHub
 Release (GitHub's CDN).

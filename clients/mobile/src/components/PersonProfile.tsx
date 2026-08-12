@@ -1,6 +1,6 @@
 // Who a person is, above their filmography: portrait, life facts, biography.
 //
-// Data comes from `GET /api/people/details` and is optional — with nothing to
+// Data comes from `GET /api/people/details` and is optional: with nothing to
 // show, the component renders nothing and the grid keeps its header-less look.
 
 import { type PersonDetail, personFacts } from '@kroma/core';

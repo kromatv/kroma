@@ -26,7 +26,7 @@ export default story({
     <Legend.Root>
       <Legend.Item color={SERIES_COLORS[0]}>{label}</Legend.Item>
       <Legend.Item color={SERIES_COLORS[1]}>Series</Legend.Item>
-      <Legend.Item color={SERIES_COLORS[2]}>Musique</Legend.Item>
+      <Legend.Item color={SERIES_COLORS[2]}>Music</Legend.Item>
     </Legend.Root>
   ),
   scenes: [
@@ -35,9 +35,9 @@ export default story({
       docs: "The other reader: the pipeline console, where the paints are the palette's semantic steps rather than the data one.",
       example: () => (
         <Legend.Root>
-          <Legend.Item color="success">Termine</Legend.Item>
-          <Legend.Item color="accent">En cours</Legend.Item>
-          <Legend.Item color="danger">Echoue</Legend.Item>
+          <Legend.Item color="success">Done</Legend.Item>
+          <Legend.Item color="accent">Running</Legend.Item>
+          <Legend.Item color="danger">Failed</Legend.Item>
         </Legend.Root>
       ),
     },

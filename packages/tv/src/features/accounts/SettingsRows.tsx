@@ -90,7 +90,13 @@ function ToggleRow({ item, first }: Readonly<{ item: ToggleItem; first?: boolean
   const t = useT();
   const [on, set] = item.use();
   return (
-    <ListRow.Root icon={item.icon} autoFocus={first} onPress={() => set(!on)}>
+    <ListRow.Root
+      icon={item.icon}
+      autoFocus={first}
+      role="switch"
+      checked={on}
+      onPress={() => set(!on)}
+    >
       <ListRow.Label>{t(item.label)}</ListRow.Label>
       <ListRow.Trailing>
         <Badge

@@ -6,19 +6,15 @@
 // cycled, so it is a value the caller already holds and not one of the palette's
 // semantic steps.
 
-import { createContext, type ReactNode, useContext } from 'react';
+import type { ReactNode } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import type { ColorValue } from '#ui/core';
+import { partContext } from '#ui/lib/part-context';
 
 const DOT = 9;
 
-const LegendContext = createContext(false);
-
-function useLegend(part: string): void {
-  const inside = useContext(LegendContext);
-  if (!inside) throw new Error(`<Legend.${part}> must be used inside <Legend.Root>`);
-}
+const [LegendContext, useLegend] = partContext<true>('Legend.Root');
 
 interface LegendRootProps extends Omit<BoxProps, 'children'> {
   children?: ReactNode;

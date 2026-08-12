@@ -179,7 +179,7 @@ export function useKromaEngine(
       }),
       player.addListener('playingChange', ({ isPlaying }) => setPlaying(isPlaying)),
       // ExoPlayer reports ENDED for the empty initial source and again on
-      // every source swap — a bare event is not proof playback reached the
+      // every source swap: a bare event is not proof playback reached the
       // end. Only trust it once this source has produced playback time and
       // the clock sits near the actual end.
       player.addListener('playToEnd', () => {

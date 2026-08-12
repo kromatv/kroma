@@ -6,7 +6,7 @@ import { StatusDot } from './status-dot';
 export default story({
   name: 'StatusDot',
   group: 'Feedback',
-  docs: 'Reachability, as one lit dot. Three states, not two: green up, red down, and grey while the first probe is still out — *unknown* has to look different from *down* on a list of servers you are picking from. `overArt` adds the dark ring the dot needs when it sits on a hero still rather than on a surface.',
+  docs: 'Reachability, as one lit dot. Three states, not two: green up, red down, and grey while the first probe is still out; *unknown* has to look different from *down* on a list of servers you are picking from. `overArt` adds the dark ring the dot needs when it sits on a hero still rather than on a surface.',
   usage: `<StatusDot online={probe?.online} />
 <StatusDot online overArt />   // on the top bar, over artwork`,
   guidelines: {

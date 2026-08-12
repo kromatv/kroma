@@ -1,19 +1,18 @@
-import { createContext, type ReactNode, useContext } from 'react';
+import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
+import { partContext } from '#ui/lib/part-context';
 
 type EmptyStateSize = 'sm' | 'md' | 'tv';
 
 type EmptyStateLayout = 'inline' | 'fill';
 
-const Context = createContext<EmptyStateSize | null>(null);
+const [Context, useSize] = partContext<EmptyStateSize>('EmptyState.Root');
 
 function useShape(part: string): Shape {
-  const size = useContext(Context);
-  if (!size) throw new Error(`<EmptyState.${part}> must be used inside <EmptyState.Root>`);
-  return SHAPE[size];
+  return SHAPE[useSize(part)];
 }
 
 type EmptyStateMedia = 'icon' | 'plain';

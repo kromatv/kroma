@@ -1,7 +1,7 @@
 // What happens when someone taps a push.
 //
 // A body tap opens the app at the linked screen; an action-button tap may not
-// (`opensAppToForeground: false`) — approving a request from the lock screen
+// (`opensAppToForeground: false`). Approving a request from the lock screen
 // must not launch the app. APNs only shows pre-registered button labels, so
 // what each button does rides in the payload instead.
 
@@ -52,7 +52,7 @@ function jsonOrNull(raw: string): unknown {
 
 /**
  * Act on a tap. Returns the route to navigate to, or `null` when the tap needs
- * no navigation — an action that ran in the background, or a link with no phone
+ * no navigation: an action that ran in the background, or a link with no phone
  * screen.
  */
 export async function handleTap(

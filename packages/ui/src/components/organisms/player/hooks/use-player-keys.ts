@@ -42,14 +42,14 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void =
 
 /**
  * Route the TV remote into the player; the native mirror of `usePlayerKeys.web.ts`
- * (same routing, different source — Metro picks this file, Vite the `.web` one).
+ * (same routing, different source: Metro picks this file, Vite the `.web` one).
  * No `preventDefault`: a claimed TV event has no default to suppress.
  */
 export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   const latest = useRef(params);
   latest.current = params;
 
-  // Claim Menu while mounted — unclaimed, tvOS treats it as "leave the app"
+  // Claim Menu while mounted: unclaimed, tvOS treats it as "leave the app"
   // instead of closing the player. A shared counter, since the screen
   // underneath also claims it.
   useEffect(() => {

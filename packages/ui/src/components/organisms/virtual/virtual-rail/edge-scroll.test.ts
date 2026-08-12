@@ -92,7 +92,7 @@ describe('whole pixels', () => {
 
 describe('the pitch grid', () => {
   // The row's offset is counted in pitches, and `edgeScrollOffset` returns an
-  // offset unchanged while it sits inside the margin window — so an offset
+  // offset unchanged while it sits inside the margin window, so an offset
   // that has fallen off the pitch grid is never corrected by it; only the
   // rail's own snapping can put it back.
 

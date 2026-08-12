@@ -5,9 +5,9 @@
 // gets from a CSS transition. See transition.web.ts for the web half.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, type LayoutChangeEvent } from 'react-native';
+import { Animated } from 'react-native';
 import { motion } from '#ui/core/tokens';
-import { longestSideOf, pressScaleFor } from '#ui/lib/press-dip';
+import { type PressScale, pressScaleFor, useLongestSide } from '#ui/lib/press-dip';
 import { ease } from './ease';
 
 const EASE = ease.out.native;
@@ -36,14 +36,6 @@ export function useFocusScale(focused: boolean, to: number): Record<string, unkn
   return to === 1 ? RING_ONLY : { transform: [{ scale: value }] };
 }
 
-interface PressScale {
-  pressed: boolean;
-  style: Record<string, unknown>;
-  onLayout: (event: LayoutChangeEvent) => void;
-  onPressIn: () => void;
-  onPressOut: () => void;
-}
-
 /**
  * The design's press dip (`motion.pressScale`): the control shrinks under the
  * finger, then springs back with a touch of overshoot on release. The touch
@@ -54,10 +46,7 @@ interface PressScale {
 export function usePressScale(): PressScale {
   const [pressed, setPressed] = useState(false);
   const value = useRef(new Animated.Value(1)).current;
-  const longest = useRef(0);
-  const onLayout = useCallback((event: LayoutChangeEvent) => {
-    longest.current = longestSideOf(event);
-  }, []);
+  const { longest, onLayout } = useLongestSide();
 
   const onPressIn = useCallback(() => {
     setPressed(true);
@@ -68,7 +57,7 @@ export function usePressScale(): PressScale {
       easing: EASE,
       useNativeDriver: true,
     }).start();
-  }, [value]);
+  }, [value, longest]);
 
   const onPressOut = useCallback(() => {
     setPressed(false);

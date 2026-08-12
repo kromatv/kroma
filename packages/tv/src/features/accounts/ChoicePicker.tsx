@@ -56,6 +56,8 @@ export function ChoicePicker({
           <ListRow.Root
             style={{ height: ROW_HEIGHT, width: ROW_WIDTH }}
             chevron={false}
+            role="option"
+            selected={option === value}
             onPress={() => {
               onPick(option);
               onClose();

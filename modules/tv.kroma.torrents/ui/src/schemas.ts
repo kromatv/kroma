@@ -1,5 +1,5 @@
 // This module's wire types: the download queue and the clients behind it.
-// `@kroma/core` models neither — a module owns the shape of its own API. The
+// `@kroma/core` models neither: a module owns the shape of its own API. The
 // queue carries the VPN module's status when that module is installed, which is
 // why this imports it by package name (see `optionalDependsOn`).
 

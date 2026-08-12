@@ -154,7 +154,7 @@ describe('color() alpha syntax', () => {
   });
 
   it('applies it to palette tokens too', () => {
-    // bg is #0A0A0C — the scrim wash the player already used, spelled once.
+    // bg is #0A0A0C: the scrim wash the player already used, spelled once.
     expect(color('bg/55')).toBe('var(--kroma-bg-55)');
     expect(color('accent/45')).toBe('var(--kroma-accent-45)');
   });

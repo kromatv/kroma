@@ -24,7 +24,7 @@ export interface SkipIntroButtonProps {
   /**
    * How high the pill sits above the bottom edge, in real pixels (already
    * scaled). Passed in because what it must clear isn't constant: the transport
-   * resizes with the stage, and the up-next peek lifts it 150px further — a
+   * resizes with the stage, and the up-next peek lifts it 150px further. A
    * fixed value drew the pill through the seek bar in the other case.
    */
   lift: number;

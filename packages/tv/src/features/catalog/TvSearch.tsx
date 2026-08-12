@@ -31,7 +31,7 @@ const DEBOUNCE_MS = 250;
 
 /** Search with a live results grid, typed either on our D-pad on-screen
  * keyboard or on the platform's own where that is the better one (Apple TV,
- * whose keyboard is also the only thing that can hear dictation — see
+ * whose keyboard is also the only thing that can hear dictation; see
  * `app/searchShell`). Falls back to the in-memory catalogue when the
  * server's `/api/search` request fails. */
 export function TvSearch() {

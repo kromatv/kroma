@@ -13,7 +13,7 @@ const CAST = [
 export default story({
   name: 'PersonCard',
   group: 'Media',
-  docs: 'A person, as a circle: the cast rail tile at both distances. The focus ring is drawn on the **photo**, never as a box around the tile and its caption — a rectangle around a circle reads as a form field, a lit circle reads as a face being pointed at. On glass there is no focus, so the card dims under the thumb instead.',
+  docs: 'A person, as a circle: the cast rail tile at both distances. The focus ring is drawn on the **photo**, never as a box around the tile and its caption: a rectangle around a circle reads as a form field, a lit circle reads as a face being pointed at. On glass there is no focus, so the card dims under the thumb instead.',
   usage: `<PersonCard name={member.name} role={member.character} photo={art} onPress={open} />
 <PersonCard size="sm" name={member.name} role={member.character} />`,
   guidelines: {

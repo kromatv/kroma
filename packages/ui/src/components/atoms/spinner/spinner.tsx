@@ -4,6 +4,7 @@
 
 import { Animated } from 'react-native';
 import { color as ink, radiusValue, useTheme } from '#ui/core';
+import { a11yState } from '#ui/lib/a11y';
 import { useLoop } from '#ui/lib/loop';
 
 interface SpinnerProps {
@@ -12,6 +13,9 @@ interface SpinnerProps {
   /** A token name (`accent`, `textMuted`, `tint/40`) or a colour. Defaults to
    *  the accent. */
   color?: string;
+  /** What is being waited for. Leave it out inside a control that already says
+   *  it is busy (a <Button loading>), where a second name is noise. */
+  label?: string;
 }
 
 const SPIN_MS = 900;
@@ -20,6 +24,7 @@ function Spinner({
   size = 28,
   thickness = Math.max(2, Math.round(size / 10)),
   color,
+  label,
 }: Readonly<SpinnerProps>) {
   const theme = useTheme();
   const spin = useLoop('spin', SPIN_MS);
@@ -27,6 +32,8 @@ function Spinner({
   return (
     <Animated.View
       accessibilityRole="progressbar"
+      accessibilityLabel={label}
+      {...a11yState({ busy: true })}
       style={[
         {
           width: size,

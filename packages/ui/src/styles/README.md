@@ -1,7 +1,7 @@
 # Styles
 
 The CSS half of the design system, for the targets that read CSS. The TV and
-native apps never load any of it — they consume the TypeScript tokens directly.
+native apps never load any of it: they consume the TypeScript tokens directly.
 
 **There is no CSS to maintain here.** `kroma.css` is a placeholder; everything
 real is emitted by `kromaUI()` (`@kroma/ui/vite`) from the TypeScript tokens, so

@@ -9,12 +9,12 @@ export default story({
   group: 'Layout',
   docs: "One fact, read: an overline naming it and the value under it. Not a `Field` - nothing here is editable, so there is no shell, no focus ring and no error state. The label is always the ramp's overline role, which is what stops six screens drifting to six label sizes.",
   usage: `<DataField.Root>
-  <DataField.Label>Duree</DataField.Label>
-  <DataField.Value>2 h 04</DataField.Value>
+  <DataField.Label>Runtime</DataField.Label>
+  <DataField.Value>2h 04m</DataField.Value>
 </DataField.Root>
 
 <DataField.Root>
-  <DataField.Label>Reseau</DataField.Label>
+  <DataField.Label>Network</DataField.Label>
   <DataField.Value lines={1}>{session.network}</DataField.Value>
 </DataField.Root>`,
   guidelines: {
@@ -33,8 +33,8 @@ export default story({
   controls: { size: ['sm', 'md', 'tv'] },
   render: ({ size }) => (
     <DataField.Root size={size}>
-      <DataField.Label>Duree</DataField.Label>
-      <DataField.Value>2 h 04</DataField.Value>
+      <DataField.Label>Runtime</DataField.Label>
+      <DataField.Value>2h 04m</DataField.Value>
     </DataField.Root>
   ),
   scenes: [
@@ -44,20 +44,20 @@ export default story({
       render: ({ size }) => (
         <Box row wrap gap={40}>
           <DataField.Root size={size}>
-            <DataField.Label>Duree</DataField.Label>
-            <DataField.Value>2 h 04</DataField.Value>
+            <DataField.Label>Runtime</DataField.Label>
+            <DataField.Value>2h 04m</DataField.Value>
           </DataField.Root>
           <DataField.Root size={size}>
-            <DataField.Label>Sortie</DataField.Label>
+            <DataField.Label>Released</DataField.Label>
             <DataField.Value>2017</DataField.Value>
           </DataField.Root>
           <DataField.Root size={size}>
             <DataField.Label>Audio</DataField.Label>
-            <DataField.Value>Francais, Anglais</DataField.Value>
+            <DataField.Value>English, French</DataField.Value>
           </DataField.Root>
           <DataField.Root size={size}>
-            <DataField.Label>Sous-titres</DataField.Label>
-            <DataField.Value>Aucun</DataField.Value>
+            <DataField.Label>Subtitles</DataField.Label>
+            <DataField.Value>None</DataField.Value>
           </DataField.Root>
         </Box>
       ),
@@ -67,7 +67,7 @@ export default story({
       docs: 'What a plain string cannot say: a clamp, a hue, a chip beside the number.',
       render: ({ size }) => (
         <DataField.Root size={size}>
-          <DataField.Label>Reseau</DataField.Label>
+          <DataField.Label>Network</DataField.Label>
           <DataField.Value lines={1}>
             <Text color="success">Wi-Fi</Text> 192.168.1.42
           </DataField.Value>

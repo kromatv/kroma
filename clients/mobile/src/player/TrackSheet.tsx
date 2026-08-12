@@ -1,6 +1,6 @@
 // Player settings, phone-sized: mirrors the TV SettingsPanel's structure and
 // visual language (icon rows, sub-views, same glyphs and shapes), but stays
-// touch-driven — a modal or bottom sheet, no focus engine.
+// touch-driven: a modal or bottom sheet, no focus engine.
 
 import {
   audioTrackLabel,

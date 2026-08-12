@@ -78,6 +78,7 @@ export function PersonHeader({
                 <Chip
                   variant="surface"
                   focusScale={1.05}
+                  expanded={expanded}
                   label={expanded ? t('person.readLess') : t('person.readMore')}
                   onPress={() => setExpanded((v) => !v)}
                 />

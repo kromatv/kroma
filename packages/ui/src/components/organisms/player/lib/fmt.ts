@@ -26,7 +26,7 @@ export function pct(value: number, total: number): number {
 
 // Human loudness is roughly logarithmic, so a linear fader barely resolves the
 // quiet end; slider position maps to volume through a power curve (gamma)
-// instead. Gamma 3 is the default — the midpoint sits at ~0.125 amplitude.
+// instead. Gamma 3 is the default: the midpoint sits at ~0.125 amplitude.
 export const VOLUME_GAMMA = 3;
 
 /** Slider position [0,1] → audio volume [0,1] (perceptual). */

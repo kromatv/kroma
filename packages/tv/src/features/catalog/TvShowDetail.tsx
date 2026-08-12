@@ -217,7 +217,7 @@ export function TvShowDetail() {
       {/* Three <FocusSlot>s, always rendered even while empty. The navigator
           orders siblings by registration order, and these three don't arrive
           together (cast comes from the route immediately, seasons/episodes
-          wait on `client.show()`) — without the slots, Down from the actions
+          wait on `client.show()`). Without the slots, Down from the actions
           could land on the cast and then jump back up once seasons appeared
           above it. A slot claims its position at first render regardless. */}
       <FocusSlot>
@@ -233,6 +233,7 @@ export function TvShowDetail() {
                   variant="surface"
                   focusScale={1.05}
                   active={entry.number === activeSeason?.number}
+                  pressed={entry.number === activeSeason?.number}
                   label={t('content.season', { number: entry.number })}
                   onPress={() => setSeason(entry.number)}
                   style={s.seasonChip}

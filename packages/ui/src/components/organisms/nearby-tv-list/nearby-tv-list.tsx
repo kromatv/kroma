@@ -54,6 +54,7 @@ export function NearbyTvList({
             // A finished row is not a row to press again: the beacon behind it
             // is spent, and the row is only still here to be read.
             onPress={outcome ? undefined : () => onSelect(device)}
+            busy={busy || undefined}
           >
             <ListRow.Label>{device.name}</ListRow.Label>
             {hint ? <ListRow.Hint>{hint}</ListRow.Hint> : null}

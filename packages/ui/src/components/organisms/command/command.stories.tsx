@@ -9,15 +9,15 @@ import { useCommandResults } from './command-context';
 import type { CommandItem } from './command-list';
 
 const LIBRARY: CommandItem[] = [
-  { id: 'films', label: 'Films', group: 'Bibliotheques', icon: 'movie', meta: '412 titres' },
-  { id: 'series', label: 'Series', group: 'Bibliotheques', icon: 'device-tv', meta: '78 titres' },
-  { id: 'musique', label: 'Musique', group: 'Bibliotheques', icon: 'music', meta: '2 104 titres' },
-  { id: 'reprendre', label: 'Reprendre la lecture', group: 'Actions', icon: 'player-play' },
-  { id: 'scanner', label: 'Scanner les dossiers', group: 'Actions', icon: 'refresh' },
-  { id: 'telechargements', label: 'Telechargements', group: 'Actions', icon: 'download' },
-  { id: 'comptes', label: 'Comptes', group: 'Reglages', icon: 'users', keywords: 'profils' },
-  { id: 'lecture', label: 'Lecture', group: 'Reglages', icon: 'settings', keywords: 'debit' },
-  { id: 'modules', label: 'Modules', group: 'Reglages', icon: 'puzzle', keywords: 'extensions' },
+  { id: 'films', label: 'Films', group: 'Libraries', icon: 'movie', meta: '412 titles' },
+  { id: 'series', label: 'Series', group: 'Libraries', icon: 'device-tv', meta: '78 titles' },
+  { id: 'music', label: 'Music', group: 'Libraries', icon: 'music', meta: '2,104 titles' },
+  { id: 'resume', label: 'Resume playback', group: 'Actions', icon: 'player-play' },
+  { id: 'scan', label: 'Scan the folders', group: 'Actions', icon: 'refresh' },
+  { id: 'downloads', label: 'Downloads', group: 'Actions', icon: 'download' },
+  { id: 'accounts', label: 'Accounts', group: 'Settings', icon: 'users', keywords: 'profiles' },
+  { id: 'playback', label: 'Playback', group: 'Settings', icon: 'settings', keywords: 'bitrate' },
+  { id: 'modules', label: 'Modules', group: 'Settings', icon: 'puzzle', keywords: 'extensions' },
 ];
 
 function Tally() {
@@ -25,7 +25,7 @@ function Tally() {
   return (
     <Box row flex justify="flex-end">
       <Text variant="meta" color="textDim">
-        {`${shown} sur ${total}`}
+        {`${shown} of ${total}`}
       </Text>
     </Box>
   );
@@ -41,7 +41,7 @@ function Palette() {
           size="sm"
           variant="outline"
           icon="search"
-          label="Rechercher"
+          label="Search"
           onPress={() => setOpen(true)}
         />
         <Kbd>⌘ K</Kbd>
@@ -57,18 +57,18 @@ function Palette() {
           onSelect={(item) => setPicked(item.id)}
           onClose={() => setOpen(false)}
         >
-          <Command.Input label="Rechercher dans la bibliotheque" placeholder="Rechercher…" />
+          <Command.Input label="Search the library" placeholder="Search…" />
           <Command.List />
-          <Command.Empty>Aucun resultat.</Command.Empty>
+          <Command.Empty>No results.</Command.Empty>
           <Command.Footer>
             <Kbd>↑</Kbd>
             <Kbd>↓</Kbd>
             <Text variant="meta" color="textDim">
-              parcourir
+              browse
             </Text>
             <Kbd>↵</Kbd>
             <Text variant="meta" color="textDim">
-              ouvrir
+              open
             </Text>
             <Tally />
           </Command.Footer>
@@ -81,14 +81,14 @@ function Palette() {
 export default story({
   name: 'Command',
   group: 'Overlays',
-  docs: 'The search-and-jump overlay: one field, a ranked and grouped list, and Enter to open. Render it while it is open and unmount it to close.\n\n**Ranked, not filtered.** A query is matched as a subsequence and scored (`lib/fuzzy-search`, the same matcher the icon browser uses), so `iconb` finds **IconButton** and the best rows rise to the top. A hit on what a row *says* always outranks a hit on what it is *filed under*.\n\n**The rows are data**, which is DESIGN.md §3 tests T2 and T5: the cursor is arithmetic over one flat order, and no arrangement of nested children keeps that true when there is no DOM to ask. Everything else is a part — the field, the list, the empty face and the footer — so a caller decides what the sheet holds.\n\nOn the web the arrows drive a cursor the pointer shares; on a television there is no keyboard, so the spatial navigator walks the rows and the palette draws no cursor of its own.',
+  docs: 'The search-and-jump overlay: one field, a ranked and grouped list, and Enter to open. Render it while it is open and unmount it to close.\n\n**Ranked, not filtered.** A query is matched as a subsequence and scored (`lib/fuzzy-search`, the same matcher the icon browser uses), so `iconb` finds **IconButton** and the best rows rise to the top. A hit on what a row *says* always outranks a hit on what it is *filed under*.\n\n**The rows are data**, which is DESIGN.md §3 tests T2 and T5: the cursor is arithmetic over one flat order, and no arrangement of nested children keeps that true when there is no DOM to ask. Everything else is a part (the field, the list, the empty face and the footer), so a caller decides what the sheet holds.\n\nOn the web the arrows drive a cursor the pointer shares; on a television there is no keyboard, so the spatial navigator walks the rows and the palette draws no cursor of its own.',
   usage: `<Command.Root items={rows} selected={open} onSelect={go} onClose={shut}>
-  <Command.Input label="Rechercher" placeholder="Rechercher…" />
+  <Command.Input label="Search" placeholder="Search…" />
   <Command.List />
-  <Command.Empty>Aucun resultat.</Command.Empty>
+  <Command.Empty>No results.</Command.Empty>
   <Command.Footer>
     <Kbd>↵</Kbd>
-    <Text variant="meta" color="textDim">ouvrir</Text>
+    <Text variant="meta" color="textDim">open</Text>
   </Command.Footer>
 </Command.Root>`,
   guidelines: {

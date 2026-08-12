@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // Captures one screenshot per story, for visual review, against the built
-// browser shell. Drives system Chrome directly — no Playwright, no test
-// runner — and captures only; it does not compare.
+// browser shell. Drives system Chrome directly: no Playwright, no test
+// runner, and captures only; it does not compare.
 
 import { spawn } from 'node:child_process';
 import {

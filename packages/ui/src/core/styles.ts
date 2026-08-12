@@ -1,13 +1,13 @@
 // Reusable styles that are not a variant of anything.
 //
-// `sv` covers a component's design — what changes with a prop or a state.
+// `sv` covers a component's design: what changes with a prop or a state.
 // This covers the rest: the shapes a file reuses, which had no home but a
 // module constant.
 
 import { breakpointStep } from '#ui/core/breakpoint';
 import { normalize, stabilise } from '#ui/core/normalize';
 import { declaredBreakpoints } from '#ui/core/shorthands';
-import { themeVersion } from '#ui/core/theme';
+import { themedCache, themeVersion } from '#ui/core/theme';
 import type { AnyStyle, StyleDecl } from '#ui/core/types';
 
 export type Styles<S> = { readonly [K in keyof S]: AnyStyle };
@@ -18,8 +18,8 @@ export type Styles<S> = { readonly [K in keyof S]: AnyStyle };
  * none.
  *
  * Shaped like `StyleSheet.create` so it reads the way React Native already
- * does, but speaking the kit's vocabulary — shorthands, colour tokens and the
- * `/NN` alpha suffix — and returning one lowercase binding instead of a spread
+ * does, but speaking the kit's vocabulary (shorthands, colour tokens and the
+ * `/NN` alpha suffix) and returning one lowercase binding instead of a spread
  * of shouting constants:
  *
  *   const s = styles({
@@ -77,17 +77,13 @@ export function styles<const S extends Record<string, StyleDecl>>(decls: S): Sty
 }
 
 /** One style, for the handful of places a set of one would be noise. Resolved
- *  against the theme active at the first read — a caller that must follow a
+ *  against the theme active at the first read. A caller that must follow a
  *  swap uses `styles()` and reads at render time. */
 export function style<const T extends StyleDecl>(decl: T): AnyStyle {
   return styles({ only: decl }).only;
 }
 
-const shared = new Map<string, AnyStyle>();
-
-const SHARED_LIMIT = 4096;
-
-let sharedAt = -1;
+const shared = themedCache<AnyStyle>(4096);
 
 /**
  * A style shared by identity with every caller passing the same `key`, for the
@@ -97,23 +93,10 @@ let sharedAt = -1;
  * its compiled-style cache on the leaf object, so resolving one per render is a
  * guaranteed miss even once the declaration compiles to a class.
  *
- * Capped, because a key built from a measured number would otherwise mint an
- * entry forever; past the cap it resolves correctly and stops remembering. A
- * theme swap clears it, which is also what retires the old theme's values.
- *
  * The key identifies the DECLARATION, so one stating a value per breakpoint
  * carries the step it was resolved at (see <Text>); the breakpoint is not part
  * of the key by itself, which is what keeps a flat declaration at one entry.
  */
 export function sharedStyle(key: string, decl: StyleDecl): AnyStyle {
-  const at = themeVersion();
-  if (sharedAt !== at) {
-    shared.clear();
-    sharedAt = at;
-  }
-  const hit = shared.get(key);
-  if (hit) return hit;
-  const made = stabilise(normalize(decl as Record<string, unknown>)) as AnyStyle;
-  if (shared.size < SHARED_LIMIT) shared.set(key, made);
-  return made;
+  return shared(key, () => stabilise(normalize(decl as Record<string, unknown>)) as AnyStyle);
 }

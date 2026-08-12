@@ -26,7 +26,7 @@ export function SheetBackdrop(props: Readonly<BottomSheetBackdropProps>) {
 
 /**
  * The style must stay flattened: `<BottomSheetView>` passes an array to
- * `StyleSheet.compose`, which takes two arguments and silently drops a third —
+ * `StyleSheet.compose`, which takes two arguments and silently drops a third:
  * the caller's `style` override.
  */
 export function SheetBody({

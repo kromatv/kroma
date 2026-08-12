@@ -6,7 +6,7 @@ import { DEFAULT_SUB_APPEARANCE, type SubEdge, type SubSize } from '../../lib/su
 import type { PlayerSub } from '../../types';
 import { SubtitleRenderer } from './subtitle-renderer';
 
-// The renderer fetches the track's url itself, and a `data:` url is a url — so the
+// The renderer fetches the track's url itself, and a `data:` url is a url, so the
 // workbench gets actual cues instead of an empty caption area.
 const CUES = `WEBVTT
 
@@ -30,7 +30,7 @@ const TRACK: PlayerSub[] = [
 export default story({
   name: 'SubtitleRenderer',
   group: 'Player',
-  docs: "One position-driven subtitle renderer for the browser AND the television. It fetches the active track's WebVTT itself and caches the parsed cues per url, because a cross-origin `<track>` element silently never loads its cues when the app and the media server are on different origins — which is the normal case for a self-hosted server. Position is interpolated locally between the player's updates, so the caption changes on the frame it should rather than up to 250ms late.",
+  docs: "One position-driven subtitle renderer for the browser AND the television. It fetches the active track's WebVTT itself and caches the parsed cues per url, because a cross-origin `<track>` element silently never loads its cues when the app and the media server are on different origins, which is the normal case for a self-hosted server. Position is interpolated locally between the player's updates, so the caption changes on the frame it should rather than up to 250ms late.",
   usage: `<SubtitleRenderer
   positionSec={controller.cur}
   playing={controller.playing}
@@ -106,7 +106,7 @@ export default story({
     },
     {
       name: 'Outline',
-      docs: 'The middle ground — an edge on the glyphs themselves, no box.',
+      docs: 'The middle ground: an edge on the glyphs themselves, no box.',
       args: { edge: 'outline', size: 'lg', positionSec: 45 },
     },
     {

@@ -14,7 +14,7 @@ const ROW_HEIGHT = Math.round((TILE_W * 3) / 2) + 32;
 export default story({
   name: 'VirtualGrid',
   group: 'Media',
-  docs: "The browse screens' poster grid: a library of thousands, of which only the rows near the viewport are mounted. Focus reaches the end anyway, because the navigator registers a *virtual* node per row that outlives the tile rendered into it. On the web the wheel scrolls it too — and that moves the selection, unlike a `VirtualRail`'s wheel, because the navigator's `scrollTo` is implemented as a focus grab.",
+  docs: "The browse screens' poster grid: a library of thousands, of which only the rows near the viewport are mounted. Focus reaches the end anyway, because the navigator registers a *virtual* node per row that outlives the tile rendered into it. On the web the wheel scrolls it too, and that moves the selection, unlike a `VirtualRail`'s wheel, because the navigator's `scrollTo` is implemented as a focus grab.",
   usage: `<VirtualGrid
   data={cards}
   columns={8}
@@ -27,7 +27,7 @@ export default story({
   guidelines: {
     do: [
       'Give the grid a bounded height (`flex: 1`): it is the viewport, and it is what clips.',
-      'Put the padding in `contentStyle` — on the viewport it insets the clip and shaves the rows.',
+      'Put the padding in `contentStyle`: on the viewport it insets the clip and shaves the rows.',
       '`itemHeight` is the row PITCH: the tile plus the gap beneath it.',
     ],
     dont: [

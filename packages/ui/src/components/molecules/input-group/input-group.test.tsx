@@ -93,6 +93,20 @@ describe('<InputGroup>', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('pulls the control at the addon edge back into the shell', () => {
+    render(
+      <InputGroup.Root label="Registry">
+        <InputGroup.Input placeholder="https://" physicalKeyboard />
+        <InputGroup.Addon align="inline-end">
+          <InputGroup.Button label="Test" onPress={() => {}} />
+        </InputGroup.Addon>
+      </InputGroup.Root>,
+    );
+    // By the shell's own padding minus the inset, so a ghost button's fill
+    // stops exactly where the well does.
+    expect(screen.getByLabelText('Test').style.marginRight).toBe('-6px');
+  });
+
   it('refuses a part used outside the Root, rather than rendering something wrong', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() =>

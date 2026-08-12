@@ -314,7 +314,7 @@ describe('sv shorthand conflicts across layers', () => {
 describe('sv state masking', () => {
   it('collapses to one entry per variant combination when no state is declared', () => {
     const plain = sv({ base: { bg: 'accent' } });
-    // Nothing declares `_hover`, so hovering cannot produce a different style —
+    // Nothing declares `_hover`, so hovering cannot produce a different style,
     // and must not produce a different cache entry either.
     expect(plain({}, { hover: true })).toBe(plain({}, {}));
     expect(plain({}, { hover: true, focus: true, press: true, disabled: true })).toBe(plain());

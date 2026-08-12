@@ -12,40 +12,16 @@
 //   styles.ts      `styles`, for the shapes that are not a variant of anything
 
 export type { Breakpoints, Responsive } from './breakpoint';
-export {
-  breakpointIndex,
-  breakpointStep,
-  currentBreakpoint,
-  pinDesignWidth,
-  subscribeBreakpoint,
-} from './breakpoint';
-export type { ColorBase, ColorValue } from './color';
-export { COLOR_KEYS, color, withAlpha } from './color';
-export { normalize, split, stabilise } from './normalize';
+export { currentBreakpoint, pinDesignWidth } from './breakpoint';
+export type { ColorValue } from './color';
+export { color, withAlpha } from './color';
+export { normalize, stabilise } from './normalize';
 export { sv, svFor } from './recipe';
-export type {
-  Align,
-  BoxStyleProps,
-  Flag,
-  Justify,
-  Size,
-  Spacing,
-  TextLayoutProps,
-  TextStyleProps,
-} from './shorthands';
-export {
-  BOX_STYLE_PROPS,
-  boxStyle,
-  declaredBreakpoints,
-  splitShorthand,
-  TEXT_STYLE_PROPS,
-  textStyle,
-} from './shorthands';
-export type { StateKey, SvState, SvStateName } from './states';
-export { maskOf, STATE_BIT, STATE_KEYS, SV_STATES, stateSuffix } from './states';
-export type { Styles } from './styles';
+export type { BoxStyleProps, TextLayoutProps } from './shorthands';
+export { boxStyle, declaredBreakpoints, splitShorthand, TEXT_STYLE_PROPS } from './shorthands';
+export type { SvState, SvStateName } from './states';
 export { sharedStyle, style, styles } from './styles';
-export type { RingToken, Theme, ThemeOverrides, ThemeTokens } from './theme';
+export type { Theme, ThemeOverrides, ThemeTokens } from './theme';
 export {
   activeTheme,
   createTheme,
@@ -57,37 +33,17 @@ export {
   radiusValue,
   setTheme,
   themed,
+  themedCache,
   themeVersion,
 } from './theme';
 export type { ThemeMode } from './theme-mode';
-export {
-  applyMode,
-  isThemeMode,
-  readMode,
-  resolveMode,
-  THEME_COOKIE,
-  writeMode,
-} from './theme-mode';
+export { applyMode, readMode, resolveMode, writeMode } from './theme-mode';
 export * from './tokens';
 export type {
-  AnyStyle,
   AnySv,
-  CompoundVariant,
-  Decl,
-  FlatLayer,
-  FlatVariantGroups,
-  HasRoot,
-  Layer,
   Resolved,
-  SlotShapes,
   StyleDecl,
-  StyleSlots,
-  SvConfig,
-  SvFlatConfig,
-  SvFn,
   Variant,
-  VariantGroups,
-  VariantPicks,
   VariantProps,
   VariantSource,
 } from './types';

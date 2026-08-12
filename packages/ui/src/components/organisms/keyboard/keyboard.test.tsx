@@ -8,10 +8,10 @@ import { UrlKeyboard } from './url-keyboard';
 
 afterEach(cleanup);
 
-// space / delete / close, in that order: the tail keys draw a glyph and carry
-// no label, so there is no name to find them by.
-function tailKeys(container: HTMLElement): Element[] {
-  return Array.from(container.querySelectorAll('[tabindex]')).slice(-3);
+// space / delete / close, in that order. A glyph key draws no words, so its
+// label is its accessible name alone - which is how a test finds it.
+function tailKeys(): Element[] {
+  return ['Espace', 'Supprimer', 'Fermer'].map((name) => screen.getByLabelText(name));
 }
 
 describe('SearchKeyboard', () => {
@@ -49,8 +49,8 @@ describe('SearchKeyboard', () => {
 
   it('types a space and deletes the last character from the tail row', () => {
     const onValueChange = vi.fn();
-    const { container } = render(<SearchKeyboard value="ali" onValueChange={onValueChange} />);
-    const [space, del] = tailKeys(container);
+    render(<SearchKeyboard value="ali" onValueChange={onValueChange} />);
+    const [space, del] = tailKeys();
     fireEvent.click(space as Element);
     expect(onValueChange).toHaveBeenCalledWith('ali ');
     fireEvent.click(del as Element);
@@ -59,10 +59,8 @@ describe('SearchKeyboard', () => {
 
   it('closes from the key at the end of the tail row', () => {
     const onClose = vi.fn();
-    const { container } = render(
-      <SearchKeyboard value="ali" onValueChange={vi.fn()} onClose={onClose} />,
-    );
-    fireEvent.click(tailKeys(container)[2] as Element);
+    render(<SearchKeyboard value="ali" onValueChange={vi.fn()} onClose={onClose} />);
+    fireEvent.click(tailKeys()[2] as Element);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

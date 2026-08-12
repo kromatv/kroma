@@ -26,7 +26,7 @@ interface VirtualGridProps<T> {
   header?: ReactElement;
   headerHeight?: number;
   rowStyle?: ViewStyle;
-  /** The viewport that clips — give it a bounded height (`flex: 1`) or nothing scrolls. */
+  /** The viewport that clips: give it a bounded height (`flex: 1`) or nothing scrolls. */
   style?: ViewStyle;
   /** Padding for the rows, not the viewport (there it would clip into them). */
   contentStyle?: ViewStyle;

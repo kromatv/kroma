@@ -84,7 +84,7 @@ export function TvAddProfile() {
         <Box gap={12}>
           {/* The navigator orders a group's children by registration order, not
               position, so this group holds the servers' place above "Ajouter
-              manuellement" — keys are list positions for the same reason. */}
+              manuellement"; keys are list positions for the same reason. */}
           <FocusColumn style={s.list}>
             {entries.map((e, index) => {
               const probe = health[e.url];

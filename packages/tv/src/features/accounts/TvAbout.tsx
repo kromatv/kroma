@@ -9,7 +9,7 @@ import { AuthScreen, GATE_MARK, KromaMark } from '#tv/shared/ui';
 /**
  * About (route `about`): which build of the client is running.
  *
- * The fact rows are disabled, taking them out of the focus graph — a remote
+ * The fact rows are disabled, taking them out of the focus graph: a remote
  * that walks through five dead rows to reach the only live one is worse than
  * one that lands on it directly. Back stays the sole focus target.
  */
@@ -38,7 +38,7 @@ export function TvAbout() {
         <Fact label={t('about.buildDate')} value={formatBuildDate(build.buildDate, locale)} />
         <Fact label={t('about.repository')} value={repoLabel(build.repository)} />
         {/* Both TV stores require the privacy policy readable in-app, not only
-            on the listing — a television can't open a browser to go read it. */}
+            on the listing: a television can't open a browser to go read it. */}
         <Box mt={20}>
           <Text variant="label" color="textMuted" mb={6}>
             {t('about.privacyTitle')}

@@ -2,7 +2,7 @@
 //
 // The route guard behind every authenticated layout: it must wait for the
 // session to hydrate, then redirect, then recognise it has already arrived at
-// /login and stand down — each wrong at the wrong moment is a bug.
+// /login and stand down. Each wrong at the wrong moment is a bug.
 
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

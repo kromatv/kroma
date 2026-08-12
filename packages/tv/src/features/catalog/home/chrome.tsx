@@ -1,6 +1,6 @@
 // The browse chrome: which routes wear the top bar, and which section it
 // lights. One <TvTopNav> for all of browse, rendered by the outlet instead of
-// by each screen — that's what lets the nav pill's lens travel between
+// by each screen: that's what lets the nav pill's lens travel between
 // sections instead of arriving with no previous box to animate from.
 
 import type { TvChrome } from '#tv/app/router';

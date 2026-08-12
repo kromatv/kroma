@@ -45,7 +45,7 @@ type Glyph = ComponentType<{ size?: number; color?: string }>;
 
 const EXPORTS = RAW as unknown as Record<string, Glyph | undefined>;
 
-/** Every glyph name the kit can draw, in the design's own spelling. Strict —
+/** Every glyph name the kit can draw, in the design's own spelling. Strict:
  * a typo fails to compile; a name from data crosses in through `hasGlyph`. */
 type IconName = IconExport extends `Icon${infer Rest}` ? Kebab<Rest> : never;
 

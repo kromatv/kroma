@@ -7,7 +7,7 @@ export const width = 'wide';
 The kit is read out of git at build time: each component's folder and each
 guide's file is traced through the log, renames included, so a component that
 was moved by a restructure still reports the day it was written rather than the
-day it was moved. Press a row to open it.
+day it was moved.
 
 <DocFigure>
   <RecentChanges />
@@ -16,10 +16,9 @@ day it was moved. Press a row to open it.
 ## What the dates mean
 
 **Added** is the first commit that touched anything in the component's folder -
-its code, its story, its demos or its tests - following the file through every
-rename it has been through. **Changed** is the most recent one. A dot beside a
-row says the working tree this build was made from carried edits on top of that
-commit, which no date can show.
+its code, its story, its demos or its tests - and **Changed** the most recent.
+A dot beside a row says the working tree this build was made from carried edits
+on top of that commit, which no date can show.
 
 A build made outside a checkout lists nothing, and so does one made from a
 shallow clone: the earliest commit such a clone holds is the depth of the fetch

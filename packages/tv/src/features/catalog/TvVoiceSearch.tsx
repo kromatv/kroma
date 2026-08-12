@@ -1,6 +1,6 @@
 // The listening panel: what the user sees while the app holds the
-// microphone. The platform half — the microphone itself, and how the words
-// arrive — is a backend the shell registers; see `#tv/app/voiceSearch`.
+// microphone. The platform half (the microphone itself, and how the words
+// arrive) is a backend the shell registers; see `#tv/app/voiceSearch`.
 
 import { useLocale, useT } from '@kroma/ui';
 import { Box, Button, colors, Dialog, Icon, styles, Text } from '@kroma/ui/kit';

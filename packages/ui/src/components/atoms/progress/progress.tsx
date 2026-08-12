@@ -7,6 +7,7 @@ import { Animated } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { type ColorValue, sharedStyle } from '#ui/core';
 import { motion } from '#ui/core/tokens';
+import { a11yState, a11yValue } from '#ui/lib/a11y';
 import { useLoop } from '#ui/lib/loop';
 import { ProgressFill } from '#ui/lib/progress-motion';
 
@@ -21,6 +22,9 @@ interface ProgressProps {
   /** Round the ends. Off for the flush bar pinned to a tile's bottom edge. */
   rounded?: boolean;
   indeterminate?: boolean;
+  /** Names the bar to assistive tech. Leave it out inside a control that
+   *  already carries the name (a rail tile's resume bar). */
+  label?: string;
 }
 
 const SWEEP_MS = motion.duration.slow * 3;
@@ -37,6 +41,7 @@ function Progress({
   trackColor = 'tint/25',
   rounded = false,
   indeterminate = false,
+  label,
 }: Readonly<ProgressProps>) {
   const sweep = useLoop('sweep', SWEEP_MS, indeterminate);
   const corner = rounded ? 'circle' : 0;
@@ -52,10 +57,12 @@ function Progress({
       radius={corner}
       overflow="hidden"
       accessibilityRole="progressbar"
-      // An indeterminate bar has no value to announce.
-      accessibilityValue={
-        indeterminate ? undefined : { min: 0, max: 100, now: Math.round(clamp01(value) * 100) }
-      }
+      accessibilityLabel={label}
+      // An indeterminate bar has no value to announce, so it announces that it
+      // is working instead.
+      {...(indeterminate
+        ? a11yState({ busy: true })
+        : a11yValue({ min: 0, max: 100, now: Math.round(clamp01(value) * 100) }))}
     >
       {indeterminate ? (
         <Animated.View style={[bar, sweep]} />

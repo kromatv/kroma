@@ -3,7 +3,7 @@
 // react-native-web silently drops `useNativeDriver` (its TurboModuleRegistry
 // returns null), leaving a JS timer that writes an inline style every frame.
 // `animationKeyframes` compiles to a real @keyframes rule, so the loops run on
-// the compositor instead — including on the legacy Chromium 53 tier.
+// the compositor instead, including on the legacy Chromium 53 tier.
 
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 

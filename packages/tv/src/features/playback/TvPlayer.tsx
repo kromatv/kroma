@@ -137,7 +137,7 @@ export function TvPlayer() {
       }
     : null;
 
-  // Targets exactly what is playing — for a series, the episode, not the show.
+  // Targets exactly what is playing: for a series, the episode, not the show.
   const onReport = useCallback(
     async (category: ReportCategory) => {
       await client.createReport({

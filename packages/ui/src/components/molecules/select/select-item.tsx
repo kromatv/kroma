@@ -89,6 +89,7 @@ function Item(props: Readonly<SelectItemProps>) {
         <Pressable
           nativeID={row.nativeID}
           role="option"
+          aria-label={option.label}
           // The panel is a web-only presentation, and react-native-web reads
           // the flat aria props rather than the state object.
           aria-selected={chosen}

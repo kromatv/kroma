@@ -95,7 +95,9 @@ function PanelRow({ row, label, icon, disabled, danger, composed, children }: Re
     <Pressable
       nativeID={row.nativeID}
       role="menuitem"
-      accessibilityLabel={label}
+      // A composed row has no label of its own, and an EMPTY name is worse than
+      // none: it hides the words the row does draw.
+      accessibilityLabel={label || undefined}
       // The panel is a web-only presentation, and react-native-web reads the
       // flat aria props rather than the state object.
       aria-disabled={disabled}
@@ -123,7 +125,7 @@ function DialogRow({ row, label, icon, disabled, danger, composed, children }: R
   return (
     <Focusable
       role="menuitem"
-      label={label}
+      label={label || undefined}
       disabled={disabled}
       onPress={row.fire}
       sv={menuItemVariants}

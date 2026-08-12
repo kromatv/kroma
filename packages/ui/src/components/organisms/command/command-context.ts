@@ -4,7 +4,7 @@
 // piece of state: typing resets the cursor, the cursor decides what Enter
 // opens, and where the cursor is decides where the list has scrolled to.
 
-import { createContext, useContext } from 'react';
+import { partContext } from '#ui/lib/part-context';
 import type { CommandItem, CommandSection } from './command-list';
 
 /** What the palette is currently showing. */
@@ -31,13 +31,7 @@ interface CommandState extends CommandResults {
   scroll: (offset: number, viewport: number) => number | null;
 }
 
-const CommandContext = createContext<CommandState | null>(null);
-
-function useCommand(part: string): CommandState {
-  const state = useContext(CommandContext);
-  if (!state) throw new Error(`<Command.${part}> must be used inside <Command.Root>`);
-  return state;
-}
+const [CommandContext, useCommand] = partContext<CommandState>('Command.Root');
 
 /**
  * What the palette is showing, for a status line or a footer inside it. Works

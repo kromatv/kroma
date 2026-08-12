@@ -42,6 +42,19 @@ describe('AudioPanel', () => {
     expect(screen.getByText('French')).toBeTruthy();
   });
 
+  it('names each row and says which track is playing', () => {
+    show(
+      <AudioPanel
+        tracks={[track({ index: 3, title: 'TrueHD 7.1' }), track({ index: 7, title: 'AC3 5.1' })]}
+        current={3}
+        onSelect={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+    expect(screen.getByLabelText('TrueHD 7.1').getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByLabelText('AC3 5.1').getAttribute('aria-selected')).toBe('false');
+  });
+
   it('selects by TRACK index, not by row position, and closes behind it', () => {
     const onSelect = vi.fn();
     const onBack = vi.fn();

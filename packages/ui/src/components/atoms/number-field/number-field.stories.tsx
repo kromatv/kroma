@@ -41,14 +41,14 @@ function Demo({ min, max, step }: Readonly<{ min: number; max: number; step: num
 export default story({
   name: 'NumberField',
   group: 'Input',
-  docs: "The numeric entry, worn inside a <Field> like any other: the same well, the same rhythm, plus a stacked **stepper pair** - the pointer's way to nudge, the arrow keys' twin on a physical keyboard, and on a television the only way to change the value at all. The buffer is text (a cleared field can be retyped in peace), only a real number is ever committed, and blur clamps to `min`/`max` and rewrites the text to the number actually stored - the field can never show one value while holding another.",
+  docs: "The numeric entry, worn inside a <Field.Root> like any other: the same well, the same rhythm, plus a stacked **stepper pair** - the pointer's way to nudge, the arrow keys' twin on a physical keyboard, and on a television the only way to change the value at all. The buffer is text (a cleared field can be retyped in peace), only a real number is ever committed, and blur clamps to `min`/`max` and rewrites the text to the number actually stored - the field can never show one value while holding another.",
   usage: `<Field.Root label="Max tokens">
   <NumberField label="Max tokens" value={maxTokens} onChange={setMaxTokens} min={64} step={256} />
   <Field.Hint>64 to 8192</Field.Hint>
 </Field.Root>`,
   guidelines: {
     do: [
-      'Wrap it in a <Field> for the label row; its own `label` stays the accessible name.',
+      'Wrap it in a <Field.Root> for the label row; its own `label` stays the accessible name.',
       'State `min`/`max` when the server would reject values outside them - the steppers grey out at the bounds.',
       "Pick a `step` that matches the value's grain: 0.1 for a temperature, 256 for a token budget.",
     ],

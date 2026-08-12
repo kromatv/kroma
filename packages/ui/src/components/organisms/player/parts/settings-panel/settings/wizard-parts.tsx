@@ -4,6 +4,7 @@ import { Text } from '#ui/components/atoms/text';
 
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import { styles } from '#ui/core';
+import { useT } from '#ui/services/i18n';
 
 /**
  * Presentational atoms for the {@link GenerateWizard}. Focus is state-driven
@@ -26,13 +27,24 @@ export function CycleField({
   onDec: () => void;
   onInc: () => void;
 }>) {
+  const t = useT();
   return (
     <Box onPointerEnter={onFocus} style={[s.cycleRow, focused ? s.cycleOn : s.cycleOff]}>
       <Text style={s.fieldLabel}>{label}</Text>
       <Box row align="center" gap={16}>
-        <CycleArrow glyph="◀" label="prev" dim={!focused} onPress={onDec} />
+        <CycleArrow
+          glyph="◀"
+          label={`${t('common.decrease')} ${label}`}
+          dim={!focused}
+          onPress={onDec}
+        />
         <Text style={s.fieldValue}>{value}</Text>
-        <CycleArrow glyph="▶" label="next" dim={!focused} onPress={onInc} />
+        <CycleArrow
+          glyph="▶"
+          label={`${t('common.increase')} ${label}`}
+          dim={!focused}
+          onPress={onInc}
+        />
       </Box>
     </Box>
   );

@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react';
 import { useAdminHost } from './admin/context';
 
 /** Subscribe to the server's event socket. A module widens the frame union
- *  with its own event types — declared in its package, not in core:
+ *  with its own event types, declared in its package, not in core:
  *
  *  ```ts
  *  useServerEvents<DownloadProgressEvent | VpnStatusEvent>((e) => { ... });

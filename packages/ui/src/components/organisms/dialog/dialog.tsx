@@ -1,26 +1,20 @@
 // The modal panel (confirmations, PIN entry, track pickers), on all four targets.
 // On a TV it locks the navigator behind it and mounts its own, so the remote
-// cannot reach — or fire OK on — anything under the panel.
+// cannot reach (or fire OK on) anything under the panel.
 
-import { Children, isValidElement, type ReactNode, useId, useMemo, useRef } from 'react';
-import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  useWindowDimensions,
-  type View,
-} from 'react-native';
+import { type ReactNode, useId, useMemo } from 'react';
+import { Modal, Platform, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
+import { DismissBackdrop } from '#ui/lib/dismiss-backdrop';
 import { useFocusNav } from '#ui/lib/focus-nav';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
 import { useScrollLock } from '#ui/lib/scroll-lock';
-import { useTDefault } from '#ui/services/i18n';
+import { surfaceBands } from '#ui/lib/surface-bands';
 import { Actions } from './dialog-actions';
 import { Footer, Header, Panel, type Shell, ShellContext } from './dialog-parts';
 
@@ -105,22 +99,18 @@ function DialogSurface({
   Omit<DialogRootProps, 'open'> & { width: number; pad: number; trapped: boolean; bridge: boolean }
 >) {
   useFocusNav({ onBack: onClose });
-  const t = useTDefault();
   // A 64pt gutter is a frame on a television and a squeeze on a phone, where it
   // costs a third of the width the panel has to say anything in.
   const gutter = useWindowDimensions().width < 600 ? 16 : 64;
-  const backdrop = useRef<View>(null);
   const titleId = useId();
   const descriptionId = useId();
   const showsTitle = Boolean(title) && !titleHidden;
-  const kids = Children.toArray(children);
-  const part = (which: unknown) => kids.find((node) => isValidElement(node) && node.type === which);
-  const headerPart = part(Header);
-  const panelPart = part(Panel);
-  const footerPart = part(Footer);
-  const loose = kids.filter(
-    (node) => node !== headerPart && node !== panelPart && node !== footerPart,
-  );
+  const {
+    header: headerPart,
+    panel: panelPart,
+    footer: footerPart,
+    loose,
+  } = surfaceBands(children, { header: Header, panel: Panel, footer: Footer });
   const header =
     headerPart ?? defaultHeader({ showsTitle, title, description, titleId, descriptionId });
   const hasHeader = Boolean(header);
@@ -139,23 +129,7 @@ function DialogSurface({
       : { accessibilityLabel: title };
   const panel = (
     <Box flex center bg="overlay" p={gutter}>
-      {/* Web only: on a TV, Back/Menu is the platform's way out and an extra
-          Pressable is one more thing for the D-pad to land on. */}
-      {onClose && Platform.OS === 'web' ? (
-        <Pressable
-          ref={backdrop}
-          accessibilityLabel={t('common.close')}
-          onPress={onClose}
-          // The backdrop must never hold the DOM focus: react-native-web 0.21's
-          // Pressable ignores `focusable` and defaults to `tabindex="0"`, and
-          // <Modal>'s focus trap focuses the first node inside it on open. A
-          // browser TV shell then delivers the remote's OK as Enter on that
-          // element, closing the dialog instead of choosing the ringed row.
-          tabIndex={-1}
-          onFocus={() => (backdrop.current as unknown as HTMLElement | null)?.blur()}
-          style={StyleSheet.absoluteFill}
-        />
-      ) : null}
+      <DismissBackdrop onPress={onClose} />
       <Box
         w={width}
         maxW="100%"

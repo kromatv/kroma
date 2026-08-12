@@ -1,11 +1,11 @@
 # Mobile offline downloads in the OS storage manager (Netflix-style)
 
-Status: DESIGN — NOT IMPLEMENTED. What shipped instead (2026-07): platform
+Status: DESIGN, NOT IMPLEMENTED. What shipped instead (2026-07): platform
 background transfers (`@kesha-antonov/react-native-background-downloader`) that
 survive backgrounding and app kills, with re-adoption and requeueing on launch
-(`clients/mobile/src/lib/downloads/`). This document records why the last step —
-per-title rows in iOS Settings ▸ General ▸ iPhone Storage, deletable by the OS
-like Netflix's — is an architecture change, and what it would take.
+(`clients/mobile/src/lib/downloads/`). This document records why the last step
+(per-title rows in iOS Settings ▸ General ▸ iPhone Storage, deletable by the OS
+like Netflix's) is an architecture change, and what it would take.
 
 ## 1. What Netflix actually uses
 
@@ -31,7 +31,7 @@ over a chunked response. The server's HLS infra
 per-(item, mode, anchor) **live transcode sessions**, LRU-reaped, whose
 playlists grow as ffmpeg produces segments. `AVAssetDownloadTask` needs a
 stable, finite, complete **VOD playlist** whose every URL stays valid for the
-whole (possibly hours-long, backgrounded) download — and auth it can present
+whole (possibly hours-long, backgrounded) download, and auth it can present
 (cookie / token in the playlist URLs; the system downloader does not attach our
 bearer header per request).
 
@@ -57,7 +57,7 @@ Mobile (iOS only):
 - Reconcile OS-side deletes: the user can remove a title from Settings while
   the app is dead, so every launch must diff the index against surviving
   bookmarks (this is a hard requirement of the API, not a nicety).
-- Playback from the `.movpkg` via AVPlayer — expo-video accepts a file URL, but
+- Playback from the `.movpkg` via AVPlayer: expo-video accepts a file URL, but
   offline `.movpkg` + subtitle sidecars + storyboard integration needs a real
   verification pass; offline subs likely have to move into the HLS master as
   WebVTT renditions to live inside the managed asset.
@@ -70,6 +70,6 @@ Every piece above is load-bearing: without the finite VOD playlist there is
 nothing for `AVAssetDownloadTask` to download; without tokenized URLs it 401s;
 without delete-reconciliation the index lies. That is a server + native + player
 project (roughly: prepare-job endpoint, auth tokens, native module, playback
-verification), not an increment on the current downloader — and the current
+verification), not an increment on the current downloader, and the current
 downloader already delivers the other half of the Netflix behavior (transfers
 that outlive the app). Sequencing it separately keeps this feature reviewable.

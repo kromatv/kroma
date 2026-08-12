@@ -6,14 +6,7 @@
 // either: that stands in for content that is missing, this sits next to content
 // that is there.
 
-import {
-  Children,
-  createContext,
-  isValidElement,
-  type ReactNode,
-  useContext,
-  useMemo,
-} from 'react';
+import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
@@ -24,6 +17,7 @@ import {
   type ControlSize,
   entryDefaultSize,
 } from '#ui/lib/field-shell';
+import { partContext } from '#ui/lib/part-context';
 
 type CalloutTone = 'neutral' | 'accent' | 'success' | 'danger';
 
@@ -63,13 +57,7 @@ interface Context {
   metrics: ControlMetrics;
 }
 
-const CalloutContext = createContext<Context | null>(null);
-
-function useCallout(part: string): Context {
-  const at = useContext(CalloutContext);
-  if (!at) throw new Error(`<Callout.${part}> must be used inside <Callout.Root>`);
-  return at;
-}
+const [CalloutContext, useCallout] = partContext<Context>('Callout.Root');
 
 interface Sorted {
   leading: ReactNode[];

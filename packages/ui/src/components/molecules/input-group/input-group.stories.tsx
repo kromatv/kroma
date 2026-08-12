@@ -6,7 +6,7 @@ import { InputGroup } from './input-group';
 export default story({
   name: 'InputGroup',
   group: 'Input',
-  docs: 'An entry with things welded into its shell: a glyph, a unit, a keyboard hint, a button. The Root owns the box, the border, the corner and the focus ring, and the entry inside it gives all four up, so the whole assembly lights as ONE control rather than a field with ornaments beside it. Reach for it when the addon belongs INSIDE the box; when the extra thing is a label, a hint or an error, that is `<Field>`, and the two compose.',
+  docs: 'An entry with things welded into its shell: a glyph, a unit, a keyboard hint, a button. The Root owns the box, the border, the corner and the focus ring, and the entry inside it gives all four up, so the whole assembly lights as ONE control rather than a field with ornaments beside it. Reach for it when the addon belongs INSIDE the box; when the extra thing is a label, a hint or an error, that is `<Field.Root>`, and the two compose.',
   usage: `<InputGroup.Root label="Search">
   <InputGroup.Addon>
     <Icon name="search" size={18} color="textDim" />
@@ -17,23 +17,24 @@ export default story({
   </InputGroup.Addon>
 </InputGroup.Root>
 
-// Inside a <Field>, which adds the label, the hint and the error:
-<Field label="Amount" hint="Before tax.">
+// Inside a <Field.Root>, which adds the label, the hint and the error:
+<Field.Root label="Amount">
   <InputGroup.Root label="Amount">
     <InputGroup.Addon><InputGroup.Text>$</InputGroup.Text></InputGroup.Addon>
     <InputGroup.Input type="number" placeholder="0.00" />
   </InputGroup.Root>
-</Field>`,
+  <Field.Hint>Before tax.</Field.Hint>
+</Field.Root>`,
   guidelines: {
     do: [
       'Say where an addon goes with `align`, and write the parts in whatever order reads best: the Root sorts them.',
       'Put a button in an addon rather than beside the group, when the action belongs to the value being typed.',
       'Use the `block-*` addons with `InputGroup.Textarea`: they are bars across the entry, not chips beside it.',
-      'Wrap the group in a `<Field>` for the label, hint and error; the group is the control, not the whole form row.',
+      'Wrap the group in a `<Field.Root>` for the label, hint and error; the group is the control, not the whole form row.',
     ],
     dont: [
       "Don't put two entries in one group. One shell is one value.",
-      "Don't reach for it just to prefix an icon: `<Field icon>` already does that, with less to write.",
+      "Don't reach for it just to prefix an icon: `<Field.Input icon>` already does that, with less to write.",
       "Don't wrap an addon in a layout view. The Root reads its DIRECT children to sort them, so a wrapped addon lands in the entry's bucket.",
     ],
   },
@@ -99,9 +100,9 @@ export default story({
             <InputGroup.Addon>
               <Icon name="photo" size={16} color="textDim" />
             </InputGroup.Addon>
-            <InputGroup.Input readOnly placeholder="Choisir une image" physicalKeyboard />
+            <InputGroup.Input readOnly placeholder="Choose an image" physicalKeyboard />
             <InputGroup.Addon align="inline-end">
-              <InputGroup.Button label="Choisir" />
+              <InputGroup.Button label="Choose" />
             </InputGroup.Addon>
           </InputGroup.Root>
           <InputGroup.Root size="sm" label="Image">
@@ -110,8 +111,8 @@ export default story({
             </InputGroup.Addon>
             <InputGroup.Input readOnly defaultValue="notif-9f2a11c0-w1280.webp" physicalKeyboard />
             <InputGroup.Addon align="inline-end">
-              <InputGroup.IconButton icon="x" label="Effacer" />
-              <InputGroup.Button label="Choisir" />
+              <InputGroup.IconButton icon="x" label="Clear" />
+              <InputGroup.Button label="Choose" />
             </InputGroup.Addon>
           </InputGroup.Root>
         </Box>

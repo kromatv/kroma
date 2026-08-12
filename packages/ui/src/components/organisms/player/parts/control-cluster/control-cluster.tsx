@@ -4,6 +4,7 @@ import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { styles, sv } from '#ui/core';
+import { a11yValue } from '#ui/lib/a11y';
 import { suppressSelection } from '#ui/lib/drag-select';
 import { useFocusVisible } from '#ui/lib/focus-visible';
 import { useT } from '#ui/services/i18n';
@@ -70,7 +71,7 @@ export interface ControlClusterProps {
   onVolume: (v: number) => void;
 }
 
-// Controlled focus (state-driven, not platform/navigator focus — see
+// Controlled focus (state-driven, not platform/navigator focus; see
 // ../lib/virtual-focus.ts): `focused` is ALWAYS passed explicitly.
 function Circle({
   id,
@@ -119,7 +120,7 @@ function volumeGlyph(level: number, size: number): ReactNode {
 }
 
 // Every control except play and volume is the SAME circular button, differing
-// only in label and glyph — a table instead of eight near-identical JSX blocks.
+// only in label and glyph: a table instead of eight near-identical JSX blocks.
 // `pip`/`fullscreen` glyphs depend on player state; every glyph draws at scale.
 const CIRCLES: Record<
   Exclude<ControlId, 'play' | 'volume'>,
@@ -148,8 +149,8 @@ const CIRCLES: Record<
 /**
  * The middle control row (§4): centered transport (rewind/play/forward) plus the
  * feature-flagged cluster (next/volume/subtitles/audio/settings/cast/pip/
- * fullscreen). Renders exactly `metrics.controls` — already filtered by feature
- * flags and available width — so it never draws a dead button, and always fits
+ * fullscreen). Renders exactly `metrics.controls` (already filtered by feature
+ * flags and available width), so it never draws a dead button, and always fits
  * on one line by shrinking then shedding controls (see ../lib/metrics
  * `chromeMetrics`); a shed control is reported via `metrics.overflow`.
  *
@@ -294,6 +295,7 @@ function VolumeControl({
   // a fifth past the cursor. The two share a left edge, so this still works.
   const track = useDragTrack();
   const level = muted ? 0 : volume;
+  const percent = Math.round(level * 100);
   // Fill and thumb track the perceptual slider position, not raw amplitude, so
   // the handle sits under the pointer while the audio follows the loudness curve.
   const sliderPos = muted ? 0 : volumeToSlider(volume);
@@ -358,6 +360,7 @@ function VolumeControl({
         {...pan.panHandlers}
         accessibilityRole="adjustable"
         accessibilityLabel={label}
+        {...a11yValue({ min: 0, max: 100, now: percent, text: `${percent}%` })}
         style={{
           height: size,
           width: px(VOLUME_RAIL),
