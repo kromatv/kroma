@@ -182,15 +182,12 @@ const s = styles({
   task: { mr: space[2], mb: -TASK_DROP },
 });
 
-export type { Ink };
 export {
   Anchor,
   BODY,
   Emphasis,
-  INLINE,
   InlineCode,
   LineBreak,
-  Mark,
   MarkerContext,
   Picture,
   Prose,

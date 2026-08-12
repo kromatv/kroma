@@ -15,7 +15,7 @@ const CONFIRM_MS = 1200;
  * outcome a reader cannot distinguish from a broken build. */
 export type CopyState = 'idle' | 'copied' | 'failed';
 
-export interface Copier {
+interface Copier {
   // False where the platform has no clipboard - a television. Callers render
   // NOTHING in that case: a disabled affordance is worse than no affordance.
   available: boolean;

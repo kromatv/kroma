@@ -158,5 +158,4 @@ function Tally() {
 const HINT = { fontSize: 11.5, marginLeft: -9 } as const;
 const TALLY = { fontSize: 11.5, fontFamily: MONO, marginLeft: 'auto' } as const;
 
-export type { CommandPaletteProps };
 export { CommandPalette, commandHint, entriesOf, isPage, useCommandKey, useEscapeKey };

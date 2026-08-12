@@ -119,5 +119,4 @@ const s = styles({
   status: { fontSize: 10.5, letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: '700' },
 });
 
-export type { InteractionsProps };
 export { Interactions };

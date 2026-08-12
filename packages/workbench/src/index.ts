@@ -8,7 +8,7 @@ export { defineWorkbench } from './define';
 export type { DemoFile, DiscoveredDemo } from './demos';
 export { attachDemos } from './demos';
 export type { Control, ControlSpec, MatrixRow, ResolvedControl } from './derive';
-export type { Context, GlobHost, Modules, PropDocs, Sources } from './discover';
+export type { Context, GlobHost, Modules, PropDocs, Sources, StoryCodes } from './discover';
 export { discoverMetro, discoverVite } from './discover';
 export type {
   HistoryCommit,

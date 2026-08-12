@@ -11,8 +11,9 @@ import type { ComponentType } from 'react';
 import { attachDemos, type DemoFile } from './demos';
 import { type PropDocs, propSections } from './props';
 import { attachDocs, type DocsFile } from './prose';
-import { attachTiers, orderStories } from './registry';
+import { attachTiers, byText, orderStories } from './registry';
 import type { DocComponent, Story } from './story';
+import { codeAt, type StoryCodes, withCode } from './story-code';
 
 /** Narrows `import.meta.glob` (a Vite compile-time transform with no runtime
  * types) to the two shapes a host needs, so a package also built by Metro
@@ -38,84 +39,75 @@ const STORY = '.stories.tsx';
 const DEMO = '.demo.tsx';
 const DOCS = '.docs.mdx';
 
-// Deliberately not localeCompare: that orders by the host's locale, so the same
-// tree would sort differently on a laptop than in CI.
-function byPath(a: string, b: string): number {
-  if (a < b) return -1;
-  return a > b ? 1 : 0;
-}
-
 // Sorted, always: a story's tier is read from its path, so paths and stories
 // must stay lined up regardless of the bundler's enumeration order.
 function pathsEnding(paths: readonly string[], suffix: string): string[] {
-  return paths.filter((path) => path.endsWith(suffix)).sort(byPath);
+  return paths.filter((path) => path.endsWith(suffix)).sort(byText);
 }
+
+// What the two bundlers disagree about is how a module is fetched, and nothing
+// else: Metro simply hands over no source text and no prop docs, which the same
+// arithmetic reads as a demo with no code panel and a component with no props.
+type ModuleAt = <T>(path: string) => T;
 
 function assemble(
-  paths: readonly string[],
-  storyAt: (path: string) => Story,
-  demos: readonly DemoFile[],
-  docs: readonly DocsFile[],
+  found: readonly string[],
+  moduleAt: ModuleAt,
+  sources: Sources,
+  props: PropDocs,
+  codes: StoryCodes,
 ): readonly Story[] {
-  const found = paths.map((path) => ({ ...storyAt(path), path }));
-  return attachDocs(attachDemos(orderStories(attachTiers(found, paths)), demos), docs);
-}
-
-/** Assembles the registry from Vite's globs: `sources` (the `?raw` text glob)
- * gives a demo its code panel; `props` documents a component matched by name.
- * A `.docs.mdx` arrives in `modules` like any other module, because that is
- * what MDX compiles it to. */
-function discoverVite(
-  modules: Modules,
-  sources: Sources = {},
-  props: PropDocs = {},
-): readonly Story[] {
-  const found = Object.keys(modules);
   const demos: DemoFile[] = pathsEnding(found, DEMO).map((path) => ({
     path,
-    component: (modules[path] as { default: ComponentType }).default,
+    component: moduleAt<{ default: ComponentType }>(path).default,
     source: sources[path],
   }));
   const docs: DocsFile[] = pathsEnding(found, DOCS).map((path) => ({
     path,
-    content: (modules[path] as { default: DocComponent }).default,
+    content: moduleAt<{ default: DocComponent }>(path).default,
   }));
+  const paths = pathsEnding(found, STORY);
+  const stories = paths.map((path) => {
+    const story = moduleAt<{ default: Story }>(path).default;
+    // Matched by name: a story beside `button.tsx` is called `Button`, and a
+    // compound one's parts are the keys under it.
+    const documented = propSections(story.name, props);
+    return withCode(
+      { ...story, ...(documented.length ? { props: documented } : null), path },
+      codeAt(codes, path),
+    );
+  });
+  return attachDocs(attachDemos(orderStories(attachTiers(stories, paths)), demos), docs);
+}
+
+/** Assembles the registry from Vite's globs: `sources` (the `?raw` text glob)
+ * gives a demo its code panel; `props` documents a component matched by name;
+ * `codes` is every story's own JSX, read at build time, which is what a scene
+ * shows in the drawer under it. A `.docs.mdx` arrives in `modules` like any
+ * other module, because that is what MDX compiles it to. */
+function discoverVite(
+  modules: Modules,
+  sources: Sources = {},
+  props: PropDocs = {},
+  codes: StoryCodes = {},
+): readonly Story[] {
   return assemble(
-    pathsEnding(found, STORY),
-    (path) => {
-      const story = (modules[path] as { default: Story }).default;
-      // Matched by name: a story beside `button.tsx` is called `Button`, and a
-      // compound one's parts are the keys under it.
-      const documented = propSections(story.name, props);
-      return documented.length ? { ...story, props: documented } : story;
-    },
-    demos,
-    docs,
+    Object.keys(modules),
+    <T>(path: string) => modules[path] as T,
+    sources,
+    props,
+    codes,
   );
 }
 
 /** Assembles the registry from Metro's context. A demo renders without a code
- * panel and the Props tab stays empty, since Metro can't hand a module its own
- * TEXT, rather than either carrying a stale hand-written copy. A `.docs.mdx` is
- * not that case: Metro compiles it to a component like any other module, so the
- * prose is whole here. */
+ * panel, a scene shows no source and the Props tab stays empty, since Metro
+ * can't hand a module its own TEXT, rather than any of the three carrying a
+ * stale hand-written copy. A `.docs.mdx` is not that case: Metro compiles it to
+ * a component like any other module, so the prose is whole here. */
 function discoverMetro(context: Context): readonly Story[] {
-  const found = context.keys();
-  const demos: DemoFile[] = pathsEnding(found, DEMO).map((path) => ({
-    path,
-    component: context<{ default: ComponentType }>(path).default,
-  }));
-  const docs: DocsFile[] = pathsEnding(found, DOCS).map((path) => ({
-    path,
-    content: context<{ default: DocComponent }>(path).default,
-  }));
-  return assemble(
-    pathsEnding(found, STORY),
-    (path) => context<{ default: Story }>(path).default,
-    demos,
-    docs,
-  );
+  return assemble(context.keys(), context, {}, {}, {});
 }
 
-export type { Context, GlobHost, Modules, PropDocs, Sources };
+export type { Context, GlobHost, Modules, PropDocs, Sources, StoryCodes };
 export { discoverMetro, discoverVite };

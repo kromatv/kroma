@@ -186,7 +186,7 @@ function textOf(node: ReactNode): string {
   return '';
 }
 
-export type { Outline, OutlineSink, Section, SectionHandle };
+export type { Section };
 export {
   ACTIVE_BAND,
   activeSection,

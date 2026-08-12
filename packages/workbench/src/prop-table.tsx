@@ -73,5 +73,4 @@ const s = styles({
   partCount: { fontSize: 10.5, fontFamily: MONO },
 });
 
-export type { PropTableProps };
 export { PropTable };

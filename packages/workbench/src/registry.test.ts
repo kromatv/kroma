@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   attachTiers,
   GROUP_ORDER,
+  glyphFor,
+  groupBy,
   matches,
   orderStories,
   slug,
@@ -108,6 +110,39 @@ describe('attachTiers', () => {
       'Foundations',
       'Other',
     ]);
+  });
+});
+
+describe('groupBy', () => {
+  const rows = [
+    { group: 'Actions', name: 'Button' },
+    { group: 'Input', name: 'Field' },
+    { group: 'Actions', name: 'Chip' },
+  ];
+
+  it('keeps encounter order, which after `orderStories` is already the sorted one', () => {
+    expect(groupBy(rows, (row) => row.group).map(({ key }) => key)).toEqual(['Actions', 'Input']);
+  });
+
+  it('gathers everything that shares a key, however far apart the two sit', () => {
+    const grouped = groupBy(rows, (row) => row.group);
+    expect(grouped[0]?.items.map((row) => row.name)).toEqual(['Button', 'Chip']);
+    expect(grouped[1]?.items.map((row) => row.name)).toEqual(['Field']);
+  });
+
+  it('groups nothing into nothing', () => {
+    expect(groupBy([], (row: { group: string }) => row.group)).toEqual([]);
+  });
+});
+
+describe('glyphFor', () => {
+  it('names a section the tree and the palette both know', () => {
+    expect(glyphFor('Guides')).toBe('book');
+    expect(glyphFor('Input')).toBe('forms');
+  });
+
+  it('falls back to a neutral mark rather than drawing nothing', () => {
+    expect(glyphFor('Something a host invented')).toBe('square');
   });
 });
 

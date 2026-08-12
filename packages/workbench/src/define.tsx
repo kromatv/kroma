@@ -46,10 +46,10 @@ interface WorkbenchDefinition<T extends string = string> {
   brand?: ReactNode;
   title?: string;
   footer?: ReactNode;
-  // Defaults to the `?story=&view=` search-param contract, which degrades to
-  // memory where there is no DOM - so a native mount needs nothing here, and
-  // one nested inside a host router wants `memoryRouter()` (or
-  // `tanstackRouter()` to share the host's history).
+  // Defaults to `pathRouter()`: real paths on the History API, degrading to
+  // memory where there is no DOM. A mount nested inside a host router wants
+  // `memoryRouter()`, or `tanstackRouter()` to share the host's history; a
+  // shell loaded off the filesystem wants `searchParamsRouter()`.
   router?: WorkbenchRouter;
   provider?: ProviderSpec<T>;
   lenses?: readonly ToolbarLens[];

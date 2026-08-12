@@ -265,5 +265,4 @@ const tabButton = sv({
   defaults: { active: false },
 });
 
-export type { PanelProps, TabId };
-export { Panel, tabsFor };
+export { Panel };

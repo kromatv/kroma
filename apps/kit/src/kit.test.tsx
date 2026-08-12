@@ -4,13 +4,19 @@ import { onScreen } from '@kroma/ui/testing';
 import { matches, type Story, slug } from '@kroma/workbench';
 import { cleanup, fireEvent, render as renderRaw, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Kit } from './config';
 
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
 function press(...names: string[]): void {
   for (const name of names) fireEvent.click(screen.getByRole('button', { name }));
+}
+
+// "3 of 96" -> [3, 96].
+function shownOf(tally: string): [number, number] {
+  const [showing, held] = tally.split(' of ').map(Number);
+  return [showing ?? 0, held ?? 0];
 }
 
 function commandKey(): void {
@@ -32,20 +38,35 @@ function windowIs(width: number, height: number): void {
   fireEvent(window, new Event('resize'));
 }
 
+// jsdom keeps one URL for the whole file, and `pathRouter` mounts on it. A bare
+// address now opens the first GUIDE, which carries no toolbar and no tabs, so
+// everything here that inspects the story chrome has to say which story.
+const at = (url: string) => history.replaceState(null, '', url);
+
+beforeEach(() => at('/story/colors'));
+
 afterEach(() => {
   cleanup();
-  // jsdom keeps one URL for the whole file, and `pathRouter` mounts on it.
-  history.replaceState(null, '', '/');
+  at('/');
   windowIs(0, 0);
 });
 
 describe('the kit site', () => {
-  it('lists the stories as a tree, and opens the first one', () => {
+  it('lists the stories as a tree, and opens the one the address names', () => {
     render(<Kit />);
     expect(screen.getAllByText('Foundations').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Colors').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Expand Actions' })).toBeTruthy();
     expect(screen.getAllByText('Preview')).toHaveLength(1);
+  });
+
+  // The front door is the first guide, not an arbitrary component: a reader
+  // arriving at the kit is told how to use it before being shown a part of it.
+  it('opens the first guide at a bare address, with no story chrome', () => {
+    at('/');
+    render(<Kit />);
+    expect(screen.getAllByText('Installing the kit').length).toBeGreaterThan(0);
+    expect(screen.queryAllByText('Preview')).toHaveLength(0);
   });
 
   it('carries the config: the mark, the wordmark and the locale lens', () => {
@@ -155,7 +176,12 @@ describe('the command palette', () => {
     });
     expect(screen.getByRole('button', { name: 'Progress' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'ProgressRing' })).toBeTruthy();
-    expect(screen.getByText(/^2 of \d+$/)).toBeTruthy();
+    // Counted rather than named: articles are searched too, so a new guide
+    // whose prose says "prog" changes the tally without changing the point,
+    // which is that the query narrows the list.
+    const [showing, held] = shownOf(screen.getByText(/^\d+ of \d+$/).textContent ?? '');
+    expect(showing).toBeGreaterThanOrEqual(2);
+    expect(showing).toBeLessThan(held);
   });
 
   it('opens from the sidebar button too', () => {
@@ -181,9 +207,14 @@ describe('the command palette', () => {
     fireEvent.change(screen.getByLabelText('Search the component list'), {
       target: { value: 'prog' },
     });
-    fireEvent.keyDown(document, { key: 'ArrowDown' });
-    fireEvent.keyDown(document, { key: 'ArrowDown' });
+    // One press per result returns the cursor to the row it started on, whatever
+    // the query matched. Articles are searched too, so pressing a fixed number of
+    // times would land somewhere else the moment a guide mentions the word.
+    const [showing] = shownOf(screen.getByText(/^\d+ of \d+$/).textContent ?? '');
+    for (let step = 0; step < showing; step += 1) fireEvent.keyDown(document, { key: 'ArrowDown' });
     fireEvent.keyDown(document, { key: 'Enter' });
+
+    expect(screen.queryByLabelText('Search the component list')).toBeNull();
     expect(screen.getAllByText('Progress').length).toBeGreaterThan(1);
   });
 

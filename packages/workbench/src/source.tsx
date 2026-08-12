@@ -12,7 +12,7 @@ import {
   type KitHistory,
   recentChanges,
 } from './history';
-import { WEB_LINK } from './link';
+import { permalink } from './link';
 import { folderOf, repoPath } from './repo-path';
 import type { Navigate, WorkbenchRouter } from './router';
 import type { Story } from './story';
@@ -57,18 +57,11 @@ interface Provenance {
   repository: string | null;
 }
 
-const SHA = /^[0-9a-f]{7,40}$/i;
-
 /** The permalink to the folder a story's file sits in - component, stories,
- * demos and tests together - pinned to the commit this build was made from.
- * Null unless the build names both a remote and a commit: an unpinned link
- * points at whatever the default branch has drifted to, which is not the code
- * being read. A dirty tree still links, at the commit its edits sit on. */
+ * demos and tests together - pinned to the commit this build was made from. */
 function sourceUrl(source: StorySource, path: string | undefined): string | null {
   const { repository, commit, root } = source;
-  if (!repository || !commit || !SHA.test(commit) || !path) return null;
-  const url = `${repository.replace(/\/+$/, '')}/tree/${commit}/${folderOf(repoPath(root, path))}`;
-  return WEB_LINK.test(url) ? url : null;
+  return path ? permalink(repository, 'tree', commit, folderOf(repoPath(root, path))) : null;
 }
 
 interface SourceBinding {
@@ -191,7 +184,7 @@ function useKitHistory(): {
   };
 }
 
-export type { PageRef, Provenance, StorySource };
+export type { PageRef, StorySource };
 export {
   SourceProvider,
   sourceUrl,

@@ -9,6 +9,7 @@ import {
   RNW_OPTIMIZE_INCLUDE,
   webResolve,
 } from '@kroma/bundler/rnw';
+import { storyCode } from '@kroma/bundler/story-code';
 import { kromaUI } from '@kroma/ui/vite';
 import { kromaIconCatalog } from '@kroma/ui/vite/icon-catalog';
 import react from '@vitejs/plugin-react';
@@ -27,6 +28,7 @@ export default defineConfig({
     kromaMdx(),
     react(),
     propDocs({ tsconfig: `${repoRoot}packages/ui/tsconfig.json` }),
+    storyCode({ tsconfig: `${repoRoot}packages/ui/tsconfig.json`, repo: repoRoot }),
     gitHistory({ repo: repoRoot, root: 'packages/ui/src' }),
     {
       name: 'kroma:watch-ui-stories',

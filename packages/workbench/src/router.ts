@@ -3,8 +3,7 @@
 
 import { webWindow } from '@kroma/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-type View = 'preview' | 'matrix' | `scene:${number}` | `demo:${number}`;
+import { parseView, type View, viewPath } from './view';
 
 interface WorkbenchLocation {
   story?: string;
@@ -23,23 +22,6 @@ type Navigate = (next: WorkbenchLocation, options?: { replace?: boolean }) => vo
 // A hook rather than a function, so a host that navigates from outside can re-render the
 // workbench.
 type WorkbenchRouter = () => readonly [WorkbenchLocation, Navigate];
-
-function parseView(raw: string | null | undefined): View | undefined {
-  if (!raw) return undefined;
-  if (raw === 'matrix' || raw === 'preview') return raw;
-  // A bare number is the legacy spelling of a scene index; old links keep working.
-  if (/^\d+$/.test(raw)) return `scene:${Number(raw)}`;
-  // Both separators parse: `scene:1` in a search param, `scene-1` in a path segment.
-  const at = /^(scene|demo)[:-](\d+)$/.exec(raw);
-  return at ? (`${at[1]}:${Number(at[2])}` as View) : undefined;
-}
-
-// A view as a path segment (`scene-1`), or null when it is the default and should be absent
-// from the URL.
-function viewPath(view: View | undefined): string | null {
-  if (!view || view === 'preview') return null;
-  return view.replace(':', '-');
-}
 
 // An article and a story are two addresses, not two fields of one: opening
 // either drops the other, so no caller has to remember to clear it.
@@ -180,4 +162,4 @@ function write(next: WorkbenchLocation): void {
 }
 
 export type { Navigate, View, WorkbenchLocation, WorkbenchRouter };
-export { memoryRouter, parseView, pathRouter, searchParamsRouter, viewPath };
+export { memoryRouter, pathRouter, searchParamsRouter };

@@ -67,5 +67,4 @@ function summaryOf(entry: HistoryEntry): string {
   return `Created ${dayLabel(entry.created)} · edited ${agoLabel(entry.changed)}`;
 }
 
-export type { HistoryBlockProps };
 export { HistoryBlock, summaryOf };

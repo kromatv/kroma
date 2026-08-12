@@ -14,7 +14,7 @@ import {
 import type { PlayFunction } from './play-types';
 import type { PropSection } from './props';
 import { slug } from './registry';
-import type { View } from './router';
+import { type View, viewIndex } from './view';
 
 /** How much width the canvas gives a story: a fixed width, the whole stage, or
  * the stage clamped. Omit it for a component sized by its own content. */
@@ -105,12 +105,15 @@ interface Scene {
   name: string;
   docs?: string;
   live: boolean;
+  /** The JSX the scene was written as. Absent on Metro, which cannot hand a
+   * module its own text. */
+  code?: string;
   render: (args: Args) => ReactNode;
   play?: PlayFunction;
 }
 
 /** A story after compilation: everything the workbench needs, nothing it has to
- * derive again at render time — including `live`, which says whether the args
+ * derive again at render time, including `live`, which says whether the args
  * reach what is on the canvas, because after compilation every render takes one
  * argument whether or not its author read it. */
 interface Story {
@@ -126,6 +129,9 @@ interface Story {
   matrix: MatrixRow[];
   scenes: Scene[];
   demos: readonly DemoDef[];
+  /** The story's own `render`, as it was written. Absent on Metro, and for a
+   * story that names a `component` rather than composing one. */
+  code?: string;
   /** One section per part of a compound component, or one unnamed section for a
    * plain one. Empty on Metro, which has no build-time reader. */
   props: readonly PropSection[];
@@ -227,7 +233,7 @@ interface ControlsRole {
 function viewIsLive(story: Story, view: View): boolean {
   if (view.startsWith('demo:')) return false;
   if (!view.startsWith('scene:')) return story.live;
-  return story.scenes[Number(view.slice(view.indexOf(':') + 1))]?.live ?? false;
+  return story.scenes[viewIndex(view)]?.live ?? false;
 }
 
 /** What the panel's controls can do on the view being shown. A scene that

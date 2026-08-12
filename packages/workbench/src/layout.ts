@@ -111,5 +111,5 @@ function useLayout(): WorkbenchLayout {
   return useMemo(() => layoutFor(width, height), [width, height]);
 }
 
-export type { LayoutMode, WorkbenchLayout };
+export type { WorkbenchLayout };
 export { BREAKPOINTS, DOCK_COLLAPSED, layoutFor, MIN_CANVAS, REGION_MIN, useLayout };

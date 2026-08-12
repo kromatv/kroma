@@ -1,6 +1,9 @@
+// @vitest-environment jsdom
+
+import { act, renderHook } from '@testing-library/react';
 import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
-import { ACTIVE_BAND, activeSection, type Section, textOf } from './outline';
+import { ACTIVE_BAND, activeSection, type Section, textOf, useOutline } from './outline';
 
 const DOC: readonly Section[] = [
   { id: 'a-vite-app', label: 'A Vite app', level: 2, y: 300 },
@@ -43,5 +46,72 @@ describe('textOf', () => {
   it('reads a number as its digits and anything else as nothing', () => {
     expect(textOf(3)).toBe('3');
     expect(textOf(null)).toBe('');
+  });
+});
+
+describe('useOutline', () => {
+  const at = (id: string, y: number, level = 2): Section => ({ id, label: id, level, y });
+
+  it('puts the headings in the order the document laid them out, not the order they arrived', () => {
+    const { result } = renderHook(() => useOutline('installing'));
+    act(() => {
+      result.current.sink.reportSection(at('the-stylesheet', 900));
+      result.current.sink.reportSection(at('a-vite-app', 300));
+    });
+    expect(result.current.sections.map((one) => one.id)).toEqual(['a-vite-app', 'the-stylesheet']);
+  });
+
+  it('gives two headings of the same words two addresses', () => {
+    const { result } = renderHook(() => useOutline('installing'));
+    let first = '';
+    let second = '';
+    act(() => {
+      first = result.current.sink.claim('react-key-1', 'the-stylesheet');
+      second = result.current.sink.claim('react-key-2', 'the-stylesheet');
+    });
+    expect([first, second]).toEqual(['the-stylesheet', 'the-stylesheet-2']);
+  });
+
+  it('returns the SAME id for one heading however often it re-renders', () => {
+    const { result, rerender } = renderHook(() => useOutline('installing'));
+    const first = result.current.sink.claim('react-key-1', 'a-vite-app');
+    rerender();
+    expect(result.current.sink.claim('react-key-1', 'a-vite-app')).toBe(first);
+  });
+
+  it('re-measures a heading in place rather than listing it twice', () => {
+    const { result } = renderHook(() => useOutline('installing'));
+    act(() => result.current.sink.reportSection(at('a-vite-app', 300)));
+    act(() => result.current.sink.reportSection(at('a-vite-app', 420)));
+    expect(result.current.sections).toEqual([at('a-vite-app', 420)]);
+  });
+
+  it('holds still when a heading reports the position it already had', () => {
+    const { result } = renderHook(() => useOutline('installing'));
+    act(() => result.current.sink.reportSection(at('a-vite-app', 300)));
+    const settled = result.current.sections;
+    act(() => result.current.sink.reportSection(at('a-vite-app', 300)));
+    expect(result.current.sections).toBe(settled);
+  });
+
+  it('carries where the document starts, which every heading is measured from', () => {
+    const { result } = renderHook(() => useOutline('installing'));
+    act(() => result.current.sink.reportTop(48));
+    expect(result.current.top).toBe(48);
+  });
+
+  it('empties in the same render as the article changes, never inheriting the last one', () => {
+    const { result, rerender } = renderHook(({ article }) => useOutline(article), {
+      initialProps: { article: 'installing' },
+    });
+    act(() => {
+      result.current.sink.reportSection(at('a-vite-app', 300));
+      result.current.sink.reportTop(48);
+    });
+    rerender({ article: 'tokens' });
+    expect(result.current.sections).toEqual([]);
+    expect(result.current.top).toBe(0);
+    // And the ids start again, so the second page is not numbered after the first.
+    expect(result.current.sink.claim('react-key-9', 'a-vite-app')).toBe('a-vite-app');
   });
 });

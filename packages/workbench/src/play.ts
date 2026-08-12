@@ -127,5 +127,5 @@ function usePlay(play: PlayFunction | undefined, timeout?: number): PlayRunner {
   return { ...transcript, stage, replay, playable: Boolean(play) };
 }
 
-export type { PlayRunner, RunPlay };
+export type { PlayRunner };
 export { runPlay, usePlay };

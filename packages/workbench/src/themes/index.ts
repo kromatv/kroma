@@ -1,6 +1,6 @@
 // The preview themes the toolbar can switch between, one file per theme: the
 // real KROMA, two accent restatements, and one full restatement. They exist to
-// prove a theme reaches everything — if a control stays amber under Ocean, or
+// prove a theme reaches everything: if a control stays amber under Ocean, or
 // keeps its round corners under Terminal, its declaration is bypassing the
 // vocabulary.
 
@@ -9,7 +9,7 @@ import { ember } from './ember';
 import { ocean } from './ocean';
 import { terminal } from './terminal';
 
-export interface PreviewTheme {
+interface PreviewTheme {
   id: string;
   label: string;
   theme: Theme;

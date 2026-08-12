@@ -281,5 +281,4 @@ const COPY_FACE: Record<CopyState, { label: string; glyph: IconName; ink: ColorT
   failed: { label: 'Could not copy', glyph: 'alert-triangle', ink: 'danger' },
 };
 
-export type { CodeBlockProps, Token, TokenKind };
 export { CodeBlock, lines, MONO, tokenize };

@@ -63,4 +63,4 @@ const anchorButton = sv({
   base: { p: space[1], radius: 'sm', _hover: { bg: 'white/6' }, _focus: { bg: 'white/6' } },
 });
 
-export { SectionAnchor, sectionHref };
+export { SectionAnchor };

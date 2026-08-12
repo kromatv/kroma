@@ -13,24 +13,24 @@ It **wears Storybook's layout**, which is a different claim from replacing it an
 a deliberate one: that arrangement has been argued over for ten years and it wins
 on the same grounds every time. The brand and the search sit at the top of the
 explorer, the toolbar spans only the canvas it acts on, and the addons panel is
-tabbed — so there is no full-width chrome, and nothing on screen is unattached to
+tabbed, so there is no full-width chrome, and nothing on screen is unattached to
 the component being looked at.
 
 The consequence worth the trouble: **it runs wherever the kit runs.** Open it in a
 browser (`bun run dev:kit`), on a TV shell (`?workbench`), on an Apple TV
-(`bun run run:kit:appletv`) or on a phone (`bun run run:kit:ios`), and you
-are inspecting the components on the device that has to display them.
+(`bun run kit:tv`) or on a phone (`bun run kit:ios`), and you are inspecting the
+components on the device that has to display them.
 
 ## Mounting it
 
 `defineWorkbench` takes the facts and returns the component. A config file is then
-declarative — no hooks, no memos, nothing with a lifecycle to get wrong, because all
-of that happens inside. `apps/kit/src/config.tsx` is the real one, and it is about
-thirty lines:
+declarative. No hooks, no memos, nothing with a lifecycle to get wrong, because all
+of that happens inside:
 
 ```tsx
 export const Kit = defineWorkbench({
   stories: STORIES,                 // a PROP: see below
+  pages: PAGES,                     // standalone articles, discovered the same way
   title: 'Kit',                     // the wordmark
   brand: <Logo size={19} />,        // a SLOT: nothing drawn without it
   provider: {                       // app context + the lens that changes it
@@ -44,10 +44,13 @@ export const Kit = defineWorkbench({
 });
 ```
 
-`<Kit />` is the whole site. Four seams make the package app-agnostic:
+`<Kit />` is the whole site. In KROMA the standing half of that (`title`, `brand`,
+`provider`) is a plain object in `@kroma/ui/workbench-config` that every host
+spreads, so `apps/kit/src/config.tsx` is down to the discovery, the router and a
+footer. Four seams make the package app-agnostic:
 
-**`stories` is a prop, not an import.** Discovery needs a bundler primitive —
-`import.meta.glob` on Vite, `require.context` on Metro — and both are compile-time
+**`stories` is a prop, not an import.** Discovery needs a bundler primitive
+(`import.meta.glob` on Vite, `require.context` on Metro), and both are compile-time
 transforms resolved relative to *the file that writes them*, so the glob can only
 live in the app that wants it (and this package, which knows no design system, has no
 business naming one library's directory). It is **two lines**, and a glob pattern
@@ -57,26 +60,28 @@ resolves aliases, so no app counts `../` to the components:
 export const STORIES = discoverVite(
   import.meta.glob('#ui/**/*.{stories.tsx,demo.tsx,docs.mdx}', { eager: true }),
   import.meta.glob('#ui/**/*.demo.tsx', { eager: true, query: '?raw', import: 'default' }),
+  PROPS,       // virtual:kroma-props
+  STORY_CODE,  // virtual:kroma-story-code
 );
 
 // Metro: one context, all three file names
 export const STORIES = discoverMetro(
-  require.context('../../ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
+  require.context('../../../packages/ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
 );
 ```
 
-One glob for the modules, one for the same tree as **text** — the second is optional,
+One glob for the modules, one for the same tree as **text**. The second is optional,
 and what it feeds (a demo's code panel, the Props tab) is simply absent without it.
 Stories, demos and docs are told apart by their own file names, inside `discover`, so a
 host cannot hand over demos and demo sources that disagree.
 
 A `.docs.mdx` is in the **module** glob, not the text one: both bundlers compile it
 to a component (`@kroma/bundler/mdx` on Vite, `@kroma/bundler/mdx-transformer` on
-Metro), so a host has to load the MDX plugin — see *A story's prose* below.
+Metro), so a host has to load the MDX plugin (see *A story's prose* below).
 
 `discoverVite` / `discoverMetro` do everything that happens to the result:
 levelling by folder, ordering, attaching demos and docs, reading each component's
-props out of its own JSDoc. Nothing is listed and nothing is registered — drop a
+props out of its own JSDoc. Nothing is listed and nothing is registered: drop a
 `*.stories.tsx` beside a component and it appears.
 
 > Both the pattern **and** the options must be written out as literals at every
@@ -90,8 +95,8 @@ props out of its own JSDoc. Nothing is listed and nothing is registered — drop
 of, so it draws whatever it is handed and nothing otherwise.
 
 **`provider` is app context, and its lens for free.** The recurring shape is a
-context every story needs in order to render at all — KROMA's i18n provider, whose
-translated components call `useT()` and throw outside one — whose value is *also*
+context every story needs in order to render at all (KROMA's i18n provider, whose
+translated components call `useT()` and throw outside one), whose value is *also*
 worth flipping while looking at a design. Declaring it gets both: the workbench
 holds the state, wraps the tree, and puts a toolbar menu on it.
 
@@ -102,15 +107,15 @@ holds the state, wraps the tree, and puts a toolbar menu on it.
 The workbench runs in four places that disagree about what a URL is: a site that
 owns the address bar, a TV shell squatting on someone else's page behind
 `?workbench`, an Apple TV with none at all, and a phone screen inside a router
-that already owns the history. So routing is a **port** — one hook, shaped like
-`useState` — and the host plugs in an adapter:
+that already owns the history. So routing is a **port** (one hook, shaped like
+`useState`), and the host plugs in an adapter:
 
 | | |
 | --- | --- |
-| `pathRouter()` | **the default. Real paths** — `/story/button/matrix` — on the History API alone, no router dependency. Degrades to memory off the web |
+| `pathRouter()` | **the default. Real paths** (`/story/button/matrix`) on the History API alone, no router dependency. Degrades to memory off the web |
 | `memoryRouter()` | never touches the address bar. For a guest mount, for native, for tests |
 | `tanstackRouter()` | `@kroma/workbench/tanstack`. Real paths through the *host's* router rather than a second one, so there is only ever one in the tree |
-| `searchParamsRouter()` | `?story=&view=`. Only for a shell that **cannot** do path routing — a TV app loaded off the filesystem, where there is no server to fall back to `index.html` and a reload of `/story/button` is a 404 |
+| `searchParamsRouter()` | `?story=&view=`. Only for a shell that **cannot** do path routing: a TV app loaded off the filesystem, where there is no server to fall back to `index.html` and a reload of `/story/button` is a 404 |
 
 A host with an idea of its own writes about fifteen lines and plugs that in.
 
@@ -133,7 +138,7 @@ the commonest state has the shortest URL, and `pushState` is used for a new stor
 
 `pathRouter({ base })` takes the path it is mounted at, so a site served from a
 sub-directory works. It needs a server that falls back to `index.html` for unknown
-paths — every dev server and static host worth using, but *not* a TV app loaded
+paths: every dev server and static host worth using, but *not* a TV app loaded
 off the filesystem.
 
 `tanstackRouter()` instead participates in the host's route tree like any other
@@ -159,8 +164,8 @@ something a person could have typed.
 
 **A story** is `<component>.stories.tsx` beside the component. Declare `name`,
 `group`, `docs`, and either the `component` or a `render`; pass the component's
-`sv` as `variants` and the controls and the variant matrix are derived from it —
-the variant map IS the design, so neither can drift. Nothing registers a story:
+`sv` as `variants` and the controls and the variant matrix are derived from it.
+The variant map IS the design, so neither can drift. Nothing registers a story:
 the registries discover `*.stories.tsx`.
 
 ```tsx
@@ -170,8 +175,8 @@ export default story({ name: 'Chip', group: 'Actions', component: Chip, args: { 
 Naming the `component` is the shorter spelling and the safer one: the workbench
 renders `<Chip {...args} />` itself, so the args ARE the props and a control that
 moves nothing cannot be written. `args` is checked against the component's props.
-Write a `render` instead when the story has to compose — a provider, a surface to
-sit on, two of the component side by side — and **take the args as its argument**.
+Write a `render` instead when the story has to compose (a provider, a surface to
+sit on, two of the component side by side), and **take the args as its argument**.
 
 ### A scene, and which of them the controls drive
 
@@ -204,7 +209,7 @@ Two spellings, and the file wins:
 | | |
 | --- | --- |
 | `docs: '...'` in the story | one or two sentences. Markdown, in a string: paragraphs, `#`/`##`, `-` lists, fenced code, links, `**bold**` and `` `code` `` |
-| `<story>.docs.mdx` beside it | a real document. Everything above, plus GFM (tables, `~~strike~~`, task lists) — and **live components** |
+| `<story>.docs.mdx` beside it | a real document. Everything above, plus GFM (tables, `~~strike~~`, task lists), and **live components** |
 
 ```mdx
 import { ListRow } from './list-row'
@@ -225,8 +230,8 @@ The file's first segment is the story's id (`list-row.docs.mdx` documents
 exist throws rather than disappearing. A story carrying both spellings shows the
 file: two sources with a silent winner is the thing this rule exists to prevent.
 
-**It runs on native too.** MDX compiles to HTML element names — `p`, `ul`,
-`code`, the table set — and React Native has none of them, so `mdx.tsx` maps
+**It runs on native too.** MDX compiles to HTML element names (`p`, `ul`,
+`code`, the table set) and React Native has none of them, so `mdx.tsx` maps
 every one to a kit component and `mdx.test.tsx` derives the list of elements
 from a real compile and fails if the map has a hole. The inline `docs:` strings
 render through that same map, so neither spelling has a look of its own.
@@ -244,12 +249,36 @@ Four things are read rather than declared, which is the theme of the folder:
 | The atomic level (search + palette) | the story file's PATH (`tierFor`) |
 | A demo's name, prose and code | its file name, doc comment and text |
 | Every prop, with its documentation | the component's props interface, and a compound one's parts off its namespace object (`props.ts`) |
+| The code under a scene, and under the preview | the story file's own JSX, cut out at build time (`storyCode` from `@kroma/bundler/story-code`, served as `virtual:kroma-story-code`) |
+
+### The code drawer
+
+Every view shows the code its author **wrote**, wherever a build could read it: a
+demo's whole file, a scene's JSX, the story's own `render`. Nothing is
+reconstructed - a compiled render's `toString()` gives the post-transform
+`jsx(...)` calls, which is not what anybody types - so the spans are cut out of
+the `*.stories.tsx` with TypeScript's own parser at build time and shipped as
+data, keyed by repository-relative path. One program, no checker: about 270 ms
+for the kit's ninety story files, and 4 ms once the on-disk cache has them.
+
+An `example: () => (…)` is unwrapped to its JSX, because a parameterless arrow
+binds nothing a reader needs. A `render: (args) => (…)` is kept whole: the
+parameter is where the controls reach the JSX, and the body shown without it
+reads as code with free variables in it. A scene that writes neither carries the
+story's own render, which is what draws it.
+
+The **live preview** of a story with variants keeps its generated call site,
+because that is the one code here that follows the controls: press `glass` and
+the line says `variant="glass"`. The story's own render fills in the previews
+that showed nothing at all. `usage:` stays a hand-written field for the same
+reason the two do not merge - it is the canonical call, the one line to copy,
+where this is the source of the picture on screen.
 
 ## Getting around
 
 | | |
 | --- | --- |
-| `⌘K` / `Ctrl-K` | the command palette — the workbench's one search |
+| `⌘K` / `Ctrl-K` | the command palette, the workbench's one search |
 | `↑` `↓` `PgUp` `PgDn`, `↵`, `esc` | walk the results, open one, give up |
 | the tree | fold a group; the open story is always revealed |
 | the toolbar | one menu per lens (frame, surface, language), a rotate button on the frames that turn, plus copy-link and full screen |
@@ -257,27 +286,27 @@ Four things are read rather than declared, which is the theme of the folder:
 ### Width
 
 Most stories need nothing here: a button is as wide as its label and the canvas
-measures it. A component that measures **itself** — a rail, a grid, a virtual list
-— has to be told, and `width` takes three forms:
+measures it. A component that measures **itself** (a rail, a grid, a virtual
+list) has to be told, and `width` takes three forms:
 
 | | |
 | --- | --- |
 | `'fill'` | whatever the stage has, and it changes with the window. What a rail gets in a real app |
 | `{ min, max }` | the same, clamped. `max` stops a 10-foot row stretching across a 4K desk; below `min` the stage scrolls rather than measuring the component at a width no screen has |
-| `340` | a fixed authored width. Honest for something that really is one size — a dialog panel — and the wrong tool for anything responsive |
+| `340` | a fixed authored width. Honest for something that really is one size (a dialog panel) and the wrong tool for anything responsive |
 
 **Prefer a range.** The bug a fixed width hides is the one that only appears at
 another width.
 
 A story that says how wide it is is **never scaled**. `react-native-web` implements
-`onLayout` with `getBoundingClientRect` — post-transform — so inside a `scale(0.8)`
+`onLayout` with `getBoundingClientRect` (post-transform), so inside a `scale(0.8)`
 a self-measuring component is told it has 80% of the width its children are laid
 out against. `VirtualRail` derives its tile pitch, scroll offset and edge-scrim
 positions from that number, and drew a row built for an 880pt viewport into an
 1100pt one: tiles sliced at the ends, black scrims over the artwork. See
 `stageWidth`.
 
-The canvas captions itself — `Tablet · 834 × 1112 · portrait · 72%` — because the
+The canvas captions itself (`Tablet · 834 × 1112 · portrait · 72%`) because the
 frame's points and the zoom it is being shown at are both things you have to know
 before judging a type size or a hit target. The frame wears a **casing**: the
 stage can be set to the page's own colour, so an edge was the only thing saying
@@ -286,58 +315,68 @@ hairline at 40% is drawn 0.4px). Hence `hairline()`, which counter-scales it.
 
 ## The pieces
 
-- `workbench.tsx` — the shell: selection, url state, full screen, the lenses.
-- `layout.ts` — one pure function turning a window size into wide / medium / compact,
-  and folding in whatever the reader has dragged without letting the canvas
-  fall below a readable width.
-- `resize.ts`, `resize-handle.tsx`, `resize-keys.*` — the seams between the
-  regions: a PanResponder drag (so the same handle works on Apple TV), a press
-  that hands the four directions to the handle, a double press or a long press
-  to put a region back, and the dragged sizes kept per device.
-- `page.ts`, `page-view.tsx` — articles: a whole `.page.mdx` shown as its own
-  page, for what belongs to no component (installing the kit, making a theme,
+- `workbench.tsx` is the shell: selection, url state, full screen, and where the
+  three regions go.
+- `story-view.tsx` is one story on the canvas, and the four things a `View` is
+  read for: what renders, its prose, its code sample and its play. `canvas-tabs.tsx`
+  is the row across the top of it.
+- `layout.ts` is one pure function turning a window size into wide / medium /
+  compact. It says the size each region OPENS at; what a reader has dragged is
+  `<Resizable>`'s, which owns the floors and the wish surviving a smaller screen.
+  The seams themselves are the kit's now (`@kroma/ui`), not this package's.
+- `page.ts` and `page-view.tsx` are articles: a whole `.page.mdx` shown as its
+  own page, for what belongs to no component (installing the kit, making a theme,
   how it works). The file's name and folder say what it is and where it sits,
-  and the document overrides that with plain `export const` — which is ESM, so
+  and the document overrides that with plain `export const`, which is ESM, so
   it survives both bundlers with no frontmatter plugin.
-- `sidebar.tsx` — the brand, the search key and the foldable tree: one flat
+- `sidebar.tsx` is the brand, the search key and the foldable tree: one flat
   level of functional groups (Layout, Input, Overlays, ...), then the stories.
-  The atomic levels stay out of the nav on purpose — they are for the people
+  The atomic levels stay out of the nav on purpose: they are for the people
   editing the kit, and nesting them scattered every kind of input across
-  three branches.
-- `command.tsx` — the ⌘K palette, built to cmdk's design and driven by a
+  three branches. The rows themselves are `sidebar-rows.tsx`.
+- `command.tsx` is the ⌘K palette, built to cmdk's design and driven by a
   capture-phase key listener (react-native-web's TextInput eats bubbled keydowns).
-- `toolbar.tsx` — the canvas toolbar: a menu per lens, so nine flat buttons became
-  three triggers that each say what is currently in force.
-- `canvas.tsx` — the stage: the frame table (`VIEWPORTS`, the one place a frame's
-  name, glyph, size and rotatability live), the casing, the caption, and the
-  adaptive zoom that scales a component down when it is wider than the canvas.
-- `panel.tsx` — the inspector, tabbed: Controls, Docs, Props, each with its count.
-- `story.ts` — the SDK: `story()`, the two spellings of a story and of a scene,
+- `toolbar.tsx` is the canvas toolbar: a menu per lens, so nine flat buttons
+  became three triggers that each say what is currently in force. One lens is
+  drawn by `toolbar-menu.tsx`.
+- `viewport.ts` is the frame table (`VIEWPORTS`, the one place a frame's name,
+  glyph, size and rotatability live) and the arithmetic under the stage:
+  `stageWidth`, the rotation, and `hairline`.
+- `canvas.tsx` is the stage itself: the casing, the caption, and the adaptive
+  zoom that scales a component down when it is wider than the canvas.
+- `panel.tsx` is the inspector, tabbed: Controls, Docs, Props, each with its count.
+- `story.ts` is the SDK: `story()`, the two spellings of a story and of a scene,
   and `controlsRole`, which decides whether the panel drives the view on screen.
-- `derive.ts` — the control model: the `sv`-derived controls and matrix rows.
-- `registry.ts` — the atomic level read from a file's path, and the registry's
+- `story-code.ts` is the build-time source a scene shows: the join from the path
+  a bundler globbed to the one the repository spells, and the attach.
+- `derive.ts` is the control model: the `sv`-derived controls and matrix rows.
+- `view.ts` is which view of a story is on the canvas, and how one is spelled in
+  an address. Apart from `router.ts` because the SDK reads a view too, and
+  nothing here imports the design system.
+- `registry.ts` is the atomic level read from a file's path, and the registry's
   ordering (functional group first, then name).
-- `play-types.ts` — what a `play` is handed, addressed by accessible name so the
+- `play-types.ts` is what a `play` is handed, addressed by accessible name so the
   same script runs on a television and in a browser.
-- `controls.tsx`, `code.tsx`, `docs.tsx`, `props.ts`, `prop-table.tsx`, `demos.ts` —
-  the parts above.
+- `controls.tsx`, `code.tsx`, `docs.tsx`, `props.ts`, `prop-table.tsx` and
+  `demos.ts` are the parts above.
 
 The story SDK ships here rather than separately because a story format that
 versioned apart from the tool that reads it is two versions to keep in step.
 
-The **registry** is the host's, in `packages/ui/src/workbench/` — Metro's and
-Vite's halves of discovery. Vite can read files as text (`?raw`) and run a type
-checker over the tree at build time; Metro can do neither. So demo code and prop
-docs are present on the web and absent on a television, rather than stale on
-both.
+The **globs** are the host's: `apps/kit/src/stories.web.ts` and `stories.ts`
+beside it are Vite's and Metro's halves of discovery. Vite can read files as text
+(`?raw`) and run TypeScript over the tree at build time; Metro can do neither. So
+demo code, story code and prop docs are present on the web and absent on a
+television, rather than stale on both.
 
 Prop docs are the third argument to `discoverVite`, and they are DATA: a host
-reads them at build time (`propDocs` in `clients/tv-build`, driving TypeScript's
-own checker) rather than shipping every component's source to the browser for a
-regex to read. That is what lets the panel follow `extends`.
+reads them at build time (`propDocs` from `@kroma/bundler/props-docs`, driving
+TypeScript's own checker, served as `virtual:kroma-props`) rather than shipping
+every component's source to the browser for a regex to read. That is what lets
+the panel follow `extends`.
 
 Nothing here is exported from `@kroma/ui/kit`: it is a tool, and it pulls in every
-story. Each KROMA host configures its own — `apps/kit` (the site, and the
+story. Each KROMA host configures its own: `apps/kit` (the site, and the
 phone/TV app of the same name), `packages/tv/src/workbench{,.web}.tsx`
 (`?workbench` on the TV shells), and `clients/mobile/src/app/workbench.tsx`.
 

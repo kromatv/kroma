@@ -12,7 +12,7 @@
 // ordinary ESM - so this works under Vite and Metro alike, with no frontmatter
 // plugin on either side.
 
-import { slug } from './registry';
+import { byText, slug } from './registry';
 import type { DocComponent } from './story';
 
 /** What a `.page.mdx` may export about itself, over what its own name says.
@@ -75,13 +75,6 @@ function titleOf(name: string): string | null {
 
 // Where a page with no folder over it goes.
 const UNFILED = 'Pages';
-
-// Deliberately not localeCompare: that orders by the host's locale, so the same
-// tree would sort differently on a laptop than in CI.
-function byText(a: string, b: string): number {
-  if (a < b) return -1;
-  return a > b ? 1 : 0;
-}
 
 /** One discovered page. Throws on a file this is not: a page that silently
  * appears nowhere is worse than a build that stops. */

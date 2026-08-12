@@ -2,8 +2,8 @@
 
 The design system's workbench, as a **website** and as an **app**.
 
-Same stories, same config, same components: three bundlers pointed at one
-source tree. It is a showcase you can deploy and a tool you can launch at a
+Same stories, same config, same components: two bundlers and three shapes
+pointed at one source tree. It is a showcase you can deploy and a tool you can launch at a
 simulator, and the second half is the point: a 10-foot component is judged on a
 television, and a 44pt hit target is judged on a phone. Neither is something a
 browser at 1280x800 can tell you.
@@ -18,8 +18,8 @@ bun run ios:tv       # Apple TV simulator
 bun run android:tv   # Android TV emulator
 ```
 
-From the repo root the same five are `bun run dev:kit`, `run:kit:ios`,
-`run:kit:android`, `run:kit:appletv`, `run:kit:androidtv`.
+From the repo root the same five are `bun run dev:kit`, `kit:ios`,
+`kit:android`, `kit:tv`, `kit:androidtv`.
 
 The first native run does an `expo prebuild`, which writes `ios/` and
 `android/` from `app.json`; both are generated and both are gitignored. The
@@ -37,10 +37,10 @@ reads it (the plugin is configured without `isTV`, so the env var decides), and
 `<TvStage>`, the fixed 1920x1080 canvas every 10-foot screen is authored
 against.
 
-## The three halves
+## What differs per bundler
 
-Discovery and routing are the only things that differ per target, and they
-differ because the *bundlers* differ:
+Discovery and routing are the only things that differ, and they differ because
+the *bundlers* do:
 
 | | web | native |
 |---|---|---|

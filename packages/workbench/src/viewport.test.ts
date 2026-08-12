@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { canRotate, frameSize, hairline, stageWidth, VIEWPORTS, type ViewportName } from './canvas';
+import {
+  canRotate,
+  frameSize,
+  hairline,
+  stageWidth,
+  VIEWPORTS,
+  type ViewportName,
+} from './viewport';
 
 const NAMES: ViewportName[] = ['fit', 'tv', 'phone', 'tablet'];
 

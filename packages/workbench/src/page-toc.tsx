@@ -144,4 +144,4 @@ const tocEntry = sv({
 });
 
 export type { PageTocProps };
-export { hasOutline, LEAST_SECTIONS, outlineOf, PageToc, TOC_WIDTH };
+export { hasOutline, outlineOf, PageToc, TOC_WIDTH };

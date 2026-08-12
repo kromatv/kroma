@@ -19,6 +19,7 @@
     "./shell": "./src/shell.ts",
     "./site": "./src/site.ts",
     "./standalone-script": "./src/standalone-script.ts",
+    "./story-code": "./src/story-code.ts",
     "./tv-frame": "./src/tv-frame.ts",
     "./workbench-stub": "./src/workbench-stub.tsx"
   },

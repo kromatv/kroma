@@ -201,5 +201,4 @@ const s = styles({
   header: { borderBottomWidth: 1, borderBottomColor: 'border' },
 });
 
-export type { PageViewProps };
 export { PageView };

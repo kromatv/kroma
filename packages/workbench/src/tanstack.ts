@@ -40,13 +40,8 @@
 
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import { useCallback, useMemo } from 'react';
-import {
-  type Navigate,
-  parseView,
-  viewPath,
-  type WorkbenchLocation,
-  type WorkbenchRouter,
-} from './router';
+import type { Navigate, WorkbenchLocation, WorkbenchRouter } from './router';
+import { parseView, viewPath } from './view';
 
 interface TanstackOptions {
   // The route holding just a story, used when the view is the default preview. Must carry a

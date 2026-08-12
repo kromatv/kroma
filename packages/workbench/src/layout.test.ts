@@ -1,5 +1,8 @@
+// @vitest-environment jsdom
+
+import { fireEvent, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { BREAKPOINTS, layoutFor } from './layout';
+import { BREAKPOINTS, layoutFor, useLayout } from './layout';
 
 describe('layoutFor', () => {
   it('keeps all three regions side by side on a desk', () => {
@@ -59,5 +62,30 @@ describe('layoutFor', () => {
     const layout = layoutFor(0, 0);
     expect(layout.mode).toBe('wide');
     expect([layout.width, layout.height]).toEqual([1440, 900]);
+  });
+});
+
+describe('useLayout', () => {
+  // jsdom lays nothing out, so react-native-web reads the window through the
+  // documentElement box it is told about here.
+  function windowIs(width: number, height: number): void {
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      configurable: true,
+      value: width,
+    });
+    Object.defineProperty(document.documentElement, 'clientHeight', {
+      configurable: true,
+      value: height,
+    });
+    fireEvent(window, new Event('resize'));
+  }
+
+  it('moves the regions when the window does, without a media query anywhere', () => {
+    windowIs(1440, 900);
+    const { result } = renderHook(() => useLayout());
+    expect(result.current.mode).toBe('wide');
+    windowIs(500, 900);
+    expect(result.current.mode).toBe('compact');
+    expect(result.current.nav).toBe('drawer');
   });
 });

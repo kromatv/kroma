@@ -49,7 +49,7 @@ export interface LogCommit {
  * are not committed, and which ones the index has already renamed - the second
  * is what keeps a moved component's history attached to it before the move is
  * committed. */
-export interface WorkingTree {
+interface WorkingTree {
   renamedFrom: Map<string, string>;
   dirty: Set<string>;
   untracked: string[];

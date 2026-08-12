@@ -2,12 +2,13 @@
 // moved, and the commits behind that. It sits beside the source link because
 // the two answer the same question - where this component came from.
 
-import { Box, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
+import { Box, styles, Text } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 import { useEscapeKey } from './command';
 import { HistoryBlock } from './history-view';
 import { useStoryHistory } from './source';
+import { IconTool } from './toolbar-menu';
 
 interface StoryHistoryProps {
   open: boolean;
@@ -22,18 +23,12 @@ function StoryHistory({ open, onOpen, onClose }: Readonly<StoryHistoryProps>) {
   if (!provenance?.entry) return null;
   return (
     <Box>
-      <IconButton
-        variant="ghost"
-        size={32}
-        radius="sm"
-        active={open}
+      <IconTool
+        glyph="history"
         label="When this component was written and last changed"
-        ring={false}
-        focusScale={1}
+        active={open}
         onPress={onOpen}
-      >
-        <Icon name="history" size={16} color={open ? 'accent' : 'textMuted'} />
-      </IconButton>
+      />
       {open ? (
         <Panel onClose={onClose}>
           <HistoryBlock entry={provenance.entry} repository={provenance.repository} limit={4} />
@@ -65,5 +60,4 @@ const s = styles({
   body: { px: 12, pb: 12 },
 });
 
-export type { StoryHistoryProps };
 export { StoryHistory };

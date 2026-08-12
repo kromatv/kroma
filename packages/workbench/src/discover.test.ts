@@ -89,6 +89,13 @@ describe('discoverVite', () => {
     expect(() => discoverVite(found)).toThrow(/unknown story "buton"/);
   });
 
+  it('gives a story the JSX a build read out of its own file', () => {
+    const codes = { [BUTTON]: { render: '<Button label="Play" />', scenes: [] } };
+    expect(discoverVite(modules(), {}, {}, codes).find((s) => s.id === 'button')?.code).toBe(
+      '<Button label="Play" />',
+    );
+  });
+
   it('takes a story’s prose from the sibling .docs.mdx the module glob found', () => {
     const found = modules();
     found[DOCS] = { default: demoComponent };
@@ -120,6 +127,7 @@ describe('discoverMetro', () => {
     expect(button?.demos[0]?.name).toBe('Detail actions');
     expect(button?.demos[0]?.code).toBeUndefined();
     expect(button?.props).toEqual([]);
+    expect(button?.code).toBeUndefined();
   });
 
   // A `.mdx` compiles to a component under Metro too (mdx-transformer.cjs), so

@@ -156,5 +156,4 @@ function snippet(story: Story, args: Record<string, unknown>): string {
   return `<${name}\n  ${props.join('\n  ')}\n/>`;
 }
 
-export type { RichTextProps };
 export { Guidelines, Markdown, RichText, StoryProse, snippet };

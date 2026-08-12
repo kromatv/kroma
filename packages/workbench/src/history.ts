@@ -5,7 +5,7 @@
 // can act on. Empty on Metro, which has no build-time reader - the same shape as
 // the prop docs.
 
-import { WEB_LINK } from './link';
+import { permalink } from './link';
 import { repoPath } from './repo-path';
 
 /** One commit, as a panel lists it. */
@@ -59,9 +59,7 @@ function historyOf(
 /** The permalink to one commit. Null unless the build names a remote, so a
  * workbench built outside a checkout lists its commits without linking them. */
 function commitUrl(repository: string | null, sha: string): string | null {
-  if (!(repository && /^[0-9a-f]{7,40}$/i.test(sha))) return null;
-  const url = `${repository.replace(/\/+$/, '')}/commit/${sha}`;
-  return WEB_LINK.test(url) ? url : null;
+  return permalink(repository, 'commit', sha);
 }
 
 /** The permalink to a single FILE, pinned to the revision this build was made
@@ -72,9 +70,7 @@ function fileUrl(
   root: string,
   path: string | undefined,
 ): string | null {
-  if (!(repository && commit && /^[0-9a-f]{7,40}$/i.test(commit) && path)) return null;
-  const url = `${repository.replace(/\/+$/, '')}/blob/${commit}/${repoPath(root, path)}`;
-  return WEB_LINK.test(url) ? url : null;
+  return path ? permalink(repository, 'blob', commit, repoPath(root, path)) : null;
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -141,5 +137,5 @@ function recentChanges(
   return rows.sort((a, b) => changedAt(b.entry) - changedAt(a.entry) || (a.name < b.name ? -1 : 1));
 }
 
-export type { Bucket, HistoryCommit, HistoryEntry, HistoryRow, HistorySubject, KitHistory };
+export type { HistoryCommit, HistoryEntry, HistoryRow, HistorySubject, KitHistory };
 export { agoLabel, BUCKETS, bucketOf, commitUrl, dayLabel, fileUrl, historyOf, recentChanges };

@@ -37,7 +37,7 @@ export function standaloneOptions({ entry, outfile, esbuild = {} }: StandaloneSc
  * The point is that there is no separate command to forget: `dev` and `build`
  * both produce it, and in dev an edit to the source rebuilds it rather than
  * needing a server restart. It writes into `public/`, which the dev server
- * serves and the build copies — so the output is a build artefact: git-ignore
+ * serves and the build copies, so the output is a build artefact: git-ignore
  * it, and edit the source.
  */
 export function standaloneScript(options: StandaloneScriptOptions): Plugin {
@@ -46,7 +46,7 @@ export function standaloneScript(options: StandaloneScriptOptions): Plugin {
   return {
     name: `kroma:standalone-script:${options.outfile.split(/[/\\]/).pop()}`,
     // These scripts are client artefacts, and `buildStart` fires once per Vite
-    // environment — without this the worker is bundled again for the SSR pass.
+    // environment: without this the worker is bundled again for the SSR pass.
     applyToEnvironment: (env) => env.name === 'client',
     async buildStart() {
       await run();

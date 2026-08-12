@@ -198,5 +198,4 @@ function Controls({ controls, args, onChange, onReset }: Readonly<ControlsProps>
 
 const textInput = style({ fontSize: 15, fontWeight: '600' });
 
-export type { ControlsProps };
-export { ControlRow, Controls, MAX_CHIPS };
+export { Controls };

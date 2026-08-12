@@ -159,7 +159,7 @@ interface Namespace {
 /** A compound component's name and the names of its parts. `Namespace` is one;
  * the rule below takes the shape rather than the AST so it can be read - and
  * tested - without a checker. */
-export interface NamespaceShape {
+interface NamespaceShape {
   name: string;
   parts: readonly { name: string }[];
 }

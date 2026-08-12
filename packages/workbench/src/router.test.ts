@@ -8,9 +8,8 @@ vi.mock('@kroma/ui/kit', () => ({
   webWindow: () => (offWeb.value ? null : window),
 }));
 
-const { memoryRouter, parseView, pathRouter, searchParamsRouter, viewPath } = await import(
-  './router'
-);
+const { memoryRouter, pathRouter, searchParamsRouter } = await import('./router');
+const { parseView, viewIndex, viewPath } = await import('./view');
 
 describe('parseView', () => {
   it('takes the two named views', () => {
@@ -52,6 +51,14 @@ describe('viewPath', () => {
     for (const view of ['matrix', 'scene:0', 'scene:12', 'demo:3'] as const) {
       expect(parseView(viewPath(view))).toBe(view);
     }
+  });
+});
+
+describe('viewIndex', () => {
+  it('names which scene or demo a view is', () => {
+    expect(viewIndex('scene:0')).toBe(0);
+    expect(viewIndex('scene:12')).toBe(12);
+    expect(viewIndex('demo:3')).toBe(3);
   });
 });
 

@@ -25,8 +25,6 @@ interface Searchable {
   summary?: string;
 }
 
-/** Case-insensitive match on everything the row says about itself. Takes the
- * shape rather than a `Story`, so an article is searched the same way. */
 // A section's glyph, so the tree and the palette name a group the same way.
 // Beside the group order rather than in either consumer: two copies would drift
 // the moment a section is added.
@@ -48,6 +46,8 @@ function glyphFor(group: string): IconName {
   return GROUP_GLYPH[group] ?? 'square';
 }
 
+/** Case-insensitive match on everything the row says about itself. Takes the
+ * shape rather than a `Story`, so an article is searched the same way. */
 function matches(entry: Searchable, query: string): boolean {
   if (!query) return true;
   const needle = query.toLowerCase();
@@ -82,8 +82,16 @@ function tierFor(path: string): string {
   return 'Other';
 }
 
+/** Compares two strings by their code units. Deliberately not `localeCompare`:
+ * that orders by the host's locale, so the same tree would sort differently on
+ * a laptop than in CI. */
+function byText(a: string, b: string): number {
+  if (a < b) return -1;
+  return a > b ? 1 : 0;
+}
+
 /** The distinct values of `key` with the items that carry them, in encounter
- * order — which, after `orderStories`, is already the sorted order. */
+ * order, which, after `orderStories`, is already the sorted order. */
 function groupBy<T, K>(items: readonly T[], key: (item: T) => K): { key: K; items: T[] }[] {
   const out = new Map<K, T[]>();
   for (const item of items) {
@@ -118,7 +126,7 @@ function orderStories(stories: readonly Story[]): Story[] {
 
 export {
   attachTiers,
-  GROUP_GLYPH,
+  byText,
   GROUP_ORDER,
   glyphFor,
   groupBy,
