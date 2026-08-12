@@ -78,7 +78,7 @@ toast({ message: 'Link copied', position: 'bottom-center' })`,
     {
       name: 'A remote joins',
       docs: 'What a television shows when somebody picks up its remote, and why the default is top-right: a notice about the status cluster belongs beside it, not over the row the viewer is browsing.',
-      render: () => (
+      example: () => (
         <Screen position="top-right">
           <Button
             label="Connect"
@@ -97,7 +97,7 @@ toast({ message: 'Link copied', position: 'bottom-center' })`,
     {
       name: 'On a phone',
       docs: 'The bottom is where a hand-held expects a notice: it is where the thumb already is, and it is the edge the notch is not on.',
-      render: () => (
+      example: () => (
         <Screen position="bottom-center">
           <Button
             label="Say it"
@@ -109,7 +109,7 @@ toast({ message: 'Link copied', position: 'bottom-center' })`,
     {
       name: 'The six corners',
       docs: 'One host serves the lot, because a notice that names its own position beats the shell it was mounted with. Compare them side by side before choosing: a corner is a promise about what the notice is allowed to cover.',
-      render: () => (
+      example: () => (
         <Screen height={420}>
           <Box row wrap gap={10}>
             {POSITIONS.map((position) => (
@@ -138,7 +138,7 @@ toast({ message: 'Link copied', position: 'bottom-center' })`,
     {
       name: 'Newest nearest the edge',
       docs: 'Stacking is a mirror rather than a rule to remember: whichever edge a column is anchored to, the newest notice is the one against it, so the eye lands on the thing that just happened.',
-      render: () => (
+      example: () => (
         <Screen height={420}>
           <Box row wrap gap={10}>
             <Button

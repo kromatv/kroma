@@ -55,7 +55,7 @@ export default story({
     {
       name: 'Units',
       docs: 'A prefix and a suffix that are text rather than glyphs. The entry drops its own padding on whichever side an addon is already holding, so `$` sits where the caret would have, and the number starts right after it instead of a stop further in.',
-      render: () => (
+      example: () => (
         <InputGroup.Root label="Amount">
           <InputGroup.Addon>
             <InputGroup.Text>$</InputGroup.Text>
@@ -70,7 +70,7 @@ export default story({
     {
       name: 'A button in the shell',
       docs: 'The action belongs to the value being typed, so it lives in the box with it. Neither button is a size someone picked: both are the shell height minus the inset, with the corner that leaves the two concentric, which is why they still look right when the shell is `md` on a television. `InputGroup.IconButton` is the icon-only one, whose `label` is the accessible name rather than visible text.',
-      render: () => (
+      example: () => (
         <Box gap={16}>
           <InputGroup.Root label="Share link">
             <InputGroup.Input defaultValue="https://kroma.tv/invite/9f2a" physicalKeyboard />
@@ -93,7 +93,7 @@ export default story({
     {
       name: 'A picker row',
       docs: "The composed shape the admin console uses for a pick-from-dialog value: a read-only entry naming the choice, the thumbnail as the leading addon, the action welded into the shell. On the console's dense `sm` shell, which is where tight insets show first.",
-      render: () => (
+      example: () => (
         <Box gap={16}>
           <InputGroup.Root size="sm" label="Image">
             <InputGroup.Addon>
@@ -120,7 +120,7 @@ export default story({
     {
       name: 'A bar under the entry',
       docs: 'What `block-end` is for: a bar the width of the shell, under a paragraph rather than beside it. Written first or last in the JSX makes no difference, because `align` decides where it lands.',
-      render: () => (
+      example: () => (
         <InputGroup.Root label="Comment">
           <InputGroup.Textarea rows={3} placeholder="Write a comment" physicalKeyboard />
           <InputGroup.Addon align="block-end" divider>
@@ -134,7 +134,7 @@ export default story({
     {
       name: 'A bar on both edges',
       docs: 'The fullest shape: a header naming what is being edited, a footer holding the action, the entry between them. `divider` rules each bar off from the entry, which is the line that stops the whole thing reading as one undifferentiated box.',
-      render: () => (
+      example: () => (
         <InputGroup.Root label="Script">
           <InputGroup.Addon align="block-start" divider>
             <Icon name="file-code" size={16} color="textDim" />

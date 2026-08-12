@@ -101,7 +101,7 @@ export default story({
     {
       name: 'Its own trigger',
       docs: 'A trigger the caller owns through `render`, which is how an account chip opens a menu.',
-      render: () => <AccountMenu />,
+      example: () => <AccountMenu />,
     },
   ],
 });

@@ -9,7 +9,8 @@
 import { Box, Icon, type TextProps } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import { blocks, segments } from './markdown';
-import { MDX_COMPONENTS, MdxDoc, Prose } from './mdx';
+import { MDX_COMPONENTS, MdxDoc } from './mdx';
+import { Prose } from './mdx-marks';
 import type { Story, StoryDocs } from './story';
 
 const {

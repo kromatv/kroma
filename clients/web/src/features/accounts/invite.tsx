@@ -70,7 +70,9 @@ export function InvitePage() {
   if (!allowed) {
     return (
       <main className={PAGE_MAIN}>
-        <EmptyState.Root icon="lock" title={t('admin.noUsersPermission')} />
+        <EmptyState.Root icon="lock">
+          <EmptyState.Title>{t('admin.noUsersPermission')}</EmptyState.Title>
+        </EmptyState.Root>
       </main>
     );
   }
@@ -95,7 +97,10 @@ export function InvitePage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader.Root title={t('nav.inviteUser')} subtitle={t('admin.inviteIntro')} />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('nav.inviteUser')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.inviteIntro')}</PageHeader.Subtitle>
+      </PageHeader.Root>
 
       <Box mt={24}>
         <Surface elevated pad="none" radius={16} px={22} py={20} gap={18} minW={0}>
@@ -108,19 +113,17 @@ export function InvitePage() {
               onValueChange={(next) => setPicked(next as Permission[])}
             >
               {PERMISSIONS.map((p) => (
-                <ChoiceList.Item
-                  key={p.key}
-                  value={p.key}
-                  label={t(p.labelKey)}
-                  hint={t(p.hintKey)}
-                />
+                <ChoiceList.Item key={p.key} value={p.key}>
+                  <ChoiceList.Label>{t(p.labelKey)}</ChoiceList.Label>
+                  <ChoiceList.Hint>{t(p.hintKey)}</ChoiceList.Hint>
+                </ChoiceList.Item>
               ))}
             </ChoiceList.Root>
           </Box>
 
           <Divider />
 
-          <Field.Root label={t('admin.inviteExpiry')} hint={t('admin.inviteExpiryHint')}>
+          <Field.Root label={t('admin.inviteExpiry')}>
             <SegmentedControl.Root
               label={t('admin.inviteExpiry')}
               value={expiry}
@@ -130,6 +133,7 @@ export function InvitePage() {
                 label: t('admin.inviteExpiryDays', { count: Number(days) }),
               }))}
             />
+            <Field.Hint>{t('admin.inviteExpiryHint')}</Field.Hint>
           </Field.Root>
 
           <Row gap={12} align="center" wrap>
@@ -159,13 +163,15 @@ export function InvitePage() {
       </Box>
 
       {pending ? (
-        <Section.Root title={t('admin.pendingInvites')} mt={28}>
+        <Section.Root mt={28}>
+          <Section.Header>
+            <Section.Title>{t('admin.pendingInvites')}</Section.Title>
+          </Section.Header>
           {pending.length === 0 ? (
-            <EmptyState.Root
-              icon="mail"
-              title={t('admin.invitesEmpty')}
-              hint={t('admin.invitesEmptyHint')}
-            />
+            <EmptyState.Root icon="mail">
+              <EmptyState.Title>{t('admin.invitesEmpty')}</EmptyState.Title>
+              <EmptyState.Hint>{t('admin.invitesEmptyHint')}</EmptyState.Hint>
+            </EmptyState.Root>
           ) : (
             pending.map((inv) => <PendingInviteRow key={inv.token} inv={inv} onChange={refresh} />)
           )}

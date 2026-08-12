@@ -11,7 +11,7 @@ function Leading({ children }: Readonly<{ children: ReactNode }>) {
   return <Box shrink={0}>{children}</Box>;
 }
 
-/** The row's title. Plain text here is also the row's accessible name. */
+/** The row's title. Written first, its plain text is the row's accessible name. */
 function Label({ children }: Readonly<{ children: ReactNode }>) {
   const { slots } = useListRow('Label');
   return (

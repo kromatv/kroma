@@ -45,7 +45,7 @@ export function ServerRow({
   // are the kit's - a row that drew its own arrived in a different colour with a
   // different focus every time either side was touched.
   return (
-    <ListRow.Root label={name} onPress={onPress} autoFocus={autoFocus}>
+    <ListRow.Root onPress={onPress} autoFocus={autoFocus}>
       <ListRow.Leading>
         <IconWell name="server-2" />
       </ListRow.Leading>
@@ -84,7 +84,10 @@ export function ActionRow({
   onPress: () => void;
 }>) {
   return (
-    <ListRow.Root icon={icon} label={title} hint={sub} autoFocus={autoFocus} onPress={onPress} />
+    <ListRow.Root icon={icon} autoFocus={autoFocus} onPress={onPress}>
+      <ListRow.Label>{title}</ListRow.Label>
+      <ListRow.Hint>{sub}</ListRow.Hint>
+    </ListRow.Root>
   );
 }
 

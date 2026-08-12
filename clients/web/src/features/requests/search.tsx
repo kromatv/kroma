@@ -40,7 +40,11 @@ export function SearchPage() {
   } else if (canDiscover) {
     body = <TrendingBrowse entries={trending.entries} loading={trending.loading} type={type} />;
   } else {
-    body = <EmptyState.Root icon="mood-empty" title={t('discover.empty')} />;
+    body = (
+      <EmptyState.Root icon="mood-empty">
+        <EmptyState.Title>{t('discover.empty')}</EmptyState.Title>
+      </EmptyState.Root>
+    );
   }
 
   return (
@@ -50,10 +54,12 @@ export function SearchPage() {
           <div style={WASH} />
         </div>
         <div style={ABOVE_WASH}>
-          <PageHeader.Root
-            title={t('discover.title')}
-            subtitle={canDiscover ? t('discover.subtitle') : t('discover.subtitleLocal')}
-          />
+          <PageHeader.Root>
+            <PageHeader.Title>{t('discover.title')}</PageHeader.Title>
+            <PageHeader.Subtitle>
+              {canDiscover ? t('discover.subtitle') : t('discover.subtitleLocal')}
+            </PageHeader.Subtitle>
+          </PageHeader.Root>
 
           <Box row wrap align="center" gap={12} mt={24}>
             <InputGroup.Root size="md" label={t('discover.title')} style={SEARCH_BOX}>
@@ -63,7 +69,7 @@ export function SearchPage() {
               <InputGroup.Input
                 type="search"
                 value={query}
-                onChange={setQuery}
+                onValueChange={setQuery}
                 placeholder={t('discover.placeholder')}
               />
               {query ? (

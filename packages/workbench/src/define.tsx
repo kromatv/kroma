@@ -8,10 +8,13 @@
 // rebuilt per render - happens once, in here, so the host writes no hooks.
 
 import { type ReactNode, useMemo, useState } from 'react';
+import type { Page } from './page';
+import { slug } from './registry';
 import { pathRouter, type WorkbenchRouter } from './router';
-import { type Story, slug } from './story';
+import { SourceProvider, type StorySource, useSourceLink } from './source';
+import type { Story } from './story';
 import type { Choice, ToolbarLens } from './toolbar';
-import { Workbench } from './workbench';
+import { Workbench, type WorkbenchProps } from './workbench';
 
 // A CONTROLLED provider the workbench is wrapped in, and the values it can take. This exists
 // because of a specific, recurring shape: an app context that every story needs in order to
@@ -38,6 +41,8 @@ interface ProviderSpec<T extends string> {
 interface WorkbenchDefinition<T extends string = string> {
   // Build it with `discoverVite` / `discoverMetro`.
   stories: readonly Story[];
+  // Standalone articles, built with `discoverPagesVite` / `discoverPagesMetro`.
+  pages?: readonly Page[];
   brand?: ReactNode;
   title?: string;
   footer?: ReactNode;
@@ -48,6 +53,26 @@ interface WorkbenchDefinition<T extends string = string> {
   router?: WorkbenchRouter;
   provider?: ProviderSpec<T>;
   lenses?: readonly ToolbarLens[];
+  // Where the stories' own code is published, and the revision this build was
+  // made from. Given one, the toolbar carries a link to the open component's
+  // source, pinned to that revision; without it there is no link.
+  source?: StorySource;
+}
+
+// The shell with the source link wired around it. Its own component because
+// `useSourceLink` is a hook and both roads out of `defineWorkbench` need it.
+function Mounted({
+  source,
+  router,
+  stories,
+  ...rest
+}: Readonly<Omit<WorkbenchProps, 'router'> & { router: WorkbenchRouter; source?: StorySource }>) {
+  const link = useSourceLink(source, stories, router);
+  return (
+    <SourceProvider binding={link.binding}>
+      <Workbench {...rest} stories={stories} router={link.router} />
+    </SourceProvider>
+  );
 }
 
 // Build the workbench component for one host. Everything expensive or stateful is resolved
@@ -56,20 +81,22 @@ interface WorkbenchDefinition<T extends string = string> {
 function defineWorkbench<T extends string = string>(
   definition: WorkbenchDefinition<T>,
 ): () => ReactNode {
-  const { stories, brand, title, footer, provider, lenses = [] } = definition;
+  const { stories, pages, brand, title, footer, provider, source, lenses = [] } = definition;
   const router = definition.router ?? pathRouter();
 
   // No provider: nothing to hold, so the config really is just props.
   if (!provider) {
     return function ConfiguredWorkbench() {
       return (
-        <Workbench
+        <Mounted
           stories={stories}
+          pages={pages}
           brand={brand}
           title={title}
           footer={footer}
           lenses={lenses}
           router={router}
+          source={source}
         />
       );
     };
@@ -102,13 +129,15 @@ function defineWorkbench<T extends string = string>(
     return provider.render(
       value,
       setValue,
-      <Workbench
+      <Mounted
         stories={stories}
+        pages={pages}
         brand={brand}
         title={title}
         footer={footer}
         lenses={all}
         router={router}
+        source={source}
       />,
     );
   };

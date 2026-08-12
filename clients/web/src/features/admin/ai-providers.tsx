@@ -160,15 +160,7 @@ function ModelField({
 }>) {
   const t = useT();
   return (
-    <Field.Root
-      label={t('admin.aiModel')}
-      hint={
-        models.length > 0
-          ? t('admin.aiModelsCount', { count: models.length })
-          : t('admin.aiModelHint')
-      }
-      mb={16}
-    >
+    <Field.Root label={t('admin.aiModel')} mb={16}>
       <Row wrap gap={8}>
         {models.length > 0 ? (
           <SearchSelect
@@ -199,6 +191,11 @@ function ModelField({
           disabled={busy !== 'idle'}
         />
       </Row>
+      <Field.Hint>
+        {models.length > 0
+          ? t('admin.aiModelsCount', { count: models.length })
+          : t('admin.aiModelHint')}
+      </Field.Hint>
     </Field.Root>
   );
 }
@@ -216,10 +213,11 @@ function AdvancedSection({
 }>) {
   const t = useT();
   return (
-    <Disclosure title={t('admin.aiAdvanced')}>
+    <Disclosure.Root>
+      <Disclosure.Trigger>{t('admin.aiAdvanced')}</Disclosure.Trigger>
       {spec.baseUrl === 'advanced' ? baseUrlField : null}
       {spec.temperature ? (
-        <Field.Root label={t('admin.aiTemperature')} hint={t('admin.aiTemperatureHint')} mb={16}>
+        <Field.Root label={t('admin.aiTemperature')} mb={16}>
           <NumberField
             label={t('admin.aiTemperature')}
             value={p.temperature}
@@ -228,9 +226,10 @@ function AdvancedSection({
             max={2}
             onChange={(n) => onSet({ temperature: n })}
           />
+          <Field.Hint>{t('admin.aiTemperatureHint')}</Field.Hint>
         </Field.Root>
       ) : null}
-      <Field.Root label={t('admin.aiMaxTokens')} hint={t('admin.aiMaxTokensHint')} mb={16}>
+      <Field.Root label={t('admin.aiMaxTokens')} mb={16}>
         <NumberField
           label={t('admin.aiMaxTokens')}
           value={p.maxTokens}
@@ -238,6 +237,7 @@ function AdvancedSection({
           min={64}
           onChange={(n) => onSet({ maxTokens: n })}
         />
+        <Field.Hint>{t('admin.aiMaxTokensHint')}</Field.Hint>
       </Field.Root>
       {spec.reasoning ? (
         <Row between gap={16} mb={16}>
@@ -249,12 +249,12 @@ function AdvancedSection({
           </Box>
           <Switch
             checked={p.reasoning}
-            onChange={(v) => onSet({ reasoning: v })}
+            onCheckedChange={(v) => onSet({ reasoning: v })}
             label={t('admin.aiReasoning')}
           />
         </Row>
       ) : null}
-    </Disclosure>
+    </Disclosure.Root>
   );
 }
 
@@ -349,12 +349,7 @@ function ProviderBody({
   const t = useT();
   // Placed in the main column (openai) or under Advanced (openrouter/anthropic).
   const baseUrlField = (
-    <Field.Root
-      label={t('admin.aiBaseUrl')}
-      hint={t(BASE_HINT_KEY[p.provider] ?? 'admin.aiBaseUrlHint')}
-      maxW={480}
-      mb={16}
-    >
+    <Field.Root label={t('admin.aiBaseUrl')} maxW={480} mb={16}>
       <Field.Input
         icon="world"
         value={p.baseUrl}
@@ -362,6 +357,7 @@ function ProviderBody({
         placeholder={PROVIDER_BASE[p.provider] || 'http://localhost:11434/v1'}
         textStyle={MONO}
       />
+      <Field.Hint>{t(BASE_HINT_KEY[p.provider] ?? 'admin.aiBaseUrlHint')}</Field.Hint>
     </Field.Root>
   );
   const apiKeyRequirement =
@@ -380,7 +376,7 @@ function ProviderBody({
           />
         </Field.Root>
 
-        <Field.Root label={t('admin.aiProvider')} hint={t('admin.aiProviderHint')} mb={16}>
+        <Field.Root label={t('admin.aiProvider')} mb={16}>
           <SegmentedControl.Root
             value={p.provider}
             onValueChange={onProvider}
@@ -390,16 +386,12 @@ function ProviderBody({
               { value: 'anthropic', label: t('admin.aiProviderAnthropic') },
             ]}
           />
+          <Field.Hint>{t('admin.aiProviderHint')}</Field.Hint>
         </Field.Root>
 
         {spec.baseUrl === 'required' ? baseUrlField : null}
 
-        <Field.Root
-          label={`${t('admin.aiApiKey')} · ${apiKeyRequirement}`}
-          hint={t('admin.aiApiKeyHint')}
-          maxW={480}
-          mb={16}
-        >
+        <Field.Root label={`${t('admin.aiApiKey')} · ${apiKeyRequirement}`} maxW={480} mb={16}>
           <Field.Input
             type="password"
             icon="key"
@@ -408,6 +400,7 @@ function ProviderBody({
             placeholder={p.hasApiKey ? t('admin.aiApiKeyKeep') : 'sk-…'}
             textStyle={MONO}
           />
+          <Field.Hint>{t('admin.aiApiKeyHint')}</Field.Hint>
         </Field.Root>
 
         <ModelField

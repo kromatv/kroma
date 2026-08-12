@@ -134,11 +134,13 @@ export function AiPage() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.aiTitle')}
-        subtitle={t('admin.aiSub')}
-        actions={<StatusChip enabled={cfg.enabled} />}
-      />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.aiTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.aiSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
+          <StatusChip enabled={cfg.enabled} />
+        </PageHeader.Actions>
+      </PageHeader.Root>
 
       <Surface
         elevated
@@ -166,32 +168,31 @@ export function AiPage() {
         </Row>
         <Switch
           checked={cfg.enabled}
-          onChange={(v) => update({ enabled: v })}
+          onCheckedChange={(v) => update({ enabled: v })}
           label={t('admin.aiEnabled')}
         />
       </Surface>
 
-      <Section.Root
-        title={t('admin.aiProviders')}
-        mt={28}
-        actions={
-          <Button
-            variant="glass"
-            size="sm"
-            icon="plus"
-            label={t('admin.aiAddProvider')}
-            onPress={addProvider}
-          />
-        }
-      >
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.aiProviders')}</Section.Title>
+          <Section.Actions>
+            <Button
+              variant="glass"
+              size="sm"
+              icon="plus"
+              label={t('admin.aiAddProvider')}
+              onPress={addProvider}
+            />
+          </Section.Actions>
+        </Section.Header>
         <Text variant="meta" color="textDim" mt={-8} mb={16}>
           {t('admin.aiProvidersHint')}
         </Text>
         {cfg.providers.length === 0 ? (
-          <EmptyState.Root
-            icon="sparkles"
-            title={t('admin.aiNoProviders')}
-            actions={
+          <EmptyState.Root icon="sparkles">
+            <EmptyState.Title>{t('admin.aiNoProviders')}</EmptyState.Title>
+            <EmptyState.Actions>
               <Button
                 variant="glass"
                 size="sm"
@@ -199,8 +200,8 @@ export function AiPage() {
                 label={t('admin.aiAddProvider')}
                 onPress={addProvider}
               />
-            }
-          />
+            </EmptyState.Actions>
+          </EmptyState.Root>
         ) : (
           <Box gap={12}>
             {cfg.providers.map((p) => (

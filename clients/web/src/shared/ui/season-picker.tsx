@@ -1,17 +1,6 @@
 import { useLocale, useT } from '@kroma/ui';
-import {
-  Box,
-  Button,
-  CheckboxFace,
-  Divider,
-  Drawer,
-  IconButton,
-  ListRow,
-  Row,
-  Text,
-} from '@kroma/ui/kit';
+import { Box, Button, CheckboxFace, Drawer, ListRow, Row, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
-import type { ViewStyle } from 'react-native';
 import type { TitleSeason } from '#web/shared/lib/titleView';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
@@ -54,23 +43,30 @@ export function SeasonPicker({
   };
 
   return (
-    <Drawer open title={t('discover.requestSeasons')} onClose={onClose} width={420} fullBelow={640}>
-      <Row shrink={0} between gap={12} px={24} py={20}>
-        <Box shrink={1}>
-          <Text variant="overline" color="text/40">
-            {t('discover.requestSeasons')}
-          </Text>
-          <h2 style={HEADING}>
-            <Text variant="title" mt={4}>
-              {title}
+    <Drawer.Root
+      open
+      title={t('discover.requestSeasons')}
+      onClose={onClose}
+      width={420}
+      fullBelow={640}
+    >
+      <Drawer.Header>
+        <Row between gap={12}>
+          <Box shrink={1}>
+            <Text variant="overline" color="text/40">
+              {t('discover.requestSeasons')}
             </Text>
-          </h2>
-        </Box>
-        <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={onClose} />
-      </Row>
-      <Divider />
+            <h2 style={HEADING}>
+              <Text variant="title" mt={4}>
+                {title}
+              </Text>
+            </h2>
+          </Box>
+          <Drawer.Close />
+        </Row>
+      </Drawer.Header>
 
-      <Box flex px={24} py={16} style={SCROLL}>
+      <Drawer.Panel>
         <ListRow.Group size="sm">
           {openSeasons.length > 1 ? (
             <ListRow.Root
@@ -95,10 +91,9 @@ export function SeasonPicker({
             />
           ))}
         </ListRow.Group>
-      </Box>
+      </Drawer.Panel>
 
-      <Divider />
-      <Box shrink={0} px={24} py={18}>
+      <Drawer.Footer>
         <Button
           block
           label={t('discover.requestN', { n: String(selected.size) })}
@@ -106,8 +101,8 @@ export function SeasonPicker({
           loading={busy}
           disabled={selected.size === 0}
         />
-      </Box>
-    </Drawer>
+      </Drawer.Footer>
+    </Drawer.Root>
   );
 }
 
@@ -155,5 +150,3 @@ function SeasonRow({
 const HEADING = { margin: 0 } as const;
 
 const LOCKED = { opacity: 0.7 } as const;
-
-const SCROLL = { overflowY: 'auto' } as unknown as ViewStyle;

@@ -3,7 +3,7 @@
 // panel. A `.docs.mdx` is not that case: Metro compiles it to a component
 // through @kroma/bundler's mdx-transformer, so the prose is whole.
 
-import { discoverMetro } from '@kroma/workbench';
+import { discoverMetro, discoverPagesMetro, withPageHistory } from '@kroma/workbench';
 
 declare const require: {
   context(
@@ -15,4 +15,8 @@ declare const require: {
 
 export const STORIES = discoverMetro(
   require.context('../../../packages/ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
+);
+
+export const PAGES = withPageHistory(
+  discoverPagesMetro(require.context('../../../packages/ui/src', true, /\.page\.mdx$/)),
 );

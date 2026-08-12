@@ -6,7 +6,8 @@ import { CANVAS, type ColorToken, colors, nestedRadius } from '@kroma/ui/tokens'
 import { useCallback, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { ScrollView } from 'react-native';
-import type { MatrixRow, StoryWidth } from './story';
+import type { MatrixRow } from './derive';
+import type { StoryWidth } from './story';
 
 interface Viewport {
   label: string;

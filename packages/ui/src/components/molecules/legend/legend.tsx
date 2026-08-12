@@ -37,21 +37,19 @@ function Root({ children, ...box }: Readonly<LegendRootProps>) {
 interface LegendItemProps {
   /** The series' own paint, as the chart was given it. */
   color: ColorValue;
-  /** Sugar for the name beside the dot; `children` say it when it is not a
-   *  plain string. */
-  label?: string;
+  /** What the dot stands for. */
   children?: ReactNode;
 }
 
 /** One entry: the dot and what it stands for. The dot is a face and never a
  *  control - a legend reports, it does not filter. */
-function Item({ color, label, children }: Readonly<LegendItemProps>) {
+function Item({ color, children }: Readonly<LegendItemProps>) {
   useLegend('Item');
   return (
     <Box row align="center" gap={7}>
       <Box w={DOT} h={DOT} shrink={0} radius="circle" bg={color} />
       <Text variant="meta" color="textMuted">
-        {label ?? children}
+        {children}
       </Text>
     </Box>
   );
@@ -62,8 +60,8 @@ function Item({ color, label, children }: Readonly<LegendItemProps>) {
  *
  * ```tsx
  * <Legend.Root>
- *   <Legend.Item color={CHART_SERIES.films} label="Films" />
- *   <Legend.Item color={CHART_SERIES.tv} label="Series" />
+ *   <Legend.Item color={CHART_SERIES.films}>Films</Legend.Item>
+ *   <Legend.Item color={CHART_SERIES.tv}>Series</Legend.Item>
  * </Legend.Root>
  * ```
  */

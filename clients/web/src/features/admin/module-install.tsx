@@ -39,7 +39,7 @@ function RunningRow({ name, op }: Readonly<{ name: string; op: OpModule | undefi
       <Progress
         value={runningPct(phase, pct) / 100}
         color={phase === 'done' ? 'success' : 'accent'}
-        size={5}
+        thickness={5}
         rounded
       />
     </Box>
@@ -140,7 +140,7 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
   };
 
   return (
-    <Dialog open title={title} onClose={close} width={520}>
+    <Dialog.Root open title={title} onClose={close} width={520}>
       {stage === 'plan' && (
         <PlanStage
           plan={plan}
@@ -199,6 +199,6 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
           </Dialog.Actions>
         </>
       )}
-    </Dialog>
+    </Dialog.Root>
   );
 });

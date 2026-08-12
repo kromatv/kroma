@@ -26,15 +26,16 @@ function glyphWidth(container: HTMLElement): string | null {
 }
 
 describe('<EmptyState>', () => {
-  it('renders the whole column from one line', () => {
+  it('renders the whole column from its parts', () => {
     const { container } = render(
-      <EmptyState.Root
-        icon="mood-empty"
-        title="Aucun resultat"
-        hint="Essayez un autre terme."
-        detail="GET /api/module/tv.kroma.remote/remote 502"
-        actions={<Text>Reessayer</Text>}
-      />,
+      <EmptyState.Root icon="mood-empty">
+        <EmptyState.Title>Aucun resultat</EmptyState.Title>
+        <EmptyState.Hint>Essayez un autre terme.</EmptyState.Hint>
+        <EmptyState.Detail>GET /api/module/tv.kroma.remote/remote 502</EmptyState.Detail>
+        <EmptyState.Actions>
+          <Text>Reessayer</Text>
+        </EmptyState.Actions>
+      </EmptyState.Root>,
     );
     expect(glyphWidth(container)).toBe('26');
     expect(screen.getByText('Aucun resultat')).toBeTruthy();
@@ -43,29 +44,15 @@ describe('<EmptyState>', () => {
     expect(screen.getByText('Reessayer')).toBeTruthy();
   });
 
-  it('writes from its parts exactly what the sugar writes', () => {
-    const sugar = render(
-      <EmptyState.Root
-        icon="mood-empty"
-        title="Aucun resultat"
-        hint="Essayez un autre terme."
-        detail="502"
-        actions={<Text>Reessayer</Text>}
-      />,
-    ).container.innerHTML;
+  it('draws the same mark whether it comes from the icon or from a written media', () => {
+    const sugar = render(<EmptyState.Root icon="mood-empty" />).container.innerHTML;
     cleanup();
-    const parts = render(
+    const part = render(
       <EmptyState.Root>
         <EmptyState.Media name="mood-empty" />
-        <EmptyState.Title>Aucun resultat</EmptyState.Title>
-        <EmptyState.Hint>Essayez un autre terme.</EmptyState.Hint>
-        <EmptyState.Detail>502</EmptyState.Detail>
-        <EmptyState.Actions>
-          <Text>Reessayer</Text>
-        </EmptyState.Actions>
       </EmptyState.Root>,
     ).container.innerHTML;
-    expect(parts).toBe(sugar);
+    expect(part).toBe(sugar);
   });
 
   it.each([
@@ -83,11 +70,23 @@ describe('<EmptyState>', () => {
 
   it('offsets an inline state by its size, and fills the same way at every size', () => {
     const inline = SIZES.map((size) =>
-      frameOf(render(<EmptyState.Root size={size} title="x" />).container),
+      frameOf(
+        render(
+          <EmptyState.Root size={size}>
+            <EmptyState.Title>x</EmptyState.Title>
+          </EmptyState.Root>,
+        ).container,
+      ),
     );
     cleanup();
     const filled = SIZES.map((size) =>
-      frameOf(render(<EmptyState.Root size={size} layout="fill" title="x" />).container),
+      frameOf(
+        render(
+          <EmptyState.Root size={size} layout="fill">
+            <EmptyState.Title>x</EmptyState.Title>
+          </EmptyState.Root>,
+        ).container,
+      ),
     );
     expect(new Set(inline).size).toBe(SIZES.length);
     expect(new Set(filled).size).toBe(1);

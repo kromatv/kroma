@@ -64,7 +64,7 @@ function InstalledRow({
           </Text>
           <Switch
             checked={m.enabled}
-            onChange={busy ? undefined : (v) => void toggle(v)}
+            onCheckedChange={busy ? undefined : (v) => void toggle(v)}
             label={m.name}
           />
         </Table.Cell>
@@ -111,19 +111,19 @@ export function InstalledList({
   const shown = all.filter((m) => matchesQuery(m, query));
   if (modules && all.length === 0) {
     return (
-      <EmptyState.Root
-        icon="apps"
-        title={t('admin.modulesInstalledEmpty')}
-        hint={t('admin.modulesInstalledEmptyHint')}
-      />
+      <EmptyState.Root icon="apps">
+        <EmptyState.Title>{t('admin.modulesInstalledEmpty')}</EmptyState.Title>
+        <EmptyState.Hint>{t('admin.modulesInstalledEmptyHint')}</EmptyState.Hint>
+      </EmptyState.Root>
     );
   }
   if (modules && shown.length === 0) {
     return (
-      <EmptyState.Root
-        icon="search"
-        title={t('admin.modulesEmptySearch', { query: query.trim() })}
-      />
+      <EmptyState.Root icon="search">
+        <EmptyState.Title>
+          {t('admin.modulesEmptySearch', { query: query.trim() })}
+        </EmptyState.Title>
+      </EmptyState.Root>
     );
   }
   return (

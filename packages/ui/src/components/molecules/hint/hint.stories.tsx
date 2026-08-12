@@ -19,12 +19,12 @@ export default story({
     ],
   },
   matrix: false,
+  component: Hint,
   args: {
     text: '{left} {right} Browse · OK Select · {back} Back',
     size: 15,
   },
   controls: { size: { min: 11, max: 28, step: 1 } },
-  render: (props) => <Hint {...props} />,
   scenes: [
     {
       name: 'Every key',

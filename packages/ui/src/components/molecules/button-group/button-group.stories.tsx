@@ -154,32 +154,32 @@ export default story({
     {
       name: 'A segmented run',
       docs: 'Bordered members need no separator: their shared edge is one line because each member after the first drops its leading border. `size` on the group is what keeps the run one height.',
-      render: () => <Segmented />,
+      example: () => <Segmented />,
     },
     {
       name: 'Text as a prefix and a suffix',
       docs: 'A chip nothing can press, shaped like the members around it: it says what the neighbouring value IS, so the value itself does not have to spell it out.',
-      render: () => <Chips />,
+      example: () => <Chips />,
     },
     {
       name: 'A separator for borderless members',
       docs: 'A filled member has no edge to share, so two of them would run together into one slab. The separator draws the line the collapsed borders would have drawn, and it occupies a slot, so the member after it is still shaped as the member after it.',
-      render: () => <Borderless />,
+      example: () => <Borderless />,
     },
     {
       name: 'An entry welded to a button',
       docs: "A `<TextField>` is a member like any button: it takes the group's size, drops the corners and the border edge it shares, and lifts itself over its neighbour while it wears the focus ring. That last part is why the field reads the slot rather than the group styling it - only the field knows it is focused, and a collapsed border would otherwise let the member after it overpaint the ring.\n\nWhere this is the whole control rather than a row of them - a search box with a count welded inside its own well - reach for an <InputGroup> instead: there the shell is one well and the addons live *inside* it, so the field draws no fill, frost or edge of its own.",
-      render: () => <WithEntry />,
+      example: () => <WithEntry />,
     },
     {
       name: 'Vertical',
       docs: 'The same rule turned ninety degrees: the top and bottom corners are the ones that survive, and the shared border is the top one. What a remote walks with up and down rather than left and right.',
-      render: () => <Vertical />,
+      example: () => <Vertical />,
     },
     {
       name: 'Nested clusters',
       docs: 'A group inside a group swallows the position it inherits and hands its own children fresh ones, while the outer group stops collapsing borders and spaces the clusters instead. That single rule is the whole of how a toolbar is written.',
-      render: () => <Toolbar />,
+      example: () => <Toolbar />,
     },
   ],
 });

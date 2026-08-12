@@ -12,6 +12,13 @@ usually something that BEHAVES.
 - **`Dialog`** — a modal that takes the remote: it declares a focus SCOPE so the
   D-pad cannot wander back into the page behind, and its backdrop is what a
   pointer user closes it with.
+- **`Resizable`** — panels a reader re-proportions and the seams between them.
+  The layout is a list of shares, so a panel dragged wide on a desk survives a
+  laptop; the seam is one D-pad stop that takes the arrow keys when pressed,
+  because react-resizable-panels is DOM-only and a television is not.
+- **`Command`** — the ⌘K palette: a ranked, grouped list with a cursor the
+  arrows and the pointer share. Its rows are data rather than children, which is
+  [`DESIGN.md`](../DESIGN.md) §3's T2 and T5.
 - **`PerfHud`** — the on-device frame read-out. A television is the only place its
   numbers mean anything and the hardest place to attach a profiler, so the app
   carries its own.

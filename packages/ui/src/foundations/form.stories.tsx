@@ -244,22 +244,22 @@ const email = form.field('email');
     {
       name: 'Every control',
       docs: 'One schema over four kinds of input. `field()` spreads onto a `<Field.Input>` and onto a `<Field.Textarea>`, which is the same two bags either way; `toggle()` onto a `<Switch>`. Anything else - a `<Select>` here - reads `form.values` and reports through `form.setValue`, and still wears the label and error by sitting inside a `<Field.Root>`.',
-      render: () => <EveryControl />,
+      example: () => <EveryControl />,
     },
     {
       name: 'A check with no field to blame',
       docs: 'Two passwords that have to match is a rule about the OBJECT, not about either entry, so zod gives its issue no path and it lands on `form.error` rather than being pinned on the second field or dropped.',
-      render: () => <CrossField />,
+      example: () => <CrossField />,
     },
     {
       name: 'When the submit fails',
       docs: 'While `onSubmit` runs the button spins and presses are ignored. A throw becomes `form.error`, resolved the same way a schema message is - this one throws the catalog key `connect.invalidCode`, so it reads in whichever language the toolbar is set to.',
-      render: () => <FailingSubmit />,
+      example: () => <FailingSubmit />,
     },
     {
       name: 'Without a catalog',
       docs: 'No `t`, and messages written as sentences: they show exactly as the schema wrote them, and `msg()` still fills in the vars. What a throwaway form or a one-language app looks like - nothing has to be added to a catalog first.',
-      render: () => <NoCatalog />,
+      example: () => <NoCatalog />,
     },
   ],
 });

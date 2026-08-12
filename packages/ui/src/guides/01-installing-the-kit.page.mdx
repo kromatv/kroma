@@ -1,0 +1,294 @@
+import { Figure } from './figure';
+import { WiringCheck } from './install-check';
+
+export const title = 'Installing the kit';
+export const summary = 'Consuming @kroma/ui as a package: what it ships, and what a Vite app and a Metro app each have to be told first.';
+export const width = 'wide';
+
+`@kroma/ui` is one component library for every screen KROMA runs on: a browser,
+a phone, a television. This page is about getting it into an app of your own -
+the guides after it are about what is inside.
+
+It ships as **source**. Its `build` script is `tsc --noEmit` - it type-checks
+and emits nothing - and the `exports` map points at `.ts` and `.tsx` files, so
+the app's own bundler compiles the kit along with the app.
+
+That is not a shortcut taken to save a build step. A platform split in this kit
+is two files - `focus-nav.ts` beside `focus-nav.web.ts`, `select-options.tsx`
+beside `select-options.web.tsx` - and which of the pair wins is a **resolver's**
+decision. A published bundle would have made that decision once, at publish
+time, for every target at once.
+
+<Figure caption="What the bundle reading this page can say about its own wiring. Each line is measured now, in this build: the stylesheet is read off the document, the faces are asked of the font set, the glyph count is whatever the icon pass kept.">
+  <WiringCheck />
+</Figure>
+
+## What you bring, and what comes with it
+
+`react` and `react-native` are **peer** dependencies, so the app owns them and
+there is exactly one copy of each in the tree. Two copies of React is the
+"Invalid hook call" every monorepo meets once; two copies of React Native is
+worse, because nothing errors at all.
+
+| Peer | Range | |
+| --- | --- | --- |
+| `react` | `>=18` | the app's copy, deduped |
+| `react-dom` | `>=18` | only where the target is a browser |
+| `react-native` | `*` | an alias everywhere here - see below |
+| `expo-video` | `~57.0.1` | optional; only `<Player>` reaches for it |
+
+What the package installs for itself needs no help: `@kroma/core`,
+`@tabler/icons-react-native` (with `@tabler/icons-react` for the browser
+targets), `react-native-svg` and `react-tv-space-navigation`.
+
+## The doors in
+
+| Specifier | Behind it |
+| --- | --- |
+| `@kroma/ui/kit` | every component, flat: `Button`, `ListRow`, `Rail` |
+| `@kroma/ui/kit/atoms/button` | one component, for a package that wants one |
+| `@kroma/ui` | the services half: the hooks, the providers and `<Player>` |
+| `@kroma/ui/tokens` | the raw values, as TypeScript |
+| `@kroma/ui/css` | the same values as CSS custom properties, for a browser |
+| `@kroma/ui/fonts` | `KIT_FONTS`, the Metro asset registrations |
+| `@kroma/ui/vite` | `kromaUI()`, the Vite plugin |
+| `@kroma/ui/bundler` | the icon pass, for a Metro config |
+| `@kroma/ui/ssr` | `withTheme()`, which grounds `<html>` before it is sent |
+| `@kroma/ui/testing` | a focus scope and a locale, so a test can render a control |
+
+The kit's own files say `#ui/...`. That is an internal alias declared in the
+package's `imports` field: a bundler has to be told how to follow it (below),
+but no app should ever write it.
+
+## A Vite app
+
+What a browser target needs is almost all resolution, and in this repo it lives
+in one shared helper (`webResolve`, `@kroma/bundler/rnw`) so that four shells
+cannot drift into four setups. Written out, it is:
+
+```ts
+import { kromaUI } from '@kroma/ui/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  define: { global: 'globalThis' },
+  plugins: [kromaUI(), react()],
+  resolve: {
+    alias: [
+      { find: /^react-native$/, replacement: 'react-native-web' },
+      { find: /^@tabler\/icons-react-native$/, replacement: '@tabler/icons-react' },
+    ],
+    extensions: ['.web.tsx', '.web.ts', '.tsx', '.ts', '.jsx', '.js', '.json'],
+    dedupe: ['react', 'react-dom', 'react-native-web'],
+  },
+});
+```
+
+- **The alias is anchored.** A plain string alias also matches a subpath, so
+  `react-native/Libraries/…` would quietly become `react-native-web/Libraries/…`.
+- **`.web.*` comes first**, which is the mirror of what Metro does for the
+  native apps - it prefers `.ios` / `.android` / `.native` and never sees these.
+- **`global: 'globalThis'`** because react-native-web's `Animated` reads React
+  Native's `global`, which no browser defines. Without it every animated
+  component throws the moment it unmounts and tries to stop its animation.
+- **The Tabler swap** lands the icons on DOM `<svg>` rather than
+  react-native-svg, which keeps that runtime out of the browser bundles.
+
+An SSR target has one more thing to say: react-native-web and three packages
+around it must not be externalised, or Node's CJS interop hands the server a
+`createPrefixer` that is `undefined`. `RNW_SSR_NO_EXTERNAL` is that list, kept
+beside the aliases that cause it.
+
+### The stylesheet is one line
+
+```css
+@import "@kroma/ui/css";
+```
+
+`kromaUI()` expands that at build time from the TypeScript tokens, the way
+`@import "tailwindcss"` expands into Tailwind. So there is no generated CSS to
+commit, and the two representations of a colour cannot drift.
+
+| Specifier | Emits |
+| --- | --- |
+| `@kroma/ui/css` | fonts + tokens + motion + base: what an app wants |
+| `@kroma/ui/css/tokens` | the custom properties, both palettes |
+| `@kroma/ui/css/fonts` | the `@font-face` rules |
+| `@kroma/ui/css/motion` | the keyframes the components animate with |
+| `@kroma/ui/css/reset` | the UA stylesheet undone, and nothing else |
+| `@kroma/ui/css/page` | body, focus ring, scrollbars, with the reset left out |
+| `@kroma/ui/css/base` | `reset` and `page` together |
+| `@kroma/ui/css/theme` | the Tailwind v4 bridge: `bg-accent`, `text-muted`, … |
+
+Take the parts where the whole would collide: a Tailwind app already has
+preflight, and a second unlayered reset outranks every utility it meets
+(`h1 { font-size: inherit }` beats `text-4xl`).
+
+Two rules the builds enforce the hard way, because both failures are silent -
+the build succeeds and ships `background: var(--kroma-bg)` pointing at nothing:
+
+1. **`kromaUI()` comes before `tailwindcss()`.** Tailwind resolves `@import`
+   itself, so from there it swallows the specifier it does not know. The plugin
+   checks the order and throws rather than letting that ship.
+2. **The directive belongs in the app's own entry stylesheet.** Vite inlines
+   nested CSS `@import`s inside its own plugin, where the expansion never sees
+   them.
+
+### The icons are scanned, not tree-shaken
+
+A glyph resolves by name (`<Icon name="wave-sine" />`), so no bundler can prove
+which of Tabler's thousands are reachable. `kromaUI()` therefore walks the
+app's sources for anything shaped like a glyph name and keeps only those. An
+app that reflects over the catalogue - `iconNames()`, `hasGlyph()` - opts out
+with `kromaUI({ icons: 'full' })`, and a workbench adds `kromaIconCatalog()` on
+top for Tabler's tags and categories.
+
+## A Metro app
+
+Metro needs the same two facts stated in its own vocabulary: one React Native,
+and the kit's internal `#ui` alias.
+
+```js
+const path = require('node:path');
+const { getDefaultConfig } = require('expo/metro-config');
+const { kromaUi } = require('@kroma/ui/bundler');
+
+const workspaceRoot = path.resolve(__dirname, '../..');
+const config = getDefaultConfig(__dirname);
+
+const pinned = {
+  '#ui': path.join(workspaceRoot, 'packages', 'ui', 'src'),
+  'react-native': path.join(__dirname, 'node_modules', 'react-native'),
+};
+
+const previous = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, name, platform) => {
+  for (const [prefix, target] of Object.entries(pinned)) {
+    if (name === prefix || name.startsWith(`${prefix}/`)) {
+      const at = path.join(target, name.slice(prefix.length));
+      return context.resolveRequest(context, at, platform);
+    }
+  }
+  return (previous ?? context.resolveRequest)(context, name, platform);
+};
+
+module.exports = kromaUi.metro(config, { repoRoot: workspaceRoot });
+```
+
+**Metro does not read a package's `imports` field**, which is why `#ui` has to
+be mirrored by hand; Vite, TypeScript and the test runner each need telling
+separately for the same reason. The second entry pins React Native to the app's
+own copy for every module in the graph, which the next section is about.
+
+`kromaUi.metro` is the icon pass again: it writes
+the scanned subset into `node_modules/.cache` and swaps it in through
+`resolveRequest`, since Metro has no virtual modules. It runs at config-eval
+time on purpose - `expo export` crawls the filesystem once and reads every hash
+from that snapshot, so a file first written during resolution is not in it and
+the bundle dies on `Failed to get the SHA-1`.
+
+In a workspace, add the usual three: `watchFolders` reaching the repo root,
+`nodeModulesPaths` naming both the app's and the root's, and
+`unstable_enableSymlinks`.
+
+### The faces are assets, not a stylesheet
+
+There is no CSS on a native target, so the two typefaces are loaded as assets
+and the app waits for them:
+
+```tsx
+import { KIT_FONTS } from '@kroma/ui/fonts';
+import { useFonts } from 'expo-font';
+
+const [loaded, error] = useFonts(KIT_FONTS);
+if (!(loaded || error)) return null;
+```
+
+`KIT_FONTS` is a map of literal `require()` calls, which is what lets Metro see
+the files at all.
+
+### Rendering a `.docs.mdx`
+
+Only if the app renders this workbench's documents. `resolver.sourceExts` has
+to name `mdx`, or the file is not in Metro's file map; `babelTransformerPath`
+is what compiles it to a component, the way `@mdx-js/rollup` does on the Vite
+side.
+
+## The `react-native` alias
+
+Every client here runs the tvOS fork, so `react-native` is an alias:
+`npm:react-native-tvos@…`. Two entries in the root manifest carry it, and both
+are load-bearing:
+
+- **`overrides`** forces the alias onto transitive peers. Roughly thirty
+  packages - the Expo modules, reanimated, screens, gesture-handler - declare
+  `react-native: *`, which an install otherwise satisfies from the registry.
+  The tree then holds two React Natives and those libraries link the non-tvOS
+  one. Nothing errors. The bundle simply behaves as if the television did not
+  exist.
+- **The root dependency** is what makes `expo prebuild` work.
+  `ReactNativeDependencies.podspec` locates its own package with
+  `require.resolve('react-native')` from inside the isolated store, a walk that
+  never visits a workspace's symlinks but does visit `<repo>/node_modules`.
+
+Because that failure is invisible, the Metro config asserts it: what is
+installed under `node_modules/react-native` has to be the package the app
+declares, or the bundle stops before it is built.
+
+## Wiring it at runtime
+
+Everything above is the build. The app's own half is five registrations and two
+hosts, each one overriding a default the kit already has - this is the mobile
+client's root, condensed:
+
+```tsx
+applyMode(readMode());              // the stored ground: dark, light or system
+setTheme(mobileTheme());            // the app's vocabulary: ramp, corners, spacing
+setEntryDefaults({ physicalKeyboard: true, size: 'md' });
+setImageBackend(expoImageBackend);  // which decoder draws artwork
+registerFrost(BlurView);            // what a frosted surface blurs with
+
+<ThemeProvider theme={theme}>
+  <OverlayHost>{children}</OverlayHost>
+</ThemeProvider>
+```
+
+- **`setEntryDefaults`** states the form factor once. The kit defaults to the
+  10-foot behaviour, where a field is a value with a caret and typing arrives
+  from an on-screen keyboard; a phone or a desktop says it has a real keyboard.
+- **`setImageBackend`** and **`registerFrost`** are inversions: a shell that
+  registers nothing gets React Native's own `Image` and a flat wash instead of
+  glass.
+- **`ThemeProvider`** is a switch, not a scope - one per app, and a swap
+  remounts the subtree under it, so place it below whatever state must survive
+  one.
+- **`OverlayHost`** is where a dialog or a drawer actually renders. React
+  Native has no portal, and the one thing it offers instead cannot be used on a
+  television, so a modal surface is mounted up here by context rather than where
+  it was written. An app without it has dialogs that are clipped by whatever
+  they were written inside.
+- **`TvStage`** wraps the whole tree on a television, and is what scales the
+  fixed 1920x1080 canvas the layouts are authored against to the panel.
+
+## Before you call it installed
+
+- [ ] `react` and `react-native` resolve to one copy each.
+- [ ] A browser target aliases `react-native` to `react-native-web`, anchored,
+      and puts `.web.*` first.
+- [ ] The entry stylesheet - the app's own, not a nested one - imports
+      `@kroma/ui/css`, and `kromaUI()` sits before `tailwindcss()`.
+- [ ] A native target loads `KIT_FONTS` and gates its first screen on them.
+- [ ] Both bundlers, TypeScript and the test runner have been told about `#ui`.
+- [ ] The app states its form factor with `setEntryDefaults` before the first
+      render.
+
+## Where to go next
+
+- **Tokens** - the values everything is made of, and why a token is a plain
+  string rather than something computed.
+- **The six levels** - where a component lives, and the three doors out of the
+  kit.
+- **Composing a component** - the part vocabulary, the rule that a face is
+  written as its part, and the prop names. Read it before writing one.
+- **Icons** - every glyph the kit can draw, searchable.

@@ -2,7 +2,7 @@
 // it works on web and Apple TV without an HTML-emitting dependency.
 
 import { Box, Icon, IconButton, type IconName, styles, Text } from '@kroma/ui/kit';
-import { type ColorToken, colors } from '@kroma/ui/tokens';
+import type { ColorToken } from '@kroma/ui/tokens';
 import { useCallback, useMemo } from 'react';
 import { Platform, ScrollView } from 'react-native';
 import { type CopyState, useCopy } from './clipboard';
@@ -13,19 +13,6 @@ interface Token {
   text: string;
   kind: TokenKind;
 }
-
-// The palette, from the design's own tokens: no imported highlighter theme,
-// and every colour here is one the rest of the app already paints with.
-const INK: Record<TokenKind, string> = {
-  plain: colors.text,
-  tag: colors.accent,
-  attr: colors.info,
-  string: colors.h265,
-  keyword: colors.hdr,
-  number: colors.h265,
-  brace: colors.textDim,
-  comment: colors.textDim,
-};
 
 const KEYWORDS = new Set([
   'const',
@@ -143,6 +130,25 @@ function lines(code: string): Token[][] {
 // in a workbench do not justify bundling one.
 const MONO = Platform.select({ ios: 'Menlo', default: 'monospace' });
 
+// `lineHeight` is shared with the gutter, and neither column adds row spacing of
+// its own, which is what keeps a number level with its line.
+const LINE = { fontFamily: MONO, fontSize: 12.5, lineHeight: 19 } as const;
+
+// The palette, from the design's own tokens: no imported highlighter theme, and
+// every colour here is one the rest of the app already paints with. Written as
+// token NAMES resolved at render, because the workbench swaps themes at run
+// time and a colour read once keeps the palette it was read under.
+const ink = styles({
+  plain: { ...LINE, color: 'text' },
+  tag: { ...LINE, color: 'accent' },
+  attr: { ...LINE, color: 'info' },
+  string: { ...LINE, color: 'h265' },
+  keyword: { ...LINE, color: 'hdr' },
+  number: { ...LINE, color: 'h265' },
+  brace: { ...LINE, color: 'textDim' },
+  comment: { ...LINE, color: 'textDim' },
+});
+
 interface CodeBlockProps {
   code: string;
   numbers?: boolean;
@@ -195,7 +201,7 @@ function CodeBlock({ code, numbers, copy = true, maxHeight = 320 }: Readonly<Cod
                     ? ' '
                     : row.map((token, index) => (
                         // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-                        <Text key={index} style={INK_STYLE[token.kind]}>
+                        <Text key={index} style={ink[token.kind]}>
                           {token.text}
                         </Text>
                       ))}
@@ -258,20 +264,10 @@ const s = styles({
   gutterCol: { pr: 12, mr: 12, borderRightWidth: 1, borderRightColor: 'border' },
   // Never shrink to the frame: shrinking is what would re-wrap the long lines.
   codeLines: { shrink: 0 },
-  // `lineHeight` is shared with `gutter`, and neither column adds row spacing of
-  // its own, which is what keeps a number level with its line.
-  line: { fontFamily: MONO, fontSize: 12.5, lineHeight: 19 },
-  gutter: { fontFamily: MONO, fontSize: 11.5, lineHeight: 19, opacity: 0.6 },
+  line: { ...LINE },
+  gutter: { fontFamily: MONO, fontSize: 11.5, lineHeight: LINE.lineHeight, opacity: 0.6 },
   copySlot: { top: 6, right: 6, z: 1 },
 });
-// One style array per token KIND, built once: a hundred-line snippet is
-// ~1500 spans, and `CodeBlock` re-renders on any shell state change (a
-// slider drag is one per frame), so building those arrays inline costs
-// thousands of allocations and as many styleq cache misses per unrelated
-// state change.
-const INK_STYLE = Object.fromEntries(
-  Object.entries(INK).map(([kind, color]) => [kind, [s.line, { color }]]),
-) as Record<TokenKind, [typeof s.line, { color: string }]>;
 // The box around the 15pt glyph.
 const COPY_BOX = 29;
 // A notch up from the ghost variant's own focus wash: this button floats over a

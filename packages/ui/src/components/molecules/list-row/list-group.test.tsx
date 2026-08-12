@@ -11,9 +11,15 @@ describe('ListRow.Group', () => {
   it('renders every member', () => {
     render(
       <ListRow.Group>
-        <ListRow.Root label="Langue" onPress={vi.fn()} />
-        <ListRow.Root label="Clavier" onPress={vi.fn()} />
-        <ListRow.Root label="À propos" onPress={vi.fn()} />
+        <ListRow.Root onPress={vi.fn()}>
+          <ListRow.Label>Langue</ListRow.Label>
+        </ListRow.Root>
+        <ListRow.Root onPress={vi.fn()}>
+          <ListRow.Label>Clavier</ListRow.Label>
+        </ListRow.Root>
+        <ListRow.Root onPress={vi.fn()}>
+          <ListRow.Label>À propos</ListRow.Label>
+        </ListRow.Root>
       </ListRow.Group>,
     );
     expect(screen.getByLabelText('Langue')).toBeTruthy();
@@ -24,7 +30,11 @@ describe('ListRow.Group', () => {
   // The contract the group exists for: ONE surface for the list, so a member
   // must not carry the lift a standalone row does.
   it('takes the surface off its members', () => {
-    const { container: alone } = render(<ListRow.Root label="Seule" />);
+    const { container: alone } = render(
+      <ListRow.Root>
+        <ListRow.Label>Seule</ListRow.Label>
+      </ListRow.Root>,
+    );
     const standalone = alone.querySelector('[aria-label="Seule"]') as HTMLElement;
     expect(getComputedStyle(standalone).boxShadow).toBeTruthy();
     expect(getComputedStyle(standalone).backgroundColor).toBeTruthy();
@@ -32,7 +42,9 @@ describe('ListRow.Group', () => {
     cleanup();
     const { container: grouped } = render(
       <ListRow.Group>
-        <ListRow.Root label="Membre" />
+        <ListRow.Root>
+          <ListRow.Label>Membre</ListRow.Label>
+        </ListRow.Root>
       </ListRow.Group>,
     );
     const member = grouped.querySelector('[aria-label="Membre"]') as HTMLElement;
@@ -43,8 +55,12 @@ describe('ListRow.Group', () => {
   it('declares its size to the members, which still get the last word', () => {
     const { container } = render(
       <ListRow.Group size="tv">
-        <ListRow.Root label="Suit" />
-        <ListRow.Root label="Décide" size="sm" />
+        <ListRow.Root>
+          <ListRow.Label>Suit</ListRow.Label>
+        </ListRow.Root>
+        <ListRow.Root size="sm">
+          <ListRow.Label>Décide</ListRow.Label>
+        </ListRow.Root>
       </ListRow.Group>,
     );
     const heightOf = (name: string) =>

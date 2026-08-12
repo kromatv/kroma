@@ -266,7 +266,7 @@ export function ManualGrabModal({
   const canAdd = magnet.trim().length > 0 && title.trim().length > 0;
 
   return (
-    <Dialog open title={t('manual.title')} onClose={onClose} width={520}>
+    <Dialog.Root open title={t('manual.title')} onClose={onClose} width={520}>
       {/* search sub-panel */}
       <SearchPanel
         query={query}
@@ -281,7 +281,6 @@ export function ManualGrabModal({
       {/* magnet + analyze */}
       <Field.Root
         label={t('manual.magnet')}
-        hint={t('manual.magnetHint')}
         value={magnet}
         onValueChange={(v) => {
           setMagnet(v);
@@ -303,6 +302,7 @@ export function ManualGrabModal({
             />
           }
         />
+        <Field.Hint>{t('manual.magnetHint')}</Field.Hint>
       </Field.Root>
       {analyzeErr ? (
         <Text variant="meta" color="dangerHover">
@@ -338,12 +338,12 @@ export function ManualGrabModal({
       <Box row={{ base: false, md: true }} gap={16}>
         <Field.Root
           label={t('manual.titleLabel')}
-          hint={t('manual.titleHint')}
           value={title}
           onValueChange={setTitle}
           flex={{ base: 0, md: 1 }}
         >
           <Field.Input placeholder="The Matrix" />
+          <Field.Hint>{t('manual.titleHint')}</Field.Hint>
         </Field.Root>
         <Field.Root
           label={t('manual.year')}
@@ -390,7 +390,7 @@ export function ManualGrabModal({
         busy={busy}
         disabled={!canAdd}
       />
-    </Dialog>
+    </Dialog.Root>
   );
 }
 

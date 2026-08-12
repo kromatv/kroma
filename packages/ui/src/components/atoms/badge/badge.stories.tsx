@@ -15,7 +15,7 @@ export default story({
     dont: ["Don't invent new tone colors inline - a tone is a design decision, not a prop."],
   },
   variants: badgeVariants,
-  render: (props) => <Badge {...props} />,
+  component: Badge,
   scenes: [
     {
       name: 'All tones',

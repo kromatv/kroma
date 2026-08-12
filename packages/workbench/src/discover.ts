@@ -9,9 +9,10 @@
 
 import type { ComponentType } from 'react';
 import { attachDemos, type DemoFile } from './demos';
-import type { PropDoc } from './props';
+import { type PropDocs, propSections } from './props';
 import { attachDocs, type DocsFile } from './prose';
-import { attachTiers, type DocComponent, orderStories, type Story } from './story';
+import { attachTiers, orderStories } from './registry';
+import type { DocComponent, Story } from './story';
 
 /** Narrows `import.meta.glob` (a Vite compile-time transform with no runtime
  * types) to the two shapes a host needs, so a package also built by Metro
@@ -27,10 +28,6 @@ interface Module {
 
 type Modules = Record<string, Module>;
 type Sources = Record<string, string>;
-
-/** Component name -> its props, read by the host's bundler at build time; see
- * `propDocs` in clients/tv-build. */
-type PropDocs = Record<string, readonly PropDoc[]>;
 
 interface Context {
   keys(): string[];
@@ -60,7 +57,8 @@ function assemble(
   demos: readonly DemoFile[],
   docs: readonly DocsFile[],
 ): readonly Story[] {
-  return attachDocs(attachDemos(orderStories(attachTiers(paths.map(storyAt), paths)), demos), docs);
+  const found = paths.map((path) => ({ ...storyAt(path), path }));
+  return attachDocs(attachDemos(orderStories(attachTiers(found, paths)), demos), docs);
 }
 
 /** Assembles the registry from Vite's globs: `sources` (the `?raw` text glob)
@@ -86,9 +84,10 @@ function discoverVite(
     pathsEnding(found, STORY),
     (path) => {
       const story = (modules[path] as { default: Story }).default;
-      // Matched by name: a story beside `button.tsx` is called `Button`.
-      const documented = props[story.name];
-      return documented?.length ? { ...story, props: documented } : story;
+      // Matched by name: a story beside `button.tsx` is called `Button`, and a
+      // compound one's parts are the keys under it.
+      const documented = propSections(story.name, props);
+      return documented.length ? { ...story, props: documented } : story;
     },
     demos,
     docs,

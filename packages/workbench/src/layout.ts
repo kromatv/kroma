@@ -10,6 +10,11 @@
 // The rule at each step is that the canvas keeps its width: the list becomes a
 // drawer before the component being inspected gets narrow, and the inspector
 // docks under the canvas rather than eating into it.
+//
+// What a reader has DRAGGED is not here: the shell hands these numbers to
+// <Resizable> as the size each region opens at, and the group owns everything
+// after that - the floors, what the window can spare, and the wish surviving a
+// smaller screen.
 
 import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -41,8 +46,6 @@ interface WorkbenchLayout {
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, Math.round(value)));
 
-// The layout for a window of this size. Pure, so it is testable without a
-// renderer and identical on every target.
 function modeFor(width: number): LayoutMode {
   if (width >= BREAKPOINTS.wide) return 'wide';
   return width >= BREAKPOINTS.medium ? 'medium' : 'compact';
@@ -59,6 +62,23 @@ const GUTTER = { wide: 28, medium: 22, compact: 16 } as const;
 // in, rather than flashing the drawer shell for one commit.
 const ASSUMED = { width: 1440, height: 900 } as const;
 
+/** What a drag may not take from the canvas: enough width for the phone
+ * viewport (390 plus its bezel) at 1:1, and enough height for the toolbar, the
+ * heading, the tab row and a band of stage under them. */
+const MIN_CANVAS = { width: 480, height: 320 } as const;
+
+/** A dragged region's own floor - the size its contents stop working at, well
+ * under the size it is computed at. There is no matching ceiling: how large a
+ * region may get is whatever the canvas can spare, which is what the canvas's
+ * own floor already says. */
+const REGION_MIN = { nav: 200, panel: 280, dock: 160 } as const;
+
+/** What the docked inspector shows when it is shut: its tab row and nothing
+ * else. */
+const DOCK_COLLAPSED = 38;
+
+/** The layout for a window of this size. Pure, so it is testable without a
+ * renderer and identical on every target. */
 function layoutFor(rawWidth: number, rawHeight: number): WorkbenchLayout {
   const width = rawWidth || ASSUMED.width;
   const height = rawHeight || ASSUMED.height;
@@ -92,4 +112,4 @@ function useLayout(): WorkbenchLayout {
 }
 
 export type { LayoutMode, WorkbenchLayout };
-export { BREAKPOINTS, layoutFor, useLayout };
+export { BREAKPOINTS, DOCK_COLLAPSED, layoutFor, MIN_CANVAS, REGION_MIN, useLayout };

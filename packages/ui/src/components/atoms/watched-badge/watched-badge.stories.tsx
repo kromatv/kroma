@@ -6,7 +6,7 @@ export default story({
   group: 'Media',
   docs: 'The "watched" pill sitting on the corner of a poster.',
   matrix: false,
+  component: WatchedBadge,
   args: { size: 28 },
   controls: { size: { min: 16, max: 64, step: 2 } },
-  render: (props) => <WatchedBadge {...props} />,
 });

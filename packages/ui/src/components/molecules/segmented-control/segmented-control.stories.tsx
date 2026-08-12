@@ -50,6 +50,6 @@ export default story({
   variants: segmentedControlVariants,
   omit: ['active'],
   matrix: false,
+  component: Demo,
   args: { withDescs: true },
-  render: (props) => <Demo {...props} />,
 });

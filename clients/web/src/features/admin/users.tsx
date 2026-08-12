@@ -57,37 +57,39 @@ function UsersPageInner() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.usersTitle')}
-        subtitle={t('admin.usersSub')}
-        actions={
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.usersTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.usersSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
           <Button icon="plus" label={t('nav.inviteUser')} onPress={() => void openInvite()} />
-        }
-      />
+        </PageHeader.Actions>
+      </PageHeader.Root>
 
       <Box mt={24}>
         <Grid min={200} gap={16}>
-          <StatCard
-            label={t('admin.statUsers')}
-            value={users.length}
-            unit={t('admin.statAccounts')}
-          />
-          <StatCard
-            label={t('admin.statOnline')}
-            value={online}
-            unit={t('admin.statNow')}
-            color="success"
-          />
-          <StatCard
-            label={t('admin.statInvites')}
-            value={invites.length}
-            unit={t('admin.statPending')}
-            color="accent"
-          />
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.statUsers')}</StatCard.Label>
+            <StatCard.Value unit={t('admin.statAccounts')}>{users.length}</StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.statOnline')}</StatCard.Label>
+            <StatCard.Value unit={t('admin.statNow')} color="success">
+              {online}
+            </StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.statInvites')}</StatCard.Label>
+            <StatCard.Value unit={t('admin.statPending')} color="accent">
+              {invites.length}
+            </StatCard.Value>
+          </StatCard.Root>
         </Grid>
       </Box>
 
-      <Section.Root title={t('admin.membersSharing')} mt={28}>
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.membersSharing')}</Section.Title>
+        </Section.Header>
         <Table.Root columns="2.4fr 1fr 1.3fr 1.2fr 44px">
           <Table.Header>
             <Table.Column>{t('admin.colUser')}</Table.Column>
@@ -149,20 +151,22 @@ function UsersPageInner() {
             );
           })}
           {data && users.length === 0 ? (
-            <EmptyState.Root
-              icon="users"
-              title={t('admin.usersEmpty')}
-              hint={t('admin.usersEmptyHint')}
-              actions={
+            <EmptyState.Root icon="users">
+              <EmptyState.Title>{t('admin.usersEmpty')}</EmptyState.Title>
+              <EmptyState.Hint>{t('admin.usersEmptyHint')}</EmptyState.Hint>
+              <EmptyState.Actions>
                 <Button icon="plus" label={t('nav.inviteUser')} onPress={() => void openInvite()} />
-              }
-            />
+              </EmptyState.Actions>
+            </EmptyState.Root>
           ) : null}
         </Table.Root>
       </Section.Root>
 
       {invites.length > 0 ? (
-        <Section.Root title={t('admin.pendingInvites')} mt={28}>
+        <Section.Root mt={28}>
+          <Section.Header>
+            <Section.Title>{t('admin.pendingInvites')}</Section.Title>
+          </Section.Header>
           <Box gap={12}>
             {invites.map((inv) => (
               <PendingInvite key={inv.token} inv={inv} onChange={reloadInvites} />

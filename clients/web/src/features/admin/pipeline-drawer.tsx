@@ -1,10 +1,9 @@
 import type { ElementRow, MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, Callout, color, Divider, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
+import { Box, Button, Callout, color, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
 import { createCallable } from 'react-call';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { fmtDur, kindMeta, posterGrad, statusMeta } from '#web/features/admin/pipeline-meta';
-import { SCROLL_PANE } from '#web/features/admin/web-style';
 import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
 
@@ -49,19 +48,18 @@ export const PipelineDrawer = createCallable<
   const eps = el.epStats;
 
   return (
-    <Drawer
+    <Drawer.Root
       open={!call.ended}
       onClose={close}
       title={t('pipeline.elementSheet')}
-      width={460}
       panelStyle={DRAWER_FILL}
     >
-      <Box px={24} py={20}>
+      <Drawer.Header>
         <Row between mb={16}>
           <Text variant="overline" color="textDim">
             {t('pipeline.elementSheet')}
           </Text>
-          <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={close} />
+          <Drawer.Close />
         </Row>
         <Box row gap={16}>
           <DrawerPoster el={el} />
@@ -77,71 +75,69 @@ export const PipelineDrawer = createCallable<
             </Text>
           </Box>
         </Box>
-      </Box>
-      <Divider color="tint/7" />
+      </Drawer.Header>
 
-      <div style={SCROLL_PANE}>
-        <Box px={24} py={20}>
-          <Text variant="overline" color="textDim" mb={12}>
-            {t('pipeline.treatments')}
-          </Text>
-          <Box gap={10}>
-            {el.treatments.map((tr) => {
-              const m = statusMeta(tr.status);
-              const failed = tr.status === 'failed';
-              return (
-                <Box key={tr.key} px={16} py={14} radius="lg" bg="surface1" border="tint/7">
-                  <Row between gap={12}>
-                    <Text variant="label">{t(`pipeline.t.${tr.key}` as MessageKey)}</Text>
-                    <Row gap={8}>
-                      <Pill
-                        ink={m.color}
-                        bg={m.bg}
-                        leading={<PillDot tone={m.dot} pulse={m.pulse} />}
-                      >
-                        {t(`pipeline.st.${tr.status}` as MessageKey)}
-                      </Pill>
-                      {/* Run just this stage now, at top priority (also acts as a retry on failure). */}
-                      <IconButton
-                        control="sm"
-                        icon="refresh"
-                        active={failed}
-                        label={failed ? t('pipeline.retryStage') : t('pipeline.runStage')}
-                        onPress={() => onRetryStage(tr.key)}
-                        disabled={busy}
-                      />
-                    </Row>
+      <Drawer.Panel>
+        <Text variant="overline" color="textDim" mb={12}>
+          {t('pipeline.treatments')}
+        </Text>
+        <Box gap={10}>
+          {el.treatments.map((tr) => {
+            const m = statusMeta(tr.status);
+            const failed = tr.status === 'failed';
+            return (
+              <Box key={tr.key} px={16} py={14} radius="lg" bg="surface1" border="tint/7">
+                <Row between gap={12}>
+                  <Text variant="label">{t(`pipeline.t.${tr.key}` as MessageKey)}</Text>
+                  <Row gap={8}>
+                    <Pill
+                      ink={m.color}
+                      bg={m.bg}
+                      leading={<PillDot tone={m.dot} pulse={m.pulse} />}
+                    >
+                      {t(`pipeline.st.${tr.status}` as MessageKey)}
+                    </Pill>
+                    {/* Run just this stage now, at top priority (also acts as a retry on failure). */}
+                    <IconButton
+                      control="sm"
+                      icon="refresh"
+                      active={failed}
+                      label={failed ? t('pipeline.retryStage') : t('pipeline.runStage')}
+                      onPress={() => onRetryStage(tr.key)}
+                      disabled={busy}
+                    />
                   </Row>
-                  {failed && tr.error ? (
-                    <Box mt={10}>
-                      <Callout.Root tone="danger" title={tr.error} />
-                    </Box>
-                  ) : null}
-                </Box>
-              );
-            })}
-          </Box>
-
-          {el.kind === 'series' && eps ? (
-            <Box mt={20} px={16} py={14} radius="lg" bg="bg" border="tint/7">
-              <Text variant="overline" color="textDim" mb={8}>
-                {t('pipeline.epsAggregated')}
-              </Text>
-              <Text variant="meta" color="textMuted">
-                {eps.episodes} {t('pipeline.episodesWord')} · {t('pipeline.t.probe')} {eps.probed}/
-                {eps.episodes} · {t('pipeline.t.storyboard')} {eps.storyboarded}/{eps.episodes} ·{' '}
-                {t('pipeline.t.markers')} {eps.markerSeasons}/{eps.seasons}
-              </Text>
-              <Text variant="meta" color="textDim" mt={6}>
-                {t('pipeline.epsNote')}
-              </Text>
-            </Box>
-          ) : null}
+                </Row>
+                {failed && tr.error ? (
+                  <Box mt={10}>
+                    <Callout.Root tone="danger">
+                      <Callout.Title>{tr.error}</Callout.Title>
+                    </Callout.Root>
+                  </Box>
+                ) : null}
+              </Box>
+            );
+          })}
         </Box>
-      </div>
 
-      <Divider color="tint/7" />
-      <Box px={24} py={18}>
+        {el.kind === 'series' && eps ? (
+          <Box mt={20} px={16} py={14} radius="lg" bg="bg" border="tint/7">
+            <Text variant="overline" color="textDim" mb={8}>
+              {t('pipeline.epsAggregated')}
+            </Text>
+            <Text variant="meta" color="textMuted">
+              {eps.episodes} {t('pipeline.episodesWord')} · {t('pipeline.t.probe')} {eps.probed}/
+              {eps.episodes} · {t('pipeline.t.storyboard')} {eps.storyboarded}/{eps.episodes} ·{' '}
+              {t('pipeline.t.markers')} {eps.markerSeasons}/{eps.seasons}
+            </Text>
+            <Text variant="meta" color="textDim" mt={6}>
+              {t('pipeline.epsNote')}
+            </Text>
+          </Box>
+        ) : null}
+      </Drawer.Panel>
+
+      <Drawer.Footer>
         <Button
           block
           icon="refresh"
@@ -152,8 +148,8 @@ export const PipelineDrawer = createCallable<
         <Text variant="meta" color="textDim" textAlign="center" mt={10}>
           {t('pipeline.reprocessNote')}
         </Text>
-      </Box>
-    </Drawer>
+      </Drawer.Footer>
+    </Drawer.Root>
   );
 }, 400);
 

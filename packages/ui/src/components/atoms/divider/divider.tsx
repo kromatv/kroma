@@ -7,8 +7,8 @@ import type { ColorValue } from '#ui/core';
 interface DividerProps {
   /** Run vertically instead of horizontally. */
   vertical?: boolean;
-  /** Thickness. Defaults to 1 on the web scale. */
-  size?: number;
+  /** In px. Defaults to 1 on the web scale. */
+  thickness?: number;
   /** Space above and below (or left and right when vertical). */
   spacing?: number;
   color?: ColorValue;
@@ -16,14 +16,14 @@ interface DividerProps {
 
 function Divider({
   vertical = false,
-  size = 1,
+  thickness = 1,
   spacing = 0,
   color = 'border',
 }: Readonly<DividerProps>) {
   return vertical ? (
-    <Box w={size} self="stretch" bg={color} mx={spacing} />
+    <Box w={thickness} self="stretch" bg={color} mx={spacing} />
   ) : (
-    <Box h={size} self="stretch" bg={color} my={spacing} />
+    <Box h={thickness} self="stretch" bg={color} my={spacing} />
   );
 }
 

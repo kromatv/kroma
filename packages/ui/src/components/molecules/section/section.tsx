@@ -4,11 +4,6 @@ import { Divider } from '#ui/components/atoms/divider';
 import { Text } from '#ui/components/atoms/text';
 
 interface SectionRootProps extends Omit<BoxProps, 'children'> {
-  /** Sugar for a `<Section.Header>` holding a `<Section.Title>`, so the common
-   *  band is one line. */
-  title?: string;
-  /** Sugar for a `<Section.Actions>` inside that same header. */
-  actions?: ReactNode;
   /** Space between the band's content rows, not between them and the header.
    *  Defaults to 16. */
   gap?: number;
@@ -31,16 +26,10 @@ function sort(children: ReactNode): Buckets {
   return at;
 }
 
-function Root({ title, actions, gap = 16, children, ...box }: Readonly<SectionRootProps>) {
+function Root({ gap = 16, children, ...box }: Readonly<SectionRootProps>) {
   const at = useMemo(() => sort(children), [children]);
   return (
     <Box gap={12} {...box}>
-      {title === undefined && actions === undefined ? null : (
-        <Header>
-          {title === undefined ? null : <Title>{title}</Title>}
-          {actions === undefined ? null : <Actions>{actions}</Actions>}
-        </Header>
-      )}
       {at.header}
       <Box gap={gap} pt={4}>
         {at.body}
@@ -86,7 +75,10 @@ const PUSH = { marginLeft: 'auto' } as const;
  * A titled band: an overline, a rule, and the content under both.
  *
  * ```tsx
- * <Section.Root title="Lecture">
+ * <Section.Root>
+ *   <Section.Header>
+ *     <Section.Title>Lecture</Section.Title>
+ *   </Section.Header>
  *   <PlaybackCard />
  * </Section.Root>
  *

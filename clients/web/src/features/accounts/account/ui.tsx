@@ -17,7 +17,9 @@ export function PrefRow({
   control,
 }: Readonly<{ icon: IconName; label: string; desc: string; control: ReactNode }>) {
   return (
-    <ListRow.Root size="md" label={label} hint={desc}>
+    <ListRow.Root size="md">
+      <ListRow.Label>{label}</ListRow.Label>
+      <ListRow.Hint>{desc}</ListRow.Hint>
       <ListRow.Leading>
         <IconWell name={icon} size="sm" tone="accent" />
       </ListRow.Leading>

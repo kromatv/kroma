@@ -46,7 +46,9 @@ export function ReleaseList({
   return (
     <Box gap={8}>
       {errors.map((e) => (
-        <Callout.Root key={e} tone="accent" title={e} />
+        <Callout.Root key={e} tone="accent">
+          <Callout.Title>{e}</Callout.Title>
+        </Callout.Root>
       ))}
       {releases.length === 0 && errors.length === 0 ? (
         <Box px={12} py={16} radius="sm" bg="surface1" border="tint/7">

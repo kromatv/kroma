@@ -27,7 +27,10 @@ export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null
         {facts.length ? (
           <Box row wrap gapX={40} gapY={16}>
             {facts.map((f) => (
-              <DataField.Root key={f.key} size="md" label={f.label} value={f.value} />
+              <DataField.Root key={f.key} size="md">
+                <DataField.Label>{f.label}</DataField.Label>
+                <DataField.Value>{f.value}</DataField.Value>
+              </DataField.Root>
             ))}
           </Box>
         ) : null}

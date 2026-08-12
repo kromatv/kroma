@@ -79,14 +79,14 @@ export default story({
   variants: navPillItemVariants,
   omit: ['lit', 'active'],
   matrix: false,
+  component: Switcher,
   args: { labels: 'all' as NavPillLabels },
   controls: { labels: ['all', 'active', 'none'] },
-  render: (props) => <Switcher {...props} />,
   scenes: [
     {
       name: 'Frosted',
       docs: 'The composed form: a backdrop is a part, so the capsule thins its own fill for the blur behind it without being told.',
-      render: () => <Frosted />,
+      example: () => <Frosted />,
     },
   ],
 });

@@ -58,12 +58,10 @@ function Registry() {
               </Row>
 
               {browse.items.length === 0 ? (
-                <EmptyState.Root
-                  size="sm"
-                  icon="search"
-                  title="No module matches"
-                  hint="Search by name, reverse-DNS id or description."
-                />
+                <EmptyState.Root size="sm" icon="search">
+                  <EmptyState.Title>No module matches</EmptyState.Title>
+                  <EmptyState.Hint>Search by name, reverse-DNS id or description.</EmptyState.Hint>
+                </EmptyState.Root>
               ) : (
                 <Row gap={16} wrap align="stretch">
                   {browse.items.map((m) => (

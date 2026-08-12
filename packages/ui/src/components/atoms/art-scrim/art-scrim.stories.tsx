@@ -33,7 +33,7 @@ export default story({
     {
       name: 'Bare artwork',
       docs: 'The same tile with no scrim at all, which is what the ramps are measured against: pale key art and a white title are unreadable together.',
-      render: () => <Tile />,
+      example: () => <Tile />,
     },
   ],
 });

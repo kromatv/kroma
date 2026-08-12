@@ -97,15 +97,23 @@ export function DashboardScreen() {
 
   return (
     <>
-      <PageHeader.Root
-        title={serverInfo?.name ?? 'KROMA'}
-        suffix={t('admin.dashboardSuffix')}
-        actions={<RealtimeBadge />}
-      />
+      <PageHeader.Root>
+        <PageHeader.Title suffix={t('admin.dashboardSuffix')}>
+          {serverInfo?.name ?? 'KROMA'}
+        </PageHeader.Title>
+        <PageHeader.Actions>
+          <RealtimeBadge />
+        </PageHeader.Actions>
+      </PageHeader.Root>
 
-      <Section.Root title={t('admin.nowPlaying')} mt={28}>
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.nowPlaying')}</Section.Title>
+        </Section.Header>
         {sessions.length === 0 ? (
-          <EmptyState.Root icon="player-play" title={t('admin.noPlayback')} />
+          <EmptyState.Root icon="player-play">
+            <EmptyState.Title>{t('admin.noPlayback')}</EmptyState.Title>
+          </EmptyState.Root>
         ) : (
           <Box gap={14}>
             {sessions.map((s) => (
@@ -124,18 +132,18 @@ export function DashboardScreen() {
       <CpuSection metrics={metrics} />
       <RamSection metrics={metrics} />
 
-      <Section.Root
-        title={t('admin.topUsers')}
-        mt={28}
-        actions={
-          <RangeSelect
-            label={t('admin.topUsers')}
-            value={topDays}
-            onChange={setTopDays}
-            options={[7, 30, 90]}
-          />
-        }
-      >
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.topUsers')}</Section.Title>
+          <Section.Actions>
+            <RangeSelect
+              label={t('admin.topUsers')}
+              value={topDays}
+              onChange={setTopDays}
+              options={[7, 30, 90]}
+            />
+          </Section.Actions>
+        </Section.Header>
         {top && top.users.length > 0 ? (
           <Grid min={200} gap={16}>
             {top.users.slice(0, 3).map((u) => (
@@ -143,22 +151,24 @@ export function DashboardScreen() {
             ))}
           </Grid>
         ) : (
-          <EmptyState.Root icon="users" title={t('admin.noHistory')} />
+          <EmptyState.Root icon="users">
+            <EmptyState.Title>{t('admin.noHistory')}</EmptyState.Title>
+          </EmptyState.Root>
         )}
       </Section.Root>
 
-      <Section.Root
-        title={t('admin.playHistory')}
-        mt={28}
-        actions={
-          <RangeSelect
-            label={t('admin.playHistory')}
-            value={historyDays}
-            onChange={setHistoryDays}
-            options={[30, 90, 180]}
-          />
-        }
-      >
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.playHistory')}</Section.Title>
+          <Section.Actions>
+            <RangeSelect
+              label={t('admin.playHistory')}
+              value={historyDays}
+              onChange={setHistoryDays}
+              options={[30, 90, 180]}
+            />
+          </Section.Actions>
+        </Section.Header>
         {history ? <HistoryBars buckets={history.buckets} /> : null}
       </Section.Root>
     </>
@@ -177,7 +187,13 @@ function BandwidthSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | nul
   const remote = metrics?.series.bwRemote ?? [];
   const max = Math.max(1, ...local, ...remote);
   return (
-    <Section.Root title={t('admin.bandwidth')} mt={28} actions={<LiveLabel />}>
+    <Section.Root mt={28}>
+      <Section.Header>
+        <Section.Title>{t('admin.bandwidth')}</Section.Title>
+        <Section.Actions>
+          <LiveLabel />
+        </Section.Actions>
+      </Section.Header>
       <MetricsChart
         max={max}
         sampleSec={sampleSec(metrics)}
@@ -204,7 +220,13 @@ function CpuSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) 
   const kroma = metrics?.series.cpuKroma ?? [];
   const sys = metrics?.series.cpuSystem ?? [];
   return (
-    <Section.Root title={t('admin.cpu')} mt={28} actions={<LiveLabel />}>
+    <Section.Root mt={28}>
+      <Section.Header>
+        <Section.Title>{t('admin.cpu')}</Section.Title>
+        <Section.Actions>
+          <LiveLabel />
+        </Section.Actions>
+      </Section.Header>
       <MetricsChart
         max={100}
         sampleSec={sampleSec(metrics)}
@@ -231,7 +253,13 @@ function RamSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) 
   const kroma = metrics?.series.ramKroma ?? [];
   const sys = metrics?.series.ramSystem ?? [];
   return (
-    <Section.Root title={t('admin.ram')} mt={28} actions={<LiveLabel />}>
+    <Section.Root mt={28}>
+      <Section.Header>
+        <Section.Title>{t('admin.ram')}</Section.Title>
+        <Section.Actions>
+          <LiveLabel />
+        </Section.Actions>
+      </Section.Header>
       <MetricsChart
         max={100}
         sampleSec={sampleSec(metrics)}

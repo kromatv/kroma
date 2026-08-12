@@ -121,7 +121,7 @@ const BrowseFiltersImpl = function BrowseFilters({
         ))}
         {genres.length > 0 ? (
           <Box key="divider" mx={4}>
-            <Divider vertical size={1} color="borderStrong" />
+            <Divider vertical thickness={1} color="borderStrong" />
           </Box>
         ) : null}
         {genres.length > 0 ? (

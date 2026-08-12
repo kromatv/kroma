@@ -42,7 +42,7 @@ function Tracks({ size, invalid, block, filled }: Readonly<TriggerArgs>) {
 
 function Subtitles() {
   return (
-    <Field.Root label="Subtitles" hint="Generated tracks are marked.">
+    <Field.Root label="Subtitles">
       <Select.Root label="Subtitles" placeholder="Off">
         <Select.Trigger />
         <Select.Item value="en">English</Select.Item>
@@ -51,6 +51,7 @@ function Subtitles() {
         </Select.Item>
         <Select.Item value="fr">Français</Select.Item>
       </Select.Root>
+      <Field.Hint>Generated tracks are marked.</Field.Hint>
     </Field.Root>
   );
 }
@@ -119,7 +120,7 @@ export default story({
     {
       name: 'Composed',
       docs: 'A row written out of the parts, beside the one-line sugar and a disabled option.',
-      render: () => <Composed />,
+      example: () => <Composed />,
     },
   ],
 });

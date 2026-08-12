@@ -33,7 +33,9 @@ export function AccountPage() {
   if (!user) {
     return (
       <main className={PAGE_MAIN}>
-        <EmptyState.Root icon="user-off" title={t('account.signedOut')} />
+        <EmptyState.Root icon="user-off">
+          <EmptyState.Title>{t('account.signedOut')}</EmptyState.Title>
+        </EmptyState.Root>
       </main>
     );
   }
@@ -100,10 +102,10 @@ function ProfileEditor() {
 
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader.Root
-        title={t('account.title')}
-        subtitle={t('account.subtitle')}
-        actions={
+      <PageHeader.Root>
+        <PageHeader.Title>{t('account.title')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('account.subtitle')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
           <Button
             variant="ghost"
             size="sm"
@@ -111,15 +113,21 @@ function ProfileEditor() {
             label={t('auth.logout')}
             onPress={() => void logout()}
           />
-        }
-      />
+        </PageHeader.Actions>
+      </PageHeader.Root>
 
       <Box gap={28} mt={24}>
-        <Section.Root title={t('account.sectionPhoto')}>
+        <Section.Root>
+          <Section.Header>
+            <Section.Title>{t('account.sectionPhoto')}</Section.Title>
+          </Section.Header>
           <PhotoCard />
         </Section.Root>
 
-        <Section.Root title={t('account.sectionInfo')}>
+        <Section.Root>
+          <Section.Header>
+            <Section.Title>{t('account.sectionInfo')}</Section.Title>
+          </Section.Header>
           <Surface elevated pad="none" p={22} radius="lg" border="border" gap={18}>
             <Box maxW={{ base: '100%', md: '50%' }}>
               <Field.Root label={t('auth.username')}>
@@ -137,7 +145,10 @@ function ProfileEditor() {
           </Surface>
         </Section.Root>
 
-        <Section.Root title={t('account.sectionPrefs')}>
+        <Section.Root>
+          <Section.Header>
+            <Section.Title>{t('account.sectionPrefs')}</Section.Title>
+          </Section.Header>
           <PreferencesCard
             audio={audio}
             subtitle={subtitle}
@@ -146,11 +157,17 @@ function ProfileEditor() {
           />
         </Section.Root>
 
-        <Section.Root title={t('account.sectionNotifications')}>
+        <Section.Root>
+          <Section.Header>
+            <Section.Title>{t('account.sectionNotifications')}</Section.Title>
+          </Section.Header>
           <NotificationsCard />
         </Section.Root>
 
-        <Section.Root title={t('account.sectionSecurity')}>
+        <Section.Root>
+          <Section.Header>
+            <Section.Title>{t('account.sectionSecurity')}</Section.Title>
+          </Section.Header>
           <SecurityCard />
           <PinCard />
           <PasskeysCard />

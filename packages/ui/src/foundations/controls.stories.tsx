@@ -95,14 +95,14 @@ setEntryDefaults({ physicalKeyboard: true, size: 'sm' });
   },
   matrix: false,
   width: 'fill',
+  component: Row,
   args: { size: 'sm' as ControlSize },
   controls: { size: ['sm', 'md', 'tv'] },
-  render: ({ size }) => <Row size={size} />,
   scenes: [
     {
       name: 'Both sizes',
       docs: 'The console density and the ten-foot one, each internally consistent.',
-      render: () => (
+      example: () => (
         <Box gap={28}>
           <Sized size="sm" />
           <Sized size="md" />

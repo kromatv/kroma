@@ -68,7 +68,8 @@ function Bench() {
           {GRID.slice(0, count).map((rail, row) => (
             <FocusSlot key={rail.id} onActive={isNearEnd(row) ? grow : undefined}>
               <Box mb={8} mt={18}>
-                <Rail.Root title={rail.title}>
+                <Rail.Root>
+                  <Rail.Title>{rail.title}</Rail.Title>
                   {rail.tiles.map((tile) => (
                     <MediaCard
                       key={tile.id}

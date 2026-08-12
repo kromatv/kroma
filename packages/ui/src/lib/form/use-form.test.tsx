@@ -61,7 +61,7 @@ function Probe({
         aria-label="remember"
         type="checkbox"
         checked={remember.checked}
-        onChange={(e) => remember.onChange(e.target.checked)}
+        onChange={(e) => remember.onCheckedChange(e.target.checked)}
       />
       <output aria-label="email-error">{email.root.error ?? ''}</output>
       <output aria-label="password-error">{password.root.error ?? ''}</output>

@@ -11,8 +11,8 @@ describe('<Legend>', () => {
   it('paints each dot with the colour its entry was given', () => {
     const { container } = render(
       <Legend.Root>
-        <Legend.Item color="success" label="Termine" />
-        <Legend.Item color="danger" label="Echoue" />
+        <Legend.Item color="success">Termine</Legend.Item>
+        <Legend.Item color="danger">Echoue</Legend.Item>
       </Legend.Root>,
     );
     const paints = [...container.querySelectorAll('div')]
@@ -21,10 +21,10 @@ describe('<Legend>', () => {
     expect(paints).toEqual([color('success'), color('danger')]);
   });
 
-  it('names each entry, from the sugar or from children', () => {
+  it('names each entry from its children', () => {
     render(
       <Legend.Root>
-        <Legend.Item color="success" label="Termine" />
+        <Legend.Item color="success">Termine</Legend.Item>
         <Legend.Item color="danger">Echoue</Legend.Item>
       </Legend.Root>,
     );
@@ -35,7 +35,7 @@ describe('<Legend>', () => {
   it('leaves nothing pressable: a legend reports, it does not filter', () => {
     const { container } = render(
       <Legend.Root>
-        <Legend.Item color="success" label="Termine" />
+        <Legend.Item color="success">Termine</Legend.Item>
       </Legend.Root>,
     );
     expect(container.querySelector('button')).toBeNull();
@@ -45,7 +45,7 @@ describe('<Legend>', () => {
   it('wraps rather than pushing a long key off the row', () => {
     const { container } = render(
       <Legend.Root>
-        <Legend.Item color="success" label="Termine" />
+        <Legend.Item color="success">Termine</Legend.Item>
       </Legend.Root>,
     );
     const root = container.firstElementChild as HTMLElement;
@@ -54,7 +54,7 @@ describe('<Legend>', () => {
 
   it('refuses an entry used outside the Root, rather than rendering something wrong', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() => render(<Legend.Item color="success" label="Termine" />)).toThrow(/Legend.Item/);
+    expect(() => render(<Legend.Item color="success">Termine</Legend.Item>)).toThrow(/Legend.Item/);
     quiet.mockRestore();
   });
 });

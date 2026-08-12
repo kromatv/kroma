@@ -6,18 +6,7 @@
 // when anything changed, so the caller knows whether to refresh.
 
 import { useT } from '@kroma/ui';
-import {
-  Box,
-  Button,
-  Dialog,
-  Divider,
-  Drawer,
-  IconButton,
-  Row,
-  Spacer,
-  Switch,
-  Text,
-} from '@kroma/ui/kit';
+import { Box, Button, Dialog, Drawer, Row, Spacer, Switch, Text } from '@kroma/ui/kit';
 import { type ReactNode, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import { message, UninstallConflictError, uninstallModule } from '#web/features/admin/module-api';
@@ -33,7 +22,6 @@ import {
 import { InstallModal } from '#web/features/admin/module-install';
 import { useStoreOps } from '#web/features/admin/module-ops';
 import { Pill } from '#web/features/admin/pill';
-import { SCROLL_PANE } from '#web/features/admin/web-style';
 
 /** The inline confirm strip the footer swaps to before an uninstall: the
  * plain ask first, then the informed-force variant listing dependents. */
@@ -170,7 +158,7 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
           <Row gap={8}>
             <Switch
               checked={installed.enabled}
-              onChange={toggler.busy ? undefined : (v) => void toggler.toggle(v)}
+              onCheckedChange={toggler.busy ? undefined : (v) => void toggler.toggle(v)}
               label={name}
             />
             <Text variant="meta" color="textDim">
@@ -208,13 +196,13 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
   })();
 
   return (
-    <Drawer open={!call.ended} onClose={close} title={name} width={460}>
-      <Box px={24} py={20}>
+    <Drawer.Root open={!call.ended} onClose={close} title={name}>
+      <Drawer.Header>
         <Row between mb={16}>
           <Text variant="overline" color="textDim">
             {t('admin.modulesSheet')}
           </Text>
-          <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={close} />
+          <Drawer.Close />
         </Row>
         <Box row align="flex-start" gap={16}>
           <HeaderIcon id={id} installed={!!installed} icon={entry?.icon} />
@@ -248,11 +236,10 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
             </Row>
           </Box>
         </Box>
-      </Box>
-      <Divider color="tint/7" />
+      </Drawer.Header>
 
-      <div style={SCROLL_PANE}>
-        <Box gap={24} px={24} py={20}>
+      <Drawer.Panel>
+        <Box gap={24}>
           {(error ?? toggler.error) && (
             <Text variant="meta" color="danger">
               {error ?? toggler.error}
@@ -273,12 +260,9 @@ export const ModuleDetailDrawer = createCallable<{ id: string }, boolean>(({ cal
           <Addons id={id} catalog={catalog} />
           {installed && <DrawerSettings module={installed} onSaved={reload} />}
         </Box>
-      </div>
+      </Drawer.Panel>
 
-      <Divider color="tint/7" />
-      <Box px={24} py={18}>
-        {footer}
-      </Box>
-    </Drawer>
+      <Drawer.Footer>{footer}</Drawer.Footer>
+    </Drawer.Root>
   );
 }, 400);

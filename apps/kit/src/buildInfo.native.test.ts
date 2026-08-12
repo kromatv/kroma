@@ -28,6 +28,7 @@ async function vite(defined?: BuildInfo): Promise<Half> {
 const STAMPED: BuildInfo = {
   version: '0.1.36',
   commit: 'a1b2c3d',
+  commitFull: 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678',
   branch: 'main',
   dirty: false,
   buildDate: '2026-07-01T10:00:00Z',
@@ -37,6 +38,7 @@ const STAMPED: BuildInfo = {
 const EMPTY: BuildInfo = {
   version: '',
   commit: null,
+  commitFull: null,
   branch: null,
   dirty: false,
   buildDate: null,
@@ -66,6 +68,7 @@ describe('the Metro half', () => {
   it('nulls each git field rather than inventing one', async () => {
     const { BUILD } = await metro({ version: '0.1.35' });
     expect(BUILD.commit).toBeNull();
+    expect(BUILD.commitFull).toBeNull();
     expect(BUILD.branch).toBeNull();
     expect(BUILD.buildDate).toBeNull();
     expect(BUILD.repository).toBeNull();

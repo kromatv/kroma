@@ -365,7 +365,7 @@ reason too:
 
 | Reason | Where | Why the two platforms cannot share the file |
 | --- | --- | --- |
-| Focus and the remote | `lib/focus-{nav,here,remote,root,transition}`, `player/lib/virtual-focus`, `player/hooks/usePlayerKeys` | one shared navigator owns movement, but the remote reaches it as TV events natively and as document keydowns on the web |
+| Focus and the remote | `lib/focus-{nav,here,remote,root,transition}`, `player/lib/virtual-focus`, `player/hooks/use-player-keys` | one shared navigator owns movement, but the remote reaches it as TV events natively and as document keydowns on the web |
 | Browser APIs with no RN equivalent | `lib/{portal,modal-portal,landmark,scroll-lock,drag-select,loop,wheel-pan,perf-memory}` | a DOM portal, a landmark role, pointer capture and `performance.memory` have no React Native spelling |
 | Drawing primitives | `lib/{css,svg}`, `lib/icons/stroke-prop` | React Native prefixes gradients `experimental_`; react-native-svg vs the browser's own SVG parser |
 | Motion | `lib/{progress-motion,splash-motion}`, `organisms/kroma-intro` | a CSS transition vs an `Animated` value |
@@ -549,7 +549,10 @@ import { ListRow } from './list-row'
 
 One **D-pad stop** per row, and a pointer-sized hit area.
 
-<ListRow.Root label="Qualité" hint="1080p" />
+<ListRow.Root>
+  <ListRow.Label>Qualité</ListRow.Label>
+  <ListRow.Hint>1080p</ListRow.Hint>
+</ListRow.Root>
 ```
 
 The file replaces the story's `docs:` string. Unlike a demo's code panel this

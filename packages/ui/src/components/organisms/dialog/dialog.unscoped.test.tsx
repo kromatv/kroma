@@ -24,14 +24,14 @@ describe('outside a focus scope', () => {
   it('renders a dialog whose actions are a focus group', () => {
     const onConfirm = vi.fn();
     render(
-      <Dialog open title="Supprimer le compte">
+      <Dialog.Root open title="Supprimer le compte">
         <Dialog.Actions
           cancelLabel="Annuler"
           onCancel={() => {}}
           confirmLabel="Supprimer"
           onConfirm={onConfirm}
         />
-      </Dialog>,
+      </Dialog.Root>,
     );
     expect(screen.getByText('Supprimer le compte')).toBeTruthy();
     settled();
@@ -42,11 +42,11 @@ describe('outside a focus scope', () => {
   it('renders a row of its own controls, and they still press', () => {
     const onPress = vi.fn();
     render(
-      <Dialog open title="Titre">
+      <Dialog.Root open title="Titre">
         <Dialog.Actions>
           <Focusable label="Annuler" onPress={onPress} />
         </Dialog.Actions>
-      </Dialog>,
+      </Dialog.Root>,
     );
     settled();
     fireEvent.click(screen.getByLabelText('Annuler'));

@@ -109,7 +109,13 @@ function ImagePickerDialog({
     );
 
   return (
-    <Dialog open={open} onClose={onClose} title={t('admin.notifImagePick')} width={720} pad={28}>
+    <Dialog.Root
+      open={open}
+      onClose={onClose}
+      title={t('admin.notifImagePick')}
+      width={720}
+      pad={28}
+    >
       <Box gap={16}>
         <Row gap={10} align="center">
           <Button
@@ -138,7 +144,7 @@ function ImagePickerDialog({
         ) : null}
         <ServerImageGrid onPick={onPick} />
       </Box>
-    </Dialog>
+    </Dialog.Root>
   );
 }
 
@@ -178,11 +184,10 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
   }
   if (images.length === 0) {
     return (
-      <EmptyState.Root
-        icon="photo"
-        title={t('admin.notifImageEmpty')}
-        hint={t('admin.notifImageEmptyHint')}
-      />
+      <EmptyState.Root icon="photo">
+        <EmptyState.Title>{t('admin.notifImageEmpty')}</EmptyState.Title>
+        <EmptyState.Hint>{t('admin.notifImageEmptyHint')}</EmptyState.Hint>
+      </EmptyState.Root>
     );
   }
   return (

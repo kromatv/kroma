@@ -200,7 +200,13 @@ export const NamingTokenModal = createCallable<
   };
 
   return (
-    <Dialog open title={t('naming.tokensTitle')} width={768} pad={24} onClose={() => call.end()}>
+    <Dialog.Root
+      open
+      title={t('naming.tokensTitle')}
+      width={768}
+      pad={24}
+      onClose={() => call.end()}
+    >
       <Dialog.Header>
         <Row between gap={12}>
           <Row gap={6} minW={0}>
@@ -218,7 +224,7 @@ export const NamingTokenModal = createCallable<
         </Row>
       </Dialog.Header>
 
-      <Dialog.Content>
+      <Dialog.Panel>
         <Row gap={8}>
           <Text variant="meta" color="textDim">
             {t('naming.separator')}
@@ -233,7 +239,10 @@ export const NamingTokenModal = createCallable<
           </Select.Root>
         </Row>
 
-        <Section.Root title={t('naming.grpPresets')} gap={6}>
+        <Section.Root gap={6}>
+          <Section.Header>
+            <Section.Title>{t('naming.grpPresets')}</Section.Title>
+          </Section.Header>
           {presets.map((parts) => {
             const tokenStr = parts.join(separator);
             return (
@@ -253,7 +262,10 @@ export const NamingTokenModal = createCallable<
         </Section.Root>
 
         {groups.map((g) => (
-          <Section.Root key={g.titleKey} title={t(g.titleKey as Parameters<typeof t>[0])} gap={6}>
+          <Section.Root key={g.titleKey} gap={6}>
+            <Section.Header>
+              <Section.Title>{t(g.titleKey as Parameters<typeof t>[0])}</Section.Title>
+            </Section.Header>
             <Grid columns={columns} gap={6}>
               {g.tokens.map((tok) => (
                 <Focusable
@@ -273,7 +285,7 @@ export const NamingTokenModal = createCallable<
             </Grid>
           </Section.Root>
         ))}
-      </Dialog.Content>
+      </Dialog.Panel>
 
       <Dialog.Footer>
         <Row gap={12}>
@@ -294,7 +306,7 @@ export const NamingTokenModal = createCallable<
           </Box>
         </Row>
       </Dialog.Footer>
-    </Dialog>
+    </Dialog.Root>
   );
 });
 

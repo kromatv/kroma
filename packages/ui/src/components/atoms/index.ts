@@ -41,6 +41,8 @@ export type { IconWellProps, IconWellSize, IconWellTone } from './icon-well';
 export { IconWell, iconWellVariants } from './icon-well';
 export type { ImgProps } from './img';
 export { IMG_FADE_MS, Img } from './img';
+export type { KbdProps } from './kbd';
+export { Kbd } from './kbd';
 export type { LogoProps } from './logo';
 export { Logo } from './logo';
 export type { NumberFieldProps } from './number-field';

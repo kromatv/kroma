@@ -41,7 +41,7 @@ export function BioSwitchRow({
   return (
     <Box style={s.bioRow}>
       <Text style={s.bioLabel}>{label}</Text>
-      <Switch checked={value} disabled={disabled} onChange={onChange} />
+      <Switch checked={value} disabled={disabled} onCheckedChange={onChange} />
     </Box>
   );
 }

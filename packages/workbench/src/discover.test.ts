@@ -33,10 +33,24 @@ describe('discoverVite', () => {
     expect(stories.map((s) => s.tier)).toEqual(['Atoms', 'Molecules']);
   });
 
+  it('keeps the file each story was found at, which is what the source link reads', () => {
+    const stories = discoverVite(modules());
+    expect(stories.map((s) => s.path)).toEqual([BUTTON, CARD]);
+  });
+
   it('documents a component’s props by matching the story name', () => {
     const stories = discoverVite(modules(), {}, { Button: [tone], Slider: [tone] });
-    expect(stories.find((s) => s.id === 'button')?.props).toEqual([tone]);
+    expect(stories.find((s) => s.id === 'button')?.props).toEqual([{ props: [tone] }]);
     expect(stories.find((s) => s.id === 'card')?.props).toEqual([]);
+  });
+
+  it('documents a compound component part by part', () => {
+    const props = { 'Card.Root': [tone], 'Card.Media': [tone] };
+    const card = discoverVite(modules(), {}, props).find((s) => s.id === 'card');
+    expect(card?.props).toEqual([
+      { part: 'Root', props: [tone] },
+      { part: 'Media', props: [tone] },
+    ]);
   });
 
   it('ignores an empty prop list rather than replacing the story’s own', () => {
@@ -95,6 +109,10 @@ describe('discoverMetro', () => {
 
   it('finds the same stories through Metro’s context', () => {
     expect(discoverMetro(context()).map((s) => s.id)).toEqual(['button', 'card']);
+  });
+
+  it('keeps the file each story was found at, in Metro’s own spelling', () => {
+    expect(discoverMetro(context()).map((s) => s.path)).toEqual([BUTTON, CARD]);
   });
 
   it('mounts the demos but leaves them without a code sample', () => {

@@ -51,16 +51,13 @@ export const DownloadClientModal = createCallable<
     );
 
   return (
-    <Dialog open title={t('dlclients.edit')} onClose={() => call.end(false)} width={520}>
+    <Dialog.Root open title={t('dlclients.edit')} onClose={() => call.end(false)} width={520}>
       <Field.Root label={t('dlclients.name')} value={name} onValueChange={setName}>
         <Field.Input placeholder={client.kind} />
       </Field.Root>
-      <Field.Root
-        label={t('dlclients.url')}
-        hint={t('dlclients.urlHint')}
-        value={url}
-        onValueChange={setUrl}
-      />
+      <Field.Root label={t('dlclients.url')} value={url} onValueChange={setUrl}>
+        <Field.Hint>{t('dlclients.urlHint')}</Field.Hint>
+      </Field.Root>
       <Box row={{ base: false, md: true }} gap={16}>
         <Field.Root
           label={t('dlclients.username')}
@@ -70,12 +67,12 @@ export const DownloadClientModal = createCallable<
         />
         <Field.Root
           label={t('dlclients.password')}
-          hint={client.hasPassword ? t('dlclients.passwordKept') : undefined}
           value={password}
           onValueChange={setPassword}
           flex={{ base: 0, md: 1 }}
         >
           <Field.Input type="password" />
+          {client.hasPassword ? <Field.Hint>{t('dlclients.passwordKept')}</Field.Hint> : null}
         </Field.Root>
       </Box>
       {error ? (
@@ -101,6 +98,6 @@ export const DownloadClientModal = createCallable<
           />
         )}
       </Dialog.Actions>
-    </Dialog>
+    </Dialog.Root>
   );
 });

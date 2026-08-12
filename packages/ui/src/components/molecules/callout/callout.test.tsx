@@ -19,16 +19,15 @@ function glyphWidth(container: HTMLElement): string | null {
 }
 
 describe('<Callout>', () => {
-  it('renders the whole row from one line', () => {
+  it('renders the whole row from its parts', () => {
     const { container } = render(
-      <Callout.Root
-        size="sm"
-        tone="danger"
-        icon="alert-triangle"
-        title="Le module a refuse de demarrer"
-        detail="GET /api/module/tv.kroma.remote/remote 502"
-        actions={<Text>Reessayer</Text>}
-      />,
+      <Callout.Root size="sm" tone="danger" icon="alert-triangle">
+        <Callout.Title>Le module a refuse de demarrer</Callout.Title>
+        <Callout.Detail>GET /api/module/tv.kroma.remote/remote 502</Callout.Detail>
+        <Callout.Actions>
+          <Text>Reessayer</Text>
+        </Callout.Actions>
+      </Callout.Root>,
     );
     expect(glyphWidth(container)).toBe('16');
     expect(screen.getByText('Le module a refuse de demarrer')).toBeTruthy();
@@ -36,28 +35,17 @@ describe('<Callout>', () => {
     expect(screen.getByText('Reessayer')).toBeTruthy();
   });
 
-  it('writes from its parts exactly what the sugar writes', () => {
-    const sugar = render(
-      <Callout.Root
-        tone="danger"
-        icon="alert-triangle"
-        title="Echec"
-        detail="502"
-        actions={<Text>Reessayer</Text>}
-      />,
-    ).container.innerHTML;
-    cleanup();
-    const parts = render(
-      <Callout.Root tone="danger">
+  it('lets a written media take the head of the row from the icon', () => {
+    const { container } = render(
+      <Callout.Root tone="danger" icon="alert-triangle">
+        <Callout.Media>
+          <Text>mark</Text>
+        </Callout.Media>
         <Callout.Title>Echec</Callout.Title>
-        <Callout.Detail>502</Callout.Detail>
-        <Callout.Actions>
-          <Text>Reessayer</Text>
-        </Callout.Actions>
-        <Callout.Media name="alert-triangle" />
       </Callout.Root>,
-    ).container.innerHTML;
-    expect(parts).toBe(sugar);
+    );
+    expect(glyphWidth(container)).toBeNull();
+    expect(screen.getByText('mark')).toBeTruthy();
   });
 
   it('sorts a media and an actions child out of the message column wherever they are written', () => {
@@ -78,7 +66,11 @@ describe('<Callout>', () => {
 
   it('paints a different well for every tone', () => {
     const wells = TONES.map((tone) => {
-      const { container } = render(<Callout.Root tone={tone} title="x" />);
+      const { container } = render(
+        <Callout.Root tone={tone}>
+          <Callout.Title>x</Callout.Title>
+        </Callout.Root>,
+      );
       const paint = getComputedStyle(block(container));
       cleanup();
       return `${paint.backgroundColor}|${paint.borderColor}`;
@@ -87,7 +79,11 @@ describe('<Callout>', () => {
   });
 
   it('takes the control shell it was given rather than paddings of its own', () => {
-    const { container } = render(<Callout.Root size="tv" icon="info-circle" title="x" />);
+    const { container } = render(
+      <Callout.Root size="tv" icon="info-circle">
+        <Callout.Title>x</Callout.Title>
+      </Callout.Root>,
+    );
     const paint = getComputedStyle(block(container));
     expect(paint.paddingLeft).toBe(`${CONTROL.tv.px}px`);
     expect(paint.paddingTop).toBe(`${CONTROL.tv.py}px`);

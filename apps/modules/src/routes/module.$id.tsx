@@ -117,11 +117,10 @@ function ModulePage() {
   if (!module) {
     return (
       <Page registry={registry}>
-        <EmptyState.Root
-          icon="package-off"
-          title="No such module"
-          hint={`The registry does not list ${id}.`}
-        />
+        <EmptyState.Root icon="package-off">
+          <EmptyState.Title>No such module</EmptyState.Title>
+          <EmptyState.Hint>{`The registry does not list ${id}.`}</EmptyState.Hint>
+        </EmptyState.Root>
       </Page>
     );
   }

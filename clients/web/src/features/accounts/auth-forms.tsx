@@ -61,7 +61,9 @@ export function LoginForm({
 
         {notice ? (
           <Box w="100%">
-            <Callout.Root tone="accent" size="md" icon="info-circle" title={notice} />
+            <Callout.Root tone="accent" size="md" icon="info-circle">
+              <Callout.Title>{notice}</Callout.Title>
+            </Callout.Root>
           </Box>
         ) : null}
 

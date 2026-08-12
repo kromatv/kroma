@@ -9,7 +9,7 @@ The panel is made of three bands, and only the middle one scrolls:
 | Band | Scrolls | Holds |
 | --- | --- | --- |
 | `Dialog.Header` | no | the title and the description |
-| `Dialog.Content` | yes | the body, however long it gets |
+| `Dialog.Panel` | yes | the body, however long it gets |
 | `Dialog.Footer` | no | a shelf for `Dialog.Actions` |
 
 So a long form never scrolls its own title away or its actions out of reach.
@@ -17,14 +17,14 @@ So a long form never scrolls its own title away or its actions out of reach.
 right-aligned - so a footer is a shelf holding an actions row rather than a
 second row competing with it.
 
-## Sugar, then parts
+## Naming it, then arranging it
 
-Pass `title` / `description` / `footer` for the ordinary case and the panel
-arranges the bands for you; reach for the parts when a panel needs a header of
-its own.
+`title` and `description` name the panel to assistive tech, and draw the
+ordinary header when nothing else does. Everything else is a band you write.
 
 ```tsx
-<Dialog open={open} onClose={close} title="Delete this profile?" footer={actions}>
+<Dialog.Root open={open} onClose={close} title="Delete this profile?">
   <Text>This cannot be undone.</Text>
-</Dialog>
+  <Dialog.Footer>{actions}</Dialog.Footer>
+</Dialog.Root>
 ```

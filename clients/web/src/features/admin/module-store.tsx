@@ -72,7 +72,7 @@ export function OpProgress({ op }: Readonly<{ op: OpModule }>) {
           </Text>
         )}
       </Row>
-      <Progress value={runningPct(op.phase, pct) / 100} size={4} rounded />
+      <Progress value={runningPct(op.phase, pct) / 100} thickness={4} rounded />
     </Box>
   );
 }
@@ -236,10 +236,11 @@ export function StoreGrid({
     .sort((a, b) => a.name.localeCompare(b.name));
   if (shown.length === 0) {
     return (
-      <EmptyState.Root
-        icon="search"
-        title={t('admin.modulesEmptySearch', { query: query.trim() })}
-      />
+      <EmptyState.Root icon="search">
+        <EmptyState.Title>
+          {t('admin.modulesEmptySearch', { query: query.trim() })}
+        </EmptyState.Title>
+      </EmptyState.Root>
     );
   }
   return (

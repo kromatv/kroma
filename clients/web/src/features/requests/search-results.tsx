@@ -83,11 +83,10 @@ export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }
   const nothing = state.local.length === 0 && state.discover.length === 0;
   if (nothing) {
     return (
-      <EmptyState.Root
-        icon="mood-empty"
-        title={t('discover.noResults')}
-        hint={t('discover.noResultsHint')}
-      />
+      <EmptyState.Root icon="mood-empty">
+        <EmptyState.Title>{t('discover.noResults')}</EmptyState.Title>
+        <EmptyState.Hint>{t('discover.noResultsHint')}</EmptyState.Hint>
+      </EmptyState.Root>
     );
   }
 

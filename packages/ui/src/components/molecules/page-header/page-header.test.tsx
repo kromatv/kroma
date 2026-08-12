@@ -19,36 +19,15 @@ const markup = (ui: ReactElement): string => {
 
 afterEach(cleanup);
 
-describe('the one-line PageHeader', () => {
-  it('draws the same tree as the parts it stands for', () => {
-    const sugar = markup(
-      <PageHeader.Root
-        title="Utilisateurs"
-        suffix="12"
-        subtitle="Comptes et invitations"
-        actions={<Text>Inviter</Text>}
-      />,
-    );
-    const parts = markup(
-      <PageHeader.Root>
-        <PageHeader.Title suffix="12">Utilisateurs</PageHeader.Title>
-        <PageHeader.Subtitle>Comptes et invitations</PageHeader.Subtitle>
-        <PageHeader.Actions>
-          <Text>Inviter</Text>
-        </PageHeader.Actions>
-      </PageHeader.Root>,
-    );
-    expect(parts).toBe(sugar);
-  });
-
-  it('leaves out the parts it was given nothing for', () => {
-    const sugar = markup(<PageHeader.Root title="Utilisateurs" />);
-    const parts = markup(
+describe('a header written with nothing but a title', () => {
+  it('draws the title column and no other band', () => {
+    const bare = markup(
       <PageHeader.Root>
         <PageHeader.Title>Utilisateurs</PageHeader.Title>
       </PageHeader.Root>,
     );
-    expect(parts).toBe(sugar);
+    expect(bare).not.toContain('Comptes');
+    expect(bare).toContain('Utilisateurs');
   });
 });
 
@@ -63,7 +42,11 @@ describe('PageHeader.Title', () => {
   });
 
   it('keeps the suffix inside the heading, so it is read as part of it', () => {
-    render(<PageHeader.Root title="Utilisateurs" suffix="12" />);
+    render(
+      <PageHeader.Root>
+        <PageHeader.Title suffix="12">Utilisateurs</PageHeader.Title>
+      </PageHeader.Root>,
+    );
     expect(screen.getByRole('heading').textContent).toBe('Utilisateurs 12');
   });
 
@@ -95,10 +78,12 @@ describe('PageHeader.Actions', () => {
   it('keeps its controls pressable', () => {
     const invite = vi.fn();
     render(
-      <PageHeader.Root
-        title="Utilisateurs"
-        actions={<Button label="Inviter" onPress={invite} />}
-      />,
+      <PageHeader.Root>
+        <PageHeader.Title>Utilisateurs</PageHeader.Title>
+        <PageHeader.Actions>
+          <Button label="Inviter" onPress={invite} />
+        </PageHeader.Actions>
+      </PageHeader.Root>,
     );
     fireEvent.click(screen.getByLabelText('Inviter'));
     expect(invite).toHaveBeenCalledTimes(1);
@@ -106,7 +91,8 @@ describe('PageHeader.Actions', () => {
 
   it('leaves its controls their own focus', () => {
     render(
-      <PageHeader.Root title="Utilisateurs">
+      <PageHeader.Root>
+        <PageHeader.Title>Utilisateurs</PageHeader.Title>
         <PageHeader.Actions>
           <Button label="Inviter" />
         </PageHeader.Actions>

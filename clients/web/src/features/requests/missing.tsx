@@ -123,12 +123,15 @@ export function MissingPage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader.Root
-        title={t('requests.missingTitle')}
-        suffix={entries && entries.length > 0 ? String(entries.length) : undefined}
-        subtitle={t('requests.missingSubtitle')}
-        actions={
-          groups.length > 0 && (canManage || selected.size > 0) ? (
+      <PageHeader.Root>
+        <PageHeader.Title
+          suffix={entries && entries.length > 0 ? String(entries.length) : undefined}
+        >
+          {t('requests.missingTitle')}
+        </PageHeader.Title>
+        <PageHeader.Subtitle>{t('requests.missingSubtitle')}</PageHeader.Subtitle>
+        {groups.length > 0 && (canManage || selected.size > 0) ? (
+          <PageHeader.Actions>
             <MissingActions
               canManage={canManage}
               selectedCount={selected.size}
@@ -137,18 +140,17 @@ export function MissingPage() {
               onClearSelection={() => setSelected(new Set())}
               onSearchAll={onSearchAll}
             />
-          ) : undefined
-        }
-      />
+          </PageHeader.Actions>
+        ) : null}
+      </PageHeader.Root>
 
       {isPending ? <MissingSkeleton /> : null}
 
       {entries?.length === 0 ? (
-        <EmptyState.Root
-          icon="circle-check"
-          title={t('requests.missingEmpty')}
-          hint={t('requests.missingEmptyHint')}
-          actions={
+        <EmptyState.Root icon="circle-check">
+          <EmptyState.Title>{t('requests.missingEmpty')}</EmptyState.Title>
+          <EmptyState.Hint>{t('requests.missingEmptyHint')}</EmptyState.Hint>
+          <EmptyState.Actions>
             <Button
               variant="glass"
               size="sm"
@@ -156,8 +158,8 @@ export function MissingPage() {
               label={t('requests.myEmptyCta')}
               onPress={() => navigate({ to: '/search' })}
             />
-          }
-        />
+          </EmptyState.Actions>
+        </EmptyState.Root>
       ) : null}
 
       <Box mt={24} gap={12}>

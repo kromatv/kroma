@@ -89,21 +89,19 @@ export function NearbyTvs() {
     );
   } else if (!settled) {
     body = (
-      <EmptyState.Root
-        size="sm"
-        icon="device-tv"
-        title={t('handoff.nearbySearching')}
-        actions={<Spinner size={18} thickness={2} />}
-      />
+      <EmptyState.Root size="sm" icon="device-tv">
+        <EmptyState.Title>{t('handoff.nearbySearching')}</EmptyState.Title>
+        <EmptyState.Actions>
+          <Spinner size={18} thickness={2} />
+        </EmptyState.Actions>
+      </EmptyState.Root>
     );
   } else {
     body = (
-      <EmptyState.Root
-        size="sm"
-        icon="device-tv"
-        title={t('handoff.nearbyEmpty')}
-        hint={t('handoff.nearbyEmptyHint')}
-      />
+      <EmptyState.Root size="sm" icon="device-tv">
+        <EmptyState.Title>{t('handoff.nearbyEmpty')}</EmptyState.Title>
+        <EmptyState.Hint>{t('handoff.nearbyEmptyHint')}</EmptyState.Hint>
+      </EmptyState.Root>
     );
   }
 

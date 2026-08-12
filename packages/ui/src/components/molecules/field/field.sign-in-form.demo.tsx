@@ -44,8 +44,9 @@ export default function SignIn() {
           {...email.input}
         />
       </Field.Root>
-      <Field.Root label="Password" hint="Eight characters or more." {...password.root}>
+      <Field.Root label="Password" {...password.root}>
         <Field.Input type="password" physicalKeyboard {...password.input} />
+        <Field.Hint>Eight characters or more.</Field.Hint>
       </Field.Root>
       <Button label="Sign in" block loading={form.submitting} onPress={form.submit} />
       {form.submitted ? (

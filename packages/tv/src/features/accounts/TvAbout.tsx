@@ -48,7 +48,9 @@ export function TvAbout() {
             {t('about.privacyUrl')}
           </Text>
         </Box>
-        <ListRow.Root icon="arrow-left" label={t('common.back')} autoFocus onPress={nav.back} />
+        <ListRow.Root icon="arrow-left" autoFocus onPress={nav.back}>
+          <ListRow.Label>{t('common.back')}</ListRow.Label>
+        </ListRow.Root>
       </Box>
 
       <Hint
@@ -70,7 +72,8 @@ function Fact({
 }: Readonly<{ label: string; value: string | null; mono?: boolean }>) {
   if (!value) return null;
   return (
-    <ListRow.Root disabled label={label}>
+    <ListRow.Root disabled>
+      <ListRow.Label>{label}</ListRow.Label>
       <ListRow.Trailing>
         <Text variant="labelTv" color="textDim" style={mono ? s.mono : undefined}>
           {value}

@@ -27,10 +27,10 @@ import { useControllable } from '#ui/lib/use-controllable';
 
 const WEB = Platform.OS === 'web';
 
-interface TextAreaProps extends Omit<BoxProps, 'children' | 'onChange' | 'ring'> {
+interface TextAreaProps extends Omit<BoxProps, 'children' | 'ring'> {
   value?: string;
   defaultValue?: string;
-  onChange?: (next: string) => void;
+  onValueChange?: (next: string) => void;
   /** After the entry takes focus; see <TextField>. */
   onFocus?: () => void;
   /** After the entry loses focus: the commit point of a save-on-blur field. */
@@ -56,7 +56,7 @@ interface TextAreaProps extends Omit<BoxProps, 'children' | 'onChange' | 'ring'>
 function TextArea({
   value: valueProp,
   defaultValue = '',
-  onChange,
+  onValueChange,
   onFocus,
   onBlur,
   placeholder,
@@ -74,7 +74,7 @@ function TextArea({
 }: Readonly<TextAreaProps>) {
   const metrics = controlMetrics(size);
   const theme = useTheme();
-  const [value, setValue] = useControllable(valueProp, defaultValue, onChange);
+  const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState(false);
   const [content, setContent] = useState(0);
   const input = useRef<TextInput>(null);

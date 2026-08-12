@@ -142,12 +142,12 @@ export function ReportsQueuePage() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.reportsTitle')}
-        actions={
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.reportsTitle')}</PageHeader.Title>
+        <PageHeader.Actions>
           <ConsoleSearch value={q} onChange={setQ} placeholder={t('reports.searchPlaceholder')} />
-        }
-      />
+        </PageHeader.Actions>
+      </PageHeader.Root>
       <ConsoleSummary
         total={c?.total ?? 0}
         totalLabel={t('reports.totalLabel')}
@@ -221,10 +221,11 @@ export function ReportsQueuePage() {
 
         {data && rows.length === 0 ? (
           <Box py={24}>
-            <EmptyState.Root
-              icon="flag"
-              title={all.length === 0 ? t('reports.empty') : t('reports.noMatch')}
-            />
+            <EmptyState.Root icon="flag">
+              <EmptyState.Title>
+                {all.length === 0 ? t('reports.empty') : t('reports.noMatch')}
+              </EmptyState.Title>
+            </EmptyState.Root>
           </Box>
         ) : null}
       </Table.Root>

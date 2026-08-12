@@ -4,46 +4,42 @@
 
 import type { Report, ReportStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, Box, Button, color, Divider, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
+import { Avatar, Box, Button, color, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { Pill } from '#web/features/admin/pill';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
-import { SCROLL_PANE } from '#web/features/admin/web-style';
 
 // Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;
 
-function Header({ report, onClose }: Readonly<{ report: Report; onClose: () => void }>) {
+function Identity({ report }: Readonly<{ report: Report }>) {
   const t = useT();
   const cat = categoryMeta(report.category);
   const st = statusMeta(report.status);
   return (
     <>
-      <Box px={24} py={20}>
-        <Row between mb={16}>
-          <Text variant="overline" color="textDim">
-            {t('reports.sheet')}
-          </Text>
-          <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={onClose} />
-        </Row>
-        <Row wrap gap={8} mb={10}>
-          <Pill ink={cat.color} bg={soft(cat.color)} variant="overline">
-            {t(cat.labelKey)}
-          </Pill>
-          <Pill ink={st.color} bg={soft(st.color)} variant="overline">
-            {t(st.labelKey)}
-          </Pill>
-          <Text variant="overline" color="textDim">
-            {t(kindLabelKey(report.subjectKind))}
-          </Text>
-        </Row>
-        <Text variant="h2" accessibilityRole="header">
-          {report.subjectTitle}
+      <Row between mb={16}>
+        <Text variant="overline" color="textDim">
+          {t('reports.sheet')}
         </Text>
-      </Box>
-      <Divider color="tint/7" />
+        <Drawer.Close />
+      </Row>
+      <Row wrap gap={8} mb={10}>
+        <Pill ink={cat.color} bg={soft(cat.color)} variant="overline">
+          {t(cat.labelKey)}
+        </Pill>
+        <Pill ink={st.color} bg={soft(st.color)} variant="overline">
+          {t(st.labelKey)}
+        </Pill>
+        <Text variant="overline" color="textDim">
+          {t(kindLabelKey(report.subjectKind))}
+        </Text>
+      </Row>
+      <Text variant="h2" accessibilityRole="header">
+        {report.subjectTitle}
+      </Text>
     </>
   );
 }
@@ -92,17 +88,18 @@ export const ReportDrawer = createCallable<
       : null;
 
   return (
-    <Drawer
+    <Drawer.Root
       open={!call.ended}
       onClose={close}
-      title={t('reports.sheet')}
-      width={460}
+      title={report.subjectTitle}
       panelStyle={DRAWER_FILL}
     >
-      <Header report={report} onClose={close} />
+      <Drawer.Header>
+        <Identity report={report} />
+      </Drawer.Header>
 
-      <div style={SCROLL_PANE}>
-        <Box px={24} py={20}>
+      <Drawer.Panel>
+        <Box>
           <Text variant="overline" color="textDim" mb={12}>
             {t('reports.reportedBy')}
           </Text>
@@ -146,12 +143,11 @@ export const ReportDrawer = createCallable<
             </Row>
           ) : null}
         </Box>
-      </div>
+      </Drawer.Panel>
 
       {canManage ? (
-        <>
-          <Divider color="tint/7" />
-          <Row gap={10} px={24} py={18}>
+        <Drawer.Footer>
+          <Row gap={10}>
             {report.status === 'open' ? (
               <>
                 <Button
@@ -188,9 +184,9 @@ export const ReportDrawer = createCallable<
               disabled={busy}
             />
           </Row>
-        </>
+        </Drawer.Footer>
       ) : null}
-    </Drawer>
+    </Drawer.Root>
   );
 }, 400);
 

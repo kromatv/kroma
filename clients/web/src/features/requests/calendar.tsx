@@ -48,10 +48,10 @@ export function ComingSoonPage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader.Root
-        title={t('requests.calendarTitle')}
-        subtitle={t('requests.calendarSubtitle')}
-      />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('requests.calendarTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('requests.calendarSubtitle')}</PageHeader.Subtitle>
+      </PageHeader.Root>
 
       {isPending ? (
         <Box mt={24} gap={10}>
@@ -63,11 +63,10 @@ export function ComingSoonPage() {
       ) : null}
 
       {entries?.length === 0 ? (
-        <EmptyState.Root
-          icon="calendar-clock"
-          title={t('requests.calendarEmpty')}
-          hint={t('requests.calendarEmptyHint')}
-        />
+        <EmptyState.Root icon="calendar-clock">
+          <EmptyState.Title>{t('requests.calendarEmpty')}</EmptyState.Title>
+          <EmptyState.Hint>{t('requests.calendarEmptyHint')}</EmptyState.Hint>
+        </EmptyState.Root>
       ) : null}
 
       {groups.map((g) => (

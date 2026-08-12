@@ -218,7 +218,7 @@ function RowProgressCell({
 }: Readonly<{ dl: DownloadView; progress: number; tone: ColorValue }>) {
   return (
     <Box>
-      <Progress value={progress} color={tone} size={5} rounded />
+      <Progress value={progress} color={tone} thickness={5} rounded />
       <Row between mt={4}>
         <Text variant="meta" color="text/45" style={s.tabular}>
           {Math.round(progress * 100)}%

@@ -26,8 +26,8 @@ export default story({
     ],
   },
   variants: personCardVariants,
+  component: PersonCard,
   args: { name: 'Sigourney Weaver', role: 'Ellen Ripley' },
-  render: (props) => <PersonCard {...props} />,
   scenes: [
     {
       name: 'A cast rail',

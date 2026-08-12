@@ -43,7 +43,10 @@ export default function VpnPage() {
   if (!useCap('settings.manage')) return <Denied />;
   return (
     <>
-      <PageHeader.Root title={t('admin.vpnTitle')} subtitle={t('admin.vpnSub')} />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.vpnTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.vpnSub')}</PageHeader.Subtitle>
+      </PageHeader.Root>
       <Box mt={24}>
         <VpnCard />
       </Box>
@@ -208,7 +211,7 @@ function VpnConfigModal({
     );
 
   return (
-    <Dialog open title={t('vpn.modalTitle')} onClose={onClose} width={520}>
+    <Dialog.Root open title={t('vpn.modalTitle')} onClose={onClose} width={520}>
       <Text variant="meta" color="textDim">
         {t('vpn.modalHelp')}
       </Text>
@@ -249,6 +252,6 @@ function VpnConfigModal({
           />
         ) : null}
       </Dialog.Actions>
-    </Dialog>
+    </Dialog.Root>
   );
 }

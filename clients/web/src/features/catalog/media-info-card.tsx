@@ -197,7 +197,8 @@ function TrackLine({
 
 function FileField({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <DataField.Root size="sm" label={label}>
+    <DataField.Root size="sm">
+      <DataField.Label>{label}</DataField.Label>
       <DataField.Value lines={1}>{value}</DataField.Value>
     </DataField.Root>
   );

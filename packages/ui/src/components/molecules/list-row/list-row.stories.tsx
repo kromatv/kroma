@@ -11,7 +11,10 @@ export default story({
   name: 'ListRow',
   group: 'Layout',
   docs: "A focusable menu or settings row, composed of named parts. This shape had been written three times before landing here: the television's profile menu, the out-of-session settings, and the admin's lists.",
-  usage: `<ListRow.Root icon="settings" label="Lecture" hint="Qualité, sous-titres" onPress={open} />
+  usage: `<ListRow.Root icon="settings" onPress={open}>
+  <ListRow.Label>Lecture</ListRow.Label>
+  <ListRow.Hint>Qualité, sous-titres</ListRow.Hint>
+</ListRow.Root>
 
 <ListRow.Root onPress={open}>
   <ListRow.Leading><Avatar name="Maxime" size={34} circle /></ListRow.Leading>
@@ -20,8 +23,8 @@ export default story({
 </ListRow.Root>`,
   guidelines: {
     do: [
-      'Write the common row with `label`, `hint` and `icon`; reach for the parts when the row is more than that.',
-      'Put media in `<ListRow.Leading>`: an avatar, a poster thumb, a module icon, a status dot.',
+      'Write the title first: the first plain text in the middle column names the row.',
+      'Keep a glyph on `icon`, and put media in `<ListRow.Leading>`: an avatar, a poster thumb, a status dot.',
       'Let `size` come from the app (`setEntryDefaults`) or from the group, and state it only where one row differs.',
     ],
     dont: [
@@ -39,35 +42,46 @@ export default story({
   controls: { icon: 'icon' },
   // `minW` as well as the story's width, because a matrix cell is sized by its
   // content: a row that is 100% of nothing collapses onto its own glyph.
-  render: ({ hint, ...props }) => (
+  render: ({ icon, label, hint }) => (
     <Box minW={320}>
-      <ListRow.Root {...props} hint={hint || undefined} onPress={() => {}} />
+      <ListRow.Root icon={icon} onPress={() => {}}>
+        <ListRow.Label>{label}</ListRow.Label>
+        {hint ? <ListRow.Hint>{hint}</ListRow.Hint> : null}
+      </ListRow.Root>
     </Box>
   ),
   scenes: [
     {
       name: 'Une liste',
-      render: ({ hint, ...props }) => (
+      render: ({ icon, label, hint }) => (
         <Box minW={320} gap={10}>
-          <ListRow.Root {...props} onPress={() => {}} />
-          <ListRow.Root icon="language" label="Audio" hint="Piste par défaut" onPress={() => {}}>
+          <ListRow.Root icon={icon} onPress={() => {}}>
+            <ListRow.Label>{label}</ListRow.Label>
+            {hint ? <ListRow.Hint>{hint}</ListRow.Hint> : null}
+          </ListRow.Root>
+          <ListRow.Root icon="language" onPress={() => {}}>
+            <ListRow.Label>Audio</ListRow.Label>
+            <ListRow.Hint>Piste par défaut</ListRow.Hint>
             <ListRow.Trailing>
               <Text color="accentText">Français</Text>
             </ListRow.Trailing>
           </ListRow.Root>
-          <ListRow.Root icon="wave-sine" label="Nivellement du volume">
+          <ListRow.Root icon="wave-sine">
+            <ListRow.Label>Nivellement du volume</ListRow.Label>
             <ListRow.Trailing>
               <SwitchFace checked />
             </ListRow.Trailing>
           </ListRow.Root>
-          <ListRow.Root icon="logout" label="Se déconnecter" onPress={() => {}} />
+          <ListRow.Root icon="logout" onPress={() => {}}>
+            <ListRow.Label>Se déconnecter</ListRow.Label>
+          </ListRow.Root>
         </Box>
       ),
     },
     {
       name: 'Média en tête',
       docs: 'The head of the row takes an avatar, a poster thumb or a status dot as readily as a glyph.',
-      render: () => (
+      example: () => (
         <Box minW={320} gap={10}>
           <ListRow.Root onPress={() => {}}>
             <ListRow.Leading>
@@ -86,10 +100,12 @@ export default story({
               <Badge tone="4K">4K</Badge>
             </ListRow.Trailing>
           </ListRow.Root>
-          <ListRow.Root label="Salon" hint="salon.local">
+          <ListRow.Root>
             <ListRow.Leading>
               <StatusDot online />
             </ListRow.Leading>
+            <ListRow.Label>Salon</ListRow.Label>
+            <ListRow.Hint>salon.local</ListRow.Hint>
           </ListRow.Root>
         </Box>
       ),
@@ -97,12 +113,19 @@ export default story({
     {
       name: 'Un groupe',
       docs: 'One card for the whole list: the group carries the surface and declares the size its members take.',
-      render: () => (
+      example: () => (
         <Box minW={320}>
           <ListRow.Group size="sm">
-            <ListRow.Root icon="language" label="Langue" hint="Français" onPress={() => {}} />
-            <ListRow.Root icon="device-tv" label="Appareils" onPress={() => {}} />
-            <ListRow.Root icon="info-circle" label="À propos" onPress={() => {}} />
+            <ListRow.Root icon="language" onPress={() => {}}>
+              <ListRow.Label>Langue</ListRow.Label>
+              <ListRow.Hint>Français</ListRow.Hint>
+            </ListRow.Root>
+            <ListRow.Root icon="device-tv" onPress={() => {}}>
+              <ListRow.Label>Appareils</ListRow.Label>
+            </ListRow.Root>
+            <ListRow.Root icon="info-circle" onPress={() => {}}>
+              <ListRow.Label>À propos</ListRow.Label>
+            </ListRow.Root>
           </ListRow.Group>
         </Box>
       ),

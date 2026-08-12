@@ -136,12 +136,10 @@ export function TvReport() {
 
         <Box gap={12}>
           <GroupLabel text={t('report.message')} />
-          <ListRow.Root
-            icon="message"
-            label={t('report.addMessage')}
-            hint={message.trim() || t('report.messageEmpty')}
-            onPress={() => setTyping(true)}
-          />
+          <ListRow.Root icon="message" onPress={() => setTyping(true)}>
+            <ListRow.Label>{t('report.addMessage')}</ListRow.Label>
+            <ListRow.Hint>{message.trim() || t('report.messageEmpty')}</ListRow.Hint>
+          </ListRow.Root>
         </Box>
 
         {error ? (

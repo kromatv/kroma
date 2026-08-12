@@ -19,7 +19,7 @@ import {
 } from 'react';
 import {
   type AccessibilityRole,
-  type AccessibilityState,
+  type AccessibilityValue,
   Animated,
   type Insets,
   Platform,
@@ -43,6 +43,7 @@ import {
   sharedStyle,
   stabilise,
 } from '#ui/core';
+import { type A11yFlags, type A11yProps, a11yState, a11yValue } from '#ui/lib/a11y';
 import { splitBoxLayers } from '#ui/lib/box-layers';
 import { focusSettled, markFocusSettled } from '#ui/lib/focus-entry';
 import { noteFocus } from '#ui/lib/focus-here';
@@ -82,16 +83,15 @@ type NavigatorViewProps = ComponentProps<typeof SpatialNavigationFocusableView>[
 // keep the selected state (see `platformRole`).
 type FocusRole = AccessibilityRole | 'option';
 
-/** The accessibility state, in whichever shape the platform reads (see the
- *  comment where it is built). */
-type A11yState =
-  | undefined
-  | { accessibilityState: AccessibilityState }
-  | {
-      'aria-checked': boolean | 'mixed' | undefined;
-      'aria-selected': boolean | undefined;
-      'aria-expanded': boolean | undefined;
-    };
+/** What the control claims about itself, in whichever shape the platform reads
+ *  (`#ui/lib/a11y`). */
+type A11yState = A11yProps | undefined;
+
+function claimProps(state: A11yFlags, value: AccessibilityValue | undefined): A11yState {
+  const claimed = Object.values(state).some((claim) => claim !== undefined);
+  if (!claimed && !value) return undefined;
+  return { ...(claimed ? a11yState(state) : null), ...(value ? a11yValue(value) : null) };
+}
 
 /** What the platform can be handed: the web keeps the real ARIA role, native
  *  gets the nearest value Android's `fromValue` accepts. */
@@ -163,6 +163,16 @@ interface FocusableProps<R extends AnySv = AnySv> {
   selected?: boolean;
   /** A disclosure trigger's open state, announced as `aria-expanded`. */
   expanded?: boolean;
+  /** A toggle button's on state (a filter chip, "Ma liste"), announced as
+   *  `aria-pressed`. Not `selected`: that is a choice among options, this is a
+   *  control that is switched on. */
+  pressed?: boolean;
+  /** Working on what it was last asked to do, announced as `aria-busy`. Pair it
+   *  with `inert`, which is the same fact said to the eye. */
+  busy?: boolean;
+  /** Where a `role="adjustable"` control sits in its range: a resize seam, a
+   *  volume rail. Without it the control announces as a slider with no value. */
+  value?: AccessibilityValue;
   ref?: Ref<ComponentRef<typeof View>>;
 }
 
@@ -242,9 +252,25 @@ function useWebKeys(
   }, [active, role, press]);
 }
 
+// react-native-web paints a real cursor, and a browser gives a bare <button>
+// the arrow rather than the hand - so on the web every control in the kit read
+// as inert text, and the pointer changed shape only where something happened to
+// state one, which is what made it flicker between neighbours. React Native's
+// own `CursorValue` knows `auto` and `pointer` and nothing else, so the arrow is
+// stated as plain style. Disabled is stated rather than left to inherit: a dead
+// row inside a pressable group would otherwise wear the group's hand.
+const HAND = { cursor: 'pointer' } as unknown as ViewStyle;
+const ARROW = { cursor: 'default' } as unknown as ViewStyle;
+
+function pointerCursor(disabled: boolean, onPress: unknown): ViewStyle | null {
+  if (!WEB) return null;
+  if (disabled) return ARROW;
+  return onPress ? HAND : null;
+}
+
 function disabledForm(at: {
   role: FocusRole;
-  a11yState: A11yState;
+  disabledState: A11yState;
   label: string | undefined;
   style: StyleProp<ViewStyle>;
   focusedStyle: ViewStyle | undefined;
@@ -257,9 +283,8 @@ function disabledForm(at: {
   return (
     <Animated.View
       accessibilityRole={platformRole(at.role)}
-      accessibilityState={at.a11yState ? { ...at.a11yState, disabled: true } : { disabled: true }}
+      {...at.disabledState}
       accessibilityLabel={at.label}
-      aria-disabled
       style={[at.style, at.focused ? at.focusedStyle : null, at.animated]}
     >
       {typeof at.children === 'function'
@@ -476,6 +501,9 @@ function Focusable<R extends AnySv = AnySv>({
   checked,
   selected,
   expanded,
+  pressed,
+  busy,
+  value,
   ref,
 }: Readonly<FocusableProps<R>>) {
   const [selfFocused, setSelfFocused] = useState(false);
@@ -492,21 +520,10 @@ function Focusable<R extends AnySv = AnySv>({
   const focusVisible = useFocusVisible(focused);
   const scoped = useInsideFocusScope();
 
-  // React Native reads the `accessibilityState` OBJECT; react-native-web reads
-  // flat `aria-*` props and ignores that object entirely, which is how every
-  // control's checked state was being dropped on the web. Emit the shape each
-  // platform actually reads.
-  const a11yState = useMemo<A11yState>(() => {
-    if (checked === undefined && selected === undefined && expanded === undefined) return undefined;
-    if (WEB) {
-      return {
-        'aria-checked': checked,
-        'aria-selected': selected,
-        'aria-expanded': expanded,
-      };
-    }
-    return { accessibilityState: { checked, selected, expanded } };
-  }, [checked, selected, expanded]);
+  const stateProps = useMemo<A11yState>(
+    () => claimProps({ checked, selected, expanded, pressed, busy }, value),
+    [checked, selected, expanded, pressed, busy, value],
+  );
 
   const webKeys = useWebKeys(!disabled && !inert && Boolean(onPress), role, pressRef);
 
@@ -666,14 +683,25 @@ function Focusable<R extends AnySv = AnySv>({
   // targets have a single view and keep the style whole.
   const layers = useMemo(() => (WEB ? null : splitBoxLayers(painted)), [painted]);
 
+  // Under `painted`, never over it: a control that states its own cursor - a
+  // resize seam asking for `col-resize` - has to keep it.
+  const dressed = useMemo(
+    () =>
+      pointerCursor(disabled, onPress) ? [pointerCursor(disabled, onPress), painted] : painted,
+    [disabled, onPress, painted],
+  );
+
   // A disabled control is not a node at all, so the remote walks straight past
   // it rather than stopping on something that does nothing.
   if (disabled) {
     return disabledForm({
       role,
-      a11yState,
+      disabledState: claimProps(
+        { checked, selected, expanded, pressed, busy, disabled: true },
+        value,
+      ),
       label,
-      style: painted,
+      style: dressed,
       focusedStyle,
       animated,
       focused,
@@ -693,8 +721,8 @@ function Focusable<R extends AnySv = AnySv>({
       href,
       label,
       role,
-      a11yState,
-      style: painted,
+      a11yState: stateProps,
+      style: dressed,
       focusedStyle,
       animated,
       showRing,
@@ -722,9 +750,9 @@ function Focusable<R extends AnySv = AnySv>({
     webKeys: webKeys?.view ?? null,
     href,
     layers,
-    style: painted,
+    style: dressed,
     role,
-    a11yState,
+    a11yState: stateProps,
     focusedStyle,
     animated,
     showRing,

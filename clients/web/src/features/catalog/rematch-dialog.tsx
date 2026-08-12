@@ -131,7 +131,11 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
             </Box>
 
             <div style={MODAL_BODY}>
-              {error ? <Callout.Root tone="danger" title={error} /> : null}
+              {error ? (
+                <Callout.Root tone="danger">
+                  <Callout.Title>{error}</Callout.Title>
+                </Callout.Root>
+              ) : null}
               {isPending ? (
                 <Box align="center" py={64}>
                   <Spinner size={26} color="white/40" />

@@ -23,7 +23,10 @@ function Single() {
   return (
     <ChoiceList.Root label="Qualité" value={quality} onValueChange={setQuality}>
       {QUALITIES.map((q) => (
-        <ChoiceList.Item key={q.value} value={q.value} label={q.label} hint={q.hint} />
+        <ChoiceList.Item key={q.value} value={q.value}>
+          <ChoiceList.Label>{q.label}</ChoiceList.Label>
+          <ChoiceList.Hint>{q.hint}</ChoiceList.Hint>
+        </ChoiceList.Item>
       ))}
     </ChoiceList.Root>
   );
@@ -34,7 +37,10 @@ function Multiple() {
   return (
     <ChoiceList.Root mode="multiple" label="Bibliothèques" value={picked} onValueChange={setPicked}>
       {LIBRARIES.map((lib) => (
-        <ChoiceList.Item key={lib.value} value={lib.value} label={lib.label} hint={lib.hint} />
+        <ChoiceList.Item key={lib.value} value={lib.value}>
+          <ChoiceList.Label>{lib.label}</ChoiceList.Label>
+          {lib.hint ? <ChoiceList.Hint>{lib.hint}</ChoiceList.Hint> : null}
+        </ChoiceList.Item>
       ))}
     </ChoiceList.Root>
   );
@@ -48,7 +54,6 @@ function WithActions() {
         <ChoiceList.Item
           key={lib.value}
           value={lib.value}
-          label={lib.label}
           actions={
             <IconButton
               variant="ghost"
@@ -58,19 +63,21 @@ function WithActions() {
               label={`Retirer ${lib.label}`}
             />
           }
-        />
+        >
+          <ChoiceList.Label>{lib.label}</ChoiceList.Label>
+        </ChoiceList.Item>
       ))}
     </ChoiceList.Root>
   );
 }
 
-/** The reason the parts are named: a row the props API could not describe. */
+/** A row the plain label-and-hint column could not describe. */
 function Composed() {
   const [picked, setPicked] = useState<string[]>(['films']);
   return (
     <ChoiceList.Root mode="multiple" label="Bibliothèques" value={picked} onValueChange={setPicked}>
       {LIBRARIES.map((lib) => (
-        <ChoiceList.Item key={lib.value} value={lib.value} label={lib.label}>
+        <ChoiceList.Item key={lib.value} value={lib.value}>
           <Box row align="center" gap={8}>
             <ChoiceList.Label>{lib.label}</ChoiceList.Label>
             {lib.hint ? <Badge tone="warning">en cours</Badge> : null}
@@ -85,14 +92,20 @@ function Composed() {
 export default story({
   name: 'ChoiceList',
   group: 'Input',
-  docs: "A list whose rows ARE the control: pick one (`single`, radios) or pick several (`multiple`, checkboxes). Composed rather than configured, in Radix's shape: **Root** owns the value and the group semantics, **Item** reads them through context, and **Indicator / Label / Hint** are there for the rows a prop list could never describe. The whole row is the target, so there is one D-pad stop per row and a pointer hit area the size of the thing a reader is aiming at; the row carries `radio`/`checkbox` with its state, inside a named `radiogroup` (single) or group (multiple). Rows can carry their own `actions`, which stay their own controls.",
+  docs: "A list whose rows ARE the control: pick one (`single`, radios) or pick several (`multiple`, checkboxes). Composed rather than configured, in Radix's shape: **Root** owns the value and the group semantics, **Item** reads them through context, and **Indicator / Label / Hint** are the row's faces, always written out. The whole row is the target, so there is one D-pad stop per row and a pointer hit area the size of the thing a reader is aiming at; the row carries `radio`/`checkbox` with its state, inside a named `radiogroup` (single) or group (multiple). Rows can carry their own `actions`, which stay their own controls.",
   usage: `<ChoiceList.Root label="Qualité" value={quality} onValueChange={setQuality}>
-  <ChoiceList.Item value="original" label="Original" hint="Sans transcodage" />
-  <ChoiceList.Item value="1080p" label="1080p" hint="Jusqu'à 8 Mb/s" />
+  <ChoiceList.Item value="original">
+    <ChoiceList.Label>Original</ChoiceList.Label>
+    <ChoiceList.Hint>Sans transcodage</ChoiceList.Hint>
+  </ChoiceList.Item>
+  <ChoiceList.Item value="1080p">
+    <ChoiceList.Label>1080p</ChoiceList.Label>
+    <ChoiceList.Hint>Jusqu'à 8 Mb/s</ChoiceList.Hint>
+  </ChoiceList.Item>
 </ChoiceList.Root>
 
-// Write the row yourself when the sugar is not enough:
-<ChoiceList.Item value={lib.value} label={lib.label}>
+// The row takes whatever arrangement it needs:
+<ChoiceList.Item value={lib.value}>
   <Box row align="center" gap={8}>
     <ChoiceList.Label>{lib.label}</ChoiceList.Label>
     <Badge tone="warning">en cours</Badge>
@@ -102,7 +115,7 @@ export default story({
   guidelines: {
     do: [
       "Name the group: Root's `label` is what a screen reader announces before the first row.",
-      'Use the `label`/`hint` sugar for a plain row, and the named parts when the row needs more.',
+      "Write the `<ChoiceList.Label>` first: its plain text is the row's accessible name.",
       'Put row-level verbs in `actions`; they are separate controls, not part of the choice.',
     ],
     dont: [
@@ -117,7 +130,7 @@ export default story({
     {
       name: 'Pick several',
       docs: 'Checkbox rows, rows carrying their own delete action, and a row composed from the named parts.',
-      render: () => (
+      example: () => (
         <Box gap={28}>
           <Box gap={10}>
             <Text variant="overline" color="textDim">

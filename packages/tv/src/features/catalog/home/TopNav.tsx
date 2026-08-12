@@ -6,8 +6,10 @@ import {
   Focusable,
   FocusRegion,
   FocusSlot,
+  Frost,
   gradient,
   Icon,
+  NavPill,
   Spinner,
   StatusDot,
   shade,
@@ -18,7 +20,6 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { useNav } from '#tv/app/router';
 import { CastRemotes } from '#tv/features/cast/CastRemotes';
-import { type NavItem, NavPill } from '#tv/features/catalog/home/NavPill';
 import { KromaMark, useClock } from '#tv/shared/ui';
 
 export type NavKey = 'home' | 'films' | 'series' | 'genres' | 'mylist' | 'search';
@@ -35,30 +36,6 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
   const clock = useClock();
   const { user } = useAuth();
   const { client, online } = useConnection();
-
-  const items: NavItem[] = [
-    { key: 'home', icon: 'home', label: t('nav.home'), onPress: () => nav.home() },
-    {
-      key: 'films',
-      icon: 'movie',
-      label: t('nav.films'),
-      onPress: () => nav.reset('grid', { kind: 'films' }),
-    },
-    {
-      key: 'series',
-      icon: 'device-tv',
-      label: t('nav.series'),
-      onPress: () => nav.reset('grid', { kind: 'series' }),
-    },
-    { key: 'genres', icon: 'category', label: t('nav.genres'), onPress: () => nav.reset('genres') },
-    {
-      key: 'mylist',
-      icon: 'bookmark',
-      label: t('nav.myList'),
-      onPress: () => nav.reset('grid', { kind: 'mylist' }),
-    },
-    { key: 'search', icon: 'search', label: t('nav.search'), onPress: () => nav.reset('search') },
-  ];
 
   return (
     <Box absolute left={0} right={0} top={0} z={10} px={64} py={32}>
@@ -86,7 +63,49 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
             <KromaMark size={28} />
           </Box>
         </FocusSlot>
-        <NavPill items={items} active={active} />
+        <NavPill.Root size="tv">
+          {/* Platforms without a blur (legacy panels, an unregistered shell)
+              keep the pill's solid fill. */}
+          <NavPill.Backdrop>
+            <Frost amount={16} />
+          </NavPill.Backdrop>
+          <NavPill.Item
+            icon="home"
+            label={t('nav.home')}
+            active={active === 'home'}
+            onPress={() => nav.home()}
+          />
+          <NavPill.Item
+            icon="movie"
+            label={t('nav.films')}
+            active={active === 'films'}
+            onPress={() => nav.reset('grid', { kind: 'films' })}
+          />
+          <NavPill.Item
+            icon="device-tv"
+            label={t('nav.series')}
+            active={active === 'series'}
+            onPress={() => nav.reset('grid', { kind: 'series' })}
+          />
+          <NavPill.Item
+            icon="category"
+            label={t('nav.genres')}
+            active={active === 'genres'}
+            onPress={() => nav.reset('genres')}
+          />
+          <NavPill.Item
+            icon="bookmark"
+            label={t('nav.myList')}
+            active={active === 'mylist'}
+            onPress={() => nav.reset('grid', { kind: 'mylist' })}
+          />
+          <NavPill.Item
+            icon="search"
+            label={t('nav.search')}
+            active={active === 'search'}
+            onPress={() => nav.reset('search')}
+          />
+        </NavPill.Root>
         <Box row align="center" gap={18}>
           {/* Renders only while a phone or browser is driving this set. */}
           <CastRemotes />

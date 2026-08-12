@@ -28,7 +28,9 @@ function MyListPending() {
   const t = useT();
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader.Root title={t('nav.myList')} />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('nav.myList')}</PageHeader.Title>
+      </PageHeader.Root>
       <Box mt={24}>
         <SkeletonRow count={10} />
       </Box>
@@ -57,9 +59,13 @@ function MyListPage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader.Root title={t('nav.myList')} />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('nav.myList')}</PageHeader.Title>
+      </PageHeader.Root>
       {ready && entries.length === 0 ? (
-        <EmptyState.Root icon="list-details" title={t('content.myListEmpty')} />
+        <EmptyState.Root icon="list-details">
+          <EmptyState.Title>{t('content.myListEmpty')}</EmptyState.Title>
+        </EmptyState.Root>
       ) : (
         <Box mt={24}>
           <CatalogGrid entries={entries} />

@@ -40,7 +40,7 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
     );
 
   return (
-    <Dialog open title={t('jobs.editSchedule')} width={520} onClose={() => call.end(false)}>
+    <Dialog.Root open title={t('jobs.editSchedule')} width={520} onClose={() => call.end(false)}>
       <Field.Root label={t('jobs.cronExpr')}>
         <Field.Input
           icon="clock"
@@ -88,6 +88,6 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
         confirmLabel={busy ? t('jobs.saving') : t('common.save')}
         busy={busy}
       />
-    </Dialog>
+    </Dialog.Root>
   );
 });

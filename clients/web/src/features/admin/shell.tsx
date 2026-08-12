@@ -260,9 +260,44 @@ function AdminBrand() {
 // own reset rather than the kit's.
 const SERVER_LINK: CSSProperties = { display: 'block', textDecoration: 'none' };
 
+// The desktop aside's own scroll frame. In the phone sheet the frame is the
+// drawer's <Drawer.Panel>, which is why the three regions are separate.
 function AdminSidebarBody() {
-  const t = useT();
+  return (
+    <>
+      <AdminServerLink />
+      {/* The only part of the sidebar that scrolls when sections overflow. */}
+      <nav className={ADMIN_SIDEBAR_NAV}>
+        <AdminNavGroups />
+      </nav>
+      <Box shrink={0} px={14} pt={8} pb={24}>
+        <ServerStatusCard />
+      </Box>
+    </>
+  );
+}
+
+function AdminServerLink() {
   const { serverInfo } = useAdmin();
+  return (
+    <Box shrink={0} px={14} pb={8}>
+      <Link to="/" style={SERVER_LINK}>
+        <Row between px={14} py={10} radius="md" bg="surface2" border="borderStrong">
+          <Row gap={10}>
+            <Logo markOnly size={17} />
+            <Text variant="label" color="accentText">
+              {serverInfo?.name ?? 'KROMA'}
+            </Text>
+          </Row>
+          <IconChevronRight size={17} stroke={1.8} color={color('success')} />
+        </Row>
+      </Link>
+    </Box>
+  );
+}
+
+function AdminNavGroups() {
+  const t = useT();
   const { user } = useAuth();
   const visible = (cap: Permission | null) => !cap || (!!user && hasPermission(user, cap));
   // Module pages target a nav-group by `section` (e.g. Torrents -> "acquisition")
@@ -278,56 +313,33 @@ function AdminSidebarBody() {
   // or a custom id) fall into a generic "Module pages" group.
   const orphanModules = moduleNav.filter((m) => !knownSections.has(m.section ?? 'library'));
   return (
-    <>
-      <Box shrink={0} px={14} pb={8}>
-        <Link to="/" style={SERVER_LINK}>
-          <Row between px={14} py={10} radius="md" bg="surface2" border="borderStrong">
-            <Row gap={10}>
-              <Logo markOnly size={17} />
-              <Text variant="label" color="accentText">
-                {serverInfo?.name ?? 'KROMA'}
-              </Text>
-            </Row>
-            <IconChevronRight size={17} stroke={1.8} color={color('success')} />
-          </Row>
-        </Link>
-      </Box>
-
-      {/* The only part of the sidebar that scrolls when sections overflow. */}
-      <nav className={ADMIN_SIDEBAR_NAV}>
-        <Box px={14} pb={12}>
-          {groups.map((g) => (
-            <SidebarGroup key={g.labelKey} label={t(g.labelKey)}>
-              {g.items.map((n) => (
-                <Link
-                  key={n.to}
-                  to={n.to}
-                  className={ADMIN_NAV_LINK}
-                  activeOptions={{ exact: n.exact ?? false }}
-                >
-                  <n.icon size={18} stroke={1.7} />
-                  {t(n.labelKey)}
-                </Link>
-              ))}
-              {g.modules.map((m) => (
-                <ModuleNavLink key={`${m.moduleId}:${m.to}`} item={m} />
-              ))}
-            </SidebarGroup>
+    <Box px={14} pb={12}>
+      {groups.map((g) => (
+        <SidebarGroup key={g.labelKey} label={t(g.labelKey)}>
+          {g.items.map((n) => (
+            <Link
+              key={n.to}
+              to={n.to}
+              className={ADMIN_NAV_LINK}
+              activeOptions={{ exact: n.exact ?? false }}
+            >
+              <n.icon size={18} stroke={1.7} />
+              {t(n.labelKey)}
+            </Link>
           ))}
-          {orphanModules.length > 0 && (
-            <SidebarGroup label={t('admin.groupModulePages')}>
-              {orphanModules.map((m) => (
-                <ModuleNavLink key={`${m.moduleId}:${m.to}`} item={m} />
-              ))}
-            </SidebarGroup>
-          )}
-        </Box>
-      </nav>
-
-      <Box shrink={0} px={14} pt={8} pb={24}>
-        <ServerStatusCard />
-      </Box>
-    </>
+          {g.modules.map((m) => (
+            <ModuleNavLink key={`${m.moduleId}:${m.to}`} item={m} />
+          ))}
+        </SidebarGroup>
+      ))}
+      {orphanModules.length > 0 && (
+        <SidebarGroup label={t('admin.groupModulePages')}>
+          {orphanModules.map((m) => (
+            <ModuleNavLink key={`${m.moduleId}:${m.to}`} item={m} />
+          ))}
+        </SidebarGroup>
+      )}
+    </Box>
   );
 }
 
@@ -358,35 +370,45 @@ function AdminMobileTopbar() {
         label={t('nav.menu')}
         onPress={() => setOpen(true)}
       />
-      <Drawer
+      <Drawer.Root
         open={open}
         onClose={() => setOpen(false)}
         title="KROMA"
         side="left"
         width={304}
         fullBelow={640}
+        pad={0}
         panelStyle={NAV_FILL}
       >
-        <Box row between shrink={0} pl={24} pr={16} mb={16} style={DRAWER_HEAD}>
-          <AdminBrand />
-          <IconButton
-            variant="ghost"
-            icon="x"
-            glyph={20}
-            label={t('common.close')}
-            onPress={() => setOpen(false)}
-          />
-        </Box>
-        <AdminSidebarBody />
-      </Drawer>
+        <Drawer.Header style={DRAWER_HEAD}>
+          <Row between>
+            <AdminBrand />
+            <Drawer.Close glyph={20} />
+          </Row>
+        </Drawer.Header>
+        <Drawer.Panel>
+          <AdminServerLink />
+          <nav>
+            <AdminNavGroups />
+          </nav>
+          <Box px={14} pt={8}>
+            <ServerStatusCard />
+          </Box>
+        </Drawer.Panel>
+      </Drawer.Root>
     </header>
   );
 }
 
 const NAV_FILL = { backgroundColor: color('bg') } as const;
 
-// `env()` has no React Native spelling, so the drawer's top inset stays CSS.
-const DRAWER_HEAD = { paddingTop: 'max(24px, env(safe-area-inset-top))' } as unknown as ViewStyle;
+// `env()` has no React Native spelling, so the sheet's own insets stay CSS.
+const DRAWER_HEAD = {
+  paddingLeft: 24,
+  paddingRight: 16,
+  paddingTop: 'max(24px, env(safe-area-inset-top))',
+  paddingBottom: 16,
+} as unknown as ViewStyle;
 
 function ModuleNavLink({ item }: Readonly<{ item: ModuleNav }>) {
   const Icon = resolveModuleIcon(item.icon);

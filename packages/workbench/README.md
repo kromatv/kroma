@@ -158,10 +158,38 @@ something a person could have typed.
 ## Adding to it
 
 **A story** is `<component>.stories.tsx` beside the component. Declare `name`,
-`group`, `docs`, and `render`; pass the component's `sv` as `variants` and the
-controls and the variant matrix are derived from it — the variant map IS the
-design, so neither can drift. Nothing registers a story: the registries discover
-`*.stories.tsx`.
+`group`, `docs`, and either the `component` or a `render`; pass the component's
+`sv` as `variants` and the controls and the variant matrix are derived from it —
+the variant map IS the design, so neither can drift. Nothing registers a story:
+the registries discover `*.stories.tsx`.
+
+```tsx
+export default story({ name: 'Chip', group: 'Actions', component: Chip, args: { label: 'HDR' } })
+```
+
+Naming the `component` is the shorter spelling and the safer one: the workbench
+renders `<Chip {...args} />` itself, so the args ARE the props and a control that
+moves nothing cannot be written. `args` is checked against the component's props.
+Write a `render` instead when the story has to compose — a provider, a surface to
+sit on, two of the component side by side — and **take the args as its argument**.
+
+### A scene, and which of them the controls drive
+
+A scene is a second take on the same component, and there are two kinds:
+
+| | |
+| --- | --- |
+| `render: (args) => …` | reads the live args. The controls keep driving it |
+| `example: () => …` | a fixed composition. The controls step aside |
+
+Spelling both is a type error. Spelling neither reuses the story's own render
+with the scene's `args` merged in.
+
+The panel follows the view on screen rather than the story: the Controls tab is
+there when the thing being shown reads the args, and gone when it does not. A
+knob that moves nothing reads as a broken workbench, so the format makes the
+difference declarable and the compiler records it (`live`) before the args are
+wrapped and every render looks alike.
 
 **A demo** is ONE FILE, `<story>.<demo>.demo.tsx`, default-exporting a component.
 Its file name becomes the tab, its doc comment the prose, and **the file itself**
@@ -183,7 +211,10 @@ import { ListRow } from './list-row'
 
 One **D-pad stop** per row, and a pointer-sized hit area.
 
-<ListRow.Root label="Qualité" hint="1080p" />
+<ListRow.Root>
+  <ListRow.Label>Qualité</ListRow.Label>
+  <ListRow.Hint>1080p</ListRow.Hint>
+</ListRow.Root>
 ```
 
 That last line is why MDX rather than markdown: a design system's documentation
@@ -212,7 +243,7 @@ Four things are read rather than declared, which is the theme of the folder:
 | Controls + the variant matrix | the component's `sv` |
 | The atomic level (search + palette) | the story file's PATH (`tierFor`) |
 | A demo's name, prose and code | its file name, doc comment and text |
-| Every prop, with its documentation | the component's props interface (`props.ts`) |
+| Every prop, with its documentation | the component's props interface, and a compound one's parts off its namespace object (`props.ts`) |
 
 ## Getting around
 
@@ -256,7 +287,18 @@ hairline at 40% is drawn 0.4px). Hence `hairline()`, which counter-scales it.
 ## The pieces
 
 - `workbench.tsx` — the shell: selection, url state, full screen, the lenses.
-- `layout.ts` — one pure function turning a window size into wide / medium / compact.
+- `layout.ts` — one pure function turning a window size into wide / medium / compact,
+  and folding in whatever the reader has dragged without letting the canvas
+  fall below a readable width.
+- `resize.ts`, `resize-handle.tsx`, `resize-keys.*` — the seams between the
+  regions: a PanResponder drag (so the same handle works on Apple TV), a press
+  that hands the four directions to the handle, a double press or a long press
+  to put a region back, and the dragged sizes kept per device.
+- `page.ts`, `page-view.tsx` — articles: a whole `.page.mdx` shown as its own
+  page, for what belongs to no component (installing the kit, making a theme,
+  how it works). The file's name and folder say what it is and where it sits,
+  and the document overrides that with plain `export const` — which is ESM, so
+  it survives both bundlers with no frontmatter plugin.
 - `sidebar.tsx` — the brand, the search key and the foldable tree: one flat
   level of functional groups (Layout, Input, Overlays, ...), then the stories.
   The atomic levels stay out of the nav on purpose — they are for the people
@@ -270,10 +312,15 @@ hairline at 40% is drawn 0.4px). Hence `hairline()`, which counter-scales it.
   name, glyph, size and rotatability live), the casing, the caption, and the
   adaptive zoom that scales a component down when it is wider than the canvas.
 - `panel.tsx` — the inspector, tabbed: Controls, Docs, Props, each with its count.
-- `story.ts` — the SDK: `story()`, the `sv`-derived controls and matrix, scenes,
-  the atomic level read from a file's path, and the registry's ordering
-  (functional group first, then name).
-- `controls.tsx`, `code.tsx`, `docs.tsx`, `props.ts`, `demos.ts` — the parts above.
+- `story.ts` — the SDK: `story()`, the two spellings of a story and of a scene,
+  and `controlsRole`, which decides whether the panel drives the view on screen.
+- `derive.ts` — the control model: the `sv`-derived controls and matrix rows.
+- `registry.ts` — the atomic level read from a file's path, and the registry's
+  ordering (functional group first, then name).
+- `play-types.ts` — what a `play` is handed, addressed by accessible name so the
+  same script runs on a television and in a browser.
+- `controls.tsx`, `code.tsx`, `docs.tsx`, `props.ts`, `prop-table.tsx`, `demos.ts` —
+  the parts above.
 
 The story SDK ships here rather than separately because a story format that
 versioned apart from the tool that reads it is two versions to keep in step.

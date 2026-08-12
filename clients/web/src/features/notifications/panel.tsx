@@ -14,7 +14,6 @@ import { useLocale, useT } from '@kroma/ui';
 import {
   Box,
   color,
-  Divider,
   Drawer,
   EmptyState,
   Icon,
@@ -73,23 +72,28 @@ export function NotificationBell() {
           </Box>
         ) : null}
       </IconButton>
-      <Drawer
+      <Drawer.Root
         open={open}
         onClose={() => setOpen(false)}
         title={t('notifications.title')}
         width={400}
         fullBelow={640}
+        pad={8}
         panelStyle={PANEL_FILL}
       >
-        <PanelHeader onClose={() => setOpen(false)} />
-        {/* Mounted on first open and kept mounted after, so reopening doesn't refetch. */}
-        {everOpened ? <PanelBody onNavigate={() => setOpen(false)} /> : null}
-      </Drawer>
+        <Drawer.Header style={HEADER_BAND}>
+          <PanelHeader />
+        </Drawer.Header>
+        <Drawer.Panel>
+          {/* Mounted on first open and kept mounted after, so reopening doesn't refetch. */}
+          {everOpened ? <PanelBody onNavigate={() => setOpen(false)} /> : null}
+        </Drawer.Panel>
+      </Drawer.Root>
     </>
   );
 }
 
-function PanelHeader({ onClose }: Readonly<{ onClose: () => void }>) {
+function PanelHeader() {
   const t = useT();
   const queryClient = useQueryClient();
   const unread = useUnreadCount();
@@ -107,44 +111,40 @@ function PanelHeader({ onClose }: Readonly<{ onClose: () => void }>) {
 
   const markAllOff = unread === 0 || busy;
   return (
-    <>
-      <Row shrink={0} gap={8} px={16} pb={12} style={SAFE_TOP}>
-        <h2 style={HEADING}>
-          <Text variant="label">{t('notifications.title')}</Text>
-        </h2>
-        <Spacer />
-        {/* Icon-only: the label is long in every language and crowded the title. */}
-        <Row gap={2}>
-          <IconButton
-            variant="ghost"
-            size={36}
-            radius="lg"
-            label={t('notifications.markAllRead')}
-            onPress={() => void markAll()}
-            disabled={markAllOff}
-            style={markAllOff ? OFF : undefined}
-          >
-            {busy ? <Spinner size={17} /> : <Icon name="checks" size={18} />}
-          </IconButton>
-          <IconButton
-            variant="ghost"
-            size={36}
-            radius="lg"
-            icon="x"
-            glyph={18}
-            label={t('common.close')}
-            onPress={onClose}
-          />
-        </Row>
+    <Row gap={8}>
+      <h2 style={HEADING}>
+        <Text variant="label">{t('notifications.title')}</Text>
+      </h2>
+      <Spacer />
+      {/* Icon-only: the label is long in every language and crowded the title. */}
+      <Row gap={2}>
+        <IconButton
+          variant="ghost"
+          size={36}
+          radius="lg"
+          label={t('notifications.markAllRead')}
+          onPress={() => void markAll()}
+          disabled={markAllOff}
+          style={markAllOff ? OFF : undefined}
+        >
+          {busy ? <Spinner size={17} /> : <Icon name="checks" size={18} />}
+        </IconButton>
+        <Drawer.Close size={36} radius="lg" glyph={18} />
       </Row>
-      <Divider />
-    </>
+    </Row>
   );
 }
 
 const PANEL_FILL = { backgroundColor: color('bg') } as const;
 
-const SAFE_TOP = { paddingTop: 'max(1.15rem, env(safe-area-inset-top))' } as unknown as ViewStyle;
+// The sheet takes the whole screen on a phone, so its first band clears the
+// notch; `env()` has no React Native spelling.
+const HEADER_BAND = {
+  paddingLeft: 16,
+  paddingRight: 16,
+  paddingTop: 'max(1.15rem, env(safe-area-inset-top))',
+  paddingBottom: 12,
+} as unknown as ViewStyle;
 
 const HEADING = { margin: 0 } as const;
 
@@ -156,7 +156,7 @@ function PanelBody({ onNavigate }: Readonly<{ onNavigate: () => void }>) {
 
   if (isPending) {
     return (
-      <Box flex px={8} pt={12}>
+      <Box>
         {[0, 1, 2, 3].map((i) => (
           <Row key={i} align="flex-start" gap={12} p={10} pl={16}>
             <Skeleton w={48} h={48} radius="xl" />
@@ -173,18 +173,15 @@ function PanelBody({ onNavigate }: Readonly<{ onNavigate: () => void }>) {
   const items = data?.notifications ?? [];
   if (items.length === 0) {
     return (
-      <EmptyState.Root
-        size="sm"
-        layout="fill"
-        icon="bell"
-        title={t('notifications.empty')}
-        hint={t('notifications.emptyHint')}
-      />
+      <EmptyState.Root size="sm" layout="fill" icon="bell">
+        <EmptyState.Title>{t('notifications.empty')}</EmptyState.Title>
+        <EmptyState.Hint>{t('notifications.emptyHint')}</EmptyState.Hint>
+      </EmptyState.Root>
     );
   }
 
   return (
-    <Box flex px={8} pb={12} style={SCROLL}>
+    <>
       {groupNotificationsByDay(items).map((group) => (
         // Keyed on the run's first row, not the day: an unsorted inbox can open a
         // second "Earlier" run, and two sections must not share a key.
@@ -204,11 +201,9 @@ function PanelBody({ onNavigate }: Readonly<{ onNavigate: () => void }>) {
           </ListRow.Group>
         </section>
       ))}
-    </Box>
+    </>
   );
 }
-
-const SCROLL = { overflowY: 'auto', overscrollBehavior: 'contain' } as unknown as ViewStyle;
 
 const DAY_LABEL = { position: 'sticky', top: 0, zIndex: 10, margin: 0 } as const;
 

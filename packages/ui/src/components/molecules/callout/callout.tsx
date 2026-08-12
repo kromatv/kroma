@@ -102,27 +102,16 @@ interface CalloutRootProps {
   /** The control shell's size, defaulting to the app's (`setEntryDefaults`), so
    *  a callout in a form matches the fields around it without saying so. */
   size?: ControlSize;
-  /** Sugar for the standard row, equivalent to
-   *  `<Media/><Title/><Detail/><Actions/>`. */
+  /** The mark, as a glyph the kit can size. Media it cannot size goes through
+   *  <Callout.Media>, which wins the head of the row. */
   icon?: IconName;
-  title?: string;
-  detail?: string;
-  actions?: ReactNode;
   /** A DIRECT <Callout.Media> or <Callout.Actions> child is sorted into the head
    *  and tail of the row, so those two may be written anywhere; everything else
    *  is the message column, in the order it was written. */
   children?: ReactNode;
 }
 
-function Root({
-  tone = 'neutral',
-  size,
-  icon,
-  title,
-  detail,
-  actions,
-  children,
-}: Readonly<CalloutRootProps>) {
+function Root({ tone = 'neutral', size, icon, children }: Readonly<CalloutRootProps>) {
   const step = size ?? entryDefaultSize();
   const metrics = CONTROL[step];
   const at = useMemo(() => sort(children), [children]);
@@ -132,7 +121,6 @@ function Root({
   );
 
   const leading = slot(at.leading, icon === undefined ? null : <Media name={icon} />);
-  const trailing = slot(at.trailing, actions === undefined ? null : <Actions>{actions}</Actions>);
 
   return (
     <CalloutContext.Provider value={context}>
@@ -150,11 +138,9 @@ function Root({
         {/* minW 0: without it a long message pushes the actions off the block
             instead of wrapping, which is the one thing a message must not do. */}
         <Box flex minW={0} gap={4}>
-          {title ? <Title>{title}</Title> : null}
-          {detail ? <Detail>{detail}</Detail> : null}
           {at.message}
         </Box>
-        {trailing}
+        {at.trailing}
       </Box>
     </CalloutContext.Provider>
   );
@@ -209,7 +195,9 @@ const s = styles({ title: { fontWeight: '600' } });
  * A toned block carrying one message, and sometimes the action that answers it.
  *
  * ```tsx
- * <Callout.Root tone="danger" title={error} />
+ * <Callout.Root tone="danger">
+ *   <Callout.Title>{error}</Callout.Title>
+ * </Callout.Root>
  *
  * <Callout.Root tone="accent" icon="info-circle">
  *   <Callout.Title>Le catalogue repond</Callout.Title>

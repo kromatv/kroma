@@ -208,7 +208,7 @@ function AddEngineDialog({
     );
 
   return (
-    <Dialog open title={ask.title} width={560} onClose={() => onSettle(false)}>
+    <Dialog.Root open title={ask.title} width={560} onClose={() => onSettle(false)}>
       {ask.engines.length > 1 ? (
         <SegmentedControl.Root
           value={engineId}
@@ -238,6 +238,6 @@ function AddEngineDialog({
         busy={busy}
         disabled={!canSubmit}
       />
-    </Dialog>
+    </Dialog.Root>
   );
 }

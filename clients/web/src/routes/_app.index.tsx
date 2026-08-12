@@ -40,11 +40,10 @@ function HomePage() {
   if (movies.length === 0 && shows.length === 0) {
     return (
       <main className={PAGE_MAIN}>
-        <EmptyState.Root
-          icon="movie"
-          title={t('content.homeEmpty')}
-          hint={t('content.homeEmptyHint')}
-        />
+        <EmptyState.Root icon="movie">
+          <EmptyState.Title>{t('content.homeEmpty')}</EmptyState.Title>
+          <EmptyState.Hint>{t('content.homeEmptyHint')}</EmptyState.Hint>
+        </EmptyState.Root>
       </main>
     );
   }

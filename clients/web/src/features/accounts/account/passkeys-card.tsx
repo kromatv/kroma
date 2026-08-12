@@ -43,10 +43,11 @@ function PasskeyRow({
   };
 
   return (
-    <ListRow.Root
-      label={passkey.name}
-      hint={passkey.lastUsed ? relativeSeen(passkey.lastUsed) : t('account.passkeyNeverUsed')}
-    >
+    <ListRow.Root>
+      <ListRow.Label>{passkey.name}</ListRow.Label>
+      <ListRow.Hint>
+        {passkey.lastUsed ? relativeSeen(passkey.lastUsed) : t('account.passkeyNeverUsed')}
+      </ListRow.Hint>
       <ListRow.Leading>
         <Box center w={38} h={38} radius="xs" border="border" bg="surface2">
           <Icon name="key" size={18} stroke={1.7} color="success" />
@@ -96,7 +97,9 @@ export function PasskeysCard() {
   const note = noteOf(supported, keys, t);
   return (
     <ListRow.Group size="md">
-      <ListRow.Root label={t('account.passkeys')} hint={t('account.passkeysDesc')}>
+      <ListRow.Root>
+        <ListRow.Label>{t('account.passkeys')}</ListRow.Label>
+        <ListRow.Hint>{t('account.passkeysDesc')}</ListRow.Hint>
         <ListRow.Leading>
           <IconWell name="shield-lock" size="sm" tone="accent" />
         </ListRow.Leading>

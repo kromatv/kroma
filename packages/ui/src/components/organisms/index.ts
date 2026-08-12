@@ -1,9 +1,22 @@
 // Organisms: a region of an interface, composing molecules and atoms and owning
 // behaviour of its own.
 
-export type { ConfirmDialogProps, ConfirmOptions, DialogActionsProps, DialogProps } from './dialog';
+export type {
+  CommandInputProps,
+  CommandItem,
+  CommandResults,
+  CommandRootProps,
+  CommandSection,
+} from './command';
+export { COMMAND_METRICS, Command, useCommandResults } from './command';
+export type {
+  ConfirmDialogProps,
+  ConfirmOptions,
+  DialogActionsProps,
+  DialogRootProps,
+} from './dialog';
 export { ConfirmDialog, ConfirmHost, confirm, Dialog } from './dialog';
-export type { DrawerProps, DrawerSide } from './drawer';
+export type { DrawerBandProps, DrawerCloseProps, DrawerRootProps, DrawerSide } from './drawer';
 export { Drawer } from './drawer';
 export type {
   KeyboardLayout,
@@ -40,6 +53,17 @@ export { NearbyTvList } from './nearby-tv-list';
 export { PerfHud } from './perf-hud';
 export type { RailListProps, RailRootProps, RailTitleProps } from './rail';
 export { RAIL_GAP, Rail } from './rail';
+export type {
+  ResizableHandleProps,
+  ResizableLayoutDetails,
+  ResizablePanelDetails,
+  ResizablePanelProps,
+  ResizablePanelState,
+  ResizableRootProps,
+  ResizableSize,
+  ResizableStorage,
+} from './resizable';
+export { Resizable, useResizablePanel } from './resizable';
 export type { SplashBackdropProps, SplashCover } from './splash-backdrop';
 export { SplashBackdrop } from './splash-backdrop';
 export type { ToasterProps, ToastOptions, ToastPosition } from './toast';

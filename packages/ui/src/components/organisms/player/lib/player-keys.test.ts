@@ -7,7 +7,7 @@
 // gives a keyboard user a Tab key that walks across a column or down a row.
 
 import { describe, expect, it, vi } from 'vitest';
-import type { PlayerNav } from '../hooks/usePlayerNav';
+import type { PlayerNav } from '../hooks/use-player-nav';
 import { type PlayerKeysParams, routeRemoteKey, tabDirection } from './player-keys';
 
 const nav = (over: Partial<PlayerNav>): PlayerNav => over as PlayerNav;

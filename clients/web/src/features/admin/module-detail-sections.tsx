@@ -28,7 +28,10 @@ export function Meta({ rows }: Readonly<{ rows: [string, ReactNode][] }>) {
   return (
     <Grid columns={2} gap={16} rowGap={12}>
       {rows.map(([k, v]) => (
-        <DataField.Root key={k} size="sm" label={k} value={v} />
+        <DataField.Root key={k} size="sm">
+          <DataField.Label>{k}</DataField.Label>
+          <DataField.Value>{v}</DataField.Value>
+        </DataField.Root>
       ))}
     </Grid>
   );
@@ -204,7 +207,7 @@ export function FooterProgress({ op }: Readonly<{ op: OpModule }>) {
       </Row>
       <Progress
         value={runningPct(op.phase, pct) / 100}
-        size={5}
+        thickness={5}
         color={op.phase === 'done' ? 'success' : 'accent'}
         rounded
       />

@@ -13,7 +13,7 @@ const LIST_HEIGHT = ROW_HEIGHT * 7 + ROW_GAP * 6;
 // width of its own to resolve against, so the row collapses to its trailing
 // glyph.
 const PANEL_WIDTH = 620;
-// Must match <Dialog>'s own panel padding.
+// Must match <Dialog.Root>'s own panel padding.
 const PANEL_PADDING = 40;
 const ROW_WIDTH = PANEL_WIDTH - PANEL_PADDING * 2;
 
@@ -44,7 +44,7 @@ export function ChoicePicker({
   const current = options.indexOf(value);
 
   return (
-    <Dialog open onClose={onClose} title={title} width={PANEL_WIDTH}>
+    <Dialog.Root open onClose={onClose} title={title} width={PANEL_WIDTH}>
       <VirtualGrid
         data={options}
         columns={1}
@@ -54,7 +54,6 @@ export function ChoicePicker({
         initialIndex={current > 0 ? current : undefined}
         renderItem={(option) => (
           <ListRow.Root
-            label={t(item.valueLabel(option))}
             style={{ height: ROW_HEIGHT, width: ROW_WIDTH }}
             chevron={false}
             onPress={() => {
@@ -62,6 +61,7 @@ export function ChoicePicker({
               onClose();
             }}
           >
+            <ListRow.Label>{t(item.valueLabel(option))}</ListRow.Label>
             <ListRow.Trailing>
               {option === value ? (
                 <Icon name="check" size={20} stroke={2.4} color="accentText" />
@@ -70,6 +70,6 @@ export function ChoicePicker({
           </ListRow.Root>
         )}
       />
-    </Dialog>
+    </Dialog.Root>
   );
 }

@@ -213,7 +213,11 @@ export const ReportDialog = createCallable<
                 </Field.Root>
               </Box>
 
-              {error ? <Callout.Root tone="danger" title={error} /> : null}
+              {error ? (
+                <Callout.Root tone="danger">
+                  <Callout.Title>{error}</Callout.Title>
+                </Callout.Root>
+              ) : null}
 
               <Box row gap={10}>
                 <Button label={t('report.submit')} onPress={submit} loading={busy} style={FLEX_1} />

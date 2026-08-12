@@ -36,12 +36,10 @@ export function ModuleUnavailable() {
   const t = useT();
   return (
     <Box style={PAGE}>
-      <EmptyState.Root
-        layout="fill"
-        icon="plug-off"
-        title={t('modules.unavailable')}
-        hint={t('modules.unavailableHint')}
-      />
+      <EmptyState.Root layout="fill" icon="plug-off">
+        <EmptyState.Title>{t('modules.unavailable')}</EmptyState.Title>
+        <EmptyState.Hint>{t('modules.unavailableHint')}</EmptyState.Hint>
+      </EmptyState.Root>
     </Box>
   );
 }
@@ -53,14 +51,12 @@ export function ModuleFailed({ retry, detail }: Readonly<{ retry?: () => void; d
   const t = useT();
   return (
     <Box style={PAGE}>
-      <EmptyState.Root
-        layout="fill"
-        icon="alert-triangle"
-        title={t('modules.loadFailed')}
-        hint={t('modules.loadFailedHint')}
-        detail={detail}
-        actions={
-          retry ? (
+      <EmptyState.Root layout="fill" icon="alert-triangle">
+        <EmptyState.Title>{t('modules.loadFailed')}</EmptyState.Title>
+        <EmptyState.Hint>{t('modules.loadFailedHint')}</EmptyState.Hint>
+        {detail ? <EmptyState.Detail>{detail}</EmptyState.Detail> : null}
+        {retry ? (
+          <EmptyState.Actions>
             <Button
               variant="glass"
               size="sm"
@@ -68,9 +64,9 @@ export function ModuleFailed({ retry, detail }: Readonly<{ retry?: () => void; d
               label={t('error.retry')}
               onPress={retry}
             />
-          ) : undefined
-        }
-      />
+          </EmptyState.Actions>
+        ) : null}
+      </EmptyState.Root>
     </Box>
   );
 }

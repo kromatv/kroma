@@ -61,10 +61,10 @@ function ChoiceRow({ item, first }: Readonly<{ item: ChoiceItem; first?: boolean
     <>
       <ListRow.Root
         icon={item.icon}
-        label={t(item.label)}
         autoFocus={first}
         onPress={list ? () => setPicking(true) : cycle}
       >
+        <ListRow.Label>{t(item.label)}</ListRow.Label>
         <ListRow.Trailing>
           <Text variant="labelTv" color="accentText">
             {t(item.valueLabel(value))}
@@ -90,7 +90,8 @@ function ToggleRow({ item, first }: Readonly<{ item: ToggleItem; first?: boolean
   const t = useT();
   const [on, set] = item.use();
   return (
-    <ListRow.Root icon={item.icon} label={t(item.label)} autoFocus={first} onPress={() => set(!on)}>
+    <ListRow.Root icon={item.icon} autoFocus={first} onPress={() => set(!on)}>
+      <ListRow.Label>{t(item.label)}</ListRow.Label>
       <ListRow.Trailing>
         <Badge
           badge={{ label: on ? 'profileMenu.on' : 'profileMenu.off', tone: on ? 'success' : 'dim' }}
@@ -103,7 +104,8 @@ function ToggleRow({ item, first }: Readonly<{ item: ToggleItem; first?: boolean
 function ActionRow({ item, first }: Readonly<{ item: ActionItem; first?: boolean }>) {
   const t = useT();
   return (
-    <ListRow.Root icon={item.icon} label={t(item.label)} autoFocus={first} onPress={item.run}>
+    <ListRow.Root icon={item.icon} autoFocus={first} onPress={item.run}>
+      <ListRow.Label>{t(item.label)}</ListRow.Label>
       <ListRow.Trailing>{item.badge ? <Badge badge={item.badge} /> : null}</ListRow.Trailing>
     </ListRow.Root>
   );

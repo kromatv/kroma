@@ -1,0 +1,123 @@
+import { Badge } from '#ui/components/atoms/badge';
+import { Button } from '#ui/components/atoms/button';
+import { IconButton } from '#ui/components/atoms/icon-button';
+import { Spinner } from '#ui/components/atoms/spinner';
+import { StatusDot } from '#ui/components/atoms/status-dot';
+import { Callout } from '#ui/components/molecules/callout';
+import { DataField } from '#ui/components/molecules/data-field';
+import { Figure } from './figure';
+
+export const title = 'The six levels';
+export const summary = 'Six levels, built bottom-up, each one allowed to know only the levels below it.';
+export const width = 'wide';
+
+The split earns its keep for one reason: you can read a level without reading
+the app.
+
+| Level | Where | What earns a place |
+| --- | --- | --- |
+| 1. Tokens | `src/core/tokens/` | A raw value that cannot be decomposed: `#F4B642`, `16`, `Hanken Grotesk`. |
+| 2. Atoms | `atoms/` | One indivisible control. Break it down and it stops being useful. |
+| 3. Molecules | `molecules/` | A few atoms bonded into one arrangement the design names. |
+| 4. Organisms | `organisms/` | A whole region of a screen, usually owning behaviour. |
+| 5. Templates | `templates/` | A page skeleton: where things go, with no data. |
+| 6. Pages | **not here** | A template filled with real data - see below. |
+
+<Figure row caption="Level 2: a button, an icon button, a badge, a spinner, a status dot. Each one is indivisible - break it down and it stops being useful.">
+  <Button label="Lire" icon="player-play-filled" />
+  <IconButton icon="heart" label="Ajouter aux favoris" variant="ghost" />
+  <Badge tone="4K" />
+  <Spinner />
+  <StatusDot online />
+</Figure>
+
+<Figure row caption="Level 3: a callout and a readout. Neither adds a value of its own - a callout is an icon and two lines of text, a readout is an overline and a line under it - and both are here because the design names the arrangement, not because the pieces were hard to write.">
+  <Callout.Root tone="accent" icon="wand">
+    <Callout.Title>Analyse terminee</Callout.Title>
+    <Callout.Detail>128 titres, 4 sans jaquette</Callout.Detail>
+  </Callout.Root>
+  <DataField.Root size="md">
+    <DataField.Label>Duree</DataField.Label>
+    <DataField.Value>2 h 04</DataField.Value>
+  </DataField.Root>
+</Figure>
+
+## Pages are not in the kit
+
+A page knows the server, the router and the session, so it belongs to an app,
+not to a design system: `packages/tv/src/features/*` for the 10-foot screens,
+`clients/*/src` for the browser and phone ones. A kit that shipped pages would
+be shipping the product, and every screen would have to be re-approved by the
+design system to change a string.
+
+## Composed, not configured
+
+The kit's components follow **Radix's shape**: a component that is a *set of
+parts* exposes them by name and lets the caller arrange them, rather than
+growing a prop for every arrangement anyone might want.
+
+```tsx
+// Configured: every new demand is another prop, and the component becomes a
+// switchboard nobody can read.
+<ChoiceList items={items} renderBadge={...} hintPosition="below" showIcons />
+
+// Composed: the caller writes the row, the component owns the behaviour.
+<ChoiceList.Root label="Bibliotheques" value={picked} onValueChange={setPicked}>
+  <ChoiceList.Item value={lib.value}>
+    <ChoiceList.Label>{lib.label}</ChoiceList.Label>
+    <ChoiceList.Hint>128 titres</ChoiceList.Hint>
+  </ChoiceList.Item>
+</ChoiceList.Root>
+```
+
+That is the whole of it here. Composing a component owns the rest - the part
+vocabulary, the six tests that decide when a `data` prop beats children, the
+escape ladder, and the checklist a component passes before it is done.
+
+## A component is a folder
+
+```
+atoms/button/
+  button.tsx                        the component, its variants, its props
+  button.stories.tsx                what the workbench shows and can adjust
+  button.detail-actions.demo.tsx    a worked example; the file IS the code sample
+  index.ts                          re-export, so importers write './button'
+```
+
+Everything about one component sits together: change it and its story and its
+examples are in the same folder, so there is nowhere for them to rot unnoticed.
+The `index.ts` is what lets the level barrel keep saying `from './button'`.
+
+## Getting them out
+
+Three doors, in the order you should reach for them:
+
+```tsx
+import { Button, ListRow, Rail } from '@kroma/ui/kit';        // 1. the flat barrel
+import { Button } from '@kroma/ui/kit/atoms/button';          // 2. one component
+import { colors } from '#ui/core/tokens';                     // 3. inside the kit only
+```
+
+1. **`@kroma/ui/kit`** re-exports all four component levels flat. App code should
+   use this and never learn which level something is at - the levels are for the
+   people editing the kit.
+2. **`@kroma/ui/kit/<level>/<name>`** is one component, for a package that wants
+   `Button` and nothing else. It is a single wildcard in `package.json`, so no
+   list is maintained: add a folder and it is importable.
+3. **`#ui/*`** is the kit's own internal alias so its files never climb `../../..`.
+   It is NOT for consumers, and four resolvers have to be told about it
+   separately, because none of them reads the others' config.
+
+Doors 1 and 2 cost the same, which is why door 1 can be the default. Measured
+with the repo's own Vite, both spellings of `Button` emit the same 478,646 bytes
+before gzip. What buys that is `"sideEffects": false` in the package manifest,
+the one thing that lets a bundler drop a barrel's untouched re-exports. Delete
+it and door 1 keeps the whole kit: a single `Text` off the flat barrel goes from
+33 KB gzipped to 166 KB. Nothing in this package runs at import time, so the
+field is true; do not "tidy" it away.
+
+## Moving a component between levels
+
+Move the folder, fix the two barrels, and that is all - the workbench follows on
+its own, because it reads the level from the file's path rather than from a field
+anything could get wrong.

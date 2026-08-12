@@ -7,7 +7,7 @@
 // refresh.
 
 import { useT } from '@kroma/ui';
-import { Box, Button, Divider, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
+import { Box, Button, Drawer, Row, Text } from '@kroma/ui/kit';
 import { useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction, usePoll } from '#web/features/admin/hooks';
@@ -18,7 +18,6 @@ import {
   ExtraRow,
   OfficialRow,
 } from '#web/features/admin/module-registry-rows';
-import { SCROLL_PANE } from '#web/features/admin/web-style';
 
 // A row's React key is minted once and then carried through every edit. Keying
 // on the URL itself would remount the row on each keystroke, dropping focus.
@@ -71,13 +70,13 @@ export const RegistriesDrawer = createCallable<Record<string, never>, boolean>((
   };
 
   return (
-    <Drawer
+    <Drawer.Root
       open={!call.ended}
       onClose={() => call.end(changed.current)}
       title={t('admin.registriesTitle')}
       width={520}
     >
-      <Box px={24} py={20}>
+      <Drawer.Header>
         <Row between>
           <Box>
             <Text variant="h2" accessibilityRole="header">
@@ -87,18 +86,12 @@ export const RegistriesDrawer = createCallable<Record<string, never>, boolean>((
               {t('admin.registriesSub')}
             </Text>
           </Box>
-          <IconButton
-            variant="ghost"
-            icon="x"
-            label={t('common.close')}
-            onPress={() => call.end(changed.current)}
-          />
+          <Drawer.Close />
         </Row>
-      </Box>
-      <Divider color="tint/7" />
+      </Drawer.Header>
 
-      <div style={SCROLL_PANE}>
-        <Box gap={12} px={24} py={20}>
+      <Drawer.Panel>
+        <Box gap={12}>
           {error && (
             <Text variant="meta" color="danger">
               {error}
@@ -155,7 +148,7 @@ export const RegistriesDrawer = createCallable<Record<string, never>, boolean>((
             </>
           )}
         </Box>
-      </div>
-    </Drawer>
+      </Drawer.Panel>
+    </Drawer.Root>
   );
 }, 400);

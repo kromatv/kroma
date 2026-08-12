@@ -79,7 +79,7 @@ export function MissingGroupCard({
           <Checkbox
             checked={allPicked}
             indeterminate={pickedCount > 0 && !allPicked}
-            onChange={onToggleGroup}
+            onCheckedChange={onToggleGroup}
             label={t('requests.select')}
           />
         ) : (

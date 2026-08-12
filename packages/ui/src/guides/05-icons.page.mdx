@@ -1,0 +1,103 @@
+import { DocFigure } from '@kroma/workbench';
+import { Icon } from '#ui/components/atoms/icon';
+import { Figure } from './figure';
+import { IconBrowser } from './icon-browser';
+
+export const title = 'Icons';
+export const summary = 'Every Tabler glyph the kit can draw, and how to find the one you mean.';
+export const width = 'wide';
+
+A glyph is drawn by its kebab-case name: `<Icon name="wave-sine" />`. Nothing has
+to be registered first, and a name that does not exist draws the fallback
+`help-circle` rather than crashing, so a name can safely come from data - a
+module manifest, a catalogue row.
+
+<Figure row caption="wave-sine, player-play-filled, chevron-right - and not-a-real-glyph, which draws help-circle in place of throwing.">
+  <Icon name="wave-sine" size={30} />
+  <Icon name="player-play-filled" size={30} color="accent" />
+  <Icon name="chevron-right" size={30} color="textDim" />
+  <Icon name="not-a-real-glyph" size={30} color="danger" />
+</Figure>
+
+<DocFigure>
+  <IconBrowser />
+</DocFigure>
+
+## The name is the whole API
+
+The slug is Tabler's own export, kebab-cased: `IconPlayerPauseFilled` is
+`player-pause-filled`, `IconVolume2` is `volume-2`. `IconName` is a strict
+union, so a typo fails to compile; a name arriving from data crosses the border
+through `hasGlyph`.
+
+```tsx
+<Icon name="player-play-filled" size={24} color="accentText" />
+```
+
+Pass a palette token to `color` - a raw string is for the few one-off washes -
+and leave `stroke` at 1.8 or above, below which an outline disappears at three
+metres.
+
+## Searching by letter
+
+The box matches loosely: the letters have to appear in the name in that order,
+not next to each other. `chevrn` finds `chevron-right`, `playpause` finds
+`player-pause`, and dashes or spaces typed into the box are ignored, so
+`player pause` and `playerpause` are the same query.
+
+Hits are ranked, best first:
+
+| What scores | Reads as |
+| --- | --- |
+| a contiguous run | `pause` in `player-pause` beats the same letters scattered |
+| a word boundary | a match at the start, or just after a `-`, is the one meant |
+| an earlier match | `search-off` before `world-search` |
+| a shorter name | `search` before `search-off`, once the score ties |
+
+The matcher is `lib/fuzzy-search.ts`: a scored subsequence match, no dependency
+and no DOM, so the same ranking runs on a television.
+
+## Searching by meaning
+
+A glyph is also reachable through Tabler's own tags, which is how `delete` finds
+`trash` and `typography` finds `align-right`. A hit the tags carried says so:
+the matched tags are drawn under the name, so a result nobody can explain never
+appears.
+
+A tag hit is handicapped rather than kept in a bucket of its own. A name of the
+same quality still wins - typing `arrow` gives `arrow-up`, not everything tagged
+"arrow" - while a tag matched cleanly beats a name the query merely scatters
+through, which is what puts `trash` near the top of `delete` instead of behind a
+hundred `device-tablet-…` names.
+
+The category picker comes from the same source: it narrows the grid to one of
+Tabler's 41 categories, and searching then works inside it. A `-filled` variant
+inherits its base glyph's category and tags, since the catalogue lists only the
+outline.
+
+## Where the tags come from
+
+The catalogue is `@tabler/icons`' `icons.json`, read at BUILD time by
+`kromaIconCatalog()` (`@kroma/ui/vite/icon-catalog`) and handed to the kit
+through `setIconCatalog()`. Only a workbench adds that plugin: it is a megabyte
+of metadata for one page, and no product bundle - least of all a television's -
+should carry it. Where it is absent the box searches names alone and the
+category picker does not appear, which is what the kit's own phone and TV builds
+do.
+
+## A page at a time
+
+Tabler ships thousands of glyphs, and drawing them all locks the workbench up
+for seconds - far longer on a television - so the grid holds 120 and the rest
+are one `Pagination.Root` away. A new query returns to page one.
+
+The grid scrolls inside its own area rather than lengthening the article, so the
+bar, the count and the pager stay where they are while a page is read, and a new
+page starts at the top of the grid instead of wherever the last one was left. A
+television gets the flat grid instead: the tiles take no focus, so a nested
+scroller is one the D-pad could never move.
+
+Everything above is the kit's own: a `Field` for the box, a `Select` for the
+categories, a `SegmentedControl` for the size, a `Pagination` row under the
+grid, and on a television a `SearchKeyboard` under the box - so the glyph
+browser is walked with the D-pad like any other screen.

@@ -18,7 +18,6 @@ import {
   Button,
   Callout,
   color,
-  Divider,
   Drawer,
   Field,
   IconButton,
@@ -31,7 +30,6 @@ import { Pill } from '#web/features/admin/pill';
 import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
 import { ReleaseList } from '#web/features/admin/release-list';
 import { useAsyncAction, usePoll } from '#web/features/admin/shell';
-import { SCROLL_PANE } from '#web/features/admin/web-style';
 import { useAuth } from '#web/shared/lib/auth';
 import { seasonsSummary } from '#web/shared/lib/request-status';
 import { Image } from '#web/shared/ui';
@@ -47,7 +45,7 @@ interface SearchState {
 }
 type GrabbedState = { title: string; error: boolean } | null;
 
-function DrawerPoster({ req }: Readonly<{ req: MediaRequest }>) {
+function Poster({ req }: Readonly<{ req: MediaRequest }>) {
   return (
     <Box w={70} h={104} shrink={0} radius="xs" overflow="hidden" shadow="pop">
       <div style={{ position: 'absolute', inset: 0, background: posterGrad(req.title) }} />
@@ -56,7 +54,7 @@ function DrawerPoster({ req }: Readonly<{ req: MediaRequest }>) {
   );
 }
 
-function DrawerHeader({ req, onClose }: Readonly<{ req: MediaRequest; onClose: () => void }>) {
+function Identity({ req }: Readonly<{ req: MediaRequest }>) {
   const t = useT();
   const km = kindMeta(req.kind === 'show' ? 'series' : 'film');
   const seasons = seasonsSummary(req.seasons);
@@ -68,32 +66,29 @@ function DrawerHeader({ req, onClose }: Readonly<{ req: MediaRequest; onClose: (
     .join(' · ');
   return (
     <>
-      <Box px={24} py={20}>
-        <Row between mb={16}>
-          <Text variant="overline" color="textDim">
-            {t('requests.sheet')}
+      <Row between mb={16}>
+        <Text variant="overline" color="textDim">
+          {t('requests.sheet')}
+        </Text>
+        <Drawer.Close />
+      </Row>
+      <Box row gap={16}>
+        <Poster req={req} />
+        <Box minW={0} pt={4} align="flex-start">
+          <Pill ink={km.color} bg={km.bg} variant="overline">
+            {t(`pipeline.type.${km.typeKey}` as MessageKey)}
+          </Pill>
+          <Text variant="h2" accessibilityRole="header" mt={10}>
+            {req.title}
           </Text>
-          <IconButton variant="ghost" icon="x" label={t('common.close')} onPress={onClose} />
-        </Row>
-        <Box row gap={16}>
-          <DrawerPoster req={req} />
-          <Box minW={0} pt={4} align="flex-start">
-            <Pill ink={km.color} bg={km.bg} variant="overline">
-              {t(`pipeline.type.${km.typeKey}` as MessageKey)}
-            </Pill>
-            <Text variant="h2" accessibilityRole="header" mt={10}>
-              {req.title}
-            </Text>
-            <Text variant="meta" color="textDim" mt={6}>
-              {meta}
-            </Text>
-            <Box mt={10}>
-              <RequestStatusChip status={req.status} />
-            </Box>
+          <Text variant="meta" color="textDim" mt={6}>
+            {meta}
+          </Text>
+          <Box mt={10}>
+            <RequestStatusChip status={req.status} />
           </Box>
         </Box>
       </Box>
-      <Divider color="tint/7" />
     </>
   );
 }
@@ -123,7 +118,9 @@ function RequesterCard({ req }: Readonly<{ req: MediaRequest }>) {
 
       {req.note ? (
         <Box mt={16}>
-          <Callout.Root tone="danger" title={req.note} />
+          <Callout.Root tone="danger">
+            <Callout.Title>{req.note}</Callout.Title>
+          </Callout.Root>
         </Box>
       ) : null}
     </>
@@ -161,13 +158,18 @@ function SearchPanel({
           loading={search.busy}
         />
       </Row>
-      {search.error ? <Callout.Root tone="danger" title={search.error} /> : null}
+      {search.error ? (
+        <Callout.Root tone="danger">
+          <Callout.Title>{search.error}</Callout.Title>
+        </Callout.Root>
+      ) : null}
       {grabbed ? (
         <Box mb={8}>
-          <Callout.Root
-            tone={grabbed.error ? 'danger' : 'success'}
-            title={grabbed.error ? grabbed.title : `${t('requests.grabbed')} ${grabbed.title}`}
-          />
+          <Callout.Root tone={grabbed.error ? 'danger' : 'success'}>
+            <Callout.Title>
+              {grabbed.error ? grabbed.title : `${t('requests.grabbed')} ${grabbed.title}`}
+            </Callout.Title>
+          </Callout.Root>
         </Box>
       ) : null}
       {search.view ? (
@@ -288,7 +290,9 @@ export const RequestDrawer = createCallable<
   // Track the request live off the shared queue query (same key + fetcher), so an
   // action or WS-driven reload refreshes the open drawer just like the table.
   const { data } = usePoll(['admin', 'requests', 'all'], () => client.listRequests(), 30000);
-  const req = data ? data.requests.find((r) => r.id === initialReq.id) : initialReq;
+  // Falls back to the row it was opened on so the sheet keeps its contents
+  // through the slide-out once the request has left the list.
+  const req = data?.requests.find((r) => r.id === initialReq.id) ?? initialReq;
 
   const { busy, run } = useAsyncAction();
   const [denying, setDenying] = useState(false);
@@ -302,30 +306,20 @@ export const RequestDrawer = createCallable<
     if (gone) call.end();
   }, [gone, call.end]);
 
-  const submitApprove = () => {
-    const r = req;
-    if (r)
-      void run(async () => {
-        await onApprove(r);
-      });
-  };
-  const submitDeny = (n: string) => {
-    const r = req;
-    if (r)
-      void run(async () => {
-        await onDeny(r, n);
-      });
-  };
+  const submitApprove = () =>
+    void run(async () => {
+      await onApprove(req);
+    });
+  const submitDeny = (n: string) =>
+    void run(async () => {
+      await onDeny(req, n);
+    });
   const submitDelete = () => {
-    const r = req;
-    if (r) {
-      onDelete(r);
-      call.end();
-    }
+    onDelete(req);
+    call.end();
   };
 
   const runSearch = () => {
-    if (!req) return;
     setGrabbed(null);
     setSearch({ busy: true, view: null, error: null });
     client
@@ -336,7 +330,6 @@ export const RequestDrawer = createCallable<
       );
   };
   const grab = (release: ScoredReleaseView) => {
-    if (!req) return;
     client
       .grabRelease(req.id, { guid: release.guid, indexerId: release.indexerId })
       .then(() => setGrabbed({ title: release.title, error: false }))
@@ -346,64 +339,55 @@ export const RequestDrawer = createCallable<
   };
 
   const showSearch =
-    !!req && acqEnabled && canReview && req.status !== 'denied' && req.status !== 'available';
+    acqEnabled && canReview && req.status !== 'denied' && req.status !== 'available';
 
   return (
-    <Drawer
+    <Drawer.Root
       open={!call.ended}
       onClose={() => call.end()}
-      title={t('requests.sheet')}
-      width={460}
+      title={req.title}
       panelStyle={DRAWER_FILL}
     >
-      {req ? (
-        <>
-          <DrawerHeader req={req} onClose={() => call.end()} />
+      <Drawer.Header>
+        <Identity req={req} />
+      </Drawer.Header>
 
-          <div style={SCROLL_PANE}>
-            <Box px={24} py={20}>
-              <RequesterCard req={req} />
+      <Drawer.Panel>
+        <RequesterCard req={req} />
+        {showSearch ? (
+          <SearchPanel
+            canReview={canReview}
+            busy={busy}
+            search={search}
+            grabbed={grabbed}
+            onSearch={runSearch}
+            onGrab={grab}
+          />
+        ) : null}
+      </Drawer.Panel>
 
-              {showSearch ? (
-                <SearchPanel
-                  canReview={canReview}
-                  busy={busy}
-                  search={search}
-                  grabbed={grabbed}
-                  onSearch={runSearch}
-                  onGrab={grab}
-                />
-              ) : null}
-            </Box>
-          </div>
-
-          {canReview ? (
-            <>
-              <Divider color="tint/7" />
-              <Box px={24} py={18}>
-                {denying ? (
-                  <DenyForm
-                    busy={busy}
-                    note={note}
-                    onNote={setNote}
-                    onDeny={submitDeny}
-                    onCancel={() => setDenying(false)}
-                  />
-                ) : (
-                  <ModerationButtons
-                    req={req}
-                    busy={busy}
-                    onApprove={submitApprove}
-                    onStartDeny={() => setDenying(true)}
-                    onDelete={submitDelete}
-                  />
-                )}
-              </Box>
-            </>
-          ) : null}
-        </>
+      {canReview ? (
+        <Drawer.Footer>
+          {denying ? (
+            <DenyForm
+              busy={busy}
+              note={note}
+              onNote={setNote}
+              onDeny={submitDeny}
+              onCancel={() => setDenying(false)}
+            />
+          ) : (
+            <ModerationButtons
+              req={req}
+              busy={busy}
+              onApprove={submitApprove}
+              onStartDeny={() => setDenying(true)}
+              onDelete={submitDelete}
+            />
+          )}
+        </Drawer.Footer>
       ) : null}
-    </Drawer>
+    </Drawer.Root>
   );
 }, 400);
 

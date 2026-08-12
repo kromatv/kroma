@@ -61,13 +61,9 @@ function ToggleRow({
   onChange,
 }: Readonly<{ label: string; hint: string; on: boolean; onChange: (v: boolean) => void }>) {
   return (
-    <ListRow.Root
-      role="switch"
-      checked={on}
-      label={label}
-      hint={hint}
-      onPress={() => onChange(!on)}
-    >
+    <ListRow.Root role="switch" checked={on} onPress={() => onChange(!on)}>
+      <ListRow.Label>{label}</ListRow.Label>
+      <ListRow.Hint>{hint}</ListRow.Hint>
       <ListRow.Trailing>
         <SwitchFace checked={on} />
       </ListRow.Trailing>
@@ -108,7 +104,7 @@ export const ExportModal = createCallable<void, boolean>(({ call }) => {
   }
 
   return (
-    <Dialog
+    <Dialog.Root
       open
       title={t('admin.backupExportTitle')}
       width={520}
@@ -121,8 +117,9 @@ export const ExportModal = createCallable<void, boolean>(({ call }) => {
         onChange={setEncrypt}
       />
       {encrypt ? (
-        <Field.Root label={t('admin.backupPassword')} hint={t('admin.backupPasswordHint')}>
+        <Field.Root label={t('admin.backupPassword')}>
           <Field.Input type="password" icon="lock" value={password} onValueChange={setPassword} />
+          <Field.Hint>{t('admin.backupPasswordHint')}</Field.Hint>
         </Field.Root>
       ) : null}
       {error ? <ErrorLine text={error} /> : null}
@@ -134,7 +131,7 @@ export const ExportModal = createCallable<void, boolean>(({ call }) => {
         busy={busy}
         disabled={!canExport}
       />
-    </Dialog>
+    </Dialog.Root>
   );
 });
 
@@ -166,7 +163,7 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
     }
 
     return (
-      <Dialog
+      <Dialog.Root
         open
         title={t('admin.backupImportTitle')}
         width={520}
@@ -176,8 +173,9 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
           <ChosenFile name={file.name} />
         </Field.Root>
         {encrypted ? (
-          <Field.Root label={t('admin.backupPassword')} hint={t('admin.backupEncryptedFile')}>
+          <Field.Root label={t('admin.backupPassword')}>
             <Field.Input type="password" icon="lock" value={password} onValueChange={setPassword} />
+            <Field.Hint>{t('admin.backupEncryptedFile')}</Field.Hint>
           </Field.Root>
         ) : null}
         <ToggleRow
@@ -198,7 +196,7 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
           busy={busy}
           disabled={!canImport}
         />
-      </Dialog>
+      </Dialog.Root>
     );
   },
 );

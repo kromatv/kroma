@@ -7,7 +7,7 @@
 // an actual television, next to the components it is inspecting.
 
 import { Box, Chip, Divider, Field, Switch, style, Text } from '@kroma/ui/kit';
-import type { Control, ResolvedControl } from './story';
+import type { Control, ResolvedControl } from './derive';
 
 // Beyond this many options a row of chips stops being scannable and turns
 // into a wall, so the control becomes a stepper through the list instead.
@@ -95,7 +95,7 @@ function ControlRow({ name, control, value, onChange }: Readonly<ControlRowProps
         <Text variant="meta" color="textDim">
           {name}
         </Text>
-        <Switch checked={value === true} onChange={onChange} label={name} />
+        <Switch checked={value === true} onCheckedChange={onChange} label={name} />
       </Box>
     );
   }

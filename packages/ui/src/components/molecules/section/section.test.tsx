@@ -22,28 +22,8 @@ const hairlines = (root: HTMLElement): Element[] =>
 
 afterEach(cleanup);
 
-describe('the one-line Section', () => {
-  it('draws the same tree as the parts it stands for', () => {
-    const sugar = markup(
-      <Section.Root title="Playback" actions={<Text>See all</Text>}>
-        <Text>First line</Text>
-      </Section.Root>,
-    );
-    const parts = markup(
-      <Section.Root>
-        <Section.Header>
-          <Section.Title>Playback</Section.Title>
-          <Section.Actions>
-            <Text>See all</Text>
-          </Section.Actions>
-        </Section.Header>
-        <Text>First line</Text>
-      </Section.Root>,
-    );
-    expect(parts).toBe(sugar);
-  });
-
-  it('lifts the header out of the content whatever order it was written in', () => {
+describe('the header', () => {
+  it('is lifted out of the content whatever order it was written in', () => {
     const written = markup(
       <Section.Root>
         <Text>First line</Text>
@@ -53,7 +33,10 @@ describe('the one-line Section', () => {
       </Section.Root>,
     );
     const sorted = markup(
-      <Section.Root title="Playback">
+      <Section.Root>
+        <Section.Header>
+          <Section.Title>Playback</Section.Title>
+        </Section.Header>
         <Text>First line</Text>
       </Section.Root>,
     );
@@ -64,7 +47,10 @@ describe('the one-line Section', () => {
 describe('the rule', () => {
   it('comes with the header', () => {
     const { container } = render(
-      <Section.Root title="Playback">
+      <Section.Root>
+        <Section.Header>
+          <Section.Title>Playback</Section.Title>
+        </Section.Header>
         <Text>First line</Text>
       </Section.Root>,
     );
@@ -85,7 +71,13 @@ describe('the rule', () => {
 describe('Section.Actions', () => {
   it('pushes itself to the far end of the header row', () => {
     render(
-      <Section.Root title="Playback" actions={<Chip variant="subtle" label="See all" />}>
+      <Section.Root>
+        <Section.Header>
+          <Section.Title>Playback</Section.Title>
+          <Section.Actions>
+            <Chip variant="subtle" label="See all" />
+          </Section.Actions>
+        </Section.Header>
         <Text>First line</Text>
       </Section.Root>,
     );

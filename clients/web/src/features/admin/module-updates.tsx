@@ -25,7 +25,7 @@ function UpdateRow({
 }>) {
   const t = useT();
   return (
-    <ListRow.Root size="md" label={m.name} onPress={onOpen}>
+    <ListRow.Root size="md" onPress={onOpen}>
       <ListRow.Leading>
         <Box w={36} h={36} radius="sm" overflow="hidden" bg={m.icon ? undefined : 'tint/5'}>
           {m.icon ? <Image src={m.icon} fit="cover" fill /> : null}
@@ -83,11 +83,10 @@ export function UpdatesList({
   const t = useT();
   if (updates.length === 0) {
     return (
-      <EmptyState.Root
-        icon="circle-check"
-        title={t('admin.modulesUpToDate')}
-        hint={t('admin.modulesUpToDateHint')}
-      />
+      <EmptyState.Root icon="circle-check">
+        <EmptyState.Title>{t('admin.modulesUpToDate')}</EmptyState.Title>
+        <EmptyState.Hint>{t('admin.modulesUpToDateHint')}</EmptyState.Hint>
+      </EmptyState.Root>
     );
   }
   const totalSize = updates.reduce((sum, m) => sum + (m.size ?? 0), 0);

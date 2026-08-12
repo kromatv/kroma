@@ -105,7 +105,11 @@ function PushPanel() {
         )}
       </Box>
 
-      {blocker ? <Callout.Root size="sm" title={t(PUSH_BLOCKER_LABEL[blocker])} /> : null}
+      {blocker ? (
+        <Callout.Root size="sm">
+          <Callout.Title>{t(PUSH_BLOCKER_LABEL[blocker])}</Callout.Title>
+        </Callout.Root>
+      ) : null}
       {error ? (
         <Text variant="meta" color="danger">
           {error}
@@ -162,7 +166,8 @@ function CategoryMatrix() {
 
   return (
     <ListRow.Group size="md">
-      <ListRow.Root label={t('notifications.settings')}>
+      <ListRow.Root>
+        <ListRow.Label>{t('notifications.settings')}</ListRow.Label>
         <ListRow.Trailing>
           <ChannelHead label={t('notifications.channelInApp')} />
           <ChannelHead label={t('notifications.channelPush')} />
@@ -171,19 +176,20 @@ function CategoryMatrix() {
       {data.categories.map((pref) => {
         const name = t(NOTIFICATION_CATEGORY_LABEL[pref.category]);
         return (
-          <ListRow.Root key={pref.category} label={name}>
+          <ListRow.Root key={pref.category}>
+            <ListRow.Label>{name}</ListRow.Label>
             <ListRow.Trailing>
               <Switch
                 label={`${name} · ${t('notifications.channelInApp')}`}
                 checked={pref.inApp}
                 disabled={saving === pref.category}
-                onChange={(inApp) => update(pref.category, { inApp })}
+                onCheckedChange={(inApp) => update(pref.category, { inApp })}
               />
               <Switch
                 label={`${name} · ${t('notifications.channelPush')}`}
                 checked={pref.push}
                 disabled={saving === pref.category}
-                onChange={(push) => update(pref.category, { push })}
+                onCheckedChange={(push) => update(pref.category, { push })}
               />
             </ListRow.Trailing>
           </ListRow.Root>

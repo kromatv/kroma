@@ -31,7 +31,7 @@ export default story({
     {
       name: 'A counting filter row',
       docs: 'The row the console filters are made of. Note the second chip: its status colour IS the accent, so on the active fill a dot of its own colour would be invisible and a pale one would wash out. An active chip paints the dot in ink with the rest of its content, and the fill is what says which filter is on.',
-      render: () => (
+      example: () => (
         <Box gap={14}>
           <Box row gap={10} wrap>
             <Chip label="En attente" dot="rgba(244, 243, 240, 0.45)" count={0} active />

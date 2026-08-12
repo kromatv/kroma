@@ -20,9 +20,9 @@ export default story({
     ],
   },
   matrix: false,
+  component: StatusDot,
   args: { online: true, size: 10, overArt: false },
   controls: { size: { min: 6, max: 16, step: 1 } },
-  render: (props) => <StatusDot {...props} />,
   scenes: [
     {
       name: 'Every state',

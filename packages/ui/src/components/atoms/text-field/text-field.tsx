@@ -33,10 +33,10 @@ const TYPE_PROPS: Record<TextFieldType, Partial<TextInputProps>> = {
   number: { keyboardType: 'numeric', inputMode: 'numeric' },
 };
 
-interface TextFieldProps extends Omit<BoxProps, 'children' | 'onChange' | 'ring'> {
+interface TextFieldProps extends Omit<BoxProps, 'children' | 'ring'> {
   value?: string;
   defaultValue?: string;
-  onChange?: (next: string) => void;
+  onValueChange?: (next: string) => void;
   type?: TextFieldType;
   onSubmit?: () => void;
   /** After the entry takes focus. A shell drawn AROUND this field (see
@@ -78,7 +78,7 @@ interface TextFieldProps extends Omit<BoxProps, 'children' | 'onChange' | 'ring'
 function TextField({
   value: valueProp,
   defaultValue = '',
-  onChange,
+  onValueChange,
   type = 'text',
   onSubmit,
   onFocus,
@@ -107,7 +107,7 @@ function TextField({
   const group = useGroupMember(onFocus, onBlur);
   const metrics = controlMetrics(size ?? group.size ?? undefined);
   const CONTENT = metrics.line;
-  const [value, setValue] = useControllable(valueProp, defaultValue, onChange);
+  const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const own = useRef<TextInput>(null);

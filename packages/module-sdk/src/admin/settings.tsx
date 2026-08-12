@@ -94,17 +94,17 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
   return (
     <Box gap={embedded ? 0 : 24}>
       {embedded ? null : (
-        <PageHeader.Root
-          title={t(titleKey)}
-          subtitle={t(subtitleKey)}
-          actions={
-            saved ? (
+        <PageHeader.Root>
+          <PageHeader.Title>{t(titleKey)}</PageHeader.Title>
+          <PageHeader.Subtitle>{t(subtitleKey)}</PageHeader.Subtitle>
+          {saved ? (
+            <PageHeader.Actions>
               <Text variant="meta" color="success">
                 {t('admin.saved')}
               </Text>
-            ) : undefined
-          }
-        />
+            </PageHeader.Actions>
+          ) : null}
+        </PageHeader.Root>
       )}
       <Box gap={22}>
         {groups.map((g) => (
@@ -163,7 +163,7 @@ function asText(v: unknown): string {
 
 function Control({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: unknown) => void }>) {
   if (row.kind === 'toggle') {
-    return <Switch checked={Boolean(row.value)} onChange={onChange} label={row.label} />;
+    return <Switch checked={Boolean(row.value)} onCheckedChange={onChange} label={row.label} />;
   }
   if (row.kind === 'select') {
     return (

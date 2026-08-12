@@ -114,11 +114,14 @@ export default function NotificationSettings() {
               <Box style={s.cell}>
                 <Switch
                   checked={pref.inApp}
-                  onChange={(inApp) => setPref(pref.category, { inApp })}
+                  onCheckedChange={(inApp) => setPref(pref.category, { inApp })}
                 />
               </Box>
               <Box style={s.cell}>
-                <Switch checked={pref.push} onChange={(push) => setPref(pref.category, { push })} />
+                <Switch
+                  checked={pref.push}
+                  onCheckedChange={(push) => setPref(pref.category, { push })}
+                />
               </Box>
             </Box>
           ))}

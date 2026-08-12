@@ -33,7 +33,9 @@ function GenrePending() {
   const { genre } = Route.useParams();
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader.Root title={genre} />
+      <PageHeader.Root>
+        <PageHeader.Title>{genre}</PageHeader.Title>
+      </PageHeader.Root>
       <Box mt={24}>
         <SkeletonRow count={14} />
       </Box>
@@ -65,9 +67,13 @@ function GenrePage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader.Root title={genre} />
+      <PageHeader.Root>
+        <PageHeader.Title>{genre}</PageHeader.Title>
+      </PageHeader.Root>
       {entries.length === 0 ? (
-        <EmptyState.Root icon="category" title={t('search.noResults')} />
+        <EmptyState.Root icon="category">
+          <EmptyState.Title>{t('search.noResults')}</EmptyState.Title>
+        </EmptyState.Root>
       ) : (
         <>
           <BrowseBar

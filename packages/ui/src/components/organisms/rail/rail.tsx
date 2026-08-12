@@ -40,8 +40,6 @@ function Title({ variant = 'h2', style, children }: Readonly<RailTitleProps>) {
 }
 
 interface RailRootProps {
-  /** Sugar for a `<Rail.Title>`, so the common row is one line. */
-  title?: string;
   gap?: number;
   /** Defaults to the overscan-safe 10-foot gutter, applied inside the
    *  scroller so the first tile's focus ring is never clipped by the
@@ -79,7 +77,6 @@ function sort(children: ReactNode): Sorted {
 }
 
 function Root({
-  title,
   gap = RAIL_GAP,
   inset = gutter.tv,
   grow = true,
@@ -90,7 +87,6 @@ function Root({
   return (
     <RailContext.Provider value={ctx}>
       <Box gap={16}>
-        {title === undefined ? null : <Title>{title}</Title>}
         {at.title}
         {at.list.length > 0 ? at.list : <GrowingRow grow={grow}>{at.tiles}</GrowingRow>}
       </Box>
@@ -102,7 +98,10 @@ function Root({
  * A titled horizontal row of tiles.
  *
  * ```tsx
- * <Rail.Root title="Reprendre">{cards}</Rail.Root>
+ * <Rail.Root>
+ *   <Rail.Title>Reprendre</Rail.Title>
+ *   {cards}
+ * </Rail.Root>
  *
  * <Rail.Root>
  *   <Rail.Title variant="subheadingTv">Reprendre</Rail.Title>

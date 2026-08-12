@@ -3,9 +3,9 @@ import { type ReactNode, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Text } from '#ui/components/atoms/text';
-import { Dialog, type DialogProps } from './dialog';
+import { Dialog, type DialogRootProps } from './dialog';
 
-type DemoProps = Omit<DialogProps, 'open' | 'onClose' | 'children'>;
+type DemoProps = Omit<DialogRootProps, 'open' | 'onClose' | 'children'>;
 
 function Demo({
   panel,
@@ -16,9 +16,9 @@ function Demo({
   return (
     <Box>
       <Button label="Open" onPress={() => setOpen(true)} />
-      <Dialog {...props} open={open} onClose={close}>
+      <Dialog.Root {...props} open={open} onClose={close}>
         {panel(close)}
-      </Dialog>
+      </Dialog.Root>
     </Box>
   );
 }
@@ -26,11 +26,9 @@ function Demo({
 export default story({
   name: 'Dialog',
   group: 'Overlays',
-  usage: `<Dialog
-  open={open}
-  onClose={close}
-  title="Delete this profile?"
-  footer={
+  usage: `<Dialog.Root open={open} onClose={close} title="Delete this profile?">
+  <Text>This cannot be undone.</Text>
+  <Dialog.Footer>
     <Dialog.Actions
       cancelLabel="Cancel"
       onCancel={close}
@@ -38,18 +36,18 @@ export default story({
       onConfirm={remove}
       destructive
     />
-  }
-/>
+  </Dialog.Footer>
+</Dialog.Root>
 
-<Dialog open={open} onClose={close}>
+<Dialog.Root open={open} onClose={close}>
   <Dialog.Header>…</Dialog.Header>
-  <Dialog.Content>…</Dialog.Content>
+  <Dialog.Panel>…</Dialog.Panel>
   <Dialog.Footer>
     <Dialog.Actions cancelLabel="Cancel" onCancel={close} confirmLabel="Save" onConfirm={save}>
       <Button variant="dangerGhost" size="sm" label="Delete account" onPress={remove} />
     </Dialog.Actions>
   </Dialog.Footer>
-</Dialog>`,
+</Dialog.Root>`,
   guidelines: {
     do: [
       "Put a panel's controls in a <Dialog.Actions>: it is the one focus group a remote walks.",
@@ -72,13 +70,15 @@ export default story({
     <Demo
       {...props}
       panel={(close) => (
-        <Dialog.Actions
-          cancelLabel="Cancel"
-          onCancel={close}
-          confirmLabel="Delete"
-          onConfirm={close}
-          destructive
-        />
+        <Dialog.Footer>
+          <Dialog.Actions
+            cancelLabel="Cancel"
+            onCancel={close}
+            confirmLabel="Delete"
+            onConfirm={close}
+            destructive
+          />
+        </Dialog.Footer>
       )}
     />
   ),
@@ -91,12 +91,14 @@ export default story({
           {...props}
           title="Edit library"
           panel={(close) => (
-            <Dialog.Actions
-              cancelLabel="Cancel"
-              onCancel={close}
-              confirmLabel="Save"
-              onConfirm={close}
-            />
+            <Dialog.Footer>
+              <Dialog.Actions
+                cancelLabel="Cancel"
+                onCancel={close}
+                confirmLabel="Save"
+                onConfirm={close}
+              />
+            </Dialog.Footer>
           )}
         />
       ),
@@ -109,21 +111,23 @@ export default story({
           {...props}
           title="Edit account"
           panel={(close) => (
-            <Dialog.Actions
-              cancelLabel="Cancel"
-              onCancel={close}
-              confirmLabel="Save"
-              onConfirm={close}
-            >
-              <Button variant="dangerGhost" size="sm" label="Delete account" onPress={close} />
-            </Dialog.Actions>
+            <Dialog.Footer>
+              <Dialog.Actions
+                cancelLabel="Cancel"
+                onCancel={close}
+                confirmLabel="Save"
+                onConfirm={close}
+              >
+                <Button variant="dangerGhost" size="sm" label="Delete account" onPress={close} />
+              </Dialog.Actions>
+            </Dialog.Footer>
           )}
         />
       ),
     },
     {
-      name: 'Composed',
-      docs: "The bands written out: a header of the panel's own, a scrolling middle, and a footer shelf holding the actions row.",
+      name: 'A header of its own',
+      docs: 'All three bands written out: a header the panel owns, a scrolling middle, and a footer shelf holding the actions row.',
       render: (props) => (
         <Demo
           {...props}
@@ -134,11 +138,11 @@ export default story({
                 <Text variant="h2">Active sessions</Text>
                 <Text color="textMuted">Three devices are playing this account.</Text>
               </Dialog.Header>
-              <Dialog.Content>
+              <Dialog.Panel>
                 <Text>Salon</Text>
                 <Text>iPhone de Maxime</Text>
                 <Text>MacBook Pro</Text>
-              </Dialog.Content>
+              </Dialog.Panel>
               <Dialog.Footer>
                 <Dialog.Actions>
                   <Button variant="ghost" size="sm" label="Close" onPress={close} />

@@ -67,67 +67,91 @@ function StoragePage() {
 
   return (
     <>
-      <PageHeader.Root title={t('admin.storageTitle')} subtitle={t('admin.storageSub')} />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.storageTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.storageSub')}</PageHeader.Subtitle>
+      </PageHeader.Root>
 
       <Box mt={24}>
         <Grid columns={3} gap={16}>
-          <StatCard label={t('admin.totalCapacity')} value={formatBytes(data?.totalBytes ?? 0)} />
-          <StatCard
-            label={t('admin.used')}
-            value={formatBytes(data?.usedBytes ?? 0)}
-            unit={`${pctUsed}%`}
-            color="accent"
-          />
-          <StatCard
-            label={t('admin.available')}
-            value={formatBytes(data?.availableBytes ?? 0)}
-            color="success"
-          />
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.totalCapacity')}</StatCard.Label>
+            <StatCard.Value>{formatBytes(data?.totalBytes ?? 0)}</StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.used')}</StatCard.Label>
+            <StatCard.Value unit={`${pctUsed}%`} color="accent">
+              {formatBytes(data?.usedBytes ?? 0)}
+            </StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.available')}</StatCard.Label>
+            <StatCard.Value color="success">
+              {formatBytes(data?.availableBytes ?? 0)}
+            </StatCard.Value>
+          </StatCard.Root>
         </Grid>
       </Box>
 
-      <Section.Root title={t('admin.volumes')} mt={28}>
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.volumes')}</Section.Title>
+        </Section.Header>
         <Box gap={14}>
           {(data?.volumes ?? []).map((v) => (
             <VolumeCard key={v.mount} v={v} />
           ))}
           {data?.volumes.length === 0 ? (
-            <EmptyState.Root icon="database" title={t('admin.noVolumes')} />
+            <EmptyState.Root icon="database">
+              <EmptyState.Title>{t('admin.noVolumes')}</EmptyState.Title>
+            </EmptyState.Root>
           ) : null}
         </Box>
       </Section.Root>
 
-      <Section.Root title={t('admin.cacheContent')} mt={28}>
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.cacheContent')}</Section.Title>
+        </Section.Header>
         <Grid columns={4} gap={16}>
-          <StatCard
-            label={t('admin.transcodeCacheSize')}
-            value={formatBytes(cache?.transcodeBytes ?? 0)}
-            unit={t('admin.transcodeCacheBudget', { limit: cache?.transcodeLimit ?? '20 Go' })}
-            color="accent"
-          />
-          <StatCard
-            label={t('admin.cachedImages')}
-            value={(cache?.imagesCount ?? 0).toLocaleString()}
-            unit={formatBytes(cache?.imagesBytes ?? 0)}
-            color="accent"
-          />
-          <StatCard
-            label={t('admin.enrichedTitles')}
-            value={enriched.toLocaleString()}
-            unit={t('admin.enrichedBreakdown', {
-              movies: cache?.enrichedItems ?? 0,
-              shows: cache?.enrichedShows ?? 0,
-            })}
-            color="success"
-          />
-          <StatCard
-            label={t('admin.cacheEmbeddings')}
-            value={(cache?.embeddings ?? 0).toLocaleString()}
-          />
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.transcodeCacheSize')}</StatCard.Label>
+            <StatCard.Value
+              unit={t('admin.transcodeCacheBudget', { limit: cache?.transcodeLimit ?? '20 Go' })}
+              color="accent"
+            >
+              {formatBytes(cache?.transcodeBytes ?? 0)}
+            </StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.cachedImages')}</StatCard.Label>
+            <StatCard.Value unit={formatBytes(cache?.imagesBytes ?? 0)} color="accent">
+              {(cache?.imagesCount ?? 0).toLocaleString()}
+            </StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.enrichedTitles')}</StatCard.Label>
+            <StatCard.Value
+              unit={t('admin.enrichedBreakdown', {
+                movies: cache?.enrichedItems ?? 0,
+                shows: cache?.enrichedShows ?? 0,
+              })}
+              color="success"
+            >
+              {enriched.toLocaleString()}
+            </StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('admin.cacheEmbeddings')}</StatCard.Label>
+            <StatCard.Value>{(cache?.embeddings ?? 0).toLocaleString()}</StatCard.Value>
+          </StatCard.Root>
         </Grid>
       </Section.Root>
 
-      <Section.Root title={t('admin.cacheMaintenance')} mt={28}>
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.cacheMaintenance')}</Section.Title>
+        </Section.Header>
         <ListRow.Group size="md">
           <MaintRow
             title={t('admin.transcodeCacheFolder')}
@@ -246,7 +270,7 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
           </Text>
         </Box>
       </Box>
-      <Progress value={pct / 100} color={nearFull ? 'danger' : 'accent'} size={9} rounded />
+      <Progress value={pct / 100} color={nearFull ? 'danger' : 'accent'} thickness={9} rounded />
     </Surface>
   );
 }
@@ -260,7 +284,9 @@ function MaintRow({
   right,
 }: Readonly<{ title: string; desc: string; right: React.ReactNode }>) {
   return (
-    <ListRow.Root label={title} hint={desc}>
+    <ListRow.Root>
+      <ListRow.Label>{title}</ListRow.Label>
+      <ListRow.Hint>{desc}</ListRow.Hint>
       <ListRow.Trailing>{right}</ListRow.Trailing>
     </ListRow.Root>
   );

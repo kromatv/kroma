@@ -30,11 +30,14 @@ export default story({
   name: 'Section',
   group: 'Layout',
   docs: 'A titled band: an overline, a rule, and the content. Every settings screen had its own copy of this arrangement, with slightly different spacing each time.\n\nComposed: `Root` owns the column, and `Header`, `Title` and `Actions` are named parts. The rule belongs to the `Header` - it is what separates the header from the content - so a band written without one has no rule to explain. `Root` sorts its direct children once: a `Header` sits at the top, everything else is content spaced by `gap`.',
-  usage: `<Section.Root title="Playback">
+  usage: `<Section.Root>
+  <Section.Header>
+    <Section.Title>Playback</Section.Title>
+  </Section.Header>
   <PlaybackCard />
 </Section.Root>
 
-// The same band, written as its parts.
+// The header takes the band's controls too.
 <Section.Root>
   <Section.Header>
     <Section.Title>Playback</Section.Title>
@@ -60,22 +63,28 @@ export default story({
   width: { min: 320, max: 720 },
   args: { title: 'Playback', gap: 16 },
   controls: { gap: { min: 0, max: 40, step: 4 } },
-  render: (props) => (
-    <Section.Root {...props} actions={<Chip variant="subtle" label="See all" />}>
+  render: ({ title, gap }) => (
+    <Section.Root gap={gap}>
+      <Section.Header>
+        <Section.Title>{title}</Section.Title>
+        <Section.Actions>
+          <Chip variant="subtle" label="See all" />
+        </Section.Actions>
+      </Section.Header>
       <Text color="textMuted">First line of the band</Text>
       <Text color="textMuted">Second line of the band</Text>
     </Section.Root>
   ),
   scenes: [
     {
-      name: 'Written as its parts',
-      docs: 'The same band the sugar renders, spelled out. `Actions` pushes itself to the end of the header row, so the title needs no spacer beside it.',
-      render: () => <Parts />,
+      name: 'An action beside the title',
+      docs: '`Actions` pushes itself to the end of the header row, so the title needs no spacer beside it.',
+      example: () => <Parts />,
     },
     {
       name: 'No header',
       docs: 'A band with neither a title nor an action is content on its own rhythm: no overline, and no rule hanging above nothing.',
-      render: () => <Untitled />,
+      example: () => <Untitled />,
     },
   ],
 });

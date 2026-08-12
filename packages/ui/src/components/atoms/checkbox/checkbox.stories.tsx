@@ -17,7 +17,7 @@ function Demo({ size }: Readonly<{ size?: 'sm' | 'tv' }>) {
           label="Tout sélectionner"
           checked={all}
           indeterminate={some && !all}
-          onChange={(next) => {
+          onCheckedChange={(next) => {
             setSubs(next);
             setAudio(next);
           }}
@@ -25,13 +25,13 @@ function Demo({ size }: Readonly<{ size?: 'sm' | 'tv' }>) {
         <Text variant="body">Tout sélectionner</Text>
       </Box>
       <Box row align="center" gap={10} ml={22}>
-        <Checkbox size={size} label="Sous-titres" checked={subs} onChange={setSubs} />
+        <Checkbox size={size} label="Sous-titres" checked={subs} onCheckedChange={setSubs} />
         <Text variant="body" color="textMuted">
           Sous-titres
         </Text>
       </Box>
       <Box row align="center" gap={10} ml={22}>
-        <Checkbox size={size} label="Pistes audio" checked={audio} onChange={setAudio} />
+        <Checkbox size={size} label="Pistes audio" checked={audio} onCheckedChange={setAudio} />
         <Text variant="body" color="textMuted">
           Pistes audio
         </Text>
@@ -44,8 +44,8 @@ export default story({
   name: 'Checkbox',
   group: 'Input',
   docs: 'The many-of-N control: a <Switch> says "this is on", a checkbox says "this one is included", which is why a list of them is a selection and a list of switches is a settings page. Announced as `checkbox` with its checked state, and as **mixed** when `indeterminate` - the parent of a partly selected group, which fills amber like a checked one because it has been acted on either way. A press from mixed checks everything under it.',
-  usage: `<Checkbox label="Sous-titres" checked={subs} onChange={setSubs} />
-<Checkbox label="Tout" checked={all} indeterminate={some && !all} onChange={setAll} />`,
+  usage: `<Checkbox label="Sous-titres" checked={subs} onCheckedChange={setSubs} />
+<Checkbox label="Tout" checked={all} indeterminate={some && !all} onCheckedChange={setAll} />`,
   guidelines: {
     do: [
       'Give it a `label`: it is the accessible name, even when a <Text> beside it carries the visible one.',
@@ -58,5 +58,5 @@ export default story({
   },
   variants: checkboxVariants,
   matrix: false,
-  render: (props) => <Demo {...props} />,
+  component: Demo,
 });

@@ -98,8 +98,6 @@ function OptInGroup({
             <ChoiceList.Item
               key={m.id}
               value={m.id}
-              label={`${m.name} v${m.version}`}
-              hint={hint(m) || undefined}
               actions={
                 m.size ? (
                   <Text variant="meta" color="textMuted">
@@ -107,7 +105,10 @@ function OptInGroup({
                   </Text>
                 ) : undefined
               }
-            />
+            >
+              <ChoiceList.Label>{`${m.name} v${m.version}`}</ChoiceList.Label>
+              {hint(m) ? <ChoiceList.Hint>{hint(m)}</ChoiceList.Hint> : null}
+            </ChoiceList.Item>
           ))}
         </ChoiceList.Root>
       </Box>
@@ -121,14 +122,14 @@ function MissingWarnings({ missing }: Readonly<{ missing: StoreMissingCapability
   return (
     <Box mt={16} gap={8}>
       {missing.map((m) => (
-        <Callout.Root
-          key={`${m.kind}:${m.for}`}
-          tone="accent"
-          title={t('admin.modulesInstallMissing', {
-            kind: m.id ? `${m.kind}:${m.id}` : m.kind,
-            name: m.for,
-          })}
-        />
+        <Callout.Root key={`${m.kind}:${m.for}`} tone="accent">
+          <Callout.Title>
+            {t('admin.modulesInstallMissing', {
+              kind: m.id ? `${m.kind}:${m.id}` : m.kind,
+              name: m.for,
+            })}
+          </Callout.Title>
+        </Callout.Root>
       ))}
     </Box>
   );

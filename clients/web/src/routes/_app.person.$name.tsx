@@ -89,7 +89,9 @@ function PersonPage() {
       {entries.length ? (
         <CatalogGrid entries={entries} />
       ) : (
-        <EmptyState.Root icon="user-x" title={t('person.empty')} />
+        <EmptyState.Root icon="user-x">
+          <EmptyState.Title>{t('person.empty')}</EmptyState.Title>
+        </EmptyState.Root>
       )}
     </main>
   );

@@ -35,36 +35,21 @@ interface RootProps {
   /** `fill` makes the state THE page: it takes the whole region it was given
    *  and centres in it, instead of hanging below whatever came before. */
   layout?: EmptyStateLayout;
-  /** Sugar for the standard column, equivalent to
-   *  `<Media/><Title/><Hint/><Detail/><Actions/>`. `children` render after it. */
+  /** The mark, as a glyph the kit can size, drawn above the column. Media it
+   *  cannot size goes through <EmptyState.Media> instead. */
   icon?: IconName;
-  title?: string;
-  hint?: string;
-  detail?: string;
-  actions?: ReactNode;
+  /** The column, in the order it is read: a <Title>, a <Hint>, a <Detail>, an
+   *  <Actions>. */
   children?: ReactNode;
 }
 
-function Root({
-  size = 'md',
-  layout = 'inline',
-  icon,
-  title,
-  hint,
-  detail,
-  actions,
-  children,
-}: Readonly<RootProps>) {
+function Root({ size = 'md', layout = 'inline', icon, children }: Readonly<RootProps>) {
   const shape = SHAPE[size];
   const frame = frameOf(shape, layout);
   return (
     <Context.Provider value={size}>
       <Box center gap={shape.gap} flex={frame.flex} mt={frame.mt} py={frame.py}>
         {icon ? <Media name={icon} /> : null}
-        {title ? <Title>{title}</Title> : null}
-        {hint ? <Hint>{hint}</Hint> : null}
-        {detail ? <Detail>{detail}</Detail> : null}
-        {actions ? <Actions>{actions}</Actions> : null}
         {children}
       </Box>
     </Context.Provider>

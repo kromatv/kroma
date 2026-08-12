@@ -37,13 +37,13 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
     }
   }
   return (
-    <ListRow.Root
-      size="md"
-      label={inv.permissions.join(', ') || t('admin.permPlayback')}
-      hint={t('admin.expiresOn', {
-        date: new Date(inv.expiresAt * 1000).toLocaleDateString('fr-FR'),
-      })}
-    >
+    <ListRow.Root size="md">
+      <ListRow.Label>{inv.permissions.join(', ') || t('admin.permPlayback')}</ListRow.Label>
+      <ListRow.Hint>
+        {t('admin.expiresOn', {
+          date: new Date(inv.expiresAt * 1000).toLocaleDateString('fr-FR'),
+        })}
+      </ListRow.Hint>
       <ListRow.Leading>
         <Row center w={42} h={42} shrink={0} radius="circle" style={DASHED}>
           <Icon name="mail" size={18} stroke={1.8} color="textDim" />
@@ -84,7 +84,10 @@ function PermPicker({
       onValueChange={(next) => toggle(diff(selected, next))}
     >
       {PERMISSIONS.map((p) => (
-        <ChoiceList.Item key={p.key} value={p.key} label={t(p.labelKey)} hint={t(p.hintKey)} />
+        <ChoiceList.Item key={p.key} value={p.key}>
+          <ChoiceList.Label>{t(p.labelKey)}</ChoiceList.Label>
+          <ChoiceList.Hint>{t(p.hintKey)}</ChoiceList.Hint>
+        </ChoiceList.Item>
       ))}
     </ChoiceList.Root>
   );
@@ -151,7 +154,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
   };
 
   return (
-    <Dialog
+    <Dialog.Root
       open
       title={t('admin.editUser', { name: user.username })}
       onClose={() => call.end(false)}
@@ -190,7 +193,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
           disabled={busy || isSelf}
         />
       </Dialog.Actions>
-    </Dialog>
+    </Dialog.Root>
   );
 });
 
@@ -225,7 +228,7 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
   }
 
   return (
-    <Dialog open title={t('nav.inviteUser')} onClose={close} width={460}>
+    <Dialog.Root open title={t('nav.inviteUser')} onClose={close} width={460}>
       <Box>
         <Text variant="meta" color="textDim" mb={16}>
           {t('admin.inviteIntro')}
@@ -233,7 +236,8 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
         <PermPicker selected={perms} toggle={toggle} />
       </Box>
       {link ? (
-        <Callout.Root tone="accent" title={t('admin.inviteLink')}>
+        <Callout.Root tone="accent">
+          <Callout.Title>{t('admin.inviteLink')}</Callout.Title>
           <InputGroup.Root label={t('admin.inviteLink')}>
             <InputGroup.Input value={link} autoFocus={false} />
             <InputGroup.Addon align="inline-end">
@@ -257,6 +261,6 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
           disabled={perms.size === 0}
         />
       )}
-    </Dialog>
+    </Dialog.Root>
   );
 });

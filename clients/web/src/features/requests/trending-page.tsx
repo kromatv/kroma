@@ -55,7 +55,9 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
       </PageHeader.Root>
 
       {!canDiscover ? (
-        <EmptyState.Root icon="mood-empty" title={t('discover.empty')} />
+        <EmptyState.Root icon="mood-empty">
+          <EmptyState.Title>{t('discover.empty')}</EmptyState.Title>
+        </EmptyState.Root>
       ) : (
         <>
           <Body state={state} />
@@ -77,7 +79,11 @@ function Body({ state }: Readonly<{ state: TrendingPageState }>) {
     );
   }
   if (state.entries.length === 0) {
-    return <EmptyState.Root icon="mood-empty" title={t('discover.noResults')} />;
+    return (
+      <EmptyState.Root icon="mood-empty">
+        <EmptyState.Title>{t('discover.noResults')}</EmptyState.Title>
+      </EmptyState.Root>
+    );
   }
   return (
     <Box mt={32}>

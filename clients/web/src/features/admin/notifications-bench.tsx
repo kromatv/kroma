@@ -148,12 +148,10 @@ export function NotificationBench() {
                 }}
               >
                 {TARGETS.map((o) => (
-                  <ChoiceList.Item
-                    key={o.value}
-                    value={o.value}
-                    label={t(o.label)}
-                    hint={t(o.hint)}
-                  />
+                  <ChoiceList.Item key={o.value} value={o.value}>
+                    <ChoiceList.Label>{t(o.label)}</ChoiceList.Label>
+                    <ChoiceList.Hint>{t(o.hint)}</ChoiceList.Hint>
+                  </ChoiceList.Item>
                 ))}
               </ChoiceList.Root>
             </Box>

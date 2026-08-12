@@ -174,7 +174,9 @@ export function MetricsChart({
       <Row wrap between gap={16} mt={14}>
         <Legend.Root>
           {legend.map((l) => (
-            <Legend.Item key={l.label} color={l.color} label={l.label} />
+            <Legend.Item key={l.label} color={l.color}>
+              {l.label}
+            </Legend.Item>
           ))}
         </Legend.Root>
         {footer ? (
@@ -262,8 +264,8 @@ export function HistoryBars({ buckets }: Readonly<{ buckets: HistoryBucket[] }>)
       </Box>
       <Row wrap between gap={16} mt={14}>
         <Legend.Root>
-          <Legend.Item color={CHART_SERIES.films} label="FILMS" />
-          <Legend.Item color={CHART_SERIES.tv} label="TV" />
+          <Legend.Item color={CHART_SERIES.films}>FILMS</Legend.Item>
+          <Legend.Item color={CHART_SERIES.tv}>TV</Legend.Item>
         </Legend.Root>
         <Text variant="meta" color="textDim">
           Totaux : Films {formatHours(totalFilms)} · TV {formatHours(totalTv)}

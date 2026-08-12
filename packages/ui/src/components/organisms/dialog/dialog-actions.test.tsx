@@ -16,7 +16,7 @@ const fill = (label: string) => getComputedStyle(control(label)).backgroundColor
 
 describe('Dialog.Actions', () => {
   it('is a part of the dialog, and the one name for a row of its controls', () => {
-    expect(Object.keys(Dialog).sort()).toEqual(['Actions', 'Content', 'Footer', 'Header', 'Root']);
+    expect(Object.keys(Dialog).sort()).toEqual(['Actions', 'Footer', 'Header', 'Panel', 'Root']);
   });
 
   it('writes cancel and confirm from the sugar', () => {

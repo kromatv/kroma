@@ -74,10 +74,10 @@ type SwitchSize = keyof typeof track;
 interface SwitchProps
   extends Omit<FocusableProps, 'children' | 'onPress' | 'style' | 'role' | 'checked'> {
   /** Present: you own the state (controlled). Absent: the switch runs itself
-   *  from `defaultChecked` and reports through `onChange`. */
+   *  from `defaultChecked` and reports through `onCheckedChange`. */
   checked?: boolean;
   defaultChecked?: boolean;
-  onChange?: (next: boolean) => void;
+  onCheckedChange?: (next: boolean) => void;
   size?: SwitchSize;
   style?: StyleProp<ViewStyle>;
 }
@@ -85,13 +85,13 @@ interface SwitchProps
 function Switch({
   checked: checkedProp,
   defaultChecked = false,
-  onChange,
+  onCheckedChange,
   size = 'sm',
   disabled = false,
   style,
   ...focusProps
 }: Readonly<SwitchProps>) {
-  const [checked, setChecked] = useControllable(checkedProp, defaultChecked, onChange);
+  const [checked, setChecked] = useControllable(checkedProp, defaultChecked, onCheckedChange);
   return (
     <Focusable
       {...focusProps}

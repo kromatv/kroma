@@ -40,7 +40,7 @@ export default story({
     {
       name: 'With the field',
       docs: 'The whole interaction: four dots, ten keys, no OK.',
-      render: () => <PinEntry />,
+      example: () => <PinEntry />,
     },
   ],
 });

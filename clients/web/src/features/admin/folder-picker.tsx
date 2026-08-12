@@ -73,7 +73,7 @@ export function FolderPicker({
     listBody = (
       <ListRow.Group size="sm">
         {entries.map((e) => (
-          <ListRow.Root key={e.path} size="sm" label={e.name} onPress={() => setPath(e.path)}>
+          <ListRow.Root key={e.path} size="sm" onPress={() => setPath(e.path)}>
             <ListRow.Leading>
               <Icon name="folder" size={16} stroke={1.8} color="accent" />
             </ListRow.Leading>

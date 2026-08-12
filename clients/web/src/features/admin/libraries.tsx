@@ -60,18 +60,18 @@ function LibrariesPageInner() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.librariesTitle')}
-        subtitle={t('admin.librariesSub')}
-        actions={
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.librariesTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.librariesSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
           <Button
             variant="primary"
             icon="plus"
             label={t('admin.addLibrary')}
             onPress={() => void openAdd()}
           />
-        }
-      />
+        </PageHeader.Actions>
+      </PageHeader.Root>
 
       {data === null ? <TableSkeleton rows={4} /> : null}
 
@@ -85,18 +85,17 @@ function LibrariesPageInner() {
         </Box>
       ) : null}
       {data && libraries.length === 0 ? (
-        <EmptyState.Root
-          icon="library"
-          title={t('admin.noLibraries')}
-          actions={
+        <EmptyState.Root icon="library">
+          <EmptyState.Title>{t('admin.noLibraries')}</EmptyState.Title>
+          <EmptyState.Actions>
             <Button
               variant="primary"
               icon="plus"
               label={t('admin.addLibrary')}
               onPress={() => void openAdd()}
             />
-          }
-        />
+          </EmptyState.Actions>
+        </EmptyState.Root>
       ) : null}
     </>
   );
@@ -195,7 +194,10 @@ function Stat({
   return (
     <>
       <Box flex px={20} py={14}>
-        <DataField.Root size="sm" label={label} value={value} />
+        <DataField.Root size="sm">
+          <DataField.Label>{label}</DataField.Label>
+          <DataField.Value>{value}</DataField.Value>
+        </DataField.Root>
       </Box>
       {border ? <Divider vertical color="tint/5" /> : null}
     </>

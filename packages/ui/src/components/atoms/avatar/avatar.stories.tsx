@@ -32,6 +32,7 @@ export default story({
     ],
   },
   matrix: false,
+  component: Avatar,
   args: {
     name: 'Marie Curie',
     seed: 'a',
@@ -45,7 +46,6 @@ export default story({
     size: { min: 32, max: 200, step: 8 },
     roundness: { min: 0, max: 0.5, step: 0.02 },
   },
-  render: (props) => <Avatar {...props} />,
   scenes: [
     {
       name: 'A team',

@@ -33,7 +33,9 @@ function GenresPending() {
   const t = useT();
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader.Root title={t('nav.genres')} />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('nav.genres')}</PageHeader.Title>
+      </PageHeader.Root>
       <Box mt={24}>
         <SkeletonRow count={10} />
       </Box>
@@ -55,9 +57,13 @@ function GenresPage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader.Root title={t('nav.genres')} />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('nav.genres')}</PageHeader.Title>
+      </PageHeader.Root>
       {genres.length === 0 ? (
-        <EmptyState.Root icon="category" title={t('genres.empty')} />
+        <EmptyState.Root icon="category">
+          <EmptyState.Title>{t('genres.empty')}</EmptyState.Title>
+        </EmptyState.Root>
       ) : (
         <Box mt={24}>
           <div className="genre-grid">

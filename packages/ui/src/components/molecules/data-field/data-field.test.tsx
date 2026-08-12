@@ -10,27 +10,25 @@ afterEach(cleanup);
 const SIZES: readonly ControlSize[] = ['sm', 'md', 'tv'];
 
 describe('<DataField>', () => {
-  it('renders the pair from one line', () => {
-    render(<DataField.Root label="Duree" value="2 h 04" />);
-    expect(screen.getByText('Duree')).toBeTruthy();
-    expect(screen.getByText('2 h 04')).toBeTruthy();
-  });
-
-  it('writes from its parts exactly what the sugar writes', () => {
-    const sugar = render(<DataField.Root label="Duree" value="2 h 04" />).container.innerHTML;
-    cleanup();
-    const parts = render(
+  it('renders the pair from its parts', () => {
+    render(
       <DataField.Root>
         <DataField.Label>Duree</DataField.Label>
         <DataField.Value>2 h 04</DataField.Value>
       </DataField.Root>,
-    ).container.innerHTML;
-    expect(parts).toBe(sugar);
+    );
+    expect(screen.getByText('Duree')).toBeTruthy();
+    expect(screen.getByText('2 h 04')).toBeTruthy();
   });
 
   it('sets the label as an overline at every size, and never as the value', () => {
     for (const size of SIZES) {
-      render(<DataField.Root size={size} label="Duree" value="2 h 04" />);
+      render(
+        <DataField.Root size={size}>
+          <DataField.Label>Duree</DataField.Label>
+          <DataField.Value>2 h 04</DataField.Value>
+        </DataField.Root>,
+      );
       const label = getComputedStyle(screen.getByText('Duree'));
       const value = getComputedStyle(screen.getByText('2 h 04'));
       expect(label.textTransform).toBe('uppercase');
@@ -42,7 +40,12 @@ describe('<DataField>', () => {
 
   it('grows the pair with the size it was given', () => {
     const sizes = SIZES.map((size) => {
-      render(<DataField.Root size={size} label="Duree" value="2 h 04" />);
+      render(
+        <DataField.Root size={size}>
+          <DataField.Label>Duree</DataField.Label>
+          <DataField.Value>2 h 04</DataField.Value>
+        </DataField.Root>,
+      );
       const at = getComputedStyle(screen.getByText('2 h 04')).fontSize;
       cleanup();
       return at;
@@ -51,13 +54,19 @@ describe('<DataField>', () => {
   });
 
   it('clamps a value only when asked', () => {
-    render(<DataField.Root label="Chemin" value="/Volumes/video/films" />);
+    render(
+      <DataField.Root>
+        <DataField.Label>Chemin</DataField.Label>
+        <DataField.Value>/Volumes/video/films</DataField.Value>
+      </DataField.Root>,
+    );
     expect(getComputedStyle(screen.getByText('/Volumes/video/films')).textOverflow).not.toBe(
       'ellipsis',
     );
     cleanup();
     render(
-      <DataField.Root label="Chemin">
+      <DataField.Root>
+        <DataField.Label>Chemin</DataField.Label>
         <DataField.Value lines={1}>/Volumes/video/films</DataField.Value>
       </DataField.Root>,
     );

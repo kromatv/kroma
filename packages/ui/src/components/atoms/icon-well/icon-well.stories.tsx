@@ -18,9 +18,9 @@ export default story({
     ],
   },
   variants: iconWellVariants,
+  component: IconWell,
   args: { name: 'settings' },
   controls: { name: 'icon' },
-  render: (props) => <IconWell {...props} />,
   scenes: [
     {
       name: 'A column of rows',

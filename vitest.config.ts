@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import { gitHistory } from '@kroma/bundler/git-history';
 import { kromaMdx } from '@kroma/bundler/mdx';
 import { propDocs } from '@kroma/bundler/props-docs';
 import { WEB_EXTENSIONS } from '@kroma/bundler/rnw';
@@ -11,6 +12,9 @@ const plugins = () => [
   // Real prop docs (not a stub) - the only way stories.web.ts can be imported
   // under the runner at all.
   propDocs({ tsconfig: dir('./packages/ui/tsconfig.json') }),
+  // Real history too, for the same reason: the kit's own source binding imports
+  // the virtual module the plugin serves.
+  gitHistory({ repo: dir('.'), root: 'packages/ui/src' }),
   // A story's prose is a `.docs.mdx`, which the runner has to compile like a
   // shell does.
   kromaMdx(),

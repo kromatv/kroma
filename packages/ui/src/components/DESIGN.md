@@ -30,8 +30,8 @@ export { Select };
 
 Not `Object.assign(Select, { … })`. The bare name is never renderable, so there
 is exactly one way to write every component and no ambiguity about whether
-`<Select>` means anything. The sugar lives on the **parts** (§4), not on a
-callable root.
+`<Select>` means anything. A face lives on the **part** that names it (§4), never
+on a callable root.
 
 **The object is not tree-shakable, and that is accepted knowingly.** Measured on
 the repo's own Vite: a five-part namespace whose parts are 9.8 KB each emits
@@ -66,12 +66,14 @@ never an input device, never a boolean spelled as a string.
 | `Actions` | The controls a surface offers: pinned to the end of a header, or under an empty state. | Always plural, even when it holds one button. It is a region, and `Action` beside `Actions` is a name one letter from another name. |
 | `Input` / `Textarea` | The text entry a field owns. | Named for the entry, not the field. |
 | `Value` | The thing being reported: a selection inside a trigger, a readout beside its `Label`. | Reports, never controls. `Select.Value` and `DataField.Value` are the same role. |
-| `Media` | The mark that stands for the thing: a glyph, a poster, an avatar, an illustration. | Takes a `name` sugar for a glyph the kit can size, and children for media it cannot. shadcn's `EmptyMedia` is the same idea. |
+| `Media` | The mark that stands for the thing: a glyph, a poster, an avatar, an illustration. | A leaf: `name` for a glyph the kit can size, children for media it cannot. shadcn's `EmptyMedia` is the same idea. |
 | `Icon` | A glyph that is an affordance on a control. | A **prop** (`<Button icon>`), never a part. Where the mark is the subject rather than an affordance, it is `Media`. |
 | `Group` / `Separator` | A section of items; a divider. | A separator is always semantic. |
 | `Slot` | One fixed position in a composite value: a character of a code. | Never pressable. Its place comes from its position in its `Group`, never from an index prop, because a hand-written index duplicates what the tree already says and a wrong one fails silently. |
 | `Close` / `Title` | Dismisses; names the surface. | |
 | `List` | The scrollable container of items. | Only where a virtualiser needs a real node. |
+| `Empty` | What a collection shows in place of itself when it holds nothing. | A sibling of the `List`, never a child of it: exactly one of the two draws. Distinct from `<EmptyState>`, the molecule it is usually made of. |
+| `Handle` | The grip on a boundary a reader may move: a seam between panels. | The WHOLE strip is the control, so nothing inside it is pressable. Not `Resizer`, not `Splitter`, not `Divider` - a divider draws, a handle moves. |
 | `Addon` | A member of a group that nothing can press, shaped like the controls beside it: a protocol, a unit, a suffix. | Named for the role, not the content. `InputGroup.Addon` and `ButtonGroup.Addon` are the same thing. |
 | `Previous` / `Next` | A step backwards or forwards through a sequence. | Named for the direction, never for the glyph that draws it. |
 | `Pages` / `Ellipsis` / `Status` | The run of page entries; the gap standing for the pages it skips; the "12 of 40" readout. | Pagination's own three. `Status` reports, it does not control. |
@@ -138,29 +140,79 @@ tree. That cost is the proof: children *and* data is not free. Do not pay it.
 
 ---
 
-## 4. Sugar, and the escape-hatch ladder
+## 4. A face is written as its part
 
-**Sugar is a shorthand for the parts, never a second implementation.** The test
-is mechanical: delete the sugar prop and every behaviour must still be reachable
-through the parts. A design system whose simplest list takes twelve lines will be
-worked around, so the common row stays one line:
+**If a part exists for a face, that face has no prop.** There is one spelling,
+and it is the part:
 
 ```tsx
-<ChoiceList.Item value="fr" label="Francais" hint="128 titres" />
-
 <ChoiceList.Item value="fr">
   <ChoiceList.Label>Francais</ChoiceList.Label>
   <ChoiceList.Hint>128 titres</ChoiceList.Hint>
 </ChoiceList.Item>
 ```
 
-When the sugar is not enough, climb the ladder in this order:
+This document used to say the opposite: keep a `label`/`hint` shorthand so the
+common row stays one line. That is withdrawn, for three reasons the kit paid for
+before the rule changed.
 
-1. **A sugar prop** on the part (`label`, `hint`, `icon`).
-2. **A named part**, if the caller needs to arrange it.
-3. **`render={(props, state) => ReactElement}`**, the **function form only**, on
+**Two spellings are two APIs.** Every reader learns both, every review allows
+both, and they drift. The shorthand was the road nearly every call site took, so
+the parts were the untested one: `<Callout>`'s `title` and `<Callout.Title>` were
+kept in step by a test asserting the two render byte-identical HTML, which is the
+cost of the second API written down.
+
+**The shorthand hides the shape.** A caller who only ever writes `title=` never
+learns the component is a set of parts, so the first time the design wants a badge
+beside the title they ask for another prop. That is how `<PageHeader.Root>`
+arrived at `title`, `suffix`, `icon`, `subtitle` and `actions`: five props
+forwarding to three parts, two of them existing only to decorate one of the
+others. Written as parts it is `<PageHeader.Title icon suffix>` and the question
+never comes up.
+
+**A prop cannot be arranged.** The moment a row is a label AND a badge, or a
+title with a chip after it, the shorthand is spent and the caller rewrites the
+whole call site into parts anyway. Composition is what the component is for; the
+shorthand only delays reaching it.
+
+### The test that survives, inverted
+
+The old rule's test was: delete the sugar and every behaviour must still be
+reachable through the parts. That test is now the migration's obligation.
+**Deleting a prop must leave nothing unreachable.** Where it would, the answer is
+a **new part**, never the prop back.
+
+`<Drawer.Root>`'s header drew a close button; composing `<Drawer.Header>` silently
+dropped it, and nine call sites had already hand-rolled their own and wired
+`onClose` a second time. The fix was `<Drawer.Close>`, which reads `onClose` off
+the shell context and renders nothing when the sheet cannot be dismissed. The
+behaviour became reachable; it did not become a prop again.
+
+Where the thing being deleted was also **semantics**, keep the semantics. A row's
+accessible name comes from the plain text of its `<ListRow.Label>`; a row whose
+middle column is a component that says its words through props has no text for the
+row to read, so `<ListRow.Root label>` survives as a name that draws nothing.
+
+### What is not a face
+
+The rule is about faces. It does not strip the kit of props.
+
+- **A leaf keeps its data props.** `<Button label>` and `<Chip label>` have no
+  parts to write, and T1 in §3 is why.
+- **Identity and behaviour stay props**: `value`, `id`, `disabled`, `selected`,
+  `onPress`, and `icon`. §1's table says an icon is a prop and never a part.
+- **The accessible name stays a prop where it is not drawn**: `<ChoiceList.Root
+  label>`, `<InputGroup.Root label>`, `<Dialog.Root title>`. These name the thing
+  to assistive tech; the fact that a Root may also draw a default header from one
+  does not make it a face a part exists for.
+- **A `data` collection is §3's question, not this one.**
+
+### The escape-hatch ladder
+
+1. **A named part.**
+2. **`render={(props, state) => ReactElement}`**, the **function form only**, on
    **leaf parts only**. The caller spreads explicitly.
-4. **An exported context hook** (`useChoiceItem()`, `useMenuItem()`). No prop
+3. **An exported context hook** (`useChoiceItem()`, `useMenuItem()`). No prop
    merging at all, and unlike a cloned child it survives arbitrary wrapper depth.
 
 ### Do not add `asChild`
@@ -260,12 +312,13 @@ Four laws behind the table:
 4. **No abbreviations.** `Submenu`, not `Sub`.
 
 Law 3 is the one this kit has broken worst, and `size` is where. It has meant a
-control size, two different distance scales, a px diameter, and a px *thickness*
-on `Divider` and `Progress`. **`size` means the shell step in
+control size, two different distance scales, a px diameter and a px thickness.
+**`size` means the shell step in
 [`lib/field-shell`](../lib/field-shell.ts) (`sm | md | tv`) and nothing else.** A
 component whose "size" is a raw measurement takes a measurement, named for what
-it measures: `thickness`, `diameter`, `w`. A component that genuinely has its own
-ladder names its own type, but keeps the same three words.
+it measures: `thickness` on `<Divider>` and `<Progress>`, `diameter`, `w`. A
+component that genuinely has its own ladder names its own type, but keeps the
+same three words.
 
 A prop that is only ever set one way is deleted, not defaulted. A handler whose
 only job is to redirect focus takes the target, not the event.
@@ -300,8 +353,11 @@ Before a component is done:
 - [ ] Every part name is in §1's table, or the table grew in this commit.
 - [ ] The Root owns state, semantics and behaviour; no indicator is pressable.
 - [ ] A `data` prop, if any, names which of the six tests forced it.
-- [ ] Sugar is implemented by the parts: delete it and nothing becomes
-      unreachable.
+- [ ] No prop writes a face a part exists for. Every `label`, `hint`, `title`,
+      `subtitle`, `detail`, `actions` or `footer` on a compound is either a part
+      or a name nothing draws.
+- [ ] Nothing is reachable only through a prop. Where a part could not express
+      something, the part grew; the prop did not come back.
 - [ ] `value`/`defaultValue`/`onValueChange`; no `onChange`.
 - [ ] The shape comes from `lib/field-shell`, not from the component's own
       paddings.

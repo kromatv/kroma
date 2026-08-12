@@ -161,34 +161,40 @@ export function NowPlayingCard({
 
         <Divider />
         <Row wrap gapX={26} gapY={10}>
-          <DataField.Root size="sm" label={t('admin.statPlayback')}>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statPlayback')}</DataField.Label>
             <Row self="flex-start" radius={4} px={9} py={3} bg={pipe.bg}>
               <Text variant="meta" color={pipe.ink}>
                 {pipe.label}
               </Text>
             </Row>
           </DataField.Root>
-          <DataField.Root size="sm" label={t('admin.statVideo')}>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statVideo')}</DataField.Label>
             <Text variant="meta" color="success">
               {s.videoLabel}
             </Text>
           </DataField.Root>
-          <DataField.Root size="sm" label={t('admin.statAudioTrack')}>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statAudioTrack')}</DataField.Label>
             <Text variant="meta" color={transcode ? 'accent' : 'success'}>
               {transcode ? `${s.audioLabel} → AAC` : s.audioLabel}
             </Text>
           </DataField.Root>
-          <DataField.Root size="sm" label={t('admin.statSubtitles')}>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statSubtitles')}</DataField.Label>
             <Text variant="meta" color="textMuted">
               {s.subtitle}
             </Text>
           </DataField.Root>
-          <DataField.Root size="sm" label={t('admin.statBitrate')}>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statBitrate')}</DataField.Label>
             <Text variant="meta" color="textMuted" style={TABULAR}>
               {formatMbps(s.bitrate)} Mb/s
             </Text>
           </DataField.Root>
-          <DataField.Root size="sm" label={t('admin.statNetwork')}>
+          <DataField.Root size="sm">
+            <DataField.Label>{t('admin.statNetwork')}</DataField.Label>
             <Row self="flex-start" radius={4} px={9} py={3} bg={lan ? 'success/12' : 'info/12'}>
               <Text variant="meta" color={lan ? 'success' : 'info'}>
                 {s.network} · {s.ip}
@@ -221,7 +227,12 @@ export const StopStreamModal = createCallable<{ session: PlaybackSession }, bool
     }
 
     return (
-      <Dialog open title={t('admin.stopStreamTitle')} width={520} onClose={() => call.end(false)}>
+      <Dialog.Root
+        open
+        title={t('admin.stopStreamTitle')}
+        width={520}
+        onClose={() => call.end(false)}
+      >
         <Text variant="meta" color="textDim">
           {t('admin.stopStreamDesc', { user: session.username })}
         </Text>
@@ -241,7 +252,7 @@ export const StopStreamModal = createCallable<{ session: PlaybackSession }, bool
           destructive
           busy={busy}
         />
-      </Dialog>
+      </Dialog.Root>
     );
   },
 );

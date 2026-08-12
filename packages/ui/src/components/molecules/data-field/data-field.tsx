@@ -38,21 +38,17 @@ interface DataFieldRootProps {
   /** How loud the pair reads, defaulting to the app's entry size
    *  (`setEntryDefaults`) so a readout matches the rows beside it. */
   size?: ControlSize;
-  /** Sugar for `<Label/><Value/>`. `children` render under both. */
-  label?: string;
-  value?: ReactNode;
+  /** The pair: a `<DataField.Label>`, and the `<DataField.Value>` under it. */
   children?: ReactNode;
 }
 
-function Root({ size, label, value, children }: Readonly<DataFieldRootProps>) {
+function Root({ size, children }: Readonly<DataFieldRootProps>) {
   const shape = SHAPE[size ?? entryDefaultSize()];
   return (
     <DataFieldContext.Provider value={shape}>
       {/* minW 0 so a long value truncates inside its column instead of widening
           the row of readouts it sits in. */}
       <Box minW={0} gap={shape.gap}>
-        {label === undefined ? null : <Label>{label}</Label>}
-        {value === undefined ? null : <Value>{value}</Value>}
         {children}
       </Box>
     </DataFieldContext.Provider>
@@ -90,9 +86,13 @@ function Value({ lines, children }: Readonly<DataFieldValueProps>) {
  * A label-above-value readout.
  *
  * ```tsx
- * <DataField.Root label="Duree" value="2 h 04" />
+ * <DataField.Root>
+ *   <DataField.Label>Duree</DataField.Label>
+ *   <DataField.Value>2 h 04</DataField.Value>
+ * </DataField.Root>
  *
- * <DataField.Root label="Reseau">
+ * <DataField.Root>
+ *   <DataField.Label>Reseau</DataField.Label>
  *   <DataField.Value lines={1}>{session.network}</DataField.Value>
  * </DataField.Root>
  * ```

@@ -84,11 +84,13 @@ export function LogsPage() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.logsTitle')}
-        subtitle={t('admin.logsSub')}
-        actions={<RealtimeBadge />}
-      />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.logsTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.logsSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
+          <RealtimeBadge />
+        </PageHeader.Actions>
+      </PageHeader.Root>
       <Row wrap gap={12} mt={8} mb={16}>
         <SegmentedControl.Root
           value={level}
@@ -115,12 +117,14 @@ export function LogsPage() {
           <Text variant="meta" color="textMuted">
             {t('logs.follow')}
           </Text>
-          <Switch checked={follow} onChange={setFollow} label={t('logs.follow')} />
+          <Switch checked={follow} onCheckedChange={setFollow} label={t('logs.follow')} />
         </Row>
       </Row>
       {data === null ? <TableSkeleton rows={10} /> : null}
       {data && entries.length === 0 ? (
-        <EmptyState.Root icon="terminal-2" title={t('logs.empty')} />
+        <EmptyState.Root icon="terminal-2">
+          <EmptyState.Title>{t('logs.empty')}</EmptyState.Title>
+        </EmptyState.Root>
       ) : null}
       {entries.length > 0 ? (
         <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">

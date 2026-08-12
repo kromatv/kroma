@@ -82,7 +82,7 @@ function RunRow({
   const t = useT();
   const status = t(`jobs.status.${run.status}` as MessageKey);
   return (
-    <ListRow.Root size="sm" selected={active} chevron={false} onPress={onClick} label={status}>
+    <ListRow.Root size="sm" selected={active} chevron={false} onPress={onClick}>
       <ListRow.Leading>
         <Box w={8} h={8} shrink={0} radius="circle" bg={statusColor(run.status)} />
       </ListRow.Leading>

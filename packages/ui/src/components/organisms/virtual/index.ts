@@ -1,2 +1,2 @@
-export * from './virtual';
+export * from './virtual-grid';
 export * from './virtual-rail';

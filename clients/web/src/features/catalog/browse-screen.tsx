@@ -211,7 +211,9 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
         creditTitle={featured?.title}
       />
       {items.length === 0 ? (
-        <EmptyState.Root icon={emptyIcon} title={emptyTitle} />
+        <EmptyState.Root icon={emptyIcon}>
+          <EmptyState.Title>{emptyTitle}</EmptyState.Title>
+        </EmptyState.Root>
       ) : (
         <>
           <BrowseBar
@@ -223,7 +225,9 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
             onGenre={onGenre}
           />
           {view.length === 0 ? (
-            <EmptyState.Root icon={emptyIcon} title={t('search.noResults')} />
+            <EmptyState.Root icon={emptyIcon}>
+              <EmptyState.Title>{t('search.noResults')}</EmptyState.Title>
+            </EmptyState.Root>
           ) : (
             <Box pr={showRail ? RAIL_RESERVE : undefined}>
               <div ref={gridWrap}>{renderGrid(view)}</div>

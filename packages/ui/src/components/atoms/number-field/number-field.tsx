@@ -16,7 +16,7 @@ import { bySize, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell'
 import { useTDefault } from '#ui/services/i18n';
 
 interface NumberFieldProps
-  extends Omit<TextFieldProps, 'value' | 'defaultValue' | 'onChange' | 'type' | 'trailing'> {
+  extends Omit<TextFieldProps, 'value' | 'defaultValue' | 'onValueChange' | 'type' | 'trailing'> {
   value: number;
   onChange: (next: number) => void;
   min?: number;
@@ -93,7 +93,7 @@ function NumberField({
       type="number"
       autoFocus={autoFocus}
       value={text}
-      onChange={edit}
+      onValueChange={edit}
       onBlur={settle}
       textStyle={TABULAR}
       trailing={

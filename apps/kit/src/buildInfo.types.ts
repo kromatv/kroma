@@ -5,6 +5,7 @@
 export interface BuildInfo {
   version: string;
   commit: string | null;
+  commitFull: string | null;
   branch: string | null;
   dirty: boolean;
   buildDate: string | null;

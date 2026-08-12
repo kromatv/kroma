@@ -121,26 +121,27 @@ export default function RemotePage() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.remoteAccess')}
-        subtitle={t('admin.remoteAccessDesc')}
-        actions={<StatusChip status={st} />}
-      />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.remoteAccess')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.remoteAccessDesc')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
+          <StatusChip status={st} />
+        </PageHeader.Actions>
+      </PageHeader.Root>
 
       {/* Public URL (used for share / Quick Connect links; always applicable). */}
       <Surface elevated border="border" pad="none" px={22} py={20} mt={24}>
-        <Field.Root
-          label={t('admin.customUrl')}
-          hint={t('admin.customUrlHint')}
-          value={url}
-          onValueChange={setUrl}
-        >
+        <Field.Root label={t('admin.customUrl')} value={url} onValueChange={setUrl}>
           <Field.Input placeholder="https://kroma.example.com" />
+          <Field.Hint>{t('admin.customUrlHint')}</Field.Hint>
         </Field.Root>
       </Surface>
 
       {/* Managed connector (optional). */}
-      <Section.Root title={t('admin.remoteManaged')} mt={28}>
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.remoteManaged')}</Section.Title>
+        </Section.Header>
         <Text variant="meta" color="textDim" mt={-8} mb={16}>
           {t('admin.remoteManagedHint')}
         </Text>
@@ -157,20 +158,19 @@ export default function RemotePage() {
                 </Text>
               </Box>
             </Row>
-            <Switch checked={enabled} onChange={toggle} label={t('admin.enableRemoteAccess')} />
+            <Switch
+              checked={enabled}
+              onCheckedChange={toggle}
+              label={t('admin.enableRemoteAccess')}
+            />
           </Row>
 
-          <Field.Root
-            label={t('admin.remoteToken')}
-            hint={t('admin.remoteTokenHint')}
-            value={token}
-            onValueChange={setToken}
-            mb={12}
-          >
+          <Field.Root label={t('admin.remoteToken')} value={token} onValueChange={setToken} mb={12}>
             <Field.Input
               type="password"
               placeholder={view.hasToken ? t('admin.remoteTokenKeep') : 'eyJhIjoi…'}
             />
+            <Field.Hint>{t('admin.remoteTokenHint')}</Field.Hint>
           </Field.Root>
 
           <a href={CF_TUNNELS_URL} target="_blank" rel="noopener noreferrer" style={TOKEN_LINK}>
@@ -199,7 +199,10 @@ export default function RemotePage() {
       </Section.Root>
 
       {/* Live connector status + logs. */}
-      <Section.Root title={t('admin.remoteLogs')} mt={28}>
+      <Section.Root mt={28}>
+        <Section.Header>
+          <Section.Title>{t('admin.remoteLogs')}</Section.Title>
+        </Section.Header>
         <Surface elevated border="border" pad="none" px={22} py={20}>
           <Row wrap gapX={24} gapY={6}>
             <StatusChip status={st} />

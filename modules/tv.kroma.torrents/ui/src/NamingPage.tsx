@@ -153,7 +153,10 @@ export default function NamingPage() {
 
   return (
     <>
-      <PageHeader.Root title={t('admin.namingTitle')} subtitle={t('admin.namingSub')} />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.namingTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.namingSub')}</PageHeader.Subtitle>
+      </PageHeader.Root>
 
       <Surface elevated border="border" pad="none" p={24} mt={24}>
         <Box gap={16}>
@@ -278,27 +281,29 @@ function RenameSection() {
   };
 
   return (
-    <Section.Root
-      title={t('naming.renameTitle')}
-      mt={28}
-      actions={
-        <Button
-          variant="glass"
-          size="sm"
-          icon="wand"
-          label={t('naming.preview2')}
-          onPress={preview}
-          loading={busy}
-        />
-      }
-    >
+    <Section.Root mt={28}>
+      <Section.Header>
+        <Section.Title>{t('naming.renameTitle')}</Section.Title>
+        <Section.Actions>
+          <Button
+            variant="glass"
+            size="sm"
+            icon="wand"
+            label={t('naming.preview2')}
+            onPress={preview}
+            loading={busy}
+          />
+        </Section.Actions>
+      </Section.Header>
       <Text variant="meta" color="textDim" mb={12}>
         {t('naming.renameHelp')}
       </Text>
 
       {result ? (
         <Box mb={12}>
-          <Callout.Root size="sm" title={result} />
+          <Callout.Root size="sm">
+            <Callout.Title>{result}</Callout.Title>
+          </Callout.Root>
         </Box>
       ) : null}
 

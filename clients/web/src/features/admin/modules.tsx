@@ -86,10 +86,10 @@ function ModulesInner() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.modulesTitle')}
-        subtitle={t('admin.modulesSub')}
-        actions={
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.modulesTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.modulesSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
           <Row gap={8}>
             <Button
               variant="glass"
@@ -109,8 +109,8 @@ function ModulesInner() {
               loading={upload.busy}
             />
           </Row>
-        }
-      />
+        </PageHeader.Actions>
+      </PageHeader.Root>
       <input
         ref={fileRef}
         type="file"

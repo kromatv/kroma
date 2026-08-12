@@ -22,15 +22,16 @@ import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { useTDefault } from '#ui/services/i18n';
 import { Actions } from './dialog-actions';
-import { Content, Footer, Header, type Shell, ShellContext } from './dialog-parts';
+import { Footer, Header, Panel, type Shell, ShellContext } from './dialog-parts';
 
-interface DialogProps {
+interface DialogRootProps {
   open: boolean;
   onClose?: () => void;
   title?: string;
   description?: string;
+  /** The panel's bands: a `<Dialog.Header>`, a `<Dialog.Panel>` and a
+   *  `<Dialog.Footer>`, each optional. Anything else is the panel's content. */
   children?: ReactNode;
-  footer?: ReactNode;
   width?: number;
   /** Panel padding. 0 hands the surface to content that owns its own layout
    *  (a routed detail sheet); such a dialog names itself via `title` even
@@ -41,17 +42,16 @@ interface DialogProps {
   titleHidden?: boolean;
 }
 
-function Dialog({
+function Root({
   open,
   onClose,
   title,
   description,
   children,
-  footer,
   width = 720,
   pad = 40,
   titleHidden = false,
-}: Readonly<DialogProps>) {
+}: Readonly<DialogRootProps>) {
   // react-native-web's Modal loses its portal container under StrictMode, and a
   // dialog that never appears is the symptom. See lib/modal-portal.web.
   useModalPortalRepair(open);
@@ -71,7 +71,6 @@ function Dialog({
       titleHidden={titleHidden}
       title={title}
       description={description}
-      footer={footer}
       trapped={navigated}
       bridge={!hosted}
     >
@@ -99,12 +98,11 @@ function DialogSurface({
   title,
   titleHidden,
   description,
-  footer,
   trapped,
   bridge,
   children,
 }: Readonly<
-  Omit<DialogProps, 'open'> & { width: number; pad: number; trapped: boolean; bridge: boolean }
+  Omit<DialogRootProps, 'open'> & { width: number; pad: number; trapped: boolean; bridge: boolean }
 >) {
   useFocusNav({ onBack: onClose });
   const t = useTDefault();
@@ -118,16 +116,15 @@ function DialogSurface({
   const kids = Children.toArray(children);
   const part = (which: unknown) => kids.find((node) => isValidElement(node) && node.type === which);
   const headerPart = part(Header);
-  const contentPart = part(Content);
+  const panelPart = part(Panel);
   const footerPart = part(Footer);
   const loose = kids.filter(
-    (node) => node !== headerPart && node !== contentPart && node !== footerPart,
+    (node) => node !== headerPart && node !== panelPart && node !== footerPart,
   );
   const header =
     headerPart ?? defaultHeader({ showsTitle, title, description, titleId, descriptionId });
-  const foot = footerPart ?? (footer ? <Footer>{footer}</Footer> : null);
   const hasHeader = Boolean(header);
-  const hasFooter = Boolean(foot);
+  const hasFooter = Boolean(footerPart);
   const shell = useMemo<Shell>(() => ({ pad, hasHeader, hasFooter }), [pad, hasHeader, hasFooter]);
   // By reference only when this panel rendered the node carrying the id: a
   // composed <Dialog.Header> replaces the fallback, and those ids go with it.
@@ -175,8 +172,8 @@ function DialogSurface({
       >
         <ShellContext.Provider value={shell}>
           {header}
-          {contentPart ?? <Content>{loose}</Content>}
-          {foot}
+          {panelPart ?? <Panel>{loose}</Panel>}
+          {footerPart}
         </ShellContext.Provider>
       </Box>
     </Box>
@@ -221,29 +218,28 @@ const s = styles({
 });
 
 /**
- * The modal panel. Callable with `title` / `description` / `footer` for the
- * ordinary case, and composed through its parts when a panel needs its own
- * header or a footer that is not a row of buttons:
+ * The modal panel. The Root takes `title` / `description`, which name it to
+ * assistive tech and draw the ordinary header; the parts arrange a panel that
+ * needs a header of its own, or a footer:
  *
- *   <Dialog open onClose={close} footer={<Dialog.Actions … />}>…</Dialog>
+ * ```tsx
+ * <Dialog.Root open onClose={close} title="Supprimer">
+ *   <Text>…</Text>
+ *   <Dialog.Footer><Dialog.Actions … /></Dialog.Footer>
+ * </Dialog.Root>
  *
- *   <Dialog open onClose={close}>
- *     <Dialog.Header>…</Dialog.Header>
- *     <Dialog.Content>…</Dialog.Content>
- *     <Dialog.Footer><Dialog.Actions … /></Dialog.Footer>
- *   </Dialog>
+ * <Dialog.Root open onClose={close}>
+ *   <Dialog.Header>…</Dialog.Header>
+ *   <Dialog.Panel>…</Dialog.Panel>
+ *   <Dialog.Footer><Dialog.Actions … /></Dialog.Footer>
+ * </Dialog.Root>
+ * ```
  *
- * Either way only `Content` scrolls; the header and the footer stay put.
+ * Either way only `Panel` scrolls; the header and the footer stay put.
  * `Footer` is the pinned shelf and `Actions` is the row of controls, so the two
  * nest rather than compete.
  */
-const DialogParts = Object.assign(Dialog, {
-  Root: Dialog,
-  Header,
-  Content,
-  Footer,
-  Actions,
-});
+const Dialog = { Root, Header, Panel, Footer, Actions };
 
-export type { DialogProps };
-export { DialogParts as Dialog };
+export type { DialogRootProps };
+export { Dialog };

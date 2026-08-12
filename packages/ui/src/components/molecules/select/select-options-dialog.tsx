@@ -17,7 +17,7 @@ function dismissReason(): SelectDismissReason {
 
 function SelectOptionsDialog({ open, onDismiss, label, items }: Readonly<SelectSurfaceProps>) {
   return (
-    <Dialog open={open} onClose={() => onDismiss(dismissReason())} title={label} width={560}>
+    <Dialog.Root open={open} onClose={() => onDismiss(dismissReason())} title={label} width={560}>
       <FocusColumn>
         {items.map((item) => (
           <SelectRowContext.Provider key={item.key} value={DIALOG_ROW}>
@@ -25,7 +25,7 @@ function SelectOptionsDialog({ open, onDismiss, label, items }: Readonly<SelectS
           </SelectRowContext.Provider>
         ))}
       </FocusColumn>
-    </Dialog>
+    </Dialog.Root>
   );
 }
 

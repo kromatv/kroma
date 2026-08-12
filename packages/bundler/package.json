@@ -7,6 +7,7 @@
   "exports": {
     "./build-info": "./src/build-info.ts",
     "./exit-after-build": "./src/exit-after-build.ts",
+    "./git-history": "./src/git-history.ts",
     "./legacy-css": "./src/legacy-css.ts",
     "./legacy-finalize": "./src/legacy-finalize.ts",
     "./mdx": "./src/mdx.mjs",

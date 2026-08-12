@@ -98,41 +98,30 @@ function TorznabIndexerForm({
     );
 
   return (
-    <Dialog open title={t('indexers.edit')} onClose={() => end(false)} width={520}>
+    <Dialog.Root open title={t('indexers.edit')} onClose={() => end(false)} width={520}>
       <Field.Root label={t('indexers.name')} value={name} onValueChange={setName}>
         <Field.Input placeholder="Jackett - YGG" />
       </Field.Root>
-      <Field.Root
-        label={t('indexers.url')}
-        hint={t('indexers.urlHint')}
-        value={url}
-        onValueChange={setUrl}
-      >
+      <Field.Root label={t('indexers.url')} value={url} onValueChange={setUrl}>
         <Field.Input placeholder="http://nas:9117/api/v2.0/indexers/xxx/results/torznab" />
+        <Field.Hint>{t('indexers.urlHint')}</Field.Hint>
       </Field.Root>
-      <Field.Root
-        label={t('indexers.apiKey')}
-        hint={indexer.hasApiKey ? t('indexers.apiKeyKept') : undefined}
-        value={apiKey}
-        onValueChange={setApiKey}
-      >
+      <Field.Root label={t('indexers.apiKey')} value={apiKey} onValueChange={setApiKey}>
         <Field.Input type="password" />
+        {indexer.hasApiKey ? <Field.Hint>{t('indexers.apiKeyKept')}</Field.Hint> : null}
       </Field.Root>
       <Box row={{ base: false, md: true }} gap={16}>
-        <Field.Root
-          flex
-          label={t('indexers.categories')}
-          hint={t('indexers.categoriesHint')}
-          value={cats}
-          onValueChange={setCats}
-        />
+        <Field.Root flex label={t('indexers.categories')} value={cats} onValueChange={setCats}>
+          <Field.Hint>{t('indexers.categoriesHint')}</Field.Hint>
+        </Field.Root>
         <Field.Root
           flex
           label={t('indexers.priority')}
-          hint={t('indexers.priorityHint')}
           value={priority}
           onValueChange={setPriority}
-        />
+        >
+          <Field.Hint>{t('indexers.priorityHint')}</Field.Hint>
+        </Field.Root>
       </Box>
       {error ? (
         <Text variant="meta" color="dangerHover">
@@ -155,7 +144,7 @@ function TorznabIndexerForm({
           disabled={busy}
         />
       </Dialog.Actions>
-    </Dialog>
+    </Dialog.Root>
   );
 }
 
@@ -205,7 +194,7 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
   }, [defs, q]);
 
   return (
-    <Dialog open title={t('indexers.pickTitle')} onClose={() => call.end(null)} width={520}>
+    <Dialog.Root open title={t('indexers.pickTitle')} onClose={() => call.end(null)} width={520}>
       <Row gap={8}>
         <Field.Root label={t('indexers.searchDefs')} hideLabel flex value={q} onValueChange={setQ}>
           <Field.Input icon="search" placeholder={t('indexers.searchDefs')} />
@@ -235,7 +224,7 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
         {defs !== null && filtered.length > 0 ? (
           <ListRow.Group size="sm">
             {filtered.map((d) => (
-              <ListRow.Root key={d.id} size="sm" onPress={() => call.end(d.id)} label={d.name}>
+              <ListRow.Root key={d.id} size="sm" onPress={() => call.end(d.id)}>
                 <ListRow.Label>{d.name}</ListRow.Label>
                 <ListRow.Hint>{d.description || d.id}</ListRow.Hint>
                 <ListRow.Trailing>
@@ -260,7 +249,7 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
         onConfirm={() => call.end(null)}
         confirmLabel={t('common.close')}
       />
-    </Dialog>
+    </Dialog.Root>
   );
 });
 
@@ -347,7 +336,7 @@ function BuiltinIndexerForm({
   const title = detail?.name ?? definitionId;
 
   return (
-    <Dialog open title={title} onClose={() => end(false)} width={520}>
+    <Dialog.Root open title={title} onClose={() => end(false)} width={520}>
       {loadError ? (
         <Text variant="meta" color="dangerHover">
           {loadError}
@@ -393,7 +382,7 @@ function BuiltinIndexerForm({
                     </Text>
                     <Switch
                       checked={settings[s.name] === 'true'}
-                      onChange={(v) => setField(s.name, v ? 'true' : 'false')}
+                      onCheckedChange={(v) => setField(s.name, v ? 'true' : 'false')}
                       label={s.label}
                     />
                   </Row>
@@ -422,31 +411,30 @@ function BuiltinIndexerForm({
                 <Field.Root
                   key={s.name}
                   label={s.label}
-                  hint={isSecret && configured ? t('indexers.apiKeyKept') : undefined}
                   value={settings[s.name] ?? ''}
                   onValueChange={(v) => setField(s.name, v)}
                   mb={16}
                 >
                   <Field.Input type={isSecret ? 'password' : undefined} />
+                  {isSecret && configured ? (
+                    <Field.Hint>{t('indexers.apiKeyKept')}</Field.Hint>
+                  ) : null}
                 </Field.Root>
               );
             })}
 
           <Box row={{ base: false, md: true }} gap={16}>
-            <Field.Root
-              flex
-              label={t('indexers.categories')}
-              hint={t('indexers.categoriesHint')}
-              value={cats}
-              onValueChange={setCats}
-            />
+            <Field.Root flex label={t('indexers.categories')} value={cats} onValueChange={setCats}>
+              <Field.Hint>{t('indexers.categoriesHint')}</Field.Hint>
+            </Field.Root>
             <Field.Root
               flex
               label={t('indexers.priority')}
-              hint={t('indexers.priorityHint')}
               value={priority}
               onValueChange={setPriority}
-            />
+            >
+              <Field.Hint>{t('indexers.priorityHint')}</Field.Hint>
+            </Field.Root>
           </Box>
         </div>
       ) : null}
@@ -474,6 +462,6 @@ function BuiltinIndexerForm({
           />
         ) : null}
       </Dialog.Actions>
-    </Dialog>
+    </Dialog.Root>
   );
 }

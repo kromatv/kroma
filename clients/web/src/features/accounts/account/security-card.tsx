@@ -69,7 +69,7 @@ export function SecurityCard() {
                     value={strength.value}
                     color={strength.color}
                     trackColor="tint/10"
-                    size={5}
+                    thickness={5}
                     rounded
                   />
                 </Box>

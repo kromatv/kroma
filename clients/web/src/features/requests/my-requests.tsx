@@ -75,7 +75,10 @@ export function MyRequestsPage() {
 
   return (
     <main className={PAGE_MAIN}>
-      <PageHeader.Root title={t('requests.myTitle')} subtitle={t('requests.mySubtitle')} />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('requests.myTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('requests.mySubtitle')}</PageHeader.Subtitle>
+      </PageHeader.Root>
 
       {isPending ? (
         <Box mt={24} gap={10}>
@@ -87,17 +90,16 @@ export function MyRequestsPage() {
       ) : null}
 
       {requests?.length === 0 ? (
-        <EmptyState.Root
-          icon="inbox"
-          title={t('requests.myEmpty')}
-          actions={
+        <EmptyState.Root icon="inbox">
+          <EmptyState.Title>{t('requests.myEmpty')}</EmptyState.Title>
+          <EmptyState.Actions>
             <Button
               size="sm"
               label={t('requests.myEmptyCta')}
               onPress={() => navigate({ to: '/search' })}
             />
-          }
-        />
+          </EmptyState.Actions>
+        </EmptyState.Root>
       ) : null}
 
       <Box mt={24} gap={10}>

@@ -46,17 +46,12 @@ export function CastRemotes() {
         </Text>
       </Focusable>
 
-      <Dialog
+      <Dialog.Root
         open={open}
         onClose={() => setOpen(false)}
         title={t('cast.remotes')}
         description={t('cast.remotesHint')}
         width={PANEL_WIDTH}
-        footer={
-          <Dialog.Actions>
-            <Button variant="ghost" label={t('common.close')} onPress={() => setOpen(false)} />
-          </Dialog.Actions>
-        }
       >
         {/* A column: <FocusRegion> is horizontal and lays several rows out side
             by side, the second landing outside the panel. */}
@@ -64,11 +59,11 @@ export function CastRemotes() {
           {controllers.map((remote, i) => (
             <ListRow.Root
               key={remote.id}
-              label={remote.username}
-              hint={remote.name}
               autoFocus={i === 0}
               onPress={() => kickCastController(remote.id)}
             >
+              <ListRow.Label>{remote.username}</ListRow.Label>
+              <ListRow.Hint>{remote.name}</ListRow.Hint>
               <ListRow.Leading>
                 <Avatar
                   name={remote.username}
@@ -87,7 +82,12 @@ export function CastRemotes() {
             </ListRow.Root>
           ))}
         </FocusColumn>
-      </Dialog>
+        <Dialog.Footer>
+          <Dialog.Actions>
+            <Button variant="ghost" label={t('common.close')} onPress={() => setOpen(false)} />
+          </Dialog.Actions>
+        </Dialog.Footer>
+      </Dialog.Root>
     </>
   );
 }

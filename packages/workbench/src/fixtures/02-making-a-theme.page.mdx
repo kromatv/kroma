@@ -1,0 +1,18 @@
+export const title = 'Making a theme, end to end';
+export const summary = 'Three tokens, one function, and the shells that read them.';
+
+# Making a theme
+
+A theme is a plain object of tokens. `createTheme` fills in everything you do
+not state, so a new theme is usually a dozen colours rather than a hundred.
+
+```ts
+import { createTheme, setTheme } from '@kroma/ui/kit';
+
+setTheme(createTheme({ accent: '#F2B705' }));
+```
+
+| Token    | What it paints          |
+| -------- | ----------------------- |
+| `bg`     | the page behind it all  |
+| `accent` | the one thing to notice |

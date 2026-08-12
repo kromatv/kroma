@@ -187,9 +187,9 @@ export function PipelinePage() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.pipelineTitle')}
-        actions={
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.pipelineTitle')}</PageHeader.Title>
+        <PageHeader.Actions>
           <Row wrap minW={0} gap={12}>
             {canManage ? (
               <Button
@@ -207,8 +207,8 @@ export function PipelinePage() {
               placeholder={t('pipeline.searchPlaceholder')}
             />
           </Row>
-        }
-      />
+        </PageHeader.Actions>
+      </PageHeader.Root>
       <ConsoleSummary
         total={total}
         totalLabel={t('pipeline.trackedLabel')}
@@ -218,7 +218,9 @@ export function PipelinePage() {
 
       {paused ? (
         <Box mb={16}>
-          <Callout.Root tone="accent" icon="player-pause" title={t('pipeline.pausedBanner')} />
+          <Callout.Root tone="accent" icon="player-pause">
+            <Callout.Title>{t('pipeline.pausedBanner')}</Callout.Title>
+          </Callout.Root>
         </Box>
       ) : null}
 
@@ -320,7 +322,9 @@ export function PipelinePage() {
 
         {data && rows.length === 0 ? (
           <Box py={24}>
-            <EmptyState.Root icon="inbox" title={t('pipeline.noMatch')} />
+            <EmptyState.Root icon="inbox">
+              <EmptyState.Title>{t('pipeline.noMatch')}</EmptyState.Title>
+            </EmptyState.Root>
           </Box>
         ) : null}
 
@@ -335,10 +339,10 @@ export function PipelinePage() {
                   {(data?.total ?? 0).toLocaleString()}
                 </Text>
                 <Legend.Root>
-                  <Legend.Item color="success" label={t('pipeline.st.done')} />
-                  <Legend.Item color="accent" label={t('pipeline.st.running')} />
-                  <Legend.Item color="tint/30" label={t('pipeline.st.pending')} />
-                  <Legend.Item color="danger" label={t('pipeline.st.failed')} />
+                  <Legend.Item color="success">{t('pipeline.st.done')}</Legend.Item>
+                  <Legend.Item color="accent">{t('pipeline.st.running')}</Legend.Item>
+                  <Legend.Item color="tint/30">{t('pipeline.st.pending')}</Legend.Item>
+                  <Legend.Item color="danger">{t('pipeline.st.failed')}</Legend.Item>
                 </Legend.Root>
               </Row>
               <Row gap={10}>

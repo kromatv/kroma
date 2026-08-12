@@ -3,12 +3,6 @@
 // overflow, so a prop for them would silently do nothing on a television. They
 // stay real CSS here, and every value they use is still a token.
 
-import type { CSSProperties } from 'react';
-
-/** A drawer's body: the one region that scrolls when its content overflows.
- *  `minHeight: 0` is what lets a flex child shrink enough to scroll at all. */
-export const SCROLL_PANE: CSSProperties = { flex: 1, minHeight: 0, overflowY: 'auto' };
-
 /** The console's outer frame: one viewport-tall column, two columns from `lg`. */
 export const ADMIN_SHELL = 'admin-shell';
 

@@ -140,7 +140,7 @@ export function ExtraRow({
         </Field.Root>
         <Switch
           checked={registry.enabled}
-          onChange={(enabled) => onChange({ ...registry, enabled })}
+          onCheckedChange={(enabled) => onChange({ ...registry, enabled })}
           label={registry.name || registry.url}
         />
         <Text variant="meta" color="textDim">
@@ -172,23 +172,23 @@ function PreviewResult({ preview }: Readonly<{ preview: StoreRegistryPreview }>)
   const t = useT();
   if (preview.ok) {
     return (
-      <Callout.Root
-        tone="success"
-        title={t('admin.registriesPreviewOk', { count: preview.moduleCount })}
-        detail={
-          preview.modules.length > 0
-            ? preview.modules.map((m) => `${m.name} v${m.version}`).join(' · ')
-            : undefined
-        }
-      />
+      <Callout.Root tone="success">
+        <Callout.Title>
+          {t('admin.registriesPreviewOk', { count: preview.moduleCount })}
+        </Callout.Title>
+        {preview.modules.length > 0 ? (
+          <Callout.Detail>
+            {preview.modules.map((m) => `${m.name} v${m.version}`).join(' · ')}
+          </Callout.Detail>
+        ) : null}
+      </Callout.Root>
     );
   }
   return (
-    <Callout.Root
-      tone="danger"
-      title={t('admin.registriesPreviewFail')}
-      detail={preview.error || undefined}
-    />
+    <Callout.Root tone="danger">
+      <Callout.Title>{t('admin.registriesPreviewFail')}</Callout.Title>
+      {preview.error ? <Callout.Detail>{preview.error}</Callout.Detail> : null}
+    </Callout.Root>
   );
 }
 

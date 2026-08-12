@@ -52,5 +52,5 @@ export default story({
   },
   variants: radioVariants,
   matrix: false,
-  render: (props) => <Demo {...props} />,
+  component: Demo,
 });

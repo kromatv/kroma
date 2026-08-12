@@ -8,16 +8,6 @@ import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 
 interface PageHeaderRootProps extends Omit<BoxProps, 'children'> {
-  /** Sugar for `<PageHeader.Title>`, so the common header is one line. */
-  title?: string;
-  /** Sugar for that title's own `suffix`. */
-  suffix?: string;
-  /** Sugar for that title's own `icon`. */
-  icon?: IconName;
-  /** Sugar for `<PageHeader.Subtitle>`. */
-  subtitle?: string;
-  /** Sugar for `<PageHeader.Actions>`. */
-  actions?: ReactNode;
   /** A `<PageHeader.Actions>` must be a DIRECT child to be pinned to the far
    *  end; every other child joins the title column. */
   children?: ReactNode;
@@ -37,28 +27,13 @@ function sort(children: ReactNode): Buckets {
   return at;
 }
 
-function Root({
-  title,
-  suffix,
-  icon,
-  subtitle,
-  actions,
-  children,
-  ...box
-}: Readonly<PageHeaderRootProps>) {
+function Root({ children, ...box }: Readonly<PageHeaderRootProps>) {
   const at = useMemo(() => sort(children), [children]);
   return (
     <Box row align="center" justify="space-between" gap={24} wrap {...box}>
       <Box shrink={1} style={MIN_W}>
-        {title === undefined ? null : (
-          <Title icon={icon} suffix={suffix}>
-            {title}
-          </Title>
-        )}
-        {subtitle === undefined ? null : <Subtitle>{subtitle}</Subtitle>}
         {at.column}
       </Box>
-      {actions === undefined ? null : <Actions>{actions}</Actions>}
       {at.actions}
     </Box>
   );
@@ -127,7 +102,10 @@ const GLYPH_SIZE = 26;
  * actions pinned to the other end.
  *
  * ```tsx
- * <PageHeader.Root title="Bibliotheques" subtitle="3 dossiers surveilles" />
+ * <PageHeader.Root>
+ *   <PageHeader.Title>Bibliotheques</PageHeader.Title>
+ *   <PageHeader.Subtitle>3 dossiers surveilles</PageHeader.Subtitle>
+ * </PageHeader.Root>
  *
  * <PageHeader.Root>
  *   <PageHeader.Title icon="flame">Tendances</PageHeader.Title>

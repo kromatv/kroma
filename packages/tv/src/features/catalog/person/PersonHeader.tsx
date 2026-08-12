@@ -1,7 +1,7 @@
 import type { PersonDetail } from '@kroma/core';
 import { personFacts } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Avatar, Box, Chip, styles, Text } from '@kroma/ui/kit';
+import { Avatar, Box, Chip, DataField, styles, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { TITLE } from '#tv/features/catalog/screenStyle';
 
@@ -56,12 +56,10 @@ export function PersonHeader({
         {facts.length ? (
           <Box row wrap gap={40} mt={6}>
             {facts.map((f) => (
-              <Box key={f.key} gap={3}>
-                <Text variant="overlineTv" style={s.factLabel} color="text/45">
-                  {f.label}
-                </Text>
-                <Text variant="labelTv">{f.value}</Text>
-              </Box>
+              <DataField.Root key={f.key} size="tv">
+                <DataField.Label>{f.label}</DataField.Label>
+                <DataField.Value>{f.value}</DataField.Value>
+              </DataField.Root>
             ))}
           </Box>
         ) : null}
@@ -93,6 +91,5 @@ export function PersonHeader({
 }
 
 const s = styles({
-  factLabel: { fontSize: 12 },
   biography: { fontSize: 18, lineHeight: 27 },
 });

@@ -176,7 +176,8 @@ function Trace({ trace }: Readonly<{ trace: string }>) {
   }, [trace]);
   return (
     <Box mt={20} w="100%">
-      <Disclosure title={t('error.technicalDetails')}>
+      <Disclosure.Root>
+        <Disclosure.Trigger>{t('error.technicalDetails')}</Disclosure.Trigger>
         <Box gap={10}>
           <Box
             bg="surface1"
@@ -201,7 +202,7 @@ function Trace({ trace }: Readonly<{ trace: string }>) {
             />
           </Box>
         </Box>
-      </Disclosure>
+      </Disclosure.Root>
     </Box>
   );
 }

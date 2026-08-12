@@ -27,7 +27,7 @@ export type { CopyButtonProps } from './copy-button';
 export { CopyButton } from './copy-button';
 export type { DataFieldRootProps, DataFieldValueProps } from './data-field';
 export { DataField } from './data-field';
-export type { DisclosureProps } from './disclosure';
+export type { DisclosureRootProps, DisclosureTriggerProps } from './disclosure';
 export { Disclosure } from './disclosure';
 export type { EmptyStateLayout, EmptyStateRootProps, EmptyStateSize } from './empty-state';
 export { EmptyState } from './empty-state';
@@ -93,9 +93,11 @@ export type {
   SelectValueDetails,
 } from './select';
 export { Select, selectTriggerVariants } from './select';
-export type { StatCardProps } from './stat-card';
+export type { StatCardRootProps, StatCardValueProps } from './stat-card';
 export { StatCard } from './stat-card';
 export type { ThemeSwitchProps } from './theme-switch';
 export { ThemeSwitch } from './theme-switch';
+export type { TimelineItemProps, TimelineRootProps, TimelineTone } from './timeline';
+export { Timeline } from './timeline';
 export type { TooltipProps } from './tooltip';
 export { Tooltip } from './tooltip';

@@ -101,7 +101,11 @@ export function DownloadClientsSection() {
     ) : null;
 
   return (
-    <Section.Root title={t('dlclients.sectionTitle')} actions={addButton} mt={28}>
+    <Section.Root mt={28}>
+      <Section.Header>
+        <Section.Title>{t('dlclients.sectionTitle')}</Section.Title>
+        {addButton ? <Section.Actions>{addButton}</Section.Actions> : null}
+      </Section.Header>
       {data === null ? <TableSkeleton rows={3} /> : null}
       <Grid min={360} gap={16}>
         {clients.map((c) => (
@@ -131,7 +135,7 @@ export function DownloadClientsSection() {
                   </Text>
                 </Box>
               </Row>
-              <Switch checked={c.enabled} onChange={(v) => toggle(c, v)} label={c.name} />
+              <Switch checked={c.enabled} onCheckedChange={(v) => toggle(c, v)} label={c.name} />
             </Row>
             <Row between gap={12} mt={14} pt={12} style={s.footRule}>
               <TestLine test={tests[c.id]} />
@@ -156,11 +160,10 @@ export function DownloadClientsSection() {
         ))}
       </Grid>
       {data && clients.length === 0 ? (
-        <EmptyState.Root
-          icon="server"
-          title={t('dlclients.empty')}
-          actions={addButton ?? undefined}
-        />
+        <EmptyState.Root icon="server">
+          <EmptyState.Title>{t('dlclients.empty')}</EmptyState.Title>
+          {addButton ? <EmptyState.Actions>{addButton}</EmptyState.Actions> : null}
+        </EmptyState.Root>
       ) : null}
 
       <DownloadClientModal />

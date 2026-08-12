@@ -19,7 +19,7 @@ export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offer
   const t = useT();
   const { receivers, active } = useCast();
   return (
-    <Dialog open title={t('cast.title')} onClose={() => call.end(undefined)} width={460}>
+    <Dialog.Root open title={t('cast.title')} onClose={() => call.end(undefined)} width={460}>
       {offerLocal || receivers.length > 0 ? (
         <ListRow.Group size="sm">
           {offerLocal ? (
@@ -48,9 +48,12 @@ export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offer
         </ListRow.Group>
       ) : null}
       {receivers.length === 0 ? (
-        <EmptyState.Root size="sm" title={t('cast.noDevices')} hint={t('cast.noDevicesHint')} />
+        <EmptyState.Root size="sm">
+          <EmptyState.Title>{t('cast.noDevices')}</EmptyState.Title>
+          <EmptyState.Hint>{t('cast.noDevicesHint')}</EmptyState.Hint>
+        </EmptyState.Root>
       ) : null}
-    </Dialog>
+    </Dialog.Root>
   );
 });
 
@@ -68,15 +71,9 @@ function DeviceRow({
   onPick: () => void;
 }>) {
   return (
-    <ListRow.Root
-      size="sm"
-      role="option"
-      label={name}
-      hint={detail}
-      selected={selected}
-      chevron={false}
-      onPress={onPick}
-    >
+    <ListRow.Root size="sm" role="option" selected={selected} chevron={false} onPress={onPick}>
+      <ListRow.Label>{name}</ListRow.Label>
+      <ListRow.Hint>{detail}</ListRow.Hint>
       <ListRow.Leading>
         <Icon name={icon} size={22} stroke={1.8} color={selected ? 'accent' : 'text'} />
       </ListRow.Leading>

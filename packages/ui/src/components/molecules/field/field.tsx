@@ -43,9 +43,8 @@ interface FieldRootProps extends Omit<BoxProps, 'children'> {
   label: string;
   /** Drops the label ROW; the label still reaches the control as its name. */
   hideLabel?: boolean;
-  /** Sugar for a <Field.Hint>; a <Field.Hint> child wins over it. */
-  hint?: string;
-  /** Takes the hint's place and marks the control invalid. Empty reads as none. */
+  /** Takes the <Field.Hint>'s place and marks the control invalid. Empty reads
+   *  as none. */
   error?: string;
   /** Defaults to whether there is an `error`. */
   invalid?: boolean;
@@ -64,7 +63,6 @@ interface FieldRootProps extends Omit<BoxProps, 'children'> {
 function Root({
   label,
   hideLabel = false,
-  hint,
   error,
   invalid = Boolean(error),
   size,
@@ -90,7 +88,7 @@ function Root({
           </Text>
         )}
         {at.control.length > 0 ? at.control : <Input />}
-        {at.note.length > 0 ? at.note : <Hint>{hint}</Hint>}
+        {at.note.length > 0 ? at.note : <Hint />}
       </Box>
     </Context.Provider>
   );
@@ -121,13 +119,13 @@ function useEntry(part: string, own: Readonly<EntryValue>) {
     invalid: field.invalid,
     size: field.size,
     ...(owned
-      ? { value: own.value, defaultValue: own.defaultValue, onChange: own.onValueChange }
-      : { value: field.value, onChange: field.setValue }),
+      ? { value: own.value, defaultValue: own.defaultValue, onValueChange: own.onValueChange }
+      : { value: field.value, onValueChange: field.setValue }),
   };
 }
 
 interface FieldInputProps
-  extends Omit<TextFieldProps, 'label' | 'invalid' | 'size' | 'onChange'>,
+  extends Omit<TextFieldProps, 'label' | 'invalid' | 'size' | 'onValueChange'>,
     EntryValue {}
 
 /** The single-line entry. `type` wires the keyboard, the autofill and the
@@ -138,7 +136,7 @@ function Input({ value, defaultValue, onValueChange, ...props }: Readonly<FieldI
 }
 
 interface FieldTextareaProps
-  extends Omit<TextAreaProps, 'label' | 'invalid' | 'size' | 'onChange'>,
+  extends Omit<TextAreaProps, 'label' | 'invalid' | 'size' | 'onValueChange'>,
     EntryValue {}
 
 /** The multi-line entry: it opens `rows` tall and grows to `maxRows`. One of its

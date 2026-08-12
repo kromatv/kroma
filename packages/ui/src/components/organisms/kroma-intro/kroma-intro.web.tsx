@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CssIntro } from './CssIntro';
 import { SAFETY_MS, SAFETY_SLACK_MS, VIDEO_SOURCES } from './constants';
-import { IntroShell } from './IntroShell';
-import { useIntroExit } from './useIntroExit';
-import { useIntroKeys } from './useIntroKeys';
+import { CssIntro } from './css-intro';
+import { IntroShell } from './intro-shell';
+import { useIntroExit } from './use-intro-exit';
+import { useIntroKeys } from './use-intro-keys';
 
 /**
  * KROMA cinematic brand intro: the bundled 4K60 HEVC film, full-screen with

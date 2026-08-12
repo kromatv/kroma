@@ -115,17 +115,14 @@ function Root(props: Readonly<ChoiceRootProps>) {
 interface ItemProps {
   value: string;
   disabled?: boolean;
-  /** The row's content. Omit it and the item renders `label`/`hint` for you,
-   *  which is what most lists want. */
+  /** The row: a <ChoiceList.Label>, and a <ChoiceList.Hint> under it. The
+   *  label's plain text is also the row's accessible name. */
   children?: ReactNode;
-  /** Sugar for the common row, equivalent to `<Indicator/><Label/><Hint/>`. */
-  label?: string;
-  hint?: string;
   /** Trailing controls (an edit or delete button); they keep their own focus. */
   actions?: ReactNode;
 }
 
-function Item({ value, disabled, children, label, hint, actions }: Readonly<ItemProps>) {
+function Item({ value, disabled, children, actions }: Readonly<ItemProps>) {
   const { mode, size, picked, toggle } = useChoice('Item');
   const on = picked(value);
   const item = useMemo(() => ({ value, on }), [value, on]);
@@ -133,8 +130,6 @@ function Item({ value, disabled, children, label, hint, actions }: Readonly<Item
     <ItemContext.Provider value={item}>
       <ListRow.Root
         size={size}
-        label={label ?? value}
-        hint={hint}
         disabled={disabled}
         role={mode === 'multiple' ? 'checkbox' : 'radio'}
         checked={on}

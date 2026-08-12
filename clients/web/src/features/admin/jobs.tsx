@@ -71,14 +71,19 @@ export function JobsPage() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.jobsTitle')}
-        subtitle={t('admin.jobsSub')}
-        actions={<RealtimeBadge />}
-      />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.jobsTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.jobsSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
+          <RealtimeBadge />
+        </PageHeader.Actions>
+      </PageHeader.Root>
       {data === null ? <TableSkeleton rows={6} /> : null}
       {categories.map((cat) => (
-        <Section.Root key={cat} title={t(`jobs.cat.${cat}` as MessageKey)} mt={28}>
+        <Section.Root key={cat} mt={28}>
+          <Section.Header>
+            <Section.Title>{t(`jobs.cat.${cat}` as MessageKey)}</Section.Title>
+          </Section.Header>
           <Box gap={14}>
             {jobs
               .filter((j) => j.category === cat)
@@ -89,7 +94,9 @@ export function JobsPage() {
         </Section.Root>
       ))}
       {data && jobs.length === 0 ? (
-        <EmptyState.Root icon="clock-bolt" title={t('jobs.empty')} />
+        <EmptyState.Root icon="clock-bolt">
+          <EmptyState.Title>{t('jobs.empty')}</EmptyState.Title>
+        </EmptyState.Root>
       ) : null}
     </>
   );
@@ -147,7 +154,7 @@ function JobActions({
       {job.schedule ? (
         <Switch
           checked={job.enabled}
-          onChange={canManage ? onToggle : undefined}
+          onCheckedChange={canManage ? onToggle : undefined}
           label={t(job.name as MessageKey)}
         />
       ) : null}

@@ -20,6 +20,7 @@
     "./tokens/*": "./src/core/tokens/*.ts",
     "./fonts": "./src/assets/fonts.ts",
     "./vite": "./vite/index.ts",
+    "./vite/icon-catalog": "./vite/icon-catalog.ts",
     "./css": "./src/styles/kroma.css",
     "./css/*": "./src/styles/kroma.css",
     "./src/assets/*": "./src/assets/*"
@@ -44,6 +45,7 @@
     "expo-video": "~57.0.1"
   },
   "devDependencies": {
+    "@tabler/icons": "^3.46.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",

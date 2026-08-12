@@ -68,7 +68,9 @@ export function SessionsCard() {
 
   return (
     <ListRow.Group size="md">
-      <ListRow.Root label={t('account.sessions')} />
+      <ListRow.Root>
+        <ListRow.Label>{t('account.sessions')}</ListRow.Label>
+      </ListRow.Root>
       {note ? (
         <ListRow.Root>
           <Text variant="meta" color="textMuted">

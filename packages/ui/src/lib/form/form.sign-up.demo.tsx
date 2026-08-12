@@ -45,7 +45,7 @@ export default function SignUpForm() {
 
   return (
     <Box w={380} gap={18}>
-      <Field.Root label="Email" hint="Try ada@example.org to be refused." {...email.root}>
+      <Field.Root label="Email" {...email.root}>
         <Field.Input
           type="email"
           icon="message"
@@ -53,6 +53,7 @@ export default function SignUpForm() {
           physicalKeyboard
           {...email.input}
         />
+        <Field.Hint>Try ada@example.org to be refused.</Field.Hint>
       </Field.Root>
       <Field.Root label="Password" {...password.root}>
         <Field.Input type="password" physicalKeyboard {...password.input} />

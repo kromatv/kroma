@@ -216,7 +216,7 @@ describe('TextField', () => {
     render(
       <TextField
         value=""
-        onChange={() => {}}
+        onValueChange={() => {}}
         icon="search"
         physicalKeyboard
         autoFocus={false}
@@ -494,15 +494,15 @@ describe('Text', () => {
 
 describe('Dialog', () => {
   it('renders nothing while closed', () => {
-    render(<Dialog open={false} title="Supprimer" />);
+    render(<Dialog.Root open={false} title="Supprimer" />);
     expect(screen.queryByText('Supprimer')).toBeNull();
   });
 
   it('declares a focus scope so the D-pad cannot leave the panel', () => {
     render(
-      <Dialog open title="Supprimer">
+      <Dialog.Root open title="Supprimer">
         <Button label="OK" />
-      </Dialog>,
+      </Dialog.Root>,
     );
     const panel = document.querySelector('[data-focus-scope]');
     expect(panel).not.toBeNull();
@@ -511,7 +511,7 @@ describe('Dialog', () => {
   });
 
   it('rounds the panel with the design radius', () => {
-    render(<Dialog open title="Titre" />);
+    render(<Dialog.Root open title="Titre" />);
     const panel = document.querySelector('[data-focus-scope]') as HTMLElement;
     expect(css(panel).borderTopLeftRadius).toBe(`${radius['2xl']}px`);
   });

@@ -14,7 +14,7 @@ export default story({
     ],
     dont: ["Don't hand-roll a chevron disc; five apps did and they all drifted."],
   },
+  component: BackButton,
   args: { size: 44, disabled: false, label: 'Back' },
   controls: { size: { min: 32, max: 64, step: 2 } },
-  render: (props) => <BackButton {...props} />,
 });

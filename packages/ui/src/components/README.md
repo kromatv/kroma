@@ -43,10 +43,9 @@ growing a prop for every arrangement anyone might want.
 
 That is the whole of it here. **[`DESIGN.md`](./DESIGN.md) owns the rest** — the
 part vocabulary and what each name means, the six tests that decide when a `data`
-prop beats children, the controlled/uncontrolled signature, how sugar stays one
-line without forking the implementation, the escape-hatch ladder (and why this
-kit has no `asChild`), prop naming, and the checklist a component passes before
-it is done.
+prop beats children, the controlled/uncontrolled signature, why a face a part
+exists for is never also a prop, the escape-hatch ladder (and why this kit has no
+`asChild`), prop naming, and the checklist a component passes before it is done.
 
 Read it before adding a component or changing one's props.
 

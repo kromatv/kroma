@@ -28,12 +28,12 @@ export function ServerRow({
   return (
     <ListRow.Root
       size="sm"
-      label={name}
-      hint={host ?? undefined}
       disabled={disabled}
       onPress={onPress}
       style={dimmed ? s.dimmed : undefined}
     >
+      <ListRow.Label>{name}</ListRow.Label>
+      {host ? <ListRow.Hint>{host}</ListRow.Hint> : null}
       <ListRow.Leading>{icon}</ListRow.Leading>
     </ListRow.Root>
   );

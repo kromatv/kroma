@@ -95,7 +95,7 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
   };
 
   return (
-    <Dialog open title={t('admin.addLibrary')} width={600} onClose={() => call.end(false)}>
+    <Dialog.Root open title={t('admin.addLibrary')} width={600} onClose={() => call.end(false)}>
       <Field.Root label={t('admin.name')}>
         <Field.Input
           icon="tag"
@@ -125,7 +125,7 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
         busy={busy}
         disabled={!name.trim()}
       />
-    </Dialog>
+    </Dialog.Root>
   );
 });
 
@@ -160,7 +160,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
     };
 
     return (
-      <Dialog
+      <Dialog.Root
         open
         title={t('admin.manageLibrary', { name: lib.name })}
         width={600}
@@ -182,7 +182,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
               {t('admin.autoScanHint')}
             </Text>
           </Box>
-          <Switch checked={autoScan} onChange={setAutoScan} label={t('admin.autoScan')} />
+          <Switch checked={autoScan} onCheckedChange={setAutoScan} label={t('admin.autoScan')} />
         </Row>
         <Dialog.Actions
           onCancel={() => call.end(false)}
@@ -204,7 +204,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
             disabled={busy}
           />
         </Dialog.Actions>
-      </Dialog>
+      </Dialog.Root>
     );
   },
 );

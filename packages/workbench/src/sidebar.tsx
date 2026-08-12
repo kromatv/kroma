@@ -2,23 +2,25 @@
 // every story under ONE flat level of collapsible functional groups (Layout,
 // Input, Overlays, ...). Deliberately not the atomic levels: those are for the
 // people editing the kit, and a tree that nested them scattered every kind of
-// input across three branches.
-//
-// Everything is a `Focusable` rather than a link, so the same tree works with a
-// mouse in a browser and a D-pad on a television.
+// input across three branches. The rows themselves are in `sidebar-rows.tsx`.
 
-import { Box, Focusable, Icon, IconButton, styles, sv, Text } from '@kroma/ui/kit';
+import { Box, styles } from '@kroma/ui/kit';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE_TOP } from './chrome';
-import { commandHint, Kbd } from './command';
 import type { WorkbenchLayout } from './layout';
-import { groupBy, type Story } from './story';
+import type { Page } from './page';
+import { groupBy } from './registry';
+import { Branch, Brand, Leaf, SearchButton } from './sidebar-rows';
+import type { Story } from './story';
 
 interface SidebarProps {
   stories: readonly Story[];
+  /** Standalone articles, listed above the component tree. */
+  pages?: readonly Page[];
   selected: string;
   onSelect: (id: string) => void;
+  onOpenPage?: (id: string) => void;
   onSearch: () => void;
   // `brand` and `footer` are slots: this package has no design system of its own,
   // so it renders whatever the host hands it and nothing when handed nothing.
@@ -43,10 +45,22 @@ function tree(stories: readonly Story[]): TreeGroup[] {
   }));
 }
 
-// The branch holding one story, so the tree re-opens to it when the selection
-// changes from elsewhere (the palette, a deep link).
-function revealPath(groups: readonly TreeGroup[], selected: string): Set<string> {
+// The branch holding whatever is open, so the tree re-opens to it when the
+// selection changes from elsewhere (the palette, a deep link, the landing page).
+// Articles are searched as well as components: an article is selected by the same
+// id, and looking only at the component tree opened the first component section
+// behind a guide the reader was actually on.
+function revealPath(
+  groups: readonly TreeGroup[],
+  pages: readonly Page[] | undefined,
+  selected: string,
+): Set<string> {
   const open = new Set<string>();
+  const page = pages?.find((entry) => entry.id === selected);
+  if (page) {
+    open.add(page.group);
+    return open;
+  }
   for (const { group, entries } of groups) {
     if (entries.some((story) => story.id === selected)) open.add(group);
   }
@@ -57,6 +71,8 @@ function revealPath(groups: readonly TreeGroup[], selected: string): Set<string>
 
 function Sidebar({
   stories,
+  pages,
+  onOpenPage,
   selected,
   onSelect,
   onSearch,
@@ -71,7 +87,7 @@ function Sidebar({
   // the list is being read, not part of what the workbench is showing, and it
   // should survive changing story (which it does - the drawer remounts, a column
   // does not).
-  const [open, setOpen] = useState(() => revealPath(groups, selected));
+  const [open, setOpen] = useState(() => revealPath(groups, pages, selected));
   const toggle = (key: string) =>
     setOpen((prev) => {
       const next = new Set(prev);
@@ -84,15 +100,18 @@ function Sidebar({
   // two components stay open behind the one that just got revealed.
   useEffect(() => {
     setOpen((prev) => {
-      const path = revealPath(groups, selected);
+      const path = revealPath(groups, pages, selected);
       if ([...path].every((key) => prev.has(key))) return prev;
       return new Set([...prev, ...path]);
     });
-  }, [groups, selected]);
+  }, [groups, pages, selected]);
 
   return (
     <Box
-      w={layout.navWidth}
+      // A column fills the resizable panel it sits in; a drawer is over the
+      // canvas rather than in the row, so it states its own width.
+      flex={onClose ? undefined : true}
+      w={onClose ? layout.navWidth : undefined}
       bg="surface1"
       shrink={0}
       // A drawer floats over the canvas, so it carries the elevation that says
@@ -103,30 +122,52 @@ function Sidebar({
       <Box px={12} pb={10}>
         <SearchButton onPress={onSearch} />
       </Box>
-      <ScrollView style={s.scroll} contentContainerStyle={s.list}>
-        {groups.map(({ group, entries }) => {
-          const groupOpen = open.has(group);
-          return (
-            <Box key={group}>
-              <Branch
-                label={group}
-                count={entries.length}
-                open={groupOpen}
-                onPress={() => toggle(group)}
+      {/* No scroll indicator: `base.css` asks for a thin scrollbar, which on the
+          browser targets is a real one taking layout space at the scroller's own
+          edge - which is the resize seam. A scrollbar under the pointer draws the
+          arrow whatever is beneath it, so the cursor flickered between the two a
+          pixel apart. The tree is navigated, not scrubbed. */}
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.list}
+        showsVerticalScrollIndicator={false}
+      >
+        {groupBy(pages ?? [], (page) => page.group).map(({ key: group, items }) => (
+          <Section
+            key={group}
+            group={group}
+            count={items.length}
+            open={open.has(group)}
+            onToggle={() => toggle(group)}
+          >
+            {items.map((page) => (
+              <Leaf
+                key={page.id}
+                name={page.title}
+                active={page.id === selected}
+                onPress={() => onOpenPage?.(page.id)}
               />
-              {groupOpen
-                ? entries.map((story) => (
-                    <Leaf
-                      key={story.id}
-                      story={story}
-                      active={story.id === selected}
-                      onPress={() => onSelect(story.id)}
-                    />
-                  ))
-                : null}
-            </Box>
-          );
-        })}
+            ))}
+          </Section>
+        ))}
+        {groups.map(({ group, entries }) => (
+          <Section
+            key={group}
+            group={group}
+            count={entries.length}
+            open={open.has(group)}
+            onToggle={() => toggle(group)}
+          >
+            {entries.map((story) => (
+              <Leaf
+                key={story.id}
+                name={story.name}
+                active={story.id === selected}
+                onPress={() => onSelect(story.id)}
+              />
+            ))}
+          </Section>
+        ))}
       </ScrollView>
       {footer ? (
         // Outside the ScrollView, so it stays put however long the tree gets,
@@ -140,129 +181,26 @@ function Sidebar({
   );
 }
 
-// Who this is, at the top of the tree rather than in a bar over the whole page. That is
-// Storybook's arrangement, and the reason for it is that the canvas is the subject: the only
-// full-width chrome should be the toolbar acting ON it.
-function Brand({
-  brand,
-  title,
+function Section({
+  group,
   count,
-  onClose,
-}: Readonly<{ brand?: ReactNode; title: string; count: number; onClose?: () => void }>) {
+  open,
+  onToggle,
+  children,
+}: Readonly<{
+  group: string;
+  count: number;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}>) {
   return (
-    <Box row align="center" gap={10} px={16} pt={16} pb={14}>
-      {brand}
-      <Box>
-        <Text variant="meta" color="accent" style={s.brand}>
-          {title}
-        </Text>
-        <Text variant="meta" color="textDim" style={s.tally}>
-          {`${count} components`}
-        </Text>
-      </Box>
-      <Box flex />
-      {onClose ? (
-        <IconButton
-          variant="ghost"
-          size={CLOSE_BOX}
-          radius="sm"
-          label="Close component list"
-          ring={false}
-          focusScale={1}
-          onPress={onClose}
-        >
-          <Icon name="x" size={16} color="textMuted" />
-        </IconButton>
-      ) : null}
+    <Box>
+      <Branch label={group} count={count} open={open} onPress={onToggle} />
+      {open ? children : null}
     </Box>
   );
 }
-
-// The search row: a button that looks like the field it replaced, with the accelerator on it.
-// Storybook's, and it is the right shape - a field you cannot type into would be a lie, but a
-// field-shaped button carrying `⌘ K` teaches the shortcut to everyone who ever clicks it.
-function SearchButton({ onPress }: Readonly<{ onPress: () => void }>) {
-  return (
-    <Focusable label="Search components" ring={false} onPress={onPress} sv={searchButton}>
-      <Icon name="search" size={15} color="textDim" />
-      <Text variant="meta" color="textDim" style={s.searchInk}>
-        Search
-      </Text>
-      <Box flex />
-      <Kbd>{commandHint()}</Kbd>
-    </Focusable>
-  );
-}
-
-// A foldable section row: the twisty, the name, and how many components are under
-// it. The chevron ROTATES in place rather than swapping glyph, which is the one
-// detail that makes a tree feel like a tree.
-function Branch({
-  label,
-  count,
-  open,
-  onPress,
-}: Readonly<{ label: string; count: number; open: boolean; onPress: () => void }>) {
-  return (
-    <Focusable
-      label={`${open ? 'Collapse' : 'Expand'} ${label}`}
-      ring={false}
-      onPress={onPress}
-      expanded={open}
-      sv={treeRow}
-      vars={{ kind: 'group' }}
-      style={s.branchRow}
-    >
-      {({ slots }) => (
-        <>
-          <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} color="textDim" />
-          <Text variant="meta" style={slots.label} lines={1}>
-            {label}
-          </Text>
-          <Box flex />
-          <Text variant="meta" color="textDim" style={s.count}>
-            {count}
-          </Text>
-        </>
-      )}
-    </Focusable>
-  );
-}
-
-function Leaf({
-  story,
-  active,
-  onPress,
-}: Readonly<{ story: Story; active: boolean; onPress: () => void }>) {
-  return (
-    <Focusable
-      label={story.name}
-      ring={false}
-      onPress={onPress}
-      sv={treeRow}
-      vars={{ active }}
-      style={s.leafRow}
-    >
-      {({ slots }) => (
-        <>
-          {/* The rail every leaf hangs off. It is what keeps a folded branch's
-              children reading as children once the chevron above them is scrolled
-              out of sight. */}
-          <Box w={1} h={16} bg={active ? 'transparent' : 'border'} mr={7} shrink={0} />
-          <Text variant="body" style={slots.label} lines={1}>
-            {story.name}
-          </Text>
-        </>
-      )}
-    </Focusable>
-  );
-}
-
-// How far the leaves step in under their section row.
-const INDENT = 12;
-
-// The 16pt glyph in the box the old padded shape came to.
-const CLOSE_BOX = 30;
 
 const s = styles({
   scroll: { flex: true },
@@ -271,60 +209,6 @@ const s = styles({
   // column is part of the page and is only ruled off from it.
   border: { borderRightWidth: 1, borderRightColor: 'border' },
   drawer: { borderRightWidth: 1, borderRightColor: 'borderStrong', shadow: 'pop' },
-  brand: { fontWeight: '700', fontSize: 13 },
-  tally: { fontSize: 10.5 },
-  searchInk: { fontSize: 12.5 },
-  count: { fontSize: 10.5 },
-  branchRow: { ml: 8 },
-  leafRow: { ml: 8 + INDENT },
-});
-const searchButton = sv({
-  base: {
-    row: true,
-    align: 'center',
-    gap: 9,
-    px: 10,
-    py: 8,
-    radius: 'sm',
-    border: 'border',
-    bg: 'surface2',
-    _focus: { border: 'borderStrong' },
-  },
-});
-// One row shape for every node of the tree, so a branch and a leaf sit on the
-// same rhythm and only their indent tells them apart.
-const treeRow = sv({
-  slots: {
-    root: {
-      row: true,
-      align: 'center',
-      gap: 6,
-      px: 8,
-      py: 6,
-      radius: 'sm',
-      _focus: { bg: 'white/6' },
-    },
-    label: { fontSize: 13.5, color: 'textMuted' },
-  },
-  variants: {
-    kind: {
-      group: {
-        label: { fontSize: 11.5, letterSpacing: 0.5, textTransform: 'uppercase', color: 'text' },
-      },
-      story: {},
-    },
-    // The open story is FILLED - amber, with ink to match - rather than tinted:
-    // the sidebar is read at a glance from across a desk, and a 16% wash was not
-    // enough to find your place in sixty rows.
-    active: {
-      true: {
-        root: { bg: 'accent', _focus: { bg: 'accent' } },
-        label: { color: 'accentInk', fontWeight: '700' },
-      },
-    },
-  },
-  defaults: { kind: 'story', active: false },
 });
 
-export type { SidebarProps, TreeGroup };
-export { revealPath, Sidebar, tree };
+export { Sidebar };

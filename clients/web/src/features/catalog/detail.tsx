@@ -402,10 +402,16 @@ function HeroFields({ audio, subtitles }: Readonly<{ audio?: string; subtitles?:
   return (
     <Box row wrap gapX={FIELD_GAP_X} gapY={16} py={18} style={RULE}>
       {audio != null ? (
-        <DataField.Root size="md" label={t('content.fieldAudio')} value={audio} />
+        <DataField.Root size="md">
+          <DataField.Label>{t('content.fieldAudio')}</DataField.Label>
+          <DataField.Value>{audio}</DataField.Value>
+        </DataField.Root>
       ) : null}
       {subtitles != null ? (
-        <DataField.Root size="md" label={t('content.fieldSubtitles')} value={subtitles} />
+        <DataField.Root size="md">
+          <DataField.Label>{t('content.fieldSubtitles')}</DataField.Label>
+          <DataField.Value>{subtitles}</DataField.Value>
+        </DataField.Root>
       ) : null}
     </Box>
   );

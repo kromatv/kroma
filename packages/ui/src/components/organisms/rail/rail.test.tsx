@@ -19,20 +19,26 @@ describe('<Rail> parts', () => {
     expect(Object.keys(Rail).sort()).toEqual(['List', 'Root', 'Title']);
   });
 
-  it('renders the same band from the title sugar and from the part', () => {
-    const { container: sugar } = render(onScreen(<Rail.Root title="Reprendre">{CHIPS}</Rail.Root>));
-    const written = sugar.innerHTML;
-
-    cleanup();
-    const { container: parts } = render(
+  it('takes the heading wherever it was written among the tiles', () => {
+    const first = render(
       onScreen(
         <Rail.Root>
           <Rail.Title>Reprendre</Rail.Title>
           {CHIPS}
         </Rail.Root>,
       ),
-    );
-    expect(parts.innerHTML).toBe(written);
+    ).container.innerHTML;
+
+    cleanup();
+    const last = render(
+      onScreen(
+        <Rail.Root>
+          {CHIPS}
+          <Rail.Title>Reprendre</Rail.Title>
+        </Rail.Root>,
+      ),
+    ).container.innerHTML;
+    expect(last).toBe(first);
   });
 
   it('lets the title carry its own type instead of being styled through the Root', () => {
@@ -62,7 +68,8 @@ describe('<Rail> parts', () => {
   it('gives the row to a <Rail.List> when one is written', () => {
     render(
       onScreen(
-        <Rail.Root title="Films">
+        <Rail.Root>
+          <Rail.Title>Films</Rail.Title>
           <Rail.List pitch={200} height={120}>
             {CHIPS}
           </Rail.List>
@@ -112,14 +119,22 @@ describe('<Rail> focus stops', () => {
     );
 
   it('is one stop per tile and none of its own', () => {
-    const { container } = render(onScreen(<Rail.Root title="Genres">{tiles}</Rail.Root>));
+    const { container } = render(
+      onScreen(
+        <Rail.Root>
+          <Rail.Title>Genres</Rail.Title>
+          {tiles}
+        </Rail.Root>,
+      ),
+    );
     expect(stops(container)).toHaveLength(3);
   });
 
   it('is the same count through <Rail.List>', () => {
     const { container } = render(
       onScreen(
-        <Rail.Root title="Genres">
+        <Rail.Root>
+          <Rail.Title>Genres</Rail.Title>
           <Rail.List pitch={200} height={120}>
             {tiles}
           </Rail.List>

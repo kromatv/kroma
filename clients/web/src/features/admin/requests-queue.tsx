@@ -104,12 +104,12 @@ export function RequestsQueuePage() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.requestsTitle')}
-        actions={
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.requestsTitle')}</PageHeader.Title>
+        <PageHeader.Actions>
           <ConsoleSearch value={q} onChange={setQ} placeholder={t('requests.searchPlaceholder')} />
-        }
-      />
+        </PageHeader.Actions>
+      </PageHeader.Root>
       <ConsoleSummary
         total={c?.total ?? 0}
         totalLabel={t('requests.totalLabel')}
@@ -178,10 +178,11 @@ export function RequestsQueuePage() {
 
         {data && rows.length === 0 ? (
           <Box py={24}>
-            <EmptyState.Root
-              icon="inbox"
-              title={all.length === 0 ? t('requests.empty') : t('requests.noMatch')}
-            />
+            <EmptyState.Root icon="inbox">
+              <EmptyState.Title>
+                {all.length === 0 ? t('requests.empty') : t('requests.noMatch')}
+              </EmptyState.Title>
+            </EmptyState.Root>
           </Box>
         ) : null}
       </Table.Root>

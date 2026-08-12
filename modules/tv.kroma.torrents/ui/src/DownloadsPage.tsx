@@ -125,18 +125,18 @@ export default function DownloadsPage() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.downloadsTitle')}
-        subtitle={t('admin.downloadsSub')}
-        actions={
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.downloadsTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.downloadsSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
           <Button
             variant="primary"
             icon="download"
             label={t('manual.title')}
             onPress={() => setManual(true)}
           />
-        }
-      />
+        </PageHeader.Actions>
+      </PageHeader.Root>
 
       {/* spacer to match the standard PageHeader → content rhythm */}
       <Box h={24} />
@@ -145,10 +145,22 @@ export default function DownloadsPage() {
 
       <Box mb={20}>
         <Grid min={200} gap={16}>
-          <StatCard label={t('downloads.statActive')} value={String(activeRows.length)} />
-          <StatCard label={t('downloads.statDown')} value={`${formatBytes(totalDown)}/s`} />
-          <StatCard label={t('downloads.statUp')} value={`${formatBytes(totalUp)}/s`} />
-          <StatCard label={t('downloads.statHistory')} value={String(doneRows.length)} />
+          <StatCard.Root>
+            <StatCard.Label>{t('downloads.statActive')}</StatCard.Label>
+            <StatCard.Value>{String(activeRows.length)}</StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('downloads.statDown')}</StatCard.Label>
+            <StatCard.Value>{`${formatBytes(totalDown)}/s`}</StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('downloads.statUp')}</StatCard.Label>
+            <StatCard.Value>{`${formatBytes(totalUp)}/s`}</StatCard.Value>
+          </StatCard.Root>
+          <StatCard.Root>
+            <StatCard.Label>{t('downloads.statHistory')}</StatCard.Label>
+            <StatCard.Value>{String(doneRows.length)}</StatCard.Value>
+          </StatCard.Root>
         </Grid>
       </Box>
 
@@ -202,7 +214,9 @@ export default function DownloadsPage() {
         {data === null ? <TableSkeleton rows={6} /> : null}
         {data && downloads.length === 0 ? (
           <Box py={24}>
-            <EmptyState.Root icon="download" title={t('downloads.empty')} />
+            <EmptyState.Root icon="download">
+              <EmptyState.Title>{t('downloads.empty')}</EmptyState.Title>
+            </EmptyState.Root>
           </Box>
         ) : null}
       </Surface>
@@ -210,7 +224,7 @@ export default function DownloadsPage() {
       {canSettings ? <DownloadClientsSection /> : null}
 
       {confirm ? (
-        <Dialog
+        <Dialog.Root
           open
           title={t('downloads.removeTitle')}
           onClose={() => setConfirm(null)}
@@ -241,7 +255,7 @@ export default function DownloadsPage() {
             confirmLabel={t('downloads.removeConfirm')}
             busy={busy}
           />
-        </Dialog>
+        </Dialog.Root>
       ) : null}
 
       {manual ? <ManualGrabModal onClose={() => setManual(false)} onAdded={reload} /> : null}
@@ -263,8 +277,9 @@ function VpnBanner({
         size="sm"
         tone={vpn.connected ? 'success' : 'accent'}
         icon={vpn.connected ? 'shield-check' : 'shield-x'}
-        title={message}
-      />
+      >
+        <Callout.Title>{message}</Callout.Title>
+      </Callout.Root>
     </Box>
   );
 }

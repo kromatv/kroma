@@ -1,6 +1,6 @@
 import { hasPermission, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, color, Drawer, IconButton, Logo, Text, useBreakpoint } from '@kroma/ui/kit';
+import { Box, color, Drawer, IconButton, Logo, Row, Text, useBreakpoint } from '@kroma/ui/kit';
 import {
   IconAlertTriangle,
   IconCalendarClock,
@@ -18,6 +18,7 @@ import {
 } from '@tabler/icons-react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { type CSSProperties, useEffect, useState } from 'react';
+import type { ViewStyle } from 'react-native';
 import { UserChip, VersionInfo } from '#web/features/catalog/sidebar-account';
 import { NavItem, NavRow } from '#web/features/catalog/sidebar-nav';
 import { NotificationBell } from '#web/features/notifications/panel';
@@ -50,7 +51,6 @@ const BODY: CSSProperties = {
   paddingLeft: 18,
   paddingRight: 18,
   paddingTop: 4,
-  paddingBottom: 'max(1.75rem, env(safe-area-inset-bottom))',
 };
 
 const TOPBAR: CSSProperties = {
@@ -72,16 +72,15 @@ const TOPBAR: CSSProperties = {
   WebkitBackdropFilter: 'blur(8px)',
 };
 
-const DRAWER_HEAD: CSSProperties = {
-  display: 'flex',
-  flexShrink: 0,
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  paddingLeft: 18,
-  paddingRight: 18,
-  paddingBottom: 8,
+// `env()` has no React Native spelling, so the sheet's own insets stay CSS.
+const DRAWER_HEAD = {
   paddingTop: 'max(1.75rem, env(safe-area-inset-top))',
-};
+  paddingBottom: 8,
+} as unknown as ViewStyle;
+
+const SAFE_BOTTOM = {
+  paddingBottom: 'max(1.75rem, env(safe-area-inset-bottom))',
+} as unknown as ViewStyle;
 
 const NAV_LIST: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 2 };
 
@@ -114,13 +113,23 @@ export function Sidebar() {
   );
 }
 
+// The desktop aside's own scroll frame. In the phone sheet the frame is the
+// drawer's <Drawer.Panel>, which is why the two are separate.
+function SidebarBody() {
+  return (
+    <div style={BODY}>
+      <SidebarNav />
+    </div>
+  );
+}
+
 // Account/device block is pinned to the bottom via `mt: auto`: it reads as a
 // fixed footer on a normal window, and scrolls (rather than clipping) when too
 // short.
-function SidebarBody() {
+function SidebarNav() {
   const t = useT();
   return (
-    <div style={BODY}>
+    <>
       <nav style={NAV_LIST}>
         {NAV.map((item) => (
           <NavItem
@@ -136,7 +145,7 @@ function SidebarBody() {
         <MissingLink />
         <ModuleNavLinks />
       </nav>
-      <Box mt="auto" gap={10} pt={24}>
+      <Box mt="auto" gap={10} pt={24} style={SAFE_BOTTOM}>
         <InviteLink />
         <NavItem to="/connect" glyph={IconDeviceDesktop} label={t('nav.connectDevice')} />
         <AdminLink />
@@ -151,7 +160,7 @@ function SidebarBody() {
           <VersionInfo />
         </Box>
       </Box>
-    </div>
+    </>
   );
 }
 
@@ -179,30 +188,28 @@ export function MobileTopbar() {
           expanded={open}
           onPress={() => setOpen(true)}
         />
-        <Drawer
+        <Drawer.Root
           open={open}
           onClose={() => setOpen(false)}
           title="KROMA"
           side="left"
           width={304}
           fullBelow={640}
+          pad={18}
           panelStyle={NAV_FILL}
         >
-          <div style={DRAWER_HEAD}>
-            <Box px={8} pb={8}>
-              <Logo size={24} />
-            </Box>
-            <IconButton
-              size={40}
-              glyph={20}
-              radius="md"
-              icon="x"
-              label={t('common.close')}
-              onPress={() => setOpen(false)}
-            />
-          </div>
-          <SidebarBody />
-        </Drawer>
+          <Drawer.Header style={DRAWER_HEAD}>
+            <Row between>
+              <Box px={8} pb={8}>
+                <Logo size={24} />
+              </Box>
+              <Drawer.Close variant="glass" size={40} glyph={20} radius="md" />
+            </Row>
+          </Drawer.Header>
+          <Drawer.Panel>
+            <SidebarNav />
+          </Drawer.Panel>
+        </Drawer.Root>
       </Box>
     </header>
   );

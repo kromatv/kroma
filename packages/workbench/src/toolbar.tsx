@@ -19,7 +19,10 @@ import { canRotate, SURFACES, VIEWPORTS, type ViewportName } from './canvas';
 import { RULE } from './chrome';
 import { type CopyState, useCopy } from './clipboard';
 import { useEscapeKey } from './command';
+import { StoryHistory } from './history-menu';
 import type { WorkbenchLayout } from './layout';
+import { openWebLink } from './link';
+import { useStorySource } from './source';
 import { PREVIEW_THEMES } from './themes';
 
 interface ToolbarProps {
@@ -186,7 +189,12 @@ function Toolbar({
 
         <Box flex />
 
-        {/* The rule belongs to CopyLink and disappears with it. */}
+        {/* Both take the story somewhere else, so one rule closes the pair; it
+            belongs to CopyLink and disappears with it. */}
+        {/* Sharing the lens state gives the panel the scrim above, and closes
+            any open menu the moment it opens. */}
+        <StoryHistory {...lens('history')} />
+        <ViewSource />
         <CopyLink />
         <IconTool
           glyph={full ? 'arrows-minimize' : 'arrows-maximize'}
@@ -367,6 +375,21 @@ function CopyLink() {
     </>
   );
 }
+
+function ViewSource() {
+  const source = useStorySource();
+  if (!source) return null;
+  return (
+    <IconTool
+      glyph="brand-github"
+      label={source.dirty ? SOURCE_UNCOMMITTED : SOURCE_LABEL}
+      onPress={() => openWebLink(source.href)}
+    />
+  );
+}
+
+const SOURCE_LABEL = 'Read this component’s source on GitHub';
+const SOURCE_UNCOMMITTED = `${SOURCE_LABEL}, as it was at the last commit`;
 
 const LINK_FACE: Record<CopyState, { label: string; glyph: IconName; ink: ColorToken }> = {
   idle: { label: 'Copy a link to this story', glyph: 'link', ink: 'textMuted' },

@@ -48,13 +48,20 @@ function sort(children: ReactNode): Sorted {
   return at;
 }
 
-function nameOf(content: readonly ReactNode[]): string | undefined {
-  for (const child of content) {
-    if (!isValidElement(child) || child.type !== Label) continue;
-    const text = (child.props as { children?: ReactNode }).children;
-    if (typeof text === 'string') return text;
+// The first plain text in the middle column, at whatever depth it sits. Not
+// `child.type === Label`: a component composing the row writes a label part of
+// its own (<ChoiceList.Label>), and the row still has to name itself.
+function nameOf(node: ReactNode): string | undefined {
+  if (typeof node === 'string') return node || undefined;
+  if (Array.isArray(node)) {
+    for (const child of node as ReactNode[]) {
+      const found = nameOf(child);
+      if (found !== undefined) return found;
+    }
+    return undefined;
   }
-  return undefined;
+  if (!isValidElement(node)) return undefined;
+  return nameOf((node.props as { children?: ReactNode }).children);
 }
 
 function iconWell(name: IconName | undefined, size: ControlSize): ReactNode {
@@ -66,25 +73,15 @@ function iconWell(name: IconName | undefined, size: ControlSize): ReactNode {
   );
 }
 
-function labelStack(label: string | undefined, hint: string | undefined): ReactNode {
-  return (
-    <>
-      {label === undefined ? null : <Label>{label}</Label>}
-      {hint === undefined ? null : <Hint>{hint}</Hint>}
-    </>
-  );
-}
-
 interface ListRowRootProps extends Omit<FocusableProps, 'children' | 'style' | 'label'> {
-  /** Leading glyph, sunk into the kit's icon well. Sugar for a
-   *  <ListRow.Leading>; media that is not a glyph goes through the part. */
+  /** Leading glyph, sunk into the kit's icon well. Media that is not a glyph
+   *  goes through <ListRow.Leading>. */
   icon?: IconName;
-  /** The row's accessible name, and its title while the row has no middle
-   *  column of its own. A plain-text <ListRow.Label> child names the row too. */
+  /** Names the row to assistive tech. It draws NOTHING: the title is
+   *  <ListRow.Label>, whose plain text already names the row. Reach for it only
+   *  where the middle column is a component that says its words through props
+   *  and so has none for the row to read. */
   label?: string;
-  /** Sugar for <ListRow.Hint>; dropped, like `label`, once the row is given a
-   *  middle column of its own. */
-  hint?: string;
   /** The control shell's size, defaulting to the group's, then to the app's
    *  (`setEntryDefaults`). */
   size?: ControlSize;
@@ -94,7 +91,8 @@ interface ListRowRootProps extends Omit<FocusableProps, 'children' | 'style' | '
   chevron?: boolean;
   /** The row's parts. Only a DIRECT <ListRow.Leading> or <ListRow.Trailing>
    *  child is sorted into its slot, so those two may be written anywhere;
-   *  everything else is the middle column, in the order it was written. */
+   *  everything else is the middle column, in the order it was written. The
+   *  first plain text in that column is the row's accessible name. */
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }
@@ -102,7 +100,6 @@ interface ListRowRootProps extends Omit<FocusableProps, 'children' | 'style' | '
 function Root({
   icon,
   label,
-  hint,
   size,
   chevron: wantsChevron,
   children,
@@ -124,7 +121,6 @@ function Root({
   const ctx = useMemo(() => ({ size: shell, metrics, slots }), [shell, metrics, slots]);
 
   const leading = at.leading.length > 0 ? at.leading : iconWell(icon, shell);
-  const middle = at.content.length > 0 ? at.content : labelStack(label, hint);
   const chevron = (wantsChevron ?? pressable) && at.trailing.length === 0;
 
   return (
@@ -154,7 +150,7 @@ function Root({
                 row instead of ellipsing, which is the one thing a row of a
                 settings list must never do. */}
             <Box flex minW={0} gap={2}>
-              {middle}
+              {at.content}
             </Box>
             {at.trailing}
             {chevron ? <Icon name="chevron-right" {...state.slots.chevron} /> : null}

@@ -14,8 +14,8 @@ interface ProgressProps {
   /** 0..1. Values outside the range are clamped, so a caller can pass a raw
    *  ratio without guarding against a stale duration of 0. */
   value?: number;
-  /** Bar thickness. The design uses 6 on a rail tile. */
-  size?: number;
+  /** In px. The design uses 6 on a rail tile. */
+  thickness?: number;
   color?: ColorValue;
   trackColor?: ColorValue;
   /** Round the ends. Off for the flush bar pinned to a tile's bottom edge. */
@@ -32,7 +32,7 @@ function clamp01(n: number): number {
 
 function Progress({
   value = 0,
-  size = 6,
+  thickness = 6,
   color = 'accent',
   trackColor = 'tint/25',
   rounded = false,
@@ -46,7 +46,7 @@ function Progress({
 
   return (
     <Box
-      h={size}
+      h={thickness}
       self="stretch"
       bg={trackColor}
       radius={corner}

@@ -1,5 +1,5 @@
-// The "live" chip a realtime console page pins beside its title, passed to
-// <PageHeader.Root actions={...}>.
+// The "live" chip a realtime console page pins beside its title, written inside
+// <PageHeader.Actions>.
 
 import { useT } from '@kroma/ui';
 import { Row, Text } from '@kroma/ui/kit';

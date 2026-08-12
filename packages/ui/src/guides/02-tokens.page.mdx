@@ -1,0 +1,104 @@
+import { Figure } from './figure';
+import { RadiusScale, SpaceScale, TypeRamp } from './token-figures';
+
+export const title = 'Tokens';
+export const summary = 'The raw values everything else in the kit is made of, and why they are plain strings.';
+export const width = 'wide';
+
+Level 1 of the hierarchy: the values that cannot be broken down into anything
+smaller. `#F4B642`. `16`. `Hanken Grotesk`. Colours, type roles, spacing, radii
+and the 10-foot canvas all live in `src/core/tokens/`, and `colors.ts` says it in
+its own header: **this is the single source of truth.** The CSS custom properties
+are emitted from these files by `kromaUI()` at build time, so there is no
+stylesheet copy that can drift.
+
+## Why the values are plain strings
+
+No `oklch()`, no `color-mix()`, no viewport units. A token has to drop unchanged
+into a React Native `StyleSheet`, into a CSS variable, and into a Chromium 53
+webOS bundle. The moment a token needs computing, one of those three cannot read
+it.
+
+The same rule is why sizes are plain numbers rather than `"16px"` strings: a
+number is a valid React Native style value, and the CSS generator appends the
+unit on the one target that needs one.
+
+The one composition a token allows is an **alpha step**, written on the name:
+`accent/25`, `white/6`, `success/9`. Nothing computes it at run time either -
+`kromaUI()` walks the app's sources for every `token/step` anybody spelled and
+emits exactly those, since the alternative is a stylesheet of one hundred steps
+per colour. Two consequences worth knowing: a step named for the first time
+needs the dev server to have seen the file (it reopens the scan on a change),
+and a step spelled only in a test or a story is not scanned at all.
+
+The palette itself is not drawn here: it is a sheet of swatches, and it has one
+under **Foundations / Colors**.
+
+## The type ramp
+
+A role stores the authored ratio and derives the absolute pixels React Native
+needs, rather than storing pixels and dividing back - which round-trips lossily.
+So a step is a size **and** its leading, never a size alone, and the leading
+tightens as the size grows.
+
+<Figure caption="The base tier, largest first. Two faces run down it: display carries the headings, ui carries everything read as text, and a role never crosses from one to the other.">
+  <TypeRamp />
+</Figure>
+
+There is a second ramp for the 10-foot tier (`heroTv`, `bodyTv`, `metaTv`…),
+authored again for three metres rather than scaled up from the phone's. Both are
+exported in reading order as `BASE_RAMP` and `TV_RAMP`, so a caller reaching for
+"one step down" reads it off the ramp instead of guessing.
+
+## Spacing
+
+One scale, in the units the target reports - pixels in a browser, points or dp
+natively.
+
+<Figure caption="space[1] through space[16]. The gaps in the numbering are deliberate: a step nobody reached for is a step that should not exist.">
+  <SpaceScale />
+</Figure>
+
+## Corners
+
+<Figure caption="The corner language. A pill is 999 rather than a percentage, because every target clamps a radius to half the shorter side.">
+  <RadiusScale />
+</Figure>
+
+`'circle'` is geometry rather than corner language and is deliberately not a
+member of the scale: a theme restating every radius may square a button, but it
+must not flatten a spinner, a radio or an avatar into a box. `nestedRadius()` is
+the other half of the same idea - corners are concentric only when the inner one
+is the outer minus the inset between them.
+
+## The stage
+
+`layout.ts` carries `CANVAS`, the fixed 1920x1080 canvas every 10-foot screen is
+authored against and `<TvStage>` scales to fit. That is what makes a layout
+pixel-identical on a 1080p Tizen panel, a 4K Apple TV reporting 1920x1080 points
+and an Android TV reporting 960x540 dp - and it is the reason a size in this kit
+is a plain number: on a fixed stage a number IS the design's pixel value, so
+there is no scale to memorise and nothing to re-tune per platform.
+
+The design widths a layout may change at are closed on purpose, with no registry
+to augment: an open set would make an unknown key in `{ base: 16, xl: 40 }` legal
+rather than a compile error.
+
+| Step | What it is for |
+| --- | --- |
+| `base` | a phone, and anything narrower than the next step |
+| `md` | a tablet in portrait, or a half-screen split view on one |
+| `lg` | a desktop window, or a tablet in landscape |
+| `tv` | the 10-foot stage, which IS the canvas width, and the widest desktop |
+
+## Who consumes what
+
+`@kroma/ui/tokens` is the public door, and it is the only one a phone or a
+television has: they read the TypeScript. A browser reads the same values as
+custom properties, which the same source emits - see **Installing the kit** for
+which stylesheet says what.
+
+A theme adds to the vocabulary rather than replacing it: `ColorRegistry`,
+`RadiusRegistry`, `FontRegistry` and `TypeRoleRegistry` are empty interfaces
+whose only job is to be augmented, so a name a theme adds becomes legal
+everywhere its kind of value is written.

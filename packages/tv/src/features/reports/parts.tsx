@@ -72,11 +72,11 @@ export function CategoryRows({
             key={c.key}
             autoFocus={index === 0}
             icon={c.icon}
-            label={t(c.labelKey)}
-            hint={t(c.hintKey)}
             chevron={false}
             onPress={() => onSelect(c.key)}
           >
+            <ListRow.Label>{t(c.labelKey)}</ListRow.Label>
+            <ListRow.Hint>{t(c.hintKey)}</ListRow.Hint>
             <ListRow.Trailing>
               {c.key === selected ? <Icon name="check" size={22} color="accentText" /> : null}
             </ListRow.Trailing>

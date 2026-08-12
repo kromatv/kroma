@@ -138,21 +138,22 @@ export default function IndexersPage() {
 
   return (
     <>
-      <PageHeader.Root
-        title={t('admin.indexersTitle')}
-        subtitle={t('admin.indexersSub')}
-        actions={addButtons ?? undefined}
-      />
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.indexersTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.indexersSub')}</PageHeader.Subtitle>
+        {addButtons ? <PageHeader.Actions>{addButtons}</PageHeader.Actions> : null}
+      </PageHeader.Root>
 
       {data === null ? <TableSkeleton rows={5} /> : null}
 
       {indexers.length === 0 && data ? (
-        <EmptyState.Root
-          icon="antenna"
-          title={t('indexers.emptyTitle')}
-          hint={engines.length === 0 ? t('indexers.noEngines') : t('indexers.emptyBody')}
-          actions={addButtons ?? undefined}
-        />
+        <EmptyState.Root icon="antenna">
+          <EmptyState.Title>{t('indexers.emptyTitle')}</EmptyState.Title>
+          <EmptyState.Hint>
+            {engines.length === 0 ? t('indexers.noEngines') : t('indexers.emptyBody')}
+          </EmptyState.Hint>
+          {addButtons ? <EmptyState.Actions>{addButtons}</EmptyState.Actions> : null}
+        </EmptyState.Root>
       ) : null}
 
       <Box mt={24}>
@@ -210,7 +211,7 @@ function IndexerCard({
             </Text>
           </Box>
         </Row>
-        <Switch checked={ix.enabled} onChange={onToggle} label={ix.name} />
+        <Switch checked={ix.enabled} onCheckedChange={onToggle} label={ix.name} />
       </Box>
 
       <Row wrap gap={8} mt={14}>

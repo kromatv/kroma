@@ -13,12 +13,9 @@ export function NotesAction({ release }: Readonly<{ release: Release }>) {
     <>
       <Button variant="ghost" size="sm" icon="notes" label="Notes" onPress={() => setOpen(true)} />
       {open ? (
-        <Dialog
-          open
-          onClose={close}
-          title={release.version}
-          width={760}
-          footer={
+        <Dialog.Root open onClose={close} title={release.version} width={760}>
+          <NotesBody notes={release.notes} />
+          <Dialog.Footer>
             <Row gap={10} justify="flex-end">
               <Button variant="ghost" size="sm" label="Close" onPress={close} />
               <Button
@@ -29,10 +26,8 @@ export function NotesAction({ release }: Readonly<{ release: Release }>) {
                 label="View on GitHub"
               />
             </Row>
-          }
-        >
-          <NotesBody notes={release.notes} />
-        </Dialog>
+          </Dialog.Footer>
+        </Dialog.Root>
       ) : null}
     </>
   );

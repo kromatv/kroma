@@ -79,8 +79,12 @@ describe('Field.Textarea', () => {
 });
 
 describe('the note under the control', () => {
-  it('shows the hint the Root was given', () => {
-    render(<Field.Root label="Port" hint="4040 by default." />);
+  it('shows the hint it was written', () => {
+    render(
+      <Field.Root label="Port">
+        <Field.Hint>4040 by default.</Field.Hint>
+      </Field.Root>,
+    );
     expect(screen.getByText('4040 by default.')).toBeTruthy();
   });
 
@@ -127,7 +131,11 @@ describe('an invalid field', () => {
     render(<Field.Root label="Port" />);
     const valid = edge('Port');
     cleanup();
-    render(<Field.Root label="Port" error="" hint="4040 by default." />);
+    render(
+      <Field.Root label="Port" error="">
+        <Field.Hint>4040 by default.</Field.Hint>
+      </Field.Root>,
+    );
     expect(edge('Port')).toBe(valid);
     expect(screen.getByText('4040 by default.')).toBeTruthy();
   });
@@ -136,11 +144,12 @@ describe('an invalid field', () => {
 describe('a control that is not a text entry', () => {
   it('keeps the label row and the note for itself', () => {
     render(
-      <Field.Root label="Category" hint="Where the alert lands.">
+      <Field.Root label="Category">
         <Select.Root label="Category" defaultValue="system">
           <Select.Trigger />
           <Select.Item value="system">Server status</Select.Item>
         </Select.Root>
+        <Field.Hint>Where the alert lands.</Field.Hint>
       </Field.Root>,
     );
     expect(screen.queryByRole('textbox')).toBeNull();

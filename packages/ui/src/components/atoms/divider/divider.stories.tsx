@@ -11,8 +11,8 @@ export default story({
   // A rule spans whatever it is put in, so the story is given a range and the
   // divider is seen stretching rather than pinned to one width.
   width: { min: 240, max: 560 },
-  args: { vertical: false, size: 1, spacing: 12 },
-  controls: { size: { min: 1, max: 6, step: 1 }, spacing: { min: 0, max: 40, step: 4 } },
+  args: { vertical: false, thickness: 1, spacing: 12 },
+  controls: { thickness: { min: 1, max: 6, step: 1 }, spacing: { min: 0, max: 40, step: 4 } },
   render: (props) => (
     <Box row={props.vertical} align="center">
       <Text variant="meta" color="textDim">

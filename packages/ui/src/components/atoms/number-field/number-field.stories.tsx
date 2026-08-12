@@ -10,7 +10,7 @@ function Demo({ min, max, step }: Readonly<{ min: number; max: number; step: num
   const [temperature, setTemperature] = useState(0.7);
   return (
     <Box gap={20}>
-      <Field.Root label="Max tokens" hint="Committed on blur, clamped to the bounds.">
+      <Field.Root label="Max tokens">
         <NumberField
           label="Max tokens"
           value={tokens}
@@ -19,6 +19,7 @@ function Demo({ min, max, step }: Readonly<{ min: number; max: number; step: num
           max={max}
           step={step}
         />
+        <Field.Hint>Committed on blur, clamped to the bounds.</Field.Hint>
       </Field.Root>
       <Field.Root label="Temperature">
         <NumberField
@@ -41,8 +42,9 @@ export default story({
   name: 'NumberField',
   group: 'Input',
   docs: "The numeric entry, worn inside a <Field> like any other: the same well, the same rhythm, plus a stacked **stepper pair** - the pointer's way to nudge, the arrow keys' twin on a physical keyboard, and on a television the only way to change the value at all. The buffer is text (a cleared field can be retyped in peace), only a real number is ever committed, and blur clamps to `min`/`max` and rewrites the text to the number actually stored - the field can never show one value while holding another.",
-  usage: `<Field.Root label="Max tokens" hint="64 to 8192">
+  usage: `<Field.Root label="Max tokens">
   <NumberField label="Max tokens" value={maxTokens} onChange={setMaxTokens} min={64} step={256} />
+  <Field.Hint>64 to 8192</Field.Hint>
 </Field.Root>`,
   guidelines: {
     do: [
@@ -54,7 +56,7 @@ export default story({
   },
   matrix: false,
   width: 340,
+  component: Demo,
   args: { min: 64, max: 8192, step: 256 },
   controls: { min: 'number', max: 'number', step: 'number' },
-  render: ({ min, max, step }) => <Demo min={min} max={max} step={step} />,
 });

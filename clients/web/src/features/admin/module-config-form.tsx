@@ -109,7 +109,7 @@ function ConfigRow({
 }>) {
   let control: ReactNode;
   if (field.type === 'bool') {
-    control = <Switch checked={value === true} onChange={onChange} label={field.label} />;
+    control = <Switch checked={value === true} onCheckedChange={onChange} label={field.label} />;
   } else if (field.type === 'select') {
     control = (
       <Select.Root label={field.label} value={String(value ?? '')} onValueChange={onChange}>
@@ -142,7 +142,8 @@ function ConfigRow({
   }
 
   return (
-    <ListRow.Root size="sm" label={field.label}>
+    <ListRow.Root size="sm">
+      <ListRow.Label>{field.label}</ListRow.Label>
       <ListRow.Trailing>{control}</ListRow.Trailing>
     </ListRow.Root>
   );

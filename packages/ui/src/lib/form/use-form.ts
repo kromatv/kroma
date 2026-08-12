@@ -17,7 +17,7 @@ interface TextBinding<T> {
 
 interface ToggleBinding<T> {
   checked: T;
-  onChange: (next: T) => void;
+  onCheckedChange: (next: T) => void;
 }
 
 interface FormOptions<Values, Output> {
@@ -163,7 +163,7 @@ function useForm<Values extends Record<string, unknown>, Output>({
     }),
     toggle: (name) => ({
       checked: values[name],
-      onChange: (next) => setValue(name, next),
+      onCheckedChange: (next) => setValue(name, next),
     }),
     setValue,
     setError: (name, message) =>

@@ -7,8 +7,8 @@ export default story({
   group: 'Feedback',
   docs: "The key to a chart's colours, or to a board's status dots. It reports and never filters, so no part of it is pressable. The paint is the value the chart was given rather than a palette tone: a canvas cannot resolve a custom property, and a series' hue is assigned by position and never cycled.",
   usage: `<Legend.Root>
-  <Legend.Item color={CHART_SERIES.films} label="Films" />
-  <Legend.Item color={CHART_SERIES.tv} label="Series" />
+  <Legend.Item color={CHART_SERIES.films}>Films</Legend.Item>
+  <Legend.Item color={CHART_SERIES.tv}>Series</Legend.Item>
 </Legend.Root>`,
   guidelines: {
     do: [
@@ -24,20 +24,20 @@ export default story({
   args: { label: 'Films' },
   render: ({ label }) => (
     <Legend.Root>
-      <Legend.Item color={SERIES_COLORS[0]} label={label} />
-      <Legend.Item color={SERIES_COLORS[1]} label="Series" />
-      <Legend.Item color={SERIES_COLORS[2]} label="Musique" />
+      <Legend.Item color={SERIES_COLORS[0]}>{label}</Legend.Item>
+      <Legend.Item color={SERIES_COLORS[1]}>Series</Legend.Item>
+      <Legend.Item color={SERIES_COLORS[2]}>Musique</Legend.Item>
     </Legend.Root>
   ),
   scenes: [
     {
       name: 'Status board',
       docs: "The other reader: the pipeline console, where the paints are the palette's semantic steps rather than the data one.",
-      render: () => (
+      example: () => (
         <Legend.Root>
-          <Legend.Item color="success" label="Termine" />
-          <Legend.Item color="accent" label="En cours" />
-          <Legend.Item color="danger" label="Echoue" />
+          <Legend.Item color="success">Termine</Legend.Item>
+          <Legend.Item color="accent">En cours</Legend.Item>
+          <Legend.Item color="danger">Echoue</Legend.Item>
         </Legend.Root>
       ),
     },

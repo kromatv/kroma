@@ -29,12 +29,12 @@ function Header({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 /** The scrolling middle, and the only part of the panel that scrolls. */
-function Content({ children }: Readonly<{ children: ReactNode }>) {
+function Panel({ children }: Readonly<{ children: ReactNode }>) {
   const { pad, hasHeader, hasFooter } = useShell();
   const gap = pad > 0 ? GAP : 0;
   return (
     <ScrollView
-      style={s.content}
+      style={s.panel}
       // No vertical padding against a pinned neighbour: it would scroll away.
       contentContainerStyle={{
         paddingHorizontal: pad,
@@ -48,8 +48,7 @@ function Content({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-/** The pinned bottom: a shelf, not a row. Put a <Dialog.Actions> in it, which
- *  is what the `footer` prop wraps for you. */
+/** The pinned bottom: a shelf, not a row. Put a <Dialog.Actions> in it. */
 function Footer({ children }: Readonly<{ children: ReactNode }>) {
   const { pad } = useShell();
   return (
@@ -60,8 +59,8 @@ function Footer({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 const s = styles({
-  content: { shrink: 1 },
+  panel: { shrink: 1 },
 });
 
 export type { Shell };
-export { Content, Footer, Header, ShellContext };
+export { Footer, Header, Panel, ShellContext };

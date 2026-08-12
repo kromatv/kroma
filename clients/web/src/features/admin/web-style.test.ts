@@ -86,15 +86,3 @@ describe('the admin class names', () => {
     }
   });
 });
-
-describe('the drawer scroll pane', () => {
-  it('is the one region that scrolls, on one axis only', () => {
-    expect(webStyle.SCROLL_PANE.overflowY).toBe('auto');
-    expect(webStyle.SCROLL_PANE.overflowX).toBeUndefined();
-  });
-
-  it('may shrink below its content, which is what lets it scroll at all', () => {
-    expect(webStyle.SCROLL_PANE.flex).toBe(1);
-    expect(webStyle.SCROLL_PANE.minHeight).toBe(0);
-  });
-});
