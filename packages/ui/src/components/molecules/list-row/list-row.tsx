@@ -138,7 +138,12 @@ function Root({
         role={role ?? (pressable || href !== undefined ? undefined : 'none')}
         selected={selected}
         label={label ?? nameOf(at.content)}
-        focusScale={1.02}
+        // A row of its own may grow a little; a member of a group may not. The
+        // group is one card and the row is flush with the edge that clips it, so
+        // a member that scales pushes past that edge and shoves the rule between
+        // it and its neighbour. The wash and the ring say the same thing without
+        // moving anything.
+        focusScale={standalone ? 1.02 : 1}
         sv={listRowVariants}
         vars={{ size: shell, pressable, standalone, selected: lit }}
         style={style}
