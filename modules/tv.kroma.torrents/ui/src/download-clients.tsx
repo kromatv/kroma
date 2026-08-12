@@ -111,7 +111,7 @@ export function DownloadClientsSection() {
         {clients.map((c) => (
           <Surface key={c.id} elevated border="border" pad="none" p={18}>
             <Row align="flex-start" between gap={16}>
-              <Row minW={0} gap={12}>
+              <Row flex minW={0} gap={12}>
                 <Box
                   w={40}
                   h={40}
@@ -128,9 +128,9 @@ export function DownloadClientsSection() {
                     color="accent"
                   />
                 </Box>
-                <Box minW={0}>
+                <Box flex minW={0}>
                   <Row gap={8}>
-                    <Text variant="label" lines={1}>
+                    <Text variant="label" shrink={1} minW={0} lines={1}>
                       {c.name}
                     </Text>
                     <Badge tone="info">{c.builtin ? t('dlclients.embedded') : c.kind}</Badge>
@@ -187,7 +187,7 @@ function TestLine({ test }: Readonly<{ test?: TestState }>) {
   }
   if (test?.error || test?.result?.error) {
     return (
-      <Text variant="meta" color="dangerHover" minW={0} lines={1}>
+      <Text variant="meta" color="dangerHover" shrink={1} minW={0} lines={1}>
         {test.error ?? test.result?.error}
       </Text>
     );

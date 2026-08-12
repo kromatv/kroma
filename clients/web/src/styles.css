@@ -384,7 +384,8 @@ select:focus-visible,
 }
 @media (min-width: 1024px) {
   .admin-shell {
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 256px minmax(0, 1fr);
   }
   .admin-sidebar {
     display: flex;
