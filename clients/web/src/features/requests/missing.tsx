@@ -8,6 +8,7 @@
 import { type CalendarEntry, hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
+  Badge,
   Box,
   Button,
   Divider,
@@ -16,6 +17,7 @@ import {
   PageHeader,
   Row,
   Surface,
+  Text,
 } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
@@ -215,9 +217,12 @@ function MissingActions({
             active
             size="sm"
             icon="search"
-            label={t('requests.searchSelected', { count: selectedCount })}
+            label={t('requests.searchSelectedCount', { count: selectedCount })}
             onPress={onSearchSelected}
-          />
+          >
+            <Text variant="label">{t('requests.searchSelected')}</Text>
+            <Badge tone="neutral">{selectedCount}</Badge>
+          </Button>
           <IconButton
             variant="ghost"
             control="sm"

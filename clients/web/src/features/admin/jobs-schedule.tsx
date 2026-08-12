@@ -3,7 +3,7 @@
 
 import { type JobInfo, KromaApiError } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, Chip, Dialog, Field, Row, Text } from '@kroma/ui/kit';
+import { Badge, Box, Button, Chip, Dialog, Field, Row, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/shell';
@@ -40,7 +40,7 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
     );
 
   return (
-    <Dialog.Root open title={t('jobs.editSchedule')} width={520} onClose={() => call.end(false)}>
+    <Dialog.Root open title={t('jobs.editSchedule')} width="md" onClose={() => call.end(false)}>
       <Field.Root label={t('jobs.cronExpr')}>
         <Field.Input
           icon="clock"
@@ -67,10 +67,16 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
       </Text>
       {job.defaultSchedule && job.defaultSchedule !== value ? (
         <Box self="flex-start">
-          <Button variant="ghost" size="sm" onPress={() => setValue(job.defaultSchedule ?? '')}>
+          <Button
+            variant="ghost"
+            size="sm"
+            label={t('jobs.resetDefault')}
+            onPress={() => setValue(job.defaultSchedule ?? '')}
+          >
             <Text color="accentText" style={RESET_LABEL}>
-              {t('jobs.resetDefault')} ({job.defaultSchedule})
+              {t('jobs.resetDefault')}
             </Text>
+            <Badge tone="neutral">{job.defaultSchedule}</Badge>
           </Button>
         </Box>
       ) : null}
