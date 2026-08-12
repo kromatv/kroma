@@ -89,7 +89,14 @@ const GUTTER: CSSProperties = {
   paddingRight: 'var(--gutter-web)',
 };
 
+// A column, stated: this is an element rather than a <Box> because `textShadow`
+// has no React Native spelling, and a plain block leaves react-native-web's
+// <Text> at its own `display: inline`. Three of them in a row then run together
+// as one paragraph with their margins dropped, which is what put the director,
+// the tagline and the overview on the same line.
 const HERO_TEXT: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
   flex: 1,
   maxWidth: 680,
   textShadow: `0 1px 3px ${color('black/50')}, 0 2px 16px ${color('black/55')}`,
