@@ -62,8 +62,9 @@ describe('CastRemotes', () => {
 
     expect(screen.getByText('2')).toBeTruthy();
     // The count is drawn INSIDE the chip, which is one control with one name,
-    // so the name has to carry it too.
-    expect(screen.getByLabelText('Remotes (2)').getAttribute('aria-expanded')).toBe('false');
+    // so the name has to carry it too - as something meant to be heard rather
+    // than a bracket a screen reader announces as punctuation.
+    expect(screen.getByLabelText('Remotes, 2').getAttribute('aria-expanded')).toBe('false');
     openPanel();
     expect(screen.getByText('iPhone')).toBeTruthy();
     expect(screen.getByText('Pixel')).toBeTruthy();

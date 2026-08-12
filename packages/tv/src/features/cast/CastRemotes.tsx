@@ -34,7 +34,7 @@ export function CastRemotes() {
     <>
       <Focusable
         onPress={() => setOpen(true)}
-        label={`${t('cast.remotes')} (${count})`}
+        label={t('cast.remotesCount', { count })}
         expanded={open}
         focusScale={1.08}
         sv={chip}

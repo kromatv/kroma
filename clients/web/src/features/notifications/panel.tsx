@@ -30,7 +30,9 @@ export function NotificationBell() {
         variant={open ? 'glass' : 'ghost'}
         diameter={40}
         radius="md"
-        label={unread > 0 ? `${t('notifications.title')} (${unread})` : t('notifications.title')}
+        label={
+          unread > 0 ? t('notifications.titleCount', { count: unread }) : t('notifications.title')
+        }
         expanded={open}
         onPress={() => setOpen(true)}
       >

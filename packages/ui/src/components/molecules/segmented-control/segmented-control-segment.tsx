@@ -1,5 +1,6 @@
 // One segment: a radio in the group's row, and the shell it is drawn in.
 
+import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -39,13 +40,21 @@ const segmentedControlVariants = svFor<{ root: StyleDecl; label: StyleDecl; desc
   defaults: { size: 'md', active: false },
 });
 
+interface ItemProps<T extends string> extends SegmentedOption<T> {
+  /** Anything richer than a string: a count as a `<Badge>`, a swatch. `label`
+   *  stays the accessible name, so what is heard does not depend on what is
+   *  drawn. */
+  children?: ReactNode;
+}
+
 function Item<T extends string>({
   value,
   label,
   icon,
   desc,
   disabled,
-}: Readonly<SegmentedOption<T>>) {
+  children,
+}: Readonly<ItemProps<T>>) {
   const ctx = useSegmented('Item');
   const { value: picked, select, size, stretch, iconOnly, report, register, mark, forget } = ctx;
   const active = value === picked;
@@ -85,7 +94,10 @@ function Item<T extends string>({
             {icon ? (
               <Icon name={icon} size={glyph} color={active ? 'accentText' : 'text/75'} />
             ) : null}
-            {iconOnly && icon ? null : <Text style={state.slots.label}>{label}</Text>}
+            {(() => {
+              if (iconOnly && icon) return null;
+              return children ?? <Text style={state.slots.label}>{label}</Text>;
+            })()}
             {desc ? <Text style={state.slots.desc}>{desc}</Text> : null}
           </>
         )}

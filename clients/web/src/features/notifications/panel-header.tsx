@@ -1,5 +1,6 @@
 import { useT } from '@kroma/ui';
 import {
+  Badge,
   Box,
   Drawer,
   Icon,
@@ -71,11 +72,20 @@ export function PanelHeader({
         label={t('notifications.filter')}
         size="sm"
         stretch
-        options={[
-          { value: 'all', label: t('notifications.filterAll') },
-          { value: 'unread', label: unread > 0 ? `${unreadLabel} (${unread})` : unreadLabel },
-        ]}
-      />
+      >
+        <SegmentedControl.Item value="all" label={t('notifications.filterAll')} />
+        {/* The count is a badge rather than a number in brackets, and the spoken
+            name keeps it in a form meant to be heard. */}
+        <SegmentedControl.Item
+          value="unread"
+          label={unread > 0 ? t('notifications.filterUnreadCount', { count: unread }) : unreadLabel}
+        >
+          <Row gap={6} align="center">
+            <Text>{unreadLabel}</Text>
+            {unread > 0 ? <Badge tone="neutral">{unread}</Badge> : null}
+          </Row>
+        </SegmentedControl.Item>
+      </SegmentedControl.Root>
     </Box>
   );
 }
