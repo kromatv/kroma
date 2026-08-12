@@ -135,7 +135,9 @@ export function DownloadClientsSection() {
                     </Text>
                     <Badge tone="info">{c.builtin ? t('dlclients.embedded') : c.kind}</Badge>
                   </Row>
-                  <Text variant="meta" color="textDim" lines={1} mt={2}>
+                  {/* A sentence wraps; an address does not, because a URL has
+                      no spaces to wrap at and would push the row open again. */}
+                  <Text variant="meta" color="textDim" lines={c.builtin ? undefined : 1} mt={2}>
                     {c.builtin ? t('dlclients.embeddedSub') : c.url}
                   </Text>
                 </Box>
@@ -187,7 +189,7 @@ function TestLine({ test }: Readonly<{ test?: TestState }>) {
   }
   if (test?.error || test?.result?.error) {
     return (
-      <Text variant="meta" color="dangerHover" shrink={1} minW={0} lines={1}>
+      <Text variant="meta" color="dangerHover" shrink={1} minW={0}>
         {test.error ?? test.result?.error}
       </Text>
     );
