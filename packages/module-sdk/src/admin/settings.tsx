@@ -134,7 +134,7 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
 function Row({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: unknown) => void }>) {
   const t = useT();
   return (
-    <Box row wrap align="center" justify="space-between" gap={20} px={22} py={16}>
+    <Box row align="center" justify="space-between" gap={20} px={22} py={16}>
       <Box shrink={1} style={{ minWidth: 0 }}>
         <Text variant="label">{row.label}</Text>
         {row.desc ? (

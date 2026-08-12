@@ -130,8 +130,11 @@ export function LogsPage() {
         <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
           <div ref={scroller} style={VIEWPORT}>
             <Box px={16} py={12}>
-              {entries.map((e) => (
-                <LogLine key={`${e.ts}-${e.source}-${e.message}`} entry={e} />
+              {entries.map((e, i) => (
+                <Box key={`${e.ts}-${e.source}-${e.message}`}>
+                  {sameDay(entries[i - 1]?.ts, e.ts) ? null : <DayMark ts={e.ts} />}
+                  <LogLine entry={e} />
+                </Box>
               ))}
             </Box>
           </div>
@@ -151,6 +154,29 @@ const LEVEL_TONE: Record<string, { bg: ColorValue; ink: ColorValue }> = {
 
 const INFO_TONE = { bg: 'tint/6', ink: 'textMuted' } as const;
 
+function sameDay(a: number | undefined, b: number): boolean {
+  if (!a) return false;
+  return new Date(a).toDateString() === new Date(b).toDateString();
+}
+
+// Every line carries a clock, so the date belongs where it changes rather than
+// on all of them: a log read top to bottom is otherwise a column of times that
+// silently crosses midnight.
+function DayMark({ ts }: Readonly<{ ts: number }>) {
+  return (
+    <Row align="center" gap={10} pt={10} pb={6}>
+      <Text variant="overline" color="textDim" shrink={0}>
+        {new Date(ts).toLocaleDateString(undefined, {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        })}
+      </Text>
+      <Box flex minH={0} h={1} bg="tint/8" />
+    </Row>
+  );
+}
+
 function LogLine({ entry }: Readonly<{ entry: LogEntry }>) {
   const time = new Date(entry.ts).toLocaleTimeString(undefined, { hour12: false });
   const tone = LEVEL_TONE[entry.level] ?? INFO_TONE;
@@ -159,8 +185,8 @@ function LogLine({ entry }: Readonly<{ entry: LogEntry }>) {
       <Text variant="meta" font="mono" color="textDim" shrink={0} style={TABULAR}>
         {time}
       </Text>
-      <Box w={52} shrink={0} radius={4} bg={tone.bg} px={6}>
-        <Text variant="overline" color={tone.ink} textAlign="center">
+      <Box shrink={0} radius={4} bg={tone.bg} px={6}>
+        <Text variant="overline" color={tone.ink} textAlign="center" lines={1}>
           {entry.level}
         </Text>
       </Box>

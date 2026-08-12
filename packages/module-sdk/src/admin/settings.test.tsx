@@ -292,6 +292,26 @@ describe('failures', () => {
     expect(container.textContent).toContain('Scan');
   });
 
+  it('keeps a control beside its label however long the hint', async () => {
+    const { container } = mount([
+      group([
+        {
+          label: 'Redirect',
+          desc:
+            'Automatically redirect HTTP traffic to HTTPS (no effect while HTTPS is off). ' +
+            'The certificate download stays reachable over HTTP. Avoid if some clients ' +
+            "can't handle the self-signed certificate. Restart the server to apply.",
+          kind: 'toggle',
+          value: false,
+        },
+      ]),
+    ]);
+    const control = await screen.findByRole('switch', { name: 'Redirect' });
+    const row = control.parentElement as HTMLElement;
+    expect(getComputedStyle(row).flexWrap).toBe('nowrap');
+    expect(container.textContent).toContain('Redirect');
+  });
+
   it('renders an empty page when the fetch fails rather than throwing', async () => {
     const { container } = mount([], {
       over: {
