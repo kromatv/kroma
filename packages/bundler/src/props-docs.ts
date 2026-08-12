@@ -5,11 +5,11 @@ import { stat } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 // Spelled with its extension: this module is loaded by Node itself, as a
 // dependency of vitest.config.ts, and Node's ESM resolver does not guess one.
-import { type PropDoc, type PropDocs, readPropDocs } from './props-read.ts';
+import { readPropDocs } from './props-read.ts';
 import { scanSources, statLine } from './source-fingerprint.ts';
 import { cachedVirtualModule } from './virtual-cache.ts';
 
-export type { PropDoc, PropDocs };
+export type { PropDoc, PropDocs } from './props-read.ts';
 export { readPropDocs };
 
 // The nearest lockfile above the project: a dependency bump can change an

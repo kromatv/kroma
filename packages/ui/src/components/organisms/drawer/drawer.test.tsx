@@ -147,7 +147,7 @@ describe('the exit', () => {
           <Text>Rien</Text>
         </Drawer.Root>,
       );
-      expect(screen.queryByText('Rien')).not.toBeNull();
+      expect(screen.getByText('Rien')).toBeTruthy();
 
       act(() => vi.advanceTimersByTime(500));
       expect(screen.queryByText('Rien')).toBeNull();

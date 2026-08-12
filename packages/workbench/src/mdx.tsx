@@ -21,7 +21,6 @@ import {
   HeadCell,
   heading,
   ListItem,
-  MEASURE,
   OrderedList,
   Paragraph,
   Pre,
@@ -89,4 +88,5 @@ function MdxDoc({ content: Content }: Readonly<{ content: DocComponent }>) {
   );
 }
 
-export { MDX_COMPONENTS, MdxDoc, MEASURE };
+export { MEASURE } from './mdx-blocks';
+export { MDX_COMPONENTS, MdxDoc };

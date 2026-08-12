@@ -49,6 +49,6 @@ describe('what the registry ends up carrying', () => {
     // The join is by path, and the two halves spell one differently: what this
     // pins is that the suffix they share is enough to line them up.
     const read = Object.values(codes).filter((code) => code.render).length;
-    expect(STORIES.filter((story) => story.code).length).toBe(read);
+    expect(STORIES.filter((story) => story.code)).toHaveLength(read);
   });
 });

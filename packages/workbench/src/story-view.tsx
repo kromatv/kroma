@@ -29,7 +29,7 @@ function useStageView(story: Story | undefined) {
   const [rotate, setRotate] = useState(false);
   const [surface, setSurface] = useState<ColorToken>('bg');
   const [full, setFull] = useState(false);
-  const [theme, setThemeId] = useState('kroma');
+  const [themeId, setThemeId] = useState('kroma');
 
   // The state change is also the re-render that makes every style re-resolve.
   const pickTheme = useCallback((next: string) => {
@@ -57,7 +57,7 @@ function useStageView(story: Story | undefined) {
     rotate,
     surface,
     full,
-    theme,
+    theme: themeId,
     setRotate,
     setSurface,
     setFull,

@@ -26,13 +26,13 @@ describe('codeAt', () => {
   });
 
   it('finds nothing for a file no build read', () => {
-    expect(codeAt(CODES, '../../packages/ui/src/components/atoms/chip/chip.stories.tsx')).toBe(
-      undefined,
-    );
+    expect(
+      codeAt(CODES, '../../packages/ui/src/components/atoms/chip/chip.stories.tsx'),
+    ).toBeUndefined();
   });
 
   it('finds nothing rather than looping on a path with no separator at all', () => {
-    expect(codeAt(CODES, 'list-row.stories.tsx')).toBe(undefined);
+    expect(codeAt(CODES, 'list-row.stories.tsx')).toBeUndefined();
   });
 });
 
@@ -54,6 +54,6 @@ describe('withCode', () => {
 
   it('leaves a story that names a component without one, so the drawer generates it', () => {
     const attached = withCode(listRow(), { scenes: [] });
-    expect(attached.code).toBe(undefined);
+    expect(attached.code).toBeUndefined();
   });
 });

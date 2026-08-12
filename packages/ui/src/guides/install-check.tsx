@@ -16,7 +16,7 @@ const PROBE = '--kroma-accent';
 
 const NAME_COLUMN = 132;
 
-const SELF_HOSTED_FACES: readonly string[] = [fonts.display, fonts.ui];
+const SELF_HOSTED_FACES: ReadonlySet<string> = new Set([fonts.display, fonts.ui]);
 
 function tokenSheet(): Check {
   const win = webWindow();
@@ -44,7 +44,7 @@ function typefaces(): Check {
   const declared = new Set(
     [...faces]
       .map((face) => face.family.replace(/["']/g, ''))
-      .filter((family) => SELF_HOSTED_FACES.includes(family)),
+      .filter((family) => SELF_HOSTED_FACES.has(family)),
   );
   return {
     label: 'Type',

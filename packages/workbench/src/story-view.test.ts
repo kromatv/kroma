@@ -30,13 +30,13 @@ describe('viewCode', () => {
   });
 
   it('shows nothing beside a scene no build could read, rather than the wrong code', () => {
-    expect(viewCode(written(), 'scene:1', {})).toBe(null);
-    expect(viewCode(chip(), 'scene:0', {})).toBe(null);
+    expect(viewCode(written(), 'scene:1', {})).toBeNull();
+    expect(viewCode(chip(), 'scene:0', {})).toBeNull();
   });
 
   it('shows the story’s own render on a preview that had nothing to show', () => {
     const composed = withCode(plain(), { render: '<Chip.Row />', scenes: [] });
-    expect(viewCode(plain(), 'preview', {})).toBe(null);
+    expect(viewCode(plain(), 'preview', {})).toBeNull();
     expect(viewCode(composed, 'preview', {})).toBe('<Chip.Row />');
   });
 
@@ -47,7 +47,7 @@ describe('viewCode', () => {
   });
 
   it('shows nothing on the matrix, which is every variant at once', () => {
-    expect(viewCode(written(), 'matrix', {})).toBe(null);
+    expect(viewCode(written(), 'matrix', {})).toBeNull();
   });
 
   it('still shows a demo its own file', () => {

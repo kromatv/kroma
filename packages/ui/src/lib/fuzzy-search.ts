@@ -34,23 +34,33 @@ function holdsInOrder(text: string, needle: string): boolean {
   return true;
 }
 
+const faceAt = (text: string, at: number): number => MATCH + (startsWord(text, at) ? BOUNDARY : 0);
+
+// The first letter has nothing behind it, so its only pull is towards the start.
+function openRow(text: string, char: string, row: number[]): void {
+  for (let at = 0; at < row.length; at += 1) {
+    row[at] = text[at] === char ? faceAt(text, at) - LEAD * at : NONE;
+  }
+}
+
+// Every later letter either carries on the run behind it or pays for the gap.
+function nextRow(text: string, char: string, prev: readonly number[], row: number[]): void {
+  let gapped = NONE;
+  for (let at = 0; at < row.length; at += 1) {
+    const earlier = at === 0 ? NONE : (prev[at - 1] ?? NONE);
+    gapped = at === 0 ? NONE : Math.max(gapped, earlier) - GAP;
+    row[at] = text[at] === char ? faceAt(text, at) + Math.max(gapped, earlier + CONSECUTIVE) : NONE;
+  }
+}
+
 function scoreOf(text: string, needle: string): number {
   const width = text.length;
   let prev = new Array<number>(width).fill(NONE);
   let row = new Array<number>(width).fill(NONE);
   let step = 0;
   for (const char of needle) {
-    let gapped = NONE;
-    for (let at = 0; at < width; at += 1) {
-      const face = MATCH + (startsWord(text, at) ? BOUNDARY : 0);
-      if (step === 0) {
-        row[at] = text[at] === char ? face - LEAD * at : NONE;
-        continue;
-      }
-      const earlier = at === 0 ? NONE : (prev[at - 1] ?? NONE);
-      gapped = at === 0 ? NONE : Math.max(gapped, earlier) - GAP;
-      row[at] = text[at] === char ? face + Math.max(gapped, earlier + CONSECUTIVE) : NONE;
-    }
+    if (step === 0) openRow(text, char, row);
+    else nextRow(text, char, prev, row);
     [prev, row] = [row, prev];
     step += 1;
   }

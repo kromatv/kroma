@@ -124,7 +124,7 @@ describe('the panel over a live story', () => {
     };
     render(onScreen(<Harness play={script} />));
 
-    await waitFor(() => expect(screen.getByText('Passed')).toBeTruthy());
+    expect(await screen.findByText('Passed')).toBeTruthy();
     expect(screen.getByText('opens the menu')).toBeTruthy();
     expect(screen.getAllByText('Rename').length).toBeGreaterThan(0);
   });
@@ -134,7 +134,7 @@ describe('the panel over a live story', () => {
       group('finds the archive entry', () => want('Archive').toBeVisible());
     render(onScreen(<Harness play={script} />));
 
-    await waitFor(() => expect(screen.getByText('Failed')).toBeTruthy());
+    expect(await screen.findByText('Failed')).toBeTruthy();
     expect(screen.getByText(/"Archive" is not on the stage/)).toBeTruthy();
   });
 
@@ -147,7 +147,7 @@ describe('the panel over a live story', () => {
       });
     render(onScreen(<Harness play={script} />));
 
-    await waitFor(() => expect(screen.getByText('Passed')).toBeTruthy());
+    expect(await screen.findByText('Passed')).toBeTruthy();
     expect(presses).toHaveLength(1);
 
     fireEvent.click(replay());

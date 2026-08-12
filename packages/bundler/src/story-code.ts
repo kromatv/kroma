@@ -6,10 +6,10 @@ import { dirname, join } from 'node:path';
 // Spelled with its extension: this module is loaded by Node itself, as a
 // dependency of a vite config, and Node's ESM resolver does not guess one.
 import { scanSources, statLine } from './source-fingerprint.ts';
-import { readStoryCode, type StoryCode, type StoryCodes } from './story-code-read.ts';
+import { readStoryCode } from './story-code-read.ts';
 import { cachedVirtualModule } from './virtual-cache.ts';
 
-export type { StoryCode, StoryCodes };
+export type { StoryCode, StoryCodes } from './story-code-read.ts';
 export { readStoryCode };
 
 export interface StoryCodeOptions {

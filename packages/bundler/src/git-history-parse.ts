@@ -151,16 +151,30 @@ function push<T>(map: Map<string, T[]>, key: string, value: T): void {
  * `targets` maps a path as it is NOW to the name HEAD knows it by, which are two
  * different things while a move sits staged in the index.
  */
-export function attribute(
-  commits: readonly LogCommit[],
-  targets: ReadonlyMap<string, string>,
-): Map<string, HistoryCommit[]> {
+function tracking(targets: ReadonlyMap<string, string>): Map<string, Set<string>> {
   const live = new Map<string, Set<string>>();
   for (const [now, head] of targets) {
     const held = live.get(head);
     if (held) held.add(now);
     else live.set(head, new Set([now]));
   }
+  return live;
+}
+
+// Move every holder of this path onto the name the file had before the rename,
+// joining whoever is already tracking that name.
+function follow(live: Map<string, Set<string>>, from: string, path: string, holders: Set<string>) {
+  live.delete(path);
+  const earlier = live.get(from);
+  if (earlier) for (const holder of holders) earlier.add(holder);
+  else live.set(from, holders);
+}
+
+export function attribute(
+  commits: readonly LogCommit[],
+  targets: ReadonlyMap<string, string>,
+): Map<string, HistoryCommit[]> {
+  const live = tracking(targets);
   const found = new Map<string, HistoryCommit[]>();
   for (const commit of commits) {
     for (const change of commit.changes) {
@@ -169,11 +183,7 @@ export function attribute(
       for (const holder of holders) {
         push(found, holder, { sha: commit.sha, date: commit.date, subject: commit.subject });
       }
-      if (!change.from) continue;
-      live.delete(change.path);
-      const earlier = live.get(change.from);
-      if (earlier) for (const holder of holders) earlier.add(holder);
-      else live.set(change.from, holders);
+      if (change.from) follow(live, change.from, change.path, holders);
     }
   }
   return found;
@@ -243,7 +253,7 @@ export function entriesOf(
     }
     const found = [...seen.values()].sort(newestFirst);
     const changed = found[0];
-    const created = found[found.length - 1];
+    const created = found.at(-1);
     const edited = files.some((file) => dirty.has(file));
     if (!(changed && created)) {
       if (edited) entries[key] = { dirty: true, commits: [] };
