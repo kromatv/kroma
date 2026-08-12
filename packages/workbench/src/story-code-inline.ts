@@ -23,7 +23,7 @@ const NAME = /^[A-Za-z_$][\w$]*$/;
 // the two shapes a story can be written in: a destructured bag, or one name.
 function head(code: string): Head | null {
   if (code.startsWith('(')) {
-    const close = matching(code, 0);
+    const close = matching(code, 0, '(');
     if (close < 0) return null;
     const arrow = code.slice(close + 1).match(/^\s*=>\s*/);
     if (!arrow) return null;
@@ -45,7 +45,7 @@ function head(code: string): Head | null {
 function binding(params: string): string {
   const text = params.trim();
   if (text.startsWith('{')) {
-    const close = matching(text, 0);
+    const close = matching(text, 0, '{');
     return close < 0 ? text : text.slice(0, close + 1);
   }
   return text.match(/^[A-Za-z_$][\w$]*/)?.[0] ?? text;
@@ -57,7 +57,7 @@ function destructured(params: string): string[] {
   return params
     .slice(1, -1)
     .split(',')
-    .map((part) => part.split(/[:=]/)[0]?.trim() ?? '')
+    .map((part) => part.replace(/[:=][\s\S]*$/, '').trim())
     .filter((name) => NAME.test(name));
 }
 
@@ -84,10 +84,8 @@ function attributes(args: Record<string, unknown>): string | null {
 
 // The index of the bracket closing the one at `from`, ignoring anything inside
 // a string or a template, or -1 when it never closes.
-function matching(text: string, from: number): number {
-  const open = text[from];
-  const shut = open === '(' ? ')' : open === '{' ? '}' : '';
-  if (!shut) return -1;
+function matching(text: string, from: number, open: '(' | '{'): number {
+  const shut = open === '(' ? ')' : '}';
   let depth = 0;
   let quote = '';
   for (let at = from; at < text.length; at += 1) {
@@ -113,7 +111,7 @@ function body(rest: string): string | null {
   // single expression to show in its place.
   if (text.startsWith('{')) return null;
   if (!text.startsWith('(')) return text;
-  const close = matching(text, 0);
+  const close = matching(text, 0, '(');
   return close === text.length - 1 ? dedent(text.slice(1, close)) : text;
 }
 
@@ -152,7 +150,7 @@ interface Hole {
 // One `{...}` container, and whether it sits after an `=` (an attribute value)
 // or between tags (a child).
 function holeAt(text: string, open: number): Hole | null {
-  const close = matching(text, open);
+  const close = matching(text, open, '{');
   if (close < 0) return null;
   let before = open - 1;
   while (before >= 0 && text[before] === ' ') before -= 1;
@@ -185,8 +183,7 @@ function resolve(
   const ternary = inner.match(/^([A-Za-z_$][\w$]*)\s*\?([\s\S]+):([\s\S]+)$/);
   const name = ternary?.[1];
   if (!name || !names.includes(name)) return null;
-  const taken = (truthy(args[name]) ? ternary[2] : ternary[3])?.trim();
-  if (taken === undefined) return null;
+  const taken = ((truthy(args[name]) ? ternary[2] : ternary[3]) as string).trim();
   const empty = taken === 'null' || taken === 'undefined';
   return { text: empty ? '' : taken, nested: !empty };
 }
@@ -208,9 +205,16 @@ function substitute(
   let entire = true;
   while (at < text.length) {
     const open = text.indexOf('{', at);
-    if (open < 0) return { text: out + text.slice(at), whole: entire };
+    if (open < 0) {
+      out += text.slice(at);
+      break;
+    }
     const hole = holeAt(text, open);
-    if (!hole) return { text: out + text.slice(at), whole: false };
+    if (!hole) {
+      out += text.slice(at);
+      entire = false;
+      break;
+    }
     const close = open + hole.inner.length + 2;
     const written = resolve(hole, names, bag, args);
     if (written === null) {

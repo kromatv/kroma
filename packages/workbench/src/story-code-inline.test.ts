@@ -134,4 +134,63 @@ describe('fullyInlined', () => {
     const code = '([first, second]) => <Pair a={first} />';
     expect(fullyInlined(code, { first: 1 })).toBeNull();
   });
+  it('leaves an attribute whose value has no literal spelling', () => {
+    const code = '({ rows }) => <Table rows={rows} />';
+    expect(inlineArgs(code, { rows: [1, 2] })).toBe('<Table rows={rows} />');
+  });
+
+  it('does not expand a bag holding a value it cannot write', () => {
+    const code = '(props) => <Table {...props} />';
+    expect(inlineArgs(code, { rows: [1, 2] })).toBe('<Table {...props} />');
+  });
+  it('stops at a brace that never closes, and says it did not finish', () => {
+    const code = '({ a }) => <X>{a</X>';
+    expect(inlineArgs(code, { a: 1 })).toBe('<X>{a</X>');
+    expect(fullyInlined(code, { a: 1 })).toBeNull();
+  });
+  it('leaves a parenthesised expression that is not a function', () => {
+    expect(inlineArgs('(<Chip />)', {})).toBe('(<Chip />)');
+  });
+
+  it('reads a parameter list whose brace never closes as one it cannot name', () => {
+    expect(inlineArgs('({ a) => <X />', { a: 1 })).toBe('<X />');
+    expect(fullyInlined('({ a) => <X />', { a: 1 })).toBeNull();
+  });
+
+  it('does not end a string on an escaped quote', () => {
+    const code = '({ a }) => <X t="say \\"{hi}\\"" v={a} />';
+    expect(inlineArgs(code, { a: 2 })).toBe('<X t="say \\"{hi}\\"" v={2} />');
+  });
+
+  it('keeps a body whose opening paren is not the whole expression', () => {
+    expect(inlineArgs('({ a }) => (a) + 1', { a: 1 })).toBe('(a) + 1');
+  });
+
+  it('survives a body with nothing in it', () => {
+    expect(inlineArgs('({ a }) => (\n   \n)', { a: 1 })).toBe('');
+  });
+
+  it('writes a number or a flag out as a child', () => {
+    expect(inlineArgs('({ n, ok }) => <X>{n}{ok}</X>', { n: 4, ok: true })).toBe('<X>4true</X>');
+  });
+
+  it('leaves an expression over two args it cannot evaluate', () => {
+    const code = '({ a, b }) => <X v={a + b} />';
+    expect(inlineArgs(code, { a: 1, b: 2 })).toBe('<X v={a + b} />');
+    expect(fullyInlined(code, { a: 1, b: 2 })).toBeNull();
+  });
+
+  it('leaves the shape alone when a value brings lines of its own', () => {
+    expect(inlineArgs('({ label }) => <X>{label}</X>', { label: 'a\nb' })).toBe('<X>a\nb</X>');
+  });
+  it('scans past an escaped quote inside an expression', () => {
+    const code = '({ a }) => <X v={fmt("a\\"}b")} w={a} />';
+    expect(inlineArgs(code, { a: 1 })).toBe('<X v={fmt("a\\"}b")} w={1} />');
+  });
+
+  it('sees the bag itself named in an expression it cannot evaluate', () => {
+    const code = '(props) => <X v={props.a + 1} />';
+    expect(inlineArgs(code, { a: 1 })).toBe('<X v={props.a + 1} />');
+    expect(fullyInlined(code, { a: 1 })).toBeNull();
+  });
 });
