@@ -4,12 +4,12 @@
 import { StyleSheet } from 'react-native';
 import { COLOR_KEYS, color } from '#ui/core/color';
 import {
-  type BoxStyleProps,
   boxStyle,
   declaredBreakpoints,
   splitShorthand,
   textStyle,
-} from '#ui/core/shorthands';
+} from '#ui/core/shorthand-resolve';
+import type { BoxStyleProps } from '#ui/core/shorthands';
 import { STATE_KEYS, type SvStateName } from '#ui/core/states';
 import type { AnyStyle } from '#ui/core/types';
 

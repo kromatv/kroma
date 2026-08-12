@@ -4,7 +4,8 @@
 //   theme.ts       the live token store: createTheme / setTheme / the version
 //   breakpoint.ts  the live design width, and the mobile-first cascade over it
 //   color.ts       what a colour may be written as, and how it resolves
-//   shorthands.ts  the vocabulary as a rule table, and the resolver over it
+//   shorthands.ts  the vocabulary as a rule table
+//   shorthand-resolve.ts  one bag of shorthands -> React Native longhands
 //   states.ts      the interaction states, and the masking that keeps them cheap
 //   normalize.ts   authored declaration -> the canonical form the resolver merges
 //   types.ts       the recipe's type surface
@@ -17,8 +18,9 @@ export type { ColorValue } from './color';
 export { color, withAlpha } from './color';
 export { normalize, stabilise } from './normalize';
 export { sv, svFor } from './recipe';
+export { boxStyle, declaredBreakpoints, splitShorthand } from './shorthand-resolve';
 export type { BoxStyleProps, TextLayoutProps } from './shorthands';
-export { boxStyle, declaredBreakpoints, splitShorthand, TEXT_STYLE_PROPS } from './shorthands';
+export { TEXT_STYLE_PROPS } from './shorthands';
 export type { SvState, SvStateName } from './states';
 export { sharedStyle, style, styles } from './styles';
 export type { Theme, ThemeOverrides, ThemeTokens } from './theme';

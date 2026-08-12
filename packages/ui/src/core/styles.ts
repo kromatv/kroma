@@ -6,7 +6,7 @@
 
 import { breakpointStep } from '#ui/core/breakpoint';
 import { normalize, stabilise } from '#ui/core/normalize';
-import { declaredBreakpoints } from '#ui/core/shorthands';
+import { declaredBreakpoints } from '#ui/core/shorthand-resolve';
 import { themedCache, themeVersion } from '#ui/core/theme';
 import type { AnyStyle, StyleDecl } from '#ui/core/types';
 

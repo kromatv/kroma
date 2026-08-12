@@ -66,33 +66,17 @@ describe('SearchKeyboard', () => {
 });
 
 describe('UrlKeyboard', () => {
-  it('deletes the last character', () => {
+  // The editing keys carry the default locale's labels; the rest are their glyph.
+  it.each([
+    ['deletes the last character', 'kroma', 'Supprimer', 'krom'],
+    ['appends the key that was pressed, URL specials included', 'kroma', ':', 'kroma:'],
+    ['carries a dot key of its own on the tail row', 'kroma', '.', 'kroma.'],
+    ['empties the whole value from the clear key', 'kroma.local:4040', 'Effacer', ''],
+  ])('%s', (_what, value, key, next) => {
     const onValueChange = vi.fn();
-    render(<UrlKeyboard value="kroma" onValueChange={onValueChange} />);
-    // The default locale labels it; the key is identified by its glyph role.
-    fireEvent.click(screen.getByLabelText('Supprimer'));
-    expect(onValueChange).toHaveBeenCalledWith('krom');
-  });
-
-  it('appends the key that was pressed, URL specials included', () => {
-    const onValueChange = vi.fn();
-    render(<UrlKeyboard value="kroma" onValueChange={onValueChange} />);
-    fireEvent.click(screen.getByLabelText(':'));
-    expect(onValueChange).toHaveBeenCalledWith('kroma:');
-  });
-
-  it('carries a dot key of its own on the tail row', () => {
-    const onValueChange = vi.fn();
-    render(<UrlKeyboard value="kroma" onValueChange={onValueChange} />);
-    fireEvent.click(screen.getByLabelText('.'));
-    expect(onValueChange).toHaveBeenCalledWith('kroma.');
-  });
-
-  it('empties the whole value from the clear key', () => {
-    const onValueChange = vi.fn();
-    render(<UrlKeyboard value="kroma.local:4040" onValueChange={onValueChange} />);
-    fireEvent.click(screen.getByLabelText('Effacer'));
-    expect(onValueChange).toHaveBeenCalledWith('');
+    render(<UrlKeyboard value={value} onValueChange={onValueChange} />);
+    fireEvent.click(screen.getByLabelText(key));
+    expect(onValueChange).toHaveBeenCalledWith(next);
   });
 
   it('submits through its own button', () => {

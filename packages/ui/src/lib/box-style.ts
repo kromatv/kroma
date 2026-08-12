@@ -6,7 +6,8 @@
 // same thing.
 
 import { StyleSheet, type ViewStyle } from 'react-native';
-import { type BoxStyleProps, boxStyle } from '#ui/core/shorthands';
+import { boxStyle } from '#ui/core/shorthand-resolve';
+import type { BoxStyleProps } from '#ui/core/shorthands';
 import { themedCache } from '#ui/core/theme';
 
 const shared = themedCache<ViewStyle>(4096);
