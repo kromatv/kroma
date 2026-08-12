@@ -685,11 +685,8 @@ function Focusable<R extends AnySv = AnySv>({
 
   // Under `painted`, never over it: a control that states its own cursor - a
   // resize seam asking for `col-resize` - has to keep it.
-  const dressed = useMemo(
-    () =>
-      pointerCursor(disabled, onPress) ? [pointerCursor(disabled, onPress), painted] : painted,
-    [disabled, onPress, painted],
-  );
+  const cursor = pointerCursor(disabled, onPress);
+  const dressed = useMemo(() => (cursor ? [cursor, painted] : painted), [cursor, painted]);
 
   // A disabled control is not a node at all, so the remote walks straight past
   // it rather than stopping on something that does nothing.
