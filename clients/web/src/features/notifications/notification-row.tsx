@@ -49,7 +49,7 @@ export function NotificationEntry({
   const t = useT();
   const navigate = useNavigate();
   const relative = useRelativeTime();
-  const { markRead, markUnread } = useReadState();
+  const { markRead } = useReadState();
   const [open, setOpen] = useState(false);
 
   const { head, items } = run;
@@ -108,24 +108,39 @@ export function NotificationEntry({
             ) : null}
           </ListRow.Root>
         </Box>
-        <Box pl={2} pr={8}>
-          <IconButton
-            variant="ghost"
-            diameter={34}
-            radius="lg"
-            active={unread}
-            label={`${t(unread ? 'notifications.markRead' : 'notifications.markUnread')} · ${head.title}`}
-            onPress={() => (unread ? markRead(ids) : markUnread(ids))}
-          >
-            <Icon
-              name={unread ? 'circle-filled' : 'circle'}
-              size={13}
-              color={unread ? 'accentText' : 'textDim'}
-            />
-          </IconButton>
-        </Box>
+        <ReadToggle unread={unread} title={head.title} ids={ids} />
       </Row>
       {folded && open ? <Occurrences items={items} onOpen={go} /> : null}
+    </Box>
+  );
+}
+
+// A sibling of the row rather than a part of it: the row is one control with
+// one press, and this is a second verb on the same notification, so it takes
+// its own focus stop beside it and never inside it.
+function ReadToggle({
+  unread,
+  title,
+  ids,
+}: Readonly<{ unread: boolean; title: string; ids: string[] }>) {
+  const t = useT();
+  const { markRead, markUnread } = useReadState();
+  return (
+    <Box pl={2} pr={8}>
+      <IconButton
+        variant="ghost"
+        diameter={34}
+        radius="lg"
+        active={unread}
+        label={`${t(unread ? 'notifications.markRead' : 'notifications.markUnread')} · ${title}`}
+        onPress={() => (unread ? markRead(ids) : markUnread(ids))}
+      >
+        <Icon
+          name={unread ? 'circle-filled' : 'circle'}
+          size={13}
+          color={unread ? 'accentText' : 'textDim'}
+        />
+      </IconButton>
     </Box>
   );
 }

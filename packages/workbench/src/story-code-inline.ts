@@ -51,24 +51,35 @@ function conditional(inner: string): Conditional | null {
   if (ask < 0) return null;
   const name = inner.slice(0, ask).trim();
   if (!NAME.test(name)) return null;
+  const colon = answering(inner, ask + 1);
+  if (colon < 0) return null;
+  return { name, whenTrue: inner.slice(ask + 1, colon), whenFalse: inner.slice(colon + 1) };
+}
+
+const QUOTES = new Set(['"', "'", '`']);
+
+const OPENS = new Set(['(', '{', '[', '?']);
+const SHUTS = new Set([')', '}', ']']);
+
+// The colon belonging to the question mark this started from: the first one
+// outside every bracket, string and nested conditional.
+function answering(text: string, from: number): number {
   let depth = 0;
   let quote = '';
-  for (let at = ask + 1; at < inner.length; at += 1) {
-    const char = inner[at] as string;
+  for (let at = from; at < text.length; at += 1) {
+    const char = text[at] as string;
     if (quote) {
       if (char === '\\') at += 1;
       else if (char === quote) quote = '';
-      continue;
-    }
-    if (char === '"' || char === "'" || char === '`') quote = char;
-    else if (char === '(' || char === '{' || char === '[') depth += 1;
-    else if (char === ')' || char === '}' || char === ']') depth -= 1;
-    else if (char === '?') depth += 1;
-    else if (char === ':' && depth === 0) {
-      return { name, whenTrue: inner.slice(ask + 1, at), whenFalse: inner.slice(at + 1) };
+    } else if (QUOTES.has(char)) quote = char;
+    else if (OPENS.has(char)) depth += 1;
+    else if (SHUTS.has(char)) depth -= 1;
+    else if (char === ':') {
+      if (depth === 0) return at;
+      depth -= 1;
     }
   }
-  return null;
+  return -1;
 }
 
 // The parameter list, when the source opens with an arrow that takes one. Only
