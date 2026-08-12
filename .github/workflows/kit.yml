@@ -73,7 +73,11 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git fetch --no-tags --depth=1 origin "$last" 2>/dev/null || true
+          # No --depth here: a shallow fetch writes .git/shallow and marks the
+          # WHOLE repository shallow, which is what the checkout above asked for
+          # the opposite of. The workbench reads its dates out of the log, and
+          # refuses to read them from a truncated one.
+          git fetch --no-tags origin "$last" 2>/dev/null || true
           # An unfetchable sha (force-push, expired) errors the diff -> deploy.
           if git diff --quiet "$last" HEAD -- apps/kit packages/ui packages/core packages/bundler clients/tv-build/rnw.ts .github/workflows/kit.yml 2>/dev/null; then
             echo "::notice::ui.kroma.tv is already serving this tree (last deployed $last); skipping."

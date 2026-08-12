@@ -5,9 +5,10 @@ import { iconLibraryReady, loadIconLibrary, setIconCatalogLoader } from './libra
 
 // One glyph stands in for the chunk the web half fetches: the runner resolves
 // `./every-glyph` to that half, and it would hand back all six thousand.
-vi.mock('./every-glyph', () => ({
-  everyGlyph: async () => ({ IconNotShipped: () => null }),
+const chunk = vi.hoisted(() => ({
+  glyphs: { IconNotShipped: () => null } as Record<string, unknown>,
 }));
+vi.mock('./every-glyph', () => ({ everyGlyph: async () => chunk.glyphs }));
 
 afterEach(() => {
   setIconCatalog({});
@@ -47,6 +48,16 @@ describe('the icon library', () => {
     await expect(loadIconLibrary()).resolves.toBeUndefined();
 
     expect(iconLibraryReady()).toBe(true);
+    expect(iconCategories()).toEqual([]);
+  });
+
+  it('keeps the half that landed when the other chunk does not', async () => {
+    chunk.glyphs = { IconArrivedAlone: () => null };
+    setIconCatalogLoader(() => Promise.reject(new Error('no such chunk')));
+
+    await loadIconLibrary();
+
+    expect(hasGlyph('arrived-alone')).toBe(true);
     expect(iconCategories()).toEqual([]);
   });
 });

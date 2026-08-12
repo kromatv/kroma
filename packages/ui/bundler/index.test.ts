@@ -237,6 +237,7 @@ describe('the workspace walk', () => {
     writeFileSync(join(dir, 'd.md'), 'd');
     writeFileSync(join(dir, 'node_modules', 'e.ts'), 'e');
     writeFileSync(join(dir, '.expo', 'f.ts'), 'f');
+    writeFileSync(join(dir, 'g.page.mdx'), 'g');
     return dir;
   }
 
@@ -268,8 +269,8 @@ describe('the workspace walk', () => {
 
       walkSources([dir], [all.pass, shipped.pass]);
 
-      expect(all.saw.sort()).toEqual(['a', 'b', 'c']);
-      expect(shipped.saw.sort()).toEqual(['a', 'c']);
+      expect(all.saw.sort()).toEqual(['a', 'b', 'c', 'g']);
+      expect(shipped.saw.sort()).toEqual(['a', 'c', 'g']);
       expect(all.ended()).toBe(1);
       expect(shipped.ended()).toBe(1);
     } finally {
@@ -321,6 +322,7 @@ describe('the workspace walk', () => {
     );
 
     expect(walkReaches(roots, join('/repo', 'packages', 'ui', 'src', 'a.tsx'))).toBe(true);
+    expect(walkReaches(roots, join('/repo', 'packages', 'ui', 'src', 'a.page.mdx'))).toBe(true);
     expect(walkReaches(roots, join('/repo', 'packages', 'node_modules', 'a.ts'))).toBe(false);
     expect(walkReaches(roots, join('/repo', 'packages', '.expo', 'a.ts'))).toBe(false);
     expect(walkReaches(roots, join('/repo', 'packages', 'a.md'))).toBe(false);
@@ -379,6 +381,26 @@ describe('the scan', () => {
       const code = kromaUi.vite({ repoRoot: dir }).load.call({}, join(dir, GLYPH_SOURCE));
       expect(code).toContain('IconRocket');
       expect(code).not.toContain('IconBanana');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps a name only a guide page draws, since the workbench ships those too', () => {
+    // An .mdx names a glyph the same way a .tsx does, and it is not typechecked,
+    // so a name missing from the subset there fails in the built site alone.
+    const dir = rootWithBarrel(
+      [
+        "export { default as IconHelpCircle } from './icons/IconHelpCircle.mjs';",
+        "export { default as IconHeart } from './icons/IconHeart.mjs';",
+      ].join('\n'),
+    );
+    try {
+      const guides = join(dir, 'packages', 'ui', 'src', 'guides');
+      mkdirSync(guides, { recursive: true });
+      writeFileSync(join(guides, 'levels.page.mdx'), '<IconButton icon="heart" />\n');
+      const code = kromaUi.vite({ repoRoot: dir }).load.call({}, join(dir, GLYPH_SOURCE));
+      expect(code).toContain('IconHeart');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

@@ -46,8 +46,13 @@ A namespace import cannot be tree-shaken, so left alone the whole set ships: the
 kit site went from 258 KB to 741 KB gzipped. Every target gets the scanned
 subset from [`@kroma/ui/bundler`](../../../bundler), which walks the workspace
 for slug literals and rewrites this folder's `glyph-source.ts` down to the names
-it found: 296 of 6,250 today. Measured on the repo's own Vite, `<Icon>` costs
+it found: 299 of 6,250 today. Measured on the repo's own Vite, `<Icon>` costs
 49 KB gzipped with the subset against 573 KB with the full set.
+
+The walk reads `.ts`, `.tsx` **and `.mdx`**: a guide page draws icons like any
+other source and is not typechecked, so a name only its prose spells would
+otherwise be missing from the subset and draw the fallback in the built site
+alone.
 
 Which paths get it: the Vite half is `apply: 'build'`, so `vite dev` still
 serves all 6,250 and only the built bundle is subset. The Metro half runs at
@@ -61,6 +66,12 @@ what arrives into the drawable set through `addGlyphs`, alongside the catalogue
 the workbench registered, and `useIconLibrary()` is what the icon browser waits
 on. That keeps 2,529 KB of glyphs and 373 KB of metadata (490 KB and 119 KB
 gzipped) out of the chunk `apps/kit` starts from, where they were 60% of it.
+
+The widening reaches the NEXT render: `addGlyphs` drops the memoised
+resolutions, but nothing already on screen re-renders, so a component that drew
+the fallback keeps it until something else moves it. Which is why the scan reads
+`.mdx` - so no page draws a fallback for a name it spells - and why the widening
+stays a workbench affair.
 
 Native has no such door: Metro cannot split a chunk off, so `every-glyph.ts` is
 `null`, the browser waits for nothing, and a Metro workbench that wants the

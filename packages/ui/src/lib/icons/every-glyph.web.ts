@@ -1,8 +1,6 @@
-// Fetching the glyphs the build cut, web (the workbench, in a browser).
-//
-// Its own chunk, so the entry carries the scanned subset alone; the specifier is
-// the React Native one because every web bundler aliases it to the DOM package
-// (see the sibling glyph-source.ts).
+// The glyphs the build cut, in a chunk of their own. The specifier is the React
+// Native one because every web bundler aliases it to the DOM package, as in the
+// sibling glyph-source.ts.
 
 import type { GlyphExports } from './glyphs';
 

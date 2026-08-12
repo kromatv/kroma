@@ -82,7 +82,10 @@ function WorkbenchShell({
   const landing = !at.story && !at.page ? pages?.[0] : undefined;
   const page = landing ?? pages?.find((entry) => entry.id === at.page);
   const entry = entries.find((candidate) => candidate.id === selected) ?? entries[0];
-  const story = useStory(entry);
+  // Nothing on the canvas is the story's while an article holds it, and the
+  // landing address IS an article: fetching the first component there buys a
+  // reader who is reading the guides nothing at all.
+  const story = useStory(page ? undefined : entry);
   const args = useMemo(
     () => ({ ...story?.args, ...edits[entry?.id ?? ''] }),
     [story, edits, entry],

@@ -385,8 +385,9 @@ beside it are Vite's and Metro's halves of discovery. Vite can read files as tex
 demo code, story code and prop docs are present on the web and absent on a
 television, rather than stale on both.
 
-Prop docs are `props` on the lazy index (the third argument to `discoverVite`),
-and they are DATA: a host reads them at build time (`propDocs` from
+Prop docs are `props`: a thunk on the lazy index, fetched with the first story,
+and the third argument to `discoverVite`. They are DATA either way: a host reads
+them at build time (`propDocs` from
 `@kroma/bundler/props-docs`, driving TypeScript's own checker, served as
 `virtual:kroma-props`) rather than shipping
 every component's source to the browser for a regex to read. That is what lets

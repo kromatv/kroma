@@ -1,8 +1,5 @@
-// Fetching the glyphs the build cut, native (Metro).
-//
-// There is nothing to fetch: Metro has no dynamic import to split the rest of
-// Tabler off with, so a native build draws from whatever glyph-source kept and
-// the icon browser lists exactly that.
+// Nothing to fetch: Metro has no dynamic import to split the rest of Tabler off
+// with, so a native build draws from whatever glyph-source kept.
 
 import type { GlyphExports } from './glyphs';
 

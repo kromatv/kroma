@@ -423,7 +423,7 @@ split.
 
 The cost, measured: a namespace import cannot be tree-shaken, so left alone the
 whole set ships, and the kit site went from 258 KB to 741 KB gzipped. A build-time
-subset in `@kroma/ui/bundler` buys it back on every target: 296 of 6,250 glyphs
+subset in `@kroma/ui/bundler` buys it back on every target: 299 of 6,250 glyphs
 kept, and `<Icon>` costs 49 KB gzipped instead of 573 KB. `vite dev` is not
 subset (`apply: 'build'`); Metro is, in both `start` and `export`.
 

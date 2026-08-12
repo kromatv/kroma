@@ -135,7 +135,9 @@ async function compile(row: Row, registry: LazyRegistry): Promise<Story> {
 }
 
 // The promise is kept, not the work: two views of one story, and a story
-// returned to, fetch its module once.
+// returned to, fetch its module once. A failure is not kept, so a chunk lost to
+// a dropped connection or a deploy mid-session is retried on the next visit
+// rather than pinning that story to a spinner until the page is reloaded.
 function entryOf(row: Row, registry: LazyRegistry): StoryEntry {
   let pending: Promise<Story> | undefined;
   let done: Story | undefined;
@@ -147,10 +149,16 @@ function entryOf(row: Row, registry: LazyRegistry): StoryEntry {
     path: row.path,
     ready: () => done,
     load: () => {
-      pending ??= compile(row, registry).then((story) => {
-        done = story;
-        return story;
-      });
+      pending ??= compile(row, registry).then(
+        (story) => {
+          done = story;
+          return story;
+        },
+        (error: unknown) => {
+          pending = undefined;
+          throw error;
+        },
+      );
       return pending;
     },
   };
