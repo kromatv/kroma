@@ -41,7 +41,7 @@ export function CastRemotes() {
         focusScale={1.08}
         sv={chip}
       >
-        <Icon name="cast" size={19} stroke={2} color="accentText" />
+        <Icon name="cast" size={19} thickness={2} color="accentText" />
         <Text variant="strongTv" style={s.count}>
           {count}
         </Text>
@@ -75,7 +75,7 @@ export function CastRemotes() {
                 />
               </ListRow.Leading>
               <ListRow.Trailing>
-                <Icon name="plug-off" size={20} stroke={2} color="textMuted" />
+                <Icon name="plug-off" size={20} thickness={2} color="textMuted" />
                 <Text variant="labelTv" color="textMuted">
                   {t('cast.disconnect')}
                 </Text>

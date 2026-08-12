@@ -20,7 +20,7 @@ function Demo({ size }: Readonly<{ size?: 'sm' | 'tv' }>) {
             size={size}
             label={m.label}
             checked={mode === m.value}
-            onChange={() => setMode(m.value)}
+            onValueChange={() => setMode(m.value)}
           />
           <Text variant="body" color={mode === m.value ? 'text' : 'textMuted'}>
             {m.label}
@@ -37,7 +37,7 @@ export default story({
   docs: 'The one-of-N control. Unlike a checkbox it cannot be un-picked by pressing it again - the only way out of a choice is another choice - so a press on the chosen radio reports nothing and the group owns which one is on. A radio never travels alone: it belongs to a `radiogroup`, which is what `<ChoiceList.Root>` draws for you.',
   usage: `<Box role="radiogroup" accessibilityLabel="Playback mode">
   {MODES.map((m) => (
-    <Radio key={m.value} label={m.label} checked={mode === m.value} onChange={() => setMode(m.value)} />
+    <Radio key={m.value} label={m.label} checked={mode === m.value} onValueChange={() => setMode(m.value)} />
   ))}
 </Box>`,
   guidelines: {

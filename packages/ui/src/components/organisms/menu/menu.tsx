@@ -125,7 +125,7 @@ interface MenuTriggerProps extends Omit<IconButtonProps, 'onPress' | 'expanded' 
 function Trigger({
   render,
   icon = 'dots-vertical',
-  size = 32,
+  diameter = 32,
   variant = 'ghost',
   label,
   ...button
@@ -143,7 +143,7 @@ function Trigger({
       ref={anchor}
       icon={icon}
       label={label ?? menuLabel}
-      size={size}
+      diameter={diameter}
       variant={variant}
       expanded={open}
       onPress={bind.onPress}

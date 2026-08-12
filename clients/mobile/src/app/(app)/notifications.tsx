@@ -60,14 +60,14 @@ export default function NotificationsScreen() {
           unread > 0 ? (
             <IconButton
               variant="ghost"
-              size={40}
+              diameter={40}
               glyph={22}
               hitSlop={10}
               disabled={busy}
               label={t('notifications.markAllRead')}
               onPress={() => void markAll()}
             >
-              <Icon name="checks" size={22} stroke={2} color="accentText" />
+              <Icon name="checks" size={22} thickness={2} color="accentText" />
             </IconButton>
           ) : null
         }
@@ -75,7 +75,7 @@ export default function NotificationsScreen() {
 
       {rows.length === 0 && !isPending ? (
         <EmptyState
-          icon={<Icon name="bell" size={34} stroke={1.4} color="textMuted" />}
+          icon={<Icon name="bell" size={34} thickness={1.4} color="textMuted" />}
           title={t('notifications.empty')}
           hint={t('notifications.emptyHint')}
         />
@@ -142,7 +142,7 @@ function NotificationRow({ row }: Readonly<{ row: Notification }>) {
           accessibilityRole="button"
           accessibilityLabel={t('common.delete')}
         >
-          <Icon name="trash" size={20} stroke={2} color="white" />
+          <Icon name="trash" size={20} thickness={2} color="white" />
         </Pressable>
       )}
     >
@@ -157,7 +157,7 @@ function NotificationRow({ row }: Readonly<{ row: Notification }>) {
           <FadeImage uri={poster} seed={row.id} radius={radius.md} style={s.tile} />
         ) : (
           <Box style={[s.tile, s.tilePlate]}>
-            <Icon name={glyph.name} size={20} stroke={1.8} color={glyph.color} />
+            <Icon name={glyph.name} size={20} thickness={1.8} color={glyph.color} />
           </Box>
         )}
 

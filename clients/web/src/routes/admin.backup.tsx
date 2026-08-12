@@ -45,7 +45,7 @@ function BackupPage() {
         mt={24}
       >
         <Box mt={2} shrink={0}>
-          <Icon name="alert-triangle" size={20} stroke={1.8} color="accent" />
+          <Icon name="alert-triangle" size={20} thickness={1.8} color="accent" />
         </Box>
         <Text variant="meta" color="text/70">
           {t('admin.backupWarning')}

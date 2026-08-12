@@ -77,7 +77,7 @@ function RowEnd({
   outcome,
 }: Readonly<{ device: DiscoveredTv; busy: boolean; outcome: HandoffOutcome | null }>): ReactNode {
   if (busy) return <Spinner size={18} thickness={2} />;
-  if (outcome === 'done') return <Icon name="check" size={18} stroke={2.4} color="success" />;
-  if (outcome) return <Icon name="alert-triangle" size={18} stroke={2.2} color="danger" />;
+  if (outcome === 'done') return <Icon name="check" size={18} thickness={2.4} color="success" />;
+  if (outcome) return <Icon name="alert-triangle" size={18} thickness={2.2} color="danger" />;
   return <Badge tone="neutral">{device.check}</Badge>;
 }

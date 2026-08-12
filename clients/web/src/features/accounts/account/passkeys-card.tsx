@@ -50,7 +50,7 @@ function PasskeyRow({
       </ListRow.Hint>
       <ListRow.Leading>
         <Box center w={38} h={38} radius="xs" border="border" bg="surface2">
-          <Icon name="key" size={18} stroke={1.7} color="success" />
+          <Icon name="key" size={18} thickness={1.7} color="success" />
         </Box>
       </ListRow.Leading>
       <ListRow.Trailing>

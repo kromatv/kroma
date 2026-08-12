@@ -143,7 +143,7 @@ function CalendarRow({
             <Text variant="meta" color="textDim">
               ·
             </Text>
-            <Icon name="checks" size={13} stroke={2} color="success" />
+            <Icon name="checks" size={13} thickness={2} color="success" />
             <Text variant="meta" color="success">
               {t('requests.securedShort')}
             </Text>

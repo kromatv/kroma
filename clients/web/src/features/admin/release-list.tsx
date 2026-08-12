@@ -116,7 +116,7 @@ function ReleaseRow({
           <Icon
             name={open ? 'chevron-down' : 'chevron-right'}
             size={13}
-            stroke={2.4}
+            thickness={2.4}
             color="textDim"
           />
           <Text variant="meta" lines={1}>
@@ -171,7 +171,7 @@ function ReleaseMeta({ r }: Readonly<{ r: ScoredReleaseView }>) {
             rel="noreferrer"
             title={t('downloads.viewOnTracker')}
           >
-            <Icon name="external-link" size={11} stroke={2} color="textDim" />
+            <Icon name="external-link" size={11} thickness={2} color="textDim" />
           </a>
         ) : null}
       </Row>

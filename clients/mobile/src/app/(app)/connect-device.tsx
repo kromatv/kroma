@@ -43,7 +43,7 @@ export default function ConnectDevice() {
         <PageHeader title={t('connect.title')} />
         <Box style={s.done}>
           <Box style={s.doneBadge}>
-            <Icon name="check" size={34} stroke={2.4} color="accentInk" />
+            <Icon name="check" size={34} thickness={2.4} color="accentInk" />
           </Box>
           <Text style={s.doneTitle}>{t('connect.connected')}</Text>
           <Text style={s.modeDesc}>{t('connect.willConnectSoon')}</Text>

@@ -117,7 +117,7 @@ function JobMeta({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => void }
         <ScheduleChip job={job} onEdit={onEdit} />
         {job.schedule && job.enabled && job.nextRunAt ? (
           <Row gap={6}>
-            <Icon name="clock" size={13} stroke={1.8} color="textMuted" />
+            <Icon name="clock" size={13} thickness={1.8} color="textMuted" />
             <Text variant="meta" color="textMuted">
               {t('jobs.next')} {rel(job.nextRunAt)}
             </Text>
@@ -202,7 +202,7 @@ function JobProgress({ prog }: Readonly<{ prog: { done: number; total: number } 
         </Row>
       ) : (
         <Row gap={8}>
-          <Icon name="bolt" size={14} stroke={2} color="accent" />
+          <Icon name="bolt" size={14} thickness={2} color="accent" />
           <Text variant="meta" color="accentText">
             {t('jobs.runningNow')}
           </Text>

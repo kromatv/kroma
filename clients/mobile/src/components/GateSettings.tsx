@@ -24,7 +24,7 @@ export function GateSettings() {
           scrim, so the gate's two corner controls read as a pair. */}
       <IconButton
         icon="settings"
-        size={44}
+        diameter={44}
         variant="scrim"
         focusFill
         ring={false}

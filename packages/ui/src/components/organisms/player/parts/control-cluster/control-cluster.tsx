@@ -75,7 +75,7 @@ export interface ControlClusterProps {
 // ../lib/virtual-focus.ts): `focused` is ALWAYS passed explicitly.
 function Circle({
   id,
-  size,
+  diameter,
   focused,
   label,
   onActivate,
@@ -83,7 +83,7 @@ function Circle({
   children,
 }: Readonly<{
   id: ControlId;
-  size: number;
+  diameter: number;
   focused: boolean;
   label: string;
   onActivate: (id: ControlId) => void;
@@ -94,7 +94,7 @@ function Circle({
   return (
     <IconButton
       variant="glass"
-      size={size}
+      diameter={diameter}
       focused={focused}
       style={circleFill(undefined, { focus: lit }).root}
       label={label}
@@ -189,7 +189,7 @@ export const ControlCluster = memo(function ControlCluster({
         <IconButton
           key={id}
           variant="primary"
-          size={px(CONTROL_SIZE.play)}
+          diameter={px(CONTROL_SIZE.play)}
           focused={on}
           style={playFill(undefined, { focus: lit && on }).root}
           label={playing ? t('player.pause') : t('player.play')}
@@ -212,7 +212,7 @@ export const ControlCluster = memo(function ControlCluster({
           <Circle
             key={id}
             id={id}
-            size={px(CONTROL_SIZE.volume)}
+            diameter={px(CONTROL_SIZE.volume)}
             focused={on}
             label={t('player.mute')}
             onActivate={onActivate}
@@ -242,7 +242,7 @@ export const ControlCluster = memo(function ControlCluster({
       <Circle
         key={id}
         id={id}
-        size={px(CONTROL_SIZE[id])}
+        diameter={px(CONTROL_SIZE[id])}
         focused={on}
         label={t(label)}
         onActivate={onActivate}
@@ -353,7 +353,13 @@ function VolumeControl({
     >
       {/* Controlled at `false`: the PILL carries the focus visuals for the whole
           control, but the button must still opt out of platform focus. */}
-      <IconButton variant="ghost" size={size} focused={false} label={muteLabel} onPress={onToggle}>
+      <IconButton
+        variant="ghost"
+        diameter={size}
+        focused={false}
+        label={muteLabel}
+        onPress={onToggle}
+      >
         {volIcon}
       </IconButton>
       <View

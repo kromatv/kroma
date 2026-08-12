@@ -124,7 +124,7 @@ function ConfigRow({
       <NumberField
         label={field.label}
         value={typeof value === 'number' ? value : 0}
-        onChange={onChange}
+        onValueChange={onChange}
         w={CONTROL_WIDTH}
       />
     );

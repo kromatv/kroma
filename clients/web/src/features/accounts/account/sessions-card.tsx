@@ -34,7 +34,7 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
     <ListRow.Root>
       <ListRow.Leading>
         <Box center w={38} h={38} radius="xs" border="border" bg="surface2">
-          <Icon name={DEVICE_ICON[kind]} size={19} stroke={1.7} color="textMuted" />
+          <Icon name={DEVICE_ICON[kind]} size={19} thickness={1.7} color="textMuted" />
         </Box>
       </ListRow.Leading>
       <Row gap={10}>

@@ -7,7 +7,7 @@ import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-butt
 interface BackButtonProps extends Omit<IconButtonProps, 'icon' | 'children'> {}
 
 function BackButton({
-  size = 44,
+  diameter = 44,
   glyph,
   variant = 'scrim',
   focusFill = true,
@@ -20,10 +20,10 @@ function BackButton({
     <IconButton
       {...rest}
       icon="chevron-left"
-      size={size}
+      diameter={diameter}
       // An open stroke reads small at the disc's default 40%, so the chevron
       // gets exactly half the diameter.
-      glyph={glyph ?? Math.round(size / 2)}
+      glyph={glyph ?? Math.round(diameter / 2)}
       variant={variant}
       focusFill={focusFill}
       focusScale={focusScale}

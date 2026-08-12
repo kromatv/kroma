@@ -97,7 +97,7 @@ export function StatsPanel({
               navigator (see ../lib/virtual-focus.ts). */}
           <IconButton
             variant="ghost"
-            size={24}
+            diameter={24}
             icon="x"
             glyph={15}
             focused={false}

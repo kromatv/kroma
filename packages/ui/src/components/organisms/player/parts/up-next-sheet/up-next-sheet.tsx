@@ -350,5 +350,5 @@ function SheetHeader({
 }
 
 function Chevron() {
-  return <IconCollapse size={20} stroke={2.2} color="accentText" />;
+  return <IconCollapse size={20} thickness={2.2} color="accentText" />;
 }

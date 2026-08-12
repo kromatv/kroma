@@ -143,7 +143,7 @@ function ConnectionStatus({ online, label }: Readonly<{ online: boolean; label: 
         <Spinner size={34} thickness={2} color="danger/80" />
       </Box>
       <Box w={28} h={28} center radius="pill" bg="danger" style={s.offlineBadge}>
-        <Icon name="wifi-off" size={16} stroke={2.2} color="white" />
+        <Icon name="wifi-off" size={16} thickness={2.2} color="white" />
       </Box>
     </Box>
   );

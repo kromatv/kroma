@@ -105,7 +105,7 @@ function NowPlaying({
         >
           {(state) => (
             <Row gap={4}>
-              <Icon name="cast" size={13} stroke={1.8} color="accent" />
+              <Icon name="cast" size={13} thickness={1.8} color="accent" />
               <Text
                 variant="meta"
                 color="accent"
@@ -219,7 +219,7 @@ function Transport({
   return (
     <IconButton
       variant={primary ? 'glass' : 'ghost'}
-      size={primary ? 36 : 32}
+      diameter={primary ? 36 : 32}
       glyph={primary ? 20 : 18}
       icon={icon}
       label={label}

@@ -193,7 +193,7 @@ export function DetailHero({
 
       <Box absolute z={3} left={CORNER_LEFT} top={CORNER_TOP}>
         <Ground tone="dark">
-          <BackButton size={42} label={t('common.back')} onPress={onBack} />
+          <BackButton diameter={42} label={t('common.back')} onPress={onBack} />
         </Ground>
       </Box>
 
@@ -295,7 +295,7 @@ function ThemeToggle({ theme }: Readonly<{ theme: ReturnType<typeof useThemeAudi
       <Ground tone="dark">
         <IconButton
           variant="scrim"
-          size={42}
+          diameter={42}
           glyph={19}
           icon={theme.muted ? 'volume-off' : 'volume'}
           label={theme.muted ? t('content.unmuteTheme') : t('content.muteTheme')}
@@ -370,7 +370,7 @@ function ListButton({ inList, onToggle }: Readonly<{ inList?: boolean; onToggle?
   if (!onToggle) return null;
   return (
     <IconButton
-      size={50}
+      diameter={50}
       glyph={20}
       radius="md"
       active={inList ?? false}
@@ -386,7 +386,7 @@ function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) {
   if (!onReport) return null;
   return (
     <IconButton
-      size={50}
+      diameter={50}
       glyph={19}
       radius="md"
       icon="flag"

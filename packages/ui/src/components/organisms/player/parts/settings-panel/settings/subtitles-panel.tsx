@@ -171,7 +171,7 @@ function TrashButton({ label, onPress }: Readonly<{ label: string; onPress: () =
   return (
     <IconButton
       variant="ghost"
-      size={36}
+      diameter={36}
       icon="trash"
       glyph={16}
       radius="md"

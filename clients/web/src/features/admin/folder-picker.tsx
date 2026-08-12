@@ -75,7 +75,7 @@ export function FolderPicker({
         {entries.map((e) => (
           <ListRow.Root key={e.path} size="sm" onPress={() => setPath(e.path)}>
             <ListRow.Leading>
-              <Icon name="folder" size={16} stroke={1.8} color="accent" />
+              <Icon name="folder" size={16} thickness={1.8} color="accent" />
             </ListRow.Leading>
             <ListRow.Label>{e.name}</ListRow.Label>
           </ListRow.Root>
@@ -95,7 +95,7 @@ export function FolderPicker({
           onPress={() => list?.parent != null && setPath(list.parent)}
           disabled={list?.parent == null}
         />
-        <Icon name="folder" size={15} stroke={1.8} color="accent" />
+        <Icon name="folder" size={15} thickness={1.8} color="accent" />
         <Text variant="meta" color="textMuted" lines={1} flex={1} minW={0}>
           {atRoot ? t('admin.volumes') : path}
         </Text>
@@ -169,13 +169,13 @@ export function FolderField({
   }
   return (
     <Row gap={10} px={12} py={8} radius="xs" bg="bg" border="border">
-      <Icon name="folder" size={16} stroke={1.8} color="accent" />
+      <Icon name="folder" size={16} thickness={1.8} color="accent" />
       <Text variant="meta" color="textMuted" lines={1} flex={1} minW={0}>
         {value}
       </Text>
       <IconButton
         variant="ghost"
-        size={26}
+        diameter={26}
         glyph={15}
         icon="pencil"
         label={t('admin.changeFolder')}
@@ -184,7 +184,7 @@ export function FolderField({
       {onClear ? (
         <IconButton
           variant="ghost"
-          size={26}
+          diameter={26}
           glyph={15}
           icon="x"
           label={t('admin.removeFolder')}

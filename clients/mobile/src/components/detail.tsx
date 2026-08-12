@@ -71,7 +71,7 @@ export function DetailHero({
       </Animated.View>
       <Box style={[s.back, { top: insets.top + 6, left: gutters.left }]}>
         <BackButton
-          size={40}
+          diameter={40}
           hitSlop={12}
           label={t('common.back')}
           onPress={() => goBack(router)}

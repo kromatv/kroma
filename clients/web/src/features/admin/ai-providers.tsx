@@ -224,7 +224,7 @@ function AdvancedSection({
             step={0.1}
             min={0}
             max={2}
-            onChange={(n) => onSet({ temperature: n })}
+            onValueChange={(n) => onSet({ temperature: n })}
           />
           <Field.Hint>{t('admin.aiTemperatureHint')}</Field.Hint>
         </Field.Root>
@@ -235,7 +235,7 @@ function AdvancedSection({
           value={p.maxTokens}
           step={100}
           min={64}
-          onChange={(n) => onSet({ maxTokens: n })}
+          onValueChange={(n) => onSet({ maxTokens: n })}
         />
         <Field.Hint>{t('admin.aiMaxTokensHint')}</Field.Hint>
       </Field.Root>
@@ -298,7 +298,7 @@ function CardActions({
           <Icon
             name={probe.ok ? 'check' : 'x'}
             size={15}
-            stroke={2.4}
+            thickness={2.4}
             color={probe.ok ? 'success' : 'danger'}
           />
           <Text variant="meta" color={probe.ok ? 'success' : 'danger'}>

@@ -97,7 +97,7 @@ export function ReportSent() {
   return (
     <Box center gap={24} py={80}>
       <Box w={104} h={104} center radius="pill" bg="accent">
-        <Icon name="check" size={48} color="accentInk" stroke={2.4} />
+        <Icon name="check" size={48} color="accentInk" thickness={2.4} />
       </Box>
       <Text variant="headingTv" textAlign="center" maxW={620}>
         {t('report.submitted')}

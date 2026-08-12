@@ -21,7 +21,7 @@ export function EndsAtHint({ runtimeMs }: Readonly<{ runtimeMs?: number | null }
   if (!at) return null;
   return (
     <Box row align="center" gap={9} mt={12}>
-      <Icon name="clock" size={16} stroke={1.8} color="accentText" />
+      <Icon name="clock" size={16} thickness={1.8} color="accentText" />
       <Text style={s.sectionLabelSm} color="text/55">
         {t('content.endsAt', { time: at })}
       </Text>
@@ -102,7 +102,7 @@ export function WatchedButton({
 export function ReportButton({ onPress }: Readonly<{ onPress: () => void }>) {
   const t = useT();
   return (
-    <IconButton icon="flag" glyph={24} size={60} label={t('report.action')} onPress={onPress} />
+    <IconButton icon="flag" glyph={24} diameter={60} label={t('report.action')} onPress={onPress} />
   );
 }
 
@@ -117,7 +117,7 @@ export function ThemeButton({
     <IconButton
       icon={muted ? 'volume-off' : 'volume'}
       glyph={24}
-      size={60}
+      diameter={60}
       label={label}
       onPress={onToggle}
     />

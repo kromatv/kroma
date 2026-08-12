@@ -237,7 +237,7 @@ function SaveStatusLabel({
   if (status === 'saved')
     return (
       <Row gap={8}>
-        <Icon name="check" size={16} stroke={2.4} color="success" />
+        <Icon name="check" size={16} thickness={2.4} color="success" />
         <Text variant="meta" color="success">
           {t('account.profileSaved')}
         </Text>

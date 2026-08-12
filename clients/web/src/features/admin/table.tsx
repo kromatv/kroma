@@ -166,7 +166,7 @@ function Action({ tone, icon, label, onPress }: Readonly<TableActionProps>) {
         }}
         states={{ hover: { bg: `${tone}/20` } }}
       >
-        <Icon name={icon} size={14} color={tone} stroke={2.6} />
+        <Icon name={icon} size={14} color={tone} thickness={2.6} />
       </Focusable>
     </Tooltip>
   );

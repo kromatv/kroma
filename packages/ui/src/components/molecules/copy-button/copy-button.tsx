@@ -50,7 +50,7 @@ export function CopyButton({
     return (
       <IconButton
         variant="ghost"
-        size={GLYPH_FACE}
+        diameter={GLYPH_FACE}
         glyph={GLYPH}
         icon={copied ? 'check' : 'copy'}
         // The glyph is the whole confirmation here, so the name has to carry it

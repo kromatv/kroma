@@ -15,7 +15,8 @@ export interface IconProps {
   size?: number;
   /** Explicit because React Native has no `currentColor` to inherit. */
   color?: ColorToken | (string & {});
-  stroke?: number;
+  /** Outline weight in px, constant across sizes. Defaults to 2. */
+  thickness?: number;
 }
 
 export interface ResolvedIcon {
@@ -25,11 +26,11 @@ export interface ResolvedIcon {
   color: string;
   /** A custom property where the ground decides the alpha (see `CSS_FADED`). */
   opacity: number | string;
-  stroke: number;
+  thickness: number;
 }
 
 export const DEFAULT_ICON_SIZE = 24;
-export const DEFAULT_ICON_STROKE = 2;
+export const DEFAULT_ICON_THICKNESS = 2;
 
 type Paint = { color: string; opacity: number | string };
 
@@ -59,7 +60,7 @@ export function resolveIcon({
   name,
   size = DEFAULT_ICON_SIZE,
   color = 'text',
-  stroke = DEFAULT_ICON_STROKE,
+  thickness = DEFAULT_ICON_THICKNESS,
 }: Readonly<IconProps>): ResolvedIcon {
   const paint = paintFor(color);
   return {
@@ -67,6 +68,6 @@ export function resolveIcon({
     size,
     color: paint.color,
     opacity: paint.opacity,
-    stroke,
+    thickness,
   };
 }

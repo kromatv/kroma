@@ -59,7 +59,7 @@ function ToastCard({
             style={typeof entry.icon === 'string' ? s.well : undefined}
           >
             {typeof entry.icon === 'string' && hasGlyph(entry.icon) ? (
-              <Icon name={entry.icon} size={22} stroke={1.9} color={wellTone(entry.tone)} />
+              <Icon name={entry.icon} size={22} thickness={1.9} color={wellTone(entry.tone)} />
             ) : (
               entry.icon
             )}

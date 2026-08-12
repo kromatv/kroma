@@ -35,7 +35,7 @@ export function CastMiniBar() {
         <Image source={{ uri: poster }} style={s.poster} contentFit="cover" />
       ) : (
         <Box style={[s.poster, s.posterFallback]}>
-          <Icon name="device-tv" size={18} stroke={1.8} color="textMuted" />
+          <Icon name="device-tv" size={18} thickness={1.8} color="textMuted" />
         </Box>
       )}
       <Box style={s.text}>

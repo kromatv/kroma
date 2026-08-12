@@ -67,12 +67,15 @@ interface TimelineRootProps {
 
 function Root({ size, children }: Readonly<TimelineRootProps>) {
   const shape = SHAPE[size ?? entryDefaultSize()];
-  const items = Children.toArray(children).filter((child) => isValidElement(child));
+  const items = useMemo(
+    () => Children.toArray(children).filter((child) => isValidElement(child)),
+    [children],
+  );
   // One value per position rather than one per render: a fresh object in the
   // provider re-renders every entry whenever the rail does.
   const rail = useMemo(
     () => items.map((_, at) => ({ shape, last: at === items.length - 1 })),
-    [shape, items.length],
+    [shape, items],
   );
   return (
     <Box>

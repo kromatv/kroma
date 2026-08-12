@@ -112,7 +112,7 @@ export default story({
         </Player.Media>
         {actions ? (
           <Player.Actions>
-            <IconButton icon="device-tv" label="Play on TV" variant="ghost" size={42} />
+            <IconButton icon="device-tv" label="Play on TV" variant="ghost" diameter={42} />
           </Player.Actions>
         ) : null}
         {stopped ? (

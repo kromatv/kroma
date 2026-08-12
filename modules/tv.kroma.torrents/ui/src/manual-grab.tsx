@@ -611,7 +611,7 @@ function ResultRow({
         </Row>
       </Box>
       <Box shrink={0}>
-        <Icon name="download" size={15} stroke={2.2} color="accent" />
+        <Icon name="download" size={15} thickness={2.2} color="accent" />
       </Box>
     </Focusable>
   );

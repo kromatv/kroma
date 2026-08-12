@@ -149,7 +149,7 @@ export default function RemotePage() {
           <Row between gap={16} mb={16}>
             <Row shrink={1} minW={0} gap={14}>
               <Row center w={40} h={40} shrink={0} radius="md" bg="info/16">
-                <Icon name="cloud" size={20} stroke={1.8} color="info" />
+                <Icon name="cloud" size={20} thickness={1.8} color="info" />
               </Row>
               <Box shrink={1} minW={0}>
                 <Text variant="cardTitle">{t('admin.enableRemoteAccess')}</Text>
@@ -174,7 +174,7 @@ export default function RemotePage() {
           </Field.Root>
 
           <a href={CF_TUNNELS_URL} target="_blank" rel="noopener noreferrer" style={TOKEN_LINK}>
-            <Icon name="external-link" size={13} stroke={2} color="accent" />
+            <Icon name="external-link" size={13} thickness={2} color="accent" />
             <Text variant="meta" color="accent">
               {t('admin.remoteGetToken')}
             </Text>

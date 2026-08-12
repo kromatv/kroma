@@ -287,7 +287,7 @@ function SearchPanel({
                 </Text>
                 {o === value ? (
                   <Box absolute right={10}>
-                    <Icon name="check" size={14} stroke={2.4} color="accentText" />
+                    <Icon name="check" size={14} thickness={2.4} color="accentText" />
                   </Box>
                 ) : null}
               </button>

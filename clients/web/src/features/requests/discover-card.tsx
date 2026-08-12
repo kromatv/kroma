@@ -146,7 +146,7 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
                   pb={12}
                   style={[s.overlay, lit ? s.overlayLit : null, CTA_SCRIM]}
                 >
-                  <Icon name="plus" size={14} stroke={2.6} color="white" />
+                  <Icon name="plus" size={14} thickness={2.6} color="white" />
                   <Text color="white" style={REQUEST_LABEL}>
                     {t('discover.request')}
                   </Text>

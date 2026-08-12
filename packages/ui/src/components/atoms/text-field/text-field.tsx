@@ -146,7 +146,7 @@ function TextField({
           never set the row height. */}
       {icon ? (
         <Box w={CONTENT} h={CONTENT} center>
-          <Icon name={icon} size={20} stroke={1.8} color="text/50" />
+          <Icon name={icon} size={20} thickness={1.8} color="text/50" />
         </Box>
       ) : null}
       {physicalKeyboard ? (
@@ -264,7 +264,12 @@ function RevealButton({
         style={s.reveal}
         states={REVEAL_STATES}
       >
-        <Icon name={revealed ? 'eye-off' : 'eye'} size={REVEAL_SIZE} stroke={1.8} color="text/50" />
+        <Icon
+          name={revealed ? 'eye-off' : 'eye'}
+          size={REVEAL_SIZE}
+          thickness={1.8}
+          color="text/50"
+        />
       </Focusable>
     </Box>
   );

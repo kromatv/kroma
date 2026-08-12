@@ -128,7 +128,7 @@ export function CatalogueScreen<T extends MediaItem | Show>({
         header={header}
         empty={
           <EmptyState
-            icon={<Icon name="movie" size={34} stroke={1.8} color="textMuted" />}
+            icon={<Icon name="movie" size={34} thickness={1.8} color="textMuted" />}
             title={t('search.noResults')}
           />
         }

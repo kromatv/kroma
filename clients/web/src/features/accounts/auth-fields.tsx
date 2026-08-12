@@ -79,7 +79,7 @@ export function RegisterFields({
                     {initials(username)}
                   </Text>
                 ) : (
-                  <Icon name="plus" size={34} stroke={1.6} color="white/85" />
+                  <Icon name="plus" size={34} thickness={1.6} color="white/85" />
                 )}
               </Box>
             )}

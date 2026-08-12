@@ -113,7 +113,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
         <Box style={s.header}>
           <SheetTitle>{title}</SheetTitle>
           <Box style={s.searchBox}>
-            <Icon name="search" size={17} stroke={2} color="textDim" />
+            <Icon name="search" size={17} thickness={2} color="textDim" />
             <BottomSheetTextInput
               value={query}
               // Reset scroll on each keystroke, or a prior scroll offset can
@@ -139,7 +139,7 @@ export const LangPickerSheet = forwardRef<BottomSheetModal, LangPickerSheetProps
                 accessibilityLabel={t('common.clear')}
                 hitSlop={10}
               >
-                <Icon name="x" size={16} stroke={2.4} color="textDim" />
+                <Icon name="x" size={16} thickness={2.4} color="textDim" />
               </Pressable>
             ) : null}
           </Box>
@@ -191,7 +191,7 @@ function LangRow({
       <Text lines={1} style={[s.rowLabel, active && s.rowLabelActive]}>
         {row.label}
       </Text>
-      {active ? <Icon name="check" size={17} stroke={2.4} color="accentText" /> : null}
+      {active ? <Icon name="check" size={17} thickness={2.4} color="accentText" /> : null}
       {row.code && !active ? <Text style={s.rowCode}>{row.code.toUpperCase()}</Text> : null}
     </Pressable>
   );

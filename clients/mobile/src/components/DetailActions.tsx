@@ -36,14 +36,14 @@ function downloadBarLabel(
 
 function barIcon(state: DownloadState) {
   if (state.status === 'done')
-    return <Icon name="check" size={20} stroke={2.4} color="accentText" />;
+    return <Icon name="check" size={20} thickness={2.4} color="accentText" />;
   if (state.status === 'paused')
     return <Icon name="player-pause-filled" size={18} color="textMuted" />;
   return (
     <Icon
       name="download"
       size={20}
-      stroke={2}
+      thickness={2}
       color={state.status === 'downloading' ? 'accent' : 'text'}
     />
   );
@@ -123,9 +123,9 @@ export function DetailActions({
           style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
         >
           {inList ? (
-            <Icon name="check" size={24} stroke={2.4} color="accentText" />
+            <Icon name="check" size={24} thickness={2.4} color="accentText" />
           ) : (
-            <Icon name="plus" size={24} stroke={2.2} />
+            <Icon name="plus" size={24} thickness={2.2} />
           )}
           <Text lines={1} style={[s.secondaryLabel, inList && s.secondaryActive]}>
             {t('nav.myList')}
@@ -137,9 +137,9 @@ export function DetailActions({
             style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
           >
             {watched ? (
-              <Icon name="eye-check" size={24} stroke={1.8} color="accentText" />
+              <Icon name="eye-check" size={24} thickness={1.8} color="accentText" />
             ) : (
-              <Icon name="eye" size={24} stroke={1.8} />
+              <Icon name="eye" size={24} thickness={1.8} />
             )}
             <Text lines={1} style={[s.secondaryLabel, watched && s.secondaryActive]}>
               {t('content.watched')}
@@ -150,7 +150,7 @@ export function DetailActions({
           onPress={() => devices.current?.present()}
           style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
         >
-          <Icon name="cast" size={24} stroke={1.8} />
+          <Icon name="cast" size={24} thickness={1.8} />
           <Text lines={1} style={s.secondaryLabel}>
             {t('cast.title')}
           </Text>
@@ -160,7 +160,7 @@ export function DetailActions({
             onPress={onReport}
             style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
           >
-            <Icon name="flag" size={24} stroke={1.8} />
+            <Icon name="flag" size={24} thickness={1.8} />
             <Text lines={1} style={s.secondaryLabel}>
               {t('reports.sheet')}
             </Text>

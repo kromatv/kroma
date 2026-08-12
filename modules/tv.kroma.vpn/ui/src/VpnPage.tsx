@@ -145,9 +145,9 @@ function StatusIcon({
   connected,
 }: Readonly<{ configured: boolean; connected: boolean }>) {
   const paint = statusColor(configured, connected);
-  if (!configured) return <Icon name="shield" size={18} stroke={1.8} color={paint} />;
-  if (connected) return <Icon name="shield-check" size={18} stroke={1.8} color={paint} />;
-  return <Icon name="shield-x" size={18} stroke={1.8} color={paint} />;
+  if (!configured) return <Icon name="shield" size={18} thickness={1.8} color={paint} />;
+  if (connected) return <Icon name="shield-check" size={18} thickness={1.8} color={paint} />;
+  return <Icon name="shield-x" size={18} thickness={1.8} color={paint} />;
 }
 
 function statusColor(configured: boolean, connected: boolean): ColorValue {

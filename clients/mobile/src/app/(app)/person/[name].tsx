@@ -76,7 +76,7 @@ function PersonPage({ name }: Readonly<{ name: string }>) {
         }
         empty={
           <EmptyState
-            icon={<Icon name="user-circle" size={34} stroke={1.8} color="textMuted" />}
+            icon={<Icon name="user-circle" size={34} thickness={1.8} color="textMuted" />}
             title={t('search.noResults')}
           />
         }

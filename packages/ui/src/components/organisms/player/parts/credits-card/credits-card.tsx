@@ -92,7 +92,7 @@ export function CreditsCard({
             <ProgressRing
               value={progress}
               size={ring}
-              stroke={px(6)}
+              thickness={px(6)}
               track="rgba(255, 255, 255, 0.14)"
               fill={theme.colors.accent}
             />

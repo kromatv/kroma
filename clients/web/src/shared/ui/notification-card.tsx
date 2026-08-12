@@ -94,7 +94,7 @@ function NotificationGlyph({
   size = 20,
 }: Readonly<{ event: NotificationEvent; size?: number }>) {
   const meta = eventMeta(event);
-  return <Icon name={meta.icon} size={size} stroke={1.8} color={meta.fg} />;
+  return <Icon name={meta.icon} size={size} thickness={1.8} color={meta.fg} />;
 }
 
 interface EventMeta {

@@ -23,12 +23,12 @@ type NavPillIcon = IconName | ((ink: string) => ReactNode);
 const navPillItemVariants = svFor<{
   root: StyleDecl;
   label: StyleDecl;
-  icon: { color: string } & Pick<IconProps, 'size' | 'stroke'>;
+  icon: { color: string } & Pick<IconProps, 'size' | 'thickness'>;
 }>()({
   slots: {
     root: { row: true, align: 'center', radius: 'pill' },
     label: { fontWeight: '700', letterSpacing: 0.2, color: 'textMuted' },
-    icon: { color: 'glyph', stroke: 1.9 },
+    icon: { color: 'glyph', thickness: 1.9 },
   },
   variants: {
     size: {

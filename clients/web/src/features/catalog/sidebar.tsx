@@ -180,7 +180,7 @@ export function MobileTopbar() {
       <Box row align="center" gap={2}>
         <NotificationBell />
         <IconButton
-          size={40}
+          diameter={40}
           glyph={22}
           radius="md"
           icon="menu-2"
@@ -203,7 +203,7 @@ export function MobileTopbar() {
               <Box px={8} pb={8}>
                 <Logo size={24} />
               </Box>
-              <Drawer.Close variant="glass" size={40} glyph={20} radius="md" />
+              <Drawer.Close variant="glass" diameter={40} glyph={20} radius="md" />
             </Row>
           </Drawer.Header>
           <Drawer.Panel>

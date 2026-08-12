@@ -33,7 +33,7 @@ export function TitleBar({
       {back ? (
         <BackButton
           variant="glass"
-          size={px(46)}
+          diameter={px(46)}
           focused={backFocused}
           onPress={back}
           label={t('player.back')}
@@ -46,7 +46,7 @@ export function TitleBar({
         // Pointer-only, controlled at `false`: the remote leaves with Back.
         <IconButton
           variant="ghost"
-          size={px(44)}
+          diameter={px(44)}
           icon="x"
           glyph={px(20)}
           focused={false}

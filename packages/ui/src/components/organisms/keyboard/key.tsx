@@ -45,7 +45,7 @@ function keyRowWidth(size: KeyboardSize): number {
 // grid's own: the corner its size carries.
 const face = svFor<{
   root: StyleDecl;
-  glyph: Pick<IconProps, 'color' | 'stroke'>;
+  glyph: Pick<IconProps, 'color' | 'thickness'>;
   label: StyleDecl;
 }>()({
   slots: keyFace,

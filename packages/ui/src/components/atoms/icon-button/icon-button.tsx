@@ -105,12 +105,12 @@ interface IconButtonProps extends Omit<FocusableProps, 'children' | 'focusScale'
   /** The glyph. Omit it and pass `children` instead for richer content (a
    *  spinner while loading, a stateful glyph). */
   icon?: IconName;
-  /** Diameter. Defaults to the control shell's height, so an icon button
+  /** Diameter in px. Defaults to the control shell's height, so an icon button
    *  beside a <Button> is the same box; pass one only for an outlier. */
-  size?: number;
+  diameter?: number;
   /** Sit on a control row: square at the shell's height, with the shell's
    *  corner rather than the pill, so an icon button beside a field or a
-   *  button is the same box. A `size`/`radius` still wins, and a
+   *  button is the same box. A `diameter`/`radius` still wins, and a
    *  <ButtonGroup> supplies it when the caller does not. */
   control?: ControlSize;
   /** Glyph size. Defaults to 40% of the diameter. */
@@ -134,7 +134,7 @@ interface IconButtonProps extends Omit<FocusableProps, 'children' | 'focusScale'
 
 function IconButton({
   icon,
-  size,
+  diameter,
   control,
   glyph,
   variant = 'glass',
@@ -152,7 +152,7 @@ function IconButton({
   const group = useGroupMember(onFocus, onBlur);
   const row = control ?? group.size;
   const shell = CONTROL[row ?? entryDefaultSize()];
-  const box$ = size ?? shell.height;
+  const box$ = diameter ?? shell.height;
   const asked = cornerRadius ?? (row ? shell.radius : undefined);
   const corner = asked === undefined ? undefined : radiusValue(asked);
   const glyphSize = glyph ?? Math.round(box$ * 0.4);

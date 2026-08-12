@@ -249,7 +249,7 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
       <Box row align="center" justify="space-between" gap={16} mb={12}>
         <Box row align="center" gap={14} minW={0}>
           <Box w={40} h={40} shrink={0} center radius="xs" bg="accentSoft">
-            <Icon name="database" size={20} stroke={1.8} color="accent" />
+            <Icon name="database" size={20} thickness={1.8} color="accent" />
           </Box>
           <Box minW={0}>
             <Text variant="cardTitle">{v.name || v.mount}</Text>

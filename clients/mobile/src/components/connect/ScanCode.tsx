@@ -130,7 +130,7 @@ export function ScanCode({ onConnected }: Readonly<{ onConnected: () => void }>)
             disabled={!camera}
             style={({ pressed }) => [s.cameraOff, pressed && s.cameraOffPressed]}
           >
-            <Icon name="scan" size={34} stroke={1.8} color="accentText" />
+            <Icon name="scan" size={34} thickness={1.8} color="accentText" />
             <Text style={s.cameraOffLabel}>{t('connect.scanTvQr')}</Text>
           </Pressable>
         )}

@@ -16,7 +16,7 @@ export function PageHeader({ title, right }: Readonly<{ title: string; right?: R
     <Box style={[s.header, { paddingTop: 6 }]}>
       <BackButton
         variant="ghost"
-        size={40}
+        diameter={40}
         hitSlop={12}
         label={t('common.back')}
         onPress={() => goBack(router)}

@@ -74,7 +74,7 @@ export default function MyList() {
         header={header}
         empty={
           <EmptyState
-            icon={<Icon name="bookmark" size={34} stroke={1.8} color="textMuted" />}
+            icon={<Icon name="bookmark" size={34} thickness={1.8} color="textMuted" />}
             title={t('nav.myList')}
             hint={t('content.myListEmpty')}
           />

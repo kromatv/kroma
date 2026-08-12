@@ -94,7 +94,7 @@ export function LoginSettings() {
         <IconButton
           icon="settings"
           variant="ghost"
-          size={40}
+          diameter={40}
           label={t('nav.settings')}
           onPress={() => setOpen(true)}
         />

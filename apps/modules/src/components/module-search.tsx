@@ -28,7 +28,7 @@ export function ModuleSearch({ value, onChange }: Readonly<ModuleSearchProps>) {
           value ? (
             <IconButton
               variant="ghost"
-              size={24}
+              diameter={24}
               glyph={16}
               icon="x"
               label="Clear search"

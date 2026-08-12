@@ -197,7 +197,7 @@ function IndexerCard({
       <Box row align="flex-start" between gap={16}>
         <Row shrink={1} minW={0} gap={14}>
           <Row center w={44} h={44} shrink={0} radius="lg" border="borderStrong" bg="surface2">
-            <Icon name="antenna" size={20} stroke={1.8} color="accent" />
+            <Icon name="antenna" size={20} thickness={1.8} color="accent" />
           </Row>
           <Box shrink={1} minW={0}>
             <Row gap={10}>

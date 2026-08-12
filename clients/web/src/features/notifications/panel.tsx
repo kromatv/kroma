@@ -44,7 +44,7 @@ export function NotificationBell() {
     <>
       <IconButton
         variant={open ? 'glass' : 'ghost'}
-        size={40}
+        diameter={40}
         radius="md"
         label={unread > 0 ? `${t('notifications.title')} (${unread})` : t('notifications.title')}
         expanded={open}
@@ -120,7 +120,7 @@ function PanelHeader() {
       <Row gap={2}>
         <IconButton
           variant="ghost"
-          size={36}
+          diameter={36}
           radius="lg"
           label={t('notifications.markAllRead')}
           onPress={() => void markAll()}
@@ -129,7 +129,7 @@ function PanelHeader() {
         >
           {busy ? <Spinner size={17} /> : <Icon name="checks" size={18} />}
         </IconButton>
-        <Drawer.Close size={36} radius="lg" glyph={18} />
+        <Drawer.Close diameter={36} radius="lg" glyph={18} />
       </Row>
     </Row>
   );

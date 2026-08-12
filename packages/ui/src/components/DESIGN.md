@@ -301,6 +301,7 @@ prop and it gives the web shells stable selectors without test ids.
 | `icon` | `glyph`, `iconName` |
 | `tone` | `color`, `intent`, `status`, `severity` |
 | `size` | `scale`, `density` |
+| `thickness` | `stroke`, `weight` (for the width of a drawn line) |
 | `disabled` | `isDisabled`, `enabled` |
 | `multiple` | `type="multiple"`, `mode="multi"` |
 | `onValueChange` | `onChange`, `onSelect`, `onUpdate` |
@@ -315,14 +316,26 @@ Four laws behind the table:
 
 Law 3 is the one this kit has broken worst, and `size` is where. It has meant a
 control size, two different distance scales, a px diameter and a px thickness.
-Two of the four are now spelled for what they measure: `thickness` on
-`<Divider>` and `<Progress>`. The remaining two are the settled meanings, and
-there are exactly two:
+Everything but the first two is now spelled for what it measures.
+
+**`thickness` is the width of anything the kit draws**: the rule of a
+`<Divider>`, the track of a `<Progress>`, the outline of an `<Icon>`, the arc of
+a `<ProgressRing>`. `stroke` is not a prop name here. It survives only as the
+SVG attribute a renderer writes, where on native it means the paint rather than
+the width, which is exactly why it is the wrong word for a caller.
+
+**`diameter` is a px box on a control that also wears a shell**, which is why
+`<IconButton>` takes one. That component reads a `sm | md | tv` step off its
+group, so `size` on it would have to mean the step and the box at once, and one
+word cannot do both.
+
+What `size` still means is the settled pair, and there are exactly two:
 
 - On a control that wears a shell, `size` is the step in
   [`lib/field-shell`](../lib/field-shell.ts) (`sm | md | tv`).
-- On a round leaf (`<Spinner>`, `<Avatar>`, `<StatusDot>`, `<Icon>`, `<Logo>`),
-  `size` is the diameter in px, because that is the only measurement it has.
+- On a round leaf (`<Spinner>`, `<Avatar>`, `<StatusDot>`, `<Icon>`, `<Logo>`,
+  `<ProgressRing>`), `size` is the diameter in px, because that is the only
+  measurement it has.
 
 **A distance is never `size`** - it takes a name for what it measures. A
 component that genuinely has its own ladder names its own type, but keeps the

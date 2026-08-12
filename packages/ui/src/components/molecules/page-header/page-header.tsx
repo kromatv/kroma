@@ -64,7 +64,7 @@ function Title({ suffix, icon, children }: Readonly<PageHeaderTitleProps>) {
   if (!icon) return heading;
   return (
     <Box row align="center" gap={GLYPH_GAP}>
-      <Icon name={icon} size={GLYPH_SIZE} stroke={2} color="accent" />
+      <Icon name={icon} size={GLYPH_SIZE} thickness={2} color="accent" />
       <Box shrink={1} style={MIN_W}>
         {heading}
       </Box>

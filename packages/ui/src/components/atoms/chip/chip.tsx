@@ -122,7 +122,7 @@ function Chip({
     >
       {(state) => (
         <>
-          {icon ? <Icon name={icon} stroke={2} {...state.slots.icon} /> : null}
+          {icon ? <Icon name={icon} thickness={2} {...state.slots.icon} /> : null}
           {dot ? <Box bg={active ? undefined : dot} style={state.slots.dot} /> : null}
           {label === undefined ? null : <Text style={state.slots.label}>{label}</Text>}
           {count === undefined ? null : (

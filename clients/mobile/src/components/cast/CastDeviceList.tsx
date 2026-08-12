@@ -160,7 +160,7 @@ function NoDevices() {
   return (
     <Box style={s.empty}>
       <Box style={s.emptyDisc}>
-        <Icon name="device-tv" size={34} stroke={1.4} color="textMuted" />
+        <Icon name="device-tv" size={34} thickness={1.4} color="textMuted" />
       </Box>
       <Text style={s.emptyTitle}>{t('cast.noDevices')}</Text>
       <Text style={s.emptyHint}>{t('cast.noDevicesHint')}</Text>
@@ -226,7 +226,7 @@ function DeviceRow({
       accessibilityRole="button"
       accessibilityState={{ selected }}
     >
-      <Icon name={icon} size={24} stroke={1.8} color={selected ? 'accentText' : 'text'} />
+      <Icon name={icon} size={24} thickness={1.8} color={selected ? 'accentText' : 'text'} />
       <Box style={s.rowText}>
         <Text lines={1} style={[s.rowName, selected && s.rowNameActive]}>
           {name}
@@ -235,7 +235,7 @@ function DeviceRow({
           {detail}
         </Text>
       </Box>
-      {selected ? <Icon name="check" size={20} stroke={2.4} color="accentText" /> : null}
+      {selected ? <Icon name="check" size={20} thickness={2.4} color="accentText" /> : null}
     </Pressable>
   );
 }

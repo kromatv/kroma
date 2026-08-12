@@ -126,7 +126,7 @@ const BULLET = /^-\s+(\S.*)$/;
 
 function closingFence(lines: readonly string[], from: number): number {
   for (let at = from; at < lines.length; at += 1) {
-    if ((lines[at] ?? '').trim().startsWith('```')) return at;
+    if ((lines[at] as string).trim().startsWith('```')) return at;
   }
   return -1;
 }
@@ -204,7 +204,7 @@ function blocks(md: string): Block[] {
 
   let at = 0;
   while (at < lines.length) {
-    const line = (lines[at] ?? '').trim();
+    const line = (lines[at] as string).trim();
     at += 1;
 
     const fenced = fencedBlock(line, lines, at);

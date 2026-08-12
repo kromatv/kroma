@@ -89,7 +89,7 @@ export default function Search() {
     if (q.length >= 2 && results.isSuccess)
       return (
         <EmptyState
-          icon={<Icon name="search" size={34} stroke={1.8} color="textMuted" />}
+          icon={<Icon name="search" size={34} thickness={1.8} color="textMuted" />}
           title={t('search.noResults')}
           hint={t('search.placeholder')}
         />

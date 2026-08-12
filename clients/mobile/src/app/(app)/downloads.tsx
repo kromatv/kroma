@@ -58,7 +58,7 @@ function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
           }}
           style={s.deleteAction}
         >
-          <Icon name="trash" size={22} stroke={2} />
+          <Icon name="trash" size={22} thickness={2} />
           <Text style={s.deleteLabel}>{t('common.delete')}</Text>
         </Pressable>
       )}
@@ -252,7 +252,7 @@ export default function Downloads() {
         />
       ) : (
         <EmptyState
-          icon={<Icon name="download" size={34} stroke={2} color="textMuted" />}
+          icon={<Icon name="download" size={34} thickness={2} color="textMuted" />}
           title={t('offline.downloads')}
           hint={t('offline.empty')}
         />

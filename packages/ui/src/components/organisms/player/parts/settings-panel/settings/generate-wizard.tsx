@@ -128,7 +128,7 @@ export const GenerateWizard = forwardRef<PanelHandle, GenerateWizardProps>(funct
             field list. */}
         <IconButton
           variant="glass"
-          size={36}
+          diameter={36}
           icon="x"
           glyph={17}
           focused={false}

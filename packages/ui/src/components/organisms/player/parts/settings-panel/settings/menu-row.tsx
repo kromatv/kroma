@@ -64,7 +64,7 @@ export function MenuRow({
       {toggle ? (
         <SwitchFace checked={Boolean(on)} size="tv" style={s.noShrink} />
       ) : (
-        <Icon name="chevron-right" size={23} stroke={2.2} />
+        <Icon name="chevron-right" size={23} thickness={2.2} />
       )}
     </Pressable>
   );

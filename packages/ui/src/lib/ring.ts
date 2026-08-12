@@ -8,14 +8,14 @@ export interface RingProps {
   value?: number;
   /** Outer diameter. */
   size?: number;
-  stroke?: number;
+  thickness?: number;
   track?: string;
   fill?: string;
 }
 
 export interface RingGeometry {
   size: number;
-  stroke: number;
+  thickness: number;
   track: string;
   fill: string;
   centre: number;
@@ -28,17 +28,17 @@ export interface RingGeometry {
 export function ringGeometry({
   value = 0,
   size = 22,
-  stroke = 2.5,
+  thickness = 2.5,
   track = 'rgba(255, 255, 255, 0.12)',
   fill = 'rgba(255, 255, 255, 0.6)',
 }: Readonly<RingProps>): RingGeometry {
-  // The stroke straddles the path, so the radius is inset by half of it or the
-  // ring would be clipped by the viewBox.
-  const radius = (size - stroke) / 2;
+  // The arc straddles the path, so the radius is inset by half its thickness or
+  // the ring would be clipped by the viewBox.
+  const radius = (size - thickness) / 2;
   const circumference = 2 * Math.PI * radius;
   return {
     size,
-    stroke,
+    thickness,
     track,
     fill,
     centre: size / 2,

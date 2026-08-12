@@ -38,7 +38,7 @@ function ProgressRing({ indeterminate = false, ...props }: Readonly<ProgressRing
           r={g.radius}
           fill="none"
           stroke={g.track}
-          strokeWidth={g.stroke}
+          strokeWidth={g.thickness}
         />
         <ProgressArc {...g} />
       </Svg>

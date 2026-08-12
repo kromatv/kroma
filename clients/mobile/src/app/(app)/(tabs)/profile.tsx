@@ -35,7 +35,7 @@ function Row({
             {value}
           </Text>
         ) : null}
-        <Icon name="chevron-right" size={16} stroke={2.2} color="textDim" />
+        <Icon name="chevron-right" size={16} thickness={2.2} color="textDim" />
       </Box>
     </Pressable>
   );
@@ -64,7 +64,7 @@ export default function Profile() {
         <Box>
           <Avatar uri={avatar} name={user?.username} size={96} />
           <Box style={s.editBadge}>
-            <Icon name="pencil" size={13} stroke={1.8} color="accentInk" />
+            <Icon name="pencil" size={13} thickness={1.8} color="accentInk" />
           </Box>
         </Box>
         <Text style={s.username}>{user?.username}</Text>
@@ -73,28 +73,28 @@ export default function Profile() {
 
       <Box style={s.card}>
         <Row
-          icon={<Icon name="users" size={19} stroke={2} color="accentText" />}
+          icon={<Icon name="users" size={19} thickness={2} color="accentText" />}
           label={t('nav.changeProfile')}
           onPress={() => switchProfile()}
         />
         <Row
-          icon={<Icon name="lock" size={19} stroke={2.2} color="accentText" />}
+          icon={<Icon name="lock" size={19} thickness={2.2} color="accentText" />}
           label={t('account.profileLock')}
           onPress={() => router.push('/profile-pin' as never)}
         />
         <Row
-          icon={<Icon name="download" size={19} stroke={2} color="accentText" />}
+          icon={<Icon name="download" size={19} thickness={2} color="accentText" />}
           label={t('offline.downloads')}
           value={downloads.entries.length > 0 ? formatBytes(downloads.totalBytes) : undefined}
           onPress={() => router.push('/downloads' as never)}
         />
         <Row
-          icon={<Icon name="device-tv" size={19} stroke={1.8} color="accentText" />}
+          icon={<Icon name="device-tv" size={19} thickness={1.8} color="accentText" />}
           label={t('connect.title')}
           onPress={() => router.push('/connect-device' as never)}
         />
         <Row
-          icon={<Icon name="settings" size={19} stroke={1.8} color="accentText" />}
+          icon={<Icon name="settings" size={19} thickness={1.8} color="accentText" />}
           label={t('nav.settings')}
           onPress={() => router.push('/settings' as never)}
         />
@@ -102,7 +102,7 @@ export default function Profile() {
 
       {/* The kit ghost inks text-colored; the danger reading comes via children. */}
       <Button variant="ghost" style={s.signOut} onPress={() => void signOut()}>
-        <Icon name="logout" size={18} stroke={1.8} color="danger" />
+        <Icon name="logout" size={18} thickness={1.8} color="danger" />
         <Text color="danger" style={s.signOutText}>
           {t('auth.logout')}
         </Text>

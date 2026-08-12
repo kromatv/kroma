@@ -33,7 +33,7 @@ function corner(size: AddTileSize): number {
 const addTileVariants = svFor<{
   root: StyleDecl;
   well: StyleDecl;
-  glyph: Pick<IconProps, 'color' | 'size' | 'stroke'>;
+  glyph: Pick<IconProps, 'color' | 'size' | 'thickness'>;
   label: StyleDecl;
 }>()({
   slots: {
@@ -120,7 +120,7 @@ function AddTile({ label, size = 'tv', icon = 'plus', style, ...focus }: Readonl
             {/* The fill is translucent, so blur what shows through: the tile
                 reads as glass over the artwork rather than a hole in it. */}
             <Frost radius={radius} />
-            <Icon name={icon} stroke={1.6} {...slots.glyph} />
+            <Icon name={icon} thickness={1.6} {...slots.glyph} />
           </Box>
           <Text style={slots.label}>{label}</Text>
         </>

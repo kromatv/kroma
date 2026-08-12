@@ -229,7 +229,7 @@ function CopyButton({ code }: Readonly<{ code: string }>) {
     <Box absolute style={s.copySlot}>
       <IconButton
         variant="ghost"
-        size={COPY_BOX}
+        diameter={COPY_BOX}
         radius="sm"
         label={COPY_FACE[state].label}
         ring={false}

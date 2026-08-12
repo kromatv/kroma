@@ -61,7 +61,7 @@ export const TopBar = memo(function TopBar({
           ../lib/virtual-focus.ts. */}
       <BackButton
         variant="glass"
-        size={px(42)}
+        diameter={px(42)}
         focused={backFocused ?? false}
         onPress={onBack}
         label={t('player.back')}

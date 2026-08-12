@@ -177,7 +177,7 @@ function RequestRow({
           </Text>
           {upcoming ? (
             <Row gap={4} mt={4}>
-              <Icon name="calendar-clock" size={13} stroke={1.9} color="accent" />
+              <Icon name="calendar-clock" size={13} thickness={1.9} color="accent" />
               <Text variant="meta" color="accent">
                 {upcoming}
               </Text>

@@ -120,7 +120,7 @@ function Keypad({
               through: the pad reads as glass over the artwork behind it. */}
           <Frost radius={KEY_RADIUS} />
           {kind === 'delete' ? (
-            <Icon name="backspace" size={30} stroke={1.8} color="textMuted" />
+            <Icon name="backspace" size={30} thickness={1.8} color="textMuted" />
           ) : (
             <Text style={state.slots.label}>{label}</Text>
           )}

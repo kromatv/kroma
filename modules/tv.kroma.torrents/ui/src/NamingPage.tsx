@@ -362,7 +362,7 @@ function MoveRow({
         {from}
       </code>
       <Box shrink={0}>
-        <Icon name="arrow-right" size={13} stroke={2} color="glyphDim" />
+        <Icon name="arrow-right" size={13} thickness={2} color="glyphDim" />
       </Box>
       <code title={to} style={MOVE_TO}>
         {to}

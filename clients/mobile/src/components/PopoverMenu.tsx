@@ -91,7 +91,7 @@ export function PopoverMenu({
               <Box style={s.right}>
                 {item.detail ? <Text style={s.detail}>{item.detail}</Text> : null}
                 {item.active ? (
-                  <Icon name="check" size={16} stroke={2.4} color="accentText" />
+                  <Icon name="check" size={16} thickness={2.4} color="accentText" />
                 ) : null}
               </Box>
             </Pressable>

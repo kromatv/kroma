@@ -8,11 +8,11 @@ import { color, ProgressRing as Ring, Spinner } from '@kroma/ui/kit';
 export function ProgressRing({
   progress,
   size = 34,
-  stroke = 2.5,
+  thickness = 2.5,
 }: Readonly<{
   progress: number;
   size?: number;
-  stroke?: number;
+  thickness?: number;
 }>) {
   if (progress < 0) return <Spinner size={20} color="accent" />;
   return (
@@ -21,7 +21,7 @@ export function ProgressRing({
       // the first sliver is always drawn.
       value={Math.max(0.02, progress)}
       size={size}
-      stroke={stroke}
+      thickness={thickness}
       track={color('borderStrong')}
       fill={color('accent')}
     />

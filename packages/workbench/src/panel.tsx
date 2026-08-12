@@ -220,7 +220,7 @@ function Handle({ open, onPress }: Readonly<{ open: boolean; onPress: () => void
   return (
     <IconButton
       variant="ghost"
-      size={35}
+      diameter={35}
       radius={0}
       label={open ? 'Hide the inspector' : 'Show the inspector'}
       ring={false}

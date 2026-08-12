@@ -121,7 +121,12 @@ export function DownloadClientsSection() {
                   border="borderStrong"
                   bg="surface2"
                 >
-                  <Icon name={c.builtin ? 'cpu' : 'server'} size={18} stroke={1.8} color="accent" />
+                  <Icon
+                    name={c.builtin ? 'cpu' : 'server'}
+                    size={18}
+                    thickness={1.8}
+                    color="accent"
+                  />
                 </Box>
                 <Box minW={0}>
                   <Row gap={8}>

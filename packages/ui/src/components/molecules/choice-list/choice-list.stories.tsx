@@ -57,7 +57,7 @@ function WithActions() {
           actions={
             <IconButton
               variant="ghost"
-              size={32}
+              diameter={32}
               glyph={16}
               icon="trash"
               label={`Remove ${lib.label}`}

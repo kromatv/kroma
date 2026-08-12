@@ -53,7 +53,7 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
     }
   };
 
-  let glyph = <Icon name="download" size={size} stroke={2} />;
+  let glyph = <Icon name="download" size={size} thickness={2} />;
   if (state.status === 'downloading') glyph = <ProgressRing progress={state.progress} />;
   else if (state.status === 'paused')
     glyph = (
@@ -68,12 +68,12 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
   else if (state.status === 'done')
     glyph = (
       <Box style={s.doneBadge}>
-        <Icon name="check" size={size - 6} stroke={2.4} color="accentInk" />
+        <Icon name="check" size={size - 6} thickness={2.4} color="accentInk" />
       </Box>
     );
 
   return (
-    <IconButton variant="ghost" size={RING} hitSlop={10} onPress={onPress}>
+    <IconButton variant="ghost" diameter={RING} hitSlop={10} onPress={onPress}>
       {glyph}
     </IconButton>
   );

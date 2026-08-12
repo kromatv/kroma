@@ -197,7 +197,7 @@ function RowTitleCell({ dl }: Readonly<{ dl: DownloadView }>) {
               title={t('downloads.viewOnTracker')}
               style={TRACKER_LINK}
             >
-              <Icon name="external-link" size={12} stroke={2} color="glyph" />
+              <Icon name="external-link" size={12} thickness={2} color="glyph" />
             </a>
           ) : null}
         </Row>
@@ -265,7 +265,7 @@ function RowSpeedCell({
           })}
         >
           <Row gap={2}>
-            <Icon name="users" size={11} stroke={2} color={peerTone} />
+            <Icon name="users" size={11} thickness={2} color={peerTone} />
             <Text variant="meta" color={peerTone} style={s.tabular}>
               {stat.peersSeen > stat.peers ? `${stat.peers}/${stat.peersSeen}` : stat.peers}
             </Text>

@@ -74,7 +74,7 @@ describe('the icon set', () => {
   });
 
   it('passes the size and the outline weight through to the glyph', () => {
-    const { container } = render(<Icon name="check" size={40} stroke={1.5} />);
+    const { container } = render(<Icon name="check" size={40} thickness={1.5} />);
     const svg = container.querySelector('svg');
     expect(svg?.getAttribute('width')).toBe('40');
     // The two Tabler packages disagree on the prop name for the weight (see

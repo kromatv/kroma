@@ -62,7 +62,7 @@ function ReportProblem({ id }: Readonly<{ id: string }>) {
       {state === 'done' ? (
         <Box style={s.done}>
           <Box style={s.doneBadge}>
-            <Icon name="check" size={30} stroke={2.4} color="accentInk" />
+            <Icon name="check" size={30} thickness={2.4} color="accentInk" />
           </Box>
           <Text style={s.doneText}>{t('report.submitted')}</Text>
         </Box>
@@ -74,7 +74,7 @@ function ReportProblem({ id }: Readonly<{ id: string }>) {
           <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
             {title ? (
               <Box style={s.subjectRow}>
-                <Icon name="flag" size={16} stroke={1.8} color="accentText" />
+                <Icon name="flag" size={16} thickness={1.8} color="accentText" />
                 <Text lines={1} style={s.subject}>
                   {title}
                 </Text>
@@ -102,7 +102,7 @@ function ReportProblem({ id }: Readonly<{ id: string }>) {
                       <Text style={s.cardHint}>{t(c.hint as never)}</Text>
                     </Box>
                     {active ? (
-                      <Icon name="check" size={18} stroke={2.4} color="accentText" />
+                      <Icon name="check" size={18} thickness={2.4} color="accentText" />
                     ) : null}
                   </Pressable>
                 );

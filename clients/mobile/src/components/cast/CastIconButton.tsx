@@ -11,9 +11,9 @@ import { CastSheet } from '#mobile/components/cast/CastSheet';
 import { useT } from '#mobile/lib/i18n';
 
 export function CastIconButton({
-  size = 40,
+  diameter = 40,
   glyph = 22,
-}: Readonly<{ size?: number; glyph?: number }>) {
+}: Readonly<{ diameter?: number; glyph?: number }>) {
   const t = useT();
   const router = useRouter();
   const { active, select } = useCast();
@@ -23,13 +23,13 @@ export function CastIconButton({
     <>
       <IconButton
         variant="ghost"
-        size={size}
+        diameter={diameter}
         glyph={glyph}
         hitSlop={10}
         label={active ? t('cast.playingOn', { device: active.name }) : t('cast.title')}
         onPress={() => devices.current?.present()}
       >
-        <Icon name="cast" size={glyph} stroke={2} color={active ? 'accent' : 'text'} />
+        <Icon name="cast" size={glyph} thickness={2} color={active ? 'accent' : 'text'} />
       </IconButton>
       <CastSheet
         ref={devices}

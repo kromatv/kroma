@@ -32,7 +32,6 @@ const listeners = new Set<() => void>();
 
 let current = -1;
 let pinned: number | undefined;
-let watching = false;
 
 function indexOf(width: number): number {
   let at = 0;
@@ -53,17 +52,11 @@ function settle(): void {
   for (const listener of listeners) listener();
 }
 
-function watch(): void {
-  if (watching) return;
-  watching = true;
-  Dimensions.addEventListener('change', settle);
-}
-
 /** The active breakpoint as a position in {@link BREAKPOINTS}, which is what
  *  the cascade and every cache key are expressed in. */
 export function breakpointIndex(): number {
   if (current < 0) {
-    watch();
+    Dimensions.addEventListener('change', settle);
     current = indexOf(measure());
   }
   return current;

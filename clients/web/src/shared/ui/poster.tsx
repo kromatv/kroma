@@ -105,7 +105,7 @@ export function Poster({
           <Ground tone="dark">
             <IconButton
               variant={watched ? 'primary' : 'scrim'}
-              size={28}
+              diameter={28}
               glyph={15}
               icon="check"
               label={watched ? t('content.markUnwatched') : t('content.markWatched')}

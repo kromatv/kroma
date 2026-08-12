@@ -206,7 +206,7 @@ function GroupIconButton({ style, ...props }: Readonly<IconButtonProps>) {
   return (
     <IconButton
       variant="ghost"
-      size={at.box}
+      diameter={at.box}
       radius={at.radius}
       {...props}
       style={[at.pull, style]}

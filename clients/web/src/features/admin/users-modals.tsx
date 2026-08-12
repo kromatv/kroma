@@ -46,7 +46,7 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
       </ListRow.Hint>
       <ListRow.Leading>
         <Row center w={42} h={42} shrink={0} radius="circle" style={DASHED}>
-          <Icon name="mail" size={18} stroke={1.8} color="textDim" />
+          <Icon name="mail" size={18} thickness={1.8} color="textDim" />
         </Row>
       </ListRow.Leading>
       <ListRow.Trailing>

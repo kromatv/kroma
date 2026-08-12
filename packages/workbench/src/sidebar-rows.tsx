@@ -33,7 +33,7 @@ function Brand({
       {onClose ? (
         <IconButton
           variant="ghost"
-          size={CLOSE_BOX}
+          diameter={CLOSE_BOX}
           radius="sm"
           label="Close component list"
           ring={false}

@@ -75,11 +75,11 @@ function DeviceRow({
       <ListRow.Label>{name}</ListRow.Label>
       <ListRow.Hint>{detail}</ListRow.Hint>
       <ListRow.Leading>
-        <Icon name={icon} size={22} stroke={1.8} color={selected ? 'accent' : 'text'} />
+        <Icon name={icon} size={22} thickness={1.8} color={selected ? 'accent' : 'text'} />
       </ListRow.Leading>
       {selected ? (
         <ListRow.Trailing>
-          <Icon name="check" size={18} stroke={2.4} color="accent" />
+          <Icon name="check" size={18} thickness={2.4} color="accent" />
         </ListRow.Trailing>
       ) : null}
     </ListRow.Root>

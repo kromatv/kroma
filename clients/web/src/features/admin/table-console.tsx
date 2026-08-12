@@ -58,7 +58,7 @@ export function ConsoleSearch({
             value ? (
               <IconButton
                 variant="ghost"
-                size={28}
+                diameter={28}
                 glyph={16}
                 icon="x"
                 onPress={() => onChange('')}

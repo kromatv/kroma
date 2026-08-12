@@ -27,7 +27,7 @@ export function LocalePicker({
             {t(l.labelKey)}
           </Text>
           {locale === l.code ? (
-            <Icon name="check" size={17} stroke={2.4} color="accentText" />
+            <Icon name="check" size={17} thickness={2.4} color="accentText" />
           ) : null}
         </Pressable>
       ))}

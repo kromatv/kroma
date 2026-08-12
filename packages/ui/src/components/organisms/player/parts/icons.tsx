@@ -4,11 +4,11 @@
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import type { ColorToken } from '#ui/core';
 
-type P = Readonly<{ size?: number; stroke?: number; color?: ColorToken | (string & {}) }>;
+type P = Readonly<{ size?: number; thickness?: number; color?: ColorToken | (string & {}) }>;
 
-function glyph(name: IconName, defaultSize: number, defaultStroke?: number) {
-  return function Glyph({ size = defaultSize, stroke = defaultStroke, color }: P) {
-    return <Icon name={name} size={size} stroke={stroke} color={color ?? '#FFFFFF'} />;
+function glyph(name: IconName, defaultSize: number, defaultThickness?: number) {
+  return function Glyph({ size = defaultSize, thickness = defaultThickness, color }: P) {
+    return <Icon name={name} size={size} thickness={thickness} color={color ?? '#FFFFFF'} />;
   };
 }
 

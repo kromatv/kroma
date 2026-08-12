@@ -467,7 +467,7 @@ function ProfileTile({
                 shadow="card"
                 accessibilityLabel={lockedLabel}
               >
-                <Icon name="lock" size={15} stroke={2.2} color="accent" />
+                <Icon name="lock" size={15} thickness={2.2} color="accent" />
               </Box>
             ) : null}
           </Box>

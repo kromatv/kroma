@@ -22,7 +22,7 @@ interface DocsFile {
 
 /** `.../list-row.docs.mdx` -> `list-row`, the id of the story it documents. */
 function docsKey(path: string): string {
-  const file = path.split('/').pop() ?? path;
+  const file = path.slice(path.lastIndexOf('/') + 1);
   const parts = file.split('.');
   const [story, marker, ext] = parts;
   if (parts.length !== 3 || marker !== 'docs' || ext !== 'mdx' || !story) {

@@ -32,7 +32,7 @@ export function Toast({
         {action}
         <IconButton
           variant="ghost"
-          size={28}
+          diameter={28}
           glyph={16}
           icon="x"
           label={t('player.dismiss')}

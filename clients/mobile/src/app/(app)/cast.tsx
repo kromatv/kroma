@@ -86,7 +86,7 @@ function RemoteArtwork({ item }: Readonly<{ item?: MediaItem }>) {
         <Image source={{ uri: art }} style={s.art} contentFit="cover" transition={200} />
       ) : (
         <Box style={[s.art, s.artFallback]}>
-          <Icon name="device-tv" size={40} stroke={1.4} color="textDim" />
+          <Icon name="device-tv" size={40} thickness={1.4} color="textDim" />
         </Box>
       )}
       <Text lines={2} style={s.title}>
@@ -114,7 +114,7 @@ export default function CastRemoteScreen() {
       <Screen>
         <Header title={t('cast.remote')} onBack={() => goBack(router)} />
         <EmptyState
-          icon={<Icon name="cast" size={40} stroke={1.4} color="textDim" />}
+          icon={<Icon name="cast" size={40} thickness={1.4} color="textDim" />}
           title={t('cast.noDevices')}
           hint={t('cast.noDevicesHint')}
         />
@@ -132,13 +132,13 @@ export default function CastRemoteScreen() {
     <Screen>
       <Header title={active.name} onBack={() => goBack(router)} />
       <Pressable onPress={() => devices.current?.present()} style={s.deviceRow}>
-        <Icon name="cast" size={18} stroke={1.8} color={playing ? 'accent' : 'textMuted'} />
+        <Icon name="cast" size={18} thickness={1.8} color={playing ? 'accent' : 'textMuted'} />
         <Text style={[s.deviceText, !playing && s.deviceTextIdle]}>
           {t(playing ? 'cast.playingOn' : 'cast.connectedTo', {
             device: `${active.name} · ${active.username}`,
           })}
         </Text>
-        <Icon name="chevron-right" size={16} stroke={2} color="textMuted" />
+        <Icon name="chevron-right" size={16} thickness={2} color="textMuted" />
       </Pressable>
 
       {playing ? (
@@ -204,7 +204,7 @@ export default function CastRemoteScreen() {
         </ScrollView>
       ) : (
         <EmptyState
-          icon={<Icon name="device-tv" size={40} stroke={1.4} color="textDim" />}
+          icon={<Icon name="device-tv" size={40} thickness={1.4} color="textDim" />}
           title={t('cast.idleTitle')}
           hint={t('cast.idleHint', { device: active.name })}
           actionLabel={t('cast.disconnect')}
@@ -256,7 +256,7 @@ function Header({ title, onBack }: Readonly<{ title: string; onBack(): void }>) 
   return (
     <Box style={s.header}>
       <Pressable onPress={onBack} hitSlop={12} accessibilityRole="button">
-        <Icon name="chevron-down" size={26} stroke={2} />
+        <Icon name="chevron-down" size={26} thickness={2} />
       </Pressable>
       <Text lines={1} style={s.headerTitle}>
         {title}
@@ -279,7 +279,7 @@ function Round({
       accessibilityLabel={label}
       style={({ pressed }) => [s.round, big && s.roundBig, pressed && { opacity: 0.7 }]}
     >
-      <Icon name={icon} size={big ? 34 : 26} stroke={1.8} color="text" />
+      <Icon name={icon} size={big ? 34 : 26} thickness={1.8} color="text" />
     </Pressable>
   );
 }
@@ -296,7 +296,7 @@ function Wide({
       accessibilityRole="button"
       style={({ pressed }) => [s.wide, pressed && { opacity: 0.75 }]}
     >
-      <Icon name={icon} size={20} stroke={1.8} color="text" />
+      <Icon name={icon} size={20} thickness={1.8} color="text" />
       <Text lines={1} style={s.wideLabel}>
         {label}
       </Text>

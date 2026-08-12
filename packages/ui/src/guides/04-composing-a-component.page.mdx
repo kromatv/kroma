@@ -208,6 +208,7 @@ same shape for `open`, `checked` and `expanded`.
 | `icon` | `glyph`, `iconName` |
 | `tone` | `color`, `intent`, `status`, `severity` |
 | `size` | `scale`, `density` |
+| `thickness` | `stroke`, `weight` - the width of a drawn line |
 | `disabled` | `isDisabled`, `enabled` |
 | `multiple` | `type="multiple"`, `mode="multi"` |
 | `onValueChange` | `onChange`, `onSelect`, `onUpdate` |
@@ -217,13 +218,18 @@ component**, or the vocabulary is worthless. `size` is where this kit broke it
 worst - it has meant a control size, two distance scales, a diameter and a
 thickness.
 
-Two of those four are now spelled for what they measure: `thickness` on
-`<Divider>` and `<Progress>`. What is left is deliberate. On a control that wears
-a shell, `size` is the step in `lib/field-shell` (`sm | md | tv`); on a round
-leaf - `<Spinner>`, `<Avatar>`, `<StatusDot>`, `<Icon>` - it is the diameter in
-px, because that is the only measurement the thing has. **A distance is never
-`size`.** A component that genuinely has its own ladder names its own type but
-keeps the same three words.
+Everything but the first two is now spelled for what it measures. `thickness` is
+the width of anything the kit draws: a `<Divider>`'s rule, a `<Progress>`'s
+track, an `<Icon>`'s outline, a `<ProgressRing>`'s arc. `diameter` is a px box on
+a control that also wears a shell, which is why `<IconButton>` takes one - `size`
+there would have to mean the step and the box at once.
+
+What is left is deliberate. On a control that wears a shell, `size` is the step
+in `lib/field-shell` (`sm | md | tv`); on a round leaf - `<Spinner>`,
+`<Avatar>`, `<StatusDot>`, `<Icon>`, `<Logo>`, `<ProgressRing>` - it is the
+diameter in px, because that is the only measurement the thing has. **A distance
+is never `size`.** A component that genuinely has its own ladder names its own
+type but keeps the same three words.
 
 ## The checklist
 

@@ -27,7 +27,7 @@ export function ReleaseSearch({ value, onChange }: Readonly<ReleaseSearchProps>)
           value ? (
             <IconButton
               variant="ghost"
-              size={24}
+              diameter={24}
               glyph={16}
               icon="x"
               label="Clear search"

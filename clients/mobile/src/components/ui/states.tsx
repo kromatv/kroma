@@ -27,7 +27,7 @@ export function ErrorBanner({ message }: Readonly<{ message: string | null }>) {
   if (!message) return null;
   return (
     <Animated.View style={[s.box, { opacity: fade, transform: [{ translateX: shake }] }]}>
-      <Icon name="alert-circle" size={17} stroke={2} color="danger" />
+      <Icon name="alert-circle" size={17} thickness={2} color="danger" />
       <Text style={s.boxText}>{message}</Text>
     </Animated.View>
   );

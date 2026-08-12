@@ -44,7 +44,7 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
   return (
     <main ref={topRef} className={PAGE_MAIN}>
       <Link to="/search" style={BACK_LINK}>
-        <Icon name="arrow-left" size={16} stroke={2.2} color="textDim" />
+        <Icon name="arrow-left" size={16} thickness={2.2} color="textDim" />
         <Text variant="meta" color="textDim">
           {t('discover.back')}
         </Text>

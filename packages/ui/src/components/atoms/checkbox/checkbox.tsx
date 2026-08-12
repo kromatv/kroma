@@ -116,7 +116,7 @@ function CheckboxMark({
     <Icon
       name={indeterminate && !checked ? 'minus' : 'check'}
       size={Math.round(BOX[size] * 0.7)}
-      stroke={3}
+      thickness={3}
       color="accentInk"
     />
   );

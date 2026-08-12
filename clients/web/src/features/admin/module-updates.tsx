@@ -36,7 +36,7 @@ function UpdateRow({
         <Text variant="meta" color="textDim">
           v{m.installedVersion}
         </Text>
-        <Icon name="arrow-right" size={12} stroke={2.2} color="textDim" />
+        <Icon name="arrow-right" size={12} thickness={2.2} color="textDim" />
         <Text variant="meta" color="accentText">
           v{m.version}
         </Text>

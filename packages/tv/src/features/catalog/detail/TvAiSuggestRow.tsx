@@ -82,7 +82,7 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
       <Box mt={40} gap={16}>
         <Text style={s.label}>{t('content.aiSuggestions')}</Text>
         <Box row align="center" gap={16}>
-          <ProgressRing value={progress} size={26} stroke={3} track="text/15" fill="text/70" />
+          <ProgressRing value={progress} size={26} thickness={3} track="text/15" fill="text/70" />
           <Text color="textDim">{t('content.aiSuggestionsLoading')}</Text>
         </Box>
       </Box>

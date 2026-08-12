@@ -105,7 +105,7 @@ function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
         <Text lines={1} style={mono ? s.rowValueMono : s.rowValue}>
           {value}
         </Text>
-        {icon ? <Icon name={icon} size={16} stroke={2.2} color="textDim" /> : null}
+        {icon ? <Icon name={icon} size={16} thickness={2.2} color="textDim" /> : null}
       </Box>
     </>
   );

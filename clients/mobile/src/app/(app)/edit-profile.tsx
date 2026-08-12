@@ -43,7 +43,7 @@ function PrefRow({
     >
       <Box style={s.rowIconLabel}>
         <Box style={s.rowIconBox}>
-          <Icon name={icon} size={19} stroke={1.8} color="accentText" />
+          <Icon name={icon} size={19} thickness={1.8} color="accentText" />
         </Box>
         {/* The label yields to an ellipsis, the value never does. */}
         <Text lines={1} style={s.rowLabel}>
@@ -54,7 +54,7 @@ function PrefRow({
         <Text lines={1} style={s.rowValue}>
           {value}
         </Text>
-        <Icon name="selector" size={16} stroke={2} color="textDim" />
+        <Icon name="selector" size={16} thickness={2} color="textDim" />
       </Box>
     </Pressable>
   );
@@ -187,7 +187,7 @@ export default function EditProfile() {
                 {avatarBusy ? (
                   <Spinner size={14} thickness={2} color="accentInk" />
                 ) : (
-                  <Icon name="camera" size={14} stroke={2} color="accentInk" />
+                  <Icon name="camera" size={14} thickness={2} color="accentInk" />
                 )}
               </Box>
             </Pressable>

@@ -14,7 +14,7 @@ function Demo({ min, max, step }: Readonly<{ min: number; max: number; step: num
         <NumberField
           label="Max tokens"
           value={tokens}
-          onChange={setTokens}
+          onValueChange={setTokens}
           min={min}
           max={max}
           step={step}
@@ -25,7 +25,7 @@ function Demo({ min, max, step }: Readonly<{ min: number; max: number; step: num
         <NumberField
           label="Temperature"
           value={temperature}
-          onChange={setTemperature}
+          onValueChange={setTemperature}
           min={0}
           max={2}
           step={0.1}
@@ -43,7 +43,7 @@ export default story({
   group: 'Input',
   docs: "The numeric entry, worn inside a <Field.Root> like any other: the same well, the same rhythm, plus a stacked **stepper pair** - the pointer's way to nudge, the arrow keys' twin on a physical keyboard, and on a television the only way to change the value at all. The buffer is text (a cleared field can be retyped in peace), only a real number is ever committed, and blur clamps to `min`/`max` and rewrites the text to the number actually stored - the field can never show one value while holding another.",
   usage: `<Field.Root label="Max tokens">
-  <NumberField label="Max tokens" value={maxTokens} onChange={setMaxTokens} min={64} step={256} />
+  <NumberField label="Max tokens" value={maxTokens} onValueChange={setMaxTokens} min={64} step={256} />
   <Field.Hint>64 to 8192</Field.Hint>
 </Field.Root>`,
   guidelines: {

@@ -62,7 +62,7 @@ function Row({
       <Text lines={1} style={[s.rowLabel, selected && s.rowLabelActive]}>
         {label}
       </Text>
-      {selected ? <Icon name="check" size={20} stroke={2.4} color="accentText" /> : null}
+      {selected ? <Icon name="check" size={20} thickness={2.4} color="accentText" /> : null}
     </Pressable>
   );
 }

@@ -66,7 +66,7 @@ export function ChoicePicker({
             <ListRow.Label>{t(item.valueLabel(option))}</ListRow.Label>
             <ListRow.Trailing>
               {option === value ? (
-                <Icon name="check" size={20} stroke={2.4} color="accentText" />
+                <Icon name="check" size={20} thickness={2.4} color="accentText" />
               ) : null}
             </ListRow.Trailing>
           </ListRow.Root>

@@ -157,7 +157,7 @@ export function AiPage() {
       >
         <Row gap={14}>
           <Row center w={40} h={40} shrink={0} radius="xs" bg="accentSoft">
-            <Icon name="sparkles" size={20} stroke={1.8} color="accentText" />
+            <Icon name="sparkles" size={20} thickness={1.8} color="accentText" />
           </Row>
           <Box>
             <Text variant="label">{t('admin.aiEnabled')}</Text>

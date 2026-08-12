@@ -87,10 +87,10 @@ function FlowDot({ treatment }: Readonly<{ treatment: Treatment }>) {
         accessibilityLabel={`${name} - ${state}`}
       >
         {treatment.status === 'done' ? (
-          <Icon name="check" size={11} stroke={3.2} color={m.color} />
+          <Icon name="check" size={11} thickness={3.2} color={m.color} />
         ) : null}
         {treatment.status === 'failed' ? (
-          <Icon name="x" size={10} stroke={3.4} color={m.color} />
+          <Icon name="x" size={10} thickness={3.4} color={m.color} />
         ) : null}
         {treatment.status === 'running' ? (
           <Spinner size={11} thickness={2} color={m.color} />

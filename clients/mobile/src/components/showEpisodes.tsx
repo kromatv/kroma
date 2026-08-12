@@ -24,7 +24,7 @@ export function SeasonDownload({ episodes }: Readonly<{ episodes: MediaItem[] }>
   if (done === episodes.length) {
     return (
       <Box style={s.seasonDl}>
-        <Icon name="check" size={16} stroke={2.4} color="accentText" />
+        <Icon name="check" size={16} thickness={2.4} color="accentText" />
         <Text style={s.seasonDlLabel}>{t('offline.downloaded')}</Text>
       </Box>
     );
@@ -141,7 +141,7 @@ export function EpisodeRow({
             {episode.episode != null ? `${episode.episode}. ` : ''}
             {episode.episodeTitle ?? episode.title}
           </Text>
-          {watched ? <Icon name="check" size={14} stroke={2.4} color="success" /> : null}
+          {watched ? <Icon name="check" size={14} thickness={2.4} color="success" /> : null}
         </Box>
         {runtime ? <Text style={s.epMeta}>{runtime}</Text> : null}
         {overview ? (

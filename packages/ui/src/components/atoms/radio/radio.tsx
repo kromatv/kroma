@@ -50,13 +50,13 @@ interface RadioProps
   checked: boolean;
   /** Fired on a press that PICKS this one. A press on the chosen radio is not
    *  a change, so nothing is reported. */
-  onChange?: () => void;
+  onValueChange?: () => void;
   size?: RadioSize;
 }
 
 function Radio({
   checked,
-  onChange,
+  onValueChange,
   size = 'sm',
   disabled = false,
   ...focusProps
@@ -68,7 +68,7 @@ function Radio({
       checked={checked}
       disabled={disabled}
       onPress={() => {
-        if (!checked) onChange?.();
+        if (!checked) onValueChange?.();
       }}
       sv={radioVariants}
       vars={{ size, checked }}

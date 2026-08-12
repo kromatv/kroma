@@ -60,7 +60,7 @@ function Row({
     >
       <Text style={[s.rowLabel, selected && s.rowLabelOn]}>{label}</Text>
       {note ? <Text style={s.rowNote}>{note}</Text> : null}
-      {selected ? <Icon name="check" size={17} stroke={2.4} color={colors.accent} /> : null}
+      {selected ? <Icon name="check" size={17} thickness={2.4} color={colors.accent} /> : null}
     </Pressable>
   );
 }
@@ -88,7 +88,7 @@ function MenuRow({
       accessibilityState={toggle ? { checked: Boolean(on) } : undefined}
       style={({ pressed }) => [s.menuRow, pressed && { backgroundColor: colors.surfaceHigh }]}
     >
-      <Icon name={icon} size={20} stroke={1.8} color={colors.textDim} />
+      <Icon name={icon} size={20} thickness={1.8} color={colors.textDim} />
       <Box style={s.menuText}>
         <Text style={s.menuLabel}>{label}</Text>
         {!toggle && value ? (
@@ -100,7 +100,7 @@ function MenuRow({
       {toggle ? (
         <SwitchFace checked={Boolean(on)} style={s.noShrink} />
       ) : (
-        <Icon name="chevron-right" size={18} stroke={2.2} color={colors.textFaint} />
+        <Icon name="chevron-right" size={18} thickness={2.2} color={colors.textFaint} />
       )}
     </Pressable>
   );
@@ -109,7 +109,7 @@ function MenuRow({
 function SubHeader({ title, onBack }: Readonly<{ title: string; onBack(): void }>) {
   return (
     <Pressable onPress={onBack} style={({ pressed }) => [s.subHeader, pressed && { opacity: 0.7 }]}>
-      <Icon name="chevron-left" size={20} stroke={2.4} color={colors.text} />
+      <Icon name="chevron-left" size={20} thickness={2.4} color={colors.text} />
       <Text style={s.subTitle}>{title}</Text>
     </Pressable>
   );

@@ -88,7 +88,7 @@ export type {
 export { msg, useForm } from './lib/form';
 export {
   DEFAULT_ICON_SIZE,
-  DEFAULT_ICON_STROKE,
+  DEFAULT_ICON_THICKNESS,
   hasGlyph,
   iconNames,
 } from './lib/glyph';

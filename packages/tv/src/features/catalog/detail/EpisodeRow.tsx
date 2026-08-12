@@ -84,7 +84,7 @@ function episodeStill(at: {
       ) : null}
       {at.watched ? (
         <Box absolute top={10} right={10} w={26} h={26} center radius="pill" bg={SEEN_BG}>
-          <Icon name="check" size={14} color="success" stroke={3} />
+          <Icon name="check" size={14} color="success" thickness={3} />
         </Box>
       ) : null}
       {at.inProgress ? (
@@ -164,7 +164,7 @@ export function EpisodeRow({
           </Row>
           {endsAt ? (
             <Row gap={9}>
-              <Icon name="clock" size={14} stroke={1.8} color="accentText" />
+              <Icon name="clock" size={14} thickness={1.8} color="accentText" />
               <Text style={s.endsAt} color="textDim">
                 {t('content.endsAtShort', { time: endsAt })}
               </Text>

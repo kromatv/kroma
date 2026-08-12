@@ -57,7 +57,7 @@ export function PhotoCard() {
           border="borderStrong"
           bg="surface2"
         >
-          <Icon name="camera" size={15} stroke={1.9} color="accent" />
+          <Icon name="camera" size={15} thickness={1.9} color="accent" />
         </Box>
       </Box>
 

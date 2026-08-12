@@ -12,14 +12,14 @@ export function NotificationBell() {
   return (
     <IconButton
       variant="ghost"
-      size={40}
+      diameter={40}
       glyph={22}
       hitSlop={10}
       label={unread > 0 ? t('notifications.unreadCount', { n: unread }) : t('notifications.title')}
       onPress={() => router.push('/notifications' as never)}
     >
       <Box>
-        <Icon name="bell" size={22} stroke={2} />
+        <Icon name="bell" size={22} thickness={2} />
         {unread > 0 ? (
           <Box style={s.badge}>
             {/* Past nine the pill starts outgrowing the bell. */}

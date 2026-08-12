@@ -95,7 +95,7 @@ export function ControlsLayer({
         ]}
         pointerEvents="box-none"
       >
-        <BackButton size={42} onPress={onBack} label={t('common.back')} />
+        <BackButton diameter={42} onPress={onBack} label={t('common.back')} />
         {/* Beside the back button, like the TV bar: the title reads from the
             corner, not the centre of the picture. */}
         <Box style={s.titleBox}>
@@ -112,7 +112,7 @@ export function ControlsLayer({
 
       <Box style={s.centerRow} pointerEvents="box-none">
         <IconButton
-          size={56}
+          diameter={56}
           icon="rewind-backward-10"
           glyph={28}
           onPress={() => {
@@ -125,7 +125,7 @@ export function ControlsLayer({
             spinner floating behind the cluster read as two half-drawn
             controls fighting over the same centre. */}
         <IconButton
-          size={72}
+          diameter={72}
           variant="primary"
           onPress={() => {
             engine.togglePlay();
@@ -140,7 +140,7 @@ export function ControlsLayer({
           })()}
         </IconButton>
         <IconButton
-          size={56}
+          diameter={56}
           icon="rewind-forward-10"
           glyph={28}
           onPress={() => {
@@ -220,7 +220,7 @@ function RowShortcut({
   label,
   onPress,
 }: Readonly<{ icon: IconName; label: string; onPress(): void }>) {
-  return <IconButton size={40} icon={icon} glyph={20} onPress={onPress} label={label} />;
+  return <IconButton diameter={40} icon={icon} glyph={20} onPress={onPress} label={label} />;
 }
 
 function ScrubRow({

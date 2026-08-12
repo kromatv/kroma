@@ -222,7 +222,7 @@ function IconTool({
   return (
     <IconButton
       variant="ghost"
-      size={TOOL_BOX}
+      diameter={TOOL_BOX}
       radius="sm"
       active={active}
       label={label}

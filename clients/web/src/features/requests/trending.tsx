@@ -19,7 +19,7 @@ function RailHeading({ title, action }: Readonly<{ title: string; action?: React
       {/* Still an <h2>: <Text accessibilityRole="header"> can only render an h1. */}
       <h2 style={HEADING}>
         <Row gap={8}>
-          <Icon name="flame" size={20} stroke={2} color="accent" />
+          <Icon name="flame" size={20} thickness={2} color="accent" />
           <Text variant="h2">{title}</Text>
         </Row>
       </h2>
@@ -44,7 +44,7 @@ function TrendRail({
             <Text variant="meta" color="textDim">
               {t('discover.seeAll')}
             </Text>
-            <Icon name="chevron-right" size={15} stroke={2.4} color="textDim" />
+            <Icon name="chevron-right" size={15} thickness={2.4} color="textDim" />
           </Link>
         }
       />
