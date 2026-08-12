@@ -29,8 +29,13 @@ describe('viewCode', () => {
     expect(viewCode(written(), 'scene:0', {})).toBe('<Chip.Row />');
   });
 
-  it('shows nothing beside a scene no build could read, rather than the wrong code', () => {
-    expect(viewCode(written(), 'scene:1', {})).toBeNull();
+  it("falls back to the story's own render for a scene that declares none", () => {
+    // A scene with neither `example` nor `render` IS the story's render, so the
+    // story's source is the code that drew it.
+    expect(viewCode(written(), 'scene:1', {})).toBe('<Chip label="HDR" />');
+  });
+
+  it('shows nothing where the build read no source at all, rather than a guess', () => {
     expect(viewCode(chip(), 'scene:0', {})).toBeNull();
   });
 

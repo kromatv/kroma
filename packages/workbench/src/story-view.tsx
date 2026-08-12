@@ -188,15 +188,35 @@ function viewDocs(story: Story, view: View): string | undefined {
 // into props it does not have, so authored markup wins wherever there is any.
 function viewCode(story: Story, view: View, args: Record<string, unknown>): string | null {
   if (view.startsWith('demo:')) return story.demos[viewIndex(view)]?.code ?? null;
-  if (view.startsWith('scene:')) return inlineArgs(story.scenes[viewIndex(view)]?.code, args);
+  // A scene that declares neither `example` nor `render` is drawn by the story's
+  // own render, so that is the code that drew it - but only where the story has
+  // something to show. A story whose render the build could not read has just
+  // its variants to generate from, and a generated call beside a scene it did
+  // not draw is a guess.
+  if (view.startsWith('scene:')) {
+    const scene = story.scenes[viewIndex(view)];
+    if (scene?.code) return inlineArgs(scene.code, args);
+    if (story.code) return inlineArgs(story.code, args);
+    return story.named ? snippet(story, args) : null;
+  }
   if (view !== 'preview') return null;
+  return previewCode(story, args);
+}
+
+// A story that names a `component` and writes no render has no source to read:
+// the workbench draws it from the args, and the call site it would draw is
+// exactly what the generated one says. So the fallback is the snippet, not
+// nothing, and 29 of the kit's stories get a code panel because of it.
+function previewCode(story: Story, args: Record<string, unknown>): string | null {
   const authored = fullyInlined(story.code, args);
   if (authored) return authored;
   if (story.controls.some((control) => control.variant)) return snippet(story, args);
-  // Nothing resolved cleanly and there is no variant to generate a call from, so
-  // the authored markup stands, minus the arrow around it: an expression left
-  // unwritten is the source itself, which reads.
-  return inlineArgs(story.code, args);
+  // Source that did not resolve still reads as source, minus the arrow around
+  // it. With no source at all there are two cases, and only one of them has an
+  // answer: a story that NAMED its component is drawn from the args, so the
+  // generated call is exactly what drew it; a story whose render the build
+  // could not read shows nothing rather than a guess about it.
+  return inlineArgs(story.code, args) ?? (story.named ? snippet(story, args) : null);
 }
 
 function CodeBar({

@@ -132,6 +132,10 @@ interface Story {
   /** The story's own `render`, as it was written. Absent on Metro, and for a
    * story that names a `component` rather than composing one. */
   code?: string;
+  /** Whether the story NAMED its component rather than composing a render. Such
+   * a story has no source to read, and the call site the workbench draws it
+   * from is exactly the generated one, so that is what its code panel shows. */
+  named: boolean;
   /** One section per part of a compound component, or one unnamed section for a
    * plain one. Empty on Metro, which has no build-time reader. */
   props: readonly PropSection[];
@@ -148,16 +152,18 @@ interface Story {
 interface OwnView<A extends Args> {
   render: (args: A) => ReactNode;
   live: boolean;
+  /** The story named a component rather than composing a render. */
+  named: boolean;
 }
 
 // The author's own arity, read BEFORE anything wraps it: a compiled render
 // always takes the args, so this is the last point at which "reads them" and
 // "ignores them" are still two different functions.
 function ownView<A extends Args, P extends object>(def: StoryDef<A, P>): OwnView<A> {
-  if (def.render) return { render: def.render, live: def.render.length > 0 };
+  if (def.render) return { render: def.render, live: def.render.length > 0, named: false };
   const component = def.component as ComponentType<Args> | undefined;
-  if (!component) return { render: () => null, live: false };
-  return { render: (args) => createElement(component, args), live: true };
+  if (!component) return { render: () => null, live: false, named: false };
+  return { render: (args) => createElement(component, args), live: true, named: true };
 }
 
 function sceneLive<A extends Args>(scene: SceneDef<A>, own: boolean): boolean {
@@ -216,6 +222,7 @@ function story<const A extends Args = Record<string, never>, P extends object = 
     props: [],
     render: (current: Args) => own.render(current as unknown as A),
     live: own.live,
+    named: own.named,
     play: def.play,
     pad: def.pad ?? 0,
     width: def.width,
