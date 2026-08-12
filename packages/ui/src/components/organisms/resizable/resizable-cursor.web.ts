@@ -29,7 +29,7 @@ function holdCursor(orientation: GroupOrientation): () => void {
   const doc = webDocument();
   if (!doc?.head) return NOOP;
   const style = doc.createElement('style');
-  style.setAttribute('data-kroma-resize', orientation);
+  style.dataset.kromaResize = orientation;
   style.textContent = ruleFor(orientation);
   doc.head.append(style);
   return () => style.remove();

@@ -84,7 +84,9 @@ export async function readGitHistory({ repo, root }: GitHistoryOptions): Promise
 
   const tracked = splitPaths(await git(repo, ['ls-files', '-z', '--', root]));
   const working = parseStatus(await git(repo, statusArgs(root)));
-  const files = [...new Set([...tracked, ...working.untracked])].sort();
+  const files = [...new Set([...tracked, ...working.untracked])].sort((a, b) =>
+    a.localeCompare(b, 'en'),
+  );
 
   // A path the index has already moved is looked for under the name HEAD still
   // knows it by; anything else is looked for under its own.

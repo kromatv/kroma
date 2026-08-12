@@ -7,7 +7,7 @@
 // last entry to stop drawing, which is the only thing an entry cannot know about
 // itself.
 
-import { Children, isValidElement, type ReactNode } from 'react';
+import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
@@ -68,13 +68,19 @@ interface TimelineRootProps {
 function Root({ size, children }: Readonly<TimelineRootProps>) {
   const shape = SHAPE[size ?? entryDefaultSize()];
   const items = Children.toArray(children).filter((child) => isValidElement(child));
+  // One value per position rather than one per render: a fresh object in the
+  // provider re-renders every entry whenever the rail does.
+  const rail = useMemo(
+    () => items.map((_, at) => ({ shape, last: at === items.length - 1 })),
+    [shape, items.length],
+  );
   return (
     <Box>
       {items.map((child, at) => (
         // The position is the identity here: this is the caller's own list of
         // children, in the order it was written, and nothing reorders it.
         // biome-ignore lint/suspicious/noArrayIndexKey: the position IS what the provider carries
-        <TimelineContext.Provider key={at} value={{ shape, last: at === items.length - 1 }}>
+        <TimelineContext.Provider key={at} value={rail[at] as Context}>
           {child}
         </TimelineContext.Provider>
       ))}

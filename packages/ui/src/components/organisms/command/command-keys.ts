@@ -11,6 +11,8 @@
 
 import type { CommandKeysOptions } from './command-keys-types';
 
-function useCommandKeys(_options: CommandKeysOptions): void {}
+function useCommandKeys(_options: CommandKeysOptions): void {
+  // Empty on purpose, for the reason above.
+}
 
 export { useCommandKeys };

@@ -191,7 +191,7 @@ function namespaceOf(statement: Statement): Namespace | null {
   const initializer = declaration?.initializer;
   if (!initializer || !isObjectLiteralExpression(initializer)) return null;
   const parts = initializer.properties.map(partOf);
-  if (!parts.length || parts.some((part) => part === null)) return null;
+  if (!parts.length || parts.includes(null)) return null;
   return { name: name.text, parts: parts as Part[] };
 }
 

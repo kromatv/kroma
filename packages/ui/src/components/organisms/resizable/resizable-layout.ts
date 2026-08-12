@@ -146,8 +146,9 @@ function solve(sizes: readonly number[], limits: readonly PanelLimit[]): number[
 
 function order(from: number, to: number): number[] {
   const step = from <= to ? 1 : -1;
-  const out: number[] = [];
-  for (let at = from; at !== to + step; at += step) out.push(at);
+  const count = Math.abs(to - from) + 1;
+  const out: number[] = new Array(count);
+  for (let i = 0; i < count; i += 1) out[i] = from + i * step;
   return out;
 }
 

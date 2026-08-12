@@ -36,7 +36,9 @@ function permalink(
   if (!repository || !rev || !SHA.test(rev)) return null;
   if (target !== 'commit' && !path) return null;
   const suffix = path ? `/${path}` : '';
-  const url = `${repository.replace(/\/+$/, '')}/${target}/${rev}${suffix}`;
+  let base = repository;
+  while (base.endsWith('/')) base = base.slice(0, -1);
+  const url = `${base}/${target}/${rev}${suffix}`;
   return WEB_LINK.test(url) ? url : null;
 }
 
