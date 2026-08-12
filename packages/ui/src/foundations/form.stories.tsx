@@ -5,7 +5,6 @@ import { Button } from '#ui/components/atoms/button';
 import { Switch } from '#ui/components/atoms/switch';
 import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
-import { Select } from '#ui/components/molecules/select';
 import { msg, useForm } from '#ui/lib/form';
 import { useT } from '#ui/services/i18n';
 
@@ -52,65 +51,6 @@ function SignIn() {
           Signed in. Nothing was sent anywhere.
         </Text>
       ) : null}
-    </Box>
-  );
-}
-
-const QUALITY = [
-  { value: 'original', label: 'Original' },
-  { value: '1080p', label: '1080p' },
-  { value: '720p', label: '720p' },
-];
-
-const Server = z.object({
-  address: z.string().min(1, msg('form.required')),
-  quality: z.string().min(1, msg('form.required')),
-  transcode: z.boolean(),
-  notes: z.string().max(120, msg('form.tooLong', { max: 120 })),
-});
-
-function EveryControl() {
-  const form = useForm({
-    schema: Server,
-    defaultValues: { address: '', quality: '', transcode: false, notes: '' },
-    t: useT(),
-  });
-  const address = form.field('address');
-  const notes = form.field('notes');
-  return (
-    <Box gap={18}>
-      <Field.Root label="Server address" {...address.root}>
-        <Field.Input
-          icon="server"
-          placeholder="kroma.local:4040"
-          physicalKeyboard
-          {...address.input}
-        />
-      </Field.Root>
-      <Field.Root label="Quality" error={form.errors.quality}>
-        <Select.Root
-          label="Quality"
-          value={form.values.quality}
-          onValueChange={(next) => form.setValue('quality', next)}
-        >
-          <Select.Trigger block invalid={Boolean(form.errors.quality)} />
-          {QUALITY.map((quality) => (
-            <Select.Item key={quality.value} value={quality.value}>
-              {quality.label}
-            </Select.Item>
-          ))}
-        </Select.Root>
-      </Field.Root>
-      <Box row align="center" gap={14}>
-        <Switch {...form.toggle('transcode')} />
-        <Text variant="meta" color="textMuted">
-          Transcode on the fly
-        </Text>
-      </Box>
-      <Field.Root label="Notes" {...notes.root}>
-        <Field.Textarea rows={2} physicalKeyboard {...notes.input} />
-      </Field.Root>
-      <Button label="Save" block loading={form.submitting} onPress={form.submit} />
     </Box>
   );
 }
@@ -241,11 +181,6 @@ const email = form.field('email');
   width: { min: 320, max: 520 },
   render: () => <SignIn />,
   scenes: [
-    {
-      name: 'Every control',
-      docs: 'One schema over four kinds of input. `field()` spreads onto a `<Field.Input>` and onto a `<Field.Textarea>`, which is the same two bags either way; `toggle()` onto a `<Switch>`. Anything else - a `<Select>` here - reads `form.values` and reports through `form.setValue`, and still wears the label and error by sitting inside a `<Field.Root>`.',
-      example: () => <EveryControl />,
-    },
     {
       name: 'A check with no field to blame',
       docs: 'Two passwords that have to match is a rule about the OBJECT, not about either entry, so zod gives its issue no path and it lands on `form.error` rather than being pinned on the second field or dropped.',

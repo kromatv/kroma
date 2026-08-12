@@ -30,6 +30,35 @@ const DEFINITION_PANE: CSSProperties = { maxHeight: '46vh', overflowY: 'auto' };
 
 const SETTINGS_PANE: CSSProperties = { maxHeight: '52vh', overflowY: 'auto', paddingRight: 2 };
 
+function CategoriesAndPriority({
+  cats,
+  onCatsChange,
+  priority,
+  onPriorityChange,
+}: Readonly<{
+  cats: string;
+  onCatsChange: (value: string) => void;
+  priority: string;
+  onPriorityChange: (value: string) => void;
+}>) {
+  const t = useT();
+  return (
+    <Box row={{ base: false, md: true }} gap={16}>
+      <Field.Root flex label={t('indexers.categories')} value={cats} onValueChange={onCatsChange}>
+        <Field.Hint>{t('indexers.categoriesHint')}</Field.Hint>
+      </Field.Root>
+      <Field.Root
+        flex
+        label={t('indexers.priority')}
+        value={priority}
+        onValueChange={onPriorityChange}
+      >
+        <Field.Hint>{t('indexers.priorityHint')}</Field.Hint>
+      </Field.Root>
+    </Box>
+  );
+}
+
 /** Parse a comma-separated Newznab category list into positive category ids. */
 export function parseCats(text: string): number[] {
   return text
@@ -110,19 +139,12 @@ function TorznabIndexerForm({
         <Field.Input type="password" />
         {indexer.hasApiKey ? <Field.Hint>{t('indexers.apiKeyKept')}</Field.Hint> : null}
       </Field.Root>
-      <Box row={{ base: false, md: true }} gap={16}>
-        <Field.Root flex label={t('indexers.categories')} value={cats} onValueChange={setCats}>
-          <Field.Hint>{t('indexers.categoriesHint')}</Field.Hint>
-        </Field.Root>
-        <Field.Root
-          flex
-          label={t('indexers.priority')}
-          value={priority}
-          onValueChange={setPriority}
-        >
-          <Field.Hint>{t('indexers.priorityHint')}</Field.Hint>
-        </Field.Root>
-      </Box>
+      <CategoriesAndPriority
+        cats={cats}
+        onCatsChange={setCats}
+        priority={priority}
+        onPriorityChange={setPriority}
+      />
       {error ? (
         <Text variant="meta" color="dangerHover">
           {error}
@@ -420,19 +442,12 @@ function BuiltinIndexerForm({
               );
             })}
 
-          <Box row={{ base: false, md: true }} gap={16}>
-            <Field.Root flex label={t('indexers.categories')} value={cats} onValueChange={setCats}>
-              <Field.Hint>{t('indexers.categoriesHint')}</Field.Hint>
-            </Field.Root>
-            <Field.Root
-              flex
-              label={t('indexers.priority')}
-              value={priority}
-              onValueChange={setPriority}
-            >
-              <Field.Hint>{t('indexers.priorityHint')}</Field.Hint>
-            </Field.Root>
-          </Box>
+          <CategoriesAndPriority
+            cats={cats}
+            onCatsChange={setCats}
+            priority={priority}
+            onPriorityChange={setPriority}
+          />
         </div>
       ) : null}
 

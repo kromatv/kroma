@@ -9,7 +9,18 @@ import {
   type ReportSubjectKind,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, Callout, color, Field, Focusable, IconButton, sv, Text } from '@kroma/ui/kit';
+import {
+  Box,
+  Callout,
+  color,
+  Dialog,
+  Field,
+  Focusable,
+  IconButton,
+  Row,
+  sv,
+  Text,
+} from '@kroma/ui/kit';
 import {
   IconCheck,
   IconDotsCircleHorizontal,
@@ -20,19 +31,7 @@ import {
 } from '@tabler/icons-react';
 import { type ComponentType, useState } from 'react';
 import { createCallable } from 'react-call';
-import {
-  HEADER_RULE,
-  MODAL_BODY,
-  MODAL_LAYER,
-  modalPanel,
-} from '#web/features/catalog/modal-shell';
 import { useAuth } from '#web/shared/lib/auth';
-import { MODAL_SCRIM } from '#web/shared/ui';
-
-// Shares the row like the old `flex-1` CTAs.
-const FLEX_1 = { flex: 1 } as const;
-
-const PANEL = modalPanel(512);
 
 const categoryRow = sv({
   base: {
@@ -121,112 +120,103 @@ export const ReportDialog = createCallable<
   };
 
   return (
-    <>
-      <button
-        type="button"
-        aria-label={t('common.close')}
-        onClick={() => call.end()}
-        className={MODAL_SCRIM}
-      />
-      <div style={MODAL_LAYER}>
-        <section style={PANEL}>
-          <Box row align="flex-start" between gap={16} px={28} py={20} style={HEADER_RULE}>
-            <Box minW={0}>
-              <Text variant="overline" color="white/40">
-                {t('report.title')}
-              </Text>
-              <h2>
-                <Text variant="title" mt={4} lines={1}>
-                  {subjectTitle}
-                </Text>
-              </h2>
-            </Box>
-            <IconButton
-              control="sm"
-              icon="x"
-              label={t('common.close')}
-              onPress={() => call.end()}
-            />
+    <Dialog.Root open title={subjectTitle} width="md" onClose={() => call.end()}>
+      <Dialog.Header>
+        <Row between align="flex-start" gap={16}>
+          <Box minW={0}>
+            <Text variant="overline" color="white/40">
+              {t('report.title')}
+            </Text>
+            <Text variant="title" mt={4} lines={1}>
+              {subjectTitle}
+            </Text>
           </Box>
+          <IconButton control="sm" icon="x" label={t('common.close')} onPress={() => call.end()} />
+        </Row>
+      </Dialog.Header>
 
-          {sent ? (
-            <Box align="center" gap={16} px={28} py={48}>
-              <Box center w={56} h={56} radius="circle" bg="success/15">
-                <IconCheck size={30} stroke={2.4} color={color('success')} />
-              </Box>
-              <Text variant="label" color="white/85" textAlign="center">
-                {t('report.submitted')}
-              </Text>
-              <Button size="sm" label={t('common.close')} onPress={() => call.end()} />
+      <Dialog.Panel>
+        {sent ? (
+          <Box align="center" gap={16} py={32}>
+            <Box center w={56} h={56} radius="circle" bg="success/15">
+              <IconCheck size={30} stroke={2.4} color={color('success')} />
             </Box>
-          ) : (
-            <div style={MODAL_BODY}>
-              <Box>
-                <Text variant="overline" color="white/40" mb={10}>
-                  {t('report.category')}
-                </Text>
-                <Box gap={8}>
-                  {CATEGORIES.map((c) => {
-                    const on = c.key === category;
-                    return (
-                      <Focusable
-                        key={c.key}
-                        sv={categoryRow}
-                        vars={{ on }}
-                        role="radio"
-                        checked={on}
-                        label={t(c.labelKey)}
-                        onPress={() => setCategory(c.key)}
-                      >
-                        <Box mt={2} shrink={0}>
-                          <c.Icon
-                            size={19}
-                            stroke={1.9}
-                            color={color(on ? 'accent' : 'white/45')}
-                          />
-                        </Box>
-                        <Box minW={0}>
-                          <Text variant="label" color="white">
-                            {t(c.labelKey)}
-                          </Text>
-                          <Text variant="meta" color="white/45" mt={2}>
-                            {t(c.descKey)}
-                          </Text>
-                        </Box>
-                      </Focusable>
-                    );
-                  })}
-                </Box>
+            <Text variant="label" color="white/85" textAlign="center">
+              {t('report.submitted')}
+            </Text>
+          </Box>
+        ) : (
+          <>
+            <Box>
+              <Text variant="overline" color="white/40" mb={10}>
+                {t('report.category')}
+              </Text>
+              <Box gap={8}>
+                {CATEGORIES.map((c) => {
+                  const on = c.key === category;
+                  return (
+                    <Focusable
+                      key={c.key}
+                      sv={categoryRow}
+                      vars={{ on }}
+                      role="radio"
+                      checked={on}
+                      label={t(c.labelKey)}
+                      onPress={() => setCategory(c.key)}
+                    >
+                      <Box mt={2} shrink={0}>
+                        <c.Icon size={19} stroke={1.9} color={color(on ? 'accent' : 'white/45')} />
+                      </Box>
+                      <Box minW={0}>
+                        <Text variant="label" color="white">
+                          {t(c.labelKey)}
+                        </Text>
+                        <Text variant="meta" color="white/45" mt={2}>
+                          {t(c.descKey)}
+                        </Text>
+                      </Box>
+                    </Focusable>
+                  );
+                })}
               </Box>
+            </Box>
 
-              <Box>
-                <Text variant="overline" color="white/40" mb={8}>
-                  {t('report.message')}
-                </Text>
-                <Field.Root label={t('report.message')} hideLabel>
-                  <Field.Textarea
-                    rows={3}
-                    value={message}
-                    onValueChange={(v) => setMessage(v.slice(0, 2000))}
-                    placeholder={t('report.messagePlaceholder')}
-                  />
-                </Field.Root>
-              </Box>
+            <Box>
+              <Text variant="overline" color="white/40" mb={8}>
+                {t('report.message')}
+              </Text>
+              <Field.Root label={t('report.message')} hideLabel>
+                <Field.Textarea
+                  rows={3}
+                  value={message}
+                  onValueChange={(v) => setMessage(v.slice(0, 2000))}
+                  placeholder={t('report.messagePlaceholder')}
+                />
+              </Field.Root>
+            </Box>
 
-              {error ? (
-                <Callout.Root tone="danger">
-                  <Callout.Title>{error}</Callout.Title>
-                </Callout.Root>
-              ) : null}
+            {error ? (
+              <Callout.Root tone="danger">
+                <Callout.Title>{error}</Callout.Title>
+              </Callout.Root>
+            ) : null}
+          </>
+        )}
+      </Dialog.Panel>
 
-              <Box row gap={10}>
-                <Button label={t('report.submit')} onPress={submit} loading={busy} style={FLEX_1} />
-                <Button variant="glass" label={t('common.cancel')} onPress={() => call.end()} />
-              </Box>
-            </div>
-          )}
-        </section>
-      </div>
-    </>
+      <Dialog.Footer>
+        {sent ? (
+          <Dialog.Actions onCancel={() => call.end()} cancelLabel={t('common.close')} />
+        ) : (
+          <Dialog.Actions
+            onCancel={() => call.end()}
+            cancelLabel={t('common.cancel')}
+            onConfirm={submit}
+            confirmLabel={t('report.submit')}
+            busy={busy}
+          />
+        )}
+      </Dialog.Footer>
+    </Dialog.Root>
   );
 });

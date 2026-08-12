@@ -5,20 +5,11 @@
 
 import type { MediaFile, MediaItem } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, IconButton, Spinner, Text } from '@kroma/ui/kit';
+import { Box, Dialog, IconButton, Row, Spinner, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { createCallable } from 'react-call';
 import { FileCard } from '#web/features/catalog/media-info-card';
-import {
-  HEADER_RULE,
-  MODAL_BODY,
-  MODAL_LAYER,
-  modalPanel,
-} from '#web/features/catalog/modal-shell';
 import { catalogQueries } from '#web/shared/lib/queries';
-import { MODAL_SCRIM } from '#web/shared/ui';
-
-const PANEL = modalPanel(768);
 
 // Open with `await MediaInfoModal.call({ id, title })`; read-only, so it resolves
 // (`void`) purely on dismiss. Its root is mounted once by `CatalogModalHosts`.
@@ -30,52 +21,42 @@ export const MediaInfoModal = createCallable<{ id: string; title: string }, void
     const files = item ? filesOf(item) : [];
 
     return (
-      <>
-        <button
-          type="button"
-          aria-label={t('common.close')}
-          onClick={() => call.end()}
-          className={MODAL_SCRIM}
-        />
-        <div style={MODAL_LAYER}>
-          <section style={PANEL}>
-            <Box row align="flex-start" between gap={16} px={28} py={20} style={HEADER_RULE}>
-              <Box minW={0}>
-                <Text variant="overline" color="white/40">
-                  {t('mediaInfo.title')}
-                </Text>
-                <h2>
-                  <Text variant="title" mt={4} lines={1}>
-                    {title}
-                  </Text>
-                </h2>
-              </Box>
-              <IconButton
-                control="sm"
-                icon="x"
-                label={t('common.close')}
-                onPress={() => call.end()}
-              />
+      <Dialog.Root open title={title} width="lg" onClose={() => call.end()}>
+        <Dialog.Header>
+          <Row between align="flex-start" gap={16}>
+            <Box minW={0}>
+              <Text variant="overline" color="white/40">
+                {t('mediaInfo.title')}
+              </Text>
+              <Text variant="title" mt={4} lines={1}>
+                {title}
+              </Text>
             </Box>
+            <IconButton
+              control="sm"
+              icon="x"
+              label={t('common.close')}
+              onPress={() => call.end()}
+            />
+          </Row>
+        </Dialog.Header>
 
-            <div style={MODAL_BODY}>
-              {isPending ? (
-                <Box align="center" py={64}>
-                  <Spinner size={26} color="white/40" />
-                </Box>
-              ) : null}
-              {!isPending && files.length === 0 ? (
-                <Text variant="meta" color="white/40" textAlign="center" py={64}>
-                  {t('mediaInfo.noFile')}
-                </Text>
-              ) : null}
-              {files.map((f, i) => (
-                <FileCard key={f.id} file={f} index={i} multi={files.length > 1} />
-              ))}
-            </div>
-          </section>
-        </div>
-      </>
+        <Dialog.Panel>
+          {isPending ? (
+            <Box align="center" py={64}>
+              <Spinner size={26} color="white/40" />
+            </Box>
+          ) : null}
+          {!isPending && files.length === 0 ? (
+            <Text variant="meta" color="white/40" textAlign="center" py={64}>
+              {t('mediaInfo.noFile')}
+            </Text>
+          ) : null}
+          {files.map((f, i) => (
+            <FileCard key={f.id} file={f} index={i} multi={files.length > 1} />
+          ))}
+        </Dialog.Panel>
+      </Dialog.Root>
     );
   },
 );
