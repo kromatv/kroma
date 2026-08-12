@@ -29,13 +29,15 @@ function iconLibraryReady(): boolean {
   return loaded || (everyGlyph === null && fetchCatalog === null);
 }
 
-async function fetchLibrary(): Promise<void> {
-  const [glyphs, catalog] = await Promise.all([everyGlyph?.(), fetchCatalog?.()]);
-  if (glyphs) addGlyphs(glyphs);
-  if (catalog) setIconCatalog(catalog);
-}
+const ignore = () => undefined;
 
-function settled(): void {
+// Applied as each arrives, not once both have: the two are separate chunks, and
+// half a library beats none of it.
+async function fetchLibrary(): Promise<void> {
+  await Promise.all([
+    everyGlyph?.().then(addGlyphs).catch(ignore),
+    fetchCatalog?.().then(setIconCatalog).catch(ignore),
+  ]);
   loaded = true;
 }
 
@@ -44,7 +46,7 @@ function settled(): void {
  * build kept, which is a smaller gallery rather than a page that never opens. */
 function loadIconLibrary(): Promise<void> {
   if (iconLibraryReady()) return Promise.resolve();
-  fetching ??= fetchLibrary().then(settled, settled);
+  fetching ??= fetchLibrary();
   return fetching;
 }
 
@@ -53,7 +55,6 @@ function loadIconLibrary(): Promise<void> {
 function useIconLibrary(): boolean {
   const [ready, setReady] = useState(iconLibraryReady);
   useEffect(() => {
-    if (ready) return;
     let live = true;
     loadIconLibrary().then(() => {
       if (live) setReady(true);
@@ -61,7 +62,7 @@ function useIconLibrary(): boolean {
     return () => {
       live = false;
     };
-  }, [ready]);
+  }, []);
   return ready;
 }
 

@@ -138,10 +138,11 @@ the build succeeds and ships `background: var(--kroma-bg)` pointing at nothing:
 
 A glyph resolves by name (`<Icon name="wave-sine" />`), so no bundler can prove
 which of Tabler's thousands are reachable. `kromaUI()` therefore walks the
-app's sources for anything shaped like a glyph name and keeps only those. An
-app that reflects over the catalogue - `iconNames()`, `hasGlyph()` - opts out
-with `kromaUI({ icons: 'full' })`, and a workbench adds `kromaIconCatalog()` on
-top for Tabler's tags and categories.
+app's sources for anything shaped like a glyph name and keeps only those, in
+`.ts`, `.tsx` and `.mdx` alike. An app that reflects over the catalogue -
+`iconNames()`, `hasGlyph()` - either opts out with `kromaUI({ icons: 'full' })`
+or fetches the rest when a page needs it, which is what this site does. A
+workbench adds `kromaIconCatalog()` on top for Tabler's tags and categories.
 
 ## A Metro app
 

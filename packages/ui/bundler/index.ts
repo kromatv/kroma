@@ -18,7 +18,7 @@ const GLYPH_SOURCE = join('packages', 'ui', 'src', 'lib', 'icons', 'glyph-source
 
 type TablerPkg = '@tabler/icons-react' | '@tabler/icons-react-native';
 
-const SOURCE_EXT = /\.(ts|tsx)$/;
+const SOURCE_EXT = /\.(ts|tsx|mdx)$/; // an .mdx guide ships too, and draws icons
 // A slug a fixture happens to spell is a false hit costing a real glyph.
 // Stories are NOT excluded: the workbench ships them.
 const NOT_SHIPPED = /\.(test|spec)\.(ts|tsx)$/;
@@ -39,8 +39,8 @@ const LITERAL = /['"`]([a-z][a-z0-9]*(?:-[a-z0-9]+)*)['"`]/g;
 
 export interface KromaUiOptions {
   repoRoot: string;
-  /** `full` keeps all of Tabler, which an app that reflects over the catalogue
-   * needs: `iconNames()` and `hasGlyph()` answer from whatever shipped. */
+  /** `full` keeps all of Tabler, which `iconNames()` and `hasGlyph()` then answer
+   * from. Metro only in practice: a web build fetches the rest instead. */
   icons?: 'subset' | 'full';
 }
 
