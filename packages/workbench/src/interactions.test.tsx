@@ -154,6 +154,25 @@ describe('the panel over a live story', () => {
     await waitFor(() => expect(presses).toHaveLength(2));
   });
 
+  it('stops reporting a play the reader has already moved on from', async () => {
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const slow: PlayFunction = ({ step: group }) => group('waits for the archive', () => held);
+    const quick: PlayFunction = ({ step: group, press }) =>
+      group('opens the menu', () => press('Options'));
+    const { rerender } = render(onScreen(<Harness play={slow} />));
+    expect(await screen.findByText('waits for the archive')).toBeTruthy();
+
+    rerender(onScreen(<Harness play={quick} />));
+    expect(await screen.findByText('Passed')).toBeTruthy();
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByText('waits for the archive')).toBeNull();
+    expect(screen.getByText('opens the menu')).toBeTruthy();
+  });
+
   it('stays idle for a story with no play function', () => {
     render(onScreen(<Harness />));
     expect(screen.getByText('Waiting')).toBeTruthy();

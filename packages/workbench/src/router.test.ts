@@ -168,6 +168,15 @@ describe('pathRouter', () => {
     expect(window.location.pathname).toBe('/story/button');
   });
 
+  it('writes a section as the fragment, and a page the reader can press Back out of', () => {
+    const { result } = renderHook(pathRouter());
+    const start = window.history.length;
+    act(() => result.current[1]({ page: 'icons', section: 'the grid' }, { replace: false }));
+    expect(window.location.pathname).toBe('/icons');
+    expect(window.location.hash).toBe('#the%20grid');
+    expect(window.history).toHaveLength(start + 1);
+  });
+
   it('writes a real path, encoding a story name that would otherwise be a segment', () => {
     const { result } = renderHook(pathRouter());
     act(() => result.current[1]({ story: 'atoms/button' }));

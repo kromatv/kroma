@@ -37,7 +37,7 @@ function useCommandKeys({ onStep, onChoose, onClose }: CommandKeysOptions): void
       event.stopPropagation();
       if (event.key === 'Escape') return at.current.onClose();
       if (event.key === 'Enter') return at.current.onChoose();
-      at.current.onStep(STEP[event.key] ?? 1);
+      at.current.onStep(STEP[event.key] as number);
     };
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);

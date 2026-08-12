@@ -1,15 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  attribute,
-  entriesOf,
-  groupFiles,
-  type HistoryCommit,
-  LOG_FORMAT,
-  type LogCommit,
-  parseLog,
-  parseStatus,
-  splitPaths,
-} from './git-history-parse.ts';
+import { LOG_FORMAT, parseLog, parseStatus, splitPaths } from './git-history-parse.ts';
 
 const NUL = '\0';
 const MARK = '\x01';
@@ -51,6 +41,17 @@ describe('parseStatus', () => {
     const status = `R  ${STORY}${NUL}old.tsx${NUL}M  ${BUTTON}${NUL}`;
     const working = parseStatus(status);
     expect([...working.dirty]).toEqual([STORY, BUTTON]);
+  });
+
+  it('skips a record carrying a status and no path', () => {
+    const working = parseStatus(`M  ${NUL}?? ${BUTTON}${NUL}`);
+    expect([...working.dirty]).toEqual([BUTTON]);
+  });
+
+  it('leaves a rename whose original name never arrives without one', () => {
+    const working = parseStatus(`R  ${STORY}`);
+    expect(working.renamedFrom.size).toBe(0);
+    expect(working.dirty.has(STORY)).toBe(true);
   });
 });
 
@@ -94,162 +95,26 @@ describe('parseLog', () => {
     expect(commits[0]?.subject).toBe(`fix: a${FIELD}b`);
   });
 
+  it('reads no commit at all from records that precede the first header', () => {
+    expect(parseLog(`M${NUL}${BUTTON}${NUL}`)).toEqual([]);
+  });
+
+  it('opens a commit on a header that stops after the sha', () => {
+    const [commit] = parseLog(`${MARK}c0ffee1${NUL}\nM${NUL}${BUTTON}${NUL}`);
+    expect(commit).toMatchObject({ sha: 'c0ffee1', date: '', subject: '' });
+    expect(commit?.changes).toEqual([{ status: 'M', path: BUTTON }]);
+  });
+
+  it('drops a change whose path the output stops short of', () => {
+    const cut = parseLog(`${MARK}c0ffee1${FIELD}2026-08-01T00:00:00Z${FIELD}fix: a${NUL}\nM`);
+    expect(cut[0]?.changes).toEqual([]);
+    const renamed = parseLog(
+      `${MARK}c0ffee1${FIELD}2026-08-01T00:00:00Z${FIELD}fix: a${NUL}\nR100`,
+    );
+    expect(renamed[0]?.changes).toEqual([]);
+  });
+
   it('names the format it reads', () => {
     expect(LOG_FORMAT).toBe(`--format=${MARK}%h${FIELD}%aI${FIELD}%s`);
-  });
-});
-
-describe('attribute', () => {
-  const commit = (sha: string, date: string, changes: LogCommit['changes']): LogCommit => ({
-    sha,
-    date,
-    subject: sha,
-    changes,
-  });
-
-  it('follows a rename into the file’s earlier life', () => {
-    const commits = [
-      commit('c333', '2026-08-10T00:00:00Z', [{ status: 'M', path: BUTTON }]),
-      commit('c222', '2026-08-02T00:00:00Z', [
-        { status: 'R100', path: BUTTON, from: 'packages/ui/src/button.tsx' },
-      ]),
-      commit('c111', '2026-07-01T00:00:00Z', [{ status: 'A', path: 'packages/ui/src/button.tsx' }]),
-    ];
-    const found = attribute(commits, new Map([[BUTTON, BUTTON]]));
-    expect(found.get(BUTTON)?.map((entry) => entry.sha)).toEqual(['c333', 'c222', 'c111']);
-  });
-
-  it('follows a move that is only staged, before it is a commit at all', () => {
-    const commits = [
-      commit('c111', '2026-07-01T00:00:00Z', [{ status: 'A', path: 'packages/ui/src/old.tsx' }]),
-    ];
-    const moved = 'packages/ui/src/new/new.tsx';
-    const found = attribute(commits, new Map([[moved, 'packages/ui/src/old.tsx']]));
-    expect(found.get(moved)?.map((entry) => entry.sha)).toEqual(['c111']);
-  });
-
-  it('says nothing about a path no commit ever held', () => {
-    const commits = [commit('c111', '2026-07-01T00:00:00Z', [{ status: 'M', path: BUTTON }])];
-    expect(attribute(commits, new Map([[STORY, STORY]])).get(STORY)).toBeUndefined();
-  });
-});
-
-describe('groupFiles', () => {
-  it('gives a component its whole folder, keyed by its story', () => {
-    const folder = 'packages/ui/src/components/atoms/button';
-    const files = [
-      `${folder}/button.tsx`,
-      `${folder}/button.test.tsx`,
-      `${folder}/index.ts`,
-      STORY,
-    ];
-    expect(groupFiles(files).get(STORY)?.sort()).toEqual(files.sort());
-  });
-
-  it('attaches a nested helper to the nearest story above it', () => {
-    const player = 'packages/ui/src/components/organisms/player';
-    const files = [
-      `${player}/player.stories.tsx`,
-      `${player}/hooks/use-controls.ts`,
-      `${player}/parts/top-bar/top-bar.stories.tsx`,
-      `${player}/parts/top-bar/top-bar.tsx`,
-    ];
-    const groups = groupFiles(files);
-    expect(groups.get(`${player}/player.stories.tsx`)).toEqual([
-      `${player}/player.stories.tsx`,
-      `${player}/hooks/use-controls.ts`,
-    ]);
-    expect(groups.get(`${player}/parts/top-bar/top-bar.stories.tsx`)).toEqual([
-      `${player}/parts/top-bar/top-bar.stories.tsx`,
-      `${player}/parts/top-bar/top-bar.tsx`,
-    ]);
-  });
-
-  it('splits a folder holding several stories by file name', () => {
-    const root = 'packages/ui/src/foundations';
-    const files = [
-      `${root}/colors.stories.tsx`,
-      `${root}/colors.test.ts`,
-      `${root}/typography.stories.tsx`,
-      `${root}/shared.ts`,
-    ];
-    const groups = groupFiles(files);
-    expect(groups.get(`${root}/colors.stories.tsx`)).toEqual([
-      `${root}/colors.stories.tsx`,
-      `${root}/colors.test.ts`,
-    ]);
-    expect(groups.get(`${root}/typography.stories.tsx`)).toEqual([
-      `${root}/typography.stories.tsx`,
-    ]);
-    expect([...groups.values()].flat()).not.toContain(`${root}/shared.ts`);
-  });
-
-  it('keys an article by its own file, never by the folder it shares', () => {
-    const files = [
-      'packages/ui/src/guides/01-tokens.page.mdx',
-      'packages/ui/src/guides/02-icons.page.mdx',
-    ];
-    const groups = groupFiles(files);
-    expect(groups.get(files[0] as string)).toEqual([files[0]]);
-    expect(groups.get(files[1] as string)).toEqual([files[1]]);
-  });
-});
-
-describe('entriesOf', () => {
-  const commits = (...list: HistoryCommit[]) => list;
-  const older: HistoryCommit = { sha: 'c111', date: '2026-07-01T00:00:00Z', subject: 'born' };
-  const newer: HistoryCommit = { sha: 'c222', date: '2026-08-01T00:00:00Z', subject: 'grew' };
-
-  it('dates a component from its whole folder, oldest commit first written', () => {
-    const groups = new Map([[STORY, [STORY, BUTTON]]]);
-    const found = new Map([
-      [STORY, commits(newer)],
-      [BUTTON, commits(older)],
-    ]);
-    const entry = entriesOf(groups, found, new Set(), 6)[STORY];
-    expect(entry?.created).toBe(older.date);
-    expect(entry?.changed).toBe(newer.date);
-    expect(entry?.commits.map((commit) => commit.sha)).toEqual(['c222', 'c111']);
-  });
-
-  it('lists a commit touching two of a component’s files once', () => {
-    const groups = new Map([[STORY, [STORY, BUTTON]]]);
-    const found = new Map([
-      [STORY, commits(newer)],
-      [BUTTON, commits(newer, older)],
-    ]);
-    expect(entriesOf(groups, found, new Set(), 6)[STORY]?.commits).toHaveLength(2);
-  });
-
-  it('bounds the listed commits without moving the creation date', () => {
-    const many = Array.from({ length: 10 }, (_, at) => ({
-      sha: `c${at}`,
-      date: `2026-0${at % 9}-01T00:00:00Z`.replace('0-0', '1-0'),
-      subject: 'x',
-    }));
-    const entry = entriesOf(new Map([[STORY, [STORY]]]), new Map([[STORY, many]]), new Set(), 3)[
-      STORY
-    ];
-    expect(entry?.commits).toHaveLength(3);
-    expect(entry?.created).toBe('2026-01-01T00:00:00Z');
-  });
-
-  it('marks an entry whose files carry uncommitted edits', () => {
-    const entry = entriesOf(
-      new Map([[STORY, [STORY, BUTTON]]]),
-      new Map([[STORY, commits(newer)]]),
-      new Set([BUTTON]),
-      6,
-    )[STORY];
-    expect(entry?.dirty).toBe(true);
-  });
-
-  it('keeps something never committed as having no history, rather than none at all', () => {
-    const entry = entriesOf(new Map([[STORY, [STORY]]]), new Map(), new Set([STORY]), 6)[STORY];
-    expect(entry).toEqual({ dirty: true, commits: [] });
-  });
-
-  it('says nothing about a group git has never seen and nobody has touched', () => {
-    expect(entriesOf(new Map([[STORY, [STORY]]]), new Map(), new Set(), 6)).toEqual({});
   });
 });

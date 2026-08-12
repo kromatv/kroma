@@ -194,6 +194,12 @@ describe('Resizable', () => {
     expect(lastLayout(changed)).toEqual([50, 50]);
   });
 
+  it('leaves a key it does not act on to the page, so focus can still leave', async () => {
+    await show();
+    grab();
+    expect(key('Tab')).toBe(true);
+  });
+
   it('gives the keys back on Escape', async () => {
     await show();
     grab();

@@ -79,7 +79,7 @@ const UNFILED = 'Pages';
 /** One discovered page. Throws on a file this is not: a page that silently
  * appears nowhere is worse than a build that stops. */
 function pageAt(path: string, module: PageModule): Page {
-  const file = path.split('/').pop() ?? path;
+  const file = path.split('/').pop() as string;
   const base = file.endsWith(PAGE) ? file.slice(0, -PAGE.length) : '';
   if (!base) {
     throw new Error(
@@ -124,7 +124,7 @@ function orderPages(pages: readonly Page[]): Page[] {
   for (const page of pages) {
     rank.set(page.group, Math.min(rank.get(page.group) ?? LAST, page.groupOrder ?? LAST));
   }
-  const of = (page: Page) => rank.get(page.group) ?? LAST;
+  const of = (page: Page) => rank.get(page.group) as number;
   return [...pages].sort(
     (a, b) =>
       of(a) - of(b) ||

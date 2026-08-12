@@ -56,12 +56,12 @@ export interface StoryCodeSources {
 // The span as written, less the indentation the story file's own nesting put
 // there. The first line starts at the token, so only the rest carry it.
 function dedent(text: string): string {
-  const [first = '', ...rest] = text.split('\n');
+  const [first, ...rest] = text.split('\n');
   const indents = rest
     .filter((line) => line.trim())
     .map((line) => line.length - line.trimStart().length);
   const cut = indents.length ? Math.min(...indents) : 0;
-  return [first, ...rest.map((line) => line.slice(cut))].join('\n').trimEnd();
+  return [first as string, ...rest.map((line) => line.slice(cut))].join('\n').trimEnd();
 }
 
 // A parameterless arrow is the story format's own ceremony - it binds nothing -
@@ -148,11 +148,11 @@ export async function readStoryCode({
     if (!project) throw new Error(`story-code: could not open ${tsconfig}`);
     const { program } = project;
     const names = (await program.getSourceFileNames()).filter(include);
-    const files = await Promise.all(names.map((name) => program.getSourceFile(name)));
+    const found = await Promise.all(names.map((name) => program.getSourceFile(name)));
     const out: StoryCodes = {};
-    for (const file of files) {
-      const code = file ? codeOf(file) : null;
-      if (file && code) out[keyOf(repo, file.fileName)] = code;
+    for (const file of found.filter((one) => one !== undefined)) {
+      const code = codeOf(file);
+      if (code) out[keyOf(repo, file.fileName)] = code;
     }
     return out;
   } finally {

@@ -112,7 +112,7 @@ export function parseLog(output: string): LogCommit[] {
     if (record.startsWith(COMMIT_MARK)) {
       const [sha, date, ...subject] = record.slice(1).split(FIELD_MARK);
       current = {
-        sha: sha ?? '',
+        sha: sha as string,
         date: date ?? '',
         subject: subject.join(FIELD_MARK),
         changes: [],
@@ -201,7 +201,7 @@ function storyFor(file: string, byFolder: ReadonlyMap<string, string[]>): string
   for (let folder = folderOf(file); folder; folder = folderOf(folder)) {
     const stories = byFolder.get(folder);
     if (!stories?.length) continue;
-    if (stories.length === 1) return stories[0] ?? null;
+    if (stories.length === 1) return stories[0] as string;
     const name = nameOf(file);
     return stories.find((story) => name.startsWith(`${stemOf(story)}.`)) ?? null;
   }

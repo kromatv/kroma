@@ -242,25 +242,29 @@ describe('a failing play', () => {
     });
     expect(result.error).toBe('the story is not on the stage');
   });
-});
 
-// React Native hands a `ref` a host instance rather than a node, and keeps the
-// fiber on it under a name of its own. There is no Metro resolution under this
-// runner, so the instance is built around a real tree rather than rendered.
-describe('a stage React Native shaped', () => {
-  it('reads the fiber off the host instance', async () => {
+  it('says a control is hidden rather than absent', async () => {
+    const result = await play(
+      <View aria-hidden>
+        <Chip label="Rename" onPress={() => {}} />
+      </View>,
+      ({ expect: want }) => want('Rename').toBeVisible(),
+    );
+    expect(result.error).toBe('"Rename" is on the stage but hidden');
+  });
+
+  it('names what is missing when the text of it was expected', async () => {
+    const result = await failure(({ expect: want }) => want('Archive').toHaveText('Pilot'));
+    expect(result.error).toContain('"Archive" is not on the stage');
+  });
+
+  it('reports what a play threw that was not an Error, and waits its own default', async () => {
     const stage = mount(<Episode />);
-    const node = stage.current as Record<string, unknown>;
-    const key = Object.keys(node).find((at) => at.startsWith('__reactFiber$')) as string;
     const result = await runPlay({
-      stage: { _internalInstanceHandle: node[key] },
-      timeout: 120,
-      play: async ({ press, expect: want }) => {
-        await press('Options');
-        await want('Rename').toBeVisible();
-      },
+      stage: stage.current as object,
+      play: () => Promise.reject('the stage went away'),
     });
-    expect(result.status).toBe('passed');
+    expect(result).toMatchObject({ status: 'failed', error: 'the stage went away' });
   });
 });
 

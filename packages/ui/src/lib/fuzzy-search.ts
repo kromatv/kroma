@@ -21,7 +21,7 @@ function fuzzyQuery(query: string): string {
 }
 
 function startsWord(text: string, at: number): boolean {
-  return at === 0 || SEPARATORS.has(text[at - 1] ?? '');
+  return at === 0 || SEPARATORS.has(text[at - 1] as string);
 }
 
 function holdsInOrder(text: string, needle: string): boolean {
@@ -47,7 +47,7 @@ function openRow(text: string, char: string, row: number[]): void {
 function nextRow(text: string, char: string, prev: readonly number[], row: number[]): void {
   let gapped = NONE;
   for (let at = 0; at < row.length; at += 1) {
-    const earlier = at === 0 ? NONE : (prev[at - 1] ?? NONE);
+    const earlier = at === 0 ? NONE : (prev[at - 1] as number);
     gapped = at === 0 ? NONE : Math.max(gapped, earlier) - GAP;
     row[at] = text[at] === char ? faceAt(text, at) + Math.max(gapped, earlier + CONSECUTIVE) : NONE;
   }

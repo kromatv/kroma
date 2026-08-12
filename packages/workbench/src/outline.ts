@@ -61,10 +61,8 @@ function useSection(level: number, children: ReactNode): SectionHandle {
   const label = useMemo(() => textOf(children), [children]);
   const id = sink ? sink.claim(key, slug(label) || UNNAMED) : undefined;
   const report = useCallback(
-    (event: LayoutChangeEvent) => {
-      if (!(sink && id)) return;
-      sink.reportSection({ id, label, level, y: event.nativeEvent.layout.y });
-    },
+    (event: LayoutChangeEvent) =>
+      sink?.reportSection({ id: id as string, label, level, y: event.nativeEvent.layout.y }),
     [sink, id, label, level],
   );
   return { id, onLayout: id ? report : undefined };

@@ -61,6 +61,29 @@ export default story({
 });
 `;
 
+// A story assembled out of pieces rather than written whole: a spread instead of
+// a member, and a scene list the file computes.
+const BADGE = `import { story } from '@kroma/workbench/story';
+
+export default story({
+  ...shared,
+  name: 'Badge',
+  render: () => <Badge label="New" />,
+  scenes: [...MORE],
+});
+`;
+
+const REEXPORT = `import { Chip } from './chip';
+
+export default Chip;
+`;
+
+const INDIRECT = `import { story } from '@kroma/workbench/story';
+import { config } from './config';
+
+export default story(config);
+`;
+
 const TSCONFIG = JSON.stringify({
   compilerOptions: {
     strict: true,
@@ -85,6 +108,9 @@ beforeAll(async () => {
   writeFileSync(join(repo, LIST_ROW_KEY), LIST_ROW);
   writeFileSync(join(repo, 'src', 'chip.stories.tsx'), CHIP);
   writeFileSync(join(repo, 'src', 'colors.stories.tsx'), SWATCHES);
+  writeFileSync(join(repo, 'src', 'badge.stories.tsx'), BADGE);
+  writeFileSync(join(repo, 'src', 'reexport.stories.tsx'), REEXPORT);
+  writeFileSync(join(repo, 'src', 'indirect.stories.tsx'), INDIRECT);
   codes = await readStoryCode({
     tsconfig: join(repo, 'tsconfig.json'),
     repo,
@@ -141,6 +167,22 @@ describe('readStoryCode', () => {
 
   it('leaves out a story that names a component, which composes nothing to show', () => {
     expect(codes['src/chip.stories.tsx']).toBeUndefined();
+  });
+
+  it('reads past a member that is not written as `name: value`', () => {
+    expect(codes['src/badge.stories.tsx']?.render).toBe('<Badge label="New" />');
+  });
+
+  it('has no source to show for a scene the file computes rather than writes', () => {
+    expect(codes['src/badge.stories.tsx']?.scenes).toEqual(['']);
+  });
+
+  it('leaves out a default export that is not a `story(…)` call at all', () => {
+    expect(codes['src/reexport.stories.tsx']).toBeUndefined();
+  });
+
+  it('leaves out a story whose configuration is written somewhere else', () => {
+    expect(codes['src/indirect.stories.tsx']).toBeUndefined();
   });
 
   it('keeps a block-bodied render whole rather than unwrapping a statement list', () => {

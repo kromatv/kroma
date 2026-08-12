@@ -120,8 +120,19 @@ const NOT_COMPONENTS = `
 const SURFACE_LABEL = { bg: 'Page', surface1: 'Card' };
 const Sizes = { Small: 12, Large: 20 };
 const Pair = { Root: 1 }, Other = { Root: 2 };
+const Spread = { ...Sizes, Root: Pair };
 export interface Props { anonymous: string }
-export const tables = [SURFACE_LABEL, Sizes, Pair, Other];
+export const tables = [SURFACE_LABEL, Sizes, Pair, Other, Spread];
+`;
+
+// Two members a panel has nothing to say about: one React owns, and one written
+// without a type at all.
+const ODD = `
+export interface OddProps {
+  key?: string;
+  label;
+}
+export const Odd = (props: OddProps) => props.label;
 `;
 
 let project = '';
@@ -142,6 +153,7 @@ beforeAll(async () => {
   writeFileSync(join(project, 'src', 'field.ts'), FIELD);
   writeFileSync(join(project, 'src', 'nothing.ts'), EMPTY);
   writeFileSync(join(project, 'src', 'not-components.ts'), NOT_COMPONENTS);
+  writeFileSync(join(project, 'src', 'odd.ts'), ODD);
   docs = await readPropDocs(join(project, 'tsconfig.json'), (file) => file.includes('/src/'));
 }, 60_000);
 
@@ -207,5 +219,30 @@ describe('readPropDocs', () => {
 
   it('names nothing after a bare `Props` interface', () => {
     expect(Object.keys(docs)).not.toContain('');
+  });
+
+  it('reads an object that spreads another as a lookup table too', () => {
+    // A namespace is written out part by part; a member that is not one at all
+    // says this object is something else.
+    expect(Object.keys(docs)).not.toContain('Spread');
+  });
+
+  it('leaves out `key`, which React owns and no panel needs', () => {
+    expect(docs.Odd?.map((prop) => prop.name)).toEqual(['label']);
+  });
+
+  it('says `unknown` for a prop written without a type', () => {
+    expect(docs.Odd?.find((prop) => prop.name === 'label')?.type).toBe('unknown');
+  });
+
+  it('names the project it could not open rather than reporting no props at all', async () => {
+    const empty = mkdtempSync(join(tmpdir(), 'kroma-props-none-'));
+    try {
+      await expect(readPropDocs(join(empty, 'tsconfig.json'), () => true)).rejects.toThrow(
+        'could not open',
+      );
+    } finally {
+      rmSync(empty, { recursive: true, force: true });
+    }
   });
 });

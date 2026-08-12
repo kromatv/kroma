@@ -1,6 +1,22 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IconCatalog } from '../src/lib/icon-catalog.ts';
 import { kromaIconCatalog } from './icon-catalog.ts';
+
+// Tabler's own file, unless a test stands one of its own in its place.
+const written = vi.hoisted(() => ({ json: null as string | null }));
+
+vi.mock('node:fs', async (importOriginal) => {
+  const real = await importOriginal<typeof import('node:fs')>();
+  return {
+    ...real,
+    readFileSync: (...args: Parameters<typeof real.readFileSync>) =>
+      written.json ?? real.readFileSync(...args),
+  };
+});
+
+afterEach(() => {
+  written.json = null;
+});
 
 // Imported as a module rather than read as text: what a workbench gets is the
 // module this code EVALUATES to, dictionary expansion and all.
@@ -36,6 +52,20 @@ describe('kromaIconCatalog', () => {
     const tags = (await catalog())['a-b-2']?.tags ?? [];
     expect(tags).toContain('2');
     expect(tags).not.toContain('');
+  });
+
+  it('costs one malformed glyph its own metadata and nothing else', async () => {
+    // A search nicety: a build that died over one unreadable entry would be a
+    // worse trade than a glyph with no tags.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    written.json = JSON.stringify({
+      trash: { category: 'System', tags: ['delete'] },
+      broken: { tags: ['nothing says which category'] },
+    });
+    const found = await catalog();
+    expect(Object.keys(found)).toEqual(['trash']);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('1 glyphs'));
+    warn.mockRestore();
   });
 
   it('ships the tag words once, not once per glyph', async () => {

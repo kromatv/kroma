@@ -83,28 +83,28 @@ function docsFrom(memberText: string): string {
     .trim();
 }
 
-// A declaring file's text, memoised by the caller. An inherited prop is declared in the file
-// its own interface lives in, so this is keyed by the DECLARATION's path rather than the
-// component's.
-type TextOf = (path: string) => Promise<string>;
-
 type Snapshot = Awaited<ReturnType<API['updateSnapshot']>>;
 type Project = NonNullable<ReturnType<Snapshot['getProject']>>;
 type Checker = Project['checker'];
 type PropSymbol = Awaited<ReturnType<Checker['getPropertiesOfType']>>[number];
 type Type = Parameters<Checker['getPropertiesOfType']>[0];
 
+// A declaring file, memoised by the caller. An inherited prop is declared in the file its own
+// interface lives in, so this is keyed by the DECLARATION's path rather than the component's.
+type FileOf = (path: string) => ReturnType<Project['program']['getSourceFile']>;
+
 // One property, as the panel shows it - or null when it is noise, or has no declaration to read
 // a written type and a doc comment out of.
-async function propDocOf(symbol: PropSymbol, textOf: TextOf): Promise<PropDoc | null> {
+async function propDocOf(symbol: PropSymbol, fileOf: FileOf): Promise<PropDoc | null> {
   if (NOISE.has(symbol.name)) return null;
   // A re-declared prop carries both declarations; ours is the one to read.
   const handle = symbol.declarations?.find((declaration) => ownDeclaration(declaration.path));
   const node = (await handle?.resolve()) as
     | { pos: number; end: number; type?: { pos: number; end: number } }
     | undefined;
-  if (!handle || !node) return null;
-  const source = await textOf(handle.path);
+  const file = handle && (await fileOf(handle.path));
+  if (!node || !file) return null;
+  const source = file.text;
   // `pos` starts at the end of the previous token, so this span carries the
   // member's leading trivia - which is where its JSDoc is.
   const member = source.slice(node.pos, node.end);
@@ -120,11 +120,11 @@ async function propDocOf(symbol: PropSymbol, textOf: TextOf): Promise<PropDoc | 
   };
 }
 
-async function propsOfType(type: Type, checker: Checker, textOf: TextOf): Promise<PropDoc[]> {
+async function propsOfType(type: Type, checker: Checker, fileOf: FileOf): Promise<PropDoc[]> {
   // Every prop in flight at once: the checker is an RPC channel, and awaiting
   // one round-trip per prop is what made this plugin show up in build timings.
   const symbols = await checker.getPropertiesOfType(type);
-  const docs = await Promise.all(symbols.map((symbol) => propDocOf(symbol, textOf)));
+  const docs = await Promise.all(symbols.map((symbol) => propDocOf(symbol, fileOf)));
   return docs.filter((doc): doc is PropDoc => doc !== null);
 }
 
@@ -133,7 +133,7 @@ async function propsOfType(type: Type, checker: Checker, textOf: TextOf): Promis
 async function componentEntries(
   statement: Statement,
   checker: Checker,
-  textOf: TextOf,
+  fileOf: FileOf,
   claimed: ReadonlySet<string>,
 ): Promise<Entry[]> {
   const declared = (statement as { name?: { text?: string } }).name?.text;
@@ -141,9 +141,8 @@ async function componentEntries(
   const component = declared.slice(0, -'Props'.length);
   if (!component || claimed.has(component)) return [];
   const type = await checker.getTypeAtLocation((statement as { name?: unknown }).name as never);
-  if (!type) return [];
-  const props = await propsOfType(type, checker, textOf);
-  return props.length ? [[component, props]] : [];
+  const props = type && (await propsOfType(type, checker, fileOf));
+  return props?.length ? [[component, props]] : [];
 }
 
 interface Part {
@@ -197,24 +196,28 @@ function namespaceOf(statement: Statement): Namespace | null {
 
 // The parameter the part's component takes, whatever the interface behind it is
 // called: `ListRow.Group` is a <ListGroup>, which no rule over names could find.
-async function partProps(part: Part, checker: Checker, textOf: TextOf): Promise<PropDoc[]> {
+async function partProps(
+  part: Part,
+  checker: Checker,
+  fileOf: FileOf,
+): Promise<PropDoc[] | undefined> {
   const type = await checker.getTypeAtLocation(part.value);
-  if (!type) return [];
-  const [signature] = await checker.getSignaturesOfType(type, SignatureKind.Call);
-  if (!signature) return [];
+  const signatures = type && (await checker.getSignaturesOfType(type, SignatureKind.Call));
+  const signature = signatures?.[0];
+  if (!signature) return undefined;
   const parameter = await checker.getParameterType(signature, 0);
-  return parameter ? propsOfType(parameter, checker, textOf) : [];
+  return parameter && (await propsOfType(parameter, checker, fileOf));
 }
 
 async function namespaceEntries(
   namespace: Namespace,
   checker: Checker,
-  textOf: TextOf,
+  fileOf: FileOf,
 ): Promise<Entry[]> {
-  const props = await Promise.all(namespace.parts.map((part) => partProps(part, checker, textOf)));
+  const props = await Promise.all(namespace.parts.map((part) => partProps(part, checker, fileOf)));
   return namespace.parts.flatMap((part, at) => {
-    const documented = props[at] ?? [];
-    return documented.length ? [[`${namespace.name}.${part.name}`, documented] as Entry] : [];
+    const documented = props[at] as PropDoc[] | undefined;
+    return documented?.length ? [[`${namespace.name}.${part.name}`, documented] as Entry] : [];
   });
 }
 
@@ -255,16 +258,16 @@ export async function readPropDocs(
     if (!project) throw new Error(`props-docs: could not open ${tsconfig}`);
     const { program, checker } = project;
 
-    // Each declaring file's text, fetched once. An inherited prop is declared in
-    // the file its interface lives in, not in the component's, so this is keyed
-    // by the DECLARATION's path rather than by the component's. The map holds
+    // Each declaring file, fetched once. An inherited prop is declared in the
+    // file its interface lives in, not in the component's, so this is keyed by
+    // the DECLARATION's path rather than by the component's. The map holds
     // PROMISES so concurrent lookups of one path share a single fetch.
-    const texts = new Map<string, Promise<string>>();
-    const textOf: TextOf = (path) => {
-      let hit = texts.get(path);
+    const sources = new Map<string, ReturnType<FileOf>>();
+    const fileOf: FileOf = (path) => {
+      let hit = sources.get(path);
       if (!hit) {
-        hit = program.getSourceFile(path).then((file) => file?.text ?? '');
-        texts.set(path, hit);
+        hit = program.getSourceFile(path);
+        sources.set(path, hit);
       }
       return hit;
     };
@@ -273,7 +276,9 @@ export async function readPropDocs(
     // model is round-trips, not work.
     const names = (await program.getSourceFileNames()).filter(include);
     const files = await Promise.all(names.map((name) => program.getSourceFile(name)));
-    const statements = files.flatMap((file) => file?.statements ?? []);
+    const statements = files
+      .filter((file) => file !== undefined)
+      .flatMap((file) => file.statements);
     // The namespaces first, because what they claim decides which flat entries
     // are duplicates of a part.
     const namespaces = statements
@@ -281,8 +286,8 @@ export async function readPropDocs(
       .filter((namespace): namespace is Namespace => namespace !== null);
     const claimed = claimedByParts(namespaces);
     const found = await Promise.all([
-      ...namespaces.map((namespace) => namespaceEntries(namespace, checker, textOf)),
-      ...statements.map((statement) => componentEntries(statement, checker, textOf, claimed)),
+      ...namespaces.map((namespace) => namespaceEntries(namespace, checker, fileOf)),
+      ...statements.map((statement) => componentEntries(statement, checker, fileOf, claimed)),
     ]);
 
     const out: PropDocs = {};

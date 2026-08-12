@@ -44,6 +44,14 @@ describe('pageAt', () => {
     expect(at('theming.page.mdx').group).toBe('Pages');
   });
 
+  it('keeps a name with no letters in it rather than showing an empty title', () => {
+    expect(at('/src/guides/--.page.mdx').title).toBe('--');
+  });
+
+  it('refuses the one id that addresses the component tree', () => {
+    expect(() => at('/src/guides/story.page.mdx')).toThrow(/"story"/);
+  });
+
   it('refuses a file that is not a page rather than hiding it', () => {
     expect(() => at('/src/guides/making-a-theme.mdx')).toThrow(/\.page\.mdx/);
     expect(() => at('/src/guides/.page.mdx')).toThrow(/\.page\.mdx/);

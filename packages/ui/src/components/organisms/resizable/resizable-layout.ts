@@ -130,7 +130,7 @@ function normalise(sizes: readonly number[], limits: readonly PanelLimit[]): num
   const spare = total(room);
   if (spare < EPSILON) return [...sizes];
   const moved = Math.min(Math.abs(drift), spare) * Math.sign(drift);
-  return sizes.map((size, at) => size + (moved * (room[at] ?? 0)) / spare);
+  return sizes.map((size, at) => size + (moved * (room[at] as number)) / spare);
 }
 
 /** A wished-for layout made legal on this group: every panel inside its own
@@ -177,9 +177,8 @@ function spend(
   let left = amount;
   for (const at of indices) {
     if (left < EPSILON) return;
-    const limit = limits[at];
-    const size = sizes[at];
-    if (!limit || size === undefined) continue;
+    const limit = limits[at] as PanelLimit;
+    const size = sizes[at] as number;
     const take = Math.min(left, dragRoom(size, limit, way));
     sizes[at] = way === 'grow' ? size + take : size - take;
     left -= take;
@@ -261,7 +260,9 @@ function resetSeam(
 
 /** Whether two layouts say the same thing, to the precision `solve` rounds to. */
 function sameLayout(a: readonly number[], b: readonly number[]): boolean {
-  return a.length === b.length && a.every((size, at) => Math.abs(size - (b[at] ?? 0)) < EPSILON);
+  return (
+    a.length === b.length && a.every((size, at) => Math.abs(size - (b[at] as number)) < EPSILON)
+  );
 }
 
 export type { PanelLimit, PanelSpec, ResizableSize };

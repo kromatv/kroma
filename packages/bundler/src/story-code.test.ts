@@ -86,6 +86,23 @@ describe('storyCode', () => {
     expect(invalidated).toHaveLength(1);
   });
 
+  it('watches the kit’s own stories by default, and nothing beside them', () => {
+    const invalidated: unknown[] = [];
+    const mod = { id: RESOLVED };
+    const server = {
+      moduleGraph: {
+        getModuleById: (id: string) => (id === RESOLVED ? mod : undefined),
+        invalidateModule: (found: unknown) => invalidated.push(found),
+      },
+    };
+    const at = open();
+    const hooks = storyCode({ tsconfig: join(at, 'tsconfig.json'), repo: at }) as unknown as Hooks;
+    hooks.handleHotUpdate({ file: '/repo/packages/ui/src/badge/badge.stories.tsx', server });
+    hooks.handleHotUpdate({ file: '/repo/packages/ui/src/badge/badge.tsx', server });
+    hooks.handleHotUpdate({ file: '/repo/clients/web/src/badge.stories.tsx', server });
+    expect(invalidated).toHaveLength(1);
+  });
+
   it('serves nothing at all off a directory with no project in it', async () => {
     // A tarball, a half-checked-out tree: the drawer goes quiet, the build runs.
     repo = mkdtempSync(join(tmpdir(), 'kroma-story-code-none-'));

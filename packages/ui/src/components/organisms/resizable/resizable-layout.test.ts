@@ -72,6 +72,10 @@ describe('defaultLayout', () => {
   it('reads a points default against the measured group', () => {
     expect(defaultLayout([{ defaultSize: '250px' }, {}], 1000)).toEqual([25, 75]);
   });
+
+  it('shares nothing out where every panel states its own size', () => {
+    expect(defaultLayout([{ defaultSize: 30 }, { defaultSize: 70 }], 1000)).toEqual([30, 70]);
+  });
 });
 
 describe('solve', () => {
@@ -100,6 +104,21 @@ describe('solve', () => {
     const limits = at([{ collapsible: true, minSize: 20 }, {}]);
     expect(solve([4, 96], limits)[0]).toBe(0);
     expect(solve([16, 84], limits)[0]).toBe(20);
+  });
+
+  it('takes nothing back from a shut panel when the group has to shrink', () => {
+    const limits = at([{ collapsible: true, minSize: 20 }, {}, {}]);
+    expect(solve([0, 60, 60], limits)).toEqual([0, 50, 50]);
+  });
+
+  it('keeps a layout that cannot be made to fill a group with nothing left to give', () => {
+    expect(solve([40, 40], at([{ maxSize: 40 }, { maxSize: 40 }]))).toEqual([40, 40]);
+  });
+
+  // A controlled `layout` naming more panels than the group holds: the extra
+  // ones have no bounds of their own to be held to.
+  it('leaves a panel it was given no bounds for where the caller put it', () => {
+    expect(solve([50, 30, 10], at(OPEN))).toEqual([54.167, 35.833, 10]);
   });
 });
 
@@ -135,6 +154,14 @@ describe('adjust', () => {
     expect(adjust([0, 100], 0, 18, limits)).toEqual([20, 80]);
     expect(adjust([0, 100], 0, 4, limits)).toEqual([0, 100]);
   });
+
+  it('holds a seam whose panel is already at its ceiling', () => {
+    expect(adjust([50, 50], 0, 10, at([{ maxSize: 50 }, {}]))).toEqual([50, 50]);
+  });
+
+  it('moves a seam inside a layout naming more panels than the group has', () => {
+    expect(adjust([40, 30, 30], 0, 10, at(OPEN))).toEqual([50, 20, 30]);
+  });
 });
 
 describe('resizePanel', () => {
@@ -163,6 +190,14 @@ describe('resetSeam', () => {
 
   it('is a no-op past the last seam', () => {
     expect(resetSeam([50, 50], 5, [50, 50], at(OPEN))).toEqual([50, 50]);
+  });
+
+  it('holds a seam whose panels were never given an opening size', () => {
+    expect(resetSeam([40, 30, 30], 1, [50, 50], at([{}, {}, {}]))).toEqual([40, 30, 30]);
+  });
+
+  it('holds a seam whose two panels both opened at nothing', () => {
+    expect(resetSeam([40, 60], 0, [0, 0], at(OPEN))).toEqual([40, 60]);
   });
 });
 

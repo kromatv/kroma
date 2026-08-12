@@ -104,6 +104,11 @@ describe('agoLabel', () => {
   it('falls back to the date itself where "weeks ago" stops meaning anything', () => {
     expect(ago(60)).toBe(dayLabel(new Date(now - 60 * 86_400_000).toISOString()));
   });
+
+  it('says nothing at all about a date there is none of', () => {
+    expect(agoLabel(undefined)).toBe('');
+    expect(agoLabel('not a date')).toBe('');
+  });
 });
 
 describe('bucketOf', () => {
@@ -120,6 +125,10 @@ describe('bucketOf', () => {
 
   it('files something never committed under its own heading', () => {
     expect(bucketOf(entry({ created: undefined, changed: undefined }), now)).toBe('Uncommitted');
+  });
+
+  it('reads the moment it is asked at where it is told none', () => {
+    expect(bucketOf(entry({ changed: new Date().toISOString() }))).toBe('Today');
   });
 });
 
@@ -147,5 +156,26 @@ describe('recentChanges', () => {
 
   it('is empty where the build read nothing', () => {
     expect(recentChanges(undefined, ROOT, subjects)).toEqual([]);
+  });
+
+  it('lists things that changed at the same moment by name', () => {
+    const names = ['Chip', 'Avatar', 'Button'];
+    const path = (name: string) => `${ROOT}/${name.toLowerCase()}.stories.tsx`;
+    const tied: KitHistory = {
+      shallow: false,
+      entries: Object.fromEntries(names.map((name) => [path(name), entry()])),
+    };
+    const rows = recentChanges(
+      tied,
+      ROOT,
+      names.map((name) => ({
+        id: name.toLowerCase(),
+        name,
+        group: 'Actions',
+        page: false,
+        path: path(name),
+      })),
+    );
+    expect(rows.map((row) => row.name)).toEqual(['Avatar', 'Button', 'Chip']);
   });
 });

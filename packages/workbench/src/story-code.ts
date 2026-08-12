@@ -23,14 +23,14 @@ type StoryCodes = Readonly<Record<string, StoryCode>>;
  * asked for each of the path's suffixes until one of them is the repository's
  * own spelling. */
 function codeAt(codes: StoryCodes, path: string): StoryCode | undefined {
-  for (let at = 0; at <= path.length; ) {
+  let at = 0;
+  for (;;) {
     const hit = codes[path.slice(at)];
     if (hit) return hit;
     const next = path.indexOf('/', at);
     if (next === -1) return undefined;
     at = next + 1;
   }
-  return undefined;
 }
 
 /** The story with its own source attached, and each scene's. Returned unchanged

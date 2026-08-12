@@ -24,6 +24,15 @@ describe('the compiled render', () => {
   });
 });
 
+describe('a story that names neither a render nor a component', () => {
+  const built = story({ name: 'Nothing yet', group: 'Media' } as never);
+
+  it('draws nothing, and is dead rather than live', () => {
+    expect(built.render({})).toBeNull();
+    expect(built.live).toBe(false);
+  });
+});
+
 describe('a story that names its component', () => {
   const built = story({ name: 'Chip', group: 'Actions', component: Chip, args: { label: 'HDR' } });
 
