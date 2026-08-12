@@ -85,11 +85,10 @@ commands the chrome issues (transport, track, filter, rate, shutdown):
   gated by the server itself; a profile without one can opt into a standalone
   Face ID / Touch ID lock on THIS device, enforced both at the profile gate and
   on cold start. Both fail closed - an unreadable keychain reads as locked.
-- Icons are `@tabler/icons-react-native`, the same family as the web client,
-  wrapped in `src/player/icons.tsx` / `src/components/tabIcons.tsx`. Import
-  icons via DEEP paths (`.../dist/esm/icons/IconX.mjs`, typed by
-  `src/types/tabler-icons.d.ts`): the package barrel loses exports under
-  Metro's Hermes live-bindings transform.
+- Icons come from the kit: `<Icon name="cast" />`, one name out of the shared
+  set, the same glyphs the web client and the televisions draw. The app does not
+  reach for `@tabler/icons-react-native` itself; it declares it because
+  `@kroma/ui` is consumed as source and imports it.
 
 Dev auto-login: put `EXPO_PUBLIC_KROMA_SERVER` and
 `EXPO_PUBLIC_KROMA_DEV_LOGIN=user:pass` in `.env.local` (gitignored) to boot

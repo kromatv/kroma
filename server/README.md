@@ -270,7 +270,7 @@ is a list, not a wildcard: see [Which browsers are answered](#which-browsers-are
 ## Metadata (TMDB)
 
 Items are enriched from [TMDB](https://www.themoviedb.org). KROMA ships a built-in
-application key (`BUILTIN_TMDB_API_KEY` in `src/config.rs`) so this works out of
+application key (`BUILTIN_TMDB_API_KEY` in `crates/kroma-config/src/lib.rs`) so this works out of
 the box with no per-install token the same approach Overseerr/Jellyseerr/Seerr
 take. Override it for your own install with `KROMA_TMDB_API_KEY`.
 
