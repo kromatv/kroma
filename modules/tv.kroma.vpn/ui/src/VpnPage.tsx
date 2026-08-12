@@ -211,7 +211,7 @@ function VpnConfigModal({
     );
 
   return (
-    <Dialog.Root open title={t('vpn.modalTitle')} onClose={onClose} width={520}>
+    <Dialog.Root open title={t('vpn.modalTitle')} onClose={onClose} width="md">
       <Text variant="meta" color="textDim">
         {t('vpn.modalHelp')}
       </Text>

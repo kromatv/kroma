@@ -55,7 +55,7 @@ export function ConfirmHost() {
   return (
     <ConfirmDialog
       open
-      width={520}
+      width="sm"
       title={current.title}
       description={current.message}
       confirmLabel={current.confirmLabel}

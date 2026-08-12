@@ -12,12 +12,12 @@
 // `mdx-blocks.tsx`, marks and the rule that decides what a line is in
 // `mdx-marks.tsx`.
 
-import { Box } from '@kroma/ui/kit';
+import { Box, Table } from '@kroma/ui/kit';
 import {
   Aside,
   BulletList,
   Cell,
-  Group,
+  DocTable,
   HeadCell,
   heading,
   ListItem,
@@ -25,9 +25,7 @@ import {
   Paragraph,
   Pre,
   Quote,
-  Row,
   Rule,
-  Table,
 } from './mdx-blocks';
 import {
   Anchor,
@@ -69,12 +67,12 @@ const MDX_COMPONENTS = {
   section: Aside,
   strong: Strong,
   sup: Superscript,
-  table: Table,
-  tbody: Group,
+  table: DocTable,
+  tbody: Table.Body,
   td: Cell,
   th: HeadCell,
-  thead: Group,
-  tr: Row,
+  thead: Table.Header,
+  tr: Table.Row,
   ul: BulletList,
 };
 

@@ -1,25 +1,17 @@
-// One TMDB candidate in the rematch grid: its poster, the matcher's confidence
-// in it, and whether it is the match the element is pinned to today.
+// One TMDB candidate in the rematch grid, drawn to a fixed box so a card with
+// three lines of plot and a card with none stay comparable.
 
-import type { MatchCandidate } from '@kroma/core';
+import { type MatchCandidate, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import {
-  Box,
-  backdropBlur,
-  type ColorValue,
-  color,
-  Focusable,
-  Spinner,
-  sv,
-  Text,
-} from '@kroma/ui/kit';
-import { IconCheck, IconSearch } from '@tabler/icons-react';
+import { Box, Focusable, Icon, Progress, Spinner, sv, Text, tintGradient } from '@kroma/ui/kit';
+import { confidencePercent, confidenceTone } from '#web/features/catalog/rematch-ranking';
 import { Image } from '#web/shared/ui';
-
-const FROST = backdropBlur(4);
 
 const candidateCard = sv({
   base: {
+    // A <button> shrink-to-fits: without this the card is as wide as its own
+    // longest word rather than as wide as the grid cell it sits in.
+    w: '100%',
     overflow: 'hidden',
     radius: 'xl',
     border: 'white/8',
@@ -40,6 +32,13 @@ const candidateCard = sv({
   defaults: { current: false },
 });
 
+const POSTER_ASPECT = 2 / 3;
+// The clamped runs keep their space whether or not TMDB filled them, so every
+// card in the grid is the same height.
+const META_H = 20;
+const OVERVIEW_H = 40;
+const PERCENT_W = 44;
+
 export interface CandidateCardProps {
   candidate: MatchCandidate;
   /** This candidate is the one being applied. */
@@ -53,89 +52,86 @@ export interface CandidateCardProps {
 export function CandidateCard({ candidate, busy, disabled, onPick }: Readonly<CandidateCardProps>) {
   const t = useT();
   const { title, originalTitle, year, posterUrl, overview, score, current, tmdbId } = candidate;
-  // The original title only earns its line when it differs from the localized one.
+  // The original title only earns its place when it differs from the localized one.
   const subtitle = originalTitle && originalTitle !== title ? originalTitle : null;
+  const meta = [year, subtitle, t('rematch.tmdbId', { id: tmdbId })].filter(Boolean).join(' · ');
+  const percent = confidencePercent(score);
+  const tone = confidenceTone(score);
   return (
     <Focusable
       sv={candidateCard}
       vars={{ current }}
       disabled={disabled}
+      busy={busy}
       label={title}
       onPress={onPick}
     >
-      {({ hovered }) => (
-        <>
-          <Box w="100%" aspect={2 / 3} bg="white/5">
-            {posterUrl ? (
-              <Image src={posterUrl} fit="cover" fill />
-            ) : (
-              <Box fill center>
-                <IconSearch size={26} stroke={1.6} color={color('white/15')} />
-              </Box>
-            )}
-            <Box absolute left={6} top={6}>
-              <Confidence score={score} />
+      <Box w="100%" aspect={POSTER_ASPECT} bg="surface2">
+        <Image
+          src={posterUrl ?? null}
+          fit="cover"
+          fill
+          background={tintGradient(posterColors(String(tmdbId)))}
+          fallback={
+            <Box fill center>
+              <Icon name="photo" size={26} color="glyphDim" />
             </Box>
-            {current ? (
-              <Box absolute right={6} top={6} radius="pill" bg="accent" px={8} py={2}>
-                <Text variant="overline" color="black">
-                  {t('rematch.current')}
-                </Text>
-              </Box>
-            ) : null}
-            {busy ? (
-              <Box fill center bg="black/50">
-                <Spinner size={22} color="white" />
-              </Box>
-            ) : null}
-            {!busy && current && hovered ? (
-              <Box fill center bg="black/40">
-                <IconCheck size={26} stroke={2.4} color={color('accent')} />
-              </Box>
-            ) : null}
-          </Box>
-          <Box flex minH={0} gap={4} p={10}>
-            <Box row align="baseline" gap={6}>
-              <Text variant="label" lines={1}>
-                {title}
-              </Text>
-              {year != null ? (
-                <Text variant="meta" color="white/45">
-                  {year}
-                </Text>
-              ) : null}
-            </Box>
-            {subtitle ? (
-              <Text variant="meta" color="white/40" lines={1}>
-                {subtitle}
-              </Text>
-            ) : null}
-            {overview ? (
-              <Text variant="meta" color="white/35" lines={2}>
-                {overview}
-              </Text>
-            ) : null}
-            <Text variant="overline" color="white/25" mt="auto" pt={4}>
-              {`#${tmdbId}`}
+          }
+        />
+        {current ? (
+          <Box
+            absolute
+            left={8}
+            top={8}
+            row
+            align="center"
+            gap={4}
+            radius="pill"
+            bg="accent"
+            px={8}
+          >
+            <Icon name="check" size={12} color="accentInk" thickness={2.6} />
+            <Text variant="overline" color="accentInk" py={4}>
+              {t('rematch.current')}
             </Text>
           </Box>
-        </>
-      )}
+        ) : null}
+        {busy ? (
+          <Box fill center bg="black/55">
+            <Spinner size={22} color="white" />
+          </Box>
+        ) : null}
+      </Box>
+      <Box gap={4} px={12} pt={10} pb={12}>
+        <Text variant="label" lines={1}>
+          {title}
+        </Text>
+        <Text variant="meta" color="textMuted" lines={1} minH={META_H}>
+          {meta}
+        </Text>
+        <Box minH={OVERVIEW_H}>
+          {overview ? (
+            <Text variant="meta" color="textDim" lines={2}>
+              {overview}
+            </Text>
+          ) : null}
+        </Box>
+        <Box row align="center" gap={8} pt={6}>
+          <Box flex>
+            <Progress
+              value={score}
+              thickness={4}
+              rounded
+              color={tone}
+              trackColor="white/12"
+              label={t('rematch.confidence', { score: percent })}
+            />
+          </Box>
+          <Text variant="overline" color={tone} w={PERCENT_W} textAlign="right" lines={1}>
+            {t('rematch.confidenceValue', { score: percent })}
+          </Text>
+        </Box>
+      </Box>
     </Focusable>
-  );
-}
-
-function Confidence({ score }: Readonly<{ score: number }>) {
-  const t = useT();
-  const pct = Math.round(score * 100);
-  let tone: { bg: ColorValue; ink: ColorValue } = { bg: 'black/70', ink: 'white/60' };
-  if (pct >= 70) tone = { bg: 'success/85', ink: 'black' };
-  else if (pct >= 35) tone = { bg: 'accent/85', ink: 'black' };
-  return (
-    <Box radius="pill" px={8} py={2} bg={tone.bg} style={FROST}>
-      <Text variant="overline" color={tone.ink}>
-        {t('rematch.confidence', { score: pct })}
-      </Text>
-    </Box>
   );
 }

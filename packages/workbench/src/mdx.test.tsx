@@ -86,15 +86,20 @@ describe('the element map', () => {
 // The elements above are the ones React Native has no renderer for: any of them
 // reaching the tree is a crash on a television, and silently fine in a browser.
 // So the assertion is made where a browser would have let it through.
+// Three elements are not in the sweep, because the KIT paints them itself on
+// the web and something else entirely on a television: <Img> is a real <img>
+// there and a React Native <Image> here, and <List> asks for the list roles,
+// which react-native-web answers with a real <ul> and <li>. Finding one of the
+// three says nothing about whether MDX's element was mapped; the two tests
+// above are what gate that.
+const PAINTED_BY_THE_KIT = ['img', 'ul', 'li'];
+
+const htmlSweep = () => EMITTABLE.filter((name) => !PAINTED_BY_THE_KIT.includes(name)).join(',');
+
 describe('rendering a compiled document', () => {
   it('puts no HTML element in the tree: every one went through the map', () => {
     const { container } = render(onScreen(<MdxDoc content={KitchenSink} />));
-    // `img` is not in the sweep: the kit's own <Img> paints a real <img> on the
-    // web (and a React Native <Image> on a television), so finding one here says
-    // nothing about whether MDX's element was mapped. The two tests above are
-    // what gate it.
-    const html = EMITTABLE.filter((name) => name !== 'img').join(',');
-    expect([...container.querySelectorAll(html)].map((el) => el.tagName)).toEqual([]);
+    expect([...container.querySelectorAll(htmlSweep())].map((el) => el.tagName)).toEqual([]);
   });
 
   it('draws the prose, the live component and the code block', () => {
@@ -145,8 +150,7 @@ describe('an inline docs string', () => {
 
   it('renders through the element map, so it puts no HTML in the tree either', () => {
     const { container } = render(onScreen(<Markdown>{SOURCE}</Markdown>));
-    const html = EMITTABLE.filter((name) => name !== 'img').join(',');
-    expect([...container.querySelectorAll(html)].map((el) => el.tagName)).toEqual([]);
+    expect([...container.querySelectorAll(htmlSweep())].map((el) => el.tagName)).toEqual([]);
     const text = container.textContent ?? '';
     expect(text).toContain('A heading');
     expect(text).toContain('another');

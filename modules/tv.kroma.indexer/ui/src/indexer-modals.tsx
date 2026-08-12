@@ -98,7 +98,7 @@ function TorznabIndexerForm({
     );
 
   return (
-    <Dialog.Root open title={t('indexers.edit')} onClose={() => end(false)} width={520}>
+    <Dialog.Root open title={t('indexers.edit')} onClose={() => end(false)} width="md">
       <Field.Root label={t('indexers.name')} value={name} onValueChange={setName}>
         <Field.Input placeholder="Jackett - YGG" />
       </Field.Root>
@@ -194,7 +194,7 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
   }, [defs, q]);
 
   return (
-    <Dialog.Root open title={t('indexers.pickTitle')} onClose={() => call.end(null)} width={520}>
+    <Dialog.Root open title={t('indexers.pickTitle')} onClose={() => call.end(null)} width="lg">
       <Row gap={8}>
         <Field.Root label={t('indexers.searchDefs')} hideLabel flex value={q} onValueChange={setQ}>
           <Field.Input icon="search" placeholder={t('indexers.searchDefs')} />
@@ -243,12 +243,9 @@ export const DefinitionPickerModal = createCallable<void, string | null>(({ call
         ) : null}
       </div>
 
-      <Dialog.Actions
-        onCancel={() => call.end(null)}
-        cancelLabel={t('common.cancel')}
-        onConfirm={() => call.end(null)}
-        confirmLabel={t('common.close')}
-      />
+      <Dialog.Footer>
+        <Dialog.Actions onCancel={() => call.end(null)} cancelLabel={t('common.close')} />
+      </Dialog.Footer>
     </Dialog.Root>
   );
 });
@@ -336,7 +333,7 @@ function BuiltinIndexerForm({
   const title = detail?.name ?? definitionId;
 
   return (
-    <Dialog.Root open title={title} onClose={() => end(false)} width={520}>
+    <Dialog.Root open title={title} onClose={() => end(false)} width="md">
       {loadError ? (
         <Text variant="meta" color="dangerHover">
           {loadError}

@@ -71,7 +71,7 @@ export function MenuSurfaceDialog({
     [onDismiss],
   );
   return (
-    <Dialog.Root open={open} onClose={() => onDismiss(dismissReason())} title={label} width={480}>
+    <Dialog.Root open={open} onClose={() => onDismiss(dismissReason())} title={label} width="sm">
       <FocusColumn>
         {entries.map((entry, at) => (
           <DialogEntry

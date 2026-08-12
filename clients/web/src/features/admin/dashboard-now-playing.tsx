@@ -230,7 +230,7 @@ export const StopStreamModal = createCallable<{ session: PlaybackSession }, bool
       <Dialog.Root
         open
         title={t('admin.stopStreamTitle')}
-        width={520}
+        width="md"
         onClose={() => call.end(false)}
       >
         <Text variant="meta" color="textDim">

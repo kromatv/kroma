@@ -95,7 +95,7 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
   };
 
   return (
-    <Dialog.Root open title={t('admin.addLibrary')} width={600} onClose={() => call.end(false)}>
+    <Dialog.Root open title={t('admin.addLibrary')} width="md" onClose={() => call.end(false)}>
       <Field.Root label={t('admin.name')}>
         <Field.Input
           icon="tag"
@@ -163,7 +163,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
       <Dialog.Root
         open
         title={t('admin.manageLibrary', { name: lib.name })}
-        width={600}
+        width="lg"
         onClose={() => call.end(false)}
       >
         <Field.Root label={t('admin.name')}>

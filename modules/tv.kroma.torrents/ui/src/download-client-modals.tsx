@@ -51,7 +51,7 @@ export const DownloadClientModal = createCallable<
     );
 
   return (
-    <Dialog.Root open title={t('dlclients.edit')} onClose={() => call.end(false)} width={520}>
+    <Dialog.Root open title={t('dlclients.edit')} onClose={() => call.end(false)} width="md">
       <Field.Root label={t('dlclients.name')} value={name} onValueChange={setName}>
         <Field.Input placeholder={client.kind} />
       </Field.Root>

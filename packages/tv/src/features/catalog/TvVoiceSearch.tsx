@@ -28,7 +28,7 @@ export function TvVoiceSearch({
   };
 
   return (
-    <Dialog.Root open onClose={onDone} title={t('search.voice')} width={720}>
+    <Dialog.Root open onClose={onDone} title={t('search.voice')} width="lg">
       <Box row align="center" gap={22}>
         <Pulse>
           <Icon name="microphone" size={34} color="accentText" />

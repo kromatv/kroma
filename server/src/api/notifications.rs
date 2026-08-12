@@ -34,6 +34,7 @@ pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/notifications", get(list))
         .route("/notifications/read", post(read))
+        .route("/notifications/unread", post(unread))
         .route("/notifications/{id}", axum::routing::delete(remove))
         .route("/notifications/prefs", get(get_prefs).put(put_prefs))
         .route("/push/key", get(push_key))
@@ -77,15 +78,53 @@ pub async fn read(
     AuthUser(user): AuthUser,
     Json(body): Json<ReadBody>,
 ) -> Result<Response, Response> {
+    let ids = bounded(body.ids.as_deref())?;
     let uid = user.id.clone();
     let unread = query(&state.db, move |pool| {
-        db::notifications::mark_read(&pool, &uid, body.ids.as_deref(), now_ms())?;
+        db::notifications::mark_read(&pool, &uid, ids.as_deref(), now_ms())?;
         let conn = pool.get()?;
         db::notifications::unread_count(&conn, &uid).map_err(Into::into)
     })
     .await?;
     notify::publish_unread(&state, &user.id, unread);
     Ok(Json(serde_json::json!({ "unread": unread })).into_response())
+}
+
+/// `POST /api/notifications/unread` body. Unlike the read side there is no
+/// "all": the affordance is per-row, so a list of ids is always required.
+#[derive(Debug, Deserialize)]
+pub struct UnreadBody {
+    pub ids: Vec<String>,
+}
+
+/// `POST /api/notifications/unread` put rows back in the unread pile, so a
+/// reader can undo a read without waiting for the event to happen again, and
+/// tell their other devices so every badge agrees.
+pub async fn unread(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+    Json(body): Json<UnreadBody>,
+) -> Result<Response, Response> {
+    let ids = bounded(Some(&body.ids))?.unwrap_or_default();
+    let uid = user.id.clone();
+    let unread = query(&state.db, move |pool| {
+        db::notifications::mark_unread(&pool, &uid, &ids)?;
+        let conn = pool.get()?;
+        db::notifications::unread_count(&conn, &uid).map_err(Into::into)
+    })
+    .await?;
+    notify::publish_unread(&state, &user.id, unread);
+    Ok(Json(serde_json::json!({ "unread": unread })).into_response())
+}
+
+// A caller can own at most `RETENTION_PER_USER` rows, so a longer list is not a
+// request anyone can mean: refuse it before it becomes that many SQL bindings.
+fn bounded(ids: Option<&[String]>) -> Result<Option<Vec<String>>, Response> {
+    match ids {
+        None => Ok(None),
+        Some(ids) if ids.len() <= db::notifications::RETENTION_PER_USER => Ok(Some(ids.to_vec())),
+        Some(_) => Err((StatusCode::BAD_REQUEST, "too many ids").into_response()),
+    }
 }
 
 /// `DELETE /api/notifications/:id` drop one of the caller's own rows.

@@ -15,8 +15,6 @@ import { useEffect, useState } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { kickCastController, useCastControllers } from '#tv/features/cast/controllers';
 
-const PANEL_WIDTH = 620;
-
 export function CastRemotes() {
   const t = useT();
   const { client } = useConnection();
@@ -52,7 +50,7 @@ export function CastRemotes() {
         onClose={() => setOpen(false)}
         title={t('cast.remotes')}
         description={t('cast.remotesHint')}
-        width={PANEL_WIDTH}
+        width="lg"
       >
         {/* A column: <FocusRegion> is horizontal and lays several rows out side
             by side, the second landing outside the panel. */}

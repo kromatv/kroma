@@ -61,6 +61,19 @@ describe('Dialog.Actions', () => {
     expect(control('Annuler')).toBeTruthy();
   });
 
+  it('draws the way out on its own, so a panel with nothing to confirm grows no confirm', () => {
+    const onCancel = vi.fn();
+    const { container } = render(<Dialog.Actions cancelLabel="Fermer" onCancel={onCancel} />);
+    expect((container.firstElementChild as HTMLElement).children).toHaveLength(1);
+    fireEvent.click(control('Fermer'));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('draws nothing at all when it was handed nothing to draw', () => {
+    const { container } = render(<Dialog.Actions />);
+    expect(container.firstElementChild).toBeNull();
+  });
+
   it('is the row itself when it is given nothing but controls', () => {
     const onPress = vi.fn();
     render(

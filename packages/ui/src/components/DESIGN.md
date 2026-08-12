@@ -55,7 +55,7 @@ never an input device, never a boolean spelled as a string.
 | `Panel` | The region a surface owns rather than pins: the body it scrolls, the region it expands, or the one it hands the whole stage to. | `Dialog`/`Drawer`'s scrolling middle between a pinned header and footer, `Resizable`'s re-proportioned area, `Disclosure`'s expanding region, and the player's stopped-state takeover. Not `Backdrop`, which is the inert scrim and never holds a control. |
 | `Popup` | The floating, styled, animated box. | Mounts itself into the overlay host. |
 | `Backdrop` | The scrim over inert content. | Not `Overlay`, which reads as the popup. |
-| `Item` | One selectable or actionable entry. | Namespaced (`Menu.Item`), never prefixed. |
+| `Item` | One entry of a collection: selectable, actionable, or simply listed. | Namespaced (`Menu.Item`), never prefixed. A document's bullet is an `Item` too: an entry does not have to be pressable to be one. |
 | `Leading` / `Trailing` | The head and tail of a row: media, a face, a chevron. | Named for the end of the row, not for what is put there. Neither is a second focus stop. |
 | `Indicator` | The selected/checked face. | **Never pressable.** See §2. |
 | `Label` | The accessible name for the control. | |
@@ -77,7 +77,15 @@ never an input device, never a boolean spelled as a string.
 | `Addon` | A member of a group that nothing can press, shaped like the controls beside it: a protocol, a unit, a suffix. | Named for the role, not the content. `InputGroup.Addon` and `ButtonGroup.Addon` are the same thing. |
 | `Previous` / `Next` | A step backwards or forwards through a sequence. | Named for the direction, never for the glyph that draws it. |
 | `Pages` / `Ellipsis` / `Status` | The run of page entries; the gap standing for the pages it skips; the "12 of 40" readout. | Pagination's own three. `Status` reports, it does not control. |
-| `Header` / `Footer` | Layout regions of a surface. | Layout, not semantics. |
+| `Line` / `Area` / `Bar` | One series of a plot, drawn as the mark that names it. | Named for the MARK, never for what the data means. A series' paint and its scale are the Root's; a mark only says which field it draws. |
+| `Grid` | The ruled ground a plot is read against. | Furniture: it draws no value, and it is never a data mark. |
+| `Axis` | One edge's scale: its levels and their labels. | `edge` says which one. Not `XAxis`/`YAxis`: a name denotes a role, and there is one axis part. |
+| `Legend` | The key to a plot's colours. | Derived from the marks, so the key and the plot cannot disagree. Made of the `<Legend>` molecule, which is the same thing outside a chart. |
+| `Tooltip` | The readout for whatever the cursor is on. | Positioned inside the plot rather than mounted into the overlay host, which is why it is not a `Popup`. Same role as the `<Tooltip>` molecule. |
+| `Header` / `Footer` | Layout regions of a surface. | Layout, not semantics. A chart's `Footer` is its caption, on the key's row. A table's `Header` is the same word for the same thing: the band that names its columns rather than filling them. |
+| `Body` | The rows a table is about, under its `Header`. | Only where a `Header` exists for it to be distinguished from. Not `Content`, which is banned below. |
+| `Row` | One band across a table: a record, read left to right. | The rule between two rows belongs to the row UNDER it, so the last one cannot double the frame. |
+| `Cell` | One field of a row, in the column its position gives it. | Its column comes from where it sits, never from an index prop: Yoga lines up the nth children of two rows, and nothing else does. |
 
 **Banned**: `Content` (meant a floating box in one library and an in-flow region
 in another) and `Viewport` (meant two different things in two libraries). Use

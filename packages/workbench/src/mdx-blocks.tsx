@@ -1,13 +1,15 @@
 // The block half of the element map: the paragraphs, headings, lists, tables
-// and rules a document is built out of, and the rhythm between them. The inline
-// half - the marks, and the rule that decides what a line is - lives in
-// `mdx-marks.tsx`, and `mdx.tsx` is the map that names both.
+// and rules a document is built out of, and the rhythm between them. The blocks
+// themselves are the kit's - <List>, <Table>, <CodeBlock> - and what lives here
+// is what a DOCUMENT adds to them: the measure it is read at and the space
+// between one block and the next. The inline half - the marks, and the rule that
+// decides what a line is - lives in `mdx-marks.tsx`, and `mdx.tsx` is the map
+// that names both.
 
-import { Box, CheckboxFace, Divider, styles, Text, type TextProps } from '@kroma/ui/kit';
+import { Box, CodeBlock, Divider, List, styles, Table, type TextProps } from '@kroma/ui/kit';
 import { space } from '@kroma/ui/tokens';
-import { Children, isValidElement, type ReactNode, useContext } from 'react';
-import { CodeBlock } from './code';
-import { BODY, MarkerContext, Prose, runs, TaskBox } from './mdx-marks';
+import { Children, isValidElement, type ReactNode } from 'react';
+import { BODY, Prose, runs, TaskBox } from './mdx-marks';
 import { useSection } from './outline';
 import { SectionAnchor } from './section-anchor';
 
@@ -29,11 +31,6 @@ const BLOCK = { base: space[3], md: space[4] };
 const FIGURE_ABOVE = { base: space[1], md: space[2] };
 const FIGURE_BELOW = { base: space[4], md: space[6] };
 const SECTION_ABOVE = { base: space[6], md: space[10] };
-
-// Half the difference between the body role's line and the 20pt checkbox face,
-// which lands the box on the optical centre of the first line rather than on
-// its top edge.
-const TASK_LIFT = 2;
 
 const s = styles({
   block: { maxW: MEASURE.prose, mb: BLOCK },
@@ -58,10 +55,7 @@ const s = styles({
     mt: { base: space[3], md: space[5] },
     mb: { base: space[1], md: space[2] },
   },
-  list: { maxW: MEASURE.prose, mb: BLOCK, gap: space[2] },
-  bullet: { w: 3, h: 3, mt: 10 },
-  marker: { minW: 18, mt: 1 },
-  task: { mt: TASK_LIFT },
+  list: { maxW: MEASURE.prose, mb: BLOCK },
   quote: {
     maxW: MEASURE.prose,
     mb: BLOCK,
@@ -73,9 +67,6 @@ const s = styles({
   },
   quoteRule: { w: 2, radius: 'pill' },
   figure: { maxW: MEASURE.figure, mt: FIGURE_ABOVE, mb: FIGURE_BELOW },
-  table: { border: 'border', radius: 'md', bg: 'surface1', overflow: 'hidden' },
-  row: { borderBottomWidth: 1, borderBottomColor: 'border' },
-  cell: { px: space[3], py: space[2] },
   rule: { maxW: MEASURE.prose, my: { base: space[4], md: space[8] } },
   footnotes: {
     maxW: MEASURE.prose,
@@ -136,66 +127,39 @@ function heading(level: number, variant: TextProps['variant'], color: TextProps[
 }
 
 function BulletList({ children }: Readonly<{ children?: ReactNode }>) {
-  return <Box style={s.list}>{children}</Box>;
+  return (
+    <Box style={s.list}>
+      <List.Root>{children}</List.Root>
+    </Box>
+  );
 }
 
 function OrderedList({ children }: Readonly<{ children?: ReactNode }>) {
   return (
     <Box style={s.list}>
-      {Children.toArray(children).map((item, at) => (
-        <MarkerContext.Provider
-          // The document order is fixed: the index IS the identity.
-          // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-          key={at}
-          value={at + 1}
-        >
-          {item}
-        </MarkerContext.Provider>
-      ))}
+      <List.Root ordered>{children}</List.Root>
     </Box>
   );
 }
 
 // A GFM task item arrives as a checkbox followed by its text. The box IS the
-// item's marker, so the item draws its own in the marker column and drops the
-// one it was handed: left in the run it draws under a bullet the item does not
-// want, and inside the <Text> that gathers a run it sits off the baseline.
-function splitTask(children: ReactNode): { checked: boolean | null; rest: ReactNode[] } {
+// item's marker, so the item hands the state to <List.Item> and drops the box it
+// was given: left in the run it draws under a bullet the item does not want, and
+// inside the <Text> that gathers a run it sits off the baseline.
+function splitTask(children: ReactNode): { checked?: boolean; rest: ReactNode[] } {
   const all = Children.toArray(children);
   const at = all.findIndex((child) => isValidElement(child) && child.type === TaskBox);
   const box = all[at];
-  if (!isValidElement<{ checked?: boolean }>(box)) return { checked: null, rest: all };
+  if (!isValidElement<{ checked?: boolean }>(box)) return { rest: all };
   return {
     checked: Boolean(box.props.checked),
     rest: [...all.slice(0, at), ...all.slice(at + 1)],
   };
 }
 
-function Marker({ checked }: Readonly<{ checked: boolean | null }>) {
-  const marker = useContext(MarkerContext);
-  if (checked !== null) {
-    return (
-      <Box shrink={0} style={s.task}>
-        <CheckboxFace checked={checked} />
-      </Box>
-    );
-  }
-  if (marker === null) return <Box shrink={0} radius="pill" bg="textDim" style={s.bullet} />;
-  return (
-    <Text variant="body" color="textDim" style={s.marker}>
-      {`${marker}.`}
-    </Text>
-  );
-}
-
 function ListItem({ children }: Readonly<{ children?: ReactNode }>) {
   const task = splitTask(children);
-  return (
-    <Box row gap={space[3]} align="flex-start">
-      <Marker checked={task.checked} />
-      <Box flex>{runs(task.rest)}</Box>
-    </Box>
-  );
+  return <List.Item checked={task.checked}>{runs(task.rest)}</List.Item>;
 }
 
 function Quote({ children }: Readonly<{ children?: ReactNode }>) {
@@ -234,41 +198,27 @@ function Pre({ children }: Readonly<{ children?: ReactNode }>) {
   );
 }
 
-function Table({ children }: Readonly<{ children?: ReactNode }>) {
+function DocTable({ children }: Readonly<{ children?: ReactNode }>) {
   return (
     <DocFigure>
-      <Box style={s.table}>{children}</Box>
+      <Table.Root>{children}</Table.Root>
     </DocFigure>
   );
 }
 
-function Group({ children }: Readonly<{ children?: ReactNode }>) {
-  return <Box>{children}</Box>;
-}
-
-function Row({ children }: Readonly<{ children?: ReactNode }>) {
-  return (
-    <Box row style={s.row}>
-      {children}
-    </Box>
-  );
-}
-
+// A cell's text is a run of marks rather than a string, so the ink is set here
+// rather than left to the kit's own plain-string case.
 function Cell({ children }: Readonly<{ children?: ReactNode }>) {
-  return (
-    <Box flex style={s.cell}>
-      {runs(children)}
-    </Box>
-  );
+  return <Table.Cell>{runs(children)}</Table.Cell>;
 }
 
 function HeadCell({ children }: Readonly<{ children?: ReactNode }>) {
   return (
-    <Box flex bg="surface2" style={s.cell}>
+    <Table.Cell>
       <Prose variant="label" color="text">
         {children}
       </Prose>
-    </Box>
+    </Table.Cell>
   );
 }
 
@@ -282,7 +232,7 @@ export {
   BulletList,
   Cell,
   DocFigure,
-  Group,
+  DocTable,
   HeadCell,
   heading,
   ListItem,
@@ -291,7 +241,5 @@ export {
   Paragraph,
   Pre,
   Quote,
-  Row,
   Rule,
-  Table,
 };

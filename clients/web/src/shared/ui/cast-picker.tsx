@@ -19,7 +19,7 @@ export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offer
   const t = useT();
   const { receivers, active } = useCast();
   return (
-    <Dialog.Root open title={t('cast.title')} onClose={() => call.end(undefined)} width={460}>
+    <Dialog.Root open title={t('cast.title')} onClose={() => call.end(undefined)} width="md">
       {offerLocal || receivers.length > 0 ? (
         <ListRow.Group size="sm">
           {offerLocal ? (

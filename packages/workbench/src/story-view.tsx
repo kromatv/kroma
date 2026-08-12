@@ -5,13 +5,12 @@
 // needs is READ from it rather than held beside it - the body, the prose, the
 // sample and the script are four answers to the same question.
 
-import { Box, Focusable, setTheme, styles, sv, Text } from '@kroma/ui/kit';
+import { Box, CodeBlock, Focusable, setTheme, styles, sv, Text } from '@kroma/ui/kit';
 import type { ColorToken } from '@kroma/ui/tokens';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Matrix, ViewportFrame } from './canvas';
 import { CanvasTabs } from './canvas-tabs';
 import { RULE_TOP } from './chrome';
-import { CodeBlock } from './code';
 import { RichText, snippet } from './docs';
 import type { WorkbenchLayout } from './layout';
 import type { PlayRunner } from './play';
@@ -227,7 +226,7 @@ function CodeBar({
       {/* No scroller of its own: <CodeBlock> owns both axes. */}
       {open ? (
         <Box px={layout.gutter} pb={18}>
-          <CodeBlock code={code} copy maxHeight={layout.mode === 'compact' ? 180 : 260} />
+          <CodeBlock code={code} maxHeight={layout.mode === 'compact' ? 180 : 260} />
         </Box>
       ) : null}
     </Box>

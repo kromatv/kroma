@@ -3,6 +3,7 @@
 
 import {
   Box,
+  CodeBlock,
   Focusable,
   Icon,
   IconButton,
@@ -15,7 +16,6 @@ import {
 import { type ReactNode, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE, RULE_TOP, TAB } from './chrome';
-import { CodeBlock, MONO } from './code';
 import { Controls } from './controls';
 import { Guidelines, StoryProse } from './docs';
 import { Interactions } from './interactions';
@@ -240,7 +240,7 @@ const s = styles({
   dockBody: { px: 20, py: 18, pb: 32 },
   // Fills the height of the tab row beside it.
   handle: { h: 37 },
-  badge: { fontSize: 10.5, fontFamily: MONO, lineHeight: 16 },
+  badge: { fontSize: 10.5, font: 'mono', lineHeight: 16 },
 });
 // `minW: 0` is what lets the label truncate; without it a flex item refuses to
 // shrink below its content and the row spills.

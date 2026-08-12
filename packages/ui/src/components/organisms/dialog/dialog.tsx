@@ -15,6 +15,7 @@ import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { surfaceBands } from '#ui/lib/surface-bands';
+import { DIALOG_PAD, SURFACE_WIDTH, type SurfaceWidth } from '#ui/lib/surface-shell';
 import { Actions } from './dialog-actions';
 import { Footer, Header, Panel, type Shell, ShellContext } from './dialog-parts';
 
@@ -26,7 +27,9 @@ interface DialogRootProps {
   /** The panel's bands: a `<Dialog.Header>`, a `<Dialog.Panel>` and a
    *  `<Dialog.Footer>`, each optional. Anything else is the panel's content. */
   children?: ReactNode;
-  width?: number;
+  /** The panel's step on the kit's width ladder, named for the densest thing it
+   *  holds rather than measured in pixels. See {@link SURFACE_WIDTH}. */
+  width?: SurfaceWidth;
   /** Panel padding. 0 hands the surface to content that owns its own layout
    *  (a routed detail sheet); such a dialog names itself via `title` even
    *  though nothing visible renders it. */
@@ -42,8 +45,8 @@ function Root({
   title,
   description,
   children,
-  width = 720,
-  pad = 40,
+  width = 'md',
+  pad = DIALOG_PAD,
   titleHidden = false,
 }: Readonly<DialogRootProps>) {
   // react-native-web's Modal loses its portal container under StrictMode, and a
@@ -96,7 +99,12 @@ function DialogSurface({
   bridge,
   children,
 }: Readonly<
-  Omit<DialogRootProps, 'open'> & { width: number; pad: number; trapped: boolean; bridge: boolean }
+  Omit<DialogRootProps, 'open'> & {
+    width: SurfaceWidth;
+    pad: number;
+    trapped: boolean;
+    bridge: boolean;
+  }
 >) {
   useFocusNav({ onBack: onClose });
   // A 64pt gutter is a frame on a television and a squeeze on a phone, where it
@@ -131,7 +139,7 @@ function DialogSurface({
     <Box flex center bg="overlay" p={gutter}>
       <DismissBackdrop onPress={onClose} />
       <Box
-        w={width}
+        w={SURFACE_WIDTH[width]}
         maxW="100%"
         maxH="100%"
         bg="surface2"

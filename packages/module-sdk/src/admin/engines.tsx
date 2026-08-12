@@ -208,7 +208,7 @@ function AddEngineDialog({
     );
 
   return (
-    <Dialog.Root open title={ask.title} width={560} onClose={() => onSettle(false)}>
+    <Dialog.Root open title={ask.title} width="md" onClose={() => onSettle(false)}>
       {ask.engines.length > 1 ? (
         <SegmentedControl.Root
           value={engineId}

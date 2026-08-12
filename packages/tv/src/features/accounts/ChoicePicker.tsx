@@ -2,7 +2,7 @@
 // Virtualised: a TV's cost follows the number of mounted focusables.
 
 import { useT } from '@kroma/ui';
-import { Dialog, Icon, ListRow, VirtualGrid } from '@kroma/ui/kit';
+import { DIALOG_PAD, Dialog, Icon, ListRow, SURFACE_WIDTH, VirtualGrid } from '@kroma/ui/kit';
 import type { ChoiceItem } from '#tv/app/settings/items';
 
 const ROW_HEIGHT = 68;
@@ -12,10 +12,7 @@ const LIST_HEIGHT = ROW_HEIGHT * 7 + ROW_GAP * 6;
 // <ListRow.Root> is `width: '100%'`, and a virtualised row container has no
 // width of its own to resolve against, so the row collapses to its trailing
 // glyph.
-const PANEL_WIDTH = 620;
-// Must match <Dialog.Root>'s own panel padding.
-const PANEL_PADDING = 40;
-const ROW_WIDTH = PANEL_WIDTH - PANEL_PADDING * 2;
+const ROW_WIDTH = SURFACE_WIDTH.lg - DIALOG_PAD * 2;
 
 export interface ChoicePickerProps {
   open: boolean;
@@ -44,7 +41,7 @@ export function ChoicePicker({
   const current = options.indexOf(value);
 
   return (
-    <Dialog.Root open onClose={onClose} title={title} width={PANEL_WIDTH}>
+    <Dialog.Root open onClose={onClose} title={title} width="lg">
       <VirtualGrid
         data={options}
         columns={1}

@@ -140,21 +140,40 @@ pub fn unread_count(conn: &Connection, user_id: &str) -> rusqlite::Result<u32> {
 /// `user_id` so an id guessed from another account is a no-op, not a leak.
 /// Returns how many rows changed.
 pub fn mark_read(pool: &Pool, user_id: &str, ids: Option<&[String]>, now_ms: i64) -> Result<usize> {
+    set_read_at(pool, user_id, ids, Some(now_ms))
+}
+
+/// Put rows back in the unread pile, so a reader who marked one read by mistake
+/// can undo it without waiting for the event to happen again. Scoped like
+/// [`mark_read`]. There is no `None` case on purpose: "mark everything unread"
+/// is not an affordance anyone wants.
+pub fn mark_unread(pool: &Pool, user_id: &str, ids: &[String]) -> Result<usize> {
+    set_read_at(pool, user_id, Some(ids), None)
+}
+
+fn set_read_at(
+    pool: &Pool,
+    user_id: &str,
+    ids: Option<&[String]>,
+    read_at: Option<i64>,
+) -> Result<usize> {
     let conn = pool.get()?;
+    // Only rows on the far side of the transition, so the count is what moved.
+    let side = if read_at.is_some() { "read_at IS NULL" } else { "read_at IS NOT NULL" };
     let changed = match ids {
         None => conn.execute(
-            "UPDATE notifications SET read_at = ?2 WHERE user_id = ?1 AND read_at IS NULL",
-            params![user_id, now_ms],
+            &format!("UPDATE notifications SET read_at = ?2 WHERE user_id = ?1 AND {side}"),
+            params![user_id, read_at],
         )?,
         Some([]) => 0,
         Some(ids) => {
             let placeholders = vec!["?"; ids.len()].join(",");
             let sql = format!(
-                "UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL \
+                "UPDATE notifications SET read_at = ? WHERE user_id = ? AND {side} \
                  AND id IN ({placeholders})"
             );
             let mut args: Vec<&dyn rusqlite::ToSql> = Vec::with_capacity(ids.len() + 2);
-            args.push(&now_ms);
+            args.push(&read_at);
             args.push(&user_id);
             for id in ids {
                 args.push(id);
@@ -400,6 +419,36 @@ mod tests {
         drop(conn);
         let ids = vec!["mine".to_string()];
         assert_eq!(mark_read(&p, &u1, Some(&ids), 9_000).unwrap(), 1);
+    }
+
+    #[test]
+    fn mark_unread_puts_a_row_back_and_counts_only_what_moved() {
+        let (p, u1, _) = pool();
+        insert(&p, "n1", &u1, 1_000);
+        insert(&p, "n2", &u1, 2_000);
+        assert_eq!(mark_read(&p, &u1, None, 9_000).unwrap(), 2);
+
+        let ids = vec!["n1".to_string()];
+        assert_eq!(mark_unread(&p, &u1, &ids).unwrap(), 1);
+        let conn = p.get().unwrap();
+        assert_eq!(unread_count(&conn, &u1).unwrap(), 1);
+        assert_eq!(list_notifications(&conn, &u1, 50, true).unwrap().len(), 1);
+        drop(conn);
+        // Already unread: nothing moves, and nothing is double-counted.
+        assert_eq!(mark_unread(&p, &u1, &ids).unwrap(), 0);
+        assert_eq!(mark_unread(&p, &u1, &[]).unwrap(), 0);
+    }
+
+    #[test]
+    fn mark_unread_cannot_touch_another_users_rows() {
+        let (p, u1, u2) = pool();
+        insert(&p, "theirs", &u2, 1_000);
+        assert_eq!(mark_read(&p, &u2, None, 9_000).unwrap(), 1);
+
+        let ids = vec!["theirs".to_string()];
+        assert_eq!(mark_unread(&p, &u1, &ids).unwrap(), 0);
+        let conn = p.get().unwrap();
+        assert_eq!(unread_count(&conn, &u2).unwrap(), 0);
     }
 
     #[test]

@@ -117,6 +117,8 @@ export { RING_ROTATION, ringGeometry } from './lib/ring';
 export type { SurfaceWidth } from './lib/surface-shell';
 export { DIALOG_PAD, SURFACE_WIDTH } from './lib/surface-shell';
 export { SvgXml } from './lib/svg';
+export type { CopyState } from './lib/use-copy';
+export { useCopy } from './lib/use-copy';
 export type { GrowingCount } from './lib/use-growing-count';
 export { useGrowingCount } from './lib/use-growing-count';
 export type { WheelSpin } from './lib/wheel-paths';

@@ -668,6 +668,9 @@ export class KromaClient {
   markNotificationsRead(ids: string[]): Promise<{ unread: number }> {
     return notifications.markRead(this.ctx, ids);
   }
+  markNotificationsUnread(ids: string[]): Promise<{ unread: number }> {
+    return notifications.markUnread(this.ctx, ids);
+  }
   markAllNotificationsRead(): Promise<{ unread: number }> {
     return notifications.markAllRead(this.ctx);
   }

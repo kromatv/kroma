@@ -47,7 +47,7 @@ export function SeasonPicker({
       open
       title={t('discover.requestSeasons')}
       onClose={onClose}
-      width={420}
+      width="sm"
       fullBelow={640}
     >
       <Drawer.Header>

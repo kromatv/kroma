@@ -14,7 +14,6 @@ import {
   webWindow,
 } from '@kroma/ui/kit';
 import { useEffect } from 'react';
-import { MONO } from './code';
 import type { Page } from './page';
 import { glyphFor } from './registry';
 import type { Story } from './story';
@@ -147,7 +146,7 @@ function Hint({ keys, label }: Readonly<{ keys: readonly string[]; label: string
 function Tally() {
   const { shown, total } = useCommandResults();
   return (
-    <Text variant="meta" color="textDim" style={TALLY}>
+    <Text variant="meta" color="textDim" font="mono" style={TALLY}>
       {`${shown} of ${total}`}
     </Text>
   );
@@ -156,6 +155,6 @@ function Tally() {
 // Negative margins against the footer's own gap: a hint is a run of caps and
 // one word, and the gap belongs between hints rather than inside one.
 const HINT = { fontSize: 11.5, marginLeft: -9 } as const;
-const TALLY = { fontSize: 11.5, fontFamily: MONO, marginLeft: 'auto' } as const;
+const TALLY = { fontSize: 11.5, marginLeft: 'auto' } as const;
 
 export { CommandPalette, commandHint, entriesOf, isPage, useCommandKey, useEscapeKey };

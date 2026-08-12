@@ -5,6 +5,7 @@ import { createContext, type ReactNode, useContext } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { styles } from '#ui/core';
+import { DIALOG_PAD } from '#ui/lib/surface-shell';
 
 interface Shell {
   pad: number;
@@ -12,7 +13,11 @@ interface Shell {
   hasFooter: boolean;
 }
 
-const ShellContext = createContext<Shell>({ pad: 40, hasHeader: false, hasFooter: false });
+const ShellContext = createContext<Shell>({
+  pad: DIALOG_PAD,
+  hasHeader: false,
+  hasFooter: false,
+});
 
 const useShell = () => useContext(ShellContext);
 

@@ -20,12 +20,13 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import { type CSSProperties, useEffect, useState } from 'react';
 import type { ViewStyle } from 'react-native';
 import { UserChip, VersionInfo } from '#web/features/catalog/sidebar-account';
-import { NavItem, NavRow } from '#web/features/catalog/sidebar-nav';
-import { NotificationBell } from '#web/features/notifications/panel';
 import { useModuleNav } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
 import { CapabilityChip } from '#web/shared/ui/capability-chip';
+import { useNavActions } from '#web/shared/ui/nav-actions';
+import { SideNav } from '#web/shared/ui/side-nav';
+import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
 // `position: sticky`, `100vh`, `overflow-y` and `env()` have no React Native
 // spelling, so the shell's own frames stay CSS around kit content.
@@ -40,17 +41,6 @@ const SIDEBAR: CSSProperties = {
   borderRightStyle: 'solid',
   borderRightColor: 'var(--kroma-border)',
   background: 'var(--kroma-bg)',
-};
-
-const BODY: CSSProperties = {
-  display: 'flex',
-  minHeight: 0,
-  flex: 1,
-  flexDirection: 'column',
-  overflowY: 'auto',
-  paddingLeft: 18,
-  paddingRight: 18,
-  paddingTop: 4,
 };
 
 const TOPBAR: CSSProperties = {
@@ -74,15 +64,11 @@ const TOPBAR: CSSProperties = {
 
 // `env()` has no React Native spelling, so the sheet's own insets stay CSS.
 const DRAWER_HEAD = {
+  paddingLeft: SIDE_NAV_GUTTER,
+  paddingRight: SIDE_NAV_GUTTER,
   paddingTop: 'max(1.75rem, env(safe-area-inset-top))',
   paddingBottom: 8,
 } as unknown as ViewStyle;
-
-const SAFE_BOTTOM = {
-  paddingBottom: 'max(1.75rem, env(safe-area-inset-bottom))',
-} as unknown as ViewStyle;
-
-const NAV_LIST: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 2 };
 
 const LOGO_LINK: CSSProperties = { display: 'block', color: 'inherit', textDecoration: 'none' };
 
@@ -102,12 +88,9 @@ export function Sidebar() {
   if (step !== 'lg' && step !== 'tv') return null;
   return (
     <aside style={SIDEBAR}>
-      <Box shrink={0} px={18} pb={8} pt={28}>
-        <Box row align="center" between px={8} pb={8}>
-          <Logo size={24} />
-          <NotificationBell />
-        </Box>
-      </Box>
+      <SideNav.Header>
+        <Logo size={24} />
+      </SideNav.Header>
       <SidebarBody />
     </aside>
   );
@@ -117,37 +100,30 @@ export function Sidebar() {
 // drawer's <Drawer.Panel>, which is why the two are separate.
 function SidebarBody() {
   return (
-    <div style={BODY}>
+    <div style={SIDE_NAV_FRAME}>
       <SidebarNav />
     </div>
   );
 }
 
-// Account/device block is pinned to the bottom via `mt: auto`: it reads as a
-// fixed footer on a normal window, and scrolls (rather than clipping) when too
-// short.
 function SidebarNav() {
   const t = useT();
   return (
-    <>
-      <nav style={NAV_LIST}>
-        {NAV.map((item) => (
-          <NavItem
-            key={item.to}
-            to={item.to}
-            exact={item.exact}
-            glyph={item.icon}
-            label={t(item.labelKey)}
-          />
-        ))}
-        <RequestsLink />
-        <ComingSoonLink />
-        <MissingLink />
-        <ModuleNavLinks />
-      </nav>
-      <Box mt="auto" gap={10} pt={24} style={SAFE_BOTTOM}>
+    <SideNav.Root>
+      {NAV.map((item) => (
+        <SideNav.Item key={item.to} to={item.to} exact={item.exact} icon={item.icon}>
+          <SideNav.Label>{t(item.labelKey)}</SideNav.Label>
+        </SideNav.Item>
+      ))}
+      <RequestsLink />
+      <ComingSoonLink />
+      <MissingLink />
+      <ModuleNavLinks />
+      <SideNav.Footer>
         <InviteLink />
-        <NavItem to="/connect" glyph={IconDeviceDesktop} label={t('nav.connectDevice')} />
+        <SideNav.Item to="/connect" icon={IconDeviceDesktop}>
+          <SideNav.Label>{t('nav.connectDevice')}</SideNav.Label>
+        </SideNav.Item>
         <AdminLink />
         <UserChip />
         <Box gap={8} px={8} pt={4}>
@@ -159,13 +135,14 @@ function SidebarNav() {
           </Box>
           <VersionInfo />
         </Box>
-      </Box>
-    </>
+      </SideNav.Footer>
+    </SideNav.Root>
   );
 }
 
 export function MobileTopbar() {
   const t = useT();
+  const actions = useNavActions();
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const step = useBreakpoint();
@@ -178,7 +155,7 @@ export function MobileTopbar() {
         <Logo size={20} />
       </Link>
       <Box row align="center" gap={2}>
-        <NotificationBell />
+        {actions}
         <IconButton
           diameter={40}
           glyph={22}
@@ -193,9 +170,9 @@ export function MobileTopbar() {
           onClose={() => setOpen(false)}
           title="KROMA"
           side="left"
-          width={304}
+          width="xs"
           fullBelow={640}
-          pad={18}
+          pad={0}
           panelStyle={NAV_FILL}
         >
           <Drawer.Header style={DRAWER_HEAD}>
@@ -219,28 +196,44 @@ function RequestsLink() {
   const t = useT();
   const { user } = useAuth();
   if (!user || !hasPermission(user, 'requests.create')) return null;
-  return <NavItem to="/requests" glyph={IconInbox} label={t('nav.requests')} />;
+  return (
+    <SideNav.Item to="/requests" icon={IconInbox}>
+      <SideNav.Label>{t('nav.requests')}</SideNav.Label>
+    </SideNav.Item>
+  );
 }
 
 function ComingSoonLink() {
   const t = useT();
   const { user } = useAuth();
   if (!user || !hasPermission(user, 'requests.create')) return null;
-  return <NavItem to="/coming-soon" glyph={IconCalendarClock} label={t('nav.comingSoon')} />;
+  return (
+    <SideNav.Item to="/coming-soon" icon={IconCalendarClock}>
+      <SideNav.Label>{t('nav.comingSoon')}</SideNav.Label>
+    </SideNav.Item>
+  );
 }
 
 function MissingLink() {
   const t = useT();
   const { user } = useAuth();
   if (!user || !hasPermission(user, 'requests.create')) return null;
-  return <NavItem to="/missing" glyph={IconAlertTriangle} label={t('nav.missing')} />;
+  return (
+    <SideNav.Item to="/missing" icon={IconAlertTriangle}>
+      <SideNav.Label>{t('nav.missing')}</SideNav.Label>
+    </SideNav.Item>
+  );
 }
 
 function InviteLink() {
   const t = useT();
   const { user } = useAuth();
   if (!user || !hasPermission(user, 'users.manage')) return null;
-  return <NavItem to="/invite" glyph={IconUserPlus} label={t('nav.inviteUser')} />;
+  return (
+    <SideNav.Item to="/invite" icon={IconUserPlus}>
+      <SideNav.Label>{t('nav.inviteUser')}</SideNav.Label>
+    </SideNav.Item>
+  );
 }
 
 function AdminLink() {
@@ -252,10 +245,11 @@ function AdminLink() {
       hasPermission(user, 'library.manage') ||
       hasPermission(user, 'settings.manage') ||
       hasPermission(user, 'requests.manage'));
-  if (!isAdmin) {
-    return <NavRow glyph={IconSettings} label={t('nav.settings')} dim />;
-  }
-  return <NavItem to="/admin" glyph={IconSettings} label={t('nav.server')} />;
+  return (
+    <SideNav.Item to="/admin" icon={IconSettings} dim={!isAdmin}>
+      <SideNav.Label>{t(isAdmin ? 'nav.server' : 'nav.settings')}</SideNav.Label>
+    </SideNav.Item>
+  );
 }
 
 function ModuleNavLinks() {
@@ -263,12 +257,9 @@ function ModuleNavLinks() {
   return (
     <>
       {items.map((n) => (
-        <NavItem
-          key={`${n.moduleId}:${n.to}`}
-          to={n.to}
-          glyph={resolveModuleIcon(n.icon)}
-          label={n.label}
-        />
+        <SideNav.Item key={`${n.moduleId}:${n.to}`} to={n.to} icon={resolveModuleIcon(n.icon)}>
+          <SideNav.Label>{n.label}</SideNav.Label>
+        </SideNav.Item>
       ))}
     </>
   );

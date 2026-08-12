@@ -17,8 +17,7 @@ import {
   MODAL_LAYER,
   modalPanel,
 } from '#web/features/catalog/modal-shell';
-import { CandidateCard } from '#web/features/catalog/rematch-card';
-import { TileGrid } from '#web/features/catalog/tile-grid';
+import { RematchResults } from '#web/features/catalog/rematch-results';
 import { useAuth } from '#web/shared/lib/auth';
 import { MODAL_SCRIM } from '#web/shared/ui';
 
@@ -146,20 +145,8 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
                   {t('rematch.noResults')}
                 </Text>
               ) : null}
-              {!isPending && (data?.results.length ?? 0) > 0 ? (
-                <TileGrid>
-                  {() =>
-                    (data?.results ?? []).map((c) => (
-                      <CandidateCard
-                        key={c.tmdbId}
-                        candidate={c}
-                        busy={applying === c.tmdbId}
-                        disabled={applying !== null}
-                        onPick={() => apply(c.tmdbId)}
-                      />
-                    ))
-                  }
-                </TileGrid>
+              {!isPending && data && data.results.length > 0 ? (
+                <RematchResults results={data.results} applying={applying} onPick={apply} />
               ) : null}
             </div>
 

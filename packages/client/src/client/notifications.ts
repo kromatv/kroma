@@ -17,6 +17,16 @@ export function markRead(ctx: RequestContext, ids: string[]): Promise<{ unread: 
   });
 }
 
+/** Put rows back in the unread pile. There is no "all" here on purpose: the
+ * affordance is per-row, and nobody wants a whole inbox back. */
+export function markUnread(ctx: RequestContext, ids: string[]): Promise<{ unread: number }> {
+  return ctx.json<{ unread: number }>('/notifications/unread', {
+    method: 'POST',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ ids }),
+  });
+}
+
 /** Omitting `ids` is what the server reads as "all". */
 export function markAllRead(ctx: RequestContext): Promise<{ unread: number }> {
   return ctx.json<{ unread: number }>('/notifications/read', {

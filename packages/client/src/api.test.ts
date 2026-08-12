@@ -556,6 +556,7 @@ describe('delegating methods issue the expected request', () => {
     ['deleteReport', (c) => c.deleteReport('r1')],
     ['listNotifications', (c) => c.listNotifications()],
     ['markNotificationsRead', (c) => c.markNotificationsRead(['n1'])],
+    ['markNotificationsUnread', (c) => c.markNotificationsUnread(['n1'])],
     ['markAllNotificationsRead', (c) => c.markAllNotificationsRead()],
     ['deleteNotification', (c) => c.deleteNotification('n1')],
     ['getNotificationPrefs', (c) => c.getNotificationPrefs()],

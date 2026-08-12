@@ -3,6 +3,7 @@ import { type ReactNode, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Text } from '#ui/components/atoms/text';
+import type { SurfaceWidth } from '#ui/lib/surface-shell';
 import { Dialog, type DialogRootProps } from './dialog';
 
 type DemoProps = Omit<DialogRootProps, 'open' | 'onClose' | 'children'>;
@@ -53,19 +54,21 @@ export default story({
       "Put a panel's controls in a <Dialog.Actions>: it is the one focus group a remote walks.",
       'Use `destructive` for a confirm that destroys something; the pair stays cancel-then-confirm.',
       'Hand extra actions to <Dialog.Actions> as children; they sit opposite the pair.',
+      'Pick `width` by the densest thing the panel holds: `sm` a question, `md` a form, `lg` rows that each carry a hint.',
     ],
     dont: [
       "Don't nest one actions row inside another: one panel, one focus group.",
       "Don't put a bare row of buttons in <Dialog.Footer>; the footer is the shelf, not the row.",
+      "Don't invent a confirm for a panel that has nothing to confirm; `onCancel` alone draws the way out.",
     ],
   },
   matrix: false,
   args: {
     title: 'Delete this profile?',
     description: 'This action cannot be undone.',
-    width: 520,
+    width: 'sm' as SurfaceWidth,
   },
-  controls: { width: { min: 320, max: 900, step: 20 } },
+  controls: { width: ['xs', 'sm', 'md', 'lg', 'xl'] },
   render: (props) => (
     <Demo
       {...props}

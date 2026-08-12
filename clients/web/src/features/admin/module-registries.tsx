@@ -74,7 +74,7 @@ export const RegistriesDrawer = createCallable<Record<string, never>, boolean>((
       open={!call.ended}
       onClose={() => call.end(changed.current)}
       title={t('admin.registriesTitle')}
-      width={520}
+      width="md"
     >
       <Drawer.Header>
         <Row between>

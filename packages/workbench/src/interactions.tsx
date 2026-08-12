@@ -3,7 +3,6 @@
 import { Box, Chip, Icon, type IconName, Spinner, styles, Text } from '@kroma/ui/kit';
 import type { ColorToken } from '@kroma/ui/tokens';
 import { RULE } from './chrome';
-import { MONO } from './code';
 import type { PlayStatus, PlayStep } from './play-types';
 
 interface StatusLook {
@@ -115,7 +114,7 @@ function Interactions({ steps, status, error, onReplay }: Readonly<InteractionsP
 
 const s = styles({
   label: { fontSize: 12.5, fontWeight: '600', shrink: 1 },
-  message: { fontFamily: MONO, fontSize: 11.5 },
+  message: { font: 'mono', fontSize: 11.5 },
   status: { fontSize: 10.5, letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: '700' },
 });
 

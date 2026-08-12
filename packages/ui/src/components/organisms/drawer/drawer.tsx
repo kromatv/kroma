@@ -18,6 +18,7 @@ import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { surfaceBands } from '#ui/lib/surface-bands';
+import { SURFACE_WIDTH, type SurfaceWidth } from '#ui/lib/surface-shell';
 import { Close, Footer, Header, PAD, Panel, type Shell, ShellContext } from './drawer-parts';
 import { type DrawerSide, FADE, SlidePanel, useSlide, WEB } from './drawer-slide';
 
@@ -28,7 +29,9 @@ interface DrawerRootProps {
    *  when no <Drawer.Header> was composed. */
   title: string;
   side?: DrawerSide;
-  width?: number;
+  /** The sheet's step on the kit's width ladder, named for the densest thing it
+   *  holds rather than measured in pixels. See {@link SURFACE_WIDTH}. */
+  width?: SurfaceWidth;
   /** Viewport width under which the panel takes the whole screen (the phone
    *  nav sheet). 0 keeps the fixed width everywhere. */
   fullBelow?: number;
@@ -47,7 +50,7 @@ function Root({
   onClose,
   title,
   side = 'right',
-  width = 460,
+  width = 'md',
   fullBelow = 0,
   panelStyle,
   pad = PAD,
@@ -103,7 +106,7 @@ function DrawerSurface({
 }: Readonly<
   Omit<DrawerRootProps, 'open'> & {
     side: DrawerSide;
-    width: number;
+    width: SurfaceWidth;
     fullBelow: number;
     pad: number;
     shown: boolean;
@@ -114,6 +117,7 @@ function DrawerSurface({
   useFocusNav({ onBack: onClose });
   const window = useWindowDimensions();
   const full = fullBelow > 0 && window.width < fullBelow;
+  const panelWidth = full ? window.width : SURFACE_WIDTH[width];
   const shell = useMemo<Shell>(() => ({ pad, onClose }), [pad, onClose]);
 
   const {
@@ -136,10 +140,10 @@ function DrawerSurface({
       >
         <DismissBackdrop onPress={onClose} />
       </Box>
-      <SlidePanel shown={shown} side={side} width={full ? window.width : width}>
+      <SlidePanel shown={shown} side={side} width={panelWidth}>
         <Box
           flex
-          w={full ? window.width : width}
+          w={panelWidth}
           maxW="100%"
           bg="surface1"
           style={[side === 'right' ? s.panelRight : s.panelLeft, panelStyle]}

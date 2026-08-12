@@ -4,6 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
+import type { SurfaceWidth } from '#ui/lib/surface-shell';
 import { Drawer, type DrawerRootProps } from './drawer';
 
 type DemoProps = Omit<DrawerRootProps, 'open' | 'onClose' | 'children'>;
@@ -55,8 +56,8 @@ export default story({
     ],
   },
   matrix: false,
-  args: { title: 'Edit registry', side: 'right' as 'left' | 'right', width: 460 },
-  controls: { side: ['right', 'left'], width: { min: 320, max: 720, step: 20 } },
+  args: { title: 'Edit registry', side: 'right' as 'left' | 'right', width: 'md' as SurfaceWidth },
+  controls: { side: ['right', 'left'], width: ['xs', 'sm', 'md', 'lg', 'xl'] },
   render: (props) => (
     <Demo
       {...props}

@@ -1,12 +1,5 @@
-// The snippet highlighter.
-//
-// It has no schema to validate against and no error state: whatever it fails to
-// recognise is simply painted as plain text, so a mistake here does not throw -
-// it silently mis-colours the code samples the whole Props drawer exists to
-// show. That is what these pin.
-
 import { describe, expect, it } from 'vitest';
-import { lines, tokenize } from './code';
+import { lines, tokenize } from './code-tokens';
 
 // The tokens of one kind, in order - the readable form of "what got painted".
 const of = (code: string, kind: string) =>

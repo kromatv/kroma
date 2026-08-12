@@ -9,14 +9,8 @@ export const ADMIN_SHELL = 'admin-shell';
 /** The permanent left navigation, which exists only from `lg` up. */
 export const ADMIN_SIDEBAR = 'admin-sidebar';
 
-/** The scrolling middle of the sidebar, above the pinned status card. */
-export const ADMIN_SIDEBAR_NAV = 'admin-sidebar-nav';
-
 /** The phone's pinned bar, which exists only below `lg`. */
 export const ADMIN_TOPBAR = 'admin-topbar';
-
-/** One entry in the navigation, rest / hover / current page. */
-export const ADMIN_NAV_LINK = 'admin-nav-link';
 
 /** A panel that stays put while the column beside it scrolls, from `lg` up. */
 export const ADMIN_STICKY_ASIDE = 'admin-sticky-aside';

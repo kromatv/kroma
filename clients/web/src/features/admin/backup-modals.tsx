@@ -107,7 +107,7 @@ export const ExportModal = createCallable<void, boolean>(({ call }) => {
     <Dialog.Root
       open
       title={t('admin.backupExportTitle')}
-      width={520}
+      width="md"
       onClose={busy ? () => {} : () => call.end(false)}
     >
       <ToggleRow
@@ -166,7 +166,7 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
       <Dialog.Root
         open
         title={t('admin.backupImportTitle')}
-        width={520}
+        width="md"
         onClose={busy ? () => {} : () => call.end(null)}
       >
         <Field.Root label={t('admin.backupFile')}>

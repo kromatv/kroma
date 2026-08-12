@@ -203,7 +203,7 @@ export const NamingTokenModal = createCallable<
     <Dialog.Root
       open
       title={t('naming.tokensTitle')}
-      width={768}
+      width="xl"
       pad={24}
       onClose={() => call.end()}
     >

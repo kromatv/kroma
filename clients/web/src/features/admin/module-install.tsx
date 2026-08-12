@@ -140,7 +140,7 @@ export const InstallModal = createCallable<{ id: string }, boolean>(({ call, id 
   };
 
   return (
-    <Dialog.Root open title={title} onClose={close} width={520}>
+    <Dialog.Root open title={title} onClose={close} width="md">
       {stage === 'plan' && (
         <PlanStage
           plan={plan}

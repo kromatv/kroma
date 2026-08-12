@@ -228,7 +228,7 @@ export default function DownloadsPage() {
           open
           title={t('downloads.removeTitle')}
           onClose={() => setConfirm(null)}
-          width={520}
+          width="sm"
         >
           <Text variant="meta" color="text/70">
             {t('downloads.removeBody', { title: confirm.title })}

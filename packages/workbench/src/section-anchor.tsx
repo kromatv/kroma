@@ -1,9 +1,16 @@
 // The link on a heading: the address of the section it names, on the clipboard.
 
-import { Focusable, Icon, type IconName, sv, webWindow } from '@kroma/ui/kit';
+import {
+  type CopyState,
+  Focusable,
+  Icon,
+  type IconName,
+  sv,
+  useCopy,
+  webWindow,
+} from '@kroma/ui/kit';
 import { type ColorToken, space } from '@kroma/ui/tokens';
 import { useCallback } from 'react';
-import { type CopyState, useCopy } from './clipboard';
 
 // The house shape for a copy control: the confirmation is the glyph itself
 // turning, and the failure is SAID rather than left looking like a dead press.

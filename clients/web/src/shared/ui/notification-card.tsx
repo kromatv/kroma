@@ -17,6 +17,8 @@ export function NotificationCard({
   titleTone = 'text',
   body,
   bodyTone = 'textMuted',
+  repeat,
+  meta,
   time,
 }: Readonly<{
   /** The shell the card sits in, padding included: a drawer row takes its
@@ -31,13 +33,19 @@ export function NotificationCard({
   titleTone?: ColorToken;
   body: ReactNode;
   bodyTone?: ColorToken;
+  /** Says how many times this one arrived, for a row standing in for a run of
+   *  repeats. Nothing is drawn without it, which is the ordinary row. */
+  repeat?: ReactNode;
+  /** A third line under the body: the span a run of repeats covers. Same rule
+   *  as `repeat`, and the two travel together. */
+  meta?: ReactNode;
   time: ReactNode;
 }>) {
   return (
     <div style={style ? { ...CARD_ROW, ...style } : CARD_ROW}>
       {/* The gutter is reserved on every row, empty or not, so nothing shifts. */}
       <Row w={6} h={48} shrink={0} mr={8}>
-        {unread ? <Box w={6} h={6} radius="circle" bg="accent" /> : null}
+        {unread ? <Box w={3} h={30} radius="pill" bg="accent" /> : null}
       </Row>
       <NotificationTile event={event} src={src} />
       <Box minW={0} flex={1}>
@@ -45,6 +53,7 @@ export function NotificationCard({
           <Text variant="label" color={titleTone} lines={1} minW={0} flex={1}>
             {title}
           </Text>
+          {repeat}
           <Text variant="meta" color="textDim" shrink={0} pt={3}>
             {time}
           </Text>
@@ -52,6 +61,7 @@ export function NotificationCard({
         <Text variant="meta" color={bodyTone} lines={2} mt={2}>
           {body}
         </Text>
+        {meta}
       </Box>
     </div>
   );

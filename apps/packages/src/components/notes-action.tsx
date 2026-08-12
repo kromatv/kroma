@@ -13,7 +13,7 @@ export function NotesAction({ release }: Readonly<{ release: Release }>) {
     <>
       <Button variant="ghost" size="sm" icon="notes" label="Notes" onPress={() => setOpen(true)} />
       {open ? (
-        <Dialog.Root open onClose={close} title={release.version} width={760}>
+        <Dialog.Root open onClose={close} title={release.version} width="lg">
           <NotesBody notes={release.notes} />
           <Dialog.Footer>
             <Row gap={10} justify="flex-end">

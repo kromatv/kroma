@@ -41,6 +41,8 @@ export type { KeypadProps } from './keypad';
 export { Keypad } from './keypad';
 export type { LegendItemProps, LegendRootProps } from './legend';
 export { Legend } from './legend';
+export type { ListItemProps, ListRootProps } from './list';
+export { List } from './list';
 export type { ListGroupProps, ListRowRootProps, ListRowSize } from './list-row';
 export { ListRow, listRowVariants } from './list-row';
 export type { MediaCardProps } from './media-card';

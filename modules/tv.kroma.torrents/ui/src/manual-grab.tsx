@@ -266,7 +266,7 @@ export function ManualGrabModal({
   const canAdd = magnet.trim().length > 0 && title.trim().length > 0;
 
   return (
-    <Dialog.Root open title={t('manual.title')} onClose={onClose} width={520}>
+    <Dialog.Root open title={t('manual.title')} onClose={onClose} width="lg">
       {/* search sub-panel */}
       <SearchPanel
         query={query}

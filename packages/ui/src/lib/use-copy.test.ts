@@ -2,7 +2,7 @@
 
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useCopy } from './clipboard';
+import { useCopy } from './use-copy';
 
 function withClipboard(writeText: (text: string) => Promise<void>) {
   Object.defineProperty(window.navigator, 'clipboard', {
@@ -30,7 +30,7 @@ afterEach(() => {
 });
 
 describe('useCopy', () => {
-  it('reports the platform has no clipboard, so the button renders nothing at all', () => {
+  it('reports the platform has no clipboard, so the control renders nothing at all', () => {
     withoutClipboard();
     const { result } = renderHook(useCopy);
     expect(result.current.available).toBe(false);

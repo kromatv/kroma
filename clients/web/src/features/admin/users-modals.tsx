@@ -158,7 +158,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
       open
       title={t('admin.editUser', { name: user.username })}
       onClose={() => call.end(false)}
-      width={460}
+      width="lg"
     >
       <Field.Root label={t('admin.name')}>
         <Field.Input icon="user" value={name} onValueChange={setName} />
@@ -174,25 +174,27 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
           </Text>
         ) : null}
       </Box>
-      <Dialog.Actions
-        onCancel={() => call.end(false)}
-        cancelLabel={t('common.cancel')}
-        onConfirm={() => {
-          save();
-        }}
-        confirmLabel={busy ? t('common.saving') : t('common.save')}
-        busy={busy}
-      >
-        <Button
-          variant="dangerGhost"
-          size="sm"
-          label={t('admin.deleteAccount')}
-          onPress={() => {
-            void remove();
+      <Dialog.Footer>
+        <Dialog.Actions
+          onCancel={() => call.end(false)}
+          cancelLabel={t('common.cancel')}
+          onConfirm={() => {
+            save();
           }}
-          disabled={busy || isSelf}
-        />
-      </Dialog.Actions>
+          confirmLabel={busy ? t('common.saving') : t('common.save')}
+          busy={busy}
+        >
+          <Button
+            variant="dangerGhost"
+            size="sm"
+            label={t('admin.deleteAccount')}
+            onPress={() => {
+              void remove();
+            }}
+            disabled={busy || isSelf}
+          />
+        </Dialog.Actions>
+      </Dialog.Footer>
     </Dialog.Root>
   );
 });
@@ -228,7 +230,7 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
   }
 
   return (
-    <Dialog.Root open title={t('nav.inviteUser')} onClose={close} width={460}>
+    <Dialog.Root open title={t('nav.inviteUser')} onClose={close} width="lg">
       <Box>
         <Text variant="meta" color="textDim" mb={16}>
           {t('admin.inviteIntro')}
@@ -249,18 +251,23 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
             </InputGroup.Addon>
           </InputGroup.Root>
         </Callout.Root>
-      ) : (
-        <Dialog.Actions
-          onCancel={close}
-          cancelLabel={t('common.cancel')}
-          onConfirm={() => {
-            create();
-          }}
-          confirmLabel={busy ? t('common.creating') : t('admin.createLink')}
-          busy={busy}
-          disabled={perms.size === 0}
-        />
-      )}
+      ) : null}
+      <Dialog.Footer>
+        {link ? (
+          <Dialog.Actions onCancel={close} cancelLabel={t('common.close')} />
+        ) : (
+          <Dialog.Actions
+            onCancel={close}
+            cancelLabel={t('common.cancel')}
+            onConfirm={() => {
+              create();
+            }}
+            confirmLabel={busy ? t('common.creating') : t('admin.createLink')}
+            busy={busy}
+            disabled={perms.size === 0}
+          />
+        )}
+      </Dialog.Footer>
     </Dialog.Root>
   );
 });

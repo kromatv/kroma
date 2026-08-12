@@ -15,7 +15,6 @@ import {
   useContext,
   useMemo,
 } from 'react';
-import { MONO } from './code';
 import { openWebLink } from './link';
 
 interface Ink {
@@ -28,9 +27,6 @@ interface Ink {
 const BODY: Ink = { variant: 'body', color: 'textMuted' };
 
 const InkContext = createContext<Ink>(BODY);
-
-// Which item of an ordered list is being drawn; null inside a bullet list.
-const MarkerContext = createContext<number | null>(null);
 
 interface ProseProps extends Ink {
   style?: TextProps['style'];
@@ -174,7 +170,7 @@ const s = styles({
   del: { textDecorationLine: 'line-through' },
   sup: { fontSize: 10 },
   link: { textDecorationLine: 'underline' },
-  code: { fontFamily: MONO, fontSize: CODE_SIZE, bg: 'white/6' },
+  code: { font: 'mono', fontSize: CODE_SIZE, bg: 'white/6' },
   image: { h: 140 },
   // A box on a text line sits on the baseline, which puts it a couple of points
   // high against the letters beside it; the drop lands it on their optical
@@ -188,7 +184,6 @@ export {
   Emphasis,
   InlineCode,
   LineBreak,
-  MarkerContext,
   Picture,
   Prose,
   runs,

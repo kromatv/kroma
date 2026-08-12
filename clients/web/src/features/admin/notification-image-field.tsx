@@ -113,7 +113,7 @@ function ImagePickerDialog({
       open={open}
       onClose={onClose}
       title={t('admin.notifImagePick')}
-      width={720}
+      width="xl"
       pad={28}
     >
       <Box gap={16}>

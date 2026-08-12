@@ -1,4 +1,4 @@
-import type { MetricsSnapshot, PlaybackSession, TopUser } from '@kroma/core';
+import type { PlaybackSession, TopUser } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Avatar,
@@ -14,13 +14,13 @@ import {
   Text,
 } from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
-import { CHART_SERIES } from '#web/features/admin/chart-palette';
-import { HistoryBars, MetricsChart } from '#web/features/admin/charts';
+import { HistoryBars } from '#web/features/admin/charts';
+import { BandwidthSection, CpuSection, RamSection } from '#web/features/admin/dashboard-metrics';
 import { NowPlayingCard, StopStreamModal } from '#web/features/admin/dashboard-now-playing';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, useAdmin, usePoll } from '#web/features/admin/shell';
 import { TABULAR } from '#web/features/admin/table';
-import { decimal, formatDuration, formatMbps } from '#web/shared/lib/adminFormat';
+import { formatDuration } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 
 function RangeSelect({
@@ -44,17 +44,6 @@ function RangeSelect({
     </Select.Root>
   );
 }
-
-function LiveLabel() {
-  const t = useT();
-  return (
-    <Text variant="label" color="textMuted">
-      {t('admin.realtime')}
-    </Text>
-  );
-}
-
-const sampleSec = (metrics: MetricsSnapshot | null) => (metrics?.sampleIntervalMs ?? 3000) / 1000;
 
 export function DashboardScreen() {
   const t = useT();
@@ -169,117 +158,13 @@ export function DashboardScreen() {
             />
           </Section.Actions>
         </Section.Header>
-        {history ? <HistoryBars buckets={history.buckets} /> : null}
+        {history ? <HistoryBars buckets={history.buckets} label={t('admin.playHistory')} /> : null}
       </Section.Root>
     </>
   );
 }
 
 const ROW_RULE = { borderBottomWidth: 1, borderBottomColor: color('tint/4') } as const;
-
-const avg = (a: number[]) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
-
-const pct = (v: number) => `${Math.round(v)} %`;
-
-function BandwidthSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) {
-  const t = useT();
-  const local = metrics?.series.bwLocal ?? [];
-  const remote = metrics?.series.bwRemote ?? [];
-  const max = Math.max(1, ...local, ...remote);
-  return (
-    <Section.Root mt={28}>
-      <Section.Header>
-        <Section.Title>{t('admin.bandwidth')}</Section.Title>
-        <Section.Actions>
-          <LiveLabel />
-        </Section.Actions>
-      </Section.Header>
-      <MetricsChart
-        max={max}
-        sampleSec={sampleSec(metrics)}
-        formatValue={formatMbps}
-        series={[
-          { label: t('admin.legendRemote'), data: remote, color: CHART_SERIES.remote },
-          { label: t('admin.legendLocal'), data: local, color: CHART_SERIES.local, fill: true },
-        ]}
-        legend={[
-          { label: t('admin.legendRemote'), color: CHART_SERIES.remote },
-          { label: t('admin.legendLocal'), color: CHART_SERIES.local },
-        ]}
-        footer={t('admin.bwAverages', {
-          remote: formatMbps(avg(remote)),
-          local: formatMbps(avg(local)),
-        })}
-      />
-    </Section.Root>
-  );
-}
-
-function CpuSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) {
-  const t = useT();
-  const kroma = metrics?.series.cpuKroma ?? [];
-  const sys = metrics?.series.cpuSystem ?? [];
-  return (
-    <Section.Root mt={28}>
-      <Section.Header>
-        <Section.Title>{t('admin.cpu')}</Section.Title>
-        <Section.Actions>
-          <LiveLabel />
-        </Section.Actions>
-      </Section.Header>
-      <MetricsChart
-        max={100}
-        sampleSec={sampleSec(metrics)}
-        formatValue={pct}
-        series={[
-          { label: t('admin.legendSystem'), data: sys, color: CHART_SERIES.cpuSystem },
-          { label: t('admin.legendKromaServer'), data: kroma, color: CHART_SERIES.kroma },
-        ]}
-        legend={[
-          { label: t('admin.legendKromaServer'), color: CHART_SERIES.kroma },
-          { label: t('admin.legendSystem'), color: CHART_SERIES.cpuSystem },
-        ]}
-        footer={t('admin.cpuAverages', {
-          kroma: decimal(avg(kroma), 1),
-          sys: decimal(avg(sys), 1),
-        })}
-      />
-    </Section.Root>
-  );
-}
-
-function RamSection({ metrics }: Readonly<{ metrics: MetricsSnapshot | null }>) {
-  const t = useT();
-  const kroma = metrics?.series.ramKroma ?? [];
-  const sys = metrics?.series.ramSystem ?? [];
-  return (
-    <Section.Root mt={28}>
-      <Section.Header>
-        <Section.Title>{t('admin.ram')}</Section.Title>
-        <Section.Actions>
-          <LiveLabel />
-        </Section.Actions>
-      </Section.Header>
-      <MetricsChart
-        max={100}
-        sampleSec={sampleSec(metrics)}
-        formatValue={pct}
-        series={[
-          { label: t('admin.legendSystem'), data: sys, color: CHART_SERIES.ramSystem },
-          { label: t('admin.legendKromaServer'), data: kroma, color: CHART_SERIES.kroma },
-        ]}
-        legend={[
-          { label: t('admin.legendKromaServer'), color: CHART_SERIES.kroma },
-          { label: t('admin.legendSystem'), color: CHART_SERIES.ramSystem },
-        ]}
-        footer={t('admin.ramAverages', {
-          kroma: decimal(avg(kroma), 2),
-          sys: decimal(avg(sys), 2),
-        })}
-      />
-    </Section.Root>
-  );
-}
 
 function TopUserCard({ u }: Readonly<{ u: TopUser }>) {
   const t = useT();

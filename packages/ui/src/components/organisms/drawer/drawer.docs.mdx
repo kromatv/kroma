@@ -25,7 +25,14 @@ television and a phone as well as in a browser. A pane of the caller's own -
 a `<div>` with `overflow-y`, say - is the one thing that will not.
 
 The pinned bands draw their own hairline against the panel, so a sheet is
-three parts rather than five.
+three parts rather than five. A band holding nothing draws neither, so a footer
+written around a condition costs nothing on the pass where the condition is
+false.
+
+`width` is a step on the same overlay ladder **Dialog** reads (`xs` a rail,
+`sm` a question, `md` a form, `lg` rows that each carry a hint, `xl` a grid),
+never a number; `fullBelow` is the viewport width under which the sheet takes
+the screen instead.
 
 ## Naming it, then arranging it
 

@@ -2,6 +2,21 @@
 // behaviour of its own.
 
 export type {
+  ChartAxisProps,
+  ChartBarProps,
+  ChartCurve,
+  ChartEdge,
+  ChartFooterProps,
+  ChartGridProps,
+  ChartMarkProps,
+  ChartPoint,
+  ChartRootProps,
+  ChartTraceProps,
+} from './chart';
+export { Chart } from './chart';
+export type { CodeBlockProps } from './code-block';
+export { CodeBlock } from './code-block';
+export type {
   CommandInputProps,
   CommandItem,
   CommandResults,
@@ -66,6 +81,14 @@ export type {
 export { Resizable, useResizablePanel } from './resizable';
 export type { SplashBackdropProps, SplashCover } from './splash-backdrop';
 export { SplashBackdrop } from './splash-backdrop';
+export type {
+  TableCellProps,
+  TableRootProps,
+  TableRowProps,
+  TableSectionProps,
+  TableVariant,
+} from './table';
+export { Table } from './table';
 export type { ToasterProps, ToastOptions, ToastPosition } from './toast';
 export { Toaster, toast } from './toast';
 export type { VirtualGridProps, VirtualRailProps } from './virtual';

@@ -382,11 +382,6 @@ select:focus-visible,
   border-bottom: 1px solid var(--kroma-border);
   background: var(--kroma-bg);
 }
-.admin-sidebar-nav {
-  min-height: 0;
-  flex: 1;
-  overflow-y: auto;
-}
 @media (min-width: 1024px) {
   .admin-shell {
     flex-direction: row;
@@ -399,14 +394,19 @@ select:focus-visible,
   }
 }
 
-/* A navigation link is a router <a>, which is the one control the kit does not
-   render (components/DESIGN.md §4), so its rest, hover and current-page faces
-   are stated here. The glyph inside inherits `color`, which is why it stays a
-   DOM icon. */
-.admin-nav-link {
+/* THE SIDE NAVIGATION (shared/ui/side-nav.tsx), the catalogue's and the
+   console's alike. A row is a router <a>, which is the one control the kit does
+   not render (components/DESIGN.md §4), and a pointer's hover is a pseudo-class
+   with no React Native spelling, so its rest, hover, current-page and
+   unreachable faces are stated here rather than re-rendered from React state.
+   The glyph and the name inherit `color`, which is why they stay DOM nodes.
+   Every number is the `sm` control shell's, pinned to it by
+   shared/ui/side-nav-style.test.ts. */
+.side-nav-row {
   display: flex;
+  min-height: 40px;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 10px 14px;
   border-radius: var(--radius-md);
   font: var(--type-label);
@@ -416,13 +416,16 @@ select:focus-visible,
     background-color var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
 }
-.admin-nav-link:hover {
-  background: color-mix(in srgb, var(--kroma-tint) 4%, transparent);
+.side-nav-row:not([aria-disabled="true"]):hover {
+  background: var(--kroma-tint-4);
   color: var(--kroma-text);
 }
-.admin-nav-link[aria-current="page"] {
+.side-nav-row[aria-current="page"] {
   background: var(--kroma-accent-soft);
   color: var(--kroma-accent-text);
+}
+.side-nav-row[aria-disabled="true"] {
+  opacity: 0.5;
 }
 
 /* Same for the Radix dropdown menu (the sidebar account menu): it's mouse-driven
