@@ -10,6 +10,8 @@ export { attachDemos } from './demos';
 export type { Control, ControlSpec, MatrixRow, ResolvedControl } from './derive';
 export type { Context, GlobHost, Modules, PropDocs, Sources, StoryCodes } from './discover';
 export { discoverMetro, discoverVite } from './discover';
+export type { Registry, StoryEntry } from './entry';
+export { storyEntries, useStory } from './entry';
 export type {
   HistoryCommit,
   HistoryEntry,
@@ -17,6 +19,8 @@ export type {
   HistorySubject,
   KitHistory,
 } from './history';
+export type { LazyRegistry, Loaders, SourceLoaders } from './lazy';
+export { indexVite } from './lazy';
 export type { Block, Mark, Segment } from './markdown';
 export { blocks, segments } from './markdown';
 export { MDX_COMPONENTS } from './mdx';

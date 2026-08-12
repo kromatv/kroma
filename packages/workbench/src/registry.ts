@@ -90,6 +90,13 @@ function byText(a: string, b: string): number {
   return a > b ? 1 : 0;
 }
 
+/** The discovered paths of one kind, sorted - always: a story's tier is read
+ * from its path, so paths and stories must stay lined up regardless of the
+ * bundler's enumeration order. */
+function pathsEnding(paths: readonly string[], suffix: string): string[] {
+  return paths.filter((path) => path.endsWith(suffix)).sort(byText);
+}
+
 /** The distinct values of `key` with the items that carry them, in encounter
  * order, which, after `orderStories`, is already the sorted order. */
 function groupBy<T, K>(items: readonly T[], key: (item: T) => K): { key: K; items: T[] }[] {
@@ -110,8 +117,9 @@ function attachTiers(stories: readonly Story[], paths: readonly string[]): Story
 
 /** Sorts the registry for display: by functional group, then name. The atomic
  * level stays attached (search matches it, the palette shows it) but never
- * drives the order a reader scans. */
-function orderStories(stories: readonly Story[]): Story[] {
+ * drives the order a reader scans. Takes the two fields it reads rather than a
+ * `Story`, so an INDEX of stories is ordered by the same arithmetic. */
+function orderStories<T extends { group: string; name: string }>(stories: readonly T[]): T[] {
   const rankOf = (order: readonly string[], value: string) => {
     const at = order.indexOf(value);
     return at === -1 ? order.length : at;
@@ -132,6 +140,7 @@ export {
   groupBy,
   matches,
   orderStories,
+  pathsEnding,
   slug,
   TIER_ORDER,
   tierFor,

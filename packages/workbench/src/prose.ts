@@ -34,23 +34,27 @@ function docsKey(path: string): string {
   return story;
 }
 
+/** The id of the story a `.docs.mdx` documents. A file naming a story that does
+ * not exist is a typo in a file name - loud, because the alternative is prose
+ * that silently appears nowhere. */
+function docsOwner(path: string, known: ReadonlySet<string>): string {
+  const id = docsKey(path);
+  if (!known.has(id)) {
+    throw new Error(
+      `Docs file for an unknown story "${id}". The first segment of a .docs.mdx ` +
+        "file name has to be a story's id (its name, kebab-cased).",
+    );
+  }
+  return id;
+}
+
 /** Give every story that has one its MDX file, which REPLACES the inline
  * `docs:` string: a story carrying both would otherwise show one of them with
- * nothing to say which. A file naming a story that does not exist is a typo in
- * a file name - loud, because the alternative is prose that silently appears
- * nowhere. */
+ * nothing to say which. */
 function attachDocs(stories: readonly Story[], files: readonly DocsFile[]): Story[] {
-  const byStory = new Map<string, DocComponent>();
-  for (const file of files) byStory.set(docsKey(file.path), file.content);
   const known = new Set(stories.map((entry) => entry.id));
-  for (const id of byStory.keys()) {
-    if (!known.has(id)) {
-      throw new Error(
-        `Docs file for an unknown story "${id}". The first segment of a .docs.mdx ` +
-          "file name has to be a story's id (its name, kebab-cased).",
-      );
-    }
-  }
+  const byStory = new Map<string, DocComponent>();
+  for (const file of files) byStory.set(docsOwner(file.path, known), file.content);
   return stories.map((story) => {
     const docs = byStory.get(story.id);
     return docs ? { ...story, docs } : story;
@@ -58,4 +62,4 @@ function attachDocs(stories: readonly Story[], files: readonly DocsFile[]): Stor
 }
 
 export type { DocsFile };
-export { attachDocs, docsKey };
+export { attachDocs, docsKey, docsOwner };

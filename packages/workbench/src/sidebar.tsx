@@ -8,14 +8,14 @@ import { Box, styles } from '@kroma/ui/kit';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE_TOP } from './chrome';
+import type { StoryEntry } from './entry';
 import type { WorkbenchLayout } from './layout';
 import type { Page } from './page';
 import { groupBy } from './registry';
 import { Branch, Brand, Leaf, SearchButton } from './sidebar-rows';
-import type { Story } from './story';
 
 interface SidebarProps {
-  stories: readonly Story[];
+  stories: readonly StoryEntry[];
   /** Standalone articles, listed above the component tree. */
   pages?: readonly Page[];
   selected: string;
@@ -34,11 +34,11 @@ interface SidebarProps {
 
 interface TreeGroup {
   group: string;
-  entries: readonly Story[];
+  entries: readonly StoryEntry[];
 }
 
 // Registry order, via the same `groupBy` the command palette uses.
-function tree(stories: readonly Story[]): TreeGroup[] {
+function tree(stories: readonly StoryEntry[]): TreeGroup[] {
   return groupBy(stories, (story) => story.group).map(({ key: group, items }) => ({
     group,
     entries: items,

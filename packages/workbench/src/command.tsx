@@ -14,13 +14,13 @@ import {
   webWindow,
 } from '@kroma/ui/kit';
 import { useEffect } from 'react';
+import type { StoryEntry } from './entry';
 import type { Page } from './page';
 import { glyphFor } from './registry';
-import type { Story } from './story';
 
 /** A story and an article are both something to open, so the palette is handed
  * the little they have in common rather than a union. */
-function entriesOf(stories: readonly Story[], pages: readonly Page[] = []): CommandItem[] {
+function entriesOf(stories: readonly StoryEntry[], pages: readonly Page[] = []): CommandItem[] {
   return [
     ...pages.map((page) => ({
       id: page.id,
@@ -92,7 +92,7 @@ function useEscapeKey(onClose: () => void): void {
 }
 
 interface CommandPaletteProps {
-  stories: readonly Story[];
+  stories: readonly StoryEntry[];
   pages?: readonly Page[];
   selected: string;
   /** `page` says which of the two lists the id belongs to, which only the

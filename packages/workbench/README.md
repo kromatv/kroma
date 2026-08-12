@@ -57,16 +57,18 @@ business naming one library's directory). It is **two lines**, and a glob patter
 resolves aliases, so no app counts `../` to the components:
 
 ```ts
-export const STORIES = discoverVite(
-  import.meta.glob('#ui/**/*.{stories.tsx,demo.tsx,docs.mdx}', { eager: true }),
-  import.meta.glob('#ui/**/*.demo.tsx', { eager: true, query: '?raw', import: 'default' }),
-  PROPS,       // virtual:kroma-props
-  STORY_CODE,  // virtual:kroma-story-code
-);
+export const STORIES = indexVite({
+  modules: import.meta.glob('#ui/**/*.{stories.tsx,demo.tsx,docs.mdx}'),
+  sources: import.meta.glob<string>('#ui/**/*.demo.tsx', { query: '?raw', import: 'default' }),
+  codes: STORY_CODE, // virtual:kroma-story-code
+  props: () => import('virtual:kroma-props').then((module) => module.PROPS),
+});
 
 // Metro: one context, all three file names
-export const STORIES = discoverMetro(
-  require.context('../../../packages/ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
+export const STORIES = storyEntries(
+  discoverMetro(
+    require.context('../../../packages/ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
+  ),
 );
 ```
 
@@ -74,6 +76,20 @@ One glob for the modules, one for the same tree as **text**. The second is optio
 and what it feeds (a demo's code panel, the Props tab) is simply absent without it.
 Stories, demos and docs are told apart by their own file names, inside `discover`, so a
 host cannot hand over demos and demo sources that disagree.
+
+**`indexVite` lists the library without running it.** No `eager` on those globs:
+each one yields a loader per file, and a story's module is fetched when a reader
+opens it. What the tree, the palette and the source link need first - an id, a
+name, a section, a level, a file - is an *index*, and it comes from
+`virtual:kroma-story-code`, which the build already reads out of every story
+file. The level is read from the path, but the name and the group are not: one
+folder of molecules holds stories filed under Layout, Feedback, Input and
+Actions alike, so they are read at build time rather than guessed. A build that
+read nothing falls back to the file name, which keeps every deep link working
+and only mis-files the sections. Until a story's module lands the canvas keeps
+the toolbar and the heading and says it is busy; `Workbench` takes either shape,
+so `discoverVite` (below) remains the spelling for a host with nothing to gain
+from splitting - the TV shells, whose bundle is a file on the television.
 
 A `.docs.mdx` is in the **module** glob, not the text one: both bundlers compile it
 to a component (`@kroma/bundler/mdx` on Vite, `@kroma/bundler/mdx-transformer` on
@@ -369,9 +385,10 @@ beside it are Vite's and Metro's halves of discovery. Vite can read files as tex
 demo code, story code and prop docs are present on the web and absent on a
 television, rather than stale on both.
 
-Prop docs are the third argument to `discoverVite`, and they are DATA: a host
-reads them at build time (`propDocs` from `@kroma/bundler/props-docs`, driving
-TypeScript's own checker, served as `virtual:kroma-props`) rather than shipping
+Prop docs are `props` on the lazy index (the third argument to `discoverVite`),
+and they are DATA: a host reads them at build time (`propDocs` from
+`@kroma/bundler/props-docs`, driving TypeScript's own checker, served as
+`virtual:kroma-props`) rather than shipping
 every component's source to the browser for a regex to read. That is what lets
 the panel follow `extends`.
 

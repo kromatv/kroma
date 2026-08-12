@@ -9,12 +9,12 @@ import { onScreen } from '@kroma/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CommandPalette, entriesOf, isPage } from './command';
+import type { StoryEntry } from './entry';
 import type { Page } from './page';
-import type { Story } from './story';
 
-// Enough of a story for the palette: a name, a section, a level.
+// Enough of an index row for the palette: a name, a section, a level.
 const at = (name: string, group: string, tier: string) =>
-  ({ id: name.toLowerCase(), name, group, tier }) as Story;
+  ({ id: name.toLowerCase(), name, group, tier }) as StoryEntry;
 
 const STORIES = [
   at('Colors', 'Foundations', 'Foundations'),

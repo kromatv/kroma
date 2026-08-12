@@ -3,6 +3,7 @@
 import { onScreen } from '@kroma/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { storyEntries } from './entry';
 import type { KitHistory } from './history';
 import { RecentChanges } from './recent-changes';
 import type { WorkbenchLocation, WorkbenchRouter } from './router';
@@ -52,7 +53,7 @@ function Mounted({
   router,
   source = SOURCE,
 }: Readonly<{ router: WorkbenchRouter; source?: StorySource }>) {
-  const link = useSourceLink(source, STORIES, router);
+  const link = useSourceLink(source, storyEntries(STORIES), router);
   // The shell calls the router at the top of its own render; the list reads what
   // that call published.
   link.router();

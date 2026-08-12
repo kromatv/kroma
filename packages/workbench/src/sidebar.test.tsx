@@ -3,13 +3,13 @@
 import { onScreen } from '@kroma/ui/testing';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { StoryEntry } from './entry';
 import { layoutFor } from './layout';
 import type { Page } from './page';
 import { Sidebar } from './sidebar';
-import type { Story } from './story';
 
 const at = (name: string, group: string) =>
-  ({ id: name.toLowerCase(), name, group, tier: 'Atoms' }) as Story;
+  ({ id: name.toLowerCase(), name, group, tier: 'Atoms' }) as StoryEntry;
 
 const STORIES = [at('Colors', 'Foundations'), at('Chip', 'Actions'), at('Button', 'Actions')];
 

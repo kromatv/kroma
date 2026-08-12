@@ -11,7 +11,7 @@ import type { ComponentType } from 'react';
 import { attachDemos, type DemoFile } from './demos';
 import { type PropDocs, propSections } from './props';
 import { attachDocs, type DocsFile } from './prose';
-import { attachTiers, byText, orderStories } from './registry';
+import { attachTiers, orderStories, pathsEnding } from './registry';
 import type { DocComponent, Story } from './story';
 import { codeAt, type StoryCodes, withCode } from './story-code';
 
@@ -35,15 +35,11 @@ interface Context {
   <T>(id: string): T;
 }
 
+/** The three file names discovery answers to: a story, a worked demo beside it,
+ * and its prose. */
 const STORY = '.stories.tsx';
 const DEMO = '.demo.tsx';
 const DOCS = '.docs.mdx';
-
-// Sorted, always: a story's tier is read from its path, so paths and stories
-// must stay lined up regardless of the bundler's enumeration order.
-function pathsEnding(paths: readonly string[], suffix: string): string[] {
-  return paths.filter((path) => path.endsWith(suffix)).sort(byText);
-}
 
 // What the two bundlers disagree about is how a module is fetched, and nothing
 // else: Metro simply hands over no source text and no prop docs, which the same
@@ -110,4 +106,4 @@ function discoverMetro(context: Context): readonly Story[] {
 }
 
 export type { Context, GlobHost, Modules, PropDocs, Sources, StoryCodes };
-export { discoverMetro, discoverVite };
+export { DEMO, DOCS, discoverMetro, discoverVite, STORY };

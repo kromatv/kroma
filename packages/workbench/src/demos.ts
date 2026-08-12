@@ -133,27 +133,32 @@ function demoFrom(file: DemoFile): DiscoveredDemo {
   };
 }
 
+/** The id of the story a demo file belongs to. A file naming a story that does
+ * not exist is a typo in a file name - loud, because the alternative is an
+ * example that silently never appears anywhere. */
+function demoOwner(path: string, known: ReadonlySet<string>): string {
+  const { story } = demoKey(path);
+  if (!known.has(story)) {
+    throw new Error(
+      `Demo file for an unknown story "${story}". The first segment of a demo's ` +
+        "file name has to be a story's id (its name, kebab-cased).",
+    );
+  }
+  return story;
+}
+
 // Hang every discovered demo on the story its file names, and return the stories with their
 // `demos` filled in. Sorted by file path, so the tab order is the same in both bundlers and a
-// `?view=demo:1` link keeps pointing at the same example. A demo naming a story that does not
-// exist is a typo in a file name - loud, because the alternative is an example that silently
-// never appears anywhere.
+// `?view=demo:1` link keeps pointing at the same example.
 function attachDemos(stories: readonly Story[], files: readonly DemoFile[]): Story[] {
+  const known = new Set(stories.map((entry) => entry.id));
+  for (const file of files) demoOwner(file.path, known);
   const byStory = new Map<string, DemoDef[]>();
   for (const file of [...files].sort((a, b) => a.path.localeCompare(b.path))) {
     const { story, ...demo } = demoFrom(file);
     const list = byStory.get(story);
     if (list) list.push(demo);
     else byStory.set(story, [demo]);
-  }
-  const known = new Set(stories.map((entry) => entry.id));
-  for (const story of byStory.keys()) {
-    if (!known.has(story)) {
-      throw new Error(
-        `Demo file for an unknown story "${story}". The first segment of a demo's ` +
-          "file name has to be a story's id (its name, kebab-cased).",
-      );
-    }
   }
   return stories.map((story) => {
     const demos = byStory.get(story.id);
@@ -162,4 +167,4 @@ function attachDemos(stories: readonly Story[], files: readonly DemoFile[]): Sto
 }
 
 export type { DemoFile, DiscoveredDemo };
-export { attachDemos, codeFrom, demoFrom, demoKey, metaFrom, titleFrom };
+export { attachDemos, codeFrom, demoFrom, demoKey, demoOwner, metaFrom, titleFrom };

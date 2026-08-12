@@ -2,8 +2,14 @@
 // text, so there is no `?raw` half here and a demo renders without its code
 // panel. A `.docs.mdx` is not that case: Metro compiles it to a component
 // through @kroma/bundler's mdx-transformer, so the prose is whole.
+//
+// Nor is there a lazy half. `require.context` puts every matched module in the
+// bundle whatever is done with it, so deferring the CALL buys a phone nothing
+// and costs it the one thing the web half gains: there is no chunk to not
+// download. The registry is compiled here and handed over as an index that is
+// already `ready()`, so the shell reads one shape on both bundlers.
 
-import { discoverMetro, discoverPagesMetro, withPageHistory } from '@kroma/workbench';
+import { discoverMetro, discoverPagesMetro, storyEntries, withPageHistory } from '@kroma/workbench';
 
 declare const require: {
   context(
@@ -13,8 +19,10 @@ declare const require: {
   ): { keys(): string[]; <T>(id: string): T };
 };
 
-export const STORIES = discoverMetro(
-  require.context('../../../packages/ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
+export const STORIES = storyEntries(
+  discoverMetro(
+    require.context('../../../packages/ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
+  ),
 );
 
 export const PAGES = withPageHistory(

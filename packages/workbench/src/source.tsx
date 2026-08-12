@@ -3,6 +3,7 @@
 // that got it there.
 
 import { createContext, type ReactNode, type RefObject, useContext, useMemo, useRef } from 'react';
+import type { StoryEntry } from './entry';
 import {
   fileUrl,
   type HistoryEntry,
@@ -15,7 +16,6 @@ import {
 import { permalink } from './link';
 import { folderOf, repoPath } from './repo-path';
 import type { Navigate, WorkbenchRouter } from './router';
-import type { Story } from './story';
 
 /** An article the source link can name a file for. The workbench hands the
  * binding its stories, never its pages, so a host that wants a page linked
@@ -66,7 +66,7 @@ function sourceUrl(source: StorySource, path: string | undefined): string | null
 
 interface SourceBinding {
   source: StorySource;
-  stories: readonly Story[];
+  stories: readonly StoryEntry[];
   showing: RefObject<string | undefined>;
   go: RefObject<Navigate | undefined>;
 }
@@ -79,7 +79,7 @@ const SourceContext = createContext<SourceBinding | null>(null);
  * much as on an address bar. */
 function useSourceLink(
   source: StorySource | undefined,
-  stories: readonly Story[],
+  stories: readonly StoryEntry[],
   router: WorkbenchRouter,
 ): { router: WorkbenchRouter; binding: SourceBinding | null } {
   const showing = useRef<string | undefined>(undefined);

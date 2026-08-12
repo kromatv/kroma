@@ -11,6 +11,8 @@ const codes = await readStoryCode({
   include: (file) => file.includes('/packages/ui/src/') && file.endsWith('.stories.tsx'),
 });
 
+const LOADED = await Promise.all(STORIES.map((entry) => entry.load()));
+
 const LIST_ROW = 'packages/ui/src/components/molecules/list-row/list-row.stories.tsx';
 
 describe('the story code read off the kit', () => {
@@ -38,7 +40,7 @@ describe('the story code read off the kit', () => {
 });
 
 describe('what the registry ends up carrying', () => {
-  const scenes = STORIES.flatMap((story) => story.scenes);
+  const scenes = LOADED.flatMap((story) => story.scenes);
 
   it('shows source beside the great majority of the scenes a reader can click', () => {
     const shown = scenes.filter((scene) => scene.code).length;
@@ -49,6 +51,6 @@ describe('what the registry ends up carrying', () => {
     // The join is by path, and the two halves spell one differently: what this
     // pins is that the suffix they share is enough to line them up.
     const read = Object.values(codes).filter((code) => code.render).length;
-    expect(STORIES.filter((story) => story.code)).toHaveLength(read);
+    expect(LOADED.filter((story) => story.code)).toHaveLength(read);
   });
 });

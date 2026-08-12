@@ -8,12 +8,16 @@ import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { STORIES } from './stories';
 
+// Every story compiled, which is the one place in the suite that wants the
+// whole library at once: the point is that none of them throws.
+const LOADED = await Promise.all(STORIES.map((entry) => entry.load()));
+
 const render = (ui: ReactNode) => renderRaw(onScreen(ui as ReactElement));
 
 afterEach(cleanup);
 
 describe('every story renders', () => {
-  for (const story of STORIES) {
+  for (const story of LOADED) {
     it(`${story.group} / ${story.name}: preview and matrix`, () => {
       expect(() => render(story.render(story.args))).not.toThrow();
     });
@@ -44,7 +48,7 @@ describe('every story renders', () => {
 
 describe('interactive stories respond to a press', () => {
   it('opens the Dialog story from its own trigger', () => {
-    const story = STORIES.find((entry) => entry.name === 'Dialog');
+    const story = LOADED.find((entry) => entry.name === 'Dialog');
     if (!story) throw new Error('the Dialog story has gone missing');
     render(story.render(story.args));
 
@@ -60,7 +64,7 @@ describe('interactive stories respond to a press', () => {
   });
 
   it('fills, submits and clears the Add-a-server demo', async () => {
-    const story = STORIES.find((entry) => entry.name === 'Form');
+    const story = LOADED.find((entry) => entry.name === 'Form');
     const demo = story?.demos.find((entry) => entry.name === 'Add a server');
     if (!demo) throw new Error('the Add a server demo has gone missing');
     render(demo.render());
@@ -86,7 +90,7 @@ describe('interactive stories respond to a press', () => {
   });
 
   it('closes a dialog when the backdrop is pressed', () => {
-    const story = STORIES.find((entry) => entry.name === 'Dialog');
+    const story = LOADED.find((entry) => entry.name === 'Dialog');
     if (!story) throw new Error('the Dialog story has gone missing');
     render(story.render(story.args));
 

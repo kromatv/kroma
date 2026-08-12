@@ -3,6 +3,7 @@
 import { onScreen } from '@kroma/ui/testing';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { storyEntries } from './entry';
 import type { KitHistory } from './history';
 import { StoryHistory } from './history-menu';
 import { memoryRouter } from './router';
@@ -39,7 +40,7 @@ const SOURCE: StorySource = {
 };
 
 function Mounted({ open, source }: Readonly<{ open: boolean; source: StorySource }>) {
-  const link = useSourceLink(source, STORIES, memoryRouter({ story: 'button' }));
+  const link = useSourceLink(source, storyEntries(STORIES), memoryRouter({ story: 'button' }));
   link.router();
   return (
     <SourceProvider binding={link.binding}>

@@ -113,7 +113,7 @@ function StoryCanvas({
         onMenu={onMenu}
         layout={layout}
       />
-      <StoryHeading story={story} layout={layout} />
+      <StoryHeading name={story.name} group={story.group} layout={layout} />
       <CanvasTabs story={story} view={view} onView={onView} layout={layout} />
       {docs ? (
         <Box px={layout.gutter} pt={14}>
@@ -150,14 +150,21 @@ function StoryCanvas({
   );
 }
 
-function StoryHeading({ story, layout }: Readonly<{ story: Story; layout: WorkbenchLayout }>) {
+/** The section and the name over the stage. Takes the two words rather than a
+ * `Story`, because the index knows both before the module that draws it has
+ * been fetched. */
+function StoryHeading({
+  name,
+  group,
+  layout,
+}: Readonly<{ name: string; group: string; layout: WorkbenchLayout }>) {
   return (
     <Box px={layout.gutter} pt={layout.mode === 'compact' ? 16 : 22} gap={4}>
       <Text variant="overline" color="accent">
-        {story.group}
+        {group}
       </Text>
       <Text variant="title" style={layout.mode === 'compact' ? s.titleCompact : s.title} lines={1}>
-        {story.name}
+        {name}
       </Text>
     </Box>
   );
@@ -267,4 +274,5 @@ const s = styles({
 });
 const codeToggle = sv({ base: { py: 12, _focus: { bg: 'white/6' } } });
 
-export { playFor, renderBody, StoryCanvas, useStageView, viewCode };
+export type { StageView };
+export { playFor, renderBody, StoryCanvas, StoryHeading, useStageView, viewCode };

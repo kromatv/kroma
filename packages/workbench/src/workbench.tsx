@@ -1,34 +1,29 @@
 // The shell: what is selected, where that lives in the URL, and where the three
 // regions go. One story on the canvas is `story-view.tsx`.
 
-import {
-  Box,
-  configureRemote,
-  Focusable,
-  FocusScope,
-  Resizable,
-  styles,
-  Text,
-} from '@kroma/ui/kit';
-import type { ColorToken } from '@kroma/ui/tokens';
+import { Box, configureRemote, Focusable, FocusScope, Resizable, styles } from '@kroma/ui/kit';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { RULE } from './chrome';
 import { CommandPalette, useCommandKey } from './command';
+import { type Registry, storyEntries, useStory } from './entry';
 import { DOCK_COLLAPSED, MIN_CANVAS, REGION_MIN, useLayout } from './layout';
 import type { Page } from './page';
 import { PageView } from './page-view';
 import { Panel } from './panel';
 import { usePlay } from './play';
 import { pathRouter, type View, type WorkbenchRouter } from './router';
+import { shotStage } from './shot';
 import { Sidebar } from './sidebar';
-import { controlsRole, type Story } from './story';
+import { controlsRole } from './story';
+import { StoryPending } from './story-pending';
 import { playFor, renderBody, StoryCanvas, useStageView } from './story-view';
 import type { ToolbarLens } from './toolbar';
 import { IconTool } from './toolbar-menu';
-import { stageWidth } from './viewport';
 
 interface WorkbenchProps {
-  stories: readonly Story[];
+  /** Compiled stories, or the index `indexVite` builds - the shell reads the
+   *  two the same way and fetches what the index has not got yet. */
+  stories: Registry;
   /** Standalone articles, addressed at `page/<id>` and listed above the tree. */
   pages?: readonly Page[];
   brand?: ReactNode;
@@ -51,27 +46,6 @@ function Workbench(props: Readonly<WorkbenchProps>) {
   );
 }
 
-function shotStage(at: {
-  listOnly: boolean;
-  stories: readonly Story[];
-  story: Story;
-  body: ReactNode;
-  surface: ColorToken;
-  width: number;
-}): ReactNode {
-  if (at.listOnly) {
-    return <Text>{`KROMA_STORY_IDS:${at.stories.map((entry) => entry.id).join(',')}`}</Text>;
-  }
-  // A story that declares a width measures itself and has to be given one;
-  // measured against the window, because a shot has no stage card.
-  const stage = stageWidth(at.story.width, at.width - SHOT_PAD * 2);
-  return (
-    <Box flex bg={at.surface} p={SHOT_PAD} align="flex-start" justify="flex-start">
-      <Box w={stage.width}>{at.body}</Box>
-    </Box>
-  );
-}
-
 function WorkbenchShell({
   stories,
   pages,
@@ -81,10 +55,12 @@ function WorkbenchShell({
   lenses,
   router = DEFAULT_ROUTER,
 }: Readonly<WorkbenchProps>) {
+  // Idempotent, so a host that already indexed its library pays nothing here.
+  const entries = useMemo(() => storyEntries(stories), [stories]);
   const [at, go] = router();
   // The location is the source, not a mirror: a subscribing adapter has to be
   // able to move the canvas from outside.
-  const selected = at.story ?? stories[0]?.id ?? '';
+  const selected = at.story ?? entries[0]?.id ?? '';
   const view: View = at.view ?? 'preview';
   const [navOpen, setNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -105,8 +81,12 @@ function WorkbenchShell({
   // the reader to already know their way around. Naming either in the URL wins.
   const landing = !at.story && !at.page ? pages?.[0] : undefined;
   const page = landing ?? pages?.find((entry) => entry.id === at.page);
-  const story = stories.find((candidate) => candidate.id === selected) ?? stories[0];
-  const args = useMemo(() => ({ ...story?.args, ...edits[story?.id ?? ''] }), [story, edits]);
+  const entry = entries.find((candidate) => candidate.id === selected) ?? entries[0];
+  const story = useStory(entry);
+  const args = useMemo(
+    () => ({ ...story?.args, ...edits[entry?.id ?? ''] }),
+    [story, edits, entry],
+  );
 
   const stage = useStageView(story);
   const run = usePlay(story ? playFor(story, view) : undefined);
@@ -133,42 +113,61 @@ function WorkbenchShell({
 
   const change = useCallback(
     (key: string, value: unknown) => {
-      const id = story?.id ?? '';
+      const id = entry?.id ?? '';
       setEdits((prev) => ({ ...prev, [id]: { ...prev[id], [key]: value } }));
     },
-    [story],
+    [entry],
   );
 
-  if (!story) return null;
+  if (!entry) return null;
 
-  const controls = controlsRole(story, view);
+  const controls = story ? controlsRole(story, view) : NO_CONTROLS;
 
   if (at.shot) {
     return shotStage({
       listOnly: !at.story,
-      stories,
+      stories: entries,
       story,
-      body: renderBody(story, view, args),
+      body: story ? renderBody(story, view, args) : null,
       surface: stage.surface,
       width: layout.width,
     });
   }
 
   const column = !drawer && !stage.full;
-  const inspector = !page && !stage.full;
+  // Nothing to inspect until the module lands: an empty panel beside a busy
+  // stage reads as a component with no props rather than as one on its way.
+  const inspector = Boolean(story) && !page && !stage.full;
   const compact = layout.mode === 'compact';
+  const openNav = drawer && !stage.full ? () => setNavOpen(true) : undefined;
 
-  const panel = (
+  const panel = story ? (
     <Panel
       story={story}
       args={args}
       onChange={change}
-      onReset={() => setEdits((prev) => ({ ...prev, [story.id]: {} }))}
+      onReset={() => setEdits((prev) => ({ ...prev, [entry.id]: {} }))}
       showControls={controls.show}
       showReset={controls.reset}
       run={run}
       layout={layout}
     />
+  ) : null;
+
+  const canvas = story ? (
+    <StoryCanvas
+      story={story}
+      view={view}
+      onView={show}
+      args={args}
+      run={run}
+      stage={stage}
+      lenses={lenses}
+      layout={layout}
+      onMenu={openNav}
+    />
+  ) : (
+    <StoryPending entry={entry} stage={stage} lenses={lenses} layout={layout} onMenu={openNav} />
   );
 
   // An article renders instead of the canvas, and the canvas is where the
@@ -184,17 +183,7 @@ function WorkbenchShell({
       <PageView page={page} layout={layout} section={at.section} onSection={openSection} />
     </Box>
   ) : (
-    <StoryCanvas
-      story={story}
-      view={view}
-      onView={show}
-      args={args}
-      run={run}
-      stage={stage}
-      lenses={lenses}
-      layout={layout}
-      onMenu={drawer && !stage.full ? () => setNavOpen(true) : undefined}
-    />
+    canvas
   );
 
   // Docked under the canvas rather than beside it, the inspector is a row of
@@ -220,13 +209,13 @@ function WorkbenchShell({
 
   const tree = (
     <Sidebar
-      stories={stories}
+      stories={entries}
       brand={brand}
       title={title}
       footer={footer}
       pages={pages}
       onOpenPage={openPage}
-      selected={page ? page.id : story.id}
+      selected={page ? page.id : entry.id}
       onSelect={select}
       onSearch={openSearch}
       layout={layout}
@@ -261,9 +250,9 @@ function WorkbenchShell({
 
       {searchOpen ? (
         <CommandPalette
-          stories={stories}
+          stories={entries}
           pages={pages}
-          selected={page ? page.id : story.id}
+          selected={page ? page.id : entry.id}
           onSelect={(id, isPage) => (isPage ? openPage(id) : select(id))}
           onClose={() => setSearchOpen(false)}
         />
@@ -284,12 +273,14 @@ function NavDrawer({ onClose, children }: Readonly<{ onClose: () => void; childr
   );
 }
 
-const SHOT_PAD = 32;
 // One key per group: the columns and the dock under the canvas are two
 // arrangements, and each is stored per panel count anyway.
 const COLUMN_STORE = 'kroma:workbench-columns';
 const DOCK_STORE = 'kroma:workbench-dock';
 const s = styles({ scrim: { flex: true, bg: 'bg/60' } });
+
+// What the panel can do while there is no story to do it to.
+const NO_CONTROLS = { show: false, reset: false } as const;
 
 // Built once: an adapter is a hook, and a fresh one per render would remount
 // its state.

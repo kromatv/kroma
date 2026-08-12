@@ -7,10 +7,16 @@
 
 import type { Story } from './story';
 
-/** One story file's authored source: the story's own `render`, and one entry
- * per scene in the order the file declares them. A scene that writes neither
- * `render` nor `example` carries the story's own, which is what renders it. */
+/** What the build read out of one story file: the identity it declares, and its
+ * authored source - the story's own `render`, and one entry per scene in the
+ * order the file declares them. A scene that writes neither `render` nor
+ * `example` carries the story's own, which is what renders it. */
 interface StoryCode {
+  /** The story's declared name, which is what a lazy index lists it by: unlike
+   * its level, no path spells it. */
+  name?: string;
+  /** Its functional section, for the same reason. */
+  group?: string;
   render?: string;
   scenes: readonly string[];
 }
@@ -44,5 +50,5 @@ function withCode(story: Story, code: StoryCode | undefined): Story {
   return { ...story, ...(code.render ? { code: code.render } : null), scenes };
 }
 
-export type { StoryCodes };
+export type { StoryCode, StoryCodes };
 export { codeAt, withCode };

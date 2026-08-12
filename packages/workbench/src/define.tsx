@@ -8,11 +8,11 @@
 // rebuilt per render - happens once, in here, so the host writes no hooks.
 
 import { type ReactNode, useMemo, useState } from 'react';
+import { type Registry, type StoryEntry, storyEntries } from './entry';
 import type { Page } from './page';
 import { slug } from './registry';
 import { pathRouter, type WorkbenchRouter } from './router';
 import { SourceProvider, type StorySource, useSourceLink } from './source';
-import type { Story } from './story';
 import type { Choice, ToolbarLens } from './toolbar';
 import { Workbench, type WorkbenchProps } from './workbench';
 
@@ -39,8 +39,9 @@ interface ProviderSpec<T extends string> {
 }
 
 interface WorkbenchDefinition<T extends string = string> {
-  // Build it with `discoverVite` / `discoverMetro`.
-  stories: readonly Story[];
+  // Build it with `indexVite`, which fetches a story when a reader opens it, or
+  // with `discoverVite` / `discoverMetro`, which compile the lot up front.
+  stories: Registry;
   // Standalone articles, built with `discoverPagesVite` / `discoverPagesMetro`.
   pages?: readonly Page[];
   brand?: ReactNode;
@@ -66,7 +67,13 @@ function Mounted({
   router,
   stories,
   ...rest
-}: Readonly<Omit<WorkbenchProps, 'router'> & { router: WorkbenchRouter; source?: StorySource }>) {
+}: Readonly<
+  Omit<WorkbenchProps, 'router' | 'stories'> & {
+    stories: readonly StoryEntry[];
+    router: WorkbenchRouter;
+    source?: StorySource;
+  }
+>) {
   const link = useSourceLink(source, stories, router);
   return (
     <SourceProvider binding={link.binding}>
@@ -81,7 +88,10 @@ function Mounted({
 function defineWorkbench<T extends string = string>(
   definition: WorkbenchDefinition<T>,
 ): () => ReactNode {
-  const { stories, pages, brand, title, footer, provider, source, lenses = [] } = definition;
+  const { pages, brand, title, footer, provider, source, lenses = [] } = definition;
+  // Once, out here: the index is what the sidebar and the source link read, and
+  // rebuilding it per render would refetch the open story on every one.
+  const stories = storyEntries(definition.stories);
   const router = definition.router ?? pathRouter();
 
   // No provider: nothing to hold, so the config really is just props.

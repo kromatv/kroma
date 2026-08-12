@@ -165,8 +165,20 @@ describe('readStoryCode', () => {
     expect(codes[LIST_ROW_KEY]?.scenes[0]).toBe(codes[LIST_ROW_KEY]?.render);
   });
 
-  it('leaves out a story that names a component, which composes nothing to show', () => {
-    expect(codes['src/chip.stories.tsx']).toBeUndefined();
+  it('reads the identity a story declares, which no path spells', () => {
+    expect(codes[LIST_ROW_KEY]?.name).toBe('ListRow');
+    expect(codes[LIST_ROW_KEY]?.group).toBe('Layout');
+  });
+
+  it('has no render for a story that names a component, but still has its identity', () => {
+    expect(codes['src/chip.stories.tsx']?.render).toBeUndefined();
+    expect(codes['src/chip.stories.tsx']?.name).toBe('Chip');
+    expect(codes['src/chip.stories.tsx']?.group).toBe('Actions');
+  });
+
+  it('reads a name written past a spread, which is not the first member', () => {
+    expect(codes['src/badge.stories.tsx']?.name).toBe('Badge');
+    expect(codes['src/badge.stories.tsx']?.group).toBeUndefined();
   });
 
   it('reads past a member that is not written as `name: value`', () => {

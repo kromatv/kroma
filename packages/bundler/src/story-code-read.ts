@@ -28,14 +28,19 @@ import {
   isObjectLiteralExpression,
   isParenthesizedExpression,
   isPropertyAssignment,
+  isStringLiteral,
 } from 'typescript/unstable/ast/is';
 import { API } from 'typescript/unstable/async';
 
-/** One story file's authored source: the story's own `render`, and one entry
- *  per scene in the order the file declares them. Mirrors `StoryCode` in
- *  @kroma/workbench; kept structural rather than imported so this build-time
+/** What the build knows about one story file: the identity it declares - the
+ *  `name` and `group` a workbench needs to LIST it without running the module
+ *  that draws it - and its authored source, being the story's own `render` and
+ *  one entry per scene in the order the file declares them. Mirrors `StoryCode`
+ *  in @kroma/workbench; kept structural rather than imported so this build-time
  *  module has no runtime dependency on the package. */
 export interface StoryCode {
+  name?: string;
+  group?: string;
   render?: string;
   scenes: string[];
 }
@@ -114,24 +119,40 @@ function storyObject(file: SourceFile): ObjectLiteralExpression | undefined {
   return undefined;
 }
 
+// A member written as a plain string, which is how a story spells the two
+// things about itself that are not derivable from where its file sits.
+function literalOf(object: ObjectLiteralExpression, name: string): string | undefined {
+  const value = propertyOf(object, name);
+  return value && isStringLiteral(value) ? value.text : undefined;
+}
+
 // A story naming a `component` rather than writing a `render` has no authored
-// JSX to show, and neither has an empty file: both are left out, so the drawer
-// falls back to the call site the controls describe.
+// JSX to show, and neither has an empty file: the drawer falls back to the call
+// site the controls describe. Such a file still has an identity, so it is left
+// out only when there is nothing at all to say about it.
 function codeOf(file: SourceFile): StoryCode | null {
   const object = storyObject(file);
   if (!object) return null;
+  const name = literalOf(object, 'name');
+  const group = literalOf(object, 'group');
   const render = propertyOf(object, 'render');
   const own = render ? displayed(render, file.text) : '';
   const scenes = scenesOf(object, file.text, own);
-  if (!own && scenes.every((scene) => !scene)) return null;
-  return { ...(own ? { render: own } : null), scenes };
+  if (!(name || own) && scenes.every((scene) => !scene)) return null;
+  return {
+    ...(name ? { name } : null),
+    ...(group ? { group } : null),
+    ...(own ? { render: own } : null),
+    scenes,
+  };
 }
 
 const keyOf = (repo: string, fileName: string): string =>
   relative(repo, fileName).split(sep).join('/');
 
 /**
- * Read every story's own `render` and the source of each of its scenes.
+ * Read what every story declares about itself: its name and group, its own
+ * `render`, and the source of each of its scenes.
  *
  * Syntax only - the program is opened for its parser, never its checker - so
  * the cost is one program and a walk of the story files' statements.
