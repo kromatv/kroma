@@ -6,7 +6,7 @@
 // `Field`s, so the panel is D-pad navigable and the whole workbench runs on
 // an actual television, next to the components it is inspecting.
 
-import { Box, Chip, Divider, Field, Switch, style, Text } from '@kroma/ui/kit';
+import { ARROW, Box, Chip, Divider, Field, HAND, Switch, style, Text } from '@kroma/ui/kit';
 import type { Control, ResolvedControl } from './derive';
 
 // Beyond this many options a row of chips stops being scannable and turns
@@ -28,9 +28,9 @@ function Stepper({
   onNext,
 }: Readonly<{ label: string; onPrev: () => void; onNext: () => void }>) {
   return (
-    <Box row align="center" gap={8}>
+    <Box row align="center" gap={8} style={HAND}>
       <Chip variant="surface" icon="chevron-left" onPress={onPrev} />
-      <Box minW={120} align="center">
+      <Box minW={120} align="center" style={ARROW}>
         <Text variant="meta" lines={1}>
           {label}
         </Text>
@@ -48,7 +48,7 @@ function SelectControl({
   const current = typeof value === 'string' ? value : '';
   if (options.length <= MAX_CHIPS) {
     return (
-      <Box row wrap gap={8}>
+      <Box row wrap gap={8} style={HAND}>
         {options.map((option) => (
           <Chip
             key={option}

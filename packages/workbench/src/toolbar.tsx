@@ -2,7 +2,16 @@
 // that applies to whatever story is open, and the buttons that take the story
 // somewhere else. A lens itself is drawn by `toolbar-menu.tsx`.
 
-import { Box, type ColorValue, Focusable, type IconName, styles, webWindow } from '@kroma/ui/kit';
+import {
+  ARROW,
+  Box,
+  type ColorValue,
+  Focusable,
+  HAND,
+  type IconName,
+  styles,
+  webWindow,
+} from '@kroma/ui/kit';
 import { type ColorToken, colors } from '@kroma/ui/tokens';
 import { useCallback, useState } from 'react';
 import { RULE } from './chrome';
@@ -113,7 +122,10 @@ function Toolbar({
           style={[s.scrim, { height: layout.height }]}
         />
       ) : null}
-      <Box row align="center" gap={4} px={layout.gutter - 8} py={5} bg="bg" z={2}>
+      {/* The row wears the hand so the 4px between two tools does not fall back
+          to the page's arrow and flicker as the pointer crosses it; the spacer
+          in the middle is not a control and says so. */}
+      <Box row align="center" gap={4} px={layout.gutter - 8} py={5} bg="bg" z={2} style={HAND}>
         {onMenu ? (
           <>
             <IconTool glyph="list" label="Browse components" onPress={onMenu} />
@@ -169,7 +181,7 @@ function Toolbar({
           />
         ))}
 
-        <Box flex />
+        <Box flex style={ARROW} />
 
         {/* Both take the story somewhere else, so one rule closes the pair; it
             belongs to CopyLink and disappears with it. */}

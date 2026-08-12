@@ -15,6 +15,7 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { type CornerValue, radiusValue, styles } from '#ui/core';
+import { HAND } from '#ui/lib/cursor';
 import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import {
   type GroupOrientation,
@@ -72,7 +73,7 @@ function Root({
       // the members into one element and destroy their individual labels.
       role="group"
       accessibilityLabel={label}
-      style={style}
+      style={[HAND, style]}
     >
       {items.map((child, index) => (
         <GroupSlotContext.Provider

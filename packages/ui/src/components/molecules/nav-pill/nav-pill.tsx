@@ -19,6 +19,7 @@ import {
 import { PanResponder, Platform, type StyleProp, type View, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { RING_ROOM } from '#ui/core';
+import { HAND } from '#ui/lib/cursor';
 import {
   type LensRect,
   NavPillContext,
@@ -227,7 +228,7 @@ function Root({
         radius="pill"
         border="borderStrong"
         bg={at.backdrop.length > 0 ? BACKDROP_FILL : PILL_FILL}
-        style={style}
+        style={[HAND, style]}
       >
         {at.backdrop}
         <Lens rect={previewRect ?? lens?.rect ?? null} chase={hover !== null} />

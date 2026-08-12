@@ -45,6 +45,7 @@ import {
 } from '#ui/core';
 import { type A11yFlags, type A11yProps, a11yState, a11yValue } from '#ui/lib/a11y';
 import { splitBoxLayers } from '#ui/lib/box-layers';
+import { ARROW, HAND } from '#ui/lib/cursor';
 import { focusSettled, markFocusSettled } from '#ui/lib/focus-entry';
 import { noteFocus } from '#ui/lib/focus-here';
 import { LIFTED, useFocusLift } from '#ui/lib/focus-lift';
@@ -251,16 +252,6 @@ function useWebKeys(
     };
   }, [active, role, press]);
 }
-
-// react-native-web paints a real cursor, and a browser gives a bare <button>
-// the arrow rather than the hand - so on the web every control in the kit read
-// as inert text, and the pointer changed shape only where something happened to
-// state one, which is what made it flicker between neighbours. React Native's
-// own `CursorValue` knows `auto` and `pointer` and nothing else, so the arrow is
-// stated as plain style. Disabled is stated rather than left to inherit: a dead
-// row inside a pressable group would otherwise wear the group's hand.
-const HAND = { cursor: 'pointer' } as unknown as ViewStyle;
-const ARROW = { cursor: 'default' } as unknown as ViewStyle;
 
 function pointerCursor(disabled: boolean, onPress: unknown): ViewStyle | null {
   if (!WEB) return null;

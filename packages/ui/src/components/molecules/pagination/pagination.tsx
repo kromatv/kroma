@@ -5,6 +5,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
+import { HAND } from '#ui/lib/cursor';
 import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
 import { partContext } from '#ui/lib/part-context';
@@ -120,7 +121,7 @@ function Root({
   return (
     <Context.Provider value={ctx}>
       <FocusRegion>
-        <Row role="navigation" accessibilityLabel={label} gap={gap} style={style}>
+        <Row role="navigation" accessibilityLabel={label} gap={gap} style={[HAND, style]}>
           {children ?? (
             <>
               <Previous />

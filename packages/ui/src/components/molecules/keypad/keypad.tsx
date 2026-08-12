@@ -19,6 +19,7 @@ import { Frost } from '#ui/components/atoms/frost';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type RadiusToken, type StyleDecl, styles, svFor } from '#ui/core';
+import { HAND } from '#ui/lib/cursor';
 import { keyFace } from '#ui/lib/field-shell';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
@@ -129,7 +130,7 @@ function Keypad({
     </Focusable>
   );
   return (
-    <FocusColumn grid style={[s.pad, { gap: GAP[size] }]}>
+    <FocusColumn grid style={[HAND, s.pad, { gap: GAP[size] }]}>
       {ROWS.map((row) => (
         <FocusRegion key={row.join('')} style={[s.padRow, { gap: GAP[size] }]}>
           {row.map((d) =>
