@@ -3,6 +3,7 @@
 //! layer is installed before any state exists.
 
 use std::collections::VecDeque;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, Mutex};
 
 const CAPACITY: usize = 5000;
@@ -10,6 +11,9 @@ const CAPACITY: usize = 5000;
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogEntry {
+    // Stamped by the buffer on push: two lines can share a millisecond, a
+    // source and a message, so nothing else in here tells them apart.
+    pub seq: u64,
     pub ts: i64,
     pub level: String,
     // Empty for module lines: their target stays in the message.
@@ -22,14 +26,16 @@ pub static LOG_BUFFER: LazyLock<LogBuffer> = LazyLock::new(LogBuffer::new);
 
 pub struct LogBuffer {
     inner: Mutex<VecDeque<LogEntry>>,
+    next: AtomicU64,
 }
 
 impl LogBuffer {
     fn new() -> Self {
-        Self { inner: Mutex::new(VecDeque::with_capacity(CAPACITY)) }
+        Self { inner: Mutex::new(VecDeque::with_capacity(CAPACITY)), next: AtomicU64::new(1) }
     }
 
-    pub fn push(&self, entry: LogEntry) {
+    pub fn push(&self, mut entry: LogEntry) {
+        entry.seq = self.next.fetch_add(1, Ordering::Relaxed);
         let mut buf = self.inner.lock().unwrap();
         if buf.len() == CAPACITY {
             buf.pop_front();
@@ -39,6 +45,7 @@ impl LogBuffer {
 
     pub fn push_core(&self, level: &str, target: &str, message: String) {
         self.push(LogEntry {
+            seq: 0,
             ts: now_ms(),
             level: level.to_lowercase(),
             target: target.to_string(),
@@ -73,6 +80,7 @@ impl LogBuffer {
             }
         }
         self.push(LogEntry {
+            seq: 0,
             ts: now_ms(),
             level: level.to_string(),
             target: String::new(),
