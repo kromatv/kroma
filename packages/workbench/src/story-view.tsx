@@ -130,7 +130,13 @@ function StoryCanvas({
         rotate={stage.rotate}
         inset={layout.stagePad}
       >
-        <Box ref={run.stage}>{renderBody(story, view, args)}</Box>
+        {/* Fills the frame rather than hugging its content: a story that asks
+            for the whole stage (the player, a screen) is written as `flex`, and
+            `flex: 1` against a parent with no definite height resolves to zero,
+            which is a component drawn at no height at all. */}
+        <Box ref={run.stage} flex minH={0}>
+          {renderBody(story, view, args)}
+        </Box>
       </ViewportFrame>
       {code ? (
         <CodeBar
