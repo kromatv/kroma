@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { Platform, Pressable, StyleSheet, type View } from 'react-native';
+import { ARROW } from '#ui/lib/cursor';
 import { useTDefault } from '#ui/services/i18n';
 
 /**
@@ -25,7 +26,9 @@ function DismissBackdrop({ onPress }: Readonly<{ onPress?: () => void }>) {
       // element, closing the dialog instead of choosing the ringed row.
       tabIndex={-1}
       onFocus={() => (backdrop.current as unknown as HTMLElement | null)?.blur()}
-      style={StyleSheet.absoluteFill}
+      // A backdrop is pressable so a click outside dismisses, but it is not a
+      // control anyone aims at: the hand would invite a press on the whole page.
+      style={[StyleSheet.absoluteFill, ARROW]}
     />
   );
 }

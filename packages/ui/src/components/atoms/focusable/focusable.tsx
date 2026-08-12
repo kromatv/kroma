@@ -45,7 +45,7 @@ import {
 } from '#ui/core';
 import { type A11yFlags, type A11yProps, a11yState, a11yValue } from '#ui/lib/a11y';
 import { splitBoxLayers } from '#ui/lib/box-layers';
-import { ARROW, HAND } from '#ui/lib/cursor';
+import { ARROW, COLOUR_MOTION, HAND } from '#ui/lib/cursor';
 import { focusSettled, markFocusSettled } from '#ui/lib/focus-entry';
 import { noteFocus } from '#ui/lib/focus-here';
 import { LIFTED, useFocusLift } from '#ui/lib/focus-lift';
@@ -677,7 +677,11 @@ function Focusable<R extends AnySv = AnySv>({
   // Under `painted`, never over it: a control that states its own cursor - a
   // resize seam asking for `col-resize` - has to keep it.
   const cursor = pointerCursor(disabled, onPress);
-  const dressed = useMemo(() => (cursor ? [cursor, painted] : painted), [cursor, painted]);
+  // Under `painted` as well: a control that states its own transition keeps it.
+  const dressed = useMemo(
+    () => (WEB ? [COLOUR_MOTION, cursor, painted] : painted),
+    [cursor, painted],
+  );
 
   // A disabled control is not a node at all, so the remote walks straight past
   // it rather than stopping on something that does nothing.

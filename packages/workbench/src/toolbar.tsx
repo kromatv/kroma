@@ -6,16 +6,17 @@ import {
   ARROW,
   Box,
   type ColorValue,
+  type CopyState,
   Focusable,
   HAND,
   type IconName,
   styles,
+  useCopy,
   webWindow,
 } from '@kroma/ui/kit';
 import { type ColorToken, colors } from '@kroma/ui/tokens';
 import { useCallback, useState } from 'react';
 import { RULE } from './chrome';
-import { type CopyState, useCopy } from './clipboard';
 import { StoryHistory } from './history-menu';
 import type { WorkbenchLayout } from './layout';
 import { openWebLink } from './link';
@@ -119,7 +120,7 @@ function Toolbar({
           label="Close menu"
           ring={false}
           onPress={close}
-          style={[s.scrim, { height: layout.height }]}
+          style={[s.scrim, ARROW, { height: layout.height }]}
         />
       ) : null}
       {/* The row wears the hand so the 4px between two tools does not fall back
