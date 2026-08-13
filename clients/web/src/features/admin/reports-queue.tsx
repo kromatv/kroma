@@ -3,15 +3,15 @@
 // drawer. Backed by GET /api/admin/reports + the report.updated WS event.
 
 import { KromaEvents, type Report, type ReportCategory, type ReportStatus } from '@kroma/core';
+import { TABULAR, Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Avatar, Box, EmptyState, Row, Text } from '@kroma/ui/kit';
+import { Avatar, EmptyState, Row, Text } from '@kroma/ui/kit';
 
 import { useEffect, useState } from 'react';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { ReportDrawer } from '#web/features/admin/report-drawer';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
 import { PageHeader, useCap, usePoll } from '#web/features/admin/shell';
-import { TABULAR, Table } from '#web/features/admin/table';
 import {
   Chip,
   ConsoleSearch,
@@ -220,13 +220,11 @@ export function ReportsQueuePage() {
         {data === null ? <TableSkeleton rows={8} /> : null}
 
         {data && rows.length === 0 ? (
-          <Box py={24}>
-            <EmptyState.Root icon="flag">
-              <EmptyState.Title>
-                {all.length === 0 ? t('reports.empty') : t('reports.noMatch')}
-              </EmptyState.Title>
-            </EmptyState.Root>
-          </Box>
+          <EmptyState.Root icon="flag">
+            <EmptyState.Title>
+              {all.length === 0 ? t('reports.empty') : t('reports.noMatch')}
+            </EmptyState.Title>
+          </EmptyState.Root>
         ) : null}
       </Table.Root>
 

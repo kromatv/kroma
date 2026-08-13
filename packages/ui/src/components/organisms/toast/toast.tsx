@@ -146,7 +146,11 @@ export function Toaster({
   // together with the first notice would swallow that notice.
   return (
     <Box
-      fill
+      // Spread over the screen only while it holds a notice. A television's
+      // focus engine reads occlusion off the view tree rather than off
+      // `pointerEvents`, so an empty layer left covering everything hides the
+      // whole screen from it - including a platform chrome's own keyboard.
+      fill={entries.length > 0}
       z={90}
       // A notice never takes the remote, and never eats a tap meant for what is
       // underneath it.

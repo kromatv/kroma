@@ -59,6 +59,12 @@ interface TextFieldProps extends Omit<BoxProps, 'children' | 'ring'> {
    *  the CURRENT password into it and never offers to generate one. */
   autoComplete?: NonNullable<TextInputProps['autoComplete']>;
   invalid?: boolean;
+  /** Raise the field off what is behind it with the card shadow. For a field
+   *  that floats over ARTWORK, where its translucent fill would otherwise sample
+   *  the picture and lose its edge -- the sign-in screens over their splash. On
+   *  a surface that is already flat it is a smudge around the well, so it is
+   *  off by default. */
+  lift?: boolean;
   /** A value to read and copy, not to change: the entry still focuses and
    *  still selects, so a share link can be picked up with the keyboard. */
   readOnly?: boolean;
@@ -98,6 +104,7 @@ function TextField({
   size,
   textStyle,
   flat = false,
+  lift = false,
   ...box
 }: Readonly<TextFieldProps>) {
   const theme = useTheme();
@@ -115,7 +122,7 @@ function TextField({
   const keyboardProps = keyboardType ? { keyboardType } : null;
   const autoCompleteProps = autoComplete ? { autoComplete } : null;
   const masked = type === 'password' && !revealed;
-  const shell = fieldShell(metrics, { flat, focused, invalid, lift: true });
+  const shell = fieldShell(metrics, { flat, focused, invalid, lift });
   return (
     <Box
       row

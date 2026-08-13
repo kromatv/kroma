@@ -109,6 +109,19 @@ pub enum Query {
 }
 
 impl Query {
+    /// The title alone, with no season/episode tag. What `{{ .Keywords }}` must
+    /// expand to for a definition that sends the numbers as their own inputs.
+    pub fn title(&self) -> String {
+        match self {
+            Query::Movie { title, year, .. } => match year {
+                Some(y) => format!("{title} {y}"),
+                None => title.clone(),
+            },
+            Query::Episode { title, .. } | Query::Season { title, .. } => title.clone(),
+            Query::Text { query } => query.clone(),
+        }
+    }
+
     /// The free-text keywords a definition's `{{ .Keywords }}` expands to.
     pub fn keywords(&self) -> String {
         match self {
@@ -227,6 +240,13 @@ impl kroma_module_sdk::ports::IndexerSearchPort for IndexerSearch {
         query: &kroma_module_sdk::ports::Query,
         categories: &[u32],
     ) -> anyhow::Result<kroma_module_sdk::ports::SearchOutcome> {
+        tracing::info!(
+            indexer = %row.name,
+            id = %row.id,
+            kind = %row.kind,
+            categories = ?categories,
+            "indexer search",
+        );
         if row.kind == admin::KIND_BUILTIN {
             let session = admin::builtin_session(host, row)?;
             let outcome = session.search(&to_native_query(query), categories);
@@ -238,9 +258,10 @@ impl kroma_module_sdk::ports::IndexerSearchPort for IndexerSearch {
             // External Torznab endpoint.
             let caps = admin::indexer_caps(host, row)?;
             let endpoint = admin::endpoint_of(row);
-            let tz = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::TorznabPort>(host)
+            let tz = kroma_module_sdk::ports::torznab(host)
                 .ok_or_else(|| anyhow::anyhow!("torznab search engine unavailable"))?;
             let releases = tz.search(&endpoint, query, &caps)?;
+            tracing::info!(indexer = %row.name, releases = releases.len(), "torznab answered");
             Ok(kroma_module_sdk::ports::SearchOutcome { releases, errors: Vec::new() })
         }
     }
@@ -603,18 +624,33 @@ search:
         }
     }
 
-    #[test]
-    fn a_torznab_search_goes_out_through_the_resolved_engine() {
-        use kroma_module_sdk::ports::{IndexerSearchPort, TorznabPort};
+    // The engine is reached over the `torznab` contract, so the fake is SERVED
+    // on a real localhost port and the host is pointed at it.
+    #[tokio::test]
+    async fn a_torznab_search_goes_out_through_the_resolved_engine() {
+        use kroma_module_sdk::ports::{torznab_routes, IndexerSearchPort, TorznabPort};
         let pool = db_pool();
         let mut row = seed_row("tz-engine", "torznab", true, 100);
         row.url = "http://tracker.example/api".into();
         db::insert_indexer(&pool, &row).unwrap();
         let port: std::sync::Arc<dyn TorznabPort> = std::sync::Arc::new(FakeTorznab);
-        let host = DbHost::with_pool(pool.clone())
-            .with_service_raw(kroma_module_sdk::host::port_service(port));
+        let resolve =
+            kroma_module_sdk::testing::serve(torznab_routes::<()>(port), ()).await;
+        let (base, token) = resolve().expect("the fake provider is up");
+        let host = DbHost::with_pool(pool.clone()).with_port(
+            kroma_module_sdk::ports::TORZNAB,
+            &base,
+            &token,
+        );
 
-        let outcome = IndexerSearch.search(&host, &row, &port_query(), &[2000]).unwrap();
+        let (host, row) = (host, row);
+        let outcome = kroma_module_sdk::testing::blocking(move || {
+            IndexerSearch.search(&host, &row, &port_query(), &[2000]).map(|o| (o, host))
+        })
+        .await
+        .unwrap();
+        let (outcome, host) = outcome;
+        let _ = &host;
         assert!(outcome.errors.is_empty());
         assert_eq!(outcome.releases.len(), 1);
         assert_eq!(outcome.releases[0].title, "From The Endpoint");

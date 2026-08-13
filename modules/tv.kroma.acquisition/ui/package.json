@@ -13,8 +13,11 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
+    "@kroma/core": "workspace:*",
     "@kroma/module-sdk": "workspace:*",
     "@kroma/ui": "workspace:*",
+    "@tanstack/react-query": "^5.101.2",
+    "@tanstack/react-router": "^1.170.23",
     "zod": "^4.4.3"
   },
   "peerDependencies": {

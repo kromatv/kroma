@@ -69,11 +69,38 @@ pub const MIGRATIONS: &str = "
         completed_at    INTEGER,
         imported_at     INTEGER,
         details_url     TEXT,
-        only_files      TEXT
+        only_files      TEXT,
+        upgrade         INTEGER NOT NULL DEFAULT 0
     );
     CREATE INDEX IF NOT EXISTS idx_downloads_status ON downloads(status, grabbed_at DESC);
     CREATE INDEX IF NOT EXISTS idx_downloads_req    ON downloads(request_id);
 ";
+
+// [`MIGRATIONS`] is one `execute_batch`, which aborts on the first error, so it
+// stays `IF NOT EXISTS`-only. A column added to a table that already exists has
+// no such spelling in SQLite: `ADD COLUMN` errors with "duplicate column name"
+// once it is there, which is exactly the case to ignore.
+const ADD_COLUMNS: &[&str] = &["ALTER TABLE downloads ADD COLUMN upgrade INTEGER NOT NULL DEFAULT 0"];
+
+/// Bring an older ledger up to the current column set. Idempotent: a column
+/// already present is the one failure that means success. Anything else leaves
+/// the ledger unreadable (`DL_COLS` names every column `row_to_download` reads),
+/// so it comes back as an error rather than a module that looks healthy.
+pub fn ensure_columns(pool: &Pool) -> Result<()> {
+    let conn = pool.get()?;
+    for sql in ADD_COLUMNS {
+        match conn.execute(sql, []) {
+            Ok(_) => {}
+            Err(e) if is_duplicate_column(&e) => {}
+            Err(e) => return Err(anyhow::anyhow!("{sql}: {e}")),
+        }
+    }
+    Ok(())
+}
+
+fn is_duplicate_column(e: &rusqlite::Error) -> bool {
+    e.to_string().contains("duplicate column name")
+}
 
 // The seeded embedded-engine row id (created at boot when compiled in).
 pub const EMBEDDED_CLIENT_ID: &str = "embedded";
@@ -180,7 +207,7 @@ pub use kroma_module_sdk::ports::DownloadRow;
 const DL_COLS: &str = "id, client_id, client_ref, request_id, kind, tmdb_id, title, year, \
     season, episodes, release_title, indexer_id, info_hash, magnet_or_url, size_bytes, score, \
     score_breakdown, status, progress, save_path, imported_paths, error, grabbed_at, \
-    completed_at, imported_at, details_url, only_files";
+    completed_at, imported_at, details_url, only_files, upgrade";
 
 fn row_to_download(r: &Row) -> rusqlite::Result<DownloadRow> {
     let episodes: Option<String> = r.get(9)?;
@@ -213,6 +240,7 @@ fn row_to_download(r: &Row) -> rusqlite::Result<DownloadRow> {
         imported_at: r.get(24)?,
         details_url: r.get(25)?,
         only_files: r.get::<_, Option<String>>(26)?.and_then(|j| serde_json::from_str(&j).ok()),
+        upgrade: r.get::<_, i64>(27)? != 0,
     })
 }
 
@@ -221,8 +249,9 @@ pub fn insert_download(pool: &Pool, d: &DownloadRow) -> Result<()> {
     conn.execute(
         "INSERT INTO downloads (id, client_id, client_ref, request_id, kind, tmdb_id, title, year, \
             season, episodes, release_title, indexer_id, info_hash, magnet_or_url, size_bytes, \
-            score, score_breakdown, status, progress, save_path, grabbed_at, details_url, only_files) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)",
+            score, score_breakdown, status, progress, save_path, grabbed_at, details_url, only_files, \
+            upgrade) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24)",
         params![
             d.id,
             d.client_id,
@@ -246,7 +275,8 @@ pub fn insert_download(pool: &Pool, d: &DownloadRow) -> Result<()> {
             d.save_path,
             d.grabbed_at,
             d.details_url,
-            d.only_files.as_ref().map(|f| serde_json::to_string(f).unwrap_or_default())
+            d.only_files.as_ref().map(|f| serde_json::to_string(f).unwrap_or_default()),
+            d.upgrade
         ],
     )?;
     Ok(())
@@ -483,6 +513,7 @@ mod tests {
             imported_at: None,
             details_url: None,
             only_files: None,
+            upgrade: false,
         }
     }
 
@@ -588,6 +619,7 @@ mod tests {
         d1.season = Some(2);
         d1.size_bytes = Some(2048);
         d1.tmdb_id = 99;
+        d1.upgrade = true;
         insert_download(&pool, &d1).unwrap();
         insert_download(&pool, &download("d2", "downloading", 20)).unwrap();
         insert_download(&pool, &download("d3", "seeding", 30)).unwrap();
@@ -601,6 +633,10 @@ mod tests {
         assert_eq!(got.season, Some(2));
         assert_eq!(got.size_bytes, Some(2048));
         assert_eq!(got.tmdb_id, 99);
+        // The import reads this to decide whether to delete what it replaced, so
+        // a flag that does not survive the ledger would silently leave duplicates.
+        assert!(got.upgrade);
+        assert!(!get_download(&conn, "d2").unwrap().unwrap().upgrade);
         assert_eq!(got.status, "queued");
         assert_eq!(got.title.as_deref(), Some("Dune"));
         // Columns not written by insert default to NULL.

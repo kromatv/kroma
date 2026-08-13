@@ -152,16 +152,17 @@ describe('merging what each source found', () => {
     expect(seen.at(-1)?.[0]?.confirmRequired).toBe(false);
   });
 
-  it('asks for a code on a television only the link found', () => {
-    // No server row means the server never placed it, which is exactly the case
-    // the check string was added for. Fail closed.
+  it('leaves a television only the link found to the server rather than guessing', () => {
+    // No server row is no answer, not a "yes": the grant is where the answer
+    // arrives, and a beacon that wants its check is refused without one.
+    // Guessing here asked for a code on every television that needed none.
     const lan = manual('lan');
     const seen: DiscoveredTv[][] = [];
     watchNearbyTvs({ sources: [lan.source], onRows: (r) => seen.push(r) });
 
     lan.report([{ ...row('h1', 'Salon', 'lan'), confirmRequired: false }]);
 
-    expect(seen.at(-1)?.[0]?.confirmRequired).toBe(true);
+    expect(seen.at(-1)?.[0]?.confirmRequired).toBe(false);
   });
 
   it('carries every television only one source could find', () => {

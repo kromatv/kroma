@@ -136,7 +136,7 @@ describe('a phone that can hear its own link', () => {
     expect(result.current.devices[0]?.proof).toBe('heard-it');
   });
 
-  it('asks for the code on a television the server never listed', async () => {
+  it('leaves the code to the grant on a television the server never listed', async () => {
     const client = stubClient([]);
     const lan = stubLan([
       {
@@ -155,7 +155,9 @@ describe('a phone that can hear its own link', () => {
     const { result } = renderHook(() => useNearbyTvs({ client, lan }));
     await waitFor(() => expect(result.current.devices).toHaveLength(1));
 
-    expect(result.current.devices[0]?.confirmRequired).toBe(true);
+    // Nothing here knows, so nothing here guesses: the grant asks, and a beacon
+    // that wants its check is refused without one.
+    expect(result.current.devices[0]?.confirmRequired).toBe(false);
   });
 
   it('does not offer a television belonging to a different server', async () => {

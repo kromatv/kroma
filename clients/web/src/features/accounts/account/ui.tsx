@@ -88,7 +88,7 @@ export function useSave() {
   return { status, error, run };
 }
 
-/** Inline saved ✓ / error text next to a section's save button. */
+/** Inline saved / error text next to a section's save button. */
 export function StatusText({
   status,
   error,

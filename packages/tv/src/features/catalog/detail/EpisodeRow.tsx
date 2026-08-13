@@ -89,7 +89,7 @@ function episodeStill(at: {
       ) : null}
       {at.inProgress ? (
         <Box absolute left={0} right={0} bottom={0}>
-          <Progress value={(at.progress ?? 0) / 100} />
+          <Progress value={(at.progress ?? 0) / 100} rounded={false} />
         </Box>
       ) : null}
     </Box>

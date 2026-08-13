@@ -20,7 +20,7 @@ export {
   KromaEvents as KromaEventStream,
   RequestId,
 } from '@kroma/core';
-export { useT } from '@kroma/ui';
+export { useLocale, useT } from '@kroma/ui';
 export type { AdminHostValue } from './admin/context';
 export { AdminHostProvider, useAdminHost } from './admin/context';
 export { Denied } from './admin/denied';
@@ -31,6 +31,7 @@ export {
   FieldForm,
   useEnabledEngines,
   useModuleEnabled,
+  useModuleEnabledCheck,
 } from './admin/engines';
 export { isAnyAdmin, useAsyncAction, useCap, usePoll } from './admin/hooks';
 export { ModuleFailed, ModuleLoading, ModuleUnavailable } from './admin/page-states';
@@ -49,10 +50,20 @@ export type {
   NavItem,
   RouteDef,
   SettingsPanel,
+  SlotContribution,
+  SlotName,
+  SlotProps,
 } from './module';
-export type { ModuleNav, ModulePanel, ModuleRoute, ModuleStatus } from './registry';
+export type {
+  ModuleNav,
+  ModulePanel,
+  ModuleRoute,
+  ModuleSlotEntry,
+  ModuleStatus,
+} from './registry';
 export { depEntries, ModuleRegistry } from './registry';
 export { ModuleScope, moduleApiHook, useModuleApi } from './scope';
+export { ModuleSlot, ModuleSlotProvider, useSlotEntries } from './slot';
 export type {
   Capability,
   CapabilityReq,
@@ -63,3 +74,5 @@ export type {
   FeRemote,
   ModuleManifest,
 } from './types';
+export type { TableActionProps, TableCellProps, TableRootProps, TableRowProps } from './ui/table';
+export { TABULAR, Table } from './ui/table';

@@ -211,10 +211,13 @@ export function watchLanBeacons(
             name,
             platform: record.platform,
             check: record.check,
-            // Not in the record and never taken from one: the server is what
-            // says whether a beacon has to be confirmed, and a row heard here
-            // has not been placed by it at all. Asking is the closed answer.
-            confirmRequired: true,
+            // Not in the record and never taken from one: whether a beacon
+            // wants its check typed is the server's word, and a row heard here
+            // has not been near it. So it does not guess. The grant is where
+            // that word arrives: sent without a check, a beacon that wants one
+            // is refused with `checkRequired` and the picker asks then. Assuming
+            // one cost a code on every television that needed none.
+            confirmRequired: false,
             via: 'lan',
             proof: record.proof,
             server: record.server,

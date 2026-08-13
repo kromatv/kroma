@@ -104,7 +104,13 @@ function PanelRow({ row, label, icon, disabled, danger, composed, children }: Re
       tabIndex={-1}
       onPress={row.fire}
       onHoverIn={row.onHoverIn}
-      style={[slots.root, s.row, row.active ? wash : null, disabled ? s.disabled : null]}
+      style={[
+        slots.root,
+        s.row,
+        row.active ? wash : null,
+        row.active && row.keyed ? s.keyed : null,
+        disabled ? s.disabled : null,
+      ]}
     >
       {composed ? (
         children
@@ -179,6 +185,8 @@ function Separator() {
 const s = styles({
   row: { radius: CONTROL.sm.radius },
   active: { bg: 'tint/7' },
+  // On the edge: the rows abut, so a gap either way lands on something.
+  keyed: { ring: 'focusEdge' },
   activeDanger: { bg: 'danger/14' },
   disabled: { opacity: 0.4 },
   label: { fontSize: 13, fontWeight: '600' },

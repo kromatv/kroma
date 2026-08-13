@@ -1,4 +1,5 @@
 import { type PlaybackSession, resolveImageUrl } from '@kroma/core';
+import { TABULAR } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import {
   Avatar,
@@ -18,7 +19,6 @@ import {
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { PillDot } from '#web/features/admin/pill';
-import { TABULAR } from '#web/features/admin/table';
 import { formatMbps, posterGradient, timecode } from '#web/shared/lib/adminFormat';
 import { apiBase, kromaClient } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';

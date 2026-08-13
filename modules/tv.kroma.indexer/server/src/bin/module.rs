@@ -1,12 +1,12 @@
-//! The Indexers module as a standalone process (its `.kmod` entrypoint). Serves
-//! IndexerDbPort / IndexerSearchPort / TorrentFetchPort plus `/indexers/*`,
-//! and consumes TorznabPort + VpnProxyPort from the sibling sidecars.
+//! The Indexers module as a standalone process (its `.kmod` entrypoint). It
+//! serves the `indexer-db`, `indexer-search` and `torrent-fetch` contracts; what
+//! it consumes it resolves at the point of use.
 
 use std::sync::Arc;
 
 use kroma_module_runtime::RemoteHost;
 use kroma_module_sdk::ports::{
-    IndexerDbPort, IndexerSearchPort, TorrentFetchPort, TorznabPort, VpnProxyPort,
+    indexer_routes, IndexerDbPort, IndexerSearchPort, TorrentFetchPort,
 };
 
 #[tokio::main]
@@ -16,18 +16,9 @@ async fn main() -> anyhow::Result<()> {
     let fetch: Arc<dyn TorrentFetchPort> = Arc::new(kroma_indexer::IndexerTorrentFetch);
 
     kroma_module_runtime::serve(
-        move |host| {
-            let tz: Arc<dyn TorznabPort> = Arc::new(kroma_port_bridge::TorznabClient::new(
-                host.sibling_resolver("tv.kroma.torznab"),
-            ));
-            host.register_port(tz);
-            let vp: Arc<dyn VpnProxyPort> = Arc::new(kroma_port_bridge::VpnProxyClient::new(
-                host.sibling_resolver("tv.kroma.vpn"),
-            ));
-            host.register_port(vp);
-        },
+        |_host| {},
         vec![kroma_indexer::server_module::<RemoteHost>()],
-        kroma_port_bridge::indexer_routes(db, search, fetch),
+        indexer_routes(db, search, fetch),
     )
     .await
 }

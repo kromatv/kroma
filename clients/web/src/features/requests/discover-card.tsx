@@ -29,6 +29,7 @@ const COARSE =
   typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches === true;
 
 const s = styles({
+  tile: { w: '100%' },
   art: { aspect: 2 / 3, radius: 'lg', overflow: 'hidden', shadow: 'card' },
   artLit: { shadow: 'pop' },
   overlay: { opacity: 0, pointerEvents: 'none' },
@@ -78,7 +79,7 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
 
   return (
     <div style={{ width: width ?? 'var(--card-w)', flexShrink: 0 }}>
-      <Focusable label={entry.title} onPress={open} focusScale={1.03}>
+      <Focusable label={entry.title} onPress={open} focusScale={1.03} style={s.tile}>
         {(state) => {
           const lit = COARSE || state.hovered || state.focused;
           return (

@@ -18,8 +18,7 @@ const NO_CAPS = { textTransform: 'none' } as const;
 const CHIP_BUTTON: CSSProperties = {
   display: 'block',
   width: '100%',
-  marginTop: 8,
-  padding: 0,
+  padding: '8px 0 0',
   border: 0,
   background: 'none',
   font: 'inherit',

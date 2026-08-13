@@ -182,6 +182,14 @@ export const ModuleEnabledResult = z.object({
 });
 export type ModuleEnabledResult = z.infer<typeof ModuleEnabledResult>;
 
+/** `POST /api/admin/modules/{id}/restart`. `running` is what the supervisor
+ * reports once the process is back up. */
+export const ModuleRestartResult = z.object({
+  restarted: z.boolean(),
+  running: z.boolean(),
+});
+export type ModuleRestartResult = z.infer<typeof ModuleRestartResult>;
+
 /** The structured `409 Conflict` body of `DELETE /api/admin/store/{id}`: who
  * still depends on the module, so the UI can offer an informed force. */
 export const StoreUninstallConflict = z.object({

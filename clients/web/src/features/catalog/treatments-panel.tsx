@@ -16,10 +16,10 @@ import {
 } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type CSSProperties, useState } from 'react';
-import { MediaInfoModal } from '#web/features/catalog/media-info-modal';
 import { RematchDialog } from '#web/features/catalog/rematch-dialog';
 import { kromaClient } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
+import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
 
 type Kind = 'item' | 'show';
 

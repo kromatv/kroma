@@ -4,7 +4,6 @@
 //! resolves it via `kroma_module_host::resolve_port`. Only generic contracts live
 //! here, never a module's own types, so no crate here depends on a module.
 
-use kroma_module_host::HostCtx;
 
 // The download-client contract (engine trait + shared types + the host port), so
 // download engine modules depend on the SDK, not on the torrents crate.
@@ -21,86 +20,11 @@ pub use indexer::*;
 // The download-ledger contract (grab spec + row + DownloadGrabPort/DownloadDbPort).
 pub mod download;
 pub use download::*;
+// The VPN contracts (proxy bridge + the engine kill-switch surface).
+pub mod vpn;
+pub use vpn::*;
+// The acquisition module's search/grab contract, consumed by the core.
+pub mod acquisition;
+pub use acquisition::*;
 // The Sonarr/Radarr-style naming engine, shared by torrents (organize) + acquisition.
 pub mod naming;
-
-/// The acquisition module's interactive-search + manual-grab surface, consumed by
-/// the core's `/api/requests/:id/search` + `/grab` endpoints so those keep a
-/// stable URL while the logic runs in the acquisition sidecar. The scored-releases
-/// view crosses the wire as opaque JSON (the core just forwards it); `grab` returns
-/// the enqueued download id and backgrounds the slow engine add provider-side.
-pub trait AcquisitionSearchPort: Send + Sync {
-    // Live interactive search for one request; the scored-releases view as JSON.
-    fn interactive_search(
-        &self,
-        host: &dyn HostCtx,
-        request_id: &str,
-    ) -> anyhow::Result<serde_json::Value>;
-    // Grab one release from the last interactive search; returns the download id.
-    fn grab(
-        &self,
-        host: &dyn HostCtx,
-        request_id: &str,
-        guid: &str,
-        indexer_id: &str,
-    ) -> anyhow::Result<String>;
-}
-
-/// The VPN module's local SOCKS5 bridge, for modules that route traffic through it
-/// (downloads always; indexers when opted in). `None` when no bridge is configured
-/// or the VPN module is absent.
-pub trait VpnProxyPort: Send + Sync {
-    // The `socks5://127.0.0.1:<port>` URL when a bridge is configured, else `None`.
-    fn proxy_url(&self, host: &dyn HostCtx) -> Option<String>;
-}
-
-/// The indexer module's authenticated `.torrent` fetch. Built-in Cardigann
-/// indexers cookie-gate their downloads, so a bare fetch returns the login page;
-/// this lets the downloads module grab the real file without depending on the
-/// indexer crate.
-pub trait TorrentFetchPort: Send + Sync {
-    // Fetch the `.torrent` bytes for `url` through the indexer's authenticated
-    // session. `None` when this indexer is not one the port handles (the caller
-    // then does a plain HTTP fetch); `Some(Err)` when the authenticated fetch
-    // itself failed.
-    fn fetch_torrent(
-        &self,
-        host: &dyn HostCtx,
-        indexer_id: &str,
-        url: &str,
-    ) -> Option<anyhow::Result<Vec<u8>>>;
-}
-
-// The VPN module's admin page shows the download engine's kill-switch status,
-// runs a seal check, and restarts the engine after the VPN config changes.
-// These live here so the VPN module resolves them as a port instead of naming
-// the torrents crate.
-
-/// The download engine's VPN / kill-switch status, for the VPN admin page.
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct VpnStatusView {
-    pub connected: bool,
-    pub exit_ip: Option<String>,
-    pub paused: bool,
-}
-
-/// Outcome of a VPN seal check (is peer traffic actually leaving via the proxy?).
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct VpnSeal {
-    pub sealed: bool,
-    pub proxied_ip: Option<String>,
-    pub direct_ip: Option<String>,
-    pub error: Option<String>,
-}
-
-/// The download manager's VPN surface, resolved by the VPN module.
-#[kroma_module_host::async_trait]
-pub trait DownloadVpnPort: Send + Sync {
-    // Latest VPN/kill-switch status of the download engine.
-    fn vpn_status(&self) -> Option<VpnStatusView>;
-    // Run the VPN seal check now.
-    fn vpn_seal_check(&self, host: &dyn HostCtx) -> Option<VpnSeal>;
-    // Restart the embedded engine (e.g. after the VPN config changed).
-    async fn restart_engine(&self, host: &dyn HostCtx);
-}

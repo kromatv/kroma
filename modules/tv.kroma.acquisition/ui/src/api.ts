@@ -7,10 +7,12 @@
 // Import from `@kroma/module-acquisition/api`.
 
 import { moduleApiHook } from '@kroma/module-sdk';
-import type { ManualAddBody, ManualSearchView, TorrentAnalysis } from './schemas';
+import type { ManualAddBody, ManualSearchBody, ManualSearchView, TorrentAnalysis } from './schemas';
 
 export const useAcquisitionApi = moduleApiHook('tv.kroma.acquisition', (api) => ({
-  search: (query: string) => api.post<ManualSearchView>('/acquisition/search', { query }),
+  /** Free-text sweep of every indexer. Pass a `season` (and optionally an
+   *  `episode`) to search the tracker's TV categories instead of its movie ones. */
+  search: (body: ManualSearchBody) => api.post<ManualSearchView>('/acquisition/search', body),
   /** Fetch a torrent's file list (metadata only, no download) + what it
    *  holds, so the admin can pick episodes / confirm the entity first. */
   analyze: (magnetOrUrl: string) =>

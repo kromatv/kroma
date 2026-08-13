@@ -36,7 +36,7 @@ pub fn build_requests(
 ) -> Vec<SearchRequest> {
     let mut ctx = Context::with_config(def, cfg);
     ctx.query = query_attributes(query);
-    let base_keywords = query.keywords();
+    let base_keywords = if sends_episode_inputs(def) { query.title() } else { query.keywords() };
     ctx.keywords = base_keywords.clone();
     ctx.keywords = filters::apply(&base_keywords, &def.search.keywordsfilters, &ctx);
     ctx.query.insert("Keywords".to_string(), ctx.keywords.clone());
@@ -70,6 +70,18 @@ pub fn build_requests(
         });
     }
     requests
+}
+
+// Whether the definition passes the season/episode as their OWN inputs. When it
+// does, the keywords must be the bare title: `q=Black Mirror S02E01&season=2&ep=1`
+// asks the tracker for a title literally containing "S02E01" and matches nothing.
+// A definition without those inputs has only `q` to say it with, so the tag stays.
+fn sends_episode_inputs(def: &Definition) -> bool {
+    def.search
+        .inputs
+        .iter()
+        .chain(def.search.paths.iter().flat_map(|p| p.inputs.iter()))
+        .any(|(key, _)| key == "season" || key == "ep" || key == "episode")
 }
 
 // Builds the `.Query.*` namespace for a query.
@@ -1519,5 +1531,68 @@ search:
 "#,
         );
         assert!(uses_xpath(&xpath));
+    }
+}
+
+#[cfg(test)]
+mod keyword_tests {
+    use super::*;
+
+    fn def_with_inputs(inputs: &str) -> Definition {
+        crate::definition::parse(
+            format!(
+                r#"
+id: t
+name: T
+caps:
+  categorymappings:
+    - {{id: 5000, cat: TV}}
+  modes:
+    tv-search: [q, season, ep]
+search:
+  paths:
+    - path: /api
+  inputs:
+{inputs}
+  rows:
+    selector: item
+  fields:
+    title:
+      selector: title
+"#
+            )
+            .as_bytes(),
+        )
+        .expect("definition fixture must parse")
+    }
+
+    fn episode() -> Query {
+        Query::Episode { tmdb_id: None, title: "Black Mirror".into(), season: 2, episode: 1 }
+    }
+
+    #[test]
+    fn a_definition_with_season_and_ep_inputs_searches_the_bare_title() {
+        let def = def_with_inputs(
+            "    q: \"{{ .Keywords }}\"\n    season: \"{{ .Query.Season }}\"\n    ep: \"{{ .Query.Ep }}\"",
+        );
+        assert!(sends_episode_inputs(&def));
+        let reqs = build_requests(&def, &IndexerConfig::default(), &episode(), &[5000]);
+        let q = reqs
+            .first()
+            .and_then(|r| r.inputs.iter().find(|(k, _)| k == "q"))
+            .map(|(_, v)| v.clone());
+        assert_eq!(q.as_deref(), Some("Black Mirror"));
+    }
+
+    #[test]
+    fn a_definition_with_only_q_keeps_the_episode_tag_in_it() {
+        let def = def_with_inputs("    q: \"{{ .Keywords }}\"");
+        assert!(!sends_episode_inputs(&def));
+        let reqs = build_requests(&def, &IndexerConfig::default(), &episode(), &[5000]);
+        let q = reqs
+            .first()
+            .and_then(|r| r.inputs.iter().find(|(k, _)| k == "q"))
+            .map(|(_, v)| v.clone());
+        assert_eq!(q.as_deref(), Some("Black Mirror S02E01"));
     }
 }

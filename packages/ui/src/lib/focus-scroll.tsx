@@ -49,8 +49,12 @@ const pad = (value: unknown): number => (typeof value === 'number' ? value : 0);
  * RING_ROOM further out and its content is padded back in by the same amount:
  * the content lands exactly where it did, with room around it for a ring.
  *
- * Only ACROSS the scroll: along it there is no edge to be flush with, the
- * content simply scrolls past.
+ * A row reaches out on all four sides: its first tile IS flush with the start
+ * edge, and nothing of the app's sits beside a row for the extra reach to show
+ * through. A page only reaches out sideways - above and below it is the screen's
+ * own chrome, and a hole in the clip there would show the scrolled-off rows
+ * through it (see organisms/virtual/clip). A page's first row gets its room from
+ * the top padding of its content instead.
  */
 function ringRoom(
   style: ViewStyle | undefined,
@@ -64,11 +68,15 @@ function ringRoom(
         ...style,
         marginTop: pad(style?.marginTop) - RING_ROOM,
         marginBottom: pad(style?.marginBottom) - RING_ROOM,
+        marginLeft: pad(style?.marginLeft) - RING_ROOM,
+        marginRight: pad(style?.marginRight) - RING_ROOM,
       },
       content: {
         ...c,
         paddingTop: pad(c.paddingTop ?? c.paddingVertical ?? c.padding) + RING_ROOM,
         paddingBottom: pad(c.paddingBottom ?? c.paddingVertical ?? c.padding) + RING_ROOM,
+        paddingLeft: pad(c.paddingLeft ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
+        paddingRight: pad(c.paddingRight ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
       },
     };
   }
@@ -140,7 +148,10 @@ function AxisScroll({
           const { viewport, content } = extent.current;
           const offset = pageOffset({
             top: horizontal ? left : top,
-            offsetFromStart,
+            // The reach above is padding on the content, so every item measures
+            // that much further in: without it here the row would scroll the
+            // room back out from under the first tile's ring.
+            offsetFromStart: horizontal ? offsetFromStart + RING_ROOM : offsetFromStart,
             viewport,
             content,
           });

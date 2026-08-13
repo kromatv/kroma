@@ -14,6 +14,7 @@ import {
 } from '#ui/lib/anchored-panel';
 import { AnchoredPopup } from '#ui/lib/anchored-popup';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
+import { useFocusVisible } from '#ui/lib/focus-visible';
 import { MenuRowContext, type MenuRowState } from './menu-context';
 import { type MenuRowSpec, MenuSurfaceDialog, type MenuSurfaceProps } from './menu-surface-dialog';
 
@@ -31,6 +32,7 @@ interface PanelEntryProps {
   nativeID: string;
   index: number;
   active: boolean;
+  keyed: boolean;
   onActivate: (index: number) => void;
   onFire: (index: number) => void;
 }
@@ -40,6 +42,7 @@ function PanelEntry({
   nativeID,
   index,
   active,
+  keyed,
   onActivate,
   onFire,
 }: Readonly<PanelEntryProps>) {
@@ -48,10 +51,11 @@ function PanelEntry({
       presentation: 'panel',
       nativeID,
       active,
+      keyed,
       onHoverIn: () => onActivate(index),
       fire: () => onFire(index),
     }),
-    [nativeID, index, active, onActivate, onFire],
+    [nativeID, index, active, keyed, onActivate, onFire],
   );
   return <MenuRowContext.Provider value={row}>{entry}</MenuRowContext.Provider>;
 }
@@ -64,6 +68,7 @@ function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<
       rows.findIndex((row) => !row.disabled),
     ),
   );
+  const keyed = useFocusVisible(active);
 
   const at = useAnchoredPlacement(anchor, {
     minWidth: MIN_WIDTH,
@@ -117,6 +122,7 @@ function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<
             nativeID={`${baseId}-${index}`}
             index={index}
             active={index === active}
+            keyed={keyed}
             onActivate={setActive}
             onFire={fireAt}
           />

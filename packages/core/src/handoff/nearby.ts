@@ -28,21 +28,10 @@ function combine(seen: DiscoveredTv, row: DiscoveredTv): DiscoveredTv {
   return { ...listed, via: 'lan', proof: heard.proof };
 }
 
-// Whether a grant costs the person a trip to the television's own screen is the
-// server's word, and a row that has no server word does not get to answer for
-// it. A television the server could not place is precisely what the check
-// string exists to settle, so a row only the link found is asked for one -
-// which is also what stops a forged record from waving the prompt away by
-// claiming its television needs none.
-function confirmUnlessListed(row: DiscoveredTv): DiscoveredTv {
-  return row.via === 'server' ? row : { ...row, confirmRequired: true };
-}
-
 function merge(views: Map<string, DiscoveredTv[]>): DiscoveredTv[] {
   const byHandle = new Map<string, DiscoveredTv>();
   for (const rows of views.values()) {
-    for (const found of rows) {
-      const row = confirmUnlessListed(found);
+    for (const row of rows) {
       const seen = byHandle.get(row.handle);
       byHandle.set(row.handle, seen ? combine(seen, row) : row);
     }

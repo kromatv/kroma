@@ -212,6 +212,12 @@ pub struct ModuleManifest {
     pub requires: Vec<CapabilityReq>,
     #[serde(default)]
     pub provides: Vec<Capability>,
+    /// The cross-module RPC contracts this module SERVES, by name
+    /// (`"torznab"`, `"indexer-db"`). Distinct from [`Self::provides`], which
+    /// describes user-configurable capabilities: this is machine wiring, and it
+    /// is what lets a consumer reach a provider without naming its module id.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ports: Vec<String>,
     #[serde(default)]
     pub permissions: Vec<String>,
     #[serde(default)]
@@ -236,6 +242,7 @@ impl ModuleManifest {
             optional_depends_on: Vec::new(),
             requires: Vec::new(),
             provides: Vec::new(),
+            ports: Vec::new(),
             permissions: Vec::new(),
             config: Vec::new(),
             fe_remote: None,

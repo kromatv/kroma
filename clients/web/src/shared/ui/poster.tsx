@@ -95,7 +95,12 @@ export function Poster({
           </div>
           {progress != null ? (
             <Box absolute left={0} right={0} bottom={0}>
-              <Progress value={progress / 100} thickness={5} trackColor="white/20" />
+              <Progress
+                value={progress / 100}
+                thickness={5}
+                trackColor="white/20"
+                rounded={false}
+              />
             </Box>
           ) : null}
         </div>

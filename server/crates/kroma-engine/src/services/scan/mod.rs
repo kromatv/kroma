@@ -104,39 +104,69 @@ pub fn scan_all(defs: &[LibraryDef]) -> ScanData {
 /// Current time as an RFC3339 / ISO8601 string (UTC). Re-exported from kroma-primitives.
 pub use kroma_primitives::now_iso8601;
 
+/// What a phase-1 scan did.
+pub enum Scanned {
+    /// The walk produced a catalog, and it was written.
+    Applied(ScanData),
+    /// Configured libraries produced NO items: a mount outage, not a library
+    /// someone emptied. `sync_all` reads that as "every file vanished" and
+    /// cascade-deletes the catalog along with its probed metadata, so nothing
+    /// is written and the stored index stays authoritative.
+    MountOffline,
+}
+
 /// Phase-1 rescan + DB sync, demo-seeding only in demo mode (no libraries
 /// configured). Pure work (no events / no background spawns) so both the `POST
 /// /api/scan` handler and the `library.scan` job can share it and add their own
 /// notifications. Blocking (walk + SQLite) call from a blocking context.
-pub fn rescan_sync(state: &crate::state::SharedState) -> anyhow::Result<ScanData> {
+pub fn rescan_sync(state: &crate::state::SharedState) -> anyhow::Result<Scanned> {
     let defs = crate::services::settings::library_defs(&state.settings, &state.config);
     let mut data = scan_all(&defs);
-    // Seed demo content only when nothing is configured (true demo mode). A
-    // configured library that momentarily reads empty NAS/SMB unmount, slow
-    // mount, permission glitch must NOT be clobbered with demo movies.
-    if data.items.is_empty() && defs.is_empty() {
+    if data.items.is_empty() {
+        // Seed demo content only when nothing is configured (true demo mode). A
+        // configured library that momentarily reads empty NAS/SMB unmount, slow
+        // mount, permission glitch must NOT be clobbered with demo movies, and
+        // must not be synced away either.
+        if !defs.is_empty() {
+            warn!(
+                libraries = defs.len(),
+                "configured libraries produced no items; keeping the stored index (mount offline?)"
+            );
+            return Ok(Scanned::MountOffline);
+        }
         info!("no libraries configured and scan is empty; seeding demo content");
         data = crate::services::demo::demo_data();
     }
     crate::db::sync_all(&state.db, &data.libraries, &data.shows, &data.items, &data.mtimes)?;
-    Ok(data)
+    Ok(Scanned::Applied(data))
 }
 
 /// Publish "scan started", run phase-1 [`rescan_sync`], then announce the
 /// catalog change with the resulting counts. Blocking; returns the synced data.
 /// Shared by `POST /api/scan` and the `library.scan` job each wraps it with
 /// its own logging / response.
-pub fn scan_and_publish(state: &crate::state::SharedState) -> anyhow::Result<ScanData> {
+pub fn scan_and_publish(state: &crate::state::SharedState) -> anyhow::Result<Scanned> {
     use crate::infra::events::ServerEvent;
     state.events.publish(ServerEvent::ScanStarted);
     crate::services::activity::scan_started(&state.activity);
 
-    let data = rescan_sync(state)?;
-    let (libraries, shows, items) = (data.libraries.len(), data.shows.len(), data.items.len());
+    let scanned = rescan_sync(state)?;
+    // On an outage the counts reported are the STORED ones: they are what the
+    // catalog is still serving, and announcing zero would read as a library
+    // that had just been emptied.
+    let (libraries, shows, items) = match &scanned {
+        Scanned::Applied(data) => (data.libraries.len(), data.shows.len(), data.items.len()),
+        Scanned::MountOffline => {
+            let (libraries, items, shows) = crate::db::counts(&state.db).unwrap_or((0, 0, 0));
+            (libraries, shows, items)
+        }
+    };
     crate::services::activity::scan_completed(&state.activity, libraries, shows, items, now_iso8601());
     state.events.publish(ServerEvent::ScanCompleted { items, shows, libraries });
-    state.events.publish(ServerEvent::LibraryUpdated);
-    Ok(data)
+    if matches!(scanned, Scanned::Applied(_)) {
+        state.events.publish(ServerEvent::LibraryUpdated);
+    }
+    Ok(scanned)
 }
 
 /// Kick the phase-2 background follow-ups after a scan media probing, search
@@ -300,12 +330,19 @@ mod tests {
             .unwrap()
     }
 
+    fn applied(scanned: Scanned) -> ScanData {
+        match scanned {
+            Scanned::Applied(data) => data,
+            Scanned::MountOffline => panic!("expected the scan to be applied"),
+        }
+    }
+
     #[test]
     fn a_server_with_nothing_configured_gets_the_demo_catalogue() {
         // True demo mode: no libraries at all. Showing an empty app on first run
         // makes it look broken, so the demo content stands in.
         let state = test_state();
-        let data = rescan_sync(&state).unwrap();
+        let data = applied(rescan_sync(&state).unwrap());
         assert!(!data.items.is_empty(), "demo content should have been seeded");
         assert!(item_count(&state) > 0);
     }
@@ -321,9 +358,30 @@ mod tests {
         let empty = tmp_root("unmounted");
         set_library_defs(&state.settings, &state.db, &[configured_library(empty.path())]);
 
-        let data = rescan_sync(&state).unwrap();
-        assert!(data.items.is_empty(), "the folder is empty, so the scan is empty");
+        assert!(matches!(rescan_sync(&state).unwrap(), Scanned::MountOffline));
         assert_eq!(item_count(&state), 0, "demo content was seeded over a real library");
+    }
+
+    // The one that matters: the guard above only proved demo content was not
+    // seeded, because the database was empty either way. This starts from a
+    // library that is really there, then takes the mount away.
+    #[test]
+    fn an_unmounted_share_never_deletes_the_library_it_already_scanned() {
+        let state = test_state();
+        let root = tmp_root("mount-goes-away");
+        let movie = root.path().join("Blade Runner (1982).mkv");
+        std::fs::write(&movie, b"x").unwrap();
+        set_library_defs(&state.settings, &state.db, &[configured_library(root.path())]);
+
+        let scanned = applied(rescan_sync(&state).unwrap());
+        assert_eq!(scanned.items.len(), 1);
+        assert_eq!(item_count(&state), 1, "the real library is indexed");
+
+        // The share drops: the folder is still configured, and reads as empty.
+        std::fs::remove_file(&movie).unwrap();
+
+        assert!(matches!(rescan_sync(&state).unwrap(), Scanned::MountOffline));
+        assert_eq!(item_count(&state), 1, "the stored index survived the outage");
     }
 
     #[test]
@@ -334,7 +392,7 @@ mod tests {
         let missing = gone.path().join("no-such-mount-point-ever");
         set_library_defs(&state.settings, &state.db, &[configured_library(&missing)]);
 
-        rescan_sync(&state).unwrap();
+        assert!(matches!(rescan_sync(&state).unwrap(), Scanned::MountOffline));
         assert_eq!(item_count(&state), 0);
     }
 
@@ -343,7 +401,7 @@ mod tests {
         // The UI shows a progress state off these, so a scan that never
         // announces completion leaves a spinner running forever.
         let state = test_state();
-        let data = scan_and_publish(&state).unwrap();
+        let data = applied(scan_and_publish(&state).unwrap());
         assert!(!data.items.is_empty(), "demo mode, so there is something to report");
 
         let activity = crate::services::activity::snapshot(&state.activity);

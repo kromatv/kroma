@@ -36,7 +36,7 @@ pub fn indexer_caps(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<Caps
     if let Some(caps) = CAPS_CACHE.lock().unwrap().as_ref().and_then(|m| m.get(&key)).cloned() {
         return Ok(caps);
     }
-    let result = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::TorznabPort>(host)
+    let result = kroma_module_sdk::ports::torznab(host)
         .ok_or_else(|| anyhow::anyhow!("torznab search engine unavailable"))
         .and_then(|p| p.caps(&endpoint_of(row)));
     match &result {
@@ -101,7 +101,7 @@ fn vpn_proxy_url(host: &dyn HostCtx) -> Option<String> {
     // Check the opt-in first so the WireGuard config isn't read on the common
     // (off) path.
     if host.setting_bool("acqIndexersUseVpn", false) {
-        kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::VpnProxyPort>(host)
+        kroma_module_sdk::ports::vpn_proxy(host)
             .and_then(|p| p.proxy_url(host))
     } else {
         None

@@ -100,7 +100,13 @@ function Item(props: Readonly<SelectItemProps>) {
           }}
           onHoverIn={row.onHoverIn}
           onLayout={(event) => row.onLayout?.(event.nativeEvent.layout.y)}
-          style={[slots.root, s.row, row.active ? s.active : null, disabled ? s.disabled : null]}
+          style={[
+            slots.root,
+            s.row,
+            row.active ? s.active : null,
+            row.active && row.keyed ? s.keyed : null,
+            disabled ? s.disabled : null,
+          ]}
         >
           {body(slots.ink)}
         </Pressable>
@@ -157,6 +163,8 @@ function Indicator() {
 const s = styles({
   row: { radius: CONTROL.sm.radius },
   active: { bg: 'tint/8' },
+  // On the edge: the rows abut, so a gap either way lands on something.
+  keyed: { ring: 'focusEdge' },
   disabled: { opacity: 0.4 },
 });
 

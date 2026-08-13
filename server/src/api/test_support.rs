@@ -114,7 +114,16 @@ fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)]) -> TestApp {
     }
     let settings = Settings::load(&db);
     let embedder: Arc<dyn kroma_engine::ports::Embedder> = Arc::new(kroma_engine::ports::NoopEmbedder);
-    let state = AppState::new(config, false, db.clone(), settings, embedder, HashMap::new(), &[]);
+    let state = AppState::new(
+        config,
+        false,
+        db.clone(),
+        settings,
+        embedder,
+        HashMap::new(),
+        &[],
+        std::sync::Arc::new(|_| None),
+    );
 
     let data = crate::services::demo::demo_data();
     db::sync_all(&db, &data.libraries, &data.shows, &data.items, &data.mtimes).expect("seed demo");

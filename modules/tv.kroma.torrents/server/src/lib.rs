@@ -92,6 +92,21 @@ impl<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'static>
         // is its own module (ordered first by the dependency graph), so its SOCKS5
         // is already up. Awaited (not detached) so a following disable cannot race.
         if let Some(downloads) = kroma_module_sdk::host::service::<DownloadManager>(host.as_ref()) {
+            // A column cannot be added from the `IF NOT EXISTS`-only migration
+            // batch, so an older ledger gains it here. Inside the manager guard
+            // because the manager is what owns the ledger: with none resolved,
+            // nothing reads a download row and there is no host database either.
+            if let Err(e) = db::ensure_columns(host.db()) {
+                // Every read of a download row names the missing column, so the
+                // engine would transfer into a ledger nothing can report on.
+                // Better visibly not started than running and unreadable.
+                tracing::error!(
+                    target: "torrents",
+                    error = %format!("{e:#}"),
+                    "the downloads ledger is missing a column; not starting the engine"
+                );
+                return;
+            }
             downloads.seed_embedded_client(host.as_ref());
             downloads.start_rqbit(host.as_ref()).await;
             downloads.resume_after_enable(host.as_ref());

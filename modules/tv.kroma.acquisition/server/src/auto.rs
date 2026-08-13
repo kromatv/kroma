@@ -1,20 +1,25 @@
 //! The automatic wanted-list search: what makes an approved request download
 //! itself. Runs as the `acquisition.search` job (cron + on-approve trigger):
 //! due wanted rows -> per-request targets (season packs first) -> indexer
-//! sweep -> best accepted release above zero -> grab. Every due row gets its
-//! `last_search_at` stamped whatever happens, so retries rotate fairly.
+//! sweep -> best accepted release above zero -> grab. Every due row is stamped
+//! and pushed out by its own backoff, so a freshly-aired episode comes back
+//! within minutes while an ancient gap steps aside.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
 
-use kroma_module_sdk::engine::services::requests::today_ymd;
 use kroma_module_sdk::db;
+use kroma_module_sdk::engine::services::jobs::now_ms;
+use kroma_module_sdk::engine::services::requests::today_ymd;
 
+use crate::search::backoff::base_delay_ms;
 use crate::search::{score_release, targets_for_wanted, wanted_ids_by};
 
-const BATCH: usize = 40;
-const MAX_REQUESTS: usize = 5;
+const BATCH: usize = 60;
+// Indexer round trips one pass may spend. Ordering, not a request cap, is what
+// keeps a fresh episode ahead of an old one, so the budget only bounds cost.
+const MAX_TARGETS: usize = 40;
 
 #[derive(Debug, Default)]
 pub struct AutoSummary {
@@ -24,20 +29,33 @@ pub struct AutoSummary {
     pub errors: Vec<String>,
 }
 
-pub fn auto_search_pass<S: kroma_module_sdk::host::HostCtx>(state: &S, log: &dyn Fn(String), cancelled: &dyn Fn() -> bool) -> Result<AutoSummary> {
+pub fn auto_search_pass<S: kroma_module_sdk::host::HostCtx>(
+    state: &S,
+    log: &dyn Fn(String),
+    cancelled: &dyn Fn() -> bool,
+) -> Result<AutoSummary> {
     let mut summary = AutoSummary::default();
     if !state.setting_bool("acqEnabled", false) {
         log("automatic acquisition is disabled (acqEnabled)".into());
         return Ok(summary);
     }
-    if !crate::downloads(state).gate_open() {
+    let downloads = match crate::downloads(state) {
+        Ok(downloads) => downloads,
+        Err(e) => {
+            log(format!("{e:#}; skipping the search pass"));
+            return Ok(summary);
+        }
+    };
+    if !downloads.gate_open() {
         log("VPN kill switch is closed; skipping the search pass".into());
         return Ok(summary);
     }
 
+    let today = today_ymd();
+    let now = now_ms();
     let conn = state.db().get()?;
-    let due = db::wanted_searchable(&conn, &today_ymd(), BATCH)?;
-    let indexers = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::IndexerDbPort>(state).ok_or_else(|| anyhow::anyhow!("indexer module unavailable"))?.enabled_indexers(state)?;
+    let due = db::wanted_searchable(&conn, &today, now, BATCH)?;
+    let indexers = crate::indexer_db(state)?.enabled_indexers(state)?;
     drop(conn);
     if due.is_empty() {
         log("nothing wanted right now".into());
@@ -54,21 +72,61 @@ pub fn auto_search_pass<S: kroma_module_sdk::host::HostCtx>(state: &S, log: &dyn
             request_ids.push(w.request_id.clone());
         }
     }
-    request_ids.truncate(MAX_REQUESTS);
     let profile = crate::profile_from_settings(state);
 
+    let due_ids: HashSet<String> = due.iter().map(|w| w.id.clone()).collect();
+    let mut searched: HashSet<String> = HashSet::new();
     for request_id in &request_ids {
-        if cancelled() {
+        if cancelled() || summary.targets >= MAX_TARGETS {
             break;
         }
-        search_request(state, request_id, &indexers, &profile, &mut summary, log, cancelled)?;
+        // One request failing is not the pass failing: the rows already searched
+        // still have to be charged below, or the next pass repeats this one.
+        if let Err(e) = search_request(
+            state,
+            request_id,
+            &indexers,
+            &profile,
+            &due_ids,
+            &mut summary,
+            &mut searched,
+            log,
+            cancelled,
+        ) {
+            summary.errors.push(format!("search failed for request {request_id}: {e:#}"));
+        }
     }
 
-    // Stamp every due row so the next pass rotates to the least recently
-    // searched, grabbed or not.
-    let stamp: Vec<String> = due.iter().map(|w| w.id.clone()).collect();
-    db::stamp_wanted_searched(state.db(), &stamp, kroma_module_sdk::engine::services::jobs::now_ms())?;
+    // Push each SEARCHED row out by its own backoff, grabbed or not: the next
+    // pass then rotates to whatever is both due and freshest. A row the target
+    // budget or a cancel never reached is not charged an attempt, or a fresh
+    // episode behind a backlog would back off to hours out without one indexer
+    // ever having been asked for it.
+    let charged: Vec<&db::WantedRow> = due.iter().filter(|w| searched.contains(&w.id)).collect();
+    schedule_retries(state, &charged, &today, now)?;
+    log(format!(
+        "{} target(s) searched across {} request(s), {} grabbed",
+        summary.targets, summary.requests, summary.grabbed
+    ));
     Ok(summary)
+}
+
+// Rows sharing an air-recency bucket share a base delay, so one UPDATE per
+// bucket covers the batch instead of one per row.
+fn schedule_retries<S: kroma_module_sdk::host::HostCtx>(
+    state: &S,
+    due: &[&db::WantedRow],
+    today: &str,
+    now: i64,
+) -> Result<()> {
+    let mut buckets: HashMap<i64, Vec<String>> = HashMap::new();
+    for w in due {
+        buckets.entry(base_delay_ms(w.air_date.as_deref(), today)).or_default().push(w.id.clone());
+    }
+    for (delay, ids) in buckets {
+        db::schedule_next_search(state.db(), &ids, now, delay)?;
+    }
+    Ok(())
 }
 
 fn wanted_row_ids(wanted: &[db::WantedRow], st: &crate::search::SearchTarget) -> Vec<String> {
@@ -79,12 +137,33 @@ fn wanted_row_ids(wanted: &[db::WantedRow], st: &crate::search::SearchTarget) ->
         .collect()
 }
 
+// A target earns one of the pass's indexer slots when it still has an open row
+// nothing grabbed this pass, AND at least one of its rows is in the due batch.
+// The request's whole open list becomes targets, so without the second rule an
+// old unfindable season spends every slot ahead of the episode that just aired,
+// is charged no backoff for it (only due rows are), and does it again forever.
+fn worth_a_slot(target_rows: &[String], covered: &HashSet<String>, due_ids: &HashSet<String>) -> bool {
+    !target_rows.is_empty()
+        && !target_rows.iter().all(|id| covered.contains(id))
+        && target_rows.iter().any(|id| due_ids.contains(id))
+}
+
+fn target_label(st: &crate::search::SearchTarget) -> String {
+    match (st.season, st.episodes.as_ref().and_then(|e| e.first())) {
+        (Some(s), _) if st.kind == "season" => format!("S{s:02} pack"),
+        (Some(s), Some(e)) => format!("S{s:02}E{e:02}"),
+        _ => "the movie".to_string(),
+    }
+}
+
 fn search_request<S: kroma_module_sdk::host::HostCtx>(
     state: &S,
     request_id: &str,
     indexers: &[kroma_module_sdk::ports::IndexerRow],
     profile: &kroma_module_sdk::scene::Profile,
+    due_ids: &HashSet<String>,
     summary: &mut AutoSummary,
+    searched: &mut HashSet<String>,
     log: &dyn Fn(String),
     cancelled: &dyn Fn() -> bool,
 ) -> Result<()> {
@@ -98,18 +177,27 @@ fn search_request<S: kroma_module_sdk::host::HostCtx>(
     // Rows a pack grab already covered this pass (skip episode targets).
     let mut covered: HashSet<String> = HashSet::new();
     for st in &targets {
-        if cancelled() {
+        if cancelled() || summary.targets >= MAX_TARGETS {
             break;
         }
         let target_rows = wanted_row_ids(&wanted, st);
-        if target_rows.is_empty() || target_rows.iter().all(|id| covered.contains(id)) {
+        if !worth_a_slot(&target_rows, &covered, due_ids) {
             continue;
         }
         summary.targets += 1;
+        searched.extend(target_rows.iter().cloned());
 
-        let Some((candidate, score)) =
-            best_candidate(state, indexers, st, profile, req.tmdb_id, &mut summary.errors)
-        else {
+        let outcome = best_candidate(state, indexers, st, profile, req.tmdb_id, &mut summary.errors);
+        let Some((candidate, score)) = outcome.best else {
+            // A silent empty pass reads the same as a broken indexer; say which
+            // it was, since this is the only trace the admin ever gets.
+            log(format!(
+                "no release for \"{}\" {} ({} seen{})",
+                req.title,
+                target_label(st),
+                outcome.seen,
+                outcome.top_reject.map(|r| format!(", best rejected: {r}")).unwrap_or_default()
+            ));
             continue;
         };
         log(format!(
@@ -124,11 +212,15 @@ fn search_request<S: kroma_module_sdk::host::HostCtx>(
             req.year,
             Some(request_id.to_string()),
             target_rows.clone(),
+            // The automatic pass only ever fills gaps: an upgrade is always a
+            // deliberate act from the request page.
+            false,
         );
-        match crate::downloads(state).grab(state, spec) {
+        let downloads = crate::downloads(state)?;
+        match downloads.grab(state, spec) {
             Ok(row) => {
                 // Background job: fine to add synchronously here.
-                crate::downloads(state).activate(state, &row);
+                downloads.activate(state, &row);
                 summary.grabbed += 1;
                 covered.extend(target_rows);
             }
@@ -138,6 +230,13 @@ fn search_request<S: kroma_module_sdk::host::HostCtx>(
     Ok(())
 }
 
+#[derive(Default)]
+struct Outcome {
+    best: Option<(crate::search::CachedRelease, i32)>,
+    seen: usize,
+    top_reject: Option<String>,
+}
+
 fn best_candidate<S: kroma_module_sdk::host::HostCtx>(
     state: &S,
     indexers: &[kroma_module_sdk::ports::IndexerRow],
@@ -145,8 +244,8 @@ fn best_candidate<S: kroma_module_sdk::host::HostCtx>(
     profile: &kroma_module_sdk::scene::Profile,
     tmdb_id: u64,
     errors: &mut Vec<String>,
-) -> Option<(crate::search::CachedRelease, i32)> {
-    let mut best: Option<(crate::search::CachedRelease, i32)> = None;
+) -> Outcome {
+    let mut out = Outcome::default();
     for indexer in indexers {
         let found = match crate::search_indexer(state, indexer, &st.query) {
             Ok(f) => f,
@@ -155,34 +254,82 @@ fn best_candidate<S: kroma_module_sdk::host::HostCtx>(
                 continue;
             }
         };
-        if let Some((cand, score)) = best_in_batch(found, indexer, st, profile, tmdb_id) {
-            if best.as_ref().is_none_or(|(_, s)| score > *s) {
-                best = Some((cand, score));
-            }
-        }
+        out.seen += found.len();
+        take_best(found, indexer, st, profile, tmdb_id, &mut out);
     }
-    best
+    out
 }
 
-fn best_in_batch(
+fn take_best(
     found: Vec<kroma_module_sdk::ports::Release>,
     indexer: &kroma_module_sdk::ports::IndexerRow,
     st: &crate::search::SearchTarget,
     profile: &kroma_module_sdk::scene::Profile,
     tmdb_id: u64,
-) -> Option<(crate::search::CachedRelease, i32)> {
-    let mut best: Option<(crate::search::CachedRelease, i32)> = None;
+    out: &mut Outcome,
+) {
     for release in found {
         let view = score_release(&release, indexer, st, profile);
-        let Some(score) = view.score else { continue };
+        let Some(score) = view.score else {
+            if out.top_reject.is_none() {
+                out.top_reject = view.rejected;
+            }
+            continue;
+        };
         let magnet_or_url =
             release.magnet.clone().or_else(|| release.link.clone()).unwrap_or_default();
         if magnet_or_url.is_empty() {
             continue;
         }
-        if best.as_ref().is_none_or(|(_, s)| score > *s) {
-            best = Some((crate::search::CachedRelease { view, magnet_or_url, tmdb_id }, score));
+        if out.best.as_ref().is_none_or(|(_, s)| score > *s) {
+            out.best = Some((crate::search::CachedRelease { view, magnet_or_url, tmdb_id }, score));
         }
     }
-    best
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use kroma_module_sdk::ports::Query;
+    use kroma_module_sdk::scene::Target;
+
+    fn target(kind: &'static str, season: Option<u32>, episodes: Option<Vec<u32>>) -> crate::search::SearchTarget {
+        crate::search::SearchTarget {
+            query: Query::Movie { tmdb_id: None, imdb_id: None, title: "T".into(), year: None },
+            target: Target::Movie { year: None },
+            kind,
+            season,
+            episodes,
+        }
+    }
+
+    fn ids(v: &[&str]) -> HashSet<String> {
+        v.iter().map(|s| (*s).to_string()).collect()
+    }
+
+    #[test]
+    fn only_a_target_holding_a_due_row_spends_a_slot() {
+        let due = ids(&["s05e10"]);
+        let backlog = vec!["s01e01".to_string(), "s01e02".to_string()];
+        assert!(
+            !worth_a_slot(&backlog, &HashSet::new(), &due),
+            "a backed-off season must not spend the budget the fresh episode needs"
+        );
+        assert!(worth_a_slot(&["s05e10".to_string()], &HashSet::new(), &due));
+    }
+
+    #[test]
+    fn a_pack_already_grabbed_this_pass_does_not_spend_a_second_slot() {
+        let due = ids(&["s01e01"]);
+        let rows = vec!["s01e01".to_string()];
+        assert!(!worth_a_slot(&rows, &ids(&["s01e01"]), &due));
+        assert!(!worth_a_slot(&[], &HashSet::new(), &due), "nothing open is nothing to search");
+    }
+
+    #[test]
+    fn target_labels_name_what_was_searched() {
+        assert_eq!(target_label(&target("movie", None, None)), "the movie");
+        assert_eq!(target_label(&target("season", Some(3), None)), "S03 pack");
+        assert_eq!(target_label(&target("episode", Some(3), Some(vec![7]))), "S03E07");
+    }
 }

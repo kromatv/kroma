@@ -360,6 +360,16 @@ function touchForm(at: {
   );
 }
 
+// The outer view is the one the parent orders, so the lift has to ride there:
+// the painted face inside it is an only child and outranks nothing.
+function liftedBox(
+  layers: ReturnType<typeof splitBoxLayers> | null,
+  focused: boolean,
+): NavigatorStyle {
+  const box = layers?.box;
+  return focused ? flat([box, LIFTED]) : (box as NavigatorStyle);
+}
+
 function navigatorForm(at: {
   entry: RefObject<SpatialNavigationNodeRef | null>;
   webKeys: WebKeys;
@@ -397,12 +407,14 @@ function navigatorForm(at: {
     at.hovered ? at.hoveredStyle : null,
     at.pressed ? at.pressedStyle : null,
     at.focusVisible ? at.focusedStyle : null,
-    // Above its neighbours for as long as it holds focus. react-native-web
-    // gives every view an explicit `z-index: 0`, so equal siblings paint in DOM
-    // order and the NEXT tile in a row draws over the ring and the focus scale
-    // of the one before it. Keyed on `focused`, not `focusVisible`: the lift is
-    // about what is selected, not about which input selected it.
-    at.focused ? LIFTED : null,
+    // Above its neighbours for as long as it holds focus, on the single element
+    // the browser targets render: every view carries an explicit `z-index: 0`
+    // there, so equal siblings paint in DOM order and the NEXT tile in a row
+    // draws over the ring and the focus scale of the one before it. Native
+    // lifts the outer view instead, see `liftedBox`. Keyed on `focused`, not
+    // `focusVisible`: the lift is about what is selected, not about which input
+    // selected it.
+    WEB && at.focused ? LIFTED : null,
     at.showRing && at.focusVisible ? focusRing() : null,
     at.animated,
   ];
@@ -416,7 +428,7 @@ function navigatorForm(at: {
       // On the browser targets the control is ONE element: a second view per
       // control is a cost Tizen pays on every focus move. The native builds keep
       // the inner view because their focus scale is a real Animated value.
-      style={WEB ? flat(painted) : (at.layers?.box as NavigatorStyle)}
+      style={WEB ? flat(painted) : liftedBox(at.layers, at.focused)}
       viewProps={
         {
           accessibilityRole: platformRole(at.role),

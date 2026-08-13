@@ -5,6 +5,7 @@
 
 import {
   ModuleEnabledResult,
+  ModuleRestartResult,
   StoreCatalog,
   StoreInstallReport,
   StorePlan,
@@ -22,6 +23,25 @@ export interface AdminModule extends ModuleManifest {
   enabled: boolean;
   configValues: Record<string, unknown>;
   removable: boolean;
+  /** Where the module came from. Absent for a compile-time module. */
+  origin?: ModuleOrigin;
+  /** The supervisor is running this sidecar right now. */
+  running: boolean;
+  /** This module ships a process at all. `false` for a library module, whose
+   *  code is co-linked into another sidecar: it is never running, and showing
+   *  it as stopped would be a false alarm. */
+  hasSidecar: boolean;
+}
+
+/** Where an installed module came from, as the server recorded it at install. */
+export interface ModuleOrigin {
+  kind: 'registry' | 'upload' | 'url' | 'unknown';
+  url?: string;
+  /** Unix seconds; 0 when the install predates origin tracking. */
+  installedAt: number;
+  /** The binary on disk is newer than the installed artifact, i.e. a local
+   *  build replaced it. */
+  localBuild: boolean;
 }
 
 export const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -151,4 +171,13 @@ export async function installBundle(file: File): Promise<void> {
   if (!res.ok) {
     throw new Error((await res.text().catch(() => '')) || `install failed (${res.status})`);
   }
+}
+
+/** Stop a module's sidecar and start it again from the binary on disk. */
+export async function restartModule(id: string): Promise<ModuleRestartResult> {
+  const res = await adminFetch(`/modules/${encodeURIComponent(id)}/restart`, { method: 'POST' });
+  if (!res.ok) {
+    throw new Error((await res.text()) || `restart failed (${res.status})`);
+  }
+  return ModuleRestartResult.parse(await res.json());
 }

@@ -12,6 +12,8 @@ import {
   Field,
   ListRow,
   Row,
+  ringRoomBlock,
+  ringRoomInline,
   Select,
   Switch,
   Text,
@@ -28,7 +30,13 @@ import type {
 
 const DEFINITION_PANE: CSSProperties = { maxHeight: '46vh', overflowY: 'auto' };
 
-const SETTINGS_PANE: CSSProperties = { maxHeight: '52vh', overflowY: 'auto', paddingRight: 2 };
+// The fields in it are flush with the pane's edges, and the pane clips.
+const SETTINGS_PANE: CSSProperties = {
+  ...ringRoomBlock(),
+  ...ringRoomInline(),
+  maxHeight: '52vh',
+  overflowY: 'auto',
+};
 
 function CategoriesAndPriority({
   cats,

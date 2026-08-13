@@ -1391,7 +1391,6 @@ dependencies = [
  "kroma-module-host",
  "kroma-module-runtime",
  "kroma-module-sdk",
- "kroma-port-bridge",
  "kroma-testing",
  "libxml",
  "quick-xml",
@@ -1402,6 +1401,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1413,6 +1413,7 @@ dependencies = [
  "axum",
  "kroma-db",
  "kroma-domain",
+ "kroma-http",
  "kroma-testing",
  "serde",
  "serde_json",
@@ -1456,6 +1457,7 @@ name = "kroma-module-sdk"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "kroma-db",
  "kroma-domain",
  "kroma-engine",
@@ -1465,19 +1467,6 @@ dependencies = [
  "kroma-module-manifest",
  "kroma-primitives",
  "kroma-scene",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "kroma-port-bridge"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "kroma-http",
- "kroma-module-host",
- "kroma-module-sdk",
  "serde",
  "serde_json",
  "tokio",

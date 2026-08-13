@@ -97,3 +97,82 @@ textarea:focus-visible {
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* THE ADMIN TABLES (<Table> in @kroma/module-sdk). Columns that must line up
+   across rows are a real CSS grid; React Native has none, so the kit carries no
+   <Table> and the shape lives here, in the one stylesheet every shell loads --
+   the component is shared by the console's own pages and by module UIs. Each table states its own template through
+   `--admin-table-columns`; below the kit's `md` step every table collapses to
+   its title column plus the trailing one, and the columns that do not fit drop
+   out. The two queries are the same boundary from both sides and must stay so. */
+.admin-table-head,
+.admin-table-row {
+  display: grid;
+  grid-template-columns: var(--admin-table-narrow, minmax(0, 1fr) auto);
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 20px;
+  /* A row is a <button> where it is pressable, so the shape is stated in full
+     rather than inherited from whatever reset the page happens to carry. */
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.admin-table-head {
+  background: var(--kroma-surface-1);
+  border-bottom: 1px solid color-mix(in srgb, var(--kroma-tint) 6%, transparent);
+}
+.admin-table-row {
+  border-bottom: 1px solid color-mix(in srgb, var(--kroma-tint) 4%, transparent);
+}
+.admin-table-row:last-child {
+  border-bottom: 0;
+}
+/* A pressable row is a <button> UNDER its cells rather than around them, because
+   a button cannot hold the action buttons a row carries. The cells are inert so
+   the press reaches through them; the real controls inside them are not. */
+[data-pressable] {
+  position: relative;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.admin-table-row[data-pressable]:hover {
+  background: color-mix(in srgb, var(--kroma-tint) 3%, transparent);
+}
+[data-pressable] > *:not(.admin-press) {
+  pointer-events: none;
+}
+[data-pressable] :is(a, button, input, select, textarea, [tabindex], [data-hoverable]) {
+  pointer-events: auto;
+}
+.admin-press {
+  position: absolute;
+  inset: 0;
+  appearance: none;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+/* The row spans the card that clips it, so its ring is drawn inward, exactly as
+   a <ListRow.Group> member's is (the rule in @kroma/ui's styles/base.css).
+   Standing off, it would keep only the two stripes the card does not clip, drawn
+   across the rows above and below. */
+.admin-press:focus-visible {
+  outline-offset: calc(-1 * (var(--ring-gap) + var(--ring-width)));
+}
+@media (min-width: 600px) {
+  .admin-table-head,
+  .admin-table-row {
+    grid-template-columns: var(--admin-table-columns);
+  }
+}
+@media (max-width: 599px) {
+  .admin-table-head > [data-wide],
+  .admin-table-row > [data-wide] {
+    display: none;
+  }
+}

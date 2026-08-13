@@ -130,6 +130,10 @@ impl HostCtx for AppState {
     ) -> Option<std::sync::Arc<dyn std::any::Any + Send + Sync>> {
         self.services.get(&type_id).cloned()
     }
+
+    fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
+        (self.port_endpoint)(port)
+    }
 }
 
 #[cfg(test)]

@@ -4,6 +4,7 @@
 // (`services::jobs`) over `/api/admin/jobs`.
 
 import { type JobInfo, KromaEvents, type MessageKey } from '@kroma/core';
+import { TABULAR } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import {
   Badge,
@@ -27,7 +28,6 @@ import { dur, rel } from '#web/features/admin/jobs-format';
 import { ScheduleModal } from '#web/features/admin/jobs-schedule';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, useAsyncAction, useCap, usePoll } from '#web/features/admin/shell';
-import { TABULAR } from '#web/features/admin/table';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';

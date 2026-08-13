@@ -15,12 +15,12 @@ export const ADMIN_TOPBAR = 'admin-topbar';
 /** A panel that stays put while the column beside it scrolls, from `lg` up. */
 export const ADMIN_STICKY_ASIDE = 'admin-sticky-aside';
 
-/** The heading band of an aligned table (see `./table.tsx`). */
-export const ADMIN_TABLE_HEAD = 'admin-table-head';
+/** Marks a surface whose whole area presses: a table row, a store card. Set it
+ *  as `data-pressable` and pair it with an [`ADMIN_PRESS`] button as the FIRST
+ *  child. A kit <Surface> emits it through `dataSet`; a plain element sets the
+ *  attribute directly. */
+export const PRESSABLE = { pressable: 'true' } as const;
 
-/** One record of an aligned table, pressable or not. */
-export const ADMIN_TABLE_ROW = 'admin-table-row';
-
-/** The press of a pressable row: a button covering the row from under its
- *  cells, so the row's own controls stay real buttons beside it. */
-export const ADMIN_TABLE_PRESS = 'admin-table-press';
+/** The press of a pressable surface: a button covering it from UNDER its
+ *  content, so the controls the surface carries stay real buttons beside it. */
+export const ADMIN_PRESS = 'admin-press';

@@ -206,7 +206,7 @@ describe('the link source', () => {
         name: 'Salon',
         platform: 'tvOS',
         check: 'K7QM',
-        confirmRequired: true,
+        confirmRequired: false,
         via: 'lan',
         proof: 'deadbeef',
         server: 'srv-1',
@@ -284,17 +284,18 @@ describe('watching the link', () => {
     expect(last?.receivers).toEqual([{ receiverId: 'r1', name: 'Chambre', platform: 'Tizen' }]);
   });
 
-  it('asks for the check on a television it only heard, whatever the record says', () => {
+  it('leaves the check to the server on a television it only heard, whatever the record says', () => {
     // The record is published in the clear by anything on the wire, so a key
-    // saying "no confirmation needed" would be a key an attacker writes. There
-    // is no such key, and a row heard here has no server word behind it.
+    // about the confirmation either way would be a key an attacker writes.
+    // There is no such key: the grant is what asks the server, and the server
+    // refuses one that wants a check without it.
     const bridge = bridgeWith([
-      { name: 'Salon', txt: { ...beaconTxt(RECORD), confirmRequired: 'false' } },
+      { name: 'Salon', txt: { ...beaconTxt(RECORD), confirmRequired: 'true' } },
     ]);
     const seen: Array<{ pairable: Array<{ confirmRequired: boolean }> }> = [];
     watchLanBeacons(bridge, (b) => seen.push(b));
 
-    expect(seen.at(-1)?.pairable[0]?.confirmRequired).toBe(true);
+    expect(seen.at(-1)?.pairable[0]?.confirmRequired).toBe(false);
   });
 
   it('falls back to the published name for a signed-in television too', () => {

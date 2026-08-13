@@ -1,11 +1,11 @@
 import { type ElementRow, type KromaClient, KromaEvents, type MessageKey } from '@kroma/core';
+import { TABULAR, Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Box, Button, Callout, color, Divider, EmptyState, Legend, Row, Text } from '@kroma/ui/kit';
 import { type Dispatch, type SetStateAction, useEffect, useRef, useState } from 'react';
 import { PipelineDrawer } from '#web/features/admin/pipeline-drawer';
 import { ElementRowView } from '#web/features/admin/pipeline-row';
 import { PageHeader, useCap, usePoll } from '#web/features/admin/shell';
-import { TABULAR, Table } from '#web/features/admin/table';
 import {
   Chip,
   ConsoleSearch,
@@ -321,11 +321,9 @@ export function PipelinePage() {
         ))}
 
         {data && rows.length === 0 ? (
-          <Box py={24}>
-            <EmptyState.Root icon="inbox">
-              <EmptyState.Title>{t('pipeline.noMatch')}</EmptyState.Title>
-            </EmptyState.Root>
-          </Box>
+          <EmptyState.Root icon="inbox">
+            <EmptyState.Title>{t('pipeline.noMatch')}</EmptyState.Title>
+          </EmptyState.Root>
         ) : null}
 
         {rows.length > 0 ? (

@@ -1,14 +1,17 @@
 // The unified season section: one switcher over ALL seasons; the selected
-// season renders its owned, playable episodes (with watched/progress) and/or a
-// request card for a missing or partial season, so a partially-owned show
-// plays what it has and requests the gaps on one screen.
+// season renders its owned, playable episodes (with watched/progress) and its
+// gaps as tickable rows, so a partially-owned show plays what it has and asks
+// for exactly the episodes it is missing from one screen. The sticky request
+// bar below turns the ticks into one request.
 
 import type { CastMember, MediaItem } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, Chip, Text } from '@kroma/ui/kit';
+import { Box, Chip, ringRoomBlock, Text } from '@kroma/ui/kit';
 import { type CSSProperties, useState } from 'react';
 import { CastRail } from '#web/features/catalog/detail';
 import { EpisodeRow, MissingEpisodeRow } from '#web/features/catalog/episode-row';
+import { epKey } from '#web/features/catalog/episode-selection';
+import { RequestBar } from '#web/features/catalog/request-bar';
 import { SeasonRequestCard } from '#web/features/catalog/season-card';
 import type { TitleSeason } from '#web/shared/lib/titleView';
 
@@ -23,6 +26,7 @@ const GUTTER: CSSProperties = {
 // with needs a stylesheet, which an inline style has no way to reach.
 const CHIP_SCROLLER: CSSProperties = {
   ...GUTTER,
+  ...ringRoomBlock(),
   display: 'flex',
   gap: 8,
   overflowX: 'auto',
@@ -30,6 +34,10 @@ const CHIP_SCROLLER: CSSProperties = {
 };
 
 const SECTION: CSSProperties = { marginTop: 40 };
+
+/** Where the hero's "ask for it" button sends a show: the season list is where
+ * the choice actually happens. */
+export const EPISODES_ANCHOR = 'episodes';
 
 function SeasonSwitcher({
   seasons,
@@ -58,9 +66,12 @@ export function SeasonSection({
   progressOf,
   onPlay,
   canRequest,
-  onPickSeason,
-  onPickAll,
-  onRequestEpisode,
+  selected,
+  onToggleEpisode,
+  onRequestSelected,
+  onRequestSeason,
+  onRequestAll,
+  onClearSelection,
   pendingEpisodes,
   requestBusy,
 }: Readonly<{
@@ -71,45 +82,45 @@ export function SeasonSection({
   progressOf: (id: string) => number | null;
   onPlay: (id: string) => void;
   canRequest: boolean;
-  onPickSeason: (season: number) => void;
-  onPickAll: () => void;
-  onRequestEpisode: (season: number, episode: number) => void;
+  selected: Set<string>;
+  onToggleEpisode: (season: number, episode: number) => void;
+  onRequestSelected: () => void;
+  onRequestSeason: (season: number) => void;
+  onRequestAll: () => void;
+  onClearSelection: () => void;
   pendingEpisodes: Set<string>;
   requestBusy: boolean;
 }>) {
   const t = useT();
   const [season, setSeason] = useState(seasons[0]?.number ?? 1);
   const current = seasons.find((s) => s.number === season) ?? seasons[0];
+  // The ticks leave the screen with their season, and the request bar counts
+  // the whole set: carrying them over would submit episodes nothing on screen
+  // shows, and nothing offers a way to see or clear.
+  const pickSeason = (n: number) => {
+    if (n === season) return;
+    onClearSelection();
+    setSeason(n);
+  };
   if (!current) return null;
   const hasOpen = canRequest && seasons.some((s) => !s.available && !s.requested);
-  const partialCurrent = canRequest && current.episodes.length > 0 && !current.available;
+  const seasonPickable = canRequest && !current.available && !current.requested;
 
   const { ownedByNum, ordered, perEpisode } = mergeEpisodes(current, canRequest);
 
   return (
-    <section style={SECTION}>
+    <section id={EPISODES_ANCHOR} style={SECTION}>
       <div style={GUTTER}>
         <Box row align="center" between gap={12} mb={16}>
           <h2>
             <Text variant="h2">{t('content.episodes')}</Text>
           </h2>
-          {hasOpen ? (
-            <Button
-              variant="outline"
-              active
-              size="sm"
-              icon="plus"
-              iconRight="chevron-right"
-              label={t('discover.requestSeasons')}
-              onPress={onPickAll}
-            />
-          ) : null}
         </Box>
       </div>
 
       {seasons.length > 1 ? (
         <Box mb={8}>
-          <SeasonSwitcher seasons={seasons} current={current.number} onPick={setSeason} />
+          <SeasonSwitcher seasons={seasons} current={current.number} onPick={pickSeason} />
         </Box>
       ) : null}
 
@@ -132,29 +143,34 @@ export function SeasonSection({
             toggleWatched={toggleWatched}
             progressOf={progressOf}
             onPlay={onPlay}
-            onRequestEpisode={onRequestEpisode}
+            selected={selected}
+            onToggleEpisode={onToggleEpisode}
             pendingEpisodes={pendingEpisodes}
-            requestBusy={requestBusy}
           />
-          {partialCurrent ? (
-            <Box mt={14}>
-              <SeasonRequestCard
-                season={current}
-                canRequest={canRequest}
-                onPick={() => onPickSeason(current.number)}
-              />
-            </Box>
-          ) : null}
         </>
       ) : (
         <Box mt={16}>
           <SeasonRequestCard
             season={current}
             canRequest={canRequest}
-            onPick={() => onPickSeason(current.number)}
+            onPick={() => onRequestSeason(current.number)}
           />
         </Box>
       )}
+
+      {canRequest ? (
+        <RequestBar
+          count={selected.size}
+          season={current.number}
+          seasonPickable={seasonPickable}
+          allPickable={hasOpen}
+          busy={requestBusy}
+          onRequestSelected={onRequestSelected}
+          onRequestSeason={() => onRequestSeason(current.number)}
+          onRequestAll={onRequestAll}
+          onClear={onClearSelection}
+        />
+      ) : null}
     </section>
   );
 }
@@ -182,9 +198,9 @@ function SeasonEpisodes({
   toggleWatched,
   progressOf,
   onPlay,
-  onRequestEpisode,
+  selected,
+  onToggleEpisode,
   pendingEpisodes,
-  requestBusy,
 }: Readonly<{
   current: TitleSeason;
   ordered: number[];
@@ -193,9 +209,9 @@ function SeasonEpisodes({
   toggleWatched: (id: string) => void;
   progressOf: (id: string) => number | null;
   onPlay: (id: string) => void;
-  onRequestEpisode: (season: number, episode: number) => void;
+  selected: Set<string>;
+  onToggleEpisode: (season: number, episode: number) => void;
   pendingEpisodes: Set<string>;
-  requestBusy: boolean;
 }>) {
   return (
     <div style={GUTTER}>
@@ -219,9 +235,9 @@ function SeasonEpisodes({
               key={`m-${n}`}
               season={current.number}
               episode={n}
-              pending={current.requested || pendingEpisodes.has(`${current.number}-${n}`)}
-              busy={requestBusy}
-              onRequest={() => onRequestEpisode(current.number, n)}
+              pending={current.requested || pendingEpisodes.has(epKey(current.number, n))}
+              selected={selected.has(epKey(current.number, n))}
+              onToggle={() => onToggleEpisode(current.number, n)}
             />
           );
         })}

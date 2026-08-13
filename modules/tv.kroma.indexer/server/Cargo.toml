@@ -18,7 +18,6 @@ path = "src/bin/module.rs"
 [dependencies]
 kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
 kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
-kroma-port-bridge = { path = "../../../server/crates/kroma-port-bridge" }
 # The module now owns its admin orchestration + routes (over the HostCtx seam):
 # it needs the DB rows, wire DTOs, shared helpers, the Torznab engine, and axum.
 # The module owns its `indexers` table now (schema + typed queries), so it talks
@@ -27,6 +26,7 @@ rusqlite = { version = "0.40", features = ["bundled"] }
 axum = { version = "0.8", features = ["macros", "ws"] }
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
+tracing = "0.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
@@ -45,6 +45,8 @@ default = []
 xpath = ["dep:libxml"]
 
 [dev-dependencies]
+# `testing::serve` stands a fake port provider up on a real localhost port.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
 # The shared HostCtx double (`host::testing::StubHost`), via the SDK re-export.
 kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
 # `db::testing::temp_pool`, also via the SDK re-export.
@@ -63,8 +65,11 @@ kroma-testing = { path = "../../../server/crates/kroma-testing" }
 # units, unstripped.
 [profile.release]
 opt-level = 3
-lto = true
-codegen-units = 1
+# ThinLTO, not fat: measured at 1116 vs 1117 ns/pair on the parse+score hot path
+# (i.e. no difference) for 3.4x faster links, because fat LTO + one codegen unit
+# is whole-program and single-threaded. It costs ~100 KB per compressed .kmod.
+lto = "thin"
+codegen-units = 16
 strip = true
 
 [profile.release-kmod]

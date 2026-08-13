@@ -27,8 +27,11 @@ serde_json = "1"
 # units, unstripped.
 [profile.release]
 opt-level = 3
-lto = true
-codegen-units = 1
+# ThinLTO, not fat: measured at 1116 vs 1117 ns/pair on the parse+score hot path
+# (i.e. no difference) for 3.4x faster links, because fat LTO + one codegen unit
+# is whole-program and single-threaded. It costs ~100 KB per compressed .kmod.
+lto = "thin"
+codegen-units = 16
 strip = true
 
 [profile.release-kmod]

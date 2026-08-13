@@ -381,7 +381,13 @@ pub async fn hls_file(
             .body(Body::from(bytes))
             .unwrap()
         }
-        None => json_error(StatusCode::NOT_FOUND, "segment not found (session expired?)"),
+        // A segment that has not been produced yet 404s the same way one that was
+        // pruned does, so the miss must never be cached: the URL becomes valid.
+        None => {
+            let mut resp = json_error(StatusCode::NOT_FOUND, "segment not found (session expired?)");
+            resp.headers_mut().insert(header::CACHE_CONTROL, header::HeaderValue::from_static("no-store"));
+            resp
+        }
     }
 }
 

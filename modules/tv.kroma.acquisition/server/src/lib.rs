@@ -46,20 +46,34 @@ pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 /// Resolve the Downloads module's grab surface (grab / gate / activate / drop /
 /// list-files) from the host port registry. Acquisition reaches it only through
 /// the SDK port, so it never names the torrents crate.
+///
+/// Resolution is a live lookup, so this answers with an error whenever no module
+/// currently serves the contract (disabled, not installed, or restarting).
 pub(crate) fn downloads<S: HostCtx>(
     state: &S,
-) -> std::sync::Arc<dyn kroma_module_sdk::ports::DownloadGrabPort> {
-    kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::DownloadGrabPort>(state)
-        .expect("download grab port registered")
+) -> anyhow::Result<std::sync::Arc<dyn kroma_module_sdk::ports::DownloadGrabPort>> {
+    kroma_module_sdk::ports::download_grab(state)
+        .ok_or_else(|| anyhow::anyhow!("downloads module unavailable"))
 }
 
 /// Resolve the downloads-ledger read/write port (completed rows + status flips)
-/// the import pass needs, through the SDK port registry.
+/// the import pass needs, through the SDK port registry. Fallible for the same
+/// reason as [`downloads`].
 pub(crate) fn download_db<S: HostCtx>(
     state: &S,
-) -> std::sync::Arc<dyn kroma_module_sdk::ports::DownloadDbPort> {
-    kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::DownloadDbPort>(state)
-        .expect("download db port registered")
+) -> anyhow::Result<std::sync::Arc<dyn kroma_module_sdk::ports::DownloadDbPort>> {
+    kroma_module_sdk::ports::download_db(state)
+        .ok_or_else(|| anyhow::anyhow!("downloads module unavailable"))
+}
+
+/// Resolve the Indexers module's data port. Unlike the download ports this one
+/// is optional at runtime (the module can be disabled), so it answers with an
+/// error the search surfaces rather than panicking.
+pub(crate) fn indexer_db<S: HostCtx>(
+    state: &S,
+) -> anyhow::Result<std::sync::Arc<dyn kroma_module_sdk::ports::IndexerDbPort>> {
+    kroma_module_sdk::ports::indexer_db(state)
+        .ok_or_else(|| anyhow::anyhow!("indexer module unavailable"))
 }
 
 /// Build the decision engine's profile from the admin settings.
@@ -99,14 +113,14 @@ pub fn search_indexer<S: HostCtx>(
     query: &kroma_module_sdk::ports::Query,
 ) -> anyhow::Result<Vec<kroma_module_sdk::ports::Release>> {
     let search =
-        kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::IndexerSearchPort>(state)
+        kroma_module_sdk::ports::indexer_search(state)
             .ok_or_else(|| anyhow::anyhow!("indexer module unavailable"))?;
     let outcome = search.search(state, row, query, &row.categories)?;
     // A partial per-path error alongside real results must not flag the indexer
     // as broken.
     let note_ok = !outcome.releases.is_empty() || outcome.errors.is_empty();
     if let Some(idx) =
-        kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::IndexerDbPort>(state)
+        kroma_module_sdk::ports::indexer_db(state)
     {
         let _ = idx.note_indexer_result(
             state,
@@ -135,7 +149,7 @@ pub fn resolve_builtin_download<S: HostCtx>(
     magnet_or_url: &str,
 ) -> anyhow::Result<String> {
     let search =
-        kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::IndexerSearchPort>(state)
+        kroma_module_sdk::ports::indexer_search(state)
             .ok_or_else(|| anyhow::anyhow!("indexer module unavailable"))?;
     Ok(match search.resolve_download(state, row, title, details_url, magnet_or_url)? {
         kroma_module_sdk::ports::DownloadTarget::Magnet(m) => m,
@@ -173,10 +187,13 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> kroma_module_sdk::host::ServerM
                 schedule: Some("*/5 * * * *"),
                 run: run_import::<S>,
             },
+            // Every 15 min: with the ledger ordered freshest-air-date-first and
+            // each row on its own backoff, a tighter tick costs little and is
+            // what puts a weekly episode in the library the day it airs.
             ModuleJob {
                 key: "acquisition.search",
                 category: "acquisition",
-                schedule: Some("*/30 * * * *"),
+                schedule: Some("*/15 * * * *"),
                 run: run_search::<S>,
             },
             ModuleJob {

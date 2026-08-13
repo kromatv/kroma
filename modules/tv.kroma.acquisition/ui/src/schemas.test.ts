@@ -84,6 +84,7 @@ describe('manual search', () => {
   const release = {
     title: 'The.Matrix.1999.1080p.BluRay.x265-GRP',
     guid: 'g1',
+    indexerId: 'idx1',
     indexerName: 'Tracker',
     downloadUrl: 'https://tracker.example/dl/1',
     sizeBytes: 8589934592,
@@ -101,13 +102,25 @@ describe('manual search', () => {
     detailsUrl: null,
   };
 
-  it('parses results alongside the indexers that failed', () => {
+  it('parses results alongside the report of every indexer asked', () => {
     const view = ManualSearchView.parse({
       releases: [release],
-      indexerErrors: ['Tracker2: timeout'],
+      indexers: [
+        { id: 'idx1', name: 'Tracker', found: 1, error: null, elapsedMs: 240 },
+        { id: 'idx2', name: 'Tracker2', found: 0, error: 'timeout', elapsedMs: 5000 },
+      ],
     });
     expect(view.releases[0]?.parsedTitle).toBe('The Matrix');
-    expect(view.indexerErrors).toEqual(['Tracker2: timeout']);
+    expect(view.indexers[1]?.error).toBe('timeout');
+  });
+
+  it('keeps an indexer that found nothing apart from one that failed', () => {
+    const view = ManualSearchView.parse({
+      releases: [],
+      indexers: [{ id: 'idx1', name: 'Tracker', found: 0, error: null, elapsedMs: 120 }],
+    });
+    expect(view.indexers[0]?.found).toBe(0);
+    expect(view.indexers[0]?.error).toBeNull();
   });
 
   it('keeps an indexer that could not size a release usable', () => {

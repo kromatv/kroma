@@ -1,7 +1,7 @@
 {
   "id": "tv.kroma.torznab",
   "name": "Torznab indexers",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minServer": "0.1.4",
   "dependsOn": [],
   "provides": [
@@ -17,7 +17,12 @@
           "placeholder": "http://nas:9117/api/v2.0/indexers/xxx/results/torznab",
           "required": true
         },
-        { "key": "apiKey", "label": "field.apiKey", "type": "string", "secret": true },
+        {
+          "key": "apiKey",
+          "label": "field.apiKey",
+          "type": "string",
+          "secret": true
+        },
         {
           "key": "categories",
           "label": "field.categories",
@@ -27,5 +32,6 @@
       ]
     }
   ],
-  "description": "External Torznab / Newznab indexers (Jackett, Prowlarr)."
+  "description": "External Torznab / Newznab indexers (Jackett, Prowlarr).",
+  "ports": ["torznab"]
 }

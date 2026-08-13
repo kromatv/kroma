@@ -33,6 +33,11 @@ const declaration = (body: string, property: string): string =>
 const px = (value: string): number => Number(value.replace('px', ''));
 
 const SHELL = CONTROL.sm;
+
+// What sits between two rows, split half above and half below each one so the
+// strip belongs to a row rather than to the column.
+const RHYTHM = 2;
+
 const ROW = rule('');
 const HOVER = rule(':not([aria-disabled="true"]):hover');
 const CURRENT = rule('[aria-current="page"]');
@@ -43,9 +48,17 @@ const [padY, padX] = declaration(ROW, 'padding').split(/\s+/).map(px);
 describe('a navigation row', () => {
   it('wears the shape of the control shell rather than one of its own', () => {
     expect(px(declaration(ROW, 'gap'))).toBe(SHELL.gap);
-    expect(px(declaration(ROW, 'min-height'))).toBe(SHELL.height);
+    expect(px(declaration(ROW, 'min-height'))).toBe(SHELL.height + RHYTHM);
     expect(padX).toBe(SHELL.px);
     expect(declaration(ROW, 'border-radius')).toBe(`var(--radius-${SHELL.radius})`);
+  });
+
+  it('carries the rhythm between two rows inside its own box', () => {
+    expect(declaration(ROW, 'border-block')).toBe(`${RHYTHM / 2}px solid transparent`);
+    for (const body of [ROW, HOVER, CURRENT]) {
+      expect(declaration(body, 'background-clip')).toBe('padding-box');
+    }
+    expect(SIDE_NAV_COLUMN.gap).toBeUndefined();
   });
 
   it('is exactly one control tall around the name it holds', () => {

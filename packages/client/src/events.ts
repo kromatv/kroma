@@ -54,6 +54,10 @@ export interface KromaEventsOptions<E extends { type: string } = ServerEvent> {
   onClose?: () => void;
   WebSocketImpl?: typeof WebSocket;
   maxBackoffMs?: number;
+  /** How long to wait before re-checking for the session bearer, which a reload
+   *  does not have until the stored access token has been exchanged. Defaults
+   *  to 150ms. */
+  tokenWaitMs?: number;
 }
 
 export class KromaEvents<E extends { type: string } = ServerEvent> {
@@ -62,6 +66,7 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
   private ws: WebSocket | null = null;
   private closed = false;
   private retry = 0;
+  private tokenWaits = 0;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(baseUrl: string, opts: KromaEventsOptions<E> = {}) {
@@ -98,8 +103,17 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
     // multi-server client (the TV) must supply `token`: the fallback reads the
     // default store, which would authenticate it against the wrong server.
     const token = this.opts.token?.() ?? sessionToken();
+    // The bearer lives in memory only, so a reload has none until the stored
+    // access token has been exchanged. The server rejects an unauthenticated
+    // upgrade, so opening one now only burns a retry: wait for the token
+    // instead, and keep the wait short since it arrives within a tick or two.
+    if (!token) {
+      this.waitForToken();
+      return;
+    }
+    this.tokenWaits = 0;
     try {
-      ws = token ? new WS(this.url, `kroma.session.${token}`) : new WS(this.url);
+      ws = new WS(this.url, `kroma.session.${token}`);
     } catch {
       this.scheduleReconnect();
       return;
@@ -129,6 +143,20 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
         /* ignore */
       }
     };
+  }
+
+  // Not a failed connection: nothing was attempted, so this leaves the
+  // reconnect backoff where it is and climbs a ladder of its own. The first
+  // re-checks stay at `tokenWaitMs` because that is how long a normal exchange
+  // takes; the ceiling is what keeps a client that will never get a token (a
+  // television booting with the server unreachable) from waking all outage.
+  private waitForToken(): void {
+    if (this.closed) return;
+    const base = this.opts.tokenWaitMs ?? 150;
+    const delay = Math.min(base * 2 ** this.tokenWaits, this.opts.maxBackoffMs ?? 15000);
+    this.tokenWaits += 1;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.connect(), delay);
   }
 
   private scheduleReconnect(): void {

@@ -52,6 +52,22 @@ describe('ListRow.Group', () => {
     expect(getComputedStyle(member).backgroundColor).toBe('rgba(0, 0, 0, 0)');
   });
 
+  // The card clips its members, so a ring standing off one would survive as two
+  // stripes across its neighbours: the card says so, and the browser targets
+  // draw the ring inward (the rule in styles/base.css).
+  it('says its members wear the ring inward', () => {
+    const { container } = render(
+      <ListRow.Group>
+        <ListRow.Root onPress={vi.fn()}>
+          <ListRow.Label>Membre</ListRow.Label>
+        </ListRow.Root>
+      </ListRow.Group>,
+    );
+    const card = container.querySelector('[data-focus-ring-inset]');
+    expect(card).toBeTruthy();
+    expect(card?.querySelector('[aria-label="Membre"]')).toBeTruthy();
+  });
+
   it('declares its size to the members, which still get the last word', () => {
     const { container } = render(
       <ListRow.Group size="tv">

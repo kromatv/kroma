@@ -54,6 +54,20 @@ function dependents(module: AdminModule, all: AdminModule[]): AdminModule[] {
 
 /** A module's dependency status in both directions: what it depends on
  * (colored by whether each is satisfied), plus what depends on it. */
+type Requirement = { kind: string; id?: string | null };
+
+const capability = (r: Requirement) => (r.id ? `${r.kind}:${r.id}` : r.kind);
+
+// A requirement names a CAPABILITY, not a module: any enabled module that
+// provides it satisfies it. Naming the one that currently does is the whole
+// answer to "what is filling this?".
+function provider(all: AdminModule[], r: Requirement): AdminModule | undefined {
+  return all.find(
+    (m) =>
+      m.enabled && (m.provides ?? []).some((c) => c.kind === r.kind && (!r.id || c.id === r.id)),
+  );
+}
+
 export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all: AdminModule[] }>) {
   const t = useT();
   const byId = new Map(all.map((m) => [m.id, m]));
@@ -66,33 +80,35 @@ export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all:
   if (deps.length === 0 && reqs.length === 0 && requiredBy.length === 0) return null;
   return (
     <Box mt={8} gap={6}>
-      {(deps.length > 0 || reqs.length > 0) && (
+      {deps.length > 0 && (
         <Box gap={4}>
           <Text variant="overline" color="textDim">
             {t('admin.modulesDependsOn')}
           </Text>
           <Row wrap gap={6}>
-            {deps.map((d) => {
-              const state = depState(byId.get(d.id), d.optional);
-              return (
-                <DepChip
-                  key={d.id}
-                  label={d.version ? `${d.id}@${d.version}` : d.id}
-                  state={state}
-                />
-              );
-            })}
+            {deps.map((d) => (
+              <DepChip
+                key={d.id}
+                label={d.version ? `${d.id}@${d.version}` : d.id}
+                state={depState(byId.get(d.id), d.optional)}
+              />
+            ))}
+          </Row>
+        </Box>
+      )}
+      {reqs.length > 0 && (
+        <Box gap={4}>
+          <Text variant="overline" color="textDim">
+            {t('admin.modulesRequires')}
+          </Text>
+          <Row wrap gap={6}>
             {reqs.map((r) => {
-              const provided = all.some(
-                (m) =>
-                  m.enabled &&
-                  (m.provides ?? []).some((c) => c.kind === r.kind && (!r.id || c.id === r.id)),
-              );
+              const by = provider(all, r);
               return (
                 <DepChip
                   key={`cap:${r.kind}:${r.id ?? ''}`}
-                  label={r.id ? `${r.kind}:${r.id}` : r.kind}
-                  state={provided ? 'ok' : 'missing'}
+                  label={by ? `${capability(r)} · ${by.name}` : capability(r)}
+                  state={by ? 'ok' : 'missing'}
                 />
               );
             })}

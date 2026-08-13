@@ -12,6 +12,11 @@ export interface AdminHostValue {
   client: KromaClient;
   user: User | null;
   apiBase: string;
+  /** Open the host's "media details" dialog for a catalog item. A service the
+   *  shell owns and a module borrows: the dialog reads the core catalog, which
+   *  is not a module's to know, but a module page listing files has every
+   *  reason to offer it. Absent on a shell that has no such dialog. */
+  openMediaInfo?: (itemId: string, title: string) => void;
 }
 
 const AdminHostContext = createContext<AdminHostValue | null>(null);

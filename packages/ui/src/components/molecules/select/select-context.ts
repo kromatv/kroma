@@ -47,6 +47,9 @@ interface SelectRowState {
   presentation: 'panel' | 'dialog';
   nativeID?: string;
   active: boolean;
+  /** Whether the keys put the highlight here rather than a cursor sweeping
+   *  past: the ring is the keyboard's, the wash is the pointer's. */
+  keyed?: boolean;
   onHoverIn?: () => void;
   onLayout?: (y: number) => void;
 }

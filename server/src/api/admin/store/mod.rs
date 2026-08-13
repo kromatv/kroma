@@ -70,9 +70,10 @@ async fn install_url(
         .await
         .map_err(|e| bad(&format!("install failed: {e:#}")))?;
     // Unpack + spawn is blocking; keep it off the async runtime.
+    let url = body.url.clone();
     let manifest: Value = {
         let sup = sup.clone();
-        tokio::task::spawn_blocking(move || sup.install(&bytes, None))
+        tokio::task::spawn_blocking(move || sup.install(&bytes, None, ("url", Some(&url))))
             .await
             .map_err(|_| bad("install task panicked"))?
             .map_err(|e| bad(&format!("install failed: {e:#}")))?
@@ -202,7 +203,8 @@ async fn install_upload(
         return Err(bad("empty bundle"));
     }
     // Unpack + spawn is blocking; keep it off the async runtime.
-    let manifest: Value = tokio::task::spawn_blocking(move || sup.install(&body, None))
+    let manifest: Value =
+        tokio::task::spawn_blocking(move || sup.install(&body, None, ("upload", None)))
         .await
         .map_err(|_| bad("install task panicked"))?
         .map_err(|e| bad(&format!("install failed: {e:#}")))?;

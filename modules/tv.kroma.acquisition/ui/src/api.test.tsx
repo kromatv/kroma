@@ -49,10 +49,17 @@ describe('useAcquisitionApi', () => {
   });
 
   it('carries the search terms in the body, never in the path', async () => {
-    await api().search('the matrix 1999');
-    expect(calls).toEqual([
-      { method: 'POST', path: '/acquisition/search', body: { query: 'the matrix 1999' } },
-    ]);
+    const body = { query: 'the matrix 1999' };
+    await api().search(body);
+    expect(calls).toEqual([{ method: 'POST', path: '/acquisition/search', body }]);
+  });
+
+  it('carries the season and episode a show search is narrowed by', async () => {
+    // Without them the far side builds a movie query and searches the wrong
+    // tracker categories, so a specific episode is never found.
+    const body = { query: 'breaking bad', kind: 'episode', season: 3, episode: 7 };
+    await api().search(body);
+    expect(calls).toEqual([{ method: 'POST', path: '/acquisition/search', body }]);
   });
 
   it('inspects a torrent before anything is grabbed', async () => {

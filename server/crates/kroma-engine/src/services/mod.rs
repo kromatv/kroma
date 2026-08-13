@@ -17,6 +17,7 @@ pub mod pairing;
 pub mod playback;
 pub mod cast;
 pub mod requests;
+pub mod request_ledger;
 pub mod notify;
 pub mod library_missing;
 pub mod settings;

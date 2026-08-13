@@ -62,7 +62,7 @@ pub async fn list<S: HostCtx + Clone + Send + Sync + 'static>(
     };
     // Resolved before the blocking closure, which cannot borrow the host.
     let indexers: std::collections::HashMap<String, String> =
-        kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::IndexerDbPort>(&state)
+        kroma_module_sdk::ports::indexer_db(&state)
             .and_then(|p| p.list_indexers(&state).ok())
             .unwrap_or_default()
             .into_iter()

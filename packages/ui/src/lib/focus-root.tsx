@@ -25,22 +25,41 @@ export interface FocusRootProps {
    *  registered (registration order is fixed for good, see the library's
    *  Node.tsx) without taking presses meant for something else. */
   active?: boolean;
+  /** Whether to draw the key host below. False only while a platform chrome
+   *  owns the television's focus, which is Apple TV's search screen and nothing
+   *  else (see focus-platform). */
+  keyHost?: boolean;
+  /** A direction the navigator handled with nothing to move to. */
+  onEdge?: (direction: string) => void;
 }
 
-export function FocusRoot({ children, style, active = true }: Readonly<FocusRootProps>) {
+export function FocusRoot({
+  children,
+  style,
+  active = true,
+  keyHost = true,
+  onEdge,
+}: Readonly<FocusRootProps>) {
   // Android delivers keys to the focused VIEW rather than through a global
   // stream, so the key host below is also where they arrive. Empty elsewhere.
   const hostProps = useRemoteHostProps();
   return (
-    <SpatialNavigationRoot isActive={active}>
+    <SpatialNavigationRoot isActive={active} onDirectionHandledWithoutMovement={onEdge}>
       {/* The one thing tvOS focuses, and the reason the remote is heard at all: a
           directional press reaches the app only when the app owns the focus, and
           with nothing focusable in the window the system keeps every key and
           `useTVEventHandler` never fires. This full-screen transparent host holds
           the platform's focus so it can never move; every press then arrives as
           an event for the navigator to interpret. Pressable, not View, because
-          that is what this fork actually makes focusable. */}
-      <Pressable focusable isTVSelectable hasTVPreferredFocus style={KEY_HOST} {...hostProps} />
+          that is what this fork actually makes focusable.
+
+          Gone while a platform chrome is up: it is the chrome's field and
+          keyboard the television must be able to focus then, and a focusable
+          spread over the whole screen would take that focus and never give it
+          back. */}
+      {keyHost ? (
+        <Pressable focusable isTVSelectable hasTVPreferredFocus style={KEY_HOST} {...hostProps} />
+      ) : null}
       <SpatialNavigationView direction="vertical" style={flat([FILL, style])}>
         {children}
       </SpatialNavigationView>

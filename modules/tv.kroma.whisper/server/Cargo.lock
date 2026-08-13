@@ -1933,6 +1933,7 @@ dependencies = [
  "axum",
  "kroma-db",
  "kroma-domain",
+ "kroma-http",
  "serde",
  "serde_json",
  "tokio",
@@ -1975,6 +1976,7 @@ name = "kroma-module-sdk"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "kroma-db",
  "kroma-domain",
  "kroma-engine",
@@ -1986,6 +1988,7 @@ dependencies = [
  "kroma-scene",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]

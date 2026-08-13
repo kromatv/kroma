@@ -103,4 +103,24 @@ describe('PageHeader.Actions', () => {
     invite.focus();
     expect(document.activeElement).toBe(invite);
   });
+
+  it('puts the way back before the heading, not among the actions', () => {
+    // Reading order is the point: a reader looks to the start of the page to
+    // leave it, and the far end is where this page's own controls live.
+    const back = vi.fn();
+    render(
+      <PageHeader.Root>
+        <PageHeader.Back label="Modules" onPress={back} />
+        <PageHeader.Title>Acquisition</PageHeader.Title>
+        <PageHeader.Actions>
+          <Button label="Desinstaller" />
+        </PageHeader.Actions>
+      </PageHeader.Root>,
+    );
+    const rendered = screen.getByLabelText('Modules');
+    const heading = screen.getByRole('heading');
+    expect(rendered.compareDocumentPosition(heading)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    fireEvent.click(rendered);
+    expect(back).toHaveBeenCalledTimes(1);
+  });
 });

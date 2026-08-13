@@ -14,6 +14,7 @@ import { Box, styles } from '@kroma/ui/kit';
 import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
 import {
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -57,7 +58,14 @@ export function PlayerPanel({
       onRequestClose={onRequestClose ?? onClose}
       supportedOrientations={['portrait', 'landscape', 'landscape-left', 'landscape-right']}
     >
-      <Box style={landscape ? s.overlayRow : s.overlayColumn}>
+      {/* A panel can hold a field (the code a television the server could not
+          place is printing), and this window is the player's own: nothing
+          outside it moves for the keyboard. iOS is padded here; Android resizes
+          the window itself (`adjustResize` in the manifest). */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={landscape ? s.overlayRow : s.overlayColumn}
+      >
         <Pressable style={s.backdrop} onPress={onClose} />
         <Box
           style={[
@@ -84,7 +92,7 @@ export function PlayerPanel({
             {children}
           </ScrollView>
         </Box>
-      </Box>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

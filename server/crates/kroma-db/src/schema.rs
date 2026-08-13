@@ -393,9 +393,10 @@ pub(crate) const SCHEMA: &str = "
         air_date       TEXT,
         status         TEXT NOT NULL DEFAULT 'wanted',
         last_search_at INTEGER,
+        search_attempts INTEGER NOT NULL DEFAULT 0,
+        next_search_at INTEGER,
         updated_at     INTEGER NOT NULL
     );
-    CREATE INDEX IF NOT EXISTS idx_wanted_search  ON wanted(status, last_search_at);
     CREATE INDEX IF NOT EXISTS idx_wanted_request ON wanted(request_id);
     CREATE INDEX IF NOT EXISTS idx_wanted_ident   ON wanted(tmdb_id, season, episode);
 
@@ -691,6 +692,16 @@ fn migrate(conn: &Connection) {
         "ALTER TABLE requests ADD COLUMN air_status TEXT",
         "ALTER TABLE requests ADD COLUMN next_air_date TEXT",
         "ALTER TABLE requests ADD COLUMN last_refresh_at INTEGER",
+        // Per-row search backoff: how many fruitless passes this row has cost,
+        // and the epoch-ms before which the next one must not bother. NULL is
+        // "due now", so rows from before the column keep their turn.
+        "ALTER TABLE wanted ADD COLUMN search_attempts INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE wanted ADD COLUMN next_search_at INTEGER",
+        // `wanted_searchable` selects on status + next_search_at and orders by
+        // air date; the old (status, last_search_at) index served neither. Both
+        // statements run here, after the column they name exists.
+        "DROP INDEX IF EXISTS idx_wanted_search",
+        "CREATE INDEX IF NOT EXISTS idx_wanted_due ON wanted(status, next_search_at, air_date)",
         "CREATE TABLE IF NOT EXISTS audio_analysis (\
             file_id     TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,\
             track_index INTEGER NOT NULL,\
@@ -744,5 +755,50 @@ mod tests {
 
         let err = apply_migrations(&conn, "CREATE TABL oops (").unwrap_err();
         assert!(format!("{err:#}").contains("failed to apply module schema"), "{err:#}");
+    }
+
+    #[test]
+    fn init_opens_a_database_whose_wanted_table_predates_the_backoff_columns() {
+        let dir = kroma_testing::temp_dir("schema-wanted-upgrade");
+        let path = dir.path().join("kroma.db");
+
+        let old = Connection::open(&path).unwrap();
+        old.execute_batch(
+            "CREATE TABLE wanted (\
+                 id             TEXT PRIMARY KEY,\
+                 request_id     TEXT NOT NULL,\
+                 kind           TEXT NOT NULL,\
+                 tmdb_id        INTEGER NOT NULL,\
+                 title          TEXT NOT NULL,\
+                 season         INTEGER,\
+                 episode        INTEGER,\
+                 air_date       TEXT,\
+                 status         TEXT NOT NULL DEFAULT 'wanted',\
+                 last_search_at INTEGER,\
+                 updated_at     INTEGER NOT NULL);\
+             CREATE INDEX idx_wanted_search ON wanted(status, last_search_at);\
+             INSERT INTO wanted (id, request_id, kind, tmdb_id, title, updated_at)\
+                 VALUES ('w1', 'r1', 'episode', 42, 'Show', 0);",
+        )
+        .unwrap();
+        drop(old);
+
+        let pool = init(&path).expect("an existing database must still open");
+        let conn = pool.get().unwrap();
+
+        let due: i64 = conn
+            .query_row("SELECT COUNT(*) FROM wanted WHERE next_search_at IS NULL", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(due, 1, "rows from before the column keep their turn");
+
+        let indexes: Vec<String> = conn
+            .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'wanted'")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<std::result::Result<_, _>>()
+            .unwrap();
+        assert!(indexes.iter().any(|n| n == "idx_wanted_due"), "{indexes:?}");
+        assert!(!indexes.iter().any(|n| n == "idx_wanted_search"), "{indexes:?}");
     }
 }

@@ -19,6 +19,10 @@ kroma-domain = { workspace = true }
 kroma-http = { workspace = true }
 kroma-db = { workspace = true }
 kroma-primitives = { workspace = true }
+# Both ends of every port contract live beside its trait: the provider mounts
+# axum routes, the consumer proxies over them.
+axum = { workspace = true }
+tokio = { workspace = true }
 # The port contract types derive serde and return anyhow::Result.
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -27,6 +31,9 @@ anyhow = { workspace = true }
 # the manifest layer) so consumer modules reach them via kroma_module_sdk::<name>
 # instead of a direct cross-module dependency.
 kroma-scene = { workspace = true }
+
+[features]
+testing = ["kroma-module-host/testing"]
 
 [dev-dependencies]
 # The shared HostCtx double (`testing::StubHost`) for the seam tests.

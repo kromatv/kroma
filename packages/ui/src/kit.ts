@@ -72,7 +72,9 @@ export { armEscapeGuard } from './lib/escape-guard';
 export type { ControlMetrics, ControlSize } from './lib/field-shell';
 export { CONTROL, controlMetrics, entryDefaultSize, setEntryDefaults } from './lib/field-shell';
 export { useFocusNav } from './lib/focus-nav';
-export { configureRemote, useHardwareKeys } from './lib/focus-remote';
+export type { FocusDirection, FocusOwner } from './lib/focus-platform';
+export { usePlatformFocus } from './lib/focus-platform';
+export { configureRemote, postRemoteDirection, useHardwareKeys } from './lib/focus-remote';
 export type { FocusScopeProps, ScreenScopeProps } from './lib/focus-scope';
 export { FocusColumn, FocusRegion, FocusScope } from './lib/focus-scope';
 export type { FocusScrollProps } from './lib/focus-scroll';
@@ -106,6 +108,7 @@ export { useLoop } from './lib/loop';
 export { OverlayHost } from './lib/overlay-host';
 export type { PerfReport } from './lib/perf';
 export { perfReport, perfRunning, resetPerf, startPerf, stopPerf } from './lib/perf';
+export { Portal } from './lib/portal';
 export {
   armPressGuard,
   clearPressGuard,
@@ -116,6 +119,7 @@ export type { ReportCategoryMeta } from './lib/report-categories';
 export { REPORT_CATEGORIES } from './lib/report-categories';
 export type { RingGeometry, RingProps } from './lib/ring';
 export { RING_ROTATION, ringGeometry } from './lib/ring';
+export { ringRoomBlock, ringRoomInline } from './lib/ring-room';
 export type { SurfaceWidth } from './lib/surface-shell';
 export { DIALOG_PAD, SURFACE_WIDTH } from './lib/surface-shell';
 export { SvgXml } from './lib/svg';

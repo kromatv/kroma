@@ -1,7 +1,7 @@
 {
   "id": "tv.kroma.vector",
   "name": "Embeddings",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minServer": "0.1.4",
   "dependsOn": [],
   "provides": [
@@ -10,5 +10,6 @@
       "id": "content"
     }
   ],
-  "description": "Content embeddings for recommendations and semantic search."
+  "description": "Content embeddings for recommendations and semantic search.",
+  "ports": ["embedder"]
 }

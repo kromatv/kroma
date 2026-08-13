@@ -404,8 +404,11 @@
       "name": "@kroma/module-acquisition",
       "version": "0.1.0",
       "dependencies": {
+        "@kroma/core": "workspace:*",
         "@kroma/module-sdk": "workspace:*",
         "@kroma/ui": "workspace:*",
+        "@tanstack/react-query": "^5.101.2",
+        "@tanstack/react-router": "^1.170.23",
         "zod": "^4.4.3",
       },
       "devDependencies": {
@@ -460,6 +463,7 @@
         "@kroma/module-vpn": "workspace:*",
         "@kroma/ui": "workspace:*",
         "@tabler/icons-react": "^3.44.0",
+        "@tanstack/react-query": "^5.101.2",
         "@tanstack/react-router": "^1.170.23",
         "react-call": "^2.0.2",
         "zod": "^4.4.3",

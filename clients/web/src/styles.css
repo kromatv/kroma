@@ -248,8 +248,9 @@
    A borderless control whose WRAPPER is the box a reader sees (a search box
    with a glyph in it, an InputGroup) marks itself `data-focus-ring="off"`:
    the control takes no ring, and its direct parent lights up instead.
-   `[role="combobox"]` is included because a select chip is a FIELD even
-   though it is built from a button. */
+   A <Select> trigger is NOT here: it is a control the keyboard operates, not
+   text the keyboard types into, so it wears the app's ring like every other
+   one. Only the native <select> does, being a field with text in it. */
 input:not(
   [type="checkbox"],
   [type="radio"],
@@ -260,82 +261,10 @@ input:not(
 ):focus-visible:not([data-focus-ring="off"]),
 textarea:focus-visible:not([data-focus-ring="off"]),
 select:focus-visible,
-[role="combobox"]:focus-visible,
 :has(> [data-focus-ring="off"]:focus):not([data-focus-ring="off"]) {
   border-color: var(--kroma-accent);
   outline: var(--ring-field);
   outline-offset: 0;
-}
-
-/* THE ADMIN TABLES (features/admin/table.tsx). Columns that must line up across
-   rows are a real CSS grid; React Native has none, so the kit carries no <Table>
-   and the shape lives here. Each table states its own template through
-   `--admin-table-columns`; below the kit's `md` step every table collapses to
-   its title column plus the trailing one, and the columns that do not fit drop
-   out. The two queries are the same boundary from both sides and must stay so. */
-.admin-table-head,
-.admin-table-row {
-  display: grid;
-  grid-template-columns: var(--admin-table-narrow, minmax(0, 1fr) auto);
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  margin: 0;
-  padding: 12px 20px;
-  /* A row is a <button> where it is pressable, so the shape is stated in full
-     rather than inherited from whatever reset the page happens to carry. */
-  appearance: none;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-}
-.admin-table-head {
-  background: var(--kroma-surface-1);
-  border-bottom: 1px solid color-mix(in srgb, var(--kroma-tint) 6%, transparent);
-}
-.admin-table-row {
-  border-bottom: 1px solid color-mix(in srgb, var(--kroma-tint) 4%, transparent);
-}
-.admin-table-row:last-child {
-  border-bottom: 0;
-}
-/* A pressable row is a <button> UNDER its cells rather than around them, because
-   a button cannot hold the action buttons a row carries. The cells are inert so
-   the press reaches through them; the real controls inside them are not. */
-.admin-table-row[data-pressable] {
-  position: relative;
-  transition: background-color var(--dur-fast) var(--ease-out);
-}
-.admin-table-row[data-pressable]:hover {
-  background: color-mix(in srgb, var(--kroma-tint) 3%, transparent);
-}
-.admin-table-row[data-pressable] > *:not(.admin-table-press) {
-  pointer-events: none;
-}
-.admin-table-row[data-pressable] :is(a, button, input, select, textarea, [tabindex]) {
-  pointer-events: auto;
-}
-.admin-table-press {
-  position: absolute;
-  inset: 0;
-  appearance: none;
-  border: 0;
-  background: none;
-  cursor: pointer;
-}
-@media (min-width: 600px) {
-  .admin-table-head,
-  .admin-table-row {
-    grid-template-columns: var(--admin-table-columns);
-  }
-}
-@media (max-width: 599px) {
-  .admin-table-head > [data-wide],
-  .admin-table-row > [data-wide] {
-    display: none;
-  }
 }
 
 /* A side panel that stays put while the column beside it scrolls. `sticky` has
@@ -403,13 +332,21 @@ select:focus-visible,
    The glyph and the name inherit `color`, which is why they stay DOM nodes.
    Every number is the `sm` control shell's, pinned to it by
    shared/ui/side-nav-style.test.ts. */
+/* The rhythm between two rows is the rows', not a gap in the column: a strip
+   that belongs to neighbour draws the page's arrow, and a pointer running down
+   the column flipped between the hand and the arrow every 2px. A transparent
+   border is inside the row's box, so it is hit-tested and wears the row's
+   cursor, and `background-clip` keeps the fill off it: the painted bar is the
+   40px it was, and the pitch is the 42px it was. */
 .side-nav-row {
   display: flex;
-  min-height: 40px;
+  min-height: 42px;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
+  border-block: 1px solid transparent;
   border-radius: var(--radius-md);
+  background-clip: padding-box;
   font: var(--type-label);
   color: var(--kroma-text-muted);
   text-decoration: none;
@@ -419,10 +356,12 @@ select:focus-visible,
 }
 .side-nav-row:not([aria-disabled="true"]):hover {
   background: var(--kroma-tint-4);
+  background-clip: padding-box;
   color: var(--kroma-text);
 }
 .side-nav-row[aria-current="page"] {
   background: var(--kroma-accent-soft);
+  background-clip: padding-box;
   color: var(--kroma-accent-text);
 }
 .side-nav-row[aria-disabled="true"] {

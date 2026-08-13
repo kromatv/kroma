@@ -404,6 +404,7 @@ impl DownloadManager {
             imported_at: None,
             details_url: spec.details_url,
             only_files: spec.only_files,
+            upgrade: spec.upgrade,
         };
         db::insert_download(host.db(), &row)?;
         db::set_wanted_status(host.db(), &spec.wanted_ids, "grabbed", now_ms())?;
@@ -678,7 +679,7 @@ pub use kroma_module_sdk::ports::GrabSpec;
 /// The local wireproxy SOCKS5 bridge peers are routed through (librqbit only
 /// proxies via SOCKS5). `None` = no VPN, torrent traffic goes out directly.
 pub fn active_proxy_url(host: &dyn HostCtx) -> Option<String> {
-    kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::VpnProxyPort>(host)
+    kroma_module_sdk::ports::vpn_proxy(host)
         .and_then(|p| p.proxy_url(host))
 }
 
@@ -717,7 +718,7 @@ fn fetch_torrent_for(host: &dyn HostCtx, row: &db::DownloadRow) -> Result<Vec<u8
 fn fetch_torrent_once(host: &dyn HostCtx, row: &db::DownloadRow) -> Result<Vec<u8>> {
     if let Some(indexer_id) = &row.indexer_id {
         if let Some(port) =
-            kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::TorrentFetchPort>(host)
+            kroma_module_sdk::ports::torrent_fetch(host)
         {
             if let Some(result) = port.fetch_torrent(host, indexer_id, &row.magnet_or_url) {
                 return result;

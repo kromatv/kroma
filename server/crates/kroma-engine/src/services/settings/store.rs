@@ -186,6 +186,7 @@ fn defaults() -> BTreeMap<String, Value> {
     m.insert("acqEnabled".into(), json!(false));
     m.insert("acqAutoApprove".into(), json!(false));
     m.insert("acqDeleteAfterImport".into(), json!(false));
+    m.insert("acqReplaceOnUpgrade".into(), json!(true));
     m.insert("acqResolution".into(), json!("1080p"));
     m.insert("acqPreferHevc".into(), json!(true));
     m.insert("acqMinSeeders".into(), json!(2));

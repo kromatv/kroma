@@ -11,7 +11,7 @@ export default story({
   // that would hide a bug at any other.
   width: { min: 240, max: 640 },
   component: Progress,
-  args: { value: 0.42, thickness: 4, rounded: false, indeterminate: false },
+  args: { value: 0.42, thickness: 4, rounded: true, indeterminate: false },
   controls: { value: { min: 0, max: 1, step: 0.05 }, thickness: { min: 2, max: 16, step: 1 } },
   scenes: [
     {

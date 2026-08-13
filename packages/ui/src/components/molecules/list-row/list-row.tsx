@@ -144,6 +144,9 @@ function Root({
         // it and its neighbour. The wash and the ring say the same thing without
         // moving anything.
         focusScale={standalone ? 1.02 : 1}
+        // A member's ring is the variant's, drawn INWARD: the default one stands
+        // off the row, and the card the row is flush with clips it to a stripe.
+        ring={standalone}
         sv={listRowVariants}
         vars={{ size: shell, pressable, standalone, selected: lit }}
         style={style}

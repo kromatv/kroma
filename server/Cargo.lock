@@ -2436,6 +2436,7 @@ dependencies = [
  "axum",
  "kroma-db",
  "kroma-domain",
+ "kroma-http",
  "kroma-testing",
  "serde",
  "serde_json",
@@ -2514,6 +2515,7 @@ dependencies = [
  "kroma-scene",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -2546,20 +2548,6 @@ dependencies = [
  "kroma-engine",
  "kroma-module-host",
  "kroma-module-manifest",
-]
-
-[[package]]
-name = "kroma-port-bridge"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "kroma-http",
- "kroma-module-host",
- "kroma-module-sdk",
- "serde",
- "serde_json",
- "tokio",
 ]
 
 [[package]]
@@ -2618,7 +2606,6 @@ dependencies = [
  "kroma-module-manifest",
  "kroma-module-sdk",
  "kroma-module-supervisor",
- "kroma-port-bridge",
  "kroma-testing",
  "kroma-vector",
  "kroma-whisper",

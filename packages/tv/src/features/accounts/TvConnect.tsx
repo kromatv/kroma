@@ -115,6 +115,7 @@ export function TvConnect() {
           mb={20}
         >
           <Field.Input
+            lift
             icon="world-search"
             placeholder={t('connect.serverPlaceholder')}
             keyboardType="url"

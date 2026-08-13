@@ -297,6 +297,42 @@ pub fn insert_wanted(pool: &Pool, rows: &[WantedRow], now_ms: i64) -> Result<()>
 
 /// Only fills a NULL `air_date`, so a known date is never overwritten, and never
 /// touches `status`.
+/// Drop the request's wanted rows that are no longer wanted, keeping `keep_ids`.
+///
+/// The other half of a reconcile: [`insert_wanted`] adds what is newly covered
+/// without disturbing what was already there, and this removes what stopped
+/// being covered. Together they change a request's SCOPE while every surviving
+/// row keeps the state it had -- which [`replace_wanted`] cannot do, since it
+/// deletes the lot and re-inserts them all as `wanted`, forgetting what was
+/// already downloaded.
+pub fn prune_wanted(pool: &Pool, request_id: &str, keep_ids: &[String]) -> Result<usize> {
+    let mut conn = pool.get()?;
+    let tx = conn.transaction()?;
+    let removed = if keep_ids.is_empty() {
+        tx.execute("DELETE FROM wanted WHERE request_id = ?1", params![request_id])?
+    } else {
+        // Bound the statement: a twenty-season show is a few hundred ids, well
+        // inside SQLite's parameter limit, but the id list is built from a
+        // request body and must not be able to grow the SQL without limit.
+        let mut removed = 0;
+        for chunk in keep_ids.chunks(400) {
+            let holes = std::iter::repeat_n("?", chunk.len()).collect::<Vec<_>>().join(",");
+            let sql = format!(
+                "DELETE FROM wanted WHERE request_id = ?1 AND id NOT IN ({holes}) \
+                 AND id IN (SELECT id FROM wanted WHERE request_id = ?1)"
+            );
+            let mut args: Vec<&dyn rusqlite::ToSql> = vec![&request_id];
+            for id in chunk {
+                args.push(id);
+            }
+            removed += tx.execute(&sql, args.as_slice())?;
+        }
+        removed
+    };
+    tx.commit()?;
+    Ok(removed)
+}
+
 pub fn set_wanted_air_date(pool: &Pool, id: &str, air_date: &str, now_ms: i64) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
@@ -441,15 +477,24 @@ pub fn library_gaps_list(conn: &Connection, limit: usize) -> rusqlite::Result<Ve
     rows.collect()
 }
 
-/// Rows ready for an automatic search pass: still wanted, aired or undated,
-/// least-recently-searched first.
-pub fn wanted_searchable(conn: &Connection, today: &str, limit: usize) -> rusqlite::Result<Vec<WantedRow>> {
+/// Rows ready for an automatic search pass: still wanted, aired or undated, and
+/// past their backoff. Ordered freshest air date first, so an episode that aired
+/// this morning is searched before a gap from years ago that no pass will ever
+/// close; `next_search_at` breaks ties in favour of the longest-waiting row.
+pub fn wanted_searchable(
+    conn: &Connection,
+    today: &str,
+    now_ms: i64,
+    limit: usize,
+) -> rusqlite::Result<Vec<WantedRow>> {
     let mut stmt = conn.prepare(&format!(
         "SELECT {WANTED_COLS} FROM wanted \
          WHERE status = 'wanted' AND (air_date IS NULL OR air_date <= ?1) \
-         ORDER BY last_search_at IS NOT NULL, last_search_at, season, episode LIMIT ?2"
+           AND (next_search_at IS NULL OR next_search_at <= ?2) \
+         ORDER BY air_date IS NULL, air_date DESC, \
+                  next_search_at IS NOT NULL, next_search_at, season, episode LIMIT ?3"
     ))?;
-    let rows = stmt.query_map(params![today, limit as i64], row_to_wanted)?;
+    let rows = stmt.query_map(params![today, now_ms, limit as i64], row_to_wanted)?;
     rows.collect()
 }
 
@@ -481,8 +526,42 @@ pub fn set_wanted_status(pool: &Pool, ids: &[String], status: &str, now_ms: i64)
     update_wanted_chunked(pool, ids, "status = ?1, updated_at = ?2", &[&status, &now_ms])
 }
 
-pub fn stamp_wanted_searched(pool: &Pool, ids: &[String], now_ms: i64) -> Result<()> {
-    update_wanted_chunked(pool, ids, "last_search_at = ?1, updated_at = ?1", &[&now_ms])
+/// Longest a searched row ever waits for its next turn.
+pub const MAX_SEARCH_DELAY_MS: i64 = 7 * 24 * 60 * 60 * 1000;
+
+// A row that keeps coming up empty costs an indexer round trip every pass, so
+// each fruitless attempt stretches its gap - up to five times the base, capped.
+const MAX_ATTEMPT_FACTOR: i64 = 5;
+
+/// Stamp a searched batch and push its next turn out by `base_delay_ms` grown
+/// by how many fruitless attempts each row already has. Callers group ids by
+/// base delay (see the acquisition module's `search::backoff`).
+pub fn schedule_next_search(
+    pool: &Pool,
+    ids: &[String],
+    now_ms: i64,
+    base_delay_ms: i64,
+) -> Result<()> {
+    update_wanted_chunked(
+        pool,
+        ids,
+        "search_attempts = search_attempts + 1, \
+         last_search_at = ?1, \
+         next_search_at = ?1 + MIN(?2 * MIN(search_attempts + 1, ?3), ?4), \
+         updated_at = ?1",
+        &[&now_ms, &base_delay_ms, &MAX_ATTEMPT_FACTOR, &MAX_SEARCH_DELAY_MS],
+    )
+}
+
+/// Put a row back at the front of the queue (a newly aired episode), clearing
+/// the backoff its earlier unaired attempts accumulated.
+pub fn reset_wanted_search(pool: &Pool, ids: &[String], now_ms: i64) -> Result<()> {
+    update_wanted_chunked(
+        pool,
+        ids,
+        "search_attempts = 0, next_search_at = NULL, updated_at = ?1",
+        &[&now_ms],
+    )
 }
 
 /// `video` items count: enrichment resolves both against TMDB's movie namespace.
@@ -507,6 +586,67 @@ pub fn show_by_tmdb(conn: &Connection, tmdb_id: u64) -> rusqlite::Result<Option<
     .optional()
 }
 
+/// One physical file backing a catalog item, with what an upgrade needs to
+/// decide whether a new release actually supersedes it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LibraryFile {
+    pub path: String,
+    pub item_id: String,
+    pub edition: Option<String>,
+    pub spans_episodes: bool,
+}
+
+const SPANS_EPISODES: &str = "i.episode_end IS NOT NULL AND i.episode_end > i.episode";
+
+fn library_file(row: &rusqlite::Row<'_>) -> rusqlite::Result<LibraryFile> {
+    Ok(LibraryFile {
+        path: row.get(0)?,
+        item_id: row.get(1)?,
+        edition: row.get(2)?,
+        spans_episodes: row.get(3)?,
+    })
+}
+
+/// The files backing a movie, by TMDB id, restricted to one library when
+/// `library` is set. Candidates for what an upgrade replaces: the caller still
+/// has to match the edition, since one item holds every cut of a title.
+pub fn movie_files_by_tmdb(
+    conn: &Connection,
+    tmdb_id: u64,
+    library: Option<&str>,
+) -> rusqlite::Result<Vec<LibraryFile>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT f.abs_path, f.item_id, f.edition, {SPANS_EPISODES} FROM files f \
+         JOIN items i ON i.id = f.item_id \
+         JOIN metadata_core c ON c.subject_id = i.id AND c.subject_kind = 'item' \
+         WHERE c.tmdb_id = ?1 AND i.kind IN ('movie', 'video') \
+           AND (?2 IS NULL OR i.library = ?2)"
+    ))?;
+    let rows = stmt.query_map(params![tmdb_id as i64, library], library_file)?;
+    rows.collect()
+}
+
+/// The files backing one episode of a show, restricted to one library when
+/// `library` is set. A file that holds a run of episodes is reported with
+/// `spans_episodes`, since it answers for every episode in the run and not just
+/// the one asked for.
+pub fn episode_files(
+    conn: &Connection,
+    show_id: &str,
+    season: u32,
+    episode: u32,
+    library: Option<&str>,
+) -> rusqlite::Result<Vec<LibraryFile>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT f.abs_path, f.item_id, f.edition, {SPANS_EPISODES} FROM files f \
+         JOIN items i ON i.id = f.item_id \
+         WHERE i.show_id = ?1 AND i.season = ?2 AND i.episode = ?3 \
+           AND (?4 IS NULL OR i.library = ?4)"
+    ))?;
+    let rows = stmt.query_map(params![show_id, season, episode, library], library_file)?;
+    rows.collect()
+}
+
 pub fn episodes_present(conn: &Connection, show_id: &str) -> rusqlite::Result<Vec<(u32, u32)>> {
     let mut stmt = conn.prepare(
         "SELECT DISTINCT season, episode FROM items \
@@ -514,6 +654,55 @@ pub fn episodes_present(conn: &Connection, show_id: &str) -> rusqlite::Result<Ve
     )?;
     let rows = stmt.query_map(params![show_id], |r| Ok((r.get(0)?, r.get(1)?)))?;
     rows.collect()
+}
+
+/// One episode of a show the library actually holds: which item it is, and how
+/// good the copy is. What the request page needs to link to a file and say what
+/// a re-grab would be replacing.
+#[derive(Debug, Clone)]
+pub struct EpisodeOnDisk {
+    pub season: u32,
+    pub episode: u32,
+    pub item_id: String,
+    pub codec: Option<String>,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    pub hdr: bool,
+    pub bit_depth: Option<u32>,
+    pub duration_ms: Option<i64>,
+}
+
+/// Every episode of `show_id` on disk. One row per season/episode: a duplicate
+/// keeps the widest copy, since that is the one a viewer gets.
+pub fn episodes_on_disk(conn: &Connection, show_id: &str) -> rusqlite::Result<Vec<EpisodeOnDisk>> {
+    let mut stmt = conn.prepare(
+        "SELECT season, episode, id, v_codec, v_width, v_height, v_hdr, v_bit_depth, duration_ms \
+         FROM items \
+         WHERE show_id = ?1 AND season IS NOT NULL AND episode IS NOT NULL \
+         ORDER BY season, episode, v_width DESC",
+    )?;
+    let rows = stmt.query_map(params![show_id], |r| {
+        Ok(EpisodeOnDisk {
+            season: r.get(0)?,
+            episode: r.get(1)?,
+            item_id: r.get(2)?,
+            codec: r.get(3)?,
+            width: r.get(4)?,
+            height: r.get(5)?,
+            hdr: r.get::<_, Option<i64>>(6)?.unwrap_or(0) != 0,
+            bit_depth: r.get(7)?,
+            duration_ms: r.get(8)?,
+        })
+    })?;
+    let mut out: Vec<EpisodeOnDisk> = Vec::new();
+    for row in rows {
+        let row = row?;
+        if out.last().is_some_and(|p| p.season == row.season && p.episode == row.episode) {
+            continue;
+        }
+        out.push(row);
+    }
+    Ok(out)
 }
 
 #[cfg(test)]
@@ -662,6 +851,109 @@ mod tests {
         assert_eq!(json.get("airStatus").and_then(|v| v.as_str()), Some("Ended"));
     }
 
+    fn ep_row(id: &str, season: u32, episode: u32, status: &str) -> WantedRow {
+        WantedRow {
+            id: id.into(),
+            request_id: "r1".into(),
+            kind: "episode".into(),
+            tmdb_id: 1396,
+            imdb_id: None,
+            title: "T".into(),
+            year: None,
+            season: Some(season),
+            episode: Some(episode),
+            air_date: None,
+            status: status.into(),
+            last_search_at: None,
+        }
+    }
+
+    #[test]
+    fn pruning_narrows_a_ledger_and_leaves_the_survivors_as_they_were() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        replace_wanted(
+            &p,
+            "r1",
+            &[
+                ep_row("w1", 1, 1, "available"),
+                ep_row("w2", 1, 2, "grabbed"),
+                ep_row("w3", 2, 1, "wanted"),
+            ],
+            1000,
+        )
+        .unwrap();
+
+        let removed = prune_wanted(&p, "r1", &["w1".into(), "w2".into()]).unwrap();
+        assert_eq!(removed, 1, "only the row that fell out of scope");
+
+        let conn = p.get().unwrap();
+        let rows = wanted_for_request(&conn, "r1").unwrap();
+        assert_eq!(rows.len(), 2);
+        // The point of pruning over replacing: what was downloaded stays known.
+        assert_eq!(rows.iter().find(|w| w.id == "w1").unwrap().status, "available");
+        assert_eq!(rows.iter().find(|w| w.id == "w2").unwrap().status, "grabbed");
+    }
+
+    #[test]
+    fn pruning_to_nothing_empties_the_ledger() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        replace_wanted(&p, "r1", &[ep_row("w1", 1, 1, "wanted")], 1000).unwrap();
+        assert_eq!(prune_wanted(&p, "r1", &[]).unwrap(), 1);
+        let conn = p.get().unwrap();
+        assert!(wanted_for_request(&conn, "r1").unwrap().is_empty());
+    }
+
+    #[test]
+    fn pruning_one_request_never_reaches_another() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        insert_request(&p, &new_req("r2", RequestKind::Show, 1400, None), 1000).unwrap();
+        replace_wanted(&p, "r1", &[ep_row("w1", 1, 1, "wanted")], 1000).unwrap();
+        let mut other = ep_row("w9", 1, 1, "wanted");
+        other.request_id = "r2".into();
+        replace_wanted(&p, "r2", &[other], 1000).unwrap();
+
+        prune_wanted(&p, "r1", &[]).unwrap();
+        let conn = p.get().unwrap();
+        assert_eq!(wanted_for_request(&conn, "r2").unwrap().len(), 1, "r2 untouched");
+    }
+
+    #[test]
+    fn episodes_on_disk_reports_one_row_per_episode_with_its_media() {
+        let p = pool();
+        let conn = p.get().unwrap();
+        seed_library(&conn);
+        conn.execute(
+            "INSERT INTO shows (id,library,title,added_at) VALUES ('s1','lib1','Show','now')",
+            [],
+        )
+        .unwrap();
+        // Two files for S01E01: the widest wins, since that is what a viewer gets.
+        for (id, season, episode, width) in
+            [("i1", 1, 1, 1920), ("i2", 1, 1, 3840), ("i3", 1, 2, 1280)]
+        {
+            conn.execute(
+                &format!(
+                    "INSERT INTO items (id,kind,title,container,library,show_id,season,episode,v_codec,v_width,v_height,v_hdr,duration_ms,added_at) \
+                     VALUES ('{id}','episode','E','mkv','lib1','s1',{season},{episode},'hevc',{width},1080,1,600000,'now')"
+                ),
+                [],
+            )
+            .unwrap();
+        }
+
+        let rows = episodes_on_disk(&conn, "s1").unwrap();
+        assert_eq!(rows.len(), 2, "one row per episode, not per file");
+        let e1 = rows.iter().find(|r| r.episode == 1).unwrap();
+        assert_eq!(e1.width, Some(3840), "the widest copy of the two");
+        assert_eq!(e1.codec.as_deref(), Some("hevc"));
+        assert!(e1.hdr);
+        assert_eq!(e1.duration_ms, Some(600_000));
+        assert_eq!(rows.iter().find(|r| r.episode == 2).unwrap().width, Some(1280));
+    }
+
     #[test]
     fn insert_wanted_is_additive_and_never_disturbs_grabbed() {
         let p = pool();
@@ -724,18 +1016,128 @@ mod tests {
         replace_wanted(&p, "r1", &rows, 1000).unwrap();
 
         let conn = p.get().unwrap();
-        let due = wanted_searchable(&conn, "2026-07-05", 10).unwrap();
+        let due = wanted_searchable(&conn, "2026-07-05", 4000, 10).unwrap();
         let ids: Vec<&str> = due.iter().map(|w| w.id.as_str()).collect();
-        assert_eq!(ids, vec!["w-undated", "w-aired"]);
+        assert_eq!(ids, vec!["w-aired", "w-undated"], "dated rows lead, undated trail");
         drop(conn);
 
         set_wanted_status(&p, &["w-aired".to_string()], "available", 2000).unwrap();
-        stamp_wanted_searched(&p, &["w-undated".to_string()], 3000).unwrap();
+        schedule_next_search(&p, &["w-undated".to_string()], 3000, 1000).unwrap();
         let conn = p.get().unwrap();
-        let due = wanted_searchable(&conn, "2026-07-05", 10).unwrap();
+        let due = wanted_searchable(&conn, "2026-07-05", 4000, 10).unwrap();
         assert_eq!(due.len(), 1);
         assert_eq!(due[0].id, "w-undated");
         assert_eq!(due[0].last_search_at, Some(3000));
+    }
+
+    #[test]
+    fn wanted_searchable_puts_the_freshest_air_date_first() {
+        // The whole point of the ordering: a weekly show's new episode must not
+        // queue behind a years-old gap no pass will ever close.
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        let mk = |id: &str, episode: u32, air: &str| WantedRow {
+            id: id.into(),
+            request_id: "r1".into(),
+            kind: "episode".into(),
+            tmdb_id: 1396,
+            imdb_id: None,
+            title: "T".into(),
+            year: None,
+            season: Some(1),
+            episode: Some(episode),
+            air_date: Some(air.into()),
+            status: "wanted".into(),
+            last_search_at: None,
+        };
+        replace_wanted(
+            &p,
+            "r1",
+            &[mk("w-old", 1, "2019-03-04"), mk("w-fresh", 2, "2026-07-04"), mk("w-mid", 3, "2024-01-01")],
+            1000,
+        )
+        .unwrap();
+
+        let conn = p.get().unwrap();
+        let due = wanted_searchable(&conn, "2026-07-05", 2000, 10).unwrap();
+        let ids: Vec<&str> = due.iter().map(|w| w.id.as_str()).collect();
+        assert_eq!(ids, vec!["w-fresh", "w-mid", "w-old"]);
+    }
+
+    #[test]
+    fn schedule_next_search_backs_a_row_off_and_resetting_brings_it_straight_back() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
+        let row = WantedRow {
+            id: "w1".into(),
+            request_id: "r1".into(),
+            kind: "episode".into(),
+            tmdb_id: 1396,
+            imdb_id: None,
+            title: "T".into(),
+            year: None,
+            season: Some(1),
+            episode: Some(1),
+            air_date: Some("2020-01-01".into()),
+            status: "wanted".into(),
+            last_search_at: None,
+        };
+        replace_wanted(&p, "r1", &[row], 1000).unwrap();
+        let ids = vec!["w1".to_string()];
+
+        schedule_next_search(&p, &ids, 10_000, 1000).unwrap();
+        let conn = p.get().unwrap();
+        assert!(wanted_searchable(&conn, "2026-07-05", 10_500, 10).unwrap().is_empty(), "backed off");
+        assert_eq!(wanted_searchable(&conn, "2026-07-05", 11_000, 10).unwrap().len(), 1, "due again");
+        drop(conn);
+
+        // A second fruitless attempt costs twice the base, a third three times.
+        schedule_next_search(&p, &ids, 11_000, 1000).unwrap();
+        let conn = p.get().unwrap();
+        assert!(wanted_searchable(&conn, "2026-07-05", 12_500, 10).unwrap().is_empty());
+        assert_eq!(wanted_searchable(&conn, "2026-07-05", 13_000, 10).unwrap().len(), 1);
+        drop(conn);
+
+        reset_wanted_search(&p, &ids, 12_000).unwrap();
+        let conn = p.get().unwrap();
+        assert_eq!(
+            wanted_searchable(&conn, "2026-07-05", 12_001, 10).unwrap().len(),
+            1,
+            "a newly aired episode jumps its own backoff"
+        );
+    }
+
+    #[test]
+    fn schedule_next_search_never_pushes_a_row_past_a_week() {
+        let p = pool();
+        insert_request(&p, &new_req("r1", RequestKind::Movie, 603, None), 1000).unwrap();
+        replace_wanted(
+            &p,
+            "r1",
+            &[WantedRow {
+                id: "w1".into(),
+                request_id: "r1".into(),
+                kind: "movie".into(),
+                tmdb_id: 603,
+                imdb_id: None,
+                title: "T".into(),
+                year: None,
+                season: None,
+                episode: None,
+                air_date: Some("2019-01-01".into()),
+                status: "wanted".into(),
+                last_search_at: None,
+            }],
+            1000,
+        )
+        .unwrap();
+
+        let ids = vec!["w1".to_string()];
+        for _ in 0..6 {
+            schedule_next_search(&p, &ids, 0, MAX_SEARCH_DELAY_MS).unwrap();
+        }
+        let conn = p.get().unwrap();
+        assert_eq!(wanted_searchable(&conn, "2026-07-05", MAX_SEARCH_DELAY_MS, 10).unwrap().len(), 1);
     }
 
     #[test]
@@ -766,7 +1168,7 @@ mod tests {
         replace_wanted(&p, "m3", &[WantedRow { request_id: "m3".into(), ..mk("m-nodate", None) }], 1000).unwrap();
 
         let conn = p.get().unwrap();
-        let due = wanted_searchable(&conn, "2026-07-05", 10).unwrap();
+        let due = wanted_searchable(&conn, "2026-07-05", 2000, 10).unwrap();
         let mut ids: Vec<&str> = due.iter().map(|w| w.id.as_str()).collect();
         ids.sort_unstable();
         assert_eq!(ids, vec!["m-nodate", "m-out"]);

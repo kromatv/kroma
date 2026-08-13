@@ -1,10 +1,11 @@
 // Admin "Modules" page: an app-store view over /api/admin/modules and
 // /api/admin/store. Discover / Installed / Updates tabs with live per-module
-// install progress off the `module.op.*` stream, a detail drawer per module,
+// install progress off the `module.op.*` stream, a detail page per module,
 // and registry management in its own drawer.
 
 import { useT } from '@kroma/ui';
 import { Box, Button, Field, Row, SegmentedControl, Text } from '@kroma/ui/kit';
+import { useNavigate } from '@tanstack/react-router';
 import { type CSSProperties, useMemo, useRef, useState } from 'react';
 
 // The file input is a handle for the upload button, never a control a reader
@@ -13,7 +14,6 @@ const OFFSCREEN: CSSProperties = { display: 'none' };
 
 import { installBundle, message, updateModules } from '#web/features/admin/module-api';
 import { useModuleData } from '#web/features/admin/module-data';
-import { ModuleDetailDrawer } from '#web/features/admin/module-detail';
 import { InstallModal } from '#web/features/admin/module-install';
 import { InstalledList } from '#web/features/admin/module-installed';
 import { useStoreOps } from '#web/features/admin/module-ops';
@@ -31,6 +31,7 @@ export function ModulesAdminPage() {
 
 function ModulesInner() {
   const t = useT();
+  const navigate = useNavigate();
   const { modules, catalog, refreshAll } = useModuleData();
   const { activeByModule } = useStoreOps();
   const [tab, setTab] = useState<Tab>('discover');
@@ -45,11 +46,7 @@ function ModulesInner() {
     [catalog],
   );
 
-  const openDetail = (id: string) => {
-    void ModuleDetailDrawer.call({ id }).then((c) => {
-      if (c) void refreshAll();
-    });
-  };
+  const openDetail = (id: string) => void navigate({ to: '/admin/modules/$id', params: { id } });
 
   const requestInstall = async (id: string) => {
     if (await InstallModal.call({ id })) void refreshAll();

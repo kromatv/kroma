@@ -7,6 +7,7 @@
 //   plan      print the cross-compile script CI runs instead of `pack`
 //   cargo     run one cargo subcommand across every module workspace
 //   registry  turn packed bundles into a publishable catalog
+//   watch     rebuild + install one module's sidecar on every save (dev loop)
 
 const COMMANDS = {
   gen: () => import('./gen'),
@@ -18,6 +19,7 @@ const COMMANDS = {
   plan: () => import('./plan'),
   cargo: () => import('./cargo'),
   registry: () => import('./registry'),
+  watch: async (args: string[]) => (await import('./watch')).main(args),
 };
 
 type Command = keyof typeof COMMANDS;

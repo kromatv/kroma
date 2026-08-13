@@ -72,18 +72,6 @@ impl RemoteHost {
         })
     }
 
-    /// A resolver to a sibling module's port bridge, reached through the core
-    /// reverse-proxy. Structurally matches `kroma_port_bridge::Resolver` without
-    /// this crate depending on port-bridge.
-    pub fn sibling_resolver(
-        &self,
-        id: &str,
-    ) -> Arc<dyn Fn() -> Option<(String, String)> + Send + Sync> {
-        let base = format!("{}/api/module/{id}", self.inner.core_url.trim_end_matches('/'));
-        let token = self.inner.host_token.clone();
-        Arc::new(move || Some((base.clone(), token.clone())))
-    }
-
     fn tmdb_config(&self) -> serde_json::Value {
         if let Some(v) = self.inner.tmdb.read().unwrap().clone() {
             return v;
@@ -266,6 +254,19 @@ impl HostCtx for RemoteHost {
             .unwrap_or_else(|| "en-US".to_string())
     }
 
+    // Asked of the core, which owns the supervisor: a sidecar cannot see which
+    // of its peers is installed or running, and must not care.
+    fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
+        let v = self
+            .callback()
+            .query("port", port)
+            .get_json::<serde_json::Value>(&self.host_url("port"))
+            .ok()?;
+        let base = v.get("base")?.as_str()?.to_string();
+        let token = v.get("token")?.as_str()?.to_string();
+        Some((base, token))
+    }
+
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
         self.inner.services.read().unwrap().get(&type_id).cloned()
     }
@@ -279,6 +280,21 @@ pub async fn serve_one(
     serve(setup, vec![module], axum::Router::new()).await
 }
 
+// A module is a separate process, so it does not inherit the core's subscriber:
+// without this it logged at a hardcoded `info` and there was no way to turn it
+// up. `KROMA_MODULE_LOG` overrides `RUST_LOG` for the sidecars alone, so the
+// core can stay quiet while one module is put under a microscope.
+fn init_tracing() {
+    let filter = std::env::var("KROMA_MODULE_LOG")
+        .or_else(|_| std::env::var("RUST_LOG"))
+        .unwrap_or_else(|_| "info".to_string());
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::new(filter))
+        .with_target(true)
+        .try_init()
+        .ok();
+}
+
 /// Run a module process: `setup` wires the process's own services and port
 /// providers into the host, each module's `admin_routes` plus `extra` routes are
 /// served on the assigned port, and every module's `on_enable` runs. A process may
@@ -288,7 +304,7 @@ pub async fn serve(
     modules: Vec<Box<dyn ServerModule<RemoteHost>>>,
     extra: axum::Router<RemoteHost>,
 ) -> anyhow::Result<()> {
-    tracing_subscriber::fmt().with_env_filter("info").try_init().ok();
+    init_tracing();
     let env = Env::from_process()?;
     let host = RemoteHost::new(&env)?;
     tracing::info!(module = %env.module_id, port = env.port, "module process starting");
@@ -424,12 +440,26 @@ async fn run_job(
     axum::extract::Path(key): axum::extract::Path<String>,
 ) -> Response {
     let Some(&run) = job_fns.get(key.as_str()) else {
+        tracing::warn!(job = %key, "run requested for a job this process does not have");
         return (StatusCode::NOT_FOUND, format!("unknown job {key}")).into_response();
     };
-    match tokio::task::spawn_blocking(move || run(&host)).await {
-        Ok(Ok(())) => StatusCode::OK.into_response(),
-        Ok(Err(e)) => (StatusCode::INTERNAL_SERVER_ERROR, format!("{e:#}")).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("job panicked: {e}")).into_response(),
+    tracing::info!(job = %key, "job starting");
+    let started = std::time::Instant::now();
+    let outcome = tokio::task::spawn_blocking(move || run(&host)).await;
+    let elapsed_ms = started.elapsed().as_millis();
+    match outcome {
+        Ok(Ok(())) => {
+            tracing::info!(job = %key, elapsed_ms, "job done");
+            StatusCode::OK.into_response()
+        }
+        Ok(Err(e)) => {
+            tracing::error!(job = %key, elapsed_ms, error = %format!("{e:#}"), "job failed");
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("{e:#}")).into_response()
+        }
+        Err(e) => {
+            tracing::error!(job = %key, elapsed_ms, error = %e, "job panicked");
+            (StatusCode::INTERNAL_SERVER_ERROR, format!("job panicked: {e}")).into_response()
+        }
     }
 }
 

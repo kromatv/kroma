@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
+import { activeTheme } from '#ui/core';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusScope } from '#ui/lib/focus-scope';
 import { clearPressGuard } from '#ui/lib/press-guard';
@@ -15,6 +16,12 @@ afterEach(() => {
   cleanup();
   clearPressGuard();
 });
+
+// A row's ring is painted rather than focused, so it arrives as a class and is
+// only there to compute.
+function ringed(row: HTMLElement) {
+  return getComputedStyle(row).outlineWidth === `${activeTheme().ring.focusEdge.outlineWidth}px`;
+}
 
 function Actions({
   onRename = () => {},
@@ -143,6 +150,20 @@ describe('<Menu>', () => {
     );
     fireEvent.keyDown(trigger, { key: 'Enter' });
     expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
+  it('rings the row the keys are on, and leaves the pointer its wash', () => {
+    render(<Actions />);
+    const trigger = screen.getByLabelText('Row actions');
+    fireEvent.click(trigger);
+
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+    expect(ringed(screen.getByLabelText('Supprimer'))).toBe(true);
+    expect(ringed(screen.getByLabelText('Renommer'))).toBe(false);
+
+    fireEvent.mouseMove(document);
+    fireEvent.pointerEnter(screen.getByLabelText('Renommer'));
+    expect(ringed(screen.getByLabelText('Renommer'))).toBe(false);
   });
 
   it('types ahead to the row a printable key names', () => {

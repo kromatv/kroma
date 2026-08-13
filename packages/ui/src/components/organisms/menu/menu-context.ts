@@ -28,6 +28,9 @@ interface MenuRowState {
   presentation: 'panel' | 'dialog';
   nativeID?: string;
   active: boolean;
+  /** Whether the keys put the highlight here rather than a cursor sweeping
+   *  past: the ring is the keyboard's, the wash is the pointer's. */
+  keyed?: boolean;
   onHoverIn?: () => void;
   /** Closes the menu and runs the item's `onSelect`, in that order. The
    *  keyboard fires the same one. */

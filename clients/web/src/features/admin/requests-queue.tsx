@@ -3,14 +3,15 @@
 // a detail drawer. Backed by GET /api/requests + the request.updated WS event.
 
 import { KromaEvents, type MediaRequest, type RequestStatus } from '@kroma/core';
+import { Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Box, EmptyState, Row } from '@kroma/ui/kit';
+import { Button, EmptyState, Row } from '@kroma/ui/kit';
 
+import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { RequestDrawer } from '#web/features/admin/request-drawer';
+import { NewRequestDialog } from '#web/features/admin/request-new-dialog';
 import { RequestRowView } from '#web/features/admin/request-row';
 import { PageHeader, useCap, usePoll } from '#web/features/admin/shell';
-import { Table } from '#web/features/admin/table';
 import {
   Chip,
   ConsoleSearch,
@@ -38,11 +39,13 @@ const BUCKETS: Record<string, (s: RequestStatus) => boolean> = {
 
 export function RequestsQueuePage() {
   const t = useT();
+  const navigate = useNavigate();
   const { client } = useAuth();
   const canReview = useCap('requests.manage');
 
   const [bucket, setBucket] = useState('pending');
   const [q, setQ] = useState('');
+  const [adding, setAdding] = useState(false);
   const { toast, flash } = useConsoleToast();
 
   const { data, reload } = usePoll(
@@ -64,7 +67,7 @@ export function RequestsQueuePage() {
     return () => ev.close();
   }, [throttledReload]);
 
-  // The open drawer subscribes to this same query (shared cache), so it stays
+  // The detail page subscribes to this same query (shared cache), so it stays
   // fresh here without an explicit push.
   const act = (label: string, fn: () => Promise<unknown>) => {
     if (!canReview) return Promise.resolve();
@@ -79,17 +82,7 @@ export function RequestsQueuePage() {
     act(`« ${r.title} » ${t('requests.toastApproved')}`, () => client.approveRequest(r.id));
   const deny = (r: MediaRequest, note?: string) =>
     act(`« ${r.title} » ${t('requests.toastDenied')}`, () => client.denyRequest(r.id, note));
-  const removeReq = (r: MediaRequest) =>
-    act(`« ${r.title} » ${t('requests.toastDeleted')}`, () => client.deleteRequest(r.id));
-
-  const openDrawer = (r: MediaRequest) =>
-    void RequestDrawer.call({
-      req: r,
-      canReview,
-      onApprove: approve,
-      onDeny: (req, note) => deny(req, note || undefined),
-      onDelete: removeReq,
-    });
+  const open = (r: MediaRequest) => navigate({ to: '/admin/requests/$id', params: { id: r.id } });
 
   const all = data?.requests ?? [];
   const c = data?.counts;
@@ -108,6 +101,14 @@ export function RequestsQueuePage() {
         <PageHeader.Title>{t('admin.requestsTitle')}</PageHeader.Title>
         <PageHeader.Actions>
           <ConsoleSearch value={q} onChange={setQ} placeholder={t('requests.searchPlaceholder')} />
+          {canReview ? (
+            <Button
+              size="sm"
+              icon="plus"
+              label={t('requests.newRequest')}
+              onPress={() => setAdding(true)}
+            />
+          ) : null}
         </PageHeader.Actions>
       </PageHeader.Root>
       <ConsoleSummary
@@ -168,7 +169,7 @@ export function RequestsQueuePage() {
             key={r.id}
             req={r}
             canReview={canReview}
-            onOpen={() => openDrawer(r)}
+            onOpen={() => void open(r)}
             onApprove={() => approve(r)}
             onDeny={() => deny(r)}
           />
@@ -177,16 +178,24 @@ export function RequestsQueuePage() {
         {data === null ? <TableSkeleton rows={8} /> : null}
 
         {data && rows.length === 0 ? (
-          <Box py={24}>
-            <EmptyState.Root icon="inbox">
-              <EmptyState.Title>
-                {all.length === 0 ? t('requests.empty') : t('requests.noMatch')}
-              </EmptyState.Title>
-            </EmptyState.Root>
-          </Box>
+          <EmptyState.Root icon="inbox">
+            <EmptyState.Title>
+              {all.length === 0 ? t('requests.empty') : t('requests.noMatch')}
+            </EmptyState.Title>
+          </EmptyState.Root>
         ) : null}
       </Table.Root>
 
+      <NewRequestDialog
+        open={adding}
+        onClose={() => setAdding(false)}
+        onCreated={reload}
+        onOpenRequest={(id) => {
+          setAdding(false);
+          reload();
+          navigate({ to: '/admin/requests/$id', params: { id } });
+        }}
+      />
       <ConsoleToast toast={toast} />
     </>
   );

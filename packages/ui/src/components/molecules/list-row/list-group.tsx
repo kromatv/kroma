@@ -6,6 +6,7 @@
 // group reads as one list of related settings, which is why a phone's server
 // picker and a settings screen want it. The group owns the surface, so its
 // members drop theirs: see the `standalone` variant in ./list-row-variants.
+// The lift is the one thing it does NOT take from the standalone row.
 
 import {
   Children,
@@ -26,6 +27,8 @@ interface ListGroupSlot {
 }
 
 const InGroup = createContext<ListGroupSlot | null>(null);
+
+const INSET_RING = { focusRingInset: '' } as const;
 
 /** The group this row is a member of, or `null` when it stands alone. A member
  * must not draw a surface of its own, and takes the group's size. */
@@ -55,13 +58,19 @@ function ListGroup({ children, size, divider, style }: Readonly<ListGroupProps>)
       w="100%"
       radius={metrics.radius}
       border="border"
-      // The card carries the shell's well, its blur and its lift ONCE, for
-      // every row in it (lib/field-shell).
+      // The card carries the shell's well and its blur ONCE, for every row in
+      // it (lib/field-shell). No lift: a group is a run of rows IN a page, and
+      // the hairline is what sets it apart. The shadow belongs to a surface
+      // that floats over the page (a <Dialog>, a <Menu>), and on a group it
+      // read as a halo everywhere the kit puts one - which is inside a panel.
       bg={metrics.bg}
-      shadow="card"
       // The members' corners are the card's: clip them rather than asking
       // each row which end of the list it landed on.
       overflow="hidden"
+      // And because it clips them, a member's ring is drawn inward: the browser
+      // targets draw the ring in CSS, where the row itself cannot say so (the
+      // rule is in styles/base.css).
+      dataSet={INSET_RING}
       style={style}
     >
       <Frost radius={metrics.radius} />

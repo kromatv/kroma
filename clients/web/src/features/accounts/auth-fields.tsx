@@ -103,6 +103,7 @@ export function RegisterFields({
           sit beside; see the note in auth-forms.tsx. */}
       <Field.Root w="100%" size="md" label={t('auth.email')} hideLabel>
         <Field.Input
+          lift
           type="email"
           icon="mail"
           placeholder={t('auth.email')}
@@ -112,6 +113,7 @@ export function RegisterFields({
       </Field.Root>
       <Field.Root w="100%" size="md" label={t('auth.username')} hideLabel>
         <Field.Input
+          lift
           icon="user"
           placeholder={t('auth.username')}
           value={username}
@@ -121,6 +123,7 @@ export function RegisterFields({
       </Field.Root>
       <Field.Root w="100%" size="md" label={t('auth.passwordHint')} hideLabel>
         <Field.Input
+          lift
           type="password"
           icon="lock"
           placeholder={t('auth.passwordHint')}

@@ -33,19 +33,29 @@ async fn blocking_env<T: Send + 'static>(
 #[derive(Deserialize)]
 struct SearchReq {
     request_id: String,
+    #[serde(default)]
+    scope: crate::search::SearchScope,
 }
 
 async fn search_h<S: HostCtx + Clone + Send + Sync + 'static>(
     State(host): State<S>,
     Json(req): Json<SearchReq>,
 ) -> Json<Result<serde_json::Value, String>> {
-    blocking_env(move || Ok(serde_json::to_value(crate::search::interactive_search(&host, &req.request_id)?)?))
-        .await
+    blocking_env(move || {
+        Ok(serde_json::to_value(crate::search::interactive_search(
+            &host,
+            &req.request_id,
+            req.scope,
+        )?)?)
+    })
+    .await
 }
 
 #[derive(Deserialize)]
 struct GrabReq {
     request_id: String,
+    #[serde(default)]
+    scope: crate::search::SearchScope,
     guid: String,
     indexer_id: String,
 }
@@ -55,11 +65,15 @@ async fn grab_h<S: HostCtx + Clone + Send + Sync + 'static>(
     Json(req): Json<GrabReq>,
 ) -> Json<Result<String, String>> {
     blocking_env(move || {
-        let row = crate::search::grab_cached(&host, &req.request_id, &req.guid, &req.indexer_id)?;
+        let row =
+            crate::search::grab_cached(&host, &req.request_id, req.scope, &req.guid, &req.indexer_id)?;
         let id = row.id.clone();
         // Background the slow engine add so the grab returns immediately; `activate`
         // is a blocking HTTP call, so a plain thread (no runtime needed) is enough.
-        std::thread::spawn(move || crate::downloads(&host).activate(&host, &row));
+        std::thread::spawn(move || match crate::downloads(&host) {
+            Ok(downloads) => downloads.activate(&host, &row),
+            Err(e) => tracing::warn!(target: "acquisition", "grabbed but not started: {e:#}"),
+        });
         Ok(id)
     })
     .await
@@ -108,6 +122,35 @@ mod tests {
         )
         .await;
         assert_eq!(status, StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn a_scoped_search_is_accepted_and_an_absent_scope_defaults_to_the_whole_request() {
+        // The scope is the one field the caller may legitimately omit (the
+        // automatic pass never narrows), so it must not be a required key.
+        for scope in [
+            serde_json::json!({ "kind": "movie" }),
+            serde_json::json!({ "kind": "season", "season": 2 }),
+            serde_json::json!({ "kind": "episode", "season": 2, "episode": 5 }),
+        ] {
+            let (status, body) =
+                post("/_port/acqsearch/search", serde_json::json!({ "request_id": "r1", "scope": scope }))
+                    .await;
+            assert_eq!(status, StatusCode::OK, "{scope}");
+            // No such request in the stub db, so it answers Err -- what matters
+            // here is that the extractor accepted the scope shape.
+            assert!(body["Err"].as_str().is_some(), "{body}");
+        }
+    }
+
+    #[tokio::test]
+    async fn an_unknown_scope_shape_is_rejected_by_the_extractor() {
+        let (status, _) = post(
+            "/_port/acqsearch/search",
+            serde_json::json!({ "request_id": "r1", "scope": { "kind": "sideways" } }),
+        )
+        .await;
+        assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
     }
 
     #[tokio::test]

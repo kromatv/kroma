@@ -42,7 +42,8 @@ fn build_state(embedder: Arc<dyn Embedder>, tmdb_api_key: Option<&str>) -> Share
     let mut config = test_config(scratch.path().to_path_buf());
     config.tmdb_api_key = tmdb_api_key.map(str::to_string);
     let settings = Settings::load(&db);
-    let state = AppState::new(config, false, db, settings, embedder, HashMap::new(), &[]);
+    let state =
+        AppState::new(config, false, db, settings, embedder, HashMap::new(), &[], Arc::new(|_| None));
     state.own_scratch_dir(scratch);
     state
 }

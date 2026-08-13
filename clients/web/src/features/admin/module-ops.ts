@@ -3,10 +3,12 @@
 // fold is a pure reducer so it is testable without a socket. One module-level
 // socket + state store is shared by every consumer (page, install dialog,
 // detail drawer), so a late-mounting dialog still sees the frames that came
-// before it and one tab holds one extra connection, not three.
+// before it and one tab holds one extra connection, not three. Plus the
+// sidecar restart, the one module op the server answers in a single call.
 
 import { KromaEvents, type MessageKey, type ServerEvent, type StoreOpEvent } from '@kroma/core';
-import { useMemo, useSyncExternalStore } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
+import { message, restartModule } from '#web/features/admin/module-api';
 import { apiBase } from '#web/shared/lib/api';
 
 export type OpPhase = 'wait' | 'download' | 'install' | 'done';
@@ -162,4 +164,37 @@ export function useStoreOps(): {
     return map;
   }, [snapshot]);
   return { ops: snapshot, activeByModule };
+}
+
+export interface ModuleRestart {
+  busy: boolean;
+  /** The last attempt came back with the sidecar up again. */
+  done: boolean;
+  /** The server's own failure text, verbatim. */
+  error: string | null;
+  restart: () => Promise<void>;
+}
+
+/** Stop a module's sidecar and start it again, surfacing what the server
+ * answered; `onDone` fires after every attempt, so the caller can re-read the
+ * module's running state either way. */
+export function useModuleRestart(id: string, onDone?: () => void): ModuleRestart {
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const restart = async () => {
+    setBusy(true);
+    setDone(false);
+    setError(null);
+    try {
+      const res = await restartModule(id);
+      setDone(res.running);
+    } catch (e) {
+      setError(message(e));
+    } finally {
+      setBusy(false);
+      onDone?.();
+    }
+  };
+  return { busy, done, error, restart };
 }

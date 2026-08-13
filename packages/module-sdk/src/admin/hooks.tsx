@@ -9,14 +9,21 @@ import { useAdminHost } from './context';
  * so `invalidateQueries(['admin'])` refreshes it, and put varying inputs in `key`.
  *
  * `loading` is true only until the FIRST answer; a later poll that fails leaves
- * the last good `data` in place and raises `failed`. */
+ * the last good `data` in place and raises `failed`. `error` is that failure's
+ * cause, for a page that says WHY rather than only that it failed. */
 export function usePoll<T>(
   key: QueryKey,
   fn: () => Promise<T>,
   intervalMs: number,
-): { data: T | null; loading: boolean; failed: boolean; reload: () => Promise<void> } {
+): {
+  data: T | null;
+  loading: boolean;
+  failed: boolean;
+  error: unknown;
+  reload: () => Promise<void>;
+} {
   const queryClient = useQueryClient();
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, error } = useQuery({
     queryKey: key,
     queryFn: fn,
     refetchInterval: intervalMs,
@@ -35,7 +42,7 @@ export function usePoll<T>(
   // `loading` and `failed` are what a page needs to avoid answering with a
   // LIE while the first fetch is out: an empty list and "not configured" are
   // both statements about the data, and neither is true yet.
-  return { data: data ?? null, loading: isPending, failed: isError, reload };
+  return { data: data ?? null, loading: isPending, failed: isError, error, reload };
 }
 
 /** `run(fn, onError?)` flips `busy` while `fn` runs and, on failure, sets `error` to `onError(e)`. */

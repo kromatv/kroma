@@ -42,7 +42,7 @@ fn install_rejects_a_module_needing_a_newer_server() {
         r#"{ "id": "com.example.demo", "name": "Demo", "version": "1.0.0",
              "minServer": "999.0.0", "library": true }"#,
     );
-    let err = sup.install(&bundle, None).unwrap_err().to_string();
+    let err = sup.install(&bundle, None, ("upload", None)).unwrap_err().to_string();
     assert!(err.contains("requires KROMA server"), "unexpected error: {err}");
     assert!(sup.installed_ids().is_empty());
 }
@@ -56,7 +56,7 @@ fn install_accepts_a_satisfied_min_server() {
         r#"{ "id": "com.example.demo", "name": "Demo", "version": "1.0.0",
              "minServer": "0.1.0", "library": true }"#,
     );
-    let manifest = sup.install(&bundle, None).unwrap();
+    let manifest = sup.install(&bundle, None, ("upload", None)).unwrap();
     assert_eq!(manifest["id"], "com.example.demo");
     assert_eq!(sup.installed_ids(), vec!["com.example.demo".to_string()]);
 }
@@ -69,7 +69,7 @@ fn install_still_rejects_reserved_ids() {
     let bundle = tar_with_manifest(
         r#"{ "id": "tv.kroma.reserved", "name": "Shadow", "version": "1.0.0", "library": true }"#,
     );
-    let err = sup.install(&bundle, None).unwrap_err().to_string();
+    let err = sup.install(&bundle, None, ("upload", None)).unwrap_err().to_string();
     assert!(err.contains("built into this server"), "unexpected error: {err}");
 }
 

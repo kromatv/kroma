@@ -16,6 +16,9 @@ import {
   entryDefaultSize,
   Focusable,
   Icon,
+  PANEL_BACKDROP,
+  PANEL_SHELL,
+  Portal,
   Row,
   selectTriggerVariants,
   Text,
@@ -38,9 +41,7 @@ import type { StyleProp, View, ViewStyle } from 'react-native';
 // which React Native has, so the panel stays real CSS. Every value in it still
 // comes from a token.
 const BACKDROP: CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  zIndex: 50,
+  ...PANEL_BACKDROP,
   margin: 0,
   padding: 0,
   border: 0,
@@ -155,8 +156,7 @@ function SearchPanel({
   const at = useAnchoredPlacement(anchor, { minWidth: 240, matchWidth: true, maxHeight: 320 });
   const theme = useTheme();
   const panel: CSSProperties = {
-    position: 'fixed',
-    zIndex: 50,
+    ...PANEL_SHELL,
     minWidth: 240,
     overflow: 'hidden',
     borderRadius: theme.radius.xs,
@@ -166,7 +166,7 @@ function SearchPanel({
   };
   // The role carries the face and the size; only the reset around it is stated.
   const entry: CSSProperties = {
-    ...(theme.type.meta as CSSProperties),
+    font: 'var(--type-meta)',
     width: '100%',
     margin: 0,
     padding: 0,
@@ -220,7 +220,7 @@ function SearchPanel({
   if (!at) return null;
 
   return (
-    <>
+    <Portal>
       {/* The world behind the panel: one press anywhere out there closes it. */}
       <button
         type="button"
@@ -295,6 +295,6 @@ function SearchPanel({
           )}
         </div>
       </div>
-    </>
+    </Portal>
   );
 }

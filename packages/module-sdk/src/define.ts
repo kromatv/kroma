@@ -2,7 +2,13 @@
 
 import type { ComponentType } from 'react';
 import type { KromaHost } from './host';
-import type { KromaModule, ModuleComponentProps, NavItem, SettingsPanel } from './module';
+import type {
+  AnySlotContribution,
+  KromaModule,
+  ModuleComponentProps,
+  NavItem,
+  SettingsPanel,
+} from './module';
 import type { Dependencies } from './types';
 
 const ADMIN_SECTIONS = new Set([
@@ -42,6 +48,7 @@ export interface DefineModuleOptions<Exports = unknown> {
   locales?: Record<string, Record<string, string>>;
   pages?: ModulePage[];
   settingsPanels?: SettingsPanel[];
+  slots?: AnySlotContribution[];
   exports?: (host: KromaHost) => Exports;
   setup?: (host: KromaHost) => void | Promise<void>;
   dependsOn?: Dependencies;
@@ -79,6 +86,7 @@ export function defineModule<Exports = unknown>(
     routes: routes.length > 0 ? routes : undefined,
     navItems: navItems.length > 0 ? navItems : undefined,
     settingsPanels: options.settingsPanels,
+    slots: options.slots,
     locales: normalizeLocales(options.locales),
     exports: options.exports,
     setup: options.setup,

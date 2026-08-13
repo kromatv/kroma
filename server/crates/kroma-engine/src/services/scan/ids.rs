@@ -27,35 +27,7 @@ pub(super) fn show_key(lib_id: &str, show_title: &str) -> String {
     short_hash(&format!("{lib_id}|show|{norm}"))
 }
 
-/// Best-effort edition label from a filename. Keep it simple: scan for a known
-/// set of edition/quality tokens and return the first match (preferring cut
-/// labels over resolution/source). `None` when nothing notable is present.
-pub(super) fn detect_edition(file_name: &str) -> Option<String> {
-    let lower = file_name.to_ascii_lowercase();
-    // (needle, label) cut/edition labels first, then source/quality.
-    const TABLE: &[(&str, &str)] = &[
-        ("director's cut", "Director's Cut"),
-        ("directors cut", "Director's Cut"),
-        ("director.cut", "Director's Cut"),
-        ("extended", "Extended"),
-        ("uncut", "Uncut"),
-        ("unrated", "Unrated"),
-        ("theatrical", "Theatrical"),
-        ("remastered", "Remastered"),
-        ("imax", "IMAX"),
-        ("remux", "Remux"),
-        ("2160p", "4K"),
-        ("4k", "4K"),
-        ("uhd", "4K"),
-        ("1080p", "1080p"),
-        ("720p", "720p"),
-        ("480p", "480p"),
-    ];
-    TABLE
-        .iter()
-        .find(|(needle, _)| lower.contains(needle))
-        .map(|(_, label)| label.to_string())
-}
+pub(super) use kroma_domain::media::detect_edition;
 
 /// `hex(sha256(input))[..16]` stable, short, collision-resistant enough.
 /// Re-exported from kroma-primitives.

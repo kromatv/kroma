@@ -65,7 +65,7 @@ function PosterCard({
         </Box>
         {progress == null ? null : (
           <Box absolute left={0} right={0} bottom={0}>
-            <Progress value={progress} />
+            <Progress value={progress} rounded={false} />
           </Box>
         )}
       </Box>

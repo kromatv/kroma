@@ -47,7 +47,7 @@ function Root({ size = 'md', layout = 'inline', icon, children }: Readonly<RootP
   const frame = frameOf(shape, layout);
   return (
     <Context.Provider value={size}>
-      <Box center gap={shape.gap} flex={frame.flex} mt={frame.mt} py={frame.py}>
+      <Box center gap={shape.gap} flex={frame.flex} py={frame.py}>
         {icon ? <Media name={icon} /> : null}
         {children}
       </Box>
@@ -110,10 +110,10 @@ function Actions({ children }: Readonly<{ children: ReactNode }>) {
 
 function frameOf(shape: Shape, layout: EmptyStateLayout) {
   if (layout === 'fill') return FILL;
-  return { flex: undefined, mt: shape.inlineMt, py: 0 } as const;
+  return { flex: undefined, py: shape.inlinePad } as const;
 }
 
-const FILL = { flex: 1, mt: 0, py: 64 } as const;
+const FILL = { flex: 1, py: 64 } as const;
 
 const s = styles({
   centred: { textAlign: 'center' },
@@ -133,7 +133,7 @@ const SHAPE = {
     titleStyle: s.titleSm,
     hintStyle: s.hint,
     actionMt: 6,
-    inlineMt: 24,
+    inlinePad: 24,
   },
   md: {
     gap: 10,
@@ -143,7 +143,7 @@ const SHAPE = {
     titleStyle: s.titleMd,
     hintStyle: s.hint,
     actionMt: 6,
-    inlineMt: 64,
+    inlinePad: 64,
   },
   tv: {
     gap: 16,
@@ -153,7 +153,7 @@ const SHAPE = {
     titleStyle: null,
     hintStyle: s.hintTv,
     actionMt: 8,
-    inlineMt: 96,
+    inlinePad: 96,
   },
 };
 

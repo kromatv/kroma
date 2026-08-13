@@ -4,7 +4,7 @@
 import { hasPermission } from '@kroma/core';
 import type { ModuleNav } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Box, color, Drawer, IconButton, Logo, Row, Text } from '@kroma/ui/kit';
+import { Box, color, Drawer, Logo, Row, Text } from '@kroma/ui/kit';
 import { IconChevronRight } from '@tabler/icons-react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { type CSSProperties, useEffect, useState } from 'react';
@@ -18,6 +18,7 @@ import { resolveModuleIcon } from '#web/modules/module-icons';
 import { formatUptime } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 import { useNavActions } from '#web/shared/ui/nav-actions';
+import { NavMenuButton } from '#web/shared/ui/nav-menu-button';
 import { SideNav } from '#web/shared/ui/side-nav';
 import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
@@ -153,7 +154,6 @@ export function AdminSidebar() {
 
 /** The phone's pinned bar, and the sheet its menu opens. */
 export function AdminMobileTopbar() {
-  const t = useT();
   const actions = useNavActions();
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -161,17 +161,11 @@ export function AdminMobileTopbar() {
   useEffect(() => setOpen(false), [pathname]);
   return (
     <header className={ADMIN_TOPBAR}>
-      <AdminBrand />
-      <Row gap={2}>
-        {actions}
-        <IconButton
-          variant="ghost"
-          icon="menu-2"
-          glyph={22}
-          label={t('nav.menu')}
-          onPress={() => setOpen(true)}
-        />
+      <Row gap={8}>
+        <NavMenuButton open={open} onPress={() => setOpen(true)} />
+        <AdminBrand />
       </Row>
+      <Row gap={2}>{actions}</Row>
       <Drawer.Root
         open={open}
         onClose={() => setOpen(false)}

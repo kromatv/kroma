@@ -3,11 +3,9 @@
 // text filters and a follow-tail toggle. Polls; the ring is the source of
 // truth so a page load shows history, not just what streams in afterwards.
 
-import type { LogEntry, MessageKey } from '@kroma/core';
-import { useLocaleDefault, useT } from '@kroma/ui';
+import type { MessageKey } from '@kroma/core';
+import { useT } from '@kroma/ui';
 import {
-  Box,
-  type ColorValue,
   EmptyState,
   Field,
   Row,
@@ -18,26 +16,10 @@ import {
   Switch,
   Text,
 } from '@kroma/ui/kit';
-import { type CSSProperties, Fragment, useEffect, useRef, useState } from 'react';
-
-// A viewport-relative height and a single-axis scroll have no React Native
-// spelling, so the log viewport stays a real element.
-const VIEWPORT: CSSProperties = { maxHeight: '70vh', overflowY: 'auto' };
-
-const LINES: CSSProperties = {
-  display: 'grid',
-  gridTemplateColumns: 'max-content max-content minmax(0, 1fr)',
-  alignItems: 'baseline',
-  columnGap: 10,
-  rowGap: 8,
-  padding: '12px 16px',
-};
-
-const FULL_ROW: CSSProperties = { gridColumn: '1 / -1' };
-
+import { useEffect, useState } from 'react';
+import { LogLines } from '#web/features/admin/log-lines';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
-import { TABULAR } from '#web/features/admin/table';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
@@ -50,11 +32,15 @@ const LEVELS: { value: LevelFilter; labelKey: MessageKey }[] = [
   { value: 'error', labelKey: 'logs.levelError' },
 ];
 
-export function LogsPage() {
+/** The console. `source` is `core`, a module id, or `all` for every source; the
+ * route holds it in the URL so a filtered console can be linked to. */
+export function LogsPage({
+  source,
+  onSourceChange,
+}: Readonly<{ source: string; onSourceChange: (source: string) => void }>) {
   const t = useT();
   const { client } = useAuth();
   const [level, setLevel] = useState<LevelFilter>('all');
-  const [source, setSource] = useState('all');
   const [qInput, setQInput] = useState('');
   const [q, setQ] = useState('');
   const [follow, setFollow] = useState(true);
@@ -77,17 +63,10 @@ export function LogsPage() {
     3000,
   );
 
-  // Follow the tail: pin the viewport to the newest line on every refresh.
-  const scroller = useRef<HTMLDivElement>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scroll on new data
-  useEffect(() => {
-    if (follow && scroller.current) {
-      scroller.current.scrollTop = scroller.current.scrollHeight;
-    }
-  }, [data, follow]);
-
   const entries = data?.entries ?? [];
-  const sources = ['all', ...(data?.sources ?? [])];
+  const known = data?.sources ?? [];
+  const missing = source !== 'all' && !known.includes(source) ? [source] : [];
+  const sources = ['all', ...known, ...missing];
   const sourceLabel = (s: string) => {
     if (s === 'all') return t('logs.allSources');
     return s === 'core' ? t('logs.sourceCore') : s;
@@ -108,7 +87,7 @@ export function LogsPage() {
           options={LEVELS.map((l) => ({ value: l.value, label: t(l.labelKey) }))}
           onValueChange={setLevel}
         />
-        <Select.Root label={t('logs.allSources')} value={source} onValueChange={setSource}>
+        <Select.Root label={t('logs.allSources')} value={source} onValueChange={onSourceChange}>
           <Select.Trigger />
           {sources.map((s) => (
             <Select.Item key={s} value={s} label={sourceLabel(s)} />
@@ -139,87 +118,9 @@ export function LogsPage() {
       ) : null}
       {entries.length > 0 ? (
         <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
-          <div ref={scroller} style={VIEWPORT}>
-            <div style={LINES}>
-              {entries.map((e, i) => (
-                <Fragment key={e.seq}>
-                  {sameDay(entries[i - 1]?.ts, e.ts) ? null : (
-                    <div style={FULL_ROW}>
-                      <DayMark ts={e.ts} />
-                    </div>
-                  )}
-                  <LogLine entry={e} />
-                </Fragment>
-              ))}
-            </div>
-          </div>
+          <LogLines entries={entries} maxHeight="70vh" follow={follow} />
         </Surface>
       ) : null}
-    </>
-  );
-}
-
-const LEVEL_TONE: Record<string, { bg: ColorValue; ink: ColorValue }> = {
-  error: { bg: 'danger/15', ink: 'dangerHover' },
-  warn: { bg: 'accentWash/15', ink: 'accentText' },
-  info: { bg: 'tint/6', ink: 'textMuted' },
-  debug: { bg: 'tint/4', ink: 'textDim' },
-  trace: { bg: 'tint/4', ink: 'textDim' },
-};
-
-const INFO_TONE = { bg: 'tint/6', ink: 'textMuted' } as const;
-
-function sameDay(a: number | undefined, b: number): boolean {
-  if (!a) return false;
-  return new Date(a).toDateString() === new Date(b).toDateString();
-}
-
-// Every line carries a clock, so the date belongs where it changes rather than
-// on all of them: a log read top to bottom is otherwise a column of times that
-// silently crosses midnight.
-function DayMark({ ts }: Readonly<{ ts: number }>) {
-  const locale = useLocaleDefault();
-  return (
-    <Row align="center" gap={10} pt={10} pb={6}>
-      <Text variant="overline" color="textDim" shrink={0}>
-        {new Date(ts).toLocaleDateString(locale, {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-        })}
-      </Text>
-      <Box flex minH={0} h={1} bg="tint/8" />
-    </Row>
-  );
-}
-
-function LogLine({ entry }: Readonly<{ entry: LogEntry }>) {
-  const locale = useLocaleDefault();
-  const time = new Date(entry.ts).toLocaleTimeString(locale, { hour12: false });
-  const tone = LEVEL_TONE[entry.level] ?? INFO_TONE;
-  return (
-    <>
-      <Text variant="meta" font="mono" color="textDim" style={TABULAR}>
-        {time}
-      </Text>
-      <Box radius={4} bg={tone.bg} px={6}>
-        <Text variant="overline" color={tone.ink} textAlign="center" lines={1}>
-          {entry.level}
-        </Text>
-      </Box>
-      <Row align="baseline" gap={8}>
-        {entry.source === 'core' ? null : (
-          <Box shrink={0} radius={4} bg="accentSoft" px={6}>
-            <Text variant="overline" color="accentText" lines={1}>
-              {entry.source.replace(/^dev\.kroma\./, '')}
-            </Text>
-          </Box>
-        )}
-        <Text variant="meta" font="mono" color="textMuted" flex={1} minW={0}>
-          {entry.target ? <Text color="textDim">{entry.target}: </Text> : null}
-          {entry.message}
-        </Text>
-      </Row>
     </>
   );
 }

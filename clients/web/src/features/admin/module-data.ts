@@ -1,6 +1,6 @@
 // The module admin surface's shared data hooks: the two polls every module
 // view reads (installed modules + store catalog) with the one refresh that
-// covers them, and the enable-toggle flow the list row and the detail drawer
+// covers them, and the enable-toggle flow the list row and the detail page
 // both drive.
 
 import { useState } from 'react';
@@ -31,9 +31,15 @@ export function useModuleData() {
   return { modules, catalog, reload, reloadCatalog, refreshAll };
 }
 
+export interface ModuleToggle {
+  busy: boolean;
+  error: string | null;
+  toggle: (enabled: boolean) => Promise<void>;
+}
+
 /** Toggle a module and surface the server's start warning (or the request
  * error) as `error`; `onDone` fires after every attempt. */
-export function useModuleToggle(id: string, onDone?: () => void) {
+export function useModuleToggle(id: string, onDone?: () => void): ModuleToggle {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const toggle = async (enabled: boolean) => {

@@ -222,6 +222,8 @@ pub fn followers_of_show(conn: &Connection, show_id: &str) -> rusqlite::Result<V
 }
 
 /// A catalogue entry that appeared since a watermark, for the media digest.
+/// `poster_url` is the show's for an episode, the title's own otherwise: an
+/// episode's art is a still, which is not what an announcement should show.
 #[derive(Debug, Clone)]
 pub struct AddedTitle {
     pub id: String,
@@ -232,6 +234,7 @@ pub struct AddedTitle {
     pub season: Option<u32>,
     pub episode: Option<u32>,
     pub added_at: String,
+    pub poster_url: Option<String>,
 }
 
 /// Everything added to the catalogue strictly after `since` (ISO-8601, compared
@@ -243,8 +246,16 @@ pub fn items_added_since(
     limit: usize,
 ) -> rusqlite::Result<Vec<AddedTitle>> {
     let mut stmt = conn.prepare(
-        "SELECT id, kind, title, show_id, show_title, season, episode, added_at FROM items \
-         WHERE added_at > ?1 ORDER BY added_at DESC LIMIT ?2",
+        "SELECT i.id, i.kind, i.title, i.show_id, i.show_title, i.season, i.episode, i.added_at, \
+                COALESCE(mcs.poster_url, json_extract(sh.metadata,'$.posterUrl'), \
+                         mci.poster_url, json_extract(i.metadata,'$.posterUrl')) \
+           FROM items i \
+           LEFT JOIN shows sh ON sh.id = i.show_id \
+           LEFT JOIN metadata_core mcs \
+             ON mcs.subject_kind = 'show' AND mcs.subject_id = i.show_id \
+           LEFT JOIN metadata_core mci \
+             ON mci.subject_kind = 'item' AND mci.subject_id = i.id \
+          WHERE i.added_at > ?1 ORDER BY i.added_at DESC LIMIT ?2",
     )?;
     let rows = stmt.query_map(params![since, limit as i64], |r| {
         Ok(AddedTitle {
@@ -256,6 +267,7 @@ pub fn items_added_since(
             season: r.get(5)?,
             episode: r.get(6)?,
             added_at: r.get(7)?,
+            poster_url: r.get(8)?,
         })
     })?;
     rows.collect()
@@ -550,6 +562,35 @@ mod tests {
         .unwrap();
 
         assert!(insert_notification(&conn, &u1, &new("over", 9_999)).is_err());
+    }
+
+    #[test]
+    fn an_addition_carries_the_poster_the_notification_will_show() {
+        let (p, _, _) = pool();
+        let conn = p.get().unwrap();
+        conn.execute_batch(
+            "INSERT INTO libraries (id,name,kind,path,added_at) \
+               VALUES ('lib','Films','movies','/x','2020-01-01T00:00:00Z'); \
+             INSERT INTO shows (id,library,title,metadata,added_at) \
+               VALUES ('shw','lib','Severance','{\"posterUrl\":\"/blob/shw.webp\"}','2020-01-01T00:00:00Z'); \
+             INSERT INTO items (id,kind,title,container,library,added_at) \
+               VALUES ('m1','movie','Dune','mkv','lib','2026-01-02T00:00:00Z'); \
+             INSERT INTO items (id,kind,title,container,library,metadata,added_at) \
+               VALUES ('m2','movie','Arrival','mkv','lib','{\"posterUrl\":\"/blob/m2.webp\"}','2026-01-03T00:00:00Z'); \
+             INSERT INTO items (id,kind,title,container,library,show_id,season,episode,added_at) \
+               VALUES ('e1','episode','Ep 4','mkv','lib','shw',1,4,'2026-01-04T00:00:00Z'); \
+             INSERT INTO metadata_core (subject_kind,subject_id,poster_url,updated_at) \
+               VALUES ('item','m1','/core/m1.webp',0);",
+        )
+        .unwrap();
+
+        let added = items_added_since(&conn, "2026-01-01", 10).unwrap();
+        let poster = |id: &str| added.iter().find(|a| a.id == id).unwrap().poster_url.clone();
+        assert_eq!(poster("m1").as_deref(), Some("/core/m1.webp"));
+        // Not yet re-enriched into `metadata_core`: the stored blob still answers.
+        assert_eq!(poster("m2").as_deref(), Some("/blob/m2.webp"));
+        // An episode has a still of its own, never a poster: the show's answers.
+        assert_eq!(poster("e1").as_deref(), Some("/blob/shw.webp"));
     }
 
     #[test]

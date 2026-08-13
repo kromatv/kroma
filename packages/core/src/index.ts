@@ -1,6 +1,7 @@
 // Shared domain logic. Re-exports @kroma/client so app code can import the API
 // client, wire types and schemas from `@kroma/core`.
 export * from '@kroma/client';
+export * from './airdate';
 export * from './brand';
 export * from './browse';
 export * from './compat';

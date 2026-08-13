@@ -79,6 +79,7 @@ export function LoginForm({
             hideLabel // Deliberate: the sign-in field is what this screen is for.
           >
             <Field.Input
+              lift
               icon="user"
               placeholder={t('auth.emailOrUsername')}
               value={identifier}
@@ -95,6 +96,7 @@ export function LoginForm({
           hideLabel // Deliberate: with a profile already picked, the password is the only thing left to type.
         >
           <Field.Input
+            lift
             type="password"
             icon="lock"
             placeholder={t('auth.password')}

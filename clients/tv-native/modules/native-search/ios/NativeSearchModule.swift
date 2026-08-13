@@ -12,7 +12,7 @@ public class NativeSearchModule: Module {
     Name("NativeSearch")
 
     View(NativeSearchView.self) {
-      Events("onChangeText", "onLayoutResults")
+      Events("onChangeText", "onLayoutResults", "onFocusOwner")
 
       Prop("placeholder") { (view: NativeSearchView, placeholder: String) in
         view.placeholder = placeholder
@@ -22,6 +22,12 @@ public class NativeSearchModule: Module {
       // way, through `onChangeText`.
       Prop("text") { (view: NativeSearchView, text: String) in
         view.setText(text)
+      }
+
+      // Which side of the screen should hold the television's focus. Same one
+      // way as `text`: where it actually is comes back as `onFocusOwner`.
+      Prop("focus") { (view: NativeSearchView, owner: FocusOwner) in
+        view.setFocusOwner(owner)
       }
     }
   }

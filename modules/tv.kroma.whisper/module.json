@@ -1,7 +1,7 @@
 {
   "id": "tv.kroma.whisper",
   "name": "Whisper transcription",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minServer": "0.1.4",
   "dependsOn": [],
   "provides": [
@@ -10,5 +10,6 @@
       "id": "whisper"
     }
   ],
-  "description": "In-process Whisper subtitle transcription (candle)."
+  "description": "In-process Whisper subtitle transcription (candle).",
+  "ports": ["whisper"]
 }

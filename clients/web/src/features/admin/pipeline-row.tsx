@@ -3,6 +3,7 @@
 // the overall status pill, and a reprocess shortcut.
 
 import type { ElementRow, MessageKey, Translate, Treatment } from '@kroma/core';
+import { Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Box, type ColorValue, Icon, Row, Spinner, Text, Tooltip } from '@kroma/ui/kit';
 import { Pill, PillDot } from '#web/features/admin/pill';
@@ -13,7 +14,6 @@ import {
   posterGrad,
   statusMeta,
 } from '#web/features/admin/pipeline-meta';
-import { Table } from '#web/features/admin/table';
 import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
 

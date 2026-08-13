@@ -5,7 +5,7 @@
 // for either. Every number below comes from the control shell, never from a
 // value tuned here.
 
-import { CONTROL } from '@kroma/ui/kit';
+import { CONTROL, RING_ROOM } from '@kroma/ui/kit';
 import type { CSSProperties } from 'react';
 import type { ViewStyle } from 'react-native';
 
@@ -37,7 +37,6 @@ export const SIDE_NAV_COLUMN: CSSProperties = {
   minHeight: 0,
   flex: 1,
   flexDirection: 'column',
-  gap: 2,
   paddingInline: SIDE_NAV_GUTTER,
   paddingTop: 4,
 };
@@ -51,6 +50,9 @@ export const SIDE_NAV_FRAME: CSSProperties = {
   flex: 1,
   flexDirection: 'column',
   overflowY: 'auto',
+  // A row brought into view lands off the edge that clips it by the room its
+  // focus ring stands in, rather than flush with it.
+  scrollPadding: RING_ROOM,
 };
 
 /** A row's name: it takes the width the glyph and the tail leave, and a label

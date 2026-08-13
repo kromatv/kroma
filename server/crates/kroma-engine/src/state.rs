@@ -20,6 +20,11 @@ use crate::services::settings::Settings;
 use crate::services::subtitles::GenRegistry;
 use crate::infra::hls;
 
+/// Resolves a port contract name to the running provider's `(base_url, token)`.
+/// The core holds only this: it never learns which module answers.
+pub type PortEndpoint =
+    std::sync::Arc<dyn Fn(&str) -> Option<(String, String)> + Send + Sync>;
+
 pub struct AppState {
     pub config: Config,
     pub ffprobe_available: bool,
@@ -45,6 +50,10 @@ pub struct AppState {
     // rather than queueing, since a permit is held for the whole transfer.
     pub downloads: Arc<tokio::sync::Semaphore>,
     me: std::sync::Weak<AppState>,
+    // Set by the composition root from the module supervisor. A FUNCTION, not
+    // the supervisor itself: the engine must not name it, and this is the whole
+    // of what the core knows about reaching a module.
+    pub(crate) port_endpoint: PortEndpoint,
     pub(crate) services:
         std::collections::HashMap<std::any::TypeId, std::sync::Arc<dyn std::any::Any + Send + Sync>>,
     // The harness's scratch `data_dir`, held here rather than by the test body:
@@ -82,6 +91,9 @@ impl AppState {
         // jobs from the downloads module), registered alongside the built-ins
         // so the core roster names no module.
         module_jobs: &'static [crate::services::jobs::Builtin],
+        // Resolves a port contract name to the running provider's
+        // `(base_url, token)`. Supplied by the binary, which owns the supervisor.
+        port_endpoint: PortEndpoint,
     ) -> SharedState {
         let hls = hls::HlsEngine::new(
             &config.data_dir,
@@ -151,6 +163,7 @@ impl AppState {
             instance_id,
             downloads,
             me: weak.clone(),
+            port_endpoint,
             services,
             #[cfg(test)]
             scratch_dir: std::sync::OnceLock::new(),
@@ -206,6 +219,7 @@ mod tests {
             Arc::new(crate::ports::NoopEmbedder),
             std::collections::HashMap::new(),
             MODULE_JOB,
+            Arc::new(|_| None),
         );
         state.own_scratch_dir(dir);
 

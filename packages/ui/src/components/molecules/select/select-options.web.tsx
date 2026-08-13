@@ -17,6 +17,7 @@ import {
 } from '#ui/lib/anchored-panel';
 import { AnchoredPopup } from '#ui/lib/anchored-popup';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
+import { useFocusVisible } from '#ui/lib/focus-visible';
 import { type SelectOption, SelectRowContext, type SelectRowState } from './select-context';
 import { SelectOptionsDialog } from './select-options-dialog';
 import type { SelectSurfaceProps } from './select-surface';
@@ -52,6 +53,7 @@ function SelectPopover({
   const baseId = useId();
   const rows = useRef(new Map<number, number>());
   const [active, setActive] = useState(() => firstEnabled(options, value));
+  const keyed = useFocusVisible(active);
 
   const at = useAnchoredPlacement(anchor, {
     minWidth: MIN_WIDTH,
@@ -93,6 +95,7 @@ function SelectPopover({
     presentation: 'panel',
     nativeID: `${baseId}-${index}`,
     active: index === active,
+    keyed,
     onHoverIn: () => setActive(index),
     onLayout: (y) => rows.current.set(index, y),
   });

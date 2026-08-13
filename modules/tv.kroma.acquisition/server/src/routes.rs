@@ -42,8 +42,7 @@ pub async fn manual_search<S: HostCtx + Clone + Send + Sync + 'static>(
 ) -> Result<Response, Response> {
     require_acquisition(&state, &user)?;
     let view: ManualSearchView =
-        match tokio::task::spawn_blocking(move || crate::search::manual_search(&state, &body.query))
-            .await
+        match tokio::task::spawn_blocking(move || crate::search::manual_search(&state, &body)).await
         {
             Ok(Ok(v)) => v,
             Ok(Err(e)) => return Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
@@ -66,7 +65,7 @@ pub async fn analyze<S: HostCtx + Clone + Send + Sync + 'static>(
         return Err(json_error(StatusCode::BAD_REQUEST, "a magnet or .torrent URL is required"));
     }
     let analysis = match tokio::task::spawn_blocking(move || {
-        let entries = crate::downloads(&state).list_files(&state, &magnet)?;
+        let entries = crate::downloads(&state)?.list_files(&state, &magnet)?;
         let files: Vec<(String, u64)> =
             entries.iter().map(|e| (e.path.clone(), e.size_bytes)).collect();
         let content = kroma_module_sdk::scene::classify(&files);
@@ -130,12 +129,17 @@ pub async fn manual_add<S: HostCtx + Clone + Send + Sync + 'static>(
         ..Default::default()
     };
     let grab_state = state.clone();
-    let result = blocking(move || Ok(crate::downloads(&grab_state).grab(&grab_state, spec))).await?;
+    let result =
+        blocking(move || Ok(crate::downloads(&grab_state).and_then(|d| d.grab(&grab_state, spec))))
+            .await?;
     match result {
         Ok(row) => {
             let id = row.id.clone();
             // Slow engine add runs in the background so the request returns now.
-            tokio::task::spawn_blocking(move || crate::downloads(&state).activate(&state, &row));
+            tokio::task::spawn_blocking(move || match crate::downloads(&state) {
+                Ok(downloads) => downloads.activate(&state, &row),
+                Err(e) => tracing::warn!(target: "acquisition", "grabbed but not started: {e:#}"),
+            });
             Ok(Json(json!({ "id": id })).into_response())
         }
         Err(e) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),

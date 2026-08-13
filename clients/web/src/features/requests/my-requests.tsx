@@ -1,11 +1,11 @@
 import {
+  type DownloadProgressEvent,
   KromaEvents,
   type MediaRequest,
   posterColors,
   type ServerEvent,
   sizedImageUrl,
 } from '@kroma/core';
-import type { DownloadProgressEvent } from '@kroma/module-torrents/schemas';
 import { useLocale, useT } from '@kroma/ui';
 import {
   Box,

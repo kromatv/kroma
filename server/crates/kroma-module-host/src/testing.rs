@@ -118,6 +118,7 @@ pub struct StubHost {
     settings: Arc<Mutex<BTreeMap<String, serde_json::Value>>>,
     string_settings: Option<StringSettings>,
     services: Arc<Mutex<Vec<Service>>>,
+    ports: Arc<Mutex<BTreeMap<String, (String, String)>>>,
     log: Arc<Log>,
 }
 
@@ -153,6 +154,7 @@ impl StubHost {
             settings: Arc::new(Mutex::new(BTreeMap::new())),
             string_settings: None,
             services: Arc::new(Mutex::new(Vec::new())),
+            ports: Arc::new(Mutex::new(BTreeMap::new())),
             log: Arc::new(Log::default()),
         }
     }
@@ -221,6 +223,17 @@ impl StubHost {
     /// name.
     pub fn with_service_raw(self, entry: Service) -> Self {
         self.services.lock().unwrap().push(entry);
+        self
+    }
+
+    /// Point a port contract at a provider this test stood up (see the SDK's
+    /// `testing::serve`). Ports resolve over HTTP now, so a fake is served
+    /// rather than injected.
+    pub fn with_port(self, port: &str, base: &str, token: &str) -> Self {
+        self.ports
+            .lock()
+            .unwrap()
+            .insert(port.to_string(), (base.to_string(), token.to_string()));
         self
     }
 
@@ -303,6 +316,10 @@ impl HostCtx for StubHost {
     fn metadata_language(&self) -> String {
         self.metadata_language.clone()
     }
+    fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
+        self.ports.lock().unwrap().get(port).cloned()
+    }
+
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
         self.services
             .lock()
@@ -395,6 +412,10 @@ impl<H: HostCtx> HostCtx for Recording<H> {
     fn metadata_language(&self) -> String {
         self.inner.metadata_language()
     }
+    fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
+        self.inner.port_endpoint(port)
+    }
+
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
         self.inner.get_service(type_id)
     }

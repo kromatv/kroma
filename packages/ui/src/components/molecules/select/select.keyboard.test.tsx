@@ -11,6 +11,7 @@ import { act } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
+import { activeTheme } from '#ui/core';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusScope } from '#ui/lib/focus-scope';
 import { clearPressGuard } from '#ui/lib/press-guard';
@@ -23,6 +24,12 @@ afterEach(() => {
   cleanup();
   clearPressGuard();
 });
+
+// A row's ring is painted rather than focused, so it arrives as a class and is
+// only there to compute.
+function ringed(row: HTMLElement) {
+  return getComputedStyle(row).outlineWidth === `${activeTheme().ring.focusEdge.outlineWidth}px`;
+}
 
 // react-native-web's press responder fires on the keyUP that follows a
 // keyDown, so a keyboard press is both halves.
@@ -385,6 +392,22 @@ describe('the anchored listbox', () => {
     press(trigger);
     const rows = screen.getAllByRole('option');
     expect(trigger.getAttribute('aria-activedescendant')).toBe(rows[1]?.getAttribute('id'));
+  });
+
+  it('rings the row the keys are on, and leaves the pointer its wash', () => {
+    render(<Quality />);
+    const trigger = screen.getByRole('combobox');
+    press(trigger);
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+
+    const rows = screen.getAllByRole('option');
+    expect(ringed(rows[1] as HTMLElement)).toBe(true);
+    expect(ringed(rows[0] as HTMLElement)).toBe(false);
+
+    fireEvent.mouseMove(document);
+    fireEvent.pointerEnter(rows[3] as HTMLElement);
+    expect(rows[3]?.getAttribute('id')).toBe(trigger.getAttribute('aria-activedescendant'));
+    expect(ringed(rows[3] as HTMLElement)).toBe(false);
   });
 
   it('types ahead to the row the key names', () => {

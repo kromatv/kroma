@@ -3,25 +3,23 @@
 // `onCancel` adds a cancel button for callers that show the browser on demand.
 import type { AdminFsList } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, color, Divider, Icon, IconButton, ListRow, Row, Text } from '@kroma/ui/kit';
-import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
+import {
+  Button,
+  EmptyState,
+  Icon,
+  IconButton,
+  ListRow,
+  Row,
+  Spinner,
+  styles,
+  Text,
+} from '@kroma/ui/kit';
+import { type ReactNode, useEffect, useState } from 'react';
+import { ScrollView } from 'react-native';
 import { kromaClient } from '#web/shared/lib/api';
 
-// A capped, scrolling list: `overflow-y` and `max-height` have no React Native
-// spelling, so the list stays a real element.
-const LIST_PANE: CSSProperties = { maxHeight: 208, overflowY: 'auto' };
-
-const SELECTED_FILL = {
-  backgroundColor: color('success/15'),
-  borderColor: color('success/35'),
-} as const;
-
-const DASHED = {
-  borderWidth: 1,
-  borderColor: color('tint/20'),
-  borderStyle: 'dashed',
-} as const;
-
+/** The browser itself, as the caller's own band: a crumb, the folders under it
+ * and the two actions, sharing one card. */
 export function FolderPicker({
   value,
   onChange,
@@ -53,144 +51,70 @@ export function FolderPicker({
 
   const atRoot = path === '';
   const entries = list?.entries ?? [];
-  const canSelect = !atRoot;
-  const isSelected = !atRoot && value === path;
+  const committed = !atRoot && value === path;
 
-  let listBody: ReactNode;
-  if (loading && entries.length === 0) {
-    listBody = (
-      <Text variant="meta" color="textDim" textAlign="center" px={12} py={24}>
-        {t('common.loading')}
-      </Text>
-    );
-  } else if (entries.length === 0) {
-    listBody = (
-      <Text variant="meta" color="textDim" textAlign="center" px={12} py={24}>
-        {t('admin.noSubfolders')}
-      </Text>
+  let body: ReactNode;
+  if (entries.length === 0) {
+    body = (
+      <EmptyState.Root size="sm" icon={loading ? undefined : 'folder-off'}>
+        {loading ? <Spinner size={22} /> : null}
+        <EmptyState.Title>
+          {loading ? t('common.loading') : t('admin.noSubfolders')}
+        </EmptyState.Title>
+      </EmptyState.Root>
     );
   } else {
-    listBody = (
-      <ListRow.Group size="sm">
-        {entries.map((e) => (
-          <ListRow.Root key={e.path} size="sm" onPress={() => setPath(e.path)}>
-            <ListRow.Leading>
-              <Icon name="folder" size={16} thickness={1.8} color="accent" />
-            </ListRow.Leading>
-            <ListRow.Label>{e.name}</ListRow.Label>
-          </ListRow.Root>
-        ))}
-      </ListRow.Group>
-    );
+    body = entries.map((e) => (
+      <ListRow.Root key={e.path} onPress={() => setPath(e.path)}>
+        <ListRow.Leading>
+          <Icon name="folder" size={17} thickness={1.8} color="accent" />
+        </ListRow.Leading>
+        <ListRow.Label>{e.name}</ListRow.Label>
+      </ListRow.Root>
+    ));
   }
 
+  // The three bands are the group's own members, so the card, its corner, its
+  // edge and the rules between the bands are drawn once rather than nested.
   return (
-    <Box radius="xs" bg="bg" border="borderStrong" overflow="hidden">
-      <Row gap={8} px={12} py={10}>
+    <ListRow.Group divider={0}>
+      <Row gap={8} px={10} py={8}>
         <IconButton
           variant="ghost"
-          control="sm"
-          icon="corner-left-up"
+          diameter={32}
+          glyph={17}
+          icon="arrow-up"
           label={t('admin.parentFolder')}
           onPress={() => list?.parent != null && setPath(list.parent)}
           disabled={list?.parent == null}
         />
-        <Icon name="folder" size={15} thickness={1.8} color="accent" />
+        <Icon name={atRoot ? 'server' : 'folder-open'} size={16} thickness={1.8} color="accent" />
         <Text variant="meta" color="textMuted" lines={1} flex={1} minW={0}>
           {atRoot ? t('admin.volumes') : path}
         </Text>
+        {loading && entries.length > 0 ? <Spinner size={14} /> : null}
       </Row>
-      <Divider color="tint/6" />
 
-      <div style={LIST_PANE}>{listBody}</div>
+      <ScrollView style={s.pane}>{body}</ScrollView>
 
-      <Divider color="tint/6" />
-      <Row between gap={8} px={12} py={10}>
-        <Text variant="meta" color="textDim" lines={1} flex={1} minW={0}>
-          {value || ''}
-        </Text>
+      <Row gap={8} px={10} py={8} justify="flex-end">
         {onCancel ? (
           <Button size="sm" variant="ghost" label={t('common.cancel')} onPress={onCancel} />
         ) : null}
         <Button
           size="sm"
-          variant={isSelected ? 'glass' : 'primary'}
+          // The kit's own "already on" paint rather than a fill invented here:
+          // browsing back onto the folder already committed offers nothing.
+          variant={committed ? 'outline' : 'primary'}
+          active={committed}
           icon="check"
           label={t('admin.selectFolder')}
           onPress={() => onChange(path)}
-          disabled={!canSelect}
-          style={isSelected ? SELECTED_FILL : null}
+          disabled={atRoot}
         />
       </Row>
-    </Box>
+    </ListRow.Group>
   );
 }
 
-/** A folder input that keeps the browser closed until asked for: a dashed add
- * button while empty, the committed path once set (editable, and removable when
- * `onClear` is given), expanding into the [`FolderPicker`] on demand. */
-export function FolderField({
-  value,
-  onChange,
-  placeholder,
-  onClear,
-}: Readonly<{
-  value: string;
-  onChange: (path: string) => void;
-  placeholder: string;
-  onClear?: () => void;
-}>) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-
-  if (open) {
-    return (
-      <FolderPicker
-        value={value}
-        onChange={(path) => {
-          onChange(path);
-          setOpen(false);
-        }}
-        onCancel={() => setOpen(false)}
-      />
-    );
-  }
-  if (!value) {
-    return (
-      <Button
-        variant="ghost"
-        size="sm"
-        icon="plus"
-        label={placeholder}
-        onPress={() => setOpen(true)}
-        style={DASHED}
-      />
-    );
-  }
-  return (
-    <Row gap={10} px={12} py={8} radius="xs" bg="bg" border="border">
-      <Icon name="folder" size={16} thickness={1.8} color="accent" />
-      <Text variant="meta" color="textMuted" lines={1} flex={1} minW={0}>
-        {value}
-      </Text>
-      <IconButton
-        variant="ghost"
-        diameter={26}
-        glyph={15}
-        icon="pencil"
-        label={t('admin.changeFolder')}
-        onPress={() => setOpen(true)}
-      />
-      {onClear ? (
-        <IconButton
-          variant="ghost"
-          diameter={26}
-          glyph={15}
-          icon="x"
-          label={t('admin.removeFolder')}
-          onPress={onClear}
-        />
-      ) : null}
-    </Row>
-  );
-}
+const s = styles({ pane: { maxH: 232 } });

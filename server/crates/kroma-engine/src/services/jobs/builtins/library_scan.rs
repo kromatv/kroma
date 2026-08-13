@@ -16,7 +16,12 @@ pub(super) const SPEC: Builtin = Builtin {
 pub(super) fn run(ctx: &JobContext) -> Result<()> {
     let state = &ctx.state;
     ctx.info("scanning libraries (walk + sync)…");
-    let data = crate::services::scan::scan_and_publish(state)?;
+    let crate::services::scan::Scanned::Applied(data) =
+        crate::services::scan::scan_and_publish(state)?
+    else {
+        ctx.info("libraries produced no items; kept the stored index (mount offline?)");
+        return Ok(());
+    };
     ctx.info(format!(
         "scan complete {} libraries, {} shows, {} items",
         data.libraries.len(),

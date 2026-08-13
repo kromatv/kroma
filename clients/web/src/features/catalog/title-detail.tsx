@@ -22,7 +22,8 @@ import {
   SimilarRail,
   subString,
 } from '#web/features/catalog/detail';
-import { SeasonSection } from '#web/features/catalog/episode-list';
+import { EPISODES_ANCHOR, SeasonSection } from '#web/features/catalog/episode-list';
+import { epKey, toEpisodeRefs, toggle } from '#web/features/catalog/episode-selection';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { TreatmentsPanel } from '#web/features/catalog/treatments-panel';
 import { useAuth } from '#web/shared/lib/auth';
@@ -31,7 +32,6 @@ import { userQueries } from '#web/shared/lib/queries';
 import { type TitleView, tmdbMetaLine } from '#web/shared/lib/titleView';
 import { useWatched } from '#web/shared/lib/watched';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
-import { SeasonPicker } from '#web/shared/ui/season-picker';
 
 // The page gutter is a fluid CSS custom property, which no style number can
 // carry, so anything indented by it stays a plain element.
@@ -74,7 +74,7 @@ function nextViewAfterRequest(
 
 function addPendingEpisodes(prev: Set<string>, episodes: EpisodeRef[]): Set<string> {
   const next = new Set(prev);
-  for (const e of episodes) next.add(`${e.season}-${e.episode}`);
+  for (const e of episodes) next.add(epKey(e.season, e.episode));
   return next;
 }
 
@@ -180,12 +180,15 @@ function TitleBody({
   epProgress,
   busy,
   pendingEps,
+  selected,
   isWatched,
   toggleWatched,
   onPlay,
-  onPickSeason,
-  onPickAll,
-  onRequestEpisode,
+  onToggleEpisode,
+  onRequestSelected,
+  onRequestSeason,
+  onRequestAll,
+  onClearSelection,
   onOpenSimilar,
 }: Readonly<{
   view: TitleView;
@@ -196,12 +199,15 @@ function TitleBody({
   epProgress: Record<string, number>;
   busy: boolean;
   pendingEps: Set<string>;
+  selected: Set<string>;
   isWatched: (id: string) => boolean;
   toggleWatched: (id: string) => void;
   onPlay: (id: string) => void;
-  onPickSeason: (season: number) => void;
-  onPickAll: () => void;
-  onRequestEpisode: (season: number, episode: number) => void;
+  onToggleEpisode: (season: number, episode: number) => void;
+  onRequestSelected: () => void;
+  onRequestSeason: (season: number) => void;
+  onRequestAll: () => void;
+  onClearSelection: () => void;
   onOpenSimilar: (key: string) => void;
 }>) {
   const t = useT();
@@ -234,9 +240,12 @@ function TitleBody({
           progressOf={(id) => epProgress[id] ?? null}
           onPlay={onPlay}
           canRequest={view.canRequest}
-          onPickSeason={onPickSeason}
-          onPickAll={onPickAll}
-          onRequestEpisode={onRequestEpisode}
+          selected={selected}
+          onToggleEpisode={onToggleEpisode}
+          onRequestSelected={onRequestSelected}
+          onRequestSeason={onRequestSeason}
+          onRequestAll={onRequestAll}
+          onClearSelection={onClearSelection}
           pendingEpisodes={pendingEps}
           requestBusy={busy}
         />
@@ -256,8 +265,8 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
   const [view, setView] = useState(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // `null` = closed; `number[]` = open (empty preselects every open season).
-  const [pick, setPick] = useState<number[] | null>(null);
+  // Episodes ticked on the season list, as `"season-episode"` keys.
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
   // Individual episodes optimistically marked pending (`"season-episode"` keys),
   // since the view carries no per-episode request flag.
   const [pendingEps, setPendingEps] = useState<Set<string>>(() => new Set());
@@ -296,15 +305,33 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
       .then((req) => {
         setView((v) => nextViewAfterRequest(v, req.status, seasons, episodes));
         if (episodes?.length) setPendingEps((prev) => addPendingEpisodes(prev, episodes));
-        setPick(null);
+        setSelected(new Set());
       })
       .catch((e) => setError(apiErrorText(e, t('discover.requestFailed'))))
       .finally(() => setBusy(false));
   };
-  const requestEpisode = (season: number, episode: number) =>
-    doRequest(null, [{ season, episode }]);
-  // Movies request immediately; shows open the season sheet.
-  const onRequestClick = () => (view.kind === 'show' ? setPick([]) : doRequest(null));
+
+  const toggleEpisode = (season: number, episode: number) =>
+    setSelected((prev) => toggle(prev, epKey(season, episode)));
+  const requestSelected = () => {
+    const episodes = toEpisodeRefs(selected);
+    if (episodes.length > 0) doRequest(null, episodes);
+  };
+  const requestSeason = (season: number) => doRequest([season]);
+  // `null` seasons with no episodes is the whole show, which is what the API
+  // reads as "every season".
+  const requestAllSeasons = () => doRequest(null);
+  // A movie has nothing to pick; a show scrolls to the season list, where the
+  // per-episode ticks and the two shortcuts live.
+  const onRequestClick = () => {
+    // With no season list there is no section to scroll to and nothing to pick,
+    // so the button asks for the whole show rather than doing nothing at all.
+    if (view.kind !== 'show' || view.seasons.length === 0) {
+      doRequest(null);
+      return;
+    }
+    document.getElementById(EPISODES_ANCHOR)?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const openSimilar = (key: string) => {
     const s = view.similar.find((x) => x.key === key);
@@ -357,25 +384,17 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
         epProgress={epProgress}
         busy={busy}
         pendingEps={pendingEps}
+        selected={selected}
         isWatched={isWatched}
         toggleWatched={toggleWatched}
         onPlay={play}
-        onPickSeason={(s) => setPick([s])}
-        onPickAll={() => setPick([])}
-        onRequestEpisode={requestEpisode}
+        onToggleEpisode={toggleEpisode}
+        onRequestSelected={requestSelected}
+        onRequestSeason={requestSeason}
+        onRequestAll={requestAllSeasons}
+        onClearSelection={() => setSelected(new Set())}
         onOpenSimilar={openSimilar}
       />
-
-      {pick !== null ? (
-        <SeasonPicker
-          seasons={view.seasons}
-          title={view.title}
-          busy={busy}
-          initial={pick.length > 0 ? pick : undefined}
-          onClose={() => setPick(null)}
-          onRequest={doRequest}
-        />
-      ) : null}
     </main>
   );
 }

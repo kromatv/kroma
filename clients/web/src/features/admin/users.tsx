@@ -1,4 +1,5 @@
 import { type AdminUser, resolveImageUrl } from '@kroma/core';
+import { Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import {
   Avatar,
@@ -14,7 +15,6 @@ import {
 } from '@kroma/ui/kit';
 import { Pill, PillDot } from '#web/features/admin/pill';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
-import { Table } from '#web/features/admin/table';
 import { EditUserModal, InviteModal, PendingInvite } from '#web/features/admin/users-modals';
 import { relativeSeen } from '#web/shared/lib/adminFormat';
 import { apiBase } from '#web/shared/lib/api';

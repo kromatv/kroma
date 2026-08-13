@@ -9,6 +9,10 @@ import { markPress } from './perf';
 
 const PROBE = { seq: focusSeq, box: focusBox };
 
+type Direction = 'up' | 'down' | 'left' | 'right' | 'enter';
+
+const handlers = new Set<(direction: Directions) => void>();
+
 // Tizen and webOS name the four directions without the `Arrow` prefix.
 const KEYS: Record<string, Directions> = {
   ArrowUp: Directions.UP,
@@ -39,8 +43,13 @@ function dropStrayFocus(document: Document): void {
 export function configureRemote(): void {
   SpatialNavigation.configureRemoteControl({
     remoteControlSubscriber: (handle: (direction: Directions) => void) => {
+      handlers.add(handle);
       const document = webDocument();
-      if (!document) return () => {};
+      if (!document) {
+        return () => {
+          handlers.delete(handle);
+        };
+      }
       const onKey = (event: KeyboardEvent) => {
         // Tab is the browser's OWN focus walk, and it moves DOM focus - a
         // second focus, landing on a different control from the navigator's.
@@ -68,10 +77,23 @@ export function configureRemote(): void {
         handle(direction);
       };
       document.addEventListener('keydown', onKey);
-      return () => document.removeEventListener('keydown', onKey);
+      return () => {
+        handlers.delete(handle);
+        document.removeEventListener('keydown', onKey);
+      };
     },
     remoteControlUnsubscriber: (stop: () => void) => stop(),
   });
+}
+
+/**
+ * Posts a direction the app never heard as a press. One caller: a platform
+ * chrome that answered the press itself and is handing the focus over (see
+ * lib/focus-platform), where the navigator has to pick the ring up in the
+ * direction the viewer was already moving.
+ */
+export function postRemoteDirection(direction: Direction): void {
+  for (const handle of handlers) handle(direction as Directions);
 }
 
 /** Nothing to mount: the listener above is not tied to a screen. Kept so

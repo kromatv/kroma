@@ -47,12 +47,12 @@ pub fn public_routes() -> Router<SharedState> {
 /// blocks on a helper thread while THIS thread polls the row to drive the
 /// (thread-bound) `on_stage`/`on_progress` callbacks and writes the cancel flag.
 pub struct WhisperClient {
-    resolve: kroma_port_bridge::Resolver,
+    resolve: kroma_module_host::Resolver,
     pool: kroma_db::Pool,
 }
 
 impl WhisperClient {
-    pub fn new(resolve: kroma_port_bridge::Resolver, pool: kroma_db::Pool) -> Self {
+    pub fn new(resolve: kroma_module_host::Resolver, pool: kroma_db::Pool) -> Self {
         Self { resolve, pool }
     }
 

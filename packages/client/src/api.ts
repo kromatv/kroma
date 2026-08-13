@@ -86,8 +86,12 @@ import type {
   QuickConnectInit,
   Report,
   ReportsView,
+  RequestCoverageBody,
+  RequestLedgerView,
   RequestsView,
   SearchResponse,
+  SearchScope,
+  SeasonLedgerView,
   Section,
   SectionItem,
   ServerInfo,
@@ -101,6 +105,7 @@ import type {
   TopUser,
   UpNext,
   User,
+  WantedEntry,
 } from './types';
 
 export type { AccountPatch } from './client/accounts';
@@ -633,8 +638,20 @@ export class KromaClient {
   denyRequest(id: string, note?: string): Promise<MediaRequest> {
     return requests.denyRequest(this.ctx, id, note);
   }
-  searchReleases(id: string): Promise<InteractiveSearchView> {
-    return requests.searchReleases(this.ctx, id);
+  requestWanted(id: string): Promise<WantedEntry[]> {
+    return requests.requestWanted(this.ctx, id);
+  }
+  setRequestCoverage(id: string, body: RequestCoverageBody): Promise<MediaRequest> {
+    return requests.setRequestCoverage(this.ctx, id, body);
+  }
+  requestLedger(id: string): Promise<RequestLedgerView> {
+    return requests.requestLedger(this.ctx, id);
+  }
+  requestSeasonLedger(id: string, season: number): Promise<SeasonLedgerView> {
+    return requests.requestSeasonLedger(this.ctx, id, season);
+  }
+  searchReleases(id: string, scope?: SearchScope): Promise<InteractiveSearchView> {
+    return requests.searchReleases(this.ctx, id, scope);
   }
   grabRelease(id: string, body: GrabBody): Promise<void> {
     return requests.grabRelease(this.ctx, id, body);

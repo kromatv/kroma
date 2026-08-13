@@ -19,7 +19,8 @@ interface ProgressProps {
   thickness?: number;
   color?: ColorValue;
   trackColor?: ColorValue;
-  /** Round the ends. Off for the flush bar pinned to a tile's bottom edge. */
+  /** Round the ends into a pill. Pass `false` for the flush bar pinned to a
+   *  tile's bottom edge. */
   rounded?: boolean;
   indeterminate?: boolean;
   /** Names the bar to assistive tech. Leave it out inside a control that
@@ -39,12 +40,12 @@ function Progress({
   thickness = 6,
   color = 'accent',
   trackColor = 'tint/25',
-  rounded = false,
+  rounded = true,
   indeterminate = false,
   label,
 }: Readonly<ProgressProps>) {
   const sweep = useLoop('sweep', SWEEP_MS, indeterminate);
-  const corner = rounded ? 'circle' : 0;
+  const corner = rounded ? 'pill' : 0;
   // Pinned to the track's left edge and left open on the right, which is where
   // both the fill's inset and the sweep's travel land.
   const bar = barStyle(color, corner);
@@ -79,7 +80,7 @@ export { clamp01, Progress };
 // Shared by identity across every bar asking for the same paint: styleq keys its
 // compiled-style cache on the leaf object, so resolving one per render is a
 // guaranteed miss for every bar on a browse grid.
-function barStyle(color: ColorValue, corner: 'circle' | 0) {
+function barStyle(color: ColorValue, corner: 'pill' | 0) {
   return sharedStyle(`bar:${color}:${corner}`, {
     absolute: true,
     top: 0,

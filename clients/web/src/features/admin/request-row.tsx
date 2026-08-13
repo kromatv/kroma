@@ -2,11 +2,11 @@
 // requester, date, status chip, and quick approve/deny on pending rows.
 
 import type { MediaRequest, MessageKey } from '@kroma/core';
+import { TABULAR, Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Avatar, Box, Row, Text } from '@kroma/ui/kit';
 import { Pill } from '#web/features/admin/pill';
 import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
-import { TABULAR, Table } from '#web/features/admin/table';
 import { seasonsSummary } from '#web/shared/lib/request-status';
 import { Image } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
@@ -47,14 +47,16 @@ export function RequestRowView({
     <Table.Row onPress={onOpen}>
       <Table.Cell row gap={14}>
         <Poster req={req} />
-        <Box minW={0}>
-          <Row gap={10}>
-            <Text variant="label" lines={1}>
+        <Box flex minW={0}>
+          <Row gap={10} align="center" minW={0}>
+            <Text variant="label" lines={1} minW={0}>
               {req.title}
             </Text>
-            <Pill ink={km.color} bg={km.bg} variant="overline">
-              {t(`pipeline.type.${km.typeKey}` as MessageKey)}
-            </Pill>
+            <Box shrink={0}>
+              <Pill ink={km.color} bg={km.bg} variant="overline">
+                {t(`pipeline.type.${km.typeKey}` as MessageKey)}
+              </Pill>
+            </Box>
           </Row>
           <Text variant="meta" color="textDim" lines={1} mt={3}>
             {sub}

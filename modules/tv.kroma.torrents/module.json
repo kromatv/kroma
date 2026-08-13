@@ -1,7 +1,7 @@
 {
   "id": "tv.kroma.torrents",
   "name": "Torrent downloads",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "minServer": "0.1.4",
   "dependsOn": {
     "tv.kroma.indexer": "^0.1.0"
@@ -15,5 +15,6 @@
       "id": "rqbit"
     }
   ],
-  "description": "The embedded librqbit download engine + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one."
+  "description": "The embedded librqbit download engine + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one.",
+  "ports": ["download-grab", "download-db", "download-vpn"]
 }

@@ -123,7 +123,6 @@ kroma-module-macros = { path = "crates/kroma-module-macros" }
 kroma-module-runtime = { path = "crates/kroma-module-runtime" }
 # The core side: spawn/supervise module processes + reverse-proxy + callback API.
 kroma-module-supervisor = { path = "crates/kroma-module-supervisor" }
-kroma-port-bridge = { path = "crates/kroma-port-bridge" }
 # Push transports: Web Push (self-hosted), APNs and FCM.
 kroma-push = { path = "crates/kroma-push" }
 # The module SDK facade (ABOVE engine): the single crate every module depends on.
@@ -226,7 +225,6 @@ sysinfo = { workspace = true }
 # admin-mount lifecycle. Formerly server/src/modules; now its own crate.
 kroma-module-kernel = { workspace = true }
 # Named only to register its stateless TorznabPort engine at the composition root.
-kroma-port-bridge = { workspace = true }
 # The core reaches the out-of-process embedder (tv.kroma.vector .kmod) over HTTP.
 kroma-http = { workspace = true }
 kroma-whisper = { workspace = true }

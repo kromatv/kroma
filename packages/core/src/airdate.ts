@@ -1,0 +1,79 @@
+// Shared air-date formatting for the requests feature ("Manquants" and
+// "Bientôt disponible"), so both pages speak the same date vocabulary. Pure
+// functions (no JSX); every date-relative helper takes an optional `now` so
+// tests are deterministic.
+
+// `new Date('2025-09-16')` is UTC midnight, which renders as the 15th anywhere
+// west of Greenwich. A calendar date has no time zone, so it is read field by
+// field into local midnight and stays the day it says.
+function localMidnight(airDate: string): Date {
+  const [year, month, day] = airDate.split('-').map(Number);
+  return new Date(year ?? 0, (month ?? 1) - 1, day ?? 1);
+}
+
+/** Whole days from today (local midnight) to a `YYYY-MM-DD` date; negative for
+ * a past date, 0 for today. */
+export function daysFromToday(airDate: string, now: Date = new Date()): number {
+  const d = localMidnight(airDate);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  return Math.round((d.getTime() - today.getTime()) / 86_400_000);
+}
+
+/** Locale-aware relative air date that scales the unit (days → months → years),
+ * like Sonarr's "2 months ago" / "in 3 months", for past AND future dates.
+ * Empty for an undated value. */
+export function relativeAirDate(
+  airDate: string | null,
+  locale: string,
+  now: Date = new Date(),
+): string {
+  if (!airDate) return '';
+  const days = daysFromToday(airDate, now);
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  if (Math.abs(days) < 31) return rtf.format(days, 'day');
+  const months = Math.round(days / 30);
+  if (Math.abs(months) < 12) return rtf.format(months, 'month');
+  return rtf.format(Math.round(days / 365), 'year');
+}
+
+/** The same string with its opening letter capitalised, for a sentence that
+ * starts with a relative date ("dans 3 jours" reading as a line of its own).
+ * `Intl.RelativeTimeFormat` has no sentence-case option and `::first-letter`
+ * has no React Native spelling. */
+export function sentenceCase(text: string, locale: string): string {
+  if (!text) return text;
+  return text.charAt(0).toLocaleUpperCase(locale) + text.slice(1);
+}
+
+/** Compact day label with the weekday, e.g. "ven. 24 juil." / "Fri, Jul 24". */
+export function shortDayLabel(airDate: string, locale: string): string {
+  return localMidnight(airDate).toLocaleDateString(locale, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
+/** Dated day label, e.g. "24 juil. 2025" / "Jul 24, 2025". Carries the year,
+ * for a list spanning several of them. */
+export function datedDayLabel(airDate: string, locale: string): string {
+  return localMidnight(airDate).toLocaleDateString(locale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+/** Month heading label, e.g. "juillet 2026" / "July 2026". */
+export function monthLabel(airDate: string, locale: string): string {
+  return localMidnight(airDate).toLocaleDateString(locale, {
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+/** Stable `YYYY-MM` month bucket key (locale-independent). */
+export function monthKey(airDate: string): string {
+  return airDate.slice(0, 7);
+}

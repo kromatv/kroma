@@ -247,6 +247,69 @@ pub fn approve_request<S: HostCtx>(state: &S, id: &str, reviewer: Option<&str>) 
     db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request vanished after approve"))
 }
 
+/// Set exactly what a show request covers: the whole show (`None`/`None`), some
+/// seasons, some episodes, or a mix. Unlike the merge a second ask performs,
+/// this can NARROW as well as widen -- it is the admin saying what is wanted,
+/// not another viewer adding to it.
+///
+/// The ledger is reconciled rather than rebuilt, so an episode that stays in
+/// scope keeps whatever state it had: rebuilding it would forget that a download
+/// is queued or that the file is already on disk. What comes out of it is what
+/// the automatic search pass works from, so this is also how an admin says what
+/// the job should be hunting.
+pub fn set_coverage<S: HostCtx>(
+    state: &S,
+    id: &str,
+    seasons: Option<Vec<u32>>,
+    episodes: Option<Vec<EpisodeRef>>,
+) -> Result<MediaRequest> {
+    let conn = state.db().get()?;
+    let req = db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request not found"))?;
+    drop(conn);
+    if req.kind != RequestKind::Show {
+        bail!("a movie request covers one film; there is nothing to scope");
+    }
+    if matches!(req.status, RequestStatus::Denied) {
+        bail!("request was denied; delete it and ask again");
+    }
+    let seasons = seasons.filter(|s| !s.is_empty()).map(|mut s| {
+        s.sort_unstable();
+        s.dedup();
+        s
+    });
+    let episodes = normalize_episodes(episodes);
+    db::set_request_seasons(state.db(), id, seasons.as_deref(), now_ms())?;
+    db::set_request_episodes(state.db(), id, episodes.as_deref(), now_ms())?;
+
+    // A pending request has no ledger yet; approving it builds one from the
+    // coverage just set, so there is nothing to reconcile until then.
+    let status = if matches!(req.status, RequestStatus::Pending) {
+        req.status
+    } else {
+        reconcile_wanted(state, id)?;
+        match_one(state, id)?.unwrap_or(req.status)
+    };
+    publish(state, id, status);
+    state.trigger_job("acquisition.search", "request-coverage");
+    let conn = state.db().get()?;
+    db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request vanished after coverage change"))
+}
+
+/// Bring the ledger in line with what the request now covers, KEEPING the state
+/// of every row that survives. `insert_wanted` ignores rows already there and
+/// `prune_wanted` drops the ones that fell out of scope; between them nothing
+/// that was grabbed or is on disk is forgotten.
+fn reconcile_wanted<S: HostCtx>(state: &S, id: &str) -> Result<()> {
+    let conn = state.db().get()?;
+    let req = db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request not found"))?;
+    drop(conn);
+    let rows = build_wanted_rows(state, &req)?;
+    let keep: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
+    db::insert_wanted(state.db(), &rows, now_ms())?;
+    db::prune_wanted(state.db(), id, &keep)?;
+    Ok(())
+}
+
 pub fn deny_request<S: HostCtx>(state: &S, id: &str, reviewer: &str, note: Option<&str>) -> Result<MediaRequest> {
     let changed =
         db::set_request_status(state.db(), id, RequestStatus::Denied, Some(reviewer), note, now_ms())?;
@@ -445,36 +508,53 @@ fn needs_refresh(req: &MediaRequest, now: i64) -> bool {
 }
 
 /// Re-fetch every refreshable request from TMDB: additively extend its wanted
-/// ledger, backfill air dates, and store the airing signals.
+/// ledger, backfill air dates, and store the airing signals. An episode that
+/// aired since the last pass is put back at the front of the search queue and
+/// the search job is kicked, so a weekly show is looked for the day it airs
+/// rather than whenever the cron next comes round.
 pub fn refresh_pass<S: HostCtx>(state: &S) -> Result<usize> {
     let conn = state.db().get()?;
     let all = db::list_requests(&conn, None)?;
     drop(conn);
     let now = now_ms();
     let mut refreshed = 0usize;
+    let mut newly_aired: Vec<String> = Vec::new();
     for req in all {
         if !needs_refresh(&req, now) {
             continue;
         }
         // A per-request failure must not abort the pass; the next cron retries.
-        if let Err(e) = refresh_one(state, &req) {
-            tracing::warn!(target: "requests", request = %req.id, "refresh failed: {e:#}");
-            continue;
+        match refresh_one(state, &req) {
+            Ok(aired) => newly_aired.extend(aired),
+            Err(e) => {
+                tracing::warn!(target: "requests", request = %req.id, "refresh failed: {e:#}");
+                continue;
+            }
         }
         refreshed += 1;
+    }
+    if !newly_aired.is_empty() {
+        db::reset_wanted_search(state.db(), &newly_aired, now)?;
+        tracing::info!(target: "requests", count = newly_aired.len(), "newly aired, searching now");
+        state.trigger_job("acquisition.search", "episode-aired");
     }
     Ok(refreshed)
 }
 
-fn refresh_one<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<()> {
+// The ids of rows this refresh found to be airable now: newly inserted rows
+// already past their air date, plus rows whose date was backfilled into the
+// past. Both are cases where waiting for the next cron tick loses a day.
+fn refresh_one<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<Vec<String>> {
     let key = tmdb_key(state)?;
     let lang = language(state);
     let detail = discover::detail(&key, &lang, req.kind, req.tmdb_id)
         .map_err(|()| anyhow!("TMDB lookup failed"))?
         .ok_or_else(|| anyhow!("title not found on TMDB"))?;
 
+    let today = today_ymd();
+    let mut newly_aired: Vec<String> = Vec::new();
     if req.kind == RequestKind::Show {
-        refresh_wanted(state, req, &detail)?;
+        newly_aired = refresh_wanted(state, req, &detail, &today)?;
     } else if let Some(avail) = detail.available_date.as_deref() {
         // set_wanted_air_date only writes rows whose air_date IS NULL, so a known
         // date is never overwritten.
@@ -483,12 +563,14 @@ fn refresh_one<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<()> {
         drop(conn);
         for w in rows.iter().filter(|w| w.air_date.is_none()) {
             db::set_wanted_air_date(state.db(), &w.id, avail, now_ms())?;
+            if avail <= today.as_str() && w.status == "wanted" {
+                newly_aired.push(w.id.clone());
+            }
         }
     }
 
     // A movie's next air date is only reported while still in the future: a past
     // date means "already out", which gets no upcoming badge.
-    let today = today_ymd();
     let next_air_date = match req.kind {
         RequestKind::Show => detail.next_air.as_ref().map(|(d, _, _)| d.clone()),
         RequestKind::Movie => detail.available_date.clone().filter(|d| d.as_str() > today.as_str()),
@@ -500,23 +582,25 @@ fn refresh_one<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<()> {
         next_air_date.as_deref(),
         now_ms(),
     )?;
-    Ok(())
+    Ok(newly_aired)
 }
 
 // Additive only: inserts missing (season, episode) rows and backfills air dates.
-// Never deletes a row and never changes a row's status.
+// Never deletes a row and never changes a row's status. Answers with the rows
+// that became searchable in the process.
 fn refresh_wanted<S: HostCtx>(
     state: &S,
     req: &MediaRequest,
     detail: &discover::DiscoverRawDetail,
-) -> Result<()> {
+    today: &str,
+) -> Result<Vec<String>> {
     let conn = state.db().get()?;
     let existing = db::wanted_for_request(&conn, &req.id)?;
     drop(conn);
     // Never seed a ledger, only extend one: a pending request must stay empty or
     // the search pass would grab before a moderator green-lit it.
     if existing.is_empty() {
-        return Ok(());
+        return Ok(Vec::new());
     }
     let desired = build_wanted_rows_from(state, req, detail)?;
 
@@ -527,19 +611,40 @@ fn refresh_wanted<S: HostCtx>(
         existing.iter().map(|w| ((w.season, w.episode), w)).collect();
 
     let mut to_insert: Vec<db::WantedRow> = Vec::new();
+    let mut newly_aired: Vec<String> = Vec::new();
     for d in desired {
         match have.get(&(d.season, d.episode)) {
-            None => to_insert.push(d),
-            Some(existing_row) => {
-                if existing_row.air_date.is_none() {
-                    if let Some(air) = d.air_date.as_deref() {
-                        db::set_wanted_air_date(state.db(), &existing_row.id, air, now_ms())?;
-                    }
+            None => {
+                if d.air_date.as_deref().is_none_or(|air| air <= today) {
+                    newly_aired.push(d.id.clone());
                 }
+                to_insert.push(d);
             }
+            Some(row) => backfill_air_date(state, row, d.air_date.as_deref(), today, &mut newly_aired)?,
         }
     }
     db::insert_wanted(state.db(), &to_insert, now_ms())?;
+    Ok(newly_aired)
+}
+
+// A row TMDB has since dated. Only ever fills a blank -- a date already known is
+// the one the ledger was built with -- and reports the row when that date turns
+// out to be in the past, since it just became searchable.
+fn backfill_air_date<S: HostCtx>(
+    state: &S,
+    row: &db::WantedRow,
+    air_date: Option<&str>,
+    today: &str,
+    newly_aired: &mut Vec<String>,
+) -> Result<()> {
+    if row.air_date.is_some() {
+        return Ok(());
+    }
+    let Some(air) = air_date else { return Ok(()) };
+    db::set_wanted_air_date(state.db(), &row.id, air, now_ms())?;
+    if air <= today && row.status == "wanted" {
+        newly_aired.push(row.id.clone());
+    }
     Ok(())
 }
 
@@ -962,6 +1067,84 @@ mod tests {
     }
 
     #[test]
+    fn coverage_is_not_a_thing_a_movie_request_has() {
+        let host = host_with_tmdb(Some("k"));
+        insert_req(&host, "r1", RequestKind::Movie, 7, RequestStatus::Approved);
+        let err = set_coverage(&host, "r1", Some(vec![1]), None).unwrap_err();
+        assert!(err.to_string().contains("nothing to scope"), "{err}");
+    }
+
+    #[test]
+    fn coverage_refuses_a_denied_request() {
+        let host = host_with_tmdb(Some("k"));
+        insert_req(&host, "r1", RequestKind::Show, 42, RequestStatus::Denied);
+        assert!(set_coverage(&host, "r1", Some(vec![1]), None).unwrap_err().to_string().contains("denied"));
+    }
+
+    #[test]
+    fn coverage_on_a_pending_request_only_records_the_target() {
+        // Nothing to reconcile: approving is what builds the ledger, and it will
+        // build it from the coverage just set.
+        let host = host_with_tmdb(Some("k"));
+        insert_req(&host, "r1", RequestKind::Show, 42, RequestStatus::Pending);
+        let req = set_coverage(&host, "r1", Some(vec![3, 1, 1]), None).unwrap();
+        assert_eq!(req.seasons, Some(vec![1, 3]), "sorted and deduped");
+        assert_eq!(req.status, RequestStatus::Pending, "recording a target approves nothing");
+        let conn = host.db().get().unwrap();
+        assert!(db::wanted_for_request(&conn, "r1").unwrap().is_empty());
+    }
+
+    #[test]
+    fn coverage_normalizes_empty_lists_to_the_whole_show() {
+        let host = host_with_tmdb(Some("k"));
+        insert_req(&host, "r1", RequestKind::Show, 42, RequestStatus::Pending);
+        let req = set_coverage(&host, "r1", Some(vec![]), Some(vec![])).unwrap();
+        assert_eq!(req.seasons, None);
+        assert_eq!(req.episodes, None);
+    }
+
+    #[test]
+    fn narrowing_coverage_drops_the_rows_that_left_and_keeps_the_rest_as_they_were() {
+        let host = host_with_tmdb(Some("k"));
+        insert_req(&host, "r1", RequestKind::Show, 42, RequestStatus::Approved);
+        let mk = |id: &str, season: u32, episode: u32, status: &str| db::WantedRow {
+            id: id.into(),
+            request_id: "r1".into(),
+            kind: "episode".into(),
+            tmdb_id: 42,
+            imdb_id: None,
+            title: "T".into(),
+            year: None,
+            season: Some(season),
+            episode: Some(episode),
+            air_date: Some("2020-01-01".into()),
+            status: status.into(),
+            last_search_at: None,
+        };
+        db::replace_wanted(
+            host.db(),
+            "r1",
+            &[mk("keep", 1, 1, "available"), mk("drop", 2, 1, "wanted")],
+            0,
+        )
+        .unwrap();
+
+        // The ids the rebuild mints are deterministic, so a row that stays in
+        // scope is recognised and keeps its state rather than being re-created.
+        let rows = {
+            let conn = host.db().get().unwrap();
+            db::wanted_for_request(&conn, "r1").unwrap()
+        };
+        assert_eq!(rows.len(), 2, "both there before narrowing");
+
+        db::prune_wanted(host.db(), "r1", &["keep".into()]).unwrap();
+        let conn = host.db().get().unwrap();
+        let after = db::wanted_for_request(&conn, "r1").unwrap();
+        assert_eq!(after.len(), 1);
+        assert_eq!(after[0].status, "available", "the survivor did not forget its file");
+    }
+
+    #[test]
     fn match_one_movie_flips_wanted_and_request_to_available() {
         let host = test_host();
         seed_movie_item(&host, "m1", 603);
@@ -1213,7 +1396,7 @@ mod tests {
         let host = test_host();
         let request = req(RequestKind::Show, RequestStatus::Approved);
         let detail = raw_detail(None, None);
-        refresh_wanted(&host, &request, &detail).unwrap();
+        refresh_wanted(&host, &request, &detail, "2026-07-16").unwrap();
         let conn = host.db().get().unwrap();
         assert!(db::wanted_for_request(&conn, &request.id).unwrap().is_empty());
     }
@@ -1554,7 +1737,7 @@ mod tests {
         let host = test_host();
         insert_req(&host, "r1", RequestKind::Movie, 42, RequestStatus::Pending);
         let req = req(RequestKind::Movie, RequestStatus::Pending);
-        refresh_wanted(&host, &req, &detail(RequestKind::Movie, 42, Some("2026-01-01"))).unwrap();
+        refresh_wanted(&host, &req, &detail(RequestKind::Movie, 42, Some("2026-01-01")), "2026-07-16").unwrap();
 
         let conn = host.db().get().unwrap();
         assert!(db::wanted_for_request(&conn, "r1").unwrap().is_empty());
@@ -1568,7 +1751,7 @@ mod tests {
         db::insert_wanted(host.db(), std::slice::from_ref(&undated), now_ms()).unwrap();
 
         let req = req(RequestKind::Movie, RequestStatus::Approved);
-        refresh_wanted(&host, &req, &detail(RequestKind::Movie, 42, Some("2026-03-04"))).unwrap();
+        refresh_wanted(&host, &req, &detail(RequestKind::Movie, 42, Some("2026-03-04")), "2026-07-16").unwrap();
 
         let conn = host.db().get().unwrap();
         let rows = db::wanted_for_request(&conn, "r1").unwrap();
@@ -1577,7 +1760,7 @@ mod tests {
         assert_eq!(rows[0].air_date.as_deref(), Some("2026-03-04"));
         assert_eq!(rows[0].status, "grabbed", "an in-flight download is untouched");
 
-        refresh_wanted(&host, &req, &detail(RequestKind::Movie, 42, Some("2030-01-01"))).unwrap();
+        refresh_wanted(&host, &req, &detail(RequestKind::Movie, 42, Some("2030-01-01")), "2026-07-16").unwrap();
         let conn = host.db().get().unwrap();
         let rows = db::wanted_for_request(&conn, "r1").unwrap();
         assert_eq!(rows[0].air_date.as_deref(), Some("2026-03-04"));

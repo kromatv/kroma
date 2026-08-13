@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Box, Button, OtpField, Text } from '@kroma/ui/kit';
+import { Box, Button, Icon, OtpField, Text } from '@kroma/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { NearbyTvs } from '#web/features/accounts/nearby-tvs';
@@ -56,9 +56,9 @@ function ConnectPage() {
 
           {status === 'ok' ? (
             <Box radius="lg" border="success/40" bg="success/10" px={16} py={24}>
-              <Text variant="h1" textAlign="center" mb={4}>
-                ✓
-              </Text>
+              <Box center mb={4}>
+                <Icon name="check" size={38} thickness={2.4} color="success" />
+              </Box>
               <Text variant="title" textAlign="center">
                 {t('connect.connected')}
               </Text>

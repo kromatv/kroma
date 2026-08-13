@@ -136,5 +136,5 @@ const s = styles({
   scroll: { flex: true, minH: 0 },
   // Padding belongs on the content, not the scroller box: on the box it would
   // pad the viewport and clip the last row instead of the list.
-  content: { px: 64, pt: 8, pb: 72, gap: GAP },
+  content: { px: 64, pt: 32, pb: 72, gap: GAP },
 });

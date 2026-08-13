@@ -19,9 +19,12 @@ function uncommented(css: string): string {
   }
 }
 
-const CSS = uncommented(
-  readFileSync(fileURLToPath(new URL('../../styles.css', import.meta.url)), 'utf8'),
-);
+// Both stylesheets the console renders under: its own, and the kit's base --
+// which is where the shapes shared with module UIs live (the aligned table, the
+// press layer under a pressable surface).
+const CSS = ['../../styles.css', '../../../../../packages/ui/src/styles/base.css']
+  .map((href) => uncommented(readFileSync(fileURLToPath(new URL(href, import.meta.url)), 'utf8')))
+  .join('\n');
 
 // `[^{}]` on both sides, so a nested rule is read on its own and the @media
 // wrapping it never counts as one.
@@ -51,8 +54,8 @@ const rulesFor = (name: string) => RULES.filter((rule) => names(rule.selector, n
 const propertiesIn = (body: string) =>
   [...body.matchAll(/var\((--[\w-]+)/g)].map(([, property]) => property ?? '');
 
-// The two the table sets inline per instance (see ./table.tsx); every other
-// custom property these rules name has to be a design token.
+// The two the table sets inline per instance (see `Table` in @kroma/module-sdk);
+// every other custom property these rules name has to be a design token.
 const LOCAL = /^--admin-table-(columns|narrow)$/;
 const TOKEN = /^--(kroma|radius|type|dur|ease|ring|shadow|glow|gutter|card)-/;
 

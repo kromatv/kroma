@@ -19,41 +19,11 @@ import {
   Surface,
   Text,
 } from '@kroma/ui/kit';
-import { type CSSProperties, useState } from 'react';
+import { useId } from 'react';
 import { matchesQuery } from '#web/features/admin/module-api';
 import { type OpModule, opPct, PHASE_KEY, runningPct } from '#web/features/admin/module-ops';
+import { ADMIN_PRESS, PRESSABLE } from '#web/features/admin/web-style';
 import { Image } from '#web/shared/ui';
-
-// A title that is also the way into the drawer: a bare control, so it states
-// the shape a page reset would otherwise have given it.
-const TITLE_BUTTON: CSSProperties = {
-  minWidth: 0,
-  margin: 0,
-  padding: 0,
-  border: 0,
-  background: 'none',
-  textAlign: 'left',
-  cursor: 'pointer',
-};
-
-const ICON_BUTTON: CSSProperties = { ...TITLE_BUTTON, flexShrink: 0 };
-
-function TitleButton({ label, onPress }: Readonly<{ label: string; onPress: () => void }>) {
-  const [hover, setHover] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={onPress}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={TITLE_BUTTON}
-    >
-      <Text variant="label" color={hover ? 'accentText' : 'text'} lines={1}>
-        {label}
-      </Text>
-    </button>
-  );
-}
 
 /** Compact live progress: the phase label above a thin bar. */
 export function OpProgress({ op }: Readonly<{ op: OpModule }>) {
@@ -125,6 +95,7 @@ function StoreCard({
   onUpdate: () => void;
 }>) {
   const t = useT();
+  const id = useId();
   return (
     <Surface
       elevated
@@ -135,15 +106,17 @@ function StoreCard({
       row
       align="flex-start"
       opacity={m.compatible ? 1 : 0.7}
+      dataSet={PRESSABLE}
     >
-      <button type="button" onClick={onOpen} aria-label={m.name} style={ICON_BUTTON}>
-        <Box w={40} h={40} mt={2} radius="lg" overflow="hidden" bg={m.icon ? undefined : 'tint/5'}>
-          {m.icon ? <Image src={m.icon} fit="cover" fill /> : null}
-        </Box>
-      </button>
+      <button type="button" className={ADMIN_PRESS} aria-labelledby={id} onClick={onOpen} />
+      <Box w={40} h={40} mt={2} radius="lg" overflow="hidden" bg={m.icon ? undefined : 'tint/5'}>
+        {m.icon ? <Image src={m.icon} fit="cover" fill /> : null}
+      </Box>
       <Box flex minW={0}>
         <Row between gap={12}>
-          <TitleButton label={m.name} onPress={onOpen} />
+          <Text id={id} variant="label" lines={1}>
+            {m.name}
+          </Text>
           <CardAction m={m} op={op} onInstall={onInstall} onUpdate={onUpdate} />
         </Row>
         <Row wrap gap={6} mt={2}>

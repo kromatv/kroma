@@ -37,7 +37,10 @@ function walk(dir: string, out: string[]): void {
 // Vite and Metro read `resolve.extensions` only for an extensionless specifier,
 // so `./thing.ts` resolves straight past `./thing.web.ts`, and silently.
 describe('platform files', () => {
-  it('are never reached through an explicit extension', () => {
+  // A synchronous walk + read of every source file in three workspace roots,
+  // which outlasts the default budget whenever the rest of the suite is
+  // competing for the same disk.
+  it('are never reached through an explicit extension', { timeout: 60_000 }, () => {
     const files: string[] = [];
     for (const root of ROOTS) walk(root, files);
 

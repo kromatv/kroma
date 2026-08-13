@@ -60,3 +60,34 @@ pub mod primitives {
 pub mod scene {
     pub use kroma_scene::*;
 }
+
+/// Test helpers for port contracts. A port is reached over HTTP now, so a test
+/// that needs a fake provider SERVES one rather than injecting a trait object.
+#[cfg(any(test, feature = "testing"))]
+pub mod testing {
+    use std::sync::Arc;
+
+    use axum::Router;
+    use kroma_module_host::Resolver;
+
+    /// Serve a provider's port routes on an ephemeral localhost port and hand
+    /// back a [`Resolver`] pointing at it, so a port's two ends can be tested
+    /// against each other over the real wire.
+    pub async fn serve<S: Clone + Send + Sync + 'static>(
+        router: Router<S>,
+        state: S,
+    ) -> Resolver {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let app = router.with_state(state);
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, app).await;
+        });
+        let base = format!("http://{addr}");
+        Arc::new(move || Some((base.clone(), "test-token".to_string())))
+    }
+
+    pub async fn blocking<T: Send + 'static>(job: impl FnOnce() -> T + Send + 'static) -> T {
+        tokio::task::spawn_blocking(job).await.unwrap()
+    }
+}

@@ -3,7 +3,7 @@
 // navigation and pages sit in.
 
 import { KromaEvents } from '@kroma/core';
-import { AdminHostProvider } from '@kroma/module-sdk';
+import { AdminHostProvider, ModuleSlotProvider } from '@kroma/module-sdk';
 import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useMemo } from 'react';
 import { usePoll } from '#web/features/admin/hooks';
@@ -11,9 +11,11 @@ import { AdminModalHosts } from '#web/features/admin/modal-hosts';
 import { AdminContext } from '#web/features/admin/shell-context';
 import { AdminMobileTopbar, AdminSidebar } from '#web/features/admin/shell-sidebar';
 import { ADMIN_SHELL } from '#web/features/admin/web-style';
+import { moduleRegistry } from '#web/modules/registry';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { PAGE_MAIN } from '#web/shared/ui';
+import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
 
 export { PageHeader } from '@kroma/ui/kit';
 // Data hooks + capability helpers, the page header and the console's context
@@ -27,7 +29,19 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
   const queryClient = useQueryClient();
   // So both built-in and module admin pages share one data + capability surface
   // without importing app internals.
-  const kit = useMemo(() => ({ client, user, apiBase: apiBase() }), [client, user]);
+  // `openMediaInfo` is the console lending a module its own dialog: a module
+  // page can offer "media details" without knowing anything about the catalog.
+  const kit = useMemo(
+    () => ({
+      client,
+      user,
+      apiBase: apiBase(),
+      openMediaInfo: (id: string, title: string) => {
+        void MediaInfoModal.call({ id, title });
+      },
+    }),
+    [client, user],
+  );
   const { data: serverInfo } = usePoll(['admin', 'server'], () => client.adminServer(), 15000);
 
   // Skip the high-frequency per-line frames (the pages that want them stream
@@ -64,7 +78,9 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   return (
     <AdminHostProvider value={kit}>
-      <AdminContext.Provider value={adminValue}>{children}</AdminContext.Provider>
+      <ModuleSlotProvider registry={moduleRegistry}>
+        <AdminContext.Provider value={adminValue}>{children}</AdminContext.Provider>
+      </ModuleSlotProvider>
     </AdminHostProvider>
   );
 }

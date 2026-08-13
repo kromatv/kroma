@@ -93,6 +93,18 @@ describe('<EmptyState>', () => {
     expect(filled[0]).not.toBe(inline[1]);
   });
 
+  it.each(SIZES)('holds a %s inline state off both edges, never only the top', (size) => {
+    const { container } = render(
+      <EmptyState.Root size={size}>
+        <EmptyState.Title>x</EmptyState.Title>
+      </EmptyState.Root>,
+    );
+    const frame = frameOf(container);
+    expect(frame).not.toMatch(/marginTop/);
+    expect(frame).toMatch(/paddingTop/);
+    expect(frame).toMatch(/paddingBottom/);
+  });
+
   it('refuses a part used outside the Root, rather than rendering something wrong', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() => render(<EmptyState.Title>Aucun resultat</EmptyState.Title>)).toThrow(

@@ -89,6 +89,14 @@ export function standoffInside(color: string): RingStyle {
   return { ...standoff(color), outlineOffset: -(RING_GAP + RING_WIDTH) };
 }
 
+/** The same ring, drawn ON the control's edge: for a row that abuts its
+ * neighbours (a dropdown option), where a gap in EITHER direction lands on
+ * something - the row above outward, the row's own wash inward. Same width,
+ * same ink, no gap, because there is nowhere to put one. */
+export function standoffEdge(color: string): RingStyle {
+  return { ...standoff(color), outlineOffset: -RING_WIDTH };
+}
+
 /** The steps the theme derives from the accent wash, as the `/NN` percentages a
  *  colour is written with everywhere else. The build emits one property per
  *  step, so a new one has to be added to the derived list in `vite/tokens.ts`. */
@@ -104,6 +112,8 @@ export const ring = {
   focusLift: standoff(colors.accent, LIFT_SHADOW),
   /** For a control with no outside: see `standoffInside`. */
   focusInset: standoffInside(colors.accent),
+  /** For a row with no room either way: see `standoffEdge`. */
+  focusEdge: standoffEdge(colors.accent),
 } as const;
 
 export const glow = {

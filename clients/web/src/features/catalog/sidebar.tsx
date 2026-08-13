@@ -1,6 +1,6 @@
 import { hasPermission, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, color, Drawer, IconButton, Logo, Row, Text, useBreakpoint } from '@kroma/ui/kit';
+import { Box, color, Drawer, Logo, Row, Text, useBreakpoint } from '@kroma/ui/kit';
 import {
   IconAlertTriangle,
   IconCalendarClock,
@@ -25,6 +25,7 @@ import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
 import { CapabilityChip } from '#web/shared/ui/capability-chip';
 import { useNavActions } from '#web/shared/ui/nav-actions';
+import { NavMenuButton } from '#web/shared/ui/nav-menu-button';
 import { SideNav } from '#web/shared/ui/side-nav';
 import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
@@ -141,7 +142,6 @@ function SidebarNav() {
 }
 
 export function MobileTopbar() {
-  const t = useT();
   const actions = useNavActions();
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -151,20 +151,11 @@ export function MobileTopbar() {
   if (step === 'lg' || step === 'tv') return null;
   return (
     <header style={TOPBAR}>
-      <Link to="/" aria-label="KROMA" style={LOGO_LINK}>
-        <Logo size={20} />
-      </Link>
-      <Box row align="center" gap={2}>
-        {actions}
-        <IconButton
-          diameter={40}
-          glyph={22}
-          radius="md"
-          icon="menu-2"
-          label={t('nav.menu')}
-          expanded={open}
-          onPress={() => setOpen(true)}
-        />
+      <Box row align="center" gap={8}>
+        <NavMenuButton open={open} onPress={() => setOpen(true)} />
+        <Link to="/" aria-label="KROMA" style={LOGO_LINK}>
+          <Logo size={20} />
+        </Link>
         <Drawer.Root
           open={open}
           onClose={() => setOpen(false)}
@@ -187,6 +178,9 @@ export function MobileTopbar() {
             <SidebarNav />
           </Drawer.Panel>
         </Drawer.Root>
+      </Box>
+      <Box row align="center" gap={2}>
+        {actions}
       </Box>
     </header>
   );

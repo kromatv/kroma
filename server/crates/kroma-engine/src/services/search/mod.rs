@@ -6,7 +6,7 @@
 mod query;
 mod schema;
 
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
 use anyhow::Result;
 use tantivy::collector::TopDocs;
@@ -46,6 +46,7 @@ pub struct SearchEngine {
     schema: Schema,
     fields: Fields,
     active: RwLock<Arc<Active>>,
+    rebuilding: Mutex<()>,
 }
 
 impl SearchEngine {
@@ -55,7 +56,7 @@ impl SearchEngine {
         let empty = HashMap::new();
         let active =
             build_active(schema.clone(), &fields, &[], &[], &[], &empty, &empty, &empty)?;
-        Ok(Self { schema, fields, active: RwLock::new(Arc::new(active)) })
+        Ok(Self { schema, fields, active: RwLock::new(Arc::new(active)), rebuilding: Mutex::new(()) })
     }
 
     /// Rebuild from explicit catalog slices (no translations); production
@@ -70,6 +71,10 @@ impl SearchEngine {
     }
 
     pub fn reindex_from_db(&self, pool: &Pool) -> Result<()> {
+        // One rebuild at a time, snapshot taken under the lock: two overlapping
+        // callers would otherwise race to publish, and the one that read the
+        // older catalog could land last.
+        let _rebuilding = self.rebuilding.lock().unwrap_or_else(|e| e.into_inner());
         let (items, shows) = db::index_snapshot(pool)?;
         let (episodes, movies): (Vec<MediaItem>, Vec<MediaItem>) =
             items.into_iter().partition(|i| matches!(i.kind, Kind::Episode));

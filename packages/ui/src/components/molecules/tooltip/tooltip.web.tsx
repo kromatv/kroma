@@ -64,6 +64,9 @@ function Tooltip({ label, children }: Readonly<TooltipProps>) {
     <span
       ref={box}
       style={{ display: 'inline-flex' }}
+      // An inert subtree (a pressable row makes its cells one) would swallow
+      // the hover this exists to watch.
+      data-hoverable="true"
       aria-describedby={spot ? id : undefined}
       onMouseEnter={show}
       onMouseLeave={hide}

@@ -43,6 +43,7 @@ export type ManualAddBody = z.infer<typeof ManualAddBody>;
 export const ManualReleaseView = z.object({
   title: z.string(),
   guid: z.string(),
+  indexerId: z.string(),
   indexerName: z.string(),
   downloadUrl: z.string().nullable(),
   sizeBytes: z.number().nullable(),
@@ -61,15 +62,32 @@ export const ManualReleaseView = z.object({
 });
 export type ManualReleaseView = z.infer<typeof ManualReleaseView>;
 
-/** `POST /search` body. */
+/** `POST /search` body. A `season` (with or without an `episode`) turns the
+ * sweep into a TV search, so a show is looked up in the tracker's TV categories
+ * instead of its movie ones. */
 export const ManualSearchBody = z.object({
   query: z.string(),
+  kind: z.string().nullish(),
+  season: z.number().nullish(),
+  episode: z.number().nullish(),
 });
 export type ManualSearchBody = z.infer<typeof ManualSearchBody>;
+
+/** What one indexer made of a sweep. Every enabled indexer answers, whether it
+ * found something, found nothing, or failed: `error` is what separates the last
+ * two. `elapsedMs` is that indexer's own round trip, not the sweep's. */
+export const IndexerReport = z.object({
+  id: z.string(),
+  name: z.string(),
+  found: z.number(),
+  error: z.string().nullable(),
+  elapsedMs: z.number(),
+});
+export type IndexerReport = z.infer<typeof IndexerReport>;
 
 /** `POST /search`. */
 export const ManualSearchView = z.object({
   releases: z.array(ManualReleaseView),
-  indexerErrors: z.array(z.string()),
+  indexers: z.array(IndexerReport),
 });
 export type ManualSearchView = z.infer<typeof ManualSearchView>;

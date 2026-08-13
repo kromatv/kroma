@@ -7,7 +7,8 @@
 import type { CastReceiver, DiscoveredTv, FinalRefusal, GrantResult } from '@kroma/core';
 import { checkRetryable, grantRefusal } from '@kroma/core';
 import { useCast } from '@kroma/ui';
-import { Box, Icon, styles, Text } from '@kroma/ui/kit';
+import { Badge, Box, Icon, styles, Text } from '@kroma/ui/kit';
+import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable } from 'react-native';
 import { CheckPrompt } from '#mobile/components/connect/CheckPrompt';
@@ -76,9 +77,10 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
     [client],
   );
 
-  // A row the server never placed asks for the code that television is printing
-  // before it hands anybody an account. Everything the picker hears on the link
-  // is such a row, since nothing here has the server's word on any of them.
+  // The link says nothing about whether a television wants its code typed, and
+  // nothing here guesses: the grant goes out, and a beacon that wants one comes
+  // back `checkRequired`, which is what raises the prompt above. The flag is
+  // still read because a row that DOES carry the server's word saves that trip.
   const start = (tv: DiscoveredTv) => {
     if (tv.confirmRequired) {
       setAsking(tv);
@@ -131,6 +133,10 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
             icon="device-tv"
             name={tv.name}
             detail={detailOfPairable(state, t)}
+            // The check string this television is printing on its own screen,
+            // so a device that named itself after yours can be told from yours.
+            // Shown, not asked for: see `start`.
+            trailing={state ? undefined : <Badge tone="neutral">{tv.check}</Badge>}
             selected={false}
             // A granted beacon is spent: the server mints a new handle when that
             // television waits again, so this row will never be the one to tap.
@@ -210,12 +216,14 @@ function DeviceRow({
   name,
   detail,
   selected,
+  trailing,
   onPress,
 }: Readonly<{
   icon: 'device-tv' | 'device-mobile';
   name: string;
   detail: string;
   selected: boolean;
+  trailing?: ReactNode;
   onPress?: () => void;
 }>) {
   return (
@@ -235,7 +243,7 @@ function DeviceRow({
           {detail}
         </Text>
       </Box>
-      {selected ? <Icon name="check" size={20} thickness={2.4} color="accentText" /> : null}
+      {selected ? <Icon name="check" size={20} thickness={2.4} color="accentText" /> : trailing}
     </Pressable>
   );
 }

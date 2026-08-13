@@ -46,7 +46,7 @@ interface SideNavGroupProps {
 /** A named run of destinations. */
 function Group({ label, children }: Readonly<SideNavGroupProps>) {
   return (
-    <Box gap={2} pt={18}>
+    <Box pt={18}>
       <Text variant="overline" color="textDim" px={SIDE_NAV_GUTTER} pb={6}>
         {label}
       </Text>
@@ -110,7 +110,7 @@ function Trailing({ children }: Readonly<{ children: ReactNode }>) {
  *  too short for both. */
 function Footer({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <Box mt="auto" gap={2} pt={24} style={SIDE_NAV_SAFE_BOTTOM}>
+    <Box mt="auto" pt={24} style={SIDE_NAV_SAFE_BOTTOM}>
       {children}
     </Box>
   );

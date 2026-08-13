@@ -3,16 +3,31 @@
 // chip and a chevron into the detail drawer. Configuration, dependencies and
 // uninstall live in the drawer, so the list stays scannable.
 
-import type { StoreCatalog } from '@kroma/core';
-import { moduleIconUrl } from '@kroma/module-sdk';
+import type { MessageKey, StoreCatalog } from '@kroma/core';
+import { moduleIconUrl, Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Badge, Box, EmptyState, IconButton, Row, Switch, Text } from '@kroma/ui/kit';
-import { type AdminModule, matchesQuery } from '#web/features/admin/module-api';
+import { Badge, Box, EmptyState, Icon, Row, Switch, Text, Tooltip } from '@kroma/ui/kit';
+import { type AdminModule, type ModuleOrigin, matchesQuery } from '#web/features/admin/module-api';
 import { useModuleToggle } from '#web/features/admin/module-data';
 import { Pill } from '#web/features/admin/pill';
-import { Table } from '#web/features/admin/table';
 import { apiBase } from '#web/shared/lib/api';
 import { Image } from '#web/shared/ui';
+
+const SOURCE_KEY = {
+  registry: 'admin.modulesSourceRegistry',
+  upload: 'admin.modulesSourceUpload',
+  url: 'admin.modulesSourceUrl',
+  unknown: 'admin.modulesSourceUnknown',
+} as const satisfies Record<ModuleOrigin['kind'], MessageKey>;
+
+function sourceKey(origin: ModuleOrigin | undefined): MessageKey {
+  return origin ? SOURCE_KEY[origin.kind] : 'admin.modulesSourceBuiltIn';
+}
+
+// The label takes the cell's free space and right-aligns inside it: a longer
+// word ("Desactive") then grows leftwards instead of pushing the switch, so both
+// columns line up down the list whatever each row says.
+const STATE_LABEL = { flex: 1, textAlign: 'right' } as const;
 
 function InstalledRow({
   m,
@@ -28,10 +43,16 @@ function InstalledRow({
   const t = useT();
   const { busy, error, toggle } = useModuleToggle(m.id, onChanged);
   const provides = m.provides ?? [];
+  const localBuild = m.origin?.localBuild === true;
+  // Only a module that HAS a process can be stopped. A library module is code
+  // co-linked into another sidecar, so "not running" is its normal state.
+  const stalled = m.enabled && m.hasSidecar && !m.running;
+  const stateKey = m.enabled ? 'admin.modulesEnabled' : 'admin.modulesDisabled';
+  const source = localBuild || m.origin?.kind === 'unknown' ? null : t(sourceKey(m.origin));
   return (
     <>
-      <Table.Row>
-        <Table.Cell row gap={14}>
+      <Table.Row onPress={onOpen}>
+        <Table.Cell row align="center" gap={14}>
           <Box w={36} h={36} shrink={0} radius="sm" overflow="hidden">
             <Image src={moduleIconUrl(m.id, apiBase())} fit="cover" fill />
           </Box>
@@ -40,6 +61,13 @@ function InstalledRow({
               <Text variant="label" lines={1}>
                 {m.name}
               </Text>
+              {localBuild && (
+                <Tooltip label={t('admin.modulesLocalBuildHint')}>
+                  <Pill ink="danger" bg="danger/13" variant="overline">
+                    {t('admin.modulesLocalBuild')}
+                  </Pill>
+                </Tooltip>
+              )}
               {update && (
                 <Pill ink="accentText" bg="accentSoft" variant="overline">
                   {t('admin.modulesUpdateChip', { version: update })}
@@ -48,19 +76,20 @@ function InstalledRow({
             </Row>
             <Text variant="meta" color="textDim" lines={1}>
               {m.id} · v{m.version}
+              {source ? ` · ${source}` : ''}
             </Text>
           </Box>
         </Table.Cell>
-        <Table.Cell wide row wrap gap={6}>
+        <Table.Cell wide row wrap align="center" gap={6} justify="flex-end">
           {provides.slice(0, 3).map((c) => (
             <Badge key={`${c.kind}:${c.id}`} tone="neutral">
               {c.kind}:{c.id}
             </Badge>
           ))}
         </Table.Cell>
-        <Table.Cell row gap={8}>
-          <Text variant="meta" color="textDim">
-            {m.enabled ? t('admin.modulesEnabled') : t('admin.modulesDisabled')}
+        <Table.Cell row align="center" gap={8} justify="flex-end">
+          <Text variant="meta" color={stalled ? 'danger' : 'textDim'} style={STATE_LABEL}>
+            {t(stalled ? 'admin.modulesNotRunning' : stateKey)}
           </Text>
           <Switch
             checked={m.enabled}
@@ -68,13 +97,8 @@ function InstalledRow({
             label={m.name}
           />
         </Table.Cell>
-        <Table.Cell row justify="flex-end">
-          <IconButton
-            variant="ghost"
-            icon="chevron-right"
-            label={t('admin.modulesDetails')}
-            onPress={onOpen}
-          />
+        <Table.Cell row align="center" justify="flex-end">
+          <Icon name="chevron-right" size={16} thickness={2.2} color="textDim" />
         </Table.Cell>
       </Table.Row>
       {error && (
@@ -127,7 +151,7 @@ export function InstalledList({
     );
   }
   return (
-    <Table.Root columns="2.4fr 1.4fr auto 44px" narrow="minmax(0, 1fr) auto 44px">
+    <Table.Root columns="minmax(0, 1fr) 260px 132px 44px" narrow="minmax(0, 1fr) auto 44px">
       {shown.map((m) => (
         <InstalledRow
           key={m.id}

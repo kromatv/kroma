@@ -105,6 +105,7 @@ fn announce_movies<S: HostCtx>(state: &S, movies: &[AddedTitle]) -> usize {
         )
         .param("title", newest.title.clone())
         .link(format!("/movie/{}", newest.id))
+        .image(newest.poster_url.clone())
         .push_category(PushCategory::MediaAvailable)
         .action(ActionSpec {
             id: "watch".into(),
@@ -124,6 +125,7 @@ fn announce_movies<S: HostCtx>(state: &S, movies: &[AddedTitle]) -> usize {
         // Name the newest anyway: "12 new titles" is a lot less enticing than
         // knowing one of them is the film you have been waiting for.
         .param("title", newest.title.clone())
+        .image(newest.poster_url.clone())
         .link("/films")
     };
     super::emit(state, &Audience::Everyone, &spec)
@@ -152,6 +154,7 @@ fn announce_episodes<S: HostCtx>(state: &S, show_id: &str, eps: &[AddedTitle]) -
     .param("title", show_title)
     .param(var, value)
     .link(format!("/show/{show_id}"))
+    .image(newest.poster_url.clone())
     .push_category(PushCategory::MediaAvailable);
     super::emit(state, &Audience::followers(show_id), &spec)
 }
@@ -185,6 +188,15 @@ mod tests {
         conn.execute_batch(&format!(
             "INSERT INTO items (id,kind,title,container,library,added_at) \
              VALUES ('{id}','movie','{title}','mkv','lib','{added_at}')"
+        ))
+        .unwrap();
+    }
+
+    fn add_poster(state: &crate::state::SharedState, kind: &str, id: &str, url: &str) {
+        let conn = state.db.get().unwrap();
+        conn.execute_batch(&format!(
+            "INSERT INTO metadata_core (subject_kind,subject_id,poster_url,updated_at) \
+             VALUES ('{kind}','{id}','{url}',0)"
         ))
         .unwrap();
     }
@@ -247,6 +259,20 @@ mod tests {
     }
 
     #[test]
+    fn a_new_film_carries_its_poster() {
+        let (state, user) = seeded();
+        add_movie(&state, "m1", "Dune", "2026-01-01T00:00:00Z");
+        run(&state).unwrap();
+        add_movie(&state, "m2", "Arrival", "2026-01-03T00:00:00Z");
+        add_poster(&state, "item", "m2", "/api/images/arrival.webp");
+        run(&state).unwrap();
+
+        let conn = state.db.get().unwrap();
+        let rows = db::notifications::list_notifications(&conn, &user, 10, false).unwrap();
+        assert_eq!(rows[0].image_url.as_deref(), Some("/api/images/arrival.webp"));
+    }
+
+    #[test]
     fn a_batch_becomes_one_notification_that_counts_them() {
         let (state, user) = seeded();
         add_movie(&state, "m0", "Seed", "2026-01-01T00:00:00Z");
@@ -302,6 +328,7 @@ mod tests {
             season: None,
             episode: None,
             added_at: added.into(),
+            poster_url: Some(format!("/api/images/{id}.webp")),
         }
     }
 
@@ -315,6 +342,7 @@ mod tests {
             season: Some(season),
             episode: Some(ep),
             added_at: "2026-01-01T00:00:00Z".into(),
+            poster_url: Some(format!("/api/images/{show}.webp")),
         }
     }
 
@@ -427,6 +455,23 @@ mod tests {
         assert_eq!(summary.sent, 1);
         assert_eq!(unread(&state, &user), 1);
         assert_eq!(bodies(&state, &user), ["notifications.media.episode.body"]);
+    }
+
+    #[test]
+    fn a_new_episode_carries_the_shows_poster() {
+        // The episode's own art is a still; the show's poster is what a
+        // notification should show.
+        let (state, user) = seeded();
+        add_show(&state, "shw", "Severance", &user);
+        add_poster(&state, "show", "shw", "/api/images/severance.webp");
+        adopt(&state);
+
+        add_episode(&state, "e1", "shw", 1, 4, "2026-02-01T00:00:00Z");
+        run(&state).unwrap();
+
+        let conn = state.db.get().unwrap();
+        let rows = db::notifications::list_notifications(&conn, &user, 10, false).unwrap();
+        assert_eq!(rows[0].image_url.as_deref(), Some("/api/images/severance.webp"));
     }
 
     #[test]

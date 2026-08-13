@@ -90,6 +90,16 @@ export const CreateRequestBody = z.object({
 });
 export type CreateRequestBody = z.infer<typeof CreateRequestBody>;
 
+/** `PUT /api/requests/:id/coverage` body: exactly what a show request covers
+ * from now on. Both absent/empty means the WHOLE show; otherwise the union of
+ * the named seasons and the named episodes. Unlike a second ask, this can narrow
+ * as well as widen. */
+export const RequestCoverageBody = z.object({
+  seasons: z.array(z.number()).nullable(),
+  episodes: z.array(EpisodeRef).nullable(),
+});
+export type RequestCoverageBody = z.infer<typeof RequestCoverageBody>;
+
 export const DiscoverEntry = z.object({
   kind: RequestKind,
   tmdbId: z.number(),

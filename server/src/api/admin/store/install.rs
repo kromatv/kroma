@@ -50,24 +50,7 @@ async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Resul
     let mut installed = Vec::new();
     for p in plan {
         let entry = p.entry;
-        let artifact = catalog::pick_artifact(entry)
-            .ok_or_else(|| anyhow!("'{}' has no build for this server's platform", entry.id))?;
-        // Registry installs download and run native code, so harden the transport:
-        // require HTTPS (no cleartext artifact fetch) and a published sha256 (the
-        // catalog generator always emits one). The bytes are verified against it
-        // before anything is written or spawned.
-        if !artifact.url.starts_with("https://") {
-            bail!("'{}' artifact URL must be https (got '{}')", entry.id, artifact.url);
-        }
-        let sha = artifact
-            .sha256
-            .as_deref()
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-            .ok_or_else(|| {
-                anyhow!("'{}' has no published sha256 checksum; refusing to install", entry.id)
-            })?;
-        let bytes = {
+        let (url, bytes) = {
             // Throttled: one frame per ~1% (floor 64 KiB), plus the final byte count.
             let last = AtomicU64::new(0);
             let on_progress = |received: u64, total: Option<u64>| {
@@ -79,15 +62,15 @@ async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Resul
                 last.store(received, Ordering::Relaxed);
                 op.download(&entry.id, received, total);
             };
-            sup.download_artifact(&artifact.url, Some(sha), &on_progress)
-                .await
-                .map_err(|e| anyhow!("downloading '{}' failed: {e:#}", entry.id))?
+            verified_artifact(sup, entry, &on_progress).await?
         };
         op.installing(&entry.id);
         let manifest = {
             let sup = sup.clone();
             let expected = entry.id.clone();
-            tokio::task::spawn_blocking(move || sup.install(&bytes, Some(&expected)))
+            tokio::task::spawn_blocking(move || {
+                sup.install(&bytes, Some(&expected), ("registry", Some(&url)))
+            })
                 .await
                 .map_err(|_| anyhow!("install task panicked"))?
                 .map_err(|e| anyhow!("installing '{}' failed: {e:#}", entry.id))?
@@ -100,6 +83,67 @@ async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Resul
         }));
     }
     Ok(installed)
+}
+
+/// `(artifact_url, bytes)` for `entry`'s build on this platform, downloaded only
+/// once the transport and the checksum are the ones a first install insists on.
+///
+/// Every path that fetches native code goes through here: registry installs
+/// download and run a binary, so requiring HTTPS and a published sha256 (which
+/// the catalog generator always emits) in ONE place is what stops a second
+/// caller from quietly skipping either.
+async fn verified_artifact(
+    sup: &Arc<Supervisor>,
+    entry: &CatalogModule,
+    on_progress: kroma_module_supervisor::FetchProgress<'_>,
+) -> Result<(String, Vec<u8>)> {
+    let artifact = catalog::pick_artifact(entry)
+        .ok_or_else(|| anyhow!("'{}' has no build for this server's platform", entry.id))?;
+    if !artifact.url.starts_with("https://") {
+        bail!("'{}' artifact URL must be https (got '{}')", entry.id, artifact.url);
+    }
+    let sha = artifact
+        .sha256
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| {
+            anyhow!("'{}' has no published sha256 checksum; refusing to install", entry.id)
+        })?;
+    let bytes = sup
+        .download_artifact(&artifact.url, Some(sha), on_progress)
+        .await
+        .map_err(|e| anyhow!("downloading '{}' failed: {e:#}", entry.id))?;
+    Ok((artifact.url.clone(), bytes))
+}
+
+/// Fetch `id` from the registry again and unpack it over the installed copy.
+///
+/// Verified exactly like a first install: the catalog is re-read so the checksum
+/// compared against is the published one, and a module no configured registry
+/// carries any more is refused rather than fetched unchecked.
+pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> Result<Value> {
+    let modules = registries::fetch_merged(state, sup).await?;
+    let entry = modules
+        .iter()
+        .find(|m| m.id == id)
+        .ok_or_else(|| anyhow!("'{id}' is not in any configured registry, so it cannot be verified"))?;
+    let (url, bytes) = verified_artifact(sup, entry, &|_, _| {}).await?;
+    let manifest = {
+        let sup = sup.clone();
+        let expected = id.to_string();
+        tokio::task::spawn_blocking(move || {
+            sup.install(&bytes, Some(&expected), ("registry", Some(&url)))
+        })
+        .await
+        .map_err(|_| anyhow!("reinstall task panicked"))?
+        .map_err(|e| anyhow!("reinstalling '{id}' failed: {e:#}"))?
+    };
+    Ok(json!({
+        "id": manifest.get("id"),
+        "name": manifest.get("name"),
+        "version": manifest.get("version"),
+    }))
 }
 
 #[derive(Serialize)]

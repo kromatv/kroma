@@ -4,7 +4,17 @@
 
 import { formatRuntime, type MediaItem, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, backdropBlur, color, Focusable, gradient, IconButton, sv, Text } from '@kroma/ui/kit';
+import {
+  Box,
+  backdropBlur,
+  CheckboxFace,
+  color,
+  Focusable,
+  gradient,
+  IconButton,
+  sv,
+  Text,
+} from '@kroma/ui/kit';
 import { IconCheck, IconPlayerPlayFilled } from '@tabler/icons-react';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { kromaClient } from '#web/shared/lib/api';
@@ -143,42 +153,79 @@ export function EpisodeRow({
   );
 }
 
+const missingRow = sv({
+  base: {
+    row: true,
+    align: 'center',
+    gap: ROW_GAP,
+    radius: 'lg',
+    p: 14,
+    bg: 'white/1.5',
+    border: 'white/5',
+    _hover: { bg: 'white/5' },
+  },
+  variants: {
+    selected: { true: { border: 'accent/45', bg: 'accentWash/8' }, false: {} },
+  },
+  defaults: { selected: false },
+});
+
+/** A gap in the season the viewer can ask for. The whole row is the toggle, so
+ * picking three episodes is three presses and one request from the bar below;
+ * a row already asked for shows its status instead. */
 export function MissingEpisodeRow({
   episode,
   pending,
-  busy,
-  onRequest,
+  selected,
+  onToggle,
 }: Readonly<{
   season: number;
   episode: number;
   pending: boolean;
-  busy: boolean;
-  onRequest: () => void;
+  selected: boolean;
+  onToggle: () => void;
 }>) {
   const t = useT();
-  return (
-    <Box row align="center" gap={ROW_GAP} radius="lg" p={14} bg="white/1.5" border="white/5">
-      <Box w={STILL_W} aspect={16 / 9} shrink={0} center radius="md" bg="white/4">
-        <Text variant="label" color="white/35" style={BOLD}>
-          {String(episode)}
-        </Text>
-      </Box>
-      <Box minW={0} flex>
-        <Text variant="label" lines={1} color="white/70" style={BOLD}>
-          {t('content.episodeN', { n: episode })}
-        </Text>
-      </Box>
-      {pending ? (
+  const label = t('content.episodeN', { n: episode });
+  if (pending) {
+    return (
+      <Box row align="center" gap={ROW_GAP} radius="lg" p={14} bg="white/1.5" border="white/5">
+        <MissingStill episode={episode} />
+        <Box minW={0} flex>
+          <Text variant="label" lines={1} color="white/70" style={BOLD}>
+            {label}
+          </Text>
+        </Box>
         <RequestStatusChip status="pending" size="card" />
-      ) : (
-        <IconButton
-          icon="plus"
-          active
-          label={t('requests.requestEpisode')}
-          onPress={onRequest}
-          disabled={busy}
-        />
-      )}
+      </Box>
+    );
+  }
+  return (
+    <Focusable
+      role="checkbox"
+      checked={selected}
+      sv={missingRow}
+      vars={{ selected }}
+      label={label}
+      onPress={onToggle}
+    >
+      <MissingStill episode={episode} />
+      <Box minW={0} flex>
+        <Text variant="label" lines={1} color={selected ? 'text' : 'white/70'} style={BOLD}>
+          {label}
+        </Text>
+      </Box>
+      <CheckboxFace checked={selected} />
+    </Focusable>
+  );
+}
+
+function MissingStill({ episode }: Readonly<{ episode: number }>) {
+  return (
+    <Box w={STILL_W} aspect={16 / 9} shrink={0} center radius="md" bg="white/4">
+      <Text variant="label" color="white/35" style={BOLD}>
+        {String(episode)}
+      </Text>
     </Box>
   );
 }

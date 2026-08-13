@@ -54,6 +54,62 @@ where
     }
 }
 
+/// Resolves the module currently serving a port: its `(base_url, auth_token)`,
+/// or `None` when nothing installed and running serves it. Called on EVERY
+/// cross-module request, so a provider that restarted on a new port is picked
+/// up without anyone re-wiring.
+pub type Resolver = Arc<dyn Fn() -> Option<(String, String)> + Send + Sync>;
+
+/// A [`Resolver`] for whichever module serves `port`. The port is a contract
+/// name (`"torznab"`, `"indexer-db"`), never a module id: which module answers
+/// is the supervisor's business, and changes as modules are installed.
+pub fn port_resolver(host: Arc<dyn HostCtx>, port: &str) -> Resolver {
+    let port = port.to_string();
+    Arc::new(move || host.port_endpoint(&port))
+}
+
+/// Serialize `body`, POST it to the provider's `/_port/<path>` with the bearer
+/// token, and unwrap the `Result<T, String>` envelope it returns.
+pub fn call<B: serde::Serialize, T: serde::de::DeserializeOwned>(
+    resolve: &Resolver,
+    path: &str,
+    body: &B,
+) -> anyhow::Result<T> {
+    let out: Result<T, String> = call_raw(resolve, path, body)?;
+    out.map_err(|e| anyhow::anyhow!(e))
+}
+
+/// Like [`call`] but the provider returns `T` directly (no `Result` envelope),
+/// for port methods returning `Option<_>` / infallible values.
+pub fn call_raw<B: serde::Serialize, T: serde::de::DeserializeOwned>(
+    resolve: &Resolver,
+    path: &str,
+    body: &B,
+) -> anyhow::Result<T> {
+    let (base, token) =
+        resolve().ok_or_else(|| anyhow::anyhow!("no module serves this port"))?;
+    let resp = kroma_http::Fetch::new()
+        .header("authorization", format!("Bearer {token}"))
+        .post_json(&format!("{base}/_port/{path}"), &serde_json::to_value(body)?)?
+        .ensure_ok()?;
+    Ok(resp.json()?)
+}
+
+/// Wrap a provider-side port handler: run the blocking work off the runtime and
+/// answer with the `Result<T, String>` envelope [`call`] expects.
+pub async fn port_reply<T>(
+    job: impl FnOnce() -> anyhow::Result<T> + Send + 'static,
+) -> Json<Result<T, String>>
+where
+    T: Send + 'static,
+{
+    let out = tokio::task::spawn_blocking(job)
+        .await
+        .map_err(|e| e.to_string())
+        .and_then(|r| r.map_err(|e| format!("{e:#}")));
+    Json(out)
+}
+
 /// Register a peer port (a trait object) for the service registry: returns the
 /// `(TypeId, value)` to insert. The registry stores concrete `Any` values, so the
 /// port `Arc<dyn P>` is wrapped in an outer `Arc` keyed by `Arc<dyn P>`'s TypeId.
@@ -156,6 +212,12 @@ pub trait HostCtx: Send + Sync + 'static {
 
     // Prefer the typed [`service`] helper.
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>>;
+
+    /// `(base_url, auth_token)` of the installed, enabled, running module that
+    /// serves `port`, a contract name and never a module id. This is the ONE hook
+    /// the core offers for cross-module calls, which is what keeps it from
+    /// naming any module.
+    fn port_endpoint(&self, port: &str) -> Option<(String, String)>;
 }
 
 pub fn service<T: Any + Send + Sync>(host: &dyn HostCtx) -> Option<Arc<T>> {
@@ -271,6 +333,9 @@ impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
         (**self).get_service(type_id)
     }
+    fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
+        (**self).port_endpoint(port)
+    }
 }
 
 /// An authenticated user, resolved from an `Authorization: Bearer <token>`
@@ -322,6 +387,29 @@ pub fn bearer_from_headers(headers: &axum::http::HeaderMap) -> Option<String> {
         .or_else(|| s.strip_prefix("bearer "))
         .map(|t| t.trim().to_string())
         .filter(|t| !t.is_empty())
+}
+
+#[cfg(test)]
+mod port_call_tests {
+    use super::*;
+
+    fn offline() -> Resolver {
+        Arc::new(|| None)
+    }
+
+    #[test]
+    fn call_errors_when_nothing_serves_the_port() {
+        let err = call::<_, serde_json::Value>(&offline(), "any/path", &serde_json::json!({}))
+            .unwrap_err();
+        assert!(err.to_string().contains("no module serves this port"));
+    }
+
+    #[test]
+    fn call_raw_errors_when_nothing_serves_the_port() {
+        let err = call_raw::<_, serde_json::Value>(&offline(), "any/path", &serde_json::json!({}))
+            .unwrap_err();
+        assert!(err.to_string().contains("no module serves this port"));
+    }
 }
 
 #[cfg(test)]
@@ -569,6 +657,9 @@ mod tests {
         fn metadata_language(&self) -> String {
             self.note("metadata_language");
             "fr-FR".into()
+        }
+        fn port_endpoint(&self, _port: &str) -> Option<(String, String)> {
+            None
         }
         fn get_service(&self, _t: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
             self.note("get_service");

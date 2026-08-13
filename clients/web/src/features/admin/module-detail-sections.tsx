@@ -1,17 +1,23 @@
-// The detail drawer's presentational sections: labels, the meta grid, the
+// The module page's presentational sections: labels, the meta grid, the
 // dependency/capability chips for catalog-only entries, the add-on list and
-// the module's declared settings. The container and its actions live in
-// module-detail.tsx.
+// the module's declared settings. The page itself lives in module-detail.tsx,
+// its controls in module-detail-actions.tsx.
 
 import type { StoreCatalog, StoreModule } from '@kroma/core';
 import { moduleIconUrl } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Badge, Box, DataField, Grid, Progress, Row, Text } from '@kroma/ui/kit';
+import { Badge, Box, Button, Callout, DataField, Grid, Progress, Row, Text } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { ModuleConfigForm } from '#web/features/admin/module-config-form';
 import { DepChip, depState, ModuleDeps } from '#web/features/admin/module-deps';
-import { type OpModule, opPct, PHASE_KEY, runningPct } from '#web/features/admin/module-ops';
+import {
+  type ModuleRestart,
+  type OpModule,
+  opPct,
+  PHASE_KEY,
+  runningPct,
+} from '#web/features/admin/module-ops';
 import { useModuleSettingsPanels } from '#web/modules/ModuleHostProvider';
 import { apiBase } from '#web/shared/lib/api';
 import { Image } from '#web/shared/ui';
@@ -145,7 +151,7 @@ export function Addons({
   );
 }
 
-export function DrawerSettings({
+export function ModuleSettings({
   module,
   onSaved,
 }: Readonly<{ module: AdminModule; onSaved: () => void }>) {
@@ -190,7 +196,45 @@ export function HeaderIcon({
   );
 }
 
-export function FooterProgress({ op }: Readonly<{ op: OpModule }>) {
+function restartState(module: AdminModule, restart: ModuleRestart) {
+  if (restart.error) {
+    return { tone: 'danger', icon: 'alert-triangle', title: 'admin.modulesRestartFailed' } as const;
+  }
+  if (!module.running) {
+    return { tone: 'danger', icon: 'alert-triangle', title: 'admin.modulesNotRunning' } as const;
+  }
+  if (restart.done) {
+    return { tone: 'success', icon: 'circle-check', title: 'admin.modulesRestarted' } as const;
+  }
+  return { tone: 'neutral', icon: 'refresh', title: null } as const;
+}
+
+/** The sidecar's state and the one action that answers it. Only for a module
+ * that has a process to restart: a library module ships no binary. */
+export function RestartCallout({
+  module,
+  restart,
+}: Readonly<{ module: AdminModule; restart: ModuleRestart }>) {
+  const t = useT();
+  const state = restartState(module, restart);
+  return (
+    <Callout.Root tone={state.tone} icon={state.icon} size="sm">
+      {state.title && <Callout.Title>{t(state.title)}</Callout.Title>}
+      <Callout.Detail>{restart.error ?? t('admin.modulesRestartHint')}</Callout.Detail>
+      <Callout.Actions>
+        <Button
+          variant="outline"
+          size="sm"
+          label={restart.busy ? t('admin.modulesRestarting') : t('admin.modulesRestart')}
+          loading={restart.busy}
+          onPress={() => void restart.restart()}
+        />
+      </Callout.Actions>
+    </Callout.Root>
+  );
+}
+
+export function OpProgress({ op }: Readonly<{ op: OpModule }>) {
   const t = useT();
   const pct = opPct(op);
   return (

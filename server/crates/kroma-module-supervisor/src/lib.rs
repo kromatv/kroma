@@ -22,6 +22,55 @@ use kroma_module_host::{Event, HostCtx};
 use serde_json::{json, Value};
 
 pub const MODULE_BIN: &str = "module";
+/// Written beside a module at install time; not part of the `.kmod` itself.
+const ORIGIN_FILE: &str = "origin.json";
+
+/// Where an installed module came from.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Origin {
+    /// `registry` | `upload` | `url` | `unknown`.
+    pub kind: String,
+    /// The catalog or artifact URL, when it came from one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// Unix seconds.
+    pub installed_at: u64,
+    /// The binary's size and mtime AS INSTALLED. Compared against what is on
+    /// disk to spot a local build; recorded rather than inferred from
+    /// `installed_at` so restoring a backup (which rewrites mtimes wholesale)
+    /// does not read as one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bin: Option<BinStamp>,
+    /// The binary on disk is not the one installed: a dev loop swapped it, so
+    /// this module is NOT running the artifact it was installed from.
+    #[serde(default)]
+    pub local_build: bool,
+}
+
+/// Identity of an installed binary, enough to notice it was replaced.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BinStamp {
+    pub size: u64,
+    /// Unix seconds.
+    pub mtime: u64,
+}
+
+impl Origin {
+    fn unknown() -> Self {
+        Self { kind: "unknown".into(), url: None, installed_at: 0, bin: None, local_build: false }
+    }
+}
+
+fn unix_secs(t: std::time::SystemTime) -> u64 {
+    t.duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
+}
+
+fn stamp_of(path: &Path) -> Option<BinStamp> {
+    let meta = std::fs::metadata(path).ok()?;
+    Some(BinStamp { size: meta.len(), mtime: meta.modified().map(unix_secs).unwrap_or(0) })
+}
 
 struct Proc {
     port: u16,
@@ -66,6 +115,12 @@ const ARTIFACT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(300
 // Long enough to cover one admin interaction (plan, toggle, install), short
 // enough that a freshly published catalog shows up on the next page visit.
 const CATALOG_CACHE_TTL: std::time::Duration = std::time::Duration::from_secs(15);
+// Fast enough that a rebuild feels immediate, slow enough to be free when idle.
+const HOT_RELOAD_POLL: Duration = Duration::from_millis(400);
+
+const WATCHDOG_POLL: Duration = Duration::from_secs(2);
+const WATCHDOG_BACKOFF_MIN: Duration = Duration::from_secs(2);
+const WATCHDOG_BACKOFF_MAX: Duration = Duration::from_secs(60);
 
 /// Byte-progress callback for a bounded fetch: `(received, total)` where
 /// `total` is the advisory Content-Length when the server sent one.
@@ -133,7 +188,20 @@ impl Supervisor {
         self.cfg.modules_dir.join(id)
     }
 
-    fn has_binary(&self, id: &str) -> bool {
+    /// A lifecycle line in the module's OWN log stream. `tracing` would file it
+    /// under the core, where nobody looking at that module would find it: a
+    /// restart has to read as one story next to the sidecar's own output.
+    fn say(&self, id: &str, line: &str) {
+        if let Some(log_line) = &self.cfg.log_line {
+            log_line(id, line);
+        }
+    }
+
+    /// Whether this module ships a sidecar binary at all. A library module (the
+    /// scene parser, the download sub-engines) is code co-linked into another
+    /// process, so it HAS no process: "not running" is its normal state, not a
+    /// fault, and nothing should report it as one.
+    pub fn has_binary(&self, id: &str) -> bool {
         self.dir(id).join(MODULE_BIN).exists()
     }
 
@@ -185,17 +253,101 @@ impl Supervisor {
         None
     }
 
+    /// Where an installed module came from, and whether its binary has been
+    /// swapped since. Read from the `origin.json` written at install time;
+    /// modules installed before that existed report `Origin::unknown()`.
+    pub fn origin(&self, id: &str) -> Origin {
+        let dir = self.dir(id);
+        let mut origin = std::fs::read_to_string(dir.join(ORIGIN_FILE))
+            .ok()
+            .and_then(|s| serde_json::from_str::<Origin>(&s).ok())
+            .unwrap_or_else(Origin::unknown);
+        // A binary that is not the one recorded at install is one a dev loop
+        // swapped in, so the process is not running the artifact this module was
+        // installed from.
+        if let (Some(installed), Some(current)) =
+            (origin.bin.clone(), stamp_of(&dir.join(MODULE_BIN)))
+        {
+            origin.local_build = current != installed;
+        }
+        origin
+    }
+
+    fn write_origin(&self, id: &str, kind: &str, url: Option<&str>) {
+        let origin = Origin {
+            kind: kind.to_string(),
+            url: url.map(str::to_string),
+            installed_at: unix_secs(std::time::SystemTime::now()),
+            bin: stamp_of(&self.dir(id).join(MODULE_BIN)),
+            local_build: false,
+        };
+        if let Ok(body) = serde_json::to_string(&origin) {
+            let _ = std::fs::write(self.dir(id).join(ORIGIN_FILE), body);
+        }
+    }
+
     pub fn port_of(&self, id: &str) -> Option<u16> {
         self.procs.read().unwrap().get(id).map(|p| p.port)
+    }
+
+    /// `(base_url, auth_token)` of the running module that serves the `port`
+    /// contract, found by reading every installed manifest's `ports`. Resolved
+    /// per call, so a provider that was just installed, restarted, or moved to
+    /// a different localhost port is picked up with nothing re-wired, and no
+    /// caller anywhere names a module id.
+    ///
+    /// A manifest that declares the contract but whose module is not running is
+    /// passed over rather than resolved to, so a second provider still answers.
+    pub fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
+        self.installed_manifests().into_iter().find_map(|m| {
+            let serves = m
+                .get("ports")
+                .and_then(Value::as_array)
+                .is_some_and(|ps| ps.iter().any(|p| p.as_str() == Some(port)));
+            if !serves {
+                return None;
+            }
+            let live = self.port_of(m.get("id").and_then(Value::as_str)?)?;
+            Some((format!("http://127.0.0.1:{live}"), self.cfg.host_token.clone()))
+        })
     }
 
     pub fn host_token(&self) -> &str {
         &self.cfg.host_token
     }
 
+    /// Drop the bookkeeping for any module whose process has exited, saying so
+    /// on that module's own log, and answer with the ids that had died.
+    ///
+    /// Nothing else notices: a sidecar that exits keeps its entry here, which
+    /// made [`spawn`](Self::spawn) a silent no-op ("already running") and left
+    /// the module unreachable until the whole server was restarted.
+    pub fn reap_exited(&self) -> Vec<String> {
+        let mut dead = Vec::new();
+        let mut procs = self.procs.write().unwrap();
+        procs.retain(|id, p| match p.child.try_wait() {
+            Ok(Some(status)) => {
+                dead.push(id.clone());
+                tracing::error!(module = %id, %status, "module process exited on its own");
+                false
+            }
+            // Still running, or the status could not be read (leave it alone
+            // rather than tear down a module over a transient wait error).
+            _ => true,
+        });
+        drop(procs);
+        for id in &dead {
+            self.say(id, "ERROR module process exited");
+        }
+        dead
+    }
+
     /// Spawn a module process on a free localhost port; a no-op if already
     /// running, an error if the module ships no binary.
     pub fn spawn(&self, id: &str) -> anyhow::Result<u16> {
+        // Before the already-running shortcut: an entry whose process is gone
+        // would otherwise answer "running" forever.
+        self.reap_exited();
         if let Some(p) = self.procs.read().unwrap().get(id) {
             return Ok(p.port);
         }
@@ -219,6 +371,7 @@ impl Supervisor {
         if let Some(log_line) = &self.cfg.log_line {
             Self::drain_logs(&mut child, id, log_line);
         }
+        self.say(id, &format!("INFO starting module process on port {port}"));
         tracing::info!(module = %id, port, pid = child.id(), "spawned module process");
         self.procs.write().unwrap().insert(id.to_string(), Proc { port, child });
         Ok(port)
@@ -250,8 +403,10 @@ impl Supervisor {
     /// A no-op if not running. Blocking: call it off the async runtime.
     pub fn stop(&self, id: &str) {
         let Some(mut p) = self.procs.write().unwrap().remove(id) else { return };
+        self.say(id, "INFO stopping module process");
         ask_to_stop(id, &mut p.child);
         reap(id, &mut p.child, Instant::now() + STOP_GRACE);
+        self.say(id, "INFO module process stopped");
         tracing::info!(module = %id, "stopped module process");
     }
 
@@ -298,7 +453,15 @@ impl Supervisor {
     /// catalog: the id inside the bundle decides which directory is REPLACED,
     /// so without this a registry could advertise one id and ship a bundle that
     /// overwrites another — including a module the official registry owns.
-    pub fn install(&self, bytes: &[u8], expected_id: Option<&str>) -> anyhow::Result<Value> {
+    /// Unpack and spawn a `.kmod`. `origin` says where it came from
+    /// (`registry` / `upload` / `url`) and is recorded beside the module so the
+    /// admin page can show it.
+    pub fn install(
+        &self,
+        bytes: &[u8],
+        expected_id: Option<&str>,
+        origin: (&str, Option<&str>),
+    ) -> anyhow::Result<Value> {
         let tar_bytes = decompressed_tar(bytes)?;
 
         let staging = self.cfg.modules_dir.join(format!(".staging-{}", rand::random::<u32>()));
@@ -320,6 +483,7 @@ impl Supervisor {
             }
             // A "library" module ships no binary: its code is a leaf crate
             // co-linked into the processes that need it, so nothing to spawn.
+            self.write_origin(&id, origin.0, origin.1);
             if self.has_binary(&id) {
                 self.spawn(&id)?;
             } else {
@@ -478,6 +642,137 @@ impl Supervisor {
         Ok(())
     }
 
+    /// Watch every running module's binary and restart the ones that change.
+    ///
+    /// This is the module half of `cargo watch`: a dev loop rebuilds a sidecar
+    /// and drops the binary in, and the process running the old code is swapped
+    /// for one running the new. Off unless `KROMA_MODULE_HOT_RELOAD=1`, so a
+    /// production server never polls the filesystem for this.
+    pub fn spawn_hot_reload(self: &Arc<Self>) {
+        if std::env::var("KROMA_MODULE_HOT_RELOAD").as_deref() != Ok("1") {
+            return;
+        }
+        let this = self.clone();
+        tracing::info!("module hot reload armed: a changed sidecar binary restarts its process");
+        std::thread::spawn(move || {
+            let mut seen: HashMap<String, std::time::SystemTime> = HashMap::new();
+            // A restart that fails takes the module out of `procs`, so watching
+            // only what is running would drop it from the loop and leave it dead
+            // and silent until the server itself restarted. It stays here until
+            // it comes back.
+            let mut down: std::collections::HashSet<String> = std::collections::HashSet::new();
+            loop {
+                std::thread::sleep(HOT_RELOAD_POLL);
+                this.retry_failed_reloads(&mut down);
+                for id in this.running_ids() {
+                    this.reload_if_changed(&id, &mut seen, &mut down);
+                }
+            }
+        });
+    }
+
+    /// The ids with a live entry in the process map. Bound in its own statement
+    /// so the read guard is DROPPED before the caller acts: held across a
+    /// restart it would deadlock against `stop`'s write lock.
+    fn running_ids(&self) -> Vec<String> {
+        self.procs.read().unwrap().keys().cloned().collect()
+    }
+
+    // Modules whose last restart failed, tried again. One stays in `down` until
+    // it comes back, so a broken build is retried rather than forgotten.
+    fn retry_failed_reloads(&self, down: &mut std::collections::HashSet<String>) {
+        for id in std::mem::take(down) {
+            match self.start_installed(&id) {
+                Ok(_) => self.say(&id, "INFO sidecar back up after a failed hot reload"),
+                Err(e) => {
+                    self.say(&id, &format!("ERROR sidecar still down: {e:#}"));
+                    down.insert(id);
+                }
+            }
+        }
+    }
+
+    // Restart one module if its binary is not the one it started with. The first
+    // sighting only records the stamp: that IS the binary already running.
+    fn reload_if_changed(
+        &self,
+        id: &str,
+        seen: &mut HashMap<String, std::time::SystemTime>,
+        down: &mut std::collections::HashSet<String>,
+    ) {
+        let Ok(stamp) =
+            std::fs::metadata(self.dir(id).join(MODULE_BIN)).and_then(|m| m.modified())
+        else {
+            return;
+        };
+        let changed = matches!(seen.get(id), Some(&last) if last != stamp);
+        seen.insert(id.to_string(), stamp);
+        if !changed {
+            return;
+        }
+        tracing::info!(module = %id, "binary changed; restarting the sidecar");
+        self.stop(id);
+        if let Err(e) = self.start_installed(id) {
+            tracing::error!(
+                module = %id,
+                error = %format!("{e:#}"),
+                "hot reload failed; retrying every poll",
+            );
+            self.say(id, &format!("ERROR hot reload failed: {e:#}"));
+            down.insert(id.to_string());
+        }
+    }
+
+    /// Watch the running sidecars and bring back any that exits. A module that
+    /// dies takes its whole feature with it (a dead acquisition sidecar is a
+    /// request page that answers "this feature is disabled"), and until this
+    /// existed it did so without a word and stayed down until the next restart.
+    ///
+    /// Backs off on a module that will not stay up, so a crash loop costs one
+    /// line a minute rather than a spin.
+    pub fn spawn_watchdog(self: &Arc<Self>) {
+        let this = self.clone();
+        std::thread::spawn(move || {
+            let mut backoff: HashMap<String, Duration> = HashMap::new();
+            let mut due: HashMap<String, Instant> = HashMap::new();
+            loop {
+                std::thread::sleep(WATCHDOG_POLL);
+                for id in this.reap_exited() {
+                    let wait = backoff.get(&id).copied().unwrap_or(WATCHDOG_POLL);
+                    due.insert(id, Instant::now() + wait);
+                }
+                let ready: Vec<String> = due
+                    .iter()
+                    .filter(|(_, at)| Instant::now() >= **at)
+                    .map(|(id, _)| id.clone())
+                    .collect();
+                for id in ready {
+                    due.remove(&id);
+                    match this.start_installed(&id) {
+                        Ok(_) => {
+                            backoff.remove(&id);
+                            this.say(&id, "INFO module process restarted after an exit");
+                        }
+                        Err(e) => {
+                            let next = backoff
+                                .get(&id)
+                                .map_or(WATCHDOG_BACKOFF_MIN, |d| (*d * 2).min(WATCHDOG_BACKOFF_MAX));
+                            backoff.insert(id.clone(), next);
+                            due.insert(id.clone(), Instant::now() + next);
+                            tracing::error!(
+                                module = %id,
+                                error = %format!("{e:#}"),
+                                retry_in_s = next.as_secs(),
+                                "module restart failed",
+                            );
+                            this.say(&id, &format!("ERROR restart failed: {e:#}"));
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     pub fn spawn_enabled(&self, host: &dyn HostCtx) {
         for manifest in self.installed_manifests() {
             let Some(id) = manifest.get("id").and_then(Value::as_str) else { continue };
@@ -485,7 +780,11 @@ impl Supervisor {
                 continue;
             }
             if let Err(e) = self.start_installed(id) {
-                tracing::warn!(module = %id, error = %format!("{e:#}"), "module not spawned");
+                tracing::error!(module = %id, error = %format!("{e:#}"), "module not spawned");
+                // Also on the module's own channel: a module that never came up
+                // is the first thing looked for in Admin > Journaux, and the core
+                // log is not where it is looked for.
+                self.say(id, &format!("ERROR module did not start: {e:#}"));
             }
         }
     }
@@ -677,7 +976,25 @@ where
         .route("/_host/enabled", get(module_enabled::<S>))
         .route("/_host/libraries", get(library_folders::<S>))
         .route("/_host/tmdb", get(tmdb_config::<S>))
+        // How a module reaches a peer: it asks for a CONTRACT and the core
+        // answers with whoever serves it. No module id crosses this wire.
+        .route("/_host/port", get(port_endpoint::<S>))
         .route_layer(from_fn_with_state(HostToken(token), require_host_token))
+}
+
+#[derive(serde::Deserialize)]
+struct PortQuery {
+    port: String,
+}
+
+async fn port_endpoint<S: HostCtx>(
+    State(host): State<S>,
+    axum::extract::Query(q): axum::extract::Query<PortQuery>,
+) -> Json<Value> {
+    match host.port_endpoint(&q.port) {
+        Some((base, token)) => Json(json!({ "base": base, "token": token })),
+        None => Json(Value::Null),
+    }
 }
 
 #[derive(serde::Deserialize)]

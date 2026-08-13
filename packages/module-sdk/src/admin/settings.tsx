@@ -54,7 +54,7 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
   const { client } = useAdminHost();
   // `null` is "not answered yet"; an empty array is a view with no groups.
   const [groups, setGroups] = useState<SettingGroup[] | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState<{ error: unknown } | null>(null);
   const [saved, setSaved] = useState(false);
 
   // One fetch, reused as the retry: a view that failed offers to ask again
@@ -63,11 +63,11 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
   // biome-ignore lint/correctness/useExhaustiveDependencies: `attempt` is an intentional re-run key (the retry), not something the effect reads
   useEffect(() => {
     let active = true;
-    setFailed(false);
+    setFailure(null);
     client
       .adminSettings(view)
       .then((r) => active && setGroups(r.groups))
-      .catch(() => active && setFailed(true));
+      .catch((e: unknown) => active && setFailure({ error: e }));
     return () => {
       active = false;
     };
@@ -87,7 +87,9 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
   // Before the first answer there is nothing to show and nothing to claim: an
   // empty page would read as a settings view with no settings in it.
   if (!groups) {
-    if (failed) return <ModuleFailed retry={() => setAttempt((n) => n + 1)} />;
+    if (failure) {
+      return <ModuleFailed error={failure.error} retry={() => setAttempt((n) => n + 1)} />;
+    }
     return embedded ? <CardSkeleton fields={3} /> : <ModuleLoading panels={2} />;
   }
 

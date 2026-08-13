@@ -1,7 +1,8 @@
-// Manual grab modal: search indexers or paste a magnet, ANALYZE the torrent's
-// real file list (Sonarr/Radarr-style), pick which episodes/files to download,
-// and set the target so import lands them in the right library. The detected
-// entity pre-fills the form; the admin can override when detection is unsure.
+// Manual grab modal: say what you are after, search indexers or paste a magnet,
+// ANALYZE the torrent's real file list (Sonarr/Radarr-style), pick which
+// episodes/files to download, and add it. The target block leads because it
+// scopes the search too: a season/episode there makes the sweep a TV search
+// instead of a movie one, which is the only way to find a specific episode.
 //
 // NOTE an inversion: the backend graph has acquisition dependsOn torrents, yet
 // this file (torrents) drives acquisition's search/analyze/add. The entangle-
@@ -10,7 +11,6 @@
 // manual-grab flow moves INTO acquisition and reaches this page via module
 // exports (`getModuleApi`), not by a package import in this direction.
 
-import { formatBytes } from '@kroma/core';
 import { useAcquisitionApi } from '@kroma/module-acquisition/api';
 import type {
   ManualReleaseView,
@@ -18,79 +18,12 @@ import type {
   TorrentFileView,
 } from '@kroma/module-acquisition/schemas';
 import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import {
-  Box,
-  Button,
-  color,
-  Dialog,
-  Field,
-  Focusable,
-  Icon,
-  Row,
-  SegmentedControl,
-  styles,
-  sv,
-  Text,
-} from '@kroma/ui/kit';
-import { type CSSProperties, useState } from 'react';
+import { Box, Button, Dialog, Field, SegmentedControl, Text } from '@kroma/ui/kit';
+import { useState } from 'react';
+import { AnalysisPanel } from './manual-grab-analysis';
+import { SearchPanel } from './manual-grab-search';
 
 type Kind = 'movie' | 'episode' | 'season';
-
-const KIND_TONE: Record<string, string> = {
-  movie: 'accent',
-  episode: 'info',
-  season: 'hdr',
-  series: 'hdr',
-  unknown: 'text/55',
-};
-
-const kindInk = (kind: string) => color(KIND_TONE[kind] ?? 'text/55');
-
-const FILE_LIST: CSSProperties = { maxHeight: 208, overflowY: 'auto' };
-
-const RESULT_LIST: CSSProperties = {
-  marginTop: 8,
-  maxHeight: 176,
-  overflowY: 'auto',
-  borderRadius: 'var(--radius-xl)',
-  border: '1px solid color-mix(in srgb, var(--kroma-tint) 7%, transparent)',
-  background: 'var(--kroma-bg)',
-};
-
-const FILE_ROW: CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  padding: '6px 8px',
-  borderRadius: 'var(--radius-sm)',
-  cursor: 'pointer',
-};
-
-const FILE_ROW_LOCKED: CSSProperties = { ...FILE_ROW, cursor: 'default', opacity: 0.45 };
-
-const FILE_BOX: CSSProperties = { width: 14, height: 14, accentColor: 'var(--kroma-accent)' };
-
-const s = styles({
-  tabular: { fontVariant: ['tabular-nums'] },
-});
-
-const resultRow = sv({
-  base: {
-    row: true,
-    align: 'center',
-    w: '100%',
-    gap: 12,
-    px: 12,
-    py: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'tint/4',
-    _hover: { bg: 'tint/3' },
-  },
-  variants: {
-    last: { true: { borderBottomWidth: 0 } },
-  },
-  defaults: { last: false },
-});
 
 /** Derive the pre-filled target from the detected content. Absent `season` /
  * `episode` keys mean "leave the current value untouched". */
@@ -149,6 +82,15 @@ function buildManualAddBody(fields: {
   };
 }
 
+const pad = (v: string) => v.padStart(2, '0');
+
+// What the sweep is narrowed to, for the hint under the search field. Null when
+// nothing narrows it (a movie search, or a show with no season typed yet).
+function scopeLabel(kind: Kind, season: string, episode: string): string | null {
+  if (kind === 'movie' || !season) return null;
+  return kind === 'episode' && episode ? `S${pad(season)}E${pad(episode)}` : `S${pad(season)}`;
+}
+
 export function ManualGrabModal({
   onClose,
   onAdded,
@@ -184,16 +126,24 @@ export function ManualGrabModal({
     setSelected(new Set());
   };
 
+  // The target block's season/episode double as the search's, so "find me
+  // S03E07" is one form rather than two.
   const doSearch = () => {
     const q = query.trim();
     if (!q) return;
     setSearching(true);
     setSearchErr(null);
     acquisition
-      .search(q)
+      .search({
+        query: q,
+        kind,
+        season: kind !== 'movie' && season ? Number.parseInt(season, 10) : null,
+        episode: kind === 'episode' && episode ? Number.parseInt(episode, 10) : null,
+      })
       .then((v) => {
         setResults(v.releases);
-        if (v.indexerErrors.length) setSearchErr(v.indexerErrors.join(' · '));
+        const failed = v.indexers.filter((i) => i.error);
+        if (failed.length) setSearchErr(failed.map((i) => `${i.name}: ${i.error}`).join(' · '));
       })
       .catch((e) => setSearchErr(apiErrorText(e, t('manual.searchFailed'))))
       .finally(() => setSearching(false));
@@ -267,62 +217,6 @@ export function ManualGrabModal({
 
   return (
     <Dialog.Root open title={t('manual.title')} onClose={onClose} width="lg">
-      {/* search sub-panel */}
-      <SearchPanel
-        query={query}
-        setQuery={setQuery}
-        searching={searching}
-        searchErr={searchErr}
-        results={results}
-        onSearch={doSearch}
-        onPick={pick}
-      />
-
-      {/* magnet + analyze */}
-      <Field.Root
-        label={t('manual.magnet')}
-        value={magnet}
-        onValueChange={(v) => {
-          setMagnet(v);
-          setDetailsUrl(null);
-          resetAnalysis();
-        }}
-      >
-        <Field.Input
-          placeholder="magnet:?xt=urn:btih:..."
-          trailing={
-            <Button
-              variant="glass"
-              size="sm"
-              icon="wand"
-              label={t('manual.analyze')}
-              onPress={analyze}
-              disabled={!magnet.trim()}
-              loading={analyzing}
-            />
-          }
-        />
-        <Field.Hint>{t('manual.magnetHint')}</Field.Hint>
-      </Field.Root>
-      {analyzeErr ? (
-        <Text variant="meta" color="dangerHover">
-          {analyzeErr}
-        </Text>
-      ) : null}
-
-      {/* analysis result: detected kind + file selection */}
-      {analysis ? (
-        <AnalysisPanel
-          analysis={analysis}
-          videoFiles={videoFiles}
-          selected={selected}
-          allVideoSelected={allVideoSelected}
-          setSelected={setSelected}
-          onToggleFile={toggleFile}
-        />
-      ) : null}
-
-      {/* target form */}
       <Field.Root label={t('manual.kind')}>
         <SegmentedControl.Root
           value={kind}
@@ -377,6 +271,59 @@ export function ManualGrabModal({
         </Box>
       ) : null}
 
+      <SearchPanel
+        query={query}
+        scopeLabel={scopeLabel(kind, season, episode)}
+        setQuery={setQuery}
+        searching={searching}
+        searchErr={searchErr}
+        results={results}
+        onSearch={doSearch}
+        onPick={pick}
+      />
+
+      <Field.Root
+        label={t('manual.magnet')}
+        value={magnet}
+        onValueChange={(v) => {
+          setMagnet(v);
+          setDetailsUrl(null);
+          resetAnalysis();
+        }}
+      >
+        <Field.Input
+          placeholder="magnet:?xt=urn:btih:..."
+          trailing={
+            <Button
+              variant="glass"
+              size="sm"
+              icon="wand"
+              label={t('manual.analyze')}
+              onPress={analyze}
+              disabled={!magnet.trim()}
+              loading={analyzing}
+            />
+          }
+        />
+        <Field.Hint>{t('manual.magnetHint')}</Field.Hint>
+      </Field.Root>
+      {analyzeErr ? (
+        <Text variant="meta" color="dangerHover">
+          {analyzeErr}
+        </Text>
+      ) : null}
+
+      {analysis ? (
+        <AnalysisPanel
+          analysis={analysis}
+          videoFiles={videoFiles}
+          selected={selected}
+          allVideoSelected={allVideoSelected}
+          setSelected={setSelected}
+          onToggleFile={toggleFile}
+        />
+      ) : null}
+
       {error ? (
         <Text variant="meta" color="dangerHover">
           {error}
@@ -391,228 +338,5 @@ export function ManualGrabModal({
         disabled={!canAdd}
       />
     </Dialog.Root>
-  );
-}
-
-function AnalysisPanel({
-  analysis,
-  videoFiles,
-  selected,
-  allVideoSelected,
-  setSelected,
-  onToggleFile,
-}: Readonly<{
-  analysis: TorrentAnalysis;
-  videoFiles: TorrentFileView[];
-  selected: Set<number>;
-  allVideoSelected: boolean;
-  setSelected: (value: Set<number>) => void;
-  onToggleFile: (i: number) => void;
-}>) {
-  const t = useT();
-  const seasonTags = analysis.seasons.map((season) => `S${season}`).join(' ');
-  const seasonsLabel = analysis.seasons.length > 0 ? ` · ${seasonTags}` : '';
-  const ink = kindInk(analysis.kind);
-  return (
-    <Box radius="xl" border="tint/7" bg="bg" p={12}>
-      <Row between mb={8}>
-        <Row
-          self="flex-start"
-          gap={6}
-          px={10}
-          py={4}
-          radius="pill"
-          style={{ backgroundColor: `color-mix(in srgb, ${ink} 12%, transparent)` }}
-        >
-          <Text variant="overline" color={ink}>
-            {t(`manual.detected.${analysis.kind}` as Parameters<typeof t>[0])}
-            {seasonsLabel}
-          </Text>
-        </Row>
-        {videoFiles.length > 1 ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            label={allVideoSelected ? t('manual.selectNone') : t('manual.selectAll')}
-            onPress={() =>
-              setSelected(allVideoSelected ? new Set() : new Set(videoFiles.map((f) => f.index)))
-            }
-          />
-        ) : null}
-      </Row>
-      <div style={FILE_LIST}>
-        {analysis.files.map((f) => (
-          <FileRow
-            key={f.index}
-            f={f}
-            checked={selected.has(f.index)}
-            onToggle={() => onToggleFile(f.index)}
-          />
-        ))}
-      </div>
-      {videoFiles.length > 1 ? (
-        <Text variant="meta" color="textDim" mt={8}>
-          {t('manual.selectedCount', {
-            n: String(selected.size),
-            total: String(videoFiles.length),
-          })}
-        </Text>
-      ) : null}
-    </Box>
-  );
-}
-
-function FileRow({
-  f,
-  checked,
-  onToggle,
-}: Readonly<{ f: TorrentFileView; checked: boolean; onToggle: () => void }>) {
-  const label =
-    f.episode != null
-      ? `S${String(f.season ?? 0).padStart(2, '0')}E${String(f.episode).padStart(2, '0')}`
-      : null;
-  return (
-    <label style={f.isVideo ? FILE_ROW : FILE_ROW_LOCKED} title={f.path}>
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={!f.isVideo}
-        onChange={onToggle}
-        style={FILE_BOX}
-      />
-      <Text variant="meta" color="text/75" flex minW={0} lines={1}>
-        {f.path.split('/').pop()}
-      </Text>
-      {label ? (
-        <Text variant="meta" color="info" shrink={0}>
-          {label}
-        </Text>
-      ) : null}
-      <Text variant="meta" color="textDim" shrink={0} style={s.tabular}>
-        {formatBytes(f.sizeBytes)}
-      </Text>
-    </label>
-  );
-}
-
-function SearchPanel({
-  query,
-  setQuery,
-  searching,
-  searchErr,
-  results,
-  onSearch,
-  onPick,
-}: Readonly<{
-  query: string;
-  setQuery: (v: string) => void;
-  searching: boolean;
-  searchErr: string | null;
-  results: ManualReleaseView[] | null;
-  onSearch: () => void;
-  onPick: (r: ManualReleaseView) => void;
-}>) {
-  const t = useT();
-  return (
-    <Box>
-      <Box row gap={8}>
-        <Field.Root
-          label={t('manual.search')}
-          hideLabel
-          flex
-          value={query}
-          onValueChange={setQuery}
-        >
-          <Field.Input
-            icon="search"
-            onSubmit={onSearch}
-            placeholder={t('manual.searchPlaceholder')}
-          />
-        </Field.Root>
-        <Button
-          variant="primary"
-          size="sm"
-          label={t('manual.search')}
-          onPress={onSearch}
-          disabled={!query.trim()}
-          loading={searching}
-        />
-      </Box>
-      {searchErr ? (
-        <Text variant="meta" color="accentText" mt={6}>
-          {searchErr}
-        </Text>
-      ) : null}
-      {results ? (
-        <div style={RESULT_LIST}>
-          {results.length === 0 ? (
-            <Box px={12} py={16}>
-              <Text variant="meta" color="textDim" textAlign="center">
-                {t('manual.noResults')}
-              </Text>
-            </Box>
-          ) : (
-            results.map((r, index) => (
-              <ResultRow
-                key={`${r.indexerName}-${r.guid}`}
-                r={r}
-                last={index === results.length - 1}
-                onPick={() => onPick(r)}
-              />
-            ))
-          )}
-        </div>
-      ) : null}
-    </Box>
-  );
-}
-
-function ResultRow({
-  r,
-  last,
-  onPick,
-}: Readonly<{ r: ManualReleaseView; last: boolean; onPick: () => void }>) {
-  const t = useT();
-  return (
-    <Focusable sv={resultRow} vars={{ last }} label={r.title} onPress={onPick}>
-      <Box minW={0} flex>
-        <Text variant="meta" lines={1}>
-          {r.title}
-        </Text>
-        <Row wrap gapX={10} mt={2}>
-          <Text variant="meta" color="textDim">
-            {r.indexerName}
-          </Text>
-          {r.resolution ? (
-            <Text variant="meta" color="info">
-              {r.resolution}
-            </Text>
-          ) : null}
-          {r.codec ? (
-            <Text variant="meta" color="hdr">
-              {r.codec}
-            </Text>
-          ) : null}
-          {r.sizeBytes != null ? (
-            <Text variant="meta" color="textDim">
-              {formatBytes(r.sizeBytes)}
-            </Text>
-          ) : null}
-          {r.seeders != null ? (
-            <Text variant="meta" color="success">
-              {t('requests.seedersN', { n: String(r.seeders) })}
-            </Text>
-          ) : null}
-          {r.detailsUrl ? (
-            <Text variant="meta" color="text/30">
-              · {t('downloads.hasTrackerPage')}
-            </Text>
-          ) : null}
-        </Row>
-      </Box>
-      <Box shrink={0}>
-        <Icon name="download" size={15} thickness={2.2} color="accent" />
-      </Box>
-    </Focusable>
   );
 }

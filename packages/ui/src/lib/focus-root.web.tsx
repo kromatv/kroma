@@ -10,13 +10,13 @@ import type { FocusRootProps } from './focus-root';
 
 export type { FocusRootProps };
 
-export function FocusRoot({ children, active = true }: Readonly<FocusRootProps>) {
+export function FocusRoot({ children, active = true, onEdge }: Readonly<FocusRootProps>) {
   // The navigator boots in remote-keys mode; only the device-type provider
   // flips it to pointer mode on the first mousemove, which a webOS Magic Remote
   // needs as much as a browser does.
   return (
     <SpatialNavigationDeviceTypeProvider>
-      <SpatialNavigationRoot isActive={active}>
+      <SpatialNavigationRoot isActive={active} onDirectionHandledWithoutMovement={onEdge}>
         <SpatialNavigationNode orientation="vertical">{children as never}</SpatialNavigationNode>
       </SpatialNavigationRoot>
     </SpatialNavigationDeviceTypeProvider>

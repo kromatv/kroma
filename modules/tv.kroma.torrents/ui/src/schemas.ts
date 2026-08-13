@@ -145,19 +145,11 @@ export const OrganizeResult = z.object({
 });
 export type OrganizeResult = z.infer<typeof OrganizeResult>;
 
-/** Per-download progress frame; `requestId` links it to the request that
- *  grabbed it, for the requests page's progress bar. */
-export interface DownloadProgressEvent {
-  type: 'download.progress';
-  id: string;
-  requestId: string | null;
-  progress: number;
-  downBps: number;
-  upBps: number;
-  peers: number;
-  peersSeen: number;
-  state: string;
-}
+// The frame this module streams is declared in `@kroma/core`: it crosses the
+// shared `/api/events` socket, so its shape is a contract with every listener
+// rather than this package's private business. Re-exported so a caller reaching
+// for it here still finds it.
+export type { DownloadProgressEvent } from '@kroma/core';
 
 export interface DownloadCompletedEvent {
   type: 'download.completed';

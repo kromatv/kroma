@@ -25,7 +25,6 @@ kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
 # The `.kmod` binary: the out-of-process runtime + the cross-module port bridges
 # (client proxies to the Downloads + Indexer sidecars).
 kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
-kroma-port-bridge = { path = "../../../server/crates/kroma-port-bridge" }
 axum = { version = "0.8", features = ["macros", "ws"] }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
@@ -45,6 +44,8 @@ rustix = { version = "1", features = ["fs"] }
 kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
 # `oneshot`, to drive the sidecar routes without binding a port.
 tower = "0.5"
+# The scratch directory that takes itself with it, panic or not.
+kroma-testing = { path = "../../../server/crates/kroma-testing" }
 
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO
@@ -57,8 +58,11 @@ tower = "0.5"
 # units, unstripped.
 [profile.release]
 opt-level = 3
-lto = true
-codegen-units = 1
+# ThinLTO, not fat: measured at 1116 vs 1117 ns/pair on the parse+score hot path
+# (i.e. no difference) for 3.4x faster links, because fat LTO + one codegen unit
+# is whole-program and single-threaded. It costs ~100 KB per compressed .kmod.
+lto = "thin"
+codegen-units = 16
 strip = true
 
 [profile.release-kmod]

@@ -8,6 +8,9 @@
 //! the session key and the URL path, so a re-anchor never reuses another
 //! anchor's segment names or thrashes a shared session.
 
+mod ffmpeg;
+mod naming;
+mod reclaim;
 mod session;
 
 use std::path::Path;

@@ -1,11 +1,17 @@
 {
   "id": "tv.kroma.indexer",
   "name": "Indexers",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minServer": "0.1.4",
   "dependsOn": [],
   "provides": [
-    { "kind": "indexer-engine", "id": "builtin", "label": "indexers.builtin", "flow": "definition" }
+    {
+      "kind": "indexer-engine",
+      "id": "builtin",
+      "label": "indexers.builtin",
+      "flow": "definition"
+    }
   ],
-  "description": "Native Cardigann indexer engine: searches trackers from community YAML definitions, no external Torznab aggregator."
+  "description": "Native Cardigann indexer engine: searches trackers from community YAML definitions, no external Torznab aggregator.",
+  "ports": ["indexer-db", "indexer-search", "torrent-fetch"]
 }

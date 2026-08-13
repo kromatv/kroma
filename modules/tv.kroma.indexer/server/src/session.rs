@@ -21,6 +21,13 @@ const USER_AGENT: &str =
 
 const MAX_TIME_SECS: u32 = 45;
 
+// How long a tracker that answered 429 is left alone for.
+const RATE_LIMIT_COOLDOWN: Duration = Duration::from_secs(60);
+
+// Enough of a body to recognise an error document or an empty result set,
+// short enough that a log line stays a log line.
+const MAX_SNIPPET: usize = 400;
+
 /// A live connection to one configured indexer.
 pub struct Session {
     def: Definition,
@@ -182,6 +189,13 @@ impl Session {
     pub fn ensure_login(&self) -> Result<()> {
         let Some(login) = self.def.login.clone() else { return Ok(()) };
         let has_test = login.test.is_some();
+        // Without a `test` block there is no cheap way to confirm the session,
+        // so a login already done in this process is trusted. It used to
+        // re-login on EVERY search, doubling the request rate against trackers
+        // that count them; `invalidate_login` puts it back when one goes sour.
+        if !has_test && self.state.lock().unwrap().logged_in {
+            return Ok(());
+        }
         // A `test` block lets us cheaply confirm an existing session and skip
         // re-logging-in.
         if has_test && self.login_ok(&login)? {
@@ -300,14 +314,35 @@ impl Session {
     pub fn search(&self, query: &Query, wanted_cats: &[u32]) -> SearchOutcome {
         let mut outcome = SearchOutcome::default();
         if let Err(e) = self.ensure_login() {
+            tracing::warn!(indexer = %self.def.name, error = %format!("{e:#}"), "login failed");
             outcome.errors.push(format!("{}: login: {e:#}", self.def.name));
             return outcome;
         }
         let requests = engine::build_requests(&self.def, &self.cfg, query, wanted_cats);
+        tracing::info!(
+            indexer = %self.def.name,
+            keywords = %query.keywords(),
+            wanted_categories = ?wanted_cats,
+            paths = requests.len(),
+            "searching",
+        );
+        if requests.is_empty() {
+            tracing::warn!(
+                indexer = %self.def.name,
+                wanted_categories = ?wanted_cats,
+                "definition produced no search path for this query; nothing was asked",
+            );
+        }
         let mut seen = std::collections::HashSet::new();
         for req in requests {
             self.search_one(&req, &mut seen, &mut outcome);
         }
+        tracing::info!(
+            indexer = %self.def.name,
+            releases = outcome.releases.len(),
+            errors = outcome.errors.len(),
+            "search done",
+        );
         outcome
     }
 
@@ -317,18 +352,30 @@ impl Session {
         seen: &mut std::collections::HashSet<String>,
         outcome: &mut SearchOutcome,
     ) {
-        let body = match req.method.as_str() {
+        let fetched = match req.method.as_str() {
             "post" => self.post_form_text(&req.url, &req.inputs),
             _ => self.get_text(&req.url, &req.inputs),
         };
-        let body = match body {
+        let body = match fetched {
             Ok(b) => b,
             Err(e) => {
+                tracing::warn!(
+                    indexer = %self.def.name,
+                    url = %req.url,
+                    method = %req.method,
+                    error = %format!("{e:#}"),
+                    "fetch failed",
+                );
                 outcome.errors.push(format!("{}: {e:#}", self.def.name));
                 return;
             }
         };
+        let bytes = body.len();
         let body = engine::preprocess(&self.def, &self.cfg, &body);
+        if let Some(message) = api_error(&body) {
+            self.note_refusal(req, bytes, &message, outcome);
+            return;
+        }
         let parsed = match req.response_kind.as_str() {
             "json" => engine::parse_json(&self.def, &self.cfg, &body),
             "xml" => engine::parse_xml(&self.def, &self.cfg, &body),
@@ -336,14 +383,95 @@ impl Session {
         };
         match parsed {
             Ok(rels) => {
+                self.note_parsed(req, bytes, &body, rels.len());
                 for r in rels {
                     if seen.insert(r.guid.clone()) {
                         outcome.releases.push(r);
                     }
                 }
             }
-            Err(e) => outcome.errors.push(format!("{}: parse: {e:#}", self.def.name)),
+            Err(e) => {
+                tracing::warn!(
+                    indexer = %self.def.name,
+                    url = %req.url,
+                    bytes,
+                    kind = %req.response_kind,
+                    error = %format!("{e:#}"),
+                    "parse failed",
+                );
+                outcome.errors.push(format!("{}: parse: {e:#}", self.def.name));
+            }
         }
+    }
+
+    // A tracker that refuses the query answers 200 with an error document, which
+    // parses to zero rows and used to read as "nothing found". It is the indexer
+    // failing, and has to be reported as one.
+    fn note_refusal(
+        &self,
+        req: &engine::SearchRequest,
+        bytes: usize,
+        message: &str,
+        outcome: &mut SearchOutcome,
+    ) {
+        tracing::warn!(
+            indexer = %self.def.name,
+            url = %req.url,
+            bytes,
+            error = %message,
+            "the tracker returned an error document",
+        );
+        if message.contains("429") {
+            // Rate limited: stop asking for a while, rather than spending the
+            // next search's budget re-earning the same refusal.
+            self.hold_off(RATE_LIMIT_COOLDOWN);
+        } else {
+            // Anything else it refuses may be the session, so the next search
+            // logs in again rather than reusing a dead one.
+            self.invalidate_login();
+        }
+        outcome.errors.push(format!("{}: {message}", self.def.name));
+    }
+
+    // Parsed-but-empty is the failure that used to be invisible: the tracker
+    // answered, and either it genuinely has nothing or the definition's row
+    // selector no longer matches its markup. The body is the only thing that
+    // tells the two apart, so a short one is quoted rather than described.
+    fn note_parsed(&self, req: &engine::SearchRequest, bytes: usize, body: &str, rows: usize) {
+        if rows == 0 {
+            tracing::warn!(
+                indexer = %self.def.name,
+                url = %req.url,
+                bytes,
+                kind = %req.response_kind,
+                body = %snippet(body),
+                "answered, but no row matched the definition's selectors",
+            );
+        } else {
+            tracing::info!(
+                indexer = %self.def.name,
+                url = %req.url,
+                bytes,
+                kind = %req.response_kind,
+                parsed = rows,
+                "response parsed",
+            );
+        }
+    }
+
+    /// Refuse to talk to this tracker for `wait`. A tracker that answered "too
+    /// many requests" means it, and the definition's own request delay is about
+    /// spacing, not about serving a penalty.
+    fn hold_off(&self, wait: Duration) {
+        let until = Instant::now() + wait;
+        let mut st = self.state.lock().unwrap();
+        st.next_allowed = Some(st.next_allowed.map_or(until, |n| n.max(until)));
+    }
+
+    /// Forget that this session logged in, so the next search does it again.
+    /// Called when a response says the credentials or the session are no good.
+    pub fn invalidate_login(&self) {
+        self.state.lock().unwrap().logged_in = false;
     }
 
     /// Server title (definition name) + reachability, for the admin test button.
@@ -435,6 +563,46 @@ impl Session {
 }
 
 // One jar per indexer id so two configs never share a session.
+/// The first [`MAX_SNIPPET`] characters of a response, whitespace-collapsed onto
+/// one line, so a log can say what came back rather than only that it was
+/// unusable.
+fn snippet(body: &str) -> String {
+    let flat = body.split_whitespace().collect::<Vec<_>>().join(" ");
+    match flat.char_indices().nth(MAX_SNIPPET) {
+        Some((cut, _)) => format!("{}...", &flat[..cut]),
+        None => flat,
+    }
+}
+
+/// The message from a Torznab/Newznab `<error>` document, which a tracker
+/// answers 200 with when it refuses the query (bad key, unknown category, rate
+/// limit). Parsing it as results would silently yield nothing.
+fn api_error(body: &str) -> Option<String> {
+    let head = body.trim_start();
+    if !head.starts_with('<') {
+        return None;
+    }
+    let start = body.find("<error")?;
+    let rest = &body[start..];
+    let end = rest.find("/>").or_else(|| rest.find('>'))?;
+    let tag = &rest[..end];
+    let code = attr(tag, "code");
+    let description = attr(tag, "description").or_else(|| attr(tag, "message"));
+    match (code, description) {
+        (Some(code), Some(description)) => Some(format!("tracker error {code}: {description}")),
+        (None, Some(description)) => Some(format!("tracker error: {description}")),
+        (Some(code), None) => Some(format!("tracker error {code}")),
+        (None, None) => Some("tracker returned an error document".to_string()),
+    }
+}
+
+fn attr(tag: &str, name: &str) -> Option<String> {
+    let at = tag.find(&format!("{name}=\""))?;
+    let rest = &tag[at + name.len() + 2..];
+    let end = rest.find('"')?;
+    Some(rest[..end].to_string())
+}
+
 fn cookie_jar_path(data_dir: &Path, indexer_id: &str) -> PathBuf {
     let safe: String = indexer_id.chars().map(|c| if c.is_alphanumeric() { c } else { '_' }).collect();
     data_dir.join("indexers").join(format!("{safe}.cookies"))
@@ -571,5 +739,42 @@ mod tests {
         set_field(&mut f, "a", "2".into());
         set_field(&mut f, "b", "3".into());
         assert_eq!(f, vec![("a".into(), "2".into()), ("b".into(), "3".into())]);
+    }
+}
+
+#[cfg(test)]
+mod response_tests {
+    use super::*;
+
+    #[test]
+    fn a_torznab_error_document_is_an_error_not_an_empty_result() {
+        let body = r#"<?xml version="1.0"?><error code="100" description="Incorrect user credentials"/>"#;
+        assert_eq!(
+            api_error(body).as_deref(),
+            Some("tracker error 100: Incorrect user credentials"),
+        );
+    }
+
+    #[test]
+    fn a_real_result_set_is_not_an_error() {
+        assert!(api_error(r#"<rss><channel><item><title>x</title></item></channel></rss>"#).is_none());
+    }
+
+    #[test]
+    fn an_empty_result_set_is_not_an_error_either() {
+        assert!(api_error(r#"<rss><channel></channel></rss>"#).is_none());
+    }
+
+    #[test]
+    fn an_html_page_mentioning_error_elsewhere_is_left_alone() {
+        assert!(api_error("<html><body>no errors here</body></html>").is_none());
+    }
+
+    #[test]
+    fn a_snippet_is_one_line_and_bounded() {
+        let long = "a\n  b\n".repeat(500);
+        let out = snippet(&long);
+        assert!(!out.contains('\n'));
+        assert!(out.chars().count() <= MAX_SNIPPET + 3);
     }
 }

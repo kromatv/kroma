@@ -1,7 +1,14 @@
 // The frontend module registry: the host-side mirror of the Rust `Registry`.
 
 import type { HostBase, KromaHost } from './host';
-import type { KromaModule, NavItem, RouteDef, SettingsPanel } from './module';
+import type {
+  AnySlotContribution,
+  KromaModule,
+  NavItem,
+  RouteDef,
+  SettingsPanel,
+  SlotName,
+} from './module';
 import type { Dependencies, ModuleManifest } from './types';
 
 /** Normalize either dependency form (a `{ id: range }` map or a legacy array of
@@ -28,6 +35,8 @@ export type ModuleRoute = RouteDef & { moduleId: string };
 export type ModuleNav = NavItem & { moduleId: string };
 
 export type ModulePanel = SettingsPanel & { moduleId: string };
+
+export type ModuleSlotEntry = AnySlotContribution & { moduleId: string };
 
 export interface ModuleStatus {
   id: string;
@@ -159,6 +168,16 @@ export class ModuleRegistry {
       }
     }
     return out;
+  }
+
+  /** Everything registered for one slot, in `order` then dependency order. The
+   *  caller decides whether a module is ENABLED: this registry only knows what
+   *  was registered. */
+  slotsFor(slot: SlotName): ModuleSlotEntry[] {
+    return this.order()
+      .flatMap((m) => (m.slots ?? []).map((s) => ({ ...s, moduleId: m.id })))
+      .filter((s) => s.slot === slot)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }
 
   settingsPanels(): ModulePanel[] {

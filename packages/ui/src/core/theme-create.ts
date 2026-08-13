@@ -20,6 +20,7 @@ import {
   type ShadowToken,
   shadow,
   standoff,
+  standoffEdge,
   standoffInside,
   WASH_ALPHA,
 } from './tokens/effects';
@@ -86,6 +87,8 @@ export interface Theme extends ThemeTokens {
     focusWash: RingStyle;
     /** The ring, inward: for a control flush with whatever clips it. */
     focusInset: RingStyle;
+    /** The ring, on the edge: for a row that abuts its neighbours. */
+    focusEdge: RingStyle;
   };
   /** Derived from the accent wash; never authored directly. */
   glow: { accent: string; play: string };
@@ -162,6 +165,7 @@ function derive(base: ThemeTokens): Theme {
       focusGlowSm: standoff(accent, glow.accent),
       focusWash: standoff(withAlpha(tokens.colors.accentWash, WASH_ALPHA.ring / 100)),
       focusInset: standoffInside(accent),
+      focusEdge: standoffEdge(accent),
     },
     glow,
   });

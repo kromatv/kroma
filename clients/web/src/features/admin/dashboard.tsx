@@ -1,4 +1,5 @@
 import type { PlaybackSession, TopUser } from '@kroma/core';
+import { TABULAR } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import {
   Avatar,
@@ -19,7 +20,6 @@ import { BandwidthSection, CpuSection, RamSection } from '#web/features/admin/da
 import { NowPlayingCard, StopStreamModal } from '#web/features/admin/dashboard-now-playing';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, useAdmin, usePoll } from '#web/features/admin/shell';
-import { TABULAR } from '#web/features/admin/table';
 import { formatDuration } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 

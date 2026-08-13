@@ -14,9 +14,10 @@
 // focus and every query that follows are still the shared app's.
 
 import type { SearchShell, SearchShellProps } from '@kroma/tv';
+import { type FocusDirection, postRemoteDirection, usePlatformFocus } from '@kroma/ui/kit';
 import { useCallback, useState } from 'react';
 import { Platform, View } from 'react-native';
-import { NativeSearchView } from '../../modules/native-search';
+import { type NativeSearchFocus, NativeSearchView } from '../../modules/native-search';
 
 /** How much room tvOS left beside its keyboard. Nothing is rendered until it
  * has said so: React cannot guess a size the platform owns. */
@@ -27,6 +28,8 @@ interface Area {
 
 function PlatformSearch({ value, onChange, placeholder, children }: Readonly<SearchShellProps>) {
   const [area, setArea] = useState<Area>({ width: 0, height: 0 });
+  // The screen opens on the keyboard, which is what the viewer came for.
+  const [owner, setOwner] = useState<NativeSearchFocus>('platform');
 
   const onLayoutResults = useCallback(
     ({ nativeEvent }: { nativeEvent: Area }) =>
@@ -43,6 +46,29 @@ function PlatformSearch({ value, onChange, placeholder, children }: Readonly<Sea
     [onChange],
   );
 
+  // Down out of the keyboard is the platform's own move, and it reports where it
+  // landed rather than being told. The press that carried it there was the
+  // platform's too, so the navigator is handed it now: without it the ring only
+  // appears on the NEXT press, and this one looks like it did nothing.
+  const onFocusOwner = useCallback(
+    ({ nativeEvent }: { nativeEvent: { owner: NativeSearchFocus; heading: string } }) => {
+      setOwner(nativeEvent.owner);
+      if (nativeEvent.owner === 'app' && isDirection(nativeEvent.heading)) {
+        postRemoteDirection(nativeEvent.heading);
+      }
+    },
+    [],
+  );
+
+  // The way back is ours to ask for: the navigator answers a press with no move
+  // left in it, which up or left against the top row means the ring is under the
+  // keyboard and the keyboard should have the focus again.
+  const onEdge = useCallback((direction: FocusDirection) => {
+    if (direction === 'up' || direction === 'left') setOwner('platform');
+  }, []);
+
+  usePlatformFocus(owner, onEdge);
+
   if (!NativeSearchView) return null;
 
   return (
@@ -50,7 +76,9 @@ function PlatformSearch({ value, onChange, placeholder, children }: Readonly<Sea
       style={{ flex: 1 }}
       placeholder={placeholder}
       text={value}
+      focus={owner}
       onChangeText={onChangeText}
+      onFocusOwner={onFocusOwner}
       onLayoutResults={onLayoutResults}
     >
       {/* Sized to the results area rather than left to fill: these views are
@@ -63,6 +91,12 @@ function PlatformSearch({ value, onChange, placeholder, children }: Readonly<Sea
       ) : null}
     </NativeSearchView>
   );
+}
+
+const DIRECTIONS: ReadonlySet<string> = new Set(['up', 'down', 'left', 'right']);
+
+function isDirection(heading: string): heading is FocusDirection {
+  return DIRECTIONS.has(heading);
 }
 
 // The only television here whose own keyboard is worth more than ours.

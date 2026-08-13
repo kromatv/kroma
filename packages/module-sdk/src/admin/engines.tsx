@@ -50,6 +50,17 @@ export function useEnabledEngines(kind: string): EngineCapability[] {
   );
 }
 
+/** Whether each module is enabled, as a predicate. For a caller checking a
+ * VARIABLE number of modules, where one `useModuleEnabled` per id would be a
+ * hook in a loop. Unknown ids answer true, matching {@link useModuleEnabled}. */
+export function useModuleEnabledCheck(): (id: string) => boolean {
+  const modules = useModules();
+  return useMemo(() => {
+    const off = new Set(modules.filter((m) => m.enabled === false).map((m) => m.id));
+    return (id: string) => !off.has(id);
+  }, [modules]);
+}
+
 /** Whether module `id` is enabled. Defaults to true while loading / when unknown,
  * so nothing flickers off before the module list resolves. */
 export function useModuleEnabled(id: string): boolean {

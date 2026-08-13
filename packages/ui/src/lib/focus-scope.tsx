@@ -8,6 +8,7 @@ import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { SpatialNavigationView, useLockSpatialNavigation } from 'react-tv-space-navigation';
 import { useFocusEntryScope } from './focus-entry';
 import { FocusLiftHost, LIFTED } from './focus-lift';
+import { PlatformFocusProvider, usePlatformFocusHost } from './focus-platform';
 import { FocusPresenceProvider, useInsideFocusScope } from './focus-presence';
 import { useRemoteBridge } from './focus-remote';
 import { FocusRoot } from './focus-root';
@@ -56,17 +57,26 @@ function FocusScope({
   bridge = true,
   active = true,
 }: Readonly<ScreenScopeProps>) {
+  const platform = usePlatformFocusHost();
   // Hooks cannot be conditional, so the flag is read INSIDE the bridge rather
-  // than around it.
-  useRemoteBridge(bridge);
+  // than around it. A chrome typing on the platform's own keyboard is heard by
+  // this bridge too, and posting those presses would walk the ring behind it.
+  useRemoteBridge(bridge && platform.owner !== 'platform');
   useFocusEntryScope(entryKey);
   return (
     // Lets a kit control exist OUTSIDE any scope (a phone screen, a plain web
     // page) without registering with a navigator that was never mounted.
     <FocusPresenceProvider value={true}>
-      <FocusRoot style={style} active={active}>
-        {children}
-      </FocusRoot>
+      <PlatformFocusProvider value={platform.host}>
+        <FocusRoot
+          style={style}
+          active={active}
+          keyHost={platform.owner === null}
+          onEdge={platform.onEdge}
+        >
+          {children}
+        </FocusRoot>
+      </PlatformFocusProvider>
     </FocusPresenceProvider>
   );
 }

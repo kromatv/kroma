@@ -59,6 +59,16 @@ export function configureRemote(): void {
   });
 }
 
+/**
+ * Posts a direction the app never heard as a press. One caller: a platform
+ * chrome that answered the press itself and is handing the focus over (see
+ * lib/focus-platform), where the navigator has to pick the ring up in the
+ * direction the viewer was already moving.
+ */
+export function postRemoteDirection(direction: Direction): void {
+  for (const handle of handlers) handle(direction);
+}
+
 // Resolved at module scope so the hook count never changes between builds.
 const HAS_TV_EVENTS = typeof useTVEventHandler === 'function';
 const useRemoteEvents: (handler: (event: HWEvent) => void) => void = HAS_TV_EVENTS

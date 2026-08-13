@@ -245,17 +245,24 @@ function describeBuild(bin: string | null, features: string[]): string {
   return `bin ${bin}${extras}`;
 }
 
-async function packOne(moduleDir: string): Promise<string> {
-  const manifest = JSON.parse(readFileSync(join(moduleDir, 'module.json'), 'utf8')) as {
-    id: string;
-  };
-  const { id } = manifest;
+/** The cargo half. Every module workspace shares one CARGO_TARGET_DIR so they
+ *  can reuse compiled dependencies, and cargo takes an exclusive lock on it, so
+ *  these cannot overlap: running them concurrently would only queue on the lock. */
+async function buildOne(moduleDir: string): Promise<{ id: string; binPath: string | null }> {
+  const { id } = JSON.parse(readFileSync(join(moduleDir, 'module.json'), 'utf8')) as { id: string };
   const { bin, features } = crateAndBin(moduleDir);
-  console.log(`\npacking ${id} (${describeBuild(bin, features)})`);
-
+  console.log(`\nbuilding ${id} (${describeBuild(bin, features)})`);
   const target = process.env.KMOD_TARGET?.trim() || null;
   const skipBuild = process.env.KMOD_SKIP_BUILD === '1';
   const binPath = bin ? await buildModuleBinary(moduleDir, bin, features, target, skipBuild) : null;
+  return { id, binPath };
+}
+
+/** The bundle half: frontend build, tar, compress. None of it touches the cargo
+ *  lock, so every module can do this at once. */
+async function packOne(moduleDir: string, id: string, binPath: string | null): Promise<string> {
+  const { bin } = crateAndBin(moduleDir);
+  const target = process.env.KMOD_TARGET?.trim() || null;
 
   const uiDir = join(moduleDir, 'ui');
   await buildFrontend(uiDir);
@@ -274,8 +281,19 @@ async function packOne(moduleDir: string): Promise<string> {
   mkdirSync(outDir, { recursive: true });
   const suffix = bin && target ? `-${target}` : '';
   const kmod = join(outDir, `${id}${suffix}.kmod`);
-  const bytes = Bun.zstdCompressSync(deterministicTar(staging, entries), { level: 19 });
+  // The tar is deterministic, so an unchanged module hashes to what is already
+  // on disk and skips the (slow, level-19) recompression entirely.
+  const tar = deterministicTar(staging, entries);
+  const stamp = `${kmod}.tarsha`;
+  const tarSha = Bun.SHA256.hash(tar, 'hex');
+  if (existsSync(kmod) && existsSync(stamp) && readFileSync(stamp, 'utf8').trim() === tarSha) {
+    rmSync(staging, { recursive: true, force: true });
+    console.log(`  unchanged: ${kmod}`);
+    return kmod;
+  }
+  const bytes = Bun.zstdCompressSync(tar, { level: 19 });
   writeFileSync(kmod, bytes);
+  writeFileSync(stamp, `${tarSha}\n`);
   // A SHA-256 sidecar file so a release/registry consumer can verify integrity.
   writeFileSync(`${kmod}.sha256`, `${Bun.SHA256.hash(bytes, 'hex')}  ${id}${suffix}.kmod\n`);
   rmSync(staging, { recursive: true, force: true });
@@ -290,10 +308,13 @@ export async function main(args: string[]): Promise<void> {
   if (dirs.length === 0) {
     throw new Error('no packable modules (none have a [[bin]] yet)');
   }
-  const packed: string[] = [];
+  // Cargo first, one at a time (shared target dir = one lock), then every
+  // bundle concurrently: on a 12-core box that tail is essentially free.
+  const built: { dir: string; id: string; binPath: string | null }[] = [];
   for (const dir of dirs) {
-    packed.push(await packOne(dir));
+    built.push({ dir, ...(await buildOne(dir)) });
   }
+  const packed = await Promise.all(built.map((b) => packOne(b.dir, b.id, b.binPath)));
   console.log(`\n${packed.length} module(s) -> ${outDir}`);
   console.log('install from Admin -> Modules, or POST to /api/admin/store/install.');
 }

@@ -33,7 +33,25 @@ pub struct ScoredReleaseView {
     pub breakdown: Vec<ScoreLineView>,
     pub rejected: Option<String>,
     pub grabbable: bool,
+    /// Everything this release covers is already on disk, so grabbing it
+    /// replaces files instead of filling a hole. Decided server-side, over the
+    /// same scope the grab will use, because it is what the grab acts on.
+    pub upgrade: bool,
     pub details_url: Option<String>,
+}
+
+/// What one indexer made of a sweep. Every enabled indexer gets a row whether it
+/// answered or not: "nothing found" and "the tracker is down" are different
+/// answers, and a sweep that only reported the failures read as the second when
+/// it was the first.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexerReport {
+    pub id: String,
+    pub name: String,
+    pub found: u32,
+    pub error: Option<String>,
+    pub elapsed_ms: u64,
 }
 
 /// `GET /api/requests/:id/search`.
@@ -41,16 +59,7 @@ pub struct ScoredReleaseView {
 #[serde(rename_all = "camelCase")]
 pub struct InteractiveSearchView {
     pub releases: Vec<ScoredReleaseView>,
-    pub indexer_errors: Vec<String>,
-}
-
-/// `POST /api/requests/:id/grab` body: pick one release from the last
-/// interactive search (identified the way the search listed it).
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GrabBody {
-    pub guid: String,
-    pub indexer_id: String,
+    pub indexers: Vec<IndexerReport>,
 }
 
 /// One release from a free-text manual indexer search. Not scored against a
@@ -61,6 +70,7 @@ pub struct GrabBody {
 pub struct ManualReleaseView {
     pub title: String,
     pub guid: String,
+    pub indexer_id: String,
     pub indexer_name: String,
     pub download_url: Option<String>,
     pub size_bytes: Option<u64>,
@@ -83,13 +93,22 @@ pub struct ManualReleaseView {
 #[serde(rename_all = "camelCase")]
 pub struct ManualSearchView {
     pub releases: Vec<ManualReleaseView>,
-    pub indexer_errors: Vec<String>,
+    pub indexers: Vec<IndexerReport>,
 }
 
-/// `POST /acquisition/search` body.
+/// `POST /acquisition/search` body. A `season` (with or without an `episode`)
+/// turns the sweep into a TV search, so a show is looked up in the tracker's TV
+/// categories instead of its movie ones.
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ManualSearchBody {
     pub query: String,
+    #[serde(default)]
+    pub kind: Option<String>,
+    #[serde(default)]
+    pub season: Option<u32>,
+    #[serde(default)]
+    pub episode: Option<u32>,
 }
 
 /// `POST /acquisition/add` body: grab a magnet / `.torrent` URL (pasted

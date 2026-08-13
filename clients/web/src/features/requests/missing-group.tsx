@@ -5,7 +5,14 @@
 // trailing button carries the row's busy and "search started" states. All
 // mutation state lives in `missing.tsx`.
 
-import { type CalendarEntry, episodeTag, posterColors, sizedImageUrl } from '@kroma/core';
+import {
+  type CalendarEntry,
+  episodeTag,
+  posterColors,
+  relativeAirDate,
+  sentenceCase,
+  sizedImageUrl,
+} from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
 import {
   Badge,
@@ -25,7 +32,6 @@ import {
   Text,
 } from '@kroma/ui/kit';
 import { useState } from 'react';
-import { relativeAirDate, sentenceCase } from '#web/features/requests/airdate';
 import { epKey, type MissingGroup } from '#web/features/requests/missing-model';
 
 // Episode lists longer than this collapse behind a "show more" toggle.

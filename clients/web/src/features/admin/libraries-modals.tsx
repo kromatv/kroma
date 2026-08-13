@@ -13,7 +13,7 @@ import {
 } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
-import { FolderField } from '#web/features/admin/folder-picker';
+import { FolderField, FolderListEditor } from '#web/features/admin/folder-field';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -44,33 +44,6 @@ export function LibraryTypeSelect({
         { value: 'mixed', label: t('admin.typeMixed') },
       ]}
     />
-  );
-}
-
-function FolderListEditor({
-  folders,
-  onChange,
-}: Readonly<{ folders: string[]; onChange: (folders: string[]) => void }>) {
-  const t = useT();
-  return (
-    <Box gap={8}>
-      {folders.map((path) => (
-        <FolderField
-          key={path}
-          value={path}
-          placeholder={t('admin.addFolder')}
-          onChange={(next) => onChange(folders.map((p) => (p === path ? next : p)))}
-          onClear={() => onChange(folders.filter((p) => p !== path))}
-        />
-      ))}
-      <FolderField
-        value=""
-        placeholder={t('admin.addFolder')}
-        onChange={(path) => {
-          if (!folders.includes(path)) onChange([...folders, path]);
-        }}
-      />
-    </Box>
   );
 }
 
@@ -115,16 +88,18 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
           onClear={() => setFolder('')}
         />
       </Field.Root>
-      <Dialog.Actions
-        onCancel={() => call.end(false)}
-        cancelLabel={t('common.cancel')}
-        onConfirm={() => {
-          create();
-        }}
-        confirmLabel={busy ? t('common.creating') : t('common.create')}
-        busy={busy}
-        disabled={!name.trim()}
-      />
+      <Dialog.Footer>
+        <Dialog.Actions
+          onCancel={() => call.end(false)}
+          cancelLabel={t('common.cancel')}
+          onConfirm={() => {
+            create();
+          }}
+          confirmLabel={busy ? t('common.creating') : t('common.create')}
+          busy={busy}
+          disabled={!name.trim()}
+        />
+      </Dialog.Footer>
     </Dialog.Root>
   );
 });
@@ -184,26 +159,28 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
           </Box>
           <Switch checked={autoScan} onCheckedChange={setAutoScan} label={t('admin.autoScan')} />
         </Row>
-        <Dialog.Actions
-          onCancel={() => call.end(false)}
-          cancelLabel={t('common.cancel')}
-          onConfirm={() => {
-            save();
-          }}
-          confirmLabel={busy ? t('common.saving') : t('common.save')}
-          busy={busy}
-          disabled={!name.trim()}
-        >
-          <Button
-            variant="dangerGhost"
-            size="sm"
-            label={t('common.delete')}
-            onPress={() => {
-              void remove();
+        <Dialog.Footer>
+          <Dialog.Actions
+            onCancel={() => call.end(false)}
+            cancelLabel={t('common.cancel')}
+            onConfirm={() => {
+              save();
             }}
-            disabled={busy}
-          />
-        </Dialog.Actions>
+            confirmLabel={busy ? t('common.saving') : t('common.save')}
+            busy={busy}
+            disabled={!name.trim()}
+          >
+            <Button
+              variant="dangerGhost"
+              size="sm"
+              label={t('common.delete')}
+              onPress={() => {
+                void remove();
+              }}
+              disabled={busy}
+            />
+          </Dialog.Actions>
+        </Dialog.Footer>
       </Dialog.Root>
     );
   },
