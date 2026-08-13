@@ -4,6 +4,11 @@ name: Desktop auto-update
 # rolling `desktop-latest` pre-release whenever desktop-facing code lands on main.
 # The installed apps self-update from it (Tauri updater, signature-verified).
 #
+# That release is a live endpoint, so the build never touches it: it stages into
+# `desktop-latest-staging` and only the final `publish` job swaps the two. A leg
+# that fails therefore leaves every app on the previous build instead of pointing
+# it at a 404 (which is what a delete-first ordering did for a day).
+#
 # Path-filtered so unrelated commits (server, docs, other clients) don't trigger a
 # costly 3-OS build. Version is `<base>-<build>` (base from server/Cargo.toml, build
 # = minutes since 2020) so every run is a strictly-newer prerelease the updater picks
@@ -48,19 +53,23 @@ jobs:
   create-release:
     needs: version
     permissions:
-      contents: write # delete + recreate the rolling desktop-latest release
+      contents: write # stage the next rolling release
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
       release_id: ${{ steps.mk.outputs.result }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      # Reset the rolling release so assets don't pile up build-over-build.
-      - name: Reset rolling pre-release
+      # The build stages into its OWN tag and the live desktop-latest is left
+      # alone until `publish` swaps it, so a failed leg no longer takes the
+      # updater endpoint down: every installed app keeps resolving the previous
+      # build. Only a stale staging draft (cancelled or failed run) is cleared
+      # here; it never serves traffic.
+      - name: Clear a stale staging draft
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release delete desktop-latest --cleanup-tag --yes || true
-      - name: Create draft pre-release
+          GH_REPO: ${{ github.repository }}
+        run: gh release delete desktop-latest-staging --cleanup-tag --yes || true
+      - name: Create staging draft
         id: mk
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -69,7 +78,7 @@ jobs:
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: 'desktop-latest',
+              tag_name: 'desktop-latest-staging',
               name: 'KROMA desktop (auto-update)',
               body: `Rolling self-update build \`${{ needs.version.outputs.version }}\`.`,
               draft: true,
@@ -245,10 +254,20 @@ jobs:
   publish:
     needs: [create-release, build]
     permissions:
-      contents: write # flip the draft pre-release to published
+      contents: write # retire the old rolling release, publish the staged one
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      # Reached only once EVERY platform built, so this is the first moment the
+      # old assets are safe to drop. Frees the desktop-latest tag for the step
+      # below; the endpoint is unresolvable for the seconds between the two.
+      - name: Retire the previous rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release delete desktop-latest --cleanup-tag --yes || true
+      # Retag staging -> desktop-latest and publish, which is what mints the
+      # tag and makes latest.json resolvable at the endpoint apps poll.
       - name: Publish the pre-release (serve latest.json)
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
@@ -257,6 +276,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: ${{ needs.create-release.outputs.release_id }},
+              tag_name: 'desktop-latest',
               draft: false,
               make_latest: 'false',
             });
