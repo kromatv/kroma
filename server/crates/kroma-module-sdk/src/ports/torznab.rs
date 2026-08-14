@@ -47,11 +47,19 @@ pub struct Release {
 
 /// What an indexer advertises via `t=caps`: which query parameters its
 /// backing tracker actually understands (not all support `tmdbid`).
+///
+/// `#[serde(default)]` because modules version independently: a field added here
+/// must not make an older peer's payload undeserializable across the port.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct Caps {
     pub search_tmdb: bool,
     pub search_imdb: bool,
     pub tv_search_tmdb: bool,
+    // `tv-search` accepting `season` (and `ep`) with a plain `q`. The common case
+    // by far: most trackers behind Jackett/Prowlarr resolve no external ids at
+    // all, and without this the only tv query left is free text.
+    pub tv_search_season: bool,
     pub server_title: Option<String>,
 }
 

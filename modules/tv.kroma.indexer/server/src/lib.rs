@@ -603,9 +603,8 @@ search:
         ) -> anyhow::Result<kroma_module_sdk::ports::Caps> {
             Ok(kroma_module_sdk::ports::Caps {
                 search_tmdb: true,
-                search_imdb: false,
-                tv_search_tmdb: false,
                 server_title: Some(endpoint.url.clone()),
+                ..Default::default()
             })
         }
 

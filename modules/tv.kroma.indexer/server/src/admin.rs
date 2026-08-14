@@ -142,6 +142,7 @@ pub fn any_indexer_caps(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<
             search_tmdb: c.search_tmdb,
             search_imdb: c.search_imdb,
             tv_search_tmdb: c.tv_search_tmdb,
+            tv_search_season: c.tv_search_season,
             server_title: c.server_title,
         })
     } else {

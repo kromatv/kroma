@@ -247,7 +247,10 @@ pub fn parse_caps(xml: &[u8]) -> Result<Caps> {
                         caps.search_tmdb = has("tmdbid");
                         caps.search_imdb = has("imdbid");
                     }
-                    b"tv-search" => caps.tv_search_tmdb = has("tmdbid"),
+                    b"tv-search" => {
+                        caps.tv_search_tmdb = has("tmdbid");
+                        caps.tv_search_season = has("season");
+                    }
                     _ => {}
                 }
             }
@@ -342,6 +345,18 @@ mod tests {
         assert_eq!(caps.server_title.as_deref(), Some("Jackett"));
         assert!(caps.search_tmdb && caps.search_imdb);
         assert!(!caps.tv_search_tmdb);
+        // No external ids, but it does take a season - the shape most trackers
+        // behind Jackett advertise, and the one worth a structured tvsearch.
+        assert!(caps.tv_search_season);
+    }
+
+    #[test]
+    fn a_tv_search_without_a_season_param_is_not_claimed_to_take_one() {
+        let xml = r#"<caps><searching>
+          <tv-search available="yes" supportedParams="q" />
+        </searching></caps>"#;
+        let caps = parse_caps(xml.as_bytes()).unwrap();
+        assert!(!caps.tv_search_season);
     }
 
     #[test]

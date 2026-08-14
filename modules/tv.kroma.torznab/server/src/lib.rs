@@ -38,9 +38,9 @@ pub fn caps(endpoint: &IndexerEndpoint) -> anyhow::Result<Caps> {
 /// Run one query against one indexer and normalize the results.
 ///
 /// Attempts the strongest parameter set the indexer supports first (tmdb id,
-/// then imdb id, then free text) and falls back on an empty answer: not every
-/// tracker behind Jackett resolves external ids, and an id miss must not hide
-/// releases a text query would find.
+/// then imdb id, then a structured `tvsearch`, then free text) and falls back on
+/// an empty answer: not every tracker behind Jackett resolves external ids, and
+/// an id miss must not hide releases a text query would find.
 pub fn search(endpoint: &IndexerEndpoint, query: &Query, caps: &Caps) -> anyhow::Result<Vec<Release>> {
     let cats = endpoint
         .categories
@@ -126,6 +126,14 @@ fn episode_attempts(
             ]);
         }
     }
+    if caps.tv_search_season {
+        out.push(vec![
+            ("t", "tvsearch".into()),
+            ("q", title.to_string()),
+            ("season", season.to_string()),
+            ("ep", episode.to_string()),
+        ]);
+    }
     out.push(vec![
         ("t", "search".into()),
         ("q", format!("{title} S{season:02}E{episode:02}")),
@@ -148,6 +156,13 @@ fn season_attempts(
                 ("season", season.to_string()),
             ]);
         }
+    }
+    if caps.tv_search_season {
+        out.push(vec![
+            ("t", "tvsearch".into()),
+            ("q", title.to_string()),
+            ("season", season.to_string()),
+        ]);
     }
     out.push(vec![("t", "search".into()), ("q", format!("{title} S{season:02}"))]);
     out
@@ -236,6 +251,43 @@ mod tests {
         let a = attempts(&season, &caps);
         assert_eq!(a.len(), 1);
         assert!(a[0].contains(&("q", "Breaking Bad S03".to_string())));
+    }
+
+    #[test]
+    fn a_tracker_that_takes_a_season_gets_a_structured_tvsearch() {
+        // The common shape by far: `tv-search: [q, season, ep]` and no external
+        // ids at all. Skipping tvsearch there left free text as the only tv query
+        // an indexer was ever asked, and a tracker whose titles do not literally
+        // contain "S03E08" answered nothing.
+        let caps = Caps { tv_search_season: true, ..Caps::default() };
+
+        let episode =
+            Query::Episode { tmdb_id: None, title: "House of the Dragon".into(), season: 3, episode: 8 };
+        let a = attempts(&episode, &caps);
+        assert_eq!(a.len(), 2, "structured tvsearch, then free text");
+        assert!(a[0].contains(&("t", "tvsearch".to_string())));
+        assert!(a[0].contains(&("q", "House of the Dragon".to_string())), "the bare title");
+        assert!(a[0].contains(&("season", "3".to_string())));
+        assert!(a[0].contains(&("ep", "8".to_string())));
+        assert!(a[1].contains(&("q", "House of the Dragon S03E08".to_string())));
+
+        let season = Query::Season { tmdb_id: None, title: "House of the Dragon".into(), season: 3 };
+        let a = attempts(&season, &caps);
+        assert_eq!(a.len(), 2);
+        assert!(a[0].contains(&("season", "3".to_string())));
+        // A season pack is not episode 0, so no `ep` is invented for one.
+        assert!(!a[0].iter().any(|(k, _)| *k == "ep"));
+    }
+
+    #[test]
+    fn an_id_capable_tracker_still_tries_the_id_first() {
+        let caps = Caps { tv_search_tmdb: true, tv_search_season: true, ..Caps::default() };
+        let q = Query::Episode { tmdb_id: Some(1396), title: "Breaking Bad".into(), season: 1, episode: 2 };
+        let a = attempts(&q, &caps);
+        assert_eq!(a.len(), 3, "tmdbid, then q+season+ep, then free text");
+        assert!(a[0].contains(&("tmdbid", "1396".to_string())));
+        assert!(a[1].contains(&("q", "Breaking Bad".to_string())));
+        assert!(a[2].contains(&("t", "search".to_string())));
     }
 
     #[test]

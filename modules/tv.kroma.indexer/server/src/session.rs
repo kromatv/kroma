@@ -372,7 +372,7 @@ impl Session {
         };
         let bytes = body.len();
         let body = engine::preprocess(&self.def, &self.cfg, &body);
-        if let Some(message) = api_error(&body) {
+        if let Some(message) = refusal(&req.response_kind, &body) {
             self.note_refusal(req, bytes, &message, outcome);
             return;
         }
@@ -439,6 +439,19 @@ impl Session {
     // tells the two apart, so a short one is quoted rather than described.
     fn note_parsed(&self, req: &engine::SearchRequest, bytes: usize, body: &str, rows: usize) {
         if rows == 0 {
+            // Except when the feed already answered the question: a newznab
+            // response header saying `total="0"` is the tracker stating it has
+            // nothing, so warning about selectors there cries wolf on the one
+            // case that is working exactly as designed.
+            if declared_empty(body) {
+                tracing::info!(
+                    indexer = %self.def.name,
+                    url = %req.url,
+                    bytes,
+                    "the tracker has nothing for this query",
+                );
+                return;
+            }
             tracing::warn!(
                 indexer = %self.def.name,
                 url = %req.url,
@@ -572,6 +585,44 @@ fn snippet(body: &str) -> String {
         Some((cut, _)) => format!("{}...", &flat[..cut]),
         None => flat,
     }
+}
+
+/// Whether a torznab/newznab feed states in its own response header that it has
+/// no results, which separates an honest empty answer from a broken selector.
+fn declared_empty(body: &str) -> bool {
+    let Some(start) = body.find(":response") else { return false };
+    let rest = &body[start..];
+    let end = rest.find('>').unwrap_or(rest.len());
+    attr(&rest[..end], "total").is_some_and(|t| t.trim() == "0")
+}
+
+/// The message a tracker refused the query with, when it answered 200 and a body
+/// that is not results: either a Torznab/Newznab `<error>` document, or - for a
+/// path that declared `xml`/`json` - something that is not that document at all.
+///
+/// The second case is not hypothetical: YggReborn answers a bad `t=` with the
+/// twenty bare bytes `unsupported function`, which parsed to zero rows and was
+/// reported as "no row matched the definition's selectors". That sends whoever
+/// reads the log to the selectors, which were fine, and it skipped the
+/// invalidate-login / back-off handling a refusal is supposed to trigger.
+fn refusal(kind: &str, body: &str) -> Option<String> {
+    let head = body.trim_start().trim_start_matches('\u{feff}').trim_start();
+    let opener = match kind {
+        "xml" => '<',
+        "json" => {
+            if head.starts_with('{') || head.starts_with('[') {
+                return api_error(body);
+            }
+            return Some(format!("the indexer did not answer json: {}", snippet(body)));
+        }
+        // `html` is the default kind and covers whatever a scraped page returns,
+        // so its shape says nothing; only a real `<error>` document counts.
+        _ => return api_error(body),
+    };
+    if !head.starts_with(opener) {
+        return Some(format!("the indexer did not answer xml: {}", snippet(body)));
+    }
+    api_error(body)
 }
 
 /// The message from a Torznab/Newznab `<error>` document, which a tracker
@@ -768,6 +819,57 @@ mod response_tests {
     #[test]
     fn an_html_page_mentioning_error_elsewhere_is_left_alone() {
         assert!(api_error("<html><body>no errors here</body></html>").is_none());
+    }
+
+    // The twenty bytes YggReborn answers a `t=` it does not know with. Not XML,
+    // so `api_error` never saw it and it was reported as a selector miss.
+    const BARE_REFUSAL: &str = "unsupported function";
+
+    #[test]
+    fn a_bare_text_body_on_an_xml_path_is_a_refusal() {
+        let msg = refusal("xml", BARE_REFUSAL).expect("a refusal");
+        assert!(msg.contains("did not answer xml"), "{msg}");
+        assert!(msg.contains(BARE_REFUSAL), "{msg}");
+        // Same body on a scraped page says nothing: html is the catch-all kind.
+        assert!(refusal("html", BARE_REFUSAL).is_none());
+    }
+
+    #[test]
+    fn a_login_page_served_to_a_json_path_is_a_refusal_too() {
+        // The session died and the tracker answered the sign-in form. It parses
+        // to zero rows, but the fix is to log in again, not to touch selectors.
+        let msg = refusal("json", "<html><body>Please sign in</body></html>").expect("a refusal");
+        assert!(msg.contains("did not answer json"), "{msg}");
+    }
+
+    #[test]
+    fn a_byte_order_mark_does_not_make_valid_markup_a_refusal() {
+        let msg = refusal("xml", "\u{feff}<?xml version=\"1.0\"?><rss><channel/></rss>");
+        assert!(msg.is_none(), "{msg:?}");
+    }
+
+    #[test]
+    fn a_well_formed_feed_is_not_a_refusal() {
+        let feed = r#"<?xml version="1.0"?><rss><channel><item/></channel></rss>"#;
+        assert!(refusal("xml", feed).is_none());
+        assert!(refusal("json", r#"{"results":[]}"#).is_none());
+        assert!(refusal("json", "[]").is_none());
+    }
+
+    #[test]
+    fn a_feed_declaring_no_results_is_an_honest_empty() {
+        // The body YggReborn returns for a title it does not carry: warning about
+        // selectors here buries the searches that really are broken.
+        let empty = r#"<?xml version="1.0" encoding="UTF-8"?>
+          <rss version="2.0" xmlns:newznab="http://www.newznab.com/DTD/2010/feeds/attributes/">
+            <channel><title>YggReborn</title>
+              <newznab:response offset="0" total="0"/>
+            </channel>
+          </rss>"#;
+        assert!(declared_empty(empty));
+        assert!(!declared_empty(r#"<newznab:response offset="0" total="14"/>"#));
+        // No header at all: the two cases stay indistinguishable, so it warns.
+        assert!(!declared_empty(r#"<rss><channel></channel></rss>"#));
     }
 
     #[test]

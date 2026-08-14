@@ -85,6 +85,13 @@ fn sends_episode_inputs(def: &Definition) -> bool {
 }
 
 // Builds the `.Query.*` namespace for a query.
+//
+// `Type` is the TORZNAB FUNCTION NAME, not a human word for the query: every
+// definition that reads it feeds it straight to a `t=` parameter
+// (`t: "{{ .Query.Type }}"`), so the vocabulary is the one torznab defines -
+// `search`, `tvsearch`, `movie`, `music`, `book`. It said `tv` for two years,
+// which every API answered with "unsupported function", so no series search
+// through a `.Query.Type` definition ever returned a row.
 fn query_attributes(query: &Query) -> HashMap<String, String> {
     let mut m = HashMap::new();
     let mut set = |k: &str, v: String| {
@@ -108,7 +115,7 @@ fn query_attributes(query: &Query) -> HashMap<String, String> {
             }
         }
         Query::Episode { tmdb_id, season, episode, .. } => {
-            set("Type", "tv".into());
+            set("Type", "tvsearch".into());
             if let Some(id) = tmdb_id {
                 set("TMDBID", id.to_string());
             }
@@ -117,7 +124,7 @@ fn query_attributes(query: &Query) -> HashMap<String, String> {
             set("Episode", episode.to_string());
         }
         Query::Season { tmdb_id, season, .. } => {
-            set("Type", "tv".into());
+            set("Type", "tvsearch".into());
             if let Some(id) = tmdb_id {
                 set("TMDBID", id.to_string());
             }
@@ -1142,7 +1149,7 @@ search:
             season: 2,
             episode: 7,
         });
-        assert_eq!(vars.get("type").map(String::as_str), Some("tv"));
+        assert_eq!(vars.get("type").map(String::as_str), Some("tvsearch"));
         assert_eq!(vars.get("tmdb").map(String::as_str), Some("1396"));
         assert_eq!(vars.get("season").map(String::as_str), Some("2"));
         assert_eq!(vars.get("ep").map(String::as_str), Some("7"));
@@ -1158,7 +1165,7 @@ search:
             title: "Breaking Bad".into(),
             season: 2,
         });
-        assert_eq!(vars.get("type").map(String::as_str), Some("tv"));
+        assert_eq!(vars.get("type").map(String::as_str), Some("tvsearch"));
         assert_eq!(vars.get("season").map(String::as_str), Some("2"));
         // `set` skips empties, so the variables are absent rather than "".
         assert_eq!(vars.get("ep").map(String::as_str), Some(""));
@@ -1203,6 +1210,25 @@ search:
         let vars = echoed(&Query::Text { query: "some release".into() });
         assert_eq!(vars.get("type").map(String::as_str), Some("search"));
         assert_eq!(vars.get("tmdb").map(String::as_str), Some(""));
+    }
+
+    #[test]
+    fn every_query_type_is_a_torznab_function_name() {
+        // Ten shipped definitions splice `.Query.Type` straight into `t=`, so the
+        // only legal values are the ones the torznab API defines. A word that
+        // reads right to a human ("tv") is answered with "unsupported function"
+        // and the search returns nothing, silently.
+        const TORZNAB_FUNCTIONS: [&str; 5] = ["search", "tvsearch", "movie", "music", "book"];
+        let queries = [
+            Query::Text { query: "q".into() },
+            Query::Movie { tmdb_id: None, imdb_id: None, title: "M".into(), year: None },
+            Query::Season { tmdb_id: None, title: "S".into(), season: 1 },
+            Query::Episode { tmdb_id: None, title: "E".into(), season: 1, episode: 2 },
+        ];
+        for query in &queries {
+            let t = echoed(query).get("type").cloned().unwrap_or_default();
+            assert!(TORZNAB_FUNCTIONS.contains(&t.as_str()), "t={t:?} is not a torznab function");
+        }
     }
 
     #[test]
