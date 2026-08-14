@@ -161,14 +161,14 @@ describe('machineResponse', () => {
     const calls = upstreamServing(CATALOG);
     vi.stubGlobal('process', { env: { GITHUB_REPO: 'ambient/fork' } });
     const res = await machineResponse(req('/modules.json'), undefined, ctx());
-    expect(calls[0]).toBe('https://github.com/ambient/fork/releases/latest/download/modules.json');
+    expect(calls[0]).toBe('https://github.com/ambient/fork/releases/download/modules/modules.json');
     expect(await res?.json()).toEqual(CATALOG);
   });
 
   it('reads the configured repo and lets the catalog be cached for five minutes', async () => {
     const calls = upstreamServing(CATALOG);
     const res = await machine('/modules.json', undefined, { GITHUB_REPO: 'someone/fork' });
-    expect(calls[0]).toBe('https://github.com/someone/fork/releases/latest/download/modules.json');
+    expect(calls[0]).toBe('https://github.com/someone/fork/releases/download/modules/modules.json');
     expect(res.headers.get('cache-control')).toBe('public, max-age=300');
     expect(res.headers.get('access-control-allow-origin')).toBe('*');
   });

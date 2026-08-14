@@ -3,9 +3,15 @@ import { moduleIdInput, moduleVersions } from './get-module';
 
 const RELEASES = [
   {
-    tag_name: 'v0.2.0',
+    tag_name: 'tv.kroma.vpn@1.0.0',
     published_at: '2026-02-01T00:00:00Z',
-    assets: [{ name: 'modules.json', browser_download_url: 'https://dl.test/v0.2.0/modules.json' }],
+    assets: [
+      {
+        name: 'tv.kroma.vpn-x86_64-unknown-linux-musl.kmod',
+        browser_download_url: 'https://dl.test/vpn.kmod',
+        size: 42,
+      },
+    ],
   },
 ];
 
@@ -15,10 +21,8 @@ function upstream() {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      calls.push(url);
-      if (url.startsWith('https://api.github.com/')) return Response.json(RELEASES);
-      return Response.json({ modules: [{ id: 'tv.kroma.vpn', version: '1.0.0' }] });
+      calls.push(String(input));
+      return Response.json(RELEASES);
     }),
   );
   return calls;
@@ -30,16 +34,15 @@ afterEach(() => {
 });
 
 describe('moduleVersions', () => {
-  it('reads back which version every recent release shipped', async () => {
+  it('reads back every version the module has released', async () => {
     upstream();
     expect(await moduleVersions({ data: { id: 'tv.kroma.vpn' } })).toEqual([
       {
         version: '1.0.0',
-        first: 'v0.2.0',
-        firstAt: '2026-02-01T00:00:00Z',
-        last: 'v0.2.0',
-        url: null,
-        size: null,
+        tag: 'tv.kroma.vpn@1.0.0',
+        publishedAt: '2026-02-01T00:00:00Z',
+        url: 'https://dl.test/vpn.kmod',
+        size: 42,
       },
     ]);
   });

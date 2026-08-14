@@ -10,10 +10,7 @@ export interface ModuleHistoryProps {
   rows: VersionRow[];
 }
 
-const span = (row: VersionRow) =>
-  row.first === row.last ? `KROMA ${row.first}` : `KROMA ${row.first} to ${row.last}`;
-
-/** Which version of the module shipped with which KROMA release. */
+/** Every version of the module that has been released, newest first. */
 export function ModuleHistory({ rows }: Readonly<ModuleHistoryProps>) {
   if (rows.length === 0) return null;
   return (
@@ -23,7 +20,7 @@ export function ModuleHistory({ rows }: Readonly<ModuleHistoryProps>) {
       </Text>
       <Box bg="surface1" border="border" radius="xl" overflow="hidden">
         {rows.map((row, at) => (
-          <Column key={`${row.version}-${row.first}`}>
+          <Column key={row.tag}>
             {at > 0 ? <Divider /> : null}
             <Row gap={16} px={18} py={14} wrap align="center">
               <Box shrink={0} basis={90}>
@@ -31,8 +28,7 @@ export function ModuleHistory({ rows }: Readonly<ModuleHistoryProps>) {
               </Box>
               <Box grow={1} shrink={1} basis={200} minW={0}>
                 <Text color="textDim" variant="meta" lines={1}>
-                  {span(row)}
-                  {row.firstAt ? ` · ${row.firstAt.slice(0, 10)}` : ''}
+                  {row.publishedAt ? row.publishedAt.slice(0, 10) : row.tag}
                   {row.size ? ` · ${mb(row.size)}` : ''}
                 </Text>
               </Box>

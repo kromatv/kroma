@@ -1,33 +1,30 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { moduleHistory } from './history';
+import { foldReleases, moduleHistory } from './history';
 import type { Env } from './source';
 
 const CACHE_KEY = 'https://kroma-modules.cache/history-index';
 
-type Asset = { name: string; browser_download_url: string };
+type Asset = { name: string; browser_download_url: string; size: number };
 
-const assetsFor = (tag: string): Asset[] => [
-  { name: 'modules.json', browser_download_url: `https://dl.test/${tag}/modules.json` },
-];
+const kmod = (tag: string, target = 'x86_64-unknown-linux-musl', size = 20): Asset => ({
+  name: `${tag.split('@')[0]}-${target}.kmod`,
+  browser_download_url: `https://dl.test/${tag}/bundle.kmod`,
+  size,
+});
 
-const release = (tag: string, publishedAt: string | null, assets = assetsFor(tag)) => ({
+const release = (tag: string, publishedAt: string | null, assets: Asset[] = [kmod(tag)]) => ({
   tag_name: tag,
   published_at: publishedAt,
   assets,
 });
 
-function upstream(releases: unknown, catalogs: Record<string, unknown> = {}) {
+function upstream(releases: unknown) {
   const calls: { url: string; headers: Record<string, string> }[] = [];
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      calls.push({ url, headers: (init?.headers ?? {}) as Record<string, string> });
-      if (url.startsWith('https://api.github.com/')) return Response.json(releases);
-      const body = catalogs[url];
-      if (body === undefined) return new Response('no such asset', { status: 404 });
-      if (typeof body === 'string') return new Response(body);
-      return Response.json(body);
+      calls.push({ url: String(input), headers: (init?.headers ?? {}) as Record<string, string> });
+      return Response.json(releases);
     }),
   );
   return calls;
@@ -60,168 +57,84 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('moduleHistory', () => {
-  it('collapses the runs of releases that shipped one version into a single row', async () => {
-    vi.stubGlobal('caches', undefined);
-    upstream(
-      [
-        release('v0.3.0', '2026-03-01T00:00:00Z'),
-        release('v0.2.0', '2026-02-01T00:00:00Z'),
-        release('v0.1.0', '2026-01-01T00:00:00Z'),
-      ],
+describe('foldReleases', () => {
+  it('reads a module id and version out of its release tag', () => {
+    const index = foldReleases([
+      release('tv.kroma.vpn@0.1.4', '2026-03-01T00:00:00Z'),
+      release('tv.kroma.vpn@0.1.3', '2026-02-01T00:00:00Z'),
+    ]);
+    expect(index['tv.kroma.vpn']).toEqual([
       {
-        'https://dl.test/v0.3.0/modules.json': {
-          modules: [
-            {
-              id: 'tv.kroma.vpn',
-              version: '2.0.0',
-              artifacts: [
-                { target: 'aarch64-apple-darwin', url: 'https://dl.test/vpn-mac.kmod', size: 10 },
-                {
-                  target: 'x86_64-unknown-linux-musl',
-                  url: 'https://dl.test/vpn-linux.kmod',
-                  size: 20,
-                },
-              ],
-            },
-          ],
-        },
-        'https://dl.test/v0.2.0/modules.json': {
-          modules: [{ id: 'tv.kroma.vpn', version: '2.0.0' }],
-        },
-        'https://dl.test/v0.1.0/modules.json': {
-          modules: [
-            { id: 'tv.kroma.vpn', version: '1.0.0', url: 'https://dl.test/vpn-1.kmod', size: 5 },
-          ],
-        },
-      },
-    );
-
-    expect(await history({}, 'tv.kroma.vpn')).toEqual([
-      {
-        version: '2.0.0',
-        first: 'v0.2.0',
-        firstAt: '2026-02-01T00:00:00Z',
-        last: 'v0.3.0',
-        url: 'https://dl.test/vpn-linux.kmod',
+        version: '0.1.4',
+        tag: 'tv.kroma.vpn@0.1.4',
+        publishedAt: '2026-03-01T00:00:00Z',
+        url: 'https://dl.test/tv.kroma.vpn@0.1.4/bundle.kmod',
         size: 20,
       },
       {
-        version: '1.0.0',
-        first: 'v0.1.0',
-        firstAt: '2026-01-01T00:00:00Z',
-        last: 'v0.1.0',
-        url: 'https://dl.test/vpn-1.kmod',
-        size: 5,
+        version: '0.1.3',
+        tag: 'tv.kroma.vpn@0.1.3',
+        publishedAt: '2026-02-01T00:00:00Z',
+        url: 'https://dl.test/tv.kroma.vpn@0.1.3/bundle.kmod',
+        size: 20,
       },
     ]);
   });
 
-  it('reopens a version that comes back after another one, rather than editing the old row', async () => {
-    vi.stubGlobal('caches', undefined);
-    upstream(
-      [
-        release('v3', '2026-03-01T00:00:00Z'),
-        release('v2', '2026-02-01T00:00:00Z'),
-        release('v1', '2026-01-01T00:00:00Z'),
-      ],
-      {
-        'https://dl.test/v3/modules.json': { modules: [{ id: 'a', version: '1.0.0' }] },
-        'https://dl.test/v2/modules.json': { modules: [{ id: 'a', version: '0.9.0' }] },
-        'https://dl.test/v1/modules.json': { modules: [{ id: 'a', version: '1.0.0' }] },
-      },
-    );
-
-    const rows = await history({}, 'a');
-    expect(rows.map((r) => [r.version, r.first, r.last])).toEqual([
-      ['1.0.0', 'v3', 'v3'],
-      ['0.9.0', 'v2', 'v2'],
-      ['1.0.0', 'v1', 'v1'],
+  it('ignores the releases that are not a module', () => {
+    // The repo's other tags share the list: server versions, the nightly, and
+    // the rolling catalog release this very worker reads.
+    const index = foldReleases([
+      release('v0.1.38', '2026-03-01T00:00:00Z'),
+      release('nightly', '2026-03-01T00:00:00Z'),
+      release('modules', '2026-03-01T00:00:00Z'),
+      release('tv.kroma.mdns@0.1.0', '2026-01-01T00:00:00Z'),
     ]);
+    expect(Object.keys(index)).toEqual(['tv.kroma.mdns']);
   });
 
-  it('skips a release with no modules.json and a module entry with no version', async () => {
-    vi.stubGlobal('caches', undefined);
-    const calls = upstream(
-      [
-        release('v2', '2026-02-01T00:00:00Z', [
-          { name: 'kroma-linux.tar.gz', browser_download_url: 'https://dl.test/v2/bin.tar.gz' },
-        ]),
-        release('v1', '2026-01-01T00:00:00Z'),
-      ],
-      {
-        'https://dl.test/v1/modules.json': {
-          modules: [{ id: 'tv.kroma.vpn', version: '1.0.0' }, { id: 'tv.kroma.draft' }],
-        },
-      },
-    );
-
-    expect((await history({}, 'tv.kroma.vpn')).map((r) => r.last)).toEqual(['v1']);
-    expect(await history({}, 'tv.kroma.draft')).toEqual([]);
-    expect(calls.some((c) => c.url === 'https://dl.test/v2/bin.tar.gz')).toBe(false);
+  it('ignores a tag with an empty id or an empty version', () => {
+    const index = foldReleases([release('@1.0.0', null), release('tv.kroma.x@', null)]);
+    expect(index).toEqual({});
   });
 
-  it('reads back at most twenty-five releases', async () => {
-    vi.stubGlobal('caches', undefined);
-    const tags = Array.from({ length: 30 }, (_, i) => `v${30 - i}`);
-    const calls = upstream(
-      tags.map((tag) => release(tag, '2026-01-01T00:00:00Z')),
-      Object.fromEntries(
-        tags.map((tag) => [
-          `https://dl.test/${tag}/modules.json`,
-          { modules: [{ id: 'a', version: tag }] },
-        ]),
-      ),
-    );
-
-    expect(await history({}, 'a')).toHaveLength(25);
-    expect(calls.filter((c) => c.url.startsWith('https://dl.test/'))).toHaveLength(25);
-  });
-
-  it('drops a release whose modules.json is gone or unparseable', async () => {
-    vi.stubGlobal('caches', undefined);
-    upstream(
-      [
-        release('v3', '2026-03-01T00:00:00Z'),
-        release('v2', '2026-02-01T00:00:00Z'),
-        release('v1', '2026-01-01T00:00:00Z'),
-      ],
-      {
-        'https://dl.test/v2/modules.json': { modules: 'not an array' },
-        'https://dl.test/v1/modules.json': { modules: [{ id: 'a', version: '1.0.0' }] },
-      },
-    );
-
-    expect((await history({}, 'a')).map((r) => r.last)).toEqual(['v1']);
-  });
-
-  it('drops a release whose modules.json is not JSON at all', async () => {
-    vi.stubGlobal('caches', undefined);
-    upstream([release('v2', '2026-02-01T00:00:00Z'), release('v1', '2026-01-01T00:00:00Z')], {
-      'https://dl.test/v2/modules.json': '<!doctype html><title>404</title>',
-      'https://dl.test/v1/modules.json': { modules: [{ id: 'a', version: '1.0.0' }] },
-    });
-
-    expect((await history({}, 'a')).map((r) => r.last)).toEqual(['v1']);
-  });
-
-  it('keeps no publication date on a run whose oldest release carries none', async () => {
-    vi.stubGlobal('caches', undefined);
-    upstream([release('v2', '2026-02-01T00:00:00Z'), release('v1', null)], {
-      'https://dl.test/v2/modules.json': { modules: [{ id: 'a', version: '1.0.0' }] },
-      'https://dl.test/v1/modules.json': { modules: [{ id: 'a', version: '1.0.0' }] },
-    });
-
-    expect(await history({}, 'a')).toEqual([
-      {
-        version: '1.0.0',
-        first: 'v1',
-        firstAt: null,
-        last: 'v2',
-        url: null,
-        size: null,
-      },
+  it('keeps one row per module even when several are released at once', () => {
+    const index = foldReleases([
+      release('tv.kroma.indexer@0.1.3', '2026-03-01T00:00:00Z'),
+      release('tv.kroma.torznab@0.1.2', '2026-03-01T00:00:00Z'),
     ]);
+    expect(Object.keys(index).sort()).toEqual(['tv.kroma.indexer', 'tv.kroma.torznab']);
+    expect(index['tv.kroma.indexer']).toHaveLength(1);
+  });
+
+  it('carries no download link for a release whose bundles are missing', () => {
+    const index = foldReleases([
+      release('tv.kroma.vpn@0.1.4', null, [
+        { name: 'notes.txt', browser_download_url: 'https://dl.test/notes.txt', size: 3 },
+      ]),
+    ]);
+    expect(index['tv.kroma.vpn']?.[0]).toMatchObject({ url: null, size: null, publishedAt: null });
+  });
+
+  it('handles an id that itself contains an @', () => {
+    // The version is after the LAST @, so a scoped-looking id cannot split wrong.
+    const index = foldReleases([release('tv.kroma.engine@qbit@0.2.0', null)]);
+    expect(Object.keys(index)).toEqual(['tv.kroma.engine@qbit']);
+    expect(index['tv.kroma.engine@qbit']?.[0]?.version).toBe('0.2.0');
+  });
+});
+
+describe('moduleHistory', () => {
+  it('lists every released version of one module, newest first', async () => {
+    vi.stubGlobal('caches', undefined);
+    upstream([
+      release('tv.kroma.indexer@0.1.3', '2026-03-01T00:00:00Z'),
+      release('tv.kroma.whisper@0.1.1', '2026-02-15T00:00:00Z'),
+      release('tv.kroma.indexer@0.1.2', '2026-02-01T00:00:00Z'),
+    ]);
+
+    const rows = await history({}, 'tv.kroma.indexer');
+    expect(rows.map((r) => r.version)).toEqual(['0.1.3', '0.1.2']);
   });
 
   it('answers empty when the releases payload is not a list of releases', async () => {
@@ -232,16 +145,15 @@ describe('moduleHistory', () => {
 
   it('names the configured repo and authenticates when a token is bound', async () => {
     vi.stubGlobal('caches', undefined);
-    const calls = upstream([release('v1', null)], {
-      'https://dl.test/v1/modules.json': { modules: [{ id: 'a', version: '1.0.0' }] },
-    });
+    const calls = upstream([release('a@1.0.0', null)]);
 
     const rows = await history({ GITHUB_REPO: 'someone/fork', GITHUB_TOKEN: 'ghp_x' }, 'a');
 
     expect(calls[0]?.url).toBe('https://api.github.com/repos/someone/fork/releases?per_page=100');
     expect(calls[0]?.headers.authorization).toBe('Bearer ghp_x');
-    expect(calls[1]?.headers.authorization).toBe('Bearer ghp_x');
-    expect(rows[0]?.firstAt).toBeNull();
+    // One request, not one per version: the tag list IS the history now.
+    expect(calls).toHaveLength(1);
+    expect(rows[0]?.publishedAt).toBeNull();
   });
 
   it('sends no authorization header when no token is bound', async () => {
@@ -254,25 +166,17 @@ describe('moduleHistory', () => {
 
   it('answers an unknown module id with no history at all', async () => {
     vi.stubGlobal('caches', undefined);
-    upstream([release('v1', '2026-01-01T00:00:00Z')], {
-      'https://dl.test/v1/modules.json': { modules: [{ id: 'a', version: '1.0.0' }] },
-    });
+    upstream([release('a@1.0.0', '2026-01-01T00:00:00Z')]);
     expect(await history({}, 'tv.kroma.absent')).toEqual([]);
   });
 
   it('serves every module page from one cached index without touching GitHub', async () => {
     const { store } = edgeCache();
-    store.set(
-      CACHE_KEY,
-      Response.json({
-        a: [{ version: '1.0.0', first: 'v1', firstAt: null, last: 'v2', url: null, size: null }],
-      }),
-    );
+    const row = { version: '1.0.0', tag: 'a@1.0.0', publishedAt: null, url: null, size: null };
+    store.set(CACHE_KEY, Response.json({ a: [row] }));
     const calls = upstream([]);
 
-    expect(await history({}, 'a')).toEqual([
-      { version: '1.0.0', first: 'v1', firstAt: null, last: 'v2', url: null, size: null },
-    ]);
+    expect(await history({}, 'a')).toEqual([row]);
     expect(await history({}, 'b')).toEqual([]);
     expect(calls).toEqual([]);
   });
@@ -281,9 +185,7 @@ describe('moduleHistory', () => {
     for (const cached of [Response.json({ a: 'not rows' }), new Response('<html>')]) {
       const { store } = edgeCache();
       store.set(CACHE_KEY, cached);
-      upstream([release('v1', '2026-01-01T00:00:00Z')], {
-        'https://dl.test/v1/modules.json': { modules: [{ id: 'a', version: '1.0.0' }] },
-      });
+      upstream([release('a@1.0.0', '2026-01-01T00:00:00Z')]);
 
       expect((await history({}, 'a')).map((r) => r.version)).toEqual(['1.0.0']);
       vi.unstubAllGlobals();
@@ -292,9 +194,7 @@ describe('moduleHistory', () => {
 
   it('stores the built index for six hours, in the background', async () => {
     const { store } = edgeCache();
-    upstream([release('v1', '2026-01-01T00:00:00Z')], {
-      'https://dl.test/v1/modules.json': { modules: [{ id: 'a', version: '1.0.0' }] },
-    });
+    upstream([release('a@1.0.0', '2026-01-01T00:00:00Z', [])]);
     const { waitUntil, pending, settled } = background();
 
     await moduleHistory({}, waitUntil, 'a');
@@ -308,9 +208,8 @@ describe('moduleHistory', () => {
       a: [
         {
           version: '1.0.0',
-          first: 'v1',
-          firstAt: '2026-01-01T00:00:00Z',
-          last: 'v1',
+          tag: 'a@1.0.0',
+          publishedAt: '2026-01-01T00:00:00Z',
           url: null,
           size: null,
         },

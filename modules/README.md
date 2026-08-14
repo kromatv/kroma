@@ -183,6 +183,17 @@ To serve modules to others, host a catalog: `bun run modules registry` emits a
 host can serve. Operators add it under Admin → Modules → Registries. See
 [`docs/module-registries.md`](../docs/module-registries.md).
 
+### Releasing this repo's modules
+
+**Bump `version` in `module.json` in the same commit as the change.** Modules
+release on their own tags (`<module-id>@<version>`) from
+`.github/workflows/modules.yml`, and it refuses a module whose bundle changed
+while its version stood still — the Store decides "update available" by comparing
+versions, so a silent republish reaches nobody. `bun run modules release
+--dry-run --repo <owner/repo>` gives the same verdict locally, against whatever
+`dist/modules` currently holds. Full shape in
+[`docs/modules-as-kmod.md`](../docs/modules-as-kmod.md#the-release-train).
+
 ## Checks
 
 ```bash

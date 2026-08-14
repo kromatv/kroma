@@ -12,23 +12,20 @@
 //
 // Output: dist/registry/{catalog.json, <id>[-<target>].kmod, ...}
 //
+// One base URL for every module, which makes this the LOCAL/self-hosted shape:
+// every bundle sits in one directory. The release pipeline uses
+// `modules release` instead, because a per-module tag gives each module its own
+// base - see that command.
+//
 // Catalog schema 2: one entry per module id with `artifacts` grouped per
 // build target (a sidecar .kmod carries a native binary, so CI packs one per
 // target and suffixes the filename with the triple). Flat url/size/sha256 of
 // the first artifact are kept per entry so schema-1 consumers keep working.
 
-import { createHash } from 'node:crypto';
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
+import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { readBundles, toEntries } from './bundles';
 import { root } from './root';
-import { byCodeUnit } from './sort';
 
 const modulesDir = join(root, 'dist/modules');
 const outDir = join(root, 'dist/registry');
@@ -36,162 +33,13 @@ const outDir = join(root, 'dist/registry');
 const baseIdx = process.argv.indexOf('--base');
 const baseUrl = (baseIdx >= 0 ? (process.argv[baseIdx + 1] ?? '') : '').replace(/\/$/, '');
 
-if (!existsSync(modulesDir)) {
-  throw new Error(`no packed modules at ${modulesDir}; run \`bun run modules:pack\` first`);
-}
+const bundles = readBundles(modulesDir);
 mkdirSync(outDir, { recursive: true });
-
-interface Manifest {
-  id: string;
-  name: string;
-  version: string;
-  description?: string;
-  minServer?: string;
-  library?: boolean;
-  dependsOn?: Record<string, string> | unknown[];
-  optionalDependsOn?: Record<string, string> | unknown[];
-  provides?: unknown[];
-  requires?: unknown[];
+for (const b of bundles) {
+  copyFileSync(b.path, join(outDir, b.file));
 }
 
-interface Artifact {
-  target: string | null;
-  file: string;
-  url: string;
-  size: number;
-  sha256: string;
-}
-
-interface Entry {
-  id: string;
-  name: string;
-  version: string;
-  description?: string;
-  minServer?: string;
-  library?: boolean;
-  dependsOn?: Record<string, string> | unknown[];
-  optionalDependsOn?: Record<string, string> | unknown[];
-  provides?: unknown[];
-  requires?: unknown[];
-  icon?: string;
-  artifacts: Artifact[];
-  // Schema-1 compatibility mirror of artifacts[0].
-  file: string;
-  url: string;
-  size: number;
-  sha256: string;
-}
-
-// Dispatched by magic bytes, like the server's installer: zstd today, gzip/raw
-// also accepted.
-function toTar(buf: Buffer): Uint8Array {
-  // A view, not a copy: Bun's decompressors want an ArrayBuffer-backed array.
-  const bytes = new Uint8Array(buf.buffer as ArrayBuffer, buf.byteOffset, buf.byteLength);
-  if (bytes[0] === 0x28 && bytes[1] === 0xb5 && bytes[2] === 0x2f && bytes[3] === 0xfd) {
-    return Bun.zstdDecompressSync(bytes);
-  }
-  if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
-    return Bun.gunzipSync(bytes);
-  }
-  return bytes;
-}
-
-// svg preferred, then png; capped so one oversized icon can't bloat the
-// whole catalog.
-function iconDataUri(tar: Uint8Array): string | undefined {
-  const MAX = 64 * 1024;
-  const svg = tarRead(tar, 'icon.svg');
-  if (svg && svg.length <= MAX) {
-    return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
-  }
-  const png = tarRead(tar, 'icon.png');
-  if (png && png.length <= MAX) {
-    return `data:image/png;base64,${Buffer.from(png).toString('base64')}`;
-  }
-  return undefined;
-}
-
-// ustar headers are 512-byte blocks: name at 0..100 (NUL-padded), size as
-// octal at 124..136.
-function tarRead(tar: Uint8Array, wanted: string): Uint8Array | null {
-  const field = (start: number, len: number) =>
-    new TextDecoder().decode(tar.subarray(start, start + len)).split('\0')[0] ?? '';
-  let off = 0;
-  while (off + 512 <= tar.length) {
-    const name = field(off, 100);
-    if (!name) break; // two empty blocks terminate the archive
-    const size = Number.parseInt(field(off + 124, 12).trim() || '0', 8);
-    if (name === wanted || name === `./${wanted}`) {
-      return tar.subarray(off + 512, off + 512 + size);
-    }
-    off += 512 + Math.ceil(size / 512) * 512;
-  }
-  return null;
-}
-
-// Sorted here rather than in the loop header: the catalog's entry order
-// follows this walk.
-const kmods = readdirSync(modulesDir)
-  .filter((f) => f.endsWith('.kmod'))
-  .sort(byCodeUnit);
-const entries = new Map<string, Entry>();
-
-for (const file of kmods) {
-  const path = join(modulesDir, file);
-  const bytes = readFileSync(path);
-  const tar = toTar(bytes);
-  const manifestBytes = tarRead(tar, 'module.json');
-  if (!manifestBytes) {
-    console.warn(`  ! ${file}: no module.json inside, skipped`);
-    continue;
-  }
-  const manifest = JSON.parse(new TextDecoder().decode(manifestBytes)) as Manifest;
-
-  // Bundles are named `<id>.kmod` or `<id>-<target>.kmod`; recover the target
-  // from the filename using the id just read out of the bundle.
-  const stem = file.slice(0, -'.kmod'.length);
-  const target =
-    stem === manifest.id ? null : stem.slice(manifest.id.length).replace(/^-/, '') || null;
-
-  copyFileSync(path, join(outDir, file));
-  const artifact: Artifact = {
-    target,
-    file,
-    url: baseUrl ? `${baseUrl}/${file}` : file,
-    size: bytes.length,
-    sha256: createHash('sha256').update(bytes).digest('hex'),
-  };
-
-  const existing = entries.get(manifest.id);
-  if (existing) {
-    existing.artifacts.push(artifact);
-    existing.icon ??= iconDataUri(tar);
-  } else {
-    entries.set(manifest.id, {
-      id: manifest.id,
-      name: manifest.name,
-      version: manifest.version,
-      description: manifest.description,
-      minServer: manifest.minServer,
-      library: manifest.library,
-      dependsOn: manifest.dependsOn,
-      optionalDependsOn: manifest.optionalDependsOn,
-      provides: manifest.provides,
-      requires: manifest.requires,
-      icon: iconDataUri(tar),
-      artifacts: [artifact],
-      file: artifact.file,
-      url: artifact.url,
-      size: artifact.size,
-      sha256: artifact.sha256,
-    });
-  }
-}
-
-const modules = [...entries.values()].sort((a, b) => a.id.localeCompare(b.id));
-for (const m of modules) {
-  m.artifacts.sort((a, b) => (a.target ?? '').localeCompare(b.target ?? ''));
-}
+const modules = toEntries(bundles, () => baseUrl);
 const catalog = { schema: 2, generatedAt: new Date().toISOString(), modules };
 writeFileSync(join(outDir, 'catalog.json'), `${JSON.stringify(catalog, null, 2)}\n`);
 

@@ -104,7 +104,7 @@ describe('loadCatalog', () => {
 
     expect(await loadCatalog({ GITHUB_REPO: 'someone/fork' }, () => {})).toBe(BODY);
     expect(calls).toEqual([
-      'https://github.com/someone/fork/releases/latest/download/modules.json',
+      'https://github.com/someone/fork/releases/download/modules/modules.json',
     ]);
   });
 });

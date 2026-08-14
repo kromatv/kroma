@@ -138,6 +138,13 @@ its own process on a free localhost port, and reverse-proxies
 (WAL = multi-process). See [`docs/modules-as-kmod.md`](docs/modules-as-kmod.md).
 It also tracks the remaining cross-module port conversions.
 
+Modules release **independently of the server**, each on its own tag
+`<module-id>@<version>`, from `.github/workflows/modules.yml`. So **bump
+`version` in `module.json` in the same commit as any change to a module** — CI
+content-hashes each bundle against the published catalog and fails a run whose
+bytes moved while its version stood still (the Store decides "update available"
+by comparing versions, so a silent republish reaches nobody).
+
 **Each module at `modules/<id>` is its own cargo workspace** (explicit package
 metadata, its own `Cargo.lock`, its own `release-kmod` profile), so it builds and
 tests standalone (`cd modules/<id>/server && cargo build`). Cargo members must be
@@ -164,6 +171,7 @@ bun run modules:new tv.kroma.notes   # scaffold
 bun run modules:gen                  # expand + regenerate the aggregators
 bun run modules:validate             # schema-check every manifest
 bun run modules:pack                 # build the native .kmod
+bun run modules release --dry-run --repo <owner/repo>   # CI's publish verdict
 ```
 
 Modules install from **registries**: one pinned official catalog plus any the

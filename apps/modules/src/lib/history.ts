@@ -1,10 +1,8 @@
 import { z } from 'zod';
-import { Catalog } from '#site/catalog';
-import { downloads } from '#site/lib/artifacts';
 import { DEFAULT_REPO, type Env, edgeCache, githubHeaders } from '#site/lib/source';
 
-const RELEASES = 25;
-const CATALOG_ASSET = 'modules.json';
+// One page of releases covers a long stretch of module history: a module only
+// cuts a release when its own bytes change.
 const CACHE_KEY = 'https://kroma-modules.cache/history-index';
 const CACHE_TTL = 21600;
 
@@ -12,17 +10,16 @@ const Release = z.object({
   tag_name: z.string(),
   published_at: z.string().nullish(),
   assets: z
-    .array(z.object({ name: z.string(), browser_download_url: z.string() }))
+    .array(z.object({ name: z.string(), browser_download_url: z.string(), size: z.number() }))
     .default([])
     .catch([]),
 });
 
 export const VersionRow = z.object({
   version: z.string(),
-  /** The oldest release still shipping this version, and the newest. */
-  first: z.string(),
-  firstAt: z.string().nullable(),
-  last: z.string(),
+  /** The release tag holding this version's bundles: `<module-id>@<version>`. */
+  tag: z.string(),
+  publishedAt: z.string().nullable(),
   url: z.string().nullable(),
   size: z.number().nullable(),
 });
@@ -31,71 +28,53 @@ export type VersionRow = z.infer<typeof VersionRow>;
 const Index = z.record(z.string(), z.array(VersionRow));
 type Index = z.infer<typeof Index>;
 
-type Asset = z.infer<typeof Release>['assets'][number];
-type Published = { release: z.infer<typeof Release>; asset: Asset };
+/**
+ * Every module version ever released, keyed by module id.
+ *
+ * The history used to be reconstructed by opening the `modules.json` of each
+ * recent KROMA release and recording which version it carried - the only source
+ * available while modules rode the server's release train. Now each module
+ * version IS a release (`<module-id>@<version>`), so the tag list is the history:
+ * exact, one entry per version, and no catalog downloads at all.
+ */
+export function foldReleases(releases: z.infer<typeof Release>[]): Index {
+  const index: Index = {};
+  for (const release of releases) {
+    const at = release.tag_name.lastIndexOf('@');
+    if (at <= 0) continue; // a server release, or the rolling catalog one
+    const id = release.tag_name.slice(0, at);
+    const version = release.tag_name.slice(at + 1);
+    if (!version) continue;
+    // Any bundle will do for a download link; they differ only by target, and
+    // the page's own artifact table is where a visitor picks one.
+    const asset = release.assets.find((a) => a.name.endsWith('.kmod')) ?? null;
+    const rows = index[id] ?? [];
+    rows.push({
+      version,
+      tag: release.tag_name,
+      publishedAt: release.published_at ?? null,
+      url: asset?.browser_download_url ?? null,
+      size: asset?.size ?? null,
+    });
+    index[id] = rows;
+  }
+  return index;
+}
 
-async function releases(env: Env): Promise<Published[]> {
+async function buildIndex(env: Env): Promise<Index> {
   const repo = env.GITHUB_REPO || DEFAULT_REPO;
   const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=100`, {
     headers: { ...githubHeaders(env), accept: 'application/vnd.github+json' },
   });
   if (!res.ok) throw new Error(`releases ${res.status}`);
   const parsed = z.array(Release).safeParse(await res.json());
-  if (!parsed.success) return [];
-  return parsed.data
-    .flatMap((release) => {
-      const asset = release.assets.find((a) => a.name === CATALOG_ASSET);
-      return asset ? [{ release, asset }] : [];
-    })
-    .slice(0, RELEASES);
-}
-
-async function catalogOf(env: Env, asset: Asset): Promise<Catalog | null> {
-  const res = await fetch(asset.browser_download_url, { headers: githubHeaders(env) });
-  if (!res.ok) return null;
-  const parsed = Catalog.safeParse(await res.json().catch(() => null));
-  return parsed.success ? parsed.data : null;
-}
-
-// Releases arrive newest first, so a row already open is extended backwards.
-function fold(index: Index, release: z.infer<typeof Release>, catalog: Catalog): void {
-  for (const entry of catalog.modules) {
-    if (!entry.version) continue;
-    const rows = index[entry.id] ?? [];
-    const open = rows.at(-1);
-    if (open?.version === entry.version) {
-      open.first = release.tag_name;
-      open.firstAt = release.published_at ?? null;
-      continue;
-    }
-    const file = downloads(entry)[0] ?? null;
-    rows.push({
-      version: entry.version,
-      first: release.tag_name,
-      firstAt: release.published_at ?? null,
-      last: release.tag_name,
-      url: file?.url ?? null,
-      size: file?.size ?? null,
-    });
-    index[entry.id] = rows;
-  }
-}
-
-async function buildIndex(env: Env): Promise<Index> {
-  const list = await releases(env);
-  const catalogs = await Promise.all(list.map(({ asset }) => catalogOf(env, asset)));
-  const index: Index = {};
-  for (const [at, { release }] of list.entries()) {
-    const catalog = catalogs[at];
-    if (catalog) fold(index, release, catalog);
-  }
-  return index;
+  // GitHub lists releases newest first, which is the order the page wants.
+  return parsed.success ? foldReleases(parsed.data) : {};
 }
 
 /**
- * Which version of `id` every recent KROMA release shipped, newest first, read
- * back from the `modules.json` each release publishes. Empty when GitHub cannot
- * be reached.
+ * Every released version of `id`, newest first. Empty when GitHub cannot be
+ * reached.
  */
 export async function moduleHistory(
   env: Env,

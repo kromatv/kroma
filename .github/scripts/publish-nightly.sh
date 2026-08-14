@@ -30,8 +30,9 @@ find assets -type f -print0 | xargs -0 gh release upload nightly --clobber
   echo "Rolling nightly build \`$VERSION\` from \`${GITHUB_SHA::10}\`."
   echo
   echo "Every artifact of a stable release, rebuilt nightly from main:"
-  echo "desktop installers, TV packages, module bundles + modules.json,"
-  echo "and the per-push canary Synology .spk. Unstable by definition."
+  echo "desktop installers, TV packages, and the per-push canary Synology .spk."
+  echo "Unstable by definition. Module \`.kmod\` bundles are not here: they"
+  echo "release on their own \`<module-id>@<version>\` tags."
   if [[ -n "$LAST" ]]; then
     echo
     echo "Changes since the previous nightly:"

@@ -8,7 +8,7 @@ configured registry and shows the union.
 
 | | |
 |---|---|
-| **Official** | Pinned first, cannot be removed or disabled. Points at `https://modules.kroma.tv/modules.json`, the first-party registry worker (`apps/modules`), which serves the `modules.json` attached to this project's GitHub Releases with edge caching and a stale fallback. The URL is editable (`moduleRegistryUrl`) so it can be aimed at a mirror or a private build. |
+| **Official** | Pinned first, cannot be removed or disabled. Points at `https://modules.kroma.tv/modules.json`, the first-party registry worker (`apps/modules`), which serves the merged `modules.json` this project's module release train publishes, with edge caching and a stale fallback. The URL is editable (`moduleRegistryUrl`) so it can be aimed at a mirror or a private build. |
 | **Added** | Any number of operator-added registries (`moduleRegistries`), each with a name, an https URL and an enabled flag. |
 
 **Official always wins.** When two registries publish the same module id, the

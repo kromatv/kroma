@@ -30,9 +30,9 @@ name: Build & Release
 #     tester can sideload.
 #   - Mobile .apk + .ipa, pushed to the two beta channels BETA.md points testers
 #     at (Firebase App Distribution, TestFlight).
-#   - Module bundles (.kmod, zstd, one per build target) + modules.json: the
-#     machine-readable store catalog the in-app Admin -> Modules Store browses
-#     via releases/latest/download/modules.json
+#
+# Module .kmod bundles are NOT in that set: they release independently from
+# .github/workflows/modules.yml.
 #
 # All bundles are PRODUCTION builds: `vite build`, console/debugger stripped by
 # the shared TV shell factory, no KROMA_TV_DEVICE dev mode.
@@ -45,7 +45,7 @@ name: Build & Release
 # here, because it costs no version number to get wrong.
 #
 # Manual runs build artifacts without publishing a Release; `targets` scopes the
-# run (all | spk | desktop | tv | modules).
+# run (all | spk | desktop | tv | mobile).
 #
 # The per-platform build jobs live in reusable workflows (_release-*.yml) that
 # this file calls; the calling job here carries the SAME gate as the jobs it
@@ -89,7 +89,7 @@ on:
       targets:
         description: 'What to build'
         type: choice
-        options: [all, spk, desktop, tv, mobile, modules]
+        options: [all, spk, desktop, tv, mobile]
         default: all
         required: false
       publish:
@@ -154,21 +154,11 @@ jobs:
         run: .github/scripts/resolve-version.sh
 
   # NB: the Synology .spk + its GitHub Pages "package source" (stable + nightly)
-  # live in their own workflow, .github/workflows/synology.yml.
-
-  # Module .kmod bundles (one per build target) + the modules.json store catalog.
-  modules:
-    name: Modules
-    needs: version
-    if: ${{ needs.version.outputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","modules"]'), github.event.inputs.targets)) }}
-    uses: ./.github/workflows/_release-modules.yml
-    permissions:
-      contents: write # passed down to the called workflow
-    with:
-      version: ${{ needs.version.outputs.version }}
-      channel: ${{ needs.version.outputs.channel }}
-      proceed: ${{ needs.version.outputs.proceed }}
-    secrets: inherit
+  # live in their own workflow, .github/workflows/synology.yml. So do the module
+  # .kmod bundles and the store catalog: modules release on their own
+  # `<module-id>@<version>` tags from .github/workflows/modules.yml, on their own
+  # cadence, so a module fix no longer waits for a server version to ship. A
+  # server release therefore neither builds nor gates on them.
 
   # -------------------------------------------------------------------- TV ---
 
@@ -245,12 +235,11 @@ jobs:
   # ------------------------------------------------------------- Publish ---
 
   # Flip the draft release live ONLY once every artifact job has attached its
-  # assets. This is what keeps `releases/latest/download/modules.json` (the
-  # module Store's default registry URL) stable: without it, the new release
-  # becomes "latest" the moment the FIRST job attaches, and the URL 404s until
-  # the catalog lands (or forever, if a job fails mid-rollout). Publishing is
-  # atomic: either the complete release goes live, or the previous one stays
-  # "latest". A failed rollout leaves a draft to inspect/delete.
+  # assets: without it, the new release becomes "latest" the moment the FIRST job
+  # attaches, and every download URL under it 404s until the rest land (or
+  # forever, if a job fails mid-rollout). Publishing is atomic: either the
+  # complete release goes live, or the previous one stays "latest". A failed
+  # rollout leaves a draft to inspect/delete.
   #
   # `appletv` and `mobile` are in this list even though they attach nothing to
   # the Release. They used to be left out so an upload hiccup could not hold back
@@ -265,7 +254,7 @@ jobs:
   # that a broken pipeline costs a re-push rather than a version number.
   gate:
     name: Candidate gate
-    needs: [version, modules, tv, desktop, appletv, mobile]
+    needs: [version, tv, desktop, appletv, mobile]
     if: needs.version.outputs.channel == 'candidate'
     runs-on: ubuntu-latest
     permissions:
@@ -286,7 +275,7 @@ jobs:
   # every build succeeded, mirroring the stable draft-flip atomicity.
   publish-nightly:
     name: Publish the nightly prerelease
-    needs: [version, modules, tv, desktop]
+    needs: [version, tv, desktop]
     if: needs.version.outputs.channel == 'nightly'
     runs-on: ubuntu-latest
     permissions:

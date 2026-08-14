@@ -38,11 +38,11 @@ it, supervises it, and reverse-proxies its HTTP.**
   (per-target via `KMOD_TARGET`; sidecar bundles are suffixed with the triple)
   plus a `.sha256` sidecar.
 - **Registry + Store (shipped)**: `bun run modules registry` builds a catalog
-  (schema 2: per-target `artifacts` with `sha256`, `dependsOn`, `minServer`);
-  the release workflow packs every target, attaches the `.kmod`s + the catalog
-  (`modules.json`) to the GitHub Release, and the server's default registry is
+  (schema 2: per-target `artifacts` with `sha256`, `contentHash`, `dependsOn`,
+  `minServer`) for a self-hosted directory; `bun run modules release` builds the
+  published one (see "The release train" below). The server's default registry is
   `https://modules.kroma.tv/modules.json`, the registry worker
-  (`apps/modules`) that serves the release catalog with edge
+  (`apps/modules`) that serves the catalog with edge
   caching, a browsable page, and a `<link rel="kroma-modules">` autodiscovery
   tag (overridable via `moduleRegistryUrl`).
   The in-app Store (Admin -> Modules) browses the catalog enriched with this
@@ -53,6 +53,80 @@ it, supervises it, and reverse-proxies its HTTP.**
   (bare version or semver range); the supervisor enforces it at install AND at
   spawn, so a stale `.kmod` fails with a clear message instead of runtime proxy
   errors.
+
+## The release train
+
+Modules release **independently of the server**, each on its own tag.
+`.github/workflows/modules.yml` owns it, triggered by a push touching
+`modules/**` or anything a bundle is built from (the module SDK/runtime crates,
+`packages/module-tools`, the pinned toolchain).
+
+```
+modules.yml
+  build (matrix: 3 targets)      pack every module -> dist/modules/*.kmod
+    |
+  publish
+    |- modules release           compare each bundle against the LIVE catalog
+    |     publish   -> cut <module-id>@<version>
+    |     unchanged -> skip, carry the live entry forward at its own older tag
+    |     stale     -> FAIL the run
+    |- publish-modules.sh        the per-module releases, then modules.json
+                                 onto the rolling `modules` release
+```
+
+Two releases are involved, and they are different kinds of thing:
+
+| Tag | What it holds |
+| --- | --- |
+| `<module-id>@<version>` | one module's per-target `.kmod`s + `.sha256`s. Immutable; one per version ever published. Also the module's version history, which is what the registry site reads. |
+| `modules` | rolling, and holds **only** `modules.json` — the merge of the newest release of every module. What `modules.kroma.tv` serves. |
+
+Both are prereleases, so neither can become the repo's `latest` and displace a
+server release.
+
+### The version gate
+
+`module.json`'s `version` is the source of truth, bumped by hand — and CI refuses
+a run that changed a module's bytes without moving it:
+
+```
+✗ tv.kroma.indexer: the bundle changed but the version did not.
+    module.json says 0.1.2, which is already published
+    differing target(s): x86_64-unknown-linux-musl
+    Bump modules/tv.kroma.indexer/module.json past 0.1.2 and re-push.
+```
+
+This closes the failure the old pipeline had all along. Modules rode the server's
+release, so the catalog's download base was the server tag and every module was
+republished at whatever version its manifest said. Nothing checked the version
+had moved, so the same version went out again carrying different bytes — and the
+Store, which compares versions to decide whether an update exists, correctly
+concluded there was nothing to do. **Module fixes shipped to nobody.**
+
+The comparison is on `contentHash`: the sha256 of the **uncompressed** tar, not
+of the `.kmod`. `pack` writes that tar deterministically (fixed epoch, uid/gid 0,
+sorted entries), so it is stable across machines — whereas the compressed sha
+would move on a zstd upgrade and demand a bump from every module at once.
+
+An entry with no `contentHash` (a catalog published before this existed) is
+treated as matching, so the first run after this change does not fail everything.
+
+### Consequences worth knowing
+
+- **A module publishes nothing when nothing about it changed.** A push that only
+  touches the SDK still rebuilds all 12, but they come out content-identical and
+  the run only refreshes the catalog.
+- **Modules are not in the server's candidate gate** any more. `ci.yml` still
+  runs `modules:clippy` + `modules:test` on every push, so a broken module is
+  caught there; the `.kmod` cross-build is proven by this workflow.
+- **The live catalog is the pipeline's memory** of what is published. It is a
+  release asset and every per-module release keeps its own bundles, so a lost
+  catalog is rebuildable from `gh release list`.
+- **Building is still all-or-nothing.** Deciding what to build without building it
+  needs a source fingerprint over each module's transitive path-dep closure; the
+  content hash above is exact but only available *after* a build. Since
+  `rust-cache` already keeps the heavy dep tree (candle, librqbit) warm, the
+  remaining win is per-module final links + vite builds. Not yet done.
 
 ## Proven end to end
 
@@ -86,13 +160,15 @@ generic `ServerModule<S: HostCtx>` behind `RemoteHost`.
    left of this item: `kroma-scene` (a pure library the SDK re-exports) and
    `kroma-whisper` / `kroma-vector` (behind the `whisper-*` and
    `semantic-embeddings` features).
-5. **More per-platform binaries**: the release matrix currently packs
-   `x86_64-unknown-linux-musl` (static: covers the .spk, Docker and any x86_64
-   Linux host) and the store picks per-target artifacts from the catalog;
-   adding aarch64 musl / macOS is one matrix entry + a cross linker each.
-6. ~~**Registry**~~ shipped (see "Registry + Store" above): GitHub-Release
-   catalog + in-app Store with dependency resolution, checksums and the
-   `minServer` compatibility gate.
+5. **More per-platform binaries**: the matrix packs `x86_64-unknown-linux-musl`
+   and `aarch64-unknown-linux-musl` (both static: between them they cover the
+   .spk, both Docker arches and any Linux host) plus `aarch64-apple-darwin`; the
+   store picks per-target artifacts from the catalog. Adding a platform is one
+   matrix entry + a cross linker.
+6. ~~**Registry**~~ shipped (see "Registry + Store" above): catalog + in-app Store
+   with dependency resolution, checksums and the `minServer` compatibility gate.
+7. ~~**Independent releases**~~ shipped (see "The release train" above):
+   per-module tags, a merged catalog, and a CI gate on the version bump.
 
 ## Trade-offs to weigh (the goal says "optimized, fast")
 

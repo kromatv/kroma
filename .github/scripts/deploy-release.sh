@@ -27,8 +27,7 @@ else
 fi
 
 # Draft first, then upload, then flip live: a half-uploaded release must never be
-# what `releases/latest/download/modules.json` resolves to, since that URL is the
-# module Store's default registry.
+# what `releases/latest/download/...` resolves to for anyone following that URL.
 if ! gh release view "$TAG" >/dev/null 2>&1; then
   gh release create "$TAG" \
     --target "$SHA" \

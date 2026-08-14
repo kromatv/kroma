@@ -1,30 +1,59 @@
-name: Release module bundles
+name: Modules
 
-# Module half of the release fleet, called by release.yml: the per-target .kmod
-# bundles plus the modules.json store catalog that merges them. Never triggered
-# on its own; the version/channel decisions all come from the caller's `version`
-# job.
+# The module release train. Modules ride their OWN tags (`<module-id>@<version>`)
+# and are published by this workflow alone, on its own cadence.
 #
-# `targets` is read straight off `github.event.inputs` rather than through a
-# workflow input: in a called workflow the `github` context is still the
-# CALLER's, so the gating expressions stay byte-identical to the ones these jobs
-# had when they lived in release.yml.
+# They used to be the module half of release.yml, which meant a module fix could
+# only reach anyone when a server version shipped - and it shipped under whatever
+# version module.json happened to say, with nothing checking that the version had
+# moved. So the same version went out again carrying different bytes, the Store
+# (which compares versions to offer an update) concluded there was nothing to do,
+# and module fixes reached nobody. `modules release` is the gate that closes that:
+# packed bundles are content-hashed against the live catalog, and a changed module
+# whose version stood still FAILS the run.
+#
+# What publishing produces:
+#   <module-id>@<version>   one prerelease per module, holding its per-target
+#                           .kmod bundles + .sha256 sidecars
+#   modules                 a rolling prerelease holding only modules.json, the
+#                           merge of the newest release of every module. This is
+#                           what https://modules.kroma.tv serves and what the
+#                           in-app Store browses.
+#
+# A push that changes nothing a module ships publishes nothing: every module comes
+# out content-identical, so the run reports "unchanged" across the board and only
+# refreshes the catalog.
 
 on:
-  workflow_call:
+  push:
+    branches: [main]
+    paths:
+      # A module's own tree, and everything a module bundle is built out of: the
+      # SDK/runtime crates it links, the packing and catalog tooling, the pinned
+      # toolchain. A change to any of those can move a bundle's bytes, and the
+      # content-hash gate is what decides whether it actually did.
+      - 'modules/**'
+      - 'server/crates/kroma-module-*/**'
+      - 'packages/module-tools/**'
+      - 'packages/module-sdk/**'
+      - 'rust-toolchain.toml'
+      - '.github/workflows/modules.yml'
+      - '.github/scripts/publish-modules.sh'
+  workflow_dispatch:
     inputs:
-      version:
-        description: 'Full release version (may carry a -nightly.YYYYMMDD suffix).'
-        type: string
-        required: true
-      channel:
-        description: 'stable | nightly | none. Decides which release the catalog points its download base at.'
-        type: string
-        required: true
-      proceed:
-        description: 'false when a nightly has nothing new to build.'
-        type: string
-        required: true
+      dry_run:
+        description: 'Decide and print, publish nothing'
+        type: boolean
+        default: false
+        required: false
+
+# Publishing mutates the shared catalog release, so two runs must not interleave:
+# the second would rebuild modules.json from a catalog the first had not finished
+# writing. Queue rather than cancel - a cancelled run can leave per-module
+# releases cut but absent from the catalog.
+concurrency:
+  group: modules-registry
+  cancel-in-progress: false
 
 env:
   BUN_VERSION: '1.3.14' # keep in sync with release.yml
@@ -34,7 +63,7 @@ jobs:
   # in-app Store installs (or an admin uploads) with no server rebuild. Built
   # PER TARGET (a sidecar .kmod carries a native binary, so its platform must
   # match the server): each matrix entry cross-compiles the sidecar binaries and
-  # suffixes the bundle with the triple; the catalog job below merges every
+  # suffixes the bundle with the triple; the publish job below merges every
   # target into one published index. The musl builds are fully static, so one
   # build per CPU arch covers everything on Linux: x86_64 musl serves the
   # Synology .spk, the linux/amd64 Docker image and any x86_64 host; aarch64
@@ -52,7 +81,6 @@ jobs:
   #    (modules:pack compiles + packs in one step).
   modules:
     name: Modules (.kmod ${{ matrix.target }})
-    if: ${{ inputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","modules"]'), github.event.inputs.targets)) }}
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read # only reads the repo and uploads run artifacts
@@ -163,20 +191,27 @@ jobs:
           path: dist/modules/*.kmod*
           if-no-files-found: error
 
-  # The module registry index: merge every target's bundles, generate the
-  # machine-readable catalog (schema 2: per-target artifacts, sha256, deps,
-  # minServer), and attach EVERYTHING to the Release together. The catalog is
-  # published as `modules.json`, so
-  #   https://github.com/<owner>/<repo>/releases/latest/download/modules.json
-  # is the stable store URL the server's Admin -> Modules page browses.
-  modules-catalog:
-    name: Modules catalog (modules.json)
+  # Decide, then publish. `modules release` compares every packed bundle against
+  # the LIVE catalog and answers per module: publish under a new tag, skip because
+  # the bytes are identical, or fail the run because the bytes moved and the
+  # version did not. Nothing is published until every module has an answer, so a
+  # single un-bumped module stops the whole train rather than shipping a version
+  # that lies about its contents.
+  #
+  # `needs` is a plain dependency: a target whose build failed means the catalog
+  # would describe a module as available on a platform whose bundle does not
+  # exist. Better to publish nothing and keep the previous catalog serving.
+  publish:
+    name: Publish the module releases
     needs: modules
-    if: ${{ github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","modules"]'), github.event.inputs.targets) }}
     runs-on: ubuntu-latest
     permissions:
-      contents: write # attach assets to the Release
-    timeout-minutes: 15
+      contents: write # cut per-module releases, refresh the catalog release
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -191,36 +226,28 @@ jobs:
           path: dist/modules
           merge-multiple: true
 
-      - name: Generate the catalog
-        run: |
-          # Nightly bundles live under the rolling `nightly` release, stable
-          # ones under the version tag.
-          if [ "${{ inputs.channel }}" = "nightly" ]; then
-            REF="nightly"
-          else
-            REF="v${{ inputs.version }}"
-          fi
-          bun run modules registry \
-            --base "https://github.com/${{ github.repository }}/releases/download/$REF"
-          cp dist/registry/catalog.json dist/registry/modules.json
+      # Reads the live catalog off the registry worker (its default), so the
+      # comparison is against what servers are actually being served - not
+      # against a release asset that may have been superseded.
+      - name: Decide what to publish
+        run: bun run modules release --repo "$GH_REPO"
 
-      - name: Upload registry artifact
+      - name: Show the plan
+        run: |
+          echo '### Module release plan' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat dist/registry/plan.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cut the releases + refresh the catalog
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+        run: .github/scripts/publish-modules.sh
+
+      - name: Upload the catalog as a run artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kroma-modules-registry
-          path: dist/registry/modules.json
-          if-no-files-found: error
-
-      - name: Attach bundles + catalog to the Release
-        # Only a STABLE release attaches here. A candidate build (push to main)
-        # uploads its artifacts and stops; deploy.yml publishes them later.
-        if: inputs.channel == 'stable'
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
-        with:
-          # Attach into a DRAFT: `releases/latest` ignores drafts, so the
-          # previous complete release keeps serving modules.json until the
-          # publish job below flips this one live with every asset present.
-          draft: true
-          files: |
-            dist/modules/*.kmod*
+          path: |
             dist/registry/modules.json
+            dist/registry/plan.json
+          if-no-files-found: error

@@ -33,12 +33,20 @@ export function jsonResponse(body: string, maxAge: number): Response {
   });
 }
 
+// The rolling release that holds nothing but the merged catalog. It used to be
+// `releases/latest/download/modules.json`, which tied the catalog to the SERVER
+// release: modules could only be published when a version shipped, and `latest`
+// described "the modules built alongside the newest server" rather than the
+// newest of each module. Modules now release on their own `<id>@<version>` tags
+// and modules.yml merges them into this one asset.
+const CATALOG_TAG = 'modules';
+
 async function fetchUpstream(env: Env | undefined): Promise<string> {
   const repo = env?.GITHUB_REPO || DEFAULT_REPO;
-  const res = await fetch(`https://github.com/${repo}/releases/latest/download/modules.json`, {
-    headers: githubHeaders(env),
-    redirect: 'follow',
-  });
+  const res = await fetch(
+    `https://github.com/${repo}/releases/download/${CATALOG_TAG}/modules.json`,
+    { headers: githubHeaders(env), redirect: 'follow' },
+  );
   if (!res.ok) throw new Error(`modules.json ${res.status}`);
   return res.text();
 }
