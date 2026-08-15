@@ -75,8 +75,9 @@ export function verdictFor(local: Entry, live: Entry | undefined): Verdict {
       return published !== undefined && published !== a.contentHash;
     })
     .map((a) => a.target ?? 'universal');
+  stale.sort(byCodeUnit);
   if (stale.length > 0) {
-    return { kind: 'stale', published: live.version, targets: stale.sort(byCodeUnit) };
+    return { kind: 'stale', published: live.version, targets: stale };
   }
   return { kind: 'unchanged' };
 }

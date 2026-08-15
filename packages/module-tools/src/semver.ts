@@ -43,20 +43,16 @@ function comparePart(a: string | number, b: string | number): number {
   return sign(String(a), String(b));
 }
 
-/** Negative / zero / positive, the `Array.sort` contract. */
-function compare(a: Version, b: Version): number {
-  for (const k of ['major', 'minor', 'patch'] as const) {
-    if (a[k] !== b[k]) return a[k] < b[k] ? -1 : 1;
-  }
+function comparePrerelease(a: Version['prerelease'], b: Version['prerelease']): number {
   // A prerelease is LOWER than the release it leads to, so "has none" wins.
-  if (a.prerelease.length === 0 || b.prerelease.length === 0) {
-    if (a.prerelease.length === b.prerelease.length) return 0;
-    return a.prerelease.length === 0 ? 1 : -1;
+  if (a.length === 0 || b.length === 0) {
+    if (a.length === b.length) return 0;
+    return a.length === 0 ? 1 : -1;
   }
-  const len = Math.max(a.prerelease.length, b.prerelease.length);
+  const len = Math.max(a.length, b.length);
   for (let i = 0; i < len; i++) {
-    const x = a.prerelease[i];
-    const y = b.prerelease[i];
+    const x = a[i];
+    const y = b[i];
     // A shorter prerelease chain is the lower one: 1.0.0-a < 1.0.0-a.1.
     if (x === undefined) return -1;
     if (y === undefined) return 1;
@@ -64,6 +60,14 @@ function compare(a: Version, b: Version): number {
     if (c !== 0) return c;
   }
   return 0;
+}
+
+/** Negative / zero / positive, the `Array.sort` contract. */
+function compare(a: Version, b: Version): number {
+  for (const k of ['major', 'minor', 'patch'] as const) {
+    if (a[k] !== b[k]) return a[k] < b[k] ? -1 : 1;
+  }
+  return comparePrerelease(a.prerelease, b.prerelease);
 }
 
 /** Compares two raw strings; unparseable ones sort below anything valid. */
