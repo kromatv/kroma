@@ -367,8 +367,17 @@ jobs:
   # build uninstallable ("Failed to verify the package ... by MD5"). A build now
   # keeps its own URL until it ages out, and a client holding a slightly stale
   # catalog still downloads bytes whose md5 matches. The .info.json sidecar
-  # rides along so the dynamic source knows the real canary version + md5
+  # rides along so the dynamic source knows the real nightly version + md5
   # without downloading the .spk.
+  #
+  # Retention is by AGE, not by count. It was "keep the newest two", which is a
+  # window measured in BUILDS while the thing that outlives it - the catalog
+  # worker's stale copy - is measured in DAYS (604800s in apps/packages
+  # lib/catalog.ts, served whenever the GitHub API call fails). Two pushes eight
+  # minutes apart were enough to delete an asset a live catalog still pointed at,
+  # which is what made packages.kroma.tv hand out 404s. KEEP_DAYS must stay
+  # comfortably above that stale window; the floor keeps the last few builds
+  # whatever their age, so a quiet fortnight cannot empty the release.
   publish-nightly:
     name: Publish nightly prerelease
     if: always() && !cancelled() && needs.build.result == 'success' && github.ref == 'refs/heads/main'
@@ -398,10 +407,21 @@ jobs:
             || gh release create nightly --prerelease --title "KROMA nightly" \
                  --notes "Rolling nightly build from main. Unstable; auto-updates via the nightly package source."
           gh release upload nightly "$SPK" "$SPK.info.json" --clobber
+
+          # Older than KEEP_DAYS *and* outside the newest KEEP_MIN. Both have to
+          # hold, so neither a burst of pushes nor a quiet fortnight can strand a
+          # catalog that still advertises one of these URLs.
+          KEEP_DAYS=14
+          KEEP_MIN=5
+          CUTOFF="$(date -u -d "${KEEP_DAYS} days ago" +%s)"
           gh api "repos/${GH_REPO}/releases/tags/nightly" \
-            --jq '.assets[].name | select(endswith(".spk"))' \
-            | grep -vxF "$NAME" | sort -Vr | tail -n +3 \
-            | while read -r OLD; do
-                gh release delete-asset nightly "$OLD" -y || true
-                gh release delete-asset nightly "$OLD.info.json" -y || true
+            --jq '.assets[] | select(.name | endswith(".spk")) | [.name, .created_at] | @tsv' \
+            | awk -F'\t' -v cur="$NAME" '$1 != cur' | sort -Vr | tail -n "+${KEEP_MIN}" \
+            | while IFS="$(printf '\t')" read -r OLD CREATED; do
+                [ -n "$OLD" ] || continue
+                if [ "$(date -u -d "$CREATED" +%s)" -lt "$CUTOFF" ]; then
+                  echo "pruning $OLD (created $CREATED)"
+                  gh release delete-asset nightly "$OLD" -y || true
+                  gh release delete-asset nightly "$OLD.info.json" -y || true
+                fi
               done

@@ -192,8 +192,15 @@ const splitBuild = (raw: string): [string, string | undefined] => {
 };
 
 /** The version string DSM's Package Center will DISPLAY: `major.minor.micro-build`,
- *  the build taken from the `-suffix` or else the 4th segment. DSM hides a package
- *  whose feature version carries a large 4th segment. */
+ *  the build taken from the `-suffix` or else the 4th segment. Package Center hides
+ *  a package whose feature version carries a large 4th segment.
+ *
+ *  build.sh now stamps that shape directly, so for anything it produces this is
+ *  the identity. It stays because the nightly release still holds `X.Y.Z.BUILD`
+ *  assets from before that change, and rewriting them is what let the catalog
+ *  list them at all. Rewriting is ALSO why the Update button never appeared for
+ *  them: an installed `0.1.38.3480473` outranks every `0.1.38-*` the catalog can
+ *  offer, so those installs move only when X.Y.Z does. */
 export function dsmVersion(raw: string): string {
   const [feat, suffix] = splitBuild(raw);
   const seg = feat.split('.');

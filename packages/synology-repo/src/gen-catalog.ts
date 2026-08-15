@@ -62,8 +62,10 @@ const {
 } = readSpkInfo(spk);
 
 // DSM's package-center list hides a package whose feature version has a large 4th
-// segment, which is how build.sh stamps nightlies (`X.Y.Z.BUILD-BUILD`), so
-// collapse to `major.minor.micro-build`. Mirrors worker/catalog.ts dsmVersion().
+// segment, so collapse to `major.minor.micro-build`. Mirrors dsmVersion() in
+// apps/packages lib/catalog.ts, including why it is now a no-op for anything
+// build.sh produces: it stamps `X.Y.Z-BUILD` itself, and this only still matters
+// for the older `X.Y.Z.BUILD` assets left on the nightly release.
 const [feat = '', build] = rawVersion.split('-');
 const version = build ? `${feat.split('.').slice(0, 3).join('.')}-${build}` : feat;
 

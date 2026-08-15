@@ -14,15 +14,26 @@ _CARGO_TOML="$(cd "$(dirname "$0")/../.." && pwd)/server/Cargo.toml"
 CARGO_VERSION="$(sed -nE 's/^version[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$_CARGO_TOML" | head -1)"
 EXPLICIT_VERSION="${1:-}"
 VERSION="${EXPLICIT_VERSION:-${CARGO_VERSION:-0.1.0}}"
-# Canary (no explicit version) gets `X.Y.Z.BUILD-BUILD`, stable gets `X.Y.Z-BUILD`.
-CANARY="${CANARY:-$([ -z "$EXPLICIT_VERSION" ] && echo 1 || echo 0)}"
-# DSM installs a manual .spk over an existing one ONLY when the new version is
+# ONE version shape, canary and stable alike: `X.Y.Z-BUILD`, which is the format
+# DSM's INFO documents. There used to be a second one - canaries stamped
+# `X.Y.Z.BUILD`, the build in a 4th FEATURE segment - so that a manual .spk
+# install of one nightly over another read as strictly greater. It also made the
+# package undiscoverable through the repository: the catalog has to advertise
+# `X.Y.Z-BUILD` (Package Center hides a feature version carrying a large 4th
+# segment), so the installed 4-segment version outranked everything the catalog
+# offered and the Update button never appeared. Two shapes for one build cannot
+# both win; the documented one wins.
+#
+# THE RULE: the version must only ever go UP. BUILD carries that on its own now,
+# so X.Y.Z does NOT have to move between nightlies. Keep BUILD as minutes since
+# 2020-01-01 UTC - shrinking its magnitude (minutes to days) once made every new
+# build read as a downgrade. Override with BUILD=...
+#
+# DSM installs a manual .spk over an existing one only when the new version is
 # strictly greater, and reports a refusal as the misleading webapi 4521 "invalid
-# file format" - which pushes you into a delete + reinstall that wipes var/. Its
-# check compares the dotted FEATURE version and ignores the -build suffix.
-# THE RULE: the version must only ever go UP. Bump X.Y.Z for every release, and
-# keep BUILD as minutes since 2020-01-01 UTC - shrinking its magnitude (minutes
-# to days) once made every new build read as a downgrade. Override with BUILD=...
+# file format". Nightly-over-nightly by hand therefore depends on DSM comparing
+# the -BUILD suffix; through the package source, which is how nightlies are meant
+# to be followed, the catalog and INFO now agree and it compares cleanly.
 BUILD="${BUILD:-$(( ( $(date -u +%s) - 1577836800 ) / 60 ))}"
 ARCH="x86_64"
 TARGET="x86_64-unknown-linux-musl"
@@ -134,17 +145,13 @@ cp "$WORK/package.tgz" "$SPK/package.tgz"
 # INFO extractsize is read in KB on DSM 6+; bytes made DSM believe the package
 # needed ~190 GB after extraction.
 EXT_SIZE="$(( $(gzip -dc "$WORK/package.tgz" | wc -c | tr -d ' ') / 1024 ))"
-# Canary/nightly builds share one X.Y.Z, so BUILD sits in a 4th feature segment
-# to keep each one strictly newer than the last (see the version note above).
-# Stamped ONCE: deploy.yml promotes a canary .spk as-is into the stable Release.
-if [ "$CANARY" = "1" ]; then
-  INFO_VERSION="$VERSION.$BUILD"
-else
-  INFO_VERSION="$VERSION-$BUILD"
-fi
+# Nightlies share one X.Y.Z, so BUILD is what orders them (see the note above).
+# Stamped ONCE: deploy.yml promotes a nightly .spk as-is into the stable Release,
+# which is the other reason there is only one shape to stamp.
+INFO_VERSION="$VERSION-$BUILD"
 sed -e "s/@INFO_VERSION@/$INFO_VERSION/g" -e "s/@ARCH@/$ARCH/g" -e "s/@SIZE@/$EXT_SIZE/g" \
   "$SKEL/INFO.template" > "$SPK/INFO"
-say "DSM package version: $INFO_VERSION ($([ "$CANARY" = 1 ] && echo 'canary: 4th-segment build keeps every nightly upgradable' || echo 'stable: X.Y.Z orders releases, BUILD is the versionCode'))"
+say "DSM package version: $INFO_VERSION (X.Y.Z orders releases, BUILD orders every build within one)"
 cp "$SKEL/PACKAGE_ICON.PNG" "$SKEL/PACKAGE_ICON_256.PNG" "$SPK/"
 
 OUT_SPK="$OUT/kroma-$INFO_VERSION-$ARCH.spk"
