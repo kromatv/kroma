@@ -112,28 +112,22 @@ describe('dsmVersion', () => {
     expect(dsmVersion('0.1.31-3447024')).toBe('0.1.31-3447024');
   });
 
-  it('collapses a legacy X.Y.Z.BUILD to X.Y.Z-BUILD (DSM hides the 4th segment)', () => {
-    expect(dsmVersion('0.1.37.3480000')).toBe('0.1.37-3480000');
-  });
-
-  // The bug this whole shape exists to prevent: build.sh used to stamp INFO in
-  // one shape while the catalog advertised another, so the installed version
-  // outranked everything on offer and no Update button ever appeared. What
-  // build.sh writes now has to reach the catalog untouched.
-  it('leaves what build.sh stamps alone, so INFO and the catalog agree', () => {
-    for (const stamped of ['0.1.39-3482771', '0.1.39-3482844', '1.0.0-1']) {
+  // The bug this shape exists to prevent: build.sh stamped INFO one way while
+  // the catalog advertised another, so the installed version outranked
+  // everything on offer and no Update button ever appeared. What build.sh
+  // writes has to reach the catalog untouched.
+  it('hands back what build.sh stamps, so INFO and the catalog agree', () => {
+    for (const stamped of ['0.1.38.3482844', '0.1.38.3482771', '1.0.0.1']) {
       expect(dsmVersion(stamped)).toBe(stamped);
     }
   });
 
-  it('orders two nightlies of one X.Y.Z, so no version bump is needed between them', () => {
-    expect(
-      cmpDsmVersion(dsmVersion('0.1.39-3482844'), dsmVersion('0.1.39-3482771')),
-    ).toBeGreaterThan(0);
+  it('offers an update over an install of the same X.Y.Z, with no version bump', () => {
+    expect(cmpDsmVersion(dsmVersion('0.1.38.3482844'), '0.1.38.3480473')).toBeGreaterThan(0);
   });
 
-  it('collapses the older doubly-stamped X.Y.Z.BUILD-BUILD to the same string', () => {
-    expect(dsmVersion('0.1.31.3447024-3447024')).toBe('0.1.31-3447024');
+  it('drops the redundant suffix of the older doubly-stamped X.Y.Z.BUILD-BUILD', () => {
+    expect(dsmVersion('0.1.31.3447024-3447024')).toBe('0.1.31.3447024');
     expect(dsmVersion('0.1.36.3461233-3461233')).toBe(dsmVersion('0.1.36.3461233'));
   });
 

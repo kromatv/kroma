@@ -61,13 +61,13 @@ const {
   md5,
 } = readSpkInfo(spk);
 
-// DSM's package-center list hides a package whose feature version has a large 4th
-// segment, so collapse to `major.minor.micro-build`. Mirrors dsmVersion() in
-// apps/packages lib/catalog.ts, including why it is now a no-op for anything
-// build.sh produces: it stamps `X.Y.Z-BUILD` itself, and this only still matters
-// for the older `X.Y.Z.BUILD` assets left on the nightly release.
+// Advertise exactly what the .spk stamps. Mirrors dsmVersion() in apps/packages
+// lib/catalog.ts: a build already inside the feature version (`X.Y.Z.BUILD`)
+// passes through untouched, and only the older doubly-stamped
+// `X.Y.Z.BUILD-BUILD` loses its redundant suffix. Rewriting the shape is what
+// stopped DSM ever seeing an update.
 const [feat = '', build] = rawVersion.split('-');
-const version = build ? `${feat.split('.').slice(0, 3).join('.')}-${build}` : feat;
+const version = feat.split('.').length > 3 || !build ? feat : `${feat}-${build}`;
 
 const iconOverride = process.env.CATALOG_ICON?.trim();
 const iconBytes = iconOverride ? readFileSync(iconOverride) : extractIcon(spk);

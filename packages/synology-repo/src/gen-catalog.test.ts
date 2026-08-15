@@ -122,17 +122,27 @@ describe('the catalog entry', () => {
     expect(entry).not.toHaveProperty('beta');
   });
 
-  it('collapses a nightly version to what DSM will actually render', async () => {
-    // build.sh stamps nightlies `X.Y.Z.BUILD-BUILD`. DSM hides a package whose
-    // feature version has a 4th segment that large, so it collapses to the
-    // conventional major.minor.micro-build.
+  it('advertises a nightly exactly as the .spk stamps it', async () => {
+    // build.sh stamps `X.Y.Z.BUILD`. Rewriting that shape is what stopped DSM
+    // ever seeing an update, so the catalog carries it through; only the older
+    // doubly-stamped form loses its redundant suffix.
     const { catalog } = await generate({
-      CATALOG_SPK: makeSpk(work, 'nightly.spk', { ...BASE_INFO, version: '1.2.3.4567-4567' }),
+      CATALOG_SPK: makeSpk(work, 'nightly.spk', { ...BASE_INFO, version: '1.2.3.4567' }),
       CATALOG_DOWNLOAD_URL: 'https://github.test/kroma.spk',
       CATALOG_PAGES_URL: 'https://pages.test/repo',
       CATALOG_OUT_DIR: join(work, 'out'),
     });
-    expect(catalog.packages[0].version).toBe('1.2.3-4567');
+    expect(catalog.packages[0].version).toBe('1.2.3.4567');
+  });
+
+  it('drops the redundant suffix of the older doubly-stamped form', async () => {
+    const { catalog } = await generate({
+      CATALOG_SPK: makeSpk(work, 'legacy.spk', { ...BASE_INFO, version: '1.2.3.4567-4567' }),
+      CATALOG_DOWNLOAD_URL: 'https://github.test/kroma.spk',
+      CATALOG_PAGES_URL: 'https://pages.test/repo',
+      CATALOG_OUT_DIR: join(work, 'out'),
+    });
+    expect(catalog.packages[0].version).toBe('1.2.3.4567');
   });
 
   it('leaves a stable three-segment version untouched', async () => {

@@ -14,26 +14,28 @@ _CARGO_TOML="$(cd "$(dirname "$0")/../.." && pwd)/server/Cargo.toml"
 CARGO_VERSION="$(sed -nE 's/^version[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$_CARGO_TOML" | head -1)"
 EXPLICIT_VERSION="${1:-}"
 VERSION="${EXPLICIT_VERSION:-${CARGO_VERSION:-0.1.0}}"
-# ONE version shape, canary and stable alike: `X.Y.Z-BUILD`, which is the format
-# DSM's INFO documents. There used to be a second one - canaries stamped
-# `X.Y.Z.BUILD`, the build in a 4th FEATURE segment - so that a manual .spk
-# install of one nightly over another read as strictly greater. It also made the
-# package undiscoverable through the repository: the catalog has to advertise
-# `X.Y.Z-BUILD` (Package Center hides a feature version carrying a large 4th
-# segment), so the installed 4-segment version outranked everything the catalog
-# offered and the Update button never appeared. Two shapes for one build cannot
-# both win; the documented one wins.
+# ONE version shape, nightly and stable alike: `X.Y.Z.BUILD`, the build in a 4th
+# FEATURE segment. There used to be a second one - the catalog rewrote this to
+# `X.Y.Z-BUILD` before advertising it - and two shapes for one build is what
+# broke the Update button: DSM compares the dotted FEATURE version, so an
+# installed `0.1.38.3480473` outranked every `0.1.38-*` on offer and Package
+# Center concluded there was nothing newer. Nothing rewrites it now.
 #
-# THE RULE: the version must only ever go UP. BUILD carries that on its own now,
+# The 4th segment is what makes this work with NO version bump: nightlies share
+# one X.Y.Z, and a build in the feature version orders them against each other
+# and against what is already installed. Synology's INFO spec allows it - the
+# delimiters are `.`, `-` and `_`, every delimited component must be a number,
+# and each is bounded by 2^31-1, which a minutes-since-2020 build clears.
+#
+# THE RULE: the version must only ever go UP, and BUILD carries that on its own,
 # so X.Y.Z does NOT have to move between nightlies. Keep BUILD as minutes since
 # 2020-01-01 UTC - shrinking its magnitude (minutes to days) once made every new
 # build read as a downgrade. Override with BUILD=...
 #
 # DSM installs a manual .spk over an existing one only when the new version is
 # strictly greater, and reports a refusal as the misleading webapi 4521 "invalid
-# file format". Nightly-over-nightly by hand therefore depends on DSM comparing
-# the -BUILD suffix; through the package source, which is how nightlies are meant
-# to be followed, the catalog and INFO now agree and it compares cleanly.
+# file format". A build inside the feature version satisfies that check too, so
+# the manual path and the package-source path agree.
 BUILD="${BUILD:-$(( ( $(date -u +%s) - 1577836800 ) / 60 ))}"
 ARCH="x86_64"
 TARGET="x86_64-unknown-linux-musl"
@@ -148,10 +150,10 @@ EXT_SIZE="$(( $(gzip -dc "$WORK/package.tgz" | wc -c | tr -d ' ') / 1024 ))"
 # Nightlies share one X.Y.Z, so BUILD is what orders them (see the note above).
 # Stamped ONCE: deploy.yml promotes a nightly .spk as-is into the stable Release,
 # which is the other reason there is only one shape to stamp.
-INFO_VERSION="$VERSION-$BUILD"
+INFO_VERSION="$VERSION.$BUILD"
 sed -e "s/@INFO_VERSION@/$INFO_VERSION/g" -e "s/@ARCH@/$ARCH/g" -e "s/@SIZE@/$EXT_SIZE/g" \
   "$SKEL/INFO.template" > "$SPK/INFO"
-say "DSM package version: $INFO_VERSION (X.Y.Z orders releases, BUILD orders every build within one)"
+say "DSM package version: $INFO_VERSION (X.Y.Z orders releases, the 4th segment orders every build within one)"
 cp "$SKEL/PACKAGE_ICON.PNG" "$SKEL/PACKAGE_ICON_256.PNG" "$SPK/"
 
 OUT_SPK="$OUT/kroma-$INFO_VERSION-$ARCH.spk"

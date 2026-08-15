@@ -67,8 +67,8 @@ describe('toRelease', () => {
     expect(toRelease(entry({ channel: 'nightly', tag: 'nightly' })).channel).toBe('nightly');
   });
 
-  it('shortens a four-segment feature version to what DSM would display', () => {
+  it('keeps a four-segment feature version, which is what the .spk stamps', () => {
     const row = toRelease(entry({ info: info({ version: '1.2.3.4500' }) }));
-    expect(row.version).toBe('1.2.3-4500');
+    expect(row.version).toBe('1.2.3.4500');
   });
 });
