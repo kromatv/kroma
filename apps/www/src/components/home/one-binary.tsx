@@ -20,13 +20,24 @@ const REPLACED: readonly { id: string; name: string; job: () => string }[] = [
 ];
 
 export function OneBinary() {
-  // Order here is the order the panel lists them.
-  const native = [
-    m.home_one_binary_native_1(),
-    m.home_one_binary_native_2(),
-    m.home_one_binary_native_3(),
-    m.home_one_binary_native_4(),
-    m.home_one_binary_native_5(),
+  // Two groups, because the panel would otherwise read as "all of this is in the
+  // binary". Only the first group is; the second is what the server installs.
+  const groups = [
+    {
+      id: 'core',
+      label: m.home_one_binary_core_label(),
+      items: [m.home_one_binary_core_1(), m.home_one_binary_core_2(), m.home_one_binary_core_3()],
+    },
+    {
+      id: 'modules',
+      label: m.home_one_binary_modules_label(),
+      items: [
+        m.home_one_binary_modules_1(),
+        m.home_one_binary_modules_2(),
+        m.home_one_binary_modules_3(),
+        m.home_one_binary_modules_4(),
+      ],
+    },
   ];
 
   return (
@@ -76,19 +87,26 @@ export function OneBinary() {
                 {m.home_one_binary_badge()}
               </span>
             </div>
-            <ul className="relative mt-5 flex flex-col gap-2.5">
-              {native.map((n) => (
-                <li key={n} className="flex items-start gap-2.5 text-sm text-muted">
-                  <IconCircleCheckFilled
-                    size={16}
-                    stroke={1.75}
-                    aria-hidden
-                    className="mt-0.5 shrink-0 text-accent"
-                  />
-                  <span>{n}</span>
-                </li>
-              ))}
-            </ul>
+            {groups.map(({ id, label, items }) => (
+              <div key={id} className="relative mt-5 first-of-type:mt-5">
+                <p className="mb-2.5 font-mono text-[0.68rem] uppercase tracking-[0.16em] text-dim">
+                  {label}
+                </p>
+                <ul className="flex flex-col gap-2.5">
+                  {items.map((n) => (
+                    <li key={n} className="flex items-start gap-2.5 text-sm text-muted">
+                      <IconCircleCheckFilled
+                        size={16}
+                        stroke={1.75}
+                        aria-hidden
+                        className="mt-0.5 shrink-0 text-accent"
+                      />
+                      <span>{n}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
       </Container>

@@ -4,6 +4,7 @@ import { DirectPlay } from '#site/components/home/direct-play';
 import { FeatureGrid } from '#site/components/home/feature-grid';
 import { FinalCta } from '#site/components/home/final-cta';
 import { Hero } from '#site/components/home/hero';
+import { Modules } from '#site/components/home/modules';
 import { OneBinary } from '#site/components/home/one-binary';
 import { Platforms } from '#site/components/home/platforms';
 import { SelfHostBand } from '#site/components/home/self-host-band';
@@ -24,6 +25,7 @@ export function Home() {
       <Hero />
       <OneBinary />
       <FeatureGrid />
+      <Modules />
       <DirectPlay />
       <Platforms />
       <SelfHostBand />

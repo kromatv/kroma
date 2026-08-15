@@ -72,6 +72,7 @@
     "check": "biome check .",
     "deadcode": "bun x knip@5 --no-progress",
     "sonar:precheck": "git diff --name-only --diff-filter=ACMR origin/main...HEAD | bun packages/sonar-tools/src/precheck.ts",
+    "sonar:lint": "bun packages/sonar-tools/src/config-lint.ts",
     "check:fix": "biome check --write .",
     "server": "bun server/preflight.ts && cd server && cargo run --features semantic-embeddings,whisper-metal",
     "server:watch": "bun server/preflight.ts && cd server && cargo watch -x 'run --features semantic-embeddings,whisper-metal'",

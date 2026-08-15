@@ -15,6 +15,7 @@ function useNav() {
   return [
     { kind: 'anchor', label: m.nav_features(), href: `${home}#fonctionnalites` },
     { kind: 'anchor', label: m.nav_platforms(), href: `${home}#plateformes` },
+    { kind: 'route', label: m.nav_modules(), to: '/modules' },
     { kind: 'route', label: m.nav_install(), to: '/download' },
     { kind: 'route', label: m.nav_blog(), to: '/blog' },
   ] as const;

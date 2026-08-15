@@ -6,6 +6,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { mdxPlugin } from './vite/mdx.ts';
+import { modulesPlugin } from './vite/modules.ts';
 import { ogPlugin } from './vite/og.tsx';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -15,6 +16,7 @@ export default defineConfig({
     kromaUI(),
     tailwindcss(),
     mdxPlugin(),
+    modulesPlugin(),
     ogPlugin(),
     tanstackStart({
       pages: [

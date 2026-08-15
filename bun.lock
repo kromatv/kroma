@@ -35,7 +35,7 @@
     },
     "apps/kit": {
       "name": "@kroma/kit",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/ui": "workspace:*",
@@ -68,7 +68,7 @@
     },
     "apps/modules": {
       "name": "@kroma/module-registry",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/site-kit": "workspace:*",
         "@kroma/site-meta": "workspace:*",
@@ -94,7 +94,7 @@
     },
     "apps/packages": {
       "name": "@kroma/package-source",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/site-kit": "workspace:*",
         "@kroma/site-meta": "workspace:*",
@@ -119,7 +119,7 @@
     },
     "apps/www": {
       "name": "@kroma/site",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/site-meta": "workspace:*",
         "@kroma/ui": "workspace:*",
@@ -150,6 +150,7 @@
         "takumi-js": "^2.9.2",
         "typescript": "^7.0.2",
         "vite": "^8.2.1",
+        "zod": "^4.4.3",
       },
     },
     "clients/bench": {
@@ -177,7 +178,7 @@
     },
     "clients/desktop": {
       "name": "@kroma/desktop",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/tv": "workspace:*",
@@ -202,7 +203,7 @@
     },
     "clients/mobile": {
       "name": "@kroma/mobile",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@gorhom/bottom-sheet": "^5.2.14",
         "@kesha-antonov/react-native-background-downloader": "^4.6.1",
@@ -254,7 +255,7 @@
     },
     "clients/tizen": {
       "name": "@kroma/tizen",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/tv": "workspace:*",
@@ -278,7 +279,7 @@
     },
     "clients/tv-native": {
       "name": "@kroma/tv-native",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/lan-beacon": "workspace:*",
@@ -310,7 +311,7 @@
     },
     "clients/tv-web": {
       "name": "@kroma/tv-web",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/tv": "workspace:*",
@@ -332,7 +333,7 @@
     },
     "clients/web": {
       "name": "@kroma/web",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/module-acquisition": "workspace:*",
@@ -377,7 +378,7 @@
     },
     "clients/webos": {
       "name": "@kroma/webos",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/mdns-beacon": "workspace:*",
@@ -402,7 +403,7 @@
     },
     "modules/tv.kroma.acquisition/ui": {
       "name": "@kroma/module-acquisition",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/module-sdk": "workspace:*",
@@ -421,7 +422,7 @@
     },
     "modules/tv.kroma.indexer/ui": {
       "name": "@kroma/module-indexer",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/module-sdk": "workspace:*",
         "@kroma/ui": "workspace:*",
@@ -439,7 +440,7 @@
     },
     "modules/tv.kroma.remote/ui": {
       "name": "@kroma/module-remote",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/module-sdk": "workspace:*",
         "@kroma/ui": "workspace:*",
@@ -455,7 +456,7 @@
     },
     "modules/tv.kroma.torrents/ui": {
       "name": "@kroma/module-torrents",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/module-acquisition": "workspace:*",
@@ -478,7 +479,7 @@
     },
     "modules/tv.kroma.vpn/ui": {
       "name": "@kroma/module-vpn",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/module-sdk": "workspace:*",
         "@kroma/ui": "workspace:*",
@@ -495,7 +496,7 @@
     },
     "packages/bundler": {
       "name": "@kroma/bundler",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/build-info": "workspace:*",
         "@kroma/ui": "workspace:*",
@@ -524,7 +525,7 @@
     },
     "packages/client": {
       "name": "@kroma/client",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "zod": "^4.4.3",
       },
@@ -534,7 +535,7 @@
     },
     "packages/core": {
       "name": "@kroma/core",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/client": "workspace:*",
         "zod": "^4.4.3",
@@ -553,7 +554,7 @@
     },
     "packages/lan-beacon": {
       "name": "@kroma/lan-beacon",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "devDependencies": {
         "typescript": "^7.0.2",
       },
@@ -564,7 +565,7 @@
     },
     "packages/mdns-beacon": {
       "name": "@kroma/mdns-beacon",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "devDependencies": {
         "@types/node": "^22.20.1",
         "typescript": "^7.0.2",
@@ -573,7 +574,7 @@
     },
     "packages/module-sdk": {
       "name": "@kroma/module-sdk",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/ui": "workspace:*",
@@ -612,7 +613,7 @@
     },
     "packages/push-relay": {
       "name": "@kroma/push-relay",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@hono/zod-validator": "^0.9.0",
         "hono": "^4.13.2",
@@ -625,7 +626,7 @@
     },
     "packages/site-kit": {
       "name": "@kroma/site-kit",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/site-meta": "workspace:*",
         "@kroma/ui": "workspace:*",
@@ -647,7 +648,7 @@
     },
     "packages/site-meta": {
       "name": "@kroma/site-meta",
-      "version": "0.1.0",
+      "version": "0.0.0",
       "devDependencies": {
         "typescript": "^7.0.2",
       },
@@ -662,7 +663,7 @@
     },
     "packages/synology-repo": {
       "name": "@kroma/synology-repo",
-      "version": "0.1.4",
+      "version": "0.0.0",
       "bin": {
         "kroma-synology-repo": "./src/gen-catalog.ts",
       },
@@ -672,7 +673,7 @@
     },
     "packages/tv": {
       "name": "@kroma/tv",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/ui": "workspace:*",
@@ -702,7 +703,7 @@
     },
     "packages/ui": {
       "name": "@kroma/ui",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
@@ -735,7 +736,7 @@
     },
     "packages/workbench": {
       "name": "@kroma/workbench",
-      "version": "0.1.3",
+      "version": "0.0.0",
       "dependencies": {
         "@kroma/ui": "workspace:*",
       },

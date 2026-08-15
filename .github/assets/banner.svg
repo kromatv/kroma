@@ -1,4 +1,4 @@
-<svg width="1280" height="420" viewBox="0 0 1280 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="KROMA self-hosted, direct-play, HEVC-first media streaming">
+<svg width="1280" height="420" viewBox="0 0 1280 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="KROMA self-hosted, direct-play, HEVC-first media streaming on web, mobile, Samsung, LG, Apple TV, Android TV, desktop and Synology">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="420" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#101014"/>
@@ -34,6 +34,6 @@
 
   <!-- platform overline -->
   <text x="640" y="364" text-anchor="middle"
-        font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700"
-        letter-spacing="6" fill="#F4B642">WEB · SAMSUNG TIZEN · LG webOS · SYNOLOGY NAS</text>
+        font-family="'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700"
+        letter-spacing="4" fill="#F4B642">WEB · MOBILE · SAMSUNG · LG · APPLE TV · ANDROID TV · DESKTOP · SYNOLOGY</text>
 </svg>
