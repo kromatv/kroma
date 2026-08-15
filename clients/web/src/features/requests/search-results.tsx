@@ -2,7 +2,7 @@
 // decouvrir" (TMDB, gated), each a counted grid. Skeletons while loading, a
 // friendly empty state when nothing matches.
 
-import { posterColors, type SearchHit } from '@kroma/core';
+import { episodeTag, posterColors, type SearchHit } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, EmptyState, Row, Text } from '@kroma/ui/kit';
 
@@ -57,14 +57,16 @@ function LocalHit({ hit }: Readonly<{ hit: SearchHit }>) {
   }
   const item = hit.item;
   // Episodes route to their show; movies to their own fiche.
-  const to = hit.type === 'episode' && item.showId ? '/show/$id' : '/movie/$id';
-  const id = hit.type === 'episode' && item.showId ? item.showId : item.id;
+  const episode = hit.type === 'episode' && item.showId ? item.showId : null;
+  const to = episode ? '/show/$id' : '/movie/$id';
   return (
     <Poster
-      title={item.title}
+      title={item.episodeTitle ?? item.title}
+      // An episode wears its show's poster, so it has to say which one it is.
+      genre={episode ? [item.showTitle, episodeTag(item)].filter(Boolean).join(' · ') : undefined}
       colors={posterColors(item.id)}
       poster={client.posterFor(item)}
-      onClick={() => navigate({ to, params: { id } })}
+      onClick={() => navigate({ to, params: { id: episode ?? item.id } })}
     />
   );
 }

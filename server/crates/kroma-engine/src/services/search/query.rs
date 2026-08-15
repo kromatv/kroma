@@ -13,12 +13,14 @@ use tantivy::Term;
 use super::schema::Fields;
 
 // Field weights: a title hit outranks an alt-title/cast hit, which outranks a
-// genre hit, which outranks a loose overview hit.
+// genre hit, which outranks a loose overview hit. `show_title` sits near the
+// bottom on purpose: it is there so "breaking bad ozymandias" resolves to the
+// episode, not so that every episode of a show competes with the show itself.
 fn weights(f: &Fields) -> [(Field, f32); 6] {
     [
         (f.title, 6.0),
         (f.alt_title, 4.0),
-        (f.show_title, 4.0),
+        (f.show_title, 1.5),
         (f.cast, 3.0),
         (f.genres, 2.0),
         (f.overview, 1.0),

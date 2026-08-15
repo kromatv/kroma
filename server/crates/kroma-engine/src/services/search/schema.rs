@@ -16,6 +16,7 @@ pub(super) const ANALYZER: &str = "kroma";
 pub(super) struct Fields {
     pub id: Field,
     pub kind: Field,
+    pub show_id: Field,
     pub title: Field,
     pub alt_title: Field,
     pub show_title: Field,
@@ -37,6 +38,8 @@ pub(super) fn build() -> (Schema, Fields) {
     // tokens, no fuzzy matching on them.
     let id = b.add_text_field("id", STRING | STORED);
     let kind = b.add_text_field("kind", STRING | STORED);
+    // Read back to fold an episode under its show; never itself a query target.
+    let show_id = b.add_text_field("show_id", STORED);
     let title = text(&mut b, "title");
     let alt_title = text(&mut b, "alt_title");
     let show_title = text(&mut b, "show_title");
@@ -44,7 +47,7 @@ pub(super) fn build() -> (Schema, Fields) {
     let genres = text(&mut b, "genres");
     let overview = text(&mut b, "overview");
     let schema = b.build();
-    let fields = Fields { id, kind, title, alt_title, show_title, cast, genres, overview };
+    let fields = Fields { id, kind, show_id, title, alt_title, show_title, cast, genres, overview };
     (schema, fields)
 }
 

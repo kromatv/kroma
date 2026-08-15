@@ -6,6 +6,7 @@
 mod query;
 mod schema;
 
+use std::collections::HashSet;
 use std::sync::{Arc, Mutex, RwLock};
 
 use anyhow::Result;
@@ -34,7 +35,17 @@ pub enum HitKind {
 pub struct Hit {
     pub id: String,
     pub kind: HitKind,
+    /// Set on an episode: the show it belongs to.
+    pub show_id: Option<String>,
 }
+
+// A show title lives on every one of its episodes, so a query naming the show
+// matches the whole season list. Collect several pages' worth of raw hits, fold
+// the episodes back under their show, and only then cut to `limit`.
+const CANDIDATE_FACTOR: usize = 8;
+const MAX_CANDIDATES: usize = 400;
+// A show that did NOT match itself is represented by its best few episodes.
+const MAX_EPISODES_PER_SHOW: usize = 3;
 
 struct Active {
     reader: IndexReader,
@@ -98,9 +109,11 @@ impl SearchEngine {
             return Vec::new();
         };
         let searcher = active.reader.searcher();
+        let limit = limit.max(1);
+        let candidates = limit.saturating_mul(CANDIDATE_FACTOR).min(MAX_CANDIDATES).max(limit);
         // tantivy 0.26 removed TopDocs' blanket Collector impl; `.order_by_score()`
         // yields the score-ordered collector.
-        let Ok(top) = searcher.search(&query, &TopDocs::with_limit(limit.max(1)).order_by_score())
+        let Ok(top) = searcher.search(&query, &TopDocs::with_limit(candidates).order_by_score())
         else {
             return Vec::new();
         };
@@ -116,10 +129,40 @@ impl SearchEngine {
                 "episode" => HitKind::Episode,
                 _ => HitKind::Movie,
             };
-            hits.push(Hit { id, kind });
+            let show_id = (kind == HitKind::Episode)
+                .then(|| field_str(&doc, self.fields.show_id))
+                .filter(|s| !s.is_empty());
+            hits.push(Hit { id, kind, show_id });
         }
-        hits
+        collapse_episodes(hits, limit)
     }
+}
+
+/// Drops every episode whose show is itself a hit, caps what is left at
+/// [`MAX_EPISODES_PER_SHOW`] per show, and truncates to `limit`. Relevance order
+/// is preserved, so a show keeps the rank its own document earned.
+fn collapse_episodes(hits: Vec<Hit>, limit: usize) -> Vec<Hit> {
+    let shows: HashSet<String> =
+        hits.iter().filter(|h| h.kind == HitKind::Show).map(|h| h.id.clone()).collect();
+    let mut kept_per_show: HashMap<String, usize> = HashMap::new();
+    let mut out = Vec::with_capacity(limit);
+    for hit in hits {
+        if out.len() == limit {
+            break;
+        }
+        if let Some(show_id) = hit.show_id.as_deref() {
+            if shows.contains(show_id) {
+                continue;
+            }
+            let kept = kept_per_show.entry(show_id.to_string()).or_default();
+            if *kept >= MAX_EPISODES_PER_SHOW {
+                continue;
+            }
+            *kept += 1;
+        }
+        out.push(hit);
+    }
+    out
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -163,6 +206,9 @@ fn add_item(writer: &mut IndexWriter, f: &Fields, item: &MediaItem, kind: &str, 
     }
     if let Some(st) = &item.show_title {
         doc.add_text(f.show_title, st);
+    }
+    if let Some(sid) = &item.show_id {
+        doc.add_text(f.show_id, sid);
     }
     add_meta(&mut doc, f, &item.title, item.metadata.as_ref());
     add_translations(&mut doc, f, &item.title, tr);
