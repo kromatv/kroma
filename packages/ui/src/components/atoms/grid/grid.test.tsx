@@ -67,11 +67,12 @@ describe('a grid that was handed no width', () => {
   it('re-measures into a new column count when the room changes', () => {
     const { container } = render(<Grid min={260}>{tiles}</Grid>);
     const box = container.firstElementChild as HTMLElement;
+    const rows = () => (box.firstElementChild as HTMLElement).children;
 
     layout(box, { width: 1000 });
-    expect(box.children).toHaveLength(3);
+    expect(rows()).toHaveLength(3);
 
     layout(box, { width: 560 });
-    expect(box.children).toHaveLength(4);
+    expect(rows()).toHaveLength(4);
   });
 });

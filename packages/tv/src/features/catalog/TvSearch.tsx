@@ -25,6 +25,7 @@ import { addRecentSearch, getRecentSearches } from '#tv/features/catalog/searchH
 import type { SearchResult } from '#tv/features/catalog/TvSearchResults';
 import { TvSearchResults } from '#tv/features/catalog/TvSearchResults';
 import { TvVoiceSearch } from '#tv/features/catalog/TvVoiceSearch';
+import { SCREEN_PAD, STAGE_W } from '#tv/shared/stage';
 import { KromaMark, SearchKeyboard } from '#tv/shared/ui';
 
 const DEBOUNCE_MS = 250;
@@ -244,14 +245,12 @@ export function TvSearch() {
 // the width from the kit is what keeps the results pane beside the keys instead
 // of on top of them the next time a key grows.
 const KEYBOARD_W = keyRowWidth('tv');
-const SCREEN_PAD = 64;
 const COLUMN_GAP = 52;
 // The scroller's own horizontal padding, which the grid does not get to use.
 const RESULTS_PADDING = 40;
-// The 1920x1080 stage makes the rest static arithmetic: what the screen's own
-// padding, the keyboard and the gap leave is the results pane.
-const RESULTS_WIDTH = 1920 - SCREEN_PAD * 2 - KEYBOARD_W - COLUMN_GAP - RESULTS_PADDING;
-
+// What the pane is on the design's stage - the fallback the results grid divides
+// until it has measured the box it really got, not a width it is held to.
+const RESULTS_WIDTH = STAGE_W - SCREEN_PAD * 2 - KEYBOARD_W - COLUMN_GAP - RESULTS_PADDING;
 const s = styles({
   columns: { row: true, flex: true, gap: COLUMN_GAP, minH: 0 },
   keyboardColumn: { w: KEYBOARD_W, shrink: 0 },

@@ -93,7 +93,7 @@ export function TvGrid() {
       entries.map((e) => ({
         id: e.item.id,
         title: e.item.title,
-        poster: entryPoster(client, e),
+        poster: (width: number) => entryPoster(client, e, width),
         colors: posterColors(e.item.id),
         watched: watched.has(e.item.id),
         progress: e.kind === 'show' ? (e.item.progress ?? null) : null,

@@ -3,33 +3,35 @@ import { Box } from '#ui/components/atoms/box';
 import { PosterCard } from '#ui/components/molecules/poster-card';
 import { posterArt } from '#ui/lib/sample-art';
 import { VirtualGrid } from './virtual-grid';
-import { TINT, TITLES, TILE_W, ROW_HEIGHT } from './virtual-grid.fixtures';
+import { TINT, TITLES, TILE_MIN, POSTER_RATIO, PREVIEW_W } from './virtual-grid.fixtures';
 
 export const story = defineStory({
   group: 'Media',
   width: { min: 640, max: 1600 },
-  args: { columns: 8, count: 400 },
+  args: { min: TILE_MIN, count: 400 },
   controls: {
-    columns: { min: 2, max: 10, step: 1 },
+    min: { min: 120, max: 320, step: 1 },
     count: { min: 40, max: 400, step: 40 },
   },
-  render: ({ columns, count }) => (
+  render: ({ min, count }) => (
     <Box style={{ height: 620 }}>
       <VirtualGrid
         data={TITLES.slice(0, count)}
-        columns={columns}
-        itemHeight={ROW_HEIGHT}
-        style={{ flex: 1, minHeight: 0 }}
-        // paddingTop = FOCUS_BLEED: the grid clips flush at its top, so a focused
-        // row's ring room has to come from the content.
-        contentStyle={{ paddingHorizontal: 24, paddingTop: 32 }}
-        rowStyle={{ gap: 24 }}
-        renderItem={(item, at) => (
+        min={min}
+        ratio={POSTER_RATIO}
+        gap={24}
+        rowGap={32}
+        // pt = FOCUS_BLEED: the grid clips flush at its top, so a focused row's
+        // ring room has to come from the content.
+        px={24}
+        pt={32}
+        width={PREVIEW_W}
+        renderItem={(item, at, width) => (
           <PosterCard
             title={item.title}
             art={posterArt(at)}
             tint={TINT}
-            width={TILE_W}
+            width={width}
             autoFocus={at === 0}
           />
         )}
@@ -40,25 +42,32 @@ export const story = defineStory({
 
 The browse screens' poster grid: a library of thousands, of which only the rows near the viewport are mounted. Focus reaches the end anyway, because the navigator registers a *virtual* node per row that outlives the tile rendered into it. On the web the wheel scrolls it too, and that moves the selection, unlike a `VirtualRail`'s wheel, because the navigator's `scrollTo` is implemented as a focus grab.
 
+The columns are auto-filled from the grid's measured box, like `<Grid min>`: drag the preview's width and watch the count change rather than the last column leave the frame. Each tile is handed the width of the cell it lands in, which is what lets it size its own artwork request.
+
 ```tsx
 <VirtualGrid
   data={cards}
-  columns={8}
-  itemHeight={336}
-  style={{ flex: 1, minHeight: 0 }}
-  contentStyle={{ paddingHorizontal: 64 }}
-  rowStyle={{ gap: 24 }}
-  renderItem={(c, i) => <PosterCard title={c.title} art={c.poster} autoFocus={i === 0} />}
+  min={203}
+  ratio={3 / 2}
+  gap={24}
+  rowGap={32}
+  px={64}
+  pt={32}
+  width={STAGE_W}
+  renderItem={(c, i, width) => (
+    <PosterCard title={c.title} art={c.poster(width)} width={width} autoFocus={i === 0} />
+  )}
 />
 ```
 
 <Do>
-- Give the grid a bounded height (`flex: 1`): it is the viewport, and it is what clips.
-- Put the padding in `contentStyle`: on the viewport it insets the clip and shaves the rows.
-- `itemHeight` is the row PITCH: the tile plus the gap beneath it.
+- Give the grid a bounded height: it is the viewport, and it is what clips. It fills its parent unless `style` says otherwise.
+- Hand it a `width` to divide until it has measured itself, or the first frame has no columns to draw.
+- Pass the padding as `px` / `pt`: the grid puts it on the rows, since on the viewport it would inset the clip and shave them.
 </Do>
 
 <Dont>
 - Use it for a handful of tiles; a plain wrapped Box costs less.
 - Give it rows of different heights: the offset maths assumes one pitch.
+- Pin `columns` to keep a design honest on a television; `min` lands the same count at 1920 and still fits a window.
 </Dont>

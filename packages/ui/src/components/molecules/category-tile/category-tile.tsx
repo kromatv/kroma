@@ -46,6 +46,8 @@ interface CategoryTileProps extends Omit<FocusableProps, 'children' | 'style' | 
   wash?: string;
   accent?: ColorValue;
   size?: CategoryTileSize;
+  /** An explicit tile width. Omit inside a <Grid>, whose cell already sets the
+   *  column width. */
   width?: number;
   aspect?: number;
   children?: ReactNode;
@@ -60,7 +62,7 @@ function CategoryTile({
   wash,
   accent,
   size = 'tv',
-  width = 340,
+  width,
   aspect = WIDESCREEN,
   children,
   style,
@@ -76,7 +78,7 @@ function CategoryTile({
       // Frame and artwork are the same box, on the same radius: the ring keeps
       // itself clear of the art (RING_GAP), so padding here would be a second
       // gap and a corner nobody could keep concentric.
-      style={[s.frame, { width }, style]}
+      style={[s.frame, { width: width ?? '100%' }, style]}
     >
       <Box aspect={aspect} radius="lg" overflow="hidden" bg="surface1" shadow="card">
         <Img src={art} background={background} position="50% 25%" fill />

@@ -20,7 +20,7 @@ function cards(n: number, over: Partial<GridCard> = {}): GridCard[] {
   return Array.from({ length: n }, (_, i) => ({
     id: `id-${i}`,
     title: `Film ${i}`,
-    poster: `/art/${i}.jpg`,
+    poster: (width: number) => `/art/${i}.jpg?w=${width}`,
     colors: ['#3A2E4F', '#1B1524'] as [string, string],
     onClick: () => {},
     ...over,
@@ -64,10 +64,16 @@ describe('PosterGrid', () => {
     expect(getComputedStyle(fill).right).toBe('60%');
   });
 
-  it('lays the tiles out at the design column width', () => {
+  it('lays the tiles out at the design column width until it has measured a box', () => {
     const { container } = render(<PosterGrid cards={cards(3)} />);
     // 1792px of content, 8 columns, 24px gaps -> 203px tiles.
     const tile = container.querySelector('[role="button"]') as HTMLElement;
     expect(getComputedStyle(tile).width).toBe('203px');
+  });
+
+  it('asks for artwork at the width of the cell the tile lands in', () => {
+    const { container } = render(<PosterGrid cards={cards(1)} />);
+    const art = container.querySelector('img') as HTMLImageElement;
+    expect(art.getAttribute('src')).toBe('/art/0.jpg?w=203');
   });
 });

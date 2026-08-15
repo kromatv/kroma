@@ -46,8 +46,8 @@ export function ChoicePicker({
         data={options}
         columns={1}
         itemHeight={ROW_HEIGHT + ROW_GAP}
+        width={ROW_WIDTH}
         style={{ height: LIST_HEIGHT, width: ROW_WIDTH }}
-        rowStyle={{ width: ROW_WIDTH }}
         initialIndex={current > 0 ? current : undefined}
         renderItem={(option) => (
           <ListRow.Root

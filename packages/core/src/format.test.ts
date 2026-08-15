@@ -104,22 +104,22 @@ describe('sizedImageUrl', () => {
   // jsdom reports a ratio of 1, which is also what a 1920x1080 television
   // reports.
   it('asks for the display width on a 1x screen (a television)', () => {
-    expect(sizedImageUrl('/api/images/abc.webp', 200)).toBe('/api/images/abc.webp?w=200');
+    expect(sizedImageUrl('/api/images/abc.webp', 200)).toBe('/api/images/abc.webp?w=240');
   });
 
   it('asks for 2x on a retina screen', () => {
     vi.stubGlobal('devicePixelRatio', 2);
-    expect(sizedImageUrl('/api/images/abc.webp', 200)).toBe('/api/images/abc.webp?w=400');
+    expect(sizedImageUrl('/api/images/abc.webp', 200)).toBe('/api/images/abc.webp?w=480');
   });
 
   it('caps the ratio at 2, so a 3x phone does not decode 3x the pixels', () => {
     vi.stubGlobal('devicePixelRatio', 3);
-    expect(sizedImageUrl('/api/images/abc.webp', 200)).toBe('/api/images/abc.webp?w=400');
+    expect(sizedImageUrl('/api/images/abc.webp', 200)).toBe('/api/images/abc.webp?w=480');
   });
 
-  it('rounds and floors the requested width to at least 1', () => {
-    expect(sizedImageUrl('/api/images/x', 100.4)).toBe('/api/images/x?w=100');
-    expect(sizedImageUrl('/api/images/x', 0)).toBe('/api/images/x?w=1');
+  it('snaps neighbouring display widths onto one rendition', () => {
+    expect(sizedImageUrl('/api/images/x', 100.4)).toBe('/api/images/x?w=160');
+    expect(sizedImageUrl('/api/images/x', 0)).toBe('/api/images/x?w=160');
   });
 
   it('caps a full-screen ask at the widest rendition the server keeps', () => {

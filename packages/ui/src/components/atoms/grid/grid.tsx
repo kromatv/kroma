@@ -8,12 +8,15 @@
 // The grid also DECLARES its rows to the spatial navigator. Wrapping is a
 // visual arrangement, not a navigational one: without the declaration the whole
 // grid is one long line and Down from the first tile walks to the second rather
-// than to the tile underneath it.
+// than to the tile underneath it. The rows are declared as a GRID rather than a
+// stack, which is what keeps the column position across a row change: Down from
+// the third tile lands on the third tile of the next row, not on whichever one
+// that row last held.
 
-import { Children, type ReactNode, useState } from 'react';
+import { Children, type ReactNode, useCallback, useMemo, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { FocusRegion } from '#ui/lib/focus-scope';
+import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
 import { FocusLine } from '#ui/lib/focus-scroll';
 
 interface GridProps {
@@ -23,8 +26,9 @@ interface GridProps {
   /** A fixed count, for a design that demands one whatever the width. Wins
    *  over `min`. */
   columns?: number;
-  /** The width to divide, when the caller already knows it. Omit and the grid
-   *  measures its own box, which costs one frame before the first paint. */
+  /** The width to divide until the grid has measured its own box: the design
+   *  width, or a room the caller already knows. Omit and the first frame has no
+   *  columns to draw; a measurement, once it arrives, always wins. */
   width?: number;
   /** Horizontal gap, which is also what the column maths removes. */
   gap?: number;
@@ -50,19 +54,22 @@ function columnsFor(width: number, min: number, gap: number): number {
 
 function Grid({ min, columns, width, gap = 24, rowGap, children }: Readonly<GridProps>) {
   const [measured, setMeasured] = useState(0);
-  // Both the cell width and an auto-fill count need the room, so a grid that was
-  // not handed one paints nothing until it has measured itself.
-  const room = width ?? measured;
+  // Both the cell width and an auto-fill count need the room, so a grid handed
+  // no width paints nothing until it has measured itself.
+  const room = measured || width || 0;
   const count = columns ?? (min ? columnsFor(room, min, gap) : 1);
 
-  const onLayout = (event: LayoutChangeEvent) => {
+  const onLayout = useCallback((event: LayoutChangeEvent) => {
     const next = Math.round(event.nativeEvent.layout.width);
     setMeasured((current) => (current === next ? current : next));
-  };
+  }, []);
 
+  const style = useMemo(() => ({ gap: rowGap ?? gap }), [gap, rowGap]);
   return (
-    <Box gap={rowGap ?? gap} onLayout={width === undefined ? onLayout : undefined}>
-      {room > 0 ? lines(children, count, cellWidth(room, count, gap), gap) : null}
+    <Box onLayout={onLayout}>
+      <FocusColumn grid style={style}>
+        {room > 0 ? lines(children, count, cellWidth(room, count, gap), gap) : null}
+      </FocusColumn>
     </Box>
   );
 }

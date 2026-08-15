@@ -1,29 +1,23 @@
 // @vitest-environment jsdom
 //
-// The 1920x1080 stage, fitted inside a browser window.
+// The 10-foot canvas, fitted inside a browser window.
 //
-// The shared TV UI is not responsive - it is a fixed canvas in real pixels.
-// PosterGrid says so outright: 1792px of content is exactly 8 x 203px tiles plus
-// 7 x 24px gaps, which with its 2 x 64px padding is exactly 1920. Every packaged
-// shell IS that panel; a browser window is not.
+// The shared TV UI is drawn in real pixels on a 1080-tall canvas. Every packaged
+// shell IS that panel; a browser window is not, and below 1080 logical px of
+// height the browse screen's header, filter chips, grid and hint bar stop
+// fitting - so the HEIGHT is what the scale is taken from, always.
 //
-// So the canvas is what gets fitted, by the smaller of the two ratios - fitting
-// WIDTH only would starve the height (below 1080 logical px, the grid's clip box,
-// which bleeds 32px for focus rings, rides up over the filter chips), and taking
-// the larger ratio overflows the canvas (a rail's last poster clipped, the right
-// gutter gone, the grid's 8th column off the edge). Both are real regressions
-// this file guards.
+// The width is not fitted, it is HANDED OVER: the canvas is as wide as the
+// window leaves at that scale, and the layout auto-fills it. What this file
+// guards is that the canvas never overflows the window in either direction, and
+// that the surround only appears where the canvas has stopped narrowing.
 //
-// The surround it costs is painted in the app background, so it reads as the
-// frame of the picture rather than as a bug. (The desktop shell's stage makes
-// the one exception, going transparent where mpv renders behind the web view;
-// there is nothing behind a browser, so this one always paints.)
+// The maths itself is @kroma/tv's (`fitStage`, tested there); this is the
+// shell's half - the box, the custom properties, and the resize listener.
 
+import { fitStage, MIN_STAGE_W, STAGE_H, STAGE_W } from '@kroma/tv/stage';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { installStage } from './stage';
-
-const STAGE_W = 1920;
-const STAGE_H = 1080;
 
 function resizeTo(width: number, height: number) {
   Object.defineProperty(window, 'innerWidth', { value: width, configurable: true });
@@ -31,6 +25,8 @@ function resizeTo(width: number, height: number) {
 }
 
 const scale = () => Number(document.documentElement.style.getPropertyValue('--kroma-stage-scale'));
+const width = () =>
+  Number.parseFloat(document.documentElement.style.getPropertyValue('--kroma-stage-width'));
 
 const css = () => document.head.querySelector('style')?.textContent ?? '';
 
@@ -41,29 +37,31 @@ beforeEach(() => {
 });
 
 describe('fitting the canvas', () => {
-  it('is 1:1 on a 1080p window', () => {
+  it('is the design canvas, 1:1, on a 1080p window', () => {
     installStage();
     expect(scale()).toBe(1);
+    expect(width()).toBe(STAGE_W);
   });
 
-  it('fits a smaller window', () => {
-    resizeTo(1280, 720);
-    installStage();
-    expect(scale()).toBeCloseTo(1280 / STAGE_W, 6);
-  });
-
-  it('takes the HEIGHT ratio on a window wider than 16:9', () => {
+  it('hands a window wider than 16:9 the extra width instead of a pillarbox', () => {
     resizeTo(2560, 1080);
     installStage();
-    // Fitting the width instead is what pushed the grid's clip box up over the
-    // filter chips.
     expect(scale()).toBeCloseTo(1, 6);
+    expect(width()).toBe(2560);
   });
 
-  it('takes the WIDTH ratio on a window taller than 16:9', () => {
-    resizeTo(1280, 1440);
+  it('scales a narrower window down instead of clipping its chrome', () => {
+    resizeTo(1400, 900);
     installStage();
-    expect(scale()).toBeCloseTo(1280 / STAGE_W, 6);
+    expect(width()).toBe(MIN_STAGE_W);
+    expect(scale()).toBeCloseTo(1400 / MIN_STAGE_W, 6);
+  });
+
+  it('keeps the full 1080 of height whatever it costs in scale', () => {
+    resizeTo(600, 900);
+    installStage();
+    expect(width()).toBe(MIN_STAGE_W);
+    expect(STAGE_H * scale()).toBeLessThanOrEqual(900);
   });
 
   it('never lets the canvas overflow the window', () => {
@@ -79,25 +77,10 @@ describe('fitting the canvas', () => {
       document.head.innerHTML = '';
       resizeTo(w, h);
       installStage();
-      // A rail's last poster clipped, the right gutter gone, the grid's 8th
+      // A rail's last poster clipped, the right gutter gone, the grid's last
       // column off the edge - all the same overflow.
-      expect(STAGE_W * scale()).toBeLessThanOrEqual(w + 0.001);
-      expect(STAGE_H * scale()).toBeLessThanOrEqual(h + 0.001);
-    }
-  });
-
-  it('always keeps a full 1080 logical px of height', () => {
-    // The browse screen's header, chips, grid and hint bar are sized for 1080.
-    for (const [w, h] of [
-      [2560, 1080],
-      [3440, 1440],
-      [1280, 720],
-    ] as Array<[number, number]>) {
-      document.head.innerHTML = '';
-      resizeTo(w, h);
-      installStage();
-      expect(STAGE_H * scale()).toBeLessThanOrEqual(h + 0.001);
-      expect(scale()).toBeGreaterThan(0);
+      expect(width() * scale()).toBeLessThanOrEqual(w + 1);
+      expect(STAGE_H * scale()).toBeLessThanOrEqual(h + 1);
     }
   });
 
@@ -105,24 +88,30 @@ describe('fitting the canvas', () => {
     installStage();
     resizeTo(960, 540);
     window.dispatchEvent(new Event('resize'));
-    expect(scale()).toBeCloseTo(0.5, 6);
+    const fit = fitStage(960, 540);
+    expect(scale()).toBeCloseTo(fit.scale, 6);
+    expect(width()).toBe(fit.width);
   });
 });
 
 describe('the stage box', () => {
-  it('renders at the authored size and scales from the centre', () => {
+  it('is 1080 tall, as wide as the fit says, and scales from the centre', () => {
     installStage();
-    expect(css()).toContain(`width: ${STAGE_W}px`);
     expect(css()).toContain(`height: ${STAGE_H}px`);
-    // Symmetric letterboxing: a corner origin puts the whole surround on two
-    // sides.
+    expect(css()).toContain('width: var(--kroma-stage-width');
+    // Symmetric surround: a corner origin puts all of it on two sides.
     expect(css()).toContain('transform-origin: center center');
+  });
+
+  it('falls back to the design width before the first fit is written', () => {
+    installStage();
+    expect(css()).toContain(`var(--kroma-stage-width, ${STAGE_W}px)`);
   });
 
   it('makes #root the containing block for the app’s fixed layers', () => {
     installStage();
     // Home, player and detail are `position: fixed`; without the transform they
-    // fill the WINDOW and escape the letterbox.
+    // fill the WINDOW and escape the stage.
     expect(css()).toMatch(/#root\s*\{[^}]*position: fixed/);
     expect(css()).toContain('scale(var(--kroma-stage-scale, 1))');
   });

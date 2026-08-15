@@ -34,7 +34,7 @@ export function TvPerson() {
       card: {
         id: m.id,
         title: m.title,
-        poster: client.posterFor(m, POSTER_W),
+        poster: (width: number) => client.posterFor(m, width),
         colors: posterColors(m.id),
         onClick: () => nav.go('movie', { item: m }),
       } satisfies GridCard,
@@ -44,7 +44,7 @@ export function TvPerson() {
       card: {
         id: s.id,
         title: s.title,
-        poster: client.showPosterFor(s, POSTER_W),
+        poster: (width: number) => client.showPosterFor(s, width),
         colors: posterColors(s.id),
         onClick: () => nav.go('show', { show: s }),
       } satisfies GridCard,
@@ -86,5 +86,4 @@ export function TvPerson() {
   );
 }
 
-const POSTER_W = 203;
 const PORTRAIT_W = 220;

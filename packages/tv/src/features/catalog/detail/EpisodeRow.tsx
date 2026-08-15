@@ -29,7 +29,6 @@ import { type ReactNode, useState } from 'react';
 export const EPISODE_W = 480;
 
 export const EPISODE_COLUMNS = 1;
-export const EPISODE_COLUMN_W = 1920 - 64 * 2;
 
 const STILL_W = 240;
 const PLAY_DISC = 54;

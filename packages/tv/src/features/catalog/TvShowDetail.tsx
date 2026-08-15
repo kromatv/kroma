@@ -20,7 +20,6 @@ import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';
 import { TvDetailScaffold } from '#tv/features/catalog/detail/DetailScaffold';
 import { EpisodeGrid } from '#tv/features/catalog/detail/EpisodeGrid';
-import { EPISODE_COLUMN_W } from '#tv/features/catalog/detail/EpisodeRow';
 import {
   CastRow,
   EndsAtHint,
@@ -255,7 +254,7 @@ export function TvShowDetail() {
           <Box mt={40} gap={18}>
             {/* The design's header line: the label, how far through the season
                 you are, and the remote legend pushed to the column's far edge. */}
-            <Row gap={18} wrap maxW={EPISODE_COLUMN_W}>
+            <Row gap={18} wrap>
               <Text style={s.episodesLabel} color="text/55">
                 {t('content.episodesHeader')}
               </Text>

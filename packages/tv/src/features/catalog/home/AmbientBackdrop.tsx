@@ -62,14 +62,13 @@ export const AMBIENT_FALLBACK: [string, string] = [colors.surface2, colors.bg];
 
 export type CatalogEntry = { kind: 'movie'; item: MediaItem } | { kind: 'show'; item: Show };
 
-export function entryPoster(client: KromaClient, e: CatalogEntry): string {
-  return e.kind === 'movie'
-    ? client.posterFor(e.item, GRID_POSTER_W)
-    : client.showPosterFor(e.item, GRID_POSTER_W);
+export function entryPoster(client: KromaClient, e: CatalogEntry, width = GRID_POSTER_W): string {
+  return e.kind === 'movie' ? client.posterFor(e.item, width) : client.showPosterFor(e.item, width);
 }
 
-// A browse-grid cell is 203pt wide on the 1920 stage; asking the server for a
-// bucketed rendition is what keeps a 120-tile grid from stuttering on a TV.
+// What a browse-grid cell is on the 1920 stage, for a caller with no measured
+// column to hand over; asking the server for a bucketed rendition is what keeps
+// a 120-tile grid from stuttering on a TV.
 const GRID_POSTER_W = 203;
 
 /** The focused entry's backdrop, falling back to its poster. */

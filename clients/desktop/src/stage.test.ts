@@ -1,10 +1,8 @@
 // @vitest-environment jsdom
 
+import { fitStage, MIN_STAGE_W, STAGE_H, STAGE_W } from '@kroma/tv/stage';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installStage } from './stage';
-
-const STAGE_W = 1920;
-const STAGE_H = 1080;
 
 function resizeTo(width: number, height: number) {
   Object.defineProperty(window, 'innerWidth', { value: width, configurable: true });
@@ -12,6 +10,8 @@ function resizeTo(width: number, height: number) {
 }
 
 const scale = () => Number(document.documentElement.style.getPropertyValue('--kroma-stage-scale'));
+const width = () =>
+  Number.parseFloat(document.documentElement.style.getPropertyValue('--kroma-stage-width'));
 
 const css = () => document.head.querySelector('style')?.textContent ?? '';
 
@@ -26,35 +26,33 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('the scale', () => {
-  it('is 1 on an exactly 1080p screen', () => {
+describe('the fit', () => {
+  it('is the design canvas, 1:1, on an exactly 1080p screen', () => {
     installStage();
     expect(scale()).toBe(1);
+    expect(width()).toBe(STAGE_W);
   });
 
-  it('fits a smaller screen', () => {
-    resizeTo(1280, 720);
-    installStage();
-    expect(scale()).toBeCloseTo(1280 / STAGE_W, 6);
-  });
-
-  it('fills a larger one', () => {
+  it('draws the design at 2x on a 4K panel', () => {
     resizeTo(3840, 2160);
     installStage();
     expect(scale()).toBeCloseTo(2, 6);
+    expect(width()).toBe(STAGE_W);
   });
 
-  it('takes the SMALLER ratio on a wider screen', () => {
-    // 21:9. Scaling to the width pushes the whole nav row off the panel.
+  // A desktop window is any shape the user drags it to; the canvas follows its
+  // width rather than clipping the fixed-px rows at the right edge.
+  it('takes its extra width from the window', () => {
     resizeTo(2560, 1080);
     installStage();
-    expect(scale()).toBeCloseTo(1080 / STAGE_H, 6);
+    expect(width()).toBe(2560);
   });
 
-  it('takes the SMALLER ratio on a taller screen', () => {
-    resizeTo(1920, 1440);
+  it('scales down rather than narrowing past the design width', () => {
+    resizeTo(1310, 790);
     installStage();
-    expect(scale()).toBeCloseTo(1, 6);
+    expect(width()).toBe(MIN_STAGE_W);
+    expect(scale()).toBeCloseTo(1310 / MIN_STAGE_W, 6);
   });
 
   it('never overflows the window, whatever its shape', () => {
@@ -69,8 +67,8 @@ describe('the scale', () => {
       document.head.innerHTML = '';
       resizeTo(w, h);
       installStage();
-      expect(STAGE_W * scale()).toBeLessThanOrEqual(w + 0.001);
-      expect(STAGE_H * scale()).toBeLessThanOrEqual(h + 0.001);
+      expect(width() * scale()).toBeLessThanOrEqual(w + 1);
+      expect(STAGE_H * scale()).toBeLessThanOrEqual(h + 1);
     }
   });
 
@@ -80,15 +78,17 @@ describe('the scale', () => {
 
     resizeTo(960, 540);
     window.dispatchEvent(new Event('resize'));
-    expect(scale()).toBeCloseTo(0.5, 6);
+    const fit = fitStage(960, 540);
+    expect(scale()).toBeCloseTo(fit.scale, 6);
+    expect(width()).toBe(fit.width);
   });
 });
 
 describe('the stage box', () => {
-  it('renders the canvas at its authored size', () => {
+  it('renders the canvas at its authored height, as wide as the fit says', () => {
     installStage();
-    expect(css()).toContain(`width: ${STAGE_W}px`);
     expect(css()).toContain(`height: ${STAGE_H}px`);
+    expect(css()).toContain(`var(--kroma-stage-width, ${STAGE_W}px)`);
   });
 
   it('centres it and scales from the centre', () => {
@@ -113,7 +113,7 @@ describe('the stage box', () => {
   });
 });
 
-describe('the letterbox surround', () => {
+describe('the surround', () => {
   it('is painted in a browser', () => {
     installStage();
     // Nothing renders behind the web view here, so unpainted bars show whatever

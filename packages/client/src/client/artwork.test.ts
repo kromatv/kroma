@@ -28,8 +28,9 @@ describe('artwork resolution setting', () => {
 
   it('scales every width a caller asks for', () => {
     setArtworkScale(0.5);
+    // 200 device pixels, served by the 240 rendition.
     expect(resolveArt(ctx, '/api/images/x.webp', 400)).toBe(
-      'http://kroma.test/api/images/x.webp?w=200',
+      'http://kroma.test/api/images/x.webp?w=240',
     );
   });
 
@@ -38,10 +39,10 @@ describe('artwork resolution setting', () => {
     expect(resolveArt(ctx, '/api/images/x.webp')).toBe('http://kroma.test/api/images/x.webp');
   });
 
-  it('never asks for a width below one pixel, however small the art', () => {
+  it('asks for the smallest rendition that exists, however small the art', () => {
     setArtworkScale(0.25);
     expect(resolveArt(ctx, '/api/images/x.webp', 1)).toBe(
-      'http://kroma.test/api/images/x.webp?w=1',
+      'http://kroma.test/api/images/x.webp?w=160',
     );
   });
 
@@ -61,7 +62,7 @@ describe('artwork resolution setting', () => {
         return artworkWidth(displayWidth);
       });
     expect(asks(320)).toEqual([320, 240, 160]);
-    expect(asks(960)).toEqual([960, 720, 480]);
+    expect(asks(960)).toEqual([960, 780, 480]);
   });
 });
 
@@ -73,9 +74,21 @@ describe('artworkWidth', () => {
 
   it('asks in device pixels, capped at 2x', () => {
     vi.stubGlobal('devicePixelRatio', 2);
-    expect(artworkWidth(96)).toBe(192);
+    // 192 device pixels, snapped up to the 240 rendition; 96 alone would take 160.
+    expect(artworkWidth(96)).toBe(240);
+    expect(artworkWidth(48)).toBe(160);
     vi.stubGlobal('devicePixelRatio', 3);
-    expect(artworkWidth(96)).toBe(192);
+    expect(artworkWidth(96)).toBe(240);
+  });
+
+  // A fluid grid's cell width moves with the window. Every ask inside one step
+  // of the ladder has to resolve to the same URL, or a resize re-fetches and
+  // re-decodes a grid's worth of artwork that the cache already held.
+  it('snaps to the ladder, so neighbouring cell widths share one URL', () => {
+    expect(artworkWidth(203)).toBe(240);
+    expect(artworkWidth(219)).toBe(240);
+    expect(artworkWidth(240)).toBe(240);
+    expect(artworkWidth(241)).toBe(320);
   });
 
   it('caps at the widest rendition, so two viewports share one cache key', () => {
@@ -91,9 +104,9 @@ describe('artworkWidth', () => {
     expect(artworkWidth(1280)).toBe(480);
   });
 
-  it('never asks for less than one pixel', () => {
+  it('never asks below the smallest rendition the server keeps', () => {
     setArtworkScale(0.25);
-    expect(artworkWidth(0)).toBe(1);
+    expect(artworkWidth(0)).toBe(160);
   });
 });
 
@@ -124,7 +137,7 @@ describe('resolveArt + art helpers', () => {
     );
     expect(
       posterFor(ctx, { id: 'i', metadata: { posterUrl: '/api/images/p.webp' } as Metadata }, 203),
-    ).toBe('http://kroma.test/api/images/p.webp?w=203');
+    ).toBe('http://kroma.test/api/images/p.webp?w=240');
     expect(backdropFor(ctx, meta({ backdropUrl: '/api/images/b.webp' }), 320)).toBe(
       'http://kroma.test/api/images/b.webp?w=320',
     );

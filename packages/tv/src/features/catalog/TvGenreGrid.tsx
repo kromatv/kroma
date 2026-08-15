@@ -46,7 +46,7 @@ export function TvGenreGrid() {
       entries.map((e) => ({
         id: e.item.id,
         title: e.item.title,
-        poster: entryPoster(client, e),
+        poster: (width: number) => entryPoster(client, e, width),
         colors: posterColors(e.item.id),
         progress: e.kind === 'show' ? (e.item.progress ?? null) : null,
         onClick: () =>

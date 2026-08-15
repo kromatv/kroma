@@ -4,12 +4,8 @@
 
 import type { MediaItem } from '@kroma/core';
 import { Grid, useGrowingCount } from '@kroma/ui/kit';
-import {
-  EPISODE_COLUMN_W,
-  EPISODE_COLUMNS,
-  EPISODE_W,
-  EpisodeRow,
-} from '#tv/features/catalog/detail/EpisodeRow';
+import { EPISODE_COLUMNS, EPISODE_W, EpisodeRow } from '#tv/features/catalog/detail/EpisodeRow';
+import { CONTENT_W } from '#tv/shared/stage';
 
 const GAP = 24;
 const ROW_GAP = 14;
@@ -35,7 +31,7 @@ export function EpisodeGrid({
 }>) {
   const { count, isNearEnd, grow } = useGrowingCount(episodes.length, CHUNK);
   return (
-    <Grid width={EPISODE_COLUMN_W} columns={EPISODE_COLUMNS} gap={GAP} rowGap={ROW_GAP}>
+    <Grid width={CONTENT_W} columns={EPISODE_COLUMNS} gap={GAP} rowGap={ROW_GAP}>
       {episodes.slice(0, count).map((ep, index) => (
         <EpisodeRow
           key={ep.id}

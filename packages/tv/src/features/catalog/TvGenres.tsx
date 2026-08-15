@@ -10,9 +10,8 @@ import { useT } from '@kroma/ui';
 import {
   Box,
   CategoryTile,
-  FocusColumn,
-  FocusRegion,
   FocusScroll,
+  Grid,
   styles,
   Text,
   tintGradient,
@@ -47,33 +46,21 @@ export function TvGenres() {
 
       {genres.length ? (
         <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
-          {/* The field wraps on screen, so it must be declared as a grid: a
-              single row would leave Up/Down nowhere to go. One region per
-              visible line, matching what the eye sees.
-              <FocusColumn grid> is what makes the lines a GRID rather than a
-              stack: without it the navigator has no index to align on, so
-              leaving a line forgets which column you were in and Up/Down land
-              on the first card of the next line. */}
-          <FocusColumn grid style={s.grid}>
-            {lines(genres, GENRE_COLUMNS).map((line, row) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the line's identity.
-              <FocusRegion key={row} style={s.line}>
-                {line.map((g, column) => {
-                  const pick = showcases.get(g.name);
-                  return (
-                    <GenreCard
-                      autoFocus={row === 0 && column === 0}
-                      key={g.name}
-                      genre={g}
-                      count={t('person.titleCount', { count: g.count })}
-                      backdrop={pick ? client.backdropFor(pick, CARD_W) : null}
-                      onPress={() => nav.go('genre', { name: g.name })}
-                    />
-                  );
-                })}
-              </FocusRegion>
-            ))}
-          </FocusColumn>
+          <Grid min={CARD_MIN} gap={GAP}>
+            {genres.map((g, index) => {
+              const pick = showcases.get(g.name);
+              return (
+                <GenreCard
+                  autoFocus={index === 0}
+                  key={g.name}
+                  genre={g}
+                  count={t('person.titleCount', { count: g.count })}
+                  backdrop={pick ? client.backdropFor(pick, CARD_MIN) : null}
+                  onPress={() => nav.go('genre', { name: g.name })}
+                />
+              );
+            })}
+          </Grid>
         </FocusScroll>
       ) : (
         <Box flex center px={64}>
@@ -113,26 +100,16 @@ function GenreCard({
   );
 }
 
-// Declared rather than measured: the stage is fixed, and the navigator needs
-// the shape before anything is laid out.
-const GENRE_COLUMNS = 5;
-
-function lines<T>(items: readonly T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let at = 0; at < items.length; at += size) out.push(items.slice(at, at + size));
-  return out;
-}
-
-const CARD_W = 320;
+// The design's card at 1920 (5 across the content width), as the narrowest one
+// rather than a count: a wider window earns a sixth column instead of stretching
+// five, a narrower one drops to four instead of running off the edge.
+const CARD_MIN = 320;
 
 // One number for both directions: the lines' own gap and the gap BETWEEN them
-// are the same seam, and the grid column is what carries the second one now
-// that it stands between the content and its lines.
+// are the same seam.
 const GAP = 12;
 
 const s = styles({
-  line: { row: true, gap: GAP },
-  grid: { gap: GAP },
   scroll: { flex: true, minH: 0 },
   // Padding belongs on the content, not the scroller box: on the box it would
   // pad the viewport and clip the last row instead of the list.

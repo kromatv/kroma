@@ -5,6 +5,11 @@ export const TITLES = Array.from({ length: 400 }, (_, at) => ({
   title: `Title ${at + 1}`,
 }));
 
-export const TILE_W = 203;
+export const TILE_MIN = 203;
 
-export const ROW_HEIGHT = Math.round((TILE_W * 3) / 2) + 32;
+export const POSTER_RATIO = 3 / 2;
+
+// What the preview assumes until it has measured its own canvas: the design's
+// stage inside the story's own padding, so an unmeasured render is the 8-column
+// grid the browse screens draw.
+export const PREVIEW_W = 1840;

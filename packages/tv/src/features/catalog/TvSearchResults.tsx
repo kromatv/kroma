@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { Box, FocusColumn, FocusScroll, Grid, Hint, PosterCard, styles, Text } from '@kroma/ui/kit';
+import { Box, FocusScroll, Grid, Hint, PosterCard, styles, Text } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 
 /** One result, already reduced to what a poster needs. */
@@ -15,7 +15,9 @@ export interface SearchResult {
 interface TvSearchResultsProps {
   hits: SearchResult[];
   query: string;
-  width: number;
+  /** The pane's width, when the chrome around it already knows it (the
+   *  platform's own search shell). Omit and the grid measures its own box. */
+  width?: number;
   onOpen: (hit: SearchResult) => void;
   header?: ReactNode;
 }
@@ -47,22 +49,17 @@ export function TvSearchResults({
         />
       </Box>
       {hits.length ? (
-        // The grid declares its ROWS; this declares the stack of them, so the
-        // whole pane is one thing to arrive at from the keyboard beside it
-        // rather than a loose pile of rows on the screen's own column.
-        <FocusColumn grid>
-          <Grid width={width} min={POSTER} gap={GAP}>
-            {hits.map((h) => (
-              <PosterCard
-                key={h.id}
-                title={h.title}
-                art={h.poster}
-                tint={h.colors}
-                onPress={() => onOpen(h)}
-              />
-            ))}
-          </Grid>
-        </FocusColumn>
+        <Grid width={width} min={POSTER} gap={GAP}>
+          {hits.map((h) => (
+            <PosterCard
+              key={h.id}
+              title={h.title}
+              art={h.poster}
+              tint={h.colors}
+              onPress={() => onOpen(h)}
+            />
+          ))}
+        </Grid>
       ) : (
         <Text variant="leadTv" pt={20} color="text/40">
           {query.trim() ? t('search.noResults') : t('search.empty')}

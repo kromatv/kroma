@@ -14,24 +14,15 @@ import { startGamepadBridge } from './gamepad';
 import { installStage } from './stage';
 import { startUpdater } from './updater';
 
-// Fixed 1920x1080 stage ONLY on a fixed-screen shell (the Steam Deck / a fullscreen
-// Chromium kiosk - both Linux): there the 10-foot canvas is scaled to fill the panel.
-// macOS / Windows desktop windows skip it and run FREE-SIZE, like a web page (the
-// window resizes naturally, no forced ratio).
+// The 1920x1080 stage, on EVERY desktop window: the shared 10-foot UI is authored
+// in fixed pixels against that canvas (PosterGrid's 8 x 203px columns, the nav row,
+// the episode column), so a free-size window narrower than 1920 does not shrink the
+// layout, it clips it. Fitted the same way as the Steam Deck panel and the browser
+// shell (see ./stage and clients/tv-web/src/stage.ts). A genuinely fluid 10-foot
+// layout is a design-system change, not a shell one.
 const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
 const fixedScreen = /Linux/i.test(ua) && !/Android/i.test(ua);
-if (fixedScreen) {
-  installStage();
-} else {
-  // Free-size desktop (macOS/Windows). On macOS the window is TRANSPARENT so the native
-  // mpv video plane can show behind the player, so paint an opaque app background by
-  // default - otherwise the transparent window shows through everywhere. The player
-  // toggles `.kroma-native-surface` (see tv.css) to go transparent only while a native
-  // video plays.
-  const base = document.createElement('style');
-  base.textContent = 'html, body, #root { background: var(--kroma-bg, #0a0a0c); }';
-  document.head.appendChild(base);
-}
+installStage();
 
 // The Deck is driven by a gamepad, not a remote. Bridge the Gamepad API onto the
 // same synthetic key events the shared TV nav already listens for.

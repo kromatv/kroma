@@ -1,10 +1,13 @@
-import { PosterCard, styles, VirtualGrid } from '@kroma/ui/kit';
+import { PosterCard, VirtualGrid } from '@kroma/ui/kit';
 import { memo } from 'react';
+import { SCREEN_PAD, STAGE_W } from '#tv/shared/stage';
 
 export interface GridCard {
   id: string;
   title: string;
-  poster: string;
+  /** Portrait art at the width of the cell the tile lands in: the column is
+   *  measured, so the rendition asked for follows it. */
+  poster: (width: number) => string;
   colors: [string, string];
   watched?: boolean;
   progress?: number | null;
@@ -12,41 +15,37 @@ export interface GridCard {
   onFocus?: () => void;
 }
 
-// The 1920px stage makes the column maths static: 1792px of content is exactly
-// 8 x 203px tiles plus 7 x 24px gaps. Flex wrap, never CSS grid, because the
-// legacy webOS tier (Chromium 53) has no grid and React Native has none either.
-const CONTENT_WIDTH = 1792;
-const COLUMNS = 8;
+// The design's column: 1792px of content is 8 x 203px tiles plus 7 x 24px gaps.
+// As a MINIMUM rather than a count, so the exact design lands on a 1920 panel
+// and a window of any other width fits whole tiles instead of clipping them.
+const TILE_MIN = 203;
+const POSTER_RATIO = 3 / 2;
 const GAP = 24;
 const ROW_GAP = 32;
-const TILE_W = Math.floor((CONTENT_WIDTH - GAP * (COLUMNS - 1)) / COLUMNS);
 
-// A computed number rather than something measured, because scroll offsets
-// are derived from it before anything is laid out; being a little out costs
-// a slightly wrong resting position, not a broken grid.
-const ROW_HEIGHT = Math.round((TILE_W * 3) / 2) + ROW_GAP;
-
-// The 2:3 poster grid for the Films / Séries browse views. Virtualised: only the rows near the
-// viewport are mounted, so a 2000-title library costs the same as a 40-title one.
+/** The 2:3 poster grid for the Films / Séries browse views. Virtualised: only the rows near the
+ * viewport are mounted, so a 2000-title library costs the same as a 40-title one. */
 function PosterGridImpl({ cards }: Readonly<{ cards: GridCard[] }>) {
   return (
     <VirtualGrid
       data={cards}
-      columns={COLUMNS}
-      itemHeight={ROW_HEIGHT}
-      style={s.viewport}
-      contentStyle={s.content}
-      rowStyle={s.row}
-      renderItem={(c, index) => (
+      min={TILE_MIN}
+      ratio={POSTER_RATIO}
+      gap={GAP}
+      rowGap={ROW_GAP}
+      px={SCREEN_PAD}
+      pt={32}
+      width={STAGE_W}
+      renderItem={(c, index, width) => (
         <PosterCard
           // The grid's entry point. tvOS picks by geometry and the web engine by
           // DOM order without one, so neither lands where the design says.
           autoFocus={index === 0}
           title={c.title}
-          art={c.poster}
+          art={c.poster(width)}
           tint={c.colors}
           watched={c.watched}
-          width={TILE_W}
+          width={width}
           // GridCard carries a percentage (the server's series-completion
           // figure); <PosterCard> takes a 0..1 ratio.
           progress={c.progress == null ? null : c.progress / 100}
@@ -61,14 +60,3 @@ function PosterGridImpl({ cards }: Readonly<{ cards: GridCard[] }>) {
 // memo: the browse screens re-render on every focus move (the ambient header
 // tracks the focused tile); an unchanged `cards` array must skip this subtree.
 export const PosterGrid = memo(PosterGridImpl);
-
-const s = styles({
-  // The grid owns the remaining height and is also what clips (see
-  // <VirtualGrid>): padding here would inset the clip and shave the rows.
-  viewport: { flex: true, minH: 0 },
-  // Padding belongs on the content, not the viewport. `pt` gives a focused
-  // row's ring and scale room to grow inside the clip, since <VirtualGrid>
-  // clips flush at its top.
-  content: { px: 64, pt: 32 },
-  row: { gap: GAP },
-});
