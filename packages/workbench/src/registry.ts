@@ -82,7 +82,7 @@ function tierFor(path: string): string {
   return 'Other';
 }
 
-/** `.../list-row/list-row.stories.tsx` -> `ListRow`: the name a story file
+/** `.../list-row/list-row.story.mdx` -> `ListRow`: the name a story file
  * implies, for every story that does not spell its own. */
 function nameFromPath(path: string, suffix: string): string {
   const file = path.slice(path.lastIndexOf('/') + 1, -suffix.length);

@@ -6,8 +6,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { historyFingerprint, NO_HISTORY, readGitHistory } from './git-history-read';
 
 const ROOT = 'kit/src';
-const STORY = `${ROOT}/button/button.stories.tsx`;
-const MOVED = `${ROOT}/atoms/button/button.stories.tsx`;
+const STORY = `${ROOT}/button/button.story.mdx`;
+const MOVED = `${ROOT}/atoms/button/button.story.mdx`;
 const PAGE = `${ROOT}/guides/01-intro.page.mdx`;
 
 let repo = '';
@@ -107,9 +107,9 @@ describe('readGitHistory', () => {
   });
 
   it('lists something that exists only in the working tree with no dates at all', async () => {
-    write(`${ROOT}/atoms/chip/chip.stories.tsx`, 'export default {}\n');
+    write(`${ROOT}/atoms/chip/chip.story.mdx`, 'export default {}\n');
     const { entries } = await readGitHistory({ repo, root: ROOT });
-    const chip = entries[`${ROOT}/atoms/chip/chip.stories.tsx`];
+    const chip = entries[`${ROOT}/atoms/chip/chip.story.mdx`];
     expect(chip).toEqual({ dirty: true, commits: [] });
     rmSync(join(repo, ROOT, 'atoms/chip'), { recursive: true, force: true });
   });

@@ -1,7 +1,7 @@
 // Which view of a story is on the canvas, and how one is spelled in an address.
 //
 // Apart from the routing adapters that read and write it, because the story SDK
-// reads a view too: nothing here imports anything, so a `*.stories.tsx` that
+// reads a view too: nothing here imports anything, so a `*.story.mdx` that
 // pulls in `@kroma/workbench/story` does not pull in the design system with it.
 
 type View = 'preview' | 'docs' | 'matrix' | `scene:${number}` | `demo:${number}`;

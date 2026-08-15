@@ -7,7 +7,7 @@ import { gitHistory } from './git-history';
 
 const RESOLVED = '\0virtual:kroma-history';
 const ROOT = 'kit/src';
-const STORY = `${ROOT}/button/button.stories.tsx`;
+const STORY = `${ROOT}/button/button.story.mdx`;
 
 interface Hooks {
   load: (id: string) => Promise<string | null>;

@@ -23,7 +23,7 @@ export interface HistoryEntry {
 }
 
 /** Every entry the build could read, keyed by repository-relative path: a
- * component by its `*.stories.tsx`, an article by its own `.page.mdx`. `shallow`
+ * component by its `*.story.mdx`, an article by its own `.page.mdx`. `shallow`
  * says the clone was truncated, in which case there are no entries at all -
  * a creation date read from half a history is a wrong one. */
 export interface GitHistory {
@@ -60,7 +60,7 @@ interface WorkingTree {
 const COMMIT_MARK = '\x01';
 const FIELD_MARK = '\x1f';
 
-const STORY = '.stories.tsx';
+const STORY = '.story.mdx';
 const PAGE = '.page.mdx';
 
 /** The fields `readGitHistory` asks `git log` for, in the order `parseLog`

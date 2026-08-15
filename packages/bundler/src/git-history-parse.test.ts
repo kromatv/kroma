@@ -15,7 +15,7 @@ function logOf(...commits: { sha: string; date: string; subject: string; body: s
 }
 
 const BUTTON = 'packages/ui/src/components/atoms/button/button.tsx';
-const STORY = 'packages/ui/src/components/atoms/button/button.stories.tsx';
+const STORY = 'packages/ui/src/components/atoms/button/button.story.mdx';
 
 describe('splitPaths', () => {
   it('reads a NUL-separated list without a trailing empty name', () => {
@@ -25,9 +25,9 @@ describe('splitPaths', () => {
 
 describe('parseStatus', () => {
   it('takes the name a staged rename came from as its earlier self', () => {
-    const status = `R  ${STORY}${NUL}packages/ui/src/button.stories.tsx${NUL}`;
+    const status = `R  ${STORY}${NUL}packages/ui/src/button.story.mdx${NUL}`;
     const working = parseStatus(status);
-    expect(working.renamedFrom.get(STORY)).toBe('packages/ui/src/button.stories.tsx');
+    expect(working.renamedFrom.get(STORY)).toBe('packages/ui/src/button.story.mdx');
     expect(working.dirty.has(STORY)).toBe(true);
   });
 

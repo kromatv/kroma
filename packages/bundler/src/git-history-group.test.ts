@@ -8,7 +8,7 @@ import {
 } from './git-history-parse.ts';
 
 const BUTTON = 'packages/ui/src/components/atoms/button/button.tsx';
-const STORY = 'packages/ui/src/components/atoms/button/button.stories.tsx';
+const STORY = 'packages/ui/src/components/atoms/button/button.story.mdx';
 const OLD_BUTTON = 'packages/ui/src/button.tsx';
 
 describe('attribute', () => {
@@ -90,18 +90,18 @@ describe('groupFiles', () => {
   it('attaches a nested helper to the nearest story above it', () => {
     const player = 'packages/ui/src/components/organisms/player';
     const files = [
-      `${player}/player.stories.tsx`,
+      `${player}/player.story.mdx`,
       `${player}/hooks/use-controls.ts`,
-      `${player}/parts/top-bar/top-bar.stories.tsx`,
+      `${player}/parts/top-bar/top-bar.story.mdx`,
       `${player}/parts/top-bar/top-bar.tsx`,
     ];
     const groups = groupFiles(files);
-    expect(groups.get(`${player}/player.stories.tsx`)).toEqual([
-      `${player}/player.stories.tsx`,
+    expect(groups.get(`${player}/player.story.mdx`)).toEqual([
+      `${player}/player.story.mdx`,
       `${player}/hooks/use-controls.ts`,
     ]);
-    expect(groups.get(`${player}/parts/top-bar/top-bar.stories.tsx`)).toEqual([
-      `${player}/parts/top-bar/top-bar.stories.tsx`,
+    expect(groups.get(`${player}/parts/top-bar/top-bar.story.mdx`)).toEqual([
+      `${player}/parts/top-bar/top-bar.story.mdx`,
       `${player}/parts/top-bar/top-bar.tsx`,
     ]);
   });
@@ -109,19 +109,17 @@ describe('groupFiles', () => {
   it('splits a folder holding several stories by file name', () => {
     const root = 'packages/ui/src/foundations';
     const files = [
-      `${root}/colors.stories.tsx`,
+      `${root}/colors.story.mdx`,
       `${root}/colors.test.ts`,
-      `${root}/typography.stories.tsx`,
+      `${root}/typography.story.mdx`,
       `${root}/shared.ts`,
     ];
     const groups = groupFiles(files);
-    expect(groups.get(`${root}/colors.stories.tsx`)).toEqual([
-      `${root}/colors.stories.tsx`,
+    expect(groups.get(`${root}/colors.story.mdx`)).toEqual([
+      `${root}/colors.story.mdx`,
       `${root}/colors.test.ts`,
     ]);
-    expect(groups.get(`${root}/typography.stories.tsx`)).toEqual([
-      `${root}/typography.stories.tsx`,
-    ]);
+    expect(groups.get(`${root}/typography.story.mdx`)).toEqual([`${root}/typography.story.mdx`]);
     expect([...groups.values()].flat()).not.toContain(`${root}/shared.ts`);
   });
 
@@ -181,7 +179,7 @@ describe('entriesOf', () => {
   });
 
   it('keys the entries by path, whatever order the groups arrived in', () => {
-    const at = (name: string) => `packages/ui/src/components/atoms/${name}.stories.tsx`;
+    const at = (name: string) => `packages/ui/src/components/atoms/${name}.story.mdx`;
     const groups = new Map(['chip', 'avatar', 'button'].map((name) => [at(name), [at(name)]]));
     const found = new Map([...groups.keys()].map((key) => [key, commits(newer)]));
     expect(Object.keys(entriesOf(groups, found, new Set(), 6))).toEqual([

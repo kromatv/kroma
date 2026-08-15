@@ -12,7 +12,7 @@
 // `export const __scenes = [...]` beside the document.
 //
 // Because this runs in the shared MDX options, Metro compiles it too - so a
-// scene's source text reaches a television, which the `.stories.tsx` reader
+// scene's source text reaches a television, which the `.story.mdx` reader
 // (story-code-read.ts, Vite-only) never could.
 //
 // Plain `.mjs` for the same reason as mdx.mjs beside it: Metro's transformer

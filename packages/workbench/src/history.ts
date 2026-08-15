@@ -26,7 +26,7 @@ interface HistoryEntry {
 }
 
 /** Every entry a build could read, keyed by repository-relative path: a
- * component by its `*.stories.tsx`, an article by its own `.page.mdx`.
+ * component by its `*.story.mdx`, an article by its own `.page.mdx`.
  * `shallow` says the clone was truncated, which is why there is nothing here. */
 interface KitHistory {
   entries: Readonly<Record<string, HistoryEntry>>;
