@@ -57,8 +57,23 @@ clients/webos/*.ipk
 
 # Env / local
 .env
-.env.local
+.env.*
+!.env.example
 *.local
+
+# Signing material, by extension rather than by location. The rules above cover
+# it wherever a build is EXPECTED to leave some - clients/*/android, and the
+# per-client ignore files in clients/mobile and clients/tv-native - which is the
+# same thing as saying they stop covering it the moment a keystore lands
+# somewhere nobody predicted. These patterns are the backstop for that case, so
+# no signing material anywhere in the tree can be swept up by a wide `git add`.
+*.jks
+*.keystore
+*.p12
+*.p8
+*.pem
+*.key
+*.mobileprovision
 
 # Local NAS serve helper kept on disk, never tracked
 scripts/serve-nas.sh

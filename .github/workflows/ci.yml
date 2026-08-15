@@ -16,8 +16,11 @@ name: CI
 # shell factory (clients/tv-build/shell.ts) strips console/debugger on build,
 # and KROMA_TV_DEVICE (on-device dev HMR) is never set in CI.
 
-# Docs-only changes build nothing and check nothing; skip the run entirely.
-# (No branch protection requires these checks, so a skipped run blocks nobody.)
+# Docs-only changes build nothing and check nothing, but the run still starts:
+# `quality` and `server` are required checks on main, and a workflow skipped by
+# `paths-ignore` never reports, which would leave a docs-only PR blocked for
+# ever. The `changes` job does the skipping instead — a skipped job reports as
+# successful, so the gate is satisfied and the docs PR pays ~20s.
 #
 # workflow_dispatch exists to re-warm the rust caches: they save only from main
 # (see the rust-cache comments below), so once evicted they stay dead until a
@@ -26,17 +29,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.claude/**'
-      - 'LICENSE'
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.claude/**'
-      - 'LICENSE'
 
 # Cancel superseded runs on the same ref (e.g. rapid pushes to a PR).
 concurrency:
@@ -52,9 +45,10 @@ env:
 jobs:
   # Which half of the fleet the change can actually touch. `rust` gates the
   # server job (a JS-only PR pays no clippy+test), `fleet` gates the client
-  # builds (a server-only PR pays no vite/gradle/tauri). `quality` stays
-  # unconditional: it is the cheap always-green check, and its inputs (biome,
-  # vitest, tokens) span too much of the tree to be worth a filter.
+  # builds (a server-only PR pays no vite/gradle/tauri), `code` gates `quality`
+  # and stands in for the `paths-ignore` this workflow can no longer carry:
+  # its inputs (biome, vitest, tokens) span too much of the tree for a narrower
+  # filter, so it runs for anything that is not prose.
   changes:
     name: Detect relevant changes
     runs-on: ubuntu-latest
@@ -66,6 +60,7 @@ jobs:
       # caches, so it runs everything.
       rust: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.f.outputs.rust }}
       fleet: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.f.outputs.fleet }}
+      code: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.f.outputs.code }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
@@ -98,10 +93,37 @@ jobs:
               # desktop-shell compiles Rust under the repo toolchain pin.
               - 'rust-toolchain.toml'
               - '.github/workflows/ci.yml'
+            code:
+              - '!**/*.md'
+              - '!docs/**'
+              - '!.claude/**'
+              - '!LICENSE'
+
+  # A ruleset would be the right home for this, but branch-name patterns are a
+  # metadata restriction and those need an org on Team or Enterprise; this repo
+  # is user-owned. So the PR head branch is checked here instead. It only fires
+  # on a pull request — a push to main is skipped, which reports as successful.
+  branch-name:
+    name: Branch name
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 5
+    steps:
+      - name: Head branch matches type/slug
+        env:
+          BRANCH: ${{ github.head_ref }}
+          PATTERN: '^(feat|fix|chore|ci|docs|refactor|perf|test|build|kit|release|revert|claude|dependabot)/[A-Za-z0-9._/-]+$'
+        run: |
+          if [[ ! "$BRANCH" =~ $PATTERN ]]; then
+            echo "::error::branch '$BRANCH' does not match $PATTERN"
+            exit 1
+          fi
 
   quality:
     name: Typecheck + unit tests + lint
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
