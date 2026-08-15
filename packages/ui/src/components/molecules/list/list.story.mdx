@@ -1,0 +1,77 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Text } from '#ui/components/atoms/text';
+import { List } from './list';
+
+export const story = defineStory({
+  group: 'Layout',
+  width: { min: 320, max: 620 },
+  args: { ordered: false },
+  component: List.Root,
+  render: ({ ordered }) => (
+    <List.Root ordered={ordered} label="Playback rules">
+      <List.Item>Direct play whenever the client can decode the file as it stands.</List.Item>
+      <List.Item>Remux only where the container is the problem, never the codecs.</List.Item>
+      <List.Item>Transcode last, and say why on the screen that asked for it.</List.Item>
+    </List.Root>
+  ),
+});
+
+The bulleted, numbered or ticked list a piece of prose is written in. It owns the marker column, and a number is the one thing an item cannot know about itself: the Root walks its direct children once and hands each one its position. It is the list a DOCUMENT has - a run of settings is `<ListRow>`, and a collection long enough to scroll is `<VirtualGrid>`.
+
+```tsx
+<List.Root>
+  <List.Item>Direct play whenever the client can decode it.</List.Item>
+  <List.Item>Remux only where the container is the problem.</List.Item>
+</List.Root>
+
+<List.Root ordered>
+  <List.Item>Install the module.</List.Item>
+  <List.Item>Give it a port.</List.Item>
+</List.Root>
+```
+
+<Scene name="Numbered">
+  The Root numbers the items in the order they were written, so an item that moves takes its number with it.
+
+  <List.Root ordered label="Installing a module">
+    <List.Item>Add the registry under Admin, Modules, Registries.</List.Item>
+    <List.Item>Install the module: the artifact is checked against its sha256.</List.Item>
+    <List.Item>Give it a port, or let the supervisor find a free one.</List.Item>
+  </List.Root>
+</Scene>
+
+<Scene name="Tasks">
+  A ticked list, where the state is part of what the document says. The box is the marker, and nothing about it is pressable.
+
+  <List.Root label="Before a release">
+    <List.Item checked>The three checks are green.</List.Item>
+    <List.Item checked>The kit builds for every shell.</List.Item>
+    <List.Item checked={false}>The changelog names the modules that moved.</List.Item>
+  </List.Root>
+</Scene>
+
+<Scene name="Blocks in an item">
+  A string is set in the body role. Anything else is drawn as it was written, which is how an item holds a second paragraph or a list of its own.
+
+  <List.Root>
+    <List.Item>
+      <Text color="textMuted">A television has one D-pad stop per row.</Text>
+      <List.Root>
+        <List.Item>So an indicator is a face, never a control.</List.Item>
+        <List.Item>And the row carries the semantics.</List.Item>
+      </List.Root>
+    </List.Item>
+    <List.Item>A pointer deserves a hit area the size of the thing it aims at.</List.Item>
+  </List.Root>
+</Scene>
+
+<Do>
+- Write one `<List.Item>` per entry and let the Root number them: a hand-written number goes wrong the moment an item moves.
+- Give an item a block of its own when it is more than a sentence - a paragraph, a snippet, a nested list.
+- Use `checked` for a task list, where the state is part of what the document says.
+</Do>
+
+<Dont>
+- Use it for a list of controls: a row that can be pressed is `<ListRow>`.
+- Tick a task box expecting a control - it is a face, and a document is not a form.
+</Dont>

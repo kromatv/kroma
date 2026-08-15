@@ -1,8 +1,8 @@
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
+import { GUTTER, scaler } from '#ui/components/organisms/player/lib/metrics';
 import { sv } from '#ui/core';
 import { useT } from '#ui/services/i18n';
-import { GUTTER, scaler } from '../../lib/metrics';
 
 // The scrim variant carries a 1px border and primary none; pinning the border on
 // the focused state too keeps the pill's box from shifting a pixel when focus

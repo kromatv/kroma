@@ -68,9 +68,15 @@ function Item({ checked, children }: Readonly<ListItemProps>) {
   return (
     <Box row role="listitem" gap={space[3]} align="flex-start">
       <Marker marker={marker} checked={checked} />
-      <Box flex minW={0}>
-        {typeof children === 'string' ? <Text color="textMuted">{children}</Text> : children}
-      </Box>
+      {typeof children === 'string' ? (
+        <Text flex minW={0} color="textMuted">
+          {children}
+        </Text>
+      ) : (
+        <Box flex minW={0}>
+          {children}
+        </Box>
+      )}
     </Box>
   );
 }

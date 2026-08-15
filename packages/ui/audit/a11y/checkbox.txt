@@ -1,0 +1,6 @@
+# Checkbox  src/components/atoms/checkbox/checkbox.story.mdx
+
+## preview
+checkbox "Select all" [checked=mixed] tab
+checkbox "Subtitles" [checked=true] tab
+checkbox "Audio tracks" [checked=false] tab

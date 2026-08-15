@@ -1,21 +1,21 @@
 import { formatTimecode } from '@kroma/core';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
+import { useDragTrack } from '#ui/components/organisms/player/hooks/use-drag-track';
+import { clamp01 } from '#ui/components/organisms/player/lib/fmt';
+import { scaler } from '#ui/components/organisms/player/lib/metrics';
+import { msAtOffset, offsetAt, SEGMENT_GAP } from '#ui/components/organisms/player/lib/seek-track';
+import { seekBar } from '#ui/components/organisms/player/lib/style';
+import { StoryboardThumb } from '#ui/components/organisms/player/parts/storyboard-thumb';
+import type { Chapter } from '#ui/components/organisms/player/types';
 import { styles, sv, themed } from '#ui/core';
 import { a11yValue } from '#ui/lib/a11y';
 import { gradient } from '#ui/lib/css';
 import { suppressSelection } from '#ui/lib/drag-select';
 import { useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard';
-import { useDragTrack } from '../../hooks/use-drag-track';
-import { clamp01 } from '../../lib/fmt';
-import { scaler } from '../../lib/metrics';
-import { msAtOffset, offsetAt, SEGMENT_GAP } from '../../lib/seek-track';
-import { seekBar } from '../../lib/style';
-import type { Chapter } from '../../types';
-import { StoryboardThumb } from '../storyboard-thumb';
 
 const seekTrack = sv({ base: { _focus: { ring: 'focusWash' } } });
 
@@ -67,6 +67,7 @@ export function SeekBar({
   // The track measures itself rather than reading a DOM rect, so the same drag
   // maths runs on a TV; PanResponder is the one gesture API both renderers have.
   const track = useDragTrack();
+  const { ref: trackRef, onLayout: onTrackLayout } = track;
   const trackWidth = track.width;
   const dragging = useRef(false);
   const [hoverSec, setHoverSec] = useState<number | null>(null);
@@ -83,57 +84,59 @@ export function SeekBar({
     [chapters, dur],
   );
 
-  const secAt = useCallback(
-    (locationX: number): number | null => {
-      const offset = track.offsetOf(locationX);
-      if (offset == null || dur <= 0) return null;
-      return msAtOffset(offset, segs, track.width) / 1000;
-    },
-    [dur, segs, track.offsetOf, track.width],
-  );
+  const secAt = (locationX: number): number | null => {
+    const offset = track.offsetOf(locationX);
+    if (offset == null || dur <= 0) return null;
+    return msAtOffset(offset, segs, track.width) / 1000;
+  };
 
   const endSelectionBlock = useRef(NOOP);
   // A drag cut short by an unmount (chrome auto-hide, route change) would
   // otherwise leave the document unselectable for the rest of the session.
   useEffect(() => () => endSelectionBlock.current(), []);
 
-  const pan = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (e: GestureResponderEvent) => {
-          endSelectionBlock.current = suppressSelection();
-          track.measure();
-          const sec = secAt(e.nativeEvent.locationX);
-          if (sec == null) return;
-          dragging.current = true;
-          onScrub(sec);
-          setHoverSec(sec);
-        },
-        onPanResponderMove: (e: GestureResponderEvent) => {
-          if (!dragging.current) return;
-          const sec = secAt(e.nativeEvent.locationX);
-          if (sec == null) return;
-          onScrub(sec);
-          setHoverSec(sec);
-        },
-        onPanResponderRelease: () => {
-          endSelectionBlock.current();
-          endSelectionBlock.current = NOOP;
-          if (!dragging.current) return;
-          dragging.current = false;
-          setHoverSec(null);
-          onScrubCommit();
-        },
-        onPanResponderTerminate: () => {
-          endSelectionBlock.current();
-          endSelectionBlock.current = NOOP;
-          dragging.current = false;
-          setHoverSec(null);
-        },
-      }),
-    [track.measure, secAt, onScrub, onScrubCommit],
+  const grabScrub = useEffectEvent((locationX: number) => {
+    endSelectionBlock.current = suppressSelection();
+    track.measure();
+    const sec = secAt(locationX);
+    if (sec == null) return;
+    dragging.current = true;
+    onScrub(sec);
+    setHoverSec(sec);
+  });
+  const moveScrub = useEffectEvent((locationX: number) => {
+    if (!dragging.current) return;
+    const sec = secAt(locationX);
+    if (sec == null) return;
+    onScrub(sec);
+    setHoverSec(sec);
+  });
+  const releaseScrub = useEffectEvent(() => {
+    endSelectionBlock.current();
+    endSelectionBlock.current = NOOP;
+    if (!dragging.current) return;
+    dragging.current = false;
+    setHoverSec(null);
+    onScrubCommit();
+  });
+  const cancelScrub = useEffectEvent(() => {
+    endSelectionBlock.current();
+    endSelectionBlock.current = NOOP;
+    dragging.current = false;
+    setHoverSec(null);
+  });
+
+  // Built once: the handlers are effect events, so the one responder always
+  // sees the current track and callbacks without ever being recreated.
+  const [pan] = useState(() =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e: GestureResponderEvent) => grabScrub(e.nativeEvent.locationX),
+      onPanResponderMove: (e: GestureResponderEvent) => moveScrub(e.nativeEvent.locationX),
+      onPanResponderRelease: () => releaseScrub(),
+      onPanResponderTerminate: () => cancelScrub(),
+    }),
   );
 
   const shownMs = shown * 1000;
@@ -202,7 +205,7 @@ export function SeekBar({
         ) : null}
 
         {/* segmented track */}
-        <View ref={track.ref} onLayout={track.onLayout} {...pan.panHandlers} style={sized.track}>
+        <View ref={trackRef} onLayout={onTrackLayout} {...pan.panHandlers} style={sized.track}>
           {segs.map((seg) => {
             const span = Math.max(1, seg.endMs - seg.startMs);
             const played = clamp01((shownMs - seg.startMs) / span);

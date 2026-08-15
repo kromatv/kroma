@@ -1,0 +1,148 @@
+export const title = 'Writing a story';
+export const summary = 'One document per component, and the four things it can show: a preview the controls drive, a scene, a worked demo, and the prose around them.';
+export const width = 'wide';
+
+A component has exactly one story, and that story **is a document**:
+`otp-field.story.mdx`, sitting beside `otp-field.tsx`. The prose is prose, the
+examples are JSX in the middle of it, and the one typed thing - the identity,
+the args, the render - is a single export at the top.
+
+```tsx
+import { defineStory } from '@kroma/workbench/story';
+import { OtpField } from './otp-field';
+import { otpVariants } from './otp-field-variants';
+
+export const story = defineStory({
+  group: 'Input',
+  variants: otpVariants,
+  args: { label: 'Verification code', maxLength: 6 },
+  render: (args) => <OtpField.Root {...args} />,
+});
+
+The one-time-code entry: a row of character slots with the caret on the next
+empty one.
+```
+
+Everything below that export is the document. The name comes from the file
+(`otp-field.story.mdx` → `OtpField`); write `name` only where that is wrong.
+
+## The four answers
+
+Each tab of a story answers a different question, which is why they are not all
+the same thing and why one story full of examples would be worse than what is
+here.
+
+| Tab | Written as | Answers |
+| --- | --- | --- |
+| Preview | the declaration's `render`, or its `component` | What does this do when I change a prop? |
+| Docs | the document itself | Why does it exist and when do I reach for it? |
+| A scene | `<Scene>` in the prose | What does it look like arranged THIS way? |
+| A demo | a `*.demo.tsx` file beside the component | Here is a whole worked screen. |
+
+Only the preview and a live scene are driven by the Controls tab. That is the
+whole distinction, and everything below follows from it.
+
+## A scene is written once
+
+A `<Scene>` sits in the prose, where its explanation is. It appears twice for
+free: as a live specimen in the document, and as a tab on the canvas, with the
+JSX you wrote in the code drawer under it.
+
+The **take** is its child, and there are three ways to write one.
+
+**An arrow reads the live args**, so the controls keep driving it. Wrap it in
+`story.take(...)` and your editor types the arrow with this story's own args.
+
+```tsx
+<Scene name="Alphanumeric">
+  A pairing code read off a screen: letters as well as digits.
+
+  {story.take(({ value, ...props }) => (
+    <OtpField.Root {...props} pattern={REGEXP_ONLY_DIGITS_AND_CHARS} defaultValue={value} />
+  ))}
+</Scene>
+```
+
+**A plain element is a fixed composition**, and the controls step aside rather
+than sitting there moving nothing. Use it when the point of the scene is the
+arrangement itself.
+
+```tsx
+<Scene name="Media at the head">
+  <ListRow.Root>
+    <ListRow.Leading>
+      <Avatar name="Maxime" size={34} circle />
+    </ListRow.Leading>
+    <ListRow.Label>Maxime</ListRow.Label>
+  </ListRow.Root>
+</Scene>
+```
+
+**No take at all** reuses the story's own render with the scene's `args` merged
+in, which is the shortest way to say "the same thing, with these values".
+
+```tsx
+<Scene name="Masked" args={{ mask: true, maxLength: 4 }}>
+  A secret PIN: the slots hold dots, and the value never renders.
+</Scene>
+```
+
+The test is not how complicated the markup is. It is: *would a reader want the
+controls to reach this?* If yes, an arrow. If the controls would be dead
+furniture beside it, an element.
+
+## Guidance, and the call worth copying
+
+Do and don't are lists inside `<Do>` and `<Dont>`, written one after the other.
+They render as a matched pair of cards, side by side wherever the column is wide
+enough for two.
+
+```tsx
+<Do>
+- Submit from `onComplete`: a full code should verify with no OK press.
+</Do>
+
+<Dont>
+- Set a `pattern` the keyboard contradicts.
+</Dont>
+```
+
+**The card header carries the verdict, so the line inside must not.** Write
+"Set a `pattern` the keyboard contradicts", not "Don't set a `pattern`…": under
+a panel headed *Don't*, the second reads as a stutter. The same rule is why a
+line needs no leading tick — the card is already the tick.
+
+A card holds ordinary markdown, so anything worth showing goes inside it: a
+fenced sample of the right call, or the component itself.
+
+The canonical call site worth copying is an ordinary fenced block in the prose,
+highlighted like any other sample.
+
+## Helpers live beside the document
+
+A stateful wrapper, a fixture list, a local `<Labelled>` - anything that is code
+rather than an example - goes in `<component>.fixtures.tsx` and is imported by
+the document. MDX is for the writing; TypeScript stays in TypeScript.
+
+## A scene or a demo
+
+A scene lives inside the document and shows the component. A demo is a whole
+`*.demo.tsx` file beside the component, discovered by its name, and shows a
+screen built out of it: the surrounding layout, the state, the handlers, the
+other components it sits with.
+
+Reach for a demo when the thing worth showing is bigger than the component: a
+sign-up form rather than a field, a settings panel rather than a row. A demo
+opens with its source already showing, because its whole purpose is to be read
+and copied. A scene is a take on the component; a demo is a use of it.
+
+## Why not one story with a dozen examples
+
+Because the controls would have nothing to drive, and the Props and Interactions
+tabs would have no single subject. The story is the unit that carries a
+component's identity: its variants, its args, its props table, its git history,
+its link to source. A page of unrelated examples is a page, and this workbench
+has those too, written as `*.page.mdx` and filed under Guides.
+
+So: one document per component, scenes for takes on it, demos for screens built
+out of it, and a page when the subject is not a component at all.

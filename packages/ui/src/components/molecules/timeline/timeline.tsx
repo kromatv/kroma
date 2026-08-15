@@ -137,25 +137,24 @@ function Item({
   return (
     <Box row pb={last ? 0 : shape.step}>
       <Rail tone={tone} icon={icon} shape={shape} last={last} />
-      {/* minW 0: without it a long line widens the entry instead of wrapping
-          inside it. */}
-      <Box flex minW={0} ml={shape.gap}>
-        {onPress ? (
-          <Focusable
-            label={label ?? (typeof title === 'string' ? title : undefined)}
-            ring={false}
-            focusScale={1}
-            onPress={onPress}
-            sv={timelineEntry}
-          >
-            {body}
-          </Focusable>
-        ) : (
-          <Box gap={2} px={WASH} py={4}>
-            {body}
-          </Box>
-        )}
-      </Box>
+      {/* The entry's own column IS its wash, pressable or not. `minW: 0`: without
+          it a long line widens the entry instead of wrapping inside it. */}
+      {onPress ? (
+        <Focusable
+          label={label ?? (typeof title === 'string' ? title : undefined)}
+          ring={false}
+          focusScale={1}
+          onPress={onPress}
+          sv={timelineEntry}
+          style={{ flex: 1, minWidth: 0, marginLeft: shape.gap }}
+        >
+          {body}
+        </Focusable>
+      ) : (
+        <Box flex minW={0} ml={shape.gap} gap={2} px={WASH} py={4}>
+          {body}
+        </Box>
+      )}
     </Box>
   );
 }

@@ -1,0 +1,112 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Button } from '#ui/components/atoms/button';
+import { IconButton } from '#ui/components/atoms/icon-button';
+import { Text } from '#ui/components/atoms/text';
+import { TextField } from '#ui/components/atoms/text-field';
+import { ButtonGroup } from './button-group';
+import { Caption, Split, Segmented, Chips, Borderless, WithEntry, Vertical, Toolbar } from './button-group.fixtures';
+
+export const story = defineStory({
+  group: 'Actions',
+  render: () => <Split />,
+});
+
+A row (or a column) of related controls rendered as ONE control: adjacent
+members share a single border line and their inner corners are flattened, so
+three buttons read as one segmented object.
+
+<ButtonGroup.Root label="Subscription">
+  <Button label="Follow" />
+  <ButtonGroup.Separator />
+  <IconButton icon="chevron-down" variant="primary" label="More options" />
+</ButtonGroup.Root>
+
+A split button, a toolbar cluster, a value with its unit welded to the end.
+
+## How the seam is drawn
+
+The browser does this with `:first-child` and a collapsed border. React Native
+has neither, so **Root counts its children and publishes each one's position
+through a context**, one provider per child, and the members shape themselves
+from it.
+
+It is a context rather than `cloneElement` because a member is routinely wrapped
+(a Tooltip trigger, a Menu trigger) and cloned props would land on the wrapper
+instead of the control.
+
+- `Button`, `IconButton`, `TextField` and `ButtonGroup.Addon` read the slot.
+- **Anything else keeps its own shape**, which is a visible signal that a child
+  is not a member.
+
+## What it is not
+
+It carries no selection state: it is `role="group"` plus a shape. For one-of-N
+use a SegmentGroup, and for a set of toggles a ChoiceList.
+
+```tsx
+<ButtonGroup.Root label="Subscription">
+  <Button label="Follow" onPress={follow} />
+  <ButtonGroup.Separator />
+  <IconButton icon="chevron-down" variant="primary" label="More options" />
+</ButtonGroup.Root>
+
+// A toolbar is a group of groups: the outer one spaces the clusters
+// instead of welding them.
+<ButtonGroup.Root label="Toolbar">
+  <ButtonGroup.Root label="Zoom">…</ButtonGroup.Root>
+  <ButtonGroup.Root label="View">…</ButtonGroup.Root>
+</ButtonGroup.Root>
+```
+
+<Scene name="A segmented run">
+  Bordered members need no separator: their shared edge is one line because each member after the first drops its leading border. `size` on the group is what keeps the run one height.
+
+  <Segmented />
+</Scene>
+
+<Scene name="Text as a prefix and a suffix">
+  A chip nothing can press, shaped like the members around it: it says what the neighbouring value IS, so the value itself does not have to spell it out.
+
+  <Chips />
+</Scene>
+
+<Scene name="A separator for borderless members">
+  A filled member has no edge to share, so two of them would run together into one slab. The separator draws the line the collapsed borders would have drawn, and it occupies a slot, so the member after it is still shaped as the member after it.
+
+  <Borderless />
+</Scene>
+
+<Scene name="An entry welded to a button">
+  A `<TextField>` is a member like any button: it takes the group's size, drops the corners and the border edge it shares, and lifts itself over its neighbour while it wears the focus ring. That last part is why the field reads the slot rather than the group styling it - only the field knows it is focused, and a collapsed border would otherwise let the member after it overpaint the ring.
+
+  Where this is the whole control rather than a row of them - a search box with a count welded inside its own well - reach for an `<InputGroup>` instead: there the shell is one well and the addons live *inside* it, so the field draws no fill, frost or edge of its own.
+
+  <WithEntry />
+</Scene>
+
+<Scene name="Vertical">
+  The same rule turned ninety degrees: the top and bottom corners are the ones that survive, and the shared border is the top one. What a remote walks with up and down rather than left and right.
+
+  <Vertical />
+</Scene>
+
+<Scene name="Nested clusters">
+  A group inside a group swallows the position it inherits and hands its own children fresh ones, while the outer group stops collapsing borders and spaces the clusters instead. That single rule is the whole of how a toolbar is written.
+
+  <Toolbar />
+</Scene>
+
+<Do>
+- Name the group: Root's `label` is what a screen reader announces before the members.
+- Give every member the same variant, and let the group own `size` so they share one height.
+- Add a `Separator` only between members that carry no border of their own.
+- Nest groups to build a toolbar: the outer group spaces the clusters.
+- Give a `<TextField>` member `flex={1} minW={0}` so it takes the row and can still shrink.
+</Do>
+
+<Dont>
+- Use it to pick one option among several - that is a `<SegmentGroup>`.
+- Wrap a member in a layout `<Box>`: the wrapper becomes the member and takes the shape.
+- Clip the group (`overflow`): a focused member's ring is painted outside its box.
+</Dont>

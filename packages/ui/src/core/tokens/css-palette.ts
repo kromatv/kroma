@@ -1,12 +1,10 @@
 // One file keyed on Platform.OS, not a `.ts`/`.web.ts` pair: the native half is
 // `null`, a legal value, so a misresolved import would fail silently.
 
-import { Platform } from 'react-native';
+import { WEB } from '#ui/lib/platform';
 import { type ColorToken, colors, splitAlpha } from './colors';
 import { cssVar } from './css-var';
 import { type ShadowToken, shadow } from './effects';
-
-const WEB = Platform.OS === 'web';
 
 const vars = <K extends string>(
   group: Record<K, string>,

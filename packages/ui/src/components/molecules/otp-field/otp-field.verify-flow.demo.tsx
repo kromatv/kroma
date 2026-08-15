@@ -35,7 +35,6 @@ export default function Verify() {
     <Box gap={18} align="flex-start">
       <OtpField.Root
         maxLength={6}
-        groups={[3, 3]}
         physicalKeyboard
         value={code}
         invalid={status === 'wrong'}
@@ -45,7 +44,19 @@ export default function Verify() {
           setStatus('idle');
         }}
         onComplete={check}
-      />
+      >
+        <OtpField.Group>
+          <OtpField.Slot />
+          <OtpField.Slot />
+          <OtpField.Slot />
+        </OtpField.Group>
+        <OtpField.Separator />
+        <OtpField.Group>
+          <OtpField.Slot />
+          <OtpField.Slot />
+          <OtpField.Slot />
+        </OtpField.Group>
+      </OtpField.Root>
       <Text variant="meta" color={status === 'wrong' ? 'danger' : 'textDim'}>
         {MESSAGE[status]}
       </Text>

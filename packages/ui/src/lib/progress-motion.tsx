@@ -5,7 +5,7 @@
 // is a native-driver property. See progress-motion.web.tsx for the browser half,
 // which spells both as CSS transitions.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, type StyleProp, type ViewStyle } from 'react-native';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
@@ -20,7 +20,7 @@ export interface ProgressFillProps {
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 function useSettling(to: number): Animated.Value {
-  const value = useRef(new Animated.Value(to)).current;
+  const [value] = useState(() => new Animated.Value(to));
   const target = useRef(to);
 
   useEffect(() => {

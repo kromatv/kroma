@@ -1,0 +1,44 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Catalogue, OneSection } from './alphabet-rail.fixtures';
+
+export const story = defineStory({
+  group: 'Actions',
+  render: () => <Catalogue />,
+});
+
+The NavPill turned vertical: a fast-scroll rail for a long alphabetical list. The **amber lens** covers every letter whose section is on screen (a tall viewport shows several at once) and travels with the scroll; scrubbing along the rail shows a bubble naming the letter under the finger and jumps as it crosses rows. A letter the list does not carry is `disabled`: it renders dimmed, takes no focus stop, and a scrub or tap near it snaps to its nearest present neighbour. The host owns the list and the scroll: the rail only reports jumps.
+
+One `<AlphabetRail.Item>` per bucket, in rail order, is the whole API: the item says which letter it stands for and whether the list carries it, and the Root reads their positions to place the lens.
+
+```tsx
+<AlphabetRail.Root
+  label={t('browse.letterNav')}
+  range={visible}            // {first, last}: the sections on screen
+  onJump={scrollToLetter}
+>
+  {TITLE_LETTERS.map((letter) => (
+    <AlphabetRail.Item
+      key={letter}
+      value={letter}
+      disabled={!lettersInView.has(letter)}
+      label={t('browse.jumpToLetter', { letter })}
+    />
+  ))}
+</AlphabetRail.Root>
+```
+
+<Scene name="One section">
+  A `range` of a single bucket tightens the lens to a circle over that letter; a taller viewport reports a stretch and the lens becomes a stadium over the whole run.
+
+  <OneSection />
+</Scene>
+
+<Do>
+- Feed `range` from a scroll-spy so the lens mirrors the viewport, not just one letter.
+- Write every bucket the list could have, dimming the ones it does not carry: a rail that grows and shrinks cannot be aimed at.
+</Do>
+
+<Dont>
+- Mount it for a short list; under a couple of screens of content it is noise.
+- Scroll smoothly during a scrub; the finger sets the pace, the page keeps up.
+</Dont>

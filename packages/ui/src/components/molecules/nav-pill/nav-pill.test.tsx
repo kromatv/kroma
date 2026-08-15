@@ -167,7 +167,7 @@ describe('NavPill items', () => {
       </NavPill.Root>,
     );
     const capsule = container.firstElementChild as HTMLElement;
-    const item = (name: string) => screen.getByLabelText(name).parentElement as HTMLElement;
+    const item = (name: string) => screen.getByLabelText(name);
     expect(capsule.children).toHaveLength(2);
 
     layout(item('Home'), { x: 8, y: 4, width: 96, height: 44 });

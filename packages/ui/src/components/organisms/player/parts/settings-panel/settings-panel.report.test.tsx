@@ -5,34 +5,10 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
-import type { SubtitleAppearance } from '../../lib/subtitle-appearance';
-import type { PlayerController } from '../../types';
-import type { SubtitleGenBundle } from './settings/gen';
 import { SettingsPanel } from './settings-panel';
+import { APPEARANCE, controller, GEN } from './settings-panel.fixture';
 
 afterEach(cleanup);
-
-function controller(): PlayerController {
-  return {
-    qualities: [],
-    qualityId: '',
-    setQuality: vi.fn(),
-    audioTracks: [],
-    audioIndex: null,
-    setAudio: vi.fn(),
-    audioFilter: 'off',
-    audioFilterSupported: false,
-    setAudioFilter: vi.fn(),
-    subtitles: [],
-    subtitleIndex: null,
-    setSubtitle: vi.fn(),
-    rate: 1,
-    setRate: vi.fn(),
-  } as unknown as PlayerController;
-}
-
-const GEN = { supported: false } as unknown as SubtitleGenBundle;
-const APPEARANCE = {} as SubtitleAppearance;
 
 function panel(onReport?: (category: ReportCategory) => Promise<void>): ReactElement {
   return (

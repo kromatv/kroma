@@ -9,7 +9,7 @@ import {
   EmptyState,
   Field,
   Row,
-  SegmentedControl,
+  SegmentGroup,
   Select,
   Spacer,
   Surface,
@@ -82,11 +82,13 @@ export function LogsPage({
         </PageHeader.Actions>
       </PageHeader.Root>
       <Row wrap gap={12} mt={8} mb={16}>
-        <SegmentedControl.Root
-          value={level}
-          options={LEVELS.map((l) => ({ value: l.value, label: t(l.labelKey) }))}
-          onValueChange={setLevel}
-        />
+        <SegmentGroup.Root value={level} onValueChange={setLevel}>
+          {LEVELS.map((l) => (
+            <SegmentGroup.Item key={l.value} value={l.value}>
+              <SegmentGroup.Label>{t(l.labelKey)}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          ))}
+        </SegmentGroup.Root>
         <Select.Root label={t('logs.allSources')} value={source} onValueChange={onSourceChange}>
           <Select.Trigger />
           {sources.map((s) => (

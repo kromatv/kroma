@@ -1,0 +1,20 @@
+# ListRow  src/components/molecules/list-row/list-row.story.mdx
+
+## preview
+button "Language" tab
+
+## scene:A list
+button "Language" tab
+button "Audio" tab
+presentation "Volume levelling"
+button "Sign out" tab
+
+## scene:Media at the head
+button "Maxime" tab
+button "The Good, the Bad and the Ugly" tab
+presentation "Living room"
+
+## scene:A group
+button "Language" tab
+button "Devices" tab
+button "About" tab

@@ -1,0 +1,37 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Switch, switchVariants } from './switch';
+
+export const story = defineStory({
+  group: 'Input',
+  variants: switchVariants,
+  matrix: true,
+  // Declaring `checked` here is what lets `render` read it with types.
+  args: { disabled: false, checked: false },
+  // A remount key, so the panel picks the starting state and the preview still
+  // toggles on press.
+  render: ({ checked, ...props }) => (
+    <Switch
+      key={String(checked)}
+      {...props}
+      label="Subtitles"
+      defaultChecked={checked === true}
+    />
+  ),
+});
+
+The on/off switch. A television has no gestures: this is not a thumb you slide but a **Focusable** that toggles on Select, and the track fills with amber so the state reads from ten feet away. Pass `checked` to own the state, or just `defaultChecked` and it runs itself.
+
+```tsx
+<Switch checked={subtitles} onCheckedChange={setSubtitles} />
+<Switch defaultChecked />
+```
+
+<Do>
+- Use the `tv` size on a settings row read from the sofa.
+- Give it a `label`, or pair it with one: a switch says a state, and a state
+  nobody can name announces as nothing.
+</Do>
+
+<Dont>
+- Use a Switch for an action; it states a condition, not a command.
+</Dont>

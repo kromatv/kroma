@@ -1,27 +1,16 @@
-// A story's own source, as the code drawer shows it beside a scene.
-//
-// There is no source here: this is the data @kroma/bundler's `storyCode` plugin
-// cut out of the `*.stories.tsx` at build time. Empty on Metro, which cannot
-// hand a module its own text - the same bargain a demo's code panel makes, and
-// the same one the prop docs make.
+// A story's identity, as @kroma/bundler's `storyCode` plugin read it out of the
+// `*.story.mdx` at build time. This is what lets an index list the library
+// without executing it; a story's source itself travels inside its own module
+// (see story-scenes.mjs), so there is nothing else to carry here.
 
-import type { Story } from './story';
-
-/** What the build read out of one story file: the identity it declares, and its
- * authored source - the story's own `render`, and one entry per scene in the
- * order the file declares them. A scene that writes neither `render` nor
- * `example` carries the story's own, which is what renders it. */
+/** What the build read out of one story file: the `name` and `group` a
+ * workbench lists it by - unlike its level, no path spells them. */
 interface StoryCode {
-  /** The story's declared name, which is what a lazy index lists it by: unlike
-   * its level, no path spells it. */
   name?: string;
-  /** Its functional section, for the same reason. */
   group?: string;
-  render?: string;
-  scenes: readonly string[];
 }
 
-/** Every story file's source, keyed by repository-relative path. */
+/** Every story file's identity, keyed by repository-relative path. */
 type StoryCodes = Readonly<Record<string, StoryCode>>;
 
 /** The entry for a file a bundler discovered. Vite globs a story as
@@ -39,16 +28,5 @@ function codeAt(codes: StoryCodes, path: string): StoryCode | undefined {
   }
 }
 
-/** The story with its own source attached, and each scene's. Returned unchanged
- * where the build had nothing to say about the file. */
-function withCode(story: Story, code: StoryCode | undefined): Story {
-  if (!code) return story;
-  const scenes = story.scenes.map((scene, at) => {
-    const source = code.scenes[at];
-    return source ? { ...scene, code: source } : scene;
-  });
-  return { ...story, ...(code.render ? { code: code.render } : null), scenes };
-}
-
 export type { StoryCode, StoryCodes };
-export { codeAt, withCode };
+export { codeAt };

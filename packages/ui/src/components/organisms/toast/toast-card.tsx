@@ -1,13 +1,14 @@
 // One notice, drawn. The column it belongs to and the timer's length are the
 // host's business (see toast.tsx); this file is the card and its motion.
 
-import { useEffect, useRef } from 'react';
-import { Animated, Platform } from 'react-native';
+import { useEffect, useEffectEvent, useState } from 'react';
+import { Animated } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type ColorToken, styles } from '#ui/core';
 import { hasGlyph } from '#ui/lib/icons/glyphs';
+import { WEB } from '#ui/lib/platform';
 import type { ToastOptions } from './toast';
 
 function ToastCard({
@@ -16,9 +17,8 @@ function ToastCard({
   from,
   onDone,
 }: Readonly<{ entry: ToastOptions; stay: number; from: number; onDone: () => void }>) {
-  const appear = useRef(new Animated.Value(0)).current;
-  const done = useRef(onDone);
-  done.current = onDone;
+  const [appear] = useState(() => new Animated.Value(0));
+  const done = useEffectEvent(onDone);
 
   useEffect(() => {
     Animated.timing(appear, {
@@ -31,7 +31,7 @@ function ToastCard({
         toValue: 0,
         duration: 200,
         useNativeDriver: true,
-      }).start(() => done.current());
+      }).start(() => done());
     }, stay);
     return () => clearTimeout(leave);
   }, [appear, stay]);
@@ -94,7 +94,7 @@ const s = styles({
     maxW: 520,
     // The lift that separates a notice from the picture behind it. Web-only: the
     // native shadow props cost a rasterisation pass a TV does not need to spend.
-    ...(Platform.OS === 'web' ? { boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)' } : null),
+    ...(WEB ? { boxShadow: '0 12px 32px rgba(0, 0, 0, 0.5)' } : null),
   },
   well: { bg: 'tint/8' },
   text: { minW: 0, shrink: 1 },

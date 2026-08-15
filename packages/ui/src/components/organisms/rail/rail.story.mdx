@@ -1,0 +1,42 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { MediaCard } from '#ui/components/molecules/media-card';
+import { stillArt } from '#ui/lib/sample-art';
+import { Rail } from './rail';
+import { TINT, SelectableRail } from './rail.fixtures';
+
+export const story = defineStory({
+  group: 'Media',
+  width: { min: 560, max: 1400 },
+  component: SelectableRail,
+  args: { title: 'Continue watching', gap: 24, inset: 0, count: 24, virtualised: true },
+  controls: { gap: { min: 8, max: 48, step: 4 }, count: { min: 1, max: 40, step: 1 } },
+});
+
+A horizontal scrolling row. `<Rail.Root>` holds a `<Rail.Title>` and the tiles; plain tile children get the growing row, which mounts a screenful and grows as focus nears its end. `<Rail.List>` is the windowed row for a long strip of uniform tiles: given a tile PITCH it runs on `<VirtualRail>`, so the row holds still while the highlight travels and moves only when the selection comes within a tile of either end, a SIDEWAYS wheel pans it without changing the selection (a vertical one is left to the page), and a pointer gets an arrow at each end. Rows whose tiles are not all one width (chips, cast faces) stay on the growing row.
+
+```tsx
+<Rail.Root>
+  <Rail.Title>Continue watching</Rail.Title>
+  {cards}
+</Rail.Root>
+
+<Rail.Root>
+  <Rail.Title variant="subheadingTv">Continue watching</Rail.Title>
+  <Rail.List pitch={320 + RAIL_GAP} height={180}>
+    {cards}
+  </Rail.List>
+</Rail.Root>
+```
+
+<Do>
+- Reach for `<Rail.List>` once a row can run past a couple of screens; it is the one that costs a screenful whatever its length.
+- Pass `grow={false}` on a short strip of controls, so it does not open showing only its first chunk.
+</Do>
+
+<Dont>
+- Style the heading through the Root - `<Rail.Title>` takes its own `variant` and `style`.
+- Put a `<Rail.List>` and loose tiles in the same Root: the list IS the row.
+</Dont>

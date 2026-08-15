@@ -1,6 +1,6 @@
 import { type ReactNode, useMemo } from 'react';
-import { Platform, type StyleProp, type ViewStyle } from 'react-native';
-import { Box, type BoxProps, Row } from '#ui/components/atoms/box';
+import type { StyleProp, ViewStyle } from 'react-native';
+import { Box, Row } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
@@ -10,10 +10,6 @@ import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/fie
 import { FocusRegion } from '#ui/lib/focus-scope';
 import { partContext } from '#ui/lib/part-context';
 import { clamp, pageWindow } from './paging';
-
-const WEB = Platform.OS === 'web';
-
-const ARIA_CURRENT = { 'aria-current': 'page' } as unknown as BoxProps;
 
 const paginationVariants = svFor<{
   root: StyleDecl;
@@ -198,16 +194,15 @@ function Item({ page }: Readonly<PaginationItemProps>) {
   const { page: current, size, go, pageLabel } = usePagination('Item');
   const on = page === current;
   return (
-    <Box {...(on && WEB ? ARIA_CURRENT : null)}>
-      <Focusable
-        label={pageLabel(page)}
-        onPress={() => go(page)}
-        sv={paginationVariants}
-        vars={{ size, current: on }}
-      >
-        {(state) => <Text style={state.slots.label}>{page}</Text>}
-      </Focusable>
-    </Box>
+    <Focusable
+      label={pageLabel(page)}
+      current={on ? 'page' : undefined}
+      onPress={() => go(page)}
+      sv={paginationVariants}
+      vars={{ size, current: on }}
+    >
+      {(state) => <Text style={state.slots.label}>{page}</Text>}
+    </Focusable>
   );
 }
 

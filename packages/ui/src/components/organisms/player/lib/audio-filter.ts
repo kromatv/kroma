@@ -1,7 +1,7 @@
 import { deviceStorage, type MessageKey, type Translate } from '@kroma/core';
 import { type RefObject, useCallback, useEffect, useState } from 'react';
+import type { AudioFilterMode } from '#ui/components/organisms/player/types';
 import { webDocument } from '#ui/lib/dom';
-import type { AudioFilterMode } from '../types';
 
 // Volume normalizer for the web player: a Web Audio compressor + make-up gain
 // behind the <video>, mirrored by native DSP on TV from the same persisted value.
@@ -132,6 +132,14 @@ function wire(el: HTMLMediaElement, mode: AudioFilterMode): void {
   publishDebugHandle({ ctx, graph: g, mode });
 }
 
+function persistAudioFilter(m: AudioFilterMode): void {
+  try {
+    deviceStorage()?.setItem(KEY, m);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** `remountKey` must change whenever the parent remounts the <video>, so the
  * graph re-attaches to the fresh element. */
 export function useAudioFilter(
@@ -155,11 +163,7 @@ export function useAudioFilter(
 
   const setMode = useCallback((m: AudioFilterMode) => {
     setModeState(m);
-    try {
-      deviceStorage()?.setItem(KEY, m);
-    } catch {
-      /* ignore */
-    }
+    persistAudioFilter(m);
   }, []);
 
   return { mode: modeState, setMode, supported };

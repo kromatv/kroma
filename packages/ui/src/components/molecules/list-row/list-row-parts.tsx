@@ -8,7 +8,9 @@ import { useListRow } from './list-row-context';
  *  the sugar for the kit's icon well. */
 function Leading({ children }: Readonly<{ children: ReactNode }>) {
   useListRow('Leading');
-  return <Box shrink={0}>{children}</Box>;
+  // No box of its own: the row is already the row, and media never shrinks under
+  // it - a view, an image and a glyph are all `flex-shrink: 0` to begin with.
+  return children;
 }
 
 /** The row's title. Written first, its plain text is the row's accessible name. */

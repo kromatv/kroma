@@ -68,15 +68,37 @@ export function productVersion(repoRoot: string): string | null {
  * app.config.ts, pass `__dirname`). A nullish `overrides.version` is ignored, so
  * a caller can pass one through unconditionally.
  */
+function packageVersion(projectRoot: string): string | null {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8')) as {
+      version?: string;
+    };
+    return pkg.version ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Up from a client to the repo: every client is two levels down (clients/web,
+// apps/kit, modules/<id>/ui is three, and lands on the repo either way because
+// `productVersion` simply fails to read a Cargo.toml that is not there).
+function repoRootOf(projectRoot: string): string {
+  return path.resolve(projectRoot, '..', '..');
+}
+
 export function collectBuildInfo(
   projectRoot: string,
   overrides?: { version?: string | null },
 ): BuildInfo {
-  const pkg = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8')) as {
-    version?: string;
-  };
   return {
-    version: overrides?.version ?? pkg.version ?? '0.0.0',
+    // The PRODUCT's version, not the manifest's: releases move
+    // `server/Cargo.toml` and nothing else, so a client that stamped its own
+    // package.json advertised a number that had not moved in thirty releases.
+    version:
+      overrides?.version ??
+      productVersion(repoRootOf(projectRoot)) ??
+      packageVersion(projectRoot) ??
+      '0.0.0',
     commit: git('rev-parse --short HEAD', projectRoot),
     commitFull: git('rev-parse HEAD', projectRoot),
     branch: git('rev-parse --abbrev-ref HEAD', projectRoot),

@@ -1,0 +1,8 @@
+# ArtScrim  src/components/atoms/art-scrim/art-scrim.story.mdx
+
+## preview
+div "" rgb(0, 0, 0)/medium/normal/depends on user agent/normal/normal//none/none << pad=0,0,0,0 op=1.000 bg=[var(--kroma-accent-bright) linear-gradient(rgba(0, 0, 0, 0.05) 40%, rgba(0, 0, 0, 0.75) 100%)] radius=[13px 13px 13px 13px 13px 13px 13px 13px] flex=[column:stretch:normal:nowrap:g0/0:n2] abs=1
+div "Blade Runner 2049" rgb(255, 255, 255)/20px/700/"Bricolage Grotesque"/-0.4px/21px/start/none/none << pad=0,0,0,0 op=1.000 bg=[var(--kroma-accent-bright)] radius=[13px 13px 13px 13px] flex=[column:stretch:normal:nowrap:g0/0:n2] abs=1
+
+## scene:Bare artwork
+div "Blade Runner 2049" rgb(255, 255, 255)/20px/700/"Bricolage Grotesque"/-0.4px/21px/start/none/none << pad=0,0,0,0 op=1.000 bg=[var(--kroma-accent-bright)] radius=[13px 13px 13px 13px] abs=1

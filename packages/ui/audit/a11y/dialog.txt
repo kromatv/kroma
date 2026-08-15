@@ -1,0 +1,13 @@
+# Dialog  src/components/organisms/dialog/dialog.story.mdx
+
+## preview
+button "Open" tab
+
+## scene:Cancel and save
+button "Open" tab
+
+## scene:A third action
+button "Open" tab
+
+## scene:A header of its own
+button "Open" tab

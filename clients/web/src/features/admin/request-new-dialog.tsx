@@ -26,7 +26,7 @@ import {
   Icon,
   ListRow,
   Row,
-  SegmentedControl,
+  SegmentGroup,
   Skeleton,
   Spinner,
   Text,
@@ -146,16 +146,21 @@ export function NewRequestDialog({
             </Field.Root>
           </Box>
           <Box shrink={0}>
-            <SegmentedControl.Root
+            <SegmentGroup.Root
               value={scope}
               onValueChange={setScope}
               label={t('requests.newRequestScope')}
-              options={[
-                { value: 'all' as const, label: t('requests.ledgerAll') },
-                { value: 'movie' as const, label: t('requests.targetMovie') },
-                { value: 'tv' as const, label: t('requests.scopeShows') },
-              ]}
-            />
+            >
+              <SegmentGroup.Item value="all">
+                <SegmentGroup.Label>{t('requests.ledgerAll')}</SegmentGroup.Label>
+              </SegmentGroup.Item>
+              <SegmentGroup.Item value="movie">
+                <SegmentGroup.Label>{t('requests.targetMovie')}</SegmentGroup.Label>
+              </SegmentGroup.Item>
+              <SegmentGroup.Item value="tv">
+                <SegmentGroup.Label>{t('requests.scopeShows')}</SegmentGroup.Label>
+              </SegmentGroup.Item>
+            </SegmentGroup.Root>
           </Box>
           <Box w={16} shrink={0}>
             {busy ? <Spinner size={16} /> : null}

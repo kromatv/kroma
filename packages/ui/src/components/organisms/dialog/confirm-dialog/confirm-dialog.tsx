@@ -1,5 +1,5 @@
 import { Button } from '#ui/components/atoms/button';
-import { Dialog, type DialogRootProps } from '../dialog';
+import { Dialog, type DialogRootProps } from '#ui/components/organisms/dialog/dialog';
 
 interface ConfirmDialogProps extends Omit<DialogRootProps, 'children'> {
   confirmLabel: string;

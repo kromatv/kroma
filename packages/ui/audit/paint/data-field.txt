@@ -1,0 +1,20 @@
+# DataField  src/components/molecules/data-field/data-field.story.mdx
+
+## preview
+div "Runtime" var(--kroma-text-dim)/11px/700/"Hanken Grotesk"/1.32px/11px/start/uppercase/none << pad=0,0,0,0 op=1.000 flex=[column:stretch:normal:nowrap:g0/0:n2]
+div "2h 04m" var(--kroma-text)/15px/600/"Hanken Grotesk"/normal/20px/start/none/none << pad=0,0,0,0 op=1.000 flex=[column:stretch:normal:nowrap:g0/0:n2]
+
+## scene:A row of facts
+div "Runtime" var(--kroma-text-dim)/11px/700/"Hanken Grotesk"/1.32px/11px/start/uppercase/none << pad=0,0,0,0 op=1.000 flex=[row:stretch:normal:wrap:g0/0:n4 column:stretch:normal:nowrap:g0/0:n2]
+div "2h 04m" var(--kroma-text)/15px/600/"Hanken Grotesk"/normal/20px/start/none/none << pad=0,0,0,0 op=1.000 flex=[row:stretch:normal:wrap:g0/0:n4 column:stretch:normal:nowrap:g0/0:n2]
+div "Released" var(--kroma-text-dim)/11px/700/"Hanken Grotesk"/1.32px/11px/start/uppercase/none << pad=0,0,0,0 op=1.000 flex=[row:stretch:normal:wrap:g0/0:n4 column:stretch:normal:nowrap:g0/0:n2]
+div "2017" var(--kroma-text)/15px/600/"Hanken Grotesk"/normal/20px/start/none/none << pad=0,0,0,0 op=1.000 flex=[row:stretch:normal:wrap:g0/0:n4 column:stretch:normal:nowrap:g0/0:n2]
+div "Audio" var(--kroma-text-dim)/11px/700/"Hanken Grotesk"/1.32px/11px/start/uppercase/none << pad=0,0,0,0 op=1.000 flex=[row:stretch:normal:wrap:g0/0:n4 column:stretch:normal:nowrap:g0/0:n2]
+div "English, French" var(--kroma-text)/15px/600/"Hanken Grotesk"/normal/20px/start/none/none << pad=0,0,0,0 op=1.000 flex=[row:stretch:normal:wrap:g0/0:n4 column:stretch:normal:nowrap:g0/0:n2]
+div "Subtitles" var(--kroma-text-dim)/11px/700/"Hanken Grotesk"/1.32px/11px/start/uppercase/none << pad=0,0,0,0 op=1.000 flex=[row:stretch:normal:wrap:g0/0:n4 column:stretch:normal:nowrap:g0/0:n2]
+div "None" var(--kroma-text)/15px/600/"Hanken Grotesk"/normal/20px/start/none/none << pad=0,0,0,0 op=1.000 flex=[row:stretch:normal:wrap:g0/0:n4 column:stretch:normal:nowrap:g0/0:n2]
+
+## scene:A value with its own shape
+div "Network" var(--kroma-text-dim)/11px/700/"Hanken Grotesk"/1.32px/11px/start/uppercase/none << pad=0,0,0,0 op=1.000 flex=[column:stretch:normal:nowrap:g0/0:n2]
+div "Wi-Fi 192.168.1.42" var(--kroma-text)/15px/600/"Hanken Grotesk"/normal/20px/start/none/none << pad=0,0,0,0 op=1.000 size=[maxwidth=100%] flex=[column:stretch:normal:nowrap:g0/0:n2]
+span "Wi-Fi" var(--kroma-success)/16px/400/"Hanken Grotesk"/normal/25px/start/none/none << pad=0,0,0,0 op=1.000 size=[maxwidth=100%] flex=[column:stretch:normal:nowrap:g0/0:n2]

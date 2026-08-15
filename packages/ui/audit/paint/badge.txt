@@ -1,0 +1,14 @@
+# Badge  src/components/atoms/badge/badge.story.mdx
+
+## preview
+div "4K" var(--kroma-accent-text)/11px/700/"Hanken Grotesk"/0.44px/17px/start/none/none << pad=4,9,4,9 op=1.000 bg=[var(--kroma-accent-soft)] radius=[6px 6px 6px 6px] self=[flex-start]
+
+## scene:All tones
+div "4K" var(--kroma-accent-text)/11px/700/"Hanken Grotesk"/0.44px/17px/start/none/none << pad=4,9,4,9 op=1.000 bg=[var(--kroma-accent-soft)] radius=[6px 6px 6px 6px] flex=[row:center:normal:wrap:g0/0:n8] self=[flex-start]
+div "HDR" var(--kroma-hdr)/11px/700/"Hanken Grotesk"/0.44px/17px/start/none/none << pad=4,9,4,9 op=1.000 bg=[var(--kroma-hdr-16)] radius=[6px 6px 6px 6px] flex=[row:center:normal:wrap:g0/0:n8] self=[flex-start]
+div "H.265" var(--kroma-h265)/11px/700/"Hanken Grotesk"/0.44px/17px/start/none/none << pad=4,9,4,9 op=1.000 bg=[var(--kroma-h265-16)] radius=[6px 6px 6px 6px] flex=[row:center:normal:wrap:g0/0:n8] self=[flex-start]
+div "success" var(--kroma-success)/11px/700/"Hanken Grotesk"/0.44px/17px/start/none/none << pad=4,9,4,9 op=1.000 bg=[var(--kroma-success-16)] radius=[6px 6px 6px 6px] flex=[row:center:normal:wrap:g0/0:n8] self=[flex-start]
+div "info" var(--kroma-info)/11px/700/"Hanken Grotesk"/0.44px/17px/start/none/none << pad=4,9,4,9 op=1.000 bg=[var(--kroma-info-16)] radius=[6px 6px 6px 6px] flex=[row:center:normal:wrap:g0/0:n8] self=[flex-start]
+div "danger" var(--kroma-danger)/11px/700/"Hanken Grotesk"/0.44px/17px/start/none/none << pad=4,9,4,9 op=1.000 bg=[var(--kroma-danger-16)] radius=[6px 6px 6px 6px] flex=[row:center:normal:wrap:g0/0:n8] self=[flex-start]
+div "warning" var(--kroma-accent-text)/11px/700/"Hanken Grotesk"/0.44px/17px/start/none/none << pad=4,9,4,9 op=1.000 bg=[var(--kroma-accent-soft)] radius=[6px 6px 6px 6px] flex=[row:center:normal:wrap:g0/0:n8] self=[flex-start]
+div "neutral" var(--kroma-text-85)/11px/700/"Hanken Grotesk"/0.44px/17px/start/none/none << pad=4,9,4,9 op=1.000 bg=[var(--kroma-tint-8)] radius=[6px 6px 6px 6px] flex=[row:center:normal:wrap:g0/0:n8] self=[flex-start]

@@ -173,35 +173,35 @@ function Root({
   const plotHeight = Math.max(0, height - (bottom ? (bottom.props.room ?? AXIS_ROOM.bottom) : 0));
   const plot = useMemo(() => ({ width: plotWidth, height: plotHeight }), [plotWidth, plotHeight]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `marks` is rebuilt from `children` on every render, and its content is what matters
-  const series = useMemo(() => seriesOf(marks, data), [children, data]);
+  const series = seriesOf(marks, data);
   const band = series.some((entry) => entry.mark === 'bar');
   const cursor = kids.some((kid) => isPart(kid, ChartTooltip));
   // The key and the caption share one row, at either end of it.
   const caption = kids.filter((kid) => isPart(kid, ChartLegend) || isPart(kid, ChartFooter));
 
-  // Memoised: every part below reads this, so a fresh object per render would
-  // redraw every mark, axis and readout whenever anything above the chart did.
-  const state = useMemo<ChartState>(
-    () => ({
-      data,
-      count: data.length,
-      plot,
-      domain: domainOf(topsOf(series), {
-        min,
-        max,
-        baseline: series.some((entry) => entry.mark !== 'line'),
-      }),
-      series,
-      band,
-      labels: data.map((point) => (x ? String(point[x] ?? '') : '')),
-      format,
-      label,
-      active,
-      setActive,
+  // Left to the React Compiler to memoise, and it has to be: a manual `useMemo`
+  // here is one the compiler cannot preserve (it sees a dependency mutated
+  // further down), so writing one costs the WHOLE component its memoisation to
+  // satisfy a rule about one object. Every part below reads this, so a fresh
+  // object per render would redraw every mark, axis and readout whenever
+  // anything above the chart did.
+  const state: ChartState = {
+    data,
+    count: data.length,
+    plot,
+    domain: domainOf(topsOf(series), {
+      min,
+      max,
+      baseline: series.some((entry) => entry.mark !== 'line'),
     }),
-    [data, plot, series, band, x, format, label, active, setActive, min, max],
-  );
+    series,
+    band,
+    labels: data.map((point) => (x ? String(point[x] ?? '') : '')),
+    format,
+    label,
+    active,
+    setActive,
+  };
 
   const track = (event: PointerEvent) => {
     const next = indexAtX(event.nativeEvent.offsetX, state.count, plot.width, band);

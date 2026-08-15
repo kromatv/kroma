@@ -139,11 +139,8 @@ function Root({ tone = 'neutral', size, icon, children }: Readonly<CalloutRootPr
  *  `children`. */
 function Media({ name, children }: Readonly<{ name?: IconName; children?: ReactNode }>) {
   const { shape, paint } = useCallout('Media');
-  return (
-    <Box shrink={0}>
-      {name ? <Icon name={name} size={shape.glyph} color={paint.ink} /> : children}
-    </Box>
-  );
+  if (name) return <Icon name={name} size={shape.glyph} color={paint.ink} />;
+  return <Box shrink={0}>{children}</Box>;
 }
 
 /** The one sentence the block exists to say, in the tone's ink. */

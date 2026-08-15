@@ -1,17 +1,14 @@
-// Story documentation, rendered by the kit itself.
-//
-// Two spellings, one look: a sibling `<story>.docs.mdx` compiled by the bundler
-// (see `mdx.tsx` for the element map), or the inline `docs:` string a one-line
-// description does not need a file for. The string is parsed by `markdown.ts`
-// and drawn through THE SAME components, so neither spelling has a rendering of
-// its own to drift.
+// The string-shaped prose the workbench still renders itself: a scene's
+// caption, a demo's paragraph, a prop's doc line, and the generated call site.
+// Parsed by `markdown.ts` and drawn through the same components as a compiled
+// document, so the two spellings cannot drift.
 
-import { Box, Icon, type TextProps } from '@kroma/ui/kit';
+import { Box, type TextProps } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import { blocks, segments } from './markdown';
-import { MDX_COMPONENTS, MdxDoc } from './mdx';
+import { MDX_COMPONENTS } from './mdx';
 import { Prose } from './mdx-marks';
-import type { Story, StoryDocs } from './story';
+import type { Story } from './story';
 
 const {
   a: A,
@@ -94,41 +91,6 @@ function Markdown({ children }: Readonly<{ children: string }>) {
   );
 }
 
-/** A story's prose, however it was written. */
-function StoryProse({ docs }: Readonly<{ docs: StoryDocs }>) {
-  return typeof docs === 'string' ? <Markdown>{docs}</Markdown> : <MdxDoc content={docs} />;
-}
-
-// One imperative line of guidance, ticked or crossed.
-function GuidelineRow({ text, good }: Readonly<{ text: string; good: boolean }>) {
-  return (
-    <Box row gap={10} align="flex-start">
-      <Box mt={2} shrink={0}>
-        <Icon name={good ? 'check' : 'x'} size={14} color={good ? 'success' : 'danger'} />
-      </Box>
-      <Box flex>
-        <RichText>{text}</RichText>
-      </Box>
-    </Box>
-  );
-}
-
-function Guidelines({
-  rules,
-}: Readonly<{ rules: { do: readonly string[]; dont: readonly string[] } }>) {
-  if (rules.do.length === 0 && rules.dont.length === 0) return null;
-  return (
-    <Box gap={10}>
-      {rules.do.map((rule) => (
-        <GuidelineRow key={rule} text={rule} good />
-      ))}
-      {rules.dont.map((rule) => (
-        <GuidelineRow key={rule} text={rule} good={false} />
-      ))}
-    </Box>
-  );
-}
-
 // The call site the current controls describe, as code. Booleans render as bare props when on
 // and disappear when off, strings quote, numbers brace: the way the line would actually be
 // written. Long calls break one prop per line, the way the formatter would break them.
@@ -156,4 +118,4 @@ function snippet(story: Story, args: Record<string, unknown>): string {
   return `<${name}\n  ${props.join('\n  ')}\n/>`;
 }
 
-export { Guidelines, Markdown, RichText, StoryProse, snippet };
+export { Markdown, RichText, snippet };

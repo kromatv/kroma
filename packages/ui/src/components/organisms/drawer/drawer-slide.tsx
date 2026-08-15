@@ -2,14 +2,14 @@
 // transform on native, and the mounted/shown pair that keeps the panel in the
 // tree long enough for the exit to play.
 
-import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Animated, Platform, type ViewStyle } from 'react-native';
+import { type ReactNode, useEffect, useState } from 'react';
+import { Animated, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { styles } from '#ui/core';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
+import { WEB } from '#ui/lib/platform';
 
-const WEB = Platform.OS === 'web';
 const SLIDE_MS = motion.duration.slow;
 
 type DrawerSide = 'left' | 'right';
@@ -70,7 +70,7 @@ function SlidePanelNative({
 }>) {
   // Initial value matches the initial state so a drawer restored open does not
   // play its own entrance.
-  const slide = useRef(new Animated.Value(shown ? 0 : 1)).current;
+  const [slide] = useState(() => new Animated.Value(shown ? 0 : 1));
   useEffect(() => {
     Animated.timing(slide, {
       toValue: shown ? 0 : 1,

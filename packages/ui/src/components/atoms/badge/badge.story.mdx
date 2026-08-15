@@ -1,0 +1,36 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Badge, badgeVariants } from './badge';
+import { TONES } from './badge.fixtures';
+
+export const story = defineStory({
+  group: 'Feedback',
+  variants: badgeVariants,
+  matrix: true,
+  component: Badge,
+});
+
+A metadata pill: video quality, codec, state. Each tone has its own dedicated color so it stays readable on a poster. Text only, **never emoji**.
+
+```tsx
+<Badge tone="4K" />
+<Badge tone={qualityTone(quality)}>{quality}</Badge>
+```
+
+<Scene name="All tones">
+  {story.take((props) => (
+    <Box row wrap gap={12} align="center">
+      {TONES.map((tone) => (
+        <Badge key={tone} {...props} tone={tone} />
+      ))}
+    </Box>
+  ))}
+</Scene>
+
+<Do>
+- Let `qualityTone()` map catalogue strings to a tone; unknowns fall back to neutral.
+</Do>
+
+<Dont>
+- Invent new tone colors inline - a tone is a design decision, not a prop.
+</Dont>

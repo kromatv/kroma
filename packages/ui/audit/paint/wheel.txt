@@ -1,0 +1,4 @@
+# Wheel  src/components/atoms/wheel/wheel.story.mdx
+
+## preview
+svg "" width=96 height=96 stroke= fill= stroke-width= viewBox=6 6 88 88 << pad=0,0,0,0 op=1.000 anim=[@r-animation-11cv4x auto]

@@ -82,6 +82,16 @@ function tierFor(path: string): string {
   return 'Other';
 }
 
+/** `.../list-row/list-row.stories.tsx` -> `ListRow`: the name a story file
+ * implies, for every story that does not spell its own. */
+function nameFromPath(path: string, suffix: string): string {
+  const file = path.slice(path.lastIndexOf('/') + 1, -suffix.length);
+  return file
+    .split(/[-_.]/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+}
+
 /** Compares two strings by their code units. Deliberately not `localeCompare`:
  * that orders by the host's locale, so the same tree would sort differently on
  * a laptop than in CI. */
@@ -139,6 +149,7 @@ export {
   glyphFor,
   groupBy,
   matches,
+  nameFromPath,
   orderStories,
   pathsEnding,
   slug,

@@ -3,8 +3,8 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
+import { Drawer } from '#ui/components/organisms/drawer';
 import { SURFACE_WIDTH } from '#ui/lib/surface-shell';
-import { Drawer } from '../drawer';
 import { Dialog } from './dialog';
 
 afterEach(cleanup);

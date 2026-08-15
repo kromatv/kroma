@@ -1,182 +1,116 @@
-// A story's own source, cut out of the story file at BUILD time.
+// A story's identity, read out of its `.story.mdx` at BUILD time.
 //
-// The workbench's code drawer shows a demo's real file text and, beside a scene,
-// showed nothing at all: a compiled render's `toString()` gives the
-// post-transform `jsx(...)` calls, which is not what anybody wrote. So the
-// authored spans are read here and shipped as data - the same bargain as
-// props-read.ts, against the same parser, for the same reason a regex cannot do
-// it (JSX text carries apostrophes, slashes and braces of its own).
-//
-// The ASYNC half of TypeScript's API, deliberately: the sync one runs its RPC
-// channel over `stdout._handle.fd`, a Node internal Bun does not implement, and
-// every build here is run by Bun.
+// The workbench's lazy index lists every component before executing any of
+// them, and a story names itself inside `defineStory({ ... })`, in an ESM block
+// the TypeScript project never sees. The two literals the index needs are read
+// off the compiled module with acorn (the compile has already turned the JSX
+// into calls), and a file that cannot be read ships nothing rather than failing
+// the build - which is also what every Metro build sees.
 
 import { relative, sep } from 'node:path';
-import type {
-  Expression,
-  Node,
-  ObjectLiteralExpression,
-  SourceFile,
-} from 'typescript/unstable/ast';
-import {
-  isArrayLiteralExpression,
-  isArrowFunction,
-  isBlock,
-  isCallExpression,
-  isExportAssignment,
-  isIdentifier,
-  isObjectLiteralExpression,
-  isParenthesizedExpression,
-  isPropertyAssignment,
-  isStringLiteral,
-} from 'typescript/unstable/ast/is';
-import { API } from 'typescript/unstable/async';
 
-/** What the build knows about one story file: the identity it declares - the
- *  `name` and `group` a workbench needs to LIST it without running the module
- *  that draws it - and its authored source, being the story's own `render` and
- *  one entry per scene in the order the file declares them. Mirrors `StoryCode`
- *  in @kroma/workbench; kept structural rather than imported so this build-time
- *  module has no runtime dependency on the package. */
+/** What the build knows about one story file: the `name` and `group` a
+ *  workbench needs to LIST it without running the module that draws it. Mirrors
+ *  `StoryCode` in @kroma/workbench; kept structural rather than imported so
+ *  this build-time module has no runtime dependency on the package. */
 export interface StoryCode {
   name?: string;
   group?: string;
-  render?: string;
-  scenes: string[];
 }
 
-/** Every story file's source, keyed by repository-relative path - the one
+/** Every story file's identity, keyed by repository-relative path - the one
  *  spelling both bundlers' globs can be reduced to. */
 export type StoryCodes = Record<string, StoryCode>;
-
-/** Where the stories are read from: `tsconfig` is the project whose program
- *  they live in, `repo` the checkout the keys are relative to, and `include`
- *  which of the project's files are stories. */
-export interface StoryCodeSources {
-  tsconfig: string;
-  repo: string;
-  include: (fileName: string) => boolean;
-}
-
-// The span as written, less the indentation the story file's own nesting put
-// there. The first line starts at the token, so only the rest carry it.
-function dedent(text: string): string {
-  const [first, ...rest] = text.split('\n');
-  const indents = rest
-    .filter((line) => line.trim())
-    .map((line) => line.length - line.trimStart().length);
-  const cut = indents.length ? Math.min(...indents) : 0;
-  return [first as string, ...rest.map((line) => line.slice(cut))].join('\n').trimEnd();
-}
-
-// A parameterless arrow is the story format's own ceremony - it binds nothing -
-// so what a reader wants is its body. One that takes the args is kept whole,
-// because the parameter is where the controls reach the JSX, and a body shown
-// without it reads as code with free variables in it.
-function authored(node: Expression): Node {
-  if (!isArrowFunction(node) || node.parameters.length > 0) return node;
-  const body = node.body;
-  if (isBlock(body)) return node;
-  return isParenthesizedExpression(body) ? body.expression : body;
-}
-
-function displayed(node: Expression, text: string): string {
-  const shown = authored(node);
-  // `pos` starts at the end of the previous token, so the span opens on the
-  // whitespace after the `:` or the `(`.
-  return dedent(text.slice(shown.pos, shown.end).trim());
-}
-
-function propertyOf(object: ObjectLiteralExpression, name: string): Expression | undefined {
-  for (const property of object.properties) {
-    if (!isPropertyAssignment(property)) continue;
-    if (isIdentifier(property.name) && property.name.text === name) return property.initializer;
-  }
-  return undefined;
-}
-
-// A scene declares `example`, or `render`, or neither - and neither reuses the
-// story's own render, which is then what its source is.
-function scenesOf(story: ObjectLiteralExpression, text: string, own: string): string[] {
-  const scenes = propertyOf(story, 'scenes');
-  if (!scenes || !isArrayLiteralExpression(scenes)) return [];
-  return scenes.elements.map((element) => {
-    if (!isObjectLiteralExpression(element)) return '';
-    const written = propertyOf(element, 'example') ?? propertyOf(element, 'render');
-    return written ? displayed(written, text) : own;
-  });
-}
-
-// `export default story({ … })`, which is the one shape a story file has.
-function storyObject(file: SourceFile): ObjectLiteralExpression | undefined {
-  for (const statement of file.statements) {
-    if (!isExportAssignment(statement)) continue;
-    const call = statement.expression;
-    if (!isCallExpression(call)) continue;
-    const [argument] = call.arguments;
-    if (argument && isObjectLiteralExpression(argument)) return argument;
-  }
-  return undefined;
-}
-
-// A member written as a plain string, which is how a story spells the two
-// things about itself that are not derivable from where its file sits.
-function literalOf(object: ObjectLiteralExpression, name: string): string | undefined {
-  const value = propertyOf(object, name);
-  return value && isStringLiteral(value) ? value.text : undefined;
-}
-
-// A story naming a `component` rather than writing a `render` has no authored
-// JSX to show, and neither has an empty file: the drawer falls back to the call
-// site the controls describe. Such a file still has an identity, so it is left
-// out only when there is nothing at all to say about it.
-function codeOf(file: SourceFile): StoryCode | null {
-  const object = storyObject(file);
-  if (!object) return null;
-  const name = literalOf(object, 'name');
-  const group = literalOf(object, 'group');
-  const render = propertyOf(object, 'render');
-  const own = render ? displayed(render, file.text) : '';
-  const scenes = scenesOf(object, file.text, own);
-  if (!(name || own) && scenes.every((scene) => !scene)) return null;
-  return {
-    ...(name ? { name } : null),
-    ...(group ? { group } : null),
-    ...(own ? { render: own } : null),
-    scenes,
-  };
-}
 
 const keyOf = (repo: string, fileName: string): string =>
   relative(repo, fileName).split(sep).join('/');
 
-/**
- * Read what every story declares about itself: its name and group, its own
- * `render`, and the source of each of its scenes.
- *
- * Syntax only - the program is opened for its parser, never its checker - so
- * the cost is one program and a walk of the story files' statements.
- */
-export async function readStoryCode({
-  tsconfig,
-  repo,
-  include,
-}: StoryCodeSources): Promise<StoryCodes> {
-  const api = new API({ cwd: process.cwd() });
-  try {
-    const snapshot = await api.updateSnapshot({ openProjects: [tsconfig] });
-    const project = snapshot.getProject(tsconfig) ?? snapshot.getProjects()[0];
-    if (!project) throw new Error(`story-code: could not open ${tsconfig}`);
-    const { program } = project;
-    const names = (await program.getSourceFileNames()).filter(include);
-    const found = await Promise.all(names.map((name) => program.getSourceFile(name)));
-    const out: StoryCodes = {};
-    for (const file of found.filter((one) => one !== undefined)) {
-      const code = codeOf(file);
-      if (code) out[keyOf(repo, file.fileName)] = code;
-    }
-    return out;
-  } finally {
-    api.close();
+type Node = { type: string; [key: string]: unknown };
+
+// Past the export wrapper, to the declaration itself.
+function declarationOf(statement: Node): Node | null {
+  const declared = (
+    statement.type === 'ExportNamedDeclaration' ? statement.declaration : statement
+  ) as Node | null;
+  return declared?.type === 'VariableDeclaration' ? declared : null;
+}
+
+// `const story = ...`, and the object it is: handed to `defineStory` or written
+// out on its own.
+function definitionIn(declaration: Node): Node | null {
+  for (const declared of declaration.declarations as Node[]) {
+    const id = declared.id as Node;
+    if (id.type !== 'Identifier' || id.name !== 'story') continue;
+    const init = declared.init as Node | null;
+    const object = (init?.type === 'CallExpression' ? (init.arguments as Node[])[0] : init) as
+      | Node
+      | undefined;
+    return object?.type === 'ObjectExpression' ? object : null;
   }
+  return null;
+}
+
+function storyObject(program: { body: readonly Node[] }): Node | null {
+  for (const statement of program.body) {
+    const declaration = declarationOf(statement);
+    if (declaration) return definitionIn(declaration);
+  }
+  return null;
+}
+
+/** A string property of the story object, read literally: anything computed is
+ * a value the index cannot know without running the module. */
+function wordOf(definition: Node, name: string): string | undefined {
+  for (const entry of definition.properties as Node[]) {
+    if (entry.type !== 'Property' || entry.computed) continue;
+    const key = entry.key as Node;
+    const value = entry.value as Node;
+    if (key.type !== 'Identifier' || key.name !== name) continue;
+    if (value.type === 'Literal' && typeof value.value === 'string') return value.value;
+  }
+  return undefined;
+}
+
+async function parseModule(fileName: string): Promise<{ body: readonly Node[] } | null> {
+  const [{ readFile }, { compileMdx }, { Parser }] = await Promise.all([
+    import('node:fs/promises'),
+    import('./mdx.mjs'),
+    import('acorn'),
+  ]);
+  const text = await readFile(fileName, 'utf8').catch(() => null);
+  if (text === null) return null;
+  try {
+    const compiled = await compileMdx(text, fileName);
+    return Parser.parse(compiled, {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+    }) as unknown as { body: readonly Node[] };
+  } catch {
+    return null;
+  }
+}
+
+async function mdxIdentity(fileName: string): Promise<StoryCode | null> {
+  const program = await parseModule(fileName);
+  const definition = program && storyObject(program);
+  if (!definition) return null;
+  const name = wordOf(definition, 'name');
+  const group = wordOf(definition, 'group');
+  if (!name && !group) return null;
+  return { ...(name ? { name } : null), ...(group ? { group } : null) };
+}
+
+/** What every `.story.mdx` declares about itself - the `name` and `group` an
+ * index lists it by - keyed by repository-relative path. */
+export async function readStoryMdxCode(
+  repo: string,
+  files: readonly string[],
+): Promise<StoryCodes> {
+  const out: StoryCodes = {};
+  const read = await Promise.all(files.map(mdxIdentity));
+  for (const [at, code] of read.entries()) {
+    const file = files[at];
+    if (code && file) out[keyOf(repo, file)] = code;
+  }
+  return out;
 }

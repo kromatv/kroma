@@ -16,7 +16,7 @@ import {
   EmptyState,
   Field,
   Row,
-  SegmentedControl,
+  SegmentGroup,
   TableSkeleton,
   Text,
 } from '@kroma/ui/kit';
@@ -75,16 +75,21 @@ export function RequestFreeSearch({
           </Text>
         </Box>
         <Box shrink={0}>
-          <SegmentedControl.Root
+          <SegmentGroup.Root
             value={search.target}
             onValueChange={search.pickTarget}
             label={t('requests.freeTarget')}
-            options={[
-              { value: 'movie' as const, label: t('requests.targetMovie') },
-              { value: 'season' as const, label: t('requests.targetSeason') },
-              { value: 'episode' as const, label: t('requests.targetEpisode') },
-            ]}
-          />
+          >
+            <SegmentGroup.Item value="movie">
+              <SegmentGroup.Label>{t('requests.targetMovie')}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+            <SegmentGroup.Item value="season">
+              <SegmentGroup.Label>{t('requests.targetSeason')}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+            <SegmentGroup.Item value="episode">
+              <SegmentGroup.Label>{t('requests.targetEpisode')}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          </SegmentGroup.Root>
         </Box>
       </Row>
 

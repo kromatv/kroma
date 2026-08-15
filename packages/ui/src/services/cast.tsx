@@ -31,6 +31,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
@@ -155,11 +156,18 @@ export function CastProvider({
   const [, rerender] = useReducer((n: number) => n + 1, 0);
   // The live socket, kept so selecting a TV can announce this remote on it.
   const socket = useRef<KromaEvents | null>(null);
-  // Read from the socket's `onOpen`, which is not re-created per render.
+  // Read from the socket's `onOpen` and from the stable callbacks below, none
+  // of which are re-created per render. Written in a layout effect rather than
+  // during render, which is the spelling the React Compiler accepts; nothing
+  // reads them before the commit lands.
   const drivingRef = useRef<string | null>(null);
-  drivingRef.current = activeId;
   const name = useRef(deviceName);
-  name.current = deviceName;
+  const receiversRef = useRef<CastReceiver[]>(receivers);
+  useLayoutEffect(() => {
+    drivingRef.current = activeId;
+    name.current = deviceName;
+    receiversRef.current = receivers;
+  });
 
   const refresh = useCallback(() => {
     if (!enabled || !client) return;
@@ -172,13 +180,11 @@ export function CastProvider({
   // What the link adds: a signed-in television heard here is refetched at once
   // instead of on the next beat, and the ones with no account are surfaced so a
   // picker never reads "none available" with one in the room.
-  const known = useRef<CastReceiver[]>(receivers);
-  known.current = receivers;
   const pairable = useLanCast({
     lan,
     enabled: enabled && Boolean(client),
     onUnknownReceiver: refresh,
-    knowsReceiver: (id) => known.current.some((r) => r.id === id),
+    knowsReceiver: (id) => receiversRef.current.some((r) => r.id === id),
   });
 
   // Roster: fetched once, then kept live off the bus.
@@ -287,9 +293,8 @@ export function CastProvider({
     [activeId, sendTo],
   );
 
-  // Keep the latest `receivers` reachable from `select` without re-creating it.
-  const receiversRef = useRef(receivers);
-  receiversRef.current = receivers;
+  // The latest `receivers` stay reachable through `receiversRef` above, so
+  // `select` is never re-created.
   const select = useCallback((receiverId: string | null) => {
     setActiveId(receiverId);
     setError(null);

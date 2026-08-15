@@ -152,7 +152,9 @@ export function useListKeys(at: ListKeysAt): {
 } {
   const typed = useRef({ buffer: '', last: 0 });
   const live = useRef(at);
-  live.current = at;
+  useLayoutEffect(() => {
+    live.current = at;
+  });
 
   const move = useCallback((from: number, delta: -1 | 1) => {
     const { count, disabledAt, setActive } = live.current;

@@ -9,7 +9,7 @@
 // drives the prompt ping off the element's play/pause events.
 
 import { KromaApiError, type KromaClient, KromaEvents } from '@kroma/core';
-import { type RefObject, useEffect, useRef } from 'react';
+import { type RefObject, useEffect, useEffectEvent, useRef, useState } from 'react';
 
 export interface PlaybackHeartbeatParams {
   client: KromaClient;
@@ -49,6 +49,11 @@ export interface PlaybackHeartbeatParams {
 
 let sessionSeq = 0;
 
+function newSessionId(prefix: string): string {
+  sessionSeq += 1;
+  return `${prefix}-${Date.now().toString(36)}-${(sessionSeq - 1).toString(36)}`;
+}
+
 /**
  * A session id keys ONE row in the server's live "now playing" registry. It is
  * never an auth token: `/playback/stop` only ends a session the requesting
@@ -57,51 +62,44 @@ let sessionSeq = 0;
  * client's `newSessionId`.
  */
 export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
-  const ref = useRef(params);
-  ref.current = params;
-
-  const sessionId = useRef('');
-  if (!sessionId.current) {
-    sessionId.current = `${params.idPrefix}-${Date.now().toString(36)}-${(sessionSeq++).toString(36)}`;
-  }
+  const [sessionId] = useState(() => newSessionId(params.idPrefix));
   // Once terminated we stop pinging and don't send a redundant stop on unmount.
   const terminated = useRef(false);
-  const fireTerminated = useRef((message: string) => {
+
+  const fireTerminated = useEffectEvent((message: string) => {
     if (terminated.current) return;
     terminated.current = true;
-    ref.current.onTerminated(message);
+    params.onTerminated(message);
   });
 
-  const send = useRef(() => {
-    const p = ref.current;
-    if (!p.enabled || terminated.current) return;
-    p.client
+  const send = useEffectEvent(() => {
+    if (!params.enabled || terminated.current) return;
+    params.client
       .pingPlayback({
-        sessionId: sessionId.current,
-        itemId: p.itemId,
-        positionMs: Math.round(p.getPosition() * 1000),
-        durationMs: p.durationMs,
-        state: p.getState(),
-        mode: p.mode,
-        player: p.player,
-        device: p.device,
-        audio: p.getAudio?.(),
-        subtitle: p.getSubtitle?.(),
+        sessionId,
+        itemId: params.itemId,
+        positionMs: Math.round(params.getPosition() * 1000),
+        durationMs: params.durationMs,
+        state: params.getState(),
+        mode: params.mode,
+        player: params.player,
+        device: params.device,
+        audio: params.getAudio?.(),
+        subtitle: params.getSubtitle?.(),
       })
       .catch((e: unknown) => {
         // 410 Gone → an admin terminated this session (WS fallback).
-        if (e instanceof KromaApiError && e.status === 410) fireTerminated.current('');
+        if (e instanceof KromaApiError && e.status === 410) fireTerminated('');
       });
   });
 
   // Heartbeat loop + prompt ping on the element's play/pause + stop on unmount.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: send/sessionId are stable refs; re-run only on client/enabled.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: send reads through the effect event; re-run only on client/enabled.
   useEffect(() => {
     if (!params.enabled) return;
-    const ping = () => send.current();
+    const ping = () => send();
     ping();
     const iv = setInterval(ping, 10000);
-    const sid = sessionId.current;
     const { client, videoRef } = params;
     const v = videoRef?.current;
     v?.addEventListener('play', ping);
@@ -110,25 +108,25 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
       clearInterval(iv);
       v?.removeEventListener('play', ping);
       v?.removeEventListener('pause', ping);
-      if (!terminated.current) client.stopPlayback(sid).catch(() => undefined);
+      if (!terminated.current) client.stopPlayback(sessionId).catch(() => undefined);
     };
   }, [params.client, params.enabled]);
 
   // Prompt ping when the caller's play state changes (web passes React `playing`).
-  // biome-ignore lint/correctness/useExhaustiveDependencies: fire only on the signal change.
   useEffect(() => {
-    if (ref.current.pingSignal === undefined) return;
-    send.current();
+    if (params.pingSignal === undefined) return;
+    send();
   }, [params.pingSignal]);
 
   // Listen for an admin terminating this session (matched by session id).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the socket lives per enabled/baseUrl; the token closure reads its live value at handshake time.
   useEffect(() => {
     if (!params.enabled) return;
     const ev = new KromaEvents(params.eventsBaseUrl, {
-      token: ref.current.eventsToken,
+      token: params.eventsToken,
       onEvent: (e) => {
-        if (e.type === 'playback.terminate' && e.sessionId === sessionId.current) {
-          fireTerminated.current(e.message);
+        if (e.type === 'playback.terminate' && e.sessionId === sessionId) {
+          fireTerminated(e.message);
         }
       },
     });

@@ -11,9 +11,9 @@
 //   the reason a picker can read "no televisions available" with one sitting in
 //   the room. Those rows are worth showing, with the one action that helps.
 
-import type { DiscoveredTv, LanDiscoveryBridge } from '@kroma/core';
+import type { DiscoveredTv, LanBeacons, LanDiscoveryBridge } from '@kroma/core';
 import { watchLanBeacons } from '@kroma/core';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { AppState } from 'react-native';
 
 export interface LanCastOptions {
@@ -25,7 +25,7 @@ export interface LanCastOptions {
   /** Called when a signed-in television is heard that the roster has not
    * listed. The provider answers by refetching. */
   onUnknownReceiver: () => void;
-  /** Whether the roster already knows a receiver id. Read through a ref, so a
+  /** Whether the roster already knows a receiver id. Read at call time, so a
    * roster change does not restart the browse. */
   knowsReceiver: (receiverId: string) => boolean;
 }
@@ -41,10 +41,20 @@ export function useLanCast(opts: LanCastOptions): DiscoveredTv[] {
   const [pairable, setPairable] = useState<DiscoveredTv[]>([]);
   const inFront = useForeground();
 
-  // The browse outlives any particular roster, so what it needs from the
-  // provider is read at call time rather than captured in the effect's deps.
-  const latest = useRef({ onUnknownReceiver, knowsReceiver });
-  latest.current = { onUnknownReceiver, knowsReceiver };
+  // An effect event: the browse outlives any particular roster, so what it
+  // needs from the provider is read at call time rather than captured in the
+  // effect's deps.
+  const report = useEffectEvent((beacons: LanBeacons) => {
+    // The same televisions keep the same array. This list is part of the cast
+    // context's value, so a fresh one per report re-renders every screen
+    // holding a cast button for a list that has not changed.
+    setPairable((held) => (sameTvs(held, beacons.pairable) ? held : beacons.pairable));
+    // One nudge per report, however many strangers it held: the refetch it
+    // triggers answers for all of them.
+    if (beacons.receivers.some((row) => !knowsReceiver(row.receiverId))) {
+      onUnknownReceiver();
+    }
+  });
 
   useEffect(() => {
     if (!enabled || !inFront || !lan?.browse) {
@@ -52,17 +62,7 @@ export function useLanCast(opts: LanCastOptions): DiscoveredTv[] {
       return;
     }
 
-    return watchLanBeacons(lan, (beacons) => {
-      // The same televisions keep the same array. This list is part of the cast
-      // context's value, so a fresh one per report re-renders every screen
-      // holding a cast button for a list that has not changed.
-      setPairable((held) => (sameTvs(held, beacons.pairable) ? held : beacons.pairable));
-      // One nudge per report, however many strangers it held: the refetch it
-      // triggers answers for all of them.
-      if (beacons.receivers.some((row) => !latest.current.knowsReceiver(row.receiverId))) {
-        latest.current.onUnknownReceiver();
-      }
-    });
+    return watchLanBeacons(lan, report);
   }, [lan, enabled, inFront]);
 
   return pairable;

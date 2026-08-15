@@ -1,0 +1,7 @@
+# NumberField  src/components/atoms/number-field/number-field.story.mdx
+
+## preview
+button "Increase" tab
+button "Decrease" tab
+button "Increase" tab
+button "Decrease" tab

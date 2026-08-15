@@ -9,6 +9,9 @@ import { partContext } from '#ui/lib/part-context';
 type AddonAlign = 'inline-start' | 'inline-end' | 'block-start' | 'block-end';
 
 interface InputGroupContext {
+  /** The shell's name, worn by the entry as well: the shell is what a reader
+   *  meets, but the entry is what focus lands on. */
+  label: string;
   /** The shell's size, handed to the controls the parts wrap. */
   size: ControlSize | undefined;
   metrics: ControlMetrics;

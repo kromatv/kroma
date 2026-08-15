@@ -9,11 +9,19 @@
 
 import type { ReactNode } from 'react';
 import type { IconName } from '#ui/components/atoms/icon';
+import {
+  Key,
+  type KeyboardSize,
+  keyMetrics,
+  keyRowWidth,
+} from '#ui/components/organisms/keyboard/key';
+import {
+  type KeyboardLayout,
+  LAYOUT_LETTER_ROWS,
+} from '#ui/components/organisms/keyboard/keyboard-layouts';
+import { usePhysicalTyping } from '#ui/components/organisms/keyboard/use-physical-typing';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
 import { useTDefault } from '#ui/services/i18n';
-import { Key, type KeyboardSize, keyMetrics, keyRowWidth } from '../key';
-import { type KeyboardLayout, LAYOUT_LETTER_ROWS } from '../keyboard-layouts';
-import { usePhysicalTyping } from '../use-physical-typing';
 
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 

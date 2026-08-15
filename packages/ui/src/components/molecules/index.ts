@@ -82,8 +82,8 @@ export type { PosterCardProps } from './poster-card';
 export { PosterCard } from './poster-card';
 export type { SectionRootProps } from './section';
 export { Section } from './section';
-export type { SegmentedOption, SegmentedRootProps } from './segmented-control';
-export { SegmentedControl, segmentedControlVariants } from './segmented-control';
+export type { SegmentGroupRootProps } from './segment-group';
+export { SegmentGroup, segmentGroupVariants } from './segment-group';
 export type {
   SelectDismissReason,
   SelectItemProps,

@@ -140,7 +140,9 @@ function WorkbenchShell({
   const column = !drawer && !stage.full;
   // Nothing to inspect until the module lands: an empty panel beside a busy
   // stage reads as a component with no props rather than as one on its way.
-  const inspector = Boolean(story) && !page && !stage.full;
+  // The reading view yields the inspector's width to the document: its
+  // controls describe the stage, and the document is not one.
+  const inspector = Boolean(story) && !page && !stage.full && view !== 'docs';
   const compact = layout.mode === 'compact';
   const openNav = drawer && !stage.full ? () => setNavOpen(true) : undefined;
 

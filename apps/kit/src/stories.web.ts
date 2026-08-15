@@ -17,12 +17,14 @@ import { STORY_CODE } from 'virtual:kroma-story-code';
 import { discoverPagesVite, indexVite, withPageHistory } from '@kroma/workbench';
 
 export const STORIES = indexVite({
-  modules: import.meta.glob('#ui/**/*.{stories.tsx,demo.tsx,docs.mdx}'),
+  modules: import.meta.glob('#ui/**/*.{story.mdx,demo.tsx}'),
   sources: import.meta.glob<string>('#ui/**/*.demo.tsx', { query: '?raw', import: 'default' }),
   codes: STORY_CODE,
   props: () => import('virtual:kroma-props').then((module) => module.PROPS),
 });
 
+// The guides are the SITE's, not the kit's: they are writing about the design
+// system rather than part of it, so they live here and glob from here.
 export const PAGES = withPageHistory(
-  discoverPagesVite(import.meta.glob('#ui/**/*.page.mdx', { eager: true })),
+  discoverPagesVite(import.meta.glob('./guides/*.page.mdx', { eager: true })),
 );

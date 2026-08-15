@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { SAFETY_MS, SAFETY_SLACK_MS, VIDEO_SOURCES } from './constants';
 import { CssIntro } from './css-intro';
 import { IntroShell } from './intro-shell';
@@ -44,6 +44,26 @@ export interface KromaIntroProps {
 const POSTER =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR42mPg4uIBIgYIBQADhgCBD73RIwAAAABJRU5ErkJggg==';
 
+// Module-level so the recheck can re-arm itself: an effect event may not call
+// itself from its own body. A hidden tab defers the media fetch entirely, so
+// instead of burning the intro while parked in the background, the timer
+// re-checks once per safety window.
+function armStallSafety(opts: {
+  video: { current: HTMLVideoElement | null };
+  arm: (ms: number, run: () => void) => void;
+  exit: () => void;
+  looping: () => boolean;
+}): void {
+  if (opts.looping()) return;
+  const d = opts.video.current?.duration;
+  const ms = d && Number.isFinite(d) && d > 0 ? d * 1000 + SAFETY_SLACK_MS : SAFETY_MS;
+  opts.arm(ms, () => {
+    const v = opts.video.current;
+    if (document.hidden && v?.readyState === 0) armStallSafety(opts);
+    else opts.exit();
+  });
+}
+
 const TAGLINE_LEAD_S = 2.6;
 // Long enough that a slow network still reads as loading rather than
 // sourceless; short enough that the fallback still opens with the sting.
@@ -69,36 +89,30 @@ function VideoIntro({
   onVideoError,
 }: Readonly<KromaIntroProps & { onVideoError: () => void }>) {
   const [tagVisible, setTagVisible] = useState(false);
-  const { exiting, exitedRef, safetyRef, exit, reopen, clearTimers } = useIntroExit(onDone);
+  const { exiting, exitedRef, armSafety, disarmSafety, exit, reopen, clearTimers } =
+    useIntroExit(onDone);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const loopRef = useRef(loop);
-  loopRef.current = loop;
-  // Latest callback without re-running the mount effect (avoids restarting the film).
-  const onVideoErrorRef = useRef(onVideoError);
-  onVideoErrorRef.current = onVideoError;
 
   // (Re-)arm the stall-safety timer from the film's real length when known.
-  const armSafety = useCallback(() => {
-    clearTimeout(safetyRef.current);
-    if (loopRef.current) return;
-    const d = videoRef.current?.duration;
-    const ms = d && Number.isFinite(d) && d > 0 ? d * 1000 + SAFETY_SLACK_MS : SAFETY_MS;
-    safetyRef.current = setTimeout(() => {
-      // A hidden tab defers the media fetch entirely; don't burn the intro
-      // while parked in the background, re-check once per safety window.
-      const vv = videoRef.current;
-      if (document.hidden && vv?.readyState === 0) {
-        armSafetyRef.current();
-        return;
-      }
-      exit();
-    }, ms);
-  }, [exit, safetyRef]);
-  const armSafetyRef = useRef(armSafety);
-  armSafetyRef.current = armSafety;
+  const isLooping = useEffectEvent(() => loop);
+  const rearmSafety = useEffectEvent(() => {
+    if (loop) {
+      disarmSafety();
+      return;
+    }
+    armStallSafety({ video: videoRef, arm: armSafety, exit, looping: isLooping });
+  });
 
-  const replay = useCallback(() => {
+  // A failure landing after the user skipped is ignored: swapping in the CSS
+  // scene would unmount us, and the mount effect's cleanup would drop the
+  // pending hand-off, so the fallback would play a whole second intro from
+  // the top.
+  const fail = useEffectEvent(() => {
+    if (!exitedRef.current) onVideoError();
+  });
+
+  const replay = useEffectEvent(() => {
     const v = videoRef.current;
     if (!v) return;
     reopen();
@@ -109,14 +123,14 @@ function VideoIntro({
       /* not yet seekable harmless */
     }
     void v.play().catch(() => undefined);
-    armSafety();
-  }, [armSafety, reopen]);
+    rearmSafety();
+  });
 
   // First gesture while the film is muted: add sound in place. Chrome keeps the
   // whole film muted until then, so a rewind here would restart the intro on any
   // click or non-skip remote key; only a gesture at the very top rewinds, which
   // is what makes picture and sound open together when the user is early.
-  const unblock = useCallback(() => {
+  const unblock = useEffectEvent(() => {
     const v = videoRef.current;
     if (!v?.muted || exitedRef.current) return;
     v.muted = false;
@@ -127,22 +141,20 @@ function VideoIntro({
       /* harmless */
     }
     void v.play().catch(() => undefined);
-    armSafety();
-  }, [armSafety, exitedRef]);
+    rearmSafety();
+  });
+
+  const onEnded = useEffectEvent(() => {
+    if (loop) replay();
+    else exit();
+  });
 
   useIntroKeys({ exit, replay, unblock });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only intro timeline; exit/armSafety/replay are stable useCallbacks and are intentionally omitted so the effect never re-arms (which would restart the film) on unrelated re-renders.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only intro timeline; exit/clearTimers are stable useCallbacks and the rest are effect events, all intentionally omitted so the effect never re-arms (which would restart the film) on unrelated re-renders.
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-
-    // A failure landing after the user skipped is ignored: swapping in the CSS
-    // scene would unmount us, and this cleanup would drop the pending hand-off,
-    // so the fallback would play a whole second intro from the top.
-    const fail = () => {
-      if (!exitedRef.current) onVideoErrorRef.current();
-    };
 
     // Sound-first autoplay; muted fallback when the browser blocks it. A
     // muted-too rejection means playback is genuinely broken: use the CSS scene.
@@ -155,7 +167,7 @@ function VideoIntro({
           if (typeof p2?.then === 'function') p2.catch(fail);
         });
       }
-      armSafety();
+      rearmSafety();
     };
 
     // Chrome defers media loading in background tabs, which would stall the film
@@ -189,11 +201,7 @@ function VideoIntro({
       if (v.networkState === v.NETWORK_NO_SOURCE && v.readyState === v.HAVE_NOTHING) fail();
     }, NO_SOURCE_MS);
 
-    const onEnded = () => {
-      if (loopRef.current) replay();
-      else exit();
-    };
-    const onMeta = () => armSafety();
+    const onMeta = () => rearmSafety();
     v.addEventListener('ended', onEnded);
     v.addEventListener('loadedmetadata', onMeta);
     v.addEventListener('error', fail);

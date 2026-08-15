@@ -9,8 +9,8 @@
 import { Box, Spinner } from '@kroma/ui/kit';
 import type { StoryEntry } from './entry';
 import type { WorkbenchLayout } from './layout';
-import { type StageView, StoryHeading } from './story-view';
-import { Toolbar, type ToolbarLens } from './toolbar';
+import { StageToolbar, type StageView, StoryHeading } from './story-view';
+import type { ToolbarLens } from './toolbar';
 
 interface StoryPendingProps {
   entry: StoryEntry;
@@ -24,21 +24,7 @@ interface StoryPendingProps {
 function StoryPending({ entry, stage, lenses, layout, onMenu }: Readonly<StoryPendingProps>) {
   return (
     <Box flex minW={0} minH={0}>
-      <Toolbar
-        lenses={lenses}
-        viewport={stage.viewport}
-        onViewport={stage.pickViewport}
-        surface={stage.surface}
-        onSurface={stage.setSurface}
-        theme={stage.theme}
-        onTheme={stage.pickTheme}
-        rotate={stage.rotate}
-        onRotate={stage.setRotate}
-        full={stage.full}
-        onFull={stage.setFull}
-        onMenu={onMenu}
-        layout={layout}
-      />
+      <StageToolbar stage={stage} lenses={lenses} onMenu={onMenu} layout={layout} />
       <StoryHeading name={entry.name} group={entry.group} layout={layout} />
       <Box flex minH={0} align="center" justify="center" p={layout.stagePad}>
         <Spinner label={`Loading ${entry.name}`} />

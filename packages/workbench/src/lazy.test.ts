@@ -1,30 +1,32 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { StoryEntry } from './entry';
-import { indexVite, type Loaders, nameFromPath } from './lazy';
+import { indexVite, type Loaders } from './lazy';
 import type { PropDoc } from './props';
-import { story } from './story';
+import { nameFromPath } from './registry';
 import type { StoryCodes } from './story-code';
 
-const BUTTON = 'src/components/atoms/button/button.stories.tsx';
-const LIST_ROW = 'src/components/molecules/list-row/list-row.stories.tsx';
+const BUTTON = 'src/components/atoms/button/button.story.mdx';
+const LIST_ROW = 'src/components/molecules/list-row/list-row.story.mdx';
 const DEMO = 'src/components/atoms/button/button.detail-actions.demo.tsx';
 const OTHER_DEMO = 'src/components/atoms/button/button.arrangements.demo.tsx';
-const DOCS = 'src/components/atoms/button/button.docs.mdx';
 
 const demoComponent = () => null;
+const buttonDoc = () => null;
 
 const CODES: StoryCodes = {
-  [BUTTON]: { name: 'Button', group: 'Actions', render: '<Button label="Play" />', scenes: [] },
-  [LIST_ROW]: { name: 'ListRow', group: 'Layout', scenes: [] },
+  [BUTTON]: { name: 'Button', group: 'Actions' },
+  [LIST_ROW]: { name: 'ListRow', group: 'Layout' },
 };
 
 const modules = (): Loaders => ({
   [LIST_ROW]: () =>
-    Promise.resolve({ default: story({ name: 'ListRow', group: 'Layout', render: () => null }) }),
+    Promise.resolve({ default: () => null, story: { group: 'Layout', render: () => null } }),
   [DEMO]: () => Promise.resolve({ default: demoComponent }),
   [BUTTON]: () =>
     Promise.resolve({
-      default: story({ name: 'Button', group: 'Actions', docs: 'Inline.', render: () => null }),
+      default: buttonDoc,
+      story: { group: 'Actions', render: () => null },
+      __code: '<Button label="Play" />',
     }),
   'src/components/atoms/button/button.tsx': () => Promise.resolve({ default: demoComponent }),
 });
@@ -103,9 +105,8 @@ describe('the index, before anything is fetched', () => {
 });
 
 describe('a story, once it is asked for', () => {
-  it('compiles with the prose, the demos and the props of its own file', async () => {
+  it('compiles with the document, the demos and the props of its own file', async () => {
     const loaders = modules();
-    loaders[DOCS] = () => Promise.resolve({ default: demoComponent });
     loaders[OTHER_DEMO] = () => Promise.resolve({ default: demoComponent });
     const index = indexVite({
       modules: loaders,
@@ -115,18 +116,13 @@ describe('a story, once it is asked for', () => {
     });
     const ready = await entryAt(index, AT_BUTTON).load();
 
-    expect(ready.docs).toBe(demoComponent);
+    expect(ready.docs).toBe(buttonDoc);
     expect(ready.demos.map((demo) => demo.name)).toEqual(['Arrangements', 'Detail actions']);
     expect(ready.demos[1]?.code).toBe('export default function Demo() {}');
     expect(ready.props).toEqual([{ props: [tone] }]);
     expect(ready.code).toBe('<Button label="Play" />');
     expect(ready.tier).toBe('Atoms');
     expect(ready.path).toBe(BUTTON);
-  });
-
-  it('leaves a story with no .docs.mdx on the string it declares', async () => {
-    const index = indexVite({ modules: modules(), codes: CODES });
-    expect((await entryAt(index, AT_BUTTON).load()).docs).toBe('Inline.');
   });
 
   it('fetches a module again after one attempt failed, rather than keeping the failure', async () => {
@@ -160,7 +156,7 @@ describe('a story, once it is asked for', () => {
 
 describe('nameFromPath', () => {
   it('reads the component a file is named after, whose slug is that name again', () => {
-    expect(nameFromPath('a/b/list-row/list-row.stories.tsx')).toBe('ListRow');
-    expect(nameFromPath('a/colors.stories.tsx')).toBe('Colors');
+    expect(nameFromPath('a/b/list-row/list-row.story.mdx', '.story.mdx')).toBe('ListRow');
+    expect(nameFromPath('a/colors.story.mdx', '.story.mdx')).toBe('Colors');
   });
 });

@@ -1,0 +1,10 @@
+# ExpandableText  src/components/atoms/expandable-text/expandable-text.story.mdx
+
+## preview
+div "A blade runner must pursue and terminate four replicants who" [hidden=true]
+
+## scene:Without the growth
+div "A blade runner must pursue and terminate four replicants who" [hidden=true]
+
+## scene:Nothing to expand
+div "Two sentences that fit. There is no more to show, so no affo" [hidden=true]

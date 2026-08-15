@@ -3,8 +3,8 @@
 
 import type { RemoteKey } from '@kroma/core';
 import type { RefObject } from 'react';
-import type { PlayerNav } from '../hooks/use-player-nav';
-import type { PlayerController, PlayerFlags } from '../types';
+import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav';
+import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';
 import type { PanelHandle } from './nav';
 
 export interface PlayerKeysParams {

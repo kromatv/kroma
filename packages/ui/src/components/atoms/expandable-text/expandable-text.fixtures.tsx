@@ -1,0 +1,2 @@
+export const SYNOPSIS =
+  'A blade runner must pursue and terminate four replicants who stole a ship in space and have returned to Earth to find their creator. In the neon murk of a Los Angeles that never sees daylight, the line between hunter and hunted thins with every retirement, and what begins as a job ends as a question about what a life is worth - and who gets to decide. More lives than his own hang on the answer, which is exactly why nobody will say it aloud.';

@@ -1,4 +1,4 @@
-import type { Chapter } from '../types';
+import type { Chapter } from '#ui/components/organisms/player/types';
 
 /**
  * The chapter model behind the progress bar (§1). Real chapter data passes

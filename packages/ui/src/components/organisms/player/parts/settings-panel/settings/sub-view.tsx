@@ -9,9 +9,9 @@
 
 import type { ReportCategory } from '@kroma/core';
 import { forwardRef } from 'react';
-import type { PanelHandle } from '../../../lib/nav';
-import type { SubtitleAppearance } from '../../../lib/subtitle-appearance';
-import type { PlayerController } from '../../../types';
+import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
+import type { SubtitleAppearance } from '#ui/components/organisms/player/lib/subtitle-appearance';
+import type { PlayerController } from '#ui/components/organisms/player/types';
 import { AudioFilterPanel } from './audio-filter-panel';
 import { AudioPanel } from './audio-panel';
 import type { View } from './entries';

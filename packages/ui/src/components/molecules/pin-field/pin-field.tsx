@@ -7,7 +7,7 @@
 // hardware keyboard is read window-wide instead and the remote's keypad feeds
 // `onValueChange`.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { OtpField, useOtpSlot } from '#ui/components/molecules/otp-field';
 import type { ColorValue } from '#ui/core';
@@ -104,22 +104,20 @@ interface Buffer {
 }
 
 // Digits are not remote keys, so this cannot collide with D-pad navigation.
-// Refs carry the changing state so the listener subscribes once.
+// An effect event reads the live buffer, so the listener subscribes once.
 function useDigitKeys(enabled: boolean, buffer: Buffer): void {
-  const state = useRef(buffer);
-  state.current = buffer;
+  const onKey = useEffectEvent((event: KeyboardEvent) => {
+    const { value, maxLength, disabled, setValue } = buffer;
+    if (disabled) return;
+    if (/^\d$/.test(event.key)) {
+      if (value.length < maxLength) setValue(value + event.key);
+    } else if (event.key === 'Delete' || event.key === 'Backspace') {
+      setValue(value.slice(0, -1));
+    }
+  });
   useEffect(() => {
     const w = enabled ? webWindow() : null;
     if (!w) return;
-    const onKey = (event: KeyboardEvent) => {
-      const { value, maxLength, disabled, setValue } = state.current;
-      if (disabled) return;
-      if (/^\d$/.test(event.key)) {
-        if (value.length < maxLength) setValue(value + event.key);
-      } else if (event.key === 'Delete' || event.key === 'Backspace') {
-        setValue(value.slice(0, -1));
-      }
-    };
     w.addEventListener('keydown', onKey);
     return () => w.removeEventListener('keydown', onKey);
   }, [enabled]);

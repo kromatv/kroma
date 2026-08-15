@@ -40,6 +40,7 @@ import {
 } from './mdx-marks';
 import { useDocumentTop } from './outline';
 import type { DocComponent } from './story';
+import { Do, Dont, Guidance, Scene } from './story-blocks';
 
 /** Every element MDX can emit, mapped to the kit. Passed to a compiled
  * `.docs.mdx` as its `components`, and read directly by the renderer for the
@@ -76,15 +77,20 @@ const MDX_COMPONENTS = {
   ul: BulletList,
 };
 
-/** A story's `.docs.mdx`, rendered. */
+/** The element map plus the blocks only a story's document writes: `<Scene>`,
+ * `<Do>` and `<Dont>` resolve from here, so a `.story.mdx` imports nothing to
+ * use them. `Guidance` is the compiler's, pairing the two cards. */
+const STORY_COMPONENTS = { ...MDX_COMPONENTS, Do, Dont, Guidance, Scene };
+
+/** A story's document, rendered. */
 function MdxDoc({ content: Content }: Readonly<{ content: DocComponent }>) {
   const onLayout = useDocumentTop();
   return (
     <Box onLayout={onLayout}>
-      <Content components={MDX_COMPONENTS} />
+      <Content components={STORY_COMPONENTS} />
     </Box>
   );
 }
 
 export { MEASURE } from './mdx-blocks';
-export { MDX_COMPONENTS, MdxDoc };
+export { MDX_COMPONENTS, MdxDoc, STORY_COMPONENTS };

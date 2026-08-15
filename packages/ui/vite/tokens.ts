@@ -174,18 +174,14 @@ export const FIRST_PAINT_FONTS: readonly string[] = SELF_HOSTED.map((family) =>
  * Absolute paths, so Vite emits the woff2 from wherever the importing
  * stylesheet lives.
  */
-export function fontsCss(): string {
+export function fontsCss(display: FontDisplay = 'optional'): string {
   return SELF_HOSTED.flatMap((family) =>
     Object.entries(SUBSETS).map(([subset, range]) =>
       rule('@font-face', [
         `font-family: "${family}";`,
         'font-style: normal;',
         'font-weight: 400 800;',
-        // `optional`, not `swap`: swapping the face after first paint moved the
-        // whole column (0.78 CLS). `optional` has no swap period at all, so the
-        // face only ever lands because kromaFontPreload() puts a matching
-        // <link rel=preload> in the document head (see font-preload.ts).
-        'font-display: optional;',
+        `font-display: ${display};`,
         `src: url("${fontFile(family, subset)}") format("woff2");`,
         `unicode-range: ${range};`,
       ]),
@@ -212,28 +208,49 @@ export const pageCss = () => readCss('base');
  *  reset alone, so this is not in the `tokens` half every target shares. */
 export const baseCss = () => [resetCss(), pageCss()].join('\n\n');
 
+/**
+ * How a face behaves while it is still on the wire.
+ *
+ * A BUILD ships `optional`, because swapping the face in after first paint
+ * moved the whole column (0.78 CLS). `optional` has no swap period at all: a
+ * face that has not arrived within the ~100ms block period is dropped for the
+ * life of the page, so it only ever lands because kromaFontPreload() puts a
+ * matching <link rel=preload> in the head (see font-preload.ts).
+ *
+ * The DEV SERVER ships `swap` instead. There the stylesheet is injected by the
+ * module graph rather than linked in the head, and a cold session has a
+ * hundred stories to transform first; past a few seconds Chrome reports the
+ * preload as unused and may drop it, the block period expires, and the reader
+ * is left on system-ui until a reload warms the cache. Nobody measures CLS on a
+ * dev server, and a typeface that only appears every other F5 is the worse bug.
+ */
+type FontDisplay = 'optional' | 'swap';
+
 /** The whole design system, framework-free: type, tokens, motion and the reset.
  *  A Tailwind app adds `@import "tailwindcss"` and `@kroma/ui/css/theme`. */
-export function kromaCss(): string {
-  return [fontsCss(), tokensCss(), motionCss(), baseCss()].join('\n\n');
+export function kromaCss(display: FontDisplay = 'optional'): string {
+  return [fontsCss(display), tokensCss(), motionCss(), baseCss()].join('\n\n');
 }
 
 // Under `/css`, because a bare `@kroma/ui` resolves to the TypeScript entry and
 // Tailwind then tries to parse it as a stylesheet.
 const DIRECTIVE = /@import\s+["']@kroma\/ui\/css(\/[a-z]+)?["']\s*;/g;
 
-const EXPANSION: Record<string, () => string> = {
-  '': kromaCss,
-  '/tokens': tokensCss,
-  '/theme': themeCss,
-  '/fonts': fontsCss,
-  '/motion': motionCss,
-  '/reset': resetCss,
-  '/page': pageCss,
-  '/base': baseCss,
+// Only the two that carry `@font-face` read the display; the rest take no
+// argument, and `tokensCss(roots)` takes a different one - so each is called
+// the way it is written rather than handed whatever this map holds.
+const EXPANSION: Record<string, (display: FontDisplay) => string> = {
+  '': (display) => kromaCss(display),
+  '/tokens': () => tokensCss(),
+  '/theme': () => themeCss(),
+  '/fonts': (display) => fontsCss(display),
+  '/motion': () => motionCss(),
+  '/reset': () => resetCss(),
+  '/page': () => pageCss(),
+  '/base': () => baseCss(),
 };
 
-const expand = (code: string) =>
+const expand = (code: string, display: FontDisplay) =>
   code.replace(DIRECTIVE, (_, which: string | undefined) => {
     const emit = EXPANSION[which ?? ''];
     if (!emit) {
@@ -243,7 +260,7 @@ const expand = (code: string) =>
           .join(', ')}`,
       );
     }
-    return emit();
+    return emit(display);
   });
 
 interface BundleFile {
@@ -272,6 +289,8 @@ interface FileChange {
 
 interface PluginList {
   plugins: readonly { name: string }[];
+  /** `serve` is the dev server, `build` everything shipped. */
+  command?: 'serve' | 'build';
 }
 
 interface CssPlugin {
@@ -317,10 +336,12 @@ const SOURCES = [
  */
 export function kromaTokens(): CssPlugin {
   const expanded = new Set<string>();
+  let display: FontDisplay = 'optional';
   return {
     name: NAME,
     enforce: 'pre',
-    configResolved({ plugins }) {
+    configResolved({ plugins, command }) {
+      display = command === 'serve' ? 'swap' : 'optional';
       const mine = plugins.findIndex((plugin) => plugin.name === NAME);
       const tailwind = plugins.findIndex((plugin) => plugin.name.startsWith(TAILWIND));
       if (mine === -1 || tailwind === -1 || tailwind > mine) return;
@@ -332,7 +353,7 @@ export function kromaTokens(): CssPlugin {
       if (!DIRECTIVE.test(code)) return null;
       for (const file of SOURCES) this.addWatchFile?.(file);
       expanded.add(id);
-      return { code: expand(code), map: null };
+      return { code: expand(code, display), map: null };
     },
     async hotUpdate({ file, read }) {
       if (!(await foldAlphas(SOURCE_ROOTS, KNOWN_COLOR_NAMES, file, read))) return;
@@ -347,7 +368,7 @@ export function kromaTokens(): CssPlugin {
       for (const file of Object.values(bundle)) {
         if (file.type !== 'asset' || !file.fileName.endsWith('.css')) continue;
         if (typeof file.source !== 'string' || !file.source.includes('@kroma/ui')) continue;
-        file.source = expand(file.source);
+        file.source = expand(file.source, display);
       }
     },
   };

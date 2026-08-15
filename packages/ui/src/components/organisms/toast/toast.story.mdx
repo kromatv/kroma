@@ -1,0 +1,139 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Button } from '#ui/components/atoms/button';
+import { Toaster, toast } from './toast';
+import { Screen, POSITIONS } from './toast.fixtures';
+
+export const story = defineStory({
+  name: 'Toaster',
+  group: 'Overlays',
+  width: 'fill',
+  args: {
+    message: 'iPhone connected',
+    detail: 'maxime',
+    tone: 'success',
+    position: 'top-right',
+  },
+  controls: { tone: ['plain', 'success', 'accent'], position: POSITIONS },
+  render: ({ message, detail, tone, position }) => (
+    <Screen position={position}>
+      <Button
+        label="Say it"
+        onPress={() => toast({ message, detail, icon: 'cast', tone, duration: 3000 })}
+      />
+    </Screen>
+  ),
+});
+
+Transient notices, the shadcn/sonner shape: one `<Toaster/>` mounted by the shell, and `toast(...)` callable from anywhere. That split is the point, since a cast receiver learning that a phone picked up its remote has no business knowing where notices are drawn. The host is a full-bleed layer over its parent rather than a window portal, so it pins to the viewport in an app and stays inside the stage here. Written for the ten-foot case first: read from the sofa, never dismissed by hand, and `pointerEvents="none"` so it can never take the remote. It is not a dialog; nothing here is a question.
+
+```tsx
+// once, in the view that fills the screen
+<Toaster position="top-right" />
+
+// anywhere
+toast({ message: 'iPhone connected', detail: 'maxime', icon: 'cast', tone: 'success' })
+
+// and the rare notice that belongs somewhere else
+toast({ message: 'Link copied', position: 'bottom-center' })
+```
+
+<Scene name="A remote joins">
+  What a television shows when somebody picks up its remote, and why the default is top-right: a notice about the status cluster belongs beside it, not over the row the viewer is browsing.
+
+  <Screen position="top-right">
+    <Button
+      label="Connect"
+      onPress={() =>
+        toast({
+          message: 'iPhone connected',
+          detail: 'maxime',
+          icon: 'cast',
+          tone: 'success',
+        })
+      }
+    />
+  </Screen>
+</Scene>
+
+<Scene name="On a phone">
+  The bottom is where a hand-held expects a notice: it is where the thumb already is, and it is the edge the notch is not on.
+
+  <Screen position="bottom-center">
+    <Button
+      label="Say it"
+      onPress={() => toast({ message: 'Playing on the living room TV', icon: 'device-tv' })}
+    />
+  </Screen>
+</Scene>
+
+<Scene name="The six corners">
+  One host serves the lot, because a notice that names its own position beats the shell it was mounted with. Compare them side by side before choosing: a corner is a promise about what the notice is allowed to cover.
+
+  <Screen height={420}>
+    <Box row wrap gap={10}>
+      {POSITIONS.map((position) => (
+        <Button
+          key={position}
+          variant="glass"
+          size="sm"
+          label={position}
+          onPress={() => toast({ message: position, icon: 'cast', position })}
+        />
+      ))}
+      <Button
+        variant="primary"
+        size="sm"
+        label="All six"
+        onPress={() => {
+          for (const position of POSITIONS) {
+            toast({ message: position, icon: 'cast', position });
+          }
+        }}
+      />
+    </Box>
+  </Screen>
+</Scene>
+
+<Scene name="Newest nearest the edge">
+  Stacking is a mirror rather than a rule to remember: whichever edge a column is anchored to, the newest notice is the one against it, so the eye lands on the thing that just happened.
+
+  <Screen height={420}>
+    <Box row wrap gap={10}>
+      <Button
+        variant="glass"
+        size="sm"
+        label="Three at the top"
+        onPress={() => {
+          for (const step of ['First', 'Second', 'Third']) {
+            toast({ message: step, position: 'top-left', duration: 8000 });
+          }
+        }}
+      />
+      <Button
+        variant="glass"
+        size="sm"
+        label="Three at the bottom"
+        onPress={() => {
+          for (const step of ['First', 'Second', 'Third']) {
+            toast({ message: step, position: 'bottom-right', duration: 8000 });
+          }
+        }}
+      />
+    </Box>
+  </Screen>
+</Scene>
+
+<Do>
+- Say what happened, in one line a viewer can read at three metres.
+- Use `detail` for who or what it concerns, never for a second sentence.
+- Leave `position` at `top-right` on a television: notices belong beside the status cluster they are usually about.
+- Pass a phone's safe-area insets as `inset={{ top, bottom }}` when the shell draws edge to edge, or mount the host inside its safe frame.
+</Do>
+
+<Dont>
+- Ask a question with one - a choice needs a dialog that takes focus.
+- Stack more than a few; the component caps each corner for the same reason.
+- Spread an app's notices over the six corners: the shell owns one, and a single notice overrides it.
+- Put an action inside one on a TV: nothing here can be clicked.
+</Dont>

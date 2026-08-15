@@ -126,6 +126,30 @@ describe('fontsCss', () => {
   it('declares one face per family per subset', () => {
     expect(fontsCss().match(/@font-face/g)).toHaveLength(4);
   });
+
+  // A build takes `optional` and the CLS it was chosen for; the dev server
+  // takes `swap`, where the stylesheet arrives with the module graph and a
+  // dropped face means reloading until the typeface turns up.
+  it('ships `optional` by default, which is what a build wants', () => {
+    expect(fontsCss()).toContain('font-display: optional;');
+    expect(fontsCss()).not.toContain('font-display: swap;');
+  });
+
+  it('swaps a late face in on the dev server rather than dropping it', () => {
+    const plugin = kromaTokens();
+    plugin.configResolved({ plugins: [{ name: 'kroma-tokens' }], command: 'serve' });
+    const css = plugin.transform.call({}, '@import "@kroma/ui/css";', '/app/src/styles.css')?.code;
+
+    expect(css).toContain('font-display: swap;');
+  });
+
+  it('leaves a build on `optional`, whatever the dev server does', () => {
+    const plugin = kromaTokens();
+    plugin.configResolved({ plugins: [{ name: 'kroma-tokens' }], command: 'build' });
+    const css = plugin.transform.call({}, '@import "@kroma/ui/css";', '/app/src/styles.css')?.code;
+
+    expect(css).toContain('font-display: optional;');
+  });
 });
 
 describe('the plugin', () => {

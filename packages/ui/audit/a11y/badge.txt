@@ -1,0 +1,7 @@
+# Badge  src/components/atoms/badge/badge.story.mdx
+
+## preview
+
+
+## scene:All tones
+

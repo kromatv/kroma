@@ -4,10 +4,10 @@ import { Img } from '#ui/components/atoms/img';
 import { clamp01 } from '#ui/components/atoms/progress';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
 import { Text } from '#ui/components/atoms/text';
+import { scaler } from '#ui/components/organisms/player/lib/metrics';
 import { styles, sv, useTheme } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
-import { scaler } from '../../lib/metrics';
 
 /**
  * Minimal shape the credits card needs from the up-next item. Declared locally

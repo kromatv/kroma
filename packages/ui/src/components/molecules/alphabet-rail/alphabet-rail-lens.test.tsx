@@ -9,6 +9,7 @@ import { Bubble, Lens, lensFor } from './alphabet-rail-lens';
 type LensBox = ReturnType<typeof lensFor>;
 
 const ROW_H = 24;
+const PRESENT = new Set(['A', 'C']);
 
 function lens(box: LensBox | null, chase = false) {
   const { container, rerender } = render(<Lens box={box} chase={chase} />);
@@ -86,12 +87,11 @@ describe('the bubble', () => {
 
   it('echoes the letter under a scrubbing finger, and goes when the finger lifts', () => {
     const { container } = render(
-      <AlphabetRail.Root
-        letters={['#', 'A', 'B', 'C']}
-        available={new Set(['A', 'C'])}
-        onJump={vi.fn()}
-        label="Alphabet"
-      />,
+      <AlphabetRail.Root onJump={vi.fn()} label="Alphabet">
+        {['#', 'A', 'B', 'C'].map((letter) => (
+          <AlphabetRail.Item key={letter} value={letter} disabled={!PRESENT.has(letter)} />
+        ))}
+      </AlphabetRail.Root>,
     );
     const rail = container.firstElementChild as HTMLElement;
     rail.setPointerCapture = vi.fn();

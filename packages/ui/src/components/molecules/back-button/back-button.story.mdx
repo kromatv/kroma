@@ -1,0 +1,25 @@
+import { defineStory } from '@kroma/workbench/story';
+import { BackButton } from './back-button';
+
+export const story = defineStory({
+  group: 'Actions',
+  component: BackButton,
+  args: { diameter: 44, disabled: false, label: 'Back' },
+  controls: { diameter: { min: 32, max: 64, step: 2 } },
+});
+
+The way back, drawn once: a scrimmed chevron disc that floats over artwork, fills amber on focus for the 10-foot targets, and grows a touch halo on the phone. Pass `label={t('common.back')}` - the default is plain English.
+
+```tsx
+<BackButton onPress={router.back} label={t('common.back')} />
+<BackButton variant="ghost" diameter={40} onPress={router.back} label={t('common.back')} />
+```
+
+<Do>
+- Use `scrim` (the default) over artwork - a hero backdrop, the player.
+- Use `ghost` in a page header that already sits on the page colour.
+</Do>
+
+<Dont>
+- Hand-roll a chevron disc; five apps did and they all drifted.
+</Dont>

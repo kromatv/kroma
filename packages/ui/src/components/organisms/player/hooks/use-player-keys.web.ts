@@ -4,9 +4,13 @@
 // `usePlayerKeys.ts`; Vite resolves `.web` first, Metro takes the plain file.
 
 import { resolveRemoteKey } from '@kroma/core';
-import { useEffect, useRef } from 'react';
-import { type PlayerKeysParams, routeRemoteKey, tabDirection } from '../lib/player-keys';
-import type { PlayerController, PlayerFlags } from '../types';
+import { useEffect, useEffectEvent } from 'react';
+import {
+  type PlayerKeysParams,
+  routeRemoteKey,
+  tabDirection,
+} from '#ui/components/organisms/player/lib/player-keys';
+import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';
 import type { PlayerNav } from './use-player-nav';
 
 function letterShortcut(
@@ -45,11 +49,10 @@ function letterShortcut(
   return false;
 }
 
-/** The single window keydown router. One stable listener calls the latest
- * closure, so re-renders never re-subscribe. */
+/** The single window keydown router. One stable listener always sees the latest
+ * render, so re-renders never re-subscribe. */
 export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
-  const latest = useRef<(e: KeyboardEvent) => void>(() => undefined);
-  latest.current = (e: KeyboardEvent) => {
+  const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
     const { nav, controller, flags, locked } = params;
     if (locked) {
       const key = resolveRemoteKey(e);
@@ -75,12 +78,11 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
     if (!remote) return;
     e.preventDefault();
     routeRemoteKey(params, remote);
-  };
+  });
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => latest.current(e);
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 }
 

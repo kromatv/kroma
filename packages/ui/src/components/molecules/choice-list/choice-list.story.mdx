@@ -1,0 +1,74 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Badge } from '#ui/components/atoms/badge';
+import { Box } from '#ui/components/atoms/box';
+import { IconButton } from '#ui/components/atoms/icon-button';
+import { Text } from '#ui/components/atoms/text';
+import { ChoiceList } from './choice-list';
+import { QUALITIES, LIBRARIES, Single, Multiple, WithActions, Composed } from './choice-list.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  width: 480,
+  render: () => <Single />,
+});
+
+A list whose rows ARE the control: pick one (`single`, radios) or pick several (`multiple`, checkboxes). Composed rather than configured, in Radix's shape: **Root** owns the value and the group semantics, **Item** reads them through context, and **Indicator / Label / Hint** are the row's faces, always written out. The whole row is the target, so there is one D-pad stop per row and a pointer hit area the size of the thing a reader is aiming at; the row carries `radio`/`checkbox` with its state, inside a named `radiogroup` (single) or group (multiple). Rows can carry their own `actions`, which stay their own controls.
+
+```tsx
+<ChoiceList.Root label="Quality" value={quality} onValueChange={setQuality}>
+  <ChoiceList.Item value="original">
+    <ChoiceList.Label>Original</ChoiceList.Label>
+    <ChoiceList.Hint>No transcoding</ChoiceList.Hint>
+  </ChoiceList.Item>
+  <ChoiceList.Item value="1080p">
+    <ChoiceList.Label>1080p</ChoiceList.Label>
+    <ChoiceList.Hint>Up to 8 Mb/s</ChoiceList.Hint>
+  </ChoiceList.Item>
+</ChoiceList.Root>
+
+// The row takes whatever arrangement it needs:
+<ChoiceList.Item value={lib.value}>
+  <Box row align="center" gap={8}>
+    <ChoiceList.Label>{lib.label}</ChoiceList.Label>
+    <Badge tone="warning">scanning</Badge>
+  </Box>
+  <ChoiceList.Hint>128 titles · 1.2 TB</ChoiceList.Hint>
+</ChoiceList.Item>
+```
+
+<Scene name="Pick several">
+  Checkbox rows, rows carrying their own delete action, and a row composed from the named parts.
+
+  <Box gap={28}>
+    <Box gap={10}>
+      <Text variant="overline" color="textDim">
+        multiple
+      </Text>
+      <Multiple />
+    </Box>
+    <Box gap={10}>
+      <Text variant="overline" color="textDim">
+        with row actions
+      </Text>
+      <WithActions />
+    </Box>
+    <Box gap={10}>
+      <Text variant="overline" color="textDim">
+        composed
+      </Text>
+      <Composed />
+    </Box>
+  </Box>
+</Scene>
+
+<Do>
+- Name the group: Root's `label` is what a screen reader announces before the first row.
+- Write the `<ChoiceList.Label>` first: its plain text is the row's accessible name.
+- Put row-level verbs in `actions`; they are separate controls, not part of the choice.
+</Do>
+
+<Dont>
+- Use it for two or three bare options - that is a `<SegmentGroup>`.
+- Nest a pressable inside the label: the row already presses.
+</Dont>

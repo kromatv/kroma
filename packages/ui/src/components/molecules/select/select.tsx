@@ -35,6 +35,7 @@ import {
 } from './select-context';
 import { Indicator, Item, optionOf, type SelectItemProps } from './select-item';
 import { SelectOptions } from './select-options';
+import type { SelectPresentation } from './select-surface';
 
 // The trigger IS a field: same well, same metrics table, so a select and an
 // entry on one row are the same shape and height (see lib/field-shell).
@@ -74,6 +75,11 @@ interface SelectRootProps {
   /** What the trigger reads before anything is picked. No default: the product
    *  is not in this file's language. */
   placeholder?: string;
+  /** Where the options appear: `auto` (the default) asks the platform - a
+   *  dialog under a D-pad, an anchored popover under a pointer - and naming one
+   *  overrides it. `panel` has no native implementation and falls back to the
+   *  dialog there. */
+  presentation?: SelectPresentation;
   disabled?: boolean;
   /** A <Select.Trigger> and the <Select.Item>s, in any order. Only DIRECT
    *  children are collected as options. */
@@ -93,6 +99,7 @@ function Root({
   onOpenChange,
   label,
   placeholder,
+  presentation = 'auto',
   disabled = false,
   children,
 }: Readonly<SelectRootProps>) {
@@ -134,6 +141,7 @@ function Root({
       {kids.filter((node) => !isItem(node))}
       <SelectOptions
         open={open}
+        presentation={presentation}
         label={label ?? placeholder}
         options={options}
         items={items}
@@ -230,6 +238,7 @@ export type {
   SelectOpenDetails,
   SelectOpenReason,
   SelectOption,
+  SelectPresentation,
   SelectRootProps,
   SelectTriggerProps,
   SelectValueDetails,

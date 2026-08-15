@@ -6,17 +6,6 @@ import { storyCode } from './story-code';
 
 const RESOLVED = '\0virtual:kroma-story-code';
 
-const TSCONFIG = JSON.stringify({
-  compilerOptions: {
-    strict: true,
-    target: 'ES2022',
-    module: 'ESNext',
-    jsx: 'react-jsx',
-    types: [],
-  },
-  include: ['src'],
-});
-
 interface Hooks {
   load: (id: string) => Promise<string | null>;
   handleHotUpdate: (at: { file: string; server: unknown }) => void;
@@ -24,15 +13,22 @@ interface Hooks {
 
 let repo = '';
 
-function badge(label: string): string {
-  return `export default story({\n  name: 'Badge',\n  group: 'Media',\n  render: () => <Badge>${label}</Badge>,\n});\n`;
+function badge(group: string): string {
+  return [
+    "import { defineStory } from '@kroma/workbench/story';",
+    '',
+    `export const story = defineStory({ group: '${group}' });`,
+    '',
+    'The pill.',
+    '',
+  ].join('\n');
 }
 
 function open(): string {
   repo = mkdtempSync(join(tmpdir(), 'kroma-story-code-plugin-'));
   mkdirSync(join(repo, 'src'));
-  writeFileSync(join(repo, 'tsconfig.json'), TSCONFIG);
-  writeFileSync(join(repo, 'src', 'badge.stories.tsx'), badge('4K'));
+  writeFileSync(join(repo, 'tsconfig.json'), '{}');
+  writeFileSync(join(repo, 'src', 'badge.story.mdx'), badge('Media'));
   return repo;
 }
 
@@ -40,7 +36,7 @@ const plugin = (at: string): Hooks =>
   storyCode({
     tsconfig: join(at, 'tsconfig.json'),
     repo: at,
-    include: (file) => file.endsWith('.stories.tsx'),
+    include: (file) => file.endsWith('.story.mdx'),
   }) as unknown as Hooks;
 
 afterEach(() => {
@@ -49,11 +45,11 @@ afterEach(() => {
 });
 
 describe('storyCode', () => {
-  it('serves every story’s own JSX as `STORY_CODE`', async () => {
+  it('serves every story’s identity as `STORY_CODE`', async () => {
     const code = await plugin(open()).load(RESOLVED);
     expect(code).toContain('export const STORY_CODE =');
-    expect(code).toContain('src/badge.stories.tsx');
-    expect(code).toContain('<Badge>4K</Badge>');
+    expect(code).toContain('src/badge.story.mdx');
+    expect(code).toContain('"group":"Media"');
   });
 
   it('scans the kit and nothing else by default', async () => {
@@ -67,11 +63,11 @@ describe('storyCode', () => {
   it('recomputes after an edit rather than serving the cache it just wrote', async () => {
     const at = open();
     await plugin(at).load(RESOLVED);
-    writeFileSync(join(at, 'src', 'badge.stories.tsx'), badge('HDR'));
-    expect(await plugin(at).load(RESOLVED)).toContain('<Badge>HDR</Badge>');
+    writeFileSync(join(at, 'src', 'badge.story.mdx'), badge('Player'));
+    expect(await plugin(at).load(RESOLVED)).toContain('"group":"Player"');
   });
 
-  it('watches the story files, so editing a scene refreshes the drawer', () => {
+  it('watches the story files, so editing one refreshes the index', () => {
     const invalidated: unknown[] = [];
     const mod = { id: RESOLVED };
     const server = {
@@ -81,7 +77,7 @@ describe('storyCode', () => {
       },
     };
     const hooks = plugin(open());
-    hooks.handleHotUpdate({ file: '/kit/src/badge.stories.tsx', server });
+    hooks.handleHotUpdate({ file: '/kit/src/badge.story.mdx', server });
     hooks.handleHotUpdate({ file: '/kit/src/badge.tsx', server });
     expect(invalidated).toHaveLength(1);
   });
@@ -97,14 +93,14 @@ describe('storyCode', () => {
     };
     const at = open();
     const hooks = storyCode({ tsconfig: join(at, 'tsconfig.json'), repo: at }) as unknown as Hooks;
-    hooks.handleHotUpdate({ file: '/repo/packages/ui/src/badge/badge.stories.tsx', server });
+    hooks.handleHotUpdate({ file: '/repo/packages/ui/src/badge/badge.story.mdx', server });
     hooks.handleHotUpdate({ file: '/repo/packages/ui/src/badge/badge.tsx', server });
-    hooks.handleHotUpdate({ file: '/repo/clients/web/src/badge.stories.tsx', server });
+    hooks.handleHotUpdate({ file: '/repo/clients/web/src/badge.story.mdx', server });
     expect(invalidated).toHaveLength(1);
   });
 
-  it('serves nothing at all off a directory with no project in it', async () => {
-    // A tarball, a half-checked-out tree: the drawer goes quiet, the build runs.
+  it('serves nothing at all off a directory with no sources in it', async () => {
+    // A tarball, a half-checked-out tree: the index goes quiet, the build runs.
     repo = mkdtempSync(join(tmpdir(), 'kroma-story-code-none-'));
     expect(await plugin(repo).load(RESOLVED)).toBe('export const STORY_CODE = {};');
   });

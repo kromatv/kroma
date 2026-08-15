@@ -1,0 +1,61 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Button } from '#ui/components/atoms/button';
+import { IconButton } from '#ui/components/atoms/icon-button';
+import { Text } from '#ui/components/atoms/text';
+import { Field } from '#ui/components/molecules/field';
+import { SegmentGroup } from '#ui/components/molecules/segment-group';
+import { Select } from '#ui/components/molecules/select';
+import { CONTROL } from '#ui/lib/field-shell';
+import { LEVELS, SOURCES, Row, Sized } from './controls.fixtures';
+
+export const story = defineStory({
+  group: 'Foundations',
+  width: 'fill',
+  component: Row,
+  args: { size: 'sm' },
+  controls: { size: ['sm', 'md', 'tv'] },
+});
+
+Every input wears ONE well: the same corner, edge, fill, padding and content line, from the single table in `lib/field-shell`. That is what lets a segment group, a select and a text entry sit on one filter row and read as one family rather than three components that happen to be adjacent. A control that needs a compound shape (a search box with a glyph, an entry with a button glued on) derives from the same numbers instead of inventing its own.
+
+```tsx
+// The app states its density once at startup...
+setEntryDefaults({ physicalKeyboard: true, size: 'sm' });
+
+// ...and every control follows, or says so itself.
+<SegmentGroup.Root label="Level" value={level} onValueChange={setLevel}>
+  <SegmentGroup.Item value="all">
+    <SegmentGroup.Label>All</SegmentGroup.Label>
+  </SegmentGroup.Item>
+</SegmentGroup.Root>
+
+<Select.Root label="Source" value={source} onValueChange={setSource}>
+  <Select.Trigger />
+  <Select.Item value="server">kroma_server</Select.Item>
+</Select.Root>
+
+<Field.Root label="Filter" hideLabel>
+  <Field.Input icon="search" placeholder="Filter the lines…" />
+</Field.Root>
+```
+
+<Scene name="Both sizes">
+  The console density and the ten-foot one, each internally consistent.
+
+  <Box gap={28}>
+    <Sized size="sm" />
+    <Sized size="md" />
+  </Box>
+</Scene>
+
+<Do>
+- Let the shell decide the height: pin a width if you must, never an `h-*`.
+- Reach for `CONTROL` when a one-off DOM control has to match a kit one.
+</Do>
+
+<Dont>
+- Hand a control its own radius or padding: the row stops agreeing the moment one is tuned.
+- Mix sizes on one row; a form is `sm` or `md`, not both.
+</Dont>

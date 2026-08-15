@@ -8,11 +8,20 @@
 // app's settings.
 
 import { Button } from '#ui/components/atoms/button';
+import {
+  Key,
+  type KeyboardSize,
+  keyMetrics,
+  keyRowWidth,
+} from '#ui/components/organisms/keyboard/key';
+import {
+  DELETE_KEY,
+  type KeyboardLayout,
+  urlRows,
+} from '#ui/components/organisms/keyboard/keyboard-layouts';
+import { usePhysicalTyping } from '#ui/components/organisms/keyboard/use-physical-typing';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
 import { useTDefault } from '#ui/services/i18n';
-import { Key, type KeyboardSize, keyMetrics, keyRowWidth } from '../key';
-import { DELETE_KEY, type KeyboardLayout, urlRows } from '../keyboard-layouts';
-import { usePhysicalTyping } from '../use-physical-typing';
 
 interface UrlKeyboardProps {
   value: string;

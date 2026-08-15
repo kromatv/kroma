@@ -1,7 +1,16 @@
 {
   "name": "@kroma/modules-generated",
   "version": "0.0.0",
+  "private": true,
   "type": "module",
+  "description": "Written by `bun run modules:gen` from the module manifests: the aggregator every shell imports so a module reaches an app without an app knowing its name.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/modules-generated"
+  },
   "exports": {
     ".": "./src/index.ts"
   },
@@ -13,10 +22,10 @@
     "@kroma/module-sdk": "workspace:*"
   },
   "peerDependencies": {
-    "react": ">=18"
+    "react": "^19.2.8"
   },
   "devDependencies": {
-    "@types/react": "^19",
+    "@types/react": "^19.2.18",
     "typescript": "^7.0.2"
   }
 }

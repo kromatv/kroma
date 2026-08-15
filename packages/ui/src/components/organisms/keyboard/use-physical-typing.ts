@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import { webWindow } from '#ui/lib/dom';
 import { useHardwareKeys } from '#ui/lib/focus-remote';
 
@@ -10,8 +10,11 @@ function usePhysicalTyping(
   onValueChange: (next: string) => void,
   physicalKeyboard: boolean,
 ) {
-  const stateRef = useRef({ value, onValueChange });
-  stateRef.current = { value, onValueChange };
+  const type = useEffectEvent((key: string) => {
+    if (key === 'Backspace') onValueChange(value.slice(0, -1));
+    else if (key.length === 1) onValueChange(value + key);
+  });
+
   useEffect(() => {
     const w = physicalKeyboard ? webWindow() : null;
     if (!w) return;
@@ -19,15 +22,9 @@ function usePhysicalTyping(
       if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
       const t = e.target;
       if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement) return;
-      const state = stateRef.current;
-      if (e.key === 'Backspace') {
+      if (e.key === 'Backspace' || e.key.length === 1) {
         e.preventDefault();
-        state.onValueChange(state.value.slice(0, -1));
-        return;
-      }
-      if (e.key.length === 1) {
-        e.preventDefault();
-        state.onValueChange(state.value + e.key);
+        type(e.key);
       }
     };
     w.addEventListener('keydown', onKey);
@@ -37,13 +34,7 @@ function usePhysicalTyping(
   // Native half of the same idea: an Android TV/emulator bluetooth keyboard has
   // no `document` to listen to, so characters come from the remote bridge
   // instead (a no-op on browser shells, already covered above).
-  useHardwareKeys(
-    useCallback((key: string) => {
-      const state = stateRef.current;
-      if (key === 'Backspace') state.onValueChange(state.value.slice(0, -1));
-      else if (key.length === 1) state.onValueChange(state.value + key);
-    }, []),
-  );
+  useHardwareKeys(type);
 }
 
 export { usePhysicalTyping };

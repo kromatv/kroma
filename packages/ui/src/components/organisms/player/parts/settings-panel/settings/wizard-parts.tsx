@@ -1,5 +1,6 @@
 import { Pressable } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
@@ -11,7 +12,10 @@ import { useT } from '#ui/services/i18n';
  * (§15): a `focused` boolean draws the ring, never CSS :hover.
  */
 
-/** A ◀ value ▶ cycle field: ▲▼ move between fields, ◀▶ change this one. */
+/** A left-value-right cycle field: up/down move between fields, left/right
+ * change this one. */
+const ARROW_SIZE = 28;
+
 export function CycleField({
   label,
   value,
@@ -33,14 +37,14 @@ export function CycleField({
       <Text style={s.fieldLabel}>{label}</Text>
       <Box row align="center" gap={16}>
         <CycleArrow
-          glyph="◀"
+          icon="chevron-left"
           label={`${t('common.decrease')} ${label}`}
           dim={!focused}
           onPress={onDec}
         />
         <Text style={s.fieldValue}>{value}</Text>
         <CycleArrow
-          glyph="▶"
+          icon="chevron-right"
           label={`${t('common.increase')} ${label}`}
           dim={!focused}
           onPress={onInc}
@@ -50,12 +54,15 @@ export function CycleField({
   );
 }
 
+// A drawn glyph, not a typed one: `◀` is a character the platform's font may
+// not carry, and on a television it landed at whatever weight and baseline that
+// font decided.
 function CycleArrow({
-  glyph,
+  icon,
   label,
   dim,
   onPress,
-}: Readonly<{ glyph: string; label: string; dim: boolean; onPress: () => void }>) {
+}: Readonly<{ icon: IconName; label: string; dim: boolean; onPress: () => void }>) {
   return (
     <Pressable
       {...VIRTUAL_FOCUS}
@@ -63,9 +70,9 @@ function CycleArrow({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      <Text style={[s.arrow, { opacity: dim ? 0.45 : 1 }]} color="accentText">
-        {glyph}
-      </Text>
+      <Box style={[s.arrow, { opacity: dim ? 0.45 : 1 }]}>
+        <Icon name={icon} size={ARROW_SIZE} color="accentText" />
+      </Box>
     </Pressable>
   );
 }
@@ -76,5 +83,5 @@ const s = styles({
   cycleOff: { bg: 'tint/4' },
   fieldLabel: { text: 'labelTv', color: 'textMuted' },
   fieldValue: { minW: 180, textAlign: 'center', text: 'strongTv' },
-  arrow: { px: 4, text: 'strongTv' },
+  arrow: { px: 4 },
 });

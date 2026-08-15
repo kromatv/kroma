@@ -1,0 +1,36 @@
+import { defineStory } from '@kroma/workbench/story';
+import { PinField } from './pin-field';
+
+export const story = defineStory({
+  group: 'Input',
+  pad: 12,
+  args: {
+    maxLength: 4,
+    invalid: false,
+    disabled: false,
+    physicalKeyboard: true,
+  },
+  controls: { maxLength: { min: 3, max: 8 } },
+  render: (props) => <PinField key={String(props.maxLength)} {...props} />,
+});
+
+The fixed-length code entry, one dot per digit. It is `<OtpField>` wearing another face: the same Root holds the code, and each dot is an `<OtpField.Group>` child reading `useOtpSlot()`. What is its own is the capture - a television cannot mount the off-screen entry `<OtpField>` types into, because a focused text input summons the platform keyboard over the screen, so a hardware keyboard is read window-wide instead. With this preview focused, just type digits.
+
+```tsx
+<PinField onComplete={(pin) => verify(pin)} physicalKeyboard={physicalKeyboard} />
+<PinField maxLength={6} value={code} onValueChange={setCode} invalid={rejected} />
+```
+
+<Scene name="Rejected" args={{ invalid: true }}>
+  The empty dots go red while the message says why.
+</Scene>
+
+<Do>
+- Submit from `onComplete`: a full code should validate with no OK press.
+- On a TV, feed `onValueChange` from the on-screen Keypad; the dots are the same.
+- Reach for `<OtpField>` instead wherever the design wants slots and a caret.
+</Do>
+
+<Dont>
+- Show what went wrong in the dots alone - pair `invalid` with a message.
+</Dont>

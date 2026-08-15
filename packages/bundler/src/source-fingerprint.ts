@@ -12,9 +12,9 @@ export async function statLine(path: string): Promise<string> {
   return found ? `${path}:${found.mtimeMs}:${found.size}` : `${path}:absent`;
 }
 
-/** Every `.ts`/`.tsx` file under `root` that `accept` takes, sorted. Takes the
- *  source directory rather than a package root: a package root holds a
- *  node_modules whose workspace symlinks recurse into each other. */
+/** Every `.ts`/`.tsx`/`.mdx` file under `root` that `accept` takes, sorted.
+ *  Takes the source directory rather than a package root: a package root holds
+ *  a node_modules whose workspace symlinks recurse into each other. */
 export async function scanSources(
   root: string,
   accept: (path: string) => boolean,
@@ -22,6 +22,6 @@ export async function scanSources(
   const entries = await readdir(root, { recursive: true });
   return entries
     .map((entry) => join(root, entry))
-    .filter((path) => /\.tsx?$/.test(path) && accept(path))
+    .filter((path) => /\.(tsx?|mdx)$/.test(path) && accept(path))
     .sort((a, b) => (a < b ? -1 : 1));
 }

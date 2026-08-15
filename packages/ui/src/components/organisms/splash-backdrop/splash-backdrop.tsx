@@ -13,7 +13,6 @@ import { useEffect, useState } from 'react';
 import {
   Animated,
   type LayoutChangeEvent,
-  Platform,
   Image as RNImage,
   type StyleProp,
   type ViewStyle,
@@ -24,9 +23,8 @@ import { IMG_FADE_MS, Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
 import { styles, WHEEL_COLORS } from '#ui/core';
 import { gradient, promote } from '#ui/lib/css';
+import { WEB } from '#ui/lib/platform';
 import { GRADE, useDrift } from '#ui/lib/splash-motion';
-
-const WEB = Platform.OS === 'web';
 
 // Ambience, not a carousel: each cover lingers, and the handover is a long
 // dissolve rather than a cut.

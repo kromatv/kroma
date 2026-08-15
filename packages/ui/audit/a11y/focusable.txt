@@ -1,0 +1,6 @@
+# Focusable  src/components/atoms/focusable/focusable.story.mdx
+
+## preview
+button "first" tab
+button "second" tab
+button "third" tab

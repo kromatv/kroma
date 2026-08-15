@@ -1,10 +1,17 @@
 {
   "name": "@kroma/site-meta",
-  "version": "0.1.0",
-  "type": "module",
+  "version": "0.0.0",
   "private": true,
-  "sideEffects": false,
+  "type": "module",
   "description": "The addresses every KROMA web property repeats: the domain, the subdomains, the repository, the mailboxes and the pages a footer links to.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/site-meta"
+  },
+  "sideEffects": false,
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts"

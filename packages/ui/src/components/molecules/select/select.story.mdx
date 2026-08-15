@@ -1,0 +1,77 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { Field } from '#ui/components/molecules/field';
+import { Select, selectTriggerVariants } from './select';
+import { TRACKS, Tracks, Subtitles, Composed, Options } from './select.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  variants: selectTriggerVariants,
+  width: 420,
+  args: { filled: true },
+  render: (args) => (
+    <Box gap={24}>
+      <Tracks {...args} />
+      <Subtitles />
+    </Box>
+  ),
+});
+
+Pick one of a few, from a trigger that says what is picked. Composed rather than configured, in Radix's shape: **Root** owns the value and the open state, **Trigger** wears `<TextField>`'s well, **Value** says what is picked and **Item / Indicator** are the row. Where the options appear is the platform's decision: under a D-pad they open in a **Dialog** (a modal is its own view controller on tvOS, so the remote is confined to the options for free), and under a pointer they open as an anchored listbox popover with the full combobox keyboard - arrows, Home/End, type-ahead, Enter picks, Esc returns to the trigger - announced through `aria-activedescendant`. Every way out is reported: `onOpenChange(open, { reason })` says `select`, `outside`, `escape` or `back` - the remote's Back button.
+
+```tsx
+<Select.Root label="Audio track" value={track} onValueChange={setTrack}>
+  <Select.Trigger />
+  <Select.Item value="truehd" note="lossless">TrueHD 7.1</Select.Item>
+  <Select.Item value="aac" note="256 kb/s">AAC Stereo</Select.Item>
+</Select.Root>
+
+// Write the row yourself when the sugar is not enough:
+<Select.Item value="original" label="Original">
+  <Box gap={2} flex>
+    <Text variant="body">Original</Text>
+    <Text variant="meta" color="textDim">No transcoding</Text>
+  </Box>
+  <Select.Indicator />
+</Select.Item>
+```
+
+<Scene name="Composed">
+  A row written out of the parts, beside the one-line sugar and a disabled option.
+
+  <Composed />
+</Scene>
+
+## Where the options appear
+
+`presentation` decides, and its default asks the platform: a popover under a
+pointer, a dialog under a D-pad. Naming one overrides that — which is what these
+two scenes do, so both presentations can be read here rather than only the one
+this device would have chosen.
+
+<Scene name="Popover">
+  The pointer presentation: an anchored listbox with the full combobox keyboard,
+  the picked row carrying its indicator.
+
+  <Options presentation="panel" />
+</Scene>
+
+<Scene name="Dialog">
+  The D-pad presentation, which a modal makes its own view controller on tvOS,
+  so the remote is confined to the options for free.
+
+  <Options presentation="dialog" />
+</Scene>
+
+<Do>
+- Use a `note` for the fact that settles the choice: a bitrate, a codec, a count.
+- Wrap it in `<Field.Root>` for the label row - the select is the control, not the form row.
+- Give a composed row a `label`: it is what the trigger and assistive tech read.
+</Do>
+
+<Dont>
+- Reach for it with two options - two Chips show both answers at once.
+- Put dozens of items in one: past a screenful it is a search problem, not a pick.
+</Dont>

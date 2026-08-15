@@ -127,7 +127,7 @@ function cardGeometry(stageWidth: number): { scale: number; x: number; rect: Pla
 // The JS driver, deliberately: `borderRadius` is not a native-driver property,
 // and the corners have to round in step with the scale.
 function useStageZoom(settingsShrink: boolean, card: { scale: number; x: number }) {
-  const zoom = useRef(new Animated.Value(settingsShrink ? 1 : 0)).current;
+  const [zoom] = useState(() => new Animated.Value(settingsShrink ? 1 : 0));
   useEffect(() => {
     const anim = Animated.timing(zoom, {
       toValue: settingsShrink ? 1 : 0,
@@ -176,14 +176,14 @@ function useNativePlaneShrink(
 function deriveChrome(
   nav: ReturnType<typeof usePlayerNav>,
   c: PlayerController,
-  props: Readonly<PlayerRootProps>,
+  upNext: UpNextData,
   panelCovers: boolean,
 ) {
   const settingsOpen =
     nav.overlay === 'settings' || nav.overlay === 'audio' || nav.overlay === 'subtitles';
   const sheetOpen = nav.overlay === 'sheet';
   const settingsShrink = settingsOpen && c.surface === 'video' && !panelCovers;
-  const hasUpNext = props.upNext.nextEpisodes.length + props.upNext.recommendations.length > 0;
+  const hasUpNext = upNext.nextEpisodes.length + upNext.recommendations.length > 0;
   const peekVisible = nav.revealed && hasUpNext && !settingsShrink && !nav.overlay;
   const chromeShown = nav.revealed && !nav.overlay;
   return { settingsOpen, sheetOpen, settingsShrink, peekVisible, chromeShown };
@@ -243,10 +243,35 @@ function playerInputHandlers(
  * engine directly. It owns the stage, so give it the whole screen and exactly
  * one `<Player.Media>`.
  */
-function Root(props: Readonly<PlayerRootProps>) {
+// Fully destructured, `ref` included: with React 19's ref-as-prop, keeping the
+// props bag whole would make every `props.x` read a ref-aggregate access and
+// cost the whole chrome its compiler memoisation.
+function Root({
+  controller: c,
+  flags,
+  title,
+  subtitle,
+  warn,
+  chapters: rawChapters,
+  markers,
+  tileAt,
+  appearance,
+  onAppearanceChange,
+  subtitleGen,
+  upNext,
+  onReport,
+  onPlayItem,
+  onPlayNext,
+  nextTitle,
+  introActive,
+  onSkipIntro,
+  onCast,
+  onClose,
+  ref,
+  children,
+}: Readonly<PlayerRootProps>) {
   useEffect(injectStageStyles, []);
-  const { controller: c, flags, onClose } = props;
-  const slots = useMemo(() => sortSlots(props.children), [props.children]);
+  const slots = useMemo(() => sortSlots(children), [children]);
   // Seeded from the window so the first frame is not measured at zero, then kept
   // honest by the root's own layout. Read once rather than through
   // `useWindowDimensions`, which would subscribe to every resize event.
@@ -265,28 +290,25 @@ function Root(props: Readonly<PlayerRootProps>) {
   const close = useCallback((reason: PlayerCloseReason) => onClose({ reason }), [onClose]);
   const closeFromChrome = useCallback(() => close('close'), [close]);
   const intro = useMemo(
-    () =>
-      props.onSkipIntro
-        ? { active: props.introActive === true, onSkip: props.onSkipIntro }
-        : undefined,
-    [props.introActive, props.onSkipIntro],
+    () => (onSkipIntro ? { active: introActive === true, onSkip: onSkipIntro } : undefined),
+    [introActive, onSkipIntro],
   );
 
   const chapters = useMemo(
-    () => normalizeChapters(props.chapters, c.dur * 1000),
-    [props.chapters, c.dur],
+    () => normalizeChapters(rawChapters, c.dur * 1000),
+    [rawChapters, c.dur],
   );
   const shown = c.seekPreview ?? c.cur;
   const curChapter = currentChapter(chapters, shown * 1000);
 
   const credits = usePlayerCredits({
-    markers: props.markers,
+    markers,
     dur: c.dur,
     cur: c.cur,
     seeking: c.seekPreview != null,
     endedNonce: c.endedNonce,
-    hasNext: Boolean(props.onPlayNext),
-    onAdvance: () => props.onPlayNext?.(),
+    hasNext: Boolean(onPlayNext),
+    onAdvance: () => onPlayNext?.(),
   });
   const [creditsFocus, setCreditsFocus] = useState<'play' | 'cancel'>('play');
   useEffect(() => {
@@ -295,10 +317,7 @@ function Root(props: Readonly<PlayerRootProps>) {
 
   // Measured BEFORE the nav machine, which is then given the row that is drawn:
   // a shed control must not keep a focus stop.
-  const row = useMemo(
-    () => controlOrder(flags, Boolean(props.onPlayNext)),
-    [flags, props.onPlayNext],
-  );
+  const row = useMemo(() => controlOrder(flags, Boolean(onPlayNext)), [flags, onPlayNext]);
   const metrics = useMemo(() => chromeMetrics(row, stageWidth), [row, stageWidth]);
   const px = scaler(metrics.scale);
 
@@ -308,27 +327,21 @@ function Root(props: Readonly<PlayerRootProps>) {
     {
       togglePlay: c.togglePlay,
       seekNudge,
-      onNext: () => props.onPlayNext?.(),
-      hasNext: Boolean(props.onPlayNext),
+      onNext: () => onPlayNext?.(),
+      hasNext: Boolean(onPlayNext),
       // Step in perceptual slider space so a nudge feels even across the range.
       volumeNudge: (d) => c.setVolume(sliderToVolume(clamp01(volumeToSlider(c.volume) + d * 0.05))),
       toggleMute: c.toggleMute,
       togglePip: c.togglePip,
       toggleFullscreen: c.toggleFullscreen,
-      onCast: props.onCast,
+      onCast,
       onExit: close,
     },
     metrics.controls,
   );
 
   const creditsKey = (key: RemoteKey): boolean =>
-    handleCreditsKey(
-      key,
-      creditsFocus,
-      setCreditsFocus,
-      () => props.onPlayNext?.(),
-      credits.cancel,
-    );
+    handleCreditsKey(key, creditsFocus, setCreditsFocus, () => onPlayNext?.(), credits.cancel);
 
   usePlayerKeys({
     nav,
@@ -345,7 +358,7 @@ function Root(props: Readonly<PlayerRootProps>) {
   const { settingsOpen, sheetOpen, settingsShrink, peekVisible, chromeShown } = deriveChrome(
     nav,
     c,
-    props,
+    upNext,
     panel.covers,
   );
   const nativeShrink = settingsOpen && c.surface !== 'video' && !panel.covers;
@@ -375,27 +388,19 @@ function Root(props: Readonly<PlayerRootProps>) {
   const introLift = chromeShown ? bottomInset + transport + px(SKIP_GAP) : px(SKIP_REST);
   const input = playerInputHandlers(nav, c, flags, locked);
 
-  // Hoisted: an inline closure would hand the memoized sheet a new prop on every
-  // ~4 Hz tick and defeat the memo.
-  const openSheet = useCallback(() => nav.openOverlay('sheet'), [nav.openOverlay]);
+  const openSheet = () => nav.openOverlay('sheet');
   // Close first: pip, cast and the next episode all change what is on screen, and
   // leaving the panel over it would hide the thing just asked for.
-  const runOverflow = useCallback(
-    (id: ControlId) => {
-      nav.closeOverlay();
-      nav.activate(id);
-    },
-    [nav.closeOverlay, nav.activate],
-  );
-  const playUpNextItem = useCallback(
-    (item: UpNextItem) => props.onPlayItem?.(item),
-    [props.onPlayItem],
-  );
+  const runOverflow = (id: ControlId) => {
+    nav.closeOverlay();
+    nav.activate(id);
+  };
+  const playUpNextItem = useCallback((item: UpNextItem) => onPlayItem?.(item), [onPlayItem]);
 
   return (
     <PlayerSlotContext.Provider value={true}>
       <Box
-        ref={props.ref}
+        ref={ref}
         fill
         z={60}
         bg={c.surface === 'video' ? '#000000' : 'transparent'}
@@ -430,7 +435,7 @@ function Root(props: Readonly<PlayerRootProps>) {
                 playing={c.playing}
                 subtitles={c.subtitles}
                 activeIndex={c.subtitleIndex}
-                appearance={props.appearance}
+                appearance={appearance}
                 raised={nav.revealed}
               />
               {c.waiting && !locked ? (
@@ -470,15 +475,15 @@ function Root(props: Readonly<PlayerRootProps>) {
           ) : null}
 
           {/* credits autoplay (§11) */}
-          {credits.show && props.nextTitle ? (
+          {credits.show && nextTitle ? (
             <CreditsCard
-              item={props.nextTitle}
+              item={nextTitle}
               secondsLeft={credits.secondsLeft}
               total={credits.total}
               playFocused={creditsFocus === 'play'}
               cancelFocused={creditsFocus === 'cancel'}
               scale={metrics.scale}
-              onPlay={() => props.onPlayNext?.()}
+              onPlay={() => onPlayNext?.()}
               onCancel={credits.cancel}
             />
           ) : null}
@@ -497,9 +502,9 @@ function Root(props: Readonly<PlayerRootProps>) {
             style={chromeShown ? s.chromeLive : s.inert}
           >
             <TopBar
-              title={props.title}
-              subtitle={props.subtitle}
-              warn={props.warn}
+              title={title}
+              subtitle={subtitle}
+              warn={warn}
               actions={slots.actions}
               scale={metrics.scale}
               backFocused={nav.zone === 'back'}
@@ -510,7 +515,7 @@ function Root(props: Readonly<PlayerRootProps>) {
           {/* up-next sheet (peek + expand, §10) */}
           <UpNextSheet
             ref={sheetOpen ? panelRef : null}
-            data={props.upNext}
+            data={upNext}
             open={sheetOpen}
             revealed={peekVisible || sheetOpen}
             onOpen={openSheet}
@@ -543,7 +548,7 @@ function Root(props: Readonly<PlayerRootProps>) {
                 bufEnd={c.bufEnd}
                 seekPreview={c.seekPreview}
                 chapters={chapters}
-                tileAt={props.tileAt}
+                tileAt={tileAt}
                 focused={nav.zone === 'progress'}
                 elapsed={fmtTime(shown)}
                 chapterLabel={curChapter?.title || undefined}
@@ -577,12 +582,12 @@ function Root(props: Readonly<PlayerRootProps>) {
               covers={panel.covers}
               scale={metrics.scale}
               controller={c}
-              appearance={props.appearance}
-              onAppearanceChange={props.onAppearanceChange}
+              appearance={appearance}
+              onAppearanceChange={onAppearanceChange}
               statsOn={statsOn}
               onToggleStats={() => setStatsOn((s) => !s)}
-              subtitleGen={props.subtitleGen}
-              onReport={props.onReport}
+              subtitleGen={subtitleGen}
+              onReport={onReport}
               overflow={metrics.overflow}
               onControl={runOverflow}
               onClose={() => nav.closeOverlay()}

@@ -4,7 +4,7 @@
 // and never asks which platform it is on. See splash-motion.web.ts for the
 // half that compiles to @keyframes.
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Animated, Easing, type StyleProp, type ViewStyle } from 'react-native';
 
 export interface DriftSpec {
@@ -31,7 +31,7 @@ export interface DriftSpec {
  */
 export function useDrift(spec: Readonly<DriftSpec>): StyleProp<ViewStyle> {
   const { x, y, zoom, ms, width, height } = spec;
-  const clock = useRef(new Animated.Value(0)).current;
+  const [clock] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     const leg = { duration: ms, easing: Easing.inOut(Easing.quad), useNativeDriver: true } as const;

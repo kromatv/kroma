@@ -54,7 +54,8 @@ Read it before adding a component or changing one's props.
 ```
 atoms/button/
   button.tsx                        the component, its variants, its props
-  button.stories.tsx                what the workbench shows and can adjust
+  button.story.mdx                  its documentation, and what the workbench shows
+  button.fixtures.tsx               helpers the document imports, where it needs any
   button.detail-actions.demo.tsx    a worked example; the file IS the code sample
   index.ts                          re-export, so importers write './button'
 ```

@@ -1,11 +1,14 @@
-import { type RefObject, useCallback, useRef, useState } from 'react';
+import { type RefObject, useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { EXIT_MS } from './constants';
 
 export interface IntroExit {
   exiting: boolean;
   exitedRef: RefObject<boolean>;
-  /** The stall-safety timer, armed by the intro and only cleared here. */
-  safetyRef: RefObject<ReturnType<typeof setTimeout> | undefined>;
+  /** (Re-)arms the stall-safety timer: `run` fires once, `ms` from now. Arming
+   *  replaces the previous timer; `exit` and `reopen` clear it. */
+  armSafety: (ms: number, run: () => void) => void;
+  /** Drops the safety timer without exiting (a looping intro never stalls out). */
+  disarmSafety: () => void;
   exit: () => void;
   reopen: () => void;
   clearTimers: () => void;
@@ -24,7 +27,9 @@ export function useIntroExit(onDone: () => void): IntroExit {
   const exitRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const exitedRef = useRef(false);
   const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
+  useLayoutEffect(() => {
+    onDoneRef.current = onDone;
+  });
 
   const exit = useCallback(() => {
     if (exitedRef.current) return;
@@ -46,5 +51,12 @@ export function useIntroExit(onDone: () => void): IntroExit {
     clearTimeout(exitRef.current);
   }, []);
 
-  return { exiting, exitedRef, safetyRef, exit, reopen, clearTimers };
+  const armSafety = useCallback((ms: number, run: () => void) => {
+    clearTimeout(safetyRef.current);
+    safetyRef.current = setTimeout(run, ms);
+  }, []);
+
+  const disarmSafety = useCallback(() => clearTimeout(safetyRef.current), []);
+
+  return { exiting, exitedRef, armSafety, disarmSafety, exit, reopen, clearTimers };
 }

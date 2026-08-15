@@ -1,0 +1,46 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { Kbd } from './kbd';
+import { Chord } from './kbd.fixtures';
+
+export const story = defineStory({
+  group: 'Foundations',
+  args: { children: 'esc' },
+  controls: { children: 'text' },
+  render: ({ children }) => <Kbd>{children}</Kbd>,
+});
+
+One keycap: the mark a shortcut is written with, in prose, in a menu row, or under a search field.
+
+It is a **face**, never a control. A picture of a key does nothing when it is pressed, and on a television it must not take a D-pad stop away from the control it describes.
+
+```tsx
+<Kbd>esc</Kbd>
+
+<Box row align="center" gap={5}>
+  <Kbd>⌘</Kbd>
+  <Kbd>K</Kbd>
+  <Text variant="meta" color="textDim">search</Text>
+</Box>
+```
+
+<Scene name="A chord, and a hint">
+  One cap per key. The label beside them is ordinary text: a cap is the key, never the sentence.
+
+  <Box row align="center" gap={14}>
+    <Chord keys={['⌘', 'K']} label="search" />
+    <Chord keys={['↑', '↓']} label="navigate" />
+    <Chord keys={['↵']} label="select" />
+  </Box>
+</Scene>
+
+<Do>
+- Print the key as the reader sees it on the keyboard: `esc`, `⌘`, `Ctrl`, `↵`.
+- Put one cap per key, so a chord reads as the two keys it is.
+</Do>
+
+<Dont>
+- Make one pressable - the shortcut is the affordance, the cap is only its label.
+- Show a keyboard shortcut on a screen that is driven only by a remote.
+</Dont>

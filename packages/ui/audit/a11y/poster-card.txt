@@ -1,0 +1,16 @@
+# PosterCard  src/components/molecules/poster-card/poster-card.story.mdx
+
+## preview
+button "Dune" tab
+
+## scene:A shelf
+button "Title 1" tab
+button "Title 2" tab
+progressbar "" [valuenow=40]
+button "Title 3" tab
+button "Title 4" tab
+button "Title 5" tab
+button "Title 6" tab
+
+## scene:No artwork
+button "Dune" tab

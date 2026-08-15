@@ -1,0 +1,11 @@
+# Box  src/components/atoms/box/box.story.mdx
+
+## preview
+div "One" var(--kroma-text)/13px/500/"Hanken Grotesk"/normal/18px/start/none/none << pad=30,36,30,36 op=1.000 bg=[var(--kroma-surface-1) var(--kroma-surface-2)] radius=[13px 13px 13px 13px 10px 10px 10px 10px] flex=[row:stretch:normal:nowrap:g0/0:n3]
+div "Two" var(--kroma-text)/13px/500/"Hanken Grotesk"/normal/18px/start/none/none << pad=30,36,30,36 op=1.000 bg=[var(--kroma-surface-1) var(--kroma-surface-2)] radius=[13px 13px 13px 13px 10px 10px 10px 10px] flex=[row:stretch:normal:nowrap:g0/0:n3]
+div "Three" var(--kroma-text)/13px/500/"Hanken Grotesk"/normal/18px/start/none/none << pad=30,36,30,36 op=1.000 bg=[var(--kroma-surface-1) var(--kroma-surface-2)] radius=[13px 13px 13px 13px 10px 10px 10px 10px] flex=[row:stretch:normal:nowrap:g0/0:n3]
+
+## scene:Centred column
+div "One" var(--kroma-text)/13px/500/"Hanken Grotesk"/normal/18px/start/none/none << pad=42,48,42,48 op=1.000 bg=[var(--kroma-surface-1) var(--kroma-surface-2)] radius=[13px 13px 13px 13px 10px 10px 10px 10px] flex=[column:center:center:nowrap:g0/0:n3]
+div "Two" var(--kroma-text)/13px/500/"Hanken Grotesk"/normal/18px/start/none/none << pad=42,48,42,48 op=1.000 bg=[var(--kroma-surface-1) var(--kroma-surface-2)] radius=[13px 13px 13px 13px 10px 10px 10px 10px] flex=[column:center:center:nowrap:g0/0:n3]
+div "Three" var(--kroma-text)/13px/500/"Hanken Grotesk"/normal/18px/start/none/none << pad=42,48,42,48 op=1.000 bg=[var(--kroma-surface-1) var(--kroma-surface-2)] radius=[13px 13px 13px 13px 10px 10px 10px 10px] flex=[column:center:center:nowrap:g0/0:n3]

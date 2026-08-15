@@ -159,6 +159,21 @@ export function migrateAppearance(raw: unknown): SubtitleAppearance {
   };
 }
 
+function readStoredAppearance(): SubtitleAppearance | null {
+  try {
+    const raw = deviceStorage()?.getItem(KEY);
+    return raw ? migrateAppearance(JSON.parse(raw)) : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistAppearance(next: SubtitleAppearance): void {
+  try {
+    deviceStorage()?.setItem(KEY, JSON.stringify(next));
+  } catch {}
+}
+
 /** Persisted subtitle appearance. SSR-safe: starts from defaults (matching the
  * server render), then hydrates from localStorage on the client. */
 export function useSubtitleAppearance(): [
@@ -168,18 +183,14 @@ export function useSubtitleAppearance(): [
   const [style, setStyle] = useState<SubtitleAppearance>(DEFAULT_SUB_APPEARANCE);
 
   useEffect(() => {
-    try {
-      const raw = deviceStorage()?.getItem(KEY) ?? null;
-      if (raw) setStyle(migrateAppearance(JSON.parse(raw)));
-    } catch {}
+    const stored = readStoredAppearance();
+    if (stored) setStyle(stored);
   }, []);
 
   const update = useCallback((next: Partial<SubtitleAppearance>) => {
     setStyle((prev) => {
       const merged = { ...prev, ...next };
-      try {
-        deviceStorage()?.setItem(KEY, JSON.stringify(merged));
-      } catch {}
+      persistAppearance(merged);
       return merged;
     });
   }, []);

@@ -1,11 +1,16 @@
 // The rail's gesture layer: dragging along the letters jumps as the finger
 // crosses rows, and the bubble follows it.
+//
+// The listeners outlive every render (DOM handlers on the web, one PanResponder
+// natively), so what they read has to stay fresh without rebuilding them.
+// `useEffectEvent` is that exactly: a stable function whose body always sees the
+// latest render - where a ref written during render would blind the React
+// Compiler and cost the rail its memoisation.
 
-import { type RefObject, useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { PanResponder, Platform, type View } from 'react-native';
+import { WEB } from '#ui/lib/platform';
 import { PAD } from './alphabet-rail-context';
-
-const WEB = Platform.OS === 'web';
 
 // Inside the slop a touch is a tap and belongs to the letter's own pressable.
 const SCRUB_SLOP = 8;
@@ -22,6 +27,20 @@ interface Bubble {
 
 const clampNum = (min: number, v: number, max: number) => Math.min(max, Math.max(min, v));
 
+/** The nearest PRESENT row to the one under the finger, or -1 in an empty rail. */
+function nearestPresent(slots: readonly Slot[], at: number): number {
+  let best = -1;
+  let gap = Number.POSITIVE_INFINITY;
+  slots.forEach((slot, i) => {
+    const away = Math.abs(i - at);
+    if (slot.present && away < gap) {
+      gap = away;
+      best = i;
+    }
+  });
+  return best;
+}
+
 function useLetterScrub(
   rail: RefObject<View | null>,
   slots: readonly Slot[],
@@ -29,39 +48,26 @@ function useLetterScrub(
   onJump: (letter: string) => void,
 ) {
   const [bubble, setBubble] = useState<Bubble | null>(null);
-
-  // The responder outlives every render, so it reads the moving parts
-  // through refs rather than closures.
-  const frame = useRef({ slots, rowH });
-  frame.current = { slots, rowH };
-  const jump = useRef(onJump);
-  jump.current = onJump;
   const scrubbed = useRef<string | null>(null);
   const originY = useRef<number | null>(null);
 
   // offsetY is measured from the rail's top edge.
-  const scrubAt = (offsetY: number) => {
-    const { slots: all, rowH: row } = frame.current;
-    const at = clampNum(0, Math.floor((offsetY - PAD) / row), all.length - 1);
-    let best = -1;
-    let gap = Number.POSITIVE_INFINITY;
-    all.forEach((slot, i) => {
-      const away = Math.abs(i - at);
-      if (slot.present && away < gap) {
-        gap = away;
-        best = i;
-      }
-    });
-    const letter = best < 0 ? undefined : all[best]?.value;
+  const scrubAt = useEffectEvent((offsetY: number) => {
+    const at = clampNum(0, Math.floor((offsetY - PAD) / rowH), slots.length - 1);
+    const best = nearestPresent(slots, at);
+    const letter = best < 0 ? undefined : slots[best]?.value;
     if (letter === undefined) return;
-    setBubble({ letter, y: PAD + best * row + row / 2 });
+    setBubble({ letter, y: PAD + best * rowH + rowH / 2 });
     if (scrubbed.current !== letter) {
       scrubbed.current = letter;
-      jump.current(letter);
+      onJump(letter);
     }
-  };
-  const scrubAtRef = useRef(scrubAt);
-  scrubAtRef.current = scrubAt;
+  });
+
+  const endScrub = useEffectEvent(() => {
+    scrubbed.current = null;
+    setBubble(null);
+  });
 
   // Web scrubbing goes straight to DOM pointer events: react-native-web's
   // responder system does not follow a mouse drag, and preventDefault on the
@@ -70,65 +76,59 @@ function useLetterScrub(
     if (!WEB) return;
     const node = rail.current as unknown as HTMLElement | null;
     if (!node?.addEventListener) return;
-    const end = () => {
-      scrubbed.current = null;
-      setBubble(null);
-    };
     const down = (e: PointerEvent) => {
       e.preventDefault();
       node.setPointerCapture(e.pointerId);
-      scrubAtRef.current(e.clientY - node.getBoundingClientRect().top);
+      scrubAt(e.clientY - node.getBoundingClientRect().top);
     };
     const move = (e: PointerEvent) => {
       if (e.buttons === 0) return;
-      scrubAtRef.current(e.clientY - node.getBoundingClientRect().top);
+      scrubAt(e.clientY - node.getBoundingClientRect().top);
     };
     node.addEventListener('pointerdown', down);
     node.addEventListener('pointermove', move);
-    node.addEventListener('pointerup', end);
-    node.addEventListener('pointercancel', end);
+    node.addEventListener('pointerup', endScrub);
+    node.addEventListener('pointercancel', endScrub);
     return () => {
       node.removeEventListener('pointerdown', down);
       node.removeEventListener('pointermove', move);
-      node.removeEventListener('pointerup', end);
-      node.removeEventListener('pointercancel', end);
+      node.removeEventListener('pointerup', endScrub);
+      node.removeEventListener('pointercancel', endScrub);
     };
   }, [rail]);
 
-  const pan = useRef(
+  const grab = useEffectEvent(() => {
+    originY.current = null;
+    const node = rail.current as (View & { getBoundingClientRect?: () => { top: number } }) | null;
+    if (node?.getBoundingClientRect) {
+      const scrollY = (globalThis as { scrollY?: number }).scrollY ?? 0;
+      originY.current = node.getBoundingClientRect().top + scrollY;
+    } else {
+      node?.measureInWindow((_x, y) => {
+        originY.current = y;
+      });
+    }
+  });
+
+  const drag = useEffectEvent((moveY: number) => {
+    if (originY.current === null) return;
+    scrubAt(moveY - originY.current);
+  });
+
+  // Built once: the handlers are effect events, so the one responder always
+  // sees the current rows without ever being recreated.
+  const [pan] = useState(() =>
     PanResponder.create({
       onMoveShouldSetPanResponderCapture: (_event, gesture) =>
         Math.abs(gesture.dy) > SCRUB_SLOP && Math.abs(gesture.dy) > Math.abs(gesture.dx),
-      onPanResponderGrant: () => {
-        originY.current = null;
-        const node = rail.current as
-          | (View & { getBoundingClientRect?: () => { top: number } })
-          | null;
-        if (node?.getBoundingClientRect) {
-          const scrollY = (globalThis as { scrollY?: number }).scrollY ?? 0;
-          originY.current = node.getBoundingClientRect().top + scrollY;
-        } else {
-          node?.measureInWindow((_x, y) => {
-            originY.current = y;
-          });
-        }
-      },
-      onPanResponderMove: (_event, gesture) => {
-        if (originY.current === null) return;
-        scrubAtRef.current(gesture.moveY - originY.current);
-      },
+      onPanResponderGrant: () => grab(),
+      onPanResponderMove: (_event, gesture) => drag(gesture.moveY),
       // Once a scrub owns the touch, no ancestor scroll view takes it back.
       onPanResponderTerminationRequest: () => false,
-      onPanResponderRelease: () => {
-        scrubbed.current = null;
-        setBubble(null);
-      },
-      onPanResponderTerminate: () => {
-        scrubbed.current = null;
-        setBubble(null);
-      },
+      onPanResponderRelease: () => endScrub(),
+      onPanResponderTerminate: () => endScrub(),
     }),
-  ).current;
+  );
 
   // A television has no finger and the web half is wired by hand above.
   const panHandlers = WEB || Platform.isTV ? null : pan.panHandlers;

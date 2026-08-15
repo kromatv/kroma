@@ -24,7 +24,10 @@ import type { SelectSurfaceProps } from './select-surface';
 
 function SelectOptions(props: Readonly<SelectSurfaceProps>) {
   const scoped = useInsideFocusScope();
-  if (scoped) return <SelectOptionsDialog {...props} />;
+  // `auto` is the platform's answer and the default; naming one overrides it,
+  // which is the only way a page can show both presentations at once.
+  const dialog = props.presentation === 'auto' ? scoped : props.presentation === 'dialog';
+  if (dialog) return <SelectOptionsDialog {...props} />;
   return props.open ? <SelectPopover {...props} /> : null;
 }
 

@@ -1,0 +1,14 @@
+# Grid  src/components/atoms/grid/grid.story.mdx
+
+## preview
+button "Poster 1" tab
+button "Poster 2" tab
+button "Poster 3" tab
+button "Poster 4" tab
+button "Poster 5" tab
+progressbar "" [valuenow=60]
+button "Poster 6" tab
+button "Poster 7" tab
+button "Poster 8" tab
+button "Poster 9" tab
+button "Poster 10" tab

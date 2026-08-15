@@ -10,10 +10,8 @@
 import type { MessageKey } from '@kroma/core';
 import { langName } from '@kroma/core';
 import type { ReactNode } from 'react';
-import type { useT } from '#ui/services/i18n';
-import { audioFilterLabels } from '../../../lib/audio-filter';
-import type { ControlId } from '../../../lib/nav';
-import type { PlayerController, PlayerSub } from '../../../types';
+import { audioFilterLabels } from '#ui/components/organisms/player/lib/audio-filter';
+import type { ControlId } from '#ui/components/organisms/player/lib/nav';
 import {
   IconAppearance,
   IconAudioFilter,
@@ -30,7 +28,9 @@ import {
   IconSpeed,
   IconStats,
   IconSubtitles,
-} from '../../icons';
+} from '#ui/components/organisms/player/parts/icons';
+import type { PlayerController, PlayerSub } from '#ui/components/organisms/player/types';
+import type { useT } from '#ui/services/i18n';
 
 type T = ReturnType<typeof useT>;
 

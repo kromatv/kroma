@@ -19,7 +19,7 @@
 // The same televisions also appear in the cast picker (<CastDeviceList>), which
 // is where somebody already choosing a screen will look for them.
 
-import { Box, Icon, SegmentedControl, styles, Text } from '@kroma/ui/kit';
+import { Box, Icon, SegmentGroup, styles, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { NearbyTvs } from '#mobile/components/connect/NearbyTvs';
 import { ScanCode } from '#mobile/components/connect/ScanCode';
@@ -56,13 +56,13 @@ export default function ConnectDevice() {
     <Screen padded={false}>
       <PageHeader title={t('connect.title')} />
       <Box style={s.body}>
-        <SegmentedControl.Root
-          value={mode}
-          onValueChange={setMode}
-          label={t('connect.title')}
-          options={MODES.map((m) => ({ value: m, label: t(`connect.mode.${m}`) }))}
-          stretch
-        />
+        <SegmentGroup.Root value={mode} onValueChange={setMode} label={t('connect.title')} stretch>
+          {MODES.map((m) => (
+            <SegmentGroup.Item key={m} value={m}>
+              <SegmentGroup.Label>{t(`connect.mode.${m}`)}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          ))}
+        </SegmentGroup.Root>
 
         {/* Under the control, because it describes the mode the control just
             selected. Above it, it read as a description of the title. */}

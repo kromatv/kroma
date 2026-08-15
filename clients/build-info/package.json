@@ -1,9 +1,17 @@
 {
   "name": "@kroma/build-info",
-  "private": true,
   "version": "0.0.0",
-  "//type": "ESM, even though an Expo app.config.ts reaches this through a CommonJS `require`. Node's type stripping does not rewrite modules, so an ESM `import` inside a \"commonjs\" package fails with \"Cannot use import statement outside a module\"; declaring it a module instead lets require(esm) - supported since Node 22.12 - do the interop.",
+  "private": true,
   "type": "module",
+  "description": "What a build knows about itself: the product version, the commit it came from, whether the tree was dirty, and where the repository lives.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "clients/build-info"
+  },
+  "//type": "ESM, even though an Expo app.config.ts reaches this through a CommonJS `require`. Node's type stripping does not rewrite modules, so an ESM `import` inside a \"commonjs\" package fails with \"Cannot use import statement outside a module\"; declaring it a module instead lets require(esm) - supported since Node 22.12 - do the interop.",
   "//main": "Explicit and pointing at TypeScript: Node's CommonJS resolver will not try a .ts extension on its own.",
   "main": "index.ts"
 }

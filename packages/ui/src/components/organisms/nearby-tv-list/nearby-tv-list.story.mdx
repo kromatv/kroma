@@ -1,0 +1,52 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { useT } from '#ui/services/i18n';
+import { NearbyTvList } from './nearby-tv-list';
+import { SALON, CHAMBRE, SPARE, DEVICES, STATES, finished, Demo, EveryEnding, Nothing } from './nearby-tv-list.fixtures';
+
+export const story = defineStory({
+  group: 'Layout',
+  width: { min: 340, max: 560 },
+  component: Demo,
+  args: { state: 'resting' },
+  controls: { state: STATES },
+});
+
+The televisions waiting on this network, as rows, drawn once for the two shells that ask: the browser's connect screen and the phone's. A row is the set's name, its platform under that, and the check string it is printing on its own screen - which is there so a television that named itself after yours can be told from yours, not because anyone is usually asked to type it. What a tap DOES lives in `useHandoffPicker`; this says only what a row looks like while it is doing it, and it says it ON the row: a spinner while the grant is in flight, then a tick or the reason it failed, never a notice somewhere else on the page. A finished row stops being pressable, because the beacon behind it is spent and the row is only still there to be read. `t` is a prop rather than the kit's own `useT` because the phone mounts its own translator and would read an empty catalogue here otherwise; the language lens in the toolbar moves these rows.
+
+```tsx
+const { rows, asking, outcomeFor, start, grant, stopAsking } = useHandoffPicker({ devices, connect });
+
+<NearbyTvList
+  devices={rows}
+  connectingHandle={connecting?.handle}
+  outcomeFor={outcomeFor}
+  onSelect={start}
+  t={t}
+/>
+```
+
+<Scene name="Every ending at once">
+  The three things a row can be saying, together: in flight, signed in, and gone. Only the first is still pressable - the other two have spent their beacons - and each of them has taken the check string off the row, since a set that is answering is no longer a set that has to be told apart.
+
+  <EveryEnding />
+</Scene>
+
+<Scene name="Nothing found">
+  What the network usually looks like, and the case the component does NOT answer: given no devices it draws an empty group card, because it has no empty state of its own. The browser renders nothing at all rather than a blank box above the code field, and the phone puts an `<EmptyState>` there instead - "still looking" for the first few seconds, then "nothing here, and why".
+
+  <Nothing />
+</Scene>
+
+<Do>
+- Feed it `useHandoffPicker`: holding a finished row on screen, ordering the tapped one first and raising the check prompt are all its business, not the list's.
+- Pass the host's own `t`. The phone's catalogue is not the kit's, and a missing one shows as raw keys.
+- Answer the empty case yourself, before the list: it renders rows and nothing else.
+</Do>
+
+<Dont>
+- Report the outcome anywhere but the row. The row is what the thumb is already on, and a line under the list is a second thing to find.
+- Sort or filter the devices on the way in. The picker has already put the tapped row first and is holding it there while the answer is read.
+- Present the check string as something to type. It identifies a set; the one row that must be typed into is the check prompt, which takes the list's place.
+</Dont>

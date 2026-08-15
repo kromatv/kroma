@@ -15,11 +15,10 @@
 // for `overflow: hidden`, which would also clip its controls' focus rings.
 
 import type { ComponentType } from 'react';
-import { Platform, type StyleProp, View, type ViewStyle } from 'react-native';
+import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { type CornerValue, onPaper, radiusValue, styles } from '#ui/core';
 import { backdropBlur } from '#ui/lib/css';
-
-const WEB = Platform.OS === 'web';
+import { WEB } from '#ui/lib/platform';
 
 /** What a registered platform blur must accept - expo-blur's <BlurView> as it
  * stands, so a shell registers the component itself, unconfigured. */

@@ -2,15 +2,14 @@
 // scrubbing finger drags with it. Both belong to the Root: the lens is one box
 // crossing several rows, so no row can draw it.
 
-import { useEffect, useRef } from 'react';
-import { Animated, Platform, type ViewStyle } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { ease } from '#ui/lib/ease';
+import { WEB } from '#ui/lib/platform';
 import { PAD, ROW_W } from './alphabet-rail-context';
-
-const WEB = Platform.OS === 'web';
 
 const TRAVEL_MS = 260;
 const CHASE_MS = 160;
@@ -42,14 +41,16 @@ function Lens({ box, chase }: Readonly<{ box: LensBox | null; chase: boolean }>)
 }
 
 function WebLens({ box, chase }: Readonly<{ box: LensBox | null; chase: boolean }>) {
-  // The first box is taken without a transition: a lens animating in from
-  // nowhere on mount would be an entrance nobody staged.
-  const placed = useRef(false);
-  const had = placed.current;
-  if (box) placed.current = true;
-  const last = useRef<LensBox | null>(null);
-  if (box) last.current = box;
-  const shown = box ?? last.current;
+  // Both are state updated during render - the sanctioned previous-value shape,
+  // and the one the compiler can memoise around. `last` is the box the lens
+  // HELD, so a lens fading out keeps its place; `entering` is true until the
+  // first MOVE, so the first box is taken with an opacity-only transition
+  // rather than an entrance nobody staged.
+  const [last, setLast] = useState<LensBox | null>(null);
+  const [entering, setEntering] = useState(true);
+  if (box && last && box !== last && entering) setEntering(false);
+  if (box && box !== last) setLast(box);
+  const shown = box ?? last;
   if (!shown) return null;
   return (
     <Box
@@ -63,7 +64,7 @@ function WebLens({ box, chase }: Readonly<{ box: LensBox | null; chase: boolean 
           width: shown.width,
           height: shown.height,
           opacity: box ? 1 : 0,
-          transitionProperty: had ? 'left, top, width, height, opacity' : 'opacity',
+          transitionProperty: entering ? 'opacity' : 'left, top, width, height, opacity',
           transitionDuration: `${chase ? CHASE_MS : TRAVEL_MS}ms`,
           transitionTimingFunction: ease.spring.css,
         } as ViewStyle
@@ -72,24 +73,36 @@ function WebLens({ box, chase }: Readonly<{ box: LensBox | null; chase: boolean 
   );
 }
 
+interface LensMotion {
+  left: Animated.Value;
+  top: Animated.Value;
+  width: Animated.Value;
+  height: Animated.Value;
+  shown: Animated.Value;
+}
+
 function NativeLens({ box, chase }: Readonly<{ box: LensBox | null; chase: boolean }>) {
-  const left = useRef(new Animated.Value(0)).current;
-  const top = useRef(new Animated.Value(0)).current;
-  const width = useRef(new Animated.Value(0)).current;
-  const height = useRef(new Animated.Value(0)).current;
-  const shown = useRef(new Animated.Value(0)).current;
+  const [motion] = useState<LensMotion>(() => ({
+    left: new Animated.Value(0),
+    top: new Animated.Value(0),
+    width: new Animated.Value(0),
+    height: new Animated.Value(0),
+    shown: new Animated.Value(0),
+  }));
+  // The first box is TAKEN, not travelled to: a lens animating in from nowhere
+  // on mount would be an entrance nobody staged.
   const placed = useRef(false);
-  const last = useRef<LensBox | null>(null);
-  if (box) last.current = box;
+  const [last, setLast] = useState<LensBox | null>(null);
+  if (box && box !== last) setLast(box);
 
   useEffect(() => {
     if (box && !placed.current) {
       placed.current = true;
-      left.setValue(box.x);
-      top.setValue(box.y);
-      width.setValue(box.width);
-      height.setValue(box.height);
-      shown.setValue(1);
+      motion.left.setValue(box.x);
+      motion.top.setValue(box.y);
+      motion.width.setValue(box.width);
+      motion.height.setValue(box.height);
+      motion.shown.setValue(1);
       return;
     }
     const eased = {
@@ -99,18 +112,19 @@ function NativeLens({ box, chase }: Readonly<{ box: LensBox | null; chase: boole
     } as const;
     if (box) {
       Animated.parallel([
-        Animated.timing(left, { toValue: box.x, ...eased }),
-        Animated.timing(top, { toValue: box.y, ...eased }),
-        Animated.timing(width, { toValue: box.width, ...eased }),
-        Animated.timing(height, { toValue: box.height, ...eased }),
-        Animated.timing(shown, { toValue: 1, ...eased }),
+        Animated.timing(motion.left, { toValue: box.x, ...eased }),
+        Animated.timing(motion.top, { toValue: box.y, ...eased }),
+        Animated.timing(motion.width, { toValue: box.width, ...eased }),
+        Animated.timing(motion.height, { toValue: box.height, ...eased }),
+        Animated.timing(motion.shown, { toValue: 1, ...eased }),
       ]).start();
       return;
     }
-    Animated.timing(shown, { toValue: 0, ...eased }).start();
-  }, [box, chase, left, top, width, height, shown]);
+    Animated.timing(motion.shown, { toValue: 0, ...eased }).start();
+  }, [box, chase, motion]);
 
-  if (!last.current && !box) return null;
+  if (!last && !box) return null;
+  const { left, top, width, height, shown } = motion;
   return <Animated.View style={[s.lens, { left, top, width, height, opacity: shown }]} />;
 }
 

@@ -1,0 +1,5 @@
+# Button  src/components/atoms/button/button.story.mdx
+
+## preview
+svg "" width=20 height=20 stroke=none fill=var(--kroma-accent-ink) stroke-width= viewBox=0 0 24 24 << pad=12,28,12,28 op=1.000 bg=[var(--kroma-accent)] radius=[22px 22px 22px 22px] tf=[scale(1)] anim=[transform 200ms] size=[minheight=50px] flex=[row:center:center:nowrap:g0/0:n2]
+div "Play" var(--kroma-accent-ink)/16px/700/"Hanken Grotesk"/normal/24px/start/none/none << pad=12,28,12,28 op=1.000 bg=[var(--kroma-accent)] radius=[22px 22px 22px 22px] tf=[scale(1)] anim=[transform 200ms] size=[minheight=50px] flex=[row:center:center:nowrap:g0/0:n2]

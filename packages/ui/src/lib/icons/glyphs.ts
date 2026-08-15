@@ -41,7 +41,9 @@ type IconExport = Extract<keyof typeof Tabler, `Icon${string}`>;
 
 // The outline weight is the third prop the kit passes, but the two Tabler
 // packages disagree on its name, so it rides in through `STROKE_PROP` instead.
-type Glyph = ComponentType<{ size?: number; color?: string }>;
+// `style` is loose for the same reason: the DOM build takes CSSProperties, the
+// native one react-native-svg's style, and both spread it onto their root.
+type Glyph = ComponentType<{ size?: number; color?: string; style?: object }>;
 
 /** Glyphs keyed by Tabler's own export name (`IconWaveSine`): a namespace of the
  * package, or any part of one. */

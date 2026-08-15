@@ -7,7 +7,7 @@ import {
   Dialog,
   Field,
   Row,
-  SegmentedControl,
+  SegmentGroup,
   Switch,
   Text,
 } from '@kroma/ui/kit';
@@ -34,16 +34,20 @@ export function LibraryTypeSelect({
 }: Readonly<{ value: LibKind; onChange: (v: LibKind) => void }>) {
   const t = useT();
   return (
-    <SegmentedControl.Root<LibKind>
-      value={value}
-      onValueChange={onChange}
-      options={[
-        { value: '', label: t('admin.typeAuto') },
-        { value: 'movies', label: t('admin.typeMovies') },
-        { value: 'shows', label: t('admin.typeShows') },
-        { value: 'mixed', label: t('admin.typeMixed') },
-      ]}
-    />
+    <SegmentGroup.Root<LibKind> value={value} onValueChange={onChange}>
+      <SegmentGroup.Item value="">
+        <SegmentGroup.Label>{t('admin.typeAuto')}</SegmentGroup.Label>
+      </SegmentGroup.Item>
+      <SegmentGroup.Item value="movies">
+        <SegmentGroup.Label>{t('admin.typeMovies')}</SegmentGroup.Label>
+      </SegmentGroup.Item>
+      <SegmentGroup.Item value="shows">
+        <SegmentGroup.Label>{t('admin.typeShows')}</SegmentGroup.Label>
+      </SegmentGroup.Item>
+      <SegmentGroup.Item value="mixed">
+        <SegmentGroup.Label>{t('admin.typeMixed')}</SegmentGroup.Label>
+      </SegmentGroup.Item>
+    </SegmentGroup.Root>
   );
 }
 

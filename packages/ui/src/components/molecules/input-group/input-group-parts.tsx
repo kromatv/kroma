@@ -14,70 +14,71 @@ import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-butt
 import { Text } from '#ui/components/atoms/text';
 import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
-import { styles } from '#ui/core';
+import { type BoxStyleProps, boxStyle, styles } from '#ui/core';
 import { nestedRadius } from '#ui/core/tokens';
 import { controlRadius } from '#ui/lib/field-shell';
 import {
   type AddonAlign,
   AddonContext,
   INSET,
+  type InputGroupContext,
   useAddonSlot,
   useInputGroup,
 } from './input-group-context';
 
+// The shell's metrics, as the defaults the entry draws itself with. Written
+// BEFORE the caller's props, so a call site can still override one.
+function shellProps(group: InputGroupContext) {
+  return {
+    size: group.size,
+    flex: 1,
+    minW: 0,
+    flat: true,
+    pl: group.padStart,
+    pr: group.padEnd,
+    invalid: group.invalid,
+  } as const;
+}
+
+interface EntryOwn {
+  label?: string;
+  onFocus?: () => void;
+  onBlur?: () => void;
+}
+
+// The name and the focus reporting the shell owns. Written AFTER the caller's
+// props: the shell has to hear every focus, so an entry with its own handler
+// gets both rather than replacing this one.
+function shellWiring(group: InputGroupContext, own: Readonly<EntryOwn>) {
+  return {
+    label: own.label ?? group.label,
+    onFocus: () => {
+      group.onFocusChange(true);
+      own.onFocus?.();
+    },
+    onBlur: () => {
+      group.onFocusChange(false);
+      own.onBlur?.();
+    },
+  };
+}
+
 /** The entry, stripped of the shell it usually draws: that belongs to Root. */
 function GroupInput(props: Readonly<Omit<TextFieldProps, 'size'>>) {
   const group = useInputGroup('Input');
+  const { registerFocus } = group;
   const entry = useRef<TextInput>(null);
-  const { size, registerFocus, onFocusChange, padStart, padEnd, invalid } = group;
   const focus = useCallback(() => entry.current?.focus(), []);
   useEffect(() => registerFocus(focus), [registerFocus, focus]);
   return (
-    <TextField
-      size={size}
-      flex={1}
-      minW={0}
-      flat
-      pl={padStart}
-      pr={padEnd}
-      invalid={invalid}
-      {...props}
-      entryRef={entry}
-      onFocus={() => {
-        onFocusChange(true);
-        props.onFocus?.();
-      }}
-      onBlur={() => {
-        onFocusChange(false);
-        props.onBlur?.();
-      }}
-    />
+    <TextField {...shellProps(group)} {...props} {...shellWiring(group, props)} entryRef={entry} />
   );
 }
 
 /** The multi-line entry, and the one the block addons are for. */
 function GroupTextarea(props: Readonly<Omit<TextAreaProps, 'size'>>) {
-  const { size, onFocusChange, padStart, padEnd, invalid } = useInputGroup('Textarea');
-  return (
-    <TextArea
-      size={size}
-      flex={1}
-      minW={0}
-      flat
-      pl={padStart}
-      pr={padEnd}
-      invalid={invalid}
-      {...props}
-      onFocus={() => {
-        onFocusChange(true);
-        props.onFocus?.();
-      }}
-      onBlur={() => {
-        onFocusChange(false);
-        props.onBlur?.();
-      }}
-    />
-  );
+  const group = useInputGroup('Textarea');
+  return <TextArea {...shellProps(group)} {...props} {...shellWiring(group, props)} />;
 }
 
 interface AddonProps {
@@ -118,37 +119,42 @@ function Addon({
       {child}
     </AddonSlotProvider>
   ));
-  const body = (
-    <Box
-      row
-      align="center"
-      gap={8}
-      // py, not px, against the shell's edge: an addon holds glyphs and chips,
-      // which sit as far from their edge as from the top and bottom, matching
-      // <TextField>'s own icon well.
-      pl={align === 'inline-end' ? 0 : metrics.py}
-      pr={align === 'inline-start' ? 0 : metrics.py}
-      py={block ? INSET : 0}
-      minH={block ? metrics.height : undefined}
-      style={[
-        block ? s.blockAddon : null,
-        divider && align === 'block-start' ? s.ruleBelow : null,
-        divider && align === 'block-end' ? s.ruleAbove : null,
-        style,
-      ]}
-    >
-      {slotted}
-    </Box>
-  );
-  if (block) return body;
+  // py, not px, against the shell's edge: an addon holds glyphs and chips, which
+  // sit as far from their edge as from the top and bottom, matching
+  // <TextField>'s own icon well.
+  const shape: BoxStyleProps = {
+    row: true,
+    align: 'center',
+    gap: 8,
+    pl: align === 'inline-end' ? 0 : metrics.py,
+    pr: align === 'inline-start' ? 0 : metrics.py,
+    py: block ? INSET : 0,
+    minH: block ? metrics.height : undefined,
+  };
+  const coats = [
+    block ? s.blockAddon : null,
+    divider && align === 'block-start' ? s.ruleBelow : null,
+    divider && align === 'block-end' ? s.ruleAbove : null,
+    style,
+  ];
+  if (block) {
+    return (
+      <Box {...shape} style={coats}>
+        {slotted}
+      </Box>
+    );
+  }
+  // The addon IS the pressable: a press anywhere on it puts the caret in the
+  // control, and a box inside it would only be the same rectangle again.
   return (
     <Pressable
       onPress={() => {
         onPress?.();
         focusControl();
       }}
+      style={[boxStyle(shape), ...coats]}
     >
-      {body}
+      {slotted}
     </Pressable>
   );
 }

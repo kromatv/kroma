@@ -232,10 +232,15 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
 
   const logout = useCallback(async () => {
     const active = loadSession();
-    try {
-      await client?.logout(active?.accessToken);
-    } catch {
-      /* best-effort server-side revocation */
+    // No value blocks (`?.`) inside the try: the React Compiler cannot lower
+    // them there and would skip the whole hook.
+    const token = active?.accessToken;
+    if (client) {
+      try {
+        await client.logout(token);
+      } catch {
+        /* best-effort server-side revocation */
+      }
     }
     setSessionToken(undefined);
     client?.setAuthToken();

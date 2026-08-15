@@ -1,7 +1,12 @@
-// Metro's babel transformer, wrapped so a `.mdx` file is compiled to a React
-// component before babel ever sees it:
+// Metro's babel transformer, wrapped for the two rewrites Metro cannot do on
+// its own. A `.mdx` file is compiled to a React component before babel ever
+// sees it:
 //
 //   import Docs from './list-row.docs.mdx'   ->   a component
+//
+// and the kit's `WEB` platform constant is collapsed to a literal (see
+// inline-platform.cjs), so Metro's own constant folding deletes web-only
+// branches from a release bundle the way it already deletes `Platform.OS` ones.
 //
 // Vite spells that `@mdx-js/rollup`; `babelTransformerPath` is Metro's
 // equivalent hook, which is why a story's `.docs.mdx` renders on a television
@@ -25,6 +30,7 @@ const UPSTREAM = 'KROMA_METRO_BABEL_TRANSFORMER';
 const { createHash } = require('node:crypto');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
+const { inlinePlatformConst } = require('./inline-platform.cjs');
 
 let loading;
 
@@ -52,6 +58,7 @@ async function transform({ src, filename, options, plugins }) {
     const { compileMdx } = await compiler();
     source = await compileMdx(src, filename);
   }
+  source = inlinePlatformConst(source, options.platform);
   return upstream().transform({ src: source, filename, options, plugins });
 }
 
@@ -65,6 +72,7 @@ function getCacheKey() {
   const own = createHash('sha256')
     .update(readFileSync(__filename))
     .update(readFileSync(join(__dirname, 'mdx.mjs')))
+    .update(readFileSync(join(__dirname, 'story-scenes.mjs')))
     .digest('hex');
   return `${inherited}$${own}`;
 }

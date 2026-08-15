@@ -1,0 +1,48 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Button, buttonVariants } from './button';
+
+export const story = defineStory({
+  group: 'Actions',
+  variants: buttonVariants,
+  matrix: true,
+  args: {
+    label: 'Play',
+    // The empty string is the icon control's "none" option, so the type has to
+    // admit it even though <Button> does not.
+    icon: 'player-play-filled',
+    iconRight: '',
+    disabled: false,
+    loading: false,
+  },
+  controls: { icon: 'icon', iconRight: 'icon' },
+  // The empty `onPress` is load-bearing: react-native-web engages its press
+  // responder only for a control that has one.
+  render: ({ icon, iconRight, ...props }) => (
+    <Button
+      {...props}
+      icon={icon || undefined}
+      iconRight={iconRight || undefined}
+      onPress={() => {}}
+    />
+  ),
+});
+
+The primary action. It is a **Focusable**, so the same component is a mouse-driven button in a browser and a D-pad target on a television, with the design's amber ring and press scale already wired in.
+
+Each variant carries three coats of feedback, one per input: the ring for the remote, a brightened fill under a finger, and (on the web only) a **hover** step one shade short of the pressed one, which is the only answer a cursor gets on a page that mounts no focus scope.
+
+```tsx
+<Button icon="player-play-filled" label="Play" onPress={play} />
+<Button variant="outline" active={inList} label="My list" />
+```
+
+<Do>
+- One `primary` button per screen: it answers "what happens on Enter".
+- Use `outline` with `active` for toggles that read as pressed, not as actions.
+- Use the `tv` size for the 10-foot primary action (hero, detail screen).
+</Do>
+
+<Dont>
+- Use `danger` for anything reversible - it promises destruction.
+- Stack two `primary` buttons; demote one to `glass` or `ghost`.
+</Dont>

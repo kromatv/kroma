@@ -1,0 +1,7 @@
+# ArtScrim  src/components/atoms/art-scrim/art-scrim.story.mdx
+
+## preview
+
+
+## scene:Bare artwork
+

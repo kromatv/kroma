@@ -1,0 +1,41 @@
+import { defineStory } from '@kroma/workbench/story';
+import { ArtScrim } from '#ui/components/atoms/art-scrim';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { Tile } from './art-scrim.fixtures';
+
+export const story = defineStory({
+  group: 'Media',
+  width: { min: 240, max: 380 },
+  args: { variant: 'soft' },
+  controls: { variant: ['soft', 'deep'] },
+  render: ({ variant }) => <Tile variant={variant} />,
+});
+
+The fade every tile lays over its artwork so the caption on it survives bright key art. Two ramps: `soft` leaves the picture alone until the bottom third, `deep` is already dark under a title that sits ON the art. The pale amber standing in for artwork here is the worst case a scrim has to work against.
+
+```tsx
+<Box aspect={16 / 9} radius="xl" overflow="hidden">
+  <Img src={art} background={tintGradient(tint)} radius={16} fill />
+  <ArtScrim variant="soft" radius="xl" />
+  <Box absolute left={18} right={18} bottom={16}>
+    <Text>{title}</Text>
+  </Box>
+</Box>
+```
+
+<Scene name="Bare artwork">
+  The same tile with no scrim at all, which is what the ramps are measured against: pale key art and a white title are unreadable together.
+
+  <Tile />
+</Scene>
+
+<Do>
+- Give it the same corner as the tile it fills: the layer rounds itself, because Chrome will not clip a composited descendant to the parent.
+- Reach for `deep` when the caption sits ON the art, and for `soft` when it only has to keep a badge readable.
+</Do>
+
+<Dont>
+- Stack a second scrim over it to darken a tile; pick the deeper ramp.
+- Use it as a page veil. It fades to the artwork, not to the page ground.
+</Dont>

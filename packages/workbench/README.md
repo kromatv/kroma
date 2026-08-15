@@ -58,23 +58,23 @@ resolves aliases, so no app counts `../` to the components:
 
 ```ts
 export const STORIES = indexVite({
-  modules: import.meta.glob('#ui/**/*.{stories.tsx,demo.tsx,docs.mdx}'),
+  modules: import.meta.glob('#ui/**/*.{story.mdx,demo.tsx}'),
   sources: import.meta.glob<string>('#ui/**/*.demo.tsx', { query: '?raw', import: 'default' }),
   codes: STORY_CODE, // virtual:kroma-story-code
   props: () => import('virtual:kroma-props').then((module) => module.PROPS),
 });
 
-// Metro: one context, all three file names
+// Metro: one context, both file names
 export const STORIES = storyEntries(
   discoverMetro(
-    require.context('../../../packages/ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
+    require.context('../../../packages/ui/src', true, /\.demo\.tsx$|\.story\.mdx$/),
   ),
 );
 ```
 
 One glob for the modules, one for the same tree as **text**. The second is optional,
 and what it feeds (a demo's code panel, the Props tab) is simply absent without it.
-Stories, demos and docs are told apart by their own file names, inside `discover`, so a
+Stories and demos are told apart by their own file names, inside `discover`, so a
 host cannot hand over demos and demo sources that disagree.
 
 **`indexVite` lists the library without running it.** No `eager` on those globs:
@@ -91,14 +91,15 @@ the toolbar and the heading and says it is busy; `Workbench` takes either shape,
 so `discoverVite` (below) remains the spelling for a host with nothing to gain
 from splitting - the TV shells, whose bundle is a file on the television.
 
-A `.docs.mdx` is in the **module** glob, not the text one: both bundlers compile it
-to a component (`@kroma/bundler/mdx` on Vite, `@kroma/bundler/mdx-transformer` on
-Metro), so a host has to load the MDX plugin (see *A story's prose* below).
+A story is in the **module** glob, not the text one: both bundlers compile a
+`.story.mdx` to a module (`@kroma/bundler/mdx` on Vite,
+`@kroma/bundler/mdx-transformer` on Metro), so a host has to load the MDX plugin
+(see *The document* below).
 
 `discoverVite` / `discoverMetro` do everything that happens to the result:
 levelling by folder, ordering, attaching demos and docs, reading each component's
 props out of its own JSDoc. Nothing is listed and nothing is registered: drop a
-`*.stories.tsx` beside a component and it appears.
+`*.story.mdx` beside a component and it appears.
 
 > Both the pattern **and** the options must be written out as literals at every
 > `import.meta.glob` call, and `import.meta` must not be put in a local first: the
@@ -178,33 +179,50 @@ something a person could have typed.
 
 ## Adding to it
 
-**A story** is `<component>.stories.tsx` beside the component. Declare `name`,
-`group`, `docs`, and either the `component` or a `render`; pass the component's
-`sv` as `variants` and the controls and the variant matrix are derived from it.
-The variant map IS the design, so neither can drift. Nothing registers a story:
-the registries discover `*.stories.tsx`.
+**A story** is `<component>.story.mdx` beside the component: a document, with one
+typed export at the top of it. Declare `group` and either the `component` or a
+`render`; pass the component's `sv` as `variants` and the controls and the
+variant matrix are derived from it. The variant map IS the design, so neither can
+drift. Nothing registers a story: the registries discover `*.story.mdx`.
 
-```tsx
-export default story({ name: 'Chip', group: 'Actions', component: Chip, args: { label: 'HDR' } })
+```mdx
+import { defineStory } from '@kroma/workbench/story';
+import { Chip } from './chip';
+
+export const story = defineStory({ group: 'Actions', component: Chip, args: { label: 'HDR' } });
+
+A small, non-pressable statement of fact.
 ```
 
-Naming the `component` is the shorter spelling and the safer one: the workbench
-renders `<Chip {...args} />` itself, so the args ARE the props and a control that
-moves nothing cannot be written. `args` is checked against the component's props.
-Write a `render` instead when the story has to compose (a provider, a surface to
-sit on, two of the component side by side), and **take the args as its argument**.
+The name comes from the file (`chip.story.mdx` → `Chip`); `name` is written only
+where that derivation is wrong. Naming the `component` is the shorter spelling
+and the safer one: the workbench renders `<Chip {...args} />` itself, so the args
+ARE the props and a control that moves nothing cannot be written. `args` is
+checked against the component's props. Write a `render` instead when the story
+has to compose (a provider, a surface to sit on, two of the component side by
+side), and **take the args as its argument**.
+
+`defineStory` exists for the types: MDX is not typechecked by `tsc`, so the one
+place the story declares itself is a function call whose argument is, and every
+story is rendered under jsdom by `apps/kit/src/stories.smoke.test.tsx` — the
+guardrail that replaces the compiler for the JSX in the prose.
 
 ### A scene, and which of them the controls drive
 
-A scene is a second take on the same component, and there are two kinds:
+A scene is a second take on the same component, written as `<Scene>` in the
+prose where its explanation is. It appears twice for free: a live specimen in
+the document, and a tab on the canvas with its own JSX in the drawer under it.
+The **take** is its child:
 
 | | |
 | --- | --- |
-| `render: (args) => …` | reads the live args. The controls keep driving it |
-| `example: () => …` | a fixed composition. The controls step aside |
+| `{story.take((args) => …)}` | reads the live args. The controls keep driving it |
+| a plain `<Element />` | a fixed composition. The controls step aside |
+| no child at all | the story's own render, with the scene's `args` merged in |
 
-Spelling both is a type error. Spelling neither reuses the story's own render
-with the scene's `args` merged in.
+`story.take` is identity at runtime and exists so an editor types the arrow with
+the story's own args; the compiler lifts the arrow straight back out. Writing the
+take as a `render`/`example` PROP is an error rather than a second spelling.
 
 The panel follows the view on screen rather than the story: the Controls tab is
 there when the thing being shown reads the args, and gone when it does not. A
@@ -212,23 +230,25 @@ knob that moves nothing reads as a broken workbench, so the format makes the
 difference declarable and the compiler records it (`live`) before the args are
 wrapped and every render looks alike.
 
+Helpers - a stateful wrapper, a fixture list, a local `<Labelled>` - go in
+`<component>.fixtures.tsx` beside the document and are imported by it. MDX is for
+the writing; TypeScript stays in TypeScript.
+
 **A demo** is ONE FILE, `<story>.<demo>.demo.tsx`, default-exporting a component.
 Its file name becomes the tab, its doc comment the prose, and **the file itself**
 the code sample (`demos.ts`). Demos used to carry a hand-written copy of their own
 source and every one had already drifted; a sample cannot drift from the demo when
 it IS the demo.
 
-### A story's prose
+### The document
 
-Two spellings, and the file wins:
-
-| | |
-| --- | --- |
-| `docs: '...'` in the story | one or two sentences. Markdown, in a string: paragraphs, `#`/`##`, `-` lists, fenced code, links, `**bold**` and `` `code` `` |
-| `<story>.docs.mdx` beside it | a real document. Everything above, plus GFM (tables, `~~strike~~`, task lists), and **live components** |
+The prose IS the story file, which is why it is MDX: everything markdown and GFM
+have (tables, `~~strike~~`, task lists, fenced samples), plus **live components**
+in the middle of a sentence, plus the `<Scene>`, `<Do>` and `<Dont>` blocks the
+workbench hands every document.
 
 ```mdx
-import { ListRow } from './list-row'
+import { ListRow } from './list-row';
 
 One **D-pad stop** per row, and a pointer-sized hit area.
 
@@ -236,21 +256,29 @@ One **D-pad stop** per row, and a pointer-sized hit area.
   <ListRow.Label>Qualité</ListRow.Label>
   <ListRow.Hint>1080p</ListRow.Hint>
 </ListRow.Root>
+
+<Do>
+- Give the whole row one press target.
+</Do>
 ```
 
-That last line is why MDX rather than markdown: a design system's documentation
-should be able to render the component beside the sentence describing it.
+`<Do>` and `<Dont>` wrap ordinary markdown - a list, a fenced sample, the
+component itself - and render as a matched pair of cards, side by side wherever
+the column fits two. Written as two blocks because that is how they read in a
+source file; **paired at compile time**, so no document wraps its own. The card's
+header carries the verdict, which is why a line inside says "Set a `pattern` the
+keyboard contradicts" rather than "Don't set…": under a panel headed *Don't*, the
+second says it twice. The canonical call site worth copying is an ordinary fenced
+block, highlighted like any other sample. None of these needs an import: they
+arrive in the element map (`STORY_COMPONENTS`).
 
-The file's first segment is the story's id (`list-row.docs.mdx` documents
-`ListRow`), the same rule a demo follows, and a file naming a story that does not
-exist throws rather than disappearing. A story carrying both spellings shows the
-file: two sources with a silent winner is the thing this rule exists to prevent.
+The document reads on the CANVAS, in a Docs view at the reading measure with the
+outline rail beside it - not in the inspector, whose column is a caption's width.
 
 **It runs on native too.** MDX compiles to HTML element names (`p`, `ul`,
 `code`, the table set) and React Native has none of them, so `mdx.tsx` maps
 every one to a kit component and `mdx.test.tsx` derives the list of elements
-from a real compile and fails if the map has a hole. The inline `docs:` strings
-render through that same map, so neither spelling has a look of its own.
+from a real compile and fails if the map has a hole.
 
 A host has to compile `.mdx`: `kromaMdx()` from `@kroma/bundler/mdx` in a Vite
 config (before `react()`), and `expoWorkspaceConfig` already wires Metro's half.
@@ -265,30 +293,33 @@ Four things are read rather than declared, which is the theme of the folder:
 | The atomic level (search + palette) | the story file's PATH (`tierFor`) |
 | A demo's name, prose and code | its file name, doc comment and text |
 | Every prop, with its documentation | the component's props interface, and a compound one's parts off its namespace object (`props.ts`) |
-| The code under a scene, and under the preview | the story file's own JSX, cut out at build time (`storyCode` from `@kroma/bundler/story-code`, served as `virtual:kroma-story-code`) |
+| The code under a scene, and under the preview | the document's own JSX, lifted at compile time by the remark plugin in `@kroma/bundler/mdx` |
+| A story's name and group, before its module is fetched | its declaration, read at build time (`storyCode`, served as `virtual:kroma-story-code`) |
 
 ### The code drawer
 
-Every view shows the code its author **wrote**, wherever a build could read it: a
-demo's whole file, a scene's JSX, the story's own `render`. Nothing is
-reconstructed - a compiled render's `toString()` gives the post-transform
-`jsx(...)` calls, which is not what anybody types - so the spans are cut out of
-the `*.stories.tsx` with TypeScript's own parser at build time and shipped as
-data, keyed by repository-relative path. One program, no checker: about 270 ms
-for the kit's ninety story files, and 4 ms once the on-disk cache has them.
+Every view shows the code its author **wrote**: a demo's whole file, a scene's
+JSX, the story's own `render`. Nothing is reconstructed - a compiled render's
+`toString()` gives the post-transform `jsx(...)` calls, which is not what anybody
+types - so the spans are cut out of the document at COMPILE time, by the same
+remark plugin that lifts the scenes, and travel inside the compiled module.
 
-An `example: () => (…)` is unwrapped to its JSX, because a parameterless arrow
-binds nothing a reader needs. A `render: (args) => (…)` is kept whole: the
+That last part is why a scene's source reaches a television: the plugin runs in
+the shared MDX options, so Metro compiles it too. The reader Vite runs
+(`story-code-read.ts`) is left with one job, the index - a story's `name` and
+`group`, which a sidebar needs before any module is fetched.
+
+A plain-element take is shown as its JSX, because the arrow the compiler wraps it
+in binds nothing a reader needs. An `(args) => …` take is kept whole: the
 parameter is where the controls reach the JSX, and the body shown without it
-reads as code with free variables in it. A scene that writes neither carries the
+reads as code with free variables in it. A scene that writes no take carries the
 story's own render, which is what draws it.
 
 The **live preview** of a story with variants keeps its generated call site,
 because that is the one code here that follows the controls: press `glass` and
 the line says `variant="glass"`. The story's own render fills in the previews
-that showed nothing at all. `usage:` stays a hand-written field for the same
-reason the two do not merge - it is the canonical call, the one line to copy,
-where this is the source of the picture on screen.
+that showed nothing at all. The canonical call worth copying is a fenced block in
+the prose, where it is read rather than generated.
 
 ## Getting around
 
@@ -399,4 +430,4 @@ phone/TV app of the same name), `packages/tv/src/workbench{,.web}.tsx`
 (`?workbench` on the TV shells), and `clients/mobile/src/app/workbench.tsx`.
 
 The **story SDK** has its own subpath, `@kroma/workbench/story`, so a
-`*.stories.tsx` declaring itself does not drag the whole tool into a bundle.
+`*.story.mdx` declaring itself does not drag the whole tool into a bundle.

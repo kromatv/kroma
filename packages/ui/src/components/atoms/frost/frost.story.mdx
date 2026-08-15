@@ -1,0 +1,54 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Img } from '#ui/components/atoms/img';
+import { Text } from '#ui/components/atoms/text';
+import { tintGradient } from '#ui/components/molecules/media-card';
+import { stillArt } from '#ui/lib/sample-art';
+import { Frost } from './frost';
+import { TINT, CORNER, OverArt, Panel } from './frost.fixtures';
+
+export const story = defineStory({
+  group: 'Layout',
+  width: { min: 320, max: 560 },
+  args: { amount: 12, radius: CORNER },
+  controls: { amount: { min: 0, max: 40, step: 2 }, radius: { min: 0, max: 40, step: 2 } },
+  render: ({ amount, radius }) => (
+    <OverArt>
+      <Panel amount={amount} radius={radius} />
+    </OverArt>
+  ),
+});
+
+The backdrop blur under a glass surface, and the kit's answer to React Native having no backdrop filter. Three behaviours from one call: a browser gets the real CSS `backdrop-filter`; the 2019 TV WebKits ignore that property, so a legacy Tizen or webOS keeps the plain wash rather than compositing a blur on the CPU; and a native target renders whatever blur view the shell handed over at startup (`registerFrost(BlurView)`), or nothing at all if it handed over none. The layer fills its parent, sits below the parent's own content, takes no press, and clips ITSELF to the corner it is given, so the surface never needs `overflow: hidden` - which would also crop the focus rings of the controls inside it. Most screens never write one: `<Surface tone="glass">`, the frosted `<Button>` coats, `<ListRow.Group>` and every field's well lay one down themselves. Slide `radius` below the card's own corner to watch a square blur cut through a rounded panel, which is the one way to get this wrong.
+
+```tsx
+<Box radius="2xl" bg="surface1/55" border="border">
+  <Frost radius="2xl" />
+  <Text>Volume levelling</Text>
+</Box>
+
+// Once, in the shell's entry file, so native frosts at all:
+registerFrost(BlurView);
+```
+
+<Scene name="Where there is no blur">
+  The same panel with no layer under it, which is exactly what a legacy TV WebKit and a native shell that never called `registerFrost` draw. The photograph shows through the fill unblurred, so a caption sitting on it competes with whatever is behind. This is the case that decides how opaque the fill above a frost is allowed to be.
+
+  <OverArt>
+    <Panel />
+  </OverArt>
+</Scene>
+
+<Do>
+- Give it the surface's own corner: it clips itself rather than asking the surface to clip its children.
+- Write it as the first child of the surface it frosts; it fills the box and paints under everything else in it.
+- Keep the fill above it translucent. The blur is what stops that translucency reading as a hole in the page.
+- Register the platform blur once in the shell. The kit ships no blur dependency of its own, the same inversion as voice search and the launcher.
+</Do>
+
+<Dont>
+- Add one to a surface the kit already frosts: a glass `<Surface>`, a glass or scrim `<Button>`, a `<ListRow.Group>`, a `<Field.Input>`.
+- Count on it: an unregistered native shell and every legacy TV panel show the wash alone, so the surface has to read without the blur.
+- Blur on a television. A backdrop filter is re-paid whenever anything behind it moves, and a 2024 Samsung measured 40fps with it against 60 without.
+- Pass `tint` to force a ground for the look of it: it is the native blur's tint only, does nothing on a browser, and the default already follows the app's ground.
+</Dont>

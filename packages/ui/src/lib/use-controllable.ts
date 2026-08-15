@@ -7,7 +7,7 @@
 // prop was present on first render, so a component cannot silently flip
 // between modes as a value goes to undefined mid-flight.
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 export function useControllable<T>(
   controlled: T | undefined,
@@ -17,7 +17,7 @@ export function useControllable<T>(
   // Mode is pinned at mount: React's own warning for flipping an input between
   // controlled and uncontrolled exists for good reason, and this is the same
   // reason.
-  const mode = useRef(controlled !== undefined ? 'controlled' : 'uncontrolled').current;
+  const [mode] = useState(() => (controlled !== undefined ? 'controlled' : 'uncontrolled'));
   const [own, setOwn] = useState(defaultValue);
   const value = mode === 'controlled' ? (controlled as T) : own;
 

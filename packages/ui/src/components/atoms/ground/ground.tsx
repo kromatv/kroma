@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
-import { Platform, type StyleProp, type ViewStyle } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-
-const WEB = Platform.OS === 'web';
+import { WEB } from '#ui/lib/platform';
 
 export interface GroundProps {
   /** The ground this subtree paints on, whatever the page around it chose. */

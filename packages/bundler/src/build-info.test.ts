@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { buildInfoPlugin } from './build-info';
 
 const PROJECT_ROOT = fileURLToPath(new URL('..', import.meta.url));
+const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url));
 
 const VIRTUAL = 'virtual:build-info';
 const RESOLVED = `\0${VIRTUAL}`;
@@ -99,12 +100,12 @@ describe('the stamp it serves', () => {
     );
   });
 
-  it('stamps the version of the client it was pointed at', () => {
-    // The plugin is shared, so the root it is given decides whose version this
-    // is - not the directory the build was launched from.
-    expect(stamp().version).toBe(
-      JSON.parse(readFileSync(join(PROJECT_ROOT, 'package.json'), 'utf8')).version,
-    );
+  it("stamps the PRODUCT's version, which is the server's and nobody else's", () => {
+    // Not the client's own package.json: releases move server/Cargo.toml alone,
+    // so a client stamping its manifest advertised a number that had not moved
+    // in thirty releases.
+    const cargo = readFileSync(join(REPO_ROOT, 'server', 'Cargo.toml'), 'utf8');
+    expect(stamp().version).toBe(/^version\s*=\s*"([^"]+)"/m.exec(cargo)?.[1]);
   });
 
   it('carries a real ISO build date', () => {

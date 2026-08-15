@@ -5,11 +5,11 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
+import { FOCUS_SCALE } from '#ui/components/organisms/player/lib/style';
 import { styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
 import { useFocusScale } from '#ui/lib/focus-transition';
-import { FOCUS_SCALE } from '../../lib/style';
 
 export interface UpNextItem {
   id: string;

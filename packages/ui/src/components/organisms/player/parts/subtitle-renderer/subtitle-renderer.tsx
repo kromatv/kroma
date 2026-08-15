@@ -6,8 +6,8 @@ import {
   type SubtitleAppearance,
   subtitleStyle,
   subtitleWindowStyle,
-} from '../../lib/subtitle-appearance';
-import type { PlayerSub } from '../../types';
+} from '#ui/components/organisms/player/lib/subtitle-appearance';
+import type { PlayerSub } from '#ui/components/organisms/player/types';
 
 /** A parsed WebVTT cue at absolute playback seconds. */
 interface Cue {

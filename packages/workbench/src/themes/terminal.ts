@@ -5,8 +5,26 @@
 // EVERY colour, not most of them. A token left out keeps its built-in value,
 // and a built-in value is one the cascade owns: it would follow the page's
 // ground and put paper borders and paper ink on phosphor.
+//
+// It carries no paper half, and that is the point: a theme whose identity IS
+// its ground paints the same in either one rather than following the page into
+// a light it has no reading of.
 
 import { createTheme } from '@kroma/ui/kit';
+
+const TYPE = {
+  hero: { size: 54, ratio: 1.08 },
+  h1: { size: 33 },
+  h2: { size: 20 },
+  title: { size: 18 },
+  body: { size: 15, ratio: 1.6 },
+  label: { size: 14, weight: '700' },
+  meta: { size: 12 },
+} as const;
+
+const SQUARE = { xs: 0, sm: 0, md: 0, lg: 0, xl: 0, '2xl': 0, pill: 0 } as const;
+
+const FACES = { display: 'Courier New', ui: 'Courier New' } as const;
 
 export const terminal = createTheme({
   colors: {
@@ -42,15 +60,7 @@ export const terminal = createTheme({
     dangerPress: '#E04F4F',
   },
   // Phosphor on glass has no round corners at all.
-  radius: { xs: 0, sm: 0, md: 0, lg: 0, xl: 0, '2xl': 0, pill: 0 },
-  fonts: { display: 'Courier New', ui: 'Courier New' },
-  typeSpec: {
-    hero: { size: 54, ratio: 1.08 },
-    h1: { size: 33 },
-    h2: { size: 20 },
-    title: { size: 18 },
-    body: { size: 15, ratio: 1.6 },
-    label: { size: 14, weight: '700' },
-    meta: { size: 12 },
-  },
+  radius: SQUARE,
+  fonts: FACES,
+  typeSpec: TYPE,
 });

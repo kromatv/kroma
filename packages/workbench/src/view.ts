@@ -4,11 +4,11 @@
 // reads a view too: nothing here imports anything, so a `*.stories.tsx` that
 // pulls in `@kroma/workbench/story` does not pull in the design system with it.
 
-type View = 'preview' | 'matrix' | `scene:${number}` | `demo:${number}`;
+type View = 'preview' | 'docs' | 'matrix' | `scene:${number}` | `demo:${number}`;
 
 function parseView(raw: string | null | undefined): View | undefined {
   if (!raw) return undefined;
-  if (raw === 'matrix' || raw === 'preview') return raw;
+  if (raw === 'matrix' || raw === 'preview' || raw === 'docs') return raw;
   // A bare number is the legacy spelling of a scene index; old links keep working.
   if (/^\d+$/.test(raw)) return `scene:${Number(raw)}`;
   // Both separators parse: `scene:1` in a search param, `scene-1` in a path segment.

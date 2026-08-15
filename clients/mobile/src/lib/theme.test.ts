@@ -29,6 +29,12 @@ vi.mock('react-native', async (importOriginal) => ({
   Platform: { OS: 'ios', select: (o: Record<string, unknown>) => o.ios ?? o.default },
 }));
 
+// The kit reads its platform from ONE place now (`#ui/lib/platform`), because a
+// literal is what a bundler can prune a branch on. A test standing in for a
+// phone has to say so there as well as to React Native, or the palette answers
+// as the browser's and the ground twins stop being twins.
+vi.mock('#ui/lib/platform', () => ({ WEB: false }));
+
 afterEach(() => {
   setTheme(KROMA);
 });

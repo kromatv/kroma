@@ -20,11 +20,11 @@ declare const require: {
 };
 
 export const STORIES = storyEntries(
-  discoverMetro(
-    require.context('../../../packages/ui/src', true, /\.(stories|demo)\.tsx$|\.docs\.mdx$/),
-  ),
+  discoverMetro(require.context('../../../packages/ui/src', true, /\.demo\.tsx$|\.story\.mdx$/)),
 );
 
+// The guides are the SITE's, not the kit's: they are writing about the design
+// system rather than part of it, so they live here and are found here.
 export const PAGES = withPageHistory(
-  discoverPagesMetro(require.context('../../../packages/ui/src', true, /\.page\.mdx$/)),
+  discoverPagesMetro(require.context('./guides', true, /\.page\.mdx$/)),
 );

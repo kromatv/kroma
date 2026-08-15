@@ -4,7 +4,7 @@
 // and never crosses the bridge: the same compositor-only guarantee the web tier
 // gets from a CSS transition. See transition.web.ts for the web half.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Animated } from 'react-native';
 import { motion } from '#ui/core/tokens';
 import { type PressScale, pressScaleFor, useLongestSide } from '#ui/lib/press-dip';
@@ -17,7 +17,7 @@ const RING_ONLY: Record<string, unknown> = {};
 
 /** An animated `transform: scale()` that eases to `to` while focused. */
 export function useFocusScale(focused: boolean, to: number): Record<string, unknown> {
-  const value = useRef(new Animated.Value(1)).current;
+  const [value] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     // A focusable with no scale (to === 1) never animates; skip the work
@@ -45,7 +45,7 @@ export function useFocusScale(focused: boolean, to: number): Record<string, unkn
  */
 export function usePressScale(): PressScale {
   const [pressed, setPressed] = useState(false);
-  const value = useRef(new Animated.Value(1)).current;
+  const [value] = useState(() => new Animated.Value(1));
   const { longest, onLayout } = useLongestSide();
 
   const onPressIn = useCallback(() => {

@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { type Context, discoverMetro, discoverVite, type Modules } from './discover';
 import type { PropDoc } from './props';
-import { story } from './story';
 
-const BUTTON = 'src/components/atoms/button/button.stories.tsx';
-const CARD = 'src/components/molecules/card/card.stories.tsx';
+const BUTTON = 'src/components/atoms/button/button.story.mdx';
+const CARD = 'src/components/molecules/card/card.story.mdx';
 const DEMO = 'src/components/atoms/button/button.detail-actions.demo.tsx';
 const OTHER_DEMO = 'src/components/atoms/button/button.arrangements.demo.tsx';
-const DOCS = 'src/components/atoms/button/button.docs.mdx';
 
 const demoComponent = () => null;
+const buttonDoc = () => null;
+const cardDoc = () => null;
 
+// A compiled `.story.mdx` arrives as the module itself, not under `default`:
+// discovery reads `story`, `__scenes` and the document straight off it.
 const modules = (): Modules => ({
-  [CARD]: { default: story({ name: 'Card', group: 'Input', render: () => null }) },
+  [CARD]: { default: cardDoc, story: { group: 'Input', render: () => null } } as never,
   [DEMO]: { default: demoComponent },
-  [BUTTON]: {
-    default: story({ name: 'Button', group: 'Actions', docs: 'Inline.', render: () => null }),
-  },
+  [BUTTON]: { default: buttonDoc, story: { group: 'Actions', render: () => null } } as never,
   'src/components/atoms/button/button.tsx': { default: demoComponent },
 });
 
@@ -26,6 +26,15 @@ describe('discoverVite', () => {
   it('takes only the story files, in a bundler-independent order', () => {
     const stories = discoverVite(modules());
     expect(stories.map((s) => s.id)).toEqual(['button', 'card']);
+  });
+
+  it('names each story from its file, unless the declaration says otherwise', () => {
+    const found = modules();
+    found[CARD] = {
+      default: cardDoc,
+      story: { name: 'Icônes', group: 'Input', render: () => null },
+    } as never;
+    expect(discoverVite(found).map((s) => s.name)).toEqual(['Button', 'Icônes']);
   });
 
   it('reads each story’s atomic level out of the path it was found at', () => {
@@ -75,35 +84,26 @@ describe('discoverVite', () => {
     expect(button?.demos.map((d) => d.name)).toEqual(['Arrangements', 'Detail actions']);
   });
 
-  it('keeps an already-ascending enumeration in exactly that order', () => {
-    const found: Modules = {
-      [BUTTON]: { default: story({ name: 'Button', group: 'Actions', render: () => null }) },
-      [CARD]: { default: story({ name: 'Card', group: 'Input', render: () => null }) },
-    };
-    expect(discoverVite(found).map((s) => s.tier)).toEqual(['Atoms', 'Molecules']);
-  });
-
   it('refuses a demo naming a story that does not exist, rather than hiding it', () => {
     const found = modules();
     found['src/components/atoms/button/buton.typo.demo.tsx'] = { default: demoComponent };
     expect(() => discoverVite(found)).toThrow(/unknown story "buton"/);
   });
 
-  it('gives a story the JSX a build read out of its own file', () => {
-    const codes = { [BUTTON]: { render: '<Button label="Play" />', scenes: [] } };
-    expect(discoverVite(modules(), {}, {}, codes).find((s) => s.id === 'button')?.code).toBe(
+  it('gives a story the source the compiler embedded in its own module', () => {
+    const found = modules();
+    found[BUTTON] = {
+      default: buttonDoc,
+      story: { group: 'Actions', render: () => null },
+      __code: '<Button label="Play" />',
+    } as never;
+    expect(discoverVite(found).find((s) => s.id === 'button')?.code).toBe(
       '<Button label="Play" />',
     );
   });
 
-  it('takes a story’s prose from the sibling .docs.mdx the module glob found', () => {
-    const found = modules();
-    found[DOCS] = { default: demoComponent };
-    expect(discoverVite(found).find((s) => s.id === 'button')?.docs).toBe(demoComponent);
-  });
-
-  it('leaves a story with no .docs.mdx on the string it declares', () => {
-    expect(discoverVite(modules()).find((s) => s.id === 'button')?.docs).toBe('Inline.');
+  it('carries the document as the story’s docs', () => {
+    expect(discoverVite(modules()).find((s) => s.id === 'button')?.docs).toBe(buttonDoc);
   });
 });
 
@@ -127,16 +127,11 @@ describe('discoverMetro', () => {
     expect(button?.demos[0]?.name).toBe('Detail actions');
     expect(button?.demos[0]?.code).toBeUndefined();
     expect(button?.props).toEqual([]);
-    expect(button?.code).toBeUndefined();
   });
 
   // A `.mdx` compiles to a component under Metro too (mdx-transformer.cjs), so
   // the prose is whole here rather than thinning out the way a demo's code does.
-  it('takes a story’s prose from the .docs.mdx module the context carries', () => {
-    const found = modules();
-    found[DOCS] = { default: demoComponent };
-    const load = (id: string) => found[id];
-    const withDocs = Object.assign(load as Context, { keys: () => Object.keys(found) });
-    expect(discoverMetro(withDocs).find((s) => s.id === 'button')?.docs).toBe(demoComponent);
+  it('carries the document through Metro’s context untouched', () => {
+    expect(discoverMetro(context()).find((s) => s.id === 'button')?.docs).toBe(buttonDoc);
   });
 });

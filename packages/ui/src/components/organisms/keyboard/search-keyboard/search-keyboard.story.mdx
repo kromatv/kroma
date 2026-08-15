@@ -1,0 +1,38 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { keyVariants } from '../key';
+import { KEYBOARD_LAYOUTS } from '../keyboard-layouts';
+import { SearchKeyboard } from './search-keyboard';
+import { SearchDemo } from './search-keyboard.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  variants: keyVariants,
+  matrix: true,
+  component: SearchDemo,
+  args: { letters: 'abc' },
+  controls: { letters: KEYBOARD_LAYOUTS },
+});
+
+The remote-driven search grid: the layout's letters as-is, with space / backspace / close on the short tail row, and a digits row above them. Letters insert lowercase, since search is case-insensitive. Every key is a `<Focusable>`, so the spatial focus nav reaches it and OK activates it. **The letter order is the caller's**: a keyboard that read a settings store would tie the kit to one app's preferences, so the host passes `letters` (the TV reads its persisted device preference once per mount). Its sibling is `<UrlKeyboard>` - two components, not one with a `layout` switch.
+
+```tsx
+<SearchKeyboard
+  value={query}
+  onValueChange={setQuery}
+  onClose={back}
+  letters={getKeyboardLayoutPref()}
+/>
+```
+
+<Do>
+- Own the value: the keyboard mutates it through `onValueChange` and holds nothing.
+- Pass `physicalKeyboard` where a real keyboard can be attached, so typing bypasses the keys instead of pressing the focused one.
+</Do>
+
+<Dont>
+- Render it beside a focusable the D-pad could wander into mid-word; give it the screen.
+- Translate the letter rows: they are layouts, not copy.
+</Dont>

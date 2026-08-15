@@ -1,13 +1,17 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Text } from '#ui/components/atoms/text';
+import { CHART_WINDOW } from '#ui/components/organisms/player/lib/chart-geometry';
+import type {
+  PlayerController,
+  PlayerMeter,
+  PlayerStats,
+} from '#ui/components/organisms/player/types';
 import { styles } from '#ui/core';
 import { useT } from '#ui/services/i18n';
-import { CHART_WINDOW } from '../../lib/chart-geometry';
-import type { PlayerController, PlayerMeter, PlayerStats } from '../../types';
 import { StatsChart } from './stats-chart';
 
 /**
@@ -36,33 +40,17 @@ export function StatsPanel({
     [top, left],
   );
   const [s, setS] = useState<PlayerStats>(() => controller.getStats());
-  const historyRef = useRef<Map<string, number[]>>(new Map());
+  const [history] = useState(() => new Map<string, number[]>());
   // The controller is rebuilt on every parent render (~4x/s while playing, via
-  // timeupdate), so keep `getStats` in a ref: depending on `controller` identity
-  // would recreate the 500ms timer faster than it ever fires.
-  const getStatsRef = useRef(controller.getStats);
-  getStatsRef.current = controller.getStats;
+  // timeupdate), so the timer calls an effect event: depending on `controller`
+  // identity would recreate the 500ms timer faster than it ever fires.
+  const tick = useEffectEvent(() => {
+    const snap = controller.getStats();
+    record(history, snap);
+    setS(snap);
+  });
 
   useEffect(() => {
-    const record = (snap: PlayerStats) => {
-      const hist = historyRef.current;
-      const live = new Set<string>();
-      for (const m of snap.meters ?? []) {
-        live.add(m.key);
-        const series = hist.get(m.key) ?? [];
-        series.push(Number.isFinite(m.value) ? m.value : 0);
-        if (series.length > CHART_WINDOW) series.shift();
-        hist.set(m.key, series);
-      }
-      // Deleting the current key while iterating a Map is well-defined, so no
-      // snapshot copy is needed.
-      for (const key of hist.keys()) if (!live.has(key)) hist.delete(key);
-    };
-    const tick = () => {
-      const snap = getStatsRef.current();
-      record(snap);
-      setS(snap);
-    };
     tick();
     const id = setInterval(tick, 500);
     return () => clearInterval(id);
@@ -116,7 +104,7 @@ export function StatsPanel({
                 <Box key={group.id} grow={1} shrink={1} style={stackCharts ? null : sx.chartCell}>
                   <StatsChart
                     meters={group.meters}
-                    history={historyRef.current}
+                    history={history}
                     width={chartWidth(stackCharts ? 1 : charts.length, width)}
                     slot={group.slot}
                   />
@@ -130,6 +118,20 @@ export function StatsPanel({
       </Box>
     </Ground>
   );
+}
+
+function record(hist: Map<string, number[]>, snap: PlayerStats): void {
+  const live = new Set<string>();
+  for (const m of snap.meters ?? []) {
+    live.add(m.key);
+    const series = hist.get(m.key) ?? [];
+    series.push(Number.isFinite(m.value) ? m.value : 0);
+    if (series.length > CHART_WINDOW) series.shift();
+    hist.set(m.key, series);
+  }
+  // Deleting the current key while iterating a Map is well-defined, so no
+  // snapshot copy is needed.
+  for (const key of hist.keys()) if (!live.has(key)) hist.delete(key);
 }
 
 // The memo comparators below compare by CONTENT: every array and tuple these

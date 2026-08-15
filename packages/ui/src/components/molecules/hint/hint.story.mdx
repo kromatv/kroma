@@ -1,0 +1,44 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { HINT_KEYS, Hint } from './hint';
+
+export const story = defineStory({
+  group: 'Feedback',
+  component: Hint,
+  args: {
+    text: '{left} {right} Browse · OK Select · {back} Back',
+    size: 15,
+  },
+  controls: { size: { min: 11, max: 28, step: 1 } },
+});
+
+The line that tells you what the remote does. The translation carries only the WORDS, with `{left}`-style tokens where a key belongs, and those become real glyphs from the kit's own set at the text's size and colour. The alternative (geometric characters typed into the translation) put part of the interface inside a string a translator edits, and tvOS rendered several of those code points as blue **emoji**.
+
+```tsx
+<Hint text={t('profiles.navHint')} />
+// "profiles.navHint": "{left} {right} Browse · OK Select"
+```
+
+<Scene name="Every key">
+  All seven tokens a hint can name, each drawing its glyph from the icon set.
+
+  {story.take(({ size }) => (
+    <Box gap={10}>
+      {Object.keys(HINT_KEYS).map((key) => (
+        <Hint key={key} size={size} text={`{${key}}  ${key}`} />
+      ))}
+    </Box>
+  ))}
+</Scene>
+
+<Scene name="Playback" args={{ text: '{play} Play · {pause} Pause · {back} Back' }} />
+
+<Do>
+- Put the tokens in the translation so word order stays with the translator.
+- Leave it at the default size and colour: a hint is secondary by definition.
+</Do>
+
+<Dont>
+- Type ◀ or ▶ into a translation - that is what the tokens exist to stop.
+- Explain more than two keys in one line; nobody reads the third.
+</Dont>

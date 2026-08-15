@@ -1,0 +1,29 @@
+import { defineStory } from '@kroma/workbench/story';
+import { stillArt } from '#ui/lib/sample-art';
+import { MediaCard } from './media-card';
+import { TINT } from './media-card.fixtures';
+
+export const story = defineStory({
+  group: 'Media',
+  args: {
+    title: 'Blade Runner 2049',
+    overline: 'Science fiction',
+    progress: 0.35,
+    watched: false,
+    width: 320,
+    artwork: true,
+  },
+  controls: {
+    progress: { min: 0, max: 1, step: 0.05 },
+    width: { min: 160, max: 480, step: 20 },
+  },
+  render: ({ artwork, ...props }) => (
+    <MediaCard {...props} art={artwork ? stillArt(0) : null} tint={TINT} />
+  ),
+});
+
+The landscape thumbnail of the home rows. It carries its own scrim so the title stays readable over any artwork.
+
+<Scene name="No artwork" args={{ artwork: false }}>
+  The scrim still has to keep the title readable when only the tint is there.
+</Scene>

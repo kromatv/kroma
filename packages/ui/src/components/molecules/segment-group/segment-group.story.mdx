@@ -1,0 +1,63 @@
+import { defineStory } from '@kroma/workbench/story';
+import { segmentGroupVariants } from './segment-group-item';
+import { Modes, Glyphs, Stretched, WithDisabled, Sizes } from './segment-group.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  variants: segmentGroupVariants,
+  omit: ['active'],
+  component: Modes,
+});
+
+One selected option among a few, all visible at once - the choice a dropdown would hide. A **radiogroup** to assistive tech: each segment is a radio carrying its checked state, and on a physical keyboard the arrow keys move the selection the way a native radio group does. Composed, in Radix's shape: **Root** owns the value and the group semantics, **Item** is one segment, **Label** is its drawn title and the segment's accessible name, and **Hint** is the quieter word beside it for the fact that settles the choice.
+
+```tsx
+<SegmentGroup.Root label="Playback mode" value={mode} onValueChange={setMode}>
+  <SegmentGroup.Item value="auto">
+    <SegmentGroup.Label>Auto</SegmentGroup.Label>
+    <SegmentGroup.Hint>Recommended</SegmentGroup.Hint>
+  </SegmentGroup.Item>
+  <SegmentGroup.Item value="direct">
+    <SegmentGroup.Label>Direct play</SegmentGroup.Label>
+  </SegmentGroup.Item>
+</SegmentGroup.Root>
+
+// A glyph-only segment has no Label to read, so `label` carries its name:
+<SegmentGroup.Item value="grid" icon="layout-grid" label="Grid" />
+```
+
+<Scene name="Glyphs only">
+  Segments drawn as their icon alone, each named to a screen reader by `label`.
+
+  <Glyphs />
+</Scene>
+
+<Scene name="Stretch">
+  `stretch` fills the row, every segment an equal share: the control that names
+  the MODE of the screen under it rather than a value in a form.
+
+  <Stretched />
+</Scene>
+
+<Scene name="Disabled segment">
+  A disabled segment stays in the row and the arrow keys step over it.
+
+  <WithDisabled />
+</Scene>
+
+<Scene name="Sizes">
+  The three shell sizes, from the one table in `lib/field-shell`.
+
+  <Sizes />
+</Scene>
+
+<Do>
+- Use it for two to four options that fit on one line.
+- Name the group with `label` - it is what a screen reader announces first.
+- Give a glyph-only Item a `label`: the glyph carries no words to read.
+</Do>
+
+<Dont>
+- Don't reach for it past four options - that is a `<Select>`.
+- Don't use it for an on/off pair - that is a `<Switch>`.
+</Dont>

@@ -27,6 +27,7 @@ export type {
 export {
   activeTheme,
   applyMode,
+  applyTheme,
   boxStyle,
   color,
   createTheme,
@@ -120,6 +121,8 @@ export { REPORT_CATEGORIES } from './lib/report-categories';
 export type { RingGeometry, RingProps } from './lib/ring';
 export { RING_ROTATION, ringGeometry } from './lib/ring';
 export { ringRoomBlock, ringRoomInline } from './lib/ring-room';
+export type { SlotProps } from './lib/slot';
+export { Slot } from './lib/slot';
 export type { SurfaceWidth } from './lib/surface-shell';
 export { DIALOG_PAD, SURFACE_WIDTH } from './lib/surface-shell';
 export { SvgXml } from './lib/svg';

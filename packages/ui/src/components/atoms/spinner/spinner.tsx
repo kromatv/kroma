@@ -9,6 +9,7 @@ import { useLoop } from '#ui/lib/loop';
 
 interface SpinnerProps {
   size?: number;
+  /** Defaults to a tenth of the size, floored at 2. */
   thickness?: number;
   /** A token name (`accent`, `textMuted`, `tint/40`) or a colour. Defaults to
    *  the accent. */
@@ -20,14 +21,10 @@ interface SpinnerProps {
 
 const SPIN_MS = 900;
 
-function Spinner({
-  size = 28,
-  thickness = Math.max(2, Math.round(size / 10)),
-  color,
-  label,
-}: Readonly<SpinnerProps>) {
+function Spinner({ size = 28, thickness, color, label }: Readonly<SpinnerProps>) {
   const theme = useTheme();
   const spin = useLoop('spin', SPIN_MS);
+  const arc = thickness ?? Math.max(2, Math.round(size / 10));
 
   return (
     <Animated.View
@@ -39,7 +36,7 @@ function Spinner({
           width: size,
           height: size,
           borderRadius: radiusValue('circle'),
-          borderWidth: thickness,
+          borderWidth: arc,
           // Three faint quadrants leave one visible arc: the spinner is the turn.
           borderColor: ink('tint/14'),
           borderTopColor: color ? ink(color) : theme.colors.accent,

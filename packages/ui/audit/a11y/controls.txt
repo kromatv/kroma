@@ -1,0 +1,32 @@
+# Controls  src/foundations/controls.story.mdx
+
+## preview
+radiogroup "Level"
+radio "All" [checked=true] tab
+radio "Info" [checked=false] tab
+radio "Warnings" [checked=false] tab
+radio "Errors" [checked=false] tab
+combobox "Source: Every source" [expanded=false] tab
+textbox "Filter the lines" tab
+button "Refresh" tab
+button "More" tab
+
+## scene:Both sizes
+radiogroup "Level"
+radio "All" [checked=true] tab
+radio "Info" [checked=false] tab
+radio "Warnings" [checked=false] tab
+radio "Errors" [checked=false] tab
+combobox "Source: Every source" [expanded=false] tab
+textbox "Filter the lines" tab
+button "Refresh" tab
+button "More" tab
+radiogroup "Level"
+radio "All" [checked=true] tab
+radio "Info" [checked=false] tab
+radio "Warnings" [checked=false] tab
+radio "Errors" [checked=false] tab
+combobox "Source: Every source" [expanded=false] tab
+textbox "Filter the lines" tab
+button "Refresh" tab
+button "More" tab

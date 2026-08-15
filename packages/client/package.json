@@ -1,9 +1,17 @@
 {
   "name": "@kroma/client",
-  "version": "0.1.3",
+  "version": "0.0.0",
+  "private": true,
   "type": "module",
-  "sideEffects": false,
   "description": "KROMA server client: the typed API client (KromaClient), ts-rs wire types, zod runtime schemas + branded ids, and session storage. Shared by every KROMA app.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/client"
+  },
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts"
   },

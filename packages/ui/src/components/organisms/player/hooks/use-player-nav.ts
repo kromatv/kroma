@@ -4,11 +4,12 @@ import {
   type SetStateAction,
   useCallback,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
 } from 'react';
-import type { ControlId, Overlay, Zone } from '../lib/nav';
-import type { PlayerCloseReason } from '../types';
+import type { ControlId, Overlay, Zone } from '#ui/components/organisms/player/lib/nav';
+import type { PlayerCloseReason } from '#ui/components/organisms/player/types';
 
 const HIDE_MS = 3500;
 
@@ -183,8 +184,6 @@ export function usePlayerNav(
     [controls],
   );
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const actionsRef = useRef(actions);
-  actionsRef.current = actions;
 
   const clearHide = useCallback(() => {
     if (hideTimer.current) {
@@ -226,8 +225,8 @@ export function usePlayerNav(
   );
   const focusProgress = useCallback(() => setZone('progress'), []);
 
-  const activate = useCallback((id: ControlId) => {
-    const a = actionsRef.current;
+  const activate = useEffectEvent((id: ControlId) => {
+    const a = actions;
     switch (id) {
       case 'rewind':
         return a.seekNudge(-1);
@@ -252,53 +251,37 @@ export function usePlayerNav(
       case 'fullscreen':
         return a.toggleFullscreen();
     }
-  }, []);
+  });
 
-  const handleKey = useCallback(
-    (key: RemoteKey) => {
-      const a = actionsRef.current;
-      if (handleMediaKey(key, a)) return;
+  const handleKey = useEffectEvent((key: RemoteKey) => {
+    if (handleMediaKey(key, actions)) return;
 
-      // While hidden, the first key just brings the chrome back (§3, §16).
-      if (!revealed) {
-        poke();
-        return;
-      }
+    // While hidden, the first key just brings the chrome back (§3, §16).
+    if (!revealed) {
       poke();
+      return;
+    }
+    poke();
 
-      // An open panel had first refusal (shell); here we only close it on Back.
-      if (overlay) {
-        if (key === 'Back') closeOverlay();
-        return;
-      }
+    // An open panel had first refusal (shell); here we only close it on Back.
+    if (overlay) {
+      if (key === 'Back') closeOverlay();
+      return;
+    }
 
-      handleDpadKey(key, {
-        a,
-        zone,
-        focused: controls[controlIndex],
-        controlsLen: controls.length,
-        setZone,
-        setControlIndex,
-        setRevealed,
-        clearHide,
-        openOverlay,
-        activate,
-      });
-    },
-    [
-      revealed,
-      overlay,
+    handleDpadKey(key, {
+      a: actions,
       zone,
-      controls,
-      controlIndex,
-      poke,
+      focused: controls[controlIndex],
+      controlsLen: controls.length,
+      setZone,
+      setControlIndex,
+      setRevealed,
       clearHide,
       openOverlay,
-      closeOverlay,
       activate,
-      setControlIndex,
-    ],
-  );
+    });
+  });
 
   const focusedControl =
     !overlay && revealed && zone === 'controls' ? (controls[controlIndex] ?? null) : null;

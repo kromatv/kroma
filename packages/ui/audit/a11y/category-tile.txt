@@ -1,0 +1,12 @@
+# CategoryTile  src/components/molecules/category-tile/category-tile.story.mdx
+
+## preview
+button "Science fiction" tab
+
+## scene:A genre row
+button "Science fiction" tab
+button "Horror" tab
+button "Documentary" tab
+
+## scene:No artwork
+button "Science fiction" tab

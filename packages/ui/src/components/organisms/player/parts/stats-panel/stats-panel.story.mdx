@@ -1,0 +1,109 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
+import { fakeController, liveMeters, TV_STATS } from '#ui/components/organisms/player/player.fixture';
+import { StatsPanel } from './stats-panel';
+import { Surface, starvingStats } from './stats-panel.fixtures';
+
+export const story = defineStory({
+  name: 'PlayerStats',
+  group: 'Player',
+  // The panel carries its own 768pt width and sits 34pt in, so the floor is what
+  // it needs and the range above it is what the surface behind it can be.
+  width: { min: 820, max: 1200 },
+  // 768pt of table on a stage that can be 326 (a phone): the scroller shows a
+  // third of it. The TV frame shows the whole read-out - which is how it is
+  // read - and `Fit` stays one press away.
+  viewport: 'tv',
+  args: {},
+  // The WEB snapshot, which is the richest one any surface builds: headline
+  // fields, media / transport / client diagnostics, and three live series. The
+  // meters wander on their own, so the charts are drawing here exactly as they do
+  // over a real stream - including the window filling in from the right, which is
+  // what the first forty seconds of every playback actually looks like.
+  render: () => (
+    <Surface>
+      <StatsPanel controller={fakeController()} onClose={() => {}} />
+    </Surface>
+  ),
+});
+
+The playback read-out: what the stream actually is, versus what was asked for. It exists because "is this direct-playing?" is the first question about any TV playback problem, and the answer is not visible anywhere else, so `mode` is the headline, above a wrapping run of the stream's fixed identity. ONE layout serves every surface: a native TV plane that reports seven fields and the web engine that reports twenty-seven fill more or fewer of the same columns, at the same type and rhythm, rather than switching to a second design. Live series arrive as `meters`; those sharing a `chart` id are drawn on ONE axis, which is only ever legal when they share a unit.
+
+```tsx
+<StatsPanel controller={controller} onClose={() => setStatsOn(false)} />
+
+// Two series on one axis, because the GAP between them is the diagnostic:
+meters: [
+  { key: 'bandwidth', label: 'Bandwidth', value: kbps, display: '79.7 Mb/s',
+    chart: 'throughput', chartLabel: 'Throughput', band: true },
+  { key: 'bitrate', label: 'Stream bitrate', value: kbps, display: '55.6 Mb/s',
+    chart: 'throughput' },
+  // Its own chart: seconds cannot share an axis with kb/s.
+  { key: 'buffer', label: 'Buffer', value: sec, display: '28.0 s ahead',
+    reference: { value: 10, label: '10 s ahead' } },
+]
+```
+
+<Scene name="On a television">
+  What a native plane (AVPlay, mpv, ExoPlayer) can report: no decode counters, no engine transport, no series to graph. This is the case that used to be a SECOND design: a stacked list, because a dozen rows in three columns looked empty. Now it is the same design with less in it: the same headline, the same wrapping summary, and the columns and charts simply absent. Nothing here is a special case.
+
+  <Surface>
+    <StatsPanel
+      controller={fakeController({ getStats: () => TV_STATS })}
+      onClose={() => {}}
+    />
+  </Surface>
+</Scene>
+
+<Scene name="Transcoding">
+  The same panel when the server had to re-encode: the line a support conversation starts from.
+
+  <Surface>
+    <StatsPanel
+      controller={fakeController({
+        getStats: () => ({
+          resolution: '1920×1080',
+          videoCodec: 'H.264 High',
+          fps: '23.976 fps',
+          dropped: '14 / 6 720',
+          audioFormat: 'AAC 2.0 · 48 kHz',
+          bitrate: '8.10 Mb/s',
+          buffer: '6.2 s ahead',
+          mode: 'Transcode (HEVC unsupported)',
+          extra: [
+            { group: 'Why', label: 'Video', value: 'HEVC not decodable by this client' },
+            { group: 'Why', label: 'Audio', value: 'TrueHD downmixed to AAC 2.0' },
+            { group: 'Why', label: 'Cost', value: 'CPU · ~1.4× realtime' },
+          ],
+        }),
+      })}
+      onClose={() => {}}
+    />
+  </Surface>
+</Scene>
+
+<Scene name="Running out of headroom">
+  The case the throughput chart exists for. Bandwidth is falling toward the bitrate the stream needs and the buffer is draining toward its floor: a stall in a few seconds. The band between the two traces closing is what says so at a glance; as two separately auto-scaled sparklines, which is what these were, both looked like their usual gentle wobble right up to the freeze.
+
+  <Surface>
+    <StatsPanel
+      controller={fakeController({ getStats: starvingStats() })}
+      onClose={() => {}}
+    />
+  </Surface>
+</Scene>
+
+<Do>
+- Read `mode` first: direct play versus transcode explains most complaints.
+- Group two meters on one chart only when they share a unit: the gap between them is then readable as headroom.
+- Give a meter a `reference` so its trace says whether the value is healthy, not just which way it is moving.
+- Give an `extra` row a `group` when a platform reports more than a handful.
+- Leave `color` unset: the panel assigns the validated series palette, which is checked as a set for colourblind separation.
+</Do>
+
+<Dont>
+- Put two units on one chart. Buffer (seconds) against bandwidth (kb/s) flattens the smaller series to a dead line and invents a crossover that is not in the data.
+- Report a charted value as an `extra` row as well: the panel drops the duplicate row, and the chart already carries the number plus its history.
+- Leave it open in a shipped session - it polls, and a TV has nothing to spare.
+</Dont>

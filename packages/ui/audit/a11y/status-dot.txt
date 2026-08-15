@@ -1,0 +1,7 @@
+# StatusDot  src/components/atoms/status-dot/status-dot.story.mdx
+
+## preview
+
+
+## scene:Every state
+

@@ -5,7 +5,7 @@
 // The gesture is a PanResponder rather than pointer events, because the same
 // handle has to work on Apple TV, where there is no DOM to listen to.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { PanResponder, type PanResponderGestureState, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -68,6 +68,10 @@ const CURSOR = {
   vertical: { cursor: 'row-resize' },
 } as unknown as Record<GroupOrientation, ViewStyle>;
 
+function along(orientation: GroupOrientation, gesture: PanResponderGestureState): number {
+  return orientation === 'horizontal' ? gesture.dx : gesture.dy;
+}
+
 interface ResizableHandleProps {
   /** Names the seam to assistive tech. */
   label?: string;
@@ -92,23 +96,21 @@ function Handle({ label = 'Resize', disabled }: Readonly<ResizableHandleProps>) 
   const share = Math.round(group.layout[at] ?? 0);
 
   const [held, setHeld] = useState(false);
-  const seat = useRef({ at, begin: group.begin, drag, reset });
-  seat.current = { at, begin: group.begin, drag, reset };
 
   useResizableKeys({
     held,
     orientation,
     onNudge: (towards) => {
-      seat.current.begin();
-      seat.current.drag(seat.current.at, towards * STEP, true);
+      group.begin();
+      drag(at, towards * STEP, true);
     },
     onRelease: () => setHeld(false),
   });
 
   const restore = useCallback(() => {
     setHeld(false);
-    seat.current.reset(seat.current.at);
-  }, []);
+    reset(at);
+  }, [reset, at]);
 
   const draggedAt = useRef(0);
   const pressedAt = useRef(0);
@@ -129,36 +131,41 @@ function Handle({ label = 'Resize', disabled }: Readonly<ResizableHandleProps>) 
   const releaseCursor = useRef(NOOP);
   useEffect(() => () => releaseCursor.current(), []);
 
-  const pan = useMemo(() => {
-    const along = (gesture: PanResponderGestureState) =>
-      orientation === 'horizontal' ? gesture.dx : gesture.dy;
-    const from = { at: 0 };
-    const end = (gesture: PanResponderGestureState) => {
-      draggedAt.current = Date.now();
-      releaseCursor.current();
-      releaseCursor.current = NOOP;
-      seat.current.drag(seat.current.at, along(gesture) - from.at, true);
-    };
-    return PanResponder.create({
+  const fromAt = useRef(0);
+  const isDrag = useEffectEvent(
+    (gesture: PanResponderGestureState) => Math.abs(along(orientation, gesture)) > DRAG_SLOP,
+  );
+  const startDrag = useEffectEvent((gesture: PanResponderGestureState) => {
+    fromAt.current = along(orientation, gesture);
+    draggedAt.current = Date.now();
+    group.begin();
+    releaseCursor.current = holdCursor(orientation);
+  });
+  const moveDrag = useEffectEvent((gesture: PanResponderGestureState) => {
+    draggedAt.current = Date.now();
+    drag(at, along(orientation, gesture) - fromAt.current, false);
+  });
+  const endDrag = useEffectEvent((gesture: PanResponderGestureState) => {
+    draggedAt.current = Date.now();
+    releaseCursor.current();
+    releaseCursor.current = NOOP;
+    drag(at, along(orientation, gesture) - fromAt.current, true);
+  });
+  // Built once: the callbacks are effect events, so the one responder always
+  // sees the current seam and orientation without ever being recreated.
+  const [pan] = useState(() =>
+    PanResponder.create({
       // A press is the child's, until it turns into a drag.
       onStartShouldSetPanResponderCapture: () => false,
-      onMoveShouldSetPanResponderCapture: (_event, gesture) => Math.abs(along(gesture)) > DRAG_SLOP,
-      onPanResponderGrant: (_event, gesture) => {
-        from.at = along(gesture);
-        draggedAt.current = Date.now();
-        seat.current.begin();
-        releaseCursor.current = holdCursor(orientation);
-      },
-      onPanResponderMove: (_event, gesture) => {
-        draggedAt.current = Date.now();
-        seat.current.drag(seat.current.at, along(gesture) - from.at, false);
-      },
+      onMoveShouldSetPanResponderCapture: (_event, gesture) => isDrag(gesture),
+      onPanResponderGrant: (_event, gesture) => startDrag(gesture),
+      onPanResponderMove: (_event, gesture) => moveDrag(gesture),
       // Once the seam is moving, nothing underneath takes the gesture back.
       onPanResponderTerminationRequest: () => false,
-      onPanResponderRelease: (_event, gesture) => end(gesture),
-      onPanResponderTerminate: (_event, gesture) => end(gesture),
-    });
-  }, [orientation]);
+      onPanResponderRelease: (_event, gesture) => endDrag(gesture),
+      onPanResponderTerminate: (_event, gesture) => endDrag(gesture),
+    }),
+  );
 
   const upright = orientation === 'horizontal';
   const handlers = off ? null : pan.panHandlers;

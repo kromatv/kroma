@@ -11,6 +11,7 @@
 import { compile } from '@mdx-js/mdx';
 import mdx from '@mdx-js/rollup';
 import remarkGfm from 'remark-gfm';
+import { remarkStoryScenes } from './story-scenes.mjs';
 
 // hast keeps every newline an HTML author typed, because a browser collapses
 // them. React Native does not: a newline inside a <Text> is a hard line break,
@@ -95,7 +96,7 @@ export const MDX_OPTIONS = {
   development: false,
   jsxRuntime: 'automatic',
   outputFormat: 'program',
-  remarkPlugins: [remarkGfm],
+  remarkPlugins: [remarkGfm, remarkStoryScenes],
   rehypePlugins: [rehypeFixWhitespace],
 };
 

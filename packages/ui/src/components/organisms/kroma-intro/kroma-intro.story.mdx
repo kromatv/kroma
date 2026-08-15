@@ -1,0 +1,59 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Button } from '#ui/components/atoms/button';
+import { Text } from '#ui/components/atoms/text';
+import { WEB } from '#ui/lib/platform';
+import { Portal } from '#ui/lib/portal';
+import { KromaIntro } from './kroma-intro';
+import { UNDECODABLE, Stage } from './kroma-intro.fixtures';
+
+export const story = defineStory({
+  group: 'Brand',
+  // No device frame: the film takes the whole window through a portal, so the
+  // width is only the note's measure.
+  width: { min: 320, max: 620 },
+  args: {
+    tagline: '',
+    lite: false,
+    loop: false,
+  },
+  render: ({ tagline, lite, loop }) => (
+    <Stage tagline={String(tagline ?? '')} lite={Boolean(lite)} loop={Boolean(loop)} />
+  ),
+});
+
+The brand film every client opens with: a chromatic light tunnel landing on the KR-wheel-MA lockup, full-screen with sound. It ships as **4K60 HEVC only** - fitting for an HEVC-first product - and anything without a hardware decoder falls back to a pure-CSS scene that needs no codec at all.
+
+It is a DOM component, deliberately: a real `<video>`, `document` visibility handling, and inline styles rather than a framework so it renders identically on the SSR shell and on a 2016 TV webview. **On native it renders `null`** - the Apple TV and phone clients play the same film through `expo-video` in their own shell, which is why this story is a note rather than a film in the native workbench.
+
+```tsx
+{showIntro && <KromaIntro onDone={() => setShowIntro(false)} />}
+```
+
+<Scene name="The CSS fallback">
+  What a browser with no HEVC decoder sees: the same choreography drawn with keyframes and no video at all. This mounts it with a deliberately undecodable source, so it arrives here through the same play()-rejection path a real codec failure takes. The scene to check when tuning for a slow panel (`lite`).
+
+  {story.take(({ tagline, lite, loop }) => (
+    <Stage
+      breakVideo
+      tagline={String(tagline ?? '')}
+      lite={Boolean(lite)}
+      loop={Boolean(loop)}
+    />
+  ))}
+</Scene>
+
+<Scene name="With a tagline" args={{ tagline: 'Everything you own, everywhere you are.' }}>
+  A tagline fades in over the final seconds of the film. There is none by default: it ends on the bare lockup.
+</Scene>
+
+<Do>
+- Mount it as a full-screen overlay and let `onDone` hand off to the app - it ends itself if playback stalls.
+- Reach for `lite` on a weak TV GPU: the CSS fallback then stays compositor-only.
+</Do>
+
+<Dont>
+- Add controls or a visible skip button - any key already skips, and the film is five seconds long.
+- Expect sound from the first frame: browsers block autoplay-with-sound until a gesture, so it starts muted and unmutes on the first one.
+</Dont>

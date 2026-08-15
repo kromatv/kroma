@@ -1,0 +1,14 @@
+# Chip  src/components/atoms/chip/chip.story.mdx
+
+## preview
+button "Added" tab
+
+## scene:A counting filter row
+button "Queued" tab
+button "Running" tab
+button "Available" tab
+button "Closed" tab
+button "Queued" tab
+button "Running" tab
+button "Available" tab
+button "Closed" tab

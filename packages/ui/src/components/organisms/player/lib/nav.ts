@@ -1,5 +1,5 @@
 import type { RemoteKey } from '@kroma/core';
-import type { PlayerFlags } from '../types';
+import type { PlayerFlags } from '#ui/components/organisms/player/types';
 
 /**
  * The unified input model. ONE navigation contract drives both the D-pad (TV

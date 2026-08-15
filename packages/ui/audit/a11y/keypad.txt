@@ -1,0 +1,28 @@
+# Keypad  src/components/molecules/keypad/keypad.story.mdx
+
+## preview
+button "1" tab
+button "2" tab
+button "3" tab
+button "4" tab
+button "5" tab
+button "6" tab
+button "7" tab
+button "8" tab
+button "9" tab
+button "0" tab
+button "Delete" tab
+
+## scene:With the field
+group ""
+button "1" tab
+button "2" tab
+button "3" tab
+button "4" tab
+button "5" tab
+button "6" tab
+button "7" tab
+button "8" tab
+button "9" tab
+button "0" tab
+button "Delete" tab

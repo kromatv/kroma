@@ -174,6 +174,28 @@ function activeSection(
   return active;
 }
 
+// A scroll is at the end a hair before the arithmetic says so.
+const END_SLACK = 2;
+
+/** Which section a scroll position is in, read straight off a scroll event.
+ *
+ * Both readers - a guide and a story's document - answer the same question the
+ * same way, so the arithmetic lives here beside `activeSection` rather than
+ * twice beside two `useCallback`s. */
+function sectionAtScroll(
+  sections: readonly Section[],
+  top: number,
+  event: {
+    contentOffset: { y: number };
+    contentSize: { height: number };
+    layoutMeasurement: { height: number };
+  },
+): string | undefined {
+  const { contentOffset, contentSize, layoutMeasurement } = event;
+  const atEnd = contentOffset.y + layoutMeasurement.height >= contentSize.height - END_SLACK;
+  return activeSection(sections, top, contentOffset.y, atEnd);
+}
+
 /** The flattened text of a heading: MDX gives it as a tree of inline marks, and
  * an outline entry is a string. */
 function textOf(node: ReactNode): string {
@@ -189,6 +211,7 @@ export {
   ACTIVE_BAND,
   activeSection,
   OutlineContext,
+  sectionAtScroll,
   textOf,
   useDocumentTop,
   useOutline,

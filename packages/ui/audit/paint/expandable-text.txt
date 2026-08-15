@@ -1,0 +1,13 @@
+# ExpandableText  src/components/atoms/expandable-text/expandable-text.story.mdx
+
+## preview
+div "A blade runner must pursue and terminate four replicants who" var(--kroma-text-muted)/16px/400/"Hanken Grotesk"/normal/25px/start/none/none << pad=0,0,0,0 op=1.000 size=[maxwidth=520px maxwidth=100%] flex=[column:stretch:normal:nowrap:g0/0:n2]
+div "A blade runner must pursue and terminate four replicants who" var(--kroma-text)/16px/400/"Hanken Grotesk"/normal/25px/start/none/none << pad=0,0,0,0 op=0.000 size=[maxwidth=520px] flex=[column:stretch:normal:nowrap:g0/0:n2] abs=1
+
+## scene:Without the growth
+div "A blade runner must pursue and terminate four replicants who" var(--kroma-text-muted)/16px/400/"Hanken Grotesk"/normal/25px/start/none/none << pad=0,0,0,0 op=1.000 size=[maxwidth=520px maxwidth=100%] flex=[column:stretch:normal:nowrap:g0/0:n2]
+div "A blade runner must pursue and terminate four replicants who" var(--kroma-text)/16px/400/"Hanken Grotesk"/normal/25px/start/none/none << pad=0,0,0,0 op=0.000 size=[maxwidth=520px] flex=[column:stretch:normal:nowrap:g0/0:n2] abs=1
+
+## scene:Nothing to expand
+div "Two sentences that fit. There is no more to show, so no affo" var(--kroma-text-muted)/16px/400/"Hanken Grotesk"/normal/25px/start/none/none << pad=0,0,0,0 op=1.000 size=[maxwidth=520px maxwidth=100%] flex=[column:stretch:normal:nowrap:g0/0:n2]
+div "Two sentences that fit. There is no more to show, so no affo" var(--kroma-text)/16px/400/"Hanken Grotesk"/normal/25px/start/none/none << pad=0,0,0,0 op=0.000 size=[maxwidth=520px] flex=[column:stretch:normal:nowrap:g0/0:n2] abs=1

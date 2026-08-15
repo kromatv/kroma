@@ -4,11 +4,12 @@ import {
   type Ref,
   useCallback,
   useEffect,
+  useEffectEvent,
   useId,
   useRef,
 } from 'react';
 import type { LayoutChangeEvent, View } from 'react-native';
-import { Box } from '#ui/components/atoms/box';
+
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
@@ -88,13 +89,12 @@ function Item({ icon, label, active = false, onPress, ref, ...focus }: Readonly<
   }, [active, claim, release, id]);
 
   // Never enrolled while disabled: an unenrolled item is invisible to the
-  // hit-test, so a slide cannot select it. `select` reads onPress through a ref
-  // so the slide never fires a stale closure.
-  const select = useRef(onPress);
-  select.current = onPress;
+  // hit-test, so a slide cannot select it. `select` is an effect event so the
+  // slide never fires a stale closure.
+  const select = useEffectEvent(() => onPress());
   useEffect(() => {
     if (focus.disabled) return;
-    enrol(id, { label, rect: () => rect.current, select: () => select.current() });
+    enrol(id, { label, rect: () => rect.current, select });
     return () => withdraw(id);
   }, [enrol, withdraw, id, label, focus.disabled]);
 
@@ -104,34 +104,33 @@ function Item({ icon, label, active = false, onPress, ref, ...focus }: Readonly<
   const named = labels === 'all' || (labels === 'active' && active);
 
   return (
-    <Box onLayout={onLayout}>
-      <Focusable
-        {...focus}
-        ref={ref}
-        onPress={onPress}
-        label={label}
-        role="tab"
-        selected={active}
-        focusScale={1.04}
-        sv={navPillItemVariants}
-        vars={{ size, lit, active }}
-      >
-        {(state) => (
-          <>
-            {typeof icon === 'string' ? (
-              <Icon name={icon} {...state.slots.icon} />
-            ) : (
-              icon(state.slots.icon.color)
-            )}
-            {named ? (
-              <Text style={state.slots.label} lines={1}>
-                {label}
-              </Text>
-            ) : null}
-          </>
-        )}
-      </Focusable>
-    </Box>
+    <Focusable
+      {...focus}
+      ref={ref}
+      onLayout={onLayout}
+      onPress={onPress}
+      label={label}
+      role="tab"
+      selected={active}
+      focusScale={1.04}
+      sv={navPillItemVariants}
+      vars={{ size, lit, active }}
+    >
+      {(state) => (
+        <>
+          {typeof icon === 'string' ? (
+            <Icon name={icon} {...state.slots.icon} />
+          ) : (
+            icon(state.slots.icon.color)
+          )}
+          {named ? (
+            <Text style={state.slots.label} lines={1}>
+              {label}
+            </Text>
+          ) : null}
+        </>
+      )}
+    </Focusable>
   );
 }
 

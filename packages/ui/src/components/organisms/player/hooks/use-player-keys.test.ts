@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { PanelHandle } from '../lib/nav';
-import type { PlayerController } from '../types';
-import { WEB_FLAGS } from '../types';
+import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
+import type { PlayerController } from '#ui/components/organisms/player/types';
+import { WEB_FLAGS } from '#ui/components/organisms/player/types';
 import { usePlayerKeys } from './use-player-keys';
 import type { PlayerNav } from './use-player-nav';
 

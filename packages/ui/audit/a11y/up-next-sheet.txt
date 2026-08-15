@@ -1,0 +1,18 @@
+# UpNextSheet  src/components/organisms/player/parts/up-next-sheet/up-next-sheet.story.mdx
+
+## preview
+button "Back" tab
+button "Up next" tab
+button "The Kingsroad" tab
+button "Lord Snow" tab
+button "Cripples and Broken Things" tab
+button "Blade Runner 2049" tab
+button "Arrival" tab
+button "Dune" tab
+
+## scene:Parked (peek)
+button "Back" tab
+button "Up next" tab
+
+## scene:Nothing next
+

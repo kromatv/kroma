@@ -1,0 +1,25 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Text } from './text';
+import { ROLES } from './text.fixtures';
+
+export const story = defineStory({
+  group: 'Foundations',
+  args: {
+    variant: 'body',
+    color: 'text',
+    children: 'The quick brown fox jumps over the lazy dog',
+    lines: 0,
+  },
+  controls: {
+    variant: ROLES,
+    color: ['text', 'textMuted', 'textDim', 'accent', 'danger', 'success'],
+    lines: { min: 0, max: 4, step: 1 },
+  },
+  render: ({ children, lines, ...props }) => (
+    <Text {...props} lines={lines || undefined}>
+      {children}
+    </Text>
+  ),
+});
+
+All text in the kit goes through here. The variant names a design ROLE, not a size: that is what makes the type ramp adjustable in a single place.

@@ -1,15 +1,10 @@
 import type { MessageKey } from '@kroma/core';
-import { memo, type ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { type GestureResponderEvent, PanResponder, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
-import { styles, sv } from '#ui/core';
-import { a11yValue } from '#ui/lib/a11y';
-import { suppressSelection } from '#ui/lib/drag-select';
-import { useFocusVisible } from '#ui/lib/focus-visible';
-import { useT } from '#ui/services/i18n';
-import { useDragTrack } from '../../hooks/use-drag-track';
-import { clamp01, sliderToVolume, volumeToSlider } from '../../lib/fmt';
+import { useDragTrack } from '#ui/components/organisms/player/hooks/use-drag-track';
+import { clamp01, sliderToVolume, volumeToSlider } from '#ui/components/organisms/player/lib/fmt';
 import {
   type ChromeMetrics,
   CLUSTER_GAP,
@@ -20,9 +15,9 @@ import {
   scaler,
   TRANSPORT_GAP,
   VOLUME_RAIL,
-} from '../../lib/metrics';
-import type { ControlId } from '../../lib/nav';
-import { FOCUS_SCALE } from '../../lib/style';
+} from '#ui/components/organisms/player/lib/metrics';
+import type { ControlId } from '#ui/components/organisms/player/lib/nav';
+import { FOCUS_SCALE } from '#ui/components/organisms/player/lib/style';
 import {
   IconAudioTrack,
   IconBack10,
@@ -39,7 +34,12 @@ import {
   IconSubtitles,
   IconVolHigh,
   IconVolLow,
-} from '../icons';
+} from '#ui/components/organisms/player/parts/icons';
+import { styles, sv } from '#ui/core';
+import { a11yValue } from '#ui/lib/a11y';
+import { suppressSelection } from '#ui/lib/drag-select';
+import { useFocusVisible } from '#ui/lib/focus-visible';
+import { useT } from '#ui/services/i18n';
 
 const circleFill = sv({ base: { _focus: { bg: 'tint/22' } } });
 const playFill = sv({ base: { _focus: { bg: 'accentHover' } } });
@@ -294,6 +294,7 @@ function VolumeControl({
   // padding, so dividing a pointer offset by the row's width would put the level
   // a fifth past the cursor. The two share a left edge, so this still works.
   const track = useDragTrack();
+  const { ref: trackRef, onLayout: onTrackLayout } = track;
   const level = muted ? 0 : volume;
   const percent = Math.round(level * 100);
   // Fill and thumb track the perceptual slider position, not raw amplitude, so
@@ -301,41 +302,38 @@ function VolumeControl({
   const sliderPos = muted ? 0 : volumeToSlider(volume);
   const volIcon = volumeGlyph(level, px(24));
 
-  const setAt = useCallback(
-    (x: number) => {
-      const offset = track.offsetOf(x);
-      if (offset == null || track.width <= 0) return;
-      onVolume(sliderToVolume(clamp01(offset / track.width)));
-    },
-    [onVolume, track.offsetOf, track.width],
-  );
+  const setAt = useEffectEvent((x: number) => {
+    const offset = track.offsetOf(x);
+    if (offset == null || track.width <= 0) return;
+    onVolume(sliderToVolume(clamp01(offset / track.width)));
+  });
 
   const endSelectionBlock = useRef(NOOP);
   // A drag cut short by an unmount (chrome auto-hide, route change) would
   // otherwise leave the document unselectable for the rest of the session.
   useEffect(() => () => endSelectionBlock.current(), []);
 
-  const pan = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onPanResponderGrant: (e: GestureResponderEvent) => {
-          endSelectionBlock.current = suppressSelection();
-          track.measure();
-          setAt(e.nativeEvent.locationX);
-        },
-        onPanResponderMove: (e: GestureResponderEvent) => setAt(e.nativeEvent.locationX),
-        onPanResponderRelease: () => {
-          endSelectionBlock.current();
-          endSelectionBlock.current = NOOP;
-        },
-        onPanResponderTerminate: () => {
-          endSelectionBlock.current();
-          endSelectionBlock.current = NOOP;
-        },
-      }),
-    [setAt, track.measure],
+  const grabRail = useEffectEvent((x: number) => {
+    endSelectionBlock.current = suppressSelection();
+    track.measure();
+    setAt(x);
+  });
+  const releaseRail = useEffectEvent(() => {
+    endSelectionBlock.current();
+    endSelectionBlock.current = NOOP;
+  });
+
+  // Built once: the handlers are effect events, so the one responder always
+  // sees the current rail geometry without ever being recreated.
+  const [pan] = useState(() =>
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e: GestureResponderEvent) => grabRail(e.nativeEvent.locationX),
+      onPanResponderMove: (e: GestureResponderEvent) => setAt(e.nativeEvent.locationX),
+      onPanResponderRelease: () => releaseRail(),
+      onPanResponderTerminate: () => releaseRail(),
+    }),
   );
 
   const size = px(CONTROL_SIZE.volume);
@@ -375,8 +373,8 @@ function VolumeControl({
         }}
       >
         <Box
-          ref={track.ref}
-          onLayout={track.onLayout}
+          ref={trackRef}
+          onLayout={onTrackLayout}
           style={s.inert}
           h={px(6)}
           w="100%"

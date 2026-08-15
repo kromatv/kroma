@@ -1,8 +1,16 @@
 {
   "name": "@kroma/module-vpn",
-  "version": "0.1.0",
+  "version": "0.0.0",
+  "private": true,
   "type": "module",
   "description": "KROMA VPN module (frontend half): the VPN admin page (WireGuard bridge card + network settings). Paired with the VpnModule ServerModule via the shared module.json.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "modules/tv.kroma.vpn/ui"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./schemas": "./src/schemas.ts"
@@ -14,11 +22,11 @@
   "dependencies": {
     "@kroma/module-sdk": "workspace:*",
     "@kroma/ui": "workspace:*",
-    "@tabler/icons-react": "^3.44.0",
+    "@tabler/icons-react": "^3.46.0",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "react": ">=18"
+    "react": "^19.2.8"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

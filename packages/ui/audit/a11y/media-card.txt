@@ -1,0 +1,9 @@
+# MediaCard  src/components/molecules/media-card/media-card.story.mdx
+
+## preview
+button "Blade Runner 2049" tab
+progressbar "" [valuenow=35]
+
+## scene:No artwork
+button "Blade Runner 2049" tab
+progressbar "" [valuenow=35]

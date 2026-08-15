@@ -13,6 +13,7 @@ import {
   type RefObject,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -22,6 +23,7 @@ import {
   type AccessibilityValue,
   Animated,
   type Insets,
+  type LayoutChangeEvent,
   Platform,
   Pressable,
   type StyleProp,
@@ -57,9 +59,8 @@ import { UNFOCUSABLE } from '#ui/lib/focus-types';
 import { useFocusVisible } from '#ui/lib/focus-visible';
 import { inputHeld } from '#ui/lib/input-gate';
 import { markFocus } from '#ui/lib/perf';
+import { WEB } from '#ui/lib/platform';
 import { pressGuardActive } from '#ui/lib/press-guard';
-
-const WEB = Platform.OS === 'web';
 
 // The navigator's `style` type follows whichever react-native copy the consuming
 // app resolves (the tvos fork on a TV, mainline on the phone), and those two are
@@ -88,10 +89,22 @@ type FocusRole = AccessibilityRole | 'option';
  *  (`#ui/lib/a11y`). */
 type A11yState = A11yProps | undefined;
 
-function claimProps(state: A11yFlags, value: AccessibilityValue | undefined): A11yState {
+/** What `aria-current` a control claims; see `current` on FocusableProps. */
+type FocusCurrent = 'page' | 'step';
+
+function claimProps(
+  state: A11yFlags,
+  value: AccessibilityValue | undefined,
+  current?: FocusCurrent,
+): A11yState {
   const claimed = Object.values(state).some((claim) => claim !== undefined);
-  if (!claimed && !value) return undefined;
-  return { ...(claimed ? a11yState(state) : null), ...(value ? a11yValue(value) : null) };
+  const mark = WEB && current ? { 'aria-current': current } : null;
+  if (!claimed && !value && !mark) return undefined;
+  return {
+    ...(claimed ? a11yState(state) : null),
+    ...(value ? a11yValue(value) : null),
+    ...mark,
+  };
 }
 
 /** What the platform can be handed: the web keeps the real ARIA role, native
@@ -99,6 +112,25 @@ function claimProps(state: A11yFlags, value: AccessibilityValue | undefined): A1
 function platformRole(role: FocusRole): AccessibilityRole {
   if (WEB) return role as AccessibilityRole;
   return role === 'option' ? 'menuitem' : role;
+}
+
+// Outside the component on purpose: a ref write is fine in a ref callback, but
+// the compiler cannot see that the callback IS one, and the whole control would
+// lose its memoisation over it.
+function attach(box: RefObject<View | null>, outer: Ref<View> | undefined, view: View | null) {
+  box.current = view;
+  if (typeof outer === 'function') outer(view);
+  else if (outer) outer.current = view;
+}
+
+// Module-level so the optional chain does not sit inside the component's own
+// try/catch, which the compiler cannot yet lower.
+function focusEntry(entry: RefObject<SpatialNavigationNodeRef | null>): void {
+  try {
+    entry.current?.focus();
+  } catch {
+    // The screen went away first; whatever is there now keeps the focus.
+  }
 }
 
 function linkProps(href: string | undefined, role: FocusRole): object | null {
@@ -128,6 +160,10 @@ interface FocusableProps<R extends AnySv = AnySv> {
   onFocus?: () => void;
   onBlur?: () => void;
   onHoverIn?: () => void;
+  /** The control's own measured box. Forwarded from the host element, so a
+   *  component that positions something against the control (a thumb, a lens)
+   *  measures the control itself rather than paying a wrapper per item. */
+  onLayout?: (event: LayoutChangeEvent) => void;
   autoFocus?: boolean;
   disabled?: boolean;
   /** Controlled focus: the control leaves the navigator entirely and paints its
@@ -158,6 +194,12 @@ interface FocusableProps<R extends AnySv = AnySv> {
    *  React Native's union but passes through react-native-web to the ARIA
    *  role a listbox row needs; native platforms ignore it harmlessly. */
   role?: FocusRole;
+  /** Which one of a set is the one being shown: the page a pagination row is on,
+   *  the step a wizard is at. Browser targets only, where it is `aria-current`;
+   *  React Native has no equivalent, and no screen reader on those platforms
+   *  reads one. Saying it here rather than on a wrapper is what keeps a paged row
+   *  from being one element per page deeper than it needs to be. */
+  current?: FocusCurrent;
   /** `role="switch" | "checkbox" | "radio"` state, announced as `aria-checked`. */
   checked?: boolean | 'mixed';
   /** `role="tab"`/listbox-option state, announced as `aria-selected`. */
@@ -259,23 +301,29 @@ function pointerCursor(disabled: boolean, onPress: unknown): ViewStyle | null {
   return onPress ? HAND : null;
 }
 
-function disabledForm(at: {
-  role: FocusRole;
-  disabledState: A11yState;
-  label: string | undefined;
-  style: StyleProp<ViewStyle>;
-  focusedStyle: ViewStyle | undefined;
-  animated: FocusableProps['style'];
-  focused: boolean;
-  hovered: boolean;
-  slots: ReturnType<AnySv>;
-  children: FocusableProps['children'];
-}): ReactNode {
+function DisabledForm({
+  at,
+}: Readonly<{
+  at: {
+    role: FocusRole;
+    disabledState: A11yState;
+    label: string | undefined;
+    onLayout: FocusableProps['onLayout'];
+    style: StyleProp<ViewStyle>;
+    focusedStyle: ViewStyle | undefined;
+    animated: FocusableProps['style'];
+    focused: boolean;
+    hovered: boolean;
+    slots: ReturnType<AnySv>;
+    children: FocusableProps['children'];
+  };
+}>): ReactNode {
   return (
     <Animated.View
       accessibilityRole={platformRole(at.role)}
       {...at.disabledState}
       accessibilityLabel={at.label}
+      onLayout={at.onLayout}
       style={[at.style, at.focused ? at.focusedStyle : null, at.animated]}
     >
       {typeof at.children === 'function'
@@ -290,31 +338,36 @@ function disabledForm(at: {
   );
 }
 
-function touchForm(at: {
-  boxRef: (view: View | null) => void;
-  webKeys: WebKeys;
-  href: string | undefined;
-  label: string | undefined;
-  role: FocusRole;
-  a11yState: A11yState;
-  style: FocusableProps['style'];
-  focusedStyle: ViewStyle | undefined;
-  animated: FocusableProps['style'];
-  showRing: boolean;
-  pressedStyle: StyleProp<ViewStyle>;
-  hoveredStyle: ViewStyle | undefined;
-  onPress: () => void;
-  onLongPress: FocusableProps['onLongPress'];
-  onHoverIn: FocusableProps['onHoverIn'];
-  onHoverOut: () => void;
-  hitSlop: FocusableProps['hitSlop'];
-  controlled: boolean;
-  focused: boolean;
-  focusVisible: boolean;
-  hovered: boolean;
-  resolve: Resolve;
-  children: FocusableProps['children'];
-}): ReactNode {
+function TouchForm({
+  at,
+}: Readonly<{
+  at: {
+    boxRef: (view: View | null) => void;
+    webKeys: WebKeys;
+    href: string | undefined;
+    label: string | undefined;
+    onLayout: FocusableProps['onLayout'];
+    role: FocusRole;
+    a11yState: A11yState;
+    style: FocusableProps['style'];
+    focusedStyle: ViewStyle | undefined;
+    animated: FocusableProps['style'];
+    showRing: boolean;
+    pressedStyle: StyleProp<ViewStyle>;
+    hoveredStyle: ViewStyle | undefined;
+    onPress: () => void;
+    onLongPress: FocusableProps['onLongPress'];
+    onHoverIn: FocusableProps['onHoverIn'];
+    onHoverOut: () => void;
+    hitSlop: FocusableProps['hitSlop'];
+    controlled: boolean;
+    focused: boolean;
+    focusVisible: boolean;
+    hovered: boolean;
+    resolve: Resolve;
+    children: FocusableProps['children'];
+  };
+}>): ReactNode {
   const lit = at.controlled && at.focusVisible;
   // Hover goes UNDER the focus coats: a control the cursor is over and the
   // remote is on is a focused control, not a doubly-lit one.
@@ -335,6 +388,7 @@ function touchForm(at: {
       webKeys={at.webKeys}
       href={at.href}
       label={at.label}
+      onLayout={at.onLayout}
       role={at.role}
       a11yState={at.a11yState}
       base={base}
@@ -370,38 +424,46 @@ function liftedBox(
   return focused ? flat([box, LIFTED]) : (box as NavigatorStyle);
 }
 
-function navigatorForm(at: {
+function NavigatorForm({
+  entry,
+  at,
+}: Readonly<{
+  /** Its own prop, outside `at`: a RefObject inside the bag would read as a ref
+   *  aggregate to the compiler and cost the form its memoisation. */
   entry: RefObject<SpatialNavigationNodeRef | null>;
-  webKeys: WebKeys;
-  href: string | undefined;
-  layers: ReturnType<typeof splitBoxLayers> | null;
-  style: FocusableProps['style'];
-  focusedStyle: ViewStyle | undefined;
-  animated: FocusableProps['style'];
-  showRing: boolean;
-  focused: boolean;
-  focusVisible: boolean;
-  hovered: boolean;
-  press: () => void;
-  pointerPress: () => void;
-  handleFocus: () => void;
-  handleBlur: () => void;
-  setBox: (view: View | null) => void;
-  label: string | undefined;
-  role: FocusRole;
-  a11yState: A11yState;
-  pressed: boolean;
-  pressedStyle: StyleProp<ViewStyle>;
-  hoveredStyle: ViewStyle | undefined;
-  onHoverIn: () => void;
-  onHoverOut: () => void;
-  onPointerDown: () => void;
-  onPointerUp: () => void;
-  onLongPress: FocusableProps['onLongPress'];
-  hitSlop: FocusableProps['hitSlop'];
-  resolve: Resolve;
-  children: FocusableProps['children'];
-}): ReactNode {
+  at: {
+    onLayout: FocusableProps['onLayout'];
+    webKeys: WebKeys;
+    href: string | undefined;
+    layers: ReturnType<typeof splitBoxLayers> | null;
+    style: FocusableProps['style'];
+    focusedStyle: ViewStyle | undefined;
+    animated: FocusableProps['style'];
+    showRing: boolean;
+    focused: boolean;
+    focusVisible: boolean;
+    hovered: boolean;
+    press: () => void;
+    pointerPress: () => void;
+    handleFocus: () => void;
+    handleBlur: () => void;
+    setBox: (view: View | null) => void;
+    label: string | undefined;
+    role: FocusRole;
+    a11yState: A11yState;
+    pressed: boolean;
+    pressedStyle: StyleProp<ViewStyle>;
+    hoveredStyle: ViewStyle | undefined;
+    onHoverIn: () => void;
+    onHoverOut: () => void;
+    onPointerDown: () => void;
+    onPointerUp: () => void;
+    onLongPress: FocusableProps['onLongPress'];
+    hitSlop: FocusableProps['hitSlop'];
+    resolve: Resolve;
+    children: FocusableProps['children'];
+  };
+}>): ReactNode {
   const painted = [
     at.layers ? at.layers.face : at.style,
     at.hovered ? at.hoveredStyle : null,
@@ -421,7 +483,7 @@ function navigatorForm(at: {
 
   return (
     <SpatialNavigationFocusableView
-      ref={at.entry}
+      ref={entry}
       onSelect={at.press}
       onFocus={at.handleFocus}
       onBlur={at.handleBlur}
@@ -436,6 +498,7 @@ function navigatorForm(at: {
           ...linkProps(at.href, at.role),
           ...(at.webKeys ?? null),
           accessibilityLabel: at.label,
+          onLayout: at.onLayout,
           ref: at.setBox,
           // Browser targets only: this view is a plain <View>, so there is no
           // hover callback to lean on and react-native-web forwards these two
@@ -488,6 +551,7 @@ function Focusable<R extends AnySv = AnySv>({
   onFocus,
   onBlur,
   onHoverIn,
+  onLayout,
   autoFocus,
   disabled = false,
   focused: controlledFocus,
@@ -506,6 +570,7 @@ function Focusable<R extends AnySv = AnySv>({
   expanded,
   pressed,
   busy,
+  current,
   value,
   ref,
 }: Readonly<FocusableProps<R>>) {
@@ -524,8 +589,8 @@ function Focusable<R extends AnySv = AnySv>({
   const scoped = useInsideFocusScope();
 
   const stateProps = useMemo<A11yState>(
-    () => claimProps({ checked, selected, expanded, pressed, busy }, value),
-    [checked, selected, expanded, pressed, busy, value],
+    () => claimProps({ checked, selected, expanded, pressed, busy }, value, current),
+    [checked, selected, expanded, pressed, busy, value, current],
   );
 
   const webKeys = useWebKeys(!disabled && !inert && Boolean(onPress), role, pressRef);
@@ -552,14 +617,7 @@ function Focusable<R extends AnySv = AnySv>({
   const animated = useFocusScale(focused || hovered, focusScale);
 
   const box = useRef<View>(null);
-  const setBox = useCallback(
-    (view: View | null) => {
-      box.current = view;
-      if (typeof ref === 'function') ref(view);
-      else if (ref) ref.current = view;
-    },
-    [ref],
-  );
+  const setBox = useCallback((view: View | null) => attach(box, ref, view), [ref]);
   const reveal = useRevealOnFocus(box);
   const report = useFocusReport();
 
@@ -593,9 +651,13 @@ function Focusable<R extends AnySv = AnySv>({
     if (disabled || inputHeld() || pressGuardActive()) return;
     onPress?.();
   }, [disabled, onPress]);
-  // The keyboard handler is built before `press` exists and must never hold a
-  // stale one.
-  pressRef.current = press;
+  // The keyboard handler must never hold a stale `press`. A layout effect is as
+  // fresh as the render-time write this used to be - no key event can land
+  // between the commit and it - and unlike that write it is a place the React
+  // Compiler allows a ref, so the whole control stays memoisable.
+  useLayoutEffect(() => {
+    pressRef.current = press;
+  });
 
   // Decided once, at mount: `autoFocus` asks for the focus a screen opens with,
   // and a control that mounts while focus already has an owner is not that.
@@ -612,13 +674,7 @@ function Focusable<R extends AnySv = AnySv>({
     // Next tick: the node registers itself as focusable during the same commit,
     // and asking too early throws "trying to assign focus to a non focusable
     // node".
-    const soon = setTimeout(() => {
-      try {
-        entry.current?.focus();
-      } catch {
-        // The screen went away first; whatever is there now keeps the focus.
-      }
-    }, 0);
+    const soon = setTimeout(() => focusEntry(entry), 0);
     return () => clearTimeout(soon);
   }, [isEntry]);
 
@@ -626,11 +682,8 @@ function Focusable<R extends AnySv = AnySv>({
   // not think is focused, and acting without moving focus leaves the next arrow
   // press carrying on from wherever the remote left the highlight.
   const pointerPress = useCallback(() => {
-    try {
-      entry.current?.focus();
-    } catch {
-      // Not a focusable node (yet, or any more); the press itself still stands.
-    }
+    // Not a focusable node (yet, or any more): the press itself still stands.
+    focusEntry(entry);
     press();
   }, [press]);
 
@@ -673,12 +726,10 @@ function Focusable<R extends AnySv = AnySv>({
   // Only what the press ADDS, not the whole root: the press coat lands after the
   // caller's `style`, so re-applying the resolved root there would revert a
   // one-off override (a `radius={12}` snapping back to the recipe's pill) for as
-  // long as the finger is down.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `rest` already keys on every input `resolve` reads
-  const pressDelta = useMemo(
-    () => (recipe && canPress ? deltaOf(rest.root, resolve(true).root) : null),
-    [recipe, canPress, rest],
-  );
+  // long as the finger is down. Plain rather than a useMemo: every shell now
+  // runs the React Compiler, which memoises it on exactly the inputs it reads -
+  // the hand-kept dependency list is what it could not verify.
+  const pressDelta = recipe && canPress ? deltaOf(rest.root, resolve(true).root) : null;
   const paintedPressed = pressDelta ?? pressedStyle;
 
   // Native renders the control as two views, so the half of the style that says
@@ -698,93 +749,112 @@ function Focusable<R extends AnySv = AnySv>({
   // A disabled control is not a node at all, so the remote walks straight past
   // it rather than stopping on something that does nothing.
   if (disabled) {
-    return disabledForm({
-      role,
-      disabledState: claimProps(
-        { checked, selected, expanded, pressed, busy, disabled: true },
-        value,
-      ),
-      label,
-      style: dressed,
-      focusedStyle,
-      animated,
-      focused,
-      hovered,
-      slots: rest,
-      children,
-    });
+    return (
+      <DisabledForm
+        at={{
+          role,
+          onLayout,
+          disabledState: claimProps(
+            { checked, selected, expanded, pressed, busy, disabled: true },
+            value,
+            current,
+          ),
+          label,
+          style: dressed,
+          focusedStyle,
+          animated,
+          focused,
+          hovered,
+          slots: rest,
+          children,
+        }}
+      />
+    );
   }
 
   // Unscoped on a television is deliberately not handled here: an unscoped TV
   // screen is one the remote cannot reach, and registering with a navigator
   // that isn't there should throw at render.
   if (controlled || (!scoped && !Platform.isTV)) {
-    return touchForm({
-      boxRef: setBox,
-      webKeys: webKeys?.pressable ?? null,
-      href,
-      label,
-      role,
-      a11yState: stateProps,
-      style: dressed,
-      focusedStyle,
-      animated,
-      showRing,
-      pressedStyle: paintedPressed,
-      hoveredStyle,
-      onPress: press,
-      onLongPress,
-      onHoverIn: hoverIn,
-      onHoverOut: hoverOut,
-      hitSlop,
-      controlled,
-      focused,
-      focusVisible,
-      hovered,
-      resolve,
-      children,
-    });
+    return (
+      <TouchForm
+        at={{
+          boxRef: setBox,
+          webKeys: webKeys?.pressable ?? null,
+          href,
+          label,
+          onLayout,
+          role,
+          a11yState: stateProps,
+          style: dressed,
+          focusedStyle,
+          animated,
+          showRing,
+          pressedStyle: paintedPressed,
+          hoveredStyle,
+          onPress: press,
+          onLongPress,
+          onHoverIn: hoverIn,
+          onHoverOut: hoverOut,
+          hitSlop,
+          controlled,
+          focused,
+          focusVisible,
+          hovered,
+          resolve,
+          children,
+        }}
+      />
+    );
   }
 
   // Built after the early returns: the paths above never touch the navigator
   // node, and constructing it first made the kit's most instantiated component
   // pay for a SpatialNavigationFocusableView it could not use.
-  const node = navigatorForm({
-    entry,
-    webKeys: webKeys?.view ?? null,
-    href,
-    layers,
-    style: dressed,
-    role,
-    a11yState: stateProps,
-    focusedStyle,
-    animated,
-    showRing,
-    focused,
-    focusVisible,
-    hovered,
-    press,
-    pointerPress,
-    handleFocus,
-    handleBlur,
-    setBox,
-    label,
-    pressed: pointerPressed,
-    pressedStyle: paintedPressed,
-    hoveredStyle,
-    onHoverIn: hoverIn,
-    onHoverOut: hoverOut,
-    onPointerDown: pointerDown,
-    onPointerUp: pointerUp,
-    onLongPress,
-    hitSlop,
-    resolve,
-    children,
-  });
+  const node = (
+    <NavigatorForm
+      entry={entry}
+      at={{
+        onLayout,
+        webKeys: webKeys?.view ?? null,
+        href,
+        layers,
+        style: dressed,
+        role,
+        a11yState: stateProps,
+        focusedStyle,
+        animated,
+        showRing,
+        focused,
+        focusVisible,
+        hovered,
+        press,
+        pointerPress,
+        handleFocus,
+        handleBlur,
+        setBox,
+        label,
+        pressed: pointerPressed,
+        pressedStyle: paintedPressed,
+        hoveredStyle,
+        onHoverIn: hoverIn,
+        onHoverOut: hoverOut,
+        onPointerDown: pointerDown,
+        onPointerUp: pointerUp,
+        onLongPress,
+        hitSlop,
+        resolve,
+        children,
+      }}
+    />
+  );
 
   return isEntry ? <DefaultFocus>{node}</DefaultFocus> : node;
 }
 
+// The three forms are COMPONENTS, not helpers: their props carry the handlers
+// that read refs, and a component boundary is what tells the React Compiler
+// those run on events rather than during this render.
 // Android TV boxes ship air mice and trackpad remotes; tvOS has no pointer
 // device at all, so it keeps the plain view and none of the Pressable's cost.
 const TV_HAS_POINTER = Platform.isTV && Platform.OS === 'android';
@@ -839,6 +909,7 @@ function TouchPressable({
   onLongPress,
   onHoverIn,
   onHoverOut,
+  onLayout,
   hitSlop,
   unfocusable = false,
   label,
@@ -855,6 +926,7 @@ function TouchPressable({
   onLongPress?: () => void;
   onHoverIn?: () => void;
   onHoverOut?: () => void;
+  onLayout?: (event: LayoutChangeEvent) => void;
   hitSlop?: number | Insets;
   unfocusable?: boolean;
   label?: string;
@@ -879,7 +951,11 @@ function TouchPressable({
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
       hitSlop={hitSlop}
-      onLayout={dip.onLayout}
+      // The press dip measures the box too; both readings come off one element.
+      onLayout={(event: LayoutChangeEvent) => {
+        dip.onLayout(event);
+        onLayout?.(event);
+      }}
       onPressIn={dip.onPressIn}
       onPressOut={dip.onPressOut}
       style={[...base, dip.pressed ? pressedStyle : null, dip.style]}
@@ -891,5 +967,5 @@ function TouchPressable({
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export type { FocusableProps, FocusState };
+export type { FocusableProps, FocusCurrent, FocusState };
 export { Focusable };

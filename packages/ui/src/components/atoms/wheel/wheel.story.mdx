@@ -1,0 +1,11 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Wheel } from './wheel';
+
+export const story = defineStory({
+  group: 'Brand',
+  component: Wheel,
+  args: { size: 96, spin: 'none' },
+  controls: { size: { min: 24, max: 240, step: 8 }, spin: ['none', 'once', 'loop'] },
+});
+
+The color wheel on its own, the O of KROMA. It also serves as the branded loading indicator when the apps open.

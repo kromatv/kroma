@@ -47,7 +47,9 @@ export interface PropDocsOptions {
 }
 
 const DEFAULT_INCLUDE = (fileName: string): boolean =>
-  fileName.includes('/packages/ui/src/') && !/\.(stories|demo|test)\.tsx$/.test(fileName);
+  fileName.includes('/packages/ui/src/') &&
+  /\.tsx?$/.test(fileName) &&
+  !/\.(stories|demo|test|fixtures)\.tsx$/.test(fileName);
 
 /**
  * Serves `virtual:kroma-props`: every component's props, read by the checker.

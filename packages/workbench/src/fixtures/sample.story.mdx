@@ -1,0 +1,41 @@
+import { Box, Text } from '@kroma/ui/kit';
+import { defineStory } from '../story';
+
+export const story = defineStory({
+  name: 'Sample',
+  group: 'Input',
+  args: { label: 'Play', loud: false },
+  render: (args) => <Text variant="body">{String(args.label)}</Text>,
+});
+
+A sample story, written the MDX way.
+
+```tsx
+<Sample label="Play" />
+```
+
+<Scene name="Loud">
+  The live take.
+
+  {story.take((args) => <Text variant="body">{`${String(args.label)}!`}</Text>)}
+</Scene>
+
+<Scene name="Fixed">
+  A fixed composition.
+
+  <Box p={4}>
+    <Text variant="body">Frozen</Text>
+  </Box>
+</Scene>
+
+<Scene name="Merged" args={{ label: 'Pause' }}>
+  The story's own render, with these values.
+</Scene>
+
+<Do>
+- Keep it short.
+</Do>
+
+<Dont>
+- Shout.
+</Dont>

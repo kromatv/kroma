@@ -66,12 +66,9 @@ interface OtpFieldRootProps extends Omit<BoxProps, 'children' | 'onChange'> {
   smsAutofill?: boolean;
   autoFocus?: boolean;
   label?: string;
-  /** Split the row into groups with a separator between them: `[3, 3]` is the
-   *  classic six-digit code. Sugar for writing the groups out; ignored once
-   *  `children` are given. */
-  groups?: readonly number[];
   /** The <OtpField.Group> and <OtpField.Separator> parts, in the order they are
-   *  drawn. Only a DIRECT Group child is given its place in the code. */
+   *  drawn. Only a DIRECT Group child is given its place in the code. Left out,
+   *  the row is one group of `maxLength` slots. */
   children?: ReactNode;
 }
 
@@ -90,7 +87,6 @@ function Root({
   smsAutofill = false,
   autoFocus = false,
   label,
-  groups,
   children,
   ...box
 }: Readonly<OtpFieldRootProps>) {
@@ -198,7 +194,7 @@ function Root({
             />
           </>
         ) : null}
-        {placed(children ?? written(maxLength, groups))}
+        {placed(children ?? oneGroup(maxLength))}
       </Box>
     </OtpFieldContext.Provider>
   );
@@ -216,36 +212,17 @@ function placed(children: ReactNode): ReactNode {
   });
 }
 
-function runsOf(maxLength: number, groups: readonly number[] | undefined): number[] {
-  if (!groups) return [maxLength];
-  const runs: number[] = [];
-  let left = maxLength;
-  for (const count of groups) {
-    if (left <= 0) break;
-    runs.push(Math.min(count, left));
-    left -= count;
-  }
-  if (left > 0) runs.push(left);
-  return runs;
-}
-
-// Flat, never wrapped in a fragment: `placed` reads the Root's DIRECT children,
-// and a fragment around a group would hide it and leave every group at zero.
-function written(maxLength: number, groups: readonly number[] | undefined): ReactNode[] {
-  const out: ReactNode[] = [];
-  let index = 0;
-  for (const [run, count] of runsOf(maxLength, groups).entries()) {
-    if (run > 0) out.push(<Separator key={`seam-${run}`} />);
-    out.push(
-      <Group key={`group-${run}`}>
-        {Array.from({ length: count }, (_, at) => `slot-${index + at}`).map((key) => (
-          <Slot key={key} />
-        ))}
-      </Group>,
-    );
-    index += count;
-  }
-  return out;
+// The unbroken row, for a code nobody asked to arrange. A bare element rather
+// than a fragment: `placed` reads the Root's DIRECT children, and a fragment
+// around the group would hide it and leave it at zero.
+function oneGroup(maxLength: number): ReactNode {
+  return (
+    <Group>
+      {Array.from({ length: maxLength }, (_, at) => `slot-${at}`).map((key) => (
+        <Slot key={key} />
+      ))}
+    </Group>
+  );
 }
 
 // Invisible, not `display: none`: it has to stay in the tree to receive the

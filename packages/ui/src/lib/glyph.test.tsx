@@ -123,15 +123,29 @@ describe('<Icon>', () => {
     const { container } = render(<Icon name="volume-off" color="textDim" />);
     const svg = svgIn(container);
     expect(svg.getAttribute('stroke')).toBe('var(--kroma-text-dim-opaque)');
-    // The alpha is on the element ABOVE the paths, which is what makes the
-    // crossings inside the glyph invisible.
-    expect(parentOf(svg).style.opacity).toBe('var(--kroma-text-dim-alpha)');
+    // The alpha is on the svg ITSELF, above its paths, which is what makes the
+    // crossings inside the glyph invisible. On this target that is the element
+    // the glyph already had; the native file needs a wrapper for it, because
+    // Tabler's React Native build would hand the alpha to every path.
+    expect((svg as unknown as HTMLElement).style.opacity).toBe('var(--kroma-text-dim-alpha)');
   });
 
-  it('draws an opaque glyph with no wrapper at all', () => {
+  it('draws a faded glyph without a wrapper element', () => {
+    const { container } = render(<Icon name="volume-off" color="textDim" />);
+
+    expect(parentOf(svgIn(container))).toBe(container);
+  });
+
+  it('fades without placing itself, so a well can still centre it', () => {
+    const { container } = render(<Icon name="volume-off" color="textDim" />);
+
+    expect((svgIn(container) as unknown as HTMLElement).style.alignSelf).toBe('');
+  });
+
+  it('draws an opaque glyph with no style at all', () => {
     const { container } = render(<Icon name="player-play" color="accent" />);
     const svg = svgIn(container);
     expect(svg.getAttribute('stroke')).toBe('var(--kroma-accent)');
-    expect(parentOf(svg).style.opacity).toBe('');
+    expect((svg as unknown as HTMLElement).style.opacity).toBe('');
   });
 });

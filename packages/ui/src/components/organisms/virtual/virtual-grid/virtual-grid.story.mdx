@@ -1,0 +1,64 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { PosterCard } from '#ui/components/molecules/poster-card';
+import { posterArt } from '#ui/lib/sample-art';
+import { VirtualGrid } from './virtual-grid';
+import { TINT, TITLES, TILE_W, ROW_HEIGHT } from './virtual-grid.fixtures';
+
+export const story = defineStory({
+  group: 'Media',
+  width: { min: 640, max: 1600 },
+  args: { columns: 8, count: 400 },
+  controls: {
+    columns: { min: 2, max: 10, step: 1 },
+    count: { min: 40, max: 400, step: 40 },
+  },
+  render: ({ columns, count }) => (
+    <Box style={{ height: 620 }}>
+      <VirtualGrid
+        data={TITLES.slice(0, count)}
+        columns={columns}
+        itemHeight={ROW_HEIGHT}
+        style={{ flex: 1, minHeight: 0 }}
+        // paddingTop = FOCUS_BLEED: the grid clips flush at its top, so a focused
+        // row's ring room has to come from the content.
+        contentStyle={{ paddingHorizontal: 24, paddingTop: 32 }}
+        rowStyle={{ gap: 24 }}
+        renderItem={(item, at) => (
+          <PosterCard
+            title={item.title}
+            art={posterArt(at)}
+            tint={TINT}
+            width={TILE_W}
+            autoFocus={at === 0}
+          />
+        )}
+      />
+    </Box>
+  ),
+});
+
+The browse screens' poster grid: a library of thousands, of which only the rows near the viewport are mounted. Focus reaches the end anyway, because the navigator registers a *virtual* node per row that outlives the tile rendered into it. On the web the wheel scrolls it too, and that moves the selection, unlike a `VirtualRail`'s wheel, because the navigator's `scrollTo` is implemented as a focus grab.
+
+```tsx
+<VirtualGrid
+  data={cards}
+  columns={8}
+  itemHeight={336}
+  style={{ flex: 1, minHeight: 0 }}
+  contentStyle={{ paddingHorizontal: 64 }}
+  rowStyle={{ gap: 24 }}
+  renderItem={(c, i) => <PosterCard title={c.title} art={c.poster} autoFocus={i === 0} />}
+/>
+```
+
+<Do>
+- Give the grid a bounded height (`flex: 1`): it is the viewport, and it is what clips.
+- Put the padding in `contentStyle`: on the viewport it insets the clip and shaves the rows.
+- `itemHeight` is the row PITCH: the tile plus the gap beneath it.
+</Do>
+
+<Dont>
+- Use it for a handful of tiles; a plain wrapped Box costs less.
+- Give it rows of different heights: the offset maths assumes one pitch.
+</Dont>

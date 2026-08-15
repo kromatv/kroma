@@ -2,8 +2,8 @@
 // press ramps into a continuous scrub, and only one real seek fires once presses
 // stop: each seek re-anchors the HLS master, so coalescing them matters.
 
-import { useCallback, useEffect, useRef } from 'react';
-import type { PlayerController } from '../types';
+import { useEffect, useEffectEvent, useRef } from 'react';
+import type { PlayerController } from '#ui/components/organisms/player/types';
 
 const TAP_STEP = 10;
 // Sized so the first repeat of a hold covers about as much ground as a tap;
@@ -34,8 +34,6 @@ interface Burst {
  * bar and for the rewind / forward transport buttons.
  */
 export function useSeekNudge(controller: PlayerController): (dir: -1 | 1) => void {
-  const latest = useRef(controller);
-  latest.current = controller;
   const burst = useRef<Burst | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -47,8 +45,17 @@ export function useSeekNudge(controller: PlayerController): (dir: -1 | 1) => voi
     [],
   );
 
-  return useCallback((dir: -1 | 1) => {
-    const c = latest.current;
+  // Reads the controller when the timer FIRES, not when the last nudge armed it:
+  // the shell rebuilds the controller per render, and a 500 ms-old scrubCommit
+  // would commit through stale playback state.
+  const commit = useEffectEvent(() => {
+    timer.current = null;
+    burst.current = null;
+    controller.scrubCommit();
+  });
+
+  return useEffectEvent((dir: -1 | 1) => {
+    const c = controller;
     const now = Date.now();
     const prev = burst.current;
     // A gap, or a change of direction, is a new gesture: the ramp restarts so
@@ -77,10 +84,6 @@ export function useSeekNudge(controller: PlayerController): (dir: -1 | 1) => voi
     c.scrubPreview(target);
 
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      timer.current = null;
-      burst.current = null;
-      latest.current.scrubCommit();
-    }, COMMIT_MS);
-  }, []);
+    timer.current = setTimeout(commit, COMMIT_MS);
+  });
 }

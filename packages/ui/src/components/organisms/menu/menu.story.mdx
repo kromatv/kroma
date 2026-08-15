@@ -1,0 +1,52 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Pressable } from 'react-native';
+import { Avatar } from '#ui/components/atoms/avatar';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { Menu } from './menu';
+import { menuItemVariants } from './menu-item';
+import { noop, RowActions, AccountMenu } from './menu.fixtures';
+
+export const story = defineStory({
+  group: 'Overlays',
+  variants: menuItemVariants,
+  pad: 120,
+  args: { align: 'end', danger: true },
+  controls: { align: ['end', 'start'] },
+  render: ({ align, danger }) => (
+    <Box row align="center" gap={16}>
+      <Text color="textMuted">Interstellar.2014.2160p.mkv</Text>
+      <RowActions align={align} danger={danger} />
+    </Box>
+  ),
+});
+
+The anchored action menu behind a "..." trigger: a download row's pause/retry/remove, a card's overflow. Composed rather than configured: **Root** owns the open state, **Trigger** opens it, **Item** is one action and **Separator** is a part rather than a string in a list. Under a pointer it is an anchored panel with the full **menu keyboard** - arrows, type-ahead, Enter fires, Esc returns to the trigger - announced as `role="menu"` through `aria-activedescendant`; under a D-pad the items open in a dialog, confined to the remote. Every way out is reported: `onOpenChange(open, { reason })` says `select`, `outside`, `escape` or `back` - the remote's Back button.
+
+```tsx
+<Menu.Root label={t('downloads.rowActions')} align="end">
+  <Menu.Trigger />
+  <Menu.Item icon="player-pause" onSelect={pause}>Pause</Menu.Item>
+  <Menu.Item icon="refresh" onSelect={retry}>Retry</Menu.Item>
+  <Menu.Separator />
+  <Menu.Item icon="trash" tone="danger" onSelect={remove}>Remove</Menu.Item>
+</Menu.Root>
+```
+
+<Scene name="Its own trigger">
+  A trigger the caller owns through `render`, which is how an account chip opens a menu.
+
+  <AccountMenu />
+</Scene>
+
+<Do>
+- Order by frequency, destructive last after a `<Menu.Separator>`.
+- Name the menu with Root's `label` - the trigger takes it as its accessible name.
+- Reach for `render` when the trigger is not a round icon button; spread `bind` onto the control itself.
+</Do>
+
+<Dont>
+- Hide the row's ONE primary action in the overflow - promote it to its own button.
+- Use a menu for navigation; menus fire actions.
+- Nest a pressable inside `<Menu.Trigger>`: the trigger already presses.
+</Dont>

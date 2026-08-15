@@ -74,6 +74,29 @@ function thrownMessage(cause: unknown, t?: MessageLookup): string {
   return resolveMessage(raw, t);
 }
 
+// Module-level: the try/finally is a construct the React Compiler cannot lower
+// inside a hook, and it would skip the whole form over it.
+async function runSubmit<Output>(
+  value: Output,
+  onSubmit: ((values: Output) => void | Promise<void>) | undefined,
+  lookup: MessageLookup | undefined,
+  report: {
+    submitting: (next: boolean) => void;
+    submitted: (next: boolean) => void;
+    failed: (message: string) => void;
+  },
+): Promise<void> {
+  report.submitting(true);
+  try {
+    await onSubmit?.(value);
+    report.submitted(true);
+  } catch (cause) {
+    report.failed(thrownMessage(cause, lookup));
+  } finally {
+    report.submitting(false);
+  }
+}
+
 /**
  * A form over any Standard Schema validator (zod, valibot, arktype): it holds the
  * values, runs the schema and hands each control the props it needs, so a screen
@@ -136,15 +159,11 @@ function useForm<Values extends Record<string, unknown>, Output>({
     const checked = await settle(values);
     if (!checked.ok) return;
 
-    setSubmitting(true);
-    try {
-      await onSubmit?.(checked.value);
-      setSubmitted(true);
-    } catch (cause) {
-      setFormError(thrownMessage(cause, lookup));
-    } finally {
-      setSubmitting(false);
-    }
+    await runSubmit(checked.value, onSubmit, lookup, {
+      submitting: setSubmitting,
+      submitted: setSubmitted,
+      failed: setFormError,
+    });
   };
 
   return {

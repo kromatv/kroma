@@ -7,9 +7,9 @@ import {
   SpatialNavigationVirtualizedGrid,
   type SpatialNavigationVirtualizedListRef,
 } from 'react-tv-space-navigation';
+import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { FocusReporter } from '#ui/lib/focus-report';
 import { markGridFocus } from '#ui/lib/perf';
-import { clipStyles, OVERSCAN } from '../clip';
 
 const NO_POINTER = { pointerEvents: 'none' } as const;
 

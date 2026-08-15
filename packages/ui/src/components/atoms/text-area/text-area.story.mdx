@@ -1,0 +1,103 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { TextField } from '#ui/components/atoms/text-field';
+import { TextArea } from './text-area';
+import { SIZES, LONG } from './text-area.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  width: { min: 320, max: 600 },
+  args: {
+    label: 'Notes',
+    value: 'The server restarts at nine.',
+    placeholder: 'Say what changed.',
+    rows: 3,
+    maxRows: 8,
+    autoSize: true,
+    size: 'md',
+    invalid: false,
+    physicalKeyboard: true,
+  },
+  controls: {
+    rows: { min: 1, max: 8, step: 1 },
+    maxRows: { min: 2, max: 20, step: 1 },
+    size: SIZES,
+  },
+  // Uncontrolled behind a remount key, so the panel can seed the text without
+  // the story holding state.
+  render: ({
+    label,
+    value,
+    placeholder,
+    rows,
+    maxRows,
+    autoSize,
+    size,
+    invalid,
+    physicalKeyboard,
+  }) => (
+    <TextArea
+      key={`${size}-${value}`}
+      label={label}
+      defaultValue={value}
+      placeholder={placeholder}
+      rows={rows}
+      maxRows={maxRows}
+      autoSize={autoSize}
+      size={size}
+      invalid={invalid}
+      physicalKeyboard={physicalKeyboard}
+    />
+  ),
+});
+
+The multi-line entry, under `<Field.Textarea>`, and the same two spellings as `<TextField>`: a live `TextInput` where a keyboard exists, a display plus a caret on a television, so nothing there can be tapped into and summon the platform IME. It opens `rows` tall and **grows with what is typed**, up to `maxRows`, past which it scrolls instead of pushing the rest of the form off the screen. The growth is the browser's own `field-sizing: content` on the web, where a measured callback would cost a state write per keystroke for the same layout, and a measured content height on native. The box aligns its content to the TOP rather than the centre, because a field that grows downwards has to keep its first line where the reader left it, and the whole box - padding included - is the caret's landing zone.
+
+```tsx
+<Field.Root label="Notes">
+  <Field.Textarea rows={4} value={notes} onValueChange={setNotes} />
+  <Field.Hint>Grows as you type, up to ten lines.</Field.Hint>
+</Field.Root>
+```
+
+<Scene name="On a television" args={{ physicalKeyboard: false, size: 'tv' }}>
+  No input at all: the value, the caret, and `maxRows` as the line cap on the text itself. The on-screen `<Keyboard>` does the typing, and the field is only what the remote is pointed at while it happens.
+</Scene>
+
+<Scene name="One line, beside a single-line field">
+  A row is the **md** shell's content line, whatever `size` says, and that is what makes a one-line textarea exactly a `md` `<Field.Input>` tall: the two below share an edge. Take both to `sm` and they part company, because the field shrinks its line to 20 and the textarea keeps counting 24s.
+
+  <Box gap={12}>
+    <TextField label="Title" defaultValue="Weekly scan" physicalKeyboard />
+    <TextArea
+      label="One line"
+      rows={1}
+      defaultValue="One line, same height."
+      physicalKeyboard
+    />
+  </Box>
+</Scene>
+
+<Scene name="Past the cap">
+  More text than `maxRows` allows: the box stops growing and the content scrolls inside it. That cap is the whole reason the prop exists - without it a pasted paragraph walks the submit button off the bottom of the screen.
+
+  <Box gap={10}>
+    <TextArea label="Report" rows={3} maxRows={5} defaultValue={LONG} physicalKeyboard />
+    <Text variant="meta" color="textDim">
+      Five rows tall, and scrolling.
+    </Text>
+  </Box>
+</Scene>
+
+<Do>
+- Reach it through `<Field.Textarea>`: the label row, the hint and the error come with it.
+- Set `rows` to the length the answer usually is, and `maxRows` to the point past which the form would be pushed off the screen.
+- Set a `lineHeight` alongside any bigger font in `textStyle`. Lines are what `rows` counts, so a font size on its own makes the opening height a lie.
+</Do>
+
+<Dont>
+- Use it for a single line, or for a value with a shape (a URL, an amount): that is `<Field.Input>`.
+- Switch `autoSize` off to keep a form still. `maxRows` already bounds the growth, and a fixed box starts scrolling under a reader who is mid-sentence.
+- Assume `rows` follows `size`: a row is the md shell's line at every size, so a `sm` textarea stands taller than the `sm` field beside it.
+</Dont>

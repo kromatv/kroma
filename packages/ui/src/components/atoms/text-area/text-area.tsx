@@ -3,7 +3,6 @@
 
 import { useRef, useState } from 'react';
 import {
-  Platform,
   type StyleProp,
   TextInput,
   type TextInputContentSizeChangeEvent,
@@ -23,9 +22,8 @@ import {
   NO_OUTLINE,
   PLACEHOLDER,
 } from '#ui/lib/field-shell';
+import { WEB } from '#ui/lib/platform';
 import { useControllable } from '#ui/lib/use-controllable';
-
-const WEB = Platform.OS === 'web';
 
 interface TextAreaProps extends Omit<BoxProps, 'children' | 'ring'> {
   value?: string;

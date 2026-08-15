@@ -1,12 +1,19 @@
 {
   "name": "@kroma/module-registry",
-  "version": "0.1.0",
-  "type": "module",
+  "version": "0.0.0",
   "private": true,
+  "type": "module",
+  "description": "KROMA module registry (modules.kroma.tv): a TanStack Start app rendered on the edge, serving the modules.json catalog read live from GitHub Releases plus a browsable grid of every module.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "apps/modules"
+  },
   "imports": {
     "#site/*": "./src/*"
   },
-  "description": "KROMA module registry (modules.kroma.tv): a TanStack Start app rendered on the edge, serving the modules.json catalog read live from GitHub Releases plus a browsable grid of every module.",
   "scripts": {
     "dev": "vite dev --port 3300",
     "build": "vite build",
@@ -18,22 +25,22 @@
     "@kroma/site-kit": "workspace:*",
     "@kroma/site-meta": "workspace:*",
     "@kroma/ui": "workspace:*",
-    "@tanstack/react-router": "^1.170.23",
-    "@tanstack/react-start": "^1.168.40",
+    "@tanstack/react-router": "^1.170.29",
+    "@tanstack/react-start": "^1.168.46",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@kroma/bundler": "workspace:*",
-    "@tanstack/router-cli": "^1.167.25",
-    "@types/node": "^22.10.2",
+    "@tanstack/router-cli": "^1.167.30",
+    "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.4",
+    "@vitejs/plugin-react": "^6.0.5",
     "react-native-web": "^0.21.2",
     "typescript": "^7.0.2",
-    "vite": "^8.1.5",
-    "wrangler": "^4.120.0"
+    "vite": "^8.2.1",
+    "wrangler": "^4.123.0"
   }
 }

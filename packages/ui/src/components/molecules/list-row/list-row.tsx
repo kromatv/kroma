@@ -12,6 +12,7 @@ import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { IconWell, type IconWellSize } from '#ui/components/atoms/icon-well';
 import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { nameOf } from '#ui/lib/name-of';
 import { ListGroup, useListGroup } from './list-group';
 import { ListRowContext } from './list-row-context';
 import { Hint, Label, Leading, Trailing } from './list-row-parts';
@@ -46,22 +47,6 @@ function sort(children: ReactNode): Sorted {
     } else at.content.push(child);
   }
   return at;
-}
-
-// The first plain text in the middle column, at whatever depth it sits. Not
-// `child.type === Label`: a component composing the row writes a label part of
-// its own (<ChoiceList.Label>), and the row still has to name itself.
-function nameOf(node: ReactNode): string | undefined {
-  if (typeof node === 'string') return node || undefined;
-  if (Array.isArray(node)) {
-    for (const child of node as ReactNode[]) {
-      const found = nameOf(child);
-      if (found !== undefined) return found;
-    }
-    return undefined;
-  }
-  if (!isValidElement(node)) return undefined;
-  return nameOf((node.props as { children?: ReactNode }).children);
 }
 
 function iconWell(name: IconName | undefined, size: ControlSize): ReactNode {

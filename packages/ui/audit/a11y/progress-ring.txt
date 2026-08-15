@@ -1,0 +1,8 @@
+# ProgressRing  src/components/atoms/progress-ring/progress-ring.story.mdx
+
+## preview
+svg "" [hidden=true]
+
+## scene:Determinate and indeterminate
+svg "" [hidden=true]
+svg "" [hidden=true]

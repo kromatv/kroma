@@ -18,7 +18,7 @@ import type {
   TorrentFileView,
 } from '@kroma/module-acquisition/schemas';
 import { apiErrorText, useAsyncAction, useT } from '@kroma/module-sdk';
-import { Box, Button, Dialog, Field, SegmentedControl, Text } from '@kroma/ui/kit';
+import { Box, Button, Dialog, Field, SegmentGroup, Text } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { AnalysisPanel } from './manual-grab-analysis';
 import { SearchPanel } from './manual-grab-search';
@@ -218,16 +218,17 @@ export function ManualGrabModal({
   return (
     <Dialog.Root open title={t('manual.title')} onClose={onClose} width="lg">
       <Field.Root label={t('manual.kind')}>
-        <SegmentedControl.Root
-          value={kind}
-          onValueChange={setKind}
-          label={t('manual.kind')}
-          options={[
-            { value: 'movie' as const, label: t('manual.kindMovie') },
-            { value: 'episode' as const, label: t('manual.kindEpisode') },
-            { value: 'season' as const, label: t('manual.kindSeason') },
-          ]}
-        />
+        <SegmentGroup.Root value={kind} onValueChange={setKind} label={t('manual.kind')}>
+          <SegmentGroup.Item value="movie">
+            <SegmentGroup.Label>{t('manual.kindMovie')}</SegmentGroup.Label>
+          </SegmentGroup.Item>
+          <SegmentGroup.Item value="episode">
+            <SegmentGroup.Label>{t('manual.kindEpisode')}</SegmentGroup.Label>
+          </SegmentGroup.Item>
+          <SegmentGroup.Item value="season">
+            <SegmentGroup.Label>{t('manual.kindSeason')}</SegmentGroup.Label>
+          </SegmentGroup.Item>
+        </SegmentGroup.Root>
       </Field.Root>
       <Box row={{ base: false, md: true }} gap={16}>
         <Field.Root

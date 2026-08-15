@@ -1,6 +1,7 @@
 import { useRef } from 'react';
-import { Platform, Pressable, StyleSheet, type View } from 'react-native';
+import { Pressable, StyleSheet, type View } from 'react-native';
 import { ARROW } from '#ui/lib/cursor';
+import { WEB } from '#ui/lib/platform';
 import { useTDefault } from '#ui/services/i18n';
 
 /**
@@ -13,7 +14,7 @@ import { useTDefault } from '#ui/services/i18n';
 function DismissBackdrop({ onPress }: Readonly<{ onPress?: () => void }>) {
   const t = useTDefault();
   const backdrop = useRef<View>(null);
-  if (!onPress || Platform.OS !== 'web') return null;
+  if (!onPress || !WEB) return null;
   return (
     <Pressable
       ref={backdrop}

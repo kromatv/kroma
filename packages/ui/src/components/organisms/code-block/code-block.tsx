@@ -68,41 +68,38 @@ function CodeBlock({ code, numbers, maxHeight = 320 }: Readonly<CodeBlockProps>)
           <CopyButton value={trimmed} iconOnly label="Copier le code" />
         </Box>
       ) : null}
-      <ScrollView style={s.scrollY} contentContainerStyle={[s.body, available && s.bodyCopy]}>
-        <Box row>
-          {showNumbers ? (
-            <Box style={s.gutterCol}>
-              {rows.map((_, at) => (
-                // Line order is fixed for a given snippet, so the index IS the
-                // identity.
-                // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-                <Text key={at} style={s.gutter} color="textDim">
-                  {String(at + 1).padStart(digits, ' ')}
-                </Text>
-              ))}
-            </Box>
-          ) : null}
-          <ScrollView horizontal style={s.scrollX} contentContainerStyle={s.codeCol}>
-            {/* One column sized to the LONGEST line: every shorter line then
-                fits inside it untouched, which is what keeps them unwrapped
-                without a web-only `white-space` override. */}
-            <Box style={s.codeLines}>
-              {rows.map((row, at) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-                <Text key={at} style={s.line}>
-                  {row.length === 0
-                    ? ' '
-                    : row.map((token, index) => (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
-                        <Text key={index} style={ink[token.kind]}>
-                          {token.text}
-                        </Text>
-                      ))}
-                </Text>
-              ))}
-            </Box>
-          </ScrollView>
-        </Box>
+      <ScrollView style={s.scrollY} contentContainerStyle={[s.body, available ? s.bodyCopy : null]}>
+        {showNumbers ? (
+          <Box style={s.gutterCol}>
+            {rows.map((_, at) => (
+              // Line order is fixed for a given snippet, so the index IS the
+              // identity.
+              // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
+              <Text key={at} style={s.gutter} color="textDim">
+                {String(at + 1).padStart(digits, ' ')}
+              </Text>
+            ))}
+          </Box>
+        ) : null}
+        {/* The sideways scroller's own content view is the column sized to the
+            LONGEST line: every shorter line then fits inside it untouched, which
+            is what keeps them unwrapped without a web-only `white-space`
+            override. */}
+        <ScrollView horizontal style={s.scrollX} contentContainerStyle={s.codeCol}>
+          {rows.map((row, at) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
+            <Text key={at} style={s.line}>
+              {row.length === 0
+                ? ' '
+                : row.map((token, index) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: positional by nature
+                    <Text key={index} style={ink[token.kind]}>
+                      {token.text}
+                    </Text>
+                  ))}
+            </Text>
+          ))}
+        </ScrollView>
       </ScrollView>
     </Box>
   );
@@ -117,16 +114,19 @@ const s = styles({
   // beside the gutter - that clamp is what it scrolls within. `minW: 0` is what
   // lets a flex child shrink under its (very wide) content on the web targets.
   scrollX: { flex: true, minW: 0 },
-  body: { p: 14 },
-  // Fill the scroller when the code is narrower than the frame.
-  codeCol: { grow: 1 },
+  // The row of gutter and code: the vertical scroller's own content view, rather
+  // than a box inside it.
+  body: { p: 14, row: true },
+  // Fill the scroller when the code is narrower than the frame, and never shrink
+  // to the frame: shrinking is what would re-wrap the long lines. The axis is
+  // named because a HORIZONTAL ScrollView lays its content view out in a row,
+  // which would put the lines side by side.
+  codeCol: { grow: 1, shrink: 0, flexDirection: 'column' },
   // Clearance for the copy button floating over the top-right corner.
   bodyCopy: { pr: 44 },
   // The gutter is a fixed column, so the separator is what tells you the
   // numbers are parked rather than scrolled off with the code.
   gutterCol: { pr: 12, mr: 12, borderRightWidth: 1, borderRightColor: 'border' },
-  // Never shrink to the frame: shrinking is what would re-wrap the long lines.
-  codeLines: { shrink: 0 },
   line: { ...LINE },
   gutter: { font: 'mono', fontSize: 11.5, lineHeight: LINE.lineHeight, opacity: 0.6 },
   copySlot: { top: 6, right: 6, z: 1 },

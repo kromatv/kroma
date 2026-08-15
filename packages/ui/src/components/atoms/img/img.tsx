@@ -13,15 +13,14 @@ import {
   Fragment,
   type ReactNode,
   useEffect,
+  useEffectEvent,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
 import {
   Animated,
   type LayoutChangeEvent,
-  Platform,
   type StyleProp,
   View,
   type ViewStyle,
@@ -31,6 +30,7 @@ import { absoluteFill, type CornerValue } from '#ui/core/tokens';
 import { coverRect, parsePosition } from '#ui/lib/cover-rect';
 import { gradient } from '#ui/lib/css';
 import { imageBackend } from '#ui/lib/image-backend';
+import { WEB } from '#ui/lib/platform';
 
 export interface ImgProps {
   /** Already-sized artwork URL. This component never rewrites it. */
@@ -87,7 +87,7 @@ function useCrossFade(src: string | null, duration: number): CrossFade {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
   const [under, setUnder] = useState<string | null>(null);
-  const loadedSrc = useRef<string | null>(null);
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const settling = useRef<{
     frame: number;
     timer: ReturnType<typeof setTimeout>;
@@ -112,8 +112,7 @@ function useCrossFade(src: string | null, duration: number): CrossFade {
   // one frame of the new (transparent) image over nothing, which reads as a
   // flicker.
   if (shown !== src) {
-    const prev = loadedSrc.current;
-    setUnder(src && prev && prev !== src ? prev : null);
+    setUnder(src && loadedSrc && loadedSrc !== src ? loadedSrc : null);
     setShown(src);
     setLoaded(false);
     setErrored(false);
@@ -126,60 +125,56 @@ function useCrossFade(src: string | null, duration: number): CrossFade {
     return () => clearTimeout(id);
   }, [loaded, under, duration]);
 
-  return {
-    loaded,
-    errored,
-    under,
-    markLoaded: () => {
-      // Idempotent per source: React re-invokes the inline `ref` below on every
-      // render, so a decoded image reports itself again on each one.
-      if (settling.current?.src === src || (loaded && loadedSrc.current === src)) return;
-      loadedSrc.current = src;
-      // On the web the reveal is a CSS transition, and a transition only runs
-      // when the browser has PAINTED the state it starts from. Artwork already
-      // in the cache is `complete` the moment its ref runs, so this lands in
-      // the same commit: opacity would step 0 -> 1 with the transparent state
-      // never on screen, and the image cuts instead of fading. Waiting a single
-      // frame is all the first paint needs - and the splash pre-decodes its
-      // next cover on purpose, so every handover there took this path.
-      if (!IS_WEB) {
-        setLoaded(true);
-        return;
-      }
-      if (settling.current) {
-        cancelAnimationFrame(settling.current.frame);
-        clearTimeout(settling.current.timer);
-      }
-      const settle = () => {
-        settling.current = null;
-        // The source can move on while this waits - rAF is suspended in a hidden
-        // tab, and a legacy webOS frame is 100ms+ - and a reveal armed for one
-        // image must never show another.
-        if (committed.current === src) setLoaded(true);
-      };
-      const frame = requestAnimationFrame(settle);
-      // A frame is not a promise. It does not run while the tab is hidden, and a
-      // television busy decoding video can skip it for a long time - and until
-      // it runs the image sits at opacity 0 with its bytes already in hand,
-      // which is what "the artwork never loads" actually looked like. The timer
-      // is the floor under that: late is a cut instead of a fade, which is worth
-      // far less than a picture that never appears.
-      const timer = setTimeout(settle, REVEAL_FLOOR_MS);
-      settling.current = { frame, timer, src };
-    },
-    markErrored: () => {
-      setErrored(true);
-      setUnder(null);
-    },
-  };
+  const markLoaded = useEffectEvent(() => {
+    // Idempotent per source: React re-invokes the inline `ref` below on every
+    // render, so a decoded image reports itself again on each one.
+    if (settling.current?.src === src || (loaded && loadedSrc === src)) return;
+    setLoadedSrc(src);
+    // On the web the reveal is a CSS transition, and a transition only runs
+    // when the browser has PAINTED the state it starts from. Artwork already
+    // in the cache is `complete` the moment its ref runs, so this lands in
+    // the same commit: opacity would step 0 -> 1 with the transparent state
+    // never on screen, and the image cuts instead of fading. Waiting a single
+    // frame is all the first paint needs - and the splash pre-decodes its
+    // next cover on purpose, so every handover there took this path.
+    if (!WEB) {
+      setLoaded(true);
+      return;
+    }
+    if (settling.current) {
+      cancelAnimationFrame(settling.current.frame);
+      clearTimeout(settling.current.timer);
+    }
+    const settle = () => {
+      settling.current = null;
+      // The source can move on while this waits - rAF is suspended in a hidden
+      // tab, and a legacy webOS frame is 100ms+ - and a reveal armed for one
+      // image must never show another.
+      if (committed.current === src) setLoaded(true);
+    };
+    const frame = requestAnimationFrame(settle);
+    // A frame is not a promise. It does not run while the tab is hidden, and a
+    // television busy decoding video can skip it for a long time - and until
+    // it runs the image sits at opacity 0 with its bytes already in hand,
+    // which is what "the artwork never loads" actually looked like. The timer
+    // is the floor under that: late is a cut instead of a fade, which is worth
+    // far less than a picture that never appears.
+    const timer = setTimeout(settle, REVEAL_FLOOR_MS);
+    settling.current = { frame, timer, src };
+  });
+
+  const markErrored = useEffectEvent(() => {
+    setErrored(true);
+    setUnder(null);
+  });
+
+  return { loaded, errored, under, markLoaded, markErrored };
 }
 
 interface Size {
   width: number;
   height: number;
 }
-
-const IS_WEB = Platform.OS === 'web';
 
 /** How long the reveal waits for a frame before showing the image anyway. */
 const REVEAL_FLOOR_MS = 250;
@@ -209,8 +204,8 @@ function Img({
   const under = noCrossFade ? null : cross.under;
   const [box, setBox] = useState<Size | null>(null);
   const [natural, setNatural] = useState<Size | null>(null);
-  const opacity = useRef(new Animated.Value(0)).current;
-  const focal = useMemo(() => parsePosition(position), [position]);
+  const [opacity] = useState(() => new Animated.Value(0));
+  const focal = parsePosition(position);
   const radius = corner === undefined ? undefined : radiusValue(corner);
 
   // Each new source starts transparent again. Before paint, not in an effect
@@ -218,15 +213,15 @@ function Img({
   // a frame of the previous cover at full opacity under the new one is exactly
   // the cut the fade exists to avoid.
   useLayoutEffect(() => {
-    if (!IS_WEB && src) opacity.setValue(0);
+    if (!WEB && src) opacity.setValue(0);
   }, [src, opacity]);
 
   // React Native has no object-position, so the native leaf places the cover
   // rectangle itself; `contain` never overflows, so it needs no focal maths.
-  const rect = !IS_WEB && fit === 'cover' ? coverRect(box, natural, focal) : null;
+  const rect = !WEB && fit === 'cover' ? coverRect(box, natural, focal) : null;
 
   const onBoxLayout = (e: LayoutChangeEvent) => {
-    if (IS_WEB) return;
+    if (WEB) return;
     const { width, height } = e.nativeEvent.layout;
     setBox((prev) => (prev?.width === width && prev.height === height ? prev : { width, height }));
   };
@@ -259,7 +254,7 @@ function Img({
     </View>
   ) : null;
 
-  if (IS_WEB) {
+  if (WEB) {
     return (
       <View style={container}>
         {placeholderLayer}

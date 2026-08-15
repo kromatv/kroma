@@ -26,6 +26,7 @@ export { sharedStyle, style, styles } from './styles';
 export type { Theme, ThemeOverrides, ThemeTokens } from './theme';
 export {
   activeTheme,
+  applyTheme,
   createTheme,
   groundShade,
   KROMA,

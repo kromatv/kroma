@@ -1,0 +1,70 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Button } from '#ui/components/atoms/button';
+import { Text } from '#ui/components/atoms/text';
+import { Resizable } from './resizable';
+import { useResizablePanel } from './resizable-panel';
+import { Pane, Shutter, Collapsing, Nested } from './resizable.fixtures';
+
+export const story = defineStory({
+  group: 'Layout',
+  width: 'fill',
+  args: { orientation: 'horizontal', disabled: false },
+  controls: { orientation: ['horizontal', 'vertical'], disabled: 'boolean' },
+  render: ({ orientation, disabled }) => (
+    <Box h={280}>
+      <Resizable.Root orientation={orientation} disabled={disabled}>
+        <Resizable.Panel asChild defaultSize={30} minSize="120px">
+          <Pane name="One" hint="minSize 120px" />
+        </Resizable.Panel>
+        <Resizable.Handle label="Resize the first panel" />
+        <Resizable.Panel asChild minSize="160px">
+          <Pane name="Two" hint="Takes what the others leave" />
+        </Resizable.Panel>
+        <Resizable.Handle label="Resize the last panel" />
+        <Resizable.Panel asChild defaultSize={25} minSize="120px">
+          <Pane name="Three" hint="minSize 120px" />
+        </Resizable.Panel>
+      </Resizable.Root>
+    </Box>
+  ),
+});
+
+Panels a reader can re-proportion, and the seams they meet at. shadcn's shape - a group, its panels and a handle between them - over this kit's own machinery, because react-resizable-panels is DOM-only and this seam has to work under a D-pad.
+
+The whole strip is the control: drag it with a pointer, **press** it to take the arrow keys, and press it again (or hold it) to put its two panels back. A size is a share of the group (`25`) or points (`"280px"`), and the layout is held as shares, so a panel dragged wide on a desk comes back whole after a spell on a laptop.
+
+```tsx
+<Resizable.Root orientation="horizontal" autoSaveId="inspector">
+  <Resizable.Panel asChild defaultSize={25} minSize="200px">
+    <ComponentList />
+  </Resizable.Panel>
+  <Resizable.Handle label="Resize the list" />
+  <Resizable.Panel asChild minSize="480px">
+    <Canvas />
+  </Resizable.Panel>
+</Resizable.Root>
+```
+
+<Scene name="Collapsible">
+  A panel that says `collapsible` shuts rather than stopping at its floor: drag past halfway between `collapsedSize` and `minSize` and it snaps closed. `useResizablePanel()` is how a control somewhere inside it drives the same thing.
+
+  <Collapsing />
+</Scene>
+
+<Scene name="Nested">
+  A panel holding a group of its own. Each group measures itself, so the inner one knows nothing about the outer one and a points minimum still means points.
+
+  <Nested />
+</Scene>
+
+<Do>
+- Give every panel the `minSize` its contents actually stop working at - the seam stops there instead of somewhere arbitrary.
+- Label each handle for what it resizes: a seam announces itself to assistive tech as a slider.
+- Pass `autoSaveId` when the reader would resent re-dragging it every visit.
+</Do>
+
+<Dont>
+- Put anything pressable inside the seam: it is one D-pad stop, and a second target inside it cannot be reached.
+- Reach for it to lay out a screen that has one right arrangement - a seam is for a reader with a preference, not for a designer without one.
+</Dont>

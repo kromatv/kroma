@@ -25,9 +25,11 @@ function shown(): PageSlot[] {
   );
 }
 
+// The control itself carries the mark: `aria-current` is a claim about the page
+// control, not about a box around it.
 function current(): string | null {
   const at = screen.getByLabelText('Releases').querySelector('[aria-current="page"]');
-  return at?.querySelector('[aria-label^="Page "]')?.getAttribute('aria-label') ?? null;
+  return at?.getAttribute('aria-label') ?? null;
 }
 
 function disabled(label: string): boolean {

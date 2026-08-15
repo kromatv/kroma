@@ -1,0 +1,11 @@
+import { defineStory } from '@kroma/workbench/story';
+import { WatchedBadge } from './watched-badge';
+
+export const story = defineStory({
+  group: 'Media',
+  component: WatchedBadge,
+  args: { size: 28 },
+  controls: { size: { min: 16, max: 64, step: 2 } },
+});
+
+The "watched" pill sitting on the corner of a poster.

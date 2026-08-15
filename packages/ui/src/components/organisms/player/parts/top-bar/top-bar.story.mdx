@@ -1,0 +1,55 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
+import { TopBar } from './top-bar';
+
+export const story = defineStory({
+  name: 'PlayerTopBar',
+  group: 'Player',
+  // A range: one fixed width never shows the title truncating against the pill.
+  width: { min: 480, max: 1100 },
+  args: {
+    title: 'Blade Runner 2049',
+    subtitle: '2017 · 2h 44m',
+    warn: '',
+    backFocused: false,
+  },
+  render: ({ warn, ...props }) => (
+    // The bar positions itself absolutely, so the story gives it a surface to
+    // sit on, deep enough to see the scrim fade out.
+    <Ground tone="dark">
+      <Box minH={200} bg="surface2" radius="lg" overflow="hidden">
+        <TopBar {...props} warn={warn || null} onBack={() => {}} />
+      </Box>
+    </Ground>
+  ),
+});
+
+The player's own header: what is playing, a way out, and a warning pill when the stream is not what the viewer asked for (a transcode, a missing track). It sits under a scrim rather than a solid bar so the artwork behind it still reads. `backFocused` is passed in rather than owned here because the player's nav machine decides where focus rests. The chrome only draws it.
+
+```tsx
+<TopBar
+  title={item.title}
+  subtitle={episodeLabel}
+  warn={transcoding ? t('player.transcodeWarning') : null}
+  backFocused={nav.zone === 'back'}
+  onBack={leave}
+/>
+```
+
+<Scene name="Warning" args={{ warn: 'Transcoding: this device cannot direct-play HEVC' }}>
+  The pill only appears when there is something to say about the stream.
+</Scene>
+
+<Scene name="Back focused" args={{ backFocused: true }}>
+  What the remote resting on the way out looks like.
+</Scene>
+
+<Do>
+- Pass `warn` a PRE-TRANSLATED line: the chrome does not decide wording.
+- Keep `subtitle` to the episode or the year - the title is the thing being read.
+</Do>
+
+<Dont>
+- Own focus here; the player's nav machine does, and it tells the bar.
+</Dont>

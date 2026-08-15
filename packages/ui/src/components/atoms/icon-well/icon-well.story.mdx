@@ -1,0 +1,44 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { IconWell, iconWellVariants } from './icon-well';
+import { ROW } from './icon-well.fixtures';
+
+export const story = defineStory({
+  group: 'Foundations',
+  variants: iconWellVariants,
+  matrix: true,
+  component: IconWell,
+  args: { name: 'settings' },
+  controls: { name: 'icon' },
+});
+
+The leading mark of a row: a glyph sunk into a rounded, tinted square. A well rather than a bare glyph because it gives a column of icons ONE optical weight: a hollow gear and a solid television differ by half their ink, and the wells line them up anyway. `<ListRow>` draws its own; reach for this one when you are building a row the kit does not have.
+
+```tsx
+<IconWell name="server-2" />
+<IconWell name="plus" tone="accent" size="sm" />
+```
+
+<Scene name="A column of rows">
+  Five different drawings, one optical weight.
+
+  {story.take((props) => (
+    <Box gap={12}>
+      {ROW.map((name) => (
+        <Box key={name} row align="center" gap={14}>
+          <IconWell {...props} name={name} />
+          <Text variant="label">{name}</Text>
+        </Box>
+      ))}
+    </Box>
+  ))}
+</Scene>
+
+<Do>
+- Keep one size per list, so the labels start on the same x.
+</Do>
+
+<Dont>
+- Use the accent tone for more than one row in a list; it means "adds something".
+</Dont>

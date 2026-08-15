@@ -1,0 +1,7 @@
+# Radio  src/components/atoms/radio/radio.story.mdx
+
+## preview
+radiogroup "Playback mode"
+radio "Auto" [checked=true] tab
+radio "Direct play" [checked=false] tab
+radio "Transcode" [checked=false] tab

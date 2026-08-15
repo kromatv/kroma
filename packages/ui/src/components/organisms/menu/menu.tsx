@@ -16,6 +16,7 @@ import {
 } from 'react';
 import type { View } from 'react-native';
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
+import { useGroupSlot } from '#ui/lib/group-shape';
 import { useControllable } from '#ui/lib/use-controllable';
 import {
   MenuContext,
@@ -125,12 +126,17 @@ interface MenuTriggerProps extends Omit<IconButtonProps, 'onPress' | 'expanded' 
 function Trigger({
   render,
   icon = 'dots-vertical',
-  diameter = 32,
+  diameter,
   variant = 'ghost',
   label,
   ...button
 }: Readonly<MenuTriggerProps>) {
   const { open, label: menuLabel, anchor, setOpen } = useMenu('Trigger');
+  // Standalone, the kebab is a quiet 32px dot. Welded into a <ButtonGroup> it
+  // must stand the group's own control height, or a 32px square hangs off a
+  // 40px neighbour; leaving diameter unset lets <IconButton> take the group's.
+  const grouped = useGroupSlot() !== null;
+  const size = diameter ?? (grouped ? undefined : 32);
   const bind: MenuTriggerBind = {
     ref: anchor,
     expanded: open,
@@ -138,17 +144,27 @@ function Trigger({
   };
   if (render) return render(bind, { open });
   return (
-    <IconButton
+    <TriggerButton
       {...button}
-      ref={anchor}
+      anchor={anchor}
       icon={icon}
       label={label ?? menuLabel}
-      diameter={diameter}
+      diameter={size}
       variant={variant}
       expanded={open}
       onPress={bind.onPress}
     />
   );
+}
+
+// Its own component so `anchor` is only spent as a JSX ref here: used that way
+// inside Trigger, the React Compiler types it as a ref and refuses the
+// `render(bind)` call above.
+function TriggerButton({
+  anchor,
+  ...button
+}: Readonly<IconButtonProps & { anchor: RefObject<View | null> }>) {
+  return <IconButton {...button} ref={anchor} />;
 }
 
 const Menu = { Root, Trigger, Item, Separator };

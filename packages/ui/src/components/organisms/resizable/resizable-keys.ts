@@ -7,7 +7,7 @@
 // remote never reaches a control - which is what lets the same button that took
 // the seam give it back.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import { type HWEvent, Platform, useTVEventHandler } from 'react-native';
 import type { GroupOrientation } from '#ui/lib/group-shape';
 import { holdInput } from '#ui/lib/input-gate';
@@ -40,21 +40,19 @@ function isKeyUp(event: HWEvent): boolean {
 }
 
 function useResizableKeys({ held, orientation, onNudge, onRelease }: ResizableKeysOptions): void {
-  const at = useRef({ held, orientation, onNudge, onRelease });
-  at.current = { held, orientation, onNudge, onRelease };
-
   useEffect(() => (held ? holdInput() : undefined), [held]);
 
-  useRemoteEvents((event: HWEvent) => {
-    const { held: holding, orientation: along, onNudge: nudge, onRelease: release } = at.current;
-    if (!holding || isKeyUp(event)) return;
+  const onRemote = useEffectEvent((event: HWEvent) => {
+    if (!held || isKeyUp(event)) return;
     if (RELEASES.has(event.eventType)) {
-      release();
+      onRelease();
       return;
     }
     const move = MOVES[event.eventType];
-    if (move?.orientation === along) nudge(move.towards);
+    if (move?.orientation === orientation) onNudge(move.towards);
   });
+
+  useRemoteEvents(onRemote);
 }
 
 export { useResizableKeys };

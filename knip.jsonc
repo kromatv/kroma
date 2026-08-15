@@ -71,8 +71,12 @@
         "src/index.{ts,tsx}",
         // Discovered at build time by `import.meta.glob` (Vite) and
         // `require.context` (Metro) - see packages/workbench/README.md. Neither
-        // is a real import, so every story and demo is an entry point.
-        "src/**/*.stories.tsx",
+        // is a real import, so every story and demo is an entry point. A
+        // story's fixtures are imported by its `.story.mdx`, which knip cannot
+        // parse, so they are entries too.
+        "src/**/*.story.mdx",
+        "src/**/*.page.mdx",
+        "src/**/*.fixtures.tsx",
         "src/**/*.demo.tsx",
         // Platform variants the bundler picks by extension, never by import.
         "src/**/*.web.{ts,tsx}",
@@ -114,6 +118,12 @@
     // fails to load aborts the whole run, every workspace with it. Skipping the
     // vite plugin here means naming what it would have found: the config, the
     // build plugins it reaches, and the app's own two entry points.
+    "apps/kit": {
+      // The guides are globbed at build time, and their figures are imported by
+      // the `.page.mdx` files, which knip cannot parse.
+      "entry": ["src/main.tsx", "src/guides/*.{page.mdx,tsx}"]
+    },
+
     "apps/www": {
       "vite": false,
       "entry": ["vite.config.ts", "vite/*.{ts,tsx}", "src/router.tsx", "src/server.ts"]

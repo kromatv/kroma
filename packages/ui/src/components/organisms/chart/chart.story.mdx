@@ -1,0 +1,159 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Chart } from './chart';
+import { CLOCK, REMOTE, LOCAL, traffic, asleep, patchy, weeks, mbps, hours } from './chart.fixtures';
+
+export const story = defineStory({
+  group: 'Feedback',
+  width: { min: 360, max: 720 },
+  args: {
+    height: 200,
+    curve: 'monotone',
+    label: 'Throughput, 8.8 Mb/s remote and 7.4 local',
+  },
+  controls: { curve: ['linear', 'monotone', 'step'] },
+  render: ({ height, curve, label }) => (
+    <Chart.Root data={traffic} x="at" height={height} format={mbps} label={label} defaultActive={7}>
+      <Chart.Grid />
+      <Chart.Area series="remote" label="Remote" curve={curve} />
+      <Chart.Axis edge="left" />
+      <Chart.Axis edge="bottom" />
+      <Chart.Tooltip />
+      <Chart.Legend />
+    </Chart.Root>
+  ),
+});
+
+A plot of one or more series over one shared scale. The Root owns the box, the scale and the paint, and it reads what to draw off its own direct children: a mark goes into the drawing, a scale reserves room beside it, the key sits underneath. Only the SAMPLES are a `data` prop, which is DESIGN.md's T3 (provenance): the points arrive off the wire as a metrics snapshot or a play-history bucket, so writing them as children would mean writing a JSX interpreter over a parsed array. T5 seconds it, because a caller could arrange the samples out of order and a scale drawn against a shuffled series lies rather than fails. The SHAPE stays composed, which is why every mark, scale, key and readout is a part. A plot is a figure and not a control: it takes no D-pad stop, and everything the readout says is also in the Root's `label`. A trace is smoothed by default with a monotone cubic, because everything this product plots is a continuous quantity sampled at an interval rather than a set of discrete counts, and a monotone cubic is the one smoothing that cannot leave the range of the two samples it joins: a metric resting at 0.0 never dips below it. Take `linear` where the samples are discrete counts, and `step` where a value is held until the next sample replaces it.
+
+```tsx
+<Chart.Root data={samples} x="at" height={208} format={mbps} label="Throughput, 8 Mb/s now">
+  <Chart.Grid />
+  <Chart.Area series="local" label="Local" />
+  <Chart.Line series="remote" label="Remote" />
+  <Chart.Axis edge="left" />
+  <Chart.Axis edge="bottom" />
+  <Chart.Tooltip />
+  <Chart.Legend />
+  <Chart.Footer>Average 5.2 remote, 5.1 local</Chart.Footer>
+</Chart.Root>
+```
+
+<Scene name="Two series">
+  Both series share one scale, so they are read against each other rather than each against its own. The wash goes under the one being followed; the other stays a trace, or the plot turns to mud.
+
+  {story.take(({ height, curve, label }) => (
+    <Chart.Root data={traffic} x="at" height={height} format={mbps} label={label}>
+      <Chart.Grid />
+      <Chart.Area series="remote" label="Remote" curve={curve} />
+      <Chart.Line series="local" label="Local" curve={curve} />
+      <Chart.Axis edge="left" />
+      <Chart.Axis edge="bottom" />
+      <Chart.Tooltip />
+      <Chart.Legend />
+      <Chart.Footer>Average 5.2 remote, 5.1 local</Chart.Footer>
+    </Chart.Root>
+  ))}
+</Scene>
+
+<Scene name="Flat on the floor">
+  The case the dashboard sits in for most of the day. A series that never leaves zero has no range to divide by, so the scale opens to 0..1 and the trace draws along the floor instead of vanishing or landing in the middle.
+
+  {story.take(({ height, curve }) => (
+    <Chart.Root
+      data={asleep}
+      x="at"
+      height={height}
+      format={mbps}
+      label="Throughput, nothing playing"
+    >
+      <Chart.Grid />
+      <Chart.Area series="remote" label="Remote" curve={curve} />
+      <Chart.Line series="local" label="Local" curve={curve} />
+      <Chart.Axis edge="left" />
+      <Chart.Axis edge="bottom" />
+      <Chart.Legend />
+    </Chart.Root>
+  ))}
+</Scene>
+
+<Scene name="Nothing yet">
+  Before the first poll answers there are no samples at all. The chrome still draws, so the card does not change size when the data arrives.
+
+  {story.take(({ height }) => (
+    <Chart.Root data={[]} height={height} format={mbps} label="Throughput, no samples yet">
+      <Chart.Grid />
+      <Chart.Area series="remote" label="Remote" />
+      <Chart.Axis edge="left" />
+      <Chart.Axis edge="bottom" />
+      <Chart.Legend />
+    </Chart.Root>
+  ))}
+</Scene>
+
+<Scene name="A gap in the sampling">
+  A sample that is not a finite number is a hole rather than a zero: the trace stops at the edge of the gap and starts again after it, so a server that was down does not read as a server that was idle.
+
+  {story.take(({ height, curve }) => (
+    <Chart.Root
+      data={patchy}
+      x="at"
+      height={height}
+      format={mbps}
+      label="Throughput, three samples missing"
+    >
+      <Chart.Grid />
+      <Chart.Line series="remote" label="Remote" curve={curve} />
+      <Chart.Line series="local" label="Local" curve={curve} />
+      <Chart.Axis edge="left" />
+      <Chart.Axis edge="bottom" />
+      <Chart.Legend />
+    </Chart.Root>
+  ))}
+</Scene>
+
+<Scene name="Stacked bars">
+  A bar sits on the ones declared before it when it says `stack`, so a band is read as its total. The radius belongs to the COLUMN and not to the segment: only the outermost corners are rounded and every join is square, or the two curves pinch and the column reads as two bars that happen to touch. W11 has nothing in the second series, so there the segment below it takes the top corners. Bars own a slice of the width rather than a position on it, which is also what the cursor lands on.
+
+  {story.take(({ height }) => (
+    <Chart.Root
+      data={weeks}
+      x="at"
+      height={height}
+      format={hours}
+      label="Watched, 15 h last week"
+      defaultActive={3}
+    >
+      <Chart.Grid />
+      <Chart.Bar series="films" label="Films" />
+      <Chart.Bar series="shows" label="Series" stack />
+      <Chart.Axis edge="left" />
+      <Chart.Axis edge="bottom" />
+      <Chart.Tooltip />
+      <Chart.Legend />
+    </Chart.Root>
+  ))}
+</Scene>
+
+<Scene name="Sparkline">
+  No scales, no key, no name: a trend beside a number that already says what it is. Nothing here carries information the row does not, so the plot is hidden from assistive tech rather than announced as an unnamed image.
+
+  <Chart.Root data={traffic} width={160} height={40}>
+    <Chart.Area series="remote" />
+  </Chart.Root>
+</Scene>
+
+<Do>
+- Give a plot that carries information a `label` saying what it shows and how it is going: assistive tech cannot read a drawing, and a plot without one is treated as decoration and hidden.
+- Let a series take the palette slot its position earns. Name a colour only where the role is already learned, the way amber is local traffic on the dashboard.
+- Pin `min` and `max` where the scale is a percentage, so a quiet hour does not draw like a busy one.
+- Write a `<Chart.Tooltip>` to make the plot follow a pointer at all: without one it draws and does nothing else.
+- Reach for `curve="step"` where a sample is a level that HELD until the next one, and for `linear` where a value between two samples would be an invention.
+</Do>
+
+<Dont>
+- Run past three series in one plot. The data palette has three slots and no fourth hue separates under CVD, so facet into a second chart instead.
+- Put an alpha on a series' paint. A wash is drawn at an opacity under an opaque trace, which composites once rather than per crossing.
+- Wrap a part: only a DIRECT child of the Root takes part, because the Root sorts its children to know what belongs where.
+- Stack two scales on one edge. Two units in one plot is two plots.
+- Reach for a smoother curve than `monotone`. Anything that overshoots draws a value no sample reached, which on a metric that cannot go negative is a lie the reader has no way to see.
+</Dont>

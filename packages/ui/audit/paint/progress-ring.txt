@@ -1,0 +1,8 @@
+# ProgressRing  src/components/atoms/progress-ring/progress-ring.story.mdx
+
+## preview
+svg "" width=64 height=64 stroke= fill= stroke-width= viewBox=0 0 64 64 << pad=0,0,0,0 op=1.000 tf=[rotate(-90deg)]
+
+## scene:Determinate and indeterminate
+svg "" width=64 height=64 stroke= fill= stroke-width= viewBox=0 0 64 64 << pad=0,0,0,0 op=1.000 tf=[rotate(-90deg)] flex=[row:center:normal:nowrap:g0/0:n2]
+svg "" width=64 height=64 stroke= fill= stroke-width= viewBox=0 0 64 64 << pad=0,0,0,0 op=1.000 tf=[rotate(-90deg)] anim=[@r-animation-11cv4x 900ms] flex=[row:center:normal:nowrap:g0/0:n2]

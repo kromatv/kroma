@@ -1,0 +1,108 @@
+import { defineStory } from '@kroma/workbench/story';
+import { OtpField } from './otp-field';
+import { otpVariants } from './otp-field-variants';
+import { Grouped } from './otp-field.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  variants: otpVariants,
+  omit: ['state'],
+  args: {
+    label: 'Verification code',
+    maxLength: 6,
+    value: '123',
+    mask: false,
+    invalid: false,
+    physicalKeyboard: true,
+  },
+  controls: { maxLength: { min: 3, max: 8 } },
+  render: ({ value, ...props }) => (
+    <OtpField.Root key={`${props.maxLength}-${value}`} {...props} defaultValue={value} />
+  ),
+});
+
+The one-time-code entry: a row of character slots with the caret on the next
+empty one. It replaces the web client's `input-otp` wrapper, which was a hidden
+DOM `input` and therefore could never run on a television. Here one off-screen
+entry owns the text - so paste, SMS autofill and typing all still work - while
+the slots are ordinary views.
+
+<OtpField.Root maxLength={4} defaultValue="12" physicalKeyboard>
+  <OtpField.Group>
+    <OtpField.Slot />
+    <OtpField.Slot />
+  </OtpField.Group>
+  <OtpField.Separator />
+  <OtpField.Group>
+    <OtpField.Slot />
+    <OtpField.Slot />
+  </OtpField.Group>
+</OtpField.Root>
+
+## The parts
+
+The anatomy is [shadcn's InputOTP](https://ui.shadcn.com/docs/components/input-otp):
+
+- **OtpField.Root** holds the code.
+- **OtpField.Group** is a run of slots.
+- **OtpField.Slot** is one character.
+- **OtpField.Separator** divides two groups.
+
+A slot takes no `index`: its place in the code comes from where it sits in its
+group. Write no children at all and the row is one group of `maxLength` slots,
+which is the common case; write the groups out where the code has a shape.
+
+```tsx
+<OtpField.Root maxLength={6} physicalKeyboard onComplete={verify}>
+  <OtpField.Group>
+    <OtpField.Slot />
+    <OtpField.Slot />
+    <OtpField.Slot />
+  </OtpField.Group>
+  <OtpField.Separator />
+  <OtpField.Group>
+    <OtpField.Slot />
+    <OtpField.Slot />
+    <OtpField.Slot />
+  </OtpField.Group>
+</OtpField.Root>
+```
+
+<Scene name="Grouped">
+  The classic six-digit code: two groups of three with one separator between
+  them. The arrangement is the point, so it is written rather than driven.
+
+  <Grouped />
+</Scene>
+
+<Scene name="Masked" args={{ mask: true, maxLength: 4, value: '12' }}>
+  A secret PIN: the slots hold dots, and the value never renders.
+</Scene>
+
+<Scene name="Rejected" args={{ invalid: true, value: '9999' }}>
+  Every slot keeps its red edge, including the one under the caret.
+</Scene>
+
+## The caret
+
+It blinks only while the entry holds focus, so a form stacking three codes
+(current PIN, new, confirm) shows one caret rather than three. Click the row at
+the top of this page to give it the focus and watch the caret appear.
+
+It also needs somewhere for the keystrokes to land: the off-screen entry is only
+mounted under `physicalKeyboard`, which is why the specimen above sets it. Left
+off (the default, and what a television wants) there is no caret to show, because
+there is nothing typing into it.
+
+<Do>
+- Submit from `onComplete`: a full code should verify with no OK press.
+- Pass `physicalKeyboard` where a real keyboard exists; a TV keypad feeds `onValueChange` instead.
+- Use `mask` for a secret PIN, or `PinField` when the design wants dots rather than slots.
+- Pass `label`: with the entry off screen, it is the only accessible name the field has.
+</Do>
+
+<Dont>
+- Set a `pattern` the keyboard contradicts - `REGEXP_ONLY_DIGITS` and a text keypad fight each other.
+- Leave `invalid` on after the user starts retyping; clear it in `onValueChange`.
+- Put a separator inside a group: it would take a slot's place in the code.
+</Dont>

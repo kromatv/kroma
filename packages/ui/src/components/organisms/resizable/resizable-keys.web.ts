@@ -4,7 +4,7 @@
 // means listening on the CAPTURE phase and stopping them there - the navigator
 // then never sees the press that moved a seam.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import { webDocument } from '#ui/lib/dom';
 import type { GroupOrientation } from '#ui/lib/group-shape';
 import type { ResizableKeysOptions } from './resizable-keys-types';
@@ -24,23 +24,21 @@ const MOVES: Record<string, { orientation: GroupOrientation; towards: -1 | 1 }> 
 const RELEASES = new Set(['Enter', 'Escape', ' ', 'Backspace']);
 
 function useResizableKeys({ held, orientation, onNudge, onRelease }: ResizableKeysOptions): void {
-  const at = useRef({ orientation, onNudge, onRelease });
-  at.current = { orientation, onNudge, onRelease };
+  const onKey = useEffectEvent((event: KeyboardEvent) => {
+    const move = MOVES[event.key];
+    if (!move && !RELEASES.has(event.key)) return;
+    event.preventDefault();
+    // Every direction is swallowed while the seam is held, not only the two
+    // it acts on: focus moving out from under a held seam would leave it
+    // holding the keys of a group nobody is looking at.
+    event.stopPropagation();
+    if (!move) onRelease();
+    else if (move.orientation === orientation) onNudge(move.towards);
+  });
 
   useEffect(() => {
     const document = webDocument();
     if (!held || !document) return;
-    const onKey = (event: KeyboardEvent) => {
-      const move = MOVES[event.key];
-      if (!move && !RELEASES.has(event.key)) return;
-      event.preventDefault();
-      // Every direction is swallowed while the seam is held, not only the two
-      // it acts on: focus moving out from under a held seam would leave it
-      // holding the keys of a group nobody is looking at.
-      event.stopPropagation();
-      if (!move) at.current.onRelease();
-      else if (move.orientation === at.current.orientation) at.current.onNudge(move.towards);
-    };
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
   }, [held]);

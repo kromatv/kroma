@@ -2,10 +2,10 @@ import { memo, type ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { BackButton } from '#ui/components/molecules/back-button';
+import { GUTTER, scaler } from '#ui/components/organisms/player/lib/metrics';
 import { styles } from '#ui/core';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
-import { GUTTER, scaler } from '../../lib/metrics';
 
 /**
  * Player top chrome (§ top chrome): a gradient bar holding the round back

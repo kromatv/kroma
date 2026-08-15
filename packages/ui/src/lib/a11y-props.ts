@@ -18,6 +18,8 @@ export interface A11yProps {
   accessibilityState?: AccessibilityState;
   accessibilityValue?: AccessibilityValue;
   'aria-busy'?: boolean;
+  /** Browser targets only: React Native has no equivalent claim. */
+  'aria-current'?: 'page' | 'step';
   'aria-checked'?: boolean | 'mixed';
   'aria-disabled'?: boolean;
   'aria-expanded'?: boolean;

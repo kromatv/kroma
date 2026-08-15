@@ -1,0 +1,47 @@
+import { defineStory } from '@kroma/workbench/story';
+import { CodeBlock } from './code-block';
+import { CALL_SITE, LONG_LINE, A_FILE } from './code-block.fixtures';
+
+export const story = defineStory({
+  group: 'Layout',
+  width: { min: 320, max: 720 },
+  component: CodeBlock,
+  args: { code: CALL_SITE, numbers: true, maxHeight: 320 },
+  controls: { maxHeight: { min: 80, max: 480, step: 20 } },
+});
+
+A block of TSX, highlighted, numbered and copyable. It paints through `<Text>` and `<Box>` rather than through a highlighter, because every highlighter worth having emits HTML and there is no HTML on a television. Code is never wrapped and never truncated - a broken call site reads as a different call site - so a long line scrolls sideways under line numbers that stay put.
+
+```tsx
+<CodeBlock code={source} />
+
+<CodeBlock code={source} numbers={false} maxHeight={180} />
+```
+
+<Scene name="One line">
+  A single line is not numbered: the gutter would be a column saying "1".
+
+  <CodeBlock code={'<Button label="Play" onPress={play} />'} />
+</Scene>
+
+<Scene name="A line too long for the block">
+  The code scrolls sideways rather than wrapping. The numbers sit outside that scroller, so they stay put while the code slides under them.
+
+  <CodeBlock code={LONG_LINE} />
+</Scene>
+
+<Scene name="Past its height">
+  The block hugs its content up to `maxHeight`; only past that does it scroll, so a two-line snippet is a two-line block rather than a mostly-empty well.
+
+  <CodeBlock code={A_FILE} maxHeight={140} />
+</Scene>
+
+<Do>
+- Hand it the snippet as it is written: it trims the ends and paints everything in between.
+- Lower `maxHeight` where the block sits in a dock or a drawer, so it scrolls instead of pushing the rest of the panel out.
+</Do>
+
+<Dont>
+- Wrap it in a scroller of its own: the block owns both axes.
+- Use it for one word of code inside a sentence - that is an inline mark, not a block.
+</Dont>

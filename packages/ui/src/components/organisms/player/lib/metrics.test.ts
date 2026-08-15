@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TV_FLAGS, WEB_FLAGS } from '../types';
+import { TV_FLAGS, WEB_FLAGS } from '#ui/components/organisms/player/types';
 import {
   CARD_MARGIN,
   CLUSTER_GAP,

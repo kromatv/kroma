@@ -4,10 +4,13 @@
 // unlike the web half which listens on it.
 
 import type { RemoteKey } from '@kroma/core';
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import { type HWEvent, useTVEventHandler } from 'react-native';
+import {
+  type PlayerKeysParams,
+  routeRemoteKey,
+} from '#ui/components/organisms/player/lib/player-keys';
 import { holdMenuKey, isRemoteKeyUp, releaseMenuKey } from '#ui/lib/tv-remote';
-import { type PlayerKeysParams, routeRemoteKey } from '../lib/player-keys';
 
 // Both the clickpad (up/down/left/right) and the touch-surface swipes
 // (swipeUp/...) map here: different gesture recognizers that never both fire.
@@ -46,9 +49,6 @@ const useRemoteEvents: (handler: (event: HWEvent) => void) => void =
  * No `preventDefault`: a claimed TV event has no default to suppress.
  */
 export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
-  const latest = useRef(params);
-  latest.current = params;
-
   // Claim Menu while mounted: unclaimed, tvOS treats it as "leave the app"
   // instead of closing the player. A shared counter, since the screen
   // underneath also claims it.
@@ -57,13 +57,14 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
     return releaseMenuKey;
   }, []);
 
-  useRemoteEvents((evt: HWEvent) => {
+  const onRemote = useEffectEvent((evt: HWEvent) => {
     if (isRemoteKeyUp(evt)) return;
     const key = REMOTE_KEYS[evt.eventType];
     // focus/blur/pan and the long-press variants land here; ignoring them is the
     // whole point of an explicit map.
-    if (key) routeRemoteKey(latest.current, key);
+    if (key) routeRemoteKey(params, key);
   });
+  useRemoteEvents(onRemote);
 }
 
 export type { PlayerKeysParams };

@@ -1,0 +1,37 @@
+# InputGroup  src/components/molecules/input-group/input-group.story.mdx
+
+## preview
+group "Search"
+textbox "Search" tab
+
+## scene:Units
+group "Amount"
+textbox "Amount" tab
+
+## scene:A button in the shell
+group "Share link"
+textbox "Share link" tab
+button "Copy" tab
+group "Search the catalogue"
+textbox "Search the catalogue" tab
+button "Search" tab
+
+## scene:A picker row
+group "Image"
+textbox "Image" tab
+button "Choose" tab
+group "Image"
+textbox "Image" tab
+button "Clear" tab
+button "Choose" tab
+
+## scene:A bar under the entry
+group "Comment"
+textbox "Comment" tab
+button "Post" tab
+
+## scene:A bar on both edges
+group "Script"
+button "Reload" tab
+textbox "Script" tab
+button "Run" tab

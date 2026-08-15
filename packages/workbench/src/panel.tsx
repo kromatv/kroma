@@ -3,7 +3,6 @@
 
 import {
   Box,
-  CodeBlock,
   Focusable,
   Icon,
   IconButton,
@@ -17,7 +16,6 @@ import { type ReactNode, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { RULE, RULE_TOP, TAB } from './chrome';
 import { Controls } from './controls';
-import { Guidelines, StoryProse } from './docs';
 import { Interactions } from './interactions';
 import type { WorkbenchLayout } from './layout';
 import type { PlayRunner } from './play';
@@ -36,7 +34,7 @@ interface PanelProps {
   layout: WorkbenchLayout;
 }
 
-type TabId = 'adjust' | 'about' | 'play' | 'props';
+type TabId = 'adjust' | 'play' | 'props';
 
 interface Tab {
   id: TabId;
@@ -46,21 +44,11 @@ interface Tab {
   body: ReactNode;
 }
 
-function Section({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
-  return (
-    <Box gap={10}>
-      <Text variant="overline" color="accent">
-        {title}
-      </Text>
-      {children}
-    </Box>
-  );
-}
-
-/** Only the tabs this story has something to put in; an empty tab is omitted. */
+/** Only the tabs this story has something to put in; an empty tab is omitted.
+ * The prose is not one of them: a story's document reads on the canvas, at
+ * full measure. */
 function tabsFor(story: Story, showControls: boolean, run: PlayRunner): Tab[] {
   const tabs: Tab[] = [];
-  const guided = story.guidelines.do.length > 0 || story.guidelines.dont.length > 0;
 
   if (showControls && story.controls.length > 0) {
     tabs.push({
@@ -69,32 +57,6 @@ function tabsFor(story: Story, showControls: boolean, run: PlayRunner): Tab[] {
       glyph: 'adjustments-horizontal',
       count: story.controls.length,
       body: null,
-    });
-  }
-  if (story.docs || story.usage || guided) {
-    tabs.push({
-      id: 'about',
-      name: 'Docs',
-      glyph: 'file-text',
-      body: (
-        <Box gap={24}>
-          {story.docs ? (
-            <Section title="What it's for">
-              <StoryProse docs={story.docs} />
-            </Section>
-          ) : null}
-          {story.usage ? (
-            <Section title="Usage">
-              <CodeBlock code={story.usage} />
-            </Section>
-          ) : null}
-          {guided ? (
-            <Section title="Guidelines">
-              <Guidelines rules={story.guidelines} />
-            </Section>
-          ) : null}
-        </Box>
-      ),
     });
   }
   if (run.playable) {

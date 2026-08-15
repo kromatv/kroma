@@ -1,0 +1,70 @@
+import { formatTimecode } from '@kroma/core';
+import { defineStory } from '@kroma/workbench/story';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
+import { currentChapter } from '#ui/components/organisms/player/lib/chapters';
+import { CHAPTERS, fakeTileAt } from '#ui/components/organisms/player/player.fixture';
+import { stillArt } from '#ui/lib/sample-art';
+import { SeekBar } from './seek-bar';
+import { Scrubbable } from './seek-bar.fixtures';
+
+export const story = defineStory({
+  group: 'Player',
+  viewport: 'tv',
+  component: Scrubbable,
+  args: {
+    cur: 2_940,
+    dur: 9_840,
+    bufEnd: 4_200,
+    focused: true,
+    endsAt: 'ends at 22:38',
+    withChapters: true,
+    scrubbing: false,
+    withPreview: true,
+  },
+  controls: {
+    cur: { min: 0, max: 9_840, step: 60 },
+    dur: { min: 600, max: 14_400, step: 60 },
+    bufEnd: { min: 0, max: 9_840, step: 60 },
+  },
+});
+
+The progress bar, aware of what it is scrubbing through. Each chapter is its OWN segment with its own played fill and buffered zone, so the shape of the film is visible before you touch it, and the intro and credits segments are tinted, which is what makes "skip the recap" a target rather than a guess. With no chapter data it degrades to one continuous segment rather than disappearing. `seekPreview` is the pending scrub position: the bar shows where you are *going*, while playback stays where it is.
+
+```tsx
+<SeekBar
+  cur={controller.cur}
+  dur={controller.dur}
+  bufEnd={controller.bufEnd}
+  seekPreview={controller.seekPreview}
+  chapters={chapters}
+  tileAt={storyboard.tileAt}
+  focused={nav.zone === 'progress'}
+  elapsed={fmtTime(cur)} total={fmtTime(dur)} endsAt={endClock}
+  onScrub={controller.scrubPreview}
+  onScrubCommit={controller.scrubCommit}
+/>
+```
+
+<Scene name="Scrubbing" args={{ scrubbing: true }}>
+  The playhead stays put while the preview runs ahead of it.
+</Scene>
+
+<Scene name="No storyboard" args={{ withPreview: false }}>
+  A file with no sprite sheet yet (ffmpeg is still building it): the bar works, without the preview.
+</Scene>
+
+<Scene name="No chapters" args={{ withChapters: false }}>
+  One continuous segment: the graceful fallback for a file with no markers. Still scrubbable - the single segment is the whole runtime.
+</Scene>
+
+<Do>
+- Pass real `chapters` when the file has them: the segments are the navigation.
+- Keep `seekPreview` separate from `cur` - the bar must show the target, not jump playback.
+</Do>
+
+<Dont>
+- Hide the bar when there are no chapters; one segment is the designed fallback.
+- Compute the labels here - `elapsed`, `total` and `endsAt` arrive already formatted.
+</Dont>

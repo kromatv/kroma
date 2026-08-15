@@ -1,0 +1,12 @@
+# Ground  src/components/atoms/ground/ground.story.mdx
+
+## preview
+button "Play" tab
+button "Play" tab
+
+## scene:Chrome over artwork
+button "Back" tab
+button "Mark watched" tab
+
+## scene:Nested
+button "Play" tab

@@ -1,8 +1,16 @@
 {
   "name": "@kroma/module-acquisition",
-  "version": "0.1.0",
+  "version": "0.0.0",
+  "private": true,
   "type": "module",
   "description": "KROMA Acquisition module (frontend half): the acquisition settings page. A settings-view module (no dedicated backend routes).",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "modules/tv.kroma.acquisition/ui"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./api": "./src/api.ts",
@@ -16,12 +24,12 @@
     "@kroma/core": "workspace:*",
     "@kroma/module-sdk": "workspace:*",
     "@kroma/ui": "workspace:*",
-    "@tanstack/react-query": "^5.101.2",
-    "@tanstack/react-router": "^1.170.23",
+    "@tanstack/react-query": "^5.101.4",
+    "@tanstack/react-router": "^1.170.29",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
-    "react": ">=18"
+    "react": "^19.2.8"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

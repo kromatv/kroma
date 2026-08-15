@@ -1,0 +1,28 @@
+# Toaster  src/components/organisms/toast/toast.story.mdx
+
+## preview
+button "Say it" tab
+div "" [live=polite]
+
+## scene:A remote joins
+button "Connect" tab
+div "" [live=polite]
+
+## scene:On a phone
+button "Say it" tab
+div "" [live=polite]
+
+## scene:The six corners
+button "top-left" tab
+button "top-center" tab
+button "top-right" tab
+button "bottom-left" tab
+button "bottom-center" tab
+button "bottom-right" tab
+button "All six" tab
+div "" [live=polite]
+
+## scene:Newest nearest the edge
+button "Three at the top" tab
+button "Three at the bottom" tab
+div "" [live=polite]

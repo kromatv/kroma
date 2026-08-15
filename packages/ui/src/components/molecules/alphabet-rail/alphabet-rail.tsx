@@ -8,7 +8,7 @@
 // <ListRow> takes - because a scrub is a hit test over POSITIONS, and a letter
 // cannot know where it sits in a rail it cannot see.
 
-import { Children, isValidElement, type ReactNode, useMemo, useRef } from 'react';
+import { Children, isValidElement, type ReactNode, useEffectEvent, useMemo, useRef } from 'react';
 import { type StyleProp, useWindowDimensions, type View, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import {
@@ -39,7 +39,7 @@ function rangeIndices(slots: readonly Slot[], range: LetterRange | undefined) {
   return [first, last] as [number, number];
 }
 
-interface RootBase {
+interface AlphabetRailRootProps {
   /** Accessible name of the rail. */
   label: string;
   /** The stretch of buckets whose sections are on screen: where the lens sits.
@@ -47,73 +47,45 @@ interface RootBase {
   range?: LetterRange;
   onJump: (letter: string) => void;
   style?: StyleProp<ViewStyle>;
-}
-
-interface ComposedRootProps extends RootBase {
   /** Only a DIRECT <AlphabetRail.Item> child takes a row. */
   children: ReactNode;
-  letters?: never;
-  available?: never;
-  letterLabel?: never;
 }
-
-interface SugarRootProps extends RootBase {
-  /** Sugar for one <AlphabetRail.Item> per bucket in rail order (for the
-   *  catalogue: '#', 'A' … 'Z'), which is what every rail so far wants. */
-  letters: readonly string[];
-  /** Which of those buckets the list carries. The rest render dimmed. */
-  available: ReadonlySet<string>;
-  /** Accessible name of one letter's jump. */
-  letterLabel?: (letter: string) => string;
-  children?: never;
-}
-
-type AlphabetRailRootProps = ComposedRootProps | SugarRootProps;
 
 /** The vertical sibling of the NavPill: a glass capsule of letters, an amber
  * lens over the letters on screen, and (under a finger or pointer drag) a
  * bubble naming the letter being scrubbed to. The host owns the list and the
  * scroll; the rail only reports jumps. */
-function Root(props: Readonly<AlphabetRailRootProps>) {
-  const { label, range, onJump, style, letters, available, letterLabel, children } = props;
-
+function Root({ label, range, onJump, style, children }: Readonly<AlphabetRailRootProps>) {
   // Rows scale with the viewport so the full alphabet always fits, capped
   // where the letters stop gaining legibility.
   const { height: winH } = useWindowDimensions();
   const rowH = Math.round(clampNum(19, winH * 0.03, 31));
   const fontSize = Math.round(clampNum(12, winH * 0.019, 17));
 
-  const rows = useMemo(
-    () =>
-      children ??
-      letters?.map((letter) => (
-        <Item
-          key={letter}
-          value={letter}
-          disabled={!available?.has(letter)}
-          label={letterLabel?.(letter)}
-        />
-      )),
-    [children, letters, available, letterLabel],
-  );
-  const slots = useMemo(() => slotsOf(rows), [rows]);
+  const slots = useMemo(() => slotsOf(children), [children]);
 
   const rail = useRef<View>(null);
   const { bubble, panHandlers } = useLetterScrub(rail, slots, rowH, onJump);
 
-  const jump = useRef(onJump);
-  jump.current = onJump;
+  // An effect event rather than a ref the render writes: stable for the
+  // context, always the latest handler, and legal for the compiler to memoise
+  // around. The context itself is a plain object - the compiler memoises it on
+  // the inputs it actually reads, where the useMemo this replaces keyed on a
+  // `lit` array rebuilt every render and so never hit at all.
+  const jump = useEffectEvent((letter: string) => onJump(letter));
   const lit = rangeIndices(slots, range);
-  const context = useMemo<AlphabetRailState>(
-    () => ({
-      indexOf: (value) => slots.findIndex((slot) => slot.value === value),
-      lit,
-      rowH,
-      fontSize,
-      jump: (letter) => jump.current(letter),
-    }),
-    [slots, lit, rowH, fontSize],
-  );
+  // Left to the React Compiler, which memoises this on the inputs it actually
+  // reads. A hand-written `useMemo` here cannot be spelled correctly: its deps
+  // would have to name effect events, which biome requires be left OUT of a
+  // dependency array - and the mismatch is what makes the compiler give up on
+  // the whole component.
+  const context: AlphabetRailState = {
+    indexOf: (value) => slots.findIndex((slot) => slot.value === value),
+    lit,
+    rowH,
+    fontSize,
+    jump,
+  };
 
   return (
     <AlphabetRailContext.Provider value={context}>
@@ -128,7 +100,7 @@ function Root(props: Readonly<AlphabetRailRootProps>) {
         style={style}
       >
         <Lens box={lit ? lensFor(lit, rowH) : null} chase={bubble !== null} />
-        {rows}
+        {children}
         {bubble ? <Bubble letter={bubble.letter} y={bubble.y} /> : null}
       </Box>
     </AlphabetRailContext.Provider>
@@ -139,19 +111,15 @@ function Root(props: Readonly<AlphabetRailRootProps>) {
  * The fast-scroll rail for a long alphabetical list.
  *
  * ```tsx
- * <AlphabetRail.Root
- *   letters={TITLE_LETTERS}
- *   available={inView}
- *   range={visible}
- *   onJump={scrollToLetter}
- *   label={t('browse.letterNav')}
- *   letterLabel={(letter) => t('browse.jumpToLetter', { letter })}
- * />
- *
  * <AlphabetRail.Root label="A-Z" range={visible} onJump={scrollToLetter}>
- *   <AlphabetRail.Item value="#" label="Jump to #" />
- *   <AlphabetRail.Item value="A" label="Jump to A" />
- *   <AlphabetRail.Item value="B" disabled />
+ *   {TITLE_LETTERS.map((letter) => (
+ *     <AlphabetRail.Item
+ *       key={letter}
+ *       value={letter}
+ *       disabled={!inView.has(letter)}
+ *       label={t('browse.jumpToLetter', { letter })}
+ *     />
+ *   ))}
  * </AlphabetRail.Root>
  * ```
  */

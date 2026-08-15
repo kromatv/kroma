@@ -1,0 +1,32 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { Radio, radioVariants } from './radio';
+import { MODES, Demo } from './radio.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  variants: radioVariants,
+  component: Demo,
+});
+
+The one-of-N control. Unlike a checkbox it cannot be un-picked by pressing it again - the only way out of a choice is another choice - so a press on the chosen radio reports nothing and the group owns which one is on. A radio never travels alone: it belongs to a `radiogroup`, which is what `<ChoiceList.Root>` draws for you.
+
+```tsx
+<Box role="radiogroup" accessibilityLabel="Playback mode">
+  {MODES.map((m) => (
+    <Radio key={m.value} label={m.label} checked={mode === m.value} onValueChange={() => setMode(m.value)} />
+  ))}
+</Box>
+```
+
+<Do>
+- Wrap a set in a `radiogroup` with a name: a lone radio tells a screen reader nothing about what it chooses between.
+- Reach for `<ChoiceList>` when the rows carry labels, hints or actions.
+</Do>
+
+<Dont>
+- Offer two or three short options as radios - that is a `<SegmentGroup>`, which shows every answer at once.
+- Let a radio un-pick itself; a choice group is never empty once made.
+</Dont>

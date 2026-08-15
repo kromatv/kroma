@@ -8,7 +8,7 @@
 // with a ref of the same name - so a fix to one would have left the other
 // double-submitting an emailed code.
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef } from 'react';
 
 /**
  * Returns a stable `report(value)`. Call it whenever the buffer changes - from
@@ -27,7 +27,9 @@ export function useCompleteOnce(
 ): (value: string) => void {
   const completed = useRef(false);
   const latest = useRef({ length, onComplete });
-  latest.current = { length, onComplete };
+  useLayoutEffect(() => {
+    latest.current = { length, onComplete };
+  });
 
   return useCallback((value: string) => {
     const { length: max, onComplete: fire } = latest.current;

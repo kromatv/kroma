@@ -14,6 +14,8 @@ import { gradient } from '#ui/lib/css';
 
 const NO_POINTER: ViewStyle = { pointerEvents: 'none' };
 
+const WIDESCREEN = 16 / 9;
+
 const categoryTileVariants = sv({
   slots: {
     frame: { shrink: 0, radius: 'lg' },
@@ -59,7 +61,7 @@ function CategoryTile({
   accent,
   size = 'tv',
   width = 340,
-  aspect = 16 / 9,
+  aspect = WIDESCREEN,
   children,
   style,
   focusScale = 1.04,

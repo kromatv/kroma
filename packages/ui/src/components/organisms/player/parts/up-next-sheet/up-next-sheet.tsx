@@ -6,7 +6,6 @@ import {
   useEffect,
   useImperativeHandle,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import { Animated, Pressable, useWindowDimensions } from 'react-native';
@@ -14,6 +13,16 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { cellWidth } from '#ui/components/atoms/grid';
 import { Text } from '#ui/components/atoms/text';
+import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
+import { FOCUS_SCALE, playerStyle } from '#ui/components/organisms/player/lib/style';
+import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
+import { IconCollapse } from '#ui/components/organisms/player/parts/icons';
+import {
+  UP_NEXT_COLUMNS,
+  UP_NEXT_GAP,
+  UpNextCard,
+  type UpNextItem,
+} from '#ui/components/organisms/player/parts/up-next-card';
 import { RING_ROOM, styles } from '#ui/core';
 import { gradient, maskImage } from '#ui/lib/css';
 import { ease } from '#ui/lib/ease';
@@ -21,11 +30,6 @@ import { FocusColumn, FocusRegion, FocusScope, useLockFocusBehind } from '#ui/li
 import { FocusScroll } from '#ui/lib/focus-scroll';
 import { pointerDriving } from '#ui/lib/input-source';
 import { useT } from '#ui/services/i18n';
-import type { PanelHandle } from '../../lib/nav';
-import { FOCUS_SCALE, playerStyle } from '../../lib/style';
-import { VIRTUAL_FOCUS } from '../../lib/virtual-focus';
-import { IconCollapse } from '../icons';
-import { UP_NEXT_COLUMNS, UP_NEXT_GAP, UpNextCard, type UpNextItem } from '../up-next-card';
 
 export type { UpNextItem };
 
@@ -128,7 +132,7 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
   const { height: stageHeight } = useWindowDimensions();
   const [sheetHeight, setSheetHeight] = useState(() => Math.round(stageHeight * SHEET_FRACTION));
 
-  const slide = useRef(new Animated.Value(open ? 0 : 1)).current;
+  const [slide] = useState(() => new Animated.Value(open ? 0 : 1));
   useEffect(() => {
     const anim = Animated.timing(slide, {
       toValue: open ? 0 : 1,

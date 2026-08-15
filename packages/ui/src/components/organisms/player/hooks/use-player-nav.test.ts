@@ -3,8 +3,8 @@
 import type { RemoteKey } from '@kroma/core';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { controlOrder } from '../lib/nav';
-import { TV_FLAGS, WEB_FLAGS } from '../types';
+import { controlOrder } from '#ui/components/organisms/player/lib/nav';
+import { TV_FLAGS, WEB_FLAGS } from '#ui/components/organisms/player/types';
 import { type PlayerNavActions, usePlayerNav } from './use-player-nav';
 
 function makeActions(over: Partial<PlayerNavActions> = {}): PlayerNavActions {

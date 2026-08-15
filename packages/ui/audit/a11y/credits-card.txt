@@ -1,0 +1,16 @@
+# CreditsCard  src/components/organisms/player/parts/credits-card/credits-card.story.mdx
+
+## preview
+svg "" [hidden=true]
+button "Cancel" tab
+button "Play now" tab
+
+## scene:About to fire
+svg "" [hidden=true]
+button "Cancel" tab
+button "Play now" tab
+
+## scene:Cancel focused
+svg "" [hidden=true]
+button "Cancel" tab
+button "Play now" tab

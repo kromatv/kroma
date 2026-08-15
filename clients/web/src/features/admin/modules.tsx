@@ -4,7 +4,7 @@
 // and registry management in its own drawer.
 
 import { useT } from '@kroma/ui';
-import { Box, Button, Field, Row, SegmentedControl, Text } from '@kroma/ui/kit';
+import { Box, Button, Field, Row, SegmentGroup, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type CSSProperties, useMemo, useRef, useState } from 'react';
 
@@ -125,7 +125,13 @@ function ModulesInner() {
       )}
 
       <Row wrap between gap={12} mt={24}>
-        <SegmentedControl.Root value={tab} options={tabs} onValueChange={setTab} />
+        <SegmentGroup.Root value={tab} onValueChange={setTab}>
+          {tabs.map((entry) => (
+            <SegmentGroup.Item key={entry.value} value={entry.value}>
+              <SegmentGroup.Label>{entry.label}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          ))}
+        </SegmentGroup.Root>
         {tab !== 'updates' && (
           <Field.Root w={256} label={t('admin.modulesSearch')} hideLabel>
             <Field.Input

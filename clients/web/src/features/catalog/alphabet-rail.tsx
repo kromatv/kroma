@@ -40,14 +40,16 @@ export function AlphabetRail({ available, range, onJump }: Readonly<AlphabetRail
   if (useBreakpoint() === 'base') return null;
   return (
     <nav aria-label={t('browse.letterNav')} style={RAIL_POSITION}>
-      <Rail.Root
-        letters={TITLE_LETTERS}
-        available={available}
-        range={range}
-        onJump={onJump}
-        label={t('browse.letterNav')}
-        letterLabel={(letter) => t('browse.jumpToLetter', { letter })}
-      />
+      <Rail.Root range={range} onJump={onJump} label={t('browse.letterNav')}>
+        {TITLE_LETTERS.map((letter) => (
+          <Rail.Item
+            key={letter}
+            value={letter}
+            disabled={!available.has(letter)}
+            label={t('browse.jumpToLetter', { letter })}
+          />
+        ))}
+      </Rail.Root>
     </nav>
   );
 }

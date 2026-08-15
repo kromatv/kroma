@@ -1,0 +1,36 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { PinField } from '#ui/components/molecules/pin-field';
+import { Keypad, keypadVariants } from './keypad';
+import { PinEntry } from './keypad.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  variants: keypadVariants,
+  omit: ['kind'],
+  args: { autoFocus: false, disabled: false },
+  render: (props) => <Keypad {...props} onDigit={() => {}} onDelete={() => {}} />,
+});
+
+The remote's half of `<PinField>`: a phone dial the D-pad can walk without instructions. There is deliberately **no OK key**: the field completes itself on the last digit, so an OK would be a control that is never the right thing to press. The empty cell under the centre column is what keeps 0 where a hand expects it.
+
+```tsx
+<PinField value={code} onValueChange={setCode} onComplete={submit} />
+<Keypad onDigit={(d) => setCode(code + d)} onDelete={back} />
+```
+
+<Scene name="With the field">
+  The whole interaction: four dots, ten keys, no OK.
+
+  <PinEntry />
+</Scene>
+
+<Do>
+- Let it take the focus on mount; a PIN screen has nowhere else worth starting.
+</Do>
+
+<Dont>
+- Add an OK key beside it - the code submits itself on the last digit.
+- Use it where the platform has a real keyboard; that shell types into the field directly.
+</Dont>

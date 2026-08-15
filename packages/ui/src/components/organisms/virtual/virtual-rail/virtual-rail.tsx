@@ -11,7 +11,15 @@
 // shrinks: tiles are mounted from the start of the data up to the furthest the
 // selection has reached.
 
-import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type ReactElement,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Animated,
   type LayoutChangeEvent,
@@ -23,18 +31,18 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SpatialNavigationView } from 'react-tv-space-navigation';
+import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { styles } from '#ui/core';
 import { maskImage } from '#ui/lib/css';
 import { webDocument } from '#ui/lib/dom';
 import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusReporter } from '#ui/lib/focus-report';
-import { clipStyles, OVERSCAN } from '../clip';
+import { WEB } from '#ui/lib/platform';
 import { edgeScrollOffset, fitPitch, horizontalInset, maxOffset } from './edge-scroll';
 import { edgeWidth, RailEdge, railMask } from './rail-edge';
 import { EASE_CSS, EASE_NATIVE, SETTLE_MS } from './rail-motion';
 
-const WEB = Platform.OS === 'web';
 const TOUCH = !WEB && !Platform.isTV;
 
 const KEY_GRACE_MS = 400;
@@ -110,33 +118,28 @@ function VirtualRail<T>({
     [count],
   );
 
-  const select = useCallback(
-    (index: number) => {
-      grow(index + OVERSCAN);
-      if (index >= count - 1 - OVERSCAN) onEndReached?.();
-      // A real scroller owns its position: the browser reveals a tab-focused
-      // tile itself, and a tap must not yank the row out from under the finger.
-      if (!translated) return;
-      // Only a PRESS moves the row: the navigator focuses whatever the cursor
-      // enters, so scrolling on every focus change made the row creep sideways
-      // under a wandering pointer.
-      if (WEB && Date.now() - keyAt.current > KEY_GRACE_MS) return;
-      at.current = edgeScrollOffset({
-        offset: at.current,
-        index,
-        itemSize: pitch,
-        viewport: measured.current,
-        count,
-        margin: edgeMargin * pitch,
-      });
-      setOffset(at.current);
-    },
-    [count, edgeMargin, grow, onEndReached, pitch, translated],
-  );
-  // The tiles close over this rather than over `select`, so growing the row does
-  // not rebuild every tile that was already in it.
-  const selectRef = useRef(select);
-  selectRef.current = select;
+  // An effect event, so the tiles never rebuild when the row grows: each one
+  // calls a stable function that always sees the current pitch and count.
+  const select = useEffectEvent((index: number) => {
+    grow(index + OVERSCAN);
+    if (index >= count - 1 - OVERSCAN) onEndReached?.();
+    // A real scroller owns its position: the browser reveals a tab-focused
+    // tile itself, and a tap must not yank the row out from under the finger.
+    if (!translated) return;
+    // Only a PRESS moves the row: the navigator focuses whatever the cursor
+    // enters, so scrolling on every focus change made the row creep sideways
+    // under a wandering pointer.
+    if (WEB && Date.now() - keyAt.current > KEY_GRACE_MS) return;
+    at.current = edgeScrollOffset({
+      offset: at.current,
+      index,
+      itemSize: pitch,
+      viewport: measured.current,
+      count,
+      margin: edgeMargin * pitch,
+    });
+    setOffset(at.current);
+  });
 
   const onRailScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -198,33 +201,29 @@ function VirtualRail<T>({
   // Every cell is the same box, so it is the same OBJECT: the tiles rebuild on
   // every pan, and a fresh style per tile is a styleq cache miss on each of them.
   const cell = useMemo(() => ({ width: pitch, paddingHorizontal: gap / 2 }), [pitch, gap]);
-  const tiles = useMemo(() => {
-    const out: ReactElement[] = [];
-    for (let index = 0; index < mounted; index++) {
-      const item = data[index];
-      if (item === undefined) continue;
-      out.push(
-        // <FocusReporter> is the only signal that fires in BOTH directions: the
-        // navigator's `onActive` is monotone, so a row wired to that scrolls
-        // right and freezes going left.
-        // The CELL rises with its tile, not just the tile: a focused tile grows
-        // and wears a ring, both of which reach into the neighbouring cell - and
-        // that cell, drawn after it, was painting over them.
-        <FocusLiftHost key={index}>
-          {(held) => (
-            <View style={held ? [cell, LIFTED] : cell}>
-              <FocusReporter onFocus={() => selectRef.current(index)}>
-                {renderItem(item, index)}
-              </FocusReporter>
-            </View>
-          )}
-        </FocusLiftHost>,
-      );
-    }
-    return out;
-  }, [data, mounted, cell, renderItem]);
+  const tiles: ReactElement[] = [];
+  for (let next = 0; next < mounted; next += 1) {
+    const index = next;
+    const item = data[index];
+    if (item === undefined) continue;
+    tiles.push(
+      // <FocusReporter> is the only signal that fires in BOTH directions: the
+      // navigator's `onActive` is monotone, so a row wired to that scrolls
+      // right and freezes going left.
+      // The CELL rises with its tile, not just the tile: a focused tile grows
+      // and wears a ring, both of which reach into the neighbouring cell - and
+      // that cell, drawn after it, was painting over them.
+      <FocusLiftHost key={index}>
+        {(held) => (
+          <View style={held ? [cell, LIFTED] : cell}>
+            <FocusReporter onFocus={() => select(index)}>{renderItem(item, index)}</FocusReporter>
+          </View>
+        )}
+      </FocusLiftHost>,
+    );
+  }
 
-  const furthest = maxOffset(count, pitch, measured.current);
+  const furthest = maxOffset(count, pitch, width);
   const arrowsOn = WEB && arrows;
   // The fade means "there is more": always on a D-pad row, with the buttons under
   // a pointer, never on touch.
@@ -308,18 +307,6 @@ function MovingRow({
   style?: ViewStyle;
   children: ReactElement;
 }>) {
-  const slide = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (WEB) return;
-    Animated.timing(slide, {
-      toValue: -offset,
-      duration: SETTLE_MS,
-      easing: EASE_NATIVE,
-      useNativeDriver: true,
-    }).start();
-  }, [offset, slide]);
-
   if (WEB) {
     return (
       <View
@@ -339,6 +326,32 @@ function MovingRow({
       </View>
     );
   }
+  return (
+    <MovingRowNative offset={offset} style={style}>
+      {children}
+    </MovingRowNative>
+  );
+}
+
+function MovingRowNative({
+  offset,
+  style,
+  children,
+}: Readonly<{
+  offset: number;
+  style?: ViewStyle;
+  children: ReactElement;
+}>) {
+  const [slide] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    Animated.timing(slide, {
+      toValue: -offset,
+      duration: SETTLE_MS,
+      easing: EASE_NATIVE,
+      useNativeDriver: true,
+    }).start();
+  }, [offset, slide]);
 
   return (
     <Animated.View style={[s.row, style, { transform: [{ translateX: slide }] }]}>

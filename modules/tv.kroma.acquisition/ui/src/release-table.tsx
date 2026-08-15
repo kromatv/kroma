@@ -5,7 +5,7 @@
 
 import type { IndexerReport, ScoredReleaseView } from '@kroma/core';
 import { TABULAR, Table, useT } from '@kroma/module-sdk';
-import { Box, Chip, Divider, EmptyState, Icon, Row, SegmentedControl, Text } from '@kroma/ui/kit';
+import { Box, Chip, Divider, EmptyState, Icon, Row, SegmentGroup, Text } from '@kroma/ui/kit';
 import { useMemo, useState } from 'react';
 import { IndexerReportStrip } from './indexer-report';
 import { ReleaseFacts } from './release-cells';
@@ -80,15 +80,13 @@ export function ReleaseTable({
             onPress={() => setFilter('all')}
           />
         </Row>
-        <SegmentedControl.Root
-          value={sort}
-          onValueChange={setSort}
-          label={t('requests.sortBy')}
-          options={SORTS.map((s) => ({
-            value: s,
-            label: t(SORT_LABEL[s] as Parameters<typeof t>[0]),
-          }))}
-        />
+        <SegmentGroup.Root value={sort} onValueChange={setSort} label={t('requests.sortBy')}>
+          {SORTS.map((s) => (
+            <SegmentGroup.Item key={s} value={s}>
+              <SegmentGroup.Label>{t(SORT_LABEL[s] as Parameters<typeof t>[0])}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          ))}
+        </SegmentGroup.Root>
       </Row>
 
       {rows.length === 0 ? (

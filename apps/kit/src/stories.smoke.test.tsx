@@ -2,7 +2,7 @@
 
 import { clearPressGuard } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';
-import { MDX_COMPONENTS } from '@kroma/workbench';
+import { STORY_COMPONENTS, StoryDocContext } from '@kroma/workbench';
 import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -35,12 +35,19 @@ describe('every story renders', () => {
       });
     }
 
-    // A `.docs.mdx` can put the live component in the middle of the prose, so
-    // it renders like anything else and fails like anything else.
+    // A story's document can put the live component - and its scenes - in the
+    // middle of the prose, so it renders like anything else and fails like
+    // anything else.
     if (typeof story.docs === 'function') {
       const Docs = story.docs;
       it(`${story.group} / ${story.name}: docs`, () => {
-        expect(() => render(<Docs components={MDX_COMPONENTS} />)).not.toThrow();
+        expect(() =>
+          render(
+            <StoryDocContext.Provider value={{ args: story.args, render: story.render }}>
+              <Docs components={STORY_COMPONENTS} />
+            </StoryDocContext.Provider>,
+          ),
+        ).not.toThrow();
       });
     }
   }

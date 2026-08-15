@@ -1,0 +1,31 @@
+# Field  src/components/molecules/field/field.story.mdx
+
+## preview
+textbox "Server address" tab
+
+## scene:With error
+textbox "Server address" tab
+
+## scene:Password
+textbox "Password" tab
+button "Show password" tab
+
+## scene:No label row
+searchbox "Search" tab
+
+## scene:Multi-line
+textbox "Message" tab
+textbox "Reason" tab
+
+## scene:Around another control
+combobox "Category: Server status" [expanded=false] tab
+textbox "Opens" tab
+
+## scene:Every type
+textbox "text" tab
+textbox "email" tab
+textbox "password" tab
+button "Show password" tab
+textbox "url" tab
+searchbox "search" tab
+textbox "number" tab

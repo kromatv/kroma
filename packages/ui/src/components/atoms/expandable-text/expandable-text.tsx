@@ -13,14 +13,14 @@
 // a thumb's gesture, and a D-pad synopsis wants a screen of its own.
 
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
+import { Animated, Pressable, type ViewStyle } from 'react-native';
 import { Text, type TextProps } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { motion } from '#ui/core/tokens';
 import { a11yState } from '#ui/lib/a11y';
 import { ease } from '#ui/lib/ease';
+import { WEB } from '#ui/lib/platform';
 
-const WEB = Platform.OS === 'web';
 const GROW_MS = motion.duration.base;
 
 interface ExpandableTextProps extends Pick<TextProps, 'variant' | 'color' | 'style'> {
@@ -134,7 +134,7 @@ function ExpandableText({
  *  `Animated` value elsewhere. `undefined` means "size to the content", which
  *  is how the first measurement happens. */
 function Grow({ height, children }: Readonly<{ height?: number; children: ReactNode }>) {
-  const value = useRef(new Animated.Value(height ?? 0)).current;
+  const [value] = useState(() => new Animated.Value(height ?? 0));
   const settled = useRef(height);
   useEffect(() => {
     if (WEB || height === undefined) return;

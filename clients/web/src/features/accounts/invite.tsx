@@ -14,7 +14,7 @@ import {
   PageHeader,
   Row,
   Section,
-  SegmentedControl,
+  SegmentGroup,
   Surface,
   Text,
 } from '@kroma/ui/kit';
@@ -124,15 +124,19 @@ export function InvitePage() {
           <Divider />
 
           <Field.Root label={t('admin.inviteExpiry')}>
-            <SegmentedControl.Root
+            <SegmentGroup.Root
               label={t('admin.inviteExpiry')}
               value={expiry}
               onValueChange={setExpiry}
-              options={EXPIRY_DAYS.map((days) => ({
-                value: days,
-                label: t('admin.inviteExpiryDays', { count: Number(days) }),
-              }))}
-            />
+            >
+              {EXPIRY_DAYS.map((days) => (
+                <SegmentGroup.Item key={days} value={days}>
+                  <SegmentGroup.Label>
+                    {t('admin.inviteExpiryDays', { count: Number(days) })}
+                  </SegmentGroup.Label>
+                </SegmentGroup.Item>
+              ))}
+            </SegmentGroup.Root>
             <Field.Hint>{t('admin.inviteExpiryHint')}</Field.Hint>
           </Field.Root>
 

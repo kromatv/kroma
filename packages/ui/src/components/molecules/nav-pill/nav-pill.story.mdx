@@ -1,0 +1,47 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Frost } from '#ui/components/atoms/frost';
+import { NavPill } from './nav-pill';
+import { navPillItemVariants } from './nav-pill-item';
+import { SECTIONS, Switcher, Frosted } from './nav-pill.fixtures';
+
+export const story = defineStory({
+  group: 'Layout',
+  variants: navPillItemVariants,
+  omit: ['lit', 'active'],
+  component: Switcher,
+  args: { labels: 'all' },
+  controls: { labels: ['all', 'active', 'none'] },
+});
+
+The floating section switcher: a capsule of icon + label items with the current section in its own amber lens. The Apple TV top nav and the iPhone tab bar are this one design at two distances, which is what `size` means: **tv** keeps every label (a viewer is reading, and the capsule must hold its width under the travelling ring), **sm** labels only the active item (a thumb is on the glass). On glass the capsule is also a slider: land a finger (or mouse) and travel, and the lens and amber ink chase as a preview - lifting commits the section it rests on, the native tab bar drag; a tap still works as ever, and a television never sees any of it. `labels` overrides the size policy (`none` is the icon-only bar) and stays on the Root because it has to be the same answer for every item; `slide={false}` keeps a capsule tap-only, and `onPreview` reports each crossing for the host to hang haptics on. Composed: `<NavPill.Item>` is a part, so a host can ref one for focus wiring or badge another - things an `items` array cannot say - and `<NavPill.Backdrop>` is where a blur goes.
+
+```tsx
+<NavPill.Root size="tv">
+  <NavPill.Item icon="home" label="Home" active onPress={goHome} />
+  <NavPill.Item icon="search" label="Search" onPress={goSearch} />
+</NavPill.Root>
+
+<NavPill.Root size="sm">
+  <NavPill.Backdrop>
+    <BlurView intensity={60} style={StyleSheet.absoluteFill} />
+  </NavPill.Backdrop>
+  <NavPill.Item icon="home" label="Home" active onPress={goHome} />
+</NavPill.Root>
+```
+
+<Scene name="Frosted">
+  The composed form: a backdrop is a part, so the capsule thins its own fill for the blur behind it without being told.
+
+  <Frosted />
+</Scene>
+
+<Do>
+- Keep it to a handful of top-level sections - it is the map, not the territory.
+- Pass the iPhone's BlurView as a `<NavPill.Backdrop>`; the fill thins so it reads through.
+</Do>
+
+<Dont>
+- Mark two items `active`: the lens is where you ARE.
+- Blur on a television - Tizen composites it on the CPU and pays in frames, which is why the default fill is solid.
+</Dont>

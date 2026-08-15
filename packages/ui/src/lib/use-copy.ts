@@ -2,8 +2,8 @@
 // tick, and the reason a control has to say when the write was refused.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
 import { webWindow } from '#ui/lib/dom';
+import { WEB } from '#ui/lib/platform';
 
 // Long enough to be read, short enough that a second copy is not blocked
 // behind it.
@@ -33,7 +33,7 @@ function clipboard(): Clipboard | undefined {
 /** The clipboard where the platform has one, a write, and a tick that reverts
  * on its own. */
 function useCopy(): Copier {
-  const [available, setAvailable] = useState(() => Platform.OS === 'web');
+  const [available, setAvailable] = useState(() => WEB);
   const [state, setState] = useState<CopyState>('idle');
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 

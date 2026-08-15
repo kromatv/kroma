@@ -9,16 +9,22 @@ afterEach(cleanup);
 const LETTERS = ['#', 'A', 'B', 'C'];
 const AVAILABLE = new Set(['A', 'C']);
 
+function letters() {
+  return LETTERS.map((letter) => (
+    <AlphabetRail.Item
+      key={letter}
+      value={letter}
+      disabled={!AVAILABLE.has(letter)}
+      label={`Jump to ${letter}`}
+    />
+  ));
+}
+
 function rail(onJump = vi.fn(), range?: { first: string; last: string }) {
   render(
-    <AlphabetRail.Root
-      letters={LETTERS}
-      available={AVAILABLE}
-      range={range}
-      onJump={onJump}
-      label="Alphabet"
-      letterLabel={(letter) => `Jump to ${letter}`}
-    />,
+    <AlphabetRail.Root range={range} onJump={onJump} label="Alphabet">
+      {letters()}
+    </AlphabetRail.Root>,
   );
   return onJump;
 }
@@ -27,35 +33,6 @@ describe('AlphabetRail parts', () => {
   it('is a namespace of parts, not a component', () => {
     expect(typeof AlphabetRail).toBe('object');
     expect(Object.keys(AlphabetRail).sort()).toEqual(['Item', 'Root']);
-  });
-
-  it('renders the same rail from the sugar and from the items', () => {
-    const { container: sugar } = render(
-      <AlphabetRail.Root
-        letters={LETTERS}
-        available={AVAILABLE}
-        range={{ first: 'A', last: 'B' }}
-        onJump={vi.fn()}
-        label="Alphabet"
-        letterLabel={(letter) => `Jump to ${letter}`}
-      />,
-    );
-    const written = sugar.innerHTML;
-
-    cleanup();
-    const { container: parts } = render(
-      <AlphabetRail.Root label="Alphabet" range={{ first: 'A', last: 'B' }} onJump={vi.fn()}>
-        {LETTERS.map((letter) => (
-          <AlphabetRail.Item
-            key={letter}
-            value={letter}
-            disabled={!AVAILABLE.has(letter)}
-            label={`Jump to ${letter}`}
-          />
-        ))}
-      </AlphabetRail.Root>,
-    );
-    expect(parts.innerHTML).toBe(written);
   });
 
   it('refuses a letter written outside a rail', () => {
@@ -90,9 +67,7 @@ describe('AlphabetRail', () => {
     // letter that cannot take it anywhere.
     const { container } = render(
       <AlphabetRail.Root label="Alphabet" onJump={vi.fn()}>
-        {LETTERS.map((letter) => (
-          <AlphabetRail.Item key={letter} value={letter} disabled={!AVAILABLE.has(letter)} />
-        ))}
+        {letters()}
       </AlphabetRail.Root>,
     );
     expect(container.querySelectorAll('[tabindex]')).toHaveLength(AVAILABLE.size);

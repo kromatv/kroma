@@ -111,13 +111,50 @@ describe('the kit site', () => {
     expect(screen.getAllByText('size').length).toBeGreaterThan(0);
   });
 
-  it('shows the inspector as tabs, one per kind of answer', () => {
+  it('shows the props in the inspector, and the document as a canvas view', () => {
     render(<Kit />);
     press('Expand Actions', 'Button');
-    expect(screen.getByRole('button', { name: 'Docs' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Props' })).toBeTruthy();
     press('Docs');
-    expect(screen.getByText("What it's for")).toBeTruthy();
+    expect(screen.getAllByText(/The primary action/).length).toBeGreaterThan(0);
+  });
+
+  // The reading view is a view like any other: the same toolbar above it, and
+  // the inspector's width spent on the document instead.
+  it('keeps the toolbar on the document, and gives it the inspector’s column', () => {
+    render(<Kit />);
+    press('Expand Actions', 'Button');
+    expect(screen.getByRole('button', { name: 'Props' })).toBeTruthy();
+
+    press('Docs');
+    expect(screen.getByRole('button', { name: 'Viewport: Fit' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Theme: KROMA' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Props' })).toBeNull();
+
+    press('Preview');
+    expect(screen.getByRole('button', { name: 'Props' })).toBeTruthy();
+  });
+
+  // The reading view is an article: its own title under the tabs, and its
+  // sections as headings. The "On this page" rail beside them is driven by
+  // onLayout, which jsdom never runs, so only the article itself is pinned here.
+  it('gives the document a title of its own, and its sections as headings', () => {
+    render(<Kit />);
+    press('Expand Input', 'OtpField', 'Docs');
+
+    expect(screen.getAllByText('OtpField').length).toBeGreaterThan(1);
+    expect(screen.getByText('The parts')).toBeTruthy();
+    expect(screen.getByText('The caret')).toBeTruthy();
+  });
+
+  it('draws the scenes of a document as live specimens in its prose', () => {
+    render(<Kit />);
+    press('Expand Input', 'OtpField', 'Docs');
+    // The scene names label the specimens, and the guidance renders as lists
+    // rather than as the strings a story used to carry.
+    expect(screen.getAllByText('Grouped').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Masked').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/only accessible name/).length).toBeGreaterThan(0);
   });
 });
 

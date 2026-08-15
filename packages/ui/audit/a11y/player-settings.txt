@@ -1,0 +1,48 @@
+# PlayerSettings  src/components/organisms/player/parts/settings-panel/settings-panel.story.mdx
+
+## preview
+button "Close" tab
+button "Quality" tab
+button "Audio track" tab
+button "Audio filters" tab
+button "Subtitles" tab
+button "Subtitle appearance" tab
+button "Speed" tab
+switch "Statistics" [checked=false] tab
+button "Report a problem" tab
+
+## scene:No reporting
+button "Close" tab
+button "Quality" tab
+button "Audio track" tab
+button "Audio filters" tab
+button "Subtitles" tab
+button "Subtitle appearance" tab
+button "Speed" tab
+switch "Statistics" [checked=false] tab
+
+## scene:Stats on
+button "Close" tab
+button "Quality" tab
+button "Audio track" tab
+button "Audio filters" tab
+button "Subtitles" tab
+button "Subtitle appearance" tab
+button "Speed" tab
+switch "Statistics" [checked=true] tab
+button "Report a problem" tab
+
+## scene:Holding a narrow row
+button "Close" tab
+button "Next episode" tab
+switch "Mute" [checked=false] tab
+button "Move to TV" tab
+button "Picture in picture" tab
+button "Quality" tab
+button "Audio track" tab
+button "Audio filters" tab
+button "Subtitles" tab
+button "Subtitle appearance" tab
+button "Speed" tab
+switch "Statistics" [checked=false] tab
+button "Report a problem" tab

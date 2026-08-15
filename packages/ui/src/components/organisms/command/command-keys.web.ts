@@ -6,7 +6,7 @@
 // lib/focus-remote.web), so stopping the event here is what keeps a press that
 // moved the cursor from also moving focus behind the palette.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 import { webDocument } from '#ui/lib/dom';
 import { type CommandKeysOptions, PAGE } from './command-keys-types';
 
@@ -25,20 +25,18 @@ const STEP: Record<string, number> = {
 };
 
 function useCommandKeys({ onStep, onChoose, onClose }: CommandKeysOptions): void {
-  const at = useRef({ onStep, onChoose, onClose });
-  at.current = { onStep, onChoose, onClose };
+  const onKey = useEffectEvent((event: KeyboardEvent) => {
+    if (!(event.key in STEP)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.key === 'Escape') return onClose();
+    if (event.key === 'Enter') return onChoose();
+    onStep(STEP[event.key] as number);
+  });
 
   useEffect(() => {
     const document = webDocument();
     if (!document) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (!(event.key in STEP)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      if (event.key === 'Escape') return at.current.onClose();
-      if (event.key === 'Enter') return at.current.onChoose();
-      at.current.onStep(STEP[event.key] as number);
-    };
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
   }, []);

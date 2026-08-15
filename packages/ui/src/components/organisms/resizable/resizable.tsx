@@ -16,6 +16,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -158,7 +159,6 @@ function Root({
   const layout = useMemo(() => (mine ? solve(mine, limits) : opened), [mine, limits, opened]);
 
   const report = useRef(onLayoutChange);
-  report.current = onLayoutChange;
   const told = useRef<readonly number[]>(NOTHING);
   const settled = useRef(true);
 
@@ -199,7 +199,13 @@ function Root({
 
   const from = useRef<readonly number[]>(NOTHING);
   const at = useRef({ layout, limits, available, opened });
-  at.current = { layout, limits, available, opened };
+  // A layout effect rather than render-phase writes: as fresh (no drag or key
+  // event can land between the commit and it), and a place the React Compiler
+  // allows a ref, so the group stays memoisable.
+  useLayoutEffect(() => {
+    report.current = onLayoutChange;
+    at.current = { layout, limits, available, opened };
+  });
 
   const begin = useCallback(() => {
     from.current = at.current.layout;

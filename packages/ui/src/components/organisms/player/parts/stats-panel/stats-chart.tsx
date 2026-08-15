@@ -10,9 +10,6 @@
 
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
-import { type ColorValue, styles } from '#ui/core';
-import { SERIES_COLORS } from '#ui/core/tokens';
-import { Circle, Line, Path, Svg } from '#ui/lib/svg';
 import {
   bandPath,
   type ChartBox,
@@ -21,8 +18,11 @@ import {
   px,
   seriesPath,
   yAt,
-} from '../../lib/chart-geometry';
-import type { PlayerMeter } from '../../types';
+} from '#ui/components/organisms/player/lib/chart-geometry';
+import type { PlayerMeter } from '#ui/components/organisms/player/types';
+import { type ColorValue, styles } from '#ui/core';
+import { SERIES_COLORS } from '#ui/core/tokens';
+import { Circle, Line, Path, Svg } from '#ui/lib/svg';
 
 // Tall enough for a trend to have shape, short enough that two charts and
 // twenty text rows still clear a 1080p frame.
@@ -210,7 +210,7 @@ function closeToBaseline(d: string, box: ChartBox): string {
 /** Exported for the panel, which sizes its chart band to match. */
 export const STATS_CHART_HEIGHT = PLOT_H;
 
-export type { Extent } from '../../lib/chart-geometry';
+export type { Extent } from '#ui/components/organisms/player/lib/chart-geometry';
 
 const sx = styles({
   chartLabel: {

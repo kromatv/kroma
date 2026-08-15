@@ -6,9 +6,18 @@
 // decides what a line is - lives in `mdx-marks.tsx`, and `mdx.tsx` is the map
 // that names both.
 
-import { Box, CodeBlock, Divider, List, styles, Table, type TextProps } from '@kroma/ui/kit';
+import {
+  Box,
+  type BoxProps,
+  CodeBlock,
+  Divider,
+  List,
+  styles,
+  Table,
+  type TextProps,
+} from '@kroma/ui/kit';
 import { space } from '@kroma/ui/tokens';
-import { Children, isValidElement, type ReactNode } from 'react';
+import { Children, createContext, isValidElement, type ReactNode, useContext } from 'react';
 import { BODY, Prose, runs, TaskBox } from './mdx-marks';
 import { useSection } from './outline';
 import { SectionAnchor } from './section-anchor';
@@ -86,8 +95,15 @@ const s = styles({
  * Exported because a `.page.mdx` embeds components this map never sees, and a
  * page that spaces one by hand is a page with a rhythm of its own.
  */
-function DocFigure({ children }: Readonly<{ children?: ReactNode }>) {
-  return <Box style={s.figure}>{children}</Box>;
+function DocFigure({
+  children,
+  onLayout,
+}: Readonly<{ children?: ReactNode; onLayout?: BoxProps['onLayout'] }>) {
+  return (
+    <Box style={s.figure} onLayout={onLayout}>
+      {children}
+    </Box>
+  );
 }
 
 function Paragraph({ children }: Readonly<{ children?: ReactNode }>) {
@@ -127,6 +143,11 @@ function heading(level: number, variant: TextProps['variant'], color: TextProps[
 }
 
 function BulletList({ children }: Readonly<{ children?: ReactNode }>) {
+  // Inside a guidance card the items draw their own markers and the card owns
+  // the rhythm, so the list is a plain column: <List.Root>'s bullets and its
+  // block margin would both be a second opinion.
+  const tone = useContext(GuidelineToneContext);
+  if (tone) return <Box gap={space[2]}>{children}</Box>;
   return (
     <Box style={s.list}>
       <List.Root>{children}</List.Root>
@@ -157,7 +178,24 @@ function splitTask(children: ReactNode): { checked?: boolean; rest: ReactNode[] 
   };
 }
 
+/** Inside a story's `<Do>`/`<Dont>` card, which tone the card carries. Null
+ * everywhere else, which is every other list in a document. */
+const GuidelineToneContext = createContext<'do' | 'dont' | null>(null);
+
+// A line of guidance. The card's header already says do or don't, so the marker
+// is a bullet in the card's own ink rather than a tick repeating it.
+function GuidelineItem({ good, children }: Readonly<{ good: boolean; children?: ReactNode }>) {
+  return (
+    <Box row gap={9} align="flex-start">
+      <Box w={4} h={4} mt={7} shrink={0} radius="pill" bg={good ? 'success' : 'danger'} />
+      <Box flex>{runs(children)}</Box>
+    </Box>
+  );
+}
+
 function ListItem({ children }: Readonly<{ children?: ReactNode }>) {
+  const tone = useContext(GuidelineToneContext);
+  if (tone) return <GuidelineItem good={tone === 'do'}>{children}</GuidelineItem>;
   const task = splitTask(children);
   return <List.Item checked={task.checked}>{runs(task.rest)}</List.Item>;
 }
@@ -233,6 +271,7 @@ export {
   Cell,
   DocFigure,
   DocTable,
+  GuidelineToneContext,
   HeadCell,
   heading,
   ListItem,

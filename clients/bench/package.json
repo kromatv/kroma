@@ -4,6 +4,13 @@
   "private": true,
   "type": "module",
   "description": "Performance bench: the TV app's rendering path over generated data, driven by clients/tv-build/perf-bench.ts.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "clients/bench"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -18,11 +25,11 @@
   },
   "devDependencies": {
     "@kroma/bundler": "workspace:*",
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.3",
+    "@vitejs/plugin-react": "^6.0.5",
     "typescript": "^7.0.2",
-    "vite": "^8.1.4"
+    "vite": "^8.2.1"
   }
 }

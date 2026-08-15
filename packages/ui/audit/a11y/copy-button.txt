@@ -1,0 +1,10 @@
+# CopyButton  src/components/molecules/copy-button/copy-button.story.mdx
+
+## preview
+
+
+## scene:Beside the value it copies
+
+
+## scene:One per row
+

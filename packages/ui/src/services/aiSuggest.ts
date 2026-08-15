@@ -69,7 +69,8 @@ export function useAiSuggest(
             // Terminal: a section (possibly with empty items).
             setSection(res);
             setPending(false);
-          } else if (tries++ < MAX_POLLS) {
+          } else if (tries < MAX_POLLS) {
+            tries += 1;
             timer = setTimeout(poll, POLL_MS); // still generating
           } else {
             setPending(false); // gave up waiting

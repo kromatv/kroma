@@ -37,6 +37,15 @@ server/bindings/
 # Desktop: downloaded kroma-mpv sidecar (clients/desktop/scripts/fetch-mpv.sh)
 clients/desktop/src-tauri/bin/
 
+# Expo prebuild output: the native projects `expo prebuild` writes beside a
+# client, regenerated from app.json and never edited by hand. `dist/` and
+# `node_modules/` are covered above; these two are not, and one stale copy of
+# them is 989 MB of untracked noise (clients/kit, whose source moved to
+# apps/kit in #48 - the directory left behind is output only).
+clients/*/android/
+clients/*/ios/
+clients/*/.expo/
+
 # TV packaging artifacts
 clients/tizen/*.wgt
 clients/tizen/dist/*.wgt
@@ -111,3 +120,6 @@ __pycache__/
 # Emitted from clients/web/src/sw.ts by the Vite plugin in
 # clients/web/service-worker.ts, on both `dev` and `build`.
 clients/web/public/sw.js
+
+# Kit DOM audit output (bun run kit:dom): review artefacts, not sources.
+.dom/

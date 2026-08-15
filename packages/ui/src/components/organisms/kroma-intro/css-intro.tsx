@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { DEFAULT_AUDIO, SAFETY_MS } from './constants';
 import { IntroScene } from './intro-scene';
 import { IntroShell } from './intro-shell';
@@ -20,13 +20,11 @@ export interface CssIntroProps {
 export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readonly<CssIntroProps>) {
   const [started, setStarted] = useState(false);
   const [runId, setRunId] = useState(0);
-  const { exiting, safetyRef, exit, reopen, clearTimers } = useIntroExit(onDone);
+  const { exiting, armSafety, exit, reopen, clearTimers } = useIntroExit(onDone);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const loopRef = useRef(loop);
-  loopRef.current = loop;
 
-  const start = useCallback(() => {
+  const start = useEffectEvent(() => {
     reopen();
     setStarted(false);
     const a = audioRef.current;
@@ -45,16 +43,16 @@ export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readon
     } else {
       begin();
     }
-    if (!loopRef.current) safetyRef.current = setTimeout(exit, SAFETY_MS);
-  }, [exit, reopen, safetyRef]);
+    if (!loop) armSafety(SAFETY_MS, exit);
+  });
 
-  const replay = useCallback(() => {
+  const replay = useEffectEvent(() => {
     setRunId((n) => n + 1);
     start();
-  }, [start]);
+  });
 
   // Autoplay may have blocked the sting; the first gesture is allowed to start it.
-  const unblock = useCallback(() => {
+  const unblock = useEffectEvent(() => {
     const a = audioRef.current;
     if (!a?.paused) return;
     try {
@@ -66,20 +64,21 @@ export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readon
       .play()
       .then(() => setStarted(true))
       .catch(() => undefined);
-  }, []);
+  });
+
+  const onEnded = useEffectEvent(() => {
+    if (loop) replay();
+    else exit();
+  });
 
   useIntroKeys({ exit, replay, unblock });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only intro timeline; arm audio once. start/exit/replay are stable useCallbacks and are intentionally omitted so the effect never re-arms (which would restart the sting) on unrelated re-renders.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only intro timeline; arm audio once. clearTimers is a stable useCallback and the rest are effect events, all intentionally omitted so the effect never re-arms (which would restart the sting) on unrelated re-renders.
   useEffect(() => {
     const a = new Audio(DEFAULT_AUDIO);
     a.preload = 'auto';
     audioRef.current = a;
 
-    const onEnded = () => {
-      if (loopRef.current) replay();
-      else exit();
-    };
     a.addEventListener('ended', onEnded);
 
     start();

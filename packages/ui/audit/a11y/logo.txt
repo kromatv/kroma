@@ -1,0 +1,7 @@
+# Logo  src/components/atoms/logo/logo.story.mdx
+
+## preview
+img "KROMA"
+svg "" [hidden=true]
+svg "" [hidden=true]
+svg "" [hidden=true]

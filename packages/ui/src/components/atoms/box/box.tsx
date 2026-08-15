@@ -11,9 +11,14 @@ import type { ReactNode, Ref } from 'react';
 import { type StyleProp, View, type ViewProps, type ViewStyle } from 'react-native';
 import { type BoxStyleProps, splitShorthand, styles, useBreakpointStep } from '#ui/core';
 import { sharedBoxStyle } from '#ui/lib/box-style';
+import { Slot } from '#ui/lib/slot';
 
 interface BoxProps extends BoxStyleProps, Omit<ViewProps, 'style'> {
   children?: ReactNode;
+  /** Render onto the one child instead of adding a <View>: the box's layout and
+   *  style merge under the child's own (see lib/slot). For a wrapper whose only
+   *  job is what its child could carry itself. */
+  asChild?: boolean;
   style?: StyleProp<ViewStyle>;
   /** Forwarded to the underlying host view. React 19 takes `ref` as a plain
    *  prop, so no forwardRef wrapper is needed; it is declared explicitly because
@@ -24,48 +29,55 @@ interface BoxProps extends BoxStyleProps, Omit<ViewProps, 'style'> {
   dataSet?: Record<string, string | number | undefined>;
 }
 
-function Box({ children, style, ref, ...props }: Readonly<BoxProps>) {
+function Box({ children, asChild, style, ref, ...props }: Readonly<BoxProps>) {
   const split = splitShorthand(props);
+  const Host = asChild ? Slot : View;
   // A box holding a breakpoint object is a different component, not a branch:
   // it is the only one that has to follow the design width, and a hook here
   // would tax every box in the app with a subscription it never reads.
   if (split.breakpoints !== 0) {
     return (
-      <FluidBox split={split} style={style} ref={ref}>
+      <FluidBox host={Host} split={split} style={style} ref={ref}>
         {children}
       </FluidBox>
     );
   }
   return (
-    <View {...split.rest} ref={ref} style={[layoutOf(split, 0), style]}>
+    <Host {...split.rest} ref={ref} style={[layoutOf(split, 0), style]}>
       {children}
-    </View>
+    </Host>
   );
 }
 
-function FluidBox({ split, style, ref, children }: Readonly<FluidBoxProps>) {
+type Split = ReturnType<typeof splitShorthand>;
+
+interface FluidBoxProps {
+  host: typeof View | typeof Slot;
+  split: Split;
+  style?: StyleProp<ViewStyle>;
+  ref?: Ref<View>;
+  children?: ReactNode;
+}
+
+function FluidBox({ host: Host, split, style, ref, children }: Readonly<FluidBoxProps>) {
   const step = useBreakpointStep(split.breakpoints);
   return (
-    <View {...split.rest} ref={ref} style={[layoutOf(split, step), style]}>
+    <Host {...split.rest} ref={ref} style={[layoutOf(split, step), style]}>
       {children}
-    </View>
+    </Host>
   );
 }
 
 /** Horizontal <Box>. Sugar for the single most common case, and it reads better
  * at a call site than `row` buried among a dozen other props. */
-function Row({ children, ...props }: Readonly<BoxProps>) {
-  return (
-    <Box row align="center" {...props}>
-      {children}
-    </Box>
-  );
+function Row(props: Readonly<BoxProps>) {
+  return <Box row align="center" {...props} />;
 }
 
 /** Vertical <Box>. React Native already stacks in a column, so this exists for
  * symmetry with <Row> and to make intent explicit at the call site. */
-function Column({ children, ...props }: Readonly<BoxProps>) {
-  return <Box {...props}>{children}</Box>;
+function Column(props: Readonly<BoxProps>) {
+  return <Box {...props} />;
 }
 
 /** Pushes whatever follows it to the far end of a <Row>. */
@@ -74,15 +86,6 @@ function Spacer() {
 }
 
 const s = styles({ spacer: { flex: true } });
-
-type Split = ReturnType<typeof splitShorthand>;
-
-interface FluidBoxProps {
-  split: Split;
-  style?: StyleProp<ViewStyle>;
-  ref?: Ref<View>;
-  children?: ReactNode;
-}
 
 // Anything the vocabulary does not name is a real View prop and is forwarded
 // untouched (onLayout, pointerEvents, testID, accessibility...). The resolved

@@ -1,0 +1,10 @@
+# KromaIntro  src/components/organisms/kroma-intro/kroma-intro.story.mdx
+
+## preview
+button "Play the film" tab
+
+## scene:The CSS fallback
+button "Play the CSS scene" tab
+
+## scene:With a tagline
+button "Play the film" tab

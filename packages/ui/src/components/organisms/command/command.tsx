@@ -7,10 +7,10 @@
 // children that keeps that true, nor any DOM to ask the way cmdk does.
 
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
-import { Platform } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { styles } from '#ui/core';
+import { WEB } from '#ui/lib/platform';
 import { useControllable } from '#ui/lib/use-controllable';
 import { CommandContext, type CommandState } from './command-context';
 import { useCommandKeys } from './command-keys';
@@ -19,7 +19,6 @@ import { Empty, Footer, Input, List } from './command-parts';
 
 // A television moves the spatial navigator's own focus, and a second highlight
 // following a keyboard it does not have would be a lie there.
-const WEB = Platform.OS === 'web';
 
 // Wide enough for a row of prose and no wider: a palette that spans a desk
 // makes the reader's eyes travel from the query to the results.

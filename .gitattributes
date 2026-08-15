@@ -1,0 +1,8 @@
+# The DOM audit's baselines: written by `bun run kit:dom --write`, never by
+# hand. They are committed because the gate compares against them in CI, and
+# because a reduction's whole proof is that they did NOT change - but they are
+# generated, so a review should collapse them rather than read 200 files of
+# resolved styles.
+packages/ui/audit/paint/*.txt linguist-generated=true
+packages/ui/audit/a11y/*.txt linguist-generated=true
+packages/ui/audit/budget.json linguist-generated=true

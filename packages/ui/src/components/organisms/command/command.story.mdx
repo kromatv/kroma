@@ -1,0 +1,46 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Button } from '#ui/components/atoms/button';
+import { Kbd } from '#ui/components/atoms/kbd';
+import { Text } from '#ui/components/atoms/text';
+import { Command } from './command';
+import { useCommandResults } from './command-context';
+import { LIBRARY, Tally, Palette } from './command.fixtures';
+
+export const story = defineStory({
+  group: 'Overlays',
+  width: 'fill',
+  render: () => <Palette />,
+});
+
+The search-and-jump overlay: one field, a ranked and grouped list, and Enter to open. Render it while it is open and unmount it to close.
+
+**Ranked, not filtered.** A query is matched as a subsequence and scored (`lib/fuzzy-search`, the same matcher the icon browser uses), so `iconb` finds **IconButton** and the best rows rise to the top. A hit on what a row *says* always outranks a hit on what it is *filed under*.
+
+**The rows are data**, which is DESIGN.md §3 tests T2 and T5: the cursor is arithmetic over one flat order, and no arrangement of nested children keeps that true when there is no DOM to ask. Everything else is a part (the field, the list, the empty face and the footer), so a caller decides what the sheet holds.
+
+On the web the arrows drive a cursor the pointer shares; on a television there is no keyboard, so the spatial navigator walks the rows and the palette draws no cursor of its own.
+
+```tsx
+<Command.Root items={rows} selected={open} onSelect={go} onClose={shut}>
+  <Command.Input label="Search" placeholder="Search…" />
+  <Command.List />
+  <Command.Empty>No results.</Command.Empty>
+  <Command.Footer>
+    <Kbd>↵</Kbd>
+    <Text variant="meta" color="textDim">open</Text>
+  </Command.Footer>
+</Command.Root>
+```
+
+<Do>
+- Give each row a `group`: a palette of thirty flat rows is a list, not a map.
+- Put anything else worth finding a row by in `keywords` - a summary, a path, a synonym.
+- Name the field something the control that opened the palette does not also say: two controls sharing one accessible name is ambiguous.
+</Do>
+
+<Dont>
+- Sort the items by relevance yourself - the palette ranks a query and keeps your order when there is none.
+- Reach for it on a screen that is only ever driven by a remote: a ten-foot search is a keyboard, not a palette.
+</Dont>

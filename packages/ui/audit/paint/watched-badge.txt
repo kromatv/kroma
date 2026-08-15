@@ -1,0 +1,4 @@
+# WatchedBadge  src/components/atoms/watched-badge/watched-badge.story.mdx
+
+## preview
+svg "" width=17 height=17 stroke=var(--kroma-accent-ink) fill=none stroke-width=3 viewBox=0 0 24 24 << pad=0,0,0,0 op=1.000 bg=[var(--kroma-accent)] radius=[14px 14px 14px 14px] shadow=[var(--shadow-card)] size=[width=28px,height=28px] flex=[column:center:center:nowrap:g0/0:n1] abs=1

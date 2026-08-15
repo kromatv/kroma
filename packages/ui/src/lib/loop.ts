@@ -9,7 +9,7 @@
 // All but `sweep` are Animated with `useNativeDriver`, so they run on the UI
 // thread and the JS thread never wakes for a frame.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Easing, type StyleProp, type ViewStyle } from 'react-native';
 
 /** `spin` rotates a full turn; `sweep` travels a segment across its parent and
@@ -42,7 +42,7 @@ function breathes(kind: LoopKind): kind is keyof typeof FLOOR {
  * and `Animated.View` is the component that knows the difference.
  */
 export function useLoop(kind: LoopKind, ms: number, active = true): StyleProp<ViewStyle> {
-  const value = useRef(new Animated.Value(breathes(kind) ? 1 : 0)).current;
+  const [value] = useState(() => new Animated.Value(breathes(kind) ? 1 : 0));
 
   useEffect(() => {
     if (!active) return;

@@ -12,7 +12,6 @@ import {
 } from 'react';
 import {
   type LayoutChangeEvent,
-  Platform,
   ScrollView,
   type StyleProp,
   StyleSheet,
@@ -22,8 +21,7 @@ import {
 import { SpatialNavigationNode } from 'react-tv-space-navigation';
 import { RING_ROOM } from '#ui/core/tokens';
 import { pointerDriving } from '#ui/lib/input-source';
-
-const WEB = Platform.OS === 'web';
+import { WEB } from '#ui/lib/platform';
 
 type Anchor = RefObject<View | null>;
 

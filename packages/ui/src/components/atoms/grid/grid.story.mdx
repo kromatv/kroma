@@ -1,0 +1,34 @@
+import { defineStory } from '@kroma/workbench/story';
+import { PosterCard } from '#ui/components/molecules/poster-card';
+import { Grid } from './grid';
+import { TINT } from './grid.fixtures';
+
+export const story = defineStory({
+  group: 'Media',
+  // Dynamic, the way it ships: the stage's width, clamped. Drag the window and
+  // the row re-measures - which is the behaviour a fixed width hid.
+  width: { min: 560, max: 1400 },
+  args: { width: 1000, columns: 5, gap: 24, count: 10 },
+  controls: {
+    width: { min: 400, max: 1600, step: 50 },
+    columns: { min: 2, max: 8, step: 1 },
+    gap: { min: 8, max: 48, step: 4 },
+    count: { min: 1, max: 24, step: 1 },
+  },
+  render: ({ count, ...props }) => (
+    <Grid {...props}>
+      {Array.from({ length: count }, (_, index) => `Poster ${index + 1}`).map((title, index) => (
+        <PosterCard
+          key={title}
+          title={title}
+          art={null}
+          tint={TINT}
+          watched={index === 2}
+          progress={index === 4 ? 0.6 : null}
+        />
+      ))}
+    </Grid>
+  ),
+});
+
+The poster grid. The cell width is computed from the row's measured width, where the web would settle for a calc(): that is what keeps it identical across all four targets.

@@ -6,7 +6,7 @@ import {
   Icon,
   IconButton,
   Row,
-  SegmentedControl,
+  SegmentGroup,
   Spacer,
   Spinner,
   Text,
@@ -66,17 +66,19 @@ export function PanelHeader({
           <Drawer.Close diameter={36} radius="lg" glyph={18} />
         </Row>
       </Row>
-      <SegmentedControl.Root<NotificationFilter>
+      <SegmentGroup.Root<NotificationFilter>
         value={filter}
         onValueChange={onFilterChange}
         label={t('notifications.filter')}
         size="sm"
         stretch
       >
-        <SegmentedControl.Item value="all" label={t('notifications.filterAll')} />
+        <SegmentGroup.Item value="all">
+          <SegmentGroup.Label>{t('notifications.filterAll')}</SegmentGroup.Label>
+        </SegmentGroup.Item>
         {/* The count is a badge rather than a number in brackets, and the spoken
             name keeps it in a form meant to be heard. */}
-        <SegmentedControl.Item
+        <SegmentGroup.Item
           value="unread"
           label={unread > 0 ? t('notifications.filterUnreadCount', { count: unread }) : unreadLabel}
         >
@@ -84,8 +86,8 @@ export function PanelHeader({
             <Text>{unreadLabel}</Text>
             {unread > 0 ? <Badge tone="neutral">{unread}</Badge> : null}
           </Row>
-        </SegmentedControl.Item>
-      </SegmentedControl.Root>
+        </SegmentGroup.Item>
+      </SegmentGroup.Root>
     </Box>
   );
 }

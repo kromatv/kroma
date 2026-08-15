@@ -4,7 +4,7 @@
 
 import { type DiscoverType, hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, EmptyState, Icon, InputGroup, PageHeader, SegmentedControl } from '@kroma/ui/kit';
+import { Box, EmptyState, Icon, InputGroup, PageHeader, SegmentGroup } from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
 import { SearchResults } from '#web/features/requests/search-results';
 import { TrendingBrowse } from '#web/features/requests/trending';
@@ -84,13 +84,18 @@ export function SearchPage() {
             </InputGroup.Root>
 
             {canDiscover ? (
-              <SegmentedControl.Root
+              <SegmentGroup.Root
                 size="md"
                 label={t('discover.title')}
                 value={type}
                 onValueChange={setType}
-                options={TYPES.map((tp) => ({ value: tp.value, label: t(tp.labelKey) }))}
-              />
+              >
+                {TYPES.map((tp) => (
+                  <SegmentGroup.Item key={tp.value} value={tp.value}>
+                    <SegmentGroup.Label>{t(tp.labelKey)}</SegmentGroup.Label>
+                  </SegmentGroup.Item>
+                ))}
+              </SegmentGroup.Root>
             ) : null}
           </Box>
         </div>

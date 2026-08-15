@@ -1,0 +1,15 @@
+# NavPill  src/components/molecules/nav-pill/nav-pill.story.mdx
+
+## preview
+tablist "HomeFilmsSeriesSearch"
+tab "Home" [selected=true] tab
+tab "Films" [selected=false] tab
+tab "Series" [selected=false] tab
+tab "Search" [selected=false] tab
+
+## scene:Frosted
+tablist "HomeFilmsSeriesSearch"
+tab "Home" [selected=false] tab
+tab "Films" [selected=true] tab
+tab "Series" [selected=false] tab
+tab "Search" [selected=false] tab

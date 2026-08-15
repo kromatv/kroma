@@ -15,14 +15,20 @@ import { story } from './story';
 import type { StoryCodes } from './story-code';
 import { Workbench } from './workbench';
 
-const BUTTON = 'src/components/atoms/button/button.stories.tsx';
-const CODES: StoryCodes = { [BUTTON]: { name: 'Button', group: 'Actions', scenes: [] } };
+const BUTTON = 'src/components/atoms/button/button.story.mdx';
+const CODES: StoryCodes = { [BUTTON]: { name: 'Button', group: 'Actions' } };
 
 const BUTTON_STORY = story({
   name: 'Button',
   group: 'Actions',
   render: () => <Text>Press me</Text>,
 });
+
+// What a compiled `.story.mdx` module carries: a document and a declaration.
+const BUTTON_MODULE = {
+  default: () => null,
+  story: { group: 'Actions', render: () => <Text>Press me</Text> },
+};
 
 // A module that arrives when the test says so, which is the only way to look at
 // the frame between the two states.
@@ -36,7 +42,7 @@ function heldBack() {
     modules: {
       [BUTTON]: async () => {
         await gate;
-        return { default: BUTTON_STORY };
+        return BUTTON_MODULE;
       },
     },
   };
@@ -89,7 +95,7 @@ describe('a story whose module is still on its way', () => {
 
 describe('an article on the canvas', () => {
   it('fetches no story module, because the bare address opens one', async () => {
-    const module = vi.fn(async () => ({ default: BUTTON_STORY }));
+    const module = vi.fn(async () => BUTTON_MODULE);
     render(
       onScreen(
         <Workbench

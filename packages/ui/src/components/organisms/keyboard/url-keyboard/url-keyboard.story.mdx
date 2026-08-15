@@ -1,0 +1,39 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { keyVariants } from '../key';
+import { KEYBOARD_LAYOUTS } from '../keyboard-layouts';
+import { UrlKeyboard } from './url-keyboard';
+import { UrlDemo } from './url-keyboard.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  variants: keyVariants,
+  matrix: true,
+  component: UrlDemo,
+  args: { letters: 'abc' },
+  controls: { letters: KEYBOARD_LAYOUTS },
+});
+
+The remote-driven server-URL grid: ten keys a row, the layout's letters plus the URL specials, and a clear / dot / submit tail row. Every key is a `<Focusable>`, so the spatial focus nav reaches it and OK activates it. **The letter order is the caller's**: a keyboard that read a settings store would tie the kit to one app's preferences, so the host passes `letters` (the TV reads its persisted device preference once per mount). Its sibling is `<SearchKeyboard>` - two components, not one with a `layout` switch.
+
+```tsx
+<UrlKeyboard
+  value={host}
+  onValueChange={setHost}
+  onSubmit={connect}
+  submitLabel={t('connect.connect')}
+  letters={getKeyboardLayoutPref()}
+/>
+```
+
+<Do>
+- Own the value: the keyboard mutates it through `onValueChange` and holds nothing.
+- Give `onSubmit` only where there is somewhere to submit to; without it the tail row is clear + dot.
+</Do>
+
+<Dont>
+- Render it beside a focusable the D-pad could wander into mid-word; give it the screen.
+- Translate the letter rows: they are layouts, not copy.
+</Dont>

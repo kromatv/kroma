@@ -8,7 +8,7 @@ export { defineWorkbench } from './define';
 export type { DemoFile, DiscoveredDemo } from './demos';
 export { attachDemos } from './demos';
 export type { Control, ControlSpec, MatrixRow, ResolvedControl } from './derive';
-export type { Context, GlobHost, Modules, PropDocs, Sources, StoryCodes } from './discover';
+export type { Context, GlobHost, Modules, PropDocs, Sources } from './discover';
 export { discoverMetro, discoverVite } from './discover';
 export type { Registry, StoryEntry } from './entry';
 export { storyEntries, useStory } from './entry';
@@ -23,7 +23,7 @@ export type { LazyRegistry, Loaders, SourceLoaders } from './lazy';
 export { indexVite } from './lazy';
 export type { Block, Mark, Segment } from './markdown';
 export { blocks, segments } from './markdown';
-export { MDX_COMPONENTS } from './mdx';
+export { MDX_COMPONENTS, STORY_COMPONENTS } from './mdx';
 export { DocFigure } from './mdx-blocks';
 export type { Page, PageMeta, PageModule } from './page';
 export { discoverPagesMetro, discoverPagesVite, orderPages, pageAt } from './page';
@@ -37,8 +37,6 @@ export type {
   PlayTranscript,
 } from './play-types';
 export type { PropDoc, PropSection } from './props';
-export type { DocsFile } from './prose';
-export { attachDocs } from './prose';
 export { RecentChanges } from './recent-changes';
 export {
   attachTiers,
@@ -60,9 +58,15 @@ export type {
   SceneDef,
   Story,
   StoryDef,
-  StoryDocs,
 } from './story';
-export { controlsRole, story } from './story';
+export { controlsRole, defineStory, story } from './story';
+// The Scene/Do/Dont components themselves travel inside STORY_COMPONENTS; a
+// bare `Scene` here would collide with the compiled scene's type above.
+export type { StoryDocScope } from './story-blocks';
+export { StoryDocContext } from './story-blocks';
+export type { StoryCode, StoryCodes } from './story-code';
+export type { StoryMdxModule } from './story-mdx';
+export { storyFromMdx } from './story-mdx';
 export type { Choice, ToolbarLens } from './toolbar';
 export type { WorkbenchProps } from './workbench';
 export { Workbench } from './workbench';

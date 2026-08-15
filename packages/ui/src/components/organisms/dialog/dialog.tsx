@@ -3,7 +3,7 @@
 // cannot reach (or fire OK on) anything under the panel.
 
 import { type ReactNode, useId, useMemo } from 'react';
-import { Modal, Platform, useWindowDimensions } from 'react-native';
+import { Modal, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
@@ -13,6 +13,7 @@ import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { useModalPortalRepair } from '#ui/lib/modal-portal';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host';
+import { WEB } from '#ui/lib/platform';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { surfaceBands } from '#ui/lib/surface-bands';
 import { DIALOG_PAD, SURFACE_WIDTH, type SurfaceWidth } from '#ui/lib/surface-shell';
@@ -127,14 +128,13 @@ function DialogSurface({
   // By reference only when this panel rendered the node carrying the id: a
   // composed <Dialog.Header> replaces the fallback, and those ids go with it.
   const namesOwnTitle = !headerPart && showsTitle;
-  const naming =
-    Platform.OS === 'web'
-      ? {
-          'aria-labelledby': namesOwnTitle ? titleId : undefined,
-          'aria-label': namesOwnTitle ? undefined : title,
-          'aria-describedby': !headerPart && description ? descriptionId : undefined,
-        }
-      : { accessibilityLabel: title };
+  const naming = WEB
+    ? {
+        'aria-labelledby': namesOwnTitle ? titleId : undefined,
+        'aria-label': namesOwnTitle ? undefined : title,
+        'aria-describedby': !headerPart && description ? descriptionId : undefined,
+      }
+    : { accessibilityLabel: title };
   const panel = (
     <Box flex center bg="overlay" p={gutter}>
       <DismissBackdrop onPress={onClose} />

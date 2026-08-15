@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent } from 'react';
 
 export interface IntroKeysParams {
   /** Skip to the app: OK/Enter, Space, Back/Escape. */
@@ -20,34 +20,32 @@ export interface IntroKeysParams {
  * One stable pair of listeners calls the latest closures.
  */
 export function useIntroKeys({ exit, replay, unblock }: IntroKeysParams): void {
-  const latest = useRef<IntroKeysParams>({ exit, replay, unblock });
-  latest.current = { exit, replay, unblock };
+  const onGesture = useEffectEvent(unblock);
+
+  // Skip / replay via keyboard + TV remote (OK/Enter, Space, Back/Escape).
+  const onKey = useEffectEvent((e: KeyboardEvent) => {
+    const k = e.key;
+    if (
+      k === 'Enter' ||
+      k === ' ' ||
+      k === 'Spacebar' ||
+      k === 'Escape' ||
+      k === 'GoBack' ||
+      k === 'BrowserBack'
+    ) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      exit();
+    } else if (k === 'r' || k === 'R') {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      replay();
+    }
+  });
 
   useEffect(() => {
-    const onGesture = () => latest.current.unblock();
     document.addEventListener('pointerdown', onGesture);
     document.addEventListener('keydown', onGesture);
-
-    // Skip / replay via keyboard + TV remote (OK/Enter, Space, Back/Escape).
-    const onKey = (e: KeyboardEvent) => {
-      const k = e.key;
-      if (
-        k === 'Enter' ||
-        k === ' ' ||
-        k === 'Spacebar' ||
-        k === 'Escape' ||
-        k === 'GoBack' ||
-        k === 'BrowserBack'
-      ) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        latest.current.exit();
-      } else if (k === 'r' || k === 'R') {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        latest.current.replay();
-      }
-    };
     // Capture phase so the TV's spatial focus-nav underneath stays inert.
     window.addEventListener('keydown', onKey, true);
 

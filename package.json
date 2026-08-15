@@ -1,8 +1,13 @@
 {
   "name": "kroma",
-  "version": "0.1.3",
+  "version": "0.0.0",
   "private": true,
   "description": "KROMA self-hosted, multi-platform video streaming (Rust server + web / Tizen / webOS clients). Direct-play HEVC everywhere.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": "https://github.com/maxscharwath/kroma",
+  "homepage": "https://kroma.tv",
+  "bugs": "https://github.com/maxscharwath/kroma/issues",
   "workspaces": [
     "packages/*",
     "clients/*",
@@ -20,6 +25,8 @@
     "modules:clippy": "bun run modules cargo clippy --all-targets",
     "modules:check": "bun run modules:validate && bun run modules:gen && git diff --exit-code -- modules server/crates/kroma-modules-generated packages/modules-generated",
     "shots": "bun run --filter '@kroma/ui' shots",
+    "kit:dom": "bun packages/ui/scripts/dom-audit.ts",
+    "kit:compiler": "bun packages/ui/scripts/compiler-coverage.ts",
     "store:art": "bun clients/tv-build/store-art.ts .store-art && python3 clients/tv-build/store-art.py .store-art",
     "start": "bun run tizen:prepare && bun run dev",
     "dev": "concurrently -k -n server,web,tv -c yellow,cyan,magenta \"bun run server:watch\" \"bun run dev:web\" \"VITE_KROMA_SERVER=http://localhost:4040 bun run dev:tizen\"",
@@ -55,7 +62,7 @@
     "build:mobile": "bun run --filter '@kroma/mobile' bundle:check",
     "build:desktop": "bun run --filter '@kroma/desktop' build",
     "deploy:tizen": "bun run --filter '@kroma/tizen' deploy",
-    "tizen:prepare": "bun run build:tizen && echo \"✓ Tizen app ready → clients/tizen/dist  (package: cd clients/tizen && tizen build-web && tizen package -t wgt -s <cert-profile> -- dist)\"",
+    "tizen:prepare": "bun run build:tizen && echo \"\u2713 Tizen app ready \u2192 clients/tizen/dist  (package: cd clients/tizen && tizen build-web && tizen package -t wgt -s <cert-profile> -- dist)\"",
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun run test:codegen && vitest run",
     "test:coverage": "bun run test:codegen && vitest run --coverage",
@@ -73,7 +80,7 @@
     "server:build": "cd server && cargo build --release"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.7",
+    "@biomejs/biome": "^2.5.8",
     "@kroma/bundler": "workspace:*",
     "@kroma/module-sdk": "workspace:*",
     "@testing-library/dom": "^10.4.1",
@@ -81,7 +88,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "@vitest/coverage-istanbul": "^4.1.10",
     "abortcontroller-polyfill": "^1.7.8",
-    "concurrently": "^10.0.4",
+    "concurrently": "^10.0.5",
     "core-js": "^3.50.0",
     "intersection-observer": "^0.12.2",
     "jsdom": "^29.1.1",
@@ -125,7 +132,7 @@
     "vite": "8.2.1"
   },
   "dependencies": {
-    "expo-modules-core": "~57.0.10",
+    "expo-modules-core": "~57.0.11",
     "react-native": "npm:react-native-tvos@0.86.0-2"
   },
   "patchedDependencies": {
@@ -153,7 +160,7 @@
     "import resolves against nothing and Metro fails the bundle outright.",
     "",
     "Metro resolves from the importing file, which lives in the store, and walks up:",
-    "  .../node_modules/.bun/expo-constants@…/node_modules",
+    "  .../node_modules/.bun/expo-constants@\u2026/node_modules",
     "  .../node_modules/.bun/node_modules",
     "  <repo>/node_modules            <- this entry",
     "It never visits clients/mobile/node_modules, so declaring it on the app does",

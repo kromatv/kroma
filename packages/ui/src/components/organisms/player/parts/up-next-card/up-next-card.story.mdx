@@ -1,0 +1,71 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Ground } from '#ui/components/atoms/ground';
+import { stillArt } from '#ui/lib/sample-art';
+import { UP_NEXT_COLUMNS, UP_NEXT_GAP, UpNextCard } from './up-next-card';
+import { ROW } from './up-next-card.fixtures';
+
+export const story = defineStory({
+  group: 'Player',
+  // The card is `width: 100%` of its cell by default - the sheet computes the
+  // cell from the row it measures - so the story is given a range and passes the
+  // width down the same way, rather than pinning the card to one size.
+  width: { min: 360, max: 960 },
+  args: {
+    title: 'The Wolf and the Lion',
+    subtitle: 'S1 E5',
+    categoryLabel: 'Episode',
+    interactive: true,
+    artwork: true,
+  },
+  render: ({ title, subtitle, categoryLabel, interactive, artwork }) => (
+    // Capped rather than pinned: one card at 960 would be a hero, not a card.
+    <Ground tone="dark">
+      <Box maxW={420}>
+        <UpNextCard
+          item={{
+            id: 'up-next-1',
+            title,
+            subtitle,
+            categoryLabel,
+            posterUrl: artwork ? stillArt(2) : null,
+          }}
+          interactive={Boolean(interactive)}
+          onActivate={() => {}}
+        />
+      </Box>
+    </Ground>
+  ),
+});
+
+One candidate in the up-next sheet: a 16:9 still, the title, and the kind of thing it is. With no still it falls back to a deterministic amber-into-charcoal gradient derived from the id, so the same episode always gets the same placeholder rather than flickering between reloads.
+
+```tsx
+<UpNextCard item={next} onActivate={play} autoFocus={first} />
+```
+
+<Scene name="The sheet row">
+  {story.take(({ interactive }) => (
+    <Ground tone="dark">
+      <Box row gap={UP_NEXT_GAP}>
+        {ROW.map((item) => (
+          <Box key={item.id} flex>
+            <UpNextCard item={item} interactive={Boolean(interactive)} onActivate={() => {}} />
+          </Box>
+        ))}
+      </Box>
+    </Ground>
+  ))}
+</Scene>
+
+<Scene name="No still" args={{ artwork: false }}>
+  The placeholder gradient is derived from the id, so it never flickers.
+</Scene>
+
+<Do>
+- Give it a 16:9 still; a poster crops badly at this ratio.
+</Do>
+
+<Dont>
+- Repeat the runtime: the subtitle line is where it goes.
+</Dont>

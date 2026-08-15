@@ -1,0 +1,4 @@
+# Surface  src/components/atoms/surface/surface.story.mdx
+
+## preview
+div "Panel content" var(--kroma-text-muted)/13px/500/"Hanken Grotesk"/normal/18px/start/none/none << pad=20,20,20,20 op=1.000 bg=[var(--kroma-surface-1)] radius=[13px 13px 13px 13px] size=[width=260px]

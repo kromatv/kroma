@@ -1,9 +1,16 @@
 {
   "name": "@kroma/bundler",
-  "version": "0.1.0",
-  "type": "module",
+  "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "KROMA shared Vite plugins: build-info stamping, post-build process exit, and bundling for scripts that live outside a client's module graph.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/bundler"
+  },
   "exports": {
     "./build-info": "./src/build-info.ts",
     "./exit-after-build": "./src/exit-after-build.ts",
@@ -32,12 +39,14 @@
     "@mdx-js/mdx": "^3.1.1",
     "@mdx-js/rollup": "^3.1.1",
     "@rolldown/plugin-babel": "^0.2.3",
-    "@tanstack/react-start": "^1.168.40",
-    "@vitejs/plugin-react": "^6.0.4",
+    "@tanstack/react-start": "^1.168.46",
+    "@vitejs/plugin-react": "^6.0.5",
+    "acorn": "^8.18.0",
+    "acorn-jsx": "^5.3.2",
     "babel-plugin-react-compiler": "^1.0.0",
     "esbuild": "^0.28.2",
     "lightningcss": "^1.33.0",
-    "postcss": "^8.5.23",
+    "postcss": "^8.5.26",
     "remark-gfm": "^4.0.1",
     "typescript": "^7.0.2"
   },
@@ -45,8 +54,8 @@
     "vite": ">=6"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "vite": "^8.1.4",
+    "@types/node": "^22.20.1",
+    "vite": "^8.2.1",
     "vitest": "^4.1.10"
   }
 }

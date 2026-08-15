@@ -3,13 +3,14 @@
 // Native has no `maskImage`, so native paints a scrim instead (same geometry,
 // same samples), sized to the row's own height so it doesn't wash out the title.
 
-import { useEffect, useRef } from 'react';
-import { Animated, Platform, Pressable, type ViewStyle } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, Pressable, type ViewStyle } from 'react-native';
 import { Icon } from '#ui/components/atoms/icon';
+import { FOCUS_BLEED } from '#ui/components/organisms/virtual/clip';
 import { styles } from '#ui/core';
 import { SHADE, shade } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
-import { FOCUS_BLEED } from '../clip';
+import { WEB } from '#ui/lib/platform';
 import { EASE_NATIVE, FADE, SETTLE_MS } from './rail-motion';
 
 const EDGE_SHARE = 0.15;
@@ -83,8 +84,6 @@ function scrimStyle(start: boolean, fade: number): ViewStyle {
   return style;
 }
 
-const WEB = Platform.OS === 'web';
-
 /** One end of the row: the paging control, plus (native D-pad rows) the fade
  *  behind it. Uses a plain `Pressable`, not `<Focusable>`, so the arrow is
  *  never a stop in the D-pad's own path through the row. */
@@ -104,7 +103,7 @@ export function RailEdge({
   const start = side === 'start';
   // CSS transitions (`FADE`) are silently ignored on native and the gradient
   // blinks instead of fading; drive it through Animated there.
-  const fade = useRef(new Animated.Value(shown ? 1 : 0)).current;
+  const [fade] = useState(() => new Animated.Value(shown ? 1 : 0));
   useEffect(() => {
     if (WEB) return;
     Animated.timing(fade, {

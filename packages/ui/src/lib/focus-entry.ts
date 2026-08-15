@@ -6,7 +6,7 @@
 // goes, and ignored once focus has an owner - the screen boundary being the
 // reset that `useFocusNav` calls once per screen.
 
-import { useRef } from 'react';
+import { useState } from 'react';
 
 let settled = false;
 
@@ -27,6 +27,8 @@ function resetFocusEntry(): void {
 
 const FRESH = Symbol('fresh');
 
+type EntryKey = string | number | symbol | undefined;
+
 /**
  * A fresh navigator scope has nothing focused yet, so its entry point wins.
  * `<FocusScope>` calls this; every app root and every test render mounts one.
@@ -40,9 +42,12 @@ const FRESH = Symbol('fresh');
  * arrival despite never remounting. Omit it and the scope behaves as before.
  */
 function useFocusEntryScope(entryKey?: string | number): void {
-  const seen = useRef<string | number | symbol | undefined>(FRESH);
-  if (seen.current !== entryKey) {
-    seen.current = entryKey;
+  // Render-phase state, not a ref: the reset must land while the scope renders
+  // (see above), and render-time state adjustment is the one spelling of that
+  // the React Compiler accepts.
+  const [seen, setSeen] = useState<EntryKey>(FRESH);
+  if (seen !== entryKey) {
+    setSeen(entryKey);
     resetFocusEntry();
   }
 }

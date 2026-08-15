@@ -1,0 +1,14 @@
+# TextField  src/components/atoms/text-field/text-field.story.mdx
+
+## preview
+textbox "Server address" tab
+
+## scene:On a television
+
+
+## scene:A control in the well
+textbox "Invite link" tab
+button "Copy the link" tab
+
+## scene:Someone else's shell
+textbox "Search" tab

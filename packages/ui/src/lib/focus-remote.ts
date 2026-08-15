@@ -5,7 +5,7 @@
 // Read via `useTVEventHandler` rather than the plain emitter: this fork's
 // emitter export has been unreliable.
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useEffectEvent } from 'react';
 import {
   type HWEvent,
   type NativeSyntheticEvent,
@@ -144,11 +144,10 @@ export function useRemoteHostProps(): RemoteHostProps {
  * keyboard the remote still needs.
  */
 export function useHardwareKeys(handle: (key: string) => void): void {
-  const latest = useRef(handle);
-  latest.current = handle;
+  // An effect event: one identity in the set for the subscriber's lifetime,
+  // always calling the latest `handle`.
+  const forward = useEffectEvent((key: string) => handle(key));
   useEffect(() => {
-    // A stable identity in the set, so a re-render cannot leak a subscription.
-    const forward = (key: string): void => latest.current(key);
     typists.add(forward);
     return () => {
       typists.delete(forward);

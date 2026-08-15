@@ -14,7 +14,7 @@ import {
   Icon,
   NumberField,
   Row,
-  SegmentedControl,
+  SegmentGroup,
   Spacer,
   Surface,
   Switch,
@@ -377,15 +377,17 @@ function ProviderBody({
         </Field.Root>
 
         <Field.Root label={t('admin.aiProvider')} mb={16}>
-          <SegmentedControl.Root
-            value={p.provider}
-            onValueChange={onProvider}
-            options={[
-              { value: 'openai', label: t('admin.aiProviderOpenai') },
-              { value: 'openrouter', label: t('admin.aiProviderOpenrouter') },
-              { value: 'anthropic', label: t('admin.aiProviderAnthropic') },
-            ]}
-          />
+          <SegmentGroup.Root value={p.provider} onValueChange={onProvider}>
+            <SegmentGroup.Item value="openai">
+              <SegmentGroup.Label>{t('admin.aiProviderOpenai')}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+            <SegmentGroup.Item value="openrouter">
+              <SegmentGroup.Label>{t('admin.aiProviderOpenrouter')}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+            <SegmentGroup.Item value="anthropic">
+              <SegmentGroup.Label>{t('admin.aiProviderAnthropic')}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          </SegmentGroup.Root>
           <Field.Hint>{t('admin.aiProviderHint')}</Field.Hint>
         </Field.Root>
 

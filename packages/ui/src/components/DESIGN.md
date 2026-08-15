@@ -225,23 +225,30 @@ The rule is about faces. It does not strip the kit of props.
 3. **An exported context hook** (`useChoiceItem()`, `useMenuItem()`). No prop
    merging at all, and unlike a cloned child it survives arbitrary wrapper depth.
 
-### Do not add `asChild`
+### `asChild` is `<Slot>`, and its merge is defined
 
-`asChild` solves a DOM-only problem: semantics live on the element tag, so a
-trigger sometimes has to be an `<a>` and sometimes a `<button>`. Here semantics
-are props (`role`, `accessibilityRole`), so that decision does not exist. What
-would remain is only the prop merge, and the merge is worse here than on the web:
-`style` is a positional array whose precedence is order, press is a family
-(`onPress`/`onPressIn`/`onPressOut`/`onLongPress`) with focus and hover on top for
-TV, and a host ref is a component instance with `measure`, not a node. An
-implicit merge over that surface is guesswork.
+The kit has one slot primitive, [`lib/slot.tsx`](../lib/slot.tsx), and `asChild`
+on a component means exactly `<Slot {...itsProps}>`. Radix leans on an implicit
+merge; this kit cannot (`style` is a positional array, press is a family, a host
+ref is a component instance), so the merge is written down and it is deliberately
+small:
 
-This is why rung 3 is the function form only. The element form's entire value is
-the automatic merge, which is exactly the part that does not survive. Making the
-caller spread explicitly is the feature.
+- the child's own props win, prop by prop;
+- `style` composes as `[slot, child]` - the child's declarations last, which is
+  React Native's own precedence for an array;
+- two handlers for the same event both run, the child's first;
+- two refs both attach.
 
-One narrow exception earns a typed, component-specific prop: router delegation.
-Name it for what it does (`as={RouterLink}`), never `asChild`.
+Anything subtler - state-dependent coats, `sv` slots, focus scales - is not a
+merge and stays on the component that owns it. `<Box asChild>` is the workhorse:
+a wrapper whose only job is layout its child could carry hands that layout to
+the child and renders nothing. It exists to DELETE elements; a component whose
+wrapper paints, animates or carries semantics keeps its element.
+
+`asChild` never appears on a control. A `<Focusable>` owns interaction state no
+merge can hand over, so composition there stays the ladder above: a named part,
+the `render` function form, or the context hook. Router delegation keeps its
+typed prop (`as={RouterLink}`).
 
 ---
 

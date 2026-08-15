@@ -1,0 +1,13 @@
+import { defineStory } from '@kroma/workbench/story';
+import { IconButton, iconButtonVariants } from './icon-button';
+
+export const story = defineStory({
+  group: 'Actions',
+  variants: iconButtonVariants,
+  matrix: true,
+  component: IconButton,
+  args: { icon: 'volume', label: 'Volume', diameter: 44, disabled: false },
+  controls: { icon: 'icon', diameter: { min: 28, max: 72, step: 4 } },
+});
+
+A square button with no text, for the player's toolbars. The label stays mandatory: it is not displayed, but it names the command for accessibility.

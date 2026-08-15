@@ -1,0 +1,13 @@
+# ThemeSwitch  src/components/molecules/theme-switch/theme-switch.story.mdx
+
+## preview
+radiogroup "Theme"
+radio "Auto" [checked=true] tab
+radio "Light" [checked=false] tab
+radio "Dark" [checked=false] tab
+
+## scene:In a settings row
+radiogroup "Appearance"
+radio "Auto" [checked=true] tab
+radio "Light" [checked=false] tab
+radio "Dark" [checked=false] tab

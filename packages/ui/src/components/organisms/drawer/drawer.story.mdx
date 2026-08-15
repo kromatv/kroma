@@ -1,0 +1,172 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Button } from '#ui/components/atoms/button';
+import { Text } from '#ui/components/atoms/text';
+import { Field } from '#ui/components/molecules/field';
+import { Drawer } from './drawer';
+import { LONG_LIST, Demo } from './drawer.fixtures';
+
+export const story = defineStory({
+  group: 'Overlays',
+  args: { title: 'Edit registry', side: 'right', width: 'md' },
+  controls: { side: ['right', 'left'], width: ['xs', 'sm', 'md', 'lg', 'xl'] },
+  render: (props) => (
+    <Demo
+      {...props}
+      body={(close) => (
+        <>
+          <Field.Root label="Name" defaultValue="Official" />
+          <Field.Root label="URL" defaultValue="https://modules.kroma.tv" />
+          <Button variant="primary" size="sm" label="Save" onPress={close} />
+        </>
+      )}
+    />
+  ),
+});
+
+The edge-anchored slide-in sheet: a detail inspector, an edit form, the phone
+nav. The same overlay contract as **Dialog** - portalled, scroll-locked, focus
+locked behind it, Esc/Back and outside-press dismiss, `role="dialog"` with
+`title` as its accessible name - but anchored to a side with its own enter/exit
+slide. It stays mounted through the exit, so callers just flip `open`.
+
+## Three bands, one scroller
+
+The sheet is made of three bands, and only the middle one scrolls:
+
+| Band | Scrolls | Holds |
+| --- | --- | --- |
+| `Drawer.Header` | no | the title, and the way out |
+| `Drawer.Panel` | yes | the body, however long it gets |
+| `Drawer.Footer` | no | a shelf for the sheet's actions |
+
+`Drawer.Close` is the way out, and it reads the Root's `onClose` rather than
+taking one: a header of your own keeps the button the default one draws, and a
+sheet that cannot be dismissed draws nothing without you writing the condition.
+It takes the rest of an icon button's props, so a sheet whose header already
+carries controls can match their size.
+
+`Panel` scrolls through a `ScrollView`, so a sheet written once works on a
+television and a phone as well as in a browser. A pane of the caller's own -
+a `<div>` with `overflow-y`, say - is the one thing that will not.
+
+The pinned bands draw their own hairline against the panel, so a sheet is
+three parts rather than five. A band holding nothing draws neither, so a footer
+written around a condition costs nothing on the pass where the condition is
+false.
+
+`width` is a step on the same overlay ladder **Dialog** reads (`xs` a rail,
+`sm` a question, `md` a form, `lg` rows that each carry a hint, `xl` a grid),
+never a number; `fullBelow` is the viewport width under which the sheet takes
+the screen instead.
+
+## Naming it, then arranging it
+
+`title` names the sheet to assistive tech, and draws the ordinary header, close
+button included:
+
+```tsx
+<Drawer.Root open={open} onClose={close} title="Edit registry">
+  <Field.Root label="Name" />
+</Drawer.Root>
+```
+
+Reach for the parts when the sheet needs a header of its own:
+
+```tsx
+<Drawer.Root open={open} onClose={close} title={report.subjectTitle}>
+  <Drawer.Header>
+    <Row between>
+      <Text variant="overline">Report</Text>
+      <Drawer.Close />
+    </Row>
+    <Text variant="h2">{report.subjectTitle}</Text>
+  </Drawer.Header>
+  <Drawer.Panel>…</Drawer.Panel>
+  <Drawer.Footer>…</Drawer.Footer>
+</Drawer.Root>
+```
+
+A part counts only as a **direct child** of the Root. A header assembled by a
+component of your own is wrapped at the call site
+(`<Drawer.Header><MyHeader /></Drawer.Header>`) rather than returning
+`<Drawer.Header>` from inside.
+
+```tsx
+<Drawer.Root open={open} onClose={close} title="Edit registry">
+  <Field.Root label="Name" />
+</Drawer.Root>
+
+<Drawer.Root open={open} onClose={close} title="Edit registry">
+  <Drawer.Header>…</Drawer.Header>
+  <Drawer.Panel>…</Drawer.Panel>
+  <Drawer.Footer>…</Drawer.Footer>
+</Drawer.Root>
+```
+
+<Scene name="Composed">
+  The bands written out: a header of the sheet's own, a scrolling middle long enough to prove it scrolls, and a footer shelf pinned under it.
+
+  {story.take((props) => (
+    <Demo
+      {...props}
+      body={(close) => (
+        <>
+          <Drawer.Header>
+            <Box row between>
+              <Text variant="overline" color="textDim">
+                Registry
+              </Text>
+              <Drawer.Close />
+            </Box>
+            <Text variant="h2" mt={4}>
+              Official
+            </Text>
+          </Drawer.Header>
+          <Drawer.Panel>
+            {LONG_LIST.map((id) => (
+              <Text key={id} color="textMuted">
+                {id}
+              </Text>
+            ))}
+          </Drawer.Panel>
+          <Drawer.Footer>
+            <Button block label="Close" onPress={close} />
+          </Drawer.Footer>
+        </>
+      )}
+    />
+  ))}
+</Scene>
+
+<Scene name="A pinned action">
+  The footer is the shelf the panel never scrolls away, whatever the body does.
+
+  {story.take((props) => (
+    <Demo
+      {...props}
+      body={() => (
+        <>
+          <Field.Root label="Name" defaultValue="Official" />
+          <Field.Root label="URL" defaultValue="https://modules.kroma.tv" />
+          <Drawer.Footer>
+            <Button block label="Request" />
+          </Drawer.Footer>
+        </>
+      )}
+    />
+  ))}
+</Scene>
+
+<Do>
+- Give `title` a real name: it is what a screen reader announces, and what the default header draws.
+- Put the long body in `<Drawer.Panel>`; it is the one band that scrolls, and it scrolls on a television too.
+- Use it for edit-in-context panels; a decision between two actions is a `<Dialog>`.
+- Put a `<Drawer.Close />` in a header of your own: it carries the Root’s onClose, so the sheet keeps one way out rather than two.
+</Do>
+
+<Dont>
+- Scroll the sheet with a pane of your own; a `<div>` with overflow-y does nothing on native.
+- Stack drawers; a drawer opening a drawer is a navigation problem.
+</Dont>

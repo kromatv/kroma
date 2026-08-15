@@ -63,7 +63,8 @@
       "expo-video"
     ],
     "experiments": {
-      "tsconfigPaths": true
+      "tsconfigPaths": true,
+      "reactCompiler": true
     }
   }
 }

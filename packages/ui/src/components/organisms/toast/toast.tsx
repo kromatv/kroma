@@ -7,7 +7,7 @@
 // is `pointerEvents: 'none'`, sized at 10-foot metrics, and leaves on a timer.
 // Deliberately not a dialog: nothing here is a question.
 
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import type { IconName } from '#ui/components/atoms/icon';
@@ -121,25 +121,24 @@ export function Toaster({
 }: Readonly<ToasterProps>) {
   const gutters = resolveInset(inset);
   const [entries, setEntries] = useState<Placed[]>([]);
-  // Through a ref, and resolved once into the entry: the host's position is
-  // what a notice is BORN with, not something it keeps reading.
-  const fallback = useRef(position);
-  fallback.current = position;
 
   const dismiss = useCallback((id: number) => {
     setEntries((list) => list.filter((e) => e.id !== id));
   }, []);
 
+  // Re-registered when `position` changes, so the host's position is resolved
+  // once into each entry: it is what a notice is BORN with, not something it
+  // keeps reading.
   useEffect(() => {
     const listener: Listener = (entry) => {
-      const at = entry.position ?? fallback.current;
+      const at = entry.position ?? position;
       setEntries((list) => capped([...list, { ...entry, at }], at));
     };
     listeners.add(listener);
     return () => {
       listeners.delete(listener);
     };
-  }, []);
+  }, [position]);
 
   // The (empty) layer stays mounted: a live region only announces changes
   // INSIDE an element assistive tech already knows about, so mounting it

@@ -2,7 +2,7 @@
 // richer snapshot instead.
 
 import type { AudioTrack, MediaItem, Translate } from '@kroma/core';
-import type { PlayerStats } from '../types';
+import type { PlayerStats } from '#ui/components/organisms/player/types';
 
 /** Typed structurally so React Native surfaces can satisfy it with no DOM lib. */
 export interface LeanStatsVideoHandle {

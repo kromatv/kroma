@@ -5,7 +5,6 @@ import type { ColorToken } from '#ui/core';
 // kit icons, because tvOS renders the geometric arrow code points with emoji
 // presentation when they are written as literal text.
 
-import type { ReactNode } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
@@ -32,11 +31,11 @@ interface HintProps extends Omit<BoxProps, 'children'> {
   textStyle?: StyleProp<TextStyle>;
 }
 
-function Hint({ text, size = 15, color = 'textDim', textStyle, ...box }: Readonly<HintProps>) {
-  const parts: ReactNode[] = [];
+function partsOf(text: string): string[] {
+  const parts: string[] = [];
   let at = 0;
   // `TOKEN` is global and shared: without the reset it keeps its lastIndex and
-  // starts mid-string on the next render.
+  // starts mid-string on the next call.
   TOKEN.lastIndex = 0;
   let match = TOKEN.exec(text);
   while (match) {
@@ -46,11 +45,16 @@ function Hint({ text, size = 15, color = 'textDim', textStyle, ...box }: Readonl
     match = TOKEN.exec(text);
   }
   if (at < text.length) parts.push(text.slice(at));
+  return parts;
+}
+
+function Hint({ text, size = 15, color = 'textDim', textStyle, ...box }: Readonly<HintProps>) {
+  const parts = partsOf(text);
 
   return (
     <Box row align="center" {...box}>
       {parts.map((part, index) =>
-        typeof part === 'string' && !(part in KEYS) ? (
+        !(part in KEYS) ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: the parts of one line are a fixed, ordered split; there is no stable id to key on.
           <Text key={index} color={color} style={[{ fontSize: size }, textStyle]}>
             {part}

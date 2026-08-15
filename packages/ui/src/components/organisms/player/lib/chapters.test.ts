@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Chapter } from '../types';
+import type { Chapter } from '#ui/components/organisms/player/types';
 import { currentChapter, currentChapterIndex, normalizeChapters } from './chapters';
 
 const raw = (startMs: number, title = `c${startMs}`, kind?: Chapter['kind']): Chapter =>

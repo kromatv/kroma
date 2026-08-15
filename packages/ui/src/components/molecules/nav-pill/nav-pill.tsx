@@ -10,9 +10,8 @@ import {
   Children,
   isValidElement,
   type ReactNode,
-  useCallback,
   useEffect,
-  useMemo,
+  useEffectEvent,
   useRef,
   useState,
 } from 'react';
@@ -100,49 +99,40 @@ function Root({
   style,
 }: Readonly<NavPillRootProps>) {
   const labelPolicy = labels ?? (size === 'tv' ? 'all' : 'active');
-  const at = useMemo(() => sort(children), [children]);
+  const at = sort(children);
   const [lens, setLens] = useState<{ id: string; rect: LensRect } | null>(null);
-  const claim = useCallback((id: string, rect: LensRect) => {
+  const claim = (id: string, rect: LensRect) => {
     setLens((prev) =>
       prev?.id === id && prev.rect.x === rect.x && prev.rect.width === rect.width
         ? prev
         : { id, rect },
     );
-  }, []);
-  const release = useCallback((id: string) => {
+  };
+  const release = (id: string) => {
     setLens((prev) => (prev?.id === id ? null : prev));
-  }, []);
+  };
 
-  const targets = useRef(new Map<string, SlideTarget>()).current;
-  const enrol = useCallback(
-    (id: string, target: SlideTarget) => {
-      targets.set(id, target);
-    },
-    [targets],
-  );
-  const withdraw = useCallback(
-    (id: string) => {
-      targets.delete(id);
-    },
-    [targets],
-  );
-  const [hover, setHover] = useState<string | null>(null);
+  const targets = useRef(new Map<string, SlideTarget>());
+  const enrol = useEffectEvent((id: string, target: SlideTarget) => {
+    targets.current.set(id, target);
+  });
+  const withdraw = useEffectEvent((id: string) => {
+    targets.current.delete(id);
+  });
+  // The rect is read once, as the preview lands: item geometry cannot move
+  // under a finger mid-slide.
+  const [hover, setHover] = useState<{ id: string; rect: LensRect | null } | null>(null);
+  // The finger's own copy of the preview owner: a slide crosses items faster
+  // than the state behind it commits.
   const hoverRef = useRef<string | null>(null);
-  const onPreviewRef = useRef(onPreview);
-  onPreviewRef.current = onPreview;
-  const preview = useCallback(
-    (id: string | null, quiet = false) => {
-      hoverRef.current = id;
-      setHover(id);
-      if (quiet) return;
-      onPreviewRef.current?.(id === null ? null : (targets.get(id)?.label ?? null));
-    },
-    [targets],
-  );
+  const preview = useEffectEvent((id: string | null, quiet = false) => {
+    hoverRef.current = id;
+    setHover(id === null ? null : { id, rect: targets.current.get(id)?.rect() ?? null });
+    if (quiet) return;
+    onPreview?.(id === null ? null : (targets.current.get(id)?.label ?? null));
+  });
   const capsule = useRef<View>(null);
   const originX = useRef<number | null>(null);
-  const lensId = useRef<string | null>(null);
-  lensId.current = lens?.id ?? null;
   const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
@@ -151,68 +141,83 @@ function Root({
     [],
   );
 
-  const pan = useRef(
+  const grab = useEffectEvent(() => {
+    if (settle.current) clearTimeout(settle.current);
+    originX.current = null;
+    preview(lens?.id ?? null, true);
+    const node = capsule.current as
+      | (View & { getBoundingClientRect?: () => { left: number } })
+      | null;
+    if (node?.getBoundingClientRect) {
+      const scrollX = (globalThis as { scrollX?: number }).scrollX ?? 0;
+      originX.current = node.getBoundingClientRect().left + scrollX;
+    } else {
+      node?.measureInWindow((x) => {
+        originX.current = x;
+      });
+    }
+  });
+
+  const drag = useEffectEvent((moveX: number) => {
+    if (originX.current === null) return;
+    const x = moveX - originX.current;
+    let hit: string | null = null;
+    let gap = Number.POSITIVE_INFINITY;
+    for (const [id, target] of targets.current) {
+      const rect = target.rect();
+      if (!rect) continue;
+      const away = Math.abs(x - (rect.x + rect.width / 2));
+      if (away < gap) {
+        gap = away;
+        hit = id;
+      }
+    }
+    if (hit && hit !== hoverRef.current) preview(hit);
+  });
+
+  const drop = useEffectEvent(() => {
+    const rested = hoverRef.current;
+    if (rested === null || rested === lens?.id) {
+      preview(null);
+      return;
+    }
+    targets.current.get(rested)?.select();
+    // The preview holds while the host navigates so the lens never dips back
+    // toward the old owner; the timer is the safety net for a host that
+    // declines the switch. Effects flush before timers, so a claim that was
+    // coming has already landed by the time this fires.
+    settle.current = setTimeout(() => preview(null), 64);
+  });
+
+  // Built once: the handlers are effect events, so the one responder always
+  // sees the current items without ever being recreated.
+  const [pan] = useState(() =>
     PanResponder.create({
       onMoveShouldSetPanResponderCapture: (_event, gesture) =>
         Math.abs(gesture.dx) > SLIDE_SLOP && Math.abs(gesture.dx) > Math.abs(gesture.dy),
-      onPanResponderGrant: () => {
-        if (settle.current) clearTimeout(settle.current);
-        originX.current = null;
-        preview(lensId.current, true);
-        const node = capsule.current as
-          | (View & { getBoundingClientRect?: () => { left: number } })
-          | null;
-        if (node?.getBoundingClientRect) {
-          const scrollX = (globalThis as { scrollX?: number }).scrollX ?? 0;
-          originX.current = node.getBoundingClientRect().left + scrollX;
-        } else {
-          node?.measureInWindow((x) => {
-            originX.current = x;
-          });
-        }
-      },
-      onPanResponderMove: (_event, gesture) => {
-        if (originX.current === null) return;
-        const x = gesture.moveX - originX.current;
-        let hit: string | null = null;
-        let gap = Number.POSITIVE_INFINITY;
-        for (const [id, target] of targets) {
-          const rect = target.rect();
-          if (!rect) continue;
-          const away = Math.abs(x - (rect.x + rect.width / 2));
-          if (away < gap) {
-            gap = away;
-            hit = id;
-          }
-        }
-        if (hit && hit !== hoverRef.current) preview(hit);
-      },
+      onPanResponderGrant: () => grab(),
+      onPanResponderMove: (_event, gesture) => drag(gesture.moveX),
       // Once a slide owns the touch, no ancestor scroll view takes it back.
       onPanResponderTerminationRequest: () => false,
-      onPanResponderRelease: () => {
-        const rested = hoverRef.current;
-        if (rested === null || rested === lensId.current) {
-          preview(null);
-          return;
-        }
-        targets.get(rested)?.select();
-        // The preview holds while the host navigates so the lens never dips back
-        // toward the old owner; the timer is the safety net for a host that
-        // declines the switch. Effects flush before timers, so a claim that was
-        // coming has already landed by the time this fires.
-        settle.current = setTimeout(() => preview(null), 64);
-      },
+      onPanResponderRelease: () => drop(),
       onPanResponderTerminate: () => preview(null),
     }),
-  ).current;
-
-  const previewRect = hover === null ? null : (targets.get(hover)?.rect() ?? null);
-
-  // A fresh context object re-renders every item on every pointer move of a slide.
-  const context = useMemo(
-    () => ({ size, labels: labelPolicy, claim, release, enrol, withdraw, hover }),
-    [size, labelPolicy, claim, release, enrol, withdraw, hover],
   );
+
+  // Left to the React Compiler, which memoises this on the inputs it actually
+  // reads. A hand-written `useMemo` here cannot be spelled correctly: its deps
+  // would have to name effect events, which biome requires be left OUT of a
+  // dependency array - and the mismatch is what makes the compiler give up on
+  // the whole component.
+  const context = {
+    size,
+    labels: labelPolicy,
+    claim,
+    release,
+    enrol,
+    withdraw,
+    hover: hover?.id ?? null,
+  };
 
   return (
     <NavPillContext.Provider value={context}>
@@ -231,7 +236,7 @@ function Root({
         style={[HAND, style]}
       >
         {at.backdrop}
-        <Lens rect={previewRect ?? lens?.rect ?? null} chase={hover !== null} />
+        <Lens rect={hover?.rect ?? lens?.rect ?? null} chase={hover !== null} />
         {at.items}
       </Box>
     </NavPillContext.Provider>

@@ -9,15 +9,14 @@
 // `translateX` and the amber is a fill layer crossfading over the off-track,
 // since neither driver can animate a background colour natively.
 
-import { useEffect, useRef } from 'react';
-import { Animated, Platform, type StyleProp, View, type ViewStyle } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Animated, type StyleProp, View, type ViewStyle } from 'react-native';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { sharedStyle, styles, sv } from '#ui/core';
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';
+import { WEB } from '#ui/lib/platform';
 import { useControllable } from '#ui/lib/use-controllable';
-
-const WEB = Platform.OS === 'web';
 
 const FLIP_MS = motion.duration.fast;
 const EASE_CSS = ease.out.css;
@@ -160,7 +159,7 @@ function FlipNative({
 }: Readonly<{ on: boolean; travel: number; face: ViewStyle }>) {
   // Initial value matches the initial state, so a switch mounted on doesn't
   // play its own flip as an entrance.
-  const flip = useRef(new Animated.Value(on ? 1 : 0)).current;
+  const [flip] = useState(() => new Animated.Value(on ? 1 : 0));
   useEffect(() => {
     Animated.timing(flip, {
       toValue: on ? 1 : 0,

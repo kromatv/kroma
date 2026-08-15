@@ -1,0 +1,199 @@
+import { defineStory } from '@kroma/workbench/story';
+import { useState } from 'react';
+import { Box } from '#ui/components/atoms/box';
+import { Button } from '#ui/components/atoms/button';
+import { Text } from '#ui/components/atoms/text';
+import { Dialog } from './dialog';
+import { Demo } from './dialog.fixtures';
+
+export const story = defineStory({
+  group: 'Overlays',
+  args: {
+    title: 'Delete this profile?',
+    description: 'This action cannot be undone.',
+    width: 'sm',
+  },
+  controls: { width: ['xs', 'sm', 'md', 'lg', 'xl'] },
+  render: (props) => (
+    <Demo
+      {...props}
+      panel={(close) => (
+        <Dialog.Footer>
+          <Dialog.Actions
+            cancelLabel="Cancel"
+            onCancel={close}
+            confirmLabel="Delete"
+            onConfirm={close}
+            destructive
+          />
+        </Dialog.Footer>
+      )}
+    />
+  ),
+});
+
+A modal box. It declares a focus SCOPE, which keeps the D-pad from wandering
+back into the page left behind: that is the difference between an overlay and a
+true modal on a television.
+
+## Three bands, one scroller
+
+The panel is made of three bands, and only the middle one scrolls:
+
+| Band | Scrolls | Holds |
+| --- | --- | --- |
+| `Dialog.Header` | no | the title and the description |
+| `Dialog.Panel` | yes | the body, however long it gets |
+| `Dialog.Footer` | no | a shelf for `Dialog.Actions` |
+
+So a long form never scrolls its own title away or its actions out of reach.
+**Dialog.Actions** is the row of controls itself - one focus group,
+right-aligned - so a footer is a shelf holding an actions row rather than a
+second row competing with it.
+
+Every band is what the caller composed and nothing more. A footer holding
+nothing draws no shelf, and an actions row draws each of `onCancel` and
+`onConfirm` only where it was given one: a panel whose only action is to close
+writes `<Dialog.Actions onCancel={close} cancelLabel="Fermer" />` and grows no
+"Save" it never had anything to save.
+
+## How wide it is, in words
+
+`width` is a step on the kit's one overlay ladder, never a number. The step is
+named for the densest thing the panel holds, so two panels holding the same
+kind of thing are the same width without anyone comparing them:
+
+| Step | px | What it is for |
+| --- | --- | --- |
+| `xs` | 320 | a rail: a column of destinations |
+| `sm` | 440 | a question and its answer |
+| `md` | 600 | a form: fields stacked, one control per line |
+| `lg` | 760 | rows that each carry a hint, or a form beside a list |
+| `xl` | 960 | a grid, or a browser |
+
+`md` is the default, `maxW: 100%` keeps every step honest on a handset, and
+`SURFACE_WIDTH` is exported for the rare panel that has to measure a child
+against itself. **Drawer** reads the same ladder.
+
+## Naming it, then arranging it
+
+`title` and `description` name the panel to assistive tech, and draw the
+ordinary header when nothing else does. Everything else is a band you write.
+
+```tsx
+<Dialog.Root open={open} onClose={close} title="Delete this profile?">
+  <Text>This cannot be undone.</Text>
+  <Dialog.Footer>{actions}</Dialog.Footer>
+</Dialog.Root>
+```
+
+```tsx
+<Dialog.Root open={open} onClose={close} title="Delete this profile?">
+  <Text>This cannot be undone.</Text>
+  <Dialog.Footer>
+    <Dialog.Actions
+      cancelLabel="Cancel"
+      onCancel={close}
+      confirmLabel="Delete"
+      onConfirm={remove}
+      destructive
+    />
+  </Dialog.Footer>
+</Dialog.Root>
+
+<Dialog.Root open={open} onClose={close}>
+  <Dialog.Header>…</Dialog.Header>
+  <Dialog.Panel>…</Dialog.Panel>
+  <Dialog.Footer>
+    <Dialog.Actions cancelLabel="Cancel" onCancel={close} confirmLabel="Save" onConfirm={save}>
+      <Button variant="dangerGhost" size="sm" label="Delete account" onPress={remove} />
+    </Dialog.Actions>
+  </Dialog.Footer>
+</Dialog.Root>
+```
+
+<Scene name="Cancel and save">
+  The everyday pair: a quiet way out, and an accent confirm that spins while it saves.
+
+  {story.take((props) => (
+    <Demo
+      {...props}
+      title="Edit library"
+      panel={(close) => (
+        <Dialog.Footer>
+          <Dialog.Actions
+            cancelLabel="Cancel"
+            onCancel={close}
+            confirmLabel="Save"
+            onConfirm={close}
+          />
+        </Dialog.Footer>
+      )}
+    />
+  ))}
+</Scene>
+
+<Scene name="A third action">
+  Children are extra controls, pushed to the edge opposite the pair. This is where a "Delete account" belongs, as a real button rather than a config object.
+
+  {story.take((props) => (
+    <Demo
+      {...props}
+      title="Edit account"
+      panel={(close) => (
+        <Dialog.Footer>
+          <Dialog.Actions
+            cancelLabel="Cancel"
+            onCancel={close}
+            confirmLabel="Save"
+            onConfirm={close}
+          >
+            <Button variant="dangerGhost" size="sm" label="Delete account" onPress={close} />
+          </Dialog.Actions>
+        </Dialog.Footer>
+      )}
+    />
+  ))}
+</Scene>
+
+<Scene name="A header of its own">
+  All three bands written out: a header the panel owns, a scrolling middle, and a footer shelf holding the actions row.
+
+  {story.take((props) => (
+    <Demo
+      {...props}
+      titleHidden
+      panel={(close) => (
+        <>
+          <Dialog.Header>
+            <Text variant="h2">Active sessions</Text>
+            <Text color="textMuted">Three devices are playing this account.</Text>
+          </Dialog.Header>
+          <Dialog.Panel>
+            <Text>Living room</Text>
+            <Text>Maxime's iPhone</Text>
+            <Text>MacBook Pro</Text>
+          </Dialog.Panel>
+          <Dialog.Footer>
+            <Dialog.Actions>
+              <Button variant="ghost" size="sm" label="Close" onPress={close} />
+            </Dialog.Actions>
+          </Dialog.Footer>
+        </>
+      )}
+    />
+  ))}
+</Scene>
+
+<Do>
+- Put a panel's controls in a `<Dialog.Actions>`: it is the one focus group a remote walks.
+- Use `destructive` for a confirm that destroys something; the pair stays cancel-then-confirm.
+- Hand extra actions to `<Dialog.Actions>` as children; they sit opposite the pair.
+- Pick `width` by the densest thing the panel holds: `sm` a question, `md` a form, `lg` rows that each carry a hint.
+</Do>
+
+<Dont>
+- Nest one actions row inside another: one panel, one focus group.
+- Put a bare row of buttons in `<Dialog.Footer>`; the footer is the shelf, not the row.
+- Invent a confirm for a panel that has nothing to confirm; `onCancel` alone draws the way out.
+</Dont>

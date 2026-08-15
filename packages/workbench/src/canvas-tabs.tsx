@@ -1,7 +1,7 @@
 // The row of views across the top of the canvas: the preview, the variant
 // matrix, each hand-written scene and each worked example.
 
-import { Box, Focusable, styles, sv, Text } from '@kroma/ui/kit';
+import { Box, Focusable, Icon, type IconName, styles, sv, Text } from '@kroma/ui/kit';
 import type { ColorToken } from '@kroma/ui/tokens';
 import { ScrollView } from 'react-native';
 import { RULE, TAB } from './chrome';
@@ -12,20 +12,30 @@ import type { Story } from './story';
 interface Tab {
   name: string;
   target: View;
+  glyph: IconName;
   demo?: boolean;
 }
 
 function viewTabs(story: Story): Tab[] {
   return [
-    { name: 'Preview', target: 'preview' },
-    ...(story.matrix.length > 0 ? [{ name: 'Matrix', target: 'matrix' as View }] : []),
+    { name: 'Preview', target: 'preview', glyph: 'eye' },
+    // Only a story written as a document earns the reading view; an inline
+    // `docs:` string is a sentence, and the inspector is where it reads.
+    ...(typeof story.docs === 'function'
+      ? [{ name: 'Docs', target: 'docs' as View, glyph: 'file-text' as IconName }]
+      : []),
+    ...(story.matrix.length > 0
+      ? [{ name: 'Matrix', target: 'matrix' as View, glyph: 'layout-grid' as IconName }]
+      : []),
     ...story.scenes.map((scene, index) => ({
       name: scene.name,
       target: `scene:${index}` as View,
+      glyph: 'photo' as IconName,
     })),
     ...story.demos.map((entry, index) => ({
       name: entry.name,
       target: `demo:${index}` as View,
+      glyph: 'player-play' as IconName,
       demo: true,
     })),
   ];
@@ -62,10 +72,12 @@ function CanvasTabs({
               vars={{ active }}
             >
               {({ focused }) => (
-                <Box row align="center" gap={7}>
-                  {tab.demo ? (
-                    <Box w={5} h={5} radius="pill" bg={tabInk(active, focused, 'accent')} />
-                  ) : null}
+                <Box row align="center" gap={6}>
+                  <Icon
+                    name={tab.glyph}
+                    size={13}
+                    color={tabInk(active, focused, tab.demo ? 'accent' : 'text')}
+                  />
                   <Text variant="meta" color={tabInk(active, focused, 'text')} style={s.tabLabel}>
                     {tab.name}
                   </Text>

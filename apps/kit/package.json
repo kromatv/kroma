@@ -1,10 +1,17 @@
 {
   "name": "@kroma/kit",
-  "version": "0.1.3",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
-  "main": "index.ts",
   "description": "KROMA design-system showcase: the @kroma/ui workbench as a deployable website AND as an app you can launch at a phone or a television simulator.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "apps/kit"
+  },
+  "main": "index.ts",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -27,8 +34,8 @@
     "@kroma/core": "workspace:*",
     "@kroma/ui": "workspace:*",
     "@kroma/workbench": "workspace:*",
-    "expo": "~57.0.11",
-    "expo-constants": "~57.0.9",
+    "expo": "~57.0.13",
+    "expo-constants": "~57.0.11",
     "expo-font": "~57.0.1",
     "expo-keep-awake": "~57.0.1",
     "expo-system-ui": "~57.0.2",
@@ -40,16 +47,16 @@
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
-    "@babel/core": "^7.28.0",
+    "@babel/core": "^7.29.7",
     "@kroma/build-info": "workspace:*",
     "@kroma/bundler": "workspace:*",
     "@react-native-tvos/config-tv": "^0.1.6",
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.20.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.3",
-    "babel-preset-expo": "~57.0.6",
+    "@vitejs/plugin-react": "^6.0.5",
+    "babel-preset-expo": "~57.0.7",
     "typescript": "^7.0.2",
-    "vite": "^8.1.4"
+    "vite": "^8.2.1"
   }
 }

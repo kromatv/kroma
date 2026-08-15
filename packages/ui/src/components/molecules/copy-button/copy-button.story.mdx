@@ -1,0 +1,84 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Divider } from '#ui/components/atoms/divider';
+import { Text } from '#ui/components/atoms/text';
+import { CopyButton } from './copy-button';
+import { VARIANTS, SIZES, REGISTRY, BUILDS } from './copy-button.fixtures';
+
+export const story = defineStory({
+  group: 'Actions',
+  component: CopyButton,
+  args: {
+    value: REGISTRY,
+    label: 'Copy URL',
+    copiedLabel: 'Copied',
+    failedLabel: 'Copy refused',
+    variant: 'primary',
+    size: 'sm',
+    iconOnly: false,
+  },
+  controls: { variant: VARIANTS, size: SIZES },
+});
+
+Copy-to-clipboard that answers **on itself**: the glyph turns to a tick and the label to its copied wording for a beat, then reverts, because the next value has to be copyable too. Three states, not two - a write is refused whenever the document does not have focus, and on any self-hosted instance served over plain http, so `failed` is a real outcome and it is SAID (an alert glyph, `failedLabel`) rather than left looking like a press that did nothing. Where the platform has no clipboard at all, the control renders **nothing**: a dead affordance is worse than no affordance, and a television has neither a clipboard nor anywhere to paste. The three labels default to the product's French, so a site in another language passes its own. `iconOnly` is the form for a control that repeats down a page: a fixed 30px ghost disc where the glyph carries the whole confirmation, which is why `label` is still required and still becomes the accessible name.
+
+```tsx
+<CopyButton
+  value={url}
+  label="Copy URL"
+  copiedLabel="Copied"
+  failedLabel="Copy refused"
+  variant="primary"
+/>
+
+// One per row, where a full button would be the loudest thing on the page:
+<CopyButton value={file.sha256} label="Copy hash" iconOnly />
+```
+
+<Scene name="Beside the value it copies">
+  The arrangement the module and package sites both use: the value in a well, mono and clipped to one line, with the button pinned at the end. The row is what makes the button make sense, and the truncation is what stops a long URL pushing it out of reach.
+
+  <Box row align="center" gap={12} w={480} px={16} py={12} radius="lg" bg="surface2">
+    <Box flex minW={0}>
+      <Text font="mono" lines={1}>
+        {REGISTRY}
+      </Text>
+    </Box>
+    <Box shrink={0}>
+      <CopyButton value={REGISTRY} label="Copy URL" copiedLabel="Copied" variant="primary" />
+    </Box>
+  </Box>
+</Scene>
+
+<Scene name="One per row">
+  Checksums, one to a build. Here the tick is the entire confirmation, so the accessible name has to carry it too, or a press reads to a screen reader as having done nothing. Press one and the others stay put: each control holds its own confirmation.
+
+  <Box w={420} gap={4}>
+    {BUILDS.map((build, at) => (
+      <Box key={build.sha}>
+        {at > 0 ? <Divider /> : null}
+        <Box row align="center" gap={12} py={8}>
+          <Box flex minW={0} gap={2}>
+            <Text variant="meta">{build.target}</Text>
+            <Text variant="meta" color="textDim" font="mono" lines={1}>
+              {build.sha}
+            </Text>
+          </Box>
+          <CopyButton value={build.sha} label="Copy hash" copiedLabel="Copied" iconOnly />
+        </Box>
+      </Box>
+    ))}
+  </Box>
+</Scene>
+
+<Do>
+- Put it next to the value it copies, and give that value `minW={0}` so it truncates instead of shoving the button off the row.
+- Pass all three labels in the page language; the defaults are the product French.
+- Reach for `iconOnly` when the control repeats on every row: one full button per line is a page of buttons.
+</Do>
+
+<Dont>
+- Pair it with a toast. Two confirmations for one press is one too many, and the far one is the one nobody reads.
+- Set `size` or `variant` alongside `iconOnly`: the glyph form is a fixed ghost disc and ignores both.
+- Guard it with a platform check of your own, or leave room for it in a layout: where there is no clipboard it renders nothing at all.
+</Dont>

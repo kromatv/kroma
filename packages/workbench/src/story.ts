@@ -15,19 +15,16 @@ import type { PlayFunction } from './play-types';
 import type { PropSection } from './props';
 import { slug } from './registry';
 import { type View, viewIndex } from './view';
+import type { ViewportName } from './viewport';
 
 /** How much width the canvas gives a story: a fixed width, the whole stage, or
  * the stage clamped. Omit it for a component sized by its own content. */
 type StoryWidth = number | 'fill' | { min?: number; max?: number };
 
-/** A `<story>.docs.mdx` compiled to a component. `components` is the element
- * map the workbench hands it (`MDX_COMPONENTS`); MDX types it loosely because
+/** A story's document, compiled to a component. `components` is the element
+ * map the workbench hands it (`STORY_COMPONENTS`); MDX types it loosely because
  * every host maps a different set. */
 type DocComponent = ComponentType<{ components?: Record<string, unknown> }>;
-
-/** A story's prose: the inline `docs:` string, or the sibling `.docs.mdx` that
- * replaces it. */
-type StoryDocs = string | DocComponent;
 
 type Widen<T> = T extends string
   ? string
@@ -69,7 +66,6 @@ interface DemoDef {
 interface StoryCommon<A extends Args> {
   name: string;
   group: string;
-  docs?: string;
   variants?: VariantSource;
   /** Variant groups to leave out of the derived controls, for a recipe that
    *  belongs to a PART while the story renders the Root: the Root cannot take
@@ -80,9 +76,7 @@ interface StoryCommon<A extends Args> {
   matrix?: false;
   pad?: number;
   width?: StoryWidth;
-  viewport?: 'fit' | 'tv' | 'phone' | 'tablet';
-  usage?: string;
-  guidelines?: { do?: readonly string[]; dont?: readonly string[] };
+  viewport?: ViewportName;
   play?: PlayFunction;
 }
 
@@ -100,6 +94,55 @@ type StoryDef<A extends Args, P extends object = A> =
       // have and giving them `never` is what makes the component the authority.
       args?: A & Partial<P> & { [K in Exclude<keyof A, keyof P>]: never };
     });
+
+interface StoryMdxCommon<A extends Args> {
+  /** Overrides the name derived from the file (`otp-field.story.mdx` ->
+   * `OtpField`); write it only where the derivation is wrong. */
+  name?: string;
+  group: string;
+  variants?: VariantSource;
+  /** Variant groups to leave out of the derived controls; see StoryCommon. */
+  omit?: readonly string[];
+  controls?: { [K in keyof A]?: ControlSpec };
+  /** Opt-in: the matrix earns its tab only where the variants cross. */
+  matrix?: boolean;
+  pad?: number;
+  width?: StoryWidth;
+  viewport?: ViewportName;
+}
+
+/** What a `.story.mdx` declares, both ways round `StoryDef` allows: everything
+ * but the prose and the scenes, which are the document's. */
+type StoryMdxDef<A extends Args, P extends object = A> =
+  | (StoryMdxCommon<A> & { render: (args: A) => ReactNode; component?: never; args?: A })
+  | (StoryMdxCommon<A> & {
+      component: ComponentType<P>;
+      render?: (args: A) => ReactNode;
+      args?: A & Partial<P> & { [K in Exclude<keyof A, keyof P>]: never };
+    });
+
+/** The declaration as a compiled `.story.mdx` module carries it, with the
+ * authoring generics erased. */
+type MdxStoryDeclaration = StoryMdxCommon<Args> & {
+  component?: ComponentType<Args>;
+  render?: (args: Args) => ReactNode;
+  args?: Args;
+  take?: (render: (args: Args) => ReactNode) => (args: Args) => ReactNode;
+};
+
+/** A `.story.mdx`'s one typed export: the story's identity, its controls and
+ * its render, checked exactly as `story()` checks them. The prose, the scenes
+ * and the guidance stay in the document around it, and a scene's take reaches
+ * these types through `take`. */
+function defineStory<const A extends Args = Record<string, never>, P extends object = A>(
+  def: StoryMdxDef<A, P>,
+): StoryMdxDef<A, P> & {
+  /** Types a scene's take: `{story.take((args) => ...)}` hands the arrow this
+   * story's own args. Identity at runtime; the compiler lifts the arrow out. */
+  take: (render: (args: A) => ReactNode) => (args: A) => ReactNode;
+} {
+  return { ...def, take: (render) => render };
+}
 
 interface Scene {
   name: string;
@@ -123,7 +166,7 @@ interface Story {
   tier: string;
   /** Absent until the registry attaches the file the story was discovered at. */
   path?: string;
-  docs?: StoryDocs;
+  docs?: DocComponent;
   args: Args;
   controls: ResolvedControl[];
   matrix: MatrixRow[];
@@ -144,9 +187,7 @@ interface Story {
   play?: PlayFunction;
   pad: number;
   width?: StoryWidth;
-  viewport?: 'fit' | 'tv' | 'phone' | 'tablet';
-  usage?: string;
-  guidelines: { do: readonly string[]; dont: readonly string[] };
+  viewport?: ViewportName;
 }
 
 interface OwnView<A extends Args> {
@@ -210,7 +251,6 @@ function story<const A extends Args = Record<string, never>, P extends object = 
     group: def.group,
     // Overwritten by the registry, the only thing that knows the file path.
     tier: 'Other',
-    docs: def.docs,
     args,
     controls: [
       ...variants.controls,
@@ -227,8 +267,6 @@ function story<const A extends Args = Record<string, never>, P extends object = 
     pad: def.pad ?? 0,
     width: def.width,
     viewport: def.viewport,
-    usage: def.usage,
-    guidelines: { do: def.guidelines?.do ?? [], dont: def.guidelines?.dont ?? [] },
   };
 }
 
@@ -238,7 +276,7 @@ interface ControlsRole {
 }
 
 function viewIsLive(story: Story, view: View): boolean {
-  if (view.startsWith('demo:')) return false;
+  if (view === 'docs' || view.startsWith('demo:')) return false;
   if (!view.startsWith('scene:')) return story.live;
   return story.scenes[viewIndex(view)]?.live ?? false;
 }
@@ -255,11 +293,12 @@ export type {
   ControlsRole,
   DemoDef,
   DocComponent,
+  MdxStoryDeclaration,
   Scene,
   SceneDef,
   Story,
   StoryDef,
-  StoryDocs,
+  StoryMdxDef,
   StoryWidth,
 };
-export { controlsRole, story };
+export { controlsRole, defineStory, story };

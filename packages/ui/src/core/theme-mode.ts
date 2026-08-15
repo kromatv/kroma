@@ -1,6 +1,7 @@
 import { deviceStorage } from '@kroma/core';
-import { Appearance, Platform } from 'react-native';
+import { Appearance } from 'react-native';
 import { webDocument } from '#ui/lib/dom';
+import { WEB } from '#ui/lib/platform';
 import { KROMA, KROMA_LIGHT, setTheme } from './theme.ts';
 import { CSS_COLORS } from './tokens/css-palette.ts';
 
@@ -17,7 +18,6 @@ export const isThemeMode = (v: unknown): v is ThemeMode =>
 
 // A cookie on the web because the SERVER has to read it and stamp the ground
 // before the page is sent; device storage where there is no server.
-const WEB = Platform.OS === 'web';
 
 const COOKIE = new RegExp(String.raw`(?:^|;\s*)${THEME_COOKIE}=([^;]+)`);
 

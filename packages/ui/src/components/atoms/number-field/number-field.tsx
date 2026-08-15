@@ -6,7 +6,7 @@
 // normalizes: clamps to the bounds and rewrites the text to the number
 // actually stored, so the field can never show 15 while holding 64.
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
@@ -50,14 +50,14 @@ function NumberField({
   const [text, setText] = useState(() => String(value));
   // Adjusted during render, not in an effect, so an outside change (a reset
   // button, a poll) lands without a frame of the stale number.
-  const seen = useRef(value);
-  if (value !== seen.current) {
-    seen.current = value;
+  const [seen, setSeen] = useState(value);
+  if (value !== seen) {
+    setSeen(value);
     if (Number(text.trim()) !== value) setText(String(value));
   }
 
   const commit = (n: number) => {
-    seen.current = n;
+    setSeen(n);
     if (n !== value) onValueChange(n);
   };
 

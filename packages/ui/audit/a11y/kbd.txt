@@ -1,0 +1,7 @@
+# Kbd  src/components/atoms/kbd/kbd.story.mdx
+
+## preview
+
+
+## scene:A chord, and a hint
+

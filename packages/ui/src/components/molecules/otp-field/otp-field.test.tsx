@@ -16,6 +16,17 @@ function type(container: HTMLElement, text: string) {
   fireEvent.change(input, { target: { value: text } });
 }
 
+function twoGroups(each: number) {
+  const run = (side: string) => (
+    <OtpField.Group key={side}>
+      {Array.from({ length: each }, (_, at) => `${side}-${at}`).map((key) => (
+        <OtpField.Slot key={key} />
+      ))}
+    </OtpField.Group>
+  );
+  return [run('first'), <OtpField.Separator key="seam" />, run('second')];
+}
+
 const carets = (container: HTMLElement) =>
   Array.from(container.querySelectorAll('div')).filter(
     (node) => getComputedStyle(node).width === '2px',
@@ -25,29 +36,6 @@ describe('OtpField', () => {
   it('is a namespace of parts, not a component', () => {
     expect(typeof OtpField).toBe('object');
     expect(Object.keys(OtpField).sort()).toEqual(['Group', 'Root', 'Separator', 'Slot']);
-  });
-
-  it('renders the same row from the sugar and from the parts', () => {
-    const { container: sugar } = render(
-      <OtpField.Root maxLength={4} groups={[2, 2]} defaultValue="12" />,
-    );
-    const written = sugar.innerHTML;
-
-    cleanup();
-    const { container: parts } = render(
-      <OtpField.Root maxLength={4} defaultValue="12">
-        <OtpField.Group>
-          <OtpField.Slot />
-          <OtpField.Slot />
-        </OtpField.Group>
-        <OtpField.Separator />
-        <OtpField.Group>
-          <OtpField.Slot />
-          <OtpField.Slot />
-        </OtpField.Group>
-      </OtpField.Root>,
-    );
-    expect(parts.innerHTML).toBe(written);
   });
 
   it('gives a slot its place in the code from where it sits, across groups', () => {
@@ -67,12 +55,15 @@ describe('OtpField', () => {
     expect(container.textContent).toBe('ABC');
   });
 
-  it('breaks the row into groups only where the sugar asks', () => {
+  it('draws one unbroken group until the parts break it', () => {
     const { container: one } = render(<OtpField.Root maxLength={6} />);
     expect(row(one).children).toHaveLength(1);
+    expect(row(one).children[0]?.children).toHaveLength(6);
 
     cleanup();
-    const { container: split } = render(<OtpField.Root maxLength={6} groups={[3, 3]} />);
+    const { container: split } = render(
+      <OtpField.Root maxLength={6}>{twoGroups(3)}</OtpField.Root>,
+    );
     expect(row(split).children).toHaveLength(3);
   });
 
@@ -89,12 +80,9 @@ describe('OtpField', () => {
   it('flows a pasted code across every slot, dropping what the pattern refuses', () => {
     const onValueChange = vi.fn();
     const { container } = render(
-      <OtpField.Root
-        maxLength={6}
-        groups={[3, 3]}
-        physicalKeyboard
-        onValueChange={onValueChange}
-      />,
+      <OtpField.Root maxLength={6} physicalKeyboard onValueChange={onValueChange}>
+        {twoGroups(3)}
+      </OtpField.Root>,
     );
     type(container, '12 34-56');
     expect(onValueChange).toHaveBeenCalledWith('123456');
@@ -102,7 +90,11 @@ describe('OtpField', () => {
   });
 
   it('keeps every slot a face, so the whole row stays one control', () => {
-    const { container } = render(<OtpField.Root maxLength={6} groups={[3, 3]} physicalKeyboard />);
+    const { container } = render(
+      <OtpField.Root maxLength={6} physicalKeyboard>
+        {twoGroups(3)}
+      </OtpField.Root>,
+    );
     const faces = Array.from(row(container).children).slice(2) as HTMLElement[];
     expect(faces).toHaveLength(3);
     for (const face of faces) expect(getComputedStyle(face).pointerEvents).toBe('none');

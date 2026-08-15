@@ -14,7 +14,7 @@ import {
   type ModuleInfo,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Dialog, Field, SegmentedControl, Select, Text } from '@kroma/ui/kit';
+import { Box, Dialog, Field, SegmentGroup, Select, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { useAdminHost } from './context';
@@ -221,14 +221,13 @@ function AddEngineDialog({
   return (
     <Dialog.Root open title={ask.title} width="md" onClose={() => onSettle(false)}>
       {ask.engines.length > 1 ? (
-        <SegmentedControl.Root
-          value={engineId}
-          onValueChange={setEngineId}
-          options={ask.engines.map((e) => ({
-            value: e.id,
-            label: t((e.label ?? e.id) as MessageKey),
-          }))}
-        />
+        <SegmentGroup.Root value={engineId} onValueChange={setEngineId}>
+          {ask.engines.map((e) => (
+            <SegmentGroup.Item key={e.id} value={e.id}>
+              <SegmentGroup.Label>{t((e.label ?? e.id) as MessageKey)}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          ))}
+        </SegmentGroup.Root>
       ) : null}
       <Box gap={16}>
         <Field.Root label={t('field.name')} value={name} onValueChange={setName}>

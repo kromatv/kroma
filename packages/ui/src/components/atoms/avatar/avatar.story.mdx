@@ -1,0 +1,87 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
+import { Avatar } from './avatar';
+import { NAMES, SHAPES, SIZES } from './avatar.fixtures';
+
+export const story = defineStory({
+  group: 'Brand',
+  component: Avatar,
+  args: {
+    name: 'Marie Curie',
+    seed: 'a',
+    size: 96,
+    roundness: 0.16,
+    circle: false,
+    locked: false,
+    shadow: false,
+  },
+  controls: {
+    size: { min: 32, max: 200, step: 8 },
+    roundness: { min: 0, max: 0.5, step: 0.02 },
+  },
+});
+
+Initials on a gradient picked deterministically from the seed, so a profile keeps its colors from one device to the next without anything being stored.
+
+The corner is a RATIO of the size (`roundness`, 0.16 by default), not a pixel radius: everything else about an avatar already scales with `size`, so one value keeps the same shape from a 26px list row to a 140px picker tile. `circle` is the shorthand for the full disc, and the padlock badge is inset from the resulting corner, so it lands inside the shape rather than being cropped by it.
+
+```tsx
+<Avatar name="Marie Curie" size={96} />
+<Avatar name="Marie Curie" circle locked />
+<Avatar name="Marie Curie" roundness={0.33} />
+```
+
+<Scene name="A team">
+  {story.take((props) => (
+    <Box row gap={20} align="center">
+      {NAMES.map((name, index) => (
+        <Avatar key={name} {...props} name={name} seed={String(index)} />
+      ))}
+    </Box>
+  ))}
+</Scene>
+
+<Scene name="Shapes">
+  From a square to the full disc. Every one carries the padlock, which is where the corner used to crop it.
+
+  {story.take(({ size, name, seed }) => (
+    <Box row gap={26} align="center">
+      {SHAPES.map((shape) => (
+        <Box key={shape.label} align="center" gap={10}>
+          <Avatar name={name} seed={seed} size={size} locked {...shape.props} />
+          <Text variant="meta" color="textDim">
+            {shape.label}
+          </Text>
+        </Box>
+      ))}
+    </Box>
+  ))}
+</Scene>
+
+<Scene name="One roundness, every size">
+  The same `roundness` at four sizes: the corner grows with the disc, so a profile is the same shape in a list row and in the picker. A pixel radius could only be right at one of these.
+
+  {story.take(({ name, seed, roundness }) => (
+    <Box row gap={24} align="flex-end">
+      {SIZES.map((size) => (
+        <Box key={size} align="center" gap={10}>
+          <Avatar name={name} seed={seed} size={size} roundness={roundness} />
+          <Text variant="meta" color="textDim">
+            {size}
+          </Text>
+        </Box>
+      ))}
+    </Box>
+  ))}
+</Scene>
+
+<Do>
+- Use `circle` for a profile or a cast member - a person is a disc, a title is a rounded rectangle.
+- Pass a stable `seed` (the user id) so a profile keeps its colour on every screen.
+</Do>
+
+<Dont>
+- Reach for a pixel radius: a 24px corner is a squircle at 48 and a barely-softened box at 200.
+- Hand it a pre-cropped square photo - it clips the art to the corner itself.
+</Dont>

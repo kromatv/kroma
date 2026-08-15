@@ -1,8 +1,16 @@
 {
   "name": "@kroma/lan-beacon",
-  "version": "0.1.0",
+  "version": "0.0.0",
+  "private": true,
   "type": "module",
   "description": "KROMA DNS-SD beacon: publishes _kroma-tv._tcp on a television and browses for it on a phone, behind the LanDiscoveryBridge shape @kroma/core defines.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/lan-beacon"
+  },
   "main": "index.ts",
   "exports": {
     ".": "./index.ts"
@@ -11,7 +19,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "expo": "*",
+    "expo": "^57.0.13",
     "@kroma/core": "workspace:*"
   },
   "devDependencies": {

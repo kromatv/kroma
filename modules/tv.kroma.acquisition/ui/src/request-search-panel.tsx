@@ -15,7 +15,7 @@ import {
   Callout,
   Dialog,
   Row,
-  SegmentedControl,
+  SegmentGroup,
   Surface,
   TableSkeleton,
   Text,
@@ -84,15 +84,18 @@ export function RequestSearchPanel({
                   onPress={() => setDraft(draftOf(ledger.data.coverage, ledger.data.seasons))}
                 />
               ) : null}
-              <SegmentedControl.Root
+              <SegmentGroup.Root
                 value={mode}
                 onValueChange={setMode}
                 label={t('requests.searchMode')}
-                options={[
-                  { value: 'catalog' as const, label: t('requests.modeCatalog') },
-                  { value: 'free' as const, label: t('requests.modeFree') },
-                ]}
-              />
+              >
+                <SegmentGroup.Item value="catalog">
+                  <SegmentGroup.Label>{t('requests.modeCatalog')}</SegmentGroup.Label>
+                </SegmentGroup.Item>
+                <SegmentGroup.Item value="free">
+                  <SegmentGroup.Label>{t('requests.modeFree')}</SegmentGroup.Label>
+                </SegmentGroup.Item>
+              </SegmentGroup.Root>
             </Row>
           </Row>
 

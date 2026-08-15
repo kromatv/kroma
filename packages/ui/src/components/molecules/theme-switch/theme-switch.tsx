@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Appearance, type StyleProp, type ViewStyle } from 'react-native';
-import { SegmentedControl } from '#ui/components/molecules/segmented-control';
+import { SegmentGroup } from '#ui/components/molecules/segment-group';
 import { applyMode, readMode, type ThemeMode, writeMode } from '#ui/core/theme-mode';
 import type { ControlSize } from '#ui/lib/field-shell';
 
@@ -47,10 +47,9 @@ export function ThemeSwitch({
   }, [mode]);
 
   return (
-    <SegmentedControl.Root
+    <SegmentGroup.Root
       label={label}
       size={size}
-      iconOnly
       value={mode}
       onValueChange={(next) => {
         setMode(next);
@@ -59,13 +58,8 @@ export function ThemeSwitch({
       style={style}
     >
       {ORDER.map((value) => (
-        <SegmentedControl.Item
-          key={value}
-          value={value}
-          label={labels[value]}
-          icon={GLYPH[value]}
-        />
+        <SegmentGroup.Item key={value} value={value} label={labels[value]} icon={GLYPH[value]} />
       ))}
-    </SegmentedControl.Root>
+    </SegmentGroup.Root>
   );
 }

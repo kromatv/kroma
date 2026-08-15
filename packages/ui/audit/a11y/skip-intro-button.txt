@@ -1,0 +1,10 @@
+# SkipIntroButton  src/components/organisms/player/parts/skip-intro-button/skip-intro-button.story.mdx
+
+## preview
+button "Skip Intro" tab
+
+## scene:Focused
+button "Skip Intro" tab
+
+## scene:Hidden
+

@@ -5,7 +5,7 @@
 // needs is READ from it rather than held beside it - the body, the prose, the
 // sample and the script are four answers to the same question.
 
-import { Box, CodeBlock, Focusable, setTheme, styles, sv, Text } from '@kroma/ui/kit';
+import { applyTheme, Box, CodeBlock, Focusable, Icon, styles, sv, Text } from '@kroma/ui/kit';
 import type { ColorToken } from '@kroma/ui/tokens';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Matrix, ViewportFrame } from './canvas';
@@ -17,6 +17,7 @@ import type { PlayRunner } from './play';
 import type { PlayFunction } from './play-types';
 import type { Story } from './story';
 import { fullyInlined, inlineArgs } from './story-code-inline';
+import { StoryDocs } from './story-docs';
 import { PREVIEW_THEMES } from './themes';
 import { Toolbar, type ToolbarLens } from './toolbar';
 import { type View, viewIndex } from './view';
@@ -35,7 +36,7 @@ function useStageView(story: Story | undefined) {
   const pickTheme = useCallback((next: string) => {
     const chosen = PREVIEW_THEMES.find((candidate) => candidate.id === next);
     if (!chosen) return;
-    setTheme(chosen.theme);
+    applyTheme(chosen.theme, chosen.light);
     setThemeId(chosen.id);
   }, []);
 
@@ -68,6 +69,37 @@ function useStageView(story: Story | undefined) {
 
 type StageView = ReturnType<typeof useStageView>;
 
+interface StageToolbarProps {
+  stage: StageView;
+  lenses?: readonly ToolbarLens[];
+  layout: WorkbenchLayout;
+  /** Opens the component list; set only while the tree is a drawer. */
+  onMenu?: () => void;
+}
+
+/** The toolbar wired to the stage it drives. Every canvas - the story, its
+ * document, and the one still loading - shows the same one, so the wiring is
+ * written once rather than fourteen props at a time. */
+function StageToolbar({ stage, lenses, layout, onMenu }: Readonly<StageToolbarProps>) {
+  return (
+    <Toolbar
+      lenses={lenses}
+      viewport={stage.viewport}
+      onViewport={stage.pickViewport}
+      surface={stage.surface}
+      onSurface={stage.setSurface}
+      theme={stage.theme}
+      onTheme={stage.pickTheme}
+      rotate={stage.rotate}
+      onRotate={stage.setRotate}
+      full={stage.full}
+      onFull={stage.setFull}
+      onMenu={onMenu}
+      layout={layout}
+    />
+  );
+}
+
 interface StoryCanvasProps {
   story: Story;
   view: View;
@@ -94,25 +126,25 @@ function StoryCanvas({
 }: Readonly<StoryCanvasProps>) {
   const docs = viewDocs(story, view);
   const code = viewCode(story, view, args);
+  if (view === 'docs' && typeof story.docs === 'function') {
+    // The same chrome as every other view - the toolbar's lenses keep their
+    // state and the theme one still repaints the document - so switching to
+    // the reading view moves nothing but the stage.
+    return (
+      <Box flex minW={0} minH={0}>
+        <StageToolbar stage={stage} lenses={lenses} onMenu={onMenu} layout={layout} />
+        {/* No heading over the tabs here: the document carries its own, the way
+            a guide does, and two titles for one component is one too many. */}
+        <CanvasTabs story={story} view={view} onView={onView} layout={layout} />
+        <StoryDocs story={story} args={args} content={story.docs} layout={layout} />
+      </Box>
+    );
+  }
   return (
     // `minW={0}` stops a wide story from pushing the column past the window
     // instead of scrolling inside it.
     <Box flex minW={0} minH={0}>
-      <Toolbar
-        lenses={lenses}
-        viewport={stage.viewport}
-        onViewport={stage.pickViewport}
-        surface={stage.surface}
-        onSurface={stage.setSurface}
-        theme={stage.theme}
-        onTheme={stage.pickTheme}
-        rotate={stage.rotate}
-        onRotate={stage.setRotate}
-        full={stage.full}
-        onFull={stage.setFull}
-        onMenu={onMenu}
-        layout={layout}
-      />
+      <StageToolbar stage={stage} lenses={lenses} onMenu={onMenu} layout={layout} />
       <StoryHeading name={story.name} group={story.group} layout={layout} />
       <CanvasTabs story={story} view={view} onView={onView} layout={layout} />
       {docs ? (
@@ -172,7 +204,7 @@ function StoryHeading({
 
 function renderBody(story: Story, view: View, args: Record<string, unknown>): ReactNode {
   if (view === 'matrix') return <Matrix rows={story.matrix} args={args} render={story.render} />;
-  if (view === 'preview') return story.render(args);
+  if (view === 'preview' || view === 'docs') return story.render(args);
   const at = viewIndex(view);
   return view.startsWith('demo:') ? story.demos[at]?.render() : story.scenes[at]?.render(args);
 }
@@ -181,12 +213,12 @@ function renderBody(story: Story, view: View, args: Record<string, unknown>): Re
 // falling back to the story's keeps one written play running on every view of it.
 function playFor(story: Story, view: View): PlayFunction | undefined {
   if (view === 'preview' || view === 'matrix') return story.play;
-  if (view.startsWith('demo:')) return undefined;
+  if (view === 'docs' || view.startsWith('demo:')) return undefined;
   return story.scenes[viewIndex(view)]?.play ?? story.play;
 }
 
 function viewDocs(story: Story, view: View): string | undefined {
-  if (view === 'preview' || view === 'matrix') return undefined;
+  if (view === 'preview' || view === 'matrix' || view === 'docs') return undefined;
   const at = viewIndex(view);
   return view.startsWith('demo:') ? story.demos[at]?.docs : story.scenes[at]?.docs;
 }
@@ -251,9 +283,7 @@ function CodeBar({
           <Text variant="overline" color={open ? 'accent' : 'textDim'}>
             Code
           </Text>
-          <Text variant="meta" color="textDim" style={s.codeHint}>
-            {open ? '▾' : '▸'}
-          </Text>
+          <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} color="textDim" />
         </Box>
       </Focusable>
       {/* No scroller of its own: <CodeBlock> owns both axes. */}
@@ -270,9 +300,8 @@ const s = styles({
   title: { fontSize: 24 },
   titleCompact: { fontSize: 20 },
   codeBar: { maxH: 320 },
-  codeHint: { fontSize: 10 },
 });
 const codeToggle = sv({ base: { py: 12, _focus: { bg: 'white/6' } } });
 
 export type { StageView };
-export { playFor, renderBody, StoryCanvas, StoryHeading, useStageView, viewCode };
+export { playFor, renderBody, StageToolbar, StoryCanvas, StoryHeading, useStageView, viewCode };

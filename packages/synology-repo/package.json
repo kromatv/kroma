@@ -1,9 +1,16 @@
 {
   "name": "@kroma/synology-repo",
-  "version": "0.1.4",
-  "type": "module",
+  "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "Generate a Synology package-source repository (catalog.json + landing page) from a built .spk, for static hosting (GitHub Pages, Cloudflare Pages, any static host).",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/synology-repo"
+  },
   "bin": {
     "kroma-synology-repo": "./src/gen-catalog.ts"
   },
@@ -14,6 +21,6 @@
     "build": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0"
+    "@types/node": "^22.20.1"
   }
 }
