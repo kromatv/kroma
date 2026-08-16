@@ -1,0 +1,76 @@
+name: Feature request
+description: A new capability, or a change to how something works
+labels: ["type/feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Title format: `<surface>: <the capability>` — imperative, lowercase scope.
+        Good: `web: resume playback across devices`
+        Bad: `Feature request: it would be nice if...`
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What is painful today. Describe the situation, not the solution — if the problem is only "the feature is missing", say what that costs you.
+      placeholder: "I watch on the TV, then continue on my phone, and I have to scrub to find where I stopped."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+      description: What should happen instead, precisely enough that someone could tell whether it works.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surfaces affected
+      multiple: true
+      options:
+        - Server (Rust)
+        - Module (tv.kroma.*)
+        - Web client
+        - TV — Tizen (Samsung)
+        - TV — webOS (LG)
+        - TV — other / tv-web
+        - Mobile — iOS
+        - Mobile — Android
+        - Desktop
+        - Synology package
+        - UI kit
+        - CI / release
+    validations:
+      required: true
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Could this be a module instead of core?
+      description: KROMA pushes optional capability into out-of-process `tv.kroma.*` sidecars. Core earns its weight.
+      options:
+        - "Yes — this belongs in a module"
+        - "No — this has to be core"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What you tried, or other designs you rejected and why. "None" is a valid answer if you mean it.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched open and closed issues for this
+          required: true
+        - label: I read ARCHITECTURE.md and this does not contradict it
+          required: false

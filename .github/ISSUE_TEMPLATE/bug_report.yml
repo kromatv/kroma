@@ -1,0 +1,102 @@
+name: Bug report
+description: Something in KROMA is broken
+labels: ["type/bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Title format: `<surface>: <what is broken>` — lowercase scope, no `[BUG]` prefix.
+        Good: `tizen: playback stalls on HEVC 10-bit after a seek`
+        Bad: `[BUG] Video problem`
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      description: Where it breaks. Pick the one closest to the failure, not where you noticed it.
+      options:
+        - Server (Rust)
+        - Module (tv.kroma.*)
+        - Web client
+        - TV — Tizen (Samsung)
+        - TV — webOS (LG)
+        - TV — other / tv-web
+        - Mobile — iOS
+        - Mobile — Android
+        - Desktop
+        - Synology package
+        - UI kit
+        - CI / release
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Server version, and client version if they differ. `unknown` is an acceptable answer.
+      placeholder: "server 0.4.2, tizen client 0.4.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How it is installed
+      options:
+        - Docker / docker-compose
+        - Synology package
+        - Built from source
+        - Not applicable
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered, from a cold start. If you cannot reproduce it reliably, say so and describe how often it happens.
+      placeholder: |
+        1. Start the server with a library containing HEVC 10-bit files
+        2. Open the Tizen client, play any HEVC file
+        3. Seek forward past 10 minutes
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      description: Two lines. What should have happened, and what did.
+      placeholder: |
+        Expected: playback resumes at the seek point, still direct play.
+        Actual: black screen, audio keeps playing, no error in the UI.
+    validations:
+      required: true
+
+  - type: textarea
+    id: media
+    attributes:
+      label: Media details
+      description: |
+        For any playback or transcode bug. Container, video codec, profile and bit depth, audio codec, resolution.
+        `ffprobe` output pasted verbatim is ideal — direct play is the whole point of KROMA, so the codec matters more than the filename.
+      placeholder: "mkv / hevc Main 10 / 3840x2160 / eac3 5.1"
+      render: shell
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server logs
+      description: The relevant window, not the whole file. Redact tokens and paths you would rather not publish — this repo is public.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched open and closed issues for this
+          required: true
+        - label: I can reproduce this on the latest version, or I said above why I cannot
+          required: true

@@ -1,0 +1,59 @@
+name: Task
+description: Internal work — refactor, chore, docs, CI, performance
+labels: ["type/chore"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For work with no external reporter: cleanups, dependency surgery, CI, docs, performance.
+        Swap `type/chore` for `type/refactor`, `type/docs` or `type/perf` if one of those fits better.
+
+        Title format: `<surface>: <imperative summary>`
+        Good: `ci: cache cargo builds between release jobs`
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What needs doing
+      validations:
+        required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why now
+      description: What this unblocks, or what it costs to keep not doing it. "It bothers me" is a real reason — write it down.
+    validations:
+      required: true
+
+  - type: textarea
+    id: done
+    attributes:
+      label: Definition of done
+      description: A checklist someone else could verify without asking you.
+      placeholder: |
+        - [ ] Release workflow reuses the cargo cache
+        - [ ] Cold release build under 12 minutes
+        - [ ] No change to published artefact contents
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surfaces affected
+      multiple: true
+      options:
+        - Server (Rust)
+        - Module (tv.kroma.*)
+        - SDK / tooling
+        - Web client
+        - TV clients
+        - Mobile
+        - Desktop
+        - Synology package
+        - UI kit
+        - CI / release
+        - Docs
+    validations:
+      required: true
