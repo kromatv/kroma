@@ -55,6 +55,14 @@ The one thing that stays hand-written is a **size check before parsing**: a
 schema cannot reject bytes it has not read yet, so bound the body first, then
 parse.
 
+## One file, one responsibility
+
+A file does one thing, and its name says which. When a second responsibility
+grows inside it, split at the domain seam, not at an arbitrary line count;
+the thresholds and exemptions live in
+[`ARCHITECTURE.md`](ARCHITECTURE.md#file-size-policy). A file you cannot name
+without "and" is two files.
+
 ## Secrets belong where the source is not
 
 The server's source is public and self-hosted by anyone, so a credential
@@ -104,6 +112,21 @@ anyone reading the manifest to find out what this package needs. Write
 
 Shared code lives in a real `@kroma/*` workspace package, depended on by name. If
 the code has no package, that is the work: give it one.
+
+## The quality gate is not optional
+
+A change ships with **0 Sonar issues, 0% duplication on new code, and ~100%
+coverage on new logic**. Not "later", not "in a follow-up": the gate is part of
+done. The scanner's scope, coverage denominator, and every reviewed suppression
+live in [`sonar-project.properties`](sonar-project.properties); read it before
+assuming an issue is a false positive, and prefer a code fix over a new entry
+there.
+
+Run the gate locally before pushing: `bun run sonar:precheck`,
+`bun run sonar:lint`, `bun run check`, `bun run test:coverage`. Untestable glue
+is excluded from the denominator deliberately, file by file, in that same
+properties file: new logic goes where a test can reach it, not into an excluded
+file.
 
 ## No em dashes
 

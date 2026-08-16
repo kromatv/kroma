@@ -163,8 +163,19 @@ The same instinct applies to the code:
 
 - **Name things fully.** `remainingRetries`, not `n`, not `retriesLeft2`. Short
   names are fine only for a short life (`i`, `f`, `ok` inside a five-line block).
-- **Small functions with one job**, named after the job.
+- **Small functions with one job**, named after the job. The same rule holds
+  one level up: a file does one thing (see
+  [`CONVENTIONS.md`](CONVENTIONS.md) and the file-size policy in
+  [`ARCHITECTURE.md`](ARCHITECTURE.md#file-size-policy)).
 - **Return early**; do not nest to describe control flow.
+- **Prefer a named pattern over a bespoke tangle.** When a well-known design
+  pattern fits (a registry, a strategy, a builder, a state machine), use it and
+  let the *names* carry it: `SubtitleStrategy`, `formatRegistry`. A reader who
+  recognises the pattern reads the code for free; a comment announcing the
+  pattern is the code failing to.
+- **Leave code simpler than you found it.** A change that lands duplication,
+  dead code, or a second way of doing something the file already does is not
+  done; the refactor is part of the change, not a follow-up.
 - **Types over checks.** See [`CONVENTIONS.md`](CONVENTIONS.md) for validating
   untrusted input with zod rather than by hand.
 - **No dead code, no unused exports.** `bun run deadcode` catches them.

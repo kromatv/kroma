@@ -59,6 +59,9 @@ cd server && cargo build   # server (use `cargo clippy` if you have it)
 
 - Read [`CODE_STYLE.md`](CODE_STYLE.md) for how code is written here, and in
   particular when a comment is allowed to exist. The default is none.
+- The quality gate (0 Sonar issues, 0% duplication, ~100% coverage on new
+  logic) is part of done, not a follow-up: see
+  [`CONVENTIONS.md`](CONVENTIONS.md#the-quality-gate-is-not-optional).
 - Keep clients **thin** UI belongs in `@kroma/ui`, logic in `@kroma/core`, and the
   shared TV experience in `@kroma/tv`. Write platform code once.
 - Match the existing style: the design language (deep-charcoal + amber, French
