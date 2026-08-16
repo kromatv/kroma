@@ -1,0 +1,25 @@
+#!/bin/sh
+# Refuse to push a branch whose name breaks the <type>/<slug> convention.
+# Wired via core.hooksPath (.githooks); see CONTRIBUTING.md.
+set -eu
+
+pattern='^(feat|fix|docs|chore|ci|refactor|perf|test|build|revert|kit)/[a-z0-9][a-z0-9._-]*$'
+zero='0000000000000000000000000000000000000000'
+status=0
+
+while read -r local_ref local_sha _remote_ref _remote_sha; do
+	case "$local_ref" in
+	refs/heads/*) branch=${local_ref#refs/heads/} ;;
+	*) continue ;;
+	esac
+	[ "$local_sha" = "$zero" ] && continue
+	[ "$branch" = "main" ] && continue
+	if ! printf '%s' "$branch" | grep -Eq "$pattern"; then
+		printf 'refused: branch "%s" breaks the naming convention.\n' "$branch" >&2
+		printf 'use <type>/<slug> — type in: feat fix docs chore ci refactor perf test build revert kit\n' >&2
+		printf 'example: fix/audio-transcode-fallback\n' >&2
+		status=1
+	fi
+done
+
+exit $status

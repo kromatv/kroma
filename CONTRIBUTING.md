@@ -37,6 +37,16 @@ bun run dev      # media server (:4040) + web client (:3000) together
 With no media configured, the server seeds demo titles so the UI is populated
 immediately. Point it at real files with `KROMA_MEDIA_DIRS=/path/to/media`.
 
+`bun install` wires the repo's git hooks (`prepare` → `core.hooksPath .githooks`).
+If you cloned before that existed, run `bun run hooks:install` once.
+
+## Branch names
+
+`<type>/<slug>`, where `<type>` is the conventional-commit type of the work:
+`feat` `fix` `docs` `chore` `ci` `refactor` `perf` `test` `build` `revert` `kit`.
+For example `fix/audio-transcode-fallback`. The `pre-push` hook refuses any branch
+that breaks this.
+
 ## Before you open a PR
 
 Everything must build and typecheck cleanly:

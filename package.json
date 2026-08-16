@@ -78,7 +78,9 @@
     "server:watch": "bun server/preflight.ts && cd server && cargo watch -x 'run --features semantic-embeddings,whisper-metal'",
     "server:watch:cpu": "bun server/preflight.ts && cd server && cargo watch -x 'run --features semantic-embeddings,whisper-local'",
     "server:watch:lexical": "bun server/preflight.ts && cd server && cargo watch -x run",
-    "server:build": "cd server && cargo build --release"
+    "server:build": "cd server && cargo build --release",
+    "prepare": "git config core.hooksPath .githooks || true",
+    "hooks:install": "git config core.hooksPath .githooks"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",
