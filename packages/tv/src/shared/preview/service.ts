@@ -17,26 +17,43 @@ function writePrivateFile(t: Tizen, name: string, data: string): Promise<void> {
   return new Promise((resolve, reject) => {
     t.filesystem.resolve(
       PRIVATE_DIR,
+      // Anything thrown in here is thrown inside the platform's callback, not
+      // inside the executor, so without this it escapes as an uncaught error and
+      // the promise never settles: the caller waits forever. A firmware that
+      // answers `resolve` and then hands back nothing usable is exactly the
+      // shape an older set fails in.
       (dir) => {
-        let file: TizenFile;
         try {
-          file = dir.resolve(name);
-        } catch {
-          file = dir.createFile(name);
+          let file: TizenFile | null;
+          try {
+            file = dir.resolve(name);
+          } catch {
+            file = dir.createFile(name);
+          }
+          if (!file) throw new Error(`tizen filesystem gave no file for ${name}`);
+          file.openStream(
+            'w',
+            // Its own callback, on its own turn of the platform's stack, so it
+            // needs its own guard: a write that throws would otherwise escape
+            // exactly the way the one above does.
+            (stream) => {
+              try {
+                try {
+                  stream.write(data);
+                } finally {
+                  stream.close();
+                }
+                resolve();
+              } catch (error) {
+                reject(error);
+              }
+            },
+            reject,
+            'UTF-8',
+          );
+        } catch (error) {
+          reject(error);
         }
-        file.openStream(
-          'w',
-          (stream) => {
-            try {
-              stream.write(data);
-            } finally {
-              stream.close();
-            }
-            resolve();
-          },
-          reject,
-          'UTF-8',
-        );
       },
       reject,
       'rw',

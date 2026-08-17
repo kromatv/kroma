@@ -73,6 +73,57 @@ beforeEach(() => {
   Reflect.deleteProperty(document, 'activeElement');
 });
 
+// An engine below Chrome 51 has no `KeyboardEvent.key` at all, which is the
+// deep tier's floor and also what Samsung's simulator remote posts. Without the
+// keyCode fallback the television paints correctly and cannot be driven.
+describe('a remote that sends only a keyCode', () => {
+  function legacyPress(keyCode: number) {
+    const event = new KeyboardEvent('keydown', { cancelable: true });
+    Object.defineProperty(event, 'key', { value: undefined });
+    Object.defineProperty(event, 'keyCode', { value: keyCode });
+    document.dispatchEvent(event);
+    return event;
+  }
+
+  it.each([
+    [37, 'left'],
+    [38, 'up'],
+    [39, 'right'],
+    [40, 'down'],
+    [13, 'enter'],
+  ])('drives the navigator from keyCode %i', (code, direction) => {
+    const { handle, stop } = mount();
+    legacyPress(code);
+    stop();
+    expect(handle).toHaveBeenCalledWith(direction);
+  });
+
+  it('still walks reading order on a bare Tab keyCode', () => {
+    const { stop } = mount();
+    legacyPress(9);
+    stop();
+    expect(tab.walk).toHaveBeenCalled();
+  });
+
+  it('leaves a keyCode alone when the engine did report a key', () => {
+    // Modern tiers and the web client: a button that reports `Unidentified`
+    // while still carrying a legacy keyCode must not steer the navigator.
+    const { handle, stop } = mount();
+    const event = new KeyboardEvent('keydown', { key: 'Unidentified', cancelable: true });
+    Object.defineProperty(event, 'keyCode', { value: 40 });
+    document.dispatchEvent(event);
+    stop();
+    expect(handle).not.toHaveBeenCalled();
+  });
+
+  it('ignores a keyCode that is not on the remote', () => {
+    const { handle, stop } = mount();
+    legacyPress(65);
+    stop();
+    expect(handle).not.toHaveBeenCalled();
+  });
+});
+
 describe('arrow keys', () => {
   it.each([
     ['ArrowUp', 'up'],

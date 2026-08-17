@@ -1,8 +1,9 @@
 // Post-build guard for a shell's legacy tier: the bundle must stay parseable and
 // renderable on Chromium 53, the tier's floor. Run from the shell directory.
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { syntaxAboveDeepFloor } from '@kroma/bundler/deep-tier';
 
 const dist = (p: string): string => join(process.cwd(), 'dist', p);
 
@@ -43,6 +44,13 @@ const CSS_CHECKS: Check[] = [
   [/oklch\(|oklab\(/, 'oklch/oklab survives (Chrome 111) - Lightning CSS down-level did not run'],
 ];
 
+// The deep tier (Chromium 47) on top of everything above. Custom properties are
+// M49 outright; the JS side is an AST walk instead of a pattern, because this
+// bundle carries generated code inside string literals that a scan misreads.
+const DEEP_CSS_CHECKS: Check[] = [
+  [/var\(--/, 'custom properties survive (Chrome 49) - the flatten pass did not run'],
+];
+
 let failed = false;
 
 function check(path: string, checks: Check[]): void {
@@ -60,10 +68,30 @@ function check(path: string, checks: Check[]): void {
 check(join('legacy', 'index.js'), JS_CHECKS);
 check(join('legacy', 'style.css'), CSS_CHECKS);
 
-if (!readFileSync(dist('index.html'), 'utf8').includes('./legacy/index.js')) {
-  console.error('[check-legacy] dist/index.html does not gate to ./legacy/index.js');
+// Only the shells whose tv.target sets `deepLegacyChrome` emit this tier.
+const hasDeep = existsSync(dist('deep'));
+if (hasDeep) {
+  check(join('deep', 'index.js'), JS_CHECKS);
+  check(join('deep', 'style.css'), [...CSS_CHECKS, ...DEEP_CSS_CHECKS]);
+  const above = syntaxAboveDeepFloor(readFileSync(dist(join('deep', 'index.js')), 'utf8'));
+  if (above.length > 0) {
+    console.error(
+      `\n[check-legacy] dist/deep/index.js: ${above.join(', ')} survive (M49) - the Babel pass did not run`,
+    );
+    failed = true;
+  }
+}
+
+const html = readFileSync(dist('index.html'), 'utf8');
+for (const dir of hasDeep ? ['legacy', 'deep'] : ['legacy']) {
+  if (html.includes(`./${dir}/index.js`)) continue;
+  console.error(`[check-legacy] dist/index.html does not gate to ./${dir}/index.js`);
   failed = true;
 }
 
 if (failed) process.exit(1);
-console.log('[check-legacy] legacy bundle OK for Chromium 53');
+console.log(
+  hasDeep
+    ? '[check-legacy] legacy bundle OK for Chromium 53, deep bundle OK for Chromium 47'
+    : '[check-legacy] legacy bundle OK for Chromium 53',
+);

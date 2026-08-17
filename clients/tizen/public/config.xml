@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://kroma.app/tizen" version="0.1.33" viewmodes="maximized">
-  <tizen:application id="KromaTV001.KROMA" package="KromaTV001" required_version="6.0"/>
+  <tizen:application id="KromaTV001.KROMA" package="KromaTV001" required_version="3.0"/>
   <content src="index.html"/>
   <feature name="http://tizen.org/feature/screen.size.normal.1080.1920"/>
   <icon src="icon.png"/>
@@ -27,9 +27,10 @@
   <!-- Smart Hub preview: a background service supplies the home-screen carousel
        (the "new movies" tiles), shown even while KROMA isn't running. -->
   <tizen:metadata key="http://samsung.com/tv/metadata/use.preview" value="bg_service"/>
-  <!-- Samsung Product API level this app targets. Safely available on the 6.0
-       floor; raise toward the device version if newer webapis are needed. -->
-  <tizen:metadata key="http://samsung.com/tv/metadata/devel.api.version" value="6.0"/>
+  <!-- Samsung Product API level this app targets. Must not exceed the floor
+       above: a set refuses a level it does not implement. Every webapi called
+       past this level has to be feature-detected, not assumed. -->
+  <tizen:metadata key="http://samsung.com/tv/metadata/devel.api.version" value="3.0"/>
   <!-- Background service that reads wgt-private/preview.json and calls
        webapis.preview.setPreviewData(). id MUST be <package>.PreviewSvc and match
        SERVICE_ID in packages/tv/src/preview.ts. -->

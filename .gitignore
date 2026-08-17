@@ -7,6 +7,8 @@ bun.lockb
 
 # Builds
 dist/
+# Per-tier slices of a built TV package (clients/tizen/scripts/slice.ts).
+dist-*/
 build/
 # Gradle's per-project cache. Not covered by clients/tv-native/.gitignore's
 # `/android`, which is anchored to the generated prebuild folder: gradle also runs

@@ -9,6 +9,7 @@
     "includes": [
       "**",
       "!**/dist",
+      "!**/dist-*",
       "!**/build",
       "!clients/webos/service",
       "!**/.tanstack",

@@ -40,18 +40,29 @@ DEV_PORT   ?= 5174
 DEV_STAGE  := .dev-shell
 
 .DEFAULT_GOAL := help
-.PHONY: help doctor build package connect devices install run deploy redeploy logs uninstall clean cert-selfsigned dev-shell
+.PHONY: help doctor preflight build package connect devices install run deploy redeploy logs uninstall clean cert-selfsigned dev-shell
+
+# Shared preflight: attempts every check, exits non-zero only on a confirmed
+# blocker (a set below the Tizen floor). Passes tool paths + identity through env.
+PREFLIGHT = SDB='$(SDB)' TIZEN='$(TIZEN)' SERIAL='$(SERIAL)' PROFILE='$(PROFILE)' \
+	PKG_ID='$(PKG_ID)' TIZEN_HOME='$(TIZEN_HOME)' CONFIG='public/config.xml' WGT='$(WGT)' \
+	sh scripts/preflight.sh
 
 help: ## Show this help
 	@awk 'BEGIN{FS=":.*?## "} /^[a-zA-Z_-]+:.*?## /{printf "  \033[33m%-14s\033[0m %s\n",$$1,$$2}' $(MAKEFILE_LIST)
 
-doctor: ## Check toolchain + print current config
+doctor: ## Check toolchain, config, and (if a TV is connected) deploy preflight
 	@echo "tizen   : $(TIZEN)";   $(TIZEN) version 2>/dev/null || echo "  ✗ not found see SETUP.md"
 	@echo "sdb     : $(SDB)";      $(SDB) version 2>/dev/null | head -1 || echo "  ✗ not found"
 	@echo "profile : $(PROFILE)"
 	@echo "app id  : $(APP_ID)  (package $(PKG_ID))"
 	@echo "TV      : $(if $(TV_IP),$(TV_IP):$(TV_PORT),<unset pass TV_IP=...>)"
 	@echo "device  : $(if $(SERIAL),$(SERIAL),<none connected>)"
+	@echo "preflight:"
+	@$(PREFLIGHT) || true
+
+preflight: ## Pre-install checks (platform floor, signing profile, stale install)
+	@$(PREFLIGHT)
 
 build: ## Build the web bundle (Vite → dist/). Pass SERVER=http://host:4040 to bake a default address.
 	cd $(REPO_ROOT) && $(if $(SERVER),VITE_KROMA_SERVER="$(SERVER)") bun run build:tizen
@@ -67,7 +78,7 @@ connect: ## sdb connect to the TV (requires TV_IP + Developer Mode on)
 devices: ## List connected devices
 	$(SDB) devices
 
-install: ## Install the latest .wgt on the connected TV
+install: preflight ## Install the latest .wgt on the connected TV
 	@test -n "$(WGT)" || { echo "No .wgt found run 'make package' first"; exit 1; }
 	@test -n "$(SERIAL)" || { echo "No device run 'make connect TV_IP=...'"; exit 1; }
 	# No -t: the Tizen CLI auto-targets the single connected device (its target

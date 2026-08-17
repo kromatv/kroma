@@ -91,10 +91,20 @@
       ]
     },
 
+    "clients/tizen": {
+      "entry": [
+        // The Chromium-47 bundle, built by vite.config.deep.ts, which names its
+        // entry as a string no static tool can follow. Tizen-only, so it cannot
+        // live in the clients/* block: a pattern that matches nothing is itself
+        // something knip reports.
+        "src/main.deep.ts"
+      ]
+    },
+
     "clients/*": {
       "entry": [
         "src/main.{ts,tsx}",
-        // The ES5 bundle for 2018-era TV browsers, built by its own vite config.
+        // The ES5 bundle for older TV browsers, built by its own vite config.
         "src/main.legacy.ts",
         "*.config.{ts,js,cjs}",
         "tv.target.ts",

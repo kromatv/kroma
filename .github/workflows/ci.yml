@@ -196,6 +196,29 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      # One build, three packages, rather than a build per generation: the three
+      # tiers come out of the same sources and the same run, so rebuilding for
+      # each would cost triple and prove nothing extra. What differs is only
+      # which tier a package keeps, and that is a slice of what was just built.
+      #
+      # The gated `dist` above stays: a Store submission needs the one package
+      # that serves every model group. These are for sideloading, where the set's
+      # Tizen version is known and the other two bundles are pure download.
+      - name: Slice per Tizen generation
+        if: matrix.name == 'tizen'
+        run: |
+          cd clients/tizen
+          for tier in modern legacy deep; do bun run slice "$tier"; done
+
+      - name: Upload per-generation packages
+        if: matrix.name == 'tizen'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kroma-tizen-generations-ci
+          path: clients/tizen/dist-*
+          retention-days: 7
+          if-no-files-found: error
+
   # The native TV app (Apple TV + Android TV). The Android half is the gate for
   # the local Expo modules' Kotlin - the launcher rows in particular, which no
   # JS-only check compiles. `android/` is generated (gitignored), so prebuild

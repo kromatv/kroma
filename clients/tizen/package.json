@@ -13,9 +13,11 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && vite build --config vite.config.legacy.ts && bun scripts/build-service.ts && bun run check:legacy && bun ../tv-build/stamp-version.ts",
+    "build": "tsc --noEmit && vite build && vite build --config vite.config.legacy.ts && vite build --config vite.config.deep.ts && bun scripts/build-service.ts && bun run check:legacy && bun ../tv-build/stamp-version.ts",
     "build:fast": "vite build",
     "check:legacy": "bun ../tv-build/check-legacy.ts",
+    "check:simulator": "bun scripts/simulator-check.ts",
+    "slice": "bun scripts/slice.ts",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "doctor": "make doctor",

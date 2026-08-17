@@ -16,6 +16,29 @@ import type { TvTarget } from '@kroma/bundler/shell';
 // lowering required_version to reach Tizen 5.0 (2019) is a one-line change once
 // somebody has run it on such a set.
 //
+// Deep tier: Tizen 3.0 only (Chromium 47-48, the 2017 sets). The gate splits it
+// from the legacy tier on custom properties, which is M49, so every set from
+// Tizen 4.0 (M56) up takes the legacy bundle and only a 2017 set falls through
+// to this one. `legacyChrome` and this floor are therefore not a range each:
+// raising the one above does not move the probe between them, which lives in
+// shell.ts.
+//
+// Reaching M47 costs two passes the tier above does not need. Babel down-levels
+// the bundle where rolldown's es2015 output stops, and the stylesheet's tokens
+// are resolved to literals; the second of those spends cascade-driven theming,
+// so the tier ships the one theme <html data-theme> names.
+//
+// config.xml floors the package at 3.0 to match, and drops devel.api.version to
+// 3.0 with it: a set refuses a Samsung Product API level it does not implement.
+// That costs `webapis.network.getTVName()`, which Samsung documents as API 4.0,
+// so a 2017 set announces its model instead of the name its owner gave it. Every
+// caller in deviceName.ts is feature-detected and already falls back that way.
+//
+// Still unverified on hardware, and neither is answerable from a build: whether
+// a 2017 set accepts the manifest's Samsung privileges, and playback, since the
+// app drives MSE and HLS. The simulator cannot settle either one, being Chromium
+// 137 behind a webapis shim.
+//
 // `deviceDev` honors KROMA_TV_DEVICE=1 for on-device live-dev over the LAN
 // (scripts/dev-device.sh + `make dev-shell`).
 export const target: TvTarget = {
@@ -23,4 +46,5 @@ export const target: TvTarget = {
   port: 5174,
   deviceDev: true,
   legacyChrome: 53,
+  deepLegacyChrome: 47,
 };

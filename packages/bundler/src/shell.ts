@@ -24,8 +24,15 @@ export interface TvTarget {
   port: number;
   chromeFloor?: number;
   legacyChrome?: number;
+  /** Floor of a second legacy tier, for engines below the custom-properties
+   * line (M49). Tizen 3.0 is M47. Requires `legacyChrome`; built after it, and
+   * it is this tier's build that writes the engine gate into index.html. */
+  deepLegacyChrome?: number;
   deviceDev?: boolean;
 }
+
+/** Which legacy bundle a config builds. `deep` needs `deepLegacyChrome`. */
+export type LegacyTier = 'legacy' | 'deep';
 
 const PROFILE = process.env.KROMA_PROFILE === '1';
 
@@ -81,7 +88,17 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
       babel({ presets: [reactCompilerPreset()] }),
       tvFrame({ enabled: !deviceDev }),
     ],
-    resolve: webResolve({ '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)) }),
+    // The workbench is reached through `?workbench`, which a television has no
+    // way to ask for: in a package it is a lazy chunk nothing can ever fetch,
+    // measured at 169 kB. Stubbed for `build` only, so the dev server keeps it.
+    // `#tv/workbench` must come first, since Vite matches string aliases by
+    // prefix in order and a bare `#tv` would swallow it.
+    resolve: webResolve({
+      ...(command === 'build'
+        ? { '#tv/workbench': fileURLToPath(new URL('workbench-stub.tsx', import.meta.url)) }
+        : {}),
+      '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)),
+    }),
     // Packaged TV apps load from a local path: assets must be referenced relatively.
     base: './',
     server: {
@@ -124,12 +141,32 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
   });
 }
 
-/** The legacy tier config (only for targets with `legacyChrome`); run this AFTER
- * the modern build, then `bun ../tv-build/check-legacy.ts` to guard the output. */
-export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserConfig {
+// The gate index.html writes, newest engine first. Modern is implicit; each
+// legacy tier below it needs a probe for the feature that separates it from the
+// next one down, and the last tier is the unconditional fallback. Custom
+// properties are the M49 line, which is exactly what splits a 2017 Tizen 3.0
+// set (M47) from every set the ordinary legacy tier was built for.
+const SUPPORTS_CUSTOM_PROPERTIES =
+  "window.CSS && window.CSS.supports && window.CSS.supports('color', 'var(--k)')";
+
+/** The legacy tier config (only for targets with the matching floor); run this
+ * AFTER the modern build, deep last, then `bun ../tv-build/check-legacy.ts`. */
+export function tvShellLegacyConfig(
+  shellUrl: string,
+  target: TvTarget,
+  tier: LegacyTier = 'legacy',
+): UserConfig {
   const repoRoot = fileURLToPath(new URL('../..', shellUrl));
-  const chrome = target.legacyChrome;
-  if (!chrome) throw new Error(`tv.target for ${target.platform} has no legacyChrome`);
+  const deep = tier === 'deep';
+  const chrome = deep ? target.deepLegacyChrome : target.legacyChrome;
+  if (!chrome) throw new Error(`tv.target for ${target.platform} has no ${tier} chrome floor`);
+  const dir = deep ? 'deep' : 'legacy';
+  const entry = deep ? 'src/main.deep.ts' : 'src/main.legacy.ts';
+  const tiers = target.deepLegacyChrome
+    ? [{ dir: 'legacy', probe: SUPPORTS_CUSTOM_PROPERTIES }, { dir: 'deep' }]
+    : [{ dir: 'legacy' }];
+  // Whichever tier is built last owns the gate, so that it can name them all.
+  const gate = dir === tiers.at(-1)?.dir ? tiers : undefined;
   return {
     plugins: [
       kromaUI(),
@@ -138,7 +175,13 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
       // slowest engines KROMA ships to, and the compiler's output is ordinary
       // JS that legacyFinalize goes on to transpile down like everything else.
       babel({ presets: [reactCompilerPreset()] }),
-      legacyFinalize({ distDir: fileURLToPath(new URL('dist', shellUrl)), chrome }),
+      legacyFinalize({
+        distDir: fileURLToPath(new URL('dist', shellUrl)),
+        chrome,
+        dir,
+        deep,
+        gate,
+      }),
     ],
     // `import.meta` doesn't exist in a classic script; the IIFE output substitutes
     // `{}` for it, so `new URL(asset, import.meta.url)` throws at module init.
@@ -151,11 +194,16 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
     // The member-expression key (like `import.meta.url` above) matches the
     // `globalThis` property read the player uses - a bare global would throw
     // in the runtimes that never define it.
+    // The deep marker is read by the kit's CSS palette: below M49 there are no
+    // custom properties, so a token written as `var(--kroma-…)` resolves to
+    // nothing and the colour is lost. The tier takes the literal values instead,
+    // the same branch native already takes.
     define: {
       ...RNW_DEFINE,
       ...TV_TIER,
       'import.meta.url': 'document.baseURI',
       'globalThis.__KROMA_LEGACY_TIER__': 'true',
+      ...(deep ? { 'globalThis.__KROMA_DEEP_TIER__': 'true' } : {}),
     },
     // `#tv/workbench` must come first: Vite matches string aliases by prefix in
     // order, and a bare `#tv` listed first would swallow it.
@@ -167,16 +215,16 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
     // appinfo/manifest + icons are already copied into dist/ by the modern build.
     publicDir: false,
     server: { fs: { allow: [repoRoot] } },
-    // Assets live under dist/legacy/. JS/HTML resolve against dist/index.html
+    // Assets live under dist/<tier>/. JS/HTML resolve against dist/index.html
     // (needs the subdirectory); the stylesheet resolves against its own
-    // dist/legacy/style.css (the prefix would double up).
+    // dist/<tier>/style.css (the prefix would double up).
     experimental: {
       renderBuiltUrl: (filename: string, { hostType }: { hostType: 'js' | 'css' | 'html' }) =>
-        hostType === 'css' ? `./${filename}` : `./legacy/${filename}`,
+        hostType === 'css' ? `./${filename}` : `./${dir}/${filename}`,
     },
     build: {
       target: 'es2015',
-      outDir: 'dist/legacy',
+      outDir: `dist/${dir}`,
       emptyOutDir: true,
       cssCodeSplit: false,
       // The post-build pass rewrites this stylesheet; legacyFinalize minifies.
@@ -184,7 +232,7 @@ export function tvShellLegacyConfig(shellUrl: string, target: TvTarget): UserCon
       modulePreload: { polyfill: false },
       reportCompressedSize: true,
       rolldownOptions: {
-        input: fileURLToPath(new URL('src/main.legacy.ts', shellUrl)),
+        input: fileURLToPath(new URL(entry, shellUrl)),
         output: {
           // No <script type=module> on old engines: one classic self-contained file.
           format: 'iife',

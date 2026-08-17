@@ -15,7 +15,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const buildPreviewData = vi.hoisted(() => vi.fn(() => '{"sections":[]}' as string | null));
 vi.mock('#tv/shared/preview/cards', () => ({ buildPreviewData }));
 
-function runtime(over: { resolveFails?: boolean; openFails?: boolean; noFile?: boolean } = {}) {
+function runtime(
+  over: { resolveFails?: boolean; openFails?: boolean; noFile?: boolean; nullFile?: boolean } = {},
+) {
   const writes: string[] = [];
   const opened: string[] = [];
   const launched: Array<string | null> = [];
@@ -31,6 +33,7 @@ function runtime(over: { resolveFails?: boolean; openFails?: boolean; noFile?: b
     },
     createFile: (name: string) => {
       created = name;
+      if (over.nullFile) return null as unknown as ReturnType<typeof stream>;
       opened.push(name);
       return stream(name);
     },
@@ -64,11 +67,15 @@ function runtime(over: { resolveFails?: boolean; openFails?: boolean; noFile?: b
         onSuccess: (dir: unknown) => void,
         onError: (e: unknown) => void,
       ) => {
-        if (over.resolveFails) {
-          onError(new Error(`no ${location}`));
-          return;
-        }
-        onSuccess(file);
+        // The platform answers on a later turn, which is the whole reason a
+        // throw inside this callback cannot reach the promise's executor.
+        queueMicrotask(() => {
+          if (over.resolveFails) {
+            onError(new Error(`no ${location}`));
+            return;
+          }
+          onSuccess(file);
+        });
       },
     },
     application: {
@@ -204,6 +211,14 @@ describe('the private file', () => {
     // called this keeps running.
     await expect(publishPreview(client, movies)).resolves.toBeUndefined();
   });
+
+  it('survives a firmware that creates no file, rather than hanging', async () => {
+    // The throw lands in the platform's callback, not the executor: unguarded it
+    // escapes and the promise never settles.
+    runtime({ noFile: true, nullFile: true });
+    const { publishPreview } = await load();
+    await expect(publishPreview(client, movies)).resolves.toBeUndefined();
+  }, 3000);
 
   it('survives a stream it cannot open', async () => {
     const tv = runtime({ openFails: true });
