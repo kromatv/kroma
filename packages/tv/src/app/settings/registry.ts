@@ -15,6 +15,7 @@ import {
 import { useLocale, useSetLocale } from '@kroma/ui';
 import { useEffect, useState } from 'react';
 import { canQuitApp, quitApp } from '#tv/app/appQuit';
+import { crashReportingPrefStore } from '#tv/app/crashReportingPref';
 import { getGpuRendering, gpuToggleAvailable, setGpuRendering } from '#tv/app/desktopGpu';
 import { availableEngines, ENGINE_LABEL_KEY, enginePrefStore } from '#tv/app/enginePref';
 import {
@@ -151,6 +152,17 @@ export const castReceiverSetting: SettingsItem = toggleItem({
   },
 });
 
+export const crashReportingSetting: SettingsItem = toggleItem({
+  id: 'crashReporting',
+  level: 'device',
+  label: 'settings.crashReporting',
+  icon: 'bug',
+  use: () => {
+    const [on, set] = useStoredPref(crashReportingPrefStore);
+    return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
+  },
+});
+
 export const quitAppItem: SettingsItem = actionItem({
   id: 'quitApp',
   label: 'profileMenu.quitApp',
@@ -170,6 +182,7 @@ export const DEVICE_SETTINGS: readonly SettingsItem[] = [
   gpuRenderingSetting,
   artworkSetting,
   perfHudSetting,
+  crashReportingSetting,
 ];
 
 export const PROFILE_SETTINGS: readonly SettingsItem[] = [
@@ -182,6 +195,7 @@ export const PROFILE_SETTINGS: readonly SettingsItem[] = [
   gpuRenderingSetting,
   artworkSetting,
   perfHudSetting,
+  crashReportingSetting,
 ];
 
 // Signed in, the flat settings block plus account rows is taller than a 1080
@@ -213,7 +227,13 @@ export const SETTINGS_GROUPS: Record<SettingsGroupId, SettingsGroup> = {
     id: 'device',
     label: 'settings.device',
     icon: 'device-tv',
-    items: [keyboardLayoutSetting, castReceiverSetting, gpuRenderingSetting, artworkSetting],
+    items: [
+      keyboardLayoutSetting,
+      castReceiverSetting,
+      gpuRenderingSetting,
+      artworkSetting,
+      crashReportingSetting,
+    ],
   },
 };
 

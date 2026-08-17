@@ -24,6 +24,7 @@ const {
   artworkSetting,
   audioLanguageSetting,
   castReceiverSetting,
+  crashReportingSetting,
   engineSetting,
   gpuRenderingSetting,
   keyboardLayoutSetting,
@@ -33,6 +34,7 @@ const {
 } = await import('./registry');
 const { ARTWORK_SCALE, perfHudPrefStore } = await import('./store');
 const { castReceiverPrefStore } = await import('#tv/features/cast/castPref');
+const { crashReportingPrefStore } = await import('#tv/app/crashReportingPref');
 type SettingsItem = typeof localeSetting;
 
 // langOptions sorts by the translated name, so an identity translator keeps the
@@ -197,6 +199,13 @@ describe('what each row is bound to', () => {
     expect(castReceiverPrefStore.get()).toBe('off');
     act(() => cast.result.current[1](true));
     expect(castReceiverPrefStore.get()).toBe('on');
+
+    const crash = renderHook(() => toggleBinding(crashReportingSetting), { wrapper });
+    expect(crash.result.current[0]).toBe(false);
+    act(() => crash.result.current[1](true));
+    expect(crashReportingPrefStore.get()).toBe('on');
+    act(() => crash.result.current[1](false));
+    expect(crashReportingPrefStore.get()).toBe('off');
   });
 
   it('GPU rendering reads the desktop shell, then writes and relaunches it', async () => {

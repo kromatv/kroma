@@ -4,6 +4,7 @@ export * from './accounts';
 export * from './acquisition';
 export * from './admin';
 export * from './cast';
+export * from './crash';
 export * from './discovery';
 export * from './handoff';
 export * from './ids';

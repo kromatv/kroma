@@ -11,6 +11,7 @@ import {
   withUserAgent,
 } from './client/base';
 import * as cast from './client/cast';
+import * as crash from './client/crash';
 import type { DiscoverType } from './client/discovery';
 import * as discovery from './client/discovery';
 import type { HandoffAnnounce, HandoffEvidence } from './client/handoff';
@@ -42,6 +43,7 @@ import type {
   CastCommand,
   CastReceiver,
   ContinueItem,
+  CrashReport,
   CreateReportBody,
   CreateRequestBody,
   DiscoverDetail,
@@ -677,6 +679,10 @@ export class KromaClient {
   }
   deleteReport(id: string): Promise<void> {
     return reports.deleteReport(this.ctx, id);
+  }
+
+  reportCrash(report: CrashReport): Promise<void> {
+    return crash.reportCrash(this.ctx, report);
   }
 
   listNotifications(): Promise<NotificationsView> {

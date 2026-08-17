@@ -11,9 +11,15 @@ and desktop apps, and the web client.
 ## The short version
 
 **We do not collect anything.** KROMA contains no analytics, no telemetry, no
-crash reporting, no advertising and no tracking of any kind. There is no KROMA
-account to create, so there is nothing for us to hold. The app talks to the
-server you point it at, and (unless you sign in) to nothing else at all.
+advertising and no tracking of any kind. There is no KROMA account to create, so
+there is nothing for us to hold. The app talks to the server you point it at, and
+(unless you sign in) to nothing else at all.
+
+Crash reporting is **off by default**. If you turn it on, a crash sends a stack
+trace and your app build and device model to **your own KROMA server** and to
+nowhere else. We never receive it: there is no KROMA-operated sink, and the
+report carries nothing that identifies you beyond the device model already needed
+to read your library.
 
 ## What the app connects to
 

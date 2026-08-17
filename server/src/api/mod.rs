@@ -12,6 +12,7 @@ pub mod ws;
 
 mod accounts;
 mod cast;
+mod diagnostics;
 mod discover;
 mod downloads_overlay;
 mod extract;
@@ -81,6 +82,8 @@ mod it_admin2;
 mod it_admin_manage;
 #[cfg(test)]
 mod it_reports;
+#[cfg(test)]
+mod it_diagnostics;
 #[cfg(test)]
 mod it_notifications;
 #[cfg(test)]
@@ -159,6 +162,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(online_subs::public_routes())
         .merge(themes::routes())
         .merge(modules::public_routes())
+        .merge(diagnostics::routes())
         .merge(ws::routes());
 
     // Content endpoints require a valid session: the catalogue listing + detail,

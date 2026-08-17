@@ -3,6 +3,8 @@ import { configureRemote, OverlayHost, setEntryDefaults, Toaster } from '@kroma/
 import { useEffect } from 'react';
 import { BrandIntro } from '#tv/app/BrandIntro';
 import { CompatBanner } from '#tv/app/CompatBanner';
+import { CrashBoundary } from '#tv/app/CrashBoundary';
+import { CrashScreen } from '#tv/app/CrashScreen';
 import { type DeviceNameSource, useDeviceName } from '#tv/app/deviceName';
 import { resolveRedirect } from '#tv/app/guard';
 import { GUARD } from '#tv/app/navPolicy';
@@ -97,32 +99,34 @@ export function TvApp({
               onSignedInChange={setSignedIn}
             >
               <LocaleProvider client={client}>
-                <CompatBanner />
-                <ContinueProvider>
-                  <RecommendProvider>
-                    <MyListProvider>
-                      <WatchedProvider>
-                        {/* Above the router: a TV must be castable from its home
+                <CrashBoundary client={client} platform={platform} fallback={<CrashScreen />}>
+                  <CompatBanner />
+                  <ContinueProvider>
+                    <RecommendProvider>
+                      <MyListProvider>
+                        <WatchedProvider>
+                          {/* Above the router: a TV must be castable from its home
                             screen, not only from the player. */}
-                        <CastReceiverProvider client={client} lan={lan} name={name}>
-                          {/* Also above the router: the beacon has to be up on
+                          <CastReceiverProvider client={client} lan={lan} name={name}>
+                            {/* Also above the router: the beacon has to be up on
                               whichever gate screen the TV is showing. */}
-                          <HandoffBeaconProvider client={client} lan={lan} name={name}>
-                            {/* A television cannot use React Native's <Modal>: its
+                            <HandoffBeaconProvider client={client} lan={lan} name={name}>
+                              {/* A television cannot use React Native's <Modal>: its
                               view controller never receives a press from a remote
                               (see @kroma/ui lib/overlay-host). */}
-                            <OverlayHost>
-                              <TvRouterGuard />
-                              {/* Above the router so notices survive a screen
+                              <OverlayHost>
+                                <TvRouterGuard />
+                                {/* Above the router so notices survive a screen
                                 change; they never take focus. */}
-                              <Toaster position="top-right" inset={TOAST_INSET} />
-                            </OverlayHost>
-                          </HandoffBeaconProvider>
-                        </CastReceiverProvider>
-                      </WatchedProvider>
-                    </MyListProvider>
-                  </RecommendProvider>
-                </ContinueProvider>
+                                <Toaster position="top-right" inset={TOAST_INSET} />
+                              </OverlayHost>
+                            </HandoffBeaconProvider>
+                          </CastReceiverProvider>
+                        </WatchedProvider>
+                      </MyListProvider>
+                    </RecommendProvider>
+                  </ContinueProvider>
+                </CrashBoundary>
               </LocaleProvider>
             </AuthProvider>
           </TvClientProvider>

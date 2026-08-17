@@ -9,6 +9,7 @@
 //! capability guards live here.
 
 mod backup;
+mod diagnostics;
 mod jobs;
 mod libraries;
 mod llm;
@@ -68,6 +69,7 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .merge(jobs::routes())
         .merge(llm::routes())
         .merge(logs::routes())
+        .merge(diagnostics::routes())
         .merge(modules::routes())
         .merge(notifications::routes())
         .merge(store::routes())
