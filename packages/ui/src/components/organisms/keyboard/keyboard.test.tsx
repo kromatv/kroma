@@ -8,6 +8,27 @@ import { UrlKeyboard } from './url-keyboard';
 
 afterEach(cleanup);
 
+function blurLayers(container: HTMLElement): Element[] {
+  return [...container.querySelectorAll('*')].filter((el) =>
+    /blur/.test((el as HTMLElement).style.backdropFilter),
+  );
+}
+
+describe('ten-foot keyboard blur', () => {
+  it('frosts each key at arm’s length but never on a television', () => {
+    const armsLength = render(<SearchKeyboard value="" onValueChange={vi.fn()} size="sm" />);
+    expect(blurLayers(armsLength.container).length).toBeGreaterThan(0);
+    cleanup();
+    const tv = render(<SearchKeyboard value="" onValueChange={vi.fn()} size="tv" />);
+    expect(blurLayers(tv.container)).toHaveLength(0);
+  });
+
+  it('lays no blur under the URL grid on a television either', () => {
+    const { container } = render(<UrlKeyboard value="" onValueChange={vi.fn()} size="tv" />);
+    expect(blurLayers(container)).toHaveLength(0);
+  });
+});
+
 // space / delete / close, in that order. A glyph key draws no words, so its
 // label is its accessible name alone - which is how a test finds it.
 function tailKeys(): Element[] {

@@ -127,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
   R404Route: typeof R404Route;
   DownloadRoute: typeof DownloadRoute;
+  ModulesRoute: typeof ModulesRoute;
   PrivacyRoute: typeof PrivacyRoute;
   SupportRoute: typeof SupportRoute;
   BlogSlugRoute: typeof BlogSlugRoute;
