@@ -140,3 +140,4 @@ clients/web/public/sw.js
 
 # Kit DOM audit output (bun run kit:dom): review artefacts, not sources.
 .dom/
+.shots/

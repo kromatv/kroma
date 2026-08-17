@@ -630,6 +630,17 @@
         "wrangler": "^4.123.0",
       },
     },
+    "packages/shots": {
+      "name": "@kroma/shots",
+      "version": "0.0.0",
+      "dependencies": {
+        "playwright": "1.62.1",
+      },
+      "devDependencies": {
+        "bun-types": "^1.3.14",
+        "typescript": "^7.0.2",
+      },
+    },
     "packages/site-kit": {
       "name": "@kroma/site-kit",
       "version": "0.0.0",
@@ -1322,6 +1333,8 @@
     "@kroma/package-source": ["@kroma/package-source@workspace:apps/packages"],
 
     "@kroma/push-relay": ["@kroma/push-relay@workspace:packages/push-relay"],
+
+    "@kroma/shots": ["@kroma/shots@workspace:packages/shots"],
 
     "@kroma/site": ["@kroma/site@workspace:apps/www"],
 

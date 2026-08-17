@@ -27,6 +27,7 @@
     "spec:index": "bun docs/spec/scripts/spec-index.ts",
     "spec:check": "bun docs/spec/scripts/spec-index.ts --check",
     "shots": "bun run --filter '@kroma/ui' shots",
+    "shots:pr": "bun packages/shots/src/cli.ts",
     "kit:dom": "bun packages/ui/scripts/dom-audit.ts",
     "kit:compiler": "bun packages/ui/scripts/compiler-coverage.ts",
     "store:art": "bun clients/tv-build/store-art.ts .store-art && python3 clients/tv-build/store-art.py .store-art",
