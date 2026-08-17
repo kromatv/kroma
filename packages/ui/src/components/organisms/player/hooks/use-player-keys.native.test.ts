@@ -12,7 +12,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rn = vi.hoisted(() => ({
   os: 'ios' as 'ios' | 'android',
+  isTV: true,
   remote: null as ((event: HWEvent) => void) | null,
+  back: null as (() => boolean) | null,
+  removeBack: vi.fn(),
   enableTVMenuKey: vi.fn(),
   disableTVMenuKey: vi.fn(),
 }));
@@ -21,6 +24,15 @@ vi.mock('react-native', () => ({
   Platform: {
     get OS() {
       return rn.os;
+    },
+    get isTV() {
+      return rn.isTV;
+    },
+  },
+  BackHandler: {
+    addEventListener: (_: string, handler: () => boolean) => {
+      rn.back = handler;
+      return { remove: rn.removeBack };
     },
   },
   TVEventControl: {
@@ -58,8 +70,10 @@ const routed = (): RemoteKey[] => routeRemoteKey.mock.calls.map(([, key]) => key
 
 beforeEach(() => {
   rn.os = 'ios';
+  rn.isTV = true;
   rn.remote = null;
   host.onKey = null;
+  rn.back = null;
   vi.clearAllMocks();
 });
 
@@ -192,6 +206,41 @@ describe('the Menu claim', () => {
     rerender({ tag: 'b' });
     rerender({ tag: 'c' });
     expect(rn.enableTVMenuKey).toHaveBeenCalledOnce();
+    unmount();
+  });
+});
+
+describe('the Back button', () => {
+  it('routes Android hardware Back into the player and swallows the press', () => {
+    rn.os = 'android';
+    const { unmount } = renderHook(() => usePlayerKeys(params('a')));
+    // Back never reaches the TV event stream on Android; consuming it here is
+    // what keeps the press from finishing the activity and quitting the app.
+    let consumed: boolean | undefined;
+    act(() => {
+      consumed = rn.back?.();
+    });
+    expect(consumed).toBe(true);
+    expect(routeRemoteKey).toHaveBeenCalledWith({ tag: 'a' }, 'Back');
+    unmount();
+    expect(rn.removeBack).toHaveBeenCalledOnce();
+  });
+
+  it('leaves the OS back button alone on tvOS, where Menu already carries Back', () => {
+    const { unmount } = renderHook(() => usePlayerKeys(params('a')));
+    // This fork builds BackHandler on top of the very `menu` event the
+    // vocabulary maps to Back, so a claim here would route one press twice.
+    expect(rn.back).toBeNull();
+    press('menu');
+    expect(routed()).toEqual(['Back']);
+    unmount();
+  });
+
+  it('leaves it alone on an Android phone, where back belongs to the navigator', () => {
+    rn.os = 'android';
+    rn.isTV = false;
+    const { unmount } = renderHook(() => usePlayerKeys(params('a')));
+    expect(rn.back).toBeNull();
     unmount();
   });
 });

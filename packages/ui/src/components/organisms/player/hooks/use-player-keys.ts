@@ -5,7 +5,7 @@
 
 import type { RemoteKey } from '@kroma/core';
 import { useEffect, useEffectEvent } from 'react';
-import { type HWEvent, useTVEventHandler } from 'react-native';
+import { BackHandler, type HWEvent, Platform, useTVEventHandler } from 'react-native';
 import {
   type PlayerKeysParams,
   routeRemoteKey,
@@ -26,7 +26,8 @@ const REMOTE_KEYS: Record<string, RemoteKey> = {
   swipeRight: 'Right',
   select: 'Enter',
   // tvOS reports the Menu button as `menu` once the key is claimed (see
-  // focus-nav); Android TV's remote sends `back`.
+  // focus-nav). Android TV's Back is KEYCODE_BACK, which never reaches this
+  // stream - it arrives through BackHandler instead (see below).
   menu: 'Back',
   back: 'Back',
   playPause: 'PlayPause',
@@ -69,6 +70,24 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   // Android's new architecture never fires `useRemoteEvents`; there the focus
   // root's key host feeds the d-pad in through here instead (see focus-remote).
   useRemoteKeys((key) => routeRemoteKey(params, key));
+
+  // Android TV routes Back through BackHandler, not the TV event stream, so the
+  // player has to claim it here or Android finishes the activity and quits the
+  // app. Returning true keeps the press inside the player (mirrors focus-nav).
+  //
+  // Android TV and nothing else. NOT `Platform.isTV` alone: on tvOS this fork
+  // implements BackHandler *on top of* the same `menu` event REMOTE_KEYS already
+  // maps to Back, so a claim there routes one press twice. NOT `OS` alone
+  // either: on a phone the back button belongs to the navigator.
+  const onBack = useEffectEvent(() => routeRemoteKey(params, 'Back'));
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !Platform.isTV) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      onBack();
+      return true;
+    });
+    return () => sub.remove();
+  }, []);
 }
 
 export type { PlayerKeysParams };
