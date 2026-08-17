@@ -10,6 +10,7 @@ import {
   type PlayerKeysParams,
   routeRemoteKey,
 } from '#ui/components/organisms/player/lib/player-keys';
+import { useRemoteKeys } from '#ui/lib/focus-remote';
 import { holdMenuKey, isRemoteKeyUp, releaseMenuKey } from '#ui/lib/tv-remote';
 
 // Both the clickpad (up/down/left/right) and the touch-surface swipes
@@ -65,6 +66,9 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
     if (key) routeRemoteKey(params, key);
   });
   useRemoteEvents(onRemote);
+  // Android's new architecture never fires `useRemoteEvents`; there the focus
+  // root's key host feeds the d-pad in through here instead (see focus-remote).
+  useRemoteKeys((key) => routeRemoteKey(params, key));
 }
 
 export type { PlayerKeysParams };

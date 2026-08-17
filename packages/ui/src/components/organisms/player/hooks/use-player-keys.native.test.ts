@@ -35,6 +35,15 @@ vi.mock('react-native', () => ({
 const routeRemoteKey = vi.hoisted(() => vi.fn());
 vi.mock('../lib/player-keys', () => ({ routeRemoteKey }));
 
+// The Android key host, mocked to the one surface the player uses: it captures
+// the d-pad subscriber so a press can be posted through it (see focus-remote).
+const host = vi.hoisted(() => ({ onKey: null as ((key: RemoteKey) => void) | null }));
+vi.mock('#ui/lib/focus-remote', () => ({
+  useRemoteKeys: (handle: (key: RemoteKey) => void) => {
+    host.onKey = handle;
+  },
+}));
+
 import { usePlayerKeys } from './use-player-keys';
 
 const params = (tag: string) => ({ tag }) as never;
@@ -50,6 +59,7 @@ const routed = (): RemoteKey[] => routeRemoteKey.mock.calls.map(([, key]) => key
 beforeEach(() => {
   rn.os = 'ios';
   rn.remote = null;
+  host.onKey = null;
   vi.clearAllMocks();
 });
 
@@ -124,6 +134,29 @@ describe('the key-up filter', () => {
     press('playPause', 1);
     // Acting on both toggles play twice, so the film never actually pauses.
     expect(routed()).toEqual(['PlayPause']);
+    unmount();
+  });
+});
+
+describe('the Android key host', () => {
+  it('routes the d-pad in where useTVEventHandler never fires', () => {
+    const { unmount } = renderHook(() => usePlayerKeys(params('a')));
+    // On the new architecture the remote arrives through the focus root's key
+    // host, not the event handler, so the player subscribes to both.
+    act(() => {
+      for (const key of ['Up', 'Down', 'Left', 'Right', 'Enter'] as RemoteKey[]) host.onKey?.(key);
+    });
+    expect(routed()).toEqual(['Up', 'Down', 'Left', 'Right', 'Enter']);
+    unmount();
+  });
+
+  it('hands the router the latest params, like the event handler does', () => {
+    const { rerender, unmount } = renderHook(({ tag }) => usePlayerKeys(params(tag)), {
+      initialProps: { tag: 'first' },
+    });
+    rerender({ tag: 'second' });
+    act(() => host.onKey?.('Enter'));
+    expect(routeRemoteKey).toHaveBeenCalledWith({ tag: 'second' }, 'Enter');
     unmount();
   });
 });

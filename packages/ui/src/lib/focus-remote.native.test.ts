@@ -227,6 +227,43 @@ describe('the Android key host', () => {
   });
 });
 
+describe('the player’s d-pad subscribers', () => {
+  it('hears the same key host the navigator does, so the player works on Android', async () => {
+    const { remote } = await load('android');
+    const nav1 = navigator();
+    const keys: string[] = [];
+    renderHook(() => remote.useRemoteKeys((key) => keys.push(key)));
+    const { result } = renderHook(() => remote.useRemoteHostProps());
+
+    for (const code of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter']) {
+      keyDown(result.current, { code });
+    }
+    // The chrome drives a virtual focus, so it needs the presses as keys; the
+    // navigator still gets its directions for whatever is spatial (the sheet).
+    expect(keys).toEqual(['Up', 'Down', 'Left', 'Right', 'Enter']);
+    expect(nav1.moves).toEqual(['up', 'down', 'left', 'right', 'enter']);
+  });
+
+  it('stays quiet on a key the player has no d-pad word for', async () => {
+    const { remote } = await load('android');
+    const keys: string[] = [];
+    renderHook(() => remote.useRemoteKeys((key) => keys.push(key)));
+    const { result } = renderHook(() => remote.useRemoteHostProps());
+    keyDown(result.current, { code: 'KeyA', key: 'a' });
+    expect(keys).toEqual([]);
+  });
+
+  it('drops the subscriber on unmount', async () => {
+    const { remote } = await load('android');
+    const keys: string[] = [];
+    const { unmount } = renderHook(() => remote.useRemoteKeys((key) => keys.push(key)));
+    const { result } = renderHook(() => remote.useRemoteHostProps());
+    unmount();
+    keyDown(result.current, { code: 'Enter' });
+    expect(keys).toEqual([]);
+  });
+});
+
 describe('typing on a hardware keyboard', () => {
   it('delivers letters to whoever is collecting text', async () => {
     const { remote } = await load('android');

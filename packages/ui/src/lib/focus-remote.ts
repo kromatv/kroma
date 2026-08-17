@@ -5,6 +5,7 @@
 // Read via `useTVEventHandler` rather than the plain emitter: this fork's
 // emitter export has been unreliable.
 
+import type { RemoteKey } from '@kroma/core';
 import { useCallback, useEffect, useEffectEvent } from 'react';
 import {
   type HWEvent,
@@ -105,6 +106,18 @@ const KEY_CODES: Record<string, Direction> = {
   Enter: ENTER,
 };
 
+// The same d-pad keys as the player's own vocabulary. The player chrome drives
+// a virtual focus of its own instead of the spatial navigator (see
+// player/lib/virtual-focus), so on Android it needs these presses from this
+// host too - the tvOS half reads them straight off `useTVEventHandler`.
+const REMOTE_KEY: Record<string, RemoteKey> = {
+  ArrowUp: 'Up',
+  ArrowDown: 'Down',
+  ArrowLeft: 'Left',
+  ArrowRight: 'Right',
+  Enter: 'Enter',
+};
+
 /** Empty off Android, where `useTVEventHandler` above is the whole story. */
 export interface RemoteHostProps {
   onKeyDown?: (event: NativeSyntheticEvent<TVKeyEvent>) => void;
@@ -112,6 +125,11 @@ export interface RemoteHostProps {
 
 // Same Set-not-slot reasoning as `handlers` above.
 const typists = new Set<(key: string) => void>();
+
+// The player chrome's d-pad subscribers. Fed by the Android key host below, so
+// a chrome that keeps its own virtual focus still hears the remote where
+// `useTVEventHandler` never fires (the new architecture, see the host comment).
+const remoteKeys = new Set<(key: RemoteKey) => void>();
 
 const NO_HOST_PROPS: RemoteHostProps = {};
 const IS_ANDROID = Platform.OS === 'android';
@@ -126,6 +144,10 @@ export function useRemoteHostProps(): RemoteHostProps {
     if (direction) {
       markPress();
       for (const handle of handlers) handle(direction);
+      // Fanned to the player chrome as well, the same way `useTVEventHandler`
+      // feeds both the navigator bridge and the player on tvOS.
+      const remoteKey = REMOTE_KEY[code];
+      if (remoteKey) for (const sub of remoteKeys) sub(remoteKey);
       return;
     }
     // Not a direction: may be someone typing. See `useHardwareKeys`.
@@ -151,6 +173,21 @@ export function useHardwareKeys(handle: (key: string) => void): void {
     typists.add(forward);
     return () => {
       typists.delete(forward);
+    };
+  }, []);
+}
+
+/**
+ * Delivers d-pad presses to a chrome driving its own virtual focus (the
+ * player): the Android mirror of the `useTVEventHandler` the player reads on
+ * tvOS. Same effect-event identity trick as {@link useHardwareKeys}.
+ */
+export function useRemoteKeys(handle: (key: RemoteKey) => void): void {
+  const forward = useEffectEvent((key: RemoteKey) => handle(key));
+  useEffect(() => {
+    remoteKeys.add(forward);
+    return () => {
+      remoteKeys.delete(forward);
     };
   }, []);
 }
