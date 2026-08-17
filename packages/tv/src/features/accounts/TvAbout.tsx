@@ -1,8 +1,10 @@
-import { commitLabel, formatBuildDate, repoLabel } from '@kroma/core';
+import { commitLabel, formatBuildDate, repoLabel, type Translate } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
 import { Box, Hint, ListRow, styles, Text, useFocusNav } from '@kroma/ui/kit';
 import { Platform } from 'react-native';
 import { buildInfo } from '#tv/app/clientBuild';
+import { type ClientHardware, clientHardware } from '#tv/app/clientHardware';
+import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
 import { AuthScreen, GATE_MARK, KromaMark } from '#tv/shared/ui';
 
@@ -18,6 +20,8 @@ export function TvAbout() {
   const t = useT();
   const locale = useLocale();
   const build = buildInfo();
+  const env = useEnv();
+  const hardware = clientHardware();
   useFocusNav({ onBack: nav.back });
 
   return (
@@ -30,7 +34,15 @@ export function TvAbout() {
       </Text>
 
       <Box w="100%" maxW={560} gap={12}>
+        <Fact label={t('about.platform')} value={platformLabel(env.platform)} />
         <Fact label={t('about.version')} value={`v${build.version}`} />
+        <Fact
+          label={t('about.cpu')}
+          value={
+            hardware.cpuCores === null ? null : t('about.cpuCores', { count: hardware.cpuCores })
+          }
+        />
+        <Fact label={t('about.memory')} value={memoryLabel(hardware, t, locale)} />
         {/* A build outside a git checkout has no commit to name; Fact hides
             the row rather than show an empty value. */}
         <Fact label={t('about.commit')} value={commitLabel(build.commit, build.dirty)} mono />
@@ -63,6 +75,34 @@ export function TvAbout() {
       />
     </AuthScreen>
   );
+}
+
+// One binary per native platform, so its label is the OS with no space
+// ('AppleTV' / 'AndroidTV' - see the shell's App.tsx); the web shells already
+// pass a display-ready string ('Desktop', 'webOS', 'Tizen'), so those pass
+// through untouched.
+const PLATFORM_LABELS: Record<string, string> = {
+  AppleTV: 'Apple TV',
+  AndroidTV: 'Android TV',
+};
+
+function platformLabel(platform: string): string {
+  return PLATFORM_LABELS[platform] ?? platform;
+}
+
+// Free RAM is the number that explains a struggling television, but only a
+// native shell can read it (no Web API reports it), so the browser shells fall
+// back to the total alone.
+function memoryLabel(hardware: ClientHardware, t: Translate, locale: string): string | null {
+  const { memoryGb, memoryFreeGb } = hardware;
+  if (memoryGb === null) return null;
+  const total = gb(memoryGb, locale);
+  if (memoryFreeGb === null) return t('about.memorySize', { gb: total });
+  return t('about.memoryFree', { free: gb(memoryFreeGb, locale), total });
+}
+
+function gb(value: number, locale: string): string {
+  return value.toLocaleString(locale, { maximumFractionDigits: 1 });
 }
 
 function Fact({

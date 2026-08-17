@@ -10,6 +10,7 @@
 import {
   type DeviceNameSource,
   setBuildInfo,
+  setHardwareSource,
   setLauncherBackend,
   setSearchShell,
   setServerBrowse,
@@ -31,6 +32,7 @@ import { lanBeacon } from '@kroma/lan-beacon';
 import { useEffect, useState } from 'react';
 import { browseForServers } from '../modules/server-discovery';
 import { startLauncherLinks } from './lib/launcher-links';
+import { nativeHardware } from './lib/native-hardware';
 import { nativeLauncher } from './lib/native-launcher';
 import { nativeSearchShell } from './lib/native-search';
 import { startSiriSearch } from './lib/siri-search';
@@ -55,6 +57,9 @@ const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
 // itself: the microphone belongs to the platform (see the module). Registered at
 // module scope, before the first render, exactly like the image backend.
 setVoiceSearchBackend(nativeVoiceSearch);
+// Hermes exposes no `navigator.hardwareConcurrency` / `deviceMemory`, so the
+// About screen's numbers come from the native module instead.
+setHardwareSource(nativeHardware);
 // And on Apple TV the keyboard belongs to the platform too, because that is the
 // only keyboard the Siri Remote will dictate into (see the module).
 setSearchShell(nativeSearchShell);

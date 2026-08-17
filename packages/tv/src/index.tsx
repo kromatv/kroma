@@ -3,6 +3,8 @@
 
 export type { BuildInfo } from '#tv/app/clientBuild';
 export { setBuildInfo } from '#tv/app/clientBuild';
+export type { ClientHardware, HardwareSource } from '#tv/app/clientHardware';
+export { setHardwareSource } from '#tv/app/clientHardware';
 export type { DeviceNameSource } from '#tv/app/deviceName';
 export { lateDeviceName } from '#tv/app/deviceName';
 export type { LauncherBackend } from '#tv/app/launcher';
