@@ -24,6 +24,8 @@
     "modules:test": "bun run modules cargo test",
     "modules:clippy": "bun run modules cargo clippy --all-targets",
     "modules:check": "bun run modules:validate && bun run modules:gen && git diff --exit-code -- modules server/crates/kroma-modules-generated packages/modules-generated",
+    "spec:index": "bun docs/spec/scripts/spec-index.ts",
+    "spec:check": "bun docs/spec/scripts/spec-index.ts --check",
     "shots": "bun run --filter '@kroma/ui' shots",
     "kit:dom": "bun packages/ui/scripts/dom-audit.ts",
     "kit:compiler": "bun packages/ui/scripts/compiler-coverage.ts",
