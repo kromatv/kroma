@@ -1,4 +1,4 @@
-import type { ContinueItem, KromaClient } from '@kroma/core';
+import type { ContinueItem } from '@kroma/core';
 import {
   createContext,
   type ReactNode,
@@ -12,40 +12,7 @@ import {
 import { launcherBackend } from '#tv/app/launcher';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
-
-// A public endpoint, so a launcher can fetch it without the app's auth.
-// A launcher card is drawn 1280 wide; asking for the original ships a
-// multi-megabyte still to a shelf that shows a thumbnail.
-const LAUNCHER_ART_W = 1280;
-
-function cardArt(c: ContinueItem, client: KromaClient): string {
-  const progress = c.durationMs ? c.positionMs / c.durationMs : 0;
-  const params = new URLSearchParams({ label: 'Reprendre', v: c.item.addedAt });
-  if (progress > 0) params.set('progress', progress.toFixed(3));
-  return `${client.baseUrl}/api/items/${encodeURIComponent(c.item.id)}/card?${params}`;
-}
-
-// `backdropUrl` is the clean art for Top Shelf, which draws its own title and
-// progress bar and would otherwise show two.
-function toWatchNext(items: ContinueItem[], client: KromaClient) {
-  return items.map((c) => {
-    const it = c.item;
-    return {
-      id: it.id,
-      title: it.showTitle ?? it.title,
-      subtitle: it.episodeTitle ?? (it.year ? String(it.year) : ''),
-      imageUrl: cardArt(c, client),
-      backdropUrl: client.backdropFor(it, LAUNCHER_ART_W) ?? undefined,
-      // Launchers link an episode card to the SHOW: the movie catalogue cannot
-      // resolve an episode id.
-      showId: it.showId ?? undefined,
-      progressMs: Math.round(c.positionMs),
-      durationMs: Math.round(c.durationMs ?? 0),
-      kind: it.kind,
-      updatedAtMs: Date.parse(c.updatedAt) || Date.now(),
-    };
-  });
-}
+import { buildWatchNext } from '#tv/shared/launcher/cards';
 
 interface Continue {
   items: ContinueItem[];
@@ -80,7 +47,7 @@ export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>
   useEffect(() => {
     const launcher = launcherBackend();
     if (!launcher || !client) return;
-    const json = JSON.stringify(toWatchNext(items, client));
+    const json = JSON.stringify(buildWatchNext(items, client));
     if (json === lastPushed.current) return;
     lastPushed.current = json;
     launcher.setContinueWatching(json);
