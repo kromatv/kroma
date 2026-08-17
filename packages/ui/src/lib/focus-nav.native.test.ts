@@ -28,6 +28,7 @@ const rn = vi.hoisted(() => ({
   enableTVMenuKey: vi.fn(),
   disableTVMenuKey: vi.fn(),
   os: 'ios' as 'ios' | 'android',
+  isTV: true,
 }));
 
 vi.mock('react-native', () => ({
@@ -44,6 +45,9 @@ vi.mock('react-native', () => ({
   Platform: {
     get OS() {
       return rn.os;
+    },
+    get isTV() {
+      return rn.isTV;
     },
   },
   TVEventControl: {
@@ -78,6 +82,7 @@ beforeEach(() => {
   rn.remote = null;
   rn.back = [];
   rn.os = 'ios';
+  rn.isTV = true;
   clearInputHolds();
   clearPressGuard();
   vi.clearAllMocks();
@@ -125,6 +130,12 @@ describe('the Menu key claim', () => {
 });
 
 describe('the hardware Back button', () => {
+  // Android TV: the only platform that routes Back through BackHandler. On tvOS
+  // it is layered on the `menu` remote event instead - see the describe below.
+  beforeEach(() => {
+    rn.os = 'android';
+  });
+
   it('runs the screen’s handler and consumes the press', () => {
     const onBack = vi.fn();
     renderHook(() => useFocusNav({ onBack }));
@@ -155,6 +166,46 @@ describe('the hardware Back button', () => {
     expect(rn.back).toHaveLength(1);
     unmount();
     expect(rn.back).toHaveLength(0);
+  });
+});
+
+describe('Back on tvOS, where BackHandler is the Menu event wearing a hat', () => {
+  it('never subscribes, so one Menu press is not routed twice', () => {
+    // tvOS implements BackHandler on top of `menu`, which BACK_EVENTS already
+    // maps below. Subscribing as well would run the screen's handler twice and
+    // back out two screens per press.
+    renderHook(() => useFocusNav({ onBack: vi.fn() }));
+    expect(rn.back).toHaveLength(0);
+  });
+
+  it('still claims the Menu key, which the subscription guard must not skip', () => {
+    // The guard sits on the subscription, not on the effect: hoisting it would
+    // drop this claim and hand Menu back to the OS, which quits the app. Every
+    // assertion above would still pass.
+    const { unmount } = renderHook(() => useFocusNav({ onBack: vi.fn() }));
+    expect(rn.enableTVMenuKey).toHaveBeenCalled();
+    unmount();
+    expect(rn.disableTVMenuKey).toHaveBeenCalled();
+  });
+
+  it('routes Menu through the remote stream exactly once', () => {
+    const onBack = vi.fn();
+    renderHook(() => useFocusNav({ onBack }));
+    act(() => rn.remote?.({ eventType: 'menu' } as HWEvent));
+    expect(onBack).toHaveBeenCalledOnce();
+  });
+});
+
+describe('Back on an Android phone', () => {
+  it('keeps the hardware button, which is not a television-only path', () => {
+    // The guard is on the OS alone, never `Platform.isTV`: mainline React Native
+    // defines no such field, so pairing the two would strip Back from the phone.
+    rn.os = 'android';
+    rn.isTV = false;
+    const onBack = vi.fn();
+    renderHook(() => useFocusNav({ onBack }));
+    expect(pressBack()).toBe(true);
+    expect(onBack).toHaveBeenCalledOnce();
   });
 });
 

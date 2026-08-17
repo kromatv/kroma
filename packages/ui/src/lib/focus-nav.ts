@@ -4,7 +4,7 @@
 // exist only in the react-native-tvos fork, so this no-ops on mainline RN.
 
 import { useEffect } from 'react';
-import { BackHandler, type HWEvent, useTVEventHandler } from 'react-native';
+import { BackHandler, type HWEvent, Platform, useTVEventHandler } from 'react-native';
 import { resetFocusEntry } from './focus-entry';
 import type { FocusNavHandlers } from './focus-types';
 import { inputHeld } from './input-gate';
@@ -37,13 +37,25 @@ function useFocusNav({ onBack, onPlayPause, resetKey }: FocusNavHandlers): void 
     if (!onBack) return;
     // Claim the Menu key so tvOS reports it instead of backing out of the app.
     holdMenuKey();
+    // Android only, phone and TV alike, where BackHandler is a channel of its
+    // own. On tvOS this fork implements it ON TOP of the same `menu` event
+    // `BACK_EVENTS` maps below, so subscribing there routes one press twice and
+    // backs out two screens. Nothing is lost by staying out: tvOS stubs
+    // `exitApp` to a no-op, so the `true` returned for a held remote buys
+    // nothing. NOT `Platform.isTV` as well - mainline RN defines no such field,
+    // and the phone app would lose its hardware Back. The Menu claim above runs
+    // on every platform, which is why this guard sits here and not at the top of
+    // the effect.
     // A held remote still consumes Back (`true`): letting it through would leave
     // the app while an overlay is on screen.
-    const sub = BackHandler.addEventListener('hardwareBackPress', () =>
-      inputHeld() ? true : onBack() !== false,
-    );
+    const sub =
+      Platform.OS === 'android'
+        ? BackHandler.addEventListener('hardwareBackPress', () =>
+            inputHeld() ? true : onBack() !== false,
+          )
+        : undefined;
     return () => {
-      sub.remove();
+      sub?.remove();
       releaseMenuKey();
     };
   }, [onBack]);
