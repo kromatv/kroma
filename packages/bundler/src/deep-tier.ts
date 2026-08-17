@@ -15,8 +15,10 @@
 //     replaces the cascade that carried them.
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { type InputOptions, transformAsync } from '@babel/core';
+import { type TransformOptions, transformAsync } from '@babel/core';
+// @ts-expect-error -- untyped package
 import transformClasses from '@babel/plugin-transform-classes';
+// @ts-expect-error -- untyped package
 import presetEnv from '@babel/preset-env';
 import { parse } from 'acorn';
 // Ships no types; it is a babel plugin factory and only ever passed to babel.
@@ -35,8 +37,8 @@ const COREJS = '3.40';
 function babelPass(
   code: string,
   path: string,
-  plugins: InputOptions['plugins'],
-  presets: InputOptions['presets'] = [],
+  plugins: TransformOptions['plugins'],
+  presets: TransformOptions['presets'] = [],
 ) {
   return transformAsync(code, {
     filename: path,
