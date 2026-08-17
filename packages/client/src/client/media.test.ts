@@ -165,6 +165,25 @@ describe('hlsMasterUrl', () => {
       'http://kroma.test/api/items/abc/hls/aac-standard/0/0/index.m3u8',
     );
   });
+
+  it('declares decodable codecs so the server can override an unplayable copy', () => {
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, undefined, ['aac', 'eac3'])).toBe(
+      'http://kroma.test/api/items/abc/hls/copy/0/0/index.m3u8?copy=aac%2Ceac3',
+    );
+    // Decodes none: an empty array is a declaration, not "no preference".
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, undefined, [])).toBe(
+      'http://kroma.test/api/items/abc/hls/copy/0/0/index.m3u8?copy=',
+    );
+  });
+
+  it('ignores declared codecs once the request already transcodes', () => {
+    expect(hlsMasterUrl(ctx, 'abc', true, 0, 0, undefined, ['aac'])).toBe(
+      'http://kroma.test/api/items/abc/hls/aac/0/0/index.m3u8',
+    );
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, 'night', ['aac'])).toBe(
+      'http://kroma.test/api/items/abc/hls/aac-night/0/0/index.m3u8',
+    );
+  });
 });
 
 describe('stream / subtitle URL builders', () => {

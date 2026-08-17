@@ -6,7 +6,7 @@ use std::net::SocketAddr;
 use axum::body::Body;
 use axum::extract::{ConnectInfo, Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
-use axum::response::Response;
+use axum::response::{IntoResponse, Redirect, Response};
 use serde::Deserialize;
 
 use crate::api::error::json_error;
@@ -275,6 +275,15 @@ pub struct StreamQuery {
     pub file: Option<String>,
 }
 
+/// `?copy=` names the audio codecs the client can decode or pass through, so the
+/// server can refuse to stream-copy one the device would play silent. Absent means
+/// no declared capability (the requested mode is trusted); present but empty means
+/// the client decodes none, so any copied track is transcoded.
+#[derive(Debug, Deserialize)]
+pub struct HlsQuery {
+    pub copy: Option<String>,
+}
+
 /// `GET /api/items/:id/stream` (optional `?file=<fileId>`) → range-streamed
 /// original file. Without `?file`, the item's default/best file is served.
 pub async fn stream_item(
@@ -309,6 +318,7 @@ fn pick_file_path(item: &MediaItem, file_id: Option<&str>) -> Option<String> {
 pub async fn hls_master(
     State(state): State<SharedState>,
     Path((id, mode, anchor, audio)): Path<(String, String, u64, u32)>,
+    Query(q): Query<HlsQuery>,
 ) -> Response {
     let Some(mode) = StreamMode::parse(&mode) else {
         return json_error(StatusCode::BAD_REQUEST, "bad mode");
@@ -316,6 +326,14 @@ pub async fn hls_master(
     let Some(item) = load_item(&state, id).await else {
         return json_error(StatusCode::NOT_FOUND, "item not found");
     };
+    // Redirected rather than served here: the effective mode owns the session and
+    // its segment URLs, so master and segments never disagree.
+    let selected_codec =
+        item.audio_tracks.iter().find(|t| t.index == audio).map(|t| t.codec.as_str());
+    let effective = mode.for_client_audio(selected_codec, q.copy.as_deref());
+    if effective != mode {
+        return Redirect::temporary(&hls_master_path(&item.id, effective, anchor, audio)).into_response();
+    }
     let Some(abs) = item.abs_path.clone() else {
         return json_error(StatusCode::NOT_FOUND, "no media file for item");
     };
@@ -389,6 +407,12 @@ pub async fn hls_file(
             resp
         }
     }
+}
+
+// Item ids are hex `short_hash`es (optionally joined by a colon), so they need no
+// escaping to sit in a path segment.
+fn hls_master_path(id: &str, mode: StreamMode, anchor: u64, audio: u32) -> String {
+    format!("/api/items/{id}/hls/{}/{anchor}/{audio}/index.m3u8", mode.token())
 }
 
 async fn load_item(state: &SharedState, id: String) -> Option<MediaItem> {
@@ -538,6 +562,18 @@ pub(crate) async fn extract_webvtt(path: &str, index: usize) -> Option<Vec<u8>> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn redirect_path_swaps_only_the_mode_segment() {
+        assert_eq!(
+            hls_master_path("abc123", StreamMode::Aac, 30, 1),
+            "/api/items/abc123/hls/aac/30/1/index.m3u8"
+        );
+        assert_eq!(
+            hls_master_path("tv:s1e2", StreamMode::Aac, 0, 0),
+            "/api/items/tv:s1e2/hls/aac/0/0/index.m3u8"
+        );
+    }
 
     #[test]
     fn parse_mode_variants() {

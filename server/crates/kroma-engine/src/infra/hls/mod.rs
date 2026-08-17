@@ -42,8 +42,20 @@ impl StreamMode {
         }
     }
 
+    /// The mode whose audio will actually reach the speakers, given the selected
+    /// track's codec and the comma-separated set the client declared it can decode
+    /// (`None` = declared nothing, and the request stands). Only `Copy` is ever
+    /// overridden; video is stream-copied in every mode, so this never touches
+    /// the picture.
+    pub fn for_client_audio(self, codec: Option<&str>, client_decodes: Option<&str>) -> Self {
+        match (self, client_decodes) {
+            (Self::Copy, Some(set)) if !client_can_play(codec, set) => Self::Aac,
+            _ => self,
+        }
+    }
+
     // Inverse of `parse`; emitted by the client URL builder in `packages/client media.ts`.
-    fn token(self) -> &'static str {
+    pub fn token(self) -> &'static str {
         match self {
             Self::Copy => "copy",
             Self::Aac => "aac",
@@ -69,6 +81,13 @@ impl StreamMode {
             }
         }
     }
+}
+
+// An unprobed track is assumed playable: with no codec there is nothing honest to
+// override, and forcing a transcode would punish the common case.
+fn client_can_play(codec: Option<&str>, client_set: &str) -> bool {
+    let Some(codec) = codec else { return true };
+    client_set.split(',').any(|c| c.trim().eq_ignore_ascii_case(codec))
 }
 
 // `{item_id}:{mode}:{anchor_secs}:a{audio}`. The mode is part of the key
@@ -181,6 +200,41 @@ mod tests {
         assert!(StreamMode::AacStandard.transcode());
         assert!(StreamMode::AacStandard.filter_chain().unwrap().contains("ratio=4"));
         assert!(StreamMode::AacNight.filter_chain().unwrap().contains("ratio=8"));
+    }
+
+    #[test]
+    fn copy_becomes_aac_when_the_client_cannot_decode_the_codec() {
+        // The AC-3-only Android TV case: a copy request the device can't play.
+        assert_eq!(StreamMode::Copy.for_client_audio(Some("ac3"), Some("aac")), StreamMode::Aac);
+    }
+
+    #[test]
+    fn copy_stays_copy_when_the_client_can_decode_or_passthrough() {
+        assert_eq!(StreamMode::Copy.for_client_audio(Some("ac3"), Some("aac,ac3,eac3")), StreamMode::Copy);
+        assert_eq!(StreamMode::Copy.for_client_audio(Some("AC3"), Some("aac, ac3")), StreamMode::Copy);
+    }
+
+    #[test]
+    fn no_declared_capability_leaves_the_requested_mode_untouched() {
+        assert_eq!(StreamMode::Copy.for_client_audio(Some("ac3"), None), StreamMode::Copy);
+    }
+
+    #[test]
+    fn an_empty_capability_set_transcodes_every_known_codec() {
+        assert_eq!(StreamMode::Copy.for_client_audio(Some("aac"), Some("")), StreamMode::Aac);
+    }
+
+    #[test]
+    fn an_unknown_codec_is_never_forced_to_transcode() {
+        assert_eq!(StreamMode::Copy.for_client_audio(None, Some("aac")), StreamMode::Copy);
+        assert_eq!(StreamMode::Copy.for_client_audio(None, Some("")), StreamMode::Copy);
+    }
+
+    #[test]
+    fn a_transcode_or_filter_request_is_never_second_guessed() {
+        for mode in [StreamMode::Aac, StreamMode::AacStandard, StreamMode::AacNight] {
+            assert_eq!(mode.for_client_audio(Some("ac3"), Some("")), mode);
+        }
     }
 
     #[test]

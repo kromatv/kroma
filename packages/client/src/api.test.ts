@@ -341,6 +341,9 @@ describe('URL builders (pure, no request)', () => {
     expect(c.hlsMasterUrl('id', true, 600.6, 2)).toBe(
       'http://kroma.test/api/items/id/hls/aac/601/2/index.m3u8',
     );
+    expect(c.hlsMasterUrl('id', false, 0, 0, undefined, ['aac', 'eac3'])).toBe(
+      'http://kroma.test/api/items/id/hls/copy/0/0/index.m3u8?copy=aac%2Ceac3',
+    );
     expect(c.posterUrl('id')).toBe('http://kroma.test/api/items/id/poster');
     expect(c.showPosterUrl('s1')).toBe('http://kroma.test/api/shows/s1/poster');
     expect(c.subtitleUrl('id', 3)).toBe('http://kroma.test/api/items/id/subtitles/3.vtt');
