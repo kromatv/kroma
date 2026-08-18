@@ -18,5 +18,7 @@ export type { TvAppProps } from '#tv/app/TvApp';
 export { TvApp } from '#tv/app/TvApp';
 export type { VoiceSearchBackend, VoiceSessionProps } from '#tv/app/voiceSearch';
 export { setVoiceSearchBackend } from '#tv/app/voiceSearch';
+export type { VlcPlaneProps } from '#tv/features/playback/player/vlcPlane';
+export { registerVlcPlane } from '#tv/features/playback/player/vlcPlane';
 export type { DeepLink } from '#tv/shared/preview';
 export { requestDeepLink } from '#tv/shared/preview';

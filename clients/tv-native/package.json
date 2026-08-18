@@ -25,6 +25,7 @@
   "dependencies": {
     "@kroma/core": "workspace:*",
     "@kroma/lan-beacon": "workspace:*",
+    "@kroma/media3-ffmpeg": "workspace:*",
     "@kroma/tv": "workspace:*",
     "@kroma/ui": "workspace:*",
     "expo": "~57.0.13",

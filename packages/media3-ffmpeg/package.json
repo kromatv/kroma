@@ -1,0 +1,24 @@
+{
+  "name": "@kroma/media3-ffmpeg",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Media3's FFmpeg audio decoders, prebuilt for Android: the software fallback that lets a television direct-play DTS, TrueHD and unlicensed E-AC3 instead of asking the server to transcode them.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/media3-ffmpeg"
+  },
+  "main": "app.plugin.js",
+  "files": [
+    "app.plugin.js",
+    "android"
+  ],
+  "peerDependencies": {
+    "expo": "*"
+  },
+  "devDependencies": {
+    "expo": "~57.0.13"
+  }
+}

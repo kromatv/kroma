@@ -9,11 +9,13 @@
 // transparent `<object type="application/avplayer">` with the HTML chrome
 // and subtitle overlay on top.
 
+import { decodableAudioCodecs } from '@kroma/core';
 import type { AudioFilterMode, PlaneRect } from '@kroma/ui';
 import {
   BaseTvEngine,
   type EngineOptions,
   NATIVE_SEEK_AHEAD,
+  serverAudioFilter,
 } from '#tv/features/playback/player/baseEngine';
 import { type AvplayApi, getAvplay, resolveMasterStart } from '#tv/features/playback/player/engine';
 
@@ -56,13 +58,10 @@ export class AvplayEngine extends BaseTvEngine {
    * has no client-side audio DSP, so the server's remux applies it instead. */
   protected sourceUrl(): string {
     if (this.mode === 'master' && this.filter !== 'off') {
-      return this.client.hlsMasterUrl(
-        this.item.id,
-        false,
-        this.baseSec,
-        this.rendition,
-        this.filter,
-      );
+      return this.client.hlsMasterUrl(this.item.id, false, this.baseSec, this.rendition, {
+        filter: serverAudioFilter(this.filter),
+        copyCodecs: decodableAudioCodecs(),
+      });
     }
     return super.sourceUrl();
   }

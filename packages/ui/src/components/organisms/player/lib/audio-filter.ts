@@ -12,6 +12,7 @@ export const AUDIO_FILTER_KEY: Record<AudioFilterMode, MessageKey> = {
   off: 'player.audioFilterOff',
   standard: 'player.audioFilterStandard',
   night: 'player.audioFilterNight',
+  boost: 'player.audioFilterBoost',
 };
 
 export function audioFilterLabels(t: Translate): Record<AudioFilterMode, string> {
@@ -19,6 +20,7 @@ export function audioFilterLabels(t: Translate): Record<AudioFilterMode, string>
     off: t(AUDIO_FILTER_KEY.off),
     standard: t(AUDIO_FILTER_KEY.standard),
     night: t(AUDIO_FILTER_KEY.night),
+    boost: t(AUDIO_FILTER_KEY.boost),
   };
 }
 
@@ -27,7 +29,7 @@ export function audioFilterLabels(t: Translate): Record<AudioFilterMode, string>
 export function storedAudioFilter(): AudioFilterMode {
   try {
     const raw = deviceStorage()?.getItem(KEY) ?? null;
-    if (raw === 'standard' || raw === 'night') return raw;
+    if (raw === 'standard' || raw === 'night' || raw === 'boost') return raw;
   } catch {
     /* ignore */
   }
@@ -85,7 +87,16 @@ const graphs = new WeakMap<HTMLMediaElement, Graph>();
 
 function configure(g: Graph, mode: Exclude<AudioFilterMode, 'off'>): void {
   const { comp, gain } = g;
-  if (mode === 'standard') {
+  if (mode === 'boost') {
+    // Gain, not compression: the track is quiet rather than uneven, so the
+    // compressor is left wide open and only the make-up moves.
+    comp.threshold.value = 0;
+    comp.knee.value = 0;
+    comp.ratio.value = 1;
+    comp.attack.value = 0.01;
+    comp.release.value = 0.25;
+    gain.gain.value = 1.75;
+  } else if (mode === 'standard') {
     comp.threshold.value = -24;
     comp.knee.value = 30;
     comp.ratio.value = 4;

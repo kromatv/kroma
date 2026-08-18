@@ -79,16 +79,17 @@ afterEach(() => {
 
 describe('AUDIO_FILTER_KEY', () => {
   it('names every mode exactly once', () => {
-    expect(Object.keys(AUDIO_FILTER_KEY).sort()).toEqual(['night', 'off', 'standard']);
-    expect(new Set(Object.values(AUDIO_FILTER_KEY)).size).toBe(3);
+    expect(Object.keys(AUDIO_FILTER_KEY).sort()).toEqual(['boost', 'night', 'off', 'standard']);
+    expect(new Set(Object.values(AUDIO_FILTER_KEY)).size).toBe(4);
   });
 
-  it('resolves the three names through the catalog', () => {
+  it('resolves every name through the catalog', () => {
     const t = ((k: string) => `<${k}>`) as never;
     expect(audioFilterLabels(t)).toEqual({
       off: '<player.audioFilterOff>',
       standard: '<player.audioFilterStandard>',
       night: '<player.audioFilterNight>',
+      boost: '<player.audioFilterBoost>',
     });
   });
 });

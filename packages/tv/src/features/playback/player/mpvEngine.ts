@@ -32,6 +32,8 @@ type MpvArg = string | number | boolean;
 const MPV_AF: Record<Exclude<AudioFilterMode, 'off'>, string> = {
   standard: 'lavfi=[acompressor=threshold=0.063:ratio=4:attack=10:release=250:knee=6:makeup=1.4]',
   night: 'lavfi=[acompressor=threshold=0.04:ratio=8:attack=4:release=250:knee=5,volume=0.9]',
+  // Gain, not compression: the track is quiet rather than uneven.
+  boost: 'lavfi=[volume=1.75]',
 };
 
 export class MpvEngine extends BaseTvEngine {

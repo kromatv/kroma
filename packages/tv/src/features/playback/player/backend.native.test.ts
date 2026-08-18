@@ -26,16 +26,48 @@ vi.mock('#tv/features/playback/player/expoVideoEngine', () => ({
   },
 }));
 
-import { createTvEngine, planEngine } from './backend';
+const vlc = vi.hoisted(() => ({ available: false, args: [] as unknown[] }));
+vi.mock('#tv/features/playback/player/vlcPlane', () => ({
+  vlcAvailable: () => vlc.available,
+}));
+vi.mock('#tv/features/playback/player/vlcEngine', () => ({
+  VlcEngine: class {
+    constructor(args: unknown) {
+      vlc.args.push(args);
+    }
+  },
+}));
+
+import { createTvEngine, type Engine, planEngine } from './backend';
 
 const item = { id: 'itm_1' } as MediaItem;
 const env = {} as PlayEnv;
 
 const plan = (pref: EnginePref = 'auto') => planEngine(item, env, pref);
 
+const args = (eng: Engine) => ({
+  plan: {
+    eng,
+    surface: eng === 'vlc' ? 'vlc' : 'video',
+    playbackMode: 'direct',
+    deviceLabel: 'Apple TV',
+    rebuildKey: eng,
+  } as const,
+  client: {} as never,
+  item,
+  durationSec: 1200,
+  rendition: 2,
+  startSec: 40,
+  audioFilter: 'off' as never,
+  dom: { video: null, nativeHls: undefined },
+  listeners: {} as never,
+});
+
 beforeEach(() => {
   rn.os = 'ios';
   built.args = [];
+  vlc.args = [];
+  vlc.available = false;
   nativeDirectPlayable.mockReset();
   nativeDirectPlayable.mockReturnValue(true);
 });
@@ -121,24 +153,6 @@ describe('what the plan reports', () => {
 });
 
 describe('building the engine', () => {
-  const args = (eng: 'expo-direct' | 'expo-remux') => ({
-    plan: {
-      eng,
-      surface: 'video',
-      playbackMode: 'direct',
-      deviceLabel: 'Apple TV',
-      rebuildKey: eng,
-    } as const,
-    client: {} as never,
-    item,
-    durationSec: 1200,
-    rendition: 2,
-    startSec: 40,
-    audioFilter: 'off' as never,
-    dom: { video: null, nativeHls: undefined },
-    listeners: {} as never,
-  });
-
   it('always succeeds: the player owns its own surface', () => {
     expect(createTvEngine(args('expo-direct'))).not.toBeNull();
   });
@@ -159,5 +173,28 @@ describe('building the engine', () => {
       initialRendition: 2,
       startSec: 40,
     });
+  });
+});
+
+describe('the libVLC engine', () => {
+  it('is offered only where a shell registered a plane', () => {
+    nativeDirectPlayable.mockReturnValue(true);
+    expect(plan('vlc')).toMatchObject({ eng: 'expo-direct' });
+    vlc.available = true;
+    expect(plan('vlc')).toMatchObject({ eng: 'vlc', surface: 'vlc', playbackMode: 'direct' });
+  });
+
+  // It carries its own decoders, so routing it through the remux would spend the
+  // server's CPU working around a limit this engine does not have.
+  it('takes the original file even for what the platform player refuses', () => {
+    vlc.available = true;
+    nativeDirectPlayable.mockReturnValue(false);
+    expect(plan('vlc')).toMatchObject({ eng: 'vlc', playbackMode: 'direct' });
+  });
+
+  it('is built with the resume point and never with the remux', () => {
+    expect(createTvEngine(args('vlc'))).not.toBeNull();
+    expect(vlc.args.at(-1)).toMatchObject({ item, startSec: 40, direct: true });
+    expect(built.args).toHaveLength(0);
   });
 });

@@ -10,13 +10,15 @@ import { Platform } from 'react-native';
 import type { EnginePref } from '#tv/app/enginePref';
 import type { EngineListeners, Surface, TvEngine } from '#tv/features/playback/player/engine';
 import { ExpoVideoEngine } from '#tv/features/playback/player/expoVideoEngine';
+import { VlcEngine } from '#tv/features/playback/player/vlcEngine';
+import { vlcAvailable } from '#tv/features/playback/player/vlcPlane';
 
 // The video surface an engine renders to. Natively there is only one: a
 // <VideoView> that sits in the tree like any other view, which is why the chrome
 // can transform it into the settings card exactly as it does an in-page video.
 export type { Surface };
 
-export type Engine = 'expo-direct' | 'expo-remux';
+export type Engine = 'expo-direct' | 'expo-remux' | 'vlc';
 
 /** The resolved backend plan for an item. Only what the SHARED hook reads is
  * declared here; anything a backend needs purely for its own `createTvEngine`
@@ -43,6 +45,18 @@ export interface EnginePlan {
  */
 export function planEngine(item: MediaItem, _env: PlayEnv, pref: EnginePref): EnginePlan {
   const os = Platform.OS === 'ios' ? 'ios' : 'android';
+  // VLC is asked for by name only. It carries its own decoders, so it always
+  // takes the original file: routing it through the remux would spend the
+  // server's CPU working around a limit this engine does not have.
+  if (pref === 'vlc' && vlcAvailable()) {
+    return {
+      eng: 'vlc',
+      surface: 'vlc',
+      playbackMode: 'direct',
+      deviceLabel: 'Android TV',
+      rebuildKey: 'vlc',
+    };
+  }
   const direct = pref !== 'remux' && nativeDirectPlayable(item, os);
   const eng: Engine = direct ? 'expo-direct' : 'expo-remux';
   return {
@@ -73,6 +87,18 @@ export function createTvEngine(args: {
   dom: { video: HTMLVideoElement | null; nativeHls: boolean | undefined };
   listeners: EngineListeners;
 }): TvEngine | null {
+  if (args.plan.eng === 'vlc') {
+    return new VlcEngine({
+      client: args.client,
+      item: args.item,
+      durationSec: args.durationSec,
+      initialRendition: args.rendition,
+      startSec: args.startSec,
+      direct: true,
+      audioFilter: args.audioFilter,
+      listeners: args.listeners,
+    });
+  }
   return new ExpoVideoEngine({
     client: args.client,
     item: args.item,

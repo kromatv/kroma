@@ -41,14 +41,18 @@ export interface ChoiceItem extends BaseItem {
   level: SettingsLevel;
   options: (t: Translate, locale: Locale) => readonly string[];
   valueLabel: (value: string) => MessageKey;
-  use: () => readonly [string, (value: string) => void];
+  /** Named `use*` because it IS a hook, and the renderer calls it through this
+   *  property: React Compiler only leaves a call alone when the name reads as
+   *  one, and memoizes `item.use()` on `item` - a module constant - which
+   *  freezes the row's value for the life of the screen. */
+  useValue: () => readonly [string, (value: string) => void];
   pick?: ChoicePick;
 }
 
 export interface ToggleItem extends BaseItem {
   kind: 'toggle';
   level: SettingsLevel;
-  use: () => readonly [boolean, (value: boolean) => void];
+  useValue: () => readonly [boolean, (value: boolean) => void];
 }
 
 export interface ActionItem extends BaseItem {
@@ -70,18 +74,18 @@ export function choiceItem<T extends string>(
     level: SettingsLevel;
     options: (t: Translate, locale: Locale) => readonly T[];
     valueLabel: (value: T) => MessageKey;
-    use: () => readonly [T, (value: T) => void];
+    useValue: () => readonly [T, (value: T) => void];
     pick?: ChoicePick;
   },
 ): SettingsItem {
-  const { options, valueLabel, use, ...base } = spec;
+  const { options, valueLabel, useValue, ...base } = spec;
   return {
     kind: 'choice',
     ...base,
     options,
     valueLabel: (value) => valueLabel(value as T),
-    use: () => {
-      const [value, set] = use();
+    useValue: () => {
+      const [value, set] = useValue();
       return [value, set as (value: string) => void] as const;
     },
   };

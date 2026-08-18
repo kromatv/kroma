@@ -37,6 +37,7 @@ import { nativeLauncher } from './lib/native-launcher';
 import { nativeSearchShell } from './lib/native-search';
 import { startSiriSearch } from './lib/siri-search';
 import { hydrateSessionStorage } from './lib/storage';
+import { installVlcPlane } from './lib/vlc-plane';
 import { nativeVoiceSearch } from './lib/voice-search';
 
 // Which build this is. The browser shells get it from a Vite `define`; Metro has
@@ -74,6 +75,10 @@ setServerBrowse(browseForServers);
 // cards, glass buttons). tvOS composites UIVisualEffectView on the GPU, so the
 // shell hands it over; the kit itself stays free of the dependency (see Frost).
 registerFrost(BlurView);
+
+// Android builds the libVLC plane; Apple has no module and registers nothing,
+// which is what keeps that engine out of its picker.
+installVlcPlane();
 
 export function App() {
   // A TV must never sleep mid-film, and unlike a phone there is no user

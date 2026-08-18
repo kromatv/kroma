@@ -1,0 +1,29 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.vlcplayer'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.vlcplayer"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // The whole of VLC's decoding, as a published artifact: this player exists to
+  // play what the platform's MediaCodec refuses (HEVC Main10 on an 8-bit decoder,
+  // VC-1, MPEG-2), and Media3 has no software video path to fall back on -
+  // its ExperimentalFfmpegVideoRenderer is an unimplemented stub.
+  // 3.6.2 is the newest libvlc-all VideoLAN publishes; the Apple half pins TVVLCKit
+  // 3.7.x because that is the newest THERE. The two halves are written as twins, so
+  // check both when a decoder or seek fix is the reason for a bump.
+  implementation 'org.videolan.android:libvlc-all:3.6.2'
+}

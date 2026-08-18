@@ -70,8 +70,9 @@ describe('the artwork quality row', () => {
   // is read when a URL is minted, so a row writing somewhere else would move
   // the setting and change no artwork.
   it('reads and writes the store the scale is applied from', () => {
-    const use = (artworkSetting as unknown as { use: () => readonly [string, (v: string) => void] })
-      .use;
+    const use = (
+      artworkSetting as unknown as { useValue: () => readonly [string, (v: string) => void] }
+    ).useValue;
     const { result } = renderHook(() => use());
     expect(result.current[0]).toBe(artworkPrefStore.get());
 

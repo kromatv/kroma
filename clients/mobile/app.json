@@ -89,7 +89,8 @@
           "icon": "./assets/images/android-icon-monochrome.png",
           "color": "#0A0A0C"
         }
-      ]
+      ],
+      "@kroma/media3-ffmpeg"
     ],
     "experiments": {
       "typedRoutes": true,

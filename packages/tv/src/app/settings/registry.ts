@@ -41,7 +41,7 @@ export const localeSetting: SettingsItem = choiceItem({
   icon: 'language',
   options: () => LOCALES.map((l) => l.code),
   valueLabel: (code) => LOCALES.find((l) => l.code === code)?.labelKey ?? 'common.language',
-  use: () => [useLocale(), useSetLocale()] as const,
+  useValue: () => [useLocale(), useSetLocale()] as const,
 });
 
 export const audioLanguageSetting: SettingsItem = choiceItem({
@@ -52,7 +52,7 @@ export const audioLanguageSetting: SettingsItem = choiceItem({
   pick: 'list',
   options: (t, locale) => [LANG_NO_PREF, ...langCodes(t, locale)],
   valueLabel: langValueLabel,
-  use: () => {
+  useValue: () => {
     const { audio, setAudio } = useLangPrefs();
     return [prefValue(audio), setAudio] as const;
   },
@@ -66,7 +66,7 @@ export const subtitleLanguageSetting: SettingsItem = choiceItem({
   pick: 'list',
   options: (t, locale) => [LANG_NO_PREF, LANG_OFF, ...langCodes(t, locale)],
   valueLabel: langValueLabel,
-  use: () => {
+  useValue: () => {
     const { subtitle, setSubtitle } = useLangPrefs();
     return [prefValue(subtitle), setSubtitle] as const;
   },
@@ -88,7 +88,7 @@ export const keyboardLayoutSetting: SettingsItem = choiceItem({
   icon: 'keyboard',
   options: () => ALL_KEYBOARD_LAYOUTS,
   valueLabel: (v) => KEYBOARD_LAYOUT_LABEL_KEY[v],
-  use: () => useStoredPref(keyboardLayoutStore),
+  useValue: () => useStoredPref(keyboardLayoutStore),
 });
 
 export const engineSetting: SettingsItem = choiceItem({
@@ -98,7 +98,7 @@ export const engineSetting: SettingsItem = choiceItem({
   icon: 'movie',
   options: availableEngines,
   valueLabel: (v) => ENGINE_LABEL_KEY[v],
-  use: () => useStoredPref(enginePrefStore),
+  useValue: () => useStoredPref(enginePrefStore),
 });
 
 export const gpuRenderingSetting: SettingsItem = toggleItem({
@@ -107,7 +107,7 @@ export const gpuRenderingSetting: SettingsItem = toggleItem({
   label: 'profileMenu.gpuRendering',
   icon: 'cpu',
   available: gpuToggleAvailable,
-  use: () => {
+  useValue: () => {
     const [on, setOn] = useState(false);
     useEffect(() => {
       void getGpuRendering().then(setOn);
@@ -127,7 +127,7 @@ export const artworkSetting: SettingsItem = choiceItem({
   icon: 'photo',
   options: () => Object.keys(ARTWORK_SCALE) as ArtworkQuality[],
   valueLabel: (v) => `artworkQuality.${v}` as MessageKey,
-  use: () => useStoredPref(artworkPrefStore),
+  useValue: () => useStoredPref(artworkPrefStore),
 });
 
 export const perfHudSetting: SettingsItem = toggleItem({
@@ -135,7 +135,7 @@ export const perfHudSetting: SettingsItem = toggleItem({
   level: 'device',
   label: 'profileMenu.perfHud',
   icon: 'gauge',
-  use: () => {
+  useValue: () => {
     const [on, set] = useStoredPref(perfHudPrefStore);
     return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
   },
@@ -146,7 +146,7 @@ export const castReceiverSetting: SettingsItem = toggleItem({
   level: 'device',
   label: 'settings.castReceiver',
   icon: 'cast',
-  use: () => {
+  useValue: () => {
     const [on, set] = useStoredPref(castReceiverPrefStore);
     return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
   },
@@ -157,7 +157,7 @@ export const crashReportingSetting: SettingsItem = toggleItem({
   level: 'device',
   label: 'settings.crashReporting',
   icon: 'bug',
-  use: () => {
+  useValue: () => {
     const [on, set] = useStoredPref(crashReportingPrefStore);
     return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
   },

@@ -3,7 +3,7 @@
 // timeline, and a `master` mode on the server's HLS remux anchored at `baseSec`
 // (its clock restarts at 0, so the absolute position is `baseSec + elSec`).
 
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { decodableAudioCodecs, type KromaClient, type MediaItem } from '@kroma/core';
 import type { AudioFilterMode } from '@kroma/ui';
 import type { EngineListeners, TvEngine } from '#tv/features/playback/player/engine';
 
@@ -21,6 +21,15 @@ export interface EngineOptions {
 /** Seconds: a master-mode seek further ahead than this re-anchors, since it is
  * past the anchored remux's production edge. Direct mode always seeks natively. */
 export const NATIVE_SEEK_AHEAD = 60;
+
+/**
+ * The filter the SERVER can apply, which is not every mode the app offers:
+ * `boost` is plain gain and belongs to whichever engine is decoding, so asking
+ * the server for it would spend a re-encode on a filter it does not have.
+ */
+export function serverAudioFilter(mode: AudioFilterMode): 'standard' | 'night' | undefined {
+  return mode === 'standard' || mode === 'night' ? mode : undefined;
+}
 
 export abstract class BaseTvEngine implements TvEngine {
   abstract readonly kind: TvEngine['kind'];
@@ -58,7 +67,16 @@ export abstract class BaseTvEngine implements TvEngine {
   protected sourceUrl(): string {
     return this.mode === 'direct'
       ? this.client.streamUrl(this.item.id)
-      : this.client.hlsMasterUrl(this.item.id, this.forceAac, this.baseSec, this.rendition);
+      : this.client.hlsMasterUrl(
+          this.item.id,
+          this.forceAac,
+          this.baseSec,
+          this.rendition,
+          // Declared on every master, not just the fallback one: the server copies
+          // audio unless it is told what this device decodes, so a master that says
+          // nothing is served a codec it may only be able to play as silence.
+          { copyCodecs: decodableAudioCodecs() },
+        );
   }
 
   // `audioUnsupported`: the device can't decode the source audio track, so

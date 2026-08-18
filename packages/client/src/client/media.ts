@@ -185,17 +185,25 @@ export type HlsAudioFilter = 'standard' | 'night';
  * audio track as an alternate rendition, so language switches happen in place
  * (no reload). `aac=true` transcodes every rendition to stereo AAC for runtimes
  * that can't decode the source codec via MSE; `aac=false` stream-copies them.
- * `copyCodecs` names what this device can decode, letting the server override a
- * stream copy it would play silent; omitted means no declaration, an empty array
- * means none, and it is read only for a copy request. */
+ * `copyCodecs` names the audio and `videoCodecs` the video this device can
+ * decode, letting the server override a stream copy it would play silent or
+ * black; omitted means no declaration, an empty array means none. `copyCodecs`
+ * is read only for a copy request, `videoCodecs` for every mode - the video axis
+ * is independent of the audio one, and the server answers a mismatch with a
+ * redirect to the mode it will actually produce. */
+export interface HlsMasterDeclaration {
+  filter?: HlsAudioFilter;
+  copyCodecs?: string[];
+  videoCodecs?: string[];
+}
+
 export function hlsMasterUrl(
   ctx: RequestContext,
   id: string,
   aac = false,
   startSec = 0,
   audio = 0,
-  filter?: HlsAudioFilter,
-  copyCodecs?: string[],
+  { filter, copyCodecs, videoCodecs }: HlsMasterDeclaration = {},
 ): string {
   // The anchor, audio index and filter mode are all in the path, so each seek
   // position and language gets its own session with its own child URLs - no
@@ -207,8 +215,11 @@ export function hlsMasterUrl(
   const clean = aac ? 'aac' : 'copy';
   const mode = filter ? `aac-${filter}` : clean;
   const base = `${ctx.baseUrl}/api/items/${encodeURIComponent(id)}/hls/${mode}/${anchor}/${a}/index.m3u8`;
-  if (!copyCodecs || mode !== 'copy') return base;
-  return `${base}?copy=${encodeURIComponent(copyCodecs.join(','))}`;
+  const params: string[] = [];
+  if (copyCodecs && mode === 'copy')
+    params.push(`copy=${encodeURIComponent(copyCodecs.join(','))}`);
+  if (videoCodecs) params.push(`video=${encodeURIComponent(videoCodecs.join(','))}`);
+  return params.length ? `${base}?${params.join('&')}` : base;
 }
 
 /** WebVTT URL for the n-th embedded subtitle track of an item. The server

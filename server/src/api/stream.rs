@@ -276,12 +276,14 @@ pub struct StreamQuery {
 }
 
 /// `?copy=` names the audio codecs the client can decode or pass through, so the
-/// server can refuse to stream-copy one the device would play silent. Absent means
+/// server can refuse to stream-copy one the device would play silent; `?video=`
+/// does the same for the picture, which would otherwise play black. Absent means
 /// no declared capability (the requested mode is trusted); present but empty means
-/// the client decodes none, so any copied track is transcoded.
+/// the client decodes none, so any copied stream is transcoded.
 #[derive(Debug, Deserialize)]
 pub struct HlsQuery {
     pub copy: Option<String>,
+    pub video: Option<String>,
 }
 
 /// `GET /api/items/:id/stream` (optional `?file=<fileId>`) → range-streamed
@@ -310,8 +312,9 @@ fn pick_file_path(item: &MediaItem, file_id: Option<&str>) -> Option<String> {
     item.abs_path.clone()
 }
 
-/// `GET /api/items/:id/hls/:mode/:anchor/:audio/index.m3u8` (mode = `copy`|`aac`|
-/// `aac-standard`|`aac-night`, anchor = start seconds for input `-ss`, audio =
+/// `GET /api/items/:id/hls/:mode/:anchor/:audio/index.m3u8` (mode = an audio
+/// treatment `copy`|`aac`|`aac-standard`|`aac-night`, optionally prefixed `h264-`
+/// to re-encode the picture; anchor = start seconds for input `-ss`; audio =
 /// audio-relative track index) → one media playlist muxing video with that single
 /// audio track. Each (mode, anchor, audio) is its own session with its own child
 /// URLs, so switching language means reloading with a different `audio`.
@@ -327,10 +330,13 @@ pub async fn hls_master(
         return json_error(StatusCode::NOT_FOUND, "item not found");
     };
     // Redirected rather than served here: the effective mode owns the session and
-    // its segment URLs, so master and segments never disagree.
+    // its segment URLs, so master and segments never disagree. Both axes are
+    // resolved before the comparison, so one redirect settles them together.
     let selected_codec =
         item.audio_tracks.iter().find(|t| t.index == audio).map(|t| t.codec.as_str());
-    let effective = mode.for_client_audio(selected_codec, q.copy.as_deref());
+    let effective = mode
+        .for_client_audio(selected_codec, q.copy.as_deref())
+        .for_client_video(item.video.as_ref().map(|v| v.codec.as_str()), q.video.as_deref());
     if effective != mode {
         return Redirect::temporary(&hls_master_path(&item.id, effective, anchor, audio)).into_response();
     }
@@ -562,26 +568,57 @@ pub(crate) async fn extract_webvtt(path: &str, index: usize) -> Option<Vec<u8>> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::infra::hls::{AudioMode, VideoMode};
+
+    fn mode(video: VideoMode, audio: AudioMode) -> StreamMode {
+        StreamMode::new(video, audio)
+    }
 
     #[test]
     fn redirect_path_swaps_only_the_mode_segment() {
         assert_eq!(
-            hls_master_path("abc123", StreamMode::Aac, 30, 1),
+            hls_master_path("abc123", mode(VideoMode::Copy, AudioMode::Aac), 30, 1),
             "/api/items/abc123/hls/aac/30/1/index.m3u8"
         );
         assert_eq!(
-            hls_master_path("tv:s1e2", StreamMode::Aac, 0, 0),
+            hls_master_path("tv:s1e2", mode(VideoMode::Copy, AudioMode::Aac), 0, 0),
             "/api/items/tv:s1e2/hls/aac/0/0/index.m3u8"
+        );
+        assert_eq!(
+            hls_master_path("abc123", mode(VideoMode::H264, AudioMode::AacNight), 30, 1),
+            "/api/items/abc123/hls/h264-aac-night/30/1/index.m3u8"
         );
     }
 
     #[test]
     fn parse_mode_variants() {
-        assert_eq!(StreamMode::parse("copy"), Some(StreamMode::Copy));
-        assert_eq!(StreamMode::parse("aac"), Some(StreamMode::Aac));
-        assert_eq!(StreamMode::parse("aac-standard"), Some(StreamMode::AacStandard));
-        assert_eq!(StreamMode::parse("aac-night"), Some(StreamMode::AacNight));
+        assert_eq!(StreamMode::parse("copy"), Some(mode(VideoMode::Copy, AudioMode::Copy)));
+        assert_eq!(StreamMode::parse("aac"), Some(mode(VideoMode::Copy, AudioMode::Aac)));
+        assert_eq!(
+            StreamMode::parse("aac-standard"),
+            Some(mode(VideoMode::Copy, AudioMode::AacStandard))
+        );
+        assert_eq!(StreamMode::parse("aac-night"), Some(mode(VideoMode::Copy, AudioMode::AacNight)));
+        assert_eq!(StreamMode::parse("h264-copy"), Some(mode(VideoMode::H264, AudioMode::Copy)));
+        assert_eq!(
+            StreamMode::parse("h264-aac-standard"),
+            Some(mode(VideoMode::H264, AudioMode::AacStandard))
+        );
         assert_eq!(StreamMode::parse("bogus"), None);
+    }
+
+    // A redirect drops the query, so re-resolving the mode it names must be a
+    // no-op or the master would bounce forever.
+    #[test]
+    fn the_redirect_target_resolves_to_itself() {
+        let asked = mode(VideoMode::Copy, AudioMode::Copy);
+        let effective = asked.for_client_audio(Some("dts"), Some("aac")).for_client_video(Some("hevc"), Some("h264"));
+        assert_eq!(effective, mode(VideoMode::H264, AudioMode::Aac));
+        assert_eq!(
+            hls_master_path("abc123", effective, 30, 1),
+            "/api/items/abc123/hls/h264-aac/30/1/index.m3u8"
+        );
+        assert_eq!(effective.for_client_audio(Some("dts"), None).for_client_video(Some("hevc"), None), effective);
     }
 
     fn track(index: u32, codec: &str) -> crate::model::AudioStream {

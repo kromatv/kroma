@@ -1,6 +1,6 @@
 import { hashString } from '@kroma/core';
 import { type ReactNode, useMemo } from 'react';
-import type { DimensionValue } from 'react-native';
+import { Animated, type DimensionValue } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
@@ -140,7 +140,13 @@ function CardBox({
   children,
 }: Readonly<{ held: boolean; width: DimensionValue; children: ReactNode }>) {
   const grow = useFocusScale(held, FOCUS_SCALE);
-  return <Box style={[s.card, { width }, held ? LIFTED : null, grow]}>{children}</Box>;
+  // <Animated.View>, not <Box>: on native `grow` carries an Animated.Value, and a
+  // plain view rejects it ("Transform with key of scale must be a number").
+  return (
+    <Animated.View style={[s.card, { width }, held ? LIFTED : null, grow]}>
+      {children}
+    </Animated.View>
+  );
 }
 
 const s = styles({

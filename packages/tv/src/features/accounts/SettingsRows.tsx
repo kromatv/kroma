@@ -43,7 +43,7 @@ function Badge({ badge }: Readonly<{ badge: RowBadge }>) {
 function ChoiceRow({ item, first }: Readonly<{ item: ChoiceItem; first?: boolean }>) {
   const t = useT();
   const locale = useLocale();
-  const [value, set] = item.use();
+  const [value, set] = item.useValue();
   const [picking, setPicking] = useState(false);
   // A language row's options are ~190 names through a collator, and this list
   // re-renders whenever any pref on the menu changes.
@@ -88,7 +88,7 @@ function ChoiceRow({ item, first }: Readonly<{ item: ChoiceItem; first?: boolean
 
 function ToggleRow({ item, first }: Readonly<{ item: ToggleItem; first?: boolean }>) {
   const t = useT();
-  const [on, set] = item.use();
+  const [on, set] = item.useValue();
   return (
     <ListRow.Root
       icon={item.icon}

@@ -15,7 +15,7 @@ interface AudioFilterPanelProps {
   onBack: () => void;
 }
 
-const MODES: AudioFilterMode[] = ['off', 'standard', 'night'];
+const MODES: AudioFilterMode[] = ['off', 'standard', 'night', 'boost'];
 
 /** Volume-normalizer picker (§7): Off / Standard / Night, with a hint. Only
  * mounted when the controller reports `audioFilterSupported`. */

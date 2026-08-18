@@ -157,31 +157,55 @@ describe('hlsMasterUrl', () => {
   });
 
   it('a loudness filter becomes the mode segment (forcing the transcode path)', () => {
-    expect(hlsMasterUrl(ctx, 'abc', false, 600.4, 1, 'night')).toBe(
+    expect(hlsMasterUrl(ctx, 'abc', false, 600.4, 1, { filter: 'night' })).toBe(
       'http://kroma.test/api/items/abc/hls/aac-night/600/1/index.m3u8',
     );
     // The filter supersedes `aac` (a filtered program is always transcoded).
-    expect(hlsMasterUrl(ctx, 'abc', true, 0, 0, 'standard')).toBe(
+    expect(hlsMasterUrl(ctx, 'abc', true, 0, 0, { filter: 'standard' })).toBe(
       'http://kroma.test/api/items/abc/hls/aac-standard/0/0/index.m3u8',
     );
   });
 
   it('declares decodable codecs so the server can override an unplayable copy', () => {
-    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, undefined, ['aac', 'eac3'])).toBe(
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, { copyCodecs: ['aac', 'eac3'] })).toBe(
       'http://kroma.test/api/items/abc/hls/copy/0/0/index.m3u8?copy=aac%2Ceac3',
     );
     // Decodes none: an empty array is a declaration, not "no preference".
-    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, undefined, [])).toBe(
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, { copyCodecs: [] })).toBe(
       'http://kroma.test/api/items/abc/hls/copy/0/0/index.m3u8?copy=',
     );
   });
 
   it('ignores declared codecs once the request already transcodes', () => {
-    expect(hlsMasterUrl(ctx, 'abc', true, 0, 0, undefined, ['aac'])).toBe(
+    expect(hlsMasterUrl(ctx, 'abc', true, 0, 0, { copyCodecs: ['aac'] })).toBe(
       'http://kroma.test/api/items/abc/hls/aac/0/0/index.m3u8',
     );
-    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, 'night', ['aac'])).toBe(
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, { filter: 'night', copyCodecs: ['aac'] })).toBe(
       'http://kroma.test/api/items/abc/hls/aac-night/0/0/index.m3u8',
+    );
+  });
+
+  it('declares decodable video, which the audio treatment never suppresses', () => {
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, { videoCodecs: ['h264', 'vp9'] })).toBe(
+      'http://kroma.test/api/items/abc/hls/copy/0/0/index.m3u8?video=h264%2Cvp9',
+    );
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, { filter: 'night', videoCodecs: ['h264'] })).toBe(
+      'http://kroma.test/api/items/abc/hls/aac-night/0/0/index.m3u8?video=h264',
+    );
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, { videoCodecs: [] })).toBe(
+      'http://kroma.test/api/items/abc/hls/copy/0/0/index.m3u8?video=',
+    );
+  });
+
+  it('carries both declarations at once', () => {
+    expect(
+      hlsMasterUrl(ctx, 'abc', false, 30, 1, { copyCodecs: ['aac'], videoCodecs: ['h264'] }),
+    ).toBe('http://kroma.test/api/items/abc/hls/copy/30/1/index.m3u8?copy=aac&video=h264');
+  });
+
+  it('omits the query entirely when nothing is declared', () => {
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0)).toBe(
+      'http://kroma.test/api/items/abc/hls/copy/0/0/index.m3u8',
     );
   });
 });

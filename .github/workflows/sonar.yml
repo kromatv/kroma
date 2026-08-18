@@ -55,14 +55,14 @@ jobs:
             echo "::notice::SONAR_TOKEN secret not set - skipping SonarCloud scan."
           fi
 
-  sonar:
-    name: SonarCloud scan
+  js-coverage:
+    name: JS/TS coverage
     needs: gate
     if: needs.gate.outputs.run == 'true'
     permissions:
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -85,6 +85,31 @@ jobs:
         # are hard-gated in ci.yml: a failure at this point means the lcov cannot
         # be trusted, and no measurement beats a wrong one.
         run: bun run test:coverage
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-js
+          path: coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 1
+
+  rust-coverage:
+    name: Rust coverage
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
 
       # --- Rust coverage (best-effort; never blocks the scan) -----------------
       # main pushes always measure Rust; PRs only when they actually touch Rust
@@ -139,7 +164,22 @@ jobs:
       # fail and the lines they cover read as uncovered. Same step as ci.yml.
       - name: Install ffmpeg
         if: steps.rustgate.outputs.run == 'true'
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+        timeout-minutes: 6
+        run: |
+          if command -v ffmpeg >/dev/null 2>&1; then
+            echo "already on the image: $(ffmpeg -version | head -1)"
+            exit 0
+          fi
+          for attempt in 1 2 3; do
+            if timeout 120 sudo apt-get update \
+              && timeout 180 sudo apt-get install -y --no-install-recommends ffmpeg; then
+              exit 0
+            fi
+            echo "::warning::ffmpeg apt attempt $attempt stalled or failed, retrying"
+            sleep 10
+          done
+          echo "::error::could not install ffmpeg after 3 attempts"
+          exit 1
 
       - name: Rust coverage (cargo-llvm-cov -> server/lcov.info)
         # Skipped on PRs that touch no Rust: Sonar's gate scores NEW code, and a
@@ -173,6 +213,52 @@ jobs:
             if [ -s "$f" ]; then cat "$f" >> server/lcov.info; fi
           done
           echo "lcov records: $(grep -c '^SF:' server/lcov.info || true)"
+
+      # Absent when this PR touched no Rust, which the scan treats as "JS/TS only".
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: steps.rustgate.outputs.run == 'true'
+        with:
+          name: coverage-rust
+          path: server/lcov.info
+          if-no-files-found: warn
+          retention-days: 1
+
+  sonar:
+    name: SonarCloud scan
+    # `always()`: Rust coverage is best-effort and may be skipped entirely on a
+    # frontend-only PR, and the scan must still run. JS coverage is not optional -
+    # a missing lcov scores every TS file 0%, so the scan is skipped with it.
+    needs: [gate, js-coverage, rust-coverage]
+    if: always() && needs.gate.outputs.run == 'true' && needs.js-coverage.result == 'success'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Full history: Sonar needs it for blame / accurate new-code detection.
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: coverage-js
+          path: coverage
+
+      # Best-effort, exactly as the step that produces it: no Rust report simply
+      # means the scan carries JS/TS coverage only.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          name: coverage-rust
+          path: server
 
       # --- Analysis -----------------------------------------------------------
       # The scanner follows symlinks while indexing, and bun leaves a symlink

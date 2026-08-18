@@ -93,8 +93,13 @@ function mkListeners(): EngineListeners {
 
 const client = {
   streamUrl: (id: string) => `stream:${id}`,
-  hlsMasterUrl: (id: string, aac: boolean, startSec: number, audio: number, filter?: string) =>
-    `master:${id}:${aac}:${startSec}:${audio}${filter ? `:${filter}` : ''}`,
+  hlsMasterUrl: (
+    id: string,
+    aac: boolean,
+    startSec: number,
+    audio: number,
+    decl?: { filter?: string },
+  ) => `master:${id}:${aac}:${startSec}:${audio}${decl?.filter ? `:${decl.filter}` : ''}`,
 } as unknown as KromaClient;
 const item = { id: 'sm1' } as unknown as MediaItem;
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));

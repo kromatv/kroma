@@ -86,7 +86,7 @@ export function SeekBar({
 
   const secAt = (locationX: number): number | null => {
     const offset = track.offsetOf(locationX);
-    if (offset == null || dur <= 0) return null;
+    if (offset == null || dur <= 0 || track.width <= 0) return null;
     return msAtOffset(offset, segs, track.width) / 1000;
   };
 

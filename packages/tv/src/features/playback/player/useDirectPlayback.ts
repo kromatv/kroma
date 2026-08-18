@@ -17,7 +17,7 @@ import {
   usePlaybackHeartbeat,
   useT,
 } from '@kroma/ui';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import {
   type EnginePref,
   getEnginePref,
@@ -34,6 +34,7 @@ import {
 } from '#tv/features/playback/player/engine';
 import { useResumeAndPersist } from '#tv/features/playback/player/useResumeAndPersist';
 import { useSeekGesture } from '#tv/features/playback/player/useSeekGesture';
+import { vlcAvailable } from '#tv/features/playback/player/vlcPlane';
 
 export type { Surface };
 
@@ -146,7 +147,24 @@ export function useDirectPlayback(
   // cannot decode AC3/EAC3, so it runs hls.js on the AAC master.
   const env = useMemo(detectTvEnv, []);
   const [enginePref, setEnginePrefState] = useState<EnginePref>(getEnginePref);
-  const plan = planEngine(item, env, enginePref);
+  // The last resort under `auto`: a title the platform player cannot decode goes to
+  // the engine that carries its own decoders. Held as the item it applies to, so a
+  // new title resets it by construction and one bad file cannot pin the session.
+  const [vlcFallbackFor, setVlcFallbackFor] = useState<string | null>(null);
+  const fellBackToVlc = vlcFallbackFor === item.id;
+  // Both ways a title can die end here: the engine reporting an error, and the load
+  // watchdog giving up on one that never errors and never becomes ready - which is
+  // precisely the silently-undecodable case this engine exists for. Only from
+  // `auto`, and only once: an explicit choice is the viewer's, and a VLC failure
+  // has nowhere left to fall.
+  const giveUp = useEffectEvent(() => {
+    if (enginePref === 'auto' && !fellBackToVlc && vlcAvailable()) {
+      setVlcFallbackFor(item.id);
+      return;
+    }
+    setError(failKey);
+  });
+  const plan = planEngine(item, env, fellBackToVlc ? 'vlc' : enginePref);
   const { surface, playbackMode, deviceLabel, rebuildKey } = plan;
   const durationSec = item.durationMs ? item.durationMs / 1000 : 0;
   // Remux-only server: an undecodable video codec here truly cannot play.
@@ -217,7 +235,7 @@ export function useDirectPlayback(
       },
       onPlaying: () => setWaiting(false),
       onEnded: () => setEndedNonce((n) => n + 1),
-      onError: () => setError(failKey),
+      onError: () => giveUp(),
       onAudioFilterUnavailable: () => setAudioFilterSupported(false),
       onSurfaceChange: () => setSurfaceNonce((n) => n + 1),
       onReady: () => {
@@ -276,7 +294,7 @@ export function useDirectPlayback(
             `src=${v?.currentSrc || v?.src || '(none)'}`,
         );
       }
-      setError(failKey);
+      giveUp();
     }, graceMs);
     return () => clearTimeout(id);
   }, [surface, ready, error, failKey, loadBeat]);
@@ -373,6 +391,9 @@ export function useDirectPlayback(
       const pos = engineRef.current?.position() ?? 0;
       persistEnginePref(p);
       setResolved({ id: item.id, sec: pos });
+      // Clears any automatic fallback: once the viewer names an engine, that is the
+      // choice, and the plan must stop overriding it for the rest of the title.
+      setVlcFallbackFor(null);
       setEnginePrefState(p);
     },
     [enginePref, item.id],

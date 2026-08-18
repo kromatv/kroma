@@ -60,7 +60,8 @@
       "./plugins/with-keep-screen-on",
       "./plugins/with-top-shelf",
       "./plugins/with-tv-blur-link",
-      "expo-video"
+      "expo-video",
+      "@kroma/media3-ffmpeg"
     ],
     "experiments": {
       "tsconfigPaths": true,

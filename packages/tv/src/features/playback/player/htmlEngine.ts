@@ -4,7 +4,12 @@
 // restarts at 0, so absolute position is `baseSec + element time`. A seek outside
 // the buffered range re-anchors (reloads the master at the new offset).
 
-import { attachDirectPlay, type KromaClient, type MediaItem } from '@kroma/core';
+import {
+  attachDirectPlay,
+  decodableAudioCodecs,
+  type KromaClient,
+  type MediaItem,
+} from '@kroma/core';
 import {
   type EngineListeners,
   resolveMasterStart,
@@ -134,6 +139,7 @@ export class HtmlEngine implements TvEngine {
       this.opts.masterAac,
       this.baseSec,
       this.rendition,
+      { copyCodecs: decodableAudioCodecs() },
     );
     // Safari / WKWebView: prefer native HLS, whose stack decodes Dolby
     // (AC3 / E-AC3) in full surround where hls.js + MSE cannot.

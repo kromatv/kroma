@@ -7,7 +7,7 @@ use std::process::Stdio;
 use tokio::process::{Child, Command};
 
 use super::naming::contains;
-use super::StreamMode;
+use super::{StreamMode, VideoMode};
 
 const SEGMENT_SECONDS: &str = "6";
 /// The write pattern handed to `-hls_segment_filename`; `naming::seg_index`
@@ -71,9 +71,15 @@ pub fn spawn_stream(
     burst: bool,
 ) -> std::io::Result<Child> {
     let seeking = start_secs > 0.5;
+    let copying_video = matches!(mode.video, VideoMode::Copy);
     let mut cmd = Command::new("ffmpeg");
-    // `-threads 1`: the remux never decodes video, so a decoder pool is pure overhead.
-    cmd.args(["-v", "error", "-nostdin", "-threads", "1"]);
+    cmd.args(["-v", "error", "-nostdin"]);
+    // `-threads` lands on the DECODER here (before `-i`): a remux never decodes
+    // video, so a pool is pure overhead - but a transcode does, and one thread
+    // cannot keep a 4K source ahead of the player.
+    if copying_video {
+        cmd.args(["-threads", "1"]);
+    }
     if seeking {
         // Required for A/V sync: an accurate seek backs the video to a keyframe but
         // decodes-and-discards audio to the exact `-ss`, starting it a GOP late.
@@ -89,9 +95,16 @@ pub fn spawn_stream(
         cmd.arg("-copyts"); // keep source timestamps so video + audio stay on one timeline
     }
     cmd.args(["-map", "0:v:0"]).arg("-map").arg(format!("0:a:{audio}"));
-    cmd.args(["-c:v", "copy"]);
-    if mode.transcode() {
-        if let Some(af) = mode.filter_chain() {
+    if copying_video {
+        cmd.args(["-c:v", "copy"]);
+    } else {
+        // 8-bit H.264 because the fallback exists for decoders the source defeats,
+        // so it must land on the one profile every target reads. HDR sources are
+        // not tone-mapped (no zimg) and come out washed-out.
+        cmd.args(["-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p"]);
+    }
+    if mode.audio.transcode() {
+        if let Some(af) = mode.audio.filter_chain() {
             cmd.args(["-af", af]);
         }
         cmd.args(["-c:a", "aac", "-ac", "2", "-b:a", "192k"]);

@@ -117,7 +117,7 @@ export type { KromaClientOptions } from './client/base';
 export { apiErrorText, KromaApiError } from './client/base';
 export type { DiscoverType } from './client/discovery';
 export type { HandoffAnnounce, HandoffEvidence } from './client/handoff';
-export type { HlsAudioFilter, StoryboardManifest } from './client/media';
+export type { HlsAudioFilter, HlsMasterDeclaration, StoryboardManifest } from './client/media';
 export type { ModuleApi } from './client/module-api';
 export type { WebAuthnCredential, WebAuthnOptions } from './client/passkeys';
 export type { ReportQuery } from './client/reports';
@@ -324,10 +324,9 @@ export class KromaClient {
     aac = false,
     startSec = 0,
     audio = 0,
-    filter?: media.HlsAudioFilter,
-    copyCodecs?: string[],
+    declaration: media.HlsMasterDeclaration = {},
   ): string {
-    return media.hlsMasterUrl(this.ctx, id, aac, startSec, audio, filter, copyCodecs);
+    return media.hlsMasterUrl(this.ctx, id, aac, startSec, audio, declaration);
   }
   posterUrl(id: string): string {
     return artwork.posterUrl(this.ctx, id);

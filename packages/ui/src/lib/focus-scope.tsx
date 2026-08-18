@@ -7,7 +7,7 @@ import { type ReactNode, useEffect } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
 import { SpatialNavigationView, useLockSpatialNavigation } from 'react-tv-space-navigation';
 import { useFocusEntryScope } from './focus-entry';
-import { FocusLiftHost, LIFTED } from './focus-lift';
+import { FocusLiftHost, GROUNDED, LIFTED } from './focus-lift';
 import { PlatformFocusProvider, usePlatformFocusHost } from './focus-platform';
 import { FocusPresenceProvider, useInsideFocusScope } from './focus-presence';
 import { useRemoteBridge } from './focus-remote';
@@ -117,7 +117,10 @@ function FocusRegion({ children, style }: Readonly<FocusScopeProps>) {
         // The row lifts ITSELF while it holds the focus: rows are separate
         // stacking contexts, so a lifted tile is still under the whole of the
         // row after it. No wrapper view - one would collapse the row.
-        <SpatialNavigationView direction="horizontal" style={flat([style, held ? LIFTED : null])}>
+        <SpatialNavigationView
+          direction="horizontal"
+          style={flat([style, held ? LIFTED : GROUNDED])}
+        >
           {children}
         </SpatialNavigationView>
       )}
@@ -140,7 +143,7 @@ function FocusColumn({ children, style, grid = false }: Readonly<FocusColumnProp
         <SpatialNavigationView
           direction="vertical"
           alignInGrid={grid}
-          style={flat([style, held ? LIFTED : null])}
+          style={flat([style, held ? LIFTED : GROUNDED])}
         >
           {children}
         </SpatialNavigationView>

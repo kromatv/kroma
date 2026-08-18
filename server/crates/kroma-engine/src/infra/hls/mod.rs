@@ -2,11 +2,12 @@
 //!
 //! Direct-play (raw byte range, [`crate::infra::stream`]) is the default; this
 //! covers what a browser can't direct-play: MKV→fMP4 repackaging, audio it
-//! can't decode (AC3/EAC3/DTS → AAC), and language switching. A thin wrapper
-//! over a [`session`] registry: one continuous ffmpeg per (item, audio-mode,
-//! anchor) produces a complete-program HLS master. The anchor is part of both
-//! the session key and the URL path, so a re-anchor never reuses another
-//! anchor's segment names or thrashes a shared session.
+//! can't decode (AC3/EAC3/DTS → AAC), video it can't decode (HEVC → H.264), and
+//! language switching. A thin wrapper over a [`session`] registry: one
+//! continuous ffmpeg per (item, mode, anchor) produces a complete-program HLS
+//! master. The anchor is part of both the session key and the URL path, so a
+//! re-anchor never reuses another anchor's segment names or thrashes a shared
+//! session.
 
 mod ffmpeg;
 mod naming;
@@ -18,52 +19,104 @@ use std::sync::Arc;
 
 use session::Sessions;
 
+/// One program's video treatment: stream-copy, or a transcode to the 8-bit H.264
+/// every target decodes. A picture is orders of magnitude dearer to re-encode
+/// than a soundtrack, so [`StreamMode::for_client_video`] is the only thing that
+/// ever reaches for `H264`.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum VideoMode {
+    Copy,
+    H264,
+}
+
 /// One program's audio treatment: stream-copy, plain stereo-AAC transcode, or an
 /// AAC transcode with a loudness filter (night-mode volume leveling for clients
 /// with no local audio DSP, e.g. Tizen AVPlay). A filter always transcodes - a
 /// stream copy cannot be filtered - so the filtered variants subsume `Aac`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum StreamMode {
+pub enum AudioMode {
     Copy,
     Aac,
     AacStandard,
     AacNight,
 }
 
+/// How one program is produced, on both axes. They are independent: a device can
+/// decode the picture and not the soundtrack, or the reverse.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct StreamMode {
+    pub video: VideoMode,
+    pub audio: AudioMode,
+}
+
+// The video axis is spelled as a prefix on the audio token, so every URL minted
+// before the axis existed still parses - and still means a video stream copy.
+const H264_PREFIX: &str = "h264-";
+
 impl StreamMode {
+    pub const fn new(video: VideoMode, audio: AudioMode) -> Self {
+        StreamMode { video, audio }
+    }
+
     /// Parse the `{mode}` URL path segment (also the token used in session keys).
     pub fn parse(s: &str) -> Option<Self> {
-        match s {
-            "copy" => Some(Self::Copy),
-            "aac" => Some(Self::Aac),
-            "aac-standard" => Some(Self::AacStandard),
-            "aac-night" => Some(Self::AacNight),
-            _ => None,
-        }
+        let (video, rest) = match s.strip_prefix(H264_PREFIX) {
+            Some(rest) => (VideoMode::H264, rest),
+            None => (VideoMode::Copy, s),
+        };
+        let audio = match rest {
+            "copy" => AudioMode::Copy,
+            "aac" => AudioMode::Aac,
+            "aac-standard" => AudioMode::AacStandard,
+            "aac-night" => AudioMode::AacNight,
+            _ => return None,
+        };
+        Some(Self::new(video, audio))
     }
 
     /// The mode whose audio will actually reach the speakers, given the selected
     /// track's codec and the comma-separated set the client declared it can decode
-    /// (`None` = declared nothing, and the request stands). Only `Copy` is ever
-    /// overridden; video is stream-copied in every mode, so this never touches
-    /// the picture.
+    /// (`None` = declared nothing, and the request stands). Only an audio copy is
+    /// ever overridden, and only the audio axis moves.
     pub fn for_client_audio(self, codec: Option<&str>, client_decodes: Option<&str>) -> Self {
-        match (self, client_decodes) {
-            (Self::Copy, Some(set)) if !client_can_play(codec, set) => Self::Aac,
+        match (self.audio, client_decodes) {
+            (AudioMode::Copy, Some(set)) if !client_can_play(codec, set) => {
+                Self { audio: AudioMode::Aac, ..self }
+            }
+            _ => self,
+        }
+    }
+
+    /// The mode whose picture will actually reach the screen, read the same way as
+    /// [`Self::for_client_audio`] from the source video codec and the set the
+    /// client declared: the real case is HEVC Main10 on an 8-bit-only decoder,
+    /// which otherwise plays black. Only a video copy is overridden, and never
+    /// speculatively - a client that declares nothing keeps its stream copy.
+    pub fn for_client_video(self, codec: Option<&str>, client_decodes: Option<&str>) -> Self {
+        match (self.video, client_decodes) {
+            (VideoMode::Copy, Some(set)) if !client_can_play(codec, set) => {
+                Self { video: VideoMode::H264, ..self }
+            }
             _ => self,
         }
     }
 
     // Inverse of `parse`; emitted by the client URL builder in `packages/client media.ts`.
     pub fn token(self) -> &'static str {
-        match self {
-            Self::Copy => "copy",
-            Self::Aac => "aac",
-            Self::AacStandard => "aac-standard",
-            Self::AacNight => "aac-night",
+        match (self.video, self.audio) {
+            (VideoMode::Copy, AudioMode::Copy) => "copy",
+            (VideoMode::Copy, AudioMode::Aac) => "aac",
+            (VideoMode::Copy, AudioMode::AacStandard) => "aac-standard",
+            (VideoMode::Copy, AudioMode::AacNight) => "aac-night",
+            (VideoMode::H264, AudioMode::Copy) => "h264-copy",
+            (VideoMode::H264, AudioMode::Aac) => "h264-aac",
+            (VideoMode::H264, AudioMode::AacStandard) => "h264-aac-standard",
+            (VideoMode::H264, AudioMode::AacNight) => "h264-aac-night",
         }
     }
+}
 
+impl AudioMode {
     fn transcode(self) -> bool {
         !matches!(self, Self::Copy)
     }
@@ -83,16 +136,16 @@ impl StreamMode {
     }
 }
 
-// An unprobed track is assumed playable: with no codec there is nothing honest to
-// override, and forcing a transcode would punish the common case.
+// An unprobed stream is assumed playable: with no codec there is nothing honest
+// to override, and forcing a transcode would punish the common case.
 fn client_can_play(codec: Option<&str>, client_set: &str) -> bool {
     let Some(codec) = codec else { return true };
     client_set.split(',').any(|c| c.trim().eq_ignore_ascii_case(codec))
 }
 
 // `{item_id}:{mode}:{anchor_secs}:a{audio}`. The mode is part of the key
-// because filtered and clean programs must never share segment URLs (segments
-// are cached immutably per URL).
+// because filtered, transcoded and clean programs must never share segment URLs
+// (segments are cached immutably per URL).
 fn session_key(item_id: &str, mode: StreamMode, anchor: u64, audio: u32) -> String {
     format!("{item_id}:{}:{anchor}:a{audio}", mode.token())
 }
@@ -184,75 +237,185 @@ impl HlsEngine {
 mod tests {
     use super::*;
 
+    const VIDEO_MODES: [VideoMode; 2] = [VideoMode::Copy, VideoMode::H264];
+    const AUDIO_MODES: [AudioMode; 4] =
+        [AudioMode::Copy, AudioMode::Aac, AudioMode::AacStandard, AudioMode::AacNight];
+
+    const fn copy() -> StreamMode {
+        StreamMode::new(VideoMode::Copy, AudioMode::Copy)
+    }
+
+    const fn audio(audio: AudioMode) -> StreamMode {
+        StreamMode::new(VideoMode::Copy, audio)
+    }
+
     #[test]
     fn mode_tokens_round_trip() {
-        for mode in [StreamMode::Copy, StreamMode::Aac, StreamMode::AacStandard, StreamMode::AacNight] {
-            assert_eq!(StreamMode::parse(mode.token()), Some(mode));
+        for video in VIDEO_MODES {
+            for audio in AUDIO_MODES {
+                let mode = StreamMode::new(video, audio);
+                assert_eq!(StreamMode::parse(mode.token()), Some(mode));
+            }
         }
         assert_eq!(StreamMode::parse("bogus"), None);
+        assert_eq!(StreamMode::parse("h264-"), None);
+        assert_eq!(StreamMode::parse("h264-bogus"), None);
+    }
+
+    #[test]
+    fn a_token_with_no_video_prefix_still_means_a_video_copy() {
+        for (token, audio) in [
+            ("copy", AudioMode::Copy),
+            ("aac", AudioMode::Aac),
+            ("aac-standard", AudioMode::AacStandard),
+            ("aac-night", AudioMode::AacNight),
+        ] {
+            assert_eq!(StreamMode::parse(token), Some(StreamMode::new(VideoMode::Copy, audio)));
+        }
+    }
+
+    #[test]
+    fn the_video_axis_is_a_prefix_on_the_audio_token() {
+        assert_eq!(StreamMode::new(VideoMode::H264, AudioMode::Copy).token(), "h264-copy");
+        assert_eq!(StreamMode::new(VideoMode::H264, AudioMode::AacNight).token(), "h264-aac-night");
     }
 
     #[test]
     fn filtered_modes_transcode_with_a_chain() {
-        assert!(!StreamMode::Copy.transcode());
-        assert!(StreamMode::Aac.transcode());
-        assert!(StreamMode::Aac.filter_chain().is_none());
-        assert!(StreamMode::AacStandard.transcode());
-        assert!(StreamMode::AacStandard.filter_chain().unwrap().contains("ratio=4"));
-        assert!(StreamMode::AacNight.filter_chain().unwrap().contains("ratio=8"));
+        assert!(!AudioMode::Copy.transcode());
+        assert!(AudioMode::Aac.transcode());
+        assert!(AudioMode::Aac.filter_chain().is_none());
+        assert!(AudioMode::AacStandard.transcode());
+        assert!(AudioMode::AacStandard.filter_chain().unwrap().contains("ratio=4"));
+        assert!(AudioMode::AacNight.filter_chain().unwrap().contains("ratio=8"));
     }
 
     #[test]
     fn copy_becomes_aac_when_the_client_cannot_decode_the_codec() {
         // The AC-3-only Android TV case: a copy request the device can't play.
-        assert_eq!(StreamMode::Copy.for_client_audio(Some("ac3"), Some("aac")), StreamMode::Aac);
+        assert_eq!(copy().for_client_audio(Some("ac3"), Some("aac")), audio(AudioMode::Aac));
     }
 
     #[test]
     fn copy_stays_copy_when_the_client_can_decode_or_passthrough() {
-        assert_eq!(StreamMode::Copy.for_client_audio(Some("ac3"), Some("aac,ac3,eac3")), StreamMode::Copy);
-        assert_eq!(StreamMode::Copy.for_client_audio(Some("AC3"), Some("aac, ac3")), StreamMode::Copy);
+        assert_eq!(copy().for_client_audio(Some("ac3"), Some("aac,ac3,eac3")), copy());
+        assert_eq!(copy().for_client_audio(Some("AC3"), Some("aac, ac3")), copy());
     }
 
     #[test]
     fn no_declared_capability_leaves_the_requested_mode_untouched() {
-        assert_eq!(StreamMode::Copy.for_client_audio(Some("ac3"), None), StreamMode::Copy);
+        assert_eq!(copy().for_client_audio(Some("ac3"), None), copy());
     }
 
     #[test]
     fn an_empty_capability_set_transcodes_every_known_codec() {
-        assert_eq!(StreamMode::Copy.for_client_audio(Some("aac"), Some("")), StreamMode::Aac);
+        assert_eq!(copy().for_client_audio(Some("aac"), Some("")), audio(AudioMode::Aac));
     }
 
     #[test]
     fn an_unknown_codec_is_never_forced_to_transcode() {
-        assert_eq!(StreamMode::Copy.for_client_audio(None, Some("aac")), StreamMode::Copy);
-        assert_eq!(StreamMode::Copy.for_client_audio(None, Some("")), StreamMode::Copy);
+        assert_eq!(copy().for_client_audio(None, Some("aac")), copy());
+        assert_eq!(copy().for_client_audio(None, Some("")), copy());
     }
 
     #[test]
     fn a_transcode_or_filter_request_is_never_second_guessed() {
-        for mode in [StreamMode::Aac, StreamMode::AacStandard, StreamMode::AacNight] {
-            assert_eq!(mode.for_client_audio(Some("ac3"), Some("")), mode);
+        for mode in [AudioMode::Aac, AudioMode::AacStandard, AudioMode::AacNight] {
+            assert_eq!(audio(mode).for_client_audio(Some("ac3"), Some("")), audio(mode));
         }
     }
 
     #[test]
+    fn video_copy_becomes_h264_when_the_client_cannot_decode_the_codec() {
+        // The HEVC-Main10-on-an-8-bit-decoder case, declared as "I decode H.264 only".
+        assert_eq!(
+            copy().for_client_video(Some("hevc"), Some("h264")),
+            StreamMode::new(VideoMode::H264, AudioMode::Copy)
+        );
+    }
+
+    #[test]
+    fn video_stays_a_copy_when_the_declared_set_holds_the_codec() {
+        assert_eq!(copy().for_client_video(Some("hevc"), Some("h264,hevc,av1")), copy());
+        assert_eq!(copy().for_client_video(Some("HEVC"), Some("h264, hevc")), copy());
+    }
+
+    #[test]
+    fn a_client_that_declares_no_video_never_pays_for_a_transcode() {
+        assert_eq!(copy().for_client_video(Some("hevc"), None), copy());
+        assert_eq!(copy().for_client_video(Some("vp9"), None), copy());
+    }
+
+    #[test]
+    fn an_empty_video_set_transcodes_every_known_codec() {
+        assert_eq!(
+            copy().for_client_video(Some("h264"), Some("")),
+            StreamMode::new(VideoMode::H264, AudioMode::Copy)
+        );
+    }
+
+    #[test]
+    fn an_unknown_video_codec_is_never_forced_to_transcode() {
+        assert_eq!(copy().for_client_video(None, Some("h264")), copy());
+        assert_eq!(copy().for_client_video(None, Some("")), copy());
+    }
+
+    #[test]
+    fn an_h264_request_is_never_second_guessed() {
+        let forced = StreamMode::new(VideoMode::H264, AudioMode::Copy);
+        assert_eq!(forced.for_client_video(Some("h264"), Some("h264")), forced);
+        assert_eq!(forced.for_client_video(Some("hevc"), None), forced);
+    }
+
+    #[test]
+    fn the_two_axes_move_independently() {
+        let both = copy().for_client_audio(Some("dts"), Some("aac")).for_client_video(Some("hevc"), Some("h264"));
+        assert_eq!(both, StreamMode::new(VideoMode::H264, AudioMode::Aac));
+        assert_eq!(both.token(), "h264-aac");
+        assert_eq!(
+            audio(AudioMode::AacNight).for_client_video(Some("hevc"), Some("h264")),
+            StreamMode::new(VideoMode::H264, AudioMode::AacNight)
+        );
+        assert_eq!(
+            StreamMode::new(VideoMode::H264, AudioMode::Copy).for_client_audio(Some("dts"), Some("aac")),
+            StreamMode::new(VideoMode::H264, AudioMode::Aac)
+        );
+    }
+
+    #[test]
+    fn a_video_declaration_alone_never_moves_the_audio_axis() {
+        assert_eq!(copy().for_client_video(Some("hevc"), Some("h264")).audio, AudioMode::Copy);
+        assert_eq!(copy().for_client_audio(Some("dts"), Some("aac")).video, VideoMode::Copy);
+    }
+
+    #[test]
     fn session_keys_keep_filtered_programs_apart() {
-        let clean = session_key("it1", StreamMode::Aac, 30, 1);
-        let night = session_key("it1", StreamMode::AacNight, 30, 1);
+        let clean = session_key("it1", audio(AudioMode::Aac), 30, 1);
+        let night = session_key("it1", audio(AudioMode::AacNight), 30, 1);
         assert_eq!(clean, "it1:aac:30:a1");
         assert_eq!(night, "it1:aac-night:30:a1");
         assert_ne!(clean, night);
     }
 
     #[test]
+    fn session_keys_keep_a_transcoded_picture_apart_from_a_copied_one() {
+        let copied = session_key("it1", audio(AudioMode::Aac), 30, 1);
+        let recoded = session_key("it1", StreamMode::new(VideoMode::H264, AudioMode::Aac), 30, 1);
+        assert_eq!(recoded, "it1:h264-aac:30:a1");
+        assert_ne!(copied, recoded);
+    }
+
+    #[test]
     fn same_program_spans_anchors_and_modes_only() {
-        let key = session_key("it1", StreamMode::Aac, 30, 1);
-        assert!(same_program(&key, &session_key("it1", StreamMode::Aac, 900, 1)));
-        assert!(same_program(&key, &session_key("it1", StreamMode::AacNight, 30, 1)));
-        assert!(!same_program(&key, &session_key("it1", StreamMode::Aac, 30, 2)));
-        assert!(!same_program(&key, &session_key("it2", StreamMode::Aac, 30, 1)));
+        let key = session_key("it1", audio(AudioMode::Aac), 30, 1);
+        assert!(same_program(&key, &session_key("it1", audio(AudioMode::Aac), 900, 1)));
+        assert!(same_program(&key, &session_key("it1", audio(AudioMode::AacNight), 30, 1)));
+        assert!(same_program(
+            &key,
+            &session_key("it1", StreamMode::new(VideoMode::H264, AudioMode::Aac), 30, 1)
+        ));
+        assert!(!same_program(&key, &session_key("it1", audio(AudioMode::Aac), 30, 2)));
+        assert!(!same_program(&key, &session_key("it2", audio(AudioMode::Aac), 30, 1)));
         assert!(!same_program(&key, "nonsense"));
         assert!(!same_program("nonsense", "nonsense"));
     }

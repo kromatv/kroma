@@ -1,0 +1,37 @@
+diff --git a/android/src/main/java/expo/modules/video/player/VideoPlayer.kt b/android/src/main/java/expo/modules/video/player/VideoPlayer.kt
+index 8bae522733a37b0125e6e808cf912098e3ad3f13..c1037be92272bc2f931002810ff8f55bbf34c5d8 100644
+--- a/android/src/main/java/expo/modules/video/player/VideoPlayer.kt
++++ b/android/src/main/java/expo/modules/video/player/VideoPlayer.kt
+@@ -63,6 +63,14 @@ class VideoPlayer(val context: Context, appContext: AppContext, source: VideoSou
+   private var renderersFactory = DefaultRenderersFactory(context)
+     .forceEnableMediaCodecAsynchronousQueueing()
+     .setEnableDecoderFallback(true)
++    // KROMA: let Media3 find the bundled FFmpeg audio decoders. DefaultRenderersFactory
++    // discovers extension renderers by reflection, but only when the mode is not OFF,
++    // which is the default - so without this the decoders ship and are never used.
++    // ON, not PREFER: ON puts the extension renderers AFTER the MediaCodec ones, so the
++    // hardware decoder still wins wherever the device has one and FFmpeg only picks up
++    // what it cannot decode (DTS, TrueHD, unlicensed E-AC3). PREFER would put software
++    // decoding ahead of hardware for everything, which a TV SoC cannot afford.
++    .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+   private val listeners: MutableList<WeakReference<VideoPlayerListener>> = mutableListOf()
+   private val currentVideoViewRef = MutableWeakReference<VideoView?>(null) { new, old ->
+     sendEvent(PlayerEvent.TargetViewChanged(new, old))
+diff --git a/expo-module.config.json b/expo-module.config.json
+index d9c4335a75a82a9a4938a2be7c36031bd924fb78..6d6ecae977a616274d83e4dcc14e8cfc20d9a320 100644
+--- a/expo-module.config.json
++++ b/expo-module.config.json
+@@ -4,12 +4,6 @@
+     "modules": ["VideoModule"]
+   },
+   "android": {
+-    "modules": ["expo.modules.video.VideoModule"],
+-    "publication": {
+-      "groupId": "host.exp.exponent",
+-      "artifactId": "expo.modules.video",
+-      "version": "57.0.2",
+-      "repository": "local-maven-repo"
+-    }
++    "modules": ["expo.modules.video.VideoModule"]
+   }
+ }

@@ -5,10 +5,11 @@ import { isTizenRuntime, isWebOsRuntime, type MessageKey } from '@kroma/core';
 import { Platform } from 'react-native';
 import { reactivePref } from '#tv/app/settings/store';
 import { mpvAvailable, shakaAvailable } from '#tv/features/playback/player/engine';
+import { vlcAvailable } from '#tv/features/playback/player/vlcPlane';
 
-export type EnginePref = 'auto' | 'avplay' | 'webview' | 'shaka' | 'remux' | 'mpv';
+export type EnginePref = 'auto' | 'avplay' | 'webview' | 'shaka' | 'remux' | 'mpv' | 'vlc';
 
-const ALL: readonly EnginePref[] = ['auto', 'avplay', 'webview', 'shaka', 'remux', 'mpv'];
+const ALL: readonly EnginePref[] = ['auto', 'avplay', 'webview', 'shaka', 'remux', 'mpv', 'vlc'];
 
 export const enginePrefStore = reactivePref('kroma:engine', ALL, 'auto');
 
@@ -22,12 +23,16 @@ export function setEnginePref(p: EnginePref): void {
   enginePrefStore.set(p);
 }
 
-/** Engines choosable on THIS platform, always starting with `auto`. A
- * single-entry list hides the row. */
+/** Engines choosable on THIS platform, always starting with `auto`. An empty
+ * list hides the row. */
 export function availableEngines(): EnginePref[] {
-  // Native clients have one player (expo-video: AVPlayer / Media3); the only
-  // choice is the original file or the server's remux.
-  if (Platform.OS !== 'web') return ['auto', 'remux'];
+  // Both native shells build the libVLC plane, so the choice is the platform
+  // player, the server's remux, or the engine that brings its own decoders. On
+  // Apple that last one also brings a Matroska demuxer, which AVFoundation has
+  // none of.
+  if (Platform.OS !== 'web') {
+    return vlcAvailable() ? ['auto', 'remux', 'vlc'] : ['auto', 'remux'];
+  }
   // The legacy tier ships without Shaka (see shakaAvailable), so the pref only
   // appears where picking it can change anything.
   const shaka: EnginePref[] = shakaAvailable() ? ['shaka'] : [];
@@ -39,6 +44,17 @@ export function availableEngines(): EnginePref[] {
   return list;
 }
 
+/** One line saying what an engine actually does, since its name cannot. */
+export const ENGINE_NOTE_KEY: Record<EnginePref, MessageKey> = {
+  auto: 'playbackEngine.autoNote',
+  avplay: 'playbackEngine.avplayNote',
+  webview: 'playbackEngine.webviewNote',
+  shaka: 'playbackEngine.shakaNote',
+  remux: 'playbackEngine.remuxNote',
+  mpv: 'playbackEngine.mpvNote',
+  vlc: 'playbackEngine.vlcNote',
+};
+
 export const ENGINE_LABEL_KEY: Record<EnginePref, MessageKey> = {
   auto: 'playbackEngine.auto',
   avplay: 'playbackEngine.avplay',
@@ -46,4 +62,5 @@ export const ENGINE_LABEL_KEY: Record<EnginePref, MessageKey> = {
   shaka: 'playbackEngine.shaka',
   remux: 'playbackEngine.remux',
   mpv: 'playbackEngine.mpv',
+  vlc: 'playbackEngine.vlc',
 };

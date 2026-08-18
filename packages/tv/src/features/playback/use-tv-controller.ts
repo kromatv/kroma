@@ -5,8 +5,13 @@ import {
   refineTrackLang,
 } from '@kroma/core';
 import { buildLeanStats, type PlayerController, useAudioFilter, useT } from '@kroma/ui';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { availableEngines, ENGINE_LABEL_KEY, type EnginePref } from '#tv/app/enginePref';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  availableEngines,
+  ENGINE_LABEL_KEY,
+  ENGINE_NOTE_KEY,
+  type EnginePref,
+} from '#tv/app/enginePref';
 import { useLangPrefs } from '#tv/app/langPref';
 import { type Playback, useDirectPlayback } from '#tv/features/playback/player/useDirectPlayback';
 import { type TvSubtitles, useTvSubtitles } from '#tv/features/playback/use-tv-subtitles';
@@ -53,11 +58,18 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
     return [{ id: 'auto', label: `${t('player.qualityAuto')}${badgeSuffix}` }];
   }, [item.video, t]);
 
-  // An empty list hides the picker row: a single option is nothing to switch.
-  const engines = useMemo(() => {
-    const list = availableEngines();
-    return list.length > 1 ? list.map((id) => ({ id, label: t(ENGINE_LABEL_KEY[id]) })) : [];
-  }, [t]);
+  // Only what this build actually compiled in: an engine the shell has no native
+  // module for is not a choice, and listing it as one is a dead row on a remote.
+  // Each carries a line saying what it does, since the names cannot.
+  const engines = useMemo(
+    () =>
+      availableEngines().map((id) => ({
+        id,
+        label: t(ENGINE_LABEL_KEY[id]),
+        note: t(ENGINE_NOTE_KEY[id]),
+      })),
+    [t],
+  );
 
   // Picking a track also sets the account's language preference, refined by the
   // dub variant its title betrays ('fre' + "VFF …" → 'fr-FR') so the France dub
@@ -74,6 +86,17 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
     [pickAudio, rememberAudio, tracks],
   );
 
+  // Speed is engine state, so it lives here rather than in the playback hook: only
+  // an engine that implements `setRate` gets the row, and the value has to survive
+  // the engine being rebuilt under it (a filter change reopens the stream).
+  const [rate, setRate] = useState(1);
+  // `engineRef` is a ref, so a rebuilt engine (a filter change reopens the stream)
+  // is invisible here otherwise, and the new player would start back at 1x.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: audited - the nonce IS the trigger
+  useEffect(() => {
+    pb.engineRef.current?.setRate?.(rate);
+  }, [pb.engineRef, rate, pb.surfaceNonce]);
+
   const statsRef = useRef<() => ReturnType<typeof buildLeanStats>>(() => ({}));
   statsRef.current = () =>
     buildLeanStats({
@@ -86,6 +109,9 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
       video: pb.videoRef.current,
       mode: pb.surface,
       t,
+      // Whatever only the running engine can answer (which plane, what its
+      // decoder is doing), so the panel can say why a picture is not moving.
+      extra: pb.engineRef.current?.debugRows?.().map((row) => ({ ...row, group: 'Engine' })),
     });
   const getStats = useCallback(() => statsRef.current(), []);
   const setEngine = useCallback((id: string) => pb.setEngine(id as EnginePref), [pb.setEngine]);
@@ -110,8 +136,8 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
     muted: false,
     setVolume: NOOP,
     toggleMute: NOOP,
-    rate: 1,
-    setRate: NOOP,
+    rate,
+    setRate,
     audioTracks: pb.audioTracks,
     audioIndex: pb.audioIndex,
     setAudio,

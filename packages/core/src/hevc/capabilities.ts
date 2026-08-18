@@ -1,5 +1,6 @@
 // Codec/capability probing: what video + audio the *current runtime* can decode.
 
+import { Platform } from 'react-native';
 import { isTizenRuntime, isWebOsRuntime } from '../platform';
 
 // `hvc1`/`hev1` are the two HEVC sample entry fourCCs; both are probed because
@@ -84,13 +85,15 @@ export function detectCapabilities(): PlaybackCapabilities {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   const isTizen = isTizenRuntime(ua);
   const isWebOS = isWebOsRuntime(ua);
-  if (isTizen || isWebOS || isReactNative()) {
+  const isNative = isReactNative();
+  if (isTizen || isWebOS || isNative) {
+    const apple = isNative && Platform.OS === 'ios';
     const tvAudio: AudioCapabilities = {
       aac: true,
       ac3: true,
       eac3: true,
-      dts: true,
-      truehd: true,
+      dts: !apple,
+      truehd: !apple,
       flac: true,
       opus: true,
       mp3: true,
@@ -138,4 +141,33 @@ let cached: PlaybackCapabilities | null = null;
 export function capabilities(): PlaybackCapabilities {
   cached ??= detectCapabilities();
   return cached;
+}
+
+/**
+ * The audio codecs this device can decode, named the way the server names them
+ * (ffprobe's `codec_name`, which is what an item's audio tracks carry).
+ *
+ * This is what a player sends as `copyCodecs`: the server stream-copies audio by
+ * default and only re-encodes what this list leaves out, so a device that never
+ * declares anything is served a copy of everything and plays whatever it cannot
+ * decode as silence.
+ */
+export function decodableAudioCodecs(caps: PlaybackCapabilities = capabilities()): string[] {
+  return Object.entries(caps.audio)
+    .filter(([, decodable]) => decodable)
+    .map(([codec]) => codec);
+}
+
+/**
+ * The video codecs this device can decode, named the way the server names them
+ * (ffprobe's `codec_name`, which is what an item's video stream carries).
+ *
+ * This is what a player sends as `videoCodecs`: the server stream-copies video by
+ * default and only re-encodes a source this list leaves out, so a device that
+ * declares nothing is served a copy and shows a black picture for anything it
+ * cannot decode. A codec name carries no bit depth, so a caller playing a 10-bit
+ * source on a runtime whose `hevc10bit` is false declares `{ ...caps, hevc: false }`.
+ */
+export function decodableVideoCodecs(caps: PlaybackCapabilities = capabilities()): string[] {
+  return (['hevc', 'h264', 'av1', 'vp9'] as const).filter((codec) => caps[codec]);
 }

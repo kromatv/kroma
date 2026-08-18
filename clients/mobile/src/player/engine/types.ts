@@ -3,6 +3,11 @@
 
 import type { AudioTrack, VideoPlayer } from 'expo-video';
 
+// Deliberately NOT the kit's `AudioFilterMode`, and narrower than it: the phone
+// applies the filter through the server's remux, so it can only offer the modes the
+// server has. The kit's `boost` is client-side gain and has no server token. Adding
+// a mode to the kit therefore does NOT reach here - wire it explicitly, or it is
+// silently absent on the phone.
 export type AudioFilterMode = 'off' | 'standard' | 'night';
 
 // In master mode, a native seek beyond this many seconds ahead is assumed

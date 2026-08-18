@@ -31,6 +31,12 @@ export function useFocusLift(): Report | null {
  *  use, so a control sitting in several of these cannot fight itself. */
 export const LIFTED: ViewStyle = { zIndex: 1 };
 
+/** The resting half of <LIFTED>, and never `null`: on Fabric a `zIndex` that
+ *  appears and disappears flattens and unflattens the native view under it, and
+ *  the mount operations aimed at the tag it just dropped are discarded
+ *  ("Unable to find viewState for tag"), which loses the row's layout. */
+export const GROUNDED: ViewStyle = { zIndex: 0 };
+
 /**
  * Makes its subtree's focus visible to a container, so the container can lift
  * ITSELF above its siblings while it holds the focus.

@@ -136,9 +136,9 @@ describe('artwork quality setting', () => {
 });
 
 const choiceBinding = (item: SettingsItem) =>
-  (item as { use: () => readonly [string, (value: string) => void] }).use();
+  (item as { useValue: () => readonly [string, (value: string) => void] }).useValue();
 const toggleBinding = (item: SettingsItem) =>
-  (item as { use: () => readonly [boolean, (value: boolean) => void] }).use();
+  (item as { useValue: () => readonly [boolean, (value: boolean) => void] }).useValue();
 
 const wrapper = ({ children }: { children: ReactNode }) =>
   createElement(I18nProvider, { locale: 'fr' as Locale, onLocaleChange: H.setLocale, children });

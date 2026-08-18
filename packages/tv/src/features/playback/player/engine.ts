@@ -36,7 +36,7 @@ export interface EngineListeners {
 
 /** The uniform surface the hook + UI talk to, regardless of backend. */
 export interface TvEngine {
-  readonly kind: 'video' | 'avplay' | 'mpv';
+  readonly kind: 'video' | 'avplay' | 'mpv' | 'vlc';
   play(): void;
   pause(): void;
   isPaused(): boolean;
@@ -55,6 +55,12 @@ export interface TvEngine {
   // upfront answers optimistically and corrects itself later through
   // `onAudioFilterUnavailable`.
   audioFilterSupported?(): boolean;
+  // Playback speed. Only the engines that can vary it implement this; the shared
+  // chrome hides the row where it is absent.
+  setRate?(rate: number): void;
+  // Rows for the stats panel that only this engine can answer, already
+  // localized. The panel shows what it is given and asks for nothing.
+  debugRows?(): { label: string; value: string }[];
   destroy(): void;
 }
 

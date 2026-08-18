@@ -376,7 +376,22 @@ jobs:
       # decoder, so their tests need the binary the server itself requires
       # (see CONTRIBUTING.md); the runner image does not ship it.
       - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+        timeout-minutes: 6
+        run: |
+          if command -v ffmpeg >/dev/null 2>&1; then
+            echo "already on the image: $(ffmpeg -version | head -1)"
+            exit 0
+          fi
+          for attempt in 1 2 3; do
+            if timeout 120 sudo apt-get update \
+              && timeout 180 sudo apt-get install -y --no-install-recommends ffmpeg; then
+              exit 0
+            fi
+            echo "::warning::ffmpeg apt attempt $attempt stalled or failed, retrying"
+            sleep 10
+          done
+          echo "::error::could not install ffmpeg after 3 attempts"
+          exit 1
 
       # Hard gates. clippy without `-D warnings` (a couple of pre-existing
       # warnings are surfaced in the log but don't fail the build).

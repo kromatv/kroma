@@ -71,13 +71,15 @@ export interface PlayerSub {
 }
 
 /** Volume-normalizer modes (§7). `night` clamps loud peaks hard. */
-export type AudioFilterMode = 'off' | 'standard' | 'night';
+export type AudioFilterMode = 'off' | 'standard' | 'night' | 'boost';
 
 /** A quality option (§5 Settings). The server is remux-only, so this reflects
  *  the SOURCE (one honest "Auto · <source>" entry) rather than a fake ladder. */
 export interface PlayerQuality {
   id: string;
   label: string;
+  /** Second line under the label, for what the entry actually does. */
+  note?: string;
 }
 
 /** One chapter segment on the progress bar (§1). */
@@ -160,7 +162,7 @@ export interface PlayerStats {
 
 /** The video surface kind the controller drives. `video` = an in-page element;
  *  the others render to a native plane BEHIND a transparent page. */
-export type PlayerSurface = 'video' | 'avplay' | 'mpv' | 'exo';
+export type PlayerSurface = 'video' | 'avplay' | 'mpv' | 'exo' | 'vlc';
 
 /** A video-plane rectangle in viewport FRACTIONS [0,1] (`x,y` = top-left corner,
  *  `w,h` = size). Used to shrink a NATIVE plane (AVPlay / mpv / ExoPlayer) into

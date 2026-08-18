@@ -37,7 +37,7 @@ describe('SettingsRows', () => {
         icon: 'check',
         options: () => ['abc', 'azerty'] as const,
         valueLabel: () => 'keyboardLayout.title',
-        use: () => useStoredPref(pref),
+        useValue: () => useStoredPref(pref),
       }),
     ]);
     const row = screen.getByRole('button');
@@ -57,7 +57,7 @@ describe('SettingsRows', () => {
         icon: 'check',
         options: () => ['abc'] as const,
         valueLabel: () => 'keyboardLayout.title',
-        use: () => useStoredPref(pref),
+        useValue: () => useStoredPref(pref),
       }),
     ]);
     expect(screen.queryByRole('button')).toBeNull();
@@ -74,7 +74,7 @@ describe('SettingsRows', () => {
         pick: 'list',
         options: () => ['fr', 'en', 'sv'] as const,
         valueLabel: (value) => `lang.${value}` as const,
-        use: () => ['fr', set] as const,
+        useValue: () => ['fr', set] as const,
       }),
     ]);
 
@@ -105,7 +105,7 @@ describe('SettingsRows', () => {
         level: 'shell',
         label: 'profileMenu.gpuRendering',
         icon: 'check',
-        use: () => [false, setToggle] as const,
+        useValue: () => [false, setToggle] as const,
       }),
       actionItem({ id: 'quit', label: 'profileMenu.quitApp', icon: 'check', run }),
     ]);

@@ -75,7 +75,9 @@ export function useKromaEngine(
     if (localUri) return localUri;
     if (core.mode === 'direct') return client.streamUrl(item.id);
     const f = core.filter === 'off' ? undefined : core.filter;
-    return client.hlsMasterUrl(item.id, core.forceAac, core.baseSec, core.audioIndex, f);
+    return client.hlsMasterUrl(item.id, core.forceAac, core.baseSec, core.audioIndex, {
+      filter: f,
+    });
   }, [client, item.id, core, localUri]);
 
   // Master anchors resolve their REAL keyframe start first so the absolute

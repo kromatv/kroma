@@ -209,6 +209,7 @@
         "@kesha-antonov/react-native-background-downloader": "^4.6.1",
         "@kroma/core": "workspace:*",
         "@kroma/lan-beacon": "workspace:*",
+        "@kroma/media3-ffmpeg": "workspace:*",
         "@kroma/ui": "workspace:*",
         "@kroma/workbench": "workspace:*",
         "@tabler/icons-react-native": "^3.46.0",
@@ -283,6 +284,7 @@
       "dependencies": {
         "@kroma/core": "workspace:*",
         "@kroma/lan-beacon": "workspace:*",
+        "@kroma/media3-ffmpeg": "workspace:*",
         "@kroma/tv": "workspace:*",
         "@kroma/ui": "workspace:*",
         "expo": "~57.0.13",
@@ -578,6 +580,16 @@
         "vitest": "^4.1.10",
       },
     },
+    "packages/media3-ffmpeg": {
+      "name": "@kroma/media3-ffmpeg",
+      "version": "0.0.0",
+      "devDependencies": {
+        "expo": "~57.0.13",
+      },
+      "peerDependencies": {
+        "expo": "*",
+      },
+    },
     "packages/module-sdk": {
       "name": "@kroma/module-sdk",
       "version": "0.0.0",
@@ -778,6 +790,7 @@
     },
   },
   "patchedDependencies": {
+    "expo-video@57.0.2": "patches/expo-video@57.0.2.patch",
     "react-native-svg@15.15.5": "patches/react-native-svg-rnsvg-utils-alias-resolution.patch",
     "@expo/require-utils@57.0.4": "patches/@expo%2Frequire-utils@57.0.4.patch",
     "react-tv-space-navigation@6.0.0-beta1": "patches/react-tv-space-navigation@6.0.0-beta1.patch",
@@ -1309,6 +1322,8 @@
     "@kroma/lan-beacon": ["@kroma/lan-beacon@workspace:packages/lan-beacon"],
 
     "@kroma/mdns-beacon": ["@kroma/mdns-beacon@workspace:packages/mdns-beacon"],
+
+    "@kroma/media3-ffmpeg": ["@kroma/media3-ffmpeg@workspace:packages/media3-ffmpeg"],
 
     "@kroma/mobile": ["@kroma/mobile@workspace:clients/mobile"],
 
