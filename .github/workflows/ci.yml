@@ -346,8 +346,10 @@ jobs:
         with:
           components: clippy, rustfmt
 
-      # Only to drive the per-module cargo runs below (`bun run modules cargo`);
-      # no `bun install` needed, the script imports nothing from node_modules.
+      # Only to drive the per-module cargo runs below (`bun run modules cargo`).
+      # No `bun install`: that ONE command reaches nothing outside module-tools.
+      # Adding an import from another workspace package to it - the way `release`
+      # now reaches `@kroma/registry` - breaks this job, so check before you do.
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: ${{ env.BUN_VERSION }}
