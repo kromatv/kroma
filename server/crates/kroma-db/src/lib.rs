@@ -54,6 +54,7 @@ pub mod translations;
 pub mod metadata_core;
 pub mod tmdb_pin;
 pub mod localize;
+mod grant;
 mod schema;
 mod vectors;
 mod home;
@@ -82,7 +83,8 @@ pub use taste::*;
 pub use curated::*;
 pub use suggest::*;
 pub use backup::*;
-pub use schema::{apply_migrations, init};
+pub use grant::{init_scoped, Grant};
+pub use schema::{apply_migrations, init, open};
 pub(crate) use schema::{FILE_COLS, ITEM_COLS, PRAGMAS};
 
 /// A small, cheap-to-clone WAL connection pool. Cloning shares the same idle
@@ -95,12 +97,25 @@ pub struct PoolInner {
     path: PathBuf,
     idle: Mutex<Vec<Connection>>,
     max_idle: usize,
+    // `None` for the core's own pool: the app is not scoped against itself. A
+    // module's pool carries the grant its manifest declared (see [`Grant`]).
+    scope: Option<grant::Scope>,
 }
 
 impl PoolInner {
+    /// The database file this pool opens.
+    pub fn path(&self) -> &std::path::Path {
+        &self.path
+    }
+
     fn open(&self) -> Result<Connection> {
         let conn = Connection::open(&self.path).context("open sqlite connection")?;
         conn.execute_batch(PRAGMAS).context("apply pragmas")?;
+        // After the pragmas, never before: the authorizer denies PRAGMA, and
+        // these are the host's own, not the module's.
+        if let Some(scope) = &self.scope {
+            scope.install(&conn).context("install storage grant")?;
+        }
         Ok(conn)
     }
 

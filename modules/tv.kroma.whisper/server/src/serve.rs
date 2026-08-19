@@ -9,26 +9,11 @@ use std::time::Duration;
 
 use axum::routing::post;
 use axum::{Json, Router};
-use kroma_module_sdk::host::HostCtx;
 use kroma_module_sdk::db::Pool;
+use kroma_module_sdk::host::HostStorage;
 use serde::Deserialize;
 
-/// Idempotent: both the sidecar and the core call this, whichever runs first.
-pub fn ensure_jobs_table(pool: &Pool) {
-    if let Ok(conn) = pool.get() {
-        let _ = conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS whisper_jobs (
-                id TEXT PRIMARY KEY,
-                stage TEXT NOT NULL DEFAULT '',
-                done INTEGER NOT NULL DEFAULT 0,
-                total INTEGER NOT NULL DEFAULT 0,
-                cancel INTEGER NOT NULL DEFAULT 0
-             );",
-        );
-    }
-}
-
-pub fn whisper_routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
+pub fn whisper_routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new().route("/_port/whisper/transcribe", post(transcribe_h::<S>))
 }
 
@@ -42,7 +27,7 @@ struct TranscribeReq {
     lang: Option<String>,
 }
 
-async fn transcribe_h<S: HostCtx + Clone + Send + Sync + 'static>(
+async fn transcribe_h<S: HostStorage + Clone + Send + Sync + 'static>(
     axum::extract::State(host): axum::extract::State<S>,
     Json(req): Json<TranscribeReq>,
 ) -> Json<Option<String>> {
@@ -52,7 +37,6 @@ async fn transcribe_h<S: HostCtx + Clone + Send + Sync + 'static>(
 }
 
 fn run(pool: Pool, req: TranscribeReq) -> Option<String> {
-    ensure_jobs_table(&pool);
     let cancel = Arc::new(AtomicBool::new(false));
     let finished = Arc::new(AtomicBool::new(false));
 

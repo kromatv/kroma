@@ -15,14 +15,14 @@ use serde_json::{json, Value};
 use kroma_module_sdk::domain::{Permission, User};
 
 use crate::dtos::{NamingTemplatesView, NamingView, OrganizePlan, OrganizeResult, SampleBody};
-use kroma_module_sdk::host::{blocking, json_error, AuthUser, HostCtx};
+use kroma_module_sdk::host::{blocking, json_error, AuthUser, HostStorage};
 
 use crate::organize::{
     self,
     naming::{Casing, NamingTemplates},
 };
 
-pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
+pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/organize/naming", get(get_naming::<S>).put(save_naming::<S>))
         .route("/organize/sample", post(sample::<S>))
@@ -30,7 +30,7 @@ pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
         .route("/organize/apply", post(apply::<S>))
 }
 
-fn require<S: HostCtx>(state: &S, user: &User) -> Result<(), Response> {
+fn require<S: HostStorage>(state: &S, user: &User) -> Result<(), Response> {
     if user.can(Permission::LibraryManage) {
         Ok(())
     } else {
@@ -61,7 +61,7 @@ fn templates_of(body: &NamingTemplatesView) -> NamingTemplates {
 }
 
 /// `GET /organize/naming` current templates + a sample.
-pub async fn get_naming<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn get_naming<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
@@ -72,7 +72,7 @@ pub async fn get_naming<S: HostCtx + Clone + Send + Sync + 'static>(
 
 /// `POST /organize/sample` render the sample for the given (unsaved)
 /// templates, for the live preview as the admin types.
-pub async fn sample<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn sample<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     Json(body): Json<SampleBody>,
@@ -82,7 +82,7 @@ pub async fn sample<S: HostCtx + Clone + Send + Sync + 'static>(
 }
 
 /// `PUT /organize/naming` persist the templates.
-pub async fn save_naming<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn save_naming<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     Json(body): Json<NamingTemplatesView>,
@@ -100,7 +100,7 @@ pub async fn save_naming<S: HostCtx + Clone + Send + Sync + 'static>(
 }
 
 /// `GET /organize/preview` the non-destructive rename plan.
-pub async fn preview<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn preview<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
@@ -110,7 +110,7 @@ pub async fn preview<S: HostCtx + Clone + Send + Sync + 'static>(
 }
 
 /// `POST /organize/apply` execute the rename (destructive).
-pub async fn apply<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn apply<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {

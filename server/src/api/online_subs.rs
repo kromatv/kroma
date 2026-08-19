@@ -78,7 +78,6 @@ impl kroma_engine::ports::Whisper for WhisperClient {
         use std::time::Duration;
 
         let (base, token) = (self.resolve)()?;
-        kroma_whisper::ensure_jobs_table(&self.pool);
         // A per-run coordination row; nanosecond clock + track avoids collisions
         // across concurrent generations.
         let job_id = format!(

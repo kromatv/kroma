@@ -8,7 +8,7 @@ use axum::http::StatusCode;
 use axum::response::Response;
 use kroma_db::Pool;
 use kroma_domain::{Permission, User};
-use kroma_module_host::{json_error, Event, HostCtx};
+use kroma_module_host::{json_error, Event, HostCtx, HostStorage};
 
 use crate::services::jobs::JobKey;
 use crate::state::AppState;
@@ -20,13 +20,25 @@ fn forbidden(user: &User) -> Response {
     )
 }
 
-impl HostCtx for AppState {
+// The core is not scoped against itself: both databases are its own. `store()`
+// exists for a module's private file, and the core has none.
+impl HostStorage for AppState {
     fn db(&self) -> &Pool {
         &self.db
     }
 
+    fn store(&self) -> &Pool {
+        &self.db
+    }
+}
+
+impl HostCtx for AppState {
     fn data_dir(&self) -> &Path {
         &self.config.data_dir
+    }
+
+    fn session_user(&self, token: &str) -> Option<User> {
+        kroma_db::session_user(&self.db, token).ok().flatten()
     }
 
     fn require(&self, user: &User, perm: Permission) -> Result<(), Response> {
@@ -157,7 +169,22 @@ mod tests {
     fn exposes_the_pool_and_data_dir_the_app_is_using() {
         let state = test_state();
         assert_eq!(HostCtx::data_dir(&*state), state.config.data_dir.as_path());
-        assert!(HostCtx::db(&*state).get().is_ok());
+        assert!(HostStorage::db(&*state).get().is_ok());
+    }
+
+    #[test]
+    fn resolves_a_live_session_and_refuses_anything_else() {
+        let state = test_state();
+        let ana = user(&state, &[Permission::Playback]);
+        let far_future = time::OffsetDateTime::now_utc().unix_timestamp() + 3600;
+        kroma_db::create_session(&state.db, "sess-tok", &ana.id, far_future, None).unwrap();
+
+        assert_eq!(HostCtx::session_user(&*state, "sess-tok").map(|u| u.id), Some(ana.id.clone()));
+        assert!(HostCtx::session_user(&*state, "not-a-token").is_none());
+
+        // An expired session is not a session; the extractors depend on this.
+        kroma_db::create_session(&state.db, "stale", &ana.id, 1, None).unwrap();
+        assert!(HostCtx::session_user(&*state, "stale").is_none());
     }
 
     #[test]

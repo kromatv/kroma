@@ -26,7 +26,7 @@ pub enum ImportError {
 
 /// A non-empty `password` wraps the ZIP in an encrypted envelope; import auto-detects.
 pub fn export(pool: &Pool, data_dir: &Path, password: Option<&str>) -> Result<Vec<u8>> {
-    let doc = db::export_portable(pool)?;
+    let doc = db::export_portable(pool, data_dir)?;
     let assets = gather_assets(&doc, data_dir);
     let zip = archive::write_zip(&doc, &assets)?;
     match password.filter(|p| !p.is_empty()) {
@@ -46,7 +46,7 @@ pub fn import(
 ) -> std::result::Result<Vec<(String, usize)>, ImportError> {
     let (doc, assets) = decode(bytes, password)?;
     write_assets(data_dir, &assets);
-    db::import_portable(pool, &doc, reset).map_err(ImportError::Db)
+    db::import_portable(pool, data_dir, &doc, reset).map_err(ImportError::Db)
 }
 
 fn decode(bytes: &[u8], password: Option<&str>) -> std::result::Result<(BackupDoc, Assets), ImportError> {
@@ -229,7 +229,7 @@ mod tests {
             )
             .unwrap();
 
-        let doc = crate::db::export_portable(&pool).unwrap();
+        let doc = crate::db::export_portable(&pool, pool.path().parent().unwrap()).unwrap();
         let assets = gather_assets(&doc, dir.path());
         assert_eq!(assets.len(), 1);
         assert_eq!(assets[0].0, "av99.webp");
@@ -242,7 +242,7 @@ mod tests {
                 [],
             )
             .unwrap();
-        let doc = crate::db::export_portable(&pool).unwrap();
+        let doc = crate::db::export_portable(&pool, pool.path().parent().unwrap()).unwrap();
         assert_eq!(gather_assets(&doc, dir.path()).len(), 1);
     }
 

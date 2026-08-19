@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { MODULE_SCHEMA_VERSION } from '@kroma/registry';
 import { describe, expect, it } from 'vitest';
 import { registryApp } from './serve';
 
@@ -34,7 +35,10 @@ function bundleDir(manifest: Record<string, unknown>): string {
 }
 
 const MANIFEST = {
-  schemaVersion: 2,
+  // The contract this build speaks, so a bump does not read as a broken test:
+  // a bundle built for another one is deliberately skipped, which is what the
+  // pinned-schema test below covers instead.
+  schemaVersion: MODULE_SCHEMA_VERSION,
   id: 'com.acme.demo',
   name: 'Demo',
   version: '1.2.0',

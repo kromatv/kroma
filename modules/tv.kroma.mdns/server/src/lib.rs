@@ -53,7 +53,7 @@ fn usable_lan_ip(ip: IpAddr) -> Option<IpAddr> {
 pub mod module;
 pub use module::MODULE;
 
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use kroma_module_sdk::host::{async_trait, HostCtx, ServerModule};
 
@@ -78,7 +78,7 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> ServerModule<S> for MdnsModule 
         MODULE_ID
     }
 
-    async fn on_enable(&self, host: Arc<dyn HostCtx>) {
+    async fn on_enable(&self, host: S) {
         if !host.setting_bool("localDiscovery", true) {
             info!("mDNS: local discovery disabled in settings");
             return;
@@ -93,7 +93,7 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> ServerModule<S> for MdnsModule 
         }
     }
 
-    async fn on_disable(&self, _host: Arc<dyn HostCtx>) {
+    async fn on_disable(&self, _host: S) {
         // Dropping the daemon unregisters the service.
         self.daemon.lock().unwrap().take();
     }
@@ -210,10 +210,9 @@ mod tests {
     #[test]
     fn discovery_switched_off_in_settings_leaves_the_module_holding_no_daemon() {
         let module = MdnsModule::default();
-        let host: Arc<dyn HostCtx> =
-            Arc::new(StubHost::new().with_setting("localDiscovery", json!(false)));
+        let host = StubHost::new().with_setting("localDiscovery", json!(false));
 
-        block_on(ServerModule::<StubHost>::on_enable(&module, host));
+        block_on(ServerModule::on_enable(&module, host));
 
         assert!(module.daemon.lock().unwrap().is_none());
     }
@@ -223,9 +222,7 @@ mod tests {
         with_core_url(|| {
             std::env::set_var("KROMA_CORE_URL", "http://kroma.local");
             let module = MdnsModule::default();
-            let host: Arc<dyn HostCtx> = Arc::new(StubHost::new());
-
-            block_on(ServerModule::<StubHost>::on_enable(&module, host));
+            block_on(ServerModule::on_enable(&module, StubHost::new()));
             std::env::remove_var("KROMA_CORE_URL");
 
             assert!(module.daemon.lock().unwrap().is_none());
@@ -235,11 +232,11 @@ mod tests {
     #[test]
     fn disabling_a_module_that_never_started_advertising_is_a_no_op_the_kernel_can_repeat() {
         let module = MdnsModule::default();
-        let host: Arc<dyn HostCtx> = Arc::new(StubHost::new());
+        let host = StubHost::new();
 
         block_on(async {
-            ServerModule::<StubHost>::on_disable(&module, host.clone()).await;
-            ServerModule::<StubHost>::on_disable(&module, host).await;
+            ServerModule::on_disable(&module, host.clone()).await;
+            ServerModule::on_disable(&module, host).await;
         });
 
         assert!(module.daemon.lock().unwrap().is_none());

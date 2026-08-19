@@ -9,7 +9,7 @@ use anyhow::{anyhow, bail, Result};
 
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
-use kroma_module_sdk::host::{HostCtx, LibraryFolders};
+use kroma_module_sdk::host::{HostStorage, LibraryFolders};
 use kroma_module_sdk::db as db;
 use kroma_module_sdk::ports::naming;
 use kroma_module_sdk::ports::DownloadRow;
@@ -34,7 +34,7 @@ pub struct ImportSummary {
     pub failed: usize,
 }
 
-fn finalize_import<S: HostCtx>(state: &S, row: &DownloadRow, written: &[String]) {
+fn finalize_import<S: HostStorage>(state: &S, row: &DownloadRow, written: &[String]) {
     if let Some(req_id) = row.request_id.as_deref() {
         if let Err(e) = kroma_module_sdk::engine::services::requests::on_download_imported(state, req_id) {
             tracing::warn!(request = %req_id, error = %format!("{e:#}"), "post-import request update failed");
@@ -51,7 +51,7 @@ fn finalize_import<S: HostCtx>(state: &S, row: &DownloadRow, written: &[String])
     }
 }
 
-fn record_file_tmdb<S: HostCtx>(state: &S, tmdb_id: u64, written: &[String]) {
+fn record_file_tmdb<S: HostStorage>(state: &S, tmdb_id: u64, written: &[String]) {
     for path in written {
         // Keyed by canonical path to match the scanner's `files.abs_path`, so the
         // enrichment join lines up regardless of title-parse differences.
@@ -66,7 +66,7 @@ fn record_file_tmdb<S: HostCtx>(state: &S, tmdb_id: u64, written: &[String]) {
 
 /// Import every `completed` download. Failures land on the row's `error`
 /// (visible in the queue) without blocking the others.
-pub fn import_pass<S: HostCtx>(state: &S, log: &dyn Fn(String)) -> Result<ImportSummary> {
+pub fn import_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<ImportSummary> {
     let ledger = crate::download_db(state)?;
     let ready = ledger.completed_downloads(state)?;
     let mut summary = ImportSummary::default();
@@ -97,7 +97,7 @@ pub fn import_pass<S: HostCtx>(state: &S, log: &dyn Fn(String)) -> Result<Import
     Ok(summary)
 }
 
-fn import_one<S: HostCtx>(state: &S, row: &DownloadRow) -> Result<Vec<String>> {
+fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String>> {
     let meta = resolve_meta(state, row)?;
 
     let save_path = row
@@ -228,7 +228,7 @@ fn base_ctx(meta: &ImportMeta, parsed: &kroma_module_sdk::scene::ParsedRelease) 
     }
 }
 
-fn resolve_meta<S: HostCtx>(state: &S, row: &DownloadRow) -> Result<ImportMeta> {
+fn resolve_meta<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<ImportMeta> {
     let kind = if row.kind == "movie" { RequestKind::Movie } else { RequestKind::Show };
     let tmdb_id = (row.tmdb_id != 0).then_some(row.tmdb_id);
 
@@ -253,7 +253,7 @@ fn stem_of(path: &Path) -> &str {
     path.file_stem().and_then(|s| s.to_str()).unwrap_or_default()
 }
 
-fn target_library_def<S: HostCtx>(state: &S, kind: RequestKind) -> Result<LibraryFolders> {
+fn target_library_def<S: HostStorage>(state: &S, kind: RequestKind) -> Result<LibraryFolders> {
     let defs = state.library_folders();
     if defs.is_empty() {
         bail!("no library configured");

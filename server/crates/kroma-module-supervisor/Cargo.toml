@@ -10,6 +10,11 @@ license.workspace = true
 # The host contract the callback endpoints resolve against (any HostCtx state).
 kroma-module-host = { workspace = true }
 kroma-module-manifest = { workspace = true }
+# The `User` the session callback answers with.
+kroma-domain = { workspace = true }
+# Moving a module's tables out of the core database, before it is spawned.
+kroma-db = { workspace = true }
+rusqlite = { workspace = true }
 axum = { workspace = true }
 tokio = { workspace = true }
 # Async client: reverse-proxy to module processes on localhost + fetch .kmod /
@@ -38,3 +43,8 @@ libc = "0.2"
 [dev-dependencies]
 # The install/stop tests scratch in a directory that removes itself.
 kroma-testing = { workspace = true }
+# The `StubHost` double the session-callback test answers from.
+kroma-module-host = { workspace = true, features = ["testing"] }
+kroma-domain = { workspace = true }
+# `oneshot`, to drive the callback router without binding a port.
+tower = { workspace = true }

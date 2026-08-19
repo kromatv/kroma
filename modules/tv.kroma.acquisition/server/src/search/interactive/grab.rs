@@ -4,7 +4,7 @@
 
 use anyhow::{anyhow, Result};
 use kroma_module_sdk::db::{self, WantedRow};
-use kroma_module_sdk::host::HostCtx;
+use kroma_module_sdk::host::HostStorage;
 
 use super::{cached_release, interactive_search, CachedRelease};
 use crate::search::targets::SearchScope;
@@ -12,7 +12,7 @@ use crate::search::targets::SearchScope;
 /// Grab one release from the last interactive search of this request under the
 /// same scope. Returns the queued download row; the caller kicks off the (slow)
 /// engine add in the background via `DownloadManager::activate`.
-pub fn grab_cached<S: HostCtx>(
+pub fn grab_cached<S: HostStorage>(
     state: &S,
     request_id: &str,
     scope: SearchScope,
@@ -61,7 +61,7 @@ pub fn grab_cached<S: HostCtx>(
 
 // A built-in indexer may need a details-page fetch to turn a search row into a
 // magnet / .torrent link.
-fn resolve_grab_target<S: HostCtx>(state: &S, cached: &CachedRelease) -> Result<String> {
+fn resolve_grab_target<S: HostStorage>(state: &S, cached: &CachedRelease) -> Result<String> {
     let row = crate::indexer_db(state)?.get_indexer(state, &cached.view.indexer_id)?;
     match row {
         Some(r) if r.kind == kroma_module_sdk::ports::KIND_BUILTIN => crate::resolve_builtin_download(
@@ -75,7 +75,7 @@ fn resolve_grab_target<S: HostCtx>(state: &S, cached: &CachedRelease) -> Result<
     }
 }
 
-fn approve_if_needed<S: HostCtx>(state: &S, request_id: &str) -> Result<()> {
+fn approve_if_needed<S: HostStorage>(state: &S, request_id: &str) -> Result<()> {
     use kroma_module_sdk::engine::model::RequestStatus;
     let conn = state.db().get()?;
     let req = db::get_request(&conn, request_id)?.ok_or_else(|| anyhow!("request not found"))?;

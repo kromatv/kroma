@@ -10,11 +10,17 @@ license.workspace = true
 # Compiles `testing::{StubHost, Recording}`, the shared HostCtx doubles. Off by
 # default so nothing reaches a release build; crates that test against the seam
 # turn it on in their dev-dependencies.
-testing = ["dep:kroma-testing"]
+testing = ["dep:kroma-testing", "storage"]
+# The `storage` capability: `HostStorage`, the two pools, and the `query` helper.
+# Off by default, and that default is the point -- a module that declares no
+# storage must not link `kroma-db`, which is what drags the whole bundled SQLite
+# amalgamation (1.5 MB of machine code) into a sidecar that never opens a
+# database. Enabled through `kroma-module-sdk/storage` by the modules that do.
+storage = ["dep:kroma-db"]
 
 [dependencies]
 kroma-domain = { workspace = true }
-kroma-db = { workspace = true }
+kroma-db = { workspace = true, optional = true }
 # Sync curl client for the consumer-side port proxies (port methods are sync).
 kroma-http = { workspace = true }
 kroma-testing = { workspace = true, optional = true }

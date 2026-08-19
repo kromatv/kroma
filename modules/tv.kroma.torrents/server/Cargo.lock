@@ -1772,6 +1772,7 @@ dependencies = [
  "serde",
  "serde_json",
  "time",
+ "tracing",
 ]
 
 [[package]]
@@ -1962,6 +1963,7 @@ dependencies = [
  "kroma-module-runtime",
  "kroma-module-sdk",
  "kroma-qbittorrent",
+ "kroma-testing",
  "kroma-transmission",
  "librqbit",
  "rusqlite",

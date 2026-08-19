@@ -16,7 +16,8 @@ pub use embedded::EmbeddedModule;
 pub use kroma_module_macros::embedded_module;
 pub use event::ModuleEvent;
 pub use manifest::{
-    Capability, CapabilityReq, ConfigField, Dependency, FeRemote, ModuleManifest, Version,
+    Capability, CapabilityReq, ConfigField, CoreScope, Dependency, FeRemote, ModuleManifest,
+    Storage, Version,
 };
 pub use compat::{engines_satisfied, is_newer, range_matches, version_satisfies, KNOWN_ENGINES};
 pub use manifest::MODULE_SCHEMA_VERSION;

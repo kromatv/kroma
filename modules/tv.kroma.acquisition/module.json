@@ -3,12 +3,13 @@
   "schemaVersion": 2,
   "id": "tv.kroma.acquisition",
   "name": "Acquisition",
-  "version": "0.1.9",
+  "version": "0.2.0",
+  "description": "The acquisition feature: interactive/manual release search, quality scoring, grab + import, and the automatic wanted-list pass. Rides on the Downloads engine and the indexers. Disable it to remove search/grab/auto and hide the settings page.",
   "engines": {
-    "server": ">=0.1.4"
+    "server": ">=0.1.38"
   },
   "dependencies": {
-    "tv.kroma.torrents": "^0.1.0"
+    "tv.kroma.torrents": "^0.2.0"
   },
   "requires": [
     {
@@ -18,6 +19,30 @@
       "kind": "download-client"
     }
   ],
-  "description": "The acquisition feature: interactive/manual release search, quality scoring, grab + import, and the automatic wanted-list pass. Rides on the Downloads engine and the indexers. Disable it to remove search/grab/auto and hide the settings page.",
-  "ports": ["acquisition-search"]
+  "ports": ["acquisition-search"],
+  "storage": {
+    "core": {
+      "read": [
+        "requests",
+        "wanted",
+        "acq_file_tmdb",
+        "items",
+        "shows",
+        "files",
+        "libraries",
+        "metadata_core",
+        "users.id",
+        "users.email",
+        "users.username",
+        "users.avatar_url",
+        "users.created_at",
+        "users.permissions",
+        "users.language",
+        "users.pin_hash",
+        "users.audio_language",
+        "users.subtitle_language"
+      ],
+      "write": ["requests", "wanted", "acq_file_tmdb"]
+    }
+  }
 }

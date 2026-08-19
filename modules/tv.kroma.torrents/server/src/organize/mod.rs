@@ -18,7 +18,7 @@ use kroma_module_sdk::db;
 use kroma_module_sdk::engine::model::{Kind, MediaFile, MediaItem, Show};
 
 use crate::dtos::{OrganizeMove, OrganizePlan, OrganizeResult, SampleNames};
-use kroma_module_sdk::host::HostCtx;
+use kroma_module_sdk::host::HostStorage;
 
 use naming::{NameContext, NamingTemplates};
 
@@ -97,7 +97,7 @@ struct OrganizeInputs {
     items: Vec<MediaItem>,
 }
 
-fn inputs<S: HostCtx>(state: &S) -> Result<OrganizeInputs> {
+fn inputs<S: HostStorage>(state: &S) -> Result<OrganizeInputs> {
     let shows = db::list_shows(state.db(), None)?;
     Ok(OrganizeInputs {
         tpl: NamingTemplates::from_host(state),
@@ -113,7 +113,7 @@ fn inputs<S: HostCtx>(state: &S) -> Result<OrganizeInputs> {
 
 /// Compute the rename plan: every library file whose current path doesn't match
 /// the configured templates. Non-destructive.
-pub fn plan<S: HostCtx>(state: &S) -> Result<OrganizePlan> {
+pub fn plan<S: HostStorage>(state: &S) -> Result<OrganizePlan> {
     let OrganizeInputs { tpl, folders, shows_by_id, items } = inputs(state)?;
     let mut moves = Vec::new();
     let (mut total, mut matching) = (0u32, 0u32);
@@ -147,7 +147,7 @@ pub fn plan<S: HostCtx>(state: &S) -> Result<OrganizePlan> {
 /// Apply the rename plan: recompute + move every mismatched file (same-filesystem
 /// rename preserves the inode; item ids are title/year-based so watched/progress
 /// survive). Emptied source folders are pruned; a scan is chained afterward.
-pub fn apply<S: HostCtx>(state: &S, log: &dyn Fn(String)) -> Result<OrganizeResult> {
+pub fn apply<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<OrganizeResult> {
     let OrganizeInputs { tpl, folders, shows_by_id, items } = inputs(state)?;
     let mut result = OrganizeResult { moved: 0, failed: 0, errors: Vec::new() };
     for item in &items {

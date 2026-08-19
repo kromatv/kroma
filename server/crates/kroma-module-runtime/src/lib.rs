@@ -1,7 +1,12 @@
 //! The out-of-process module runtime: each module is its own binary. `main()`
-//! calls [`serve`], which opens the shared SQLite directly and builds a
-//! [`RemoteHost`] ([`HostCtx`]) proxying settings, events and jobs to the core
-//! over `/api/_host/*`.
+//! calls [`serve`], which builds a [`RemoteHost`] ([`HostCtx`]) proxying
+//! settings, events, sessions and jobs to the core over `/api/_host/*`.
+//!
+//! Databases are a CAPABILITY, not part of the runtime: only a module built with
+//! the `storage` feature opens one, and it opens two -- its own file, and the
+//! core database behind the grant its manifest declared. A module without the
+//! feature does not link SQLite at all, which is most of the size of a sidecar
+//! that never had a table.
 
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
@@ -10,7 +15,6 @@ use std::sync::{Arc, RwLock};
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use kroma_db::Pool;
 use kroma_domain::{Permission, User};
 use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_host::{json_error, Event, HostCtx, ServerModule};
@@ -20,6 +24,9 @@ struct Env {
     port: u16,
     core_url: String,
     host_token: String,
+    // Only read under `storage`: a module that declares none never learns where
+    // the core database is, which is the capability said in one more place.
+    #[cfg(feature = "storage")]
     db_path: PathBuf,
     data_dir: PathBuf,
 }
@@ -32,14 +39,37 @@ impl Env {
             port: get("KROMA_MODULE_PORT")?.parse()?,
             core_url: get("KROMA_CORE_URL")?,
             host_token: get("KROMA_HOST_TOKEN")?,
+            #[cfg(feature = "storage")]
             db_path: PathBuf::from(get("KROMA_DB_PATH")?),
             data_dir: PathBuf::from(get("KROMA_DATA_DIR")?),
         })
     }
+
+    /// The grant the core spawned this module with, as its manifest declared it.
+    /// Absent or unreadable is the empty grant: a pool that answers nothing,
+    /// never an unscoped one.
+    #[cfg(feature = "storage")]
+    fn grant(&self) -> kroma_db::Grant {
+        let Ok(json) = std::env::var("KROMA_MODULE_GRANT") else {
+            return kroma_db::Grant::none();
+        };
+        serde_json::from_str(&json).unwrap_or_else(|error| {
+            tracing::error!(%error, "core sent a storage grant this build cannot read; denying all");
+            kroma_db::Grant::none()
+        })
+    }
+
+    /// The module's own database, beside the files the core unpacked it into.
+    #[cfg(feature = "storage")]
+    fn store_path(&self) -> PathBuf {
+        self.data_dir.join("modules").join(&self.module_id).join("module.sqlite")
+    }
 }
 
-/// The out-of-process [`HostCtx`]: `db()` is direct on the shared SQLite;
-/// settings, events and jobs go to the core over the callback API.
+/// The out-of-process [`HostCtx`]: settings, events, sessions and jobs go to the
+/// core over the callback API; the databases (behind `storage`) are opened here,
+/// because SQLite in WAL mode is multi-process and a query has no business
+/// becoming an HTTP round-trip.
 #[derive(Clone)]
 pub struct RemoteHost {
     inner: Arc<Inner>,
@@ -48,7 +78,10 @@ pub struct RemoteHost {
 struct Inner {
     module_id: String,
     data_dir: PathBuf,
-    db: Pool,
+    #[cfg(feature = "storage")]
+    store: kroma_db::Pool,
+    #[cfg(feature = "storage")]
+    core: kroma_db::Pool,
     core_url: String,
     host_token: String,
     services: RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
@@ -57,13 +90,16 @@ struct Inner {
 
 impl RemoteHost {
     fn new(env: &Env) -> anyhow::Result<Self> {
-        // `init` is idempotent; the core has already migrated by the time we spawn.
-        let db = kroma_db::init(&env.db_path)?;
         Ok(Self {
             inner: Arc::new(Inner {
                 module_id: env.module_id.clone(),
                 data_dir: env.data_dir.clone(),
-                db,
+                // `open`, not `init`: the module's own file has no core schema
+                // in it, only whatever its own `migrations()` create below.
+                #[cfg(feature = "storage")]
+                store: kroma_db::open(&env.store_path())?,
+                #[cfg(feature = "storage")]
+                core: kroma_db::init_scoped(&env.db_path, &env.module_id, &env.grant())?,
                 core_url: env.core_url.clone(),
                 host_token: env.host_token.clone(),
                 services: RwLock::new(HashMap::new()),
@@ -119,13 +155,33 @@ impl RemoteHost {
     }
 }
 
-impl HostCtx for RemoteHost {
-    fn db(&self) -> &Pool {
-        &self.inner.db
+#[cfg(feature = "storage")]
+impl kroma_module_host::HostStorage for RemoteHost {
+    fn db(&self) -> &kroma_db::Pool {
+        &self.inner.core
     }
 
+    fn store(&self) -> &kroma_db::Pool {
+        &self.inner.store
+    }
+}
+
+impl HostCtx for RemoteHost {
     fn data_dir(&self) -> &Path {
         &self.inner.data_dir
+    }
+
+    // Asked of the core rather than read from the `sessions` table: this is what
+    // a module used to open a database for, and the reason eight sidecars that
+    // never had a row of their own still linked the whole of SQLite.
+    fn session_user(&self, token: &str) -> Option<User> {
+        // POSTed, not queried: the token is the caller's live session.
+        self.callback()
+            .post_json(&self.host_url("session"), &serde_json::json!({ "token": token }))
+            .ok()?
+            .json::<Option<User>>()
+            .ok()
+            .flatten()
     }
 
     fn require(&self, user: &User, perm: Permission) -> Result<(), Response> {
@@ -277,7 +333,14 @@ pub async fn serve_one(
     setup: impl FnOnce(&RemoteHost),
     module: Box<dyn ServerModule<RemoteHost>>,
 ) -> anyhow::Result<()> {
-    serve(setup, vec![module], axum::Router::new()).await
+    serve(
+        |host| {
+            setup(host);
+            axum::Router::new()
+        },
+        vec![module],
+    )
+    .await
 }
 
 // A module is a separate process, so it does not inherit the core's subscriber:
@@ -295,31 +358,30 @@ fn init_tracing() {
         .ok();
 }
 
-/// Run a module process: `setup` wires the process's own services and port
-/// providers into the host, each module's `admin_routes` plus `extra` routes are
-/// served on the assigned port, and every module's `on_enable` runs. A process may
-/// host several modules or none (a port-provider-only process).
+/// Run a module process: `wire` builds the process's own services and port
+/// providers against the live host and hands back whatever extra routes it
+/// serves, each module's `admin_routes` are mounted beside them on the assigned
+/// port, and every module's `on_enable` runs. A process may host several modules
+/// or none (a port-provider-only process).
+///
+/// `wire` takes the host rather than running before it, because a provider that
+/// answers out of a database has to be built holding that database: the port
+/// contract it implements names only [`HostCtx`], so the pools cannot arrive
+/// through the call.
 pub async fn serve(
-    setup: impl FnOnce(&RemoteHost),
+    wire: impl FnOnce(&RemoteHost) -> axum::Router<RemoteHost>,
     modules: Vec<Box<dyn ServerModule<RemoteHost>>>,
-    extra: axum::Router<RemoteHost>,
 ) -> anyhow::Result<()> {
     init_tracing();
     let env = Env::from_process()?;
     let host = RemoteHost::new(&env)?;
     tracing::info!(module = %env.module_id, port = env.port, "module process starting");
 
-    for module in &modules {
-        let migrations = module.migrations();
-        if !migrations.is_empty() {
-            let conn = host.db().get()?;
-            kroma_db::apply_migrations(&conn, migrations)?;
-        }
-    }
-    setup(&host);
+    apply_module_migrations(&host, &modules)?;
+    let extra = wire(&host);
 
     for module in &modules {
-        module.on_enable(Arc::new(host.clone()) as Arc<dyn HostCtx>).await;
+        module.on_enable(host.clone()).await;
     }
 
     // job_fns backs /_job/run/{key}; job_specs registers with the core scheduler.
@@ -358,7 +420,7 @@ pub async fn serve(
     if !job_fns.is_empty() {
         app = app.merge(job_router(job_fns, env.host_token.clone()));
     }
-    let shutdown_host = Arc::new(host.clone()) as Arc<dyn HostCtx>;
+    let shutdown_host = host.clone();
     let app = app.with_state(host);
 
     let addr = std::net::SocketAddr::from(([127, 0, 0, 1], env.port));
@@ -392,6 +454,41 @@ pub async fn serve(
             }
         })
         .await?;
+    Ok(())
+}
+
+// A module's `migrations()` run against its OWN database, never the shared one:
+// the core database's schema is the core's, and a module that could add a table
+// to it could add a trigger to one it cannot read.
+#[cfg(feature = "storage")]
+fn apply_module_migrations(
+    host: &RemoteHost,
+    modules: &[Box<dyn ServerModule<RemoteHost>>],
+) -> anyhow::Result<()> {
+    use kroma_module_host::HostStorage;
+    for module in modules {
+        let migrations = module.migrations();
+        if !migrations.is_empty() {
+            let conn = host.store().get()?;
+            kroma_db::apply_migrations(&conn, migrations)?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "storage"))]
+fn apply_module_migrations(
+    _host: &RemoteHost,
+    modules: &[Box<dyn ServerModule<RemoteHost>>],
+) -> anyhow::Result<()> {
+    for module in modules {
+        anyhow::ensure!(
+            module.migrations().is_empty(),
+            "'{}' declares migrations but was built without the storage capability; add \
+             `storage` to its module.json and enable the SDK's `storage` feature",
+            module.id(),
+        );
+    }
     Ok(())
 }
 

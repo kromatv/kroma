@@ -11,10 +11,9 @@ use kroma_module_runtime::RemoteHost;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     kroma_module_runtime::serve(
-        |_host| {},
-        vec![kroma_acquisition::server_module::<RemoteHost>()],
         // Provider routes for the core's /api/requests/:id/search + /grab endpoints.
-        kroma_acquisition::acqsearch_routes::<RemoteHost>(),
+        |_host| kroma_acquisition::acqsearch_routes::<RemoteHost>(),
+        vec![kroma_acquisition::server_module::<RemoteHost>()],
     )
     .await
 }

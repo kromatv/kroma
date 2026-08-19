@@ -7,7 +7,7 @@ mod transports;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use kroma_db::push_subs::{self, PushSubscription};
-use kroma_module_host::HostCtx;
+use kroma_module_host::HostStorage;
 use kroma_push::webpush::VapidKey;
 use kroma_push::Urgency;
 use serde_json::json;
@@ -38,7 +38,7 @@ const DEFAULT_SUBJECT: &str = "mailto:admin@kroma.invalid";
 
 // Env is read first so a distribution can carry the app's own Apple and Google
 // keys; the stored setting is the fallback a fork writes to.
-fn from_env_or_setting<S: HostCtx>(state: &S, var: &str, key: &str) -> String {
+fn from_env_or_setting<S: HostStorage>(state: &S, var: &str, key: &str) -> String {
     match std::env::var(var) {
         Ok(v) if !v.trim().is_empty() => v.trim().to_string(),
         _ => state.setting_str(key, "").trim().to_string(),
@@ -46,7 +46,7 @@ fn from_env_or_setting<S: HostCtx>(state: &S, var: &str, key: &str) -> String {
 }
 
 /// The server's VAPID public key, minting the keypair on first call.
-pub fn public_key<S: HostCtx>(state: &S) -> anyhow::Result<String> {
+pub fn public_key<S: HostStorage>(state: &S) -> anyhow::Result<String> {
     if let Some(key) = keys_for(&credentials(state)).web.as_ref() {
         return Ok(key.public_base64url());
     }
@@ -62,11 +62,11 @@ pub fn public_key<S: HostCtx>(state: &S) -> anyhow::Result<String> {
 
 // The RFC 8292 `sub` claim. Must be a `mailto:` or `https:` URL and must never
 // be empty — an empty `sub` is not an absent one, and FCM rejects the token.
-fn subject_of<S: HostCtx>(state: &S) -> String {
+fn subject_of<S: HostStorage>(state: &S) -> String {
     public_url_of(state).unwrap_or_else(|| DEFAULT_SUBJECT.to_string())
 }
 
-fn public_url_of<S: HostCtx>(state: &S) -> Option<String> {
+fn public_url_of<S: HostStorage>(state: &S) -> Option<String> {
     let public = state.setting_str("remoteUrl", "");
     let public = public.trim().trim_end_matches('/');
     let usable = public.starts_with("https://") || public.starts_with("http://");
@@ -101,7 +101,7 @@ type Cached = Mutex<Option<(Credentials, Arc<Keys>)>>;
 
 static PARSED: OnceLock<Cached> = OnceLock::new();
 
-fn credentials<S: HostCtx>(state: &S) -> Credentials {
+fn credentials<S: HostStorage>(state: &S) -> Credentials {
     Credentials {
         vapid_private: state.setting_str(VAPID_PRIVATE_KEY, ""),
         apns_p8: from_env_or_setting(state, "KROMA_APNS_KEY_P8", APNS_KEY_P8),
@@ -184,7 +184,7 @@ fn parse(credentials: &Credentials) -> Keys {
 }
 
 /// The server's push identity for this emission.
-pub fn sender<S: HostCtx>(state: &S) -> Sender {
+pub fn sender<S: HostStorage>(state: &S) -> Sender {
     let keys = keys_for(&credentials(state));
     transports::Senders {
         web: keys
@@ -221,7 +221,7 @@ fn fcm_access_token(key: &kroma_push::fcm::FcmKey) -> anyhow::Result<String> {
 
 /// Sends to every endpoint `user_id` has registered and returns how many
 /// accepted it. Any failure here costs a push, never the in-app notification.
-pub fn deliver<S: HostCtx>(
+pub fn deliver<S: HostStorage>(
     state: &S,
     sender: &Sender,
     user_id: &str,
@@ -261,7 +261,7 @@ pub fn deliver<S: HostCtx>(
 
 /// Sends one "push is working" message to a user's own devices, deliberately
 /// bypassing the category preferences: the user just pressed the button.
-pub fn send_test<S: HostCtx>(state: &S, user: &User) -> anyhow::Result<usize> {
+pub fn send_test<S: HostStorage>(state: &S, user: &User) -> anyhow::Result<usize> {
     let sender = sender(state);
     let locale = crate::i18n::user_locale(user);
     let notification = Notification {
@@ -282,7 +282,7 @@ pub fn send_test<S: HostCtx>(state: &S, user: &User) -> anyhow::Result<usize> {
 
 // `Ok(false)` = not delivered but handled (dropped as gone, or a transport
 // this server has no credentials for).
-fn send_one<S: HostCtx>(
+fn send_one<S: HostStorage>(
     state: &S,
     sender: &Sender,
     sub: &PushSubscription,
@@ -368,13 +368,15 @@ fn urgency_of(n: &Notification) -> Urgency {
     }
 }
 
-pub fn is_subscribed<S: HostCtx>(state: &S, user_id: &str) -> bool {
+pub fn is_subscribed<S: HostStorage>(state: &S, user_id: &str) -> bool {
     let Ok(conn) = state.db().get() else { return false };
     db::push_subs::has_subscription(&conn, user_id).unwrap_or(false)
 }
 
 #[cfg(test)]
 mod tests {
+    use kroma_module_host::HostCtx;
+
     use super::*;
     use kroma_domain::{NotificationAction, NotificationCategory, NotificationEvent};
 

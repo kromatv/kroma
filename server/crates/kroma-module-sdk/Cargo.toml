@@ -13,11 +13,13 @@ kroma-module-manifest = { workspace = true }
 kroma-module-macros = { workspace = true }
 # Host contract: ServerModule, HostCtx, service/port resolution, async_trait.
 kroma-module-host = { workspace = true }
-# The application surface modules build against.
-kroma-engine = { workspace = true }
+# The application surface modules build against. Both are optional and both are
+# off by default: between them they are the whole core, and a sidecar that only
+# publishes an mDNS beacon has no business linking it.
+kroma-engine = { workspace = true, optional = true }
 kroma-domain = { workspace = true }
 kroma-http = { workspace = true }
-kroma-db = { workspace = true }
+kroma-db = { workspace = true, optional = true }
 kroma-primitives = { workspace = true }
 # Both ends of every port contract live beside its trait: the provider mounts
 # axum routes, the consumer proxies over them.
@@ -33,7 +35,15 @@ anyhow = { workspace = true }
 kroma-scene = { workspace = true }
 
 [features]
-testing = ["kroma-module-host/testing"]
+testing = ["kroma-module-host/testing", "storage", "engine"]
+# The `storage` capability: `host::HostStorage` and the `db` facade. A module
+# enables it when its `module.json` declares `storage`, and only then does its
+# binary link SQLite -- which is 1.5 MB of the 3.3 MB a sidecar used to be.
+storage = ["dep:kroma-db", "kroma-module-host/storage"]
+# The `engine` facade (`engine::services`, `engine::model`): the core's own
+# business logic, for the two modules that orchestrate it. It pulls `kroma-db`
+# with it, because the services it exposes are written against the pool.
+engine = ["dep:kroma-engine", "storage"]
 
 [dev-dependencies]
 # The shared HostCtx double (`testing::StubHost`) for the seam tests.

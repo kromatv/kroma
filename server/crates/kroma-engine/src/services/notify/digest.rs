@@ -7,7 +7,7 @@
 use std::collections::BTreeMap;
 
 use kroma_db::notifications::AddedTitle;
-use kroma_module_host::HostCtx;
+use kroma_module_host::HostStorage;
 
 use kroma_domain::{
     ActionKind, ActionSpec, ActionStyle, Audience, NotificationEvent, NotificationSpec, PushCategory,
@@ -32,7 +32,7 @@ pub struct DigestSummary {
 }
 
 /// Report everything added since the watermark, then advance it.
-pub fn run<S: HostCtx>(state: &S) -> anyhow::Result<DigestSummary> {
+pub fn run<S: HostStorage>(state: &S) -> anyhow::Result<DigestSummary> {
     let since = state.setting_str(WATERMARK_KEY, "");
     let conn = state.db().get()?;
 
@@ -67,7 +67,7 @@ pub fn run<S: HostCtx>(state: &S) -> anyhow::Result<DigestSummary> {
     Ok(summary)
 }
 
-fn set_watermark<S: HostCtx>(state: &S, value: &str) {
+fn set_watermark<S: HostStorage>(state: &S, value: &str) {
     state.set_settings(BTreeMap::from([(
         WATERMARK_KEY.to_string(),
         serde_json::Value::String(value.to_string()),
@@ -92,7 +92,7 @@ fn split(added: Vec<AddedTitle>) -> (Vec<AddedTitle>, BTreeMap<String, Vec<Added
 
 // A single new film names itself and links straight to it; a batch reports the
 // count and opens the list.
-fn announce_movies<S: HostCtx>(state: &S, movies: &[AddedTitle]) -> usize {
+fn announce_movies<S: HostStorage>(state: &S, movies: &[AddedTitle]) -> usize {
     let Some(newest) = movies.first() else {
         return 0;
     };
@@ -132,7 +132,7 @@ fn announce_movies<S: HostCtx>(state: &S, movies: &[AddedTitle]) -> usize {
 }
 
 // One notification per show, to its followers only.
-fn announce_episodes<S: HostCtx>(state: &S, show_id: &str, eps: &[AddedTitle]) -> usize {
+fn announce_episodes<S: HostStorage>(state: &S, show_id: &str, eps: &[AddedTitle]) -> usize {
     let Some(newest) = eps.first() else {
         return 0;
     };
@@ -161,6 +161,8 @@ fn announce_episodes<S: HostCtx>(state: &S, show_id: &str, eps: &[AddedTitle]) -
 
 #[cfg(test)]
 mod tests {
+    use kroma_module_host::HostCtx;
+
     use super::*;
     use crate::test_support;
     use kroma_domain::ParamValue;

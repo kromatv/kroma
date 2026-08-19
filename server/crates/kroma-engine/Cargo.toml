@@ -15,7 +15,8 @@ kroma-primitives = { workspace = true }
 kroma-i18n = { workspace = true }
 # Module registry contract + the module descriptors from the leaf crates.
 kroma-module-manifest = { workspace = true }
-kroma-module-host = { workspace = true }
+# `storage` unconditionally: the engine IS the core database.
+kroma-module-host = { workspace = true, features = ["storage"] }
 kroma-http = { workspace = true }
 kroma-push = { workspace = true }
 # The heavy/optional adapters (embeddings, whisper transcription, mDNS) are no

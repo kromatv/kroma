@@ -8,7 +8,7 @@ use axum::http::StatusCode;
 use axum::middleware::{from_fn_with_state, Next};
 use axum::response::IntoResponse;
 use axum::Router;
-use kroma_module_host::{HostCtx, ServerModule};
+use kroma_module_host::ServerModule;
 use kroma_module_manifest::{ModuleManifest, Registry};
 
 use kroma_engine::state::SharedState;
@@ -124,15 +124,14 @@ pub fn module_migrations() -> Vec<&'static str> {
 /// through it — so enabled state survives a restart.
 pub async fn apply_enabled_states(state: &SharedState) {
     let order = resolved_order();
-    let host: Arc<dyn HostCtx> = state.clone();
     let mut servers: Vec<&dyn ServerModule<SharedState>> =
         registry().servers.iter().map(|m| m.as_ref()).collect();
     servers.sort_by_key(|m| order.iter().position(|id| id == m.id()).unwrap_or(usize::MAX));
     for module in servers {
         if kroma_engine::modules::module_enabled(&state.settings, module.id()) {
-            module.on_enable(host.clone()).await;
+            module.on_enable(state.clone()).await;
         } else {
-            module.on_disable(host.clone()).await;
+            module.on_disable(state.clone()).await;
         }
     }
 }

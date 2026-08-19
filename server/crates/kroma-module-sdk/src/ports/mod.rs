@@ -3,6 +3,13 @@
 //! composition root registers it in the host service registry; a consumer module
 //! resolves it via `kroma_module_host::resolve_port`. Only generic contracts live
 //! here, never a module's own types, so no crate here depends on a module.
+//!
+//! A port names [`HostCtx`](kroma_module_host::HostCtx) and nothing wider, even
+//! when the module answering it is database-backed: the CONSUMER has to be able
+//! to name every type in the contract, and a consumer holds no capability just
+//! because a provider does. A provider that needs a database holds it itself
+//! (the manager it registers carries its own pools), so the contract stays the
+//! narrow thing both ends can compile against.
 
 
 // The download-client contract (engine trait + shared types + the host port), so
@@ -26,5 +33,8 @@ pub use vpn::*;
 // The acquisition module's search/grab contract, consumed by the core.
 pub mod acquisition;
 pub use acquisition::*;
-// The Sonarr/Radarr-style naming engine, shared by torrents (organize) + acquisition.
+// The Sonarr/Radarr-style naming engine, shared by torrents (organize) +
+// acquisition. Behind `engine` because it also reads templates straight off the
+// core's `Settings`; both its consumers hold that feature anyway.
+#[cfg(feature = "engine")]
 pub mod naming;

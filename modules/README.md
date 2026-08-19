@@ -107,9 +107,11 @@ use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 ```
 
-A sidecar's whole `main()` is one `serve` call: the runtime opens the shared
-SQLite, builds the out-of-process host, applies migrations, runs `on_enable` and
-serves the module's admin routes on the port the supervisor assigned:
+A sidecar's whole `main()` is one `serve` call: the runtime builds the
+out-of-process host, applies the module's migrations to its own database, runs
+`on_enable` and serves the module's admin routes on the port the supervisor
+assigned. The closure is handed the live host and returns whatever extra routes
+the module serves:
 
 ```rust
 #[tokio::main]
@@ -158,17 +160,72 @@ against the module's own catalog first, then the core ones.
 
 The supervisor scans `<data>/modules/*`, spawns each enabled module as its own
 process on a free localhost port, and reverse-proxies `/api/module/<id>/*` to it.
-A module opens the shared SQLite **directly** (WAL, so multi-process is fine) and
-calls back into the core over the token-authed `/api/_host/*` API for settings,
-events and jobs. It owns its own tables.
+A module calls back into the core over the token-authed `/api/_host/*` API for
+settings, events, jobs and **session lookup** (`AuthUser` resolves through the
+host, so authenticating a caller costs no database).
 
-- **`dependsOn`** is a hard dependency: a bare id, `"id@^1.0"`, or `{ id, version }`.
+- **`dependencies`** is a hard dependency, as a `{ "<id>": "<range>" }` map.
   Enforced on the backend; the Store installs missing ones automatically.
-- **`optionalDependsOn`** is ordered first when present, not required.
+- **`optionalDependencies`** is ordered first when present, not required.
 - **`requires: [{ kind, id? }]`** is a *capability* dependency, satisfied by any
   module whose `provides` declares that kind.
-- **`minServer`** is a bare version or a range, enforced at install **and** at
-  spawn, so a stale bundle fails with a clear message instead of proxy errors.
+- **`engines`** is what the module needs from its host (`{ "server": ">=0.1.4" }`),
+  enforced at install **and** at spawn, so a stale bundle fails with a clear
+  message instead of proxy errors.
+
+## Storage
+
+**A module has no database unless it declares one.** That is what `storage` in
+`module.json` is, and leaving it out is the normal case: eight of the twelve
+first-party modules never open a database, and a sidecar that declares none does
+not link SQLite at all -- which is half of what its binary used to be.
+
+```jsonc
+"storage": {
+  // The slice of the SHARED core database this module may reach. Anything not
+  // listed is denied by SQLite's own authorizer, at prepare time.
+  "core": { "read": ["requests", "users.username"], "write": ["wanted"] },
+  // Tables this module used to keep in the core database and now owns. Moved
+  // into its own file, once, before it is next spawned.
+  "adopt": ["indexers"]
+}
+```
+
+Declaring it is half the job: the crate enables the matching SDK feature, or it
+compiles without the API.
+
+```toml
+kroma-module-sdk = { path = "...", features = ["storage"] }
+kroma-module-runtime = { path = "...", features = ["storage"] }
+```
+
+The capability gives a module **two** databases, and they are not
+interchangeable:
+
+- `host.store()` is the module's own file, `<data>/modules/<id>/module.sqlite`.
+  It owns it outright, `migrations()` are applied there, and nothing else reads
+  it. This is where a table only that module uses belongs -- especially one
+  holding credentials.
+- `host.db()` is the shared core database, and every statement prepared on it
+  passes an authorizer built from the `core` grant above. A module that declared
+  no grant still gets the pool; it just answers nothing, and says which table it
+  refused.
+
+Two rules about a grant come from SQLite rather than from us, and both have bitten:
+a column named in a `WHERE` is reached as much as one that is projected, and a
+foreign key drags its other table in -- writing a child row reads the parent, and
+a cascading delete writes the child.
+
+A table the core itself reads (`downloads`, for the progress overlay) or that is
+a channel between the core and the module (`whisper_jobs`) is **shared by
+definition**: it lives in the core schema, and the module holds a grant on it. A
+module cannot create a table in the core database, which is the same statement
+said in enforcement.
+
+Ports are unaffected: a port contract names `HostCtx` and nothing wider, even
+when the module answering it is database-backed, because a consumer holds no
+capability just because a provider does. A provider that needs a database holds
+it itself.
 
 `provides` is a declaration for introspection and capability deps; the concrete
 dispatch is a sub-engine registry (`DownloadClientRegistry` and friends).

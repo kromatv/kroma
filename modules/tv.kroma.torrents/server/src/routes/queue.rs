@@ -16,15 +16,15 @@ use crate::db;
 use kroma_module_sdk::domain::{Permission, User};
 
 use crate::{DownloadView, DownloadsView};
-use kroma_module_sdk::host::{blocking, json_error, query, service, AuthUser, HostCtx};
+use kroma_module_sdk::host::{blocking, json_error, query, service, AuthUser, HostStorage};
 
 use crate::DownloadManager;
 
-fn dm<S: HostCtx>(state: &S) -> Arc<DownloadManager> {
+fn dm<S: HostStorage>(state: &S) -> Arc<DownloadManager> {
     service::<DownloadManager>(state).expect("download manager registered")
 }
 
-pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
+pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/downloads", get(list::<S>))
         .route("/downloads/pause-all", post(pause_all::<S>))
@@ -37,7 +37,7 @@ pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
         .route("/downloads/{id}", axum::routing::delete(remove::<S>))
 }
 
-fn require_downloads<S: HostCtx>(state: &S, user: &User) -> Result<(), Response> {
+fn require_downloads<S: HostStorage>(state: &S, user: &User) -> Result<(), Response> {
     if user.can(Permission::RequestsManage) || user.can(Permission::SettingsManage) {
         Ok(())
     } else {
@@ -47,7 +47,7 @@ fn require_downloads<S: HostCtx>(state: &S, user: &User) -> Result<(), Response>
 
 const HISTORY_LIMIT: usize = 200;
 
-pub async fn list<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
@@ -57,8 +57,7 @@ pub async fn list<S: HostCtx + Clone + Send + Sync + 'static>(
     // can't reach the client. Blocking: engine stats run off the runtime.
     let live = {
         let mgr = dm(&state);
-        let host = state.clone();
-        tokio::task::spawn_blocking(move || mgr.live_stats(&host)).await.unwrap_or_default()
+        tokio::task::spawn_blocking(move || mgr.live_stats()).await.unwrap_or_default()
     };
     // Resolved before the blocking closure, which cannot borrow the host.
     let indexers: std::collections::HashMap<String, String> =
@@ -124,7 +123,7 @@ pub async fn list<S: HostCtx + Clone + Send + Sync + 'static>(
     Ok(Json(view).into_response())
 }
 
-async fn act<S: HostCtx + Clone + Send + Sync + 'static>(
+async fn act<S: HostStorage + Clone + Send + Sync + 'static>(
     state: S,
     user: User,
     id: String,
@@ -142,32 +141,32 @@ async fn act<S: HostCtx + Clone + Send + Sync + 'static>(
     }
 }
 
-pub async fn pause<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn pause<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
 ) -> Result<Response, Response> {
     let downloads = dm(&state);
-    act(state.clone(), user, id, move |st, id| downloads.pause(st, id)).await
+    act(state.clone(), user, id, move |_st, id| downloads.pause(id)).await
 }
 
-pub async fn resume<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn resume<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
 ) -> Result<Response, Response> {
     let downloads = dm(&state);
-    act(state.clone(), user, id, move |st, id| downloads.resume(st, id)).await
+    act(state.clone(), user, id, move |_st, id| downloads.resume(id)).await
 }
 
 /// Asks the tracker for more peers on one download.
-pub async fn reannounce<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn reannounce<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
 ) -> Result<Response, Response> {
     let downloads = dm(&state);
-    act(state.clone(), user, id, move |st, id| downloads.reannounce(st, id)).await
+    act(state.clone(), user, id, move |_st, id| downloads.reannounce(id)).await
 }
 
 fn bulk_response(out: anyhow::Result<usize>) -> Result<Response, Response> {
@@ -177,35 +176,35 @@ fn bulk_response(out: anyhow::Result<usize>) -> Result<Response, Response> {
     }
 }
 
-pub async fn pause_all<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn pause_all<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     require_downloads(&state, &user)?;
-    bulk_response(blocking(move || Ok(dm(&state).pause_all(&state))).await?)
+    bulk_response(blocking(move || Ok(dm(&state).pause_all())).await?)
 }
 
-pub async fn resume_all<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn resume_all<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     require_downloads(&state, &user)?;
-    bulk_response(blocking(move || Ok(dm(&state).resume_all(&state))).await?)
+    bulk_response(blocking(move || Ok(dm(&state).resume_all())).await?)
 }
 
 /// Forces a tracker re-announce on every active download.
-pub async fn reannounce_all<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn reannounce_all<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     require_downloads(&state, &user)?;
-    bulk_response(blocking(move || Ok(dm(&state).reannounce_all(&state))).await?)
+    bulk_response(blocking(move || Ok(dm(&state).reannounce_all())).await?)
 }
 
 /// Re-attempts a failed step in the background: a `completed` download whose
 /// import failed is re-imported without re-downloading, a `failed` grab is reset
 /// and re-added.
-pub async fn retry<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn retry<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
@@ -228,7 +227,7 @@ pub async fn retry<S: HostCtx + Clone + Send + Sync + 'static>(
         return Ok(Json(json!({ "ok": true })).into_response());
     }
     let reset_state = state.clone();
-    let row = match blocking(move || Ok(dm(&reset_state).retry(&reset_state, &id))).await? {
+    let row = match blocking(move || Ok(dm(&reset_state).retry(&id))).await? {
         Ok(row) => row,
         Err(e) if format!("{e:#}").contains("not found") => {
             return Err(json_error(StatusCode::NOT_FOUND, "download not found"))
@@ -245,12 +244,12 @@ pub struct RemoveParams {
     delete_data: bool,
 }
 
-pub async fn remove<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn remove<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
     AxQuery(params): AxQuery<RemoveParams>,
 ) -> Result<Response, Response> {
     let downloads = dm(&state);
-    act(state.clone(), user, id, move |st, id| downloads.remove(st, id, params.delete_data)).await
+    act(state.clone(), user, id, move |_st, id| downloads.remove(id, params.delete_data)).await
 }

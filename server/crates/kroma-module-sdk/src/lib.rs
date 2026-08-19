@@ -30,6 +30,9 @@ pub mod host {
 pub mod ports;
 
 /// The application surface: `state::SharedState`, `services::*`, `model::*`.
+/// Behind the `engine` feature: this is the whole core, and only the two modules
+/// that orchestrate it (acquisition, torrents) have any use for it.
+#[cfg(feature = "engine")]
 pub mod engine {
     pub use kroma_engine::*;
 }
@@ -44,7 +47,10 @@ pub mod http {
     pub use kroma_http::*;
 }
 
-/// Direct SQLite access via the shared pool.
+/// Direct SQLite access. Behind the `storage` feature, which a module turns on
+/// when its `module.json` declares `storage`; the pools themselves come from
+/// `host::HostStorage`, not from here.
+#[cfg(feature = "storage")]
 pub mod db {
     pub use kroma_db::*;
 }

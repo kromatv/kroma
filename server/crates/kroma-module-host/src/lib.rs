@@ -8,6 +8,12 @@
 
 pub mod host_token;
 
+/// The `storage` capability: the module-private and scoped-core databases. Off
+/// unless the module declares storage, which is what keeps SQLite out of the
+/// eight sidecars that never open one.
+#[cfg(feature = "storage")]
+pub mod storage;
+
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 
@@ -22,7 +28,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
-use kroma_db::Pool;
 use kroma_domain::{Permission, User};
 pub use kroma_domain::{
     ActionKind, ActionSpec, ActionStyle, Audience, NotificationCategory, NotificationEvent,
@@ -126,15 +131,8 @@ pub fn resolve_port<P: ?Sized + Any + Send + Sync>(host: &dyn HostCtx) -> Option
     any.downcast::<Arc<P>>().ok().map(|boxed| (*boxed).clone())
 }
 
-/// [`blocking`], with the closure handed its own clone of the [`Pool`].
-pub async fn query<T, F>(pool: &Pool, f: F) -> Result<T, Response>
-where
-    F: FnOnce(Pool) -> anyhow::Result<T> + Send + 'static,
-    T: Send + 'static,
-{
-    let pool = pool.clone();
-    blocking(move || f(pool)).await
-}
+#[cfg(feature = "storage")]
+pub use storage::{query, HostStorage};
 
 /// A real-time event a module publishes onto the host's bus, fanned out to
 /// WebSocket clients as `{ "type": <topic>, ...payload }`.
@@ -163,9 +161,15 @@ pub struct LibraryFolders {
 /// `AppState` (as `Arc<AppState>` = `SharedState`) implements it; a module crate
 /// names only this trait, never the app, so it stays a leaf and breaks the cycle.
 pub trait HostCtx: Send + Sync + 'static {
-    fn db(&self) -> &Pool;
-
     fn data_dir(&self) -> &Path;
+
+    // Resolve a session bearer token to the account holding it, or `None` for a
+    // missing, expired or unknown one. Blocking: in-process this is one indexed
+    // read, out-of-process it is the `/_host/session` callback. It is on the base
+    // trait rather than behind `storage` on purpose -- authenticating a caller is
+    // something EVERY module route does, and making it a database read is what
+    // made a module link SQLite to answer a request.
+    fn session_user(&self, token: &str) -> Option<User>;
 
     // A failure is a localized `403` response.
     fn require(&self, user: &User, perm: Permission) -> Result<(), Response>;
@@ -268,22 +272,26 @@ where
     // Called when the module is enabled at runtime AND at boot for an
     // already-enabled module. Awaited, not detached, so a slow start completes
     // before a following disable can race it.
-    async fn on_enable(&self, _host: Arc<dyn HostCtx>) {}
+    //
+    // The state itself, not an `Arc<dyn HostCtx>`: erasing it lost whatever the
+    // module declared beyond the base seam, so a module holding `storage` could
+    // not reach its own database from the one hook that starts it.
+    async fn on_enable(&self, _host: S) {}
 
     // Called when the module is disabled at runtime AND at boot for a disabled
     // module, so nothing is left running. Awaited.
-    async fn on_disable(&self, _host: Arc<dyn HostCtx>) {}
+    async fn on_disable(&self, _host: S) {}
 }
 
 // The router state is `Arc<AppState>`, but the orphan rule forbids
 // `impl HostCtx for Arc<AppState>` in the app crate. This blanket impl - legal
 // here because the trait is local - lifts any `T: HostCtx` to `Arc<T>`.
 impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
-    fn db(&self) -> &Pool {
-        (**self).db()
-    }
     fn data_dir(&self) -> &Path {
         (**self).data_dir()
+    }
+    fn session_user(&self, token: &str) -> Option<User> {
+        (**self).session_user(token)
     }
     fn require(&self, user: &User, perm: Permission) -> Result<(), Response> {
         (**self).require(user, perm)
@@ -339,21 +347,28 @@ impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
 }
 
 /// An authenticated user, resolved from an `Authorization: Bearer <token>`
-/// header against the `sessions` table. A missing, expired or unknown token
+/// header through [`HostCtx::session_user`]. A missing, expired or unknown token
 /// yields `401`.
 pub struct AuthUser(pub User);
 
-impl<S: HostCtx> FromRequestParts<S> for AuthUser {
+// Resolution is blocking, so it runs on a blocking thread and the state has to
+// be owned there -- which is why these two want `Clone`. Every router state
+// already is one (axum requires it).
+async fn resolve_session<S: HostCtx + Clone>(parts: &Parts, state: &S) -> Option<User> {
+    let token = bearer_from_headers(&parts.headers)?;
+    let state = state.clone();
+    tokio::task::spawn_blocking(move || state.session_user(&token)).await.ok().flatten()
+}
+
+impl<S: HostCtx + Clone> FromRequestParts<S> for AuthUser {
     type Rejection = Response;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let token = bearer_from_headers(&parts.headers)
-            .ok_or_else(|| json_error(StatusCode::UNAUTHORIZED, "missing bearer token"))?;
-        let pool = state.db().clone();
-        let user = tokio::task::spawn_blocking(move || kroma_db::session_user(&pool, &token))
+        if bearer_from_headers(&parts.headers).is_none() {
+            return Err(json_error(StatusCode::UNAUTHORIZED, "missing bearer token"));
+        }
+        let user = resolve_session(parts, state)
             .await
-            .map_err(|_| json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal error"))?
-            .map_err(|_| json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal error"))?
             .ok_or_else(|| json_error(StatusCode::UNAUTHORIZED, "invalid or expired session"))?;
         Ok(AuthUser(user))
     }
@@ -363,20 +378,11 @@ impl<S: HostCtx> FromRequestParts<S> for AuthUser {
 /// endpoints that are public but personalise when signed in.
 pub struct OptionalAuthUser(pub Option<User>);
 
-impl<S: HostCtx> FromRequestParts<S> for OptionalAuthUser {
+impl<S: HostCtx + Clone> FromRequestParts<S> for OptionalAuthUser {
     type Rejection = std::convert::Infallible;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Some(token) = bearer_from_headers(&parts.headers) else {
-            return Ok(OptionalAuthUser(None));
-        };
-        let pool = state.db().clone();
-        let user = tokio::task::spawn_blocking(move || kroma_db::session_user(&pool, &token))
-            .await
-            .ok()
-            .and_then(|r| r.ok())
-            .flatten();
-        Ok(OptionalAuthUser(user))
+        Ok(OptionalAuthUser(resolve_session(parts, state).await))
     }
 }
 
@@ -547,17 +553,71 @@ mod tests {
         assert!(user.is_none(), "a public endpoint must not reject an anonymous caller");
     }
 
-    #[tokio::test]
-    async fn query_hands_the_closure_its_own_pool() {
-        let pool = kroma_db::testing::temp_pool("host-query");
-        let n: Result<i64, Response> = query(&pool, |p| {
-            let conn = p.get()?;
-            let v: i64 = conn.query_row("SELECT 1 + 1", [], |r| r.get(0))?;
-            Ok(v)
-        })
-        .await;
-        assert_eq!(n.unwrap(), 2);
+    fn bearer(token: &str) -> Parts {
+        axum::http::Request::builder()
+            .header(axum::http::header::AUTHORIZATION, format!("Bearer {token}"))
+            .body(())
+            .unwrap()
+            .into_parts()
+            .0
     }
+
+    fn someone() -> User {
+        User {
+            id: "u1".into(),
+            email: "ana@t.dev".into(),
+            username: "ana".into(),
+            avatar_url: None,
+            language: None,
+            audio_language: None,
+            subtitle_language: None,
+            permissions: Vec::new(),
+            created_at: "now".into(),
+            has_pin: false,
+        }
+    }
+
+    #[tokio::test]
+    async fn both_extractors_resolve_through_the_host_rather_than_a_database() {
+        // The whole point of moving `session_user` onto the base seam: a module
+        // with no storage still authenticates its callers.
+        let host = testing::StubHost::new().with_session("live", someone());
+
+        let AuthUser(user) = AuthUser::from_request_parts(&mut bearer("live"), &host).await.unwrap();
+        assert_eq!(user.id, "u1");
+
+        let OptionalAuthUser(user) =
+            OptionalAuthUser::from_request_parts(&mut bearer("live"), &host).await.unwrap();
+        assert_eq!(user.map(|u| u.id).as_deref(), Some("u1"));
+    }
+
+    #[tokio::test]
+    async fn a_token_the_host_does_not_know_is_a_401_and_not_a_500() {
+        let host = testing::StubHost::new().with_session("live", someone());
+
+        // `AuthUser` is not Debug, so map the Ok side away before unwrapping.
+        let status = |r: Result<AuthUser, Response>| r.map(|_| ()).unwrap_err().status();
+        assert_eq!(
+            status(AuthUser::from_request_parts(&mut bearer("stale"), &host).await),
+            StatusCode::UNAUTHORIZED
+        );
+        assert_eq!(
+            status(
+                AuthUser::from_request_parts(
+                    &mut axum::http::Request::builder().body(()).unwrap().into_parts().0,
+                    &host,
+                )
+                .await
+            ),
+            StatusCode::UNAUTHORIZED
+        );
+
+        // ...and the tolerant one still answers.
+        let OptionalAuthUser(user) =
+            OptionalAuthUser::from_request_parts(&mut bearer("stale"), &host).await.unwrap();
+        assert!(user.is_none());
+    }
+
     use serde_json::json;
 
     #[test]
@@ -576,7 +636,7 @@ mod tests {
 
         let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
         rt.block_on(async {
-            let host: Arc<dyn HostCtx> = Arc::new(testing::StubHost::new());
+            let host = Arc::new(testing::StubHost::new());
             Bare.on_enable(host.clone()).await;
             Bare.on_disable(host).await;
         });
@@ -597,11 +657,12 @@ mod tests {
     }
 
     impl HostCtx for Recorder {
-        fn db(&self) -> &Pool {
-            unimplemented!("not exercised")
-        }
         fn data_dir(&self) -> &Path {
             Path::new("/recorder")
+        }
+        fn session_user(&self, token: &str) -> Option<User> {
+            self.note(&format!("session_user:{token}"));
+            None
         }
         fn require(&self, _user: &User, _perm: Permission) -> Result<(), Response> {
             self.note("require");
@@ -686,6 +747,7 @@ mod tests {
         };
 
         assert_eq!(host.data_dir(), Path::new("/recorder"));
+        assert!(host.session_user("tok").is_none());
         host.require(&user, Permission::Playback).unwrap();
         host.require_any_admin(&user).unwrap();
         assert_eq!(host.setting_str("k", "d"), "str:k");
@@ -710,6 +772,7 @@ mod tests {
         assert_eq!(
             inner.calls(),
             [
+                "session_user:tok",
                 "require",
                 "require_any_admin",
                 "setting_str",

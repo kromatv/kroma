@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 use anyhow::{anyhow, Result};
 
-use kroma_module_host::HostCtx;
+use kroma_module_host::HostStorage;
 
 use crate::db;
 use crate::infra::metadata::{self, discover};
@@ -32,7 +32,7 @@ pub struct MissingScanSummary {
 /// progress + honours cancellation between shows (a full scan is a lot of TMDB
 /// calls). Rewrites `library_gaps` per show, so a show that is now complete has
 /// its rows cleared.
-pub fn scan<S: HostCtx>(
+pub fn scan<S: HostStorage>(
     state: &S,
     progress: &dyn Fn(usize, usize),
     cancelled: &dyn Fn() -> bool,
@@ -81,7 +81,7 @@ pub fn scan<S: HostCtx>(
 
 // Fetch the show's seasons + each season's episodes, keep the aired ones not
 // present on disk. Returns the show's poster (for the gap rows) and the gaps.
-fn scan_one<S: HostCtx>(
+fn scan_one<S: HostStorage>(
     state: &S,
     key: &str,
     lang: &str,

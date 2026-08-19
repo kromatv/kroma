@@ -29,17 +29,19 @@ const VERSION: u32 = 1;
 // Tables carried by a portable backup. Everything else (catalogue, embeddings,
 // AI sections, sessions, job run history, and the machine-specific `downloads`
 // torrent state) is regenerated and left out. `settings` carries the VPN /
-// naming / acquisition preferences; `indexers` and `download_clients` are the
-// admin's acquisition config (their credentials ride inside the
-// password-encrypted archive); `requests` + `wanted` carry the users' media
+// naming / acquisition preferences; `requests` + `wanted` carry the users' media
 // wishlist and its episode ledger. `progress`/`watched`/`my_list` are item-keyed
 // user state that re-links by `item_id` once a re-scan recreates the catalogue
 // with matching ids.
+//
+// A module's own tables are NOT named here any more -- they are not in this
+// database. Each installed module's private store is walked whole (see
+// [`module_stores`]), which is both how the admin's indexer keys and download
+// client passwords still travel and how this list stopped needing to know which
+// modules exist.
 const TABLES: &[&str] = &[
     "users",
     "settings",
-    "indexers",
-    "download_clients",
     "requests",
     "wanted",
     "invites",
@@ -64,13 +66,16 @@ pub struct BackupDoc {
     // (pre-assets) backups still deserialize.
     #[serde(default)]
     pub assets: BTreeMap<String, String>,
+    // Each installed module's own database: module id → table → rows. `default`
+    // so a backup taken before modules had their own file still deserializes.
+    #[serde(default)]
+    pub modules: BTreeMap<String, BTreeMap<String, Vec<Map<String, Value>>>>,
 }
 
-/// Dump every portable table to a [`BackupDoc`]. Tables owned by a module
-/// (`indexers` / `download_clients`) only exist once that module's migrations
-/// have run, so a table that is absent (module never installed / disabled before
-/// its schema was created) is skipped rather than erroring.
-pub fn export_portable(pool: &Pool) -> Result<BackupDoc> {
+/// Dump every portable table, plus every installed module's own database, to a
+/// [`BackupDoc`]. A table that is absent is skipped rather than erroring, which
+/// is the normal state of a database whose optional features were never used.
+pub fn export_portable(pool: &Pool, data_dir: &std::path::Path) -> Result<BackupDoc> {
     let conn = pool.get()?;
     let mut tables = BTreeMap::new();
     for &t in TABLES {
@@ -79,7 +84,60 @@ pub fn export_portable(pool: &Pool) -> Result<BackupDoc> {
         }
         tables.insert(t.to_string(), dump_query(&conn, &format!("SELECT * FROM {t}"))?);
     }
-    Ok(BackupDoc { version: VERSION, exported_at: now_or_blank(), tables, assets: BTreeMap::new() })
+    let mut modules = BTreeMap::new();
+    for (id, path) in module_stores(data_dir) {
+        // One unreadable module store must not cost the operator the rest of the
+        // backup; it is reported and the export goes on.
+        match dump_store(&path) {
+            Ok(store) if !store.is_empty() => {
+                modules.insert(id, store);
+            }
+            Ok(_) => {}
+            Err(error) => {
+                tracing::warn!(module = %id, %error, "module database not backed up")
+            }
+        }
+    }
+    Ok(BackupDoc {
+        version: VERSION,
+        exported_at: now_or_blank(),
+        tables,
+        assets: BTreeMap::new(),
+        modules,
+    })
+}
+
+/// Every installed module's own database, as `(module id, path)`. Empty when
+/// nothing is installed, which is the zero-module base build.
+fn module_stores(data_dir: &std::path::Path) -> Vec<(String, std::path::PathBuf)> {
+    let Ok(entries) = std::fs::read_dir(data_dir.join("modules")) else {
+        return Vec::new();
+    };
+    let mut out: Vec<(String, std::path::PathBuf)> = entries
+        .filter_map(|e| e.ok())
+        .filter_map(|e| {
+            let store = e.path().join("module.sqlite");
+            let id = e.file_name().to_string_lossy().into_owned();
+            store.is_file().then_some((id, store))
+        })
+        .collect();
+    out.sort();
+    out
+}
+
+// Every user table in one module's database, whatever they are: the core does
+// not know a module's schema and has no business learning it.
+fn dump_store(path: &std::path::Path) -> Result<BTreeMap<String, Vec<Map<String, Value>>>> {
+    let conn = Connection::open(path)?;
+    let names: Vec<String> = conn
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")?
+        .query_map([], |r| r.get(0))?
+        .collect::<std::result::Result<_, _>>()?;
+    let mut out = BTreeMap::new();
+    for name in names {
+        out.insert(name.clone(), dump_query(&conn, &format!("SELECT * FROM \"{name}\""))?);
+    }
+    Ok(out)
 }
 
 // Whether `name` is a table in the current database (module-owned tables may not
@@ -98,7 +156,12 @@ fn table_exists(conn: &Connection, name: &str) -> Result<bool> {
 /// `reset` is set, the portable tables are emptied first (a true A→B clone)
 /// still inside the same transaction, so a crash mid-restore rolls back wholesale.
 /// Returns `(table, rows_written)` pairs in restore order.
-pub fn import_portable(pool: &Pool, doc: &BackupDoc, reset: bool) -> Result<Vec<(String, usize)>> {
+pub fn import_portable(
+    pool: &Pool,
+    data_dir: &std::path::Path,
+    doc: &BackupDoc,
+    reset: bool,
+) -> Result<Vec<(String, usize)>> {
     if doc.version > VERSION {
         anyhow::bail!("backup version {} is newer than supported {VERSION}", doc.version);
     }
@@ -110,7 +173,56 @@ pub fn import_portable(pool: &Pool, doc: &BackupDoc, reset: bool) -> Result<Vec<
     conn.execute_batch("PRAGMA foreign_keys = OFF;")?;
     let result = restore_all(&mut conn, doc, reset);
     let _ = conn.execute_batch("PRAGMA foreign_keys = ON;");
-    result
+    let mut summary = result?;
+    summary.extend(restore_modules(data_dir, doc, reset));
+    Ok(summary)
+}
+
+// A module's rows go back into that module's own database, and only into tables
+// it has already created. A module absent from this server (or one that has
+// never started, so its schema does not exist yet) is skipped: its rows stay in
+// the document and land the next time the same backup is restored somewhere the
+// module IS installed.
+fn restore_modules(
+    data_dir: &std::path::Path,
+    doc: &BackupDoc,
+    reset: bool,
+) -> Vec<(String, usize)> {
+    let mut summary = Vec::new();
+    for (id, tables) in &doc.modules {
+        let path = data_dir.join("modules").join(id).join("module.sqlite");
+        if !path.is_file() {
+            tracing::info!(module = %id, "not installed here; its rows are not restored");
+            continue;
+        }
+        match restore_store(&path, tables, reset) {
+            Ok(counts) => summary.extend(counts.into_iter().map(|(t, n)| (format!("{id}/{t}"), n))),
+            Err(error) => tracing::warn!(module = %id, %error, "module rows not restored"),
+        }
+    }
+    summary
+}
+
+fn restore_store(
+    path: &std::path::Path,
+    tables: &BTreeMap<String, Vec<Map<String, Value>>>,
+    reset: bool,
+) -> Result<Vec<(String, usize)>> {
+    let mut conn = Connection::open(path)?;
+    let tx = conn.transaction()?;
+    let mut summary = Vec::new();
+    for (name, rows) in tables {
+        if !is_ident(name) || !table_exists(&tx, name)? {
+            continue;
+        }
+        if reset {
+            tx.execute(&format!("DELETE FROM \"{name}\""), [])?;
+        }
+        let n = restore_rows(&tx, name, rows).with_context(|| format!("restoring {name}"))?;
+        summary.push((name.clone(), n));
+    }
+    tx.commit()?;
+    Ok(summary)
 }
 
 // The transactional body of [`import_portable`], split out so the caller can
@@ -214,29 +326,34 @@ mod tests {
     use crate::testing::TempPool;
 
     fn fresh_pool(tag: &str) -> TempPool {
-        let pool = crate::testing::temp_pool(&format!("bkp-{tag}"));
-        // The acquisition module tables (`indexers` / `download_clients`) are owned
-        // by the module crates now and created by their `ServerModule::migrations`
-        // at boot, not by `init`. Backup still dumps them by name (see `TABLES`),
-        // so recreate the minimal shape here to exercise that path.
-        pool.get()
+        crate::testing::temp_pool(&format!("bkp-{tag}"))
+    }
+
+    // The data directory the pool's database sits in, which is also where a
+    // module's own store lives.
+    fn data_dir(pool: &Pool) -> std::path::PathBuf {
+        pool.path().parent().expect("the database has a directory").to_path_buf()
+    }
+
+    // Stand up one module's own database the way a running module would: the
+    // indexer's table, holding an API key nobody wants to lose in a restore.
+    fn seed_indexer_store(dir: &std::path::Path, rows: &str) -> std::path::PathBuf {
+        let store = dir.join("modules").join("tv.kroma.indexer").join("module.sqlite");
+        std::fs::create_dir_all(store.parent().unwrap()).unwrap();
+        let conn = Connection::open(&store).unwrap();
+        conn.execute_batch(&format!(
+            "CREATE TABLE IF NOT EXISTS indexers (id TEXT PRIMARY KEY, name TEXT NOT NULL, \
+             api_key TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL);{rows}"
+        ))
+        .unwrap();
+        store
+    }
+
+    fn store_count(store: &std::path::Path, table: &str) -> i64 {
+        Connection::open(store)
             .unwrap()
-            .execute_batch(
-                "CREATE TABLE IF NOT EXISTS indexers (\
-                    id TEXT PRIMARY KEY, name TEXT NOT NULL, url TEXT NOT NULL, \
-                    api_key TEXT NOT NULL DEFAULT '', categories TEXT NOT NULL DEFAULT '2000,5000', \
-                    enabled INTEGER NOT NULL DEFAULT 1, priority INTEGER NOT NULL DEFAULT 0, \
-                    kind TEXT NOT NULL DEFAULT 'torznab', definition_id TEXT, \
-                    settings TEXT NOT NULL DEFAULT '{}', last_ok_at INTEGER, last_error TEXT, \
-                    created_at INTEGER NOT NULL);\
-                 CREATE TABLE IF NOT EXISTS download_clients (\
-                    id TEXT PRIMARY KEY, kind TEXT NOT NULL, name TEXT NOT NULL, \
-                    url TEXT NOT NULL DEFAULT '', username TEXT NOT NULL DEFAULT '', \
-                    password TEXT NOT NULL DEFAULT '', enabled INTEGER NOT NULL DEFAULT 1, \
-                    priority INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL);",
-            )
-            .unwrap();
-        pool
+            .query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))
+            .unwrap()
     }
 
     fn count(pool: &Pool, table: &str) -> i64 {
@@ -259,21 +376,16 @@ mod tests {
             c.execute("INSERT INTO play_history (id,kind,title,started_at,ended_at) VALUES ('h1','movie','Film',1,2)", []).unwrap();
             c.execute("INSERT INTO watched (user_id,item_id,watched_at) VALUES ('u1','it1','t')", []).unwrap();
             c.execute("INSERT INTO my_list (user_id,item_id,added_at) VALUES ('u1','it1','t')", []).unwrap();
-            // Acquisition config: an indexer (with its api key) + a download client.
-            c.execute("INSERT INTO indexers (id,name,url,api_key,created_at) VALUES ('ix1','Jackett','http://jackett','secret',1)", []).unwrap();
-            c.execute("INSERT INTO download_clients (id,kind,name,password,created_at) VALUES ('dc1','qbittorrent','qBit','pw',1)", []).unwrap();
             // A user's media request (wishlist) + its episode ledger.
             c.execute("INSERT INTO requests (id,kind,tmdb_id,title,status,created_at,updated_at) VALUES ('rq1','movie',603,'The Matrix','approved',1,1)", []).unwrap();
             c.execute("INSERT INTO wanted (id,request_id,kind,tmdb_id,title,status,updated_at) VALUES ('wt1','rq1','movie',603,'The Matrix','wanted',1)", []).unwrap();
         }
 
-        let doc = export_portable(&src).unwrap();
+        let doc = export_portable(&src, &data_dir(&src)).unwrap();
         assert_eq!(doc.tables["users"].len(), 1);
         assert_eq!(doc.tables["progress"].len(), 1);
         assert_eq!(doc.tables["watched"].len(), 1);
         assert_eq!(doc.tables["my_list"].len(), 1);
-        assert_eq!(doc.tables["indexers"].len(), 1);
-        assert_eq!(doc.tables["download_clients"].len(), 1);
         assert_eq!(doc.tables["requests"].len(), 1);
         assert_eq!(doc.tables["wanted"].len(), 1);
         // The catalogue is NOT exported only the portable identity tables.
@@ -281,7 +393,7 @@ mod tests {
 
         // Fresh target with no catalogue (items table empty).
         let dst = fresh_pool("dst");
-        import_portable(&dst, &doc, false).unwrap();
+        import_portable(&dst, &data_dir(&dst), &doc, false).unwrap();
 
         assert_eq!(count(&dst, "users"), 1);
         assert_eq!(count(&dst, "play_history"), 1);
@@ -291,18 +403,8 @@ mod tests {
         assert_eq!(count(&dst, "progress"), 1);
         assert_eq!(count(&dst, "watched"), 1);
         assert_eq!(count(&dst, "my_list"), 1);
-        // Acquisition config restores, credentials intact (they ride inside the
-        // password-encrypted archive at the service layer).
-        assert_eq!(count(&dst, "indexers"), 1);
-        assert_eq!(count(&dst, "download_clients"), 1);
         assert_eq!(count(&dst, "requests"), 1);
         assert_eq!(count(&dst, "wanted"), 1);
-        let api_key: String = dst
-            .get()
-            .unwrap()
-            .query_row("SELECT api_key FROM indexers WHERE id='ix1'", [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(api_key, "secret");
 
         let server_name: String = dst
             .get()
@@ -322,14 +424,66 @@ mod tests {
             exported_at: "t".into(),
             tables: BTreeMap::new(),
             assets: BTreeMap::new(),
+            modules: BTreeMap::new(),
         }
+    }
+
+    #[test]
+    fn a_modules_own_database_travels_with_the_backup() {
+        // The indexer API keys and download-client passwords moved out of the
+        // core database, and losing them in a restore would be the whole point
+        // of a backup gone.
+        let src = fresh_pool("mod-src");
+        let src_dir = data_dir(&src);
+        seed_indexer_store(
+            &src_dir,
+            "INSERT INTO indexers VALUES ('ix1','Jackett','secret',1);",
+        );
+
+        let doc = export_portable(&src, &src_dir).unwrap();
+        let dumped = &doc.modules["tv.kroma.indexer"]["indexers"];
+        assert_eq!(dumped.len(), 1);
+        assert_eq!(dumped[0]["api_key"], Value::from("secret"));
+
+        // The target has the module installed and started, so its schema exists.
+        let dst = fresh_pool("mod-dst");
+        let dst_dir = data_dir(&dst);
+        let dst_store = seed_indexer_store(&dst_dir, "");
+
+        let summary = import_portable(&dst, &dst_dir, &doc, false).unwrap();
+        assert!(summary.contains(&("tv.kroma.indexer/indexers".to_string(), 1)), "{summary:?}");
+        assert_eq!(store_count(&dst_store, "indexers"), 1);
+        let key: String = Connection::open(&dst_store)
+            .unwrap()
+            .query_row("SELECT api_key FROM indexers WHERE id='ix1'", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(key, "secret");
+    }
+
+    #[test]
+    fn rows_for_a_module_this_server_does_not_have_are_left_in_the_document() {
+        // Restoring onto a server where the module is not installed must not
+        // fail the restore, and must not invent a database for it either.
+        let dst = fresh_pool("mod-absent");
+        let dir = data_dir(&dst);
+        let mut doc = empty_doc();
+        doc.modules.insert(
+            "tv.kroma.indexer".into(),
+            BTreeMap::from([(
+                "indexers".to_string(),
+                vec![Map::from_iter([("id".to_string(), Value::from("ix1"))])],
+            )]),
+        );
+
+        assert!(import_portable(&dst, &dir, &doc, false).unwrap().is_empty());
+        assert!(!dir.join("modules/tv.kroma.indexer/module.sqlite").exists());
     }
 
     #[test]
     fn a_backup_from_a_newer_server_is_refused_rather_than_half_restored() {
         let dst = fresh_pool("newer");
         let doc = BackupDoc { version: VERSION + 1, ..empty_doc() };
-        let err = import_portable(&dst, &doc, false).unwrap_err().to_string();
+        let err = import_portable(&dst, &data_dir(&dst), &doc, false).unwrap_err().to_string();
         assert!(err.contains("newer than supported"), "{err}");
     }
 
@@ -352,7 +506,7 @@ mod tests {
             ])],
         );
 
-        let summary = import_portable(&dst, &doc, true).unwrap();
+        let summary = import_portable(&dst, &data_dir(&dst), &doc, true).unwrap();
         assert_eq!(summary, vec![("users".to_string(), 1)]);
         assert_eq!(count(&dst, "users"), 1);
     }
@@ -365,7 +519,7 @@ mod tests {
             "users".into(),
             vec![Map::from_iter([("id); DROP TABLE users --".to_string(), Value::from("u1"))])],
         );
-        assert_eq!(import_portable(&dst, &doc, false).unwrap(), vec![("users".to_string(), 0)]);
+        assert_eq!(import_portable(&dst, &data_dir(&dst), &doc, false).unwrap(), vec![("users".to_string(), 0)]);
         assert_eq!(count(&dst, "users"), 0);
     }
 

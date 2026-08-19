@@ -6,7 +6,7 @@ use anyhow::{anyhow, bail, Result};
 
 use serde_json::json;
 
-use kroma_module_host::{Event, HostCtx};
+use kroma_module_host::{Event, HostStorage};
 
 use crate::db;
 use crate::infra::metadata::discover;
@@ -16,15 +16,15 @@ use crate::model::{
 };
 use crate::services::jobs::now_ms;
 
-fn tmdb_key<S: HostCtx>(state: &S) -> Result<String> {
+fn tmdb_key<S: HostStorage>(state: &S) -> Result<String> {
     state.tmdb_api_key().ok_or_else(|| anyhow!("TMDB is not configured"))
 }
 
-fn language<S: HostCtx>(state: &S) -> String {
+fn language<S: HostStorage>(state: &S) -> String {
     state.metadata_language()
 }
 
-fn publish<S: HostCtx>(state: &S, req_id: &str, status: RequestStatus) {
+fn publish<S: HostStorage>(state: &S, req_id: &str, status: RequestStatus) {
     // Clients depend on the wire shape `{ "type": "request.updated", id, status }`;
     // HostCtx::publish merges the topic under the `type` key.
     state.publish(Event::new(
@@ -35,7 +35,7 @@ fn publish<S: HostCtx>(state: &S, req_id: &str, status: RequestStatus) {
 
 // Only call on a real state change: [`publish`] fires on every touch, but a
 // notification must mark a transition.
-fn notify_requester<S: HostCtx>(state: &S, req: &MediaRequest, status: RequestStatus, link: &str) {
+fn notify_requester<S: HostStorage>(state: &S, req: &MediaRequest, status: RequestStatus, link: &str) {
     let Some(user_id) = req.requested_by.as_deref() else {
         return;
     };
@@ -76,7 +76,7 @@ fn notify_requester<S: HostCtx>(state: &S, req: &MediaRequest, status: RequestSt
     state.notify(&Audience::user(user_id), &spec);
 }
 
-fn notify_moderators<S: HostCtx>(state: &S, req: &MediaRequest, requester: &User) {
+fn notify_moderators<S: HostStorage>(state: &S, req: &MediaRequest, requester: &User) {
     let spec = NotificationSpec::new(
         NotificationEvent::RequestSubmitted,
         "notifications.request.submitted.title",
@@ -106,7 +106,7 @@ fn notify_moderators<S: HostCtx>(state: &S, req: &MediaRequest, requester: &User
     state.notify(&Audience::permission(Permission::RequestsManage), &spec);
 }
 
-fn request_link<S: HostCtx>(state: &S, req: &MediaRequest) -> String {
+fn request_link<S: HostStorage>(state: &S, req: &MediaRequest) -> String {
     let local = state.db().get().ok().and_then(|conn| match req.kind {
         RequestKind::Movie => {
             db::movie_item_by_tmdb(&conn, req.tmdb_id).ok().flatten().map(|id| format!("/movie/{id}"))
@@ -118,7 +118,7 @@ fn request_link<S: HostCtx>(state: &S, req: &MediaRequest) -> String {
     local.unwrap_or_else(|| "/requests".to_string())
 }
 
-fn notify_transition<S: HostCtx>(state: &S, id: &str, status: RequestStatus) {
+fn notify_transition<S: HostStorage>(state: &S, id: &str, status: RequestStatus) {
     let Ok(conn) = state.db().get() else { return };
     let Ok(Some(req)) = db::get_request(&conn, id) else { return };
     drop(conn);
@@ -128,7 +128,7 @@ fn notify_transition<S: HostCtx>(state: &S, id: &str, status: RequestStatus) {
 
 /// Create (or duplicate-merge) a request. Auto-approves when the requester
 /// holds `requests.auto`.
-pub fn create_request<S: HostCtx>(state: &S, user: &User, body: &CreateRequestBody) -> Result<MediaRequest> {
+pub fn create_request<S: HostStorage>(state: &S, user: &User, body: &CreateRequestBody) -> Result<MediaRequest> {
     let key = tmdb_key(state)?;
     let lang = language(state);
     let detail = discover::detail(&key, &lang, body.kind, body.tmdb_id)
@@ -200,7 +200,7 @@ pub fn create_request<S: HostCtx>(state: &S, user: &User, body: &CreateRequestBo
     db::get_request(&conn, &id)?.ok_or_else(|| anyhow!("request vanished after insert"))
 }
 
-fn merge_show_request<S: HostCtx>(
+fn merge_show_request<S: HostStorage>(
     state: &S,
     existing: &MediaRequest,
     asked_seasons: Option<Vec<u32>>,
@@ -229,7 +229,7 @@ fn merge_show_request<S: HostCtx>(
     Ok(())
 }
 
-pub fn approve_request<S: HostCtx>(state: &S, id: &str, reviewer: Option<&str>) -> Result<MediaRequest> {
+pub fn approve_request<S: HostStorage>(state: &S, id: &str, reviewer: Option<&str>) -> Result<MediaRequest> {
     let conn = state.db().get()?;
     let req = db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request not found"))?;
     drop(conn);
@@ -257,7 +257,7 @@ pub fn approve_request<S: HostCtx>(state: &S, id: &str, reviewer: Option<&str>) 
 /// is queued or that the file is already on disk. What comes out of it is what
 /// the automatic search pass works from, so this is also how an admin says what
 /// the job should be hunting.
-pub fn set_coverage<S: HostCtx>(
+pub fn set_coverage<S: HostStorage>(
     state: &S,
     id: &str,
     seasons: Option<Vec<u32>>,
@@ -299,7 +299,7 @@ pub fn set_coverage<S: HostCtx>(
 /// of every row that survives. `insert_wanted` ignores rows already there and
 /// `prune_wanted` drops the ones that fell out of scope; between them nothing
 /// that was grabbed or is on disk is forgotten.
-fn reconcile_wanted<S: HostCtx>(state: &S, id: &str) -> Result<()> {
+fn reconcile_wanted<S: HostStorage>(state: &S, id: &str) -> Result<()> {
     let conn = state.db().get()?;
     let req = db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request not found"))?;
     drop(conn);
@@ -310,7 +310,7 @@ fn reconcile_wanted<S: HostCtx>(state: &S, id: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn deny_request<S: HostCtx>(state: &S, id: &str, reviewer: &str, note: Option<&str>) -> Result<MediaRequest> {
+pub fn deny_request<S: HostStorage>(state: &S, id: &str, reviewer: &str, note: Option<&str>) -> Result<MediaRequest> {
     let changed =
         db::set_request_status(state.db(), id, RequestStatus::Denied, Some(reviewer), note, now_ms())?;
     if !changed {
@@ -362,7 +362,7 @@ fn merge_target(
     (seasons, normalize_episodes(Some(episodes)))
 }
 
-fn materialize_wanted<S: HostCtx>(state: &S, id: &str) -> Result<()> {
+fn materialize_wanted<S: HostStorage>(state: &S, id: &str) -> Result<()> {
     let conn = state.db().get()?;
     let req = db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request not found"))?;
     drop(conn);
@@ -371,12 +371,12 @@ fn materialize_wanted<S: HostCtx>(state: &S, id: &str) -> Result<()> {
 }
 
 /// The wanted rows a request WOULD get on approval, persisting nothing.
-pub fn preview_wanted<S: HostCtx>(state: &S, req: &MediaRequest, out: &mut Vec<db::WantedRow>) -> Result<()> {
+pub fn preview_wanted<S: HostStorage>(state: &S, req: &MediaRequest, out: &mut Vec<db::WantedRow>) -> Result<()> {
     *out = build_wanted_rows(state, req)?;
     Ok(())
 }
 
-fn build_wanted_rows<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<Vec<db::WantedRow>> {
+fn build_wanted_rows<S: HostStorage>(state: &S, req: &MediaRequest) -> Result<Vec<db::WantedRow>> {
     let key = tmdb_key(state)?;
     let lang = language(state);
     let detail = discover::detail(&key, &lang, req.kind, req.tmdb_id)
@@ -385,7 +385,7 @@ fn build_wanted_rows<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<Vec<db
     build_wanted_rows_from(state, req, &detail)
 }
 
-fn build_wanted_rows_from<S: HostCtx>(
+fn build_wanted_rows_from<S: HostStorage>(
     state: &S,
     req: &MediaRequest,
     detail: &discover::DiscoverRawDetail,
@@ -466,7 +466,7 @@ pub struct MatchSummary {
 }
 
 /// Re-derive availability for every non-terminal request.
-pub fn availability_pass<S: HostCtx>(state: &S) -> Result<MatchSummary> {
+pub fn availability_pass<S: HostStorage>(state: &S) -> Result<MatchSummary> {
     let conn = state.db().get()?;
     let all = db::list_requests(&conn, None)?;
     drop(conn);
@@ -512,7 +512,7 @@ fn needs_refresh(req: &MediaRequest, now: i64) -> bool {
 /// aired since the last pass is put back at the front of the search queue and
 /// the search job is kicked, so a weekly show is looked for the day it airs
 /// rather than whenever the cron next comes round.
-pub fn refresh_pass<S: HostCtx>(state: &S) -> Result<usize> {
+pub fn refresh_pass<S: HostStorage>(state: &S) -> Result<usize> {
     let conn = state.db().get()?;
     let all = db::list_requests(&conn, None)?;
     drop(conn);
@@ -544,7 +544,7 @@ pub fn refresh_pass<S: HostCtx>(state: &S) -> Result<usize> {
 // The ids of rows this refresh found to be airable now: newly inserted rows
 // already past their air date, plus rows whose date was backfilled into the
 // past. Both are cases where waiting for the next cron tick loses a day.
-fn refresh_one<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<Vec<String>> {
+fn refresh_one<S: HostStorage>(state: &S, req: &MediaRequest) -> Result<Vec<String>> {
     let key = tmdb_key(state)?;
     let lang = language(state);
     let detail = discover::detail(&key, &lang, req.kind, req.tmdb_id)
@@ -588,7 +588,7 @@ fn refresh_one<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<Vec<String>>
 // Additive only: inserts missing (season, episode) rows and backfills air dates.
 // Never deletes a row and never changes a row's status. Answers with the rows
 // that became searchable in the process.
-fn refresh_wanted<S: HostCtx>(
+fn refresh_wanted<S: HostStorage>(
     state: &S,
     req: &MediaRequest,
     detail: &discover::DiscoverRawDetail,
@@ -630,7 +630,7 @@ fn refresh_wanted<S: HostCtx>(
 // A row TMDB has since dated. Only ever fills a blank -- a date already known is
 // the one the ledger was built with -- and reports the row when that date turns
 // out to be in the past, since it just became searchable.
-fn backfill_air_date<S: HostCtx>(
+fn backfill_air_date<S: HostStorage>(
     state: &S,
     row: &db::WantedRow,
     air_date: Option<&str>,
@@ -650,7 +650,7 @@ fn backfill_air_date<S: HostCtx>(
 
 /// Fulfill a request from a completed import, without waiting for the
 /// scan -> enrich -> match-by-tmdbId chain (enrichment may not recover the id).
-pub fn on_download_imported<S: HostCtx>(state: &S, request_id: &str) -> Result<()> {
+pub fn on_download_imported<S: HostStorage>(state: &S, request_id: &str) -> Result<()> {
     let conn = state.db().get()?;
     let Some(req) = db::get_request(&conn, request_id)? else {
         return Ok(());
@@ -683,7 +683,7 @@ pub fn on_download_imported<S: HostCtx>(state: &S, request_id: &str) -> Result<(
 
 /// Match one request against the local catalog. `None` when no judgement is
 /// possible; never downgrades a request that already reached `available`.
-pub fn match_one<S: HostCtx>(state: &S, id: &str) -> Result<Option<RequestStatus>> {
+pub fn match_one<S: HostStorage>(state: &S, id: &str) -> Result<Option<RequestStatus>> {
     let conn = state.db().get()?;
     let Some(req) = db::get_request(&conn, id)? else {
         return Ok(None);
@@ -694,7 +694,7 @@ pub fn match_one<S: HostCtx>(state: &S, id: &str) -> Result<Option<RequestStatus
     }
 }
 
-fn match_movie<S: HostCtx>(
+fn match_movie<S: HostStorage>(
     state: &S,
     conn: db::PooledConn,
     req: &MediaRequest,
@@ -714,7 +714,7 @@ fn match_movie<S: HostCtx>(
     Ok(Some(RequestStatus::Available))
 }
 
-fn match_show<S: HostCtx>(
+fn match_show<S: HostStorage>(
     state: &S,
     conn: db::PooledConn,
     req: &MediaRequest,

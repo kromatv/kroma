@@ -1,9 +1,11 @@
-//! The Downloads module's own persistence: the `download_clients` + `downloads`
-//! ledger tables (schema + typed rows + queries), relocated out of the core
-//! `kroma-db` crate so the module owns its vertical end to end. [`MIGRATIONS`] is
-//! registered by the module's `ServerModule::migrations` and applied at DB init,
-//! right after the core schema (so `downloads.request_id` can FK the core
-//! `requests` table).
+//! The Downloads module's persistence, split by who reads it.
+//!
+//! `download_clients` is this module's alone -- credentials included -- so it
+//! lives in this module's OWN database, which is what [`MIGRATIONS`] creates.
+//! The `downloads` ledger is shared: the core reads it for the live progress
+//! overlay on request / discover lists, and `request_id` is a real foreign key
+//! into `requests`. It is therefore part of the CORE schema, and this module
+//! reaches it through the grant its `module.json` declares.
 //!
 //! This module doubles as a thin facade: it re-exports the core `kroma-db` surface
 //! (catalog, requests, settings, tmdb hints) and the `indexers` rows that moved to
@@ -19,8 +21,9 @@ pub use kroma_module_sdk::db::*;
 // The indexers table is owned by the indexer module; the queue view + acquisition
 // reach it through kroma_module_sdk::ports::IndexerDbPort, not a re-export here.
 
-// `IF NOT EXISTS` DDL only, so it runs harmlessly on every boot. Copied verbatim
-// out of the old core schema so existing databases keep working.
+// `IF NOT EXISTS` DDL only, so it runs harmlessly on every boot. Applied to this
+// module's OWN database (see `ServerModule::migrations`), which is why the
+// passwords in it are not in the shared one.
 pub const MIGRATIONS: &str = "
     -- Download clients (torrent engines). The embedded rqbit engine is seeded
     -- as a row (id='embedded', kind='rqbit') at boot when compiled in, so
@@ -37,70 +40,7 @@ pub const MIGRATIONS: &str = "
         priority   INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL
     );
-
-    -- One row per grab: a release sent to a download client. `client_id` has no
-    -- FK so history survives a deleted client config. `score_breakdown` keeps
-    -- the decision engine's explanation; `episodes` is the JSON list of episode
-    -- numbers a season pack covers; `imported_paths` the library files written.
-    CREATE TABLE IF NOT EXISTS downloads (
-        id              TEXT PRIMARY KEY,
-        client_id       TEXT NOT NULL,
-        client_ref      TEXT NOT NULL,
-        request_id      TEXT REFERENCES requests(id) ON DELETE SET NULL,
-        kind            TEXT NOT NULL,
-        tmdb_id         INTEGER NOT NULL,
-        title           TEXT,
-        year            INTEGER,
-        season          INTEGER,
-        episodes        TEXT,
-        release_title   TEXT NOT NULL,
-        indexer_id      TEXT,
-        info_hash       TEXT,
-        magnet_or_url   TEXT NOT NULL,
-        size_bytes      INTEGER,
-        score           INTEGER,
-        score_breakdown TEXT,
-        status          TEXT NOT NULL DEFAULT 'queued',
-        progress        REAL NOT NULL DEFAULT 0,
-        save_path       TEXT,
-        imported_paths  TEXT,
-        error           TEXT,
-        grabbed_at      INTEGER NOT NULL,
-        completed_at    INTEGER,
-        imported_at     INTEGER,
-        details_url     TEXT,
-        only_files      TEXT,
-        upgrade         INTEGER NOT NULL DEFAULT 0
-    );
-    CREATE INDEX IF NOT EXISTS idx_downloads_status ON downloads(status, grabbed_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_downloads_req    ON downloads(request_id);
 ";
-
-// [`MIGRATIONS`] is one `execute_batch`, which aborts on the first error, so it
-// stays `IF NOT EXISTS`-only. A column added to a table that already exists has
-// no such spelling in SQLite: `ADD COLUMN` errors with "duplicate column name"
-// once it is there, which is exactly the case to ignore.
-const ADD_COLUMNS: &[&str] = &["ALTER TABLE downloads ADD COLUMN upgrade INTEGER NOT NULL DEFAULT 0"];
-
-/// Bring an older ledger up to the current column set. Idempotent: a column
-/// already present is the one failure that means success. Anything else leaves
-/// the ledger unreadable (`DL_COLS` names every column `row_to_download` reads),
-/// so it comes back as an error rather than a module that looks healthy.
-pub fn ensure_columns(pool: &Pool) -> Result<()> {
-    let conn = pool.get()?;
-    for sql in ADD_COLUMNS {
-        match conn.execute(sql, []) {
-            Ok(_) => {}
-            Err(e) if is_duplicate_column(&e) => {}
-            Err(e) => return Err(anyhow::anyhow!("{sql}: {e}")),
-        }
-    }
-    Ok(())
-}
-
-fn is_duplicate_column(e: &rusqlite::Error) -> bool {
-    e.to_string().contains("duplicate column name")
-}
 
 // The seeded embedded-engine row id (created at boot when compiled in).
 pub const EMBEDDED_CLIENT_ID: &str = "embedded";

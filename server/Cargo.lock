@@ -2364,6 +2364,7 @@ dependencies = [
  "serde",
  "serde_json",
  "time",
+ "tracing",
 ]
 
 [[package]]
@@ -2526,18 +2527,22 @@ dependencies = [
  "axum",
  "flate2",
  "hex",
+ "kroma-db",
+ "kroma-domain",
  "kroma-module-host",
  "kroma-module-manifest",
  "kroma-testing",
  "libc",
  "rand 0.10.2",
  "reqwest",
+ "rusqlite",
  "ruzstd",
  "serde",
  "serde_json",
  "sha2",
  "tar",
  "tokio",
+ "tower",
  "tracing",
 ]
 

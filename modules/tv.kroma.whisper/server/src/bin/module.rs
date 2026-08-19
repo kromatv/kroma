@@ -3,17 +3,8 @@
 //! core process. Progress and cancel flow through a shared `whisper_jobs` DB row.
 
 use kroma_module_runtime::RemoteHost;
-use kroma_module_sdk::host::HostCtx;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    kroma_module_runtime::serve(
-        move |host| {
-            // Make sure the coordination table exists before the core writes to it.
-            kroma_whisper::ensure_jobs_table(host.db());
-        },
-        vec![],
-        kroma_whisper::whisper_routes::<RemoteHost>(),
-    )
-    .await
+    kroma_module_runtime::serve(|_host| kroma_whisper::whisper_routes::<RemoteHost>(), vec![]).await
 }

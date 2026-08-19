@@ -8,7 +8,7 @@ use std::sync::Mutex;
 use anyhow::{anyhow, Result};
 use kroma_module_sdk::db;
 use kroma_module_sdk::engine::services::requests::today_ymd;
-use kroma_module_sdk::host::HostCtx;
+use kroma_module_sdk::host::HostStorage;
 use kroma_module_sdk::ports::{IndexerRow, Release};
 use kroma_module_sdk::scene::{Candidate, Profile};
 
@@ -116,7 +116,7 @@ pub fn score_release(
 /// Interactive search for one request over `scope`: sweep every enabled indexer
 /// and return everything, scored or rejected-with-reason, accepted-best first.
 /// Synchronous and network-heavy: call from a blocking context only.
-pub fn interactive_search<S: HostCtx>(
+pub fn interactive_search<S: HostStorage>(
     state: &S,
     request_id: &str,
     scope: SearchScope,
@@ -190,7 +190,7 @@ pub fn interactive_search<S: HostCtx>(
 // requester asked for. The rows are synthesized from TMDB and never persisted,
 // so a grab of one flips no ledger row -- the availability pass picks the file
 // up once it lands.
-fn rows_outside_request<S: HostCtx>(
+fn rows_outside_request<S: HostStorage>(
     state: &S,
     req: &kroma_module_sdk::engine::model::MediaRequest,
     wanted: &[db::WantedRow],
@@ -209,7 +209,7 @@ struct Hit {
     release: Release,
 }
 
-fn collect_search_hits<S: HostCtx>(
+fn collect_search_hits<S: HostStorage>(
     state: &S,
     indexers: &[IndexerRow],
     targets: &[SearchTarget],

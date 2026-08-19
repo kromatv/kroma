@@ -376,15 +376,15 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> ServerModule<S> for VpnModule {
         Some(routes::routes::<S>())
     }
 
-    async fn on_enable(&self, host: Arc<dyn HostCtx>) {
-        if let Some(vpn) = service::<Vpn>(host.as_ref()) {
+    async fn on_enable(&self, host: S) {
+        if let Some(vpn) = service::<Vpn>(&host) {
             vpn.resume();
-            vpn.apply(host.as_ref()).await;
+            vpn.apply(&host).await;
         }
     }
 
-    async fn on_disable(&self, host: Arc<dyn HostCtx>) {
-        if let Some(vpn) = service::<Vpn>(host.as_ref()) {
+    async fn on_disable(&self, host: S) {
+        if let Some(vpn) = service::<Vpn>(&host) {
             vpn.stop().await;
         }
     }

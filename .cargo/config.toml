@@ -1,0 +1,18 @@
+
+# Repo-wide cargo config. Cargo walks up from the invocation directory, so this
+# reaches `server/`, every `modules/<id>/server/` workspace and the Tauri shell
+# alike -- which is what it has to do, because the setting below has to hold for
+# every binary that links SQLite or they disagree about what the file format
+# supports.
+
+[env]
+# `libsqlite3-sys`'s bundled build hardcodes FTS3/FTS4/FTS5 and R-Tree into the
+# amalgamation. Nothing in this repo uses any of them: search is tantivy, and
+# there is no `USING fts`, no `MATCH`, no `USING rtree` anywhere. They cost
+# ~390 KB of machine code in EVERY binary that links SQLite -- the server and all
+# twelve module sidecars.
+#
+# `LIBSQLITE3_FLAGS` is appended after the crate's own `-D` flags, so `-U`
+# undefines them. `force` because a stale value in a developer's shell would
+# otherwise silently produce a differently-built SQLite than CI.
+LIBSQLITE3_FLAGS = { value = "-USQLITE_ENABLE_FTS3 -USQLITE_ENABLE_FTS3_PARENTHESIS -USQLITE_ENABLE_FTS5 -USQLITE_ENABLE_RTREE", force = true }

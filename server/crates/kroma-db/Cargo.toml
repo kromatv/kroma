@@ -22,6 +22,9 @@ serde_json = { workspace = true }
 time = { workspace = true }
 # Embedded SQLite compiled from source (bundled) — no system libsqlite3 needed.
 rusqlite = { workspace = true }
+# Only for the denial line a module's storage grant emits: a bare SQLITE_AUTH
+# says "not authorized" and nothing about which table.
+tracing = { workspace = true }
 
 [dev-dependencies]
 # `testing` is this crate's own feature, which its unit tests cannot switch on

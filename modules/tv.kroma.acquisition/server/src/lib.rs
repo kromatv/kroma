@@ -27,7 +27,7 @@ mod serve;
 pub use dtos::*;
 pub use serve::acqsearch_routes;
 
-use kroma_module_sdk::host::HostCtx;
+use kroma_module_sdk::host::HostStorage;
 use kroma_module_sdk::scene::{Profile, Res};
 
 use kroma_module_sdk::engine::services::jobs::now_ms;
@@ -49,7 +49,7 @@ pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 ///
 /// Resolution is a live lookup, so this answers with an error whenever no module
 /// currently serves the contract (disabled, not installed, or restarting).
-pub(crate) fn downloads<S: HostCtx>(
+pub(crate) fn downloads<S: HostStorage>(
     state: &S,
 ) -> anyhow::Result<std::sync::Arc<dyn kroma_module_sdk::ports::DownloadGrabPort>> {
     kroma_module_sdk::ports::download_grab(state)
@@ -59,7 +59,7 @@ pub(crate) fn downloads<S: HostCtx>(
 /// Resolve the downloads-ledger read/write port (completed rows + status flips)
 /// the import pass needs, through the SDK port registry. Fallible for the same
 /// reason as [`downloads`].
-pub(crate) fn download_db<S: HostCtx>(
+pub(crate) fn download_db<S: HostStorage>(
     state: &S,
 ) -> anyhow::Result<std::sync::Arc<dyn kroma_module_sdk::ports::DownloadDbPort>> {
     kroma_module_sdk::ports::download_db(state)
@@ -69,7 +69,7 @@ pub(crate) fn download_db<S: HostCtx>(
 /// Resolve the Indexers module's data port. Unlike the download ports this one
 /// is optional at runtime (the module can be disabled), so it answers with an
 /// error the search surfaces rather than panicking.
-pub(crate) fn indexer_db<S: HostCtx>(
+pub(crate) fn indexer_db<S: HostStorage>(
     state: &S,
 ) -> anyhow::Result<std::sync::Arc<dyn kroma_module_sdk::ports::IndexerDbPort>> {
     kroma_module_sdk::ports::indexer_db(state)
@@ -77,7 +77,7 @@ pub(crate) fn indexer_db<S: HostCtx>(
 }
 
 /// Build the decision engine's profile from the admin settings.
-pub fn profile_from_settings<S: HostCtx>(state: &S) -> Profile {
+pub fn profile_from_settings<S: HostStorage>(state: &S) -> Profile {
     let resolution = match state.setting_str("acqResolution", "1080p").as_str() {
         "720p" => Res::R720,
         "2160p" => Res::R2160,
@@ -107,7 +107,7 @@ pub fn profile_from_settings<S: HostCtx>(state: &S) -> Profile {
 /// releases. This is the single dispatch point the search pipelines call; the
 /// native-vs-Torznab dispatch + type conversions live behind the indexer's
 /// `IndexerSearchPort`, so acquisition never names the indexer/torznab crates.
-pub fn search_indexer<S: HostCtx>(
+pub fn search_indexer<S: HostStorage>(
     state: &S,
     row: &IndexerRow,
     query: &kroma_module_sdk::ports::Query,
@@ -141,7 +141,7 @@ pub fn search_indexer<S: HostCtx>(
 /// Resolve the grabbable target (magnet / .torrent URL) for a built-in release,
 /// following the definition's `download` block if the search row carried no
 /// direct link.
-pub fn resolve_builtin_download<S: HostCtx>(
+pub fn resolve_builtin_download<S: HostStorage>(
     state: &S,
     row: &IndexerRow,
     title: &str,
@@ -163,7 +163,7 @@ pub fn resolve_builtin_download<S: HostCtx>(
 pub struct AcquisitionModule;
 
 #[kroma_module_sdk::host::async_trait]
-impl<S: HostCtx + Clone + Send + Sync + 'static> kroma_module_sdk::host::ServerModule<S>
+impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::ServerModule<S>
     for AcquisitionModule
 {
     fn id(&self) -> &'static str {
@@ -219,24 +219,24 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> kroma_module_sdk::host::ServerM
 // No enabled-guard needed here: the supervisor stops this sidecar process when
 // the module is disabled.
 
-fn run_search<S: HostCtx>(host: &S) -> anyhow::Result<()> {
+fn run_search<S: HostStorage>(host: &S) -> anyhow::Result<()> {
     // No JobContext-driven cancellation across the process boundary (MVP): the
     // pass runs to completion once the core fires it.
     auto::auto_search_pass(host, &|l| tracing::info!(target: "acquisition", "{l}"), &|| false)?;
     Ok(())
 }
 
-fn run_import<S: HostCtx>(host: &S) -> anyhow::Result<()> {
+fn run_import<S: HostStorage>(host: &S) -> anyhow::Result<()> {
     import::import_pass(host, &|l| tracing::info!(target: "acquisition", "{l}"))?;
     Ok(())
 }
 
-fn run_match<S: HostCtx>(host: &S) -> anyhow::Result<()> {
+fn run_match<S: HostStorage>(host: &S) -> anyhow::Result<()> {
     kroma_module_sdk::engine::services::requests::availability_pass(host)?;
     Ok(())
 }
 
-fn run_refresh<S: HostCtx>(host: &S) -> anyhow::Result<()> {
+fn run_refresh<S: HostStorage>(host: &S) -> anyhow::Result<()> {
     kroma_module_sdk::engine::services::requests::refresh_pass(host)?;
     Ok(())
 }
@@ -244,7 +244,7 @@ fn run_refresh<S: HostCtx>(host: &S) -> anyhow::Result<()> {
 /// This module's backend behavior, for the host's generic module roster. Generic
 /// over the host state so both the in-core roster (`S = SharedState`) and the
 /// `.kmod` binary (`S = RemoteHost`) construct it.
-pub fn server_module<S: HostCtx + Clone + Send + Sync + 'static>(
+pub fn server_module<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Box<dyn kroma_module_sdk::host::ServerModule<S>> {
     Box::new(AcquisitionModule)
 }

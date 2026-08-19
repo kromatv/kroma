@@ -12,20 +12,20 @@ use axum::{Json, Router};
 use serde_json::json;
 
 use kroma_module_sdk::domain::{Permission, User};
-use kroma_module_sdk::host::{blocking, json_error, AuthUser, HostCtx};
+use kroma_module_sdk::host::{blocking, json_error, AuthUser, HostStorage};
 
 use crate::dtos::{
     AnalyzeBody, ManualAddBody, ManualSearchBody, ManualSearchView, TorrentAnalysis, TorrentFileView,
 };
 
-pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
+pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/acquisition/search", post(manual_search::<S>))
         .route("/acquisition/analyze", post(analyze::<S>))
         .route("/acquisition/add", post(manual_add::<S>))
 }
 
-fn require_acquisition<S: HostCtx>(state: &S, user: &User) -> Result<(), Response> {
+fn require_acquisition<S: HostStorage>(state: &S, user: &User) -> Result<(), Response> {
     if user.can(Permission::RequestsManage) || user.can(Permission::SettingsManage) {
         Ok(())
     } else {
@@ -35,7 +35,7 @@ fn require_acquisition<S: HostCtx>(state: &S, user: &User) -> Result<(), Respons
 
 /// `POST /acquisition/search` free-text sweep of every indexer,
 /// returning parsed releases best-first for the admin to pick from.
-pub async fn manual_search<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn manual_search<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     Json(body): Json<ManualSearchBody>,
@@ -54,7 +54,7 @@ pub async fn manual_search<S: HostCtx + Clone + Send + Sync + 'static>(
 /// `POST /acquisition/analyze` fetch the torrent's file list (metadata
 /// only, no download) and classify what it holds, so the admin can select
 /// episodes / confirm the entity before grabbing.
-pub async fn analyze<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn analyze<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     Json(body): Json<AnalyzeBody>,
@@ -96,7 +96,7 @@ pub async fn analyze<S: HostCtx + Clone + Send + Sync + 'static>(
 
 /// `POST /acquisition/add` grab a pasted magnet / `.torrent` URL (or a
 /// manual-search result) and import it as the given kind into the right library.
-pub async fn manual_add<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn manual_add<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     Json(body): Json<ManualAddBody>,

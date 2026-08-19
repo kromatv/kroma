@@ -453,19 +453,19 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> ServerModule<S> for RemoteModul
         Some(routes::<S>(remote))
     }
 
-    async fn on_enable(&self, host: Arc<dyn HostCtx>) {
+    async fn on_enable(&self, host: S) {
         // Bring the tunnel up from the stored config (a no-op when off) and keep
         // it alive via the watchdog.
-        if let Some(remote) = service::<RemoteAccess>(host.as_ref()) {
-            remote.spawn_boot(host);
+        if let Some(remote) = service::<RemoteAccess>(&host) {
+            remote.spawn_boot(Arc::new(host.clone()));
         }
     }
 
-    async fn on_disable(&self, host: Arc<dyn HostCtx>) {
+    async fn on_disable(&self, host: S) {
         // Disabling the module has to take the tunnel with it: the connector is
         // a child process, so leaving it up would keep the box publicly
         // reachable with no module left to show or stop it.
-        if let Some(remote) = service::<RemoteAccess>(host.as_ref()) {
+        if let Some(remote) = service::<RemoteAccess>(&host) {
             remote.shutdown().await;
         }
     }

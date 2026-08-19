@@ -38,7 +38,7 @@ fn boots_with_no_modules_and_no_port_routes() {
             .enable_all()
             .build()
             .expect("runtime");
-        rt.block_on(kroma_module_runtime::serve(|_| {}, vec![], axum::Router::new()))
+        rt.block_on(kroma_module_runtime::serve(|_| axum::Router::new(), vec![]))
             .expect("serve");
     });
 

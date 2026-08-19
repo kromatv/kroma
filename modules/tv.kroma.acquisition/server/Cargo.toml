@@ -21,10 +21,12 @@ path = "src/bin/module.rs"
 # SDK-only: acquisition reaches the Downloads / Indexer / Torznab modules purely
 # through the SDK ports (DownloadGrabPort, DownloadDbPort, IndexerSearchPort, ...),
 # resolved at runtime through the host registry, so it names no sibling crate.
-kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
+# `storage` + `engine`: this module orchestrates the core's request /
+# wanted ledger, so it reaches both, within the grant module.json declares.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage", "engine"] }
 # The `.kmod` binary: the out-of-process runtime + the cross-module port bridges
 # (client proxies to the Downloads + Indexer sidecars).
-kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
+kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime", features = ["storage"] }
 axum = { version = "0.8", features = ["macros", "ws"] }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
@@ -44,6 +46,8 @@ rustix = { version = "1", features = ["fs"] }
 kroma-module-host = { path = "../../../server/crates/kroma-module-host", features = ["testing"] }
 # `oneshot`, to drive the sidecar routes without binding a port.
 tower = "0.5"
+# `db::testing`: the scoped pool the storage-grant test asserts against.
+kroma-db = { path = "../../../server/crates/kroma-db", features = ["testing"] }
 # The scratch directory that takes itself with it, panic or not.
 kroma-testing = { path = "../../../server/crates/kroma-testing" }
 

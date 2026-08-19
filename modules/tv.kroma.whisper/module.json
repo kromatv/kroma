@@ -3,9 +3,10 @@
   "schemaVersion": 2,
   "id": "tv.kroma.whisper",
   "name": "Whisper transcription",
-  "version": "0.1.2",
+  "version": "0.2.0",
+  "description": "In-process Whisper subtitle transcription (candle).",
   "engines": {
-    "server": ">=0.1.4"
+    "server": ">=0.1.38"
   },
   "provides": [
     {
@@ -13,6 +14,11 @@
       "id": "whisper"
     }
   ],
-  "description": "In-process Whisper subtitle transcription (candle).",
-  "ports": ["whisper"]
+  "ports": ["whisper"],
+  "storage": {
+    "core": {
+      "read": ["whisper_jobs"],
+      "write": ["whisper_jobs"]
+    }
+  }
 }

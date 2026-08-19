@@ -62,14 +62,14 @@ pub const MODULE_ID: &str = "tv.kroma.torrents";
 /// `optionalDependencies`. It reaches its [`DownloadManager`] through the host service
 /// registry.
 ///
-/// Generic over the host state `S: HostCtx`, like every other module: it runs
+/// Generic over the host state `S: HostStorage`, like every other module: it runs
 /// in-process (`S = SharedState`) and out-of-process (`S = RemoteHost`, its
 /// `.kmod` form). The organize vertical reaches settings + library folders + the
 /// DB through the [`HostCtx`] seam, never naming the engine's `AppState`.
 pub struct DownloadsModule;
 
 #[kroma_module_sdk::host::async_trait]
-impl<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'static>
+impl<S: kroma_module_sdk::host::HostStorage + Clone + Send + Sync + 'static>
     kroma_module_sdk::host::ServerModule<S> for DownloadsModule
 {
     fn id(&self) -> &'static str {
@@ -84,41 +84,26 @@ impl<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'static>
         Some(routes::routes::<S>())
     }
 
-    async fn on_enable(&self, host: std::sync::Arc<dyn kroma_module_sdk::host::HostCtx>) {
+    async fn on_enable(&self, host: S) {
         // Everything the Downloads module needs at (re)enable lives here, so the
         // binary shell never seeds rows or spawns the monitor: seed the embedded
         // client row, start the engine, flip disable-paused rows back to active,
         // and ensure the resident monitor is running (spawned once). The VPN bridge
         // is its own module (ordered first by the dependency graph), so its SOCKS5
         // is already up. Awaited (not detached) so a following disable cannot race.
-        if let Some(downloads) = kroma_module_sdk::host::service::<DownloadManager>(host.as_ref()) {
-            // A column cannot be added from the `IF NOT EXISTS`-only migration
-            // batch, so an older ledger gains it here. Inside the manager guard
-            // because the manager is what owns the ledger: with none resolved,
-            // nothing reads a download row and there is no host database either.
-            if let Err(e) = db::ensure_columns(host.db()) {
-                // Every read of a download row names the missing column, so the
-                // engine would transfer into a ledger nothing can report on.
-                // Better visibly not started than running and unreadable.
-                tracing::error!(
-                    target: "torrents",
-                    error = %format!("{e:#}"),
-                    "the downloads ledger is missing a column; not starting the engine"
-                );
-                return;
-            }
-            downloads.seed_embedded_client(host.as_ref());
-            downloads.start_rqbit(host.as_ref()).await;
-            downloads.resume_after_enable(host.as_ref());
-            downloads.ensure_monitor(host.clone());
+        if let Some(downloads) = kroma_module_sdk::host::service::<DownloadManager>(&host) {
+            downloads.seed_embedded_client();
+            downloads.start_rqbit(&host).await;
+            downloads.resume_after_enable();
+            downloads.ensure_monitor(std::sync::Arc::new(host.clone()));
         }
     }
 
-    async fn on_disable(&self, host: std::sync::Arc<dyn kroma_module_sdk::host::HostCtx>) {
+    async fn on_disable(&self, host: S) {
         // Tear the engine down entirely (session stopped, active downloads paused)
         // so nothing is left transferring or seeding while disabled.
-        if let Some(downloads) = kroma_module_sdk::host::service::<DownloadManager>(host.as_ref()) {
-            downloads.disable_embedded(host.as_ref());
+        if let Some(downloads) = kroma_module_sdk::host::service::<DownloadManager>(&host) {
+            downloads.disable_embedded();
         }
     }
 }
@@ -126,7 +111,7 @@ impl<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'static>
 /// This module's backend behavior, for the host's generic module roster. Generic
 /// over the host state so both the in-core roster (`S = SharedState`) and the
 /// `.kmod` binary (`S = RemoteHost`) construct it.
-pub fn server_module<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'static>(
+pub fn server_module<S: kroma_module_sdk::host::HostStorage + Clone + Send + Sync + 'static>(
 ) -> Box<dyn kroma_module_sdk::host::ServerModule<S>> {
     Box::new(DownloadsModule)
 }
@@ -275,8 +260,7 @@ mod tests {
         let module = server_module::<BareHost>();
         let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
         rt.block_on(async {
-            let host: std::sync::Arc<dyn kroma_module_sdk::host::HostCtx> =
-                std::sync::Arc::new(BareHost::new());
+            let host = BareHost::new();
             module.on_enable(host.clone()).await;
             module.on_disable(host).await;
         });

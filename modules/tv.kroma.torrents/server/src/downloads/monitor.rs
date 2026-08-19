@@ -113,7 +113,7 @@ impl DownloadManager {
 
     // Returns whether anything is still active (drives the tick cadence).
     fn tick(&self, host: &dyn HostCtx) -> bool {
-        let rows = match host.db().get().and_then(|c| Ok(db::active_downloads(&c)?)) {
+        let rows = match self.core().get().and_then(|c| Ok(db::active_downloads(&c)?)) {
             Ok(rows) => rows,
             Err(e) => {
                 tracing::warn!(error = %format!("{e:#}"), "downloads monitor: ledger read failed");
@@ -147,11 +147,11 @@ impl DownloadManager {
             return false;
         }
         let client =
-            match host.db().get().and_then(|c| Ok(db::get_download_client(&c, &row.client_id)?)) {
+            match self.store().get().and_then(|c| Ok(db::get_download_client(&c, &row.client_id)?)) {
                 Ok(Some(c)) => c,
                 _ => {
                     let _ = db::set_download_status(
-                        host.db(),
+                        self.core(),
                         &row.id,
                         "failed",
                         Some("download client removed"),
@@ -174,7 +174,7 @@ impl DownloadManager {
                 // The torrent vanished from the engine (user removed it there, or a
                 // session reset): the grab failed.
                 let _ = db::set_download_status(
-                    host.db(),
+                    self.core(),
                     &row.id,
                     "failed",
                     Some("torrent disappeared from the download client"),
@@ -223,17 +223,17 @@ impl DownloadManager {
         if finished {
             // save_path may only be known now (external clients).
             let _ = db::update_download_progress(
-                host.db(),
+                self.core(),
                 &row.id,
                 "completed",
                 1.0,
                 status.save_path.as_deref(),
                 None,
             );
-            let _ = db::mark_download_completed(host.db(), &row.id, now_ms());
+            let _ = db::mark_download_completed(self.core(), &row.id, now_ms());
         } else {
             let _ = db::update_download_progress(
-                host.db(),
+                self.core(),
                 &row.id,
                 new_status,
                 status.progress,

@@ -40,6 +40,11 @@ FROM rust:1.96-bookworm AS builder
 WORKDIR /src
 # Warm the dependency cache (the default `whisper-local` feature pulls the candle
 # stack, which is slow) before copying sources so a code-only change reuses it.
+# The repo-root cargo config, BEFORE the warm-up build: it carries the
+# LIBSQLITE3_FLAGS every binary that links SQLite is built with, and cargo finds
+# it by walking up from /src/server. Missing here, the container would quietly
+# get a differently-built SQLite than every other build of this tree.
+COPY .cargo ./.cargo
 COPY server/Cargo.toml server/Cargo.lock ./server/
 # The workspace members must be present for cargo to resolve the dependency
 # graph, otherwise the stub-main build below fails to solve. The server also

@@ -30,7 +30,7 @@ use kroma_db::Pool;
 use kroma_domain::{Audience, NotificationSpec, Permission, User};
 use kroma_testing::TempDir;
 
-use crate::{Event, HostCtx, LibraryFolders};
+use crate::{Event, HostCtx, HostStorage, LibraryFolders};
 
 /// One thing that went onto the event bus: the addressee (`None` for a
 /// broadcast) and the event's topic.
@@ -105,11 +105,14 @@ impl Log {
 /// `data_dir()` is a scratch directory of this host's own, removed once the last
 /// clone drops, so anything the code under test writes there goes with it.
 ///
-/// `db()` panics unless the host was built with [`with_db`](Self::with_db) -
-/// louder than handing out a pool to a test that did not ask for one.
+/// `db()` / `store()` panic unless the host was built with
+/// [`with_db`](Self::with_db) - louder than handing out a pool to a test that did
+/// not ask for one.
 #[derive(Clone)]
 pub struct StubHost {
     db: Option<Pool>,
+    store: Option<Pool>,
+    sessions: Arc<Mutex<BTreeMap<String, User>>>,
     data_dir: Arc<TempDir>,
     tmdb_key: Option<String>,
     metadata_language: String,
@@ -129,23 +132,28 @@ impl Default for StubHost {
 }
 
 impl StubHost {
-    /// A host with no database. `db()` panics if reached.
+    /// A host with no database. `db()` / `store()` panic if reached.
     pub fn new() -> Self {
         Self::in_dir(kroma_testing::temp_dir("stub-host"))
     }
 
     /// A host over a real, empty, migrated SQLite database inside this host's
-    /// own scratch directory. `tag` only shapes that directory's name, to make
-    /// a stray one identifiable.
+    /// own scratch directory, plus the module-private store beside it. `tag` only
+    /// shapes that directory's name, to make a stray one identifiable.
     pub fn with_db(tag: &str) -> Self {
         let data_dir = kroma_testing::temp_dir(tag);
         let db = kroma_db::init(&data_dir.path().join("kroma.db")).expect("init test db");
-        Self { db: Some(db), ..Self::in_dir(data_dir) }
+        // `open`, like the real runtime: a module's own file carries no core
+        // schema, only what its own migrations put there.
+        let store = kroma_db::open(&data_dir.path().join("module.sqlite")).expect("open test store");
+        Self { db: Some(db), store: Some(store), ..Self::in_dir(data_dir) }
     }
 
     fn in_dir(data_dir: TempDir) -> Self {
         Self {
             db: None,
+            store: None,
+            sessions: Arc::new(Mutex::new(BTreeMap::new())),
             data_dir: Arc::new(data_dir),
             tmdb_key: None,
             metadata_language: "en".into(),
@@ -163,7 +171,17 @@ impl StubHost {
     /// need their OWN migrations applied on top of the core schema, which
     /// [`with_db`](Self::with_db) does not know about.
     pub fn with_pool(pool: Pool) -> Self {
-        Self { db: Some(pool), ..Self::new() }
+        let store = kroma_db::open(&kroma_testing::temp_dir("stub-store").path().join("module.sqlite"))
+            .expect("open test store");
+        Self { db: Some(pool), store: Some(store), ..Self::new() }
+    }
+
+    /// Answer `session_user(token)` with `user`. Without a seeded token the host
+    /// falls back to a real lookup against its core pool, so a test that created
+    /// a genuine session still authenticates through the seam.
+    pub fn with_session(self, token: &str, user: User) -> Self {
+        self.sessions.lock().unwrap().insert(token.to_string(), user);
+        self
     }
 
     /// Answer `tmdb_api_key()` with `key`.
@@ -264,12 +282,24 @@ impl StubHost {
     }
 }
 
-impl HostCtx for StubHost {
+impl HostStorage for StubHost {
     fn db(&self) -> &Pool {
         self.db.as_ref().expect("this StubHost has no database - build it with StubHost::with_db")
     }
+    fn store(&self) -> &Pool {
+        self.store.as_ref().expect("this StubHost has no store - build it with StubHost::with_db")
+    }
+}
+
+impl HostCtx for StubHost {
     fn data_dir(&self) -> &Path {
         self.data_dir.path()
+    }
+    fn session_user(&self, token: &str) -> Option<User> {
+        if let Some(u) = self.sessions.lock().unwrap().get(token) {
+            return Some(u.clone());
+        }
+        kroma_db::session_user(self.db.as_ref()?, token).ok().flatten()
     }
     fn require(&self, _user: &User, _perm: Permission) -> Result<(), Response> {
         Ok(())
@@ -368,12 +398,21 @@ impl<H: HostCtx> Recording<H> {
     }
 }
 
-impl<H: HostCtx> HostCtx for Recording<H> {
+impl<H: HostStorage> HostStorage for Recording<H> {
     fn db(&self) -> &Pool {
         self.inner.db()
     }
+    fn store(&self) -> &Pool {
+        self.inner.store()
+    }
+}
+
+impl<H: HostCtx> HostCtx for Recording<H> {
     fn data_dir(&self) -> &Path {
         self.inner.data_dir()
+    }
+    fn session_user(&self, token: &str) -> Option<User> {
+        self.inner.session_user(token)
     }
     fn require(&self, user: &User, perm: Permission) -> Result<(), Response> {
         self.inner.require(user, perm)
@@ -592,6 +631,13 @@ mod tests {
         .unwrap_err();
         let msg = err.downcast_ref::<String>().expect("expect() panics with a String");
         assert!(msg.contains("StubHost::with_db"), "{msg}");
+    }
+
+    #[test]
+    fn a_seeded_session_resolves_and_an_unknown_token_does_not() {
+        let host = StubHost::new().with_session("tok", user());
+        assert_eq!(host.session_user("tok").map(|u| u.id), Some("u1".to_string()));
+        assert!(host.session_user("other").is_none());
     }
 
     #[test]

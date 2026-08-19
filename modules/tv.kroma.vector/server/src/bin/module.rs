@@ -15,9 +15,8 @@ async fn main() -> anyhow::Result<()> {
     // serve it. No modules, no consumed ports: purely a provider process.
     let embedder = kroma_vector::default_embedder();
     kroma_module_runtime::serve(
-        move |_host| {},
+        move |_host| kroma_vector::embedder_routes::<RemoteHost>(embedder),
         vec![],
-        kroma_vector::embedder_routes::<RemoteHost>(embedder),
     )
     .await
 }

@@ -5,7 +5,7 @@
 use std::collections::HashSet;
 
 use anyhow::{anyhow, Result};
-use kroma_module_sdk::host::HostCtx;
+use kroma_module_sdk::host::HostStorage;
 use kroma_module_sdk::ports::Query;
 
 use crate::dtos::{ManualReleaseView, ManualSearchBody, ManualSearchView};
@@ -31,7 +31,7 @@ fn query_for(body: &ManualSearchBody, text: &str) -> Query {
 /// quality/episode hints and sort best-first, with no accept/reject scoring
 /// since there's no specific target. The admin picks and grabs via the add
 /// endpoint.
-pub fn manual_search<S: HostCtx>(state: &S, body: &ManualSearchBody) -> Result<ManualSearchView> {
+pub fn manual_search<S: HostStorage>(state: &S, body: &ManualSearchBody) -> Result<ManualSearchView> {
     let q = body.query.trim();
     if q.is_empty() {
         return Ok(ManualSearchView { releases: Vec::new(), indexers: Vec::new() });

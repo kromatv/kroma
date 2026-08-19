@@ -16,8 +16,10 @@ name = "kroma-module-indexer"
 path = "src/bin/module.rs"
 
 [dependencies]
-kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
-kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
+# `storage`: the module owns the `indexers` table, in its OWN database
+# (module.json adopts it out of the core one). It reaches no core table.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage"] }
+kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime", features = ["storage"] }
 # The module now owns its admin orchestration + routes (over the HostCtx seam):
 # it needs the DB rows, wire DTOs, shared helpers, the Torznab engine, and axum.
 # The module owns its `indexers` table now (schema + typed queries), so it talks

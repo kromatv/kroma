@@ -19,9 +19,9 @@ async fn main() -> anyhow::Result<()> {
             // The module owns the WireGuard bridge service (its own code resolves
             // it via service::<Vpn>).
             host.register_service(kroma_vpn::Vpn::new(host.data_dir().to_path_buf()));
+            vpnproxy_routes(vpnproxy)
         },
         vec![kroma_vpn::server_module::<RemoteHost>()],
-        vpnproxy_routes(vpnproxy),
     )
     .await
 }

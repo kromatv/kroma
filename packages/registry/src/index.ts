@@ -31,6 +31,7 @@ export {
 export {
   ArtifactRef,
   ConfigField,
+  CoreScope,
   DescribedModule,
   dependenciesOf,
   MANIFEST_SCHEMAS,
@@ -38,6 +39,7 @@ export {
   MODULE_SCHEMA_VERSION,
   optionalDependenciesOf,
   REVERSE_DNS_ID,
+  Storage,
   speaksCurrentSchema,
 } from './manifest/index.ts';
 export { channelOf, compareRaw, parse, satisfies, type Version } from './semver.ts';

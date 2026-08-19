@@ -239,14 +239,14 @@ impl<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'static>
         MODULE_ID
     }
 
-    async fn on_enable(&self, host: std::sync::Arc<dyn kroma_module_sdk::host::HostCtx>) {
-        if let Some(dm) = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::DownloadClientHost>(host.as_ref()) {
+    async fn on_enable(&self, host: S) {
+        if let Some(dm) = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::DownloadClientHost>(&host) {
             dm.register_engine(register);
         }
     }
 
-    async fn on_disable(&self, host: std::sync::Arc<dyn kroma_module_sdk::host::HostCtx>) {
-        if let Some(dm) = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::DownloadClientHost>(host.as_ref()) {
+    async fn on_disable(&self, host: S) {
+        if let Some(dm) = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::DownloadClientHost>(&host) {
             dm.unregister_engine(KIND);
         }
     }

@@ -15,21 +15,38 @@ it, supervises it, and reverse-proxies its HTTP.**
 
 ## The pieces (built)
 
-- **`kroma-module-runtime`** is what a module binary links. `serve(setup, module)`
-  is the whole `main()`: it reads the env the supervisor set, opens the shared
-  SQLite directly (WAL = multi-process, so `db()`/auth/session need no IPC),
-  builds a `RemoteHost` (the out-of-process `HostCtx`), applies the module's
-  migrations, wires the module's own services, runs `on_enable`, and serves the
-  module's `admin_routes` + a `/_health` probe on the assigned local port.
-  Settings/events/jobs go to the core over a small callback API; everything else
-  is local.
+- **`kroma-module-runtime`** is what a module binary links. `serve(wire, modules)`
+  is the whole `main()`: it reads the env the supervisor set, builds a
+  `RemoteHost` (the out-of-process `HostCtx`), applies the module's migrations to
+  the module's OWN database, calls `wire` with the live host (which registers the
+  module's services and hands back its extra routes), runs `on_enable`, and
+  serves the module's `admin_routes` + a `/_health` probe on the assigned local
+  port. Settings, events, jobs and session lookup go to the core over a small
+  callback API; everything else is local.
+- **Storage is a capability, not part of the runtime.** A module that declares no
+  `storage` in its manifest neither links SQLite nor can reach a row; the eight
+  first-party modules in that position are about half the size they were. One
+  that does gets two pools: its own file at
+  `<data>/modules/<id>/module.sqlite`, and the shared core database behind an
+  `sqlite3_set_authorizer` scope built from what its manifest declared. See
+  `modules/README.md#storage`.
+
+  This is a privilege reduction and an auditability property, not a sandbox: a
+  sidecar is a native process running as the same user and could always open the
+  file itself. What the grant buys is that the reach is declared where an
+  operator can read it before installing, and enforced for every module that goes
+  through the SDK.
 - **`kroma-module-supervisor`** is the core side. `Supervisor` scans
   `<data>/modules/*`, spawns each enabled module's `module` binary with the
   runtime env (id, free localhost port, core URL, a per-process callback token,
-  DB path, data dir), tracks `id -> port`, and stop/spawns them. `proxy_to`
-  reverse-proxies a request to a module process. `host_router::<HostCtx>(token)`
-  serves `/api/_host/*` (setting / settings / events / job / enabled),
-  token-authed, resolved against the core's real state.
+  DB path, data dir, and the module's declared storage grant), tracks
+  `id -> port`, and stop/spawns them. Before spawning it moves any table the
+  module declared under `storage.adopt` out of the core database and into the
+  module's own file -- the core does it, because the module no longer holds the
+  rights to. `proxy_to` reverse-proxies a request to a module process.
+  `host_router::<HostCtx>(token)` serves `/api/_host/*` (setting / settings /
+  events / job / enabled / session / ...), token-authed, resolved against the
+  core's real state.
 - **Core integration**: `main.rs` builds the supervisor and `spawn_enabled`s
   installed modules at boot; `api/mod.rs` mounts the callback API and a
   `/api/module/<id>/*` reverse proxy.

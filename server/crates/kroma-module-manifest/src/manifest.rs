@@ -187,6 +187,53 @@ pub struct CapabilityReq {
 /// at runtime, somewhere else, with nothing pointing back here.
 pub const MODULE_SCHEMA_VERSION: u32 = 2;
 
+/// A module's declared storage, and the capability itself: a manifest with no
+/// `storage` object gets no database at all, and the sidecar built for it does
+/// not link SQLite.
+///
+/// Additive, so it cost no [`MODULE_SCHEMA_VERSION`] bump: a reader that
+/// predates the field sees a module with no database, which is what such a
+/// module had. What a module needs from its HOST is `engines`, and that is where
+/// the floor for this one is declared.
+///
+/// Presence alone grants the module its own file
+/// (`<data>/modules/<id>/module.sqlite`), which it owns outright. Reaching the
+/// SHARED core database is separate and narrower: only what [`core`](Self::core)
+/// lists, enforced per connection by SQLite's authorizer.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Storage {
+    #[serde(default, skip_serializing_if = "CoreScope::is_empty")]
+    pub core: CoreScope,
+    /// Tables this module used to keep in the core database and now owns, moved
+    /// into its own file the first time it starts under a host that understands
+    /// this field. Table and rows travel together, and the core copy is dropped,
+    /// so the move happens exactly once and never runs again.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub adopt: Vec<String>,
+}
+
+/// The slice of the CORE database a module may reach, as `"table"` (the whole
+/// table) or `"table.column"` entries. Empty -- the default -- means none of it.
+///
+/// Two rules are not visible from the list itself, because they come from
+/// SQLite rather than from us: a column named in a `WHERE` is reached as much as
+/// one that is projected, and a foreign key drags its other table in (a write
+/// into a child reads the parent, a cascading delete writes the child).
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CoreScope {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub read: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub write: Vec<String>,
+}
+
+impl CoreScope {
+    pub fn is_empty(&self) -> bool {
+        self.read.is_empty() && self.write.is_empty()
+    }
+}
+
 /// The public description of a module.
 ///
 /// This is the serde shape served at `GET /api/modules` and mirrored by the
@@ -232,6 +279,9 @@ pub struct ModuleManifest {
     pub config: Vec<ConfigField>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fe_remote: Option<FeRemote>,
+    /// Absent for a module that touches no database, which is most of them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub storage: Option<Storage>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub library: bool,
 }
@@ -255,6 +305,7 @@ impl ModuleManifest {
             permissions: Vec::new(),
             config: Vec::new(),
             fe_remote: None,
+            storage: None,
             library: false,
         }
     }
@@ -273,6 +324,37 @@ impl ModuleManifest {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn storage_is_absent_unless_declared_and_round_trips_when_it_is() {
+        let plain: ModuleManifest =
+            serde_json::from_str(r#"{ "id": "a", "name": "A", "version": "1.0.0" }"#).unwrap();
+        assert!(plain.storage.is_none(), "no storage object means no database");
+        assert!(serde_json::to_value(&plain).unwrap().get("storage").is_none());
+
+        // An empty object is NOT the same as an absent one: it is the module's
+        // own file, with no reach into the core database.
+        let private: ModuleManifest = serde_json::from_str(
+            r#"{ "id": "a", "name": "A", "version": "1.0.0", "storage": {} }"#,
+        )
+        .unwrap();
+        assert_eq!(private.storage, Some(Storage::default()));
+
+        let scoped: ModuleManifest = serde_json::from_str(
+            r#"{ "id": "a", "name": "A", "version": "1.0.0",
+                 "storage": { "core": { "read": ["requests"], "write": ["wanted"] },
+                              "adopt": ["indexers"] } }"#,
+        )
+        .unwrap();
+        let storage = scoped.storage.as_ref().unwrap();
+        assert_eq!(storage.core.read, ["requests"]);
+        assert_eq!(storage.core.write, ["wanted"]);
+        assert_eq!(storage.adopt, ["indexers"]);
+
+        let back: ModuleManifest =
+            serde_json::from_value(serde_json::to_value(&scoped).unwrap()).unwrap();
+        assert_eq!(back.storage, scoped.storage);
+    }
 
     #[test]
     fn depends_on_reads_the_package_json_style_map() {

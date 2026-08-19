@@ -21,7 +21,11 @@ use kroma_module_manifest::ModuleManifest;
 use kroma_module_host::{Event, HostCtx};
 use serde_json::{json, Value};
 
+mod adopt;
+
 pub const MODULE_BIN: &str = "module";
+/// A module's own database, beside the files its `.kmod` unpacked into.
+pub const MODULE_STORE: &str = "module.sqlite";
 /// Written beside a module at install time; not part of the `.kmod` itself.
 const ORIGIN_FILE: &str = "origin.json";
 
@@ -186,6 +190,34 @@ impl Supervisor {
 
     fn dir(&self, id: &str) -> PathBuf {
         self.cfg.modules_dir.join(id)
+    }
+
+    /// What `id` declared under `storage`, or `None` when it declared none -- in
+    /// which case it holds no database capability at all.
+    fn storage_of(&self, id: &str) -> Option<kroma_module_manifest::Storage> {
+        self.installed_manifests().into_iter().find(|m| m.id == id).and_then(|m| m.storage)
+    }
+
+    /// Move any table `id` declared as its own out of the core database and into
+    /// its own file, before the process that will read it starts. Best-effort:
+    /// a failure leaves the rows in the core database and is logged, because a
+    /// module that starts without its old rows is worse than one that starts late.
+    fn adopt_declared_tables(&self, id: &str, storage: Option<&kroma_module_manifest::Storage>) {
+        let Some(tables) = storage.map(|s| s.adopt.as_slice()).filter(|t| !t.is_empty()) else {
+            return;
+        };
+        let store = self.dir(id).join(MODULE_STORE);
+        let moved = kroma_db::init(&self.cfg.db_path)
+            .and_then(|pool| pool.get())
+            .and_then(|conn| adopt::adopt_tables(&conn, &store, tables));
+        match moved {
+            Ok(0) => {}
+            Ok(n) => self.say(id, &format!("INFO moved {n} table(s) into this module's own database")),
+            Err(error) => {
+                tracing::error!(module = %id, error = %format!("{error:#}"), "table adoption failed");
+                self.say(id, "ERROR could not move this module's tables out of the core database");
+            }
+        }
     }
 
     /// A lifecycle line in the module's OWN log stream. `tracing` would file it
@@ -364,6 +396,8 @@ impl Supervisor {
             anyhow::bail!("module binary missing: {}", bin.display());
         }
         let port = free_port()?;
+        let storage = self.storage_of(id);
+        self.adopt_declared_tables(id, storage.as_ref());
         let piped = self.cfg.log_line.is_some();
         let stdio = || if piped { Stdio::piped() } else { Stdio::inherit() };
         let mut child = Command::new(&bin)
@@ -373,6 +407,11 @@ impl Supervisor {
             .env("KROMA_HOST_TOKEN", &self.cfg.host_token)
             .env("KROMA_DB_PATH", &self.cfg.db_path)
             .env("KROMA_DATA_DIR", &self.cfg.data_dir)
+            // What the module may reach in the CORE database, as its manifest
+            // declared it. A module that declared nothing gets an empty grant
+            // rather than no variable, so the sidecar can tell "denied
+            // everything" from "an older host that sent no grant at all".
+            .env("KROMA_MODULE_GRANT", grant_json(storage.as_ref()))
             .stdout(stdio())
             .stderr(stdio())
             .spawn()?;
@@ -992,10 +1031,44 @@ where
         .route("/_host/enabled", get(module_enabled::<S>))
         .route("/_host/libraries", get(library_folders::<S>))
         .route("/_host/tmdb", get(tmdb_config::<S>))
+        // Authentication, so a sidecar resolves the caller of one of its routes
+        // without reading the `sessions` table -- the last thing that made a
+        // module with no storage of its own open a database.
+        .route("/_host/session", post(session_user::<S>))
         // How a module reaches a peer: it asks for a CONTRACT and the core
         // answers with whoever serves it. No module id crosses this wire.
         .route("/_host/port", get(port_endpoint::<S>))
         .route_layer(from_fn_with_state(HostToken(token), require_host_token))
+}
+
+#[derive(serde::Deserialize)]
+struct SessionBody {
+    token: String,
+}
+
+// The whole `User`, not a bare id: the sidecar gates on permissions and
+// localizes for the account, and a second round-trip for each would be silly.
+//
+// On a blocking thread, unlike its neighbours here: resolving a session is an
+// indexed read of a real database, and every authenticated request a sidecar
+// serves arrives through this one.
+// A POST, unlike its neighbours here, because the argument is a live session
+// token: a query string is the one place a secret reliably ends up in a log.
+async fn session_user<S: HostCtx + Clone>(
+    State(host): State<S>,
+    Json(body): Json<SessionBody>,
+) -> Json<Option<kroma_domain::User>> {
+    Json(tokio::task::spawn_blocking(move || host.session_user(&body.token)).await.ok().flatten())
+}
+
+/// A module's core-database grant on the wire, as `kroma-db` reads it back.
+/// Serialization cannot fail for this shape; an empty grant is the fallback and
+/// also the answer for a module that declared no storage.
+fn grant_json(storage: Option<&kroma_module_manifest::Storage>) -> String {
+    storage
+        .map(|s| serde_json::json!({ "read": s.core.read, "write": s.core.write }))
+        .and_then(|v| serde_json::to_string(&v).ok())
+        .unwrap_or_else(|| "{}".to_string())
 }
 
 #[derive(serde::Deserialize)]
@@ -1119,7 +1192,7 @@ async fn tmdb_config<S: HostCtx>(State(host): State<S>) -> Json<Value> {
 
 #[cfg(test)]
 mod tests {
-    use super::registry_document_url;
+    use super::{grant_json, registry_document_url};
 
     #[test]
     fn a_registry_root_resolves_to_the_descriptor_at_the_well_known_path() {
@@ -1146,5 +1219,38 @@ mod tests {
         ] {
             assert_eq!(registry_document_url(doc), doc);
         }
+    }
+
+    #[test]
+    fn the_grant_a_module_is_spawned_with_is_the_one_its_manifest_declares() {
+        // The last link in the chain: manifest -> this JSON -> the env the
+        // sidecar reads -> the authorizer. If the shape drifted here, every
+        // module would come up with a grant that silently is not its own, and
+        // the only symptom would be denials somewhere else entirely.
+        let storage = kroma_module_manifest::Storage {
+            core: kroma_module_manifest::CoreScope {
+                read: vec!["requests".into(), "users.username".into()],
+                write: vec!["wanted".into()],
+            },
+            adopt: vec!["indexers".into()],
+        };
+        let json = grant_json(Some(&storage));
+        let back: kroma_db::Grant = serde_json::from_str(&json).expect("kroma-db reads it back");
+        assert_eq!(back.read, ["requests", "users.username"]);
+        assert_eq!(back.write, ["wanted"]);
+    }
+
+    #[test]
+    fn a_module_that_declared_no_storage_is_spawned_with_an_empty_grant() {
+        // Not "no variable": the sidecar has to be able to tell "denied
+        // everything" from an older host that sent nothing at all.
+        let json = grant_json(None);
+        assert_eq!(serde_json::from_str::<kroma_db::Grant>(&json).unwrap(), kroma_db::Grant::none());
+
+        // ...and the same for a module that declared storage but no core reach,
+        // which is the one that gets its own file and nothing else.
+        let private_only = kroma_module_manifest::Storage::default();
+        let json = grant_json(Some(&private_only));
+        assert_eq!(serde_json::from_str::<kroma_db::Grant>(&json).unwrap(), kroma_db::Grant::none());
     }
 }

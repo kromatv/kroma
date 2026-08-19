@@ -3,15 +3,16 @@
   "schemaVersion": 2,
   "id": "tv.kroma.torrents",
   "name": "Torrent downloads",
-  "version": "0.1.8",
+  "version": "0.2.0",
+  "description": "The embedded librqbit download engine + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one.",
   "engines": {
-    "server": ">=0.1.4"
+    "server": ">=0.1.38"
   },
   "dependencies": {
-    "tv.kroma.indexer": "^0.1.0"
+    "tv.kroma.indexer": "^0.2.0"
   },
   "optionalDependencies": {
-    "tv.kroma.vpn": "^0.1.0"
+    "tv.kroma.vpn": "^0.2.0"
   },
   "provides": [
     {
@@ -19,6 +20,31 @@
       "id": "rqbit"
     }
   ],
-  "description": "The embedded librqbit download engine + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one.",
-  "ports": ["download-grab", "download-db", "download-vpn"]
+  "ports": ["download-grab", "download-db", "download-vpn"],
+  "storage": {
+    "core": {
+      "read": [
+        "downloads",
+        "requests",
+        "wanted",
+        "items",
+        "shows",
+        "files",
+        "libraries",
+        "metadata_core",
+        "users.id",
+        "users.email",
+        "users.username",
+        "users.avatar_url",
+        "users.created_at",
+        "users.permissions",
+        "users.language",
+        "users.pin_hash",
+        "users.audio_language",
+        "users.subtitle_language"
+      ],
+      "write": ["downloads", "wanted"]
+    },
+    "adopt": ["download_clients"]
+  }
 }

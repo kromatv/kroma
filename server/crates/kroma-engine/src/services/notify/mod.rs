@@ -14,7 +14,7 @@ pub mod push;
 pub mod render;
 
 use kroma_db::notifications::StoredNotification;
-use kroma_module_host::{Event, HostCtx};
+use kroma_module_host::{Event, HostStorage};
 use serde_json::json;
 
 use kroma_domain::{Audience, NotificationSpec, User};
@@ -24,7 +24,7 @@ use crate::services::jobs::now_ms;
 
 // Returns full `User`s: the caller needs `language` to render for each
 // recipient, so re-fetching per id would be a query per notification.
-fn resolve<S: HostCtx>(audience: &Audience, state: &S) -> anyhow::Result<Vec<User>> {
+fn resolve<S: HostStorage>(audience: &Audience, state: &S) -> anyhow::Result<Vec<User>> {
     // The single-recipient case is by far the most common (a request approved,
     // a report triaged) and has an indexed lookup; only the set-valued audiences
     // need the whole account list.
@@ -55,7 +55,7 @@ fn resolve<S: HostCtx>(audience: &Audience, state: &S) -> anyhow::Result<Vec<Use
 ///
 /// Failures are contained per recipient a notification is never the point of
 /// the operation that triggered it, so one bad row must not fail an approval.
-pub fn emit<S: HostCtx>(state: &S, audience: &Audience, spec: &NotificationSpec) -> usize {
+pub fn emit<S: HostStorage>(state: &S, audience: &Audience, spec: &NotificationSpec) -> usize {
     let recipients = match resolve(audience, state) {
         Ok(r) => r,
         Err(e) => {
@@ -72,7 +72,7 @@ pub fn emit<S: HostCtx>(state: &S, audience: &Audience, spec: &NotificationSpec)
 /// would re-read the whole user table per show, so it resolves once and calls
 /// this. The VAPID key and push subject are resolved here too, for the same
 /// reason: they are per-server, not per-recipient.
-pub fn emit_to<S: HostCtx>(state: &S, recipients: &[User], spec: &NotificationSpec) -> usize {
+pub fn emit_to<S: HostStorage>(state: &S, recipients: &[User], spec: &NotificationSpec) -> usize {
     if recipients.is_empty() {
         return 0;
     }
@@ -94,7 +94,7 @@ pub fn emit_to<S: HostCtx>(state: &S, recipients: &[User], spec: &NotificationSp
 }
 
 // `Ok(false)` means they have this category muted.
-fn deliver<S: HostCtx>(
+fn deliver<S: HostStorage>(
     state: &S,
     user: &User,
     spec: &NotificationSpec,
@@ -162,7 +162,7 @@ fn deliver<S: HostCtx>(
 /// Takes the count rather than reading it: callers have just done the write that
 /// changed it and already know the answer, which keeps this a pure bus publish
 /// and therefore safe to call straight from an async handler.
-pub fn publish_unread<S: HostCtx>(state: &S, user_id: &str, unread: u32) {
+pub fn publish_unread<S: HostStorage>(state: &S, user_id: &str, unread: u32) {
     state.publish_to(user_id, Event::new("notification.read", json!({ "unread": unread })));
 }
 

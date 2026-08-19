@@ -29,7 +29,7 @@ pub struct AutoSummary {
     pub errors: Vec<String>,
 }
 
-pub fn auto_search_pass<S: kroma_module_sdk::host::HostCtx>(
+pub fn auto_search_pass<S: kroma_module_sdk::host::HostStorage>(
     state: &S,
     log: &dyn Fn(String),
     cancelled: &dyn Fn() -> bool,
@@ -113,7 +113,7 @@ pub fn auto_search_pass<S: kroma_module_sdk::host::HostCtx>(
 
 // Rows sharing an air-recency bucket share a base delay, so one UPDATE per
 // bucket covers the batch instead of one per row.
-fn schedule_retries<S: kroma_module_sdk::host::HostCtx>(
+fn schedule_retries<S: kroma_module_sdk::host::HostStorage>(
     state: &S,
     due: &[&db::WantedRow],
     today: &str,
@@ -156,7 +156,7 @@ fn target_label(st: &crate::search::SearchTarget) -> String {
     }
 }
 
-fn search_request<S: kroma_module_sdk::host::HostCtx>(
+fn search_request<S: kroma_module_sdk::host::HostStorage>(
     state: &S,
     request_id: &str,
     indexers: &[kroma_module_sdk::ports::IndexerRow],
@@ -237,7 +237,7 @@ struct Outcome {
     top_reject: Option<String>,
 }
 
-fn best_candidate<S: kroma_module_sdk::host::HostCtx>(
+fn best_candidate<S: kroma_module_sdk::host::HostStorage>(
     state: &S,
     indexers: &[kroma_module_sdk::ports::IndexerRow],
     st: &crate::search::SearchTarget,

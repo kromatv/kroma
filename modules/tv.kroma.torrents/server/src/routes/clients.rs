@@ -16,17 +16,17 @@ use crate::db::{self, DownloadClientRow, EMBEDDED_CLIENT_ID};
 use kroma_module_sdk::domain::Permission;
 
 use crate::{ClientTestResult, DownloadClientView, DownloadClientsView, SaveDownloadClientBody};
-use kroma_module_sdk::host::{blocking, json_error, query, service, AuthUser, HostCtx};
+use kroma_module_sdk::host::{blocking, json_error, query, service, AuthUser, HostStorage};
 use kroma_module_sdk::primitives::{now_ms, random_token, short_hash};
 
 use crate::DownloadManager;
 
 // Resolve the module's download manager from the host service registry.
-fn dm<S: HostCtx>(state: &S) -> Arc<DownloadManager> {
+fn dm<S: HostStorage>(state: &S) -> Arc<DownloadManager> {
     service::<DownloadManager>(state).expect("download manager registered")
 }
 
-pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
+pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/download-clients", get(list::<S>).post(create::<S>))
         .route("/download-clients/{id}", axum::routing::put(update::<S>).delete(remove::<S>))
@@ -49,7 +49,7 @@ fn view_of(row: &DownloadClientRow) -> DownloadClientView {
 }
 
 /// `GET /download-clients`
-pub async fn list<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
@@ -64,7 +64,7 @@ pub async fn list<S: HostCtx + Clone + Send + Sync + 'static>(
 }
 
 /// `POST /download-clients` add an external engine.
-pub async fn create<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn create<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     Json(body): Json<SaveDownloadClientBody>,
@@ -102,7 +102,7 @@ pub async fn create<S: HostCtx + Clone + Send + Sync + 'static>(
 
 /// `PUT /download-clients/:id` partial update (kind is immutable;
 /// empty password keeps the stored secret).
-pub async fn update<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn update<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
@@ -134,17 +134,15 @@ pub async fn update<S: HostCtx + Clone + Send + Sync + 'static>(
             if enabled {
                 dm(&state).start_rqbit(&state).await;
                 let downloads = dm(&state);
-                let state2 = state.clone();
                 blocking(move || {
-                    downloads.resume_after_enable(&state2);
+                    downloads.resume_after_enable();
                     Ok(())
                 })
                 .await?;
             } else {
                 let downloads = dm(&state);
-                let state2 = state.clone();
                 blocking(move || {
-                    downloads.disable_embedded(&state2);
+                    downloads.disable_embedded();
                     Ok(())
                 })
                 .await?;
@@ -164,7 +162,7 @@ pub async fn update<S: HostCtx + Clone + Send + Sync + 'static>(
 }
 
 /// `DELETE /download-clients/:id` (the embedded row is permanent).
-pub async fn remove<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn remove<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
@@ -181,7 +179,7 @@ pub async fn remove<S: HostCtx + Clone + Send + Sync + 'static>(
 }
 
 /// `POST /download-clients/:id/test` live reachability probe.
-pub async fn test<S: HostCtx + Clone + Send + Sync + 'static>(
+pub async fn test<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,

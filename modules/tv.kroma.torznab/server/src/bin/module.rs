@@ -9,5 +9,5 @@ use kroma_module_sdk::ports::{torznab_routes, TorznabPort};
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let engine: Arc<dyn TorznabPort> = Arc::new(kroma_torznab::TorznabEngine);
-    kroma_module_runtime::serve(|_host| {}, vec![], torznab_routes(engine)).await
+    kroma_module_runtime::serve(|_host| torznab_routes(engine), vec![]).await
 }

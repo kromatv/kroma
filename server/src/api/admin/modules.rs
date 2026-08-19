@@ -106,11 +106,10 @@ async fn set_enabled(
     // Drive the module's lifecycle so the toggle starts/stops its live services,
     // not just its listing flag.
     if let Some(module) = kroma_module_kernel::find_server(&id) {
-        let host: Arc<dyn kroma_module_host::HostCtx> = state.clone();
         if body.enabled {
-            module.on_enable(host).await;
+            module.on_enable(state.clone()).await;
         } else {
-            module.on_disable(host).await;
+            module.on_disable(state.clone()).await;
         }
     }
     // A runtime-installed sidecar follows the toggle too: its process comes up

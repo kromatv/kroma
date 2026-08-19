@@ -1,8 +1,9 @@
 //! The Remote-access module as a standalone process (its `.kmod` entrypoint).
 //!
-//! The whole binary is one `serve()` call: the runtime opens the shared DB,
-//! builds the out-of-process host, and serves this module's admin routes on the
-//! local port the core supervisor assigned.
+//! The whole binary is one `serve()` call: the runtime builds the
+//! out-of-process host and serves this module's admin routes on the local port
+//! the core supervisor assigned. It declares no storage, so it opens no database
+//! and its binary links no SQLite.
 
 use kroma_module_runtime::RemoteHost;
 use kroma_module_sdk::host::HostCtx;

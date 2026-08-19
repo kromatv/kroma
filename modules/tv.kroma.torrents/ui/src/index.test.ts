@@ -5,8 +5,8 @@ import { torrentsModule } from './index';
 describe('torrentsModule', () => {
   it('takes its identity and its dependencies from the shared manifest', () => {
     expect(torrentsModule.id).toBe('tv.kroma.torrents');
-    expect(torrentsModule.dependencies).toEqual({ 'tv.kroma.indexer': '^0.1.0' });
-    expect(torrentsModule.optionalDependencies).toEqual({ 'tv.kroma.vpn': '^0.1.0' });
+    expect(torrentsModule.dependencies).toEqual({ 'tv.kroma.indexer': '^0.2.0' });
+    expect(torrentsModule.optionalDependencies).toEqual({ 'tv.kroma.vpn': '^0.2.0' });
   });
 
   it('derives every nav link from the route it points at', () => {

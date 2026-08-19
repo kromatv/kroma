@@ -73,7 +73,13 @@ mod tests {
         let mut row = serde_json::Map::new();
         row.insert("id".into(), serde_json::json!("u1"));
         tables.insert("users".to_string(), vec![row]);
-        BackupDoc { version: 1, exported_at: "t".into(), tables, assets: BTreeMap::new() }
+        BackupDoc {
+            version: 1,
+            exported_at: "t".into(),
+            tables,
+            assets: BTreeMap::new(),
+            modules: BTreeMap::new(),
+        }
     }
 
     #[test]

@@ -9,11 +9,11 @@
 use axum::extract::State;
 use axum::routing::post;
 use axum::{Json, Router};
-use kroma_module_sdk::host::HostCtx;
+use kroma_module_sdk::host::HostStorage;
 use serde::Deserialize;
 
 /// The routes the acquisition sidecar mounts for its search port.
-pub fn acqsearch_routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
+pub fn acqsearch_routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/_port/acqsearch/search", post(search_h::<S>))
         .route("/_port/acqsearch/grab", post(grab_h::<S>))
@@ -37,7 +37,7 @@ struct SearchReq {
     scope: crate::search::SearchScope,
 }
 
-async fn search_h<S: HostCtx + Clone + Send + Sync + 'static>(
+async fn search_h<S: HostStorage + Clone + Send + Sync + 'static>(
     State(host): State<S>,
     Json(req): Json<SearchReq>,
 ) -> Json<Result<serde_json::Value, String>> {
@@ -60,7 +60,7 @@ struct GrabReq {
     indexer_id: String,
 }
 
-async fn grab_h<S: HostCtx + Clone + Send + Sync + 'static>(
+async fn grab_h<S: HostStorage + Clone + Send + Sync + 'static>(
     State(host): State<S>,
     Json(req): Json<GrabReq>,
 ) -> Json<Result<String, String>> {

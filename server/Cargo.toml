@@ -82,7 +82,9 @@ sha2 = "0.10"
 hex = "0.4"
 base64 = "0.22"
 # Embedded SQLite compiled from source. Shared by kroma-db + the binary.
-rusqlite = { version = "0.40", features = ["bundled"] }
+# `hooks` is what exposes `Connection::authorizer`, the per-connection scope a
+# module's core-database grant is enforced with (see kroma-db's `grant`).
+rusqlite = { version = "0.40", features = ["bundled", "hooks"] }
 # HTTP / async runtime, shared by kroma-engine (i18n extractor, stream, services)
 # and the binary (router + handlers).
 axum = { version = "0.8", features = ["macros", "ws"] }

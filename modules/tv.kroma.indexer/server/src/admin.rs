@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use crate::db::IndexerRow;
+use kroma_module_sdk::db::Pool;
 use kroma_module_sdk::host::HostCtx;
 use kroma_module_sdk::primitives::now_ms;
 use kroma_module_sdk::ports::{Caps, IndexerEndpoint};
@@ -31,7 +32,10 @@ pub fn endpoint_of(row: &IndexerRow) -> IndexerEndpoint {
 // extra round-trip; keyed by id + url so re-pointing an indexer refreshes.
 static CAPS_CACHE: Mutex<Option<HashMap<String, Caps>>> = Mutex::new(None);
 
-pub fn indexer_caps(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<Caps> {
+/// `store` is this module's own database, where the last-result column lives.
+/// Passed rather than taken off `host`, because the callers reach this through a
+/// port contract that names only [`HostCtx`].
+pub fn indexer_caps(host: &dyn HostCtx, store: &Pool, row: &IndexerRow) -> anyhow::Result<Caps> {
     let key = format!("{}|{}", row.id, row.url);
     if let Some(caps) = CAPS_CACHE.lock().unwrap().as_ref().and_then(|m| m.get(&key)).cloned() {
         return Ok(caps);
@@ -41,11 +45,11 @@ pub fn indexer_caps(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<Caps
         .and_then(|p| p.caps(&endpoint_of(row)));
     match &result {
         Ok(_) => {
-            let _ = crate::db::note_indexer_result(host.db(), &row.id, true, None, now_ms());
+            let _ = crate::db::note_indexer_result(store, &row.id, true, None, now_ms());
         }
         Err(e) => {
             let _ = crate::db::note_indexer_result(
-                host.db(),
+                store,
                 &row.id,
                 false,
                 Some(&format!("{e:#}")),
@@ -133,7 +137,7 @@ pub fn build_builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Re
 
 /// Capabilities for any indexer kind (native ones derive from the definition; no
 /// network round-trip).
-pub fn any_indexer_caps(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<Caps> {
+pub fn any_indexer_caps(host: &dyn HostCtx, store: &Pool, row: &IndexerRow) -> anyhow::Result<Caps> {
     if row.kind == KIND_BUILTIN {
         let def = definition_store(host)
             .load(row.definition_id.as_deref().ok_or_else(|| anyhow::anyhow!("no definition"))?)?;
@@ -146,6 +150,6 @@ pub fn any_indexer_caps(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<
             server_title: c.server_title,
         })
     } else {
-        indexer_caps(host, row)
+        indexer_caps(host, store, row)
     }
 }

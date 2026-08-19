@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-use kroma_module_host::HostCtx;
+use kroma_module_host::HostStorage;
 
 use crate::db;
 use crate::infra::metadata::{self, discover};
@@ -25,7 +25,7 @@ type OnDisk = HashMap<(u32, u32), db::EpisodeOnDisk>;
 /// The request's seasons, tallied against the ledger and the library. Costs one
 /// TMDB detail call; the per-episode rows are fetched a season at a time by
 /// [`season_ledger`].
-pub fn ledger<S: HostCtx>(state: &S, request_id: &str) -> Result<RequestLedgerView> {
+pub fn ledger<S: HostStorage>(state: &S, request_id: &str) -> Result<RequestLedgerView> {
     let req = load_request(state, request_id)?;
     let detail = fetch_detail(state, &req)?;
     let conn = state.db().get()?;
@@ -72,7 +72,7 @@ pub fn ledger<S: HostCtx>(state: &S, request_id: &str) -> Result<RequestLedgerVi
 
 /// One season's episodes, from TMDB, flagged with what the request covers and
 /// what the library holds.
-pub fn season_ledger<S: HostCtx>(
+pub fn season_ledger<S: HostStorage>(
     state: &S,
     request_id: &str,
     season: u32,
@@ -116,7 +116,7 @@ pub fn season_ledger<S: HostCtx>(
 /// The wanted rows a season WOULD get, for a season the request does not cover.
 /// Persists nothing: it exists so an interactive search can be aimed at a season
 /// outside the request, which is most of what an admin looks for.
-pub fn preview_season_rows<S: HostCtx>(
+pub fn preview_season_rows<S: HostStorage>(
     state: &S,
     req: &MediaRequest,
     season: u32,
@@ -154,19 +154,19 @@ fn video_of(file: &db::EpisodeOnDisk) -> Option<VideoStream> {
     })
 }
 
-fn load_request<S: HostCtx>(state: &S, request_id: &str) -> Result<MediaRequest> {
+fn load_request<S: HostStorage>(state: &S, request_id: &str) -> Result<MediaRequest> {
     let conn = state.db().get()?;
     db::get_request(&conn, request_id)?.ok_or_else(|| anyhow!("request not found"))
 }
 
-fn fetch_detail<S: HostCtx>(state: &S, req: &MediaRequest) -> Result<discover::DiscoverRawDetail> {
+fn fetch_detail<S: HostStorage>(state: &S, req: &MediaRequest) -> Result<discover::DiscoverRawDetail> {
     let key = tmdb_key(state)?;
     discover::detail(&key, &state.metadata_language(), req.kind, req.tmdb_id)
         .map_err(|()| anyhow!("TMDB lookup failed"))?
         .ok_or_else(|| anyhow!("title not found on TMDB"))
 }
 
-fn season_episodes<S: HostCtx>(
+fn season_episodes<S: HostStorage>(
     state: &S,
     tmdb_id: u64,
     season: u32,
@@ -175,7 +175,7 @@ fn season_episodes<S: HostCtx>(
     Ok(metadata::season_episodes(&key, &state.metadata_language(), tmdb_id, season).episodes)
 }
 
-fn tmdb_key<S: HostCtx>(state: &S) -> Result<String> {
+fn tmdb_key<S: HostStorage>(state: &S) -> Result<String> {
     state.tmdb_api_key().ok_or_else(|| anyhow!("TMDB is not configured"))
 }
 

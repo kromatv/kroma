@@ -134,9 +134,13 @@ the zero-module base build. Every first-party module ships as an installable
 `kroma-module-supervisor` scans `<data>/modules/*`, spawns each enabled module as
 its own process on a free localhost port, and reverse-proxies
 `/api/module/<id>/*` to it; modules call back into the core over the token-authed
-`/api/_host/*` API for settings/events/jobs, and open the shared SQLite directly
-(WAL = multi-process). See [`docs/modules-as-kmod.md`](docs/modules-as-kmod.md).
-It also tracks the remaining cross-module port conversions.
+`/api/_host/*` API for settings/events/jobs/session. A database is a **declared
+capability**, not something every sidecar gets: a module with no `storage` in its
+`module.json` does not link SQLite at all, and one that has it gets its own file
+plus whatever slice of the core database it declared, enforced per connection by
+SQLite's authorizer. See [`docs/modules-as-kmod.md`](docs/modules-as-kmod.md) and
+[`modules/README.md`](modules/README.md#storage). The former also tracks the
+remaining cross-module port conversions.
 
 Modules release **independently of the server**, each on its own tag
 `<module-id>@<version>`, from `.github/workflows/modules.yml`. So **bump

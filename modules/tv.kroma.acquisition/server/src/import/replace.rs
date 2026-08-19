@@ -8,12 +8,12 @@ use std::path::Path;
 
 use kroma_module_sdk::db;
 use kroma_module_sdk::domain::media::{detect_edition, edition_cut};
-use kroma_module_sdk::host::HostCtx;
+use kroma_module_sdk::host::HostStorage;
 use kroma_module_sdk::ports::DownloadRow;
 
 use super::Replaced;
 
-pub(super) fn drop_replaced<S: HostCtx>(
+pub(super) fn drop_replaced<S: HostStorage>(
     state: &S,
     row: &DownloadRow,
     placed: &[(Replaced, String)],
@@ -45,7 +45,7 @@ fn canonical(path: &str) -> String {
     std::fs::canonicalize(path).map(|p| p.to_string_lossy().into_owned()).unwrap_or_else(|_| path.to_string())
 }
 
-fn superseded<S: HostCtx>(
+fn superseded<S: HostStorage>(
     state: &S,
     row: &DownloadRow,
     placed: &[(Replaced, String)],

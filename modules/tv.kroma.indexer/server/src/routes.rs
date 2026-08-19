@@ -24,7 +24,7 @@ use crate::{
     IndexerDefinitionsView, IndexerTestResult, IndexerView, IndexersView, SaveIndexerBody,
     SyncDefinitionsResult,
 };
-use kroma_module_sdk::host::{blocking, json_error, query, AuthUser, HostCtx};
+use kroma_module_sdk::host::{blocking, json_error, query, AuthUser, HostStorage};
 use kroma_module_sdk::primitives::{now_ms, random_token, short_hash};
 
 use crate::admin::{
@@ -33,7 +33,7 @@ use crate::admin::{
 
 pub fn routes<S>() -> Router<S>
 where
-    S: HostCtx + Clone + Send + Sync + 'static,
+    S: HostStorage + Clone + Send + Sync + 'static,
 {
     Router::new()
         .route("/indexers", get(list::<S>).post(create::<S>))
@@ -73,12 +73,12 @@ fn view_of(row: &IndexerRow) -> IndexerView {
 }
 
 /// `GET /indexers`
-pub async fn list<S: HostCtx>(
+pub async fn list<S: HostStorage>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
-    let view = query(state.db(), |pool| {
+    let view = query(state.store(), |pool| {
         let conn = pool.get()?;
         let indexers = db::list_indexers(&conn)?.iter().map(view_of).collect();
         Ok(IndexersView { indexers })
@@ -90,7 +90,7 @@ pub async fn list<S: HostCtx>(
 /// `POST /indexers` create. `kind: "builtin"` creates a native
 /// Cardigann indexer (needs `definitionId`); otherwise a Torznab endpoint
 /// (needs `name` + `url`).
-pub async fn create<S: HostCtx + Clone>(
+pub async fn create<S: HostStorage + Clone>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     Json(body): Json<SaveIndexerBody>,
@@ -123,11 +123,11 @@ pub async fn create<S: HostCtx + Clone>(
         }
     };
     let view = view_of(&row);
-    query(state.db(), move |pool| db::insert_indexer(&pool, &row)).await?;
+    query(state.store(), move |pool| db::insert_indexer(&pool, &row)).await?;
     Ok(Json(view).into_response())
 }
 
-async fn build_builtin_row<S: HostCtx + Clone>(
+async fn build_builtin_row<S: HostStorage + Clone>(
     state: &S,
     body: &SaveIndexerBody,
 ) -> Result<IndexerRow, Response> {
@@ -197,7 +197,7 @@ fn default_cats() -> Vec<u32> {
 
 /// `PUT /indexers/:id` partial update. For built-in rows the `settings`
 /// map is merged into the stored one (an omitted/empty password keeps its value).
-pub async fn update<S: HostCtx + Clone>(
+pub async fn update<S: HostStorage + Clone>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
@@ -217,7 +217,7 @@ pub async fn update<S: HostCtx + Clone>(
     };
 
     let id2 = id.clone();
-    let updated = query(state.db(), move |pool| {
+    let updated = query(state.store(), move |pool| {
         db::update_indexer(
             &pool,
             &id2,
@@ -236,7 +236,7 @@ pub async fn update<S: HostCtx + Clone>(
     }
     invalidate_caps(&id);
     let id3 = id.clone();
-    let row = query(state.db(), move |pool| {
+    let row = query(state.store(), move |pool| {
         let conn = pool.get()?;
         Ok(db::get_indexer(&conn, &id3)?)
     })
@@ -249,12 +249,12 @@ pub async fn update<S: HostCtx + Clone>(
 
 // Preserves a stored password when the incoming value for a `password`-type
 // setting is empty.
-fn merge_settings<S: HostCtx>(
+fn merge_settings<S: HostStorage>(
     state: &S,
     id: &str,
     incoming: &HashMap<String, String>,
 ) -> anyhow::Result<String> {
-    let conn = state.db().get()?;
+    let conn = state.store().get()?;
     let row = db::get_indexer(&conn, id)?.ok_or_else(|| anyhow::anyhow!("indexer not found"))?;
     drop(conn);
     let mut current: HashMap<String, String> =
@@ -280,14 +280,14 @@ fn merge_settings<S: HostCtx>(
 }
 
 /// `DELETE /indexers/:id`
-pub async fn remove<S: HostCtx + Clone>(
+pub async fn remove<S: HostStorage + Clone>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
     let id2 = id.clone();
-    let deleted = query(state.db(), move |pool| db::delete_indexer(&pool, &id2)).await?;
+    let deleted = query(state.store(), move |pool| db::delete_indexer(&pool, &id2)).await?;
     if !deleted {
         return Err(state.lerr(&user, StatusCode::NOT_FOUND, "error.indexerNotFound"));
     }
@@ -297,7 +297,7 @@ pub async fn remove<S: HostCtx + Clone>(
 
 /// `POST /indexers/:id/test`. Torznab: a live `t=caps` round-trip.
 /// Built-in: derive caps from the definition and verify login/reachability.
-pub async fn test<S: HostCtx + Clone>(
+pub async fn test<S: HostStorage + Clone>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
@@ -306,13 +306,13 @@ pub async fn test<S: HostCtx + Clone>(
     invalidate_caps(&id);
     let host = state.clone();
     let result = blocking(move || {
-        let conn = host.db().get()?;
+        let conn = host.store().get()?;
         let Some(row) = db::get_indexer(&conn, &id)? else {
             return Ok(None);
         };
         drop(conn);
         let started = std::time::Instant::now();
-        let caps = any_indexer_caps(&host, &row);
+        let caps = any_indexer_caps(&host, host.store(), &row);
         let reachable = if row.kind == KIND_BUILTIN {
             // Verify the session (drives a login for private trackers).
             builtin_session(&host, &row).and_then(|s| s.test()).map(|_| ())
@@ -345,7 +345,7 @@ pub async fn test<S: HostCtx + Clone>(
 }
 
 /// `GET /indexers/definitions` the browsable Cardigann catalog.
-pub async fn list_definitions<S: HostCtx + Clone>(
+pub async fn list_definitions<S: HostStorage + Clone>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
@@ -373,7 +373,7 @@ pub async fn list_definitions<S: HostCtx + Clone>(
 }
 
 /// `GET /indexers/definitions/:defId` the settings schema for the form.
-pub async fn definition_detail<S: HostCtx + Clone>(
+pub async fn definition_detail<S: HostStorage + Clone>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
     AxPath(def_id): AxPath<String>,
@@ -410,7 +410,7 @@ pub async fn definition_detail<S: HostCtx + Clone>(
 }
 
 /// `POST /indexers/definitions/sync` fetch the current definition set.
-pub async fn sync_definitions<S: HostCtx + Clone>(
+pub async fn sync_definitions<S: HostStorage + Clone>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {

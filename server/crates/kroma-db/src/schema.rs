@@ -548,6 +548,62 @@ pub(crate) const SCHEMA: &str = "
     -- Serve a whole home row in one language in a single indexed scan
     -- (WHERE subject_kind=? AND lang=? AND subject_id IN (...)).
     CREATE INDEX IF NOT EXISTS idx_translations_lang ON translations(subject_kind, lang);
+
+    -- The two SHARED tables below are written by a module and read by the core.
+    -- They live here, in the core schema, because that is what they are: a
+    -- module holds a grant on them, and a grant cannot create a table. A module
+    -- table nothing outside it reads belongs in its own file instead (see
+    -- kroma-db's `grant` and the supervisor's `adopt`).
+
+    -- One row per grab: a release the downloads module sent to a client. The
+    -- core reads it for the live progress overlay on request / discover lists,
+    -- and `request_id` is a real foreign key into `requests`, so it could not
+    -- live anywhere else. `client_id` has NO foreign key, so history survives a
+    -- deleted client config.
+    CREATE TABLE IF NOT EXISTS downloads (
+        id              TEXT PRIMARY KEY,
+        client_id       TEXT NOT NULL,
+        client_ref      TEXT NOT NULL,
+        request_id      TEXT REFERENCES requests(id) ON DELETE SET NULL,
+        kind            TEXT NOT NULL,
+        tmdb_id         INTEGER NOT NULL,
+        title           TEXT,
+        year            INTEGER,
+        season          INTEGER,
+        episodes        TEXT,
+        release_title   TEXT NOT NULL,
+        indexer_id      TEXT,
+        info_hash       TEXT,
+        magnet_or_url   TEXT NOT NULL,
+        size_bytes      INTEGER,
+        score           INTEGER,
+        score_breakdown TEXT,
+        status          TEXT NOT NULL DEFAULT 'queued',
+        progress        REAL NOT NULL DEFAULT 0,
+        save_path       TEXT,
+        imported_paths  TEXT,
+        error           TEXT,
+        grabbed_at      INTEGER NOT NULL,
+        completed_at    INTEGER,
+        imported_at     INTEGER,
+        details_url     TEXT,
+        only_files      TEXT,
+        upgrade         INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX IF NOT EXISTS idx_downloads_status ON downloads(status, grabbed_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_downloads_req    ON downloads(request_id);
+
+    -- The transcription progress channel. A whisper run is minutes long and
+    -- drives live progress plus a mid-run cancel, which do not fit the buffered
+    -- request/response the port bridge speaks: the core writes `cancel` and
+    -- polls the rest, the sidecar does the reverse.
+    CREATE TABLE IF NOT EXISTS whisper_jobs (
+        id     TEXT PRIMARY KEY,
+        stage  TEXT NOT NULL DEFAULT '',
+        done   INTEGER NOT NULL DEFAULT 0,
+        total  INTEGER NOT NULL DEFAULT 0,
+        cancel INTEGER NOT NULL DEFAULT 0
+    );
 ";
 
 /// Explicit column list for file SELECTs keeps [`super::row_to_file`] index-stable.
@@ -562,16 +618,36 @@ pub(crate) const ITEM_COLS: &str = "id,kind,title,year,duration_ms,container,\
     library,show_id,show_title,season,episode,episode_end,episode_title,rel_path,abs_path,added_at,metadata";
 
 /// Open (creating if needed) the database and ensure schema + pragmas.
-pub fn init(path: &Path) -> Result<Pool> {
+/// A pool over `path` with the pragmas applied and NO schema.
+///
+/// For a database this crate does not own the shape of -- a module's own file,
+/// whose tables come from that module's `migrations()`. [`init`] would stamp the
+/// whole core schema into it, which is forty tables it will never read.
+pub fn open(path: &Path) -> Result<Pool> {
+    pool_at(path, 4, None)
+}
+
+/// The one place a [`Pool`] is built. `scope` is `None` for a database its owner
+/// is not scoped against, and the module grant otherwise.
+///
+/// Opens one connection before returning, so a path that cannot be opened fails
+/// here rather than at whatever query happens to run first.
+pub(crate) fn pool_at(path: &Path, max_idle: usize, scope: Option<crate::grant::Scope>) -> Result<Pool> {
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).ok();
     }
     let pool = Arc::new(PoolInner {
         path: path.to_path_buf(),
         idle: Mutex::new(Vec::new()),
-        max_idle: 8,
+        max_idle,
+        scope,
     });
+    let _ = pool.get()?;
+    Ok(pool)
+}
 
+pub fn init(path: &Path) -> Result<Pool> {
+    let pool = pool_at(path, 8, None)?;
     let conn = pool.get()?;
     conn.execute_batch(SCHEMA).context("failed to apply schema")?;
     migrate(&conn);
@@ -583,6 +659,9 @@ pub fn init(path: &Path) -> Result<Pool> {
 // column is present, which we ignore.
 fn migrate(conn: &Connection) {
     for sql in [
+        // The downloads ledger predates its move into this schema; a database
+        // that already carries it is missing the columns added since.
+        "ALTER TABLE downloads ADD COLUMN upgrade INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE items ADD COLUMN metadata TEXT",
         "ALTER TABLE shows ADD COLUMN metadata TEXT",
         // Per-user permissions for accounts created before they existed.

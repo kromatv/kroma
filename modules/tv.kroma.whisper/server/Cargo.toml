@@ -35,9 +35,11 @@ cuda = ["local", "candle-core/cuda", "candle-nn/cuda", "candle-transformers/cuda
 accelerate = ["local", "candle-core/accelerate", "candle-nn/accelerate", "candle-transformers/accelerate"]
 
 [dependencies]
-kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
+# `storage`: the progress channel is a core table this module holds a grant on
+# (see `storage` in module.json).
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage"] }
 # The `.kmod` binary: the out-of-process runtime + axum for the transcription route.
-kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
+kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime", features = ["storage"] }
 axum = { version = "0.8", features = ["macros", "ws"] }
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
@@ -57,6 +59,10 @@ tokenizers = { version = "0.23", default-features = false, features = ["onig"], 
 candle-core = { version = "0.11", default-features = false, features = ["metal"], optional = true }
 candle-nn = { version = "0.11", default-features = false, features = ["metal"], optional = true }
 candle-transformers = { version = "0.11", default-features = false, features = ["metal"], optional = true }
+
+[dev-dependencies]
+# `db::testing`: the scoped pool the storage-grant test asserts against.
+kroma-db = { path = "../../../server/crates/kroma-db", features = ["testing"] }
 
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO

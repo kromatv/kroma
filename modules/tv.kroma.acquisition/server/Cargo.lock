@@ -1117,6 +1117,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "kroma-db",
  "kroma-module-host",
  "kroma-module-runtime",
  "kroma-module-sdk",
@@ -1144,10 +1145,12 @@ dependencies = [
  "anyhow",
  "kroma-domain",
  "kroma-primitives",
+ "kroma-testing",
  "rusqlite",
  "serde",
  "serde_json",
  "time",
+ "tracing",
 ]
 
 [[package]]

@@ -6,7 +6,7 @@
 mod engine;
 
 mod serve;
-pub use serve::{ensure_jobs_table, whisper_routes};
+pub use serve::whisper_routes;
 
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
