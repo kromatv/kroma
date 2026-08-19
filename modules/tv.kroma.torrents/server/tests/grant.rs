@@ -120,3 +120,49 @@ fn this_modules_migrations_build_its_own_table_and_leave_the_shared_one_alone() 
     assert_eq!(table("download_clients"), 1, "the credentials table is this module's own");
     assert_eq!(table("downloads"), 0, "the shared ledger belongs to the core schema");
 }
+
+#[test]
+fn the_client_configs_are_read_from_this_modules_own_database() {
+    // Four call sites read `download_clients` off the CORE pool after the table
+    // moved into this module's file, and each one failed the same way in
+    // production: "no such table: download_clients". The table is not in the
+    // core schema at all, so anything still looking there cannot work -- which
+    // is what this asserts, from the manager down.
+    let core = db::testing::temp_pool("torrents-clients");
+    let store = core.store();
+    {
+        let conn = store.get().unwrap();
+        db::apply_migrations(&conn, kroma_torrent::db::MIGRATIONS).unwrap();
+    }
+    let dir = kroma_testing::temp_dir("torrents-clients-dir");
+    let manager =
+        kroma_torrent::DownloadManager::new(dir.path(), (*core).clone(), store.clone());
+
+    // Seeding the embedded engine writes the module's own file. Without the
+    // `rqbit` feature there is no embedded engine to seed, so the seed is a
+    // no-op by design and the row below is the one this test puts there.
+    manager.seed_embedded_client();
+    if !kroma_torrent::RQBIT_COMPILED {
+        let conn = store.get().unwrap();
+        conn.execute(
+            "INSERT INTO download_clients (id,kind,name,password,enabled,priority,created_at) \
+             VALUES ('qb','qbittorrent','qBit','hunter2',1,0,1)",
+            [],
+        )
+        .unwrap();
+    }
+    let seeded = kroma_torrent::db::list_download_clients(&store.get().unwrap()).unwrap();
+    assert_eq!(seeded.len(), 1, "the client config is in this module's database");
+
+    // ...and the shared database has no such table to have written it into.
+    let absent: i64 = core
+        .get()
+        .unwrap()
+        .query_row(
+            "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='download_clients'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(absent, 0, "the credentials table is not in the shared database");
+}

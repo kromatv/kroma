@@ -67,11 +67,18 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
             .into_iter()
             .map(|i| (i.id, i.name))
             .collect();
+    // The client names come from this module's OWN database; the ledger below
+    // from the shared one. Two files, so two lookups: resolved here because the
+    // blocking closure gets only the one pool.
+    let clients: std::collections::HashMap<String, String> = query(state.store(), |pool| {
+        let conn = pool.get()?;
+        Ok(db::list_download_clients(&conn)?.into_iter().map(|c| (c.id, c.name)).collect())
+    })
+    .await
+    .unwrap_or_default();
     let view = query(state.db(), move |pool| {
         let conn = pool.get()?;
         let rows = db::list_downloads(&conn, HISTORY_LIMIT)?;
-        let clients: std::collections::HashMap<String, String> =
-            db::list_download_clients(&conn)?.into_iter().map(|c| (c.id, c.name)).collect();
         let downloads = rows
             .into_iter()
             .map(|d| {

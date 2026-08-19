@@ -108,7 +108,7 @@ impl DownloadManager {
     pub async fn start_rqbit(&self, host: &dyn HostCtx) {
         // Never bring the engine up while the embedded client is disabled; a
         // missing row means first boot before seeding, treated as enabled.
-        if let Ok(conn) = self.core().get() {
+        if let Ok(conn) = self.store().get() {
             if let Ok(Some(c)) = db::get_download_client(&conn, db::EMBEDDED_CLIENT_ID) {
                 if !c.enabled {
                     drop(conn);
@@ -688,9 +688,11 @@ impl DownloadManager {
     }
 
     fn row_and_client(&self, id: &str) -> Result<(DownloadRow, DownloadClientRow)> {
-        let conn = self.core().get()?;
-        let row = db::get_download(&conn, id)?.ok_or_else(|| anyhow!("download not found"))?;
-        let client = db::get_download_client(&conn, &row.client_id)?
+        let ledger = self.core().get()?;
+        let row = db::get_download(&ledger, id)?.ok_or_else(|| anyhow!("download not found"))?;
+        drop(ledger);
+        let clients = self.store().get()?;
+        let client = db::get_download_client(&clients, &row.client_id)?
             .ok_or_else(|| anyhow!("download client no longer configured"))?;
         Ok((row, client))
     }

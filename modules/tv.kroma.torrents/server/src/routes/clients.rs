@@ -54,7 +54,7 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
-    let view = query(state.db(), |pool| {
+    let view = query(state.store(), |pool| {
         let conn = pool.get()?;
         let clients = db::list_download_clients(&conn)?.iter().map(view_of).collect();
         Ok(DownloadClientsView { clients, rqbit_compiled: crate::RQBIT_COMPILED })
@@ -96,7 +96,7 @@ pub async fn create<S: HostStorage + Clone + Send + Sync + 'static>(
         created_at: now_ms(),
     };
     let view = view_of(&row);
-    query(state.db(), move |pool| db::insert_download_client(&pool, &row)).await?;
+    query(state.store(), move |pool| db::insert_download_client(&pool, &row)).await?;
     Ok(Json(view).into_response())
 }
 
@@ -110,7 +110,7 @@ pub async fn update<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
     let id2 = id.clone();
-    let updated = query(state.db(), move |pool| {
+    let updated = query(state.store(), move |pool| {
         db::update_download_client(
             &pool,
             &id2,
@@ -150,7 +150,7 @@ pub async fn update<S: HostStorage + Clone + Send + Sync + 'static>(
         }
     }
     let id3 = id.clone();
-    let row = query(state.db(), move |pool| {
+    let row = query(state.store(), move |pool| {
         let conn = pool.get()?;
         Ok(db::get_download_client(&conn, &id3)?)
     })
@@ -171,7 +171,7 @@ pub async fn remove<S: HostStorage + Clone + Send + Sync + 'static>(
     if id == EMBEDDED_CLIENT_ID {
         return Err(json_error(StatusCode::BAD_REQUEST, "the embedded engine cannot be deleted"));
     }
-    let deleted = query(state.db(), move |pool| db::delete_download_client(&pool, &id)).await?;
+    let deleted = query(state.store(), move |pool| db::delete_download_client(&pool, &id)).await?;
     if !deleted {
         return Err(state.lerr(&user, StatusCode::NOT_FOUND, "error.clientNotFound"));
     }
@@ -189,7 +189,7 @@ pub async fn test<S: HostStorage + Clone + Send + Sync + 'static>(
     // localized not-found response.
     let st = state.clone();
     let result = blocking(move || {
-        let conn = st.db().get()?;
+        let conn = st.store().get()?;
         let Some(row) = db::get_download_client(&conn, &id)? else {
             return Ok(None);
         };

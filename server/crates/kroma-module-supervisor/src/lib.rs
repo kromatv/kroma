@@ -194,8 +194,14 @@ impl Supervisor {
 
     /// What `id` declared under `storage`, or `None` when it declared none -- in
     /// which case it holds no database capability at all.
+    ///
+    /// Read off disk rather than out of [`installed_manifests`](Self::installed_manifests),
+    /// which is cached: this is what a module's grant is built from, and a grant
+    /// one version out of date is not a stale listing, it is a module that gets
+    /// the wrong answer to every query. One small file, read once per spawn.
     fn storage_of(&self, id: &str) -> Option<kroma_module_manifest::Storage> {
-        self.installed_manifests().into_iter().find(|m| m.id == id).and_then(|m| m.storage)
+        let text = std::fs::read_to_string(self.dir(id).join("module.json")).ok()?;
+        serde_json::from_str::<ModuleManifest>(&text).ok()?.storage
     }
 
     /// Move any table `id` declared as its own out of the core database and into
@@ -514,6 +520,14 @@ impl Supervisor {
             let dest = self.dir(&id);
             let _ = std::fs::remove_dir_all(&dest);
             std::fs::rename(&staging, &dest)?;
+            // BEFORE anything reads a manifest again, and `spawn` below is one
+            // such reader: it builds the module's storage grant from what the
+            // manifest declares. Invalidating only at the end of this function
+            // meant a module installed and started in one go was spawned with
+            // the grant its PREVIOUS version declared -- for an upgrade from a
+            // version that predates `storage`, the empty one, so every query it
+            // made was denied.
+            self.invalidate_manifests();
             #[cfg(unix)]
             {
                 use std::os::unix::fs::PermissionsExt;
@@ -1192,7 +1206,7 @@ async fn tmdb_config<S: HostCtx>(State(host): State<S>) -> Json<Value> {
 
 #[cfg(test)]
 mod tests {
-    use super::{grant_json, registry_document_url};
+    use super::{grant_json, registry_document_url, Supervisor, SupervisorConfig};
 
     #[test]
     fn a_registry_root_resolves_to_the_descriptor_at_the_well_known_path() {
@@ -1252,5 +1266,60 @@ mod tests {
         let private_only = kroma_module_manifest::Storage::default();
         let json = grant_json(Some(&private_only));
         assert_eq!(serde_json::from_str::<kroma_db::Grant>(&json).unwrap(), kroma_db::Grant::none());
+    }
+
+    #[test]
+    fn a_modules_grant_comes_off_disk_even_when_the_listing_cache_is_stale() {
+        // The failure this pins cost every acquisition job on a real server.
+        // `install` writes the new bundle and then spawns it, and `spawn` builds
+        // the module's storage grant. Reading that grant from the CACHED listing
+        // meant an upgrade handed the new binary the grant its PREVIOUS version
+        // declared -- upgrading from a version that predates `storage`, the
+        // empty one, so every query it made came back "authorization denied".
+        let dir = kroma_testing::temp_dir("grant-stale-cache");
+        let sup = Supervisor::new(SupervisorConfig {
+            modules_dir: dir.path().to_path_buf(),
+            core_url: "http://127.0.0.1:0".into(),
+            host_token: "t".into(),
+            db_path: dir.path().join("db.sqlite"),
+            data_dir: dir.path().to_path_buf(),
+            reserved_ids: Vec::new(),
+            server_version: "0.1.4".into(),
+            log_line: None,
+        });
+
+        let write = |body: &str| {
+            let d = dir.path().join("com.example.demo");
+            std::fs::create_dir_all(&d).unwrap();
+            std::fs::write(d.join("module.json"), body).unwrap();
+        };
+        let v = kroma_module_manifest::MODULE_SCHEMA_VERSION;
+
+        // v1 declares no storage, and listing it warms the cache.
+        write(&format!(
+            r#"{{ "schemaVersion": {v}, "id": "com.example.demo", "name": "D", "version": "1.0.0" }}"#
+        ));
+        assert_eq!(sup.installed_manifests().len(), 1);
+        assert!(sup.storage_of("com.example.demo").is_none());
+
+        // v2 declares one. The cache is deliberately NOT invalidated here: this
+        // is the window `install` used to spawn in.
+        write(&format!(
+            r#"{{ "schemaVersion": {v}, "id": "com.example.demo", "name": "D", "version": "2.0.0",
+                  "storage": {{ "core": {{ "read": ["requests"], "write": ["wanted"] }} }} }}"#
+        ));
+        assert_eq!(
+            sup.installed_manifests()[0].version,
+            "1.0.0",
+            "the listing is still stale, which is the whole point"
+        );
+
+        let storage = sup.storage_of("com.example.demo").expect("the grant comes off disk");
+        assert_eq!(storage.core.read, ["requests"]);
+        assert_eq!(storage.core.write, ["wanted"]);
+
+        // ...and it is what would reach the sidecar.
+        let back: kroma_db::Grant = serde_json::from_str(&grant_json(Some(&storage))).unwrap();
+        assert_eq!(back.read, ["requests"]);
     }
 }
