@@ -63,6 +63,54 @@ the thresholds and exemptions live in
 [`ARCHITECTURE.md`](ARCHITECTURE.md#file-size-policy). A file you cannot name
 without "and" is two files.
 
+## A file name says what it exports, and a suffix says how it resolves
+
+Kebab-case, named after its export: `focusable.tsx` exports `Focusable`,
+`stage-ratio.ts` exports `useStageRatio`. Rust is snake_case. `packages/ui` holds
+this without exception; `packages/tv` has drifted to PascalCase in about a third
+of its files, so name a new file correctly wherever it lands and rename a
+neighbour only when you are already changing it.
+
+A suffix is a resolution instruction, not decoration. These are the ones in use,
+and there are no others:
+
+| Suffix | Means |
+|---|---|
+| `.test.ts` `.test.tsx` | A vitest suite, beside the file it covers |
+| `.native.test.ts` | Must run under Metro resolution, where the plain file wins |
+| `.web.ts` `.web.tsx` | The web implementation, chosen by the shells' Vite config |
+| `.story.mdx` | The workbench story for a kit component |
+| `.fixtures.tsx` | Rendered demo props for a story |
+| `.fixture.ts` | Plain data a test or story imports |
+| `.demo.tsx` | A standalone demo the workbench mounts |
+| `.a11y.test.tsx` | An accessibility suite, kept separate so it can be run alone |
+| `.gen.ts` | Generated. Never hand-edited, exempt from every policy |
+
+Inventing a new suffix means changing the bundler config first and the file name
+second, so do not. A file that fits none of these is a plain `name.ts`.
+
+An `index.ts` re-exports and nothing else. Logic in an `index.ts` is logic nobody
+can find.
+
+Unit tests in Rust live in a `mod tests` beside the code; API integration tests
+are `src/api/it_*.rs` beside the handlers, and shared setup lives in
+`test_support`, never repeated per test.
+
+## One vocabulary for the domains
+
+Feature slices, server crates, spec spaces and `area/` labels all draw from the
+same nouns: `catalog`, `playback`, `accounts`, `admin`, `discovery`, `modules`,
+`library`, `media`, `surfaces`. Learn them once and use them everywhere. A new
+noun for an existing domain is how two names for one thing start, and the second
+one is the one nobody searches for.
+
+The `area/` labels are a different axis and deliberately so: they name where in the
+stack the work lands (`server`, `web`, `tv`, `mobile`, `desktop`, `synology`,
+`ui-kit`, `ci`, `docs`, `modules`, `sdk`), not which product domain it belongs to.
+The full label set is in [`docs/TICKETS.md`](docs/TICKETS.md#labels).
+
+Module ids are reverse-DNS: `tv.kroma.torrents`.
+
 ## Secrets belong where the source is not
 
 The server's source is public and self-hosted by anyone, so a credential
