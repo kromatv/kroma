@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite';
-import { z } from 'zod';
+import { Catalog } from '../src/lib/catalog.ts';
 import { type SiteCatalog, toSiteCatalog } from '../src/lib/modules.ts';
 
 // The official module catalog, fetched once per build and compiled into the
@@ -17,30 +17,6 @@ const RESOLVED_ID = `\0${VIRTUAL_ID}`;
 // before it is parsed, so the ceiling is checked there rather than after.
 const MAX_BYTES = 2 * 1024 * 1024;
 const TIMEOUT_MS = 15_000;
-
-// Only a data URI survives: the site is self-contained, so an icon that would
-// reach a third-party host at render time is dropped rather than embedded.
-const Icon = z
-  .string()
-  .nullish()
-  .transform((v) => (v?.startsWith('data:image/') ? v : null));
-
-const Entry = z.object({
-  id: z.string().min(1),
-  name: z.string().default(''),
-  version: z.string().default(''),
-  description: z.string().nullish(),
-  library: z.boolean().nullish(),
-  icon: Icon,
-  dependsOn: z.union([z.record(z.string(), z.string()), z.array(z.string())]).nullish(),
-  provides: z.array(z.object({ kind: z.string() }).loose()).nullish(),
-  requires: z.array(z.object({ kind: z.string() }).loose()).nullish(),
-});
-
-const Catalog = z.object({
-  generatedAt: z.string().nullish(),
-  modules: z.array(Entry).default([]),
-});
 
 async function fetchCatalog(): Promise<SiteCatalog> {
   const res = await fetch(CATALOG_URL, { signal: AbortSignal.timeout(TIMEOUT_MS) });

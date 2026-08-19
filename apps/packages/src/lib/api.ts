@@ -1,4 +1,3 @@
-import { KROMA_MARK_SVG } from '#site/lib/brand';
 import {
   archSupported,
   type Catalog,
@@ -89,10 +88,13 @@ export async function machineResponse(
   if (path === '/icon.png') {
     return icon(env.GITHUB_REPO || DEFAULT_REPO, ctx, url.searchParams.has('fresh'));
   }
-  if (path === '/favicon.svg' || path === '/favicon.ico') {
-    return new Response(KROMA_MARK_SVG, {
-      headers: { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=3600' },
-    });
+  // `/favicon.svg` is a static asset, which the platform answers before this
+  // worker runs. `.ico` is only ever requested by a client that ignored the
+  // `<link rel="icon">` in the page, so point it at the real file rather than
+  // keeping a second copy of the mark inlined here to serve under a name that
+  // is not its format.
+  if (path === '/favicon.ico') {
+    return Response.redirect(new URL('/favicon.svg', url), 301);
   }
 
   const isFeed = path === '/catalog.json' || path === '/nightly.json' || path === '/all.json';

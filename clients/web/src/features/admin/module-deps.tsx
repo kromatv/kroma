@@ -38,13 +38,13 @@ export function DepChip({ label, state }: Readonly<{ label: string; state: DepSt
 }
 
 // The reverse edges of the dependency graph, so a provider (e.g. Downloads)
-// shows who needs it: a hard/optional `dependsOn` on its id, or a capability
+// shows who needs it: a hard/optional `dependencies` on its id, or a capability
 // `requires` this module's `provides` satisfies.
 function dependents(module: AdminModule, all: AdminModule[]): AdminModule[] {
   const provides = module.provides ?? [];
   return all.filter((other) => {
     if (other.id === module.id) return false;
-    const deps = [...depEntries(other.dependsOn), ...depEntries(other.optionalDependsOn)];
+    const deps = [...depEntries(other.dependencies), ...depEntries(other.optionalDependencies)];
     if (deps.some((d) => d.id === module.id)) return true;
     return (other.requires ?? []).some((r) =>
       provides.some((c) => c.kind === r.kind && (!r.id || c.id === r.id)),
@@ -72,8 +72,8 @@ export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all:
   const t = useT();
   const byId = new Map(all.map((m) => [m.id, m]));
   const deps = [
-    ...depEntries(module.dependsOn).map((d) => ({ ...d, optional: false })),
-    ...depEntries(module.optionalDependsOn).map((d) => ({ ...d, optional: true })),
+    ...depEntries(module.dependencies).map((d) => ({ ...d, optional: false })),
+    ...depEntries(module.optionalDependencies).map((d) => ({ ...d, optional: true })),
   ];
   const reqs = module.requires ?? [];
   const requiredBy = dependents(module, all);

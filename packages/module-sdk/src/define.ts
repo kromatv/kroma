@@ -39,8 +39,8 @@ export interface ModulePage {
 export interface ModuleManifestInput {
   id: string;
   version: string;
-  dependsOn?: Dependencies;
-  optionalDependsOn?: Dependencies;
+  dependencies?: Dependencies;
+  optionalDependencies?: Dependencies;
 }
 
 export interface DefineModuleOptions<Exports = unknown> {
@@ -51,8 +51,8 @@ export interface DefineModuleOptions<Exports = unknown> {
   slots?: AnySlotContribution[];
   exports?: (host: KromaHost) => Exports;
   setup?: (host: KromaHost) => void | Promise<void>;
-  dependsOn?: Dependencies;
-  optionalDependsOn?: Dependencies;
+  dependencies?: Dependencies;
+  optionalDependencies?: Dependencies;
 }
 
 /** Build a `KromaModule` from its manifest + pages. `defineModule({ pages })` has
@@ -81,8 +81,8 @@ export function defineModule<Exports = unknown>(
   return {
     id: manifest.id,
     version: manifest.version,
-    dependsOn: options.dependsOn ?? manifest.dependsOn,
-    optionalDependsOn: options.optionalDependsOn ?? manifest.optionalDependsOn,
+    dependencies: options.dependencies ?? manifest.dependencies,
+    optionalDependencies: options.optionalDependencies ?? manifest.optionalDependencies,
     routes: routes.length > 0 ? routes : undefined,
     navItems: navItems.length > 0 ? navItems : undefined,
     settingsPanels: options.settingsPanels,

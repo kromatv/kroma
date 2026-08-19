@@ -1,8 +1,12 @@
 {
+  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
+  "schemaVersion": 2,
   "id": "tv.kroma.vpn",
   "name": "VPN",
-  "version": "0.1.4",
-  "minServer": "0.1.4",
+  "version": "0.1.5",
+  "engines": {
+    "server": ">=0.1.4"
+  },
   "provides": [
     {
       "kind": "vpn",

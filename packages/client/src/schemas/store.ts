@@ -4,29 +4,12 @@
 // `/api/events`. The server hand-builds these responses (no ts-rs), so there is
 // no drift guard: the zod parse at the trust boundary IS the check.
 
+import { Capability, CapabilityReq } from '@kroma/registry';
 import { z } from 'zod';
 
-/** One `{ id, version? }` dependency edge as the catalog reports it. */
-export const StoreDependency = z.object({
-  id: z.string(),
-  version: z.string().nullish(),
-});
-export type StoreDependency = z.infer<typeof StoreDependency>;
-
-/** A `(kind, id)` capability a module provides (e.g. `download-client`). */
-export const StoreCapability = z.object({
-  kind: z.string(),
-  id: z.string(),
-});
-export type StoreCapability = z.infer<typeof StoreCapability>;
-
-/** A capability a module needs SOMEONE to provide; `id` narrows it to one
- * specific provider. */
-export const StoreCapabilityReq = z.object({
-  kind: z.string(),
-  id: z.string().nullish(),
-});
-export type StoreCapabilityReq = z.infer<typeof StoreCapabilityReq>;
+/** A `{ id: range }` dependency map, the one shape a dependency has anywhere:
+ * in a manifest, in a registry record, and here. */
+const DependencyMap = z.record(z.string(), z.string());
 
 /** One catalog entry, enriched server-side (`GET /api/admin/store/catalog`):
  * the picked artifact for this platform, installed/update state, and the
@@ -38,11 +21,11 @@ export const StoreModule = z.object({
   description: z.string(),
   library: z.boolean(),
   icon: z.string().nullish(),
-  minServer: z.string().nullish(),
-  dependsOn: z.array(StoreDependency),
-  optionalDependsOn: z.array(StoreDependency),
-  provides: z.array(StoreCapability),
-  requires: z.array(StoreCapabilityReq),
+  engines: z.record(z.string(), z.string()).default({}),
+  dependencies: DependencyMap,
+  optionalDependencies: DependencyMap,
+  provides: z.array(Capability),
+  requires: z.array(CapabilityReq),
   target: z.string().nullish(),
   url: z.string().nullish(),
   size: z.number().nullish(),

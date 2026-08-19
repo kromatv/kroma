@@ -4,6 +4,7 @@
 
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { MODULE_SCHEMA_VERSION } from '@kroma/registry';
 import { REVERSE_DNS, slug as toSlug } from './format';
 import { root } from './root';
 
@@ -26,11 +27,12 @@ const leaf = id.split('.').pop() ?? id;
 const title = leaf.charAt(0).toUpperCase() + leaf.slice(1);
 
 const template = `---
+schemaVersion: ${MODULE_SCHEMA_VERSION}
 id: ${id}
 name: ${title}
 version: 0.1.0
 description: "TODO: one-line description of ${title}."
-dependsOn: []
+dependencies: {}
 provides: []
 permissions:
   - library.manage
@@ -60,7 +62,7 @@ function Panel(_: ModuleComponentProps) {
 export const module: KromaModule = {
   id: manifest.id,
   version: manifest.version,
-  dependsOn: manifest.dependsOn,
+  dependencies: manifest.dependencies,
   // A user-facing page at /m/${slug}. For an admin-only page instead, use
   // section: 'admin' and to: '/admin/m/${slug}'.
   navItems: [{ to: '/m/${slug}', label: manifest.name, section: 'library' }],

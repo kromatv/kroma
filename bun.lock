@@ -67,14 +67,16 @@
       },
     },
     "apps/modules": {
-      "name": "@kroma/module-registry",
+      "name": "@kroma/modules-site",
       "version": "0.0.0",
       "dependencies": {
+        "@kroma/registry": "workspace:*",
         "@kroma/site-kit": "workspace:*",
         "@kroma/site-meta": "workspace:*",
         "@kroma/ui": "workspace:*",
         "@tanstack/react-router": "^1.170.29",
         "@tanstack/react-start": "^1.168.46",
+        "hono": "^4.13.2",
         "react": "19.2.8",
         "react-dom": "19.2.8",
         "zod": "^4.4.3",
@@ -121,6 +123,7 @@
       "name": "@kroma/site",
       "version": "0.0.0",
       "dependencies": {
+        "@kroma/registry": "workspace:*",
         "@kroma/site-meta": "workspace:*",
         "@kroma/ui": "workspace:*",
         "@mdx-js/react": "^3.1.1",
@@ -535,6 +538,7 @@
       "name": "@kroma/client",
       "version": "0.0.0",
       "dependencies": {
+        "@kroma/registry": "workspace:*",
         "zod": "^4.4.3",
       },
       "devDependencies": {
@@ -555,9 +559,11 @@
       },
       "peerDependencies": {
         "react": ">=18",
+        "react-native": "*",
       },
       "optionalPeers": [
         "react",
+        "react-native",
       ],
     },
     "packages/lan-beacon": {
@@ -595,6 +601,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
+        "@kroma/registry": "workspace:*",
         "@kroma/ui": "workspace:*",
         "@tanstack/react-query": "^5.101.4",
       },
@@ -610,6 +617,11 @@
     "packages/module-tools": {
       "name": "@kroma/module-tools",
       "version": "0.0.0",
+      "dependencies": {
+        "@kroma/registry": "workspace:*",
+        "hono": "^4.13.2",
+        "zod": "^4.4.3",
+      },
       "devDependencies": {
         "bun-types": "^1.3.14",
         "typescript": "^7.0.2",
@@ -640,6 +652,16 @@
       "devDependencies": {
         "typescript": "^7.0.2",
         "wrangler": "^4.123.0",
+      },
+    },
+    "packages/registry": {
+      "name": "@kroma/registry",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "typescript": "^7.0.2",
       },
     },
     "packages/shots": {
@@ -787,6 +809,20 @@
       "optionalPeers": [
         "@tanstack/react-router",
       ],
+    },
+    "packages/workspace-tools": {
+      "name": "@kroma/workspace-tools",
+      "version": "0.0.0",
+      "bin": {
+        "workspace-tools": "src/cli.ts",
+      },
+      "dependencies": {
+        "@kroma/registry": "workspace:*",
+      },
+      "devDependencies": {
+        "bun-types": "^1.3.14",
+        "typescript": "^7.0.2",
+      },
     },
   },
   "patchedDependencies": {
@@ -1331,8 +1367,6 @@
 
     "@kroma/module-indexer": ["@kroma/module-indexer@workspace:modules/tv.kroma.indexer/ui"],
 
-    "@kroma/module-registry": ["@kroma/module-registry@workspace:apps/modules"],
-
     "@kroma/module-remote": ["@kroma/module-remote@workspace:modules/tv.kroma.remote/ui"],
 
     "@kroma/module-sdk": ["@kroma/module-sdk@workspace:packages/module-sdk"],
@@ -1345,9 +1379,13 @@
 
     "@kroma/modules-generated": ["@kroma/modules-generated@workspace:packages/modules-generated"],
 
+    "@kroma/modules-site": ["@kroma/modules-site@workspace:apps/modules"],
+
     "@kroma/package-source": ["@kroma/package-source@workspace:apps/packages"],
 
     "@kroma/push-relay": ["@kroma/push-relay@workspace:packages/push-relay"],
+
+    "@kroma/registry": ["@kroma/registry@workspace:packages/registry"],
 
     "@kroma/shots": ["@kroma/shots@workspace:packages/shots"],
 
@@ -1378,6 +1416,8 @@
     "@kroma/webos": ["@kroma/webos@workspace:clients/webos"],
 
     "@kroma/workbench": ["@kroma/workbench@workspace:packages/workbench"],
+
+    "@kroma/workspace-tools": ["@kroma/workspace-tools@workspace:packages/workspace-tools"],
 
     "@lix-js/sdk": ["@lix-js/sdk@0.12.0", "", { "dependencies": { "fflate": "^0.8.3" }, "optionalDependencies": { "@lix-js/sdk-darwin-arm64": "0.12.0", "@lix-js/sdk-linux-arm64": "0.12.0", "@lix-js/sdk-linux-x64": "0.12.0", "@lix-js/sdk-win32-x64": "0.12.0" } }, "sha512-Vn4IYLmQyvqrVM+wcpzK6yDAZoK2Q4Hi9wRSsslfr1CcLQanRV1Tfheb5Kh2xy5NBLLbzFmFLsl7ElIKo8wVuA=="],
 

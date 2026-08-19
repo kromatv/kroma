@@ -60,7 +60,7 @@ describe('the roster as a whole', () => {
   it('places every dependency before the module that declares it', () => {
     const ordered = moduleRegistry.order().map((m) => m.id);
     for (const module of moduleRegistry.order()) {
-      for (const dep of dependencyIds(module.dependsOn)) {
+      for (const dep of dependencyIds(module.dependencies)) {
         if (!moduleRegistry.has(dep)) continue;
         expect(ordered.indexOf(dep)).toBeLessThan(ordered.indexOf(module.id));
       }

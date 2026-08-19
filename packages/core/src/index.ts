@@ -2,7 +2,6 @@
 // client, wire types and schemas from `@kroma/core`.
 export * from '@kroma/client';
 export * from './airdate';
-export * from './brand';
 export * from './browse';
 export * from './compat';
 export * from './discover';

@@ -1,12 +1,16 @@
 {
+  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
+  "schemaVersion": 2,
   "id": "tv.kroma.torrents",
   "name": "Torrent downloads",
-  "version": "0.1.7",
-  "minServer": "0.1.4",
-  "dependsOn": {
+  "version": "0.1.8",
+  "engines": {
+    "server": ">=0.1.4"
+  },
+  "dependencies": {
     "tv.kroma.indexer": "^0.1.0"
   },
-  "optionalDependsOn": {
+  "optionalDependencies": {
     "tv.kroma.vpn": "^0.1.0"
   },
   "provides": [

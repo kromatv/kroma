@@ -18,7 +18,8 @@ pub use event::ModuleEvent;
 pub use manifest::{
     Capability, CapabilityReq, ConfigField, Dependency, FeRemote, ModuleManifest, Version,
 };
-pub use compat::{is_newer, range_matches, server_satisfies};
+pub use compat::{engines_satisfied, is_newer, range_matches, version_satisfies, KNOWN_ENGINES};
+pub use manifest::MODULE_SCHEMA_VERSION;
 pub use registry::{ModuleRegistration, Registry, ResolveError};
 
 /// A module's packaged icon: an `icon.svg` / `icon.png` sitting next to the

@@ -197,7 +197,7 @@ clients/   the product's shells, thin: web · tizen · webos · tv-web · tv-nat
 apps/      the web properties, deployed to Cloudflare
   www/      @kroma/site: kroma.tv, prerendered marketing + blog
   kit/      @kroma/kit: the workbench, as a site and as a phone/TV app
-  modules/  @kroma/module-registry: the official .kmod catalog
+  modules/  @kroma/modules-site: the official .kmod catalog
   packages/ @kroma/package-source: the release listing DSM downloads from
 ```
 

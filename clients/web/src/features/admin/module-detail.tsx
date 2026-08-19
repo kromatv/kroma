@@ -314,8 +314,10 @@ function metaRowsFor(
     ],
   ];
   if (entry?.source) rows.push([t('admin.modulesSource'), entry.source]);
-  const minServer = entry?.minServer ?? installed?.minServer;
-  if (minServer) rows.push([t('admin.modulesMinServer'), minServer]);
+  const engines = entry?.engines ?? installed?.engines ?? {};
+  for (const [engine, range] of Object.entries(engines)) {
+    rows.push([engine === 'server' ? t('admin.modulesMinServer') : engine, range]);
+  }
   if (entry?.target) rows.push([t('admin.modulesPlatform'), entry.target]);
   return rows;
 }

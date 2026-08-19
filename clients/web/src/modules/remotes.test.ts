@@ -224,7 +224,7 @@ describe('loadRuntimeRemotes (federation path)', () => {
         ),
     );
     vi.mocked(mfRuntime.loadRemote).mockResolvedValue({
-      default: { id: 'runtimeBad', version: '1.0.0', dependsOn: { nope: '*' } },
+      default: { id: 'runtimeBad', version: '1.0.0', dependencies: { nope: '*' } },
     });
 
     const reg = new ModuleRegistry();

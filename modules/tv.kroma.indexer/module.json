@@ -1,9 +1,12 @@
 {
+  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
+  "schemaVersion": 2,
   "id": "tv.kroma.indexer",
   "name": "Indexers",
-  "version": "0.1.3",
-  "minServer": "0.1.4",
-  "dependsOn": [],
+  "version": "0.1.4",
+  "engines": {
+    "server": ">=0.1.4"
+  },
   "provides": [
     {
       "kind": "indexer-engine",

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@kroma/core": "workspace:*",
+    "@kroma/registry": "workspace:*",
     "@kroma/ui": "workspace:*",
     "@tanstack/react-query": "^5.101.4"
   },

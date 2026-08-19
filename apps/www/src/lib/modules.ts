@@ -1,3 +1,5 @@
+import type { Catalog } from '#site/lib/catalog';
+
 /** One catalog entry, reduced to the language-invariant facts the site renders. */
 export interface SiteModule {
   id: string;
@@ -10,7 +12,7 @@ export interface SiteModule {
   library: boolean;
   provides: string[];
   requires: string[];
-  dependsOn: string[];
+  dependencies: string[];
 }
 
 export interface SiteCatalog {
@@ -18,32 +20,14 @@ export interface SiteCatalog {
   modules: SiteModule[];
 }
 
-export interface RawEntry {
-  id: string;
-  name?: string;
-  version?: string;
-  description?: string | null;
-  icon?: string | null;
-  library?: boolean | null;
-  provides?: { kind: string }[] | null;
-  requires?: { kind: string }[] | null;
-  dependsOn?: Record<string, string> | string[] | null;
-}
-
-export interface RawCatalog {
-  generatedAt?: string | null;
-  modules: RawEntry[];
-}
-
 const kinds = (xs: { kind: string }[] | null | undefined) => [
   ...new Set((xs ?? []).map((x) => x.kind).filter(Boolean)),
 ];
 
-const depIds = (d: Record<string, string> | string[] | null | undefined) =>
-  Array.isArray(d) ? d : Object.keys(d ?? {});
+const depIds = (d: Catalog['modules'][number]['dependencies']) => Object.keys(d ?? {});
 
 /** The catalog as fetched, reduced to what the site renders and ordered by id. */
-export function toSiteCatalog(raw: RawCatalog): SiteCatalog {
+export function toSiteCatalog(raw: Catalog): SiteCatalog {
   return {
     generatedAt: raw.generatedAt ?? null,
     modules: raw.modules
@@ -56,14 +40,14 @@ export function toSiteCatalog(raw: RawCatalog): SiteCatalog {
         library: e.library === true,
         provides: kinds(e.provides),
         requires: kinds(e.requires),
-        dependsOn: depIds(e.dependsOn),
+        dependencies: depIds(e.dependencies),
       }))
       .sort((a, b) => a.id.localeCompare(b.id)),
   };
 }
 
 /** How much has to be installed before a module is useful: its own prerequisites. */
-const depth = (mod: SiteModule): number => mod.requires.length + mod.dependsOn.length;
+const depth = (mod: SiteModule): number => mod.requires.length + mod.dependencies.length;
 
 /**
  * The catalog in the order the page reads: what stands on its own first, then

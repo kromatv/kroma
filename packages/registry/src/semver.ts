@@ -80,3 +80,67 @@ export function compareRaw(a: string, b: string): number {
   }
   return compare(x, y);
 }
+
+type Operator = '^' | '~' | '>=' | '=';
+
+function operatorOf(range: string): Operator {
+  if (range.startsWith('^')) return '^';
+  if (range.startsWith('~')) return '~';
+  if (range.startsWith('>=')) return '>=';
+  return '=';
+}
+
+const stable = (major: number, minor: number, patch: number): Version => ({
+  major,
+  minor,
+  patch,
+  prerelease: [],
+});
+
+// Caret is compatible within the left-most non-zero segment; tilde within the minor.
+function upperBound(operator: '^' | '~', base: Version): Version {
+  if (operator === '~') return stable(base.major, base.minor + 1, 0);
+  if (base.major > 0) return stable(base.major + 1, 0, 0);
+  if (base.minor > 0) return stable(0, base.minor + 1, 0);
+  return stable(0, 0, base.patch + 1);
+}
+
+const sameTuple = (a: Version, b: Version) =>
+  a.major === b.major && a.minor === b.minor && a.patch === b.patch;
+
+/**
+ * Whether `version` is inside `range`, for the operators the manifests use
+ * (exact, `^`, `~`, `>=`, `*`). Pre-releases stay opt-in exactly as npm has
+ * them: `^0.1.0` never matches `0.2.0-beta.1`, and a pre-release only satisfies
+ * a range whose own comparator is a pre-release of the same `x.y.z`. An
+ * unparseable version or comparator satisfies nothing.
+ */
+export function satisfies(version: string, range: string): boolean {
+  const v = parse(version);
+  if (!v) return false;
+  const r = range.trim();
+  if (r === '' || r === '*' || r === 'latest') return v.prerelease.length === 0;
+
+  const operator = operatorOf(r);
+  const base = parse(operator === '=' ? r : r.slice(operator.length));
+  if (!base) return false;
+  if (v.prerelease.length > 0 && (base.prerelease.length === 0 || !sameTuple(v, base))) {
+    return false;
+  }
+  if (operator === '=') return compare(v, base) === 0;
+  if (operator === '>=') return compare(v, base) >= 0;
+  return compare(v, base) >= 0 && compare(v, upperBound(operator, base)) < 0;
+}
+
+/**
+ * The named channel a version belongs to: `latest` for a stable release, its
+ * first pre-release identifier (`beta`, `rc`, `nightly`…) otherwise, and `null`
+ * for a pre-release that names none (`1.0.0-1`) or a version that is not semver.
+ */
+export function channelOf(version: string): string | null {
+  const parsed = parse(version);
+  if (!parsed) return null;
+  const [first] = parsed.prerelease;
+  if (first === undefined) return 'latest';
+  return typeof first === 'string' ? first : null;
+}

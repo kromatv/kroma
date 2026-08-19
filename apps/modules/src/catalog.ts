@@ -1,42 +1,44 @@
+import { ArtifactRef, DescribedModule } from '@kroma/registry';
 import { z } from 'zod';
 
-const DownloadUrl = z
+// The shape is `@kroma/registry`'s; what is site-specific is the hardening. This
+// catalog is rendered into a page with clickable download links and checksums
+// shown as fact, so a malformed upstream value becomes `null` (absent) rather
+// than reaching the DOM.
+const Https = z
   .string()
   .nullish()
   .transform((v) => (v?.startsWith('https://') ? v : null));
 
-const Sha256 = z
+const HexSha256 = z
   .string()
   .nullish()
   .transform((v) => (v && /^[0-9a-f]{64}$/i.test(v) ? v : null));
 
-const Artifact = z.object({
-  target: z.string().nullish(),
+const Artifact = ArtifactRef.extend({
   size: z.number().nullish(),
-  url: DownloadUrl,
-  sha256: Sha256,
+  url: Https,
+  sha256: HexSha256,
+  contentHash: HexSha256,
 });
 
-export const ModuleEntry = z.object({
-  id: z.string(),
+/** One module as the published catalog carries it: the registry's own model,
+ *  plus the schema-1 mirror older catalogs put at the top level. */
+export const ModuleEntry = DescribedModule.extend({
+  // A catalog missing these is still listable; the card just has less to show.
   name: z.string().default(''),
   version: z.string().default(''),
-  description: z.string().nullish(),
-  minServer: z.string().nullish(),
-  library: z.boolean().nullish(),
-  dependsOn: z.union([z.record(z.string(), z.string()), z.array(z.string())]).nullish(),
-  provides: z.array(z.object({ kind: z.string(), id: z.string() })).nullish(),
-  icon: z.string().nullish(),
-  artifacts: z.array(Artifact).nullish(),
+  artifacts: z.array(Artifact).default([]),
   size: z.number().nullish(),
-  url: DownloadUrl,
-  sha256: Sha256,
+  url: Https,
+  sha256: HexSha256,
 });
 export type ModuleEntry = z.infer<typeof ModuleEntry>;
 
 export const Catalog = z.object({
   generatedAt: z.string().nullish(),
   modules: z.array(ModuleEntry).default([]),
+  // A proxying registry that cannot reach its upstream says so here.
   error: z.string().nullish(),
 });
 export type Catalog = z.infer<typeof Catalog>;

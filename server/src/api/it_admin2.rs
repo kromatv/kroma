@@ -196,12 +196,36 @@ async fn store_catalog_reports_an_unreachable_registry_cleanly() {
     assert!(body["error"].is_string());
 }
 
-async fn spawn_registry(body: serde_json::Value) -> String {
-    let app = axum::Router::new().route(
-        "/modules.json",
+// An RFC 110 registry serving the modules it is given: the descriptor, and the
+// index beside it. Returns the descriptor URL, which is what an operator pastes.
+async fn spawn_registry(modules: serde_json::Value) -> String {
+    let ids: Vec<&str> =
+        modules.as_array().map(|m| m.iter().filter_map(|e| e["id"].as_str()).collect()).unwrap();
+    let descriptor = json!({ "apiVersion": 1, "name": "Test", "url": "https://test", "modules": ids });
+    let serve = |body: serde_json::Value| {
         axum::routing::get(move || {
             let body = body.clone();
             async move { axum::Json(body) }
+        })
+    };
+    let app = axum::Router::new()
+        .route("/registry.json", serve(descriptor))
+        .route("/index.json", serve(modules));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        let _ = axum::serve(listener, app).await;
+    });
+    format!("http://{addr}/registry.json")
+}
+
+// A registry that answers, but cannot produce a catalog - what the first-party
+// worker does when its upstream is down.
+async fn spawn_degraded_registry() -> String {
+    let app = axum::Router::new().route(
+        "/registry.json",
+        axum::routing::get(|| async {
+            (StatusCode::SERVICE_UNAVAILABLE, axum::Json(json!({ "error": "upstream unavailable" })))
         }),
     );
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -209,27 +233,25 @@ async fn spawn_registry(body: serde_json::Value) -> String {
     tokio::spawn(async move {
         let _ = axum::serve(listener, app).await;
     });
-    format!("http://{addr}/modules.json")
+    format!("http://{addr}/registry.json")
 }
 
 #[tokio::test]
 async fn store_catalog_enriches_a_reachable_registry() {
     let t = test_app();
-    let url = spawn_registry(json!({
-        "schema": 2,
-        "modules": [
+    let url = spawn_registry(json!([
             // Universal (library) bundle: satisfies any host -> compatible.
-            { "id": "tv.kroma.lib", "name": "Lib", "version": "1.0.0", "library": true,
-              "dependsOn": { "tv.kroma.dep": "^0.1.0" },
+            { "schemaVersion": 2, "id": "tv.kroma.lib", "name": "Lib", "version": "1.0.0", "library": true,
+              "dependencies": { "tv.kroma.dep": "^0.1.0" },
               "artifacts": [{ "target": null, "url": "https://x/lib.kmod", "size": 10, "sha256": "aa" }] },
-            // minServer far in the future -> incompatible with a reason.
-            { "id": "tv.kroma.future", "name": "Future", "version": "2.0.0", "minServer": "999.0.0",
+            // An engine range no server satisfies -> incompatible with a reason.
+            { "schemaVersion": 2, "id": "tv.kroma.future", "name": "Future", "version": "2.0.0",
+              "engines": { "server": ">=999.0.0" },
               "artifacts": [{ "target": null, "url": "https://x/future.kmod" }] },
             // Only a foreign-arch build -> no artifact for this platform.
-            { "id": "tv.kroma.alien", "name": "Alien", "version": "1.0.0",
+            { "schemaVersion": 2, "id": "tv.kroma.alien", "name": "Alien", "version": "1.0.0",
               "artifacts": [{ "target": "sparc-unknown-none-elf", "url": "https://x/alien.kmod" }] }
-        ]
-    }))
+        ]))
     .await;
     t.state.settings.set_patch(
         &t.state.db,
@@ -253,15 +275,90 @@ async fn store_catalog_enriches_a_reachable_registry() {
     assert!(lib["url"].is_string(), "a universal artifact resolves an install URL");
     assert!(lib["installedVersion"].is_null());
     assert_eq!(lib["updateAvailable"], json!(false));
-    assert_eq!(lib["dependsOn"][0]["id"], json!("tv.kroma.dep"));
+    // The `{ id: range }` map, the one shape a dependency has anywhere.
+    assert_eq!(lib["dependencies"], json!({ "tv.kroma.dep": "^0.1.0" }));
 
     let future = by_id("tv.kroma.future");
     assert_eq!(future["compatible"], json!(false));
-    assert!(future["reason"].as_str().unwrap_or_default().contains("requires"));
+    assert!(future["reason"].as_str().unwrap_or_default().contains("requires server >=999.0.0"));
 
     let alien = by_id("tv.kroma.alien");
     assert_eq!(alien["compatible"], json!(false));
     assert!(alien["url"].is_null(), "no build for this platform -> no install URL");
+}
+
+// An RFC 110 registry: a descriptor that fronts the one-request index beside it.
+async fn spawn_rfc_registry(descriptor: serde_json::Value, index: serde_json::Value) -> String {
+    let serve = |body: serde_json::Value| {
+        axum::routing::get(move || {
+            let body = body.clone();
+            async move { axum::Json(body) }
+        })
+    };
+    let app = axum::Router::new()
+        .route("/registry.json", serve(descriptor))
+        .route("/index.json", serve(index));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        let _ = axum::serve(listener, app).await;
+    });
+    format!("http://{addr}/registry.json")
+}
+
+#[tokio::test]
+async fn the_store_reads_an_rfc_110_registry_through_its_descriptor() {
+    let t = test_app();
+    // sha256-<base64> of 32 0xab bytes, the form RFC 110 mandates.
+    let integrity = "sha256-q6urq6urq6urq6urq6urq6urq6urq6urq6urq6urq6s=";
+    let url = spawn_rfc_registry(
+        json!({
+            "apiVersion": 1,
+            "name": "Third party",
+            // Deliberately NOT where it is served from: a registry does not get
+            // to point the client somewhere else by describing itself as living
+            // there, so the index must still be read off the loopback origin.
+            "url": "https://elsewhere.example",
+            "modules": ["com.acme.app"]
+        }),
+        json!([
+            { "schemaVersion": 2, "id": "com.acme.app", "name": "App", "version": "1.2.0", "library": true,
+              "dependencies": { "com.acme.lib": "^1.0.0" },
+              "optionalDependencies": { "com.acme.vpn": "*" },
+              "artifacts": [{ "target": null, "url": "https://x/app.kmod", "size": 10,
+                              "integrity": integrity }] }
+        ]),
+    )
+    .await;
+    point_store_at(&t, &url);
+
+    let (status, body) = get(&t.app, "/api/admin/store/catalog", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    let mods = body["modules"].as_array().expect("modules");
+    assert_eq!(mods.len(), 1, "the descriptor was followed to the index beside it");
+    assert_eq!(mods[0]["id"], json!("com.acme.app"));
+    assert_eq!(mods[0]["version"], json!("1.2.0"));
+    assert_eq!(mods[0]["compatible"], json!(true));
+    assert_eq!(mods[0]["dependencies"], json!({ "com.acme.lib": "^1.0.0" }));
+    assert_eq!(mods[0]["optionalDependencies"], json!({ "com.acme.vpn": "*" }));
+    // `integrity` is what the installer will compare the downloaded bytes to.
+    assert_eq!(mods[0]["sha256"], json!("ab".repeat(32)));
+}
+
+#[tokio::test]
+async fn a_registry_speaking_a_contract_this_server_does_not_know_is_not_read() {
+    let t = test_app();
+    let url = spawn_rfc_registry(
+        json!({ "apiVersion": 99, "name": "Future", "url": "https://f", "modules": ["com.acme.app"] }),
+        json!([{ "schemaVersion": 2, "id": "com.acme.app", "name": "App", "version": "1.2.0", "artifacts": [] }]),
+    )
+    .await;
+    point_store_at(&t, &url);
+
+    let (status, body) = get(&t.app, "/api/admin/store/catalog", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["modules"].as_array().map(Vec::len), Some(0));
+    assert!(body["error"].as_str().unwrap_or_default().contains("apiVersion 99"), "{body}");
 }
 
 fn point_store_at(t: &crate::api::test_support::TestApp, url: &str) {
@@ -274,23 +371,20 @@ fn point_store_at(t: &crate::api::test_support::TestApp, url: &str) {
 #[tokio::test]
 async fn the_install_plan_pulls_dependencies_first_and_offers_the_rest() {
     let t = test_app();
-    let url = spawn_registry(json!({
-        "schema": 2,
-        "modules": [
-            { "id": "tv.x.app", "name": "App", "version": "1.0.0",
-              "dependsOn": { "tv.x.lib": "^1.0.0" },
-              "optionalDependsOn": { "tv.x.vpn": "*" },
+    let url = spawn_registry(json!([
+            { "schemaVersion": 2, "id": "tv.x.app", "name": "App", "version": "1.0.0",
+              "dependencies": { "tv.x.lib": "^1.0.0" },
+              "optionalDependencies": { "tv.x.vpn": "*" },
               "requires": [{ "kind": "download-client" }],
               "artifacts": [{ "target": null, "url": "https://x/app.kmod", "size": 30 }] },
-            { "id": "tv.x.lib", "name": "Lib", "version": "1.4.0", "library": true,
+            { "schemaVersion": 2, "id": "tv.x.lib", "name": "Lib", "version": "1.4.0", "library": true,
               "artifacts": [{ "target": null, "url": "https://x/lib.kmod", "size": 12 }] },
-            { "id": "tv.x.vpn", "name": "VPN", "version": "1.0.0",
+            { "schemaVersion": 2, "id": "tv.x.vpn", "name": "VPN", "version": "1.0.0",
               "artifacts": [{ "target": null, "url": "https://x/vpn.kmod", "size": 7 }] },
-            { "id": "tv.x.engine", "name": "Engine", "version": "1.0.0",
+            { "schemaVersion": 2, "id": "tv.x.engine", "name": "Engine", "version": "1.0.0",
               "provides": [{ "kind": "download-client", "id": "rqbit" }],
               "artifacts": [{ "target": null, "url": "https://x/engine.kmod", "size": 5 }] }
-        ]
-    }))
+        ]))
     .await;
     point_store_at(&t, &url);
 
@@ -299,7 +393,7 @@ async fn the_install_plan_pulls_dependencies_first_and_offers_the_rest() {
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "id": "tv.x.app" })),
+        Some(json!({ "schemaVersion": 2, "id": "tv.x.app" })),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
@@ -327,7 +421,7 @@ async fn the_install_plan_pulls_dependencies_first_and_offers_the_rest() {
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "id": "tv.x.app", "include": ["tv.x.app", "tv.x.vpn"] })),
+        Some(json!({ "schemaVersion": 2, "id": "tv.x.app", "include": ["tv.x.app", "tv.x.vpn"] })),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
@@ -340,7 +434,7 @@ async fn the_install_plan_pulls_dependencies_first_and_offers_the_rest() {
 #[tokio::test]
 async fn planning_a_module_the_registry_does_not_offer_is_a_client_error() {
     let t = test_app();
-    let url = spawn_registry(json!({ "schema": 2, "modules": [] })).await;
+    let url = spawn_registry(json!([])).await;
     point_store_at(&t, &url);
 
     let (status, message) = text(
@@ -348,7 +442,7 @@ async fn planning_a_module_the_registry_does_not_offer_is_a_client_error() {
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "id": "tv.x.ghost" })),
+        Some(json!({ "schemaVersion": 2, "id": "tv.x.ghost" })),
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
@@ -365,7 +459,7 @@ async fn an_official_registry_that_is_down_stops_a_plan_rather_than_offering_les
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "id": "tv.kroma.torrents" })),
+        Some(json!({ "schemaVersion": 2, "id": "tv.kroma.torrents" })),
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
@@ -375,13 +469,10 @@ async fn an_official_registry_that_is_down_stops_a_plan_rather_than_offering_les
 #[tokio::test]
 async fn an_added_registry_that_is_down_leaves_the_official_catalog_usable() {
     let t = test_app();
-    let url = spawn_registry(json!({
-        "schema": 2,
-        "modules": [
-            { "id": "tv.x.app", "name": "App", "version": "1.0.0",
+    let url = spawn_registry(json!([
+            { "schemaVersion": 2, "id": "tv.x.app", "name": "App", "version": "1.0.0",
               "artifacts": [{ "target": null, "url": "https://x/app.kmod", "size": 3 }] }
-        ]
-    }))
+        ]))
     .await;
     point_store_at(&t, &url);
     t.state.settings.set_patch(
@@ -402,7 +493,7 @@ async fn an_added_registry_that_is_down_leaves_the_official_catalog_usable() {
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "id": "tv.x.app" })),
+        Some(json!({ "schemaVersion": 2, "id": "tv.x.app" })),
     )
     .await;
     assert_eq!(status, StatusCode::OK);
@@ -426,7 +517,7 @@ async fn the_install_plan_is_closed_to_anyone_who_cannot_manage_the_server() {
         "POST",
         "/api/admin/store/plan",
         Some(&m),
-        Some(json!({ "id": "tv.x.app" })),
+        Some(json!({ "schemaVersion": 2, "id": "tv.x.app" })),
     )
     .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
@@ -541,15 +632,15 @@ async fn a_finished_session_lands_in_the_weekly_watch_history() {
 #[tokio::test]
 async fn an_official_catalog_that_reports_its_own_outage_is_a_failure_not_an_empty_shelf() {
     let t = test_app();
-    let url = spawn_registry(json!({ "modules": [], "error": "upstream unavailable" })).await;
+    let url = spawn_degraded_registry().await;
     point_store_at(&t, &url);
 
     let (status, catalog) = get(&t.app, "/api/admin/store/catalog", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
-    assert!(
-        catalog["error"].as_str().unwrap_or_default().contains("upstream unavailable"),
-        "{catalog}"
-    );
+    // A registry that cannot answer is a FAILURE, never a shelf with nothing on
+    // it: reported as "0 modules" it would let a lower-priority registry claim
+    // first-party ids, and auto-update would install its copies unattended.
+    assert!(catalog["error"].is_string(), "{catalog}");
     assert_eq!(catalog["modules"].as_array().map(Vec::len), Some(0));
 
     let (status, message) = text(
@@ -557,7 +648,7 @@ async fn an_official_catalog_that_reports_its_own_outage_is_a_failure_not_an_emp
         "POST",
         "/api/admin/store/plan",
         Some(&t.token),
-        Some(json!({ "id": "tv.kroma.torrents" })),
+        Some(json!({ "schemaVersion": 2, "id": "tv.kroma.torrents" })),
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);

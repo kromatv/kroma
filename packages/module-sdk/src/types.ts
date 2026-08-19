@@ -2,6 +2,13 @@
 // `kroma_module_sdk::ModuleManifest` (serialized camelCase). The frontend reads
 // this to learn which backend modules are active and to reconcile them against
 // the frontend modules registered in the host.
+//
+// The manifest half comes from `@kroma/registry`, which is where the contract is
+// defined; what is added here is the runtime state only this endpoint reports.
+
+import type { ConfigField, Manifest } from '@kroma/registry';
+
+export type { ConfigField } from '@kroma/registry';
 
 /** One capability a backend module provides. `kind`+`id` are the interface and
  *  implementation; engine capabilities (download-client, indexer-engine) may also
@@ -14,37 +21,15 @@ export interface Capability {
   flow?: string;
 }
 
-/** One entry in the legacy array dependency form: a bare id, an `"id@range"`
- *  string, or an object with a semver range. */
-export type Dependency = string | { id: string; version?: string };
-
-/** The package.json-style dependency form: a map of module id to semver range
- *  (a bare `"*"` means any version). This is what the backend now serializes;
- *  the array form is still accepted for older manifests. Version ranges are
- *  enforced on the backend; the frontend registry uses only the id for setup
- *  ordering. */
-export type DependencyMap = Record<string, string>;
-
-/** Either dependency form a manifest may carry. */
-export type Dependencies = DependencyMap | Dependency[];
+/** A map of module id to semver range; a bare `"*"` means any version. Ranges
+ *  are enforced on the backend, so the frontend registry reads only the id, for
+ *  setup ordering. */
+export type Dependencies = Record<string, string>;
 
 /** A capability dependency: satisfied by any module whose `provides` matches. */
 export interface CapabilityReq {
   kind: string;
   id?: string;
-}
-
-/** One admin-configurable setting a module exposes. */
-export interface ConfigField {
-  key: string;
-  label: string;
-  type: 'string' | 'bool' | 'number' | 'select';
-  default?: string;
-  options?: string[];
-  placeholder?: string;
-  // Render as a password input; the value is treated write-only.
-  secret?: boolean;
-  required?: boolean;
 }
 
 /** The frontend remote a runtime-loaded module ships (Module Federation). The
@@ -53,19 +38,10 @@ export interface FeRemote {
   module: string;
 }
 
-/** A backend module's self-description. */
-export interface ModuleManifest {
-  id: string;
-  name: string;
-  version: string;
-  description?: string;
-  minServer?: string;
-  dependsOn?: Dependency[];
-  optionalDependsOn?: Dependency[];
-  requires?: CapabilityReq[];
-  provides?: Capability[];
-  permissions?: string[];
-  config?: ConfigField[];
+/** A backend module's self-description: the manifest contract, plus whether the
+ *  server currently has it enabled. */
+export type ModuleManifest = Manifest & {
   feRemote?: FeRemote;
+  /** Whether the server currently has it enabled; runtime state, not manifest. */
   enabled?: boolean;
-}
+};

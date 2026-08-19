@@ -16,6 +16,8 @@ on:
     paths:
       - 'apps/packages/**'
       - 'apps/modules/**'
+      # The registry worker builds the RFC 110 documents with this.
+      - 'packages/registry/**'
       - '.github/workflows/repo-worker.yml'
   workflow_dispatch:
 
@@ -45,6 +47,7 @@ jobs:
               - '.github/workflows/repo-worker.yml'
             modules_worker:
               - 'apps/modules/**'
+              - 'packages/registry/**'
               - '.github/workflows/repo-worker.yml'
 
       # Soft gate: no token -> skip (not fail). secrets can't be read in a job-

@@ -15,6 +15,9 @@ async function machine(path: string, init?: RequestInit, env: Env = {}): Promise
 
 const MARK = '<svg viewBox="0 0 24 24" />';
 
+const DIGEST = 'ab'.repeat(32);
+const SRI = `sha256-${btoa(String.fromCharCode(...Array(32).fill(0xab)))}`;
+
 const CATALOG = {
   schema: 2,
   generatedAt: '2026-07-02T00:00:00Z',
@@ -25,7 +28,18 @@ const CATALOG = {
       version: '1.0.0',
       description: 'A <demo> module',
       icon: `data:image/svg+xml;base64,${btoa(MARK)}`,
-      artifacts: [{ target: 'wasm32', url: 'https://dl/a.kmod', size: 1, sha256: 'x' }],
+      engines: { server: '>=0.1.4' },
+      dependencies: { 'tv.kroma.other': '^0.1.0' },
+      provides: [{ kind: 'download-client', id: 'demo' }],
+      artifacts: [
+        {
+          target: 'wasm32',
+          url: 'https://dl/a.kmod',
+          size: 1,
+          sha256: DIGEST,
+          contentHash: DIGEST,
+        },
+      ],
     },
   ],
 };
@@ -61,11 +75,28 @@ function upstreamServing(body: unknown, status = 200) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      calls.push(String(input));
+      const url = String(input);
+      calls.push(url);
+      // The releases listing is a different upstream; a test that does not care
+      // about history gets an empty one.
+      if (url.startsWith('https://api.github.com/')) return new Response('[]');
       return new Response(JSON.stringify(body), { status });
     }),
   );
   return calls;
+}
+
+// The per-module release tags the pipeline cuts, which carry the versions the
+// merged catalog does not.
+function releasesServing(releases: unknown[]) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('https://api.github.com/')) return new Response(JSON.stringify(releases));
+      return new Response(JSON.stringify(CATALOG));
+    }),
+  );
 }
 
 function offline(message: string) {
@@ -89,18 +120,23 @@ describe('machineResponse', () => {
     expect(calls).toEqual([]);
   });
 
-  it('serves the brand mark at /favicon.svg and /favicon.ico, never the catalog', async () => {
-    for (const path of ['/favicon.svg', '/favicon.ico']) {
-      const res = await machine(path);
-      expect(res.headers.get('content-type')).toBe('image/svg+xml');
-      expect(await res.text()).toContain('aria-label="KROMA"');
-    }
+  it('sends /favicon.ico to the real asset instead of serving a second copy', async () => {
+    const res = await machine('/favicon.ico');
+    expect(res.status).toBe(301);
+    expect(res.headers.get('location')).toBe('https://modules.kroma.tv/favicon.svg');
   });
 
-  it('answers the bare origin with the catalog when the caller did not ask for HTML', async () => {
+  it('leaves /favicon.svg to the asset handler, which answers before this worker', async () => {
+    expect(await machineResponse(req('/favicon.svg'), {}, ctx())).toBeNull();
+  });
+
+  it('keeps answering the bare origin with the legacy catalog', async () => {
     upstreamServing(CATALOG);
     const res = await machine('/');
     expect(res.headers.get('content-type')).toBe('application/json');
+    // Deliberately unchanged: a current server pointed at a root appends
+    // `/registry.json` itself, so moving this would serve nobody and would break
+    // the servers still reading the old shape here.
     expect(await res.json()).toEqual(CATALOG);
   });
 
@@ -130,6 +166,20 @@ describe('machineResponse', () => {
     expect(await machineResponse(req('/browse'), {}, ctx())).toBeNull();
     expect(await machineResponse(req('/assets/app-abc123.js'), {}, ctx())).toBeNull();
     expect(calls).toEqual([]);
+  });
+
+  it('separates a route falling through from a route answering 404', async () => {
+    upstreamServing(CATALOG);
+    // Both are 404-shaped; only the first means "this is a page, not a document".
+    expect(await machineResponse(req('/browse'), {}, ctx())).toBeNull();
+    const missing = await machine('/m/tv.kroma.nope.json');
+    expect(missing.status).toBe(404);
+    expect(await missing.json()).toEqual({ error: 'no such module' });
+  });
+
+  it('answers only GET; a write to a document is not a route', async () => {
+    upstreamServing(CATALOG);
+    expect(await machineResponse(req('/index.json', { method: 'POST' }), {}, ctx())).toBeNull();
   });
 
   it('serves a module icon from the versioned path the catalog hands out', async () => {
@@ -195,5 +245,120 @@ describe('machineResponse', () => {
     expect(raw).not.toContain('10.0.0.7');
     expect(raw).not.toContain('github.com');
     expect(logged).toHaveBeenCalled();
+  });
+});
+
+describe('the RFC-110 documents', () => {
+  it('describes itself at /registry.json, naming the origin it was asked at', async () => {
+    upstreamServing(CATALOG);
+    expect(await (await machine('/registry.json')).json()).toEqual({
+      apiVersion: 1,
+      name: 'KROMA modules',
+      url: 'https://modules.kroma.tv',
+      modules: ['tv.kroma.demo'],
+    });
+  });
+
+  it('serves the installable version of every module at /index.json', async () => {
+    upstreamServing(CATALOG);
+    const index = (await (await machine('/index.json')).json()) as Array<Record<string, unknown>>;
+    expect(index).toHaveLength(1);
+    expect(index[0]).toMatchObject({
+      id: 'tv.kroma.demo',
+      version: '1.0.0',
+      engines: { server: '>=0.1.4' },
+      dependencies: { 'tv.kroma.other': '^0.1.0' },
+      tags: ['download-client'],
+      artifacts: [{ target: 'wasm32', url: 'https://dl/a.kmod', size: 1, integrity: SRI }],
+    });
+  });
+
+  it('serves one module record at /m/<id>.json', async () => {
+    upstreamServing(CATALOG);
+    const record = (await (await machine('/m/tv.kroma.demo.json')).json()) as {
+      latest: string;
+      distTags: Record<string, string>;
+      versions: Record<string, { artifacts: Array<{ integrity: string }> }>;
+    };
+    expect(record.latest).toBe('1.0.0');
+    expect(record.distTags).toEqual({ latest: '1.0.0' });
+    expect(record.versions['1.0.0']?.artifacts[0]?.integrity).toBe(SRI);
+  });
+
+  it('carries every version the release tags hold, not just the catalog row', async () => {
+    releasesServing([
+      {
+        tag_name: 'tv.kroma.demo@0.9.0',
+        assets: [
+          {
+            name: 'tv.kroma.demo-wasm32.kmod',
+            size: 9,
+            browser_download_url: 'https://dl/old.kmod',
+            digest: `sha256:${DIGEST}`,
+          },
+        ],
+      },
+    ]);
+    const record = (await (await machine('/m/tv.kroma.demo.json')).json()) as {
+      latest: string;
+      versions: Record<string, unknown>;
+    };
+    expect(Object.keys(record.versions).sort()).toEqual(['0.9.0', '1.0.0']);
+    // The catalog still names which one a bare install resolves to.
+    expect(record.latest).toBe('1.0.0');
+  });
+
+  it('404s a module the registry does not carry', async () => {
+    upstreamServing(CATALOG);
+    expect((await machine('/m/tv.kroma.nope.json')).status).toBe(404);
+  });
+
+  it('503s rather than reporting an empty registry when the catalog cannot be read', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    offline('offline');
+    for (const path of ['/registry.json', '/index.json', '/m/tv.kroma.demo.json']) {
+      const res = await machine(path);
+      expect(res.status, path).toBe(503);
+    }
+  });
+
+  it('answers the descriptor and the index a pasted root resolves to', async () => {
+    upstreamServing(CATALOG);
+    // A server given the root appends `/registry.json`, so these two are what an
+    // operator pasting `https://modules.kroma.tv` actually reaches.
+    const descriptor = (await (await machine('/registry.json')).json()) as { modules: string[] };
+    expect(descriptor.modules).toEqual(['tv.kroma.demo']);
+    const index = (await (await machine('/index.json')).json()) as unknown[];
+    expect(index).toHaveLength(descriptor.modules.length);
+  });
+
+  it('serves the JSON Schema for each document without reading the catalog', async () => {
+    const calls = upstreamServing(CATALOG);
+    for (const name of ['manifest', 'registry', 'index', 'module']) {
+      const res = await machine(`/schemas/${name}.json`);
+      const schema = (await res.json()) as Record<string, unknown>;
+      expect(schema.$schema, name).toBe('https://json-schema.org/draft/2020-12/schema');
+      // Open-world: a registry may carry fields a later apiVersion defines.
+      expect(JSON.stringify(schema), name).not.toContain('"additionalProperties":false');
+    }
+    expect(calls, 'the spec does not depend on the upstream catalog').toEqual([]);
+    expect(await machineResponse(req('/schemas/nope.json'), {}, ctx())).toBeNull();
+  });
+
+  it('answers a pinned schema url, and only for a version it publishes', async () => {
+    upstreamServing(CATALOG);
+    // What a manifest's `$schema` points at. It has to keep resolving to the
+    // schema it was pinned to, which is why versions are files and not edits.
+    const pinned = (await (await machine('/schemas/2/manifest.json')).json()) as {
+      $id: string;
+    };
+    expect(pinned.$id).toBe('https://modules.kroma.tv/schemas/2/manifest.json');
+    expect(await machineResponse(req('/schemas/9/manifest.json'), {}, ctx())).toBeNull();
+  });
+
+  it('leaves any other /m/ path to the rendered site', async () => {
+    upstreamServing(CATALOG);
+    expect(await machineResponse(req('/m/tv.kroma.demo'), {}, ctx())).toBeNull();
+    expect(await machineResponse(req('/m/a/b.json'), {}, ctx())).toBeNull();
   });
 });

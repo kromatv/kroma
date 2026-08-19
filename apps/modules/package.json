@@ -1,9 +1,9 @@
 {
-  "name": "@kroma/module-registry",
+  "name": "@kroma/modules-site",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "KROMA module registry (modules.kroma.tv): a TanStack Start app rendered on the edge, serving the modules.json catalog read live from GitHub Releases plus a browsable grid of every module.",
+  "description": "KROMA module registry (modules.kroma.tv): a TanStack Start app rendered on the edge. Serves the RFC 110 documents and their schemas, plus a browsable grid of every module. The contract itself is `@kroma/registry`.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "license": "GPL-2.0-or-later",
   "repository": {
@@ -22,11 +22,13 @@
     "deploy": "bun run build && bunx wrangler@4 deploy"
   },
   "dependencies": {
+    "@kroma/registry": "workspace:*",
     "@kroma/site-kit": "workspace:*",
     "@kroma/site-meta": "workspace:*",
     "@kroma/ui": "workspace:*",
     "@tanstack/react-router": "^1.170.29",
     "@tanstack/react-start": "^1.168.46",
+    "hono": "^4.13.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "zod": "^4.4.3"

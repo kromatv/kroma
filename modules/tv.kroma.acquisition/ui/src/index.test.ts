@@ -5,7 +5,7 @@ import { acquisitionModule } from './index';
 describe('acquisitionModule', () => {
   it('takes its identity and its dependency from the shared manifest', () => {
     expect(acquisitionModule.id).toBe('tv.kroma.acquisition');
-    expect(acquisitionModule.dependsOn).toEqual({ 'tv.kroma.torrents': '^0.1.0' });
+    expect(acquisitionModule.dependencies).toEqual({ 'tv.kroma.torrents': '^0.1.0' });
   });
 
   it('derives its nav link from the route it points at', () => {

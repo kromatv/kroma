@@ -52,7 +52,7 @@
     "deploy:kit": "bun run --filter '@kroma/kit' deploy",
     "deploy:tv-web": "bun run --filter '@kroma/tv-web' deploy",
     "deploy:site": "bun run --filter '@kroma/site' deploy",
-    "deploy:modules": "bun run --filter '@kroma/module-registry' deploy",
+    "deploy:modules": "bun run --filter '@kroma/modules-site' deploy",
     "deploy:packages": "bun run --filter '@kroma/package-source' deploy",
     "build": "bun run --filter '*' build",
     "build:web": "bun run --filter '@kroma/web' build",

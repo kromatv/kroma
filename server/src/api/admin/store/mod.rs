@@ -37,7 +37,7 @@ const MAX_BUNDLE_BYTES: usize = kroma_module_supervisor::MAX_BUNDLE_BYTES as usi
 // apps/modules). It reads `modules.json` off the latest GitHub
 // Release, edge-caches it with a stale fallback, and serves a browsable page
 // at the bare origin. Overridable via the `moduleRegistryUrl` setting.
-const DEFAULT_REGISTRY: &str = "https://modules.kroma.tv/modules.json";
+const DEFAULT_REGISTRY: &str = "https://modules.kroma.tv/registry.json";
 
 pub fn routes() -> Router<SharedState> {
     Router::new()
@@ -71,7 +71,7 @@ async fn install_url(
         .map_err(|e| bad(&format!("install failed: {e:#}")))?;
     // Unpack + spawn is blocking; keep it off the async runtime.
     let url = body.url.clone();
-    let manifest: Value = {
+    let manifest = {
         let sup = sup.clone();
         tokio::task::spawn_blocking(move || sup.install(&bytes, None, ("url", Some(&url))))
             .await
@@ -203,7 +203,7 @@ async fn install_upload(
         return Err(bad("empty bundle"));
     }
     // Unpack + spawn is blocking; keep it off the async runtime.
-    let manifest: Value =
+    let manifest =
         tokio::task::spawn_blocking(move || sup.install(&body, None, ("upload", None)))
         .await
         .map_err(|_| bad("install task panicked"))?
@@ -232,7 +232,7 @@ async fn uninstall(
     if !q.force {
         let dependents: Vec<String> = kroma_module_kernel::manifests(&state)
             .into_iter()
-            .filter(|m| m.id != id && m.depends_on.iter().any(|d| d.id == id))
+            .filter(|m| m.id != id && m.dependencies.iter().any(|d| d.id == id))
             .filter(|m| kroma_engine::modules::module_enabled(&state.settings, &m.id))
             .map(|m| m.id)
             .collect();
@@ -267,12 +267,8 @@ async fn uninstall(
     }
 }
 
-fn installed_json(manifest: &Value) -> Json<Value> {
-    Json(json!({
-        "id": manifest.get("id"),
-        "name": manifest.get("name"),
-        "version": manifest.get("version"),
-    }))
+fn installed_json(manifest: &kroma_module_manifest::ModuleManifest) -> Json<Value> {
+    Json(super::store::install::installed_row(manifest))
 }
 
 fn bad(msg: &str) -> Response {

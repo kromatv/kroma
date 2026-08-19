@@ -76,11 +76,7 @@ async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Resul
                 .map_err(|e| anyhow!("installing '{}' failed: {e:#}", entry.id))?
         };
         op.done(&entry.id, &entry.version);
-        installed.push(json!({
-            "id": manifest.get("id"),
-            "name": manifest.get("name"),
-            "version": manifest.get("version"),
-        }));
+        installed.push(installed_row(&manifest));
     }
     Ok(installed)
 }
@@ -89,9 +85,10 @@ async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Resul
 /// once the transport and the checksum are the ones a first install insists on.
 ///
 /// Every path that fetches native code goes through here: registry installs
-/// download and run a binary, so requiring HTTPS and a published sha256 (which
-/// the catalog generator always emits) in ONE place is what stops a second
-/// caller from quietly skipping either.
+/// download and run a binary, so requiring HTTPS and a published checksum (RFC
+/// 110 `integrity`, or the legacy flat `sha256`, both normalized by
+/// [`super::catalog`]) in ONE place is what stops a second caller from quietly
+/// skipping either.
 async fn verified_artifact(
     sup: &Arc<Supervisor>,
     entry: &CatalogModule,
@@ -108,7 +105,7 @@ async fn verified_artifact(
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .ok_or_else(|| {
-            anyhow!("'{}' has no published sha256 checksum; refusing to install", entry.id)
+            anyhow!("'{}' has no published checksum; refusing to install", entry.id)
         })?;
     let bytes = sup
         .download_artifact(&artifact.url, Some(sha), on_progress)
@@ -139,11 +136,12 @@ pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> 
         .map_err(|_| anyhow!("reinstall task panicked"))?
         .map_err(|e| anyhow!("reinstalling '{id}' failed: {e:#}"))?
     };
-    Ok(json!({
-        "id": manifest.get("id"),
-        "name": manifest.get("name"),
-        "version": manifest.get("version"),
-    }))
+    Ok(installed_row(&manifest))
+}
+
+/// What the Store shows for a module that just landed.
+pub(super) fn installed_row(m: &kroma_module_manifest::ModuleManifest) -> Value {
+    json!({ "id": m.id, "name": m.name, "version": m.version })
 }
 
 #[derive(Serialize)]
@@ -180,12 +178,7 @@ pub async fn update_all(
     let mut outcome = UpdateOutcome { updated: Vec::new(), failed: Vec::new() };
     let mut targets: Vec<(&CatalogModule, String)> = Vec::new();
     for manifest in sup.installed_manifests() {
-        let (Some(id), Some(cur)) = (
-            manifest.get("id").and_then(Value::as_str),
-            manifest.get("version").and_then(Value::as_str),
-        ) else {
-            continue;
-        };
+        let (id, cur) = (manifest.id.as_str(), manifest.version.as_str());
         if only.is_some_and(|ids| !ids.iter().any(|x| x == id)) {
             continue;
         }
@@ -193,14 +186,10 @@ pub async fn update_all(
         if !kroma_module_manifest::is_newer(&entry.version, cur) {
             continue;
         }
-        if !kroma_module_manifest::server_satisfies(entry.min_server.as_deref(), SERVER_VERSION) {
-            outcome.failed.push(FailedUpdate {
-                id: id.to_string(),
-                error: format!(
-                    "requires KROMA server {} (this server is {SERVER_VERSION}); update the server first",
-                    entry.min_server.as_deref().unwrap_or("?"),
-                ),
-            });
+        if let Err(reason) =
+            kroma_module_manifest::engines_satisfied(&entry.engines, SERVER_VERSION)
+        {
+            outcome.failed.push(FailedUpdate { id: id.to_string(), error: reason });
             continue;
         }
         targets.push((entry, cur.to_string()));

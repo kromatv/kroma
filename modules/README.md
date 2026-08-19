@@ -178,9 +178,35 @@ dispatch is a sub-engine registry (`DownloadClientRegistry` and friends).
 `bun run modules:pack` output is directly installable: upload the `.kmod` in
 Admin → Modules.
 
-To serve modules to others, host a catalog: `bun run modules registry` emits a
-`modules.json` index of per-target artifacts with checksums, which any static
-host can serve. Operators add it under Admin → Modules → Registries. See
+To try the packed bundles as a registry before publishing anything:
+
+```bash
+bun run modules serve                      # dist/modules, on :4173
+bun run modules serve --from ./bundles --port 8080
+```
+
+It serves the RFC 110 documents live off the directory, re-read per request, with
+artifact URLs taken from the origin each request arrived at — so the same tree is
+right on localhost, on a LAN address and behind a tunnel. Add
+`http://localhost:4173` under Admin → Modules → Registries to browse it.
+
+To actually **install** a local build, upload it rather than pointing a server at
+that registry — a server refuses an artifact URL that is not https, which a local
+registry never is:
+
+```bash
+KROMA_TOKEN=<a token with settings.manage> \
+  bun run modules install tv.kroma.vpn            # -> http://localhost:4040
+bun run modules install tv.kroma.vpn --server http://192.168.1.20:4040
+```
+
+It picks this machine's build out of `dist/modules` when a module was packed for
+several targets, and the server applies the same gates the Store does — a bundle
+built against an older manifest schema is refused with what to do about it.
+
+To serve modules to others, host them: `bun run modules registry` writes the same
+documents to disk (plus the schemas and a `modules.json` mirror), which any
+static host can serve. See
 [`docs/module-registries.md`](../docs/module-registries.md).
 
 ### Releasing this repo's modules
@@ -197,7 +223,7 @@ versions, so a silent republish reaches nobody. `bun run modules release
 ## Checks
 
 ```bash
-bun run modules:validate   # every manifest against module.schema.json
+bun run modules:validate   # every manifest against the @kroma/registry schema
 bun run modules:gen        # expand single-file sources + regenerate aggregators
 bun run modules:check      # CI gate: valid + generated output in sync
 ```

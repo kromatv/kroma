@@ -2,36 +2,16 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { ModuleEntry } from '../catalog';
-import { matchesQuery, sliceLabel, useModuleBrowse } from './browse';
+import { sliceLabel, useModuleBrowse } from './browse';
 
 const entry = (id: string, name = '', description = ''): ModuleEntry => ({
   id,
   name,
   version: '0.1.0',
   description,
+  artifacts: [],
   url: null,
   sha256: null,
-});
-
-describe('matchesQuery', () => {
-  it('matches on the name, the id and the description, case-insensitively', () => {
-    const m = entry('tv.kroma.vpn', 'VPN', 'Routes the download engine through a tunnel.');
-    expect(matchesQuery(m, 'vpn')).toBe(true);
-    expect(matchesQuery(m, 'KROMA.VPN')).toBe(true);
-    expect(matchesQuery(m, 'tunnel')).toBe(true);
-    expect(matchesQuery(m, 'whisper')).toBe(false);
-  });
-
-  it('still searches a module the catalog described with nothing at all', () => {
-    const m = { ...entry('tv.kroma.vpn', 'VPN'), description: null };
-    expect(matchesQuery(m, 'vpn')).toBe(true);
-    expect(matchesQuery(m, 'tunnel')).toBe(false);
-  });
-
-  it('keeps everything for an empty or blank query', () => {
-    expect(matchesQuery(entry('tv.kroma.vpn'), '')).toBe(true);
-    expect(matchesQuery(entry('tv.kroma.vpn'), '   ')).toBe(true);
-  });
 });
 
 describe('sliceLabel', () => {

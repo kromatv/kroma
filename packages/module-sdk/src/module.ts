@@ -74,8 +74,8 @@ export interface KromaModule<Exports = unknown> {
   version: string;
   // Version ranges are enforced on the backend; the frontend uses the id for
   // setup ordering.
-  dependsOn?: Dependencies;
-  optionalDependsOn?: Dependencies;
+  dependencies?: Dependencies;
+  optionalDependencies?: Dependencies;
   routes?: RouteDef[];
   navItems?: NavItem[];
   settingsPanels?: SettingsPanel[];

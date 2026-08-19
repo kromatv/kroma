@@ -255,7 +255,7 @@ kroma/
 └─ apps/                    the web properties, deployed to Cloudflare
    ├─ www/      @kroma/site             kroma.tv, prerendered marketing + blog
    ├─ kit/      @kroma/kit              the design system's workbench, as a site and an app
-   ├─ modules/  @kroma/module-registry   the official .kmod catalog
+   ├─ modules/  @kroma/modules-site      the official .kmod catalog
    └─ packages/ @kroma/package-source    the release listing DSM downloads from
 ```
 

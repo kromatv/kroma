@@ -25,6 +25,7 @@
     "paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy url --emit-ts-declarations --silent"
   },
   "dependencies": {
+    "@kroma/registry": "workspace:*",
     "@kroma/site-meta": "workspace:*",
     "@kroma/ui": "workspace:*",
     "@mdx-js/react": "^3.1.1",

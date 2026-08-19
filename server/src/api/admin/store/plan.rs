@@ -1,4 +1,4 @@
-//! The install planner: resolve a root's hard `dependsOn` closure against what
+//! The install planner: resolve a root's hard `dependencies` closure against what
 //! is already present (compiled-in + runtime installed) and the registry
 //! catalog, dependencies first, and derive the opt-in rows the install dialog
 //! offers (declared optional deps, plus providers for capability requirements
@@ -15,7 +15,7 @@ use super::catalog::{self, CatalogModule};
 use super::registries;
 use crate::state::SharedState;
 
-// This server's version, checked against each entry's `minServer`.
+// This server's version, checked against each entry's `engines.server` range.
 pub(super) const SERVER_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub(super) struct Planned<'a> {
@@ -90,17 +90,15 @@ impl<'a> Planner<'a> {
             }
         })?;
         // Fail fast with the precise blocker instead of a partial install.
-        if !kroma_module_manifest::server_satisfies(entry.min_server.as_deref(), SERVER_VERSION) {
-            bail!(
-                "'{id}' requires KROMA server {} (this server is {SERVER_VERSION}); update the server first",
-                entry.min_server.as_deref().unwrap_or("?"),
-            );
+        if let Err(reason) = kroma_module_manifest::engines_satisfied(&entry.engines, SERVER_VERSION)
+        {
+            bail!("'{id}' {reason}");
         }
         if catalog::pick_artifact(entry).is_none() {
             bail!("'{id}' has no build for this server's platform");
         }
         self.stack.push(id.to_string());
-        for (dep_id, range) in &entry.depends_on {
+        for (dep_id, range) in &entry.dependencies {
             let satisfied = self.present.get(dep_id).is_some_and(|installed| {
                 range.as_deref().is_none_or(|r| kroma_module_manifest::range_matches(r, installed))
             });
@@ -137,7 +135,7 @@ impl<'a> Planner<'a> {
         catalog::compat_verdict(entry).0.then_some(entry)
     }
 
-    /// The install dialog's opt-in rows: declared `optionalDependsOn` targets,
+    /// The install dialog's opt-in rows: declared `optionalDependencies` targets,
     /// plus, for every capability a planned module `requires` that nothing
     /// installed or planned provides, the catalog's compatible providers.
     /// The second list is the requirements no available module can satisfy.
@@ -170,7 +168,7 @@ impl<'a> Planner<'a> {
     fn declared_optional_rows(&self, seen: &mut HashSet<String>) -> Vec<Value> {
         let mut rows = Vec::new();
         for p in &self.plan {
-            for (dep_id, _) in &p.entry.optional_depends_on {
+            for (dep_id, _) in &p.entry.optional_dependencies {
                 if !seen.insert(dep_id.clone()) {
                     continue;
                 }
@@ -326,7 +324,7 @@ mod tests {
     #[test]
     fn dependencies_land_before_their_dependents_and_only_roots_are_requested() {
         let mut root = module("tv.x.app", "1.0.0");
-        root.depends_on = vec![("tv.x.lib".into(), None)];
+        root.dependencies = vec![("tv.x.lib".into(), None)];
         let modules = vec![root, module("tv.x.lib", "1.0.0")];
         let mut p = planner(&modules);
         p.roots(&["tv.x.app"]).unwrap();
@@ -373,7 +371,7 @@ mod tests {
     #[test]
     fn a_requirement_the_plan_itself_satisfies_is_not_suggested() {
         let mut root = module("tv.x.app", "1.0.0");
-        root.depends_on = vec![("tv.x.engine".into(), None)];
+        root.dependencies = vec![("tv.x.engine".into(), None)];
         root.requires = vec![("download-client".into(), None)];
         let mut dep = module("tv.x.engine", "1.0.0");
         dep.provides = vec![("download-client".into(), "builtin".into())];
@@ -418,9 +416,9 @@ mod tests {
     #[test]
     fn a_shared_dependency_is_planned_once_for_two_dependents() {
         let mut a = module("tv.x.a", "1.0.0");
-        a.depends_on = vec![("tv.x.lib".into(), None)];
+        a.dependencies = vec![("tv.x.lib".into(), None)];
         let mut b = module("tv.x.b", "1.0.0");
-        b.depends_on = vec![("tv.x.lib".into(), None)];
+        b.dependencies = vec![("tv.x.lib".into(), None)];
         let modules = vec![a, b, module("tv.x.lib", "1.0.0")];
         let mut p = planner(&modules);
         p.roots(&["tv.x.a", "tv.x.b"]).unwrap();
@@ -431,9 +429,9 @@ mod tests {
     #[test]
     fn a_dependency_cycle_is_refused_by_name_rather_than_recursed_into() {
         let mut a = module("tv.x.a", "1.0.0");
-        a.depends_on = vec![("tv.x.b".into(), None)];
+        a.dependencies = vec![("tv.x.b".into(), None)];
         let mut b = module("tv.x.b", "1.0.0");
-        b.depends_on = vec![("tv.x.a".into(), None)];
+        b.dependencies = vec![("tv.x.a".into(), None)];
         let modules = vec![a, b];
         let mut p = planner(&modules);
         let err = p.roots(&["tv.x.a"]).unwrap_err().to_string();
@@ -447,7 +445,7 @@ mod tests {
         assert_eq!(err, "'tv.x.absent' is not in the registry");
 
         let mut root = module("tv.x.app", "1.0.0");
-        root.depends_on = vec![("tv.x.absent".into(), None)];
+        root.dependencies = vec![("tv.x.absent".into(), None)];
         let modules = vec![root];
         let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err().to_string();
         assert_eq!(err, "dependency 'tv.x.absent' is neither installed nor in the registry");
@@ -456,11 +454,11 @@ mod tests {
     #[test]
     fn a_module_this_server_is_too_old_for_blocks_the_plan_up_front() {
         let mut root = module("tv.x.app", "1.0.0");
-        root.min_server = Some("999.0.0".into());
+        root.engines.insert("server".into(), ">=999.0.0".into());
         let modules = vec![root];
         let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err().to_string();
-        assert!(err.contains("requires KROMA server 999.0.0"), "{err}");
-        assert!(err.contains("update the server first"), "{err}");
+        assert!(err.contains("requires server >=999.0.0"), "{err}");
+        assert!(err.contains("this server is"), "{err}");
     }
 
     #[test]
@@ -473,7 +471,7 @@ mod tests {
     #[test]
     fn a_dependency_already_installed_in_range_is_not_reinstalled() {
         let mut root = module("tv.x.app", "1.0.0");
-        root.depends_on = vec![("tv.x.lib".into(), Some("^1.0.0".into()))];
+        root.dependencies = vec![("tv.x.lib".into(), Some("^1.0.0".into()))];
         let modules = vec![root, module("tv.x.lib", "1.2.0")];
         let mut p = Planner::with_present(
             &modules,
@@ -488,7 +486,7 @@ mod tests {
     #[test]
     fn a_registry_copy_that_misses_the_declared_range_is_refused_before_installing_it() {
         let mut root = module("tv.x.app", "1.0.0");
-        root.depends_on = vec![("tv.x.lib".into(), Some("^2.0.0".into()))];
+        root.dependencies = vec![("tv.x.lib".into(), Some("^2.0.0".into()))];
         let modules = vec![root, module("tv.x.lib", "1.0.0")];
         let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err().to_string();
         assert_eq!(err, "'tv.x.app' needs tv.x.lib@^2.0.0 but the registry has 1.0.0");
@@ -497,9 +495,9 @@ mod tests {
     #[test]
     fn an_optional_dependency_two_modules_name_is_offered_once() {
         let mut a = module("tv.x.a", "1.0.0");
-        a.optional_depends_on = vec![("tv.x.vpn".into(), None)];
+        a.optional_dependencies = vec![("tv.x.vpn".into(), None)];
         let mut b = module("tv.x.b", "1.0.0");
-        b.optional_depends_on = vec![("tv.x.vpn".into(), None)];
+        b.optional_dependencies = vec![("tv.x.vpn".into(), None)];
         let modules = vec![a, b, module("tv.x.vpn", "1.0.0")];
         let mut p = planner(&modules);
         p.roots(&["tv.x.a", "tv.x.b"]).unwrap();
@@ -518,7 +516,7 @@ mod tests {
     #[test]
     fn a_plan_row_states_what_is_installed_and_what_was_asked_for() {
         let mut root = module("tv.x.app", "1.0.0");
-        root.depends_on = vec![("tv.x.lib".into(), None)];
+        root.dependencies = vec![("tv.x.lib".into(), None)];
         let modules = vec![root, module("tv.x.lib", "1.0.0")];
         let mut p = Planner::with_present(
             &modules,
@@ -550,7 +548,7 @@ mod tests {
     #[test]
     fn optional_deps_are_offered_but_installed_ones_are_not() {
         let mut root = module("tv.x.app", "1.0.0");
-        root.optional_depends_on = vec![("tv.x.vpn".into(), None), ("tv.x.already".into(), None)];
+        root.optional_dependencies = vec![("tv.x.vpn".into(), None), ("tv.x.already".into(), None)];
         let modules = vec![root, module("tv.x.vpn", "1.0.0"), module("tv.x.already", "1.0.0")];
         let mut p = Planner::with_present(
             &modules,

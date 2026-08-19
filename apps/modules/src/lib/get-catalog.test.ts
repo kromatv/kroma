@@ -47,10 +47,12 @@ afterEach(() => {
 });
 
 describe('catalogPayload', () => {
-  it('names the registry url on the origin the page was reached at', async () => {
+  it('hands out the origin as the registry url, not a document under it', async () => {
     upstream(JSON.stringify(CATALOG));
     const payload = await catalogPayload('https://modules.kroma.tv');
-    expect(payload.registry).toBe('https://modules.kroma.tv/modules.json');
+    // What an operator pastes names the REGISTRY; the server resolves the
+    // descriptor at its well-known path from there.
+    expect(payload.registry).toBe('https://modules.kroma.tv');
     expect(payload.generatedAt).toBe('2026-07-02T00:00:00Z');
   });
 
@@ -72,7 +74,7 @@ describe('catalogPayload', () => {
   it('still names the registry when nothing upstream can produce a catalog', async () => {
     offline();
     expect(await catalogPayload('https://modules.kroma.tv')).toEqual({
-      registry: 'https://modules.kroma.tv/modules.json',
+      registry: 'https://modules.kroma.tv',
       modules: [],
       generatedAt: null,
     });
@@ -81,7 +83,7 @@ describe('catalogPayload', () => {
   it('degrades the same way when the body upstream served is not a catalog', async () => {
     upstream('<!doctype html><title>404</title>');
     expect(await catalogPayload('https://modules.kroma.tv')).toEqual({
-      registry: 'https://modules.kroma.tv/modules.json',
+      registry: 'https://modules.kroma.tv',
       modules: [],
       generatedAt: null,
     });
@@ -92,7 +94,7 @@ describe('catalogForRequest', () => {
   it('names the registry on the origin the page was reached at, path and query dropped', async () => {
     upstream(JSON.stringify(CATALOG));
     const payload = await catalogForRequest();
-    expect(payload.registry).toBe('https://modules.kroma.tv/modules.json');
+    expect(payload.registry).toBe('https://modules.kroma.tv');
     expect(payload.modules.map((m) => m.id)).toEqual(['tv.kroma.vpn']);
   });
 });

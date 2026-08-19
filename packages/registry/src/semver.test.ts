@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compareRaw, parse } from './semver';
+import { channelOf, compareRaw, parse, satisfies } from './semver.ts';
 
 const sorted = (...versions: string[]) => [...versions].sort(compareRaw);
 
@@ -62,5 +62,55 @@ describe('compareRaw', () => {
   it('is zero for equal versions', () => {
     expect(compareRaw('1.2.3', '1.2.3')).toBe(0);
     expect(compareRaw('1.2.3-a.1', '1.2.3-a.1')).toBe(0);
+  });
+});
+
+describe('satisfies', () => {
+  it('matches the caret range within the left-most non-zero segment', () => {
+    expect(satisfies('0.1.9', '^0.1.0')).toBe(true);
+    expect(satisfies('0.2.0', '^0.1.0')).toBe(false);
+    expect(satisfies('1.9.0', '^1.2.0')).toBe(true);
+    expect(satisfies('2.0.0', '^1.2.0')).toBe(false);
+  });
+
+  it('matches tilde within the minor, and >= upwards', () => {
+    expect(satisfies('1.2.9', '~1.2.0')).toBe(true);
+    expect(satisfies('1.3.0', '~1.2.0')).toBe(false);
+    expect(satisfies('9.9.9', '>=1.0.0')).toBe(true);
+    expect(satisfies('0.9.9', '>=1.0.0')).toBe(false);
+  });
+
+  it('treats a bare version as exact', () => {
+    expect(satisfies('1.2.3', '1.2.3')).toBe(true);
+    expect(satisfies('1.2.4', '1.2.3')).toBe(false);
+  });
+
+  it('keeps pre-releases opt-in', () => {
+    expect(satisfies('0.2.0-beta.1', '^0.1.0')).toBe(false);
+    expect(satisfies('0.2.0-beta.1', '*')).toBe(false);
+    expect(satisfies('0.2.0-beta.2', '^0.2.0-beta.1')).toBe(true);
+    expect(satisfies('0.3.0-beta.1', '^0.2.0-beta.1')).toBe(false);
+  });
+
+  it('satisfies nothing when either side is unreadable', () => {
+    expect(satisfies('nightly', '^1.0.0')).toBe(false);
+    expect(satisfies('1.0.0', '^nightly')).toBe(false);
+  });
+});
+
+describe('channelOf', () => {
+  it('names the channel a version publishes to', () => {
+    expect(channelOf('1.0.0')).toBe('latest');
+    expect(channelOf('1.0.0-beta.3')).toBe('beta');
+    expect(channelOf('1.0.0-rc.1')).toBe('rc');
+  });
+
+  it('ignores build metadata, which is not a channel', () => {
+    expect(channelOf('1.0.0+exp-sha.5114f85')).toBe('latest');
+  });
+
+  it('has no channel for a numeric pre-release or a version it cannot read', () => {
+    expect(channelOf('1.0.0-1')).toBeNull();
+    expect(channelOf('nightly')).toBeNull();
   });
 });

@@ -1,9 +1,12 @@
 {
+  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
+  "schemaVersion": 2,
   "id": "tv.kroma.torznab",
   "name": "Torznab indexers",
-  "version": "0.1.2",
-  "minServer": "0.1.4",
-  "dependsOn": [],
+  "version": "0.1.3",
+  "engines": {
+    "server": ">=0.1.4"
+  },
   "provides": [
     {
       "kind": "indexer-engine",

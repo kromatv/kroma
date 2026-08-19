@@ -69,8 +69,6 @@ export type {
   CapabilityReq,
   ConfigField,
   Dependencies,
-  Dependency,
-  DependencyMap,
   FeRemote,
   ModuleManifest,
 } from './types';

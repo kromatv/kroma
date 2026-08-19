@@ -4,7 +4,7 @@
 // scopes the search too: a season/episode there makes the sweep a TV search
 // instead of a movie one, which is the only way to find a specific episode.
 //
-// NOTE an inversion: the backend graph has acquisition dependsOn torrents, yet
+// NOTE an inversion: the backend graph has acquisition dependencies torrents, yet
 // this file (torrents) drives acquisition's search/analyze/add. The entangle-
 // ment is real (a manual grab needs both halves) and predates this layout; it
 // used to hide inside the monolithic client. If it ever needs untangling, the

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Bundle, Catalog, Entry } from './bundles';
+import type { Bundle } from './bundles';
+import type { Catalog, Entry } from './catalog';
 import { decide, tagFor, verdictFor } from './release';
 
 const REPO = 'maxscharwath/kroma';

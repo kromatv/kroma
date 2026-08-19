@@ -30,15 +30,19 @@ function Requirement({ icon, children }: Readonly<{ icon: IconName; children: Re
 }
 
 function Requirements({
-  minServer,
+  engines,
   deps,
-}: Readonly<{ minServer: string | null | undefined; deps: Dependency[] }>) {
+}: Readonly<{ engines: Record<string, string> | null | undefined; deps: Dependency[] }>) {
   return (
     <Row gap={8} wrap align="center">
       <Text color="textDim" variant="overline">
         Requires
       </Text>
-      {minServer ? <Requirement icon="server">KROMA {minServer}+</Requirement> : null}
+      {Object.entries(engines ?? {}).map(([engine, range]) => (
+        <Requirement key={engine} icon="server">
+          {engine === 'server' ? 'KROMA' : engine} {range}
+        </Requirement>
+      ))}
       {deps.map((dep) => (
         <Requirement key={dep.id} icon="packages">
           {dep.range ? `${dep.id} ${dep.range}` : dep.id}
@@ -81,8 +85,8 @@ function Footer({ id, sha256 }: Readonly<{ id: string; sha256: string | null }>)
 export function ModuleCard({ module: m }: Readonly<{ module: ModuleEntry }>) {
   const files = downloads(m);
   const { picked, pick } = useDownloadPick(files);
-  const deps = depEntries(m.dependsOn);
-  const requires = Boolean(m.minServer) || deps.length > 0;
+  const deps = depEntries(m);
+  const requires = Object.keys(m.engines ?? {}).length > 0 || deps.length > 0;
 
   return (
     <Box
@@ -129,7 +133,7 @@ export function ModuleCard({ module: m }: Readonly<{ module: ModuleEntry }>) {
       </Row>
 
       <Divider />
-      {requires ? <Requirements minServer={m.minServer} deps={deps} /> : null}
+      {requires ? <Requirements engines={m.engines} deps={deps} /> : null}
       <Footer id={m.id} sha256={picked?.sha256 ?? null} />
     </Box>
   );

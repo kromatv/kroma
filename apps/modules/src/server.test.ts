@@ -65,12 +65,12 @@ describe('the worker entry', () => {
     expect(calls[0]).toContain('someone/fork');
   });
 
-  it('serves the mark without asking GitHub for anything', async () => {
+  it('redirects /favicon.ico to the asset without asking GitHub for anything', async () => {
     const calls = ghServing();
-    const res = await server.fetch(req('/favicon.svg'), {}, ctx());
+    const res = await server.fetch(req('/favicon.ico'), {}, ctx());
 
-    expect(res.headers.get('content-type')).toBe('image/svg+xml');
-    expect(await res.text()).toContain('<svg');
+    expect(res.status).toBe(301);
+    expect(res.headers.get('location')).toBe('https://modules.kroma.tv/favicon.svg');
     expect(calls).toEqual([]);
   });
 

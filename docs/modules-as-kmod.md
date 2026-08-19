@@ -39,7 +39,7 @@ it, supervises it, and reverse-proxies its HTTP.**
   plus a `.sha256` sidecar.
 - **Registry + Store (shipped)**: `bun run modules registry` builds a catalog
   (schema 2: per-target `artifacts` with `sha256`, `contentHash`, `dependsOn`,
-  `minServer`) for a self-hosted directory; `bun run modules release` builds the
+  `engines`) for a self-hosted directory; `bun run modules release` builds the
   published one (see "The release train" below). The server's default registry is
   `https://modules.kroma.tv/modules.json`, the registry worker
   (`apps/modules`) that serves the catalog with edge
@@ -49,7 +49,7 @@ it, supervises it, and reverse-proxies its HTTP.**
   server's verdict (matching artifact, installed version, update flag,
   compatibility + reason), installs/updates by id with automatic hard-dependency
   resolution, verifies every download's SHA-256, and refuses to uninstall a
-  module other enabled modules depend on. Manifests may declare `minServer`
+  module other enabled modules depend on. Manifests may declare `engines`
   (bare version or semver range); the supervisor enforces it at install AND at
   spawn, so a stale `.kmod` fails with a clear message instead of runtime proxy
   errors.
@@ -166,7 +166,7 @@ generic `ServerModule<S: HostCtx>` behind `RemoteHost`.
    store picks per-target artifacts from the catalog. Adding a platform is one
    matrix entry + a cross linker.
 6. ~~**Registry**~~ shipped (see "Registry + Store" above): catalog + in-app Store
-   with dependency resolution, checksums and the `minServer` compatibility gate.
+   with dependency resolution, checksums and the `engines` compatibility gate.
 7. ~~**Independent releases**~~ shipped (see "The release train" above):
    per-module tags, a merged catalog, and a CI gate on the version bump.
 

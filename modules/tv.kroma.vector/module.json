@@ -1,9 +1,12 @@
 {
+  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
+  "schemaVersion": 2,
   "id": "tv.kroma.vector",
   "name": "Embeddings",
-  "version": "0.1.1",
-  "minServer": "0.1.4",
-  "dependsOn": [],
+  "version": "0.1.2",
+  "engines": {
+    "server": ">=0.1.4"
+  },
   "provides": [
     {
       "kind": "embedder",

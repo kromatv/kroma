@@ -23,8 +23,9 @@ export function githubHeaders(env: Env | undefined): Record<string, string> {
   return out;
 }
 
-export function jsonResponse(body: string, maxAge: number): Response {
+export function jsonResponse(body: string, maxAge: number, status = 200): Response {
   return new Response(body, {
+    status,
     headers: {
       'content-type': 'application/json',
       'cache-control': `public, max-age=${maxAge}`,

@@ -4,7 +4,7 @@
 // its controls in module-detail-actions.tsx.
 
 import type { StoreCatalog, StoreModule } from '@kroma/core';
-import { moduleIconUrl } from '@kroma/module-sdk';
+import { depEntries, moduleIconUrl } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Badge, Box, Button, Callout, DataField, Grid, Progress, Row, Text } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
@@ -47,8 +47,8 @@ function DepChips({ entry, all }: Readonly<{ entry: StoreModule; all: AdminModul
   const t = useT();
   const byId = new Map(all.map((m) => [m.id, m]));
   const deps = [
-    ...entry.dependsOn.map((d) => ({ ...d, optional: false })),
-    ...entry.optionalDependsOn.map((d) => ({ ...d, optional: true })),
+    ...depEntries(entry.dependencies).map((d) => ({ ...d, optional: false })),
+    ...depEntries(entry.optionalDependencies).map((d) => ({ ...d, optional: true })),
   ];
   if (deps.length === 0) return null;
   return (
@@ -123,7 +123,7 @@ export function DepsSection({
   return null;
 }
 
-// Reverse `dependsOn` edges from the catalog: modules built to plug into this
+// Reverse `dependencies` edges from the catalog: modules built to plug into this
 // one (e.g. download-engine sub-modules for the torrents host).
 export function Addons({
   id,
@@ -131,7 +131,7 @@ export function Addons({
 }: Readonly<{ id: string; catalog: StoreCatalog | null | undefined }>) {
   const t = useT();
   const addons = (catalog?.modules ?? []).filter(
-    (m) => m.id !== id && m.dependsOn.some((d) => d.id === id),
+    (m) => m.id !== id && Object.hasOwn(m.dependencies, id),
   );
   if (addons.length === 0) return null;
   return (

@@ -1,10 +1,13 @@
 {
+  "$schema": "https://modules.kroma.tv/schemas/2/manifest.json",
+  "schemaVersion": 2,
   "id": "tv.kroma.scene",
   "name": "Release parser",
-  "version": "0.1.0",
-  "minServer": "0.1.4",
+  "version": "0.1.1",
+  "engines": {
+    "server": ">=0.1.4"
+  },
   "library": true,
-  "dependsOn": [],
   "provides": [
     {
       "kind": "release-parser",

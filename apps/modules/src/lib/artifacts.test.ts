@@ -9,12 +9,14 @@ const artifact = (target: string | null, url: string | null, size?: number): Art
   url,
   size,
   sha256: null,
+  contentHash: null,
 });
 
 const entry = (over: Partial<ModuleEntry> = {}): ModuleEntry => ({
   id: 'tv.kroma.vpn',
   name: 'VPN',
   version: '1.0.0',
+  artifacts: [],
   url: null,
   sha256: null,
   ...over,
@@ -54,6 +56,7 @@ describe('downloads', () => {
               url: 'https://dl.test/a.kmod',
               size: 4096,
               sha256: digest,
+              contentHash: null,
             },
           ],
         }),

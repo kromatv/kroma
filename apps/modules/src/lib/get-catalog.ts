@@ -5,7 +5,9 @@ import { withIconUrls } from '#site/lib/icon';
 import { loadCatalog } from '#site/lib/source';
 
 /** What the browse pages render: the catalog read live from the upstream release,
- *  with `registry` the URL a KROMA server would add to reach this site. */
+ *  with `registry` the URL a KROMA server would add to reach this site - the
+ *  ORIGIN, not a document under it, because a registry URL names a registry and
+ *  the server resolves the descriptor at its well-known path. */
 export async function catalogPayload(origin: string): Promise<{
   registry: string;
   modules: ModuleEntry[];
@@ -15,7 +17,7 @@ export async function catalogPayload(origin: string): Promise<{
   // bundle, which this module is also part of.
   const { parseCatalog } = await import('#site/catalog');
   const { env, waitUntil } = await workerContext();
-  const registry = `${origin}/modules.json`;
+  const registry = origin;
   const body = await loadCatalog(env, waitUntil);
   const catalog = body ? parseCatalog(body) : null;
   if (!catalog) return { registry, modules: [], generatedAt: null };

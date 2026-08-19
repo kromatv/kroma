@@ -1,6 +1,6 @@
 // Shared helpers for the module authoring scripts (gen / new / validate).
 
-// Kept identical to `modules/module.schema.json`'s `id` pattern.
+// Kept identical to `@kroma/registry`'s REVERSE_DNS_ID.
 export const REVERSE_DNS = /^[a-z0-9]+(\.[a-z0-9-]+)+$/;
 
 export type Manifest = Record<string, unknown>;

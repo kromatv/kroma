@@ -1,7 +1,6 @@
 //! The core side of the out-of-process module system: spawns each installed
 //! module's binary, reverse-proxies to it, and serves the `/api/_host/*` callback API.
 
-mod discover;
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -18,6 +17,7 @@ use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use kroma_module_host::host_token::{require_host_token, HostToken};
+use kroma_module_manifest::ModuleManifest;
 use kroma_module_host::{Event, HostCtx};
 use serde_json::{json, Value};
 
@@ -92,7 +92,7 @@ pub struct SupervisorConfig {
 pub struct Supervisor {
     cfg: SupervisorConfig,
     procs: RwLock<HashMap<String, Proc>>,
-    manifests_cache: RwLock<Option<Vec<Value>>>,
+    manifests_cache: RwLock<Option<Vec<ModuleManifest>>>,
     // Short-TTL catalog cache: the admin flow sweeps EVERY registry from the
     // catalog view, the plan dialog (once per opt-in toggle) and the install
     // itself in quick succession; within the TTL they share one fetch.
@@ -205,9 +205,10 @@ impl Supervisor {
         self.dir(id).join(MODULE_BIN).exists()
     }
 
-    /// Every installed module's `module.json` (best-effort), cached until the
-    /// next install or uninstall.
-    pub fn installed_manifests(&self) -> Vec<Value> {
+    /// Every installed module's `module.json`, cached until the next install or
+    /// uninstall. One that does not parse is logged with its directory and left
+    /// out, so a reader downstream never has to ask whether a field is there.
+    pub fn installed_manifests(&self) -> Vec<ModuleManifest> {
         if let Some(cached) = self.manifests_cache.read().unwrap().clone() {
             return cached;
         }
@@ -216,15 +217,28 @@ impl Supervisor {
         scanned
     }
 
-    fn scan_manifests(&self) -> Vec<Value> {
+    fn scan_manifests(&self) -> Vec<ModuleManifest> {
         let Ok(entries) = std::fs::read_dir(&self.cfg.modules_dir) else {
             return Vec::new();
         };
         entries
             .filter_map(|e| e.ok())
             .filter(|e| e.path().is_dir())
-            .filter_map(|e| std::fs::read_to_string(e.path().join("module.json")).ok())
-            .filter_map(|s| serde_json::from_str(&s).ok())
+            .filter_map(|e| {
+                let dir = e.path();
+                let text = std::fs::read_to_string(dir.join("module.json")).ok()?;
+                match serde_json::from_str::<ModuleManifest>(&text) {
+                    Ok(manifest) => Some(manifest),
+                    Err(error) => {
+                        tracing::warn!(
+                            dir = %dir.display(),
+                            %error,
+                            "module.json is not a manifest; that module is ignored",
+                        );
+                        None
+                    }
+                }
+            })
             .collect()
     }
 
@@ -235,9 +249,7 @@ impl Supervisor {
     /// The ids of every runtime-installed (`.kmod`) module — not the ones
     /// compiled into this server.
     pub fn installed_ids(&self) -> Vec<String> {
-        self.installed_manifests()
-            .into_iter()
-            .filter_map(|m| m.get("id").and_then(Value::as_str).map(str::to_string))
+        self.installed_manifests().into_iter().map(|m| m.id)
             .collect()
     }
 
@@ -300,14 +312,10 @@ impl Supervisor {
     /// passed over rather than resolved to, so a second provider still answers.
     pub fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
         self.installed_manifests().into_iter().find_map(|m| {
-            let serves = m
-                .get("ports")
-                .and_then(Value::as_array)
-                .is_some_and(|ps| ps.iter().any(|p| p.as_str() == Some(port)));
-            if !serves {
+            if !m.ports.iter().any(|p| p == port) {
                 return None;
             }
-            let live = self.port_of(m.get("id").and_then(Value::as_str)?)?;
+            let live = self.port_of(&m.id)?;
             Some((format!("http://127.0.0.1:{live}"), self.cfg.host_token.clone()))
         })
     }
@@ -414,14 +422,10 @@ impl Supervisor {
         &self,
         staging: &Path,
         expected_id: Option<&str>,
-    ) -> anyhow::Result<(String, Value)> {
-        let manifest: Value =
+    ) -> anyhow::Result<(String, ModuleManifest)> {
+        let manifest: ModuleManifest =
             serde_json::from_str(&std::fs::read_to_string(staging.join("module.json"))?)?;
-        let id = manifest
-            .get("id")
-            .and_then(Value::as_str)
-            .ok_or_else(|| anyhow::anyhow!("module.json has no id"))?
-            .to_string();
+        let id = manifest.id.clone();
         validate_id(&id)?;
         if let Some(expected) = expected_id {
             if expected != id {
@@ -435,14 +439,12 @@ impl Supervisor {
                 "'{id}' is built into this server and can't be installed as a module (this build compiles it in)"
             );
         }
-        let min_server = manifest.get("minServer").and_then(Value::as_str);
-        if !kroma_module_manifest::server_satisfies(min_server, &self.cfg.server_version) {
-            anyhow::bail!(
-                "'{id}' requires KROMA server {} but this server is {}; update the server first",
-                min_server.unwrap_or("?"),
-                self.cfg.server_version,
-            );
-        }
+        // After the id checks, which are the security ones: a bundle shipped
+        // under someone else's id must be reported as that, whatever contract it
+        // was built against.
+        check_manifest_schema(&id, &manifest)?;
+        kroma_module_manifest::engines_satisfied(&manifest.engines, &self.cfg.server_version)
+            .map_err(|reason| anyhow::anyhow!("'{id}' {reason}"))?;
         Ok((id, manifest))
     }
 
@@ -461,7 +463,7 @@ impl Supervisor {
         bytes: &[u8],
         expected_id: Option<&str>,
         origin: (&str, Option<&str>),
-    ) -> anyhow::Result<Value> {
+    ) -> anyhow::Result<ModuleManifest> {
         let tar_bytes = decompressed_tar(bytes)?;
 
         let staging = self.cfg.modules_dir.join(format!(".staging-{}", rand::random::<u32>()));
@@ -489,7 +491,7 @@ impl Supervisor {
             } else {
                 tracing::info!(module = %id, "library module installed (no binary to spawn)");
             }
-            Ok::<Value, anyhow::Error>(manifest)
+            Ok::<ModuleManifest, anyhow::Error>(manifest)
         })();
         let _ = std::fs::remove_dir_all(&staging);
         self.invalidate_manifests();
@@ -521,11 +523,12 @@ impl Supervisor {
     /// host must not hang the admin page) and a size cap read BEFORE parsing (a
     /// schema cannot reject bytes it has not read).
     ///
-    /// The URL may also be a registry's WEBSITE rather than the JSON itself:
-    /// when the body isn't JSON, a `<link rel="kroma-modules" href="…">` tag
-    /// names the catalog (see [`discover`]), so an operator can paste
-    /// `https://modules.example.com` and people clicking the same URL get a
-    /// page.
+    /// The URL may be a document or a registry's ROOT: a contract with a
+    /// well-known path does not need the site to say where its documents are,
+    /// so anything not ending in `.json` gets [`DESCRIPTOR_PATH`] appended. That
+    /// is also why nothing here reads HTML - the page an operator pastes is
+    /// attacker-controlled, and parsing it to find a URL to fetch was a trust
+    /// boundary the contract removed the need for.
     pub async fn fetch_catalog(&self, url: &str) -> anyhow::Result<Value> {
         if let Some((at, value)) = self.catalog_cache.read().unwrap().get(url) {
             if at.elapsed() < CATALOG_CACHE_TTL {
@@ -540,29 +543,10 @@ impl Supervisor {
     }
 
     async fn fetch_catalog_uncached(&self, url: &str) -> anyhow::Result<Value> {
-        let body = fetch_bounded(self.catalog_client(), url, MAX_CATALOG_BYTES, None).await?;
-        if let Ok(value) = serde_json::from_slice(&body) {
-            return Ok(value);
-        }
-        let href = discover::catalog_href(&String::from_utf8_lossy(&body)).ok_or_else(|| {
-            anyhow::anyhow!("not a catalog, and the page declares no kroma-modules link")
-        })?;
-        let base = reqwest::Url::parse(url)?;
-        let resolved = base.join(&href)?;
-        // The discovered link inherits the operator's trust in the SITE, not
-        // more: it must be https, or stay on the exact origin the operator
-        // typed (which also keeps the loopback URL the test harness points the
-        // official slot at working).
-        let same_origin = resolved.scheme() == base.scheme()
-            && resolved.host() == base.host()
-            && resolved.port_or_known_default() == base.port_or_known_default();
-        if resolved.scheme() != "https" && !same_origin {
-            anyhow::bail!("the page's kroma-modules link must be https (got '{resolved}')");
-        }
-        let body =
-            fetch_bounded(self.catalog_client(), resolved.as_str(), MAX_CATALOG_BYTES, None)
-                .await?;
-        Ok(serde_json::from_slice(&body)?)
+        let target = registry_document_url(url);
+        let body = fetch_bounded(self.catalog_client(), &target, MAX_CATALOG_BYTES, None).await?;
+        serde_json::from_slice(&body)
+            .map_err(|e| anyhow::anyhow!("{target} is not a registry document: {e}"))
     }
 
     fn catalog_client(&self) -> &reqwest::Client {
@@ -615,26 +599,21 @@ impl Supervisor {
 
     /// Start one installed module, applying the same gates as boot: a stray
     /// `.kmod` for a built-in id never spawns (it would duplicate the in-core
-    /// module), `minServer` is enforced, and a library module (no binary) is a
+    /// module), its `engines` are enforced, and a library module (no binary) is a
     /// successful no-op. This is what the admin enable toggle drives, so
     /// enabling a runtime module brings its process up without a restart.
     pub fn start_installed(&self, id: &str) -> anyhow::Result<()> {
         let manifest = self
             .installed_manifests()
             .into_iter()
-            .find(|m| m.get("id").and_then(Value::as_str) == Some(id))
+            .find(|m| m.id == id)
             .ok_or_else(|| anyhow::anyhow!("'{id}' is not installed"))?;
         if self.cfg.reserved_ids.iter().any(|r| r == id) {
             anyhow::bail!("'{id}' shadows a built-in module; not spawning");
         }
-        let min_server = manifest.get("minServer").and_then(Value::as_str);
-        if !kroma_module_manifest::server_satisfies(min_server, &self.cfg.server_version) {
-            anyhow::bail!(
-                "'{id}' requires KROMA server {} but this server is {}",
-                min_server.unwrap_or("?"),
-                self.cfg.server_version,
-            );
-        }
+        check_manifest_schema(id, &manifest)?;
+        kroma_module_manifest::engines_satisfied(&manifest.engines, &self.cfg.server_version)
+            .map_err(|reason| anyhow::anyhow!("'{id}' {reason}"))?;
         if !self.has_binary(id) {
             return Ok(());
         }
@@ -775,7 +754,7 @@ impl Supervisor {
 
     pub fn spawn_enabled(&self, host: &dyn HostCtx) {
         for manifest in self.installed_manifests() {
-            let Some(id) = manifest.get("id").and_then(Value::as_str) else { continue };
+            let id = manifest.id.as_str();
             if !host.module_enabled(id) {
                 continue;
             }
@@ -792,6 +771,43 @@ impl Supervisor {
 
 /// Verify `bytes` against a hex SHA-256. Refusing on mismatch is what keeps a
 /// tampered or truncated registry download out of `install()`.
+/// `Err` when a bundle was built against a manifest contract this server does not
+/// speak. Checked at install AND at spawn: an installed module predates the
+/// server it now runs under, and the fields that moved parse as absent rather
+/// than as errors, so reading one on a best-effort basis loses its dependencies
+/// silently instead of saying why.
+fn check_manifest_schema(id: &str, manifest: &ModuleManifest) -> anyhow::Result<()> {
+    let found = manifest.schema_version;
+    anyhow::ensure!(
+        found == kroma_module_manifest::MODULE_SCHEMA_VERSION,
+        "'{id}' was built for manifest schema v{found}, and this server speaks v{}; rebuild it against \
+         the current SDK",
+        kroma_module_manifest::MODULE_SCHEMA_VERSION,
+    );
+    Ok(())
+}
+
+/// The document at a registry ROOT. Named once because the operator's setting,
+/// the sibling lookup and the error messages must all agree on it.
+pub const DESCRIPTOR_PATH: &str = "registry.json";
+
+/// The document an operator's registry URL names: itself when it already points
+/// at one, else the descriptor at the well-known path beneath it.
+pub fn registry_document_url(url: &str) -> String {
+    let trimmed = url.trim().trim_end_matches('/');
+    if trimmed.rsplit('/').next().is_some_and(|last| last.ends_with(".json")) {
+        return trimmed.to_string();
+    }
+    format!("{trimmed}/{DESCRIPTOR_PATH}")
+}
+
+/// Resolve `relative` against the URL a document was actually fetched from, so a
+/// sibling document (a registry's index beside its descriptor) is reached
+/// without trusting a URL that document declares about itself.
+pub fn sibling_url(fetched_from: &str, relative: &str) -> anyhow::Result<String> {
+    Ok(reqwest::Url::parse(fetched_from)?.join(relative)?.to_string())
+}
+
 pub fn verify_sha256(bytes: &[u8], expected: &str) -> anyhow::Result<()> {
     use sha2::Digest;
     let actual = hex::encode(sha2::Sha256::digest(bytes));
@@ -1099,4 +1115,36 @@ async fn library_folders<S: HostCtx>(State(host): State<S>) -> Json<Value> {
 
 async fn tmdb_config<S: HostCtx>(State(host): State<S>) -> Json<Value> {
     Json(json!({ "key": host.tmdb_api_key(), "language": host.metadata_language() }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::registry_document_url;
+
+    #[test]
+    fn a_registry_root_resolves_to_the_descriptor_at_the_well_known_path() {
+        for root in [
+            "https://mods.example.com",
+            "https://mods.example.com/",
+            "  https://mods.example.com  ",
+        ] {
+            assert_eq!(registry_document_url(root), "https://mods.example.com/registry.json");
+        }
+        // A registry hosted under a subpath is a root like any other.
+        assert_eq!(
+            registry_document_url("https://example.com/kroma/"),
+            "https://example.com/kroma/registry.json",
+        );
+    }
+
+    #[test]
+    fn a_url_that_already_names_a_document_is_left_alone() {
+        for doc in [
+            "https://mods.example.com/registry.json",
+            "https://mods.example.com/index.json",
+            "https://mods.example.com/m/tv.kroma.torrents.json",
+        ] {
+            assert_eq!(registry_document_url(doc), doc);
+        }
+    }
 }

@@ -135,7 +135,7 @@ impl Registry {
         index: &HashMap<&str, &ModuleManifest>,
     ) -> Result<Vec<String>, ResolveError> {
         let mut deps: Vec<String> = Vec::new();
-        for dep in &m.depends_on {
+        for dep in &m.dependencies {
             match index.get(dep.id.as_str()) {
                 None => {
                     return Err(ResolveError::MissingDependency {
@@ -149,7 +149,7 @@ impl Registry {
                 }
             }
         }
-        for dep in &m.optional_depends_on {
+        for dep in &m.optional_dependencies {
             if let Some(target) = index.get(dep.id.as_str()) {
                 check_version(m, dep, target)?;
                 deps.push(dep.id.clone());
@@ -363,14 +363,14 @@ mod tests {
         let mut ok = Registry::new();
         ok.register(Fake::boxed("lib", &[], &[])); // version 0.1.0
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.depends_on.push(Dependency { id: "lib".into(), version: Some(">=0.1".into()) });
+        app.dependencies.push(Dependency { id: "lib".into(), version: Some(">=0.1".into()) });
         ok.register(boxed_manifest(app));
         assert!(ok.resolve().is_ok());
 
         let mut bad = Registry::new();
         bad.register(Fake::boxed("lib", &[], &[])); // version 0.1.0
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.depends_on.push(Dependency { id: "lib".into(), version: Some("^2".into()) });
+        app.dependencies.push(Dependency { id: "lib".into(), version: Some("^2".into()) });
         bad.register(boxed_manifest(app));
         assert!(matches!(bad.resolve(), Err(ResolveError::VersionMismatch { .. })));
     }
@@ -379,13 +379,13 @@ mod tests {
     fn optional_dep_is_skipped_when_absent_and_ordered_when_present() {
         let mut reg = Registry::new();
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.optional_depends_on.push(Dependency::new("maybe"));
+        app.optional_dependencies.push(Dependency::new("maybe"));
         reg.register(boxed_manifest(app));
         assert!(reg.resolve().is_ok());
 
         let mut reg = Registry::new();
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.optional_depends_on.push(Dependency::new("maybe"));
+        app.optional_dependencies.push(Dependency::new("maybe"));
         reg.register(boxed_manifest(app));
         reg.register(Fake::boxed("maybe", &[], &[]));
         let order = reg.resolve().expect("resolves");
@@ -426,14 +426,14 @@ mod tests {
         let mut unreadable_range = Registry::new();
         unreadable_range.register(Fake::boxed("lib", &[], &[]));
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.depends_on.push(Dependency { id: "lib".into(), version: Some("latest".into()) });
+        app.dependencies.push(Dependency { id: "lib".into(), version: Some("latest".into()) });
         unreadable_range.register(boxed_manifest(app));
         assert!(unreadable_range.resolve().is_ok());
 
         let mut unreadable_target = Registry::new();
         unreadable_target.register(boxed_manifest(ModuleManifest::new("lib", "lib", "nightly")));
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.depends_on.push(Dependency { id: "lib".into(), version: Some("^1".into()) });
+        app.dependencies.push(Dependency { id: "lib".into(), version: Some("^1".into()) });
         unreadable_target.register(boxed_manifest(app));
         assert!(unreadable_target.resolve().is_ok());
     }

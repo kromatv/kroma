@@ -81,11 +81,12 @@ pub fn manifests(state: &SharedState) -> Vec<ModuleManifest> {
     let mut all = compiled_manifests();
     if let Some(sup) = supervisor(state) {
         let have: std::collections::HashSet<String> = all.iter().map(|m| m.id.clone()).collect();
-        for v in sup.installed_manifests() {
-            match serde_json::from_value::<ModuleManifest>(v) {
-                Ok(m) if !have.contains(&m.id) => all.push(m),
-                Ok(_) => {}
-                Err(e) => tracing::warn!(error = %e, "installed module has an invalid module.json"),
+        // A compiled-in module wins its id: the supervisor refuses to spawn a
+        // `.kmod` that shadows one, so listing the installed copy would describe
+        // something that never runs.
+        for m in sup.installed_manifests() {
+            if !have.contains(&m.id) {
+                all.push(m);
             }
         }
     }

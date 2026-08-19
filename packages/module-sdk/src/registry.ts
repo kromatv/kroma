@@ -11,19 +11,9 @@ import type {
 } from './module';
 import type { Dependencies, ModuleManifest } from './types';
 
-/** Normalize either dependency form (a `{ id: range }` map or a legacy array of
- *  ids / `"id@range"` / `{ id, version }`) to a flat list; `"*"` means no
- *  constraint. */
-export function depEntries(deps?: Dependencies): { id: string; version?: string }[] {
+/** A `{ id: range }` dependency map as a flat list; `"*"` means no constraint. */
+export function depEntries(deps?: Dependencies | null): { id: string; version?: string }[] {
   if (!deps) return [];
-  if (Array.isArray(deps)) {
-    return deps.map((d) => {
-      if (typeof d !== 'string') return d;
-      // Split on the FIRST '@'; a leading one (scoped id) is not a separator.
-      const at = d.indexOf('@');
-      return at <= 0 ? { id: d } : { id: d.slice(0, at), version: d.slice(at + 1) };
-    });
-  }
   return Object.entries(deps).map(([id, range]) => ({
     id,
     version: range && range !== '*' ? range : undefined,
@@ -83,13 +73,13 @@ export class ModuleRegistry {
     const mods = [...this.modules.values()];
     const edgesOf = (m: KromaModule): string[] => {
       const ids: string[] = [];
-      for (const { id } of depEntries(m.dependsOn)) {
+      for (const { id } of depEntries(m.dependencies)) {
         if (!this.modules.has(id)) {
           throw new Error(`module "${m.id}" depends on "${id}", which is not registered`);
         }
         ids.push(id);
       }
-      for (const { id } of depEntries(m.optionalDependsOn)) {
+      for (const { id } of depEntries(m.optionalDependencies)) {
         if (this.modules.has(id)) ids.push(id);
       }
       return ids;

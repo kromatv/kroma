@@ -105,7 +105,6 @@ coverage/
 lcov.info
 
 # Brand generator intermediate (input to `bunx tauri icon`, not a shipped asset).
-packages/core/scripts/tauri-source-1024.png
 
 # Workbench screenshots (bun run shots): review artefacts, not sources.
 .shots/

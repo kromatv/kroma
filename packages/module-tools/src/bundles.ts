@@ -6,49 +6,9 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { Manifest, MODULE_SCHEMA_VERSION, speaksCurrentSchema } from '@kroma/registry';
+import type { Artifact, Entry } from './catalog';
 import { byCodeUnit } from './sort';
-
-export interface Manifest {
-  id: string;
-  name: string;
-  version: string;
-  description?: string;
-  minServer?: string;
-  library?: boolean;
-  dependsOn?: Record<string, string> | unknown[];
-  optionalDependsOn?: Record<string, string> | unknown[];
-  provides?: unknown[];
-  requires?: unknown[];
-}
-
-export interface Artifact {
-  target: string | null;
-  file: string;
-  url: string;
-  size: number;
-  sha256: string;
-  // sha256 of the UNCOMPRESSED tar. The pipeline's "did this module actually
-  // change?" test, and the reason it is not `sha256`: that one covers the zstd
-  // stream, so a compressor upgrade would move it while the bundle's contents
-  // stood still, and every module would look like it needed a version bump.
-  contentHash: string;
-}
-
-export interface Entry extends Manifest {
-  icon?: string;
-  artifacts: Artifact[];
-  // Schema-1 compatibility mirror of artifacts[0].
-  file: string;
-  url: string;
-  size: number;
-  sha256: string;
-}
-
-export interface Catalog {
-  schema: number;
-  generatedAt?: string;
-  modules: Entry[];
-}
 
 /** One packed bundle on disk, before it is placed in a catalog. */
 export interface Bundle {
@@ -127,7 +87,20 @@ export function readBundles(dir: string): Bundle[] {
       console.warn(`  ! ${file}: no module.json inside, skipped`);
       continue;
     }
-    const manifest = JSON.parse(new TextDecoder().decode(manifestBytes)) as Manifest;
+    const read = Manifest.safeParse(JSON.parse(new TextDecoder().decode(manifestBytes)));
+    if (!read.success) {
+      console.warn(`  ! ${file}: module.json is not a manifest, skipped (${read.error.message})`);
+      continue;
+    }
+    const manifest = read.data;
+    // Refused here as well as at install: a registry that lists a bundle no
+    // current server will unpack is worse than one that never offered it.
+    if (!speaksCurrentSchema(manifest)) {
+      console.warn(
+        `  ! ${file}: built for manifest schema v${manifest.schemaVersion ?? 0}, and this SDK speaks v${MODULE_SCHEMA_VERSION}; skipped`,
+      );
+      continue;
+    }
     // Bundles are named `<id>.kmod` or `<id>-<target>.kmod`; recover the target
     // from the filename using the id just read out of the bundle.
     const stem = file.slice(0, -'.kmod'.length);

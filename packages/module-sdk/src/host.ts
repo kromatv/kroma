@@ -34,7 +34,7 @@ export interface KromaHost {
   i18n: HostI18n;
   nav: HostNav;
   bus: EventBus;
-  // Only meaningful for a module the caller declared in its `dependsOn`,
+  // Only meaningful for a module the caller declared in its `dependencies`,
   // which guarantees it is set up first.
   getModuleApi<K extends keyof ModuleApiRegistry>(id: K): ModuleApiRegistry[K] | undefined;
 }

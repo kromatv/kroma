@@ -133,7 +133,7 @@ function ConfigRow({
       <Field.Root label={field.label} hideLabel w={CONTROL_WIDTH}>
         <Field.Input
           type={field.secret ? 'password' : 'text'}
-          placeholder={field.placeholder}
+          placeholder={field.placeholder ?? undefined}
           value={String(value ?? '')}
           onValueChange={onChange}
         />

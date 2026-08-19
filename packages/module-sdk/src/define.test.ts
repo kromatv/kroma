@@ -32,7 +32,7 @@ describe('pageHref', () => {
 describe('defineModule', () => {
   it('builds a module from the explicit (manifest, options) form', () => {
     const m = defineModule(
-      { id: 'x', version: '2.3.4', dependsOn: { dep: '*' } },
+      { id: 'x', version: '2.3.4', dependencies: { dep: '*' } },
       {
         pages: [
           { path: 'p1', component: Page, nav: { section: 'library', label: 'One' } },
@@ -42,7 +42,7 @@ describe('defineModule', () => {
     );
     expect(m.id).toBe('x');
     expect(m.version).toBe('2.3.4');
-    expect(m.dependsOn).toEqual({ dep: '*' });
+    expect(m.dependencies).toEqual({ dep: '*' });
     expect(m.routes).toEqual([
       { path: 'p1', component: Page },
       { path: 'p2', component: Page },
@@ -59,13 +59,13 @@ describe('defineModule', () => {
     expect(m.navItems).toBeUndefined();
   });
 
-  it('lets explicit options.dependsOn override the manifest deps', () => {
+  it('lets explicit options.dependencies override the manifest deps', () => {
     const m = defineModule(
-      { id: 'z', version: '1.0.0', dependsOn: { a: '*' } },
-      { dependsOn: { b: '^2' }, optionalDependsOn: { c: '*' } },
+      { id: 'z', version: '1.0.0', dependencies: { a: '*' } },
+      { dependencies: { b: '^2' }, optionalDependencies: { c: '*' } },
     );
-    expect(m.dependsOn).toEqual({ b: '^2' });
-    expect(m.optionalDependsOn).toEqual({ c: '*' });
+    expect(m.dependencies).toEqual({ b: '^2' });
+    expect(m.optionalDependencies).toEqual({ c: '*' });
   });
 
   it('throws when no manifest is available', () => {

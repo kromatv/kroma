@@ -59,7 +59,7 @@ pub const MODULE_ID: &str = "tv.kroma.torrents";
 /// engine lifecycle, so disabling it 404s those routes and stops the running
 /// engine. Its download sub-engines (rqbit / transmission / qBittorrent) plug into
 /// the `DownloadClientRegistry`; VPN is a separate module this one
-/// `optionalDependsOn`. It reaches its [`DownloadManager`] through the host service
+/// `optionalDependencies`. It reaches its [`DownloadManager`] through the host service
 /// registry.
 ///
 /// Generic over the host state `S: HostCtx`, like every other module: it runs
