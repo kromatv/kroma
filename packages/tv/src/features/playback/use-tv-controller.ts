@@ -127,6 +127,7 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
     error: null,
     endedNonce: pb.endedNonce,
     surface: pb.surface,
+    aspect: pb.aspect,
     togglePlay: pb.togglePlay,
     seekTo: pb.seekTo,
     skip: pb.seek,

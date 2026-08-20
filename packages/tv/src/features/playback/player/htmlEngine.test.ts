@@ -129,6 +129,7 @@ function mkListeners(): EngineListeners {
     onEnded: vi.fn(),
     onError: vi.fn(),
     onReady: vi.fn(),
+    onAspect: vi.fn(),
   };
 }
 
@@ -540,10 +541,38 @@ describe('HtmlEngine destroy', () => {
     expect(listeners.onTime).not.toHaveBeenCalled();
   });
 
+  it('reports the display aspect on metadata and on a variant switch', () => {
+    const listeners = mkListeners();
+    const fv = fakeVideo({ videoWidth: 1920, videoHeight: 816 });
+    const { engine } = makeEngine({ fv, direct: true, listeners });
+    fv.fire('loadedmetadata');
+    expect(listeners.onAspect).toHaveBeenCalledWith(1920 / 816);
+    fv.set('videoWidth', 1440);
+    fv.set('videoHeight', 1080);
+    fv.fire('resize');
+    expect(listeners.onAspect).toHaveBeenLastCalledWith(4 / 3);
+    engine.destroy();
+  });
+
+  it('stays quiet about the aspect while the stream has no dimensions yet', () => {
+    const listeners = mkListeners();
+    const fv = fakeVideo({ videoWidth: 0, videoHeight: 0 });
+    const { engine } = makeEngine({ fv, direct: true, listeners });
+    fv.fire('loadedmetadata');
+    expect(listeners.onAspect).not.toHaveBeenCalled();
+    engine.destroy();
+  });
+
   it('drops the pending direct-play resume seek so the next item is not moved', () => {
+    // Counted against an engine with nothing to resume, so the assertion stays
+    // about the seek rather than about how many listeners the engine binds.
+    const bare = fakeVideo();
+    const bareEngine = makeEngine({ fv: bare, direct: true, startSec: 0 }).engine;
+    const withSeek = bare.listenerCount('loadedmetadata') + 1;
+    bareEngine.destroy();
     const fv = fakeVideo();
     const { engine } = makeEngine({ fv, direct: true, startSec: 20 });
-    expect(fv.listenerCount('loadedmetadata')).toBe(2);
+    expect(fv.listenerCount('loadedmetadata')).toBe(withSeek);
     engine.destroy();
     expect(fv.listenerCount('loadedmetadata')).toBe(0);
     fv.fire('loadedmetadata');

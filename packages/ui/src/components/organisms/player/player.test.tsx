@@ -68,9 +68,10 @@ describe('<Player> as a compound', () => {
     expect(Object.keys(Player).sort()).toEqual(['Actions', 'Media', 'Panel', 'Root']);
   });
 
-  it('mounts the media as a DIRECT child of the stage, which is what sizes a browser surface', () => {
+  it('mounts the media inside the stage, which is what sizes a browser surface', () => {
     render(player(media));
-    expect(screen.getByTestId('surface').parentElement?.id).toBe('kroma-player-stage');
+    const surface = screen.getByTestId('surface');
+    expect(surface.closest('#kroma-player-stage')).not.toBeNull();
   });
 
   it('draws <Player.Actions> in the top bar', () => {

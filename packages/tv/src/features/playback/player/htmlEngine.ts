@@ -89,6 +89,11 @@ export class HtmlEngine implements TvEngine {
     const onEnded = () => L.onEnded();
     const onErr = () => L.onError();
     const onReady = () => L.onReady();
+    // The DISPLAY size, so an anamorphic stream is already corrected. `resize`
+    // covers a variant switch mid-playback, not just the first metadata.
+    const onResize = () => {
+      if (v.videoHeight > 0) L.onAspect?.(v.videoWidth / v.videoHeight);
+    };
 
     const evs: [string, EventListener][] = [
       ['timeupdate', onTime],
@@ -103,6 +108,8 @@ export class HtmlEngine implements TvEngine {
       ['loadedmetadata', onReady],
       ['loadeddata', onReady],
       ['canplay', onReady],
+      ['loadedmetadata', onResize],
+      ['resize', onResize],
     ];
     for (const [t, fn] of evs) v.addEventListener(t, fn);
     this.cleanupEvents = () => {

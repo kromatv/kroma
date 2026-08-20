@@ -170,7 +170,7 @@ export const PANEL_MIN = 420;
 // rather than duplicated, so the two constraints can't disagree on it.
 export const CARD_MARGIN = 64;
 
-const MIN_CARD_SCALE = 0.2;
+export const MIN_CARD_SCALE = 0.2;
 
 export interface PanelGeometry {
   width: number;

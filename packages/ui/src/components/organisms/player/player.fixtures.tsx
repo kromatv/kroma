@@ -36,6 +36,14 @@ export const UP_NEXT = {
   })),
 };
 
+export const ASPECTS: Record<string, number> = {
+  scope: 2.39,
+  widescreen: 16 / 9,
+  academy: 4 / 3,
+  square: 1,
+  vertical: 9 / 16,
+};
+
 export function Surface() {
   return <Img src={stillArt(1)} fill fit="cover" />;
 }

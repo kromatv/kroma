@@ -1,6 +1,6 @@
 import type { KromaClient, MediaItem } from '@kroma/client';
 import { describe, expect, it, vi } from 'vitest';
-import { attachDirectPlay, formatRuntime } from './player';
+import { attachDirectPlay, declaredAspect, formatRuntime } from './player';
 
 const client = { streamUrl: (id: string) => `http://nas/api/items/${id}/stream` } as KromaClient;
 const ITEM = { id: 'i1', video: { codec: 'h264', bitDepth: 8 } } as unknown as MediaItem;
@@ -79,6 +79,22 @@ describe('attachDirectPlay', () => {
     attachDirectPlay(blocked.el, client, ITEM, { autoplay: true });
     expect(blocked.play).toHaveBeenCalledTimes(1);
     await expect(blocked.play.mock.results[0]?.value).rejects.toThrow('autoplay blocked');
+  });
+});
+
+describe('declaredAspect', () => {
+  const withVideo = (video: unknown) => ({ id: 'i1', video }) as unknown as MediaItem;
+
+  it('divides the declared dimensions', () => {
+    expect(declaredAspect(withVideo({ width: 1920, height: 1080 }))).toBeCloseTo(16 / 9, 6);
+    expect(declaredAspect(withVideo({ width: 1080, height: 1920 }))).toBeCloseTo(9 / 16, 6);
+  });
+
+  it('has no answer when a dimension is missing or zero', () => {
+    expect(declaredAspect(withVideo({ width: 1920, height: null }))).toBeUndefined();
+    expect(declaredAspect(withVideo({ width: null, height: 1080 }))).toBeUndefined();
+    expect(declaredAspect(withVideo({ width: 0, height: 0 }))).toBeUndefined();
+    expect(declaredAspect(withVideo(null))).toBeUndefined();
   });
 });
 

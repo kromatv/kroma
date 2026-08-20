@@ -4,6 +4,7 @@ import {
   audioTracksOf,
   canDirectPlay,
   type DirectPlayVerdict,
+  declaredAspect,
   type KromaClient,
   type MediaItem,
   type MessageKey,
@@ -57,6 +58,9 @@ export interface Playback {
   cur: number;
   dur: number;
   bufEnd: number;
+  /** The picture's display ratio, from the decoder where a backend can read it
+   *  and from the catalog otherwise; undefined when neither knows. */
+  aspect: number | undefined;
   audioTracks: AudioTrack[];
   audioIndex: number;
   setAudio: (index: number) => void;
@@ -123,6 +127,9 @@ export function useDirectPlayback(
   const [cur, setCur] = useState(0);
   const [dur, setDur] = useState(item.durationMs ? item.durationMs / 1000 : 0);
   const [bufEnd, setBufEnd] = useState(0);
+  // Seeded from the catalog so the picture has its shape before a frame decodes,
+  // then corrected by any engine that can read its own decoder.
+  const [decodedAspect, setDecodedAspect] = useState<number | undefined>(undefined);
   const [endedNonce, setEndedNonce] = useState(0);
   const [seekNonce, setSeekNonce] = useState(0);
   // `engineRef` is a ref, so the surface cannot see a replaced player without this.
@@ -209,6 +216,7 @@ export function useDirectPlayback(
   useEffect(() => {
     setReady(false);
     startedRef.current = false;
+    setDecodedAspect(undefined);
     if (startSec == null) return;
     // The stream opens there, so the cursor must not sit at 0:00 then teleport.
     setCur(startSec);
@@ -237,6 +245,7 @@ export function useDirectPlayback(
       onEnded: () => setEndedNonce((n) => n + 1),
       onError: () => giveUp(),
       onAudioFilterUnavailable: () => setAudioFilterSupported(false),
+      onAspect: (a) => setDecodedAspect(a > 0 && Number.isFinite(a) ? a : undefined),
       onSurfaceChange: () => setSurfaceNonce((n) => n + 1),
       onReady: () => {
         setReady(true);
@@ -418,6 +427,7 @@ export function useDirectPlayback(
     cur,
     dur,
     bufEnd,
+    aspect: decodedAspect ?? declaredAspect(item),
     audioTracks,
     audioIndex,
     setAudio,

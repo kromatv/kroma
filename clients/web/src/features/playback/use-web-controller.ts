@@ -1,4 +1,9 @@
-import { audioTrackLabel, qualityBadgeForVideo, refineTrackLang } from '@kroma/core';
+import {
+  audioTrackLabel,
+  declaredAspect,
+  qualityBadgeForVideo,
+  refineTrackLang,
+} from '@kroma/core';
 import {
   type PlayerController,
   type PlayerStats,
@@ -94,6 +99,27 @@ export function useWebController(item: MovieView): WebController {
     }
   }, [pb.videoRef]);
 
+  // The picture's shape, so the chrome can hug it before a frame is decoded.
+  // `videoWidth/videoHeight` is the DISPLAY size, anamorphic storage already
+  // corrected, which the catalog's dimensions are not, so the element wins as
+  // soon as it can answer. `resize` fires on every variant switch, not just the
+  // first metadata.
+  const [decodedAspect, setDecodedAspect] = useState<number | undefined>(undefined);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: anchor/audioIndex are intentional remount triggers, not read values. The <video> is keyed by anchor+audio, so re-anchoring / switching audio mounts a fresh element the `resize` listener must rebind to. Depending on `pb` itself would rerun on every render.
+  useEffect(() => {
+    const v = pb.videoRef.current;
+    if (!v) return;
+    const read = () =>
+      setDecodedAspect(v.videoHeight > 0 ? v.videoWidth / v.videoHeight : undefined);
+    read();
+    v.addEventListener('resize', read);
+    v.addEventListener('loadedmetadata', read);
+    return () => {
+      v.removeEventListener('resize', read);
+      v.removeEventListener('loadedmetadata', read);
+    };
+  }, [pb.anchor, pb.audioIndex, pb.videoRef]);
+
   // Natural-end nonce (autoplay trigger), rebinding on remount.
   const [endedNonce, setEndedNonce] = useState(0);
   // biome-ignore lint/correctness/useExhaustiveDependencies: anchor/audioIndex are intentional remount triggers, not read values. The <video> is keyed by anchor+audio, so re-anchoring / switching audio mounts a fresh element the `ended` listener must rebind to. Depending on `pb` itself would rerun on every render.
@@ -175,6 +201,7 @@ export function useWebController(item: MovieView): WebController {
     error: null,
     endedNonce,
     surface: 'video',
+    aspect: decodedAspect ?? declaredAspect(item),
     togglePlay: pb.togglePlay,
     seekTo: pb.seekTo,
     skip: pb.skip,

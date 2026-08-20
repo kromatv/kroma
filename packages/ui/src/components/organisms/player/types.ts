@@ -193,6 +193,10 @@ export interface PlayerController {
   /** Bumps once each time playback reaches the natural end (autoplay trigger). */
   endedNonce: number;
   surface: PlayerSurface;
+  /** The picture's display ratio (width / height), once the media declares one.
+   *  Left out while unknown, and then the surface fills the stage rather than
+   *  hugging its own shape. */
+  aspect?: number;
 
   togglePlay(): void;
   /** Seek to an absolute position (seconds). */

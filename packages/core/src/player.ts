@@ -41,6 +41,18 @@ export function attachDirectPlay(
   return verdict;
 }
 
+/**
+ * The picture's display ratio (width / height) as the CATALOG declares it, or
+ * undefined when the item carries no usable dimensions. Storage geometry, so an
+ * anamorphic source is off by its pixel ratio: a player that can read the
+ * decoder's own size should report that instead and keep this as the seed.
+ */
+export function declaredAspect(item: MediaItem): number | undefined {
+  const width = item.video?.width ?? 0;
+  const height = item.video?.height ?? 0;
+  return width > 0 && height > 0 ? width / height : undefined;
+}
+
 /** Formats a runtime as `"2h08"` or `"47min"`. */
 export function formatRuntime(durationMs: number | null | undefined): string {
   if (!durationMs || durationMs <= 0) return '';

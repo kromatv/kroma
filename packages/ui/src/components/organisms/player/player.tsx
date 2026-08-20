@@ -30,15 +30,10 @@ import { usePlayerNav } from './hooks/use-player-nav';
 import { useSeekNudge } from './hooks/use-seek-nudge';
 import { currentChapter, normalizeChapters } from './lib/chapters';
 import { clamp01, endsAtClock, sliderToVolume, volumeToSlider } from './lib/fmt';
-import {
-  CARD_MARGIN,
-  chromeMetrics,
-  GUTTER,
-  panelGeometry,
-  scaler,
-  TRANSPORT_HEIGHT,
-} from './lib/metrics';
+import { chromeMetrics, GUTTER, panelGeometry, scaler, TRANSPORT_HEIGHT } from './lib/metrics';
 import { type ControlId, controlOrder, type PanelHandle } from './lib/nav';
+import { stageCard } from './lib/stage-card';
+import { useStageRatio } from './lib/stage-ratio';
 import { injectStageStyles } from './lib/styles';
 import type { SubtitleAppearance } from './lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from './lib/virtual-focus';
@@ -108,25 +103,11 @@ const SKIP_REST = 56;
 const CARD_RADIUS = 72;
 const ZOOM_MS = 340;
 
-// The scale is uniform, so the card's height fraction equals its width fraction
-// and `transformOrigin: '0 50%'` keeps it vertically centred for free.
-function cardGeometry(stageWidth: number): { scale: number; x: number; rect: PlaneRect } {
-  const free = Math.max(0, stageWidth - panelGeometry(stageWidth).width);
-  const width = Math.max(0, free - CARD_MARGIN * 2);
-  const scale = stageWidth > 0 ? width / stageWidth : 0.5;
-  const x = (free - width) / 2;
-  return {
-    scale,
-    x,
-    // The same geometry as fractions, for a native plane that cannot be
-    // transformed and is moved with setPlaneRect instead.
-    rect: { x: stageWidth > 0 ? x / stageWidth : 0, y: (1 - scale) / 2, w: scale, h: scale },
-  };
-}
+const pct = (fraction: number): `${number}%` => `${fraction * 100}%`;
 
 // The JS driver, deliberately: `borderRadius` is not a native-driver property,
 // and the corners have to round in step with the scale.
-function useStageZoom(settingsShrink: boolean, card: { scale: number; x: number }) {
+function useStageZoom(settingsShrink: boolean, card: { scale: number; origin: number }) {
   const [zoom] = useState(() => new Animated.Value(settingsShrink ? 1 : 0));
   useEffect(() => {
     const anim = Animated.timing(zoom, {
@@ -142,14 +123,12 @@ function useStageZoom(settingsShrink: boolean, card: { scale: number; x: number 
   const radius = zoom.interpolate({ inputRange: [0, 1], outputRange: [0, CARD_RADIUS] });
   return {
     radius,
+    // A scale alone: `stageCard` picked the origin that lands the picture on the
+    // card, so there is no translate to state in pixels the shell may have
+    // scaled away under us.
     style: {
-      transformOrigin: '0 50%',
+      transformOrigin: `${pct(card.origin)} 50%`,
       transform: [
-        // Pixels, not '3%': React Native cannot interpret a percentage in a
-        // transform (react-native-web can, so this only broke on the TV).
-        {
-          translateX: zoom.interpolate({ inputRange: [0, 1], outputRange: [0, card.x] }),
-        },
         { scale: zoom.interpolate({ inputRange: [0, 1], outputRange: [1, card.scale] }) },
       ],
       borderRadius: radius,
@@ -275,12 +254,30 @@ function Root({
   // Seeded from the window so the first frame is not measured at zero, then kept
   // honest by the root's own layout. Read once rather than through
   // `useWindowDimensions`, which would subscribe to every resize event.
-  const [stageWidth, setStageWidth] = useState(() => Dimensions.get('window').width);
+  const [stageSize, setStageSize] = useState(() => {
+    const win = Dimensions.get('window');
+    return { width: win.width, height: win.height };
+  });
   const onStageLayout = useCallback((e: LayoutChangeEvent) => {
     const width = Math.round(e.nativeEvent.layout.width);
-    setStageWidth((prev) => (prev === width || width <= 0 ? prev : width));
+    const height = Math.round(e.nativeEvent.layout.height);
+    setStageSize((prev) =>
+      (prev.width === width || width <= 0) && (prev.height === height || height <= 0)
+        ? prev
+        : { width: width > 0 ? width : prev.width, height: height > 0 ? height : prev.height },
+    );
   }, []);
-  const card = useMemo(() => cardGeometry(stageWidth), [stageWidth]);
+  const stageWidth = stageSize.width;
+  // The stage's shape, which a television shell's window does not share: it fits
+  // a 1920x1080 canvas into the window it was given and keeps a surround.
+  const stageRatio = useStageRatio(
+    STAGE_ID,
+    stageSize.height > 0 ? stageSize.width / stageSize.height : 16 / 9,
+  );
+  const card = useMemo(
+    () => stageCard(stageWidth, stageWidth / stageRatio, c.aspect),
+    [stageWidth, stageRatio, c.aspect],
+  );
   const t = useT();
   const locale = useLocale();
 
@@ -368,11 +365,28 @@ function Root({
   // Only an in-page `video` surface transforms: some firmwares drag the hardware
   // layer around if the native plane's <object> placeholder is CSS-transformed.
   const stage = useStageZoom(settingsShrink, card);
+  // Clipped, so the card's corners round whatever the host mounted; a surface
+  // that must round ITSELF (a hardware plane is not clipped by a parent) still
+  // reads the same radius off SurfaceRadiusProvider.
+  const pictureBox: ViewStyle = card.picture
+    ? {
+        position: 'absolute',
+        overflow: 'hidden',
+        left: pct(card.picture.x),
+        top: pct(card.picture.y),
+        width: pct(card.picture.width),
+        height: pct(card.picture.height),
+      }
+    : s.picture;
   // On a native shrink the stage stays put, so this wrapper carries the spinner
-  // and subtitles down itself - on the same geometry the plane gets, so they land
-  // on the shrunken picture.
+  // and subtitles down itself - on the picture's box, which is what the transform
+  // maps onto the card, so they land on the shrunken picture rather than beside it.
   const contentShrink: ViewStyle | undefined = nativeShrink
-    ? { transformOrigin: '0 50%', transform: [{ translateX: card.x }, { scale: card.scale }] }
+    ? {
+        ...pictureBox,
+        transformOrigin: `${pct(card.origin)} 50%`,
+        transform: [{ scale: card.scale }],
+      }
     : undefined;
   const endsAt = c.dur ? endsAtClock(Math.max(0, c.dur - c.cur) * 1000, locale) : '';
   // Measured rather than assumed, and it falls back to the design height:
@@ -417,19 +431,19 @@ function Root({
             onPress={input.onStagePress}
             onLongPress={input.onStageLongPress}
             nativeID={STAGE_ID}
-            style={[
-              s.stage,
-              settingsShrink ? { backgroundColor: '#000000', boxShadow: STAGE_SHADOW } : null,
-              stage.style,
-            ]}
+            style={[s.stage, stage.style]}
           >
-            {/* The surface rounds ITSELF: a rounded parent does not clip a native
-              video layer. Renders no element, so the web client's direct-child
-              `<video>` rule still matches. */}
-            <SurfaceRadiusProvider radius={stage.radius}>{slots.media}</SurfaceRadiusProvider>
+            {/* The picture's own box, so the shrink card hugs the film's shape
+              instead of the window's. The surface rounds ITSELF on top of it: a
+              rounded parent does not clip a native video layer. */}
+            <Animated.View
+              style={[pictureBox, { borderRadius: stage.radius }, settingsShrink ? s.card : null]}
+            >
+              <SurfaceRadiusProvider radius={stage.radius}>{slots.media}</SurfaceRadiusProvider>
+            </Animated.View>
             {/* Carries the spinner + subtitles into the card when a native plane
               shrinks; the stage itself must not move then. */}
-            <Box fill overflow="hidden" style={[s.inert, contentShrink]}>
+            <Box style={[contentShrink ?? s.picture, s.inert]}>
               <SubtitleRenderer
                 positionSec={c.cur}
                 playing={c.playing}
@@ -609,6 +623,8 @@ const BOTTOM_SCRIM = gradient('linear-gradient(0deg, rgba(0,0,0,0.82), transpare
 
 const s = styles({
   stage: { fill: true, z: 2, overflow: 'hidden' },
+  picture: { fill: true, overflow: 'hidden' },
+  card: { bg: '#000000', boxShadow: STAGE_SHADOW },
   maskSurround: { boxShadow: '0 0 0 100vmax #000', pointerEvents: 'none' },
   inert: { pointerEvents: 'none' },
   chromeLive: { pointerEvents: 'box-none' },

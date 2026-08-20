@@ -4,9 +4,13 @@
 import { webDocument } from '#ui/lib/dom';
 
 // The surface element is supplied by the client, so the chrome cannot style it
-// through a prop. A native surface sizes itself and never sees this rule.
+// through a prop. It fills the picture box the stage lays out, which already
+// carries the film's shape; `object-fit` is what keeps it honest for the frames
+// before the media declares one. A native surface sizes itself and never sees
+// this rule. Runtime CSS, so it never meets the legacy tier's down-level pass:
+// every property here has to work on the oldest engine a shell ships to.
 const STAGE_SURFACE = `
-#kroma-player-stage > video {
+#kroma-player-stage video {
   width: 100%;
   height: 100%;
   background: #000;

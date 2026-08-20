@@ -97,9 +97,12 @@ textarea {
    cost a neighbour its own edge: react-native-web gives every View
    `position: relative; z-index: 0`, so each control is its own stacking
    context, `z-index: -1` cannot get behind the one beside it, and the overhang
-   would take the pointer over a sibling that paints earlier. */
+   would take the pointer over a sibling that paints earlier.
+   That same react-native-web default is why `[role="button"]` is NOT in the
+   list below: every control the kit builds is already relative, and naming the
+   attribute here would out-weigh the atomic class an absolutely positioned one
+   is given, collapsing it onto its content. */
 button,
-[role="button"],
 summary {
   position: relative;
 }

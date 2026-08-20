@@ -161,6 +161,7 @@ function fakeController(over: Partial<PlayerController> = {}): PlayerController 
     error: null,
     endedNonce: 0,
     surface: 'video',
+    aspect: 2.39,
 
     togglePlay: noop,
     seekTo: noop,

@@ -7,7 +7,7 @@ import { stillArt } from '#ui/lib/sample-art';
 import { DEFAULT_SUB_APPEARANCE } from './lib/subtitle-appearance';
 import { Player } from './player';
 import { CHAPTERS, fakeController } from './player.fixture';
-import { WEB, TV, NO_GEN, UP_NEXT, Surface } from './player.fixtures';
+import { WEB, TV, NO_GEN, UP_NEXT, ASPECTS, Surface } from './player.fixtures';
 
 export const story = defineStory({
   group: 'Player',
@@ -17,16 +17,18 @@ export const story = defineStory({
   pad: 0,
   args: {
     playing: false,
+    format: 'scope',
     warn: '',
     tv: false,
     intro: false,
     actions: false,
     stopped: false,
   },
-  render: ({ playing, warn, tv, intro, actions, stopped }) => (
+  controls: { format: Object.keys(ASPECTS) },
+  render: ({ playing, format, warn, tv, intro, actions, stopped }) => (
     <Box flex bg="#000000" overflow="hidden">
       <Player.Root
-        controller={fakeController({ playing })}
+        controller={fakeController({ playing, aspect: ASPECTS[String(format)] })}
         flags={tv ? TV : WEB}
         title="Blade Runner 2049"
         subtitle="2017 · 2 h 44"
