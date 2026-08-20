@@ -29,10 +29,6 @@ tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
-# Pure capability-provider modules the facade re-exports (they sit below it, on
-# the manifest layer) so consumer modules reach them via kroma_module_sdk::<name>
-# instead of a direct cross-module dependency.
-kroma-scene = { workspace = true }
 
 [features]
 testing = ["kroma-module-host/testing", "storage", "engine"]
@@ -50,5 +46,3 @@ engine = ["dep:kroma-engine", "storage"]
 kroma-module-host = { workspace = true, features = ["testing"] }
 # Only so a test can implement `HostCtx`, whose methods return axum responses.
 axum = { workspace = true }
-# `db::testing::temp_pool`, the throwaway settings store the naming tests read.
-kroma-db = { workspace = true, features = ["testing"] }

@@ -1,5 +1,6 @@
-//! The acquisition-port surface of a request: the live indexer sweep, the
-//! release it picks, and the manual grab.
+//! The acquisition surface of a request: the live indexer sweep, the release it
+//! picks, and the manual grab. Every one of them is forwarded to whichever module
+//! answers the `acquisition` point, as opaque JSON.
 
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
@@ -13,20 +14,58 @@ use crate::api::extract::AuthUser;
 use crate::model::{
     Permission, User,
 };
+use crate::api::point;
 use crate::services::jobs::TriggerError;
 use crate::state::SharedState;
 
-use super::{locale, require, service};
+use super::{require, service};
 
-// The request-tied search + grab routes are core, but the feature they call into
-// lives behind the acquisition-search contract. Resolving it IS the gate: with
-// no module installed, enabled and serving it, search/grab 404 everywhere.
-fn require_acquisition_port(
+// The search + grab routes are core, but the work behind them happens in
+// whichever module answers this point. The core holds the name and forwards
+// opaque JSON: the scored-releases view is the client's business, not the core's.
+const ACQUISITION: &str = "acquisition";
+
+// Resolving IS the gate: with no module installed, enabled and answering the
+// point, search/grab 404 everywhere.
+fn require_acquisition_point(
     state: &SharedState,
     user: &User,
-) -> Result<std::sync::Arc<dyn kroma_module_sdk::ports::AcquisitionSearchPort>, Response> {
+) -> Result<kroma_module_host::Resolver, Response> {
     require(user, Permission::RequestsManage)?;
-    acquisition_search(state, user)
+    point::require(state, user, ACQUISITION)
+}
+
+fn search_at(
+    resolve: &kroma_module_host::Resolver,
+    id: &str,
+    scope: &serde_json::Value,
+) -> anyhow::Result<serde_json::Value> {
+    kroma_module_host::call_point(
+        resolve,
+        ACQUISITION,
+        "search",
+        &json!({ "request_id": id, "scope": scope }),
+    )
+}
+
+fn grab_at(
+    resolve: &kroma_module_host::Resolver,
+    id: &str,
+    scope: &serde_json::Value,
+    guid: &str,
+    indexer_id: &str,
+) -> anyhow::Result<String> {
+    kroma_module_host::call_point(
+        resolve,
+        ACQUISITION,
+        "grab",
+        &json!({
+            "request_id": id,
+            "scope": scope,
+            "guid": guid,
+            "indexer_id": indexer_id,
+        }),
+    )
 }
 
 /// `POST /api/requests/search-missing` (requests.manage) "Search all missing":
@@ -44,14 +83,14 @@ pub async fn search_all_missing(
     let job = state
         .jobs
         .resolve("acquisition.search")
-        .ok_or_else(|| lerr(locale(&user), StatusCode::NOT_FOUND, "error.moduleDisabled"))?;
+        .ok_or_else(|| lerr(super::locale(&user), StatusCode::NOT_FOUND, "error.moduleDisabled"))?;
     match state.jobs.trigger(state.clone(), job, "manual") {
         Ok(run_id) => Ok(Json(json!({ "runId": run_id })).into_response()),
         Err(TriggerError::AlreadyRunning) => {
             Err(json_error(StatusCode::CONFLICT, "a search pass is already running"))
         }
         Err(TriggerError::Unknown) => {
-            Err(lerr(locale(&user), StatusCode::NOT_FOUND, "error.moduleDisabled"))
+            Err(lerr(super::locale(&user), StatusCode::NOT_FOUND, "error.moduleDisabled"))
         }
     }
 }
@@ -66,15 +105,15 @@ pub async fn auto_search_one(
     AuthUser(user): AuthUser,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    let port = require_acquisition_port(&state, &user)?;
+    let resolve = require_acquisition_point(&state, &user)?;
     let rid = id.clone();
     let grabbed = service(move || {
         let scope = json!({ "kind": "all" });
-        let view = port.interactive_search(&state, &rid, &scope)?;
+        let view = search_at(&resolve, &rid, &scope)?;
         let Some((guid, indexer_id, title)) = best_release(&view) else {
             return Ok(None);
         };
-        port.grab(&state, &rid, &scope, &guid, &indexer_id)?;
+        grab_at(&resolve, &rid, &scope, &guid, &indexer_id)?;
         Ok(Some(title))
     })
     .await?;
@@ -114,7 +153,7 @@ pub struct ScopeParams {
     episode: Option<u32>,
 }
 
-// Mirrors the acquisition module's `SearchScope`; the core only forwards it, so
+// Mirrors the acquisition module's own scope type; the core only forwards it, so
 // it travels as JSON rather than as a shared type across the sidecar boundary.
 fn scope_value(params: &ScopeParams) -> Result<serde_json::Value, Response> {
     let bad = |what: &str| json_error(StatusCode::BAD_REQUEST, what);
@@ -145,9 +184,9 @@ pub async fn interactive_search(
     Path(id): Path<String>,
     Query(params): Query<ScopeParams>,
 ) -> Result<Response, Response> {
-    let port = require_acquisition_port(&state, &user)?;
+    let resolve = require_acquisition_point(&state, &user)?;
     let scope = scope_value(&params)?;
-    let view = service(move || port.interactive_search(&state, &id, &scope)).await?;
+    let view = service(move || search_at(&resolve, &id, &scope)).await?;
     Ok(Json(view).into_response())
 }
 
@@ -170,21 +209,13 @@ pub async fn grab(
     Path(id): Path<String>,
     Json(body): Json<GrabBody>,
 ) -> Result<Response, Response> {
-    let port = require_acquisition_port(&state, &user)?;
+    let resolve = require_acquisition_point(&state, &user)?;
     let scope = scope_value(&body.scope)?;
-    // The port enqueues (fast) and backgrounds the slow torrent add on the
-    // acquisition sidecar, so the request returns right away.
+    // The module enqueues (fast) and backgrounds the slow torrent add, so the
+    // request returns right away.
     let rid = id.clone();
-    service(move || port.grab(&state, &rid, &scope, &body.guid, &body.indexer_id)).await?;
+    service(move || grab_at(&resolve, &rid, &scope, &body.guid, &body.indexer_id)).await?;
     Ok(Json(json!({ "ok": true, "id": id })).into_response())
-}
-
-fn acquisition_search(
-    state: &SharedState,
-    user: &User,
-) -> Result<std::sync::Arc<dyn kroma_module_sdk::ports::AcquisitionSearchPort>, Response> {
-    kroma_module_sdk::ports::acquisition_search(state.as_ref())
-        .ok_or_else(|| lerr(locale(user), StatusCode::NOT_FOUND, "error.moduleDisabled"))
 }
 
 #[cfg(test)]

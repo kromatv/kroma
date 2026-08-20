@@ -15,6 +15,7 @@ use crate::model::MediaItem;
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
+use kroma_engine::services::embeddings;
 
 pub fn routes() -> Router<SharedState> {
     Router::new()
@@ -80,8 +81,8 @@ pub async fn themed(
     // Embed and search together on the blocking pool: embedding is CPU work.
     let embedder = state.embedder.clone();
     match query(&state.db, move |pool| {
-        let vec = embedder.embed(&q);
-        let mut items = db::themed_items(&pool, &vec, ROW_LEN, embedder.relevance_floor())?;
+        let vec = embeddings::embed(&embedder, &q);
+        let mut items = db::themed_items(&pool, &vec, ROW_LEN, embeddings::relevance_floor(&embedder))?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
         Ok(items)
     })

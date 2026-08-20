@@ -14,8 +14,8 @@ use crate::services::settings;
 use crate::services::subtitles::{self, GenMode, GenSpec, Quality};
 use crate::state::SharedState;
 
-use crate::boot::whisper::WhisperClient;
-use super::whisper_available;
+use crate::boot::transcriber::TranscriberClient;
+use super::transcriber_available;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -62,7 +62,7 @@ pub async fn generate(State(state): State<SharedState>, Path(id): Path<String>, 
 
     // Cheap, synchronous config gates (no I/O) so the client gets a real error
     // instead of a genId that fails the instant it starts.
-    if mode == GenMode::Transcribe && !whisper_available(&state) {
+    if mode == GenMode::Transcribe && !transcriber_available(&state) {
         return json_error(StatusCode::BAD_REQUEST, "the Whisper module is not installed or not running");
     }
     if mode == GenMode::Translate && settings::default_provider(&state.settings).is_none() {
@@ -151,15 +151,15 @@ async fn run_generation(t: GenTask) {
     let settings = state.settings.clone();
     let data_dir = state.config.data_dir.clone();
     let pool = state.db.clone();
-    // The whisper transcriber is the out-of-process sidecar proxy (registered
-    // as a service in the composition root); translate-only generations don't
-    // need it, so a missing one only fails a transcribe.
-    let whisper = kroma_module_host::service::<WhisperClient>(&state);
+    // The transcriber is the out-of-process sidecar proxy (registered as a
+    // service in the composition root); translate-only generations don't need
+    // it, so a missing one only fails a transcribe.
+    let transcriber = kroma_module_host::service::<TranscriberClient>(&state);
     // The model (ffmpeg + Whisper / LLM) is blocking: run it on the blocking pool
     // and finalize the registry entry with its result.
     let _ = tokio::task::spawn_blocking(move || {
-        let result = match whisper.as_ref() {
-            Some(whisper) => subtitles::generate(
+        let result = match transcriber.as_ref() {
+            Some(transcriber) => subtitles::generate(
                 &settings,
                 &data_dir,
                 &pool,
@@ -167,9 +167,9 @@ async fn run_generation(t: GenTask) {
                 std::path::Path::new(&abs),
                 &spec,
                 &handle,
-                whisper.as_ref(),
+                &transcriber.step(),
             ),
-            None => Err("the Whisper module is not installed".to_string()),
+            None => Err("no transcription module is installed".to_string()),
         };
         match result {
             Ok(sub) => handle.done(&sub.id),

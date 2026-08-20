@@ -3,17 +3,17 @@
   "schemaVersion": 2,
   "id": "tv.kroma.engine.qbittorrent",
   "name": "qBittorrent engine",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "qBittorrent WebUI as a download sub-engine for the Downloads module. Toggle it to add/remove qBittorrent from the download-client picker.",
   "engines": {
-    "server": ">=0.1.38"
+    "server": ">=0.1.39"
   },
   "dependencies": {
-    "tv.kroma.torrents": "^0.2.0"
+    "tv.kroma.torrents": "^0.3.0"
   },
-  "provides": [
+  "contributes": [
     {
-      "kind": "download-client",
+      "point": "tv.kroma.torrents/client",
       "id": "qbittorrent",
       "label": "qBittorrent",
       "fields": [

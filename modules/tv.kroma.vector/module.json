@@ -3,16 +3,14 @@
   "schemaVersion": 2,
   "id": "tv.kroma.vector",
   "name": "Embeddings",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Content embeddings for recommendations and semantic search.",
   "engines": {
-    "server": ">=0.1.38"
+    "server": ">=0.1.39"
   },
-  "provides": [
+  "contributes": [
     {
-      "kind": "embedder",
-      "id": "content"
+      "point": "embedder"
     }
-  ],
-  "ports": ["embedder"]
+  ]
 }

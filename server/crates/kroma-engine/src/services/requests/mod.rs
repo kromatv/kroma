@@ -29,7 +29,7 @@ use anyhow::{anyhow, Result};
 use kroma_module_host::HostStorage;
 
 fn tmdb_key<S: HostStorage>(state: &S) -> Result<String> {
-    state.tmdb_api_key().ok_or_else(|| anyhow!("TMDB is not configured"))
+    state.secret("tmdb").ok_or_else(|| anyhow!("TMDB is not configured"))
 }
 
 fn language<S: HostStorage>(state: &S) -> String {

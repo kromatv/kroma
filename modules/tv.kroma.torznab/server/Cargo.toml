@@ -23,6 +23,10 @@ anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 quick-xml = "0.41"
+# The point's routes: this module mounts them itself, so it holds the axum it
+# needs rather than a shared contract crate holding it on everyone's behalf.
+axum = { version = "0.8", features = ["macros"] }
+kroma-module-host = { path = "../../../server/crates/kroma-module-host" }
 
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO

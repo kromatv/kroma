@@ -1,10 +1,10 @@
 // The install dialog's plan stage: the resolved module list, the opt-in
-// groups (optional deps + capability providers) and the unsatisfiable-
+// groups (optional deps + point contributors) and the unanswerable-
 // requirement warnings. The dialog itself lives in module-install.tsx.
 
 import {
   formatBytes,
-  type StoreMissingCapability,
+  type StoreMissingPoint,
   type StoreOptionalModule,
   type StorePlan,
   type StorePlanModule,
@@ -74,9 +74,7 @@ function OptInGroup({
   if (rows.length === 0) return null;
   const hint = (m: StoreOptionalModule) =>
     [
-      m.capability && m.for
-        ? t('admin.modulesInstallProvidesFor', { kind: m.capability, name: m.for })
-        : '',
+      m.point && m.for ? t('admin.modulesInstallAnswersFor', { point: m.point, name: m.for }) : '',
       m.description,
     ]
       .filter(Boolean)
@@ -116,16 +114,16 @@ function OptInGroup({
   );
 }
 
-function MissingWarnings({ missing }: Readonly<{ missing: StoreMissingCapability[] }>) {
+function MissingWarnings({ missing }: Readonly<{ missing: StoreMissingPoint[] }>) {
   const t = useT();
   if (missing.length === 0) return null;
   return (
     <Box mt={16} gap={8}>
       {missing.map((m) => (
-        <Callout.Root key={`${m.kind}:${m.for}`} tone="accent">
+        <Callout.Root key={`${m.point}:${m.for}`} tone="accent">
           <Callout.Title>
             {t('admin.modulesInstallMissing', {
-              kind: m.id ? `${m.kind}:${m.id}` : m.kind,
+              point: m.id ? `${m.point}:${m.id}` : m.point,
               name: m.for,
             })}
           </Callout.Title>
@@ -188,14 +186,14 @@ export function PlanStage({
         </ListRow.Group>
       </Box>
       <OptInGroup
-        title={t('admin.modulesInstallProviders')}
-        rows={optional.filter((m) => m.capability)}
+        title={t('admin.modulesInstallContributors')}
+        rows={optional.filter((m) => m.point)}
         include={include}
         onIncludeChange={onIncludeChange}
       />
       <OptInGroup
         title={t('admin.modulesInstallOptional')}
-        rows={optional.filter((m) => !m.capability)}
+        rows={optional.filter((m) => !m.point)}
         include={include}
         onIncludeChange={onIncludeChange}
       />

@@ -170,6 +170,11 @@ fn default_true() -> bool {
 /// `KROMA_MOVIES_DIRS` / `KROMA_SERIES_DIRS` roots (one "Films" / "Séries" library
 /// each) and always keeps the untyped one-per-folder `KROMA_MEDIA_DIRS` seed for
 /// backward compatibility.
+///
+/// With nothing configured at all, the demo library under `<data>/demo-media` is
+/// the seed, so a server that has written it treats those files exactly as it
+/// would a real library — one scan path, one set of jobs, no special case
+/// downstream.
 pub fn library_defs(settings: &Settings, config: &crate::config::Config) -> Vec<LibraryDef> {
     if let Value::Array(_) = settings.get("libraries") {
         if let Ok(defs) = serde_json::from_value::<Vec<LibraryDef>>(settings.get("libraries")) {
@@ -195,6 +200,9 @@ pub fn library_defs(settings: &Settings, config: &crate::config::Config) -> Vec<
             auto_scan: true,
         });
     }
+    if defs.is_empty() {
+        return demo_defs(config);
+    }
     defs.extend(config.media_dirs.iter().map(|dir| {
         let path = dir.to_string_lossy().to_string();
         let name = dir
@@ -210,6 +218,37 @@ pub fn library_defs(settings: &Settings, config: &crate::config::Config) -> Vec<
             auto_scan: true,
         }
     }));
+    defs
+}
+
+// The two libraries the written demo library is read as. Named so an admin can
+// see what they are looking at, and pointed at the folders `demo::media` writes.
+//
+// Only the ones that EXIST. A definition for a folder nobody wrote would scan as
+// zero items with folders configured, which is how an unmounted share looks: the
+// scan would keep the stored index and the row-only demo seed would never run. So
+// a server with no ffmpeg behaves exactly as it did before this existed.
+fn demo_defs(config: &crate::config::Config) -> Vec<LibraryDef> {
+    let (movies, shows) = crate::services::demo::media::roots(&config.data_dir);
+    let mut defs = Vec::new();
+    if movies.is_dir() {
+        defs.push(LibraryDef {
+            id: crate::services::scan::short_hash("lib|demo|movies"),
+            name: "Films (Démo)".to_string(),
+            kind: "movies".to_string(),
+            folders: vec![movies.to_string_lossy().to_string()],
+            auto_scan: true,
+        });
+    }
+    if shows.is_dir() {
+        defs.push(LibraryDef {
+            id: crate::services::scan::short_hash("lib|demo|shows"),
+            name: "Séries (Démo)".to_string(),
+            kind: "shows".to_string(),
+            folders: vec![shows.to_string_lossy().to_string()],
+            auto_scan: true,
+        });
+    }
     defs
 }
 
@@ -430,6 +469,60 @@ mod tests {
 
         assert!(written.is_empty(), "the patch allow-list let it through: {written:?}");
         assert_eq!(ensure_instance_id(&s, &pool), minted);
+    }
+
+    #[test]
+    fn nothing_configured_and_nothing_written_seeds_no_library_at_all() {
+        // The row-only demo depends on this: a definition for a folder that does
+        // not exist scans as zero items WITH folders configured, which is how an
+        // unmounted share looks, and the seed would never run.
+        let pool = test_pool();
+        let s = settings(&pool);
+        let mut cfg = test_config();
+        cfg.data_dir = PathBuf::from("/nonexistent/kroma-data");
+
+        assert!(library_defs(&s, &cfg).is_empty());
+    }
+
+    #[test]
+    fn a_written_demo_library_is_seeded_as_two_ordinary_libraries() {
+        let pool = test_pool();
+        let s = settings(&pool);
+        let dir = kroma_testing::temp_dir("demo-defs");
+        let mut cfg = test_config();
+        cfg.data_dir = dir.path().to_path_buf();
+        let (movies, shows) = crate::services::demo::media::roots(dir.path());
+        std::fs::create_dir_all(&movies).unwrap();
+        std::fs::create_dir_all(&shows).unwrap();
+
+        let defs = library_defs(&s, &cfg);
+
+        assert_eq!(defs.len(), 2);
+        assert_eq!(defs[0].kind, "movies");
+        assert_eq!(defs[0].folders, vec![movies.to_string_lossy().to_string()]);
+        assert_eq!(defs[1].kind, "shows");
+        assert_eq!(defs[1].folders, vec![shows.to_string_lossy().to_string()]);
+        // Two ids, stable across runs, and not the ones a configured library gets.
+        assert_ne!(defs[0].id, defs[1].id);
+        assert_ne!(defs[0].id, crate::services::scan::short_hash("lib|movies"));
+    }
+
+    #[test]
+    fn a_configured_library_wins_over_the_written_demo_one() {
+        let pool = test_pool();
+        let s = settings(&pool);
+        let dir = kroma_testing::temp_dir("demo-defs-configured");
+        let (movies, _) = crate::services::demo::media::roots(dir.path());
+        std::fs::create_dir_all(&movies).unwrap();
+        let mut cfg = test_config();
+        cfg.data_dir = dir.path().to_path_buf();
+        cfg.movies_dirs = vec![PathBuf::from("/media/films")];
+
+        let defs = library_defs(&s, &cfg);
+
+        assert_eq!(defs.len(), 1);
+        assert_eq!(defs[0].name, "Films");
+        assert_eq!(defs[0].folders, vec!["/media/films".to_string()]);
     }
 
     #[test]

@@ -38,7 +38,10 @@ pub struct DownloadManager {
     paused_by_disable: Mutex<Vec<String>>,
     state_dir: PathBuf,
     downloads_dir: PathBuf,
-    clients: RwLock<crate::DownloadClientRegistry>,
+    // Held rather than threaded through: `engine_for` is called from the monitor
+    // loop and from lifecycle methods with no host in scope, and every engine but
+    // the embedded one is another process this has to resolve.
+    host: Arc<dyn HostCtx>,
     monitor_started: AtomicBool,
     // The manager holds its own pools rather than taking them off a host,
     // because the port contracts it implements name only `HostCtx`: a consumer
@@ -51,7 +54,12 @@ pub struct DownloadManager {
 }
 
 impl DownloadManager {
-    pub fn new(data_dir: &std::path::Path, core: Pool, store: Pool) -> Arc<Self> {
+    pub fn new(
+        host: Arc<dyn HostCtx>,
+        data_dir: &std::path::Path,
+        core: Pool,
+        store: Pool,
+    ) -> Arc<Self> {
         let state_dir = data_dir.join("torrents");
         std::fs::create_dir_all(&state_dir).ok();
         Arc::new(Self {
@@ -63,7 +71,7 @@ impl DownloadManager {
             paused_by_disable: Mutex::new(Vec::new()),
             downloads_dir: state_dir.join("downloads"),
             state_dir,
-            clients: RwLock::new(crate::builtin_download_clients()),
+            host,
             monitor_started: AtomicBool::new(false),
             core,
             store,
@@ -123,6 +131,10 @@ impl DownloadManager {
         self.engine_for(&client)?.list_files(magnet_or_url, prefetched.as_deref())
     }
 
+    /// The engine for one configured client. The embedded one is in this process;
+    /// every other kind is a module answering the `download-client` point under
+    /// that kind, so a client this module has never heard of works as soon as
+    /// something is installed to answer for it.
     pub fn engine_for(&self, row: &DownloadClientRow) -> Result<Box<dyn DownloadClient>> {
         let def = ClientDef {
             kind: row.kind.clone(),
@@ -130,69 +142,53 @@ impl DownloadManager {
             username: row.username.clone(),
             password: row.password.clone(),
         };
-        self.clients.read().expect("download client registry lock").build(
-            &def,
-            &crate::DownloadClientCtx {
-                rqbit: self.rqbit().map(|e| e as std::sync::Arc<dyn std::any::Any + Send + Sync>),
-                state_dir: &self.state_dir,
-            },
-        )
+        if def.kind == crate::engine::EMBEDDED_KIND {
+            // Both reasons are actionable, and they are different problems: one
+            // needs the engine started, the other a build that has it.
+            let engine = self.rqbit().ok_or_else(|| {
+                if crate::RQBIT_COMPILED {
+                    anyhow!("embedded engine not started")
+                } else {
+                    anyhow!("the embedded engine is not compiled into this build")
+                }
+            })?;
+            return Ok(engine.client());
+        }
+        crate::engine::remote::RemoteEngine::new(&*self.host, def)
+            .map(|e| Box::new(e) as Box<dyn DownloadClient>)
+            .ok_or_else(|| anyhow!("no module provides the {:?} download client", row.kind))
     }
 }
 
-pub use kroma_module_sdk::ports::GrabSpec;
-
-impl kroma_module_sdk::ports::DownloadClientHost for DownloadManager {
-    fn register_engine(&self, register: fn(&mut crate::DownloadClientRegistry)) {
-        let mut reg = self.clients.write().expect("download client registry lock");
-        register(&mut reg);
-    }
-
-    fn unregister_engine(&self, kind: &str) {
-        self.clients.write().expect("download client registry lock").unregister(kind);
-    }
-}
-
-#[kroma_module_sdk::host::async_trait]
-impl kroma_module_sdk::ports::DownloadVpnPort for DownloadManager {
-    fn vpn_status(&self) -> Option<kroma_module_sdk::ports::VpnStatusView> {
-        self.vpn_status()
-    }
-
-    fn vpn_seal_check(&self, host: &dyn HostCtx) -> Option<kroma_module_sdk::ports::VpnSeal> {
-        self.vpn_check(host).map(|c| kroma_module_sdk::ports::VpnSeal {
-            sealed: c.sealed(),
-            proxied_ip: c.proxied_ip,
-            direct_ip: c.direct_ip,
-            error: c.error,
-        })
-    }
-
-    async fn restart_engine(&self, host: &dyn HostCtx) {
-        self.start_rqbit(host).await;
-    }
-}
-
-impl kroma_module_sdk::ports::DownloadGrabPort for DownloadManager {
-    fn grab(&self, host: &dyn HostCtx, spec: GrabSpec) -> Result<DownloadRow> {
-        DownloadManager::grab(self, host, spec)
-    }
-    fn list_files(
-        &self,
-        host: &dyn HostCtx,
-        magnet_or_url: &str,
-    ) -> Result<Vec<crate::TorrentFileEntry>> {
-        DownloadManager::list_files(self, host, magnet_or_url)
-    }
-    fn gate_open(&self) -> bool {
-        DownloadManager::gate_open(self)
-    }
-    fn activate(&self, host: &dyn HostCtx, row: &DownloadRow) {
-        DownloadManager::activate(self, host, row);
-    }
-    fn drop_data(&self, host: &dyn HostCtx, row: &DownloadRow) {
-        DownloadManager::drop_data(self, host, row);
-    }
+/// Everything needed to grab a torrent + import it. Built from a scored release
+/// (auto / interactive) or from admin-provided fields (manual add / magnet).
+/// `upgrade` means the grab replaces media already on disk, so the import takes
+/// the destination and clears what it superseded instead of landing beside it.
+///
+/// Tolerant, because it arrives over the `download-grab` point from a separately
+/// released module: a field that consumer does not send has to default, or an
+/// older peer's spec would be a 422 rather than a grab.
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct GrabSpec {
+    pub magnet_or_url: String,
+    pub kind: String,
+    pub tmdb_id: u64,
+    pub title: Option<String>,
+    pub year: Option<u32>,
+    pub season: Option<u32>,
+    pub episodes: Option<Vec<u32>>,
+    pub release_title: String,
+    pub indexer_id: Option<String>,
+    pub size_bytes: Option<u64>,
+    pub score: Option<i32>,
+    pub score_breakdown: Option<String>,
+    pub request_id: Option<String>,
+    pub wanted_ids: Vec<String>,
+    pub only_files: Option<Vec<usize>>,
+    pub details_url: Option<String>,
+    #[serde(default)]
+    pub upgrade: bool,
 }
 
 /// The `download-db` provider: the ledger reads the import pass makes over the
@@ -206,27 +202,27 @@ impl DownloadDb {
     }
 }
 
-impl kroma_module_sdk::ports::DownloadDbPort for DownloadDb {
-    fn completed_downloads(&self, _host: &dyn HostCtx) -> Result<Vec<DownloadRow>> {
+impl DownloadDb {
+    /// One row by id, or `None` when nothing has it.
+    pub fn get(&self, id: &str) -> Result<Option<DownloadRow>> {
+        let conn = self.0.get()?;
+        Ok(db::get_download(&conn, id)?)
+    }
+
+    /// Rows the engine finished but nothing has imported yet.
+    pub fn completed(&self) -> Result<Vec<DownloadRow>> {
         let conn = self.0.get()?;
         Ok(db::completed_downloads(&conn)?)
     }
-    fn mark_download_imported(
-        &self,
-        _host: &dyn HostCtx,
-        id: &str,
-        paths: &[String],
-        now_ms: i64,
-    ) -> Result<()> {
+
+    /// Record where an import landed a row's files.
+    pub fn mark_imported(&self, id: &str, paths: &[String], now_ms: i64) -> Result<()> {
         db::mark_download_imported(&self.0, id, paths, now_ms)
     }
-    fn set_download_status(
-        &self,
-        _host: &dyn HostCtx,
-        id: &str,
-        status: &str,
-        error: Option<&str>,
-    ) -> Result<bool> {
+
+    /// Move a row to `status`, with the reason when it failed. `false` when no row
+    /// has that id.
+    pub fn set_status(&self, id: &str, status: &str, error: Option<&str>) -> Result<bool> {
         db::set_download_status(&self.0, id, status, error)
     }
 }

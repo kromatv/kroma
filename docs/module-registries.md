@@ -141,8 +141,8 @@ uncompressed tar — not something an installer verifies.
 }
 ```
 
-`tags` defaults to the capability kinds the module provides, so a store can
-filter by `download-client` without hand-authored tags. `apiVersion` is the
+`tags` defaults to the local half of every point the module contributes, so a
+store can filter by `client` or `engine` without hand-authored tags. `apiVersion` is the
 manifest contract the bundle was built against, copied out of its `module.json`;
 a module declaring another one is listed with the reason and never offered.
 
@@ -158,7 +158,7 @@ Two sources, and the split matters:
 - **`/index.json`** is projected from the merged `modules.json` the release train
   publishes to the rolling `modules` tag. That document is the publisher's
   statement of what is *current*, and it is the only place the manifest metadata
-  (icon, `engines`, dependencies, capabilities) exists outside the bundles.
+  (icon, `engines`, dependencies, points) exists outside the bundles.
 - **`/m/{id}.json`** additionally lists every version, read from the
   `<id>@<version>` **GitHub Releases themselves** — the ground truth the merged
   catalog is only a current-row projection of. Each asset carries a `digest`

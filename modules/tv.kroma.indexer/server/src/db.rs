@@ -32,7 +32,25 @@ pub const MIGRATIONS: &str = "
     );
 ";
 
-pub use kroma_module_sdk::ports::IndexerRow;
+/// A stored indexer row, credentials and all. This module's own, and it stays
+/// here: what a consumer sees is [`crate::port::IndexerRef`], which carries no
+/// secret.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct IndexerRow {
+    pub id: String,
+    pub name: String,
+    pub url: String,
+    pub api_key: String,
+    pub categories: Vec<u32>,
+    pub enabled: bool,
+    pub priority: i32,
+    pub kind: String,
+    pub definition_id: Option<String>,
+    pub settings: String,
+    pub last_ok_at: Option<i64>,
+    pub last_error: Option<String>,
+    pub created_at: i64,
+}
 
 const INDEXER_COLS: &str = "id, name, url, api_key, categories, enabled, priority, \
     kind, definition_id, settings, last_ok_at, last_error, created_at";

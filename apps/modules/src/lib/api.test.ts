@@ -30,7 +30,7 @@ const CATALOG = {
       icon: `data:image/svg+xml;base64,${btoa(MARK)}`,
       engines: { server: '>=0.1.4' },
       dependencies: { 'tv.kroma.other': '^0.1.0' },
-      provides: [{ kind: 'download-client', id: 'demo' }],
+      contributes: [{ point: 'tv.kroma.torrents/client', id: 'demo' }],
       artifacts: [
         {
           target: 'wasm32',
@@ -268,7 +268,7 @@ describe('the RFC-110 documents', () => {
       version: '1.0.0',
       engines: { server: '>=0.1.4' },
       dependencies: { 'tv.kroma.other': '^0.1.0' },
-      tags: ['download-client'],
+      tags: ['client'],
       artifacts: [{ target: 'wasm32', url: 'https://dl/a.kmod', size: 1, integrity: SRI }],
     });
   });

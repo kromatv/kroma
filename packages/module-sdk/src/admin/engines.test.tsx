@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 
 // Which engine add-flows the admin console offers. A module with no add-flow
-// (the always-on embedded `rqbit` provides a capability but has nothing to
-// add) is not offered, and `enabled` defaults to true while the module list
-// is still loading, so add-flows don't blink off on every page load.
+// (the always-on embedded `rqbit` answers the point but has nothing to add) is
+// not offered, and `enabled` defaults to true while the module list is still
+// loading, so add-flows don't blink off on every page load.
 
-import type { EngineCapability, EngineField, ModuleInfo } from '@kroma/core';
+import type { EngineField, ModuleInfo } from '@kroma/core';
 import { I18nProvider } from '@kroma/ui';
 import { clearPressGuard, setEntryDefaults } from '@kroma/ui/kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -25,6 +25,7 @@ import {
   AddEngineHost,
   type AddEngineOptions,
   addEngine,
+  type EngineChoice,
   useEnabledEngines,
   useModuleEnabled,
 } from './engines';
@@ -48,67 +49,79 @@ function wrapper(modules: ModuleInfo[] | (() => Promise<ModuleInfo[]>)) {
 }
 
 const mod = (over: Partial<ModuleInfo> & { id: string }): ModuleInfo =>
-  ({ enabled: true, provides: [], ...over }) as ModuleInfo;
+  ({ enabled: true, contributes: [], ...over }) as ModuleInfo;
 
-const cap = (kind: string, over: Record<string, unknown> = {}) =>
-  ({ kind, fields: [{ key: 'url', label: 'field.url', type: 'text' }], ...over }) as never;
+// A contribution with an instance name, because the add-picker only offers one
+// that has it: the id is the kind an added row stores.
+const answers = (point: string, over: Record<string, unknown> = {}) =>
+  ({
+    point,
+    id: point.split('/').pop(),
+    fields: [{ key: 'url', label: 'field.url', type: 'text' }],
+    ...over,
+  }) as never;
 
 describe('useEnabledEngines', () => {
-  it('offers an enabled module that provides the kind', async () => {
-    const { result } = renderHook(() => useEnabledEngines('download-client'), {
-      wrapper: wrapper([mod({ id: 'transmission', provides: [cap('download-client')] })]),
+  it('offers an enabled module that answers the point', async () => {
+    const { result } = renderHook(() => useEnabledEngines('tv.kroma.torrents/client'), {
+      wrapper: wrapper([
+        mod({ id: 'transmission', contributes: [answers('tv.kroma.torrents/client')] }),
+      ]),
     });
     await waitFor(() => expect(result.current).toHaveLength(1));
-    expect(result.current[0]?.kind).toBe('download-client');
+    expect(result.current[0]?.point).toBe('tv.kroma.torrents/client');
   });
 
   it('drops a disabled module, so its add-flow disappears from the page', async () => {
-    const { result } = renderHook(() => useEnabledEngines('download-client'), {
+    const { result } = renderHook(() => useEnabledEngines('tv.kroma.torrents/client'), {
       wrapper: wrapper([
-        mod({ id: 'off', enabled: false, provides: [cap('download-client')] }),
-        mod({ id: 'on', provides: [cap('download-client')] }),
+        mod({ id: 'off', enabled: false, contributes: [answers('tv.kroma.torrents/client')] }),
+        mod({ id: 'on', contributes: [answers('tv.kroma.torrents/client')] }),
       ]),
     });
     await waitFor(() => expect(result.current).toHaveLength(1));
   });
 
-  it('ignores capabilities of a different kind', async () => {
-    const { result } = renderHook(() => useEnabledEngines('indexer-engine'), {
-      wrapper: wrapper([mod({ id: 'a', provides: [cap('download-client')] })]),
+  it('ignores contributions to another point', async () => {
+    const { result } = renderHook(() => useEnabledEngines('tv.kroma.indexer/engine'), {
+      wrapper: wrapper([mod({ id: 'a', contributes: [answers('tv.kroma.torrents/client')] })]),
     });
     await waitFor(() => expect(result.current).toHaveLength(0));
   });
 
-  it('skips a capability with nothing to add', async () => {
-    const { result } = renderHook(() => useEnabledEngines('download-client'), {
+  it('skips a contribution with nothing to add', async () => {
+    const { result } = renderHook(() => useEnabledEngines('tv.kroma.torrents/client'), {
       wrapper: wrapper([
-        // The embedded always-on engine: it PROVIDES the capability but has no
-        // form and no flow, so an add-picker entry would open an empty modal.
-        mod({ id: 'rqbit', provides: [cap('download-client', { fields: [] })] }),
+        // The embedded always-on engine: it ANSWERS the point but has no form
+        // and no flow, so an add-picker entry would open an empty modal.
+        mod({ id: 'rqbit', contributes: [answers('tv.kroma.torrents/client', { fields: [] })] }),
       ]),
     });
     await waitFor(() => expect(result.current).toHaveLength(0));
   });
 
   it('accepts a custom flow in place of a field form', async () => {
-    const { result } = renderHook(() => useEnabledEngines('indexer-engine'), {
+    const { result } = renderHook(() => useEnabledEngines('tv.kroma.indexer/engine'), {
       wrapper: wrapper([
         // The Cardigann definition picker has no `fields` - its whole add-flow
         // is bespoke - and must still be offered.
         mod({
           id: 'cardigann',
-          provides: [cap('indexer-engine', { fields: [], flow: 'cardigann' })],
+          contributes: [answers('tv.kroma.indexer/engine', { fields: [], flow: 'cardigann' })],
         }),
       ]),
     });
     await waitFor(() => expect(result.current).toHaveLength(1));
   });
 
-  it('gathers every provider of the kind across modules', async () => {
-    const { result } = renderHook(() => useEnabledEngines('download-client'), {
+  it('gathers every contributor to the point across modules', async () => {
+    const { result } = renderHook(() => useEnabledEngines('tv.kroma.torrents/client'), {
       wrapper: wrapper([
-        mod({ id: 'a', provides: [cap('download-client')] }),
-        mod({ id: 'b', provides: [cap('download-client'), cap('indexer-engine')] }),
+        mod({ id: 'a', contributes: [answers('tv.kroma.torrents/client')] }),
+        mod({
+          id: 'b',
+          contributes: [answers('tv.kroma.torrents/client'), answers('tv.kroma.indexer/engine')],
+        }),
       ]),
     });
     await waitFor(() => expect(result.current).toHaveLength(2));
@@ -116,7 +129,7 @@ describe('useEnabledEngines', () => {
 
   it('is empty rather than throwing before the module list arrives', () => {
     const never = () => new Promise<ModuleInfo[]>(() => {});
-    const { result } = renderHook(() => useEnabledEngines('download-client'), {
+    const { result } = renderHook(() => useEnabledEngines('tv.kroma.torrents/client'), {
       wrapper: wrapper(never),
     });
     expect(result.current).toEqual([]);
@@ -157,7 +170,7 @@ describe('useModuleEnabled', () => {
 
   it('treats a module with no explicit flag as enabled', async () => {
     const { result } = renderHook(() => useModuleEnabled('torrents'), {
-      wrapper: wrapper([{ id: 'torrents', provides: [] } as never]),
+      wrapper: wrapper([{ id: 'torrents', contributes: [] } as never]),
     });
     await waitFor(() => expect(result.current).toBe(true));
   });
@@ -177,8 +190,8 @@ const field = (over: Partial<EngineField> & { key: string }): EngineField => ({
   ...over,
 });
 
-const capability = (id: string, fields: EngineField[] = []): EngineCapability => ({
-  kind: 'download-client',
+const engine = (id: string, fields: EngineField[] = []): EngineChoice => ({
+  point: 'tv.kroma.torrents/client',
   id,
   label: id,
   fields,
@@ -215,7 +228,7 @@ const save = () => click(screen.getByLabelText('Save'));
 describe('addEngine', () => {
   it('answers no when there is no host mounted to draw it', async () => {
     await expect(
-      addEngine({ engines: [capability('transmission')], title: 'Add', onSubmit: vi.fn() }),
+      addEngine({ engines: [engine('transmission')], title: 'Add', onSubmit: vi.fn() }),
     ).resolves.toBe(false);
   });
 
@@ -224,7 +237,7 @@ describe('addEngine', () => {
     const answer = open({
       title: 'Add a download client',
       engines: [
-        capability('transmission', [
+        engine('transmission', [
           field({ key: 'url', required: true }),
           field({ key: 'password', label: 'field.password', secret: true }),
         ]),
@@ -250,7 +263,7 @@ describe('addEngine', () => {
   it('holds Save until the name and every required field are there', () => {
     open({
       title: 'Add a download client',
-      engines: [capability('transmission', [field({ key: 'url', required: true })])],
+      engines: [engine('transmission', [field({ key: 'url', required: true })])],
       onSubmit: vi.fn(),
     });
 
@@ -266,7 +279,7 @@ describe('addEngine', () => {
     open({
       title: 'Add an indexer',
       engines: [
-        capability('cardigann', [
+        engine('cardigann', [
           field({
             key: 'category',
             label: 'field.categories',
@@ -296,8 +309,8 @@ describe('addEngine', () => {
     open({
       title: 'Add a download client',
       engines: [
-        capability('transmission', [field({ key: 'url' })]),
-        capability('qbittorrent', [field({ key: 'url' })]),
+        engine('transmission', [field({ key: 'url' })]),
+        engine('qbittorrent', [field({ key: 'url' })]),
       ],
       onSubmit,
     });
@@ -324,7 +337,7 @@ describe('addEngine', () => {
   it('says why the server refused, and leaves the panel open', async () => {
     open({
       title: 'Add a download client',
-      engines: [capability('transmission')],
+      engines: [engine('transmission')],
       onSubmit: vi.fn(async () => {
         throw new Error('unreachable');
       }),
@@ -340,7 +353,7 @@ describe('addEngine', () => {
   it('answers no when the panel is dismissed', async () => {
     const answer = open({
       title: 'Add a download client',
-      engines: [capability('transmission')],
+      engines: [engine('transmission')],
       onSubmit: vi.fn(),
     });
 
@@ -351,7 +364,7 @@ describe('addEngine', () => {
   it('answers no when the panel is closed on Back', async () => {
     const answer = open({
       title: 'Add a download client',
-      engines: [capability('transmission')],
+      engines: [engine('transmission')],
       onSubmit: vi.fn(),
     });
 
@@ -362,14 +375,14 @@ describe('addEngine', () => {
   it('draws one ask at a time, in the order they arrived', async () => {
     const first = open({
       title: 'Add a download client',
-      engines: [capability('transmission')],
+      engines: [engine('transmission')],
       onSubmit: vi.fn(),
     });
     let second!: Promise<boolean>;
     act(() => {
       second = addEngine({
         title: 'Add an indexer',
-        engines: [capability('cardigann')],
+        engines: [engine('cardigann')],
         onSubmit: vi.fn(),
       });
     });

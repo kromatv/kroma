@@ -13,20 +13,16 @@ use crate::db::IndexerRow;
 use kroma_module_sdk::db::Pool;
 use kroma_module_sdk::host::HostCtx;
 use kroma_module_sdk::primitives::now_ms;
-use kroma_module_sdk::ports::{Caps, IndexerEndpoint};
 
+use crate::peers;
 use crate::store::DefinitionStore;
-use crate::{Caps as EngineCaps, IndexerConfig, Session};
+use crate::{Caps, IndexerConfig, Session};
 
-pub use kroma_module_sdk::ports::KIND_BUILTIN;
+/// The `kind` of an indexer that runs a Cardigann definition in this process,
+/// rather than being an external Torznab endpoint.
+pub const KIND_BUILTIN: &str = "builtin";
 
-pub fn endpoint_of(row: &IndexerRow) -> IndexerEndpoint {
-    IndexerEndpoint {
-        url: row.url.clone(),
-        api_key: row.api_key.clone(),
-        categories: row.categories.clone(),
-    }
-}
+pub use crate::peers::endpoint_of;
 
 // Capabilities are static per indexer, and every search would otherwise pay an
 // extra round-trip; keyed by id + url so re-pointing an indexer refreshes.
@@ -40,9 +36,7 @@ pub fn indexer_caps(host: &dyn HostCtx, store: &Pool, row: &IndexerRow) -> anyho
     if let Some(caps) = CAPS_CACHE.lock().unwrap().as_ref().and_then(|m| m.get(&key)).cloned() {
         return Ok(caps);
     }
-    let result = kroma_module_sdk::ports::torznab(host)
-        .ok_or_else(|| anyhow::anyhow!("torznab search engine unavailable"))
-        .and_then(|p| p.caps(&endpoint_of(row)));
+    let result = peers::caps(host, &row.kind, &endpoint_of(row));
     match &result {
         Ok(_) => {
             let _ = crate::db::note_indexer_result(store, &row.id, true, None, now_ms());
@@ -105,8 +99,7 @@ fn vpn_proxy_url(host: &dyn HostCtx) -> Option<String> {
     // Check the opt-in first so the WireGuard config isn't read on the common
     // (off) path.
     if host.setting_bool("acqIndexersUseVpn", false) {
-        kroma_module_sdk::ports::vpn_proxy(host)
-            .and_then(|p| p.proxy_url(host))
+        peers::proxy_url(host)
     } else {
         None
     }
@@ -141,14 +134,7 @@ pub fn any_indexer_caps(host: &dyn HostCtx, store: &Pool, row: &IndexerRow) -> a
     if row.kind == KIND_BUILTIN {
         let def = definition_store(host)
             .load(row.definition_id.as_deref().ok_or_else(|| anyhow::anyhow!("no definition"))?)?;
-        let c = EngineCaps::from_definition(&def);
-        Ok(Caps {
-            search_tmdb: c.search_tmdb,
-            search_imdb: c.search_imdb,
-            tv_search_tmdb: c.tv_search_tmdb,
-            tv_search_season: c.tv_search_season,
-            server_title: c.server_title,
-        })
+        Ok(Caps::from_definition(&def))
     } else {
         indexer_caps(host, store, row)
     }

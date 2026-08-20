@@ -1,0 +1,26 @@
+# Shared Rust libraries: pure computation two or more modules link, which is NOT
+# the same thing as an extension point.
+#
+# A point is a coarse operation reached over HTTP. A library is a function you
+# would call in a loop, so a localhost round trip per call would be slower than
+# the code it replaced. The naming engine renders one path per imported file and
+# the release parser scores every release of every search; both belong here, and
+# neither has a manifest, a point or an endpoint.
+#
+# Their own workspace, not members of `server/` or of any module: nothing in
+# `server/` may depend on them by policy, and a module cannot hold members above
+# its own root.
+[workspace]
+resolver = "2"
+members = ["naming"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.88"
+license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"

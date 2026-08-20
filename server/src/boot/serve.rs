@@ -18,7 +18,12 @@ pub async fn run(
     supervisor: std::sync::Arc<kroma_module_supervisor::Supervisor>,
     addr: std::net::SocketAddr,
 ) -> anyhow::Result<()> {
-    let mut app = api::router(state.clone(), supervisor.clone());
+    // Module event subscriptions, and the task that delivers onto them. Started
+    // here rather than while building the router: constructing a router must not
+    // spawn anything, and this outlives it.
+    let subscriptions = std::sync::Arc::new(api::host_events::Subscriptions::default());
+    api::host_events::deliver(state.clone(), supervisor.clone(), subscriptions.clone());
+    let mut app = api::router(state.clone(), supervisor.clone(), subscriptions);
 
     // Built before serving so the cert-download route can be merged into the router.
     let https = build_https(&state).await;

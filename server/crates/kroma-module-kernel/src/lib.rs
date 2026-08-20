@@ -249,17 +249,15 @@ mod gate_tests {
             tmdb_language: "en-US".into(),
             ..Default::default()
         };
-        let embedder: Arc<dyn kroma_engine::ports::Embedder> =
-            Arc::new(kroma_engine::ports::NoopEmbedder);
         let state = kroma_engine::state::AppState::new(
             config,
             false,
             db,
             settings,
-            embedder,
+            kroma_engine::point::Point::absent("embedder"),
             services(dir.path()),
             &[],
-            Arc::new(|_| None),
+            Arc::new(|_| Vec::new()),
         );
         (state, dir)
     }

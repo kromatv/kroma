@@ -45,7 +45,7 @@ async fn status<S: HostCtx + Clone + Send + Sync + 'static>(
         wg_configured: wg_configured(&state),
         bridge_running,
         local_port: state.setting_i64("vpnLocalPort", 25345).clamp(1, 65535) as u16,
-        status: kroma_module_sdk::ports::download_vpn(&state).and_then(|d| d.vpn_status()),
+        status: crate::port::engine_status(&state),
     };
     Ok(Json(view).into_response())
 }
@@ -71,9 +71,7 @@ async fn save<S: HostCtx + Clone + Send + Sync + 'static>(
         if let Some(vpn) = service::<Vpn>(&state) {
             vpn.apply(&state).await;
         }
-        if let Some(downloads) = kroma_module_sdk::ports::download_vpn(&state) {
-            downloads.restart_engine(&state).await;
-        }
+        crate::port::restart_engine(&state);
     }
     Ok(Json(json!({ "ok": true, "wgConfigured": wg_configured(&state) })).into_response())
 }
@@ -85,7 +83,7 @@ async fn test<S: HostCtx + Clone + Send + Sync + 'static>(
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
     let result = blocking(move || {
-        Ok(match kroma_module_sdk::ports::download_vpn(&state).and_then(|d| d.vpn_seal_check(&state)) {
+        Ok(match crate::port::engine_seal_check(&state) {
             Some(check) => VpnTestResult {
                 sealed: check.sealed,
                 proxied_ip: check.proxied_ip,

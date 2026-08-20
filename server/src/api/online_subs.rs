@@ -16,7 +16,7 @@ use crate::api::util::query;
 use crate::db;
 use crate::services::settings;
 use crate::state::SharedState;
-use crate::boot::whisper::WhisperClient;
+use crate::boot::transcriber::TranscriberClient;
 use axum::routing::{delete, get, post};
 use axum::Router;
 
@@ -76,17 +76,17 @@ pub struct SubCapabilities {
 /// `GET /api/items/:id/subtitles/capabilities`. Server config, not item-specific,
 /// but kept under the item path for client convenience.
 pub async fn capabilities(State(state): State<SharedState>, Path(_id): Path<String>) -> Response {
-    let transcribe = whisper_available(&state);
+    let transcribe = transcriber_available(&state);
     let translate = settings::default_provider(&state.settings).is_some();
     Json(SubCapabilities { transcribe, translate }).into_response()
 }
 
-// Transcription runs in the whisper sidecar (tv.kroma.whisper .kmod), so it is
-// available when that resolves, not on a compile-time core feature. `capabilities`
-// and `generate` must answer from the same check or the player offers a button
-// whose endpoint refuses it.
-pub(super) fn whisper_available(state: &SharedState) -> bool {
-    kroma_module_host::service::<WhisperClient>(state).is_some_and(|w| w.available())
+// Transcription runs in whichever module answers the `transcriber` point, so it
+// is available when that resolves, not on a compile-time core feature.
+// `capabilities` and `generate` must answer from the same check or the player
+// offers a button whose endpoint refuses it.
+pub(super) fn transcriber_available(state: &SharedState) -> bool {
+    kroma_module_host::service::<TranscriberClient>(state).is_some_and(|t| t.available())
 }
 
 /// `GET /api/items/:id/subtitles/downloaded` → this item's generated subtitles.

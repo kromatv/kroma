@@ -16,11 +16,12 @@ export {
   verifyIntegrity,
 } from './client.ts';
 export {
-  Capability,
-  CapabilityReq,
+  Contribution,
   DOCUMENT_SCHEMAS,
   Integrity,
   ModuleRecord,
+  PointDef,
+  PointReq,
   REGISTRY_API_VERSION,
   RegistryArtifact,
   RegistryDescriptor,

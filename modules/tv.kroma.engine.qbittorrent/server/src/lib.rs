@@ -9,7 +9,12 @@ use std::path::PathBuf;
 use anyhow::{anyhow, bail, Result};
 use serde_json::Value;
 
-use kroma_module_sdk::ports::{magnet_info_hash, AddTorrentReq, ClientDef, DownloadClient, TorrentState, TorrentStatus};
+pub mod port;
+pub mod types;
+
+pub use types::{
+    cookie_jar_path, magnet_info_hash, AddTorrentReq, ClientDef, TorrentState, TorrentStatus,
+};
 
 pub struct QBittorrent {
     base: String,
@@ -91,18 +96,16 @@ fn state_of(qbit_state: &str, progress: f64) -> TorrentState {
     }
 }
 
-impl DownloadClient for QBittorrent {
-    fn kind(&self) -> &'static str {
-        "qbittorrent"
-    }
-
-    fn test(&self) -> Result<String> {
+/// The engine itself. [`port`] serves these over the `download-client` point;
+/// nothing here implements a trait another crate owns.
+impl QBittorrent {
+    pub fn test(&self) -> Result<String> {
         self.login()?;
         let version = self.get("/api/v2/app/version", &[])?.text();
         Ok(format!("qBittorrent {}", version.trim()))
     }
 
-    fn add(&self, req: &AddTorrentReq) -> Result<String> {
+    pub fn add(&self, req: &AddTorrentReq) -> Result<String> {
         // Known hash up-front for magnets; otherwise diff the category.
         let known = magnet_info_hash(req.magnet_or_url);
         let before: Vec<String> = if known.is_none() {
@@ -142,7 +145,7 @@ impl DownloadClient for QBittorrent {
         Err(anyhow!("added, but could not identify the new torrent's hash"))
     }
 
-    fn status(&self, client_ref: &str) -> Result<Option<TorrentStatus>> {
+    pub fn status(&self, client_ref: &str) -> Result<Option<TorrentStatus>> {
         let torrents = self.torrents_info(&[("hashes", client_ref)])?;
         let Some(t) = torrents.first() else {
             return Ok(None);
@@ -180,19 +183,19 @@ impl DownloadClient for QBittorrent {
         }))
     }
 
-    fn pause(&self, client_ref: &str) -> Result<()> {
+    pub fn pause(&self, client_ref: &str) -> Result<()> {
         self.post("/api/v2/torrents/pause", &[("hashes", client_ref)]).map(|_| ())
     }
 
-    fn resume(&self, client_ref: &str) -> Result<()> {
+    pub fn resume(&self, client_ref: &str) -> Result<()> {
         self.post("/api/v2/torrents/resume", &[("hashes", client_ref)]).map(|_| ())
     }
 
-    fn reannounce(&self, client_ref: &str) -> Result<()> {
+    pub fn reannounce(&self, client_ref: &str) -> Result<()> {
         self.post("/api/v2/torrents/reannounce", &[("hashes", client_ref)]).map(|_| ())
     }
 
-    fn remove(&self, client_ref: &str, delete_data: bool) -> Result<()> {
+    pub fn remove(&self, client_ref: &str, delete_data: bool) -> Result<()> {
         self.post(
             "/api/v2/torrents/delete",
             &[("hashes", client_ref), ("deleteFiles", if delete_data { "true" } else { "false" })],
@@ -201,34 +204,20 @@ impl DownloadClient for QBittorrent {
     }
 }
 
-fn cookie_jar_path(state_dir: &std::path::Path, def: &ClientDef) -> PathBuf {
-    let mut tag: u64 = 0xcbf2_9ce4_8422_2325;
-    for b in format!("{}|{}", def.url, def.username).bytes() {
-        tag ^= u64::from(b);
-        tag = tag.wrapping_mul(0x1000_0000_01b3);
-    }
-    state_dir.join(format!("qbit-{tag:016x}.cookies"))
-}
-
+/// The client `kind` this module answers for, and the instance name the
+/// download module resolves it under. It is declared in `module.json` as well,
+/// which is what the supervisor reads.
 pub const KIND: &str = "qbittorrent";
-
-/// Register the qBittorrent factory into a download-client registry (called by
-/// the engine module's ServerModule on enable).
-pub fn register(reg: &mut kroma_module_sdk::ports::DownloadClientRegistry) {
-    reg.register(KIND, |def, ctx| {
-        Ok(Box::new(QBittorrent::new(def, cookie_jar_path(ctx.state_dir, def))) as Box<dyn DownloadClient>)
-    });
-}
 
 pub const MODULE_ID: &str = "tv.kroma.engine.qbittorrent";
 
 use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 
-/// The qBittorrent engine sub-module: a lifecycle-only [`ServerModule`] that
-/// registers / unregisters its download-client kind on the Downloads module's
-/// shared registry as it is enabled / disabled. It reaches the `DownloadManager`
-/// through the host's service registry, so the binary wires nothing.
+/// The qBittorrent engine has no lifecycle and no admin routes of its own: being
+/// installed and enabled IS the registration, because the download module
+/// resolves whoever answers the point when it needs an engine. Disabling it stops
+/// the process, and the point stops resolving to it.
 pub struct QbittorrentModule;
 
 #[kroma_module_sdk::host::async_trait]
@@ -237,18 +226,6 @@ impl<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'static>
 {
     fn id(&self) -> &'static str {
         MODULE_ID
-    }
-
-    async fn on_enable(&self, host: S) {
-        if let Some(dm) = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::DownloadClientHost>(&host) {
-            dm.register_engine(register);
-        }
-    }
-
-    async fn on_disable(&self, host: S) {
-        if let Some(dm) = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::DownloadClientHost>(&host) {
-            dm.unregister_engine(KIND);
-        }
     }
 }
 

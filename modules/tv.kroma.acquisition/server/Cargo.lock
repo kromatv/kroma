@@ -1121,6 +1121,8 @@ dependencies = [
  "kroma-module-host",
  "kroma-module-runtime",
  "kroma-module-sdk",
+ "kroma-naming",
+ "kroma-scene",
  "kroma-testing",
  "rustix",
  "serde",
@@ -1273,10 +1275,16 @@ dependencies = [
  "kroma-module-macros",
  "kroma-module-manifest",
  "kroma-primitives",
- "kroma-scene",
  "serde",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "kroma-naming"
+version = "0.1.0"
+dependencies = [
+ "kroma-scene",
 ]
 
 [[package]]

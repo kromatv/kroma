@@ -16,7 +16,7 @@ builds standalone, with its own `Cargo.lock`, outside the server tree:
 
 ```
 modules/<id>/
-  module.json      manifest: id, version, minServer, dependsOn, provides, config
+  module.json      manifest: id, version, engines, dependencies, points, config
   server/          the Rust backend: a [[bin]] makes it a spawned sidecar
   ui/              the React frontend (a KromaModule: pages, nav, settings)
   locales/         en.json, fr.json, this module's own catalog
@@ -124,10 +124,100 @@ async fn main() -> anyhow::Result<()> {
 }
 ```
 
-Depend on `kroma-module-sdk` and, for a sidecar, `kroma-module-runtime`, never
-on core crates directly. The SDK re-exports the surface a module is allowed
-to touch, plus pure library modules like `kroma_module_sdk::scene`. In this repo
-they are path deps back into `server/crates/`.
+Depend on **`kroma-module-sdk`** and, for a sidecar, **`kroma-module-runtime`**,
+never on core crates directly. The SDK re-exports the surface a module is allowed
+to touch. In this repo they are path deps back into `server/crates/`.
+
+What the SDK does NOT carry is any description of what a module is for. To reach
+a peer, ask the host for a POINT name and speak JSON both sides declare
+themselves; see [Calling another module](#calling-another-module).
+
+Shared *computation* is different, and lives in `modules/lib/`: the naming engine
+(`kroma-naming`) and the release parser (`kroma-scene`). Those are ordinary crates
+their consumers link, because a function called once per imported file or once per
+scored release cannot be a localhost round trip.
+
+### Calling another module
+
+A module never names a peer. It asks the host which modules answer a point, and
+POSTs JSON:
+
+```rust
+// The consumer. The point is a NAME; which module answers is the supervisor's
+// business, and changes as modules are installed. `Some(kind)` picks one
+// contribution when several are live at once.
+const ENGINE: &str = "tv.kroma.indexer/engine";
+
+let resolve = pinned_resolver(host, ENGINE, Some(kind))
+    .ok_or_else(|| anyhow!("no module answers {ENGINE} as {kind}"))?;
+let releases: Vec<Release> = call(&resolve, &format!("{ENGINE}/search"), &body)?;
+```
+
+```rust
+// The contributor, in its own crate, with its own structs. The route path is
+// `/_port/<point>/<method>`, the point's full name included, which is the same
+// string the consumer resolved with.
+pub fn routes<S: Clone + Send + Sync + 'static>() -> Router<S> {
+    Router::new().route("/_port/tv.kroma.indexer/engine/search", post(search))
+}
+```
+
+Three manifest verbs, and any module may use all three:
+
+- **`definesPoints: [{ name, version?, methods? }]`** invents a point. `name` is
+  local: the full name is `<this module's id>/<name>`, so ownership reads off the
+  name and two authors cannot collide. The handful the CORE calls (`acquisition`,
+  `transcriber`, `embedder`) are bare, and nothing but the core may define one.
+- **`contributes: [{ point, version?, id?, label?, fields?, flow? }]`** answers a
+  point, its own included. `id` is the instance name, for a point several modules
+  answer at once — a download client is picked by it — and absent for a point that
+  takes one answer. `label` / `fields` / `flow` drive the admin's add-form, so an
+  engine the console can add an instance of declares them here and nowhere else.
+- **`consumes: [{ point, version?, id?, optional? }]`** calls a point. It names
+  what has to answer, never which module answers it, which is what a marketplace
+  can resolve; an unmet non-optional entry is what makes the admin call a running
+  module INERT.
+
+Two rules make this hold together across independently released modules:
+
+- **Each side owns its structs.** Declare the fields YOU read or write, not a
+  shared type. The two ends ship on separate tags and the operator installs
+  whichever pair they installed, so a shared type would prove they agreed at build
+  time in this repo and nothing about the pair actually running.
+- **Be tolerant, and pin the JSON.** `#[serde(default)]` on anything crossing,
+  unknown fields ignored, and a test on each side asserting the exact JSON it
+  sends or expects. That test is the contract; without it a rename fails in
+  someone's install rather than in CI.
+
+### Reacting to what happens
+
+A module can also be woken by the bus instead of only being called. Declare the
+topics on the `ServerModule` and handle them:
+
+```rust
+fn events(&self) -> Vec<&'static str> {
+    vec!["item.added"]
+}
+
+async fn on_event(&self, host: S, topic: String, payload: serde_json::Value) {
+    // `payload` is the whole event, `type` included, so a module that took
+    // several topics dispatches on it.
+}
+```
+
+The runtime registers them at boot and serves `/_event/{topic}`; the core reads
+its bus and POSTs each matching event to every subscriber. Three things to know:
+
+- **Opt in one topic at a time.** The bus carries high-rate traffic (playback
+  progress) and each delivery is an HTTP call to the module's process.
+- **Delivery is best-effort and unordered.** A module that was restarting missed
+  what fired. Anything that must not be missed belongs in a job that reconciles
+  state, not in a handler.
+- **Addressed events are not delivered.** An event published to one user is that
+  user's business; a module is not a user.
+
+The design and the parts of it that are not built yet are in
+[`docs/module-plugin-model.md`](../docs/module-plugin-model.md).
 
 ### Frontend
 
@@ -167,8 +257,9 @@ host, so authenticating a caller costs no database).
 - **`dependencies`** is a hard dependency, as a `{ "<id>": "<range>" }` map.
   Enforced on the backend; the Store installs missing ones automatically.
 - **`optionalDependencies`** is ordered first when present, not required.
-- **`requires: [{ kind, id? }]`** is a *capability* dependency, satisfied by any
-  module whose `provides` declares that kind.
+- **`consumes`** is a POINT dependency, satisfied by any module whose
+  `contributes` answers it. Prefer it to a module id: it says what has to happen
+  rather than who has to do it.
 - **`engines`** is what the module needs from its host (`{ "server": ">=0.1.4" }`),
   enforced at install **and** at spawn, so a stale bundle fails with a clear
   message instead of proxy errors.
@@ -227,13 +318,11 @@ definition: it lives in the core schema, and the module holds a grant on it. A
 module cannot create a table in the core database, which is the same statement
 said in enforcement.
 
-Ports are unaffected: a port contract names `HostCtx` and nothing wider, even
-when the module answering it is database-backed, because a consumer holds no
-capability just because a provider does. A provider that needs a database holds
-it itself.
-
-`provides` is a declaration for introspection and capability deps; the concrete
-dispatch is a sub-engine registry (`DownloadClientRegistry` and friends).
+Points are unaffected, and the reason is worth stating: a consumer holds no
+capability just because a provider does. A provider reads its OWN database and
+answers with what the caller needs, which is why an indexer's `api_key` and a
+download's engine bookkeeping do not cross. Name a row by id and let the provider
+read it.
 
 ## Publish one
 

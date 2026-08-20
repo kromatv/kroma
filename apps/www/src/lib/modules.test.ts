@@ -17,8 +17,8 @@ describe('toSiteCatalog', () => {
           version: '0.1.7',
           description: 'The engine',
           icon: 'data:image/svg+xml;base64,AAA',
-          provides: [{ kind: 'download-client', id: 'rqbit' }],
-          requires: [],
+          contributes: [{ point: 'tv.kroma.torrents/client', id: 'rqbit' }],
+          consumes: [],
           dependencies: { 'tv.kroma.indexer': '^0.1.0' },
         },
       ]),
@@ -31,8 +31,8 @@ describe('toSiteCatalog', () => {
       description: 'The engine',
       icon: 'data:image/svg+xml;base64,AAA',
       library: false,
-      provides: ['download-client'],
-      requires: [],
+      answers: ['client'],
+      needs: [],
       dependencies: ['tv.kroma.indexer'],
     });
   });
@@ -50,8 +50,8 @@ describe('toSiteCatalog', () => {
       description: null,
       icon: null,
       library: false,
-      provides: [],
-      requires: [],
+      answers: [],
+      needs: [],
       dependencies: [],
     });
   });
@@ -61,19 +61,19 @@ describe('toSiteCatalog', () => {
     expect(modules[0]?.library).toBe(true);
   });
 
-  it('de-duplicates repeated capability kinds', () => {
+  it('de-duplicates two contributions to one point', () => {
     const { modules } = toSiteCatalog(
       raw([
         {
           id: 'a',
-          provides: [
-            { kind: 'indexer-engine', id: 'torznab' },
-            { kind: 'indexer-engine', id: 'newznab' },
+          contributes: [
+            { point: 'tv.kroma.indexer/engine', id: 'torznab' },
+            { point: 'tv.kroma.indexer/engine', id: 'newznab' },
           ],
         },
       ]),
     );
-    expect(modules[0]?.provides).toEqual(['indexer-engine']);
+    expect(modules[0]?.answers).toEqual(['engine']);
   });
 
   it('carries a missing generatedAt through as null rather than undefined', () => {
@@ -88,7 +88,7 @@ describe('ordered', () => {
         {
           id: 'tv.kroma.acquisition',
           name: 'Acquisition',
-          requires: [{ kind: 'indexer-engine' }, { kind: 'download-client' }],
+          consumes: [{ point: 'tv.kroma.indexer/engine' }, { point: 'tv.kroma.torrents/client' }],
         },
         {
           id: 'tv.kroma.torrents',

@@ -1,6 +1,6 @@
 [package]
 name = "kroma-server"
-version = "0.1.38"
+version = "0.1.39"
 edition.workspace = true
 rust-version.workspace = true
 description = "KROMA a self-hosted, direct-play media streaming server"
@@ -12,15 +12,14 @@ path = "src/main.rs"
 
 # The server is the root package of a Cargo workspace (the Rust mirror of the
 # bun workspaces on the TS side). Self-contained domains live as crates under
-# crates/ so they build + test in isolation (`cargo test -p kroma-scene`),
+# crates/ so they build + test in isolation (`cargo test -p kroma-db`),
 # while everything still links into this one binary. All existing entry points
 # (`cargo build` from server/, CI, the Synology docker build) are unchanged.
 [workspace]
-# Shared infra crates live under crates/. Modules are NOT members: each one is
-# its own workspace at <repo>/modules/<id>, built and packed on its own (see
-# modules/README.md). The three named below are reached as ordinary path deps,
-# which cargo allows across workspace roots even though members must be
-# hierarchically below this file.
+# Shared infra crates live under crates/. Modules are NOT members and NOT deps:
+# each one is its own workspace at <repo>/modules/<id>, built and packed on its
+# own (see modules/README.md), and reached at runtime over HTTP by the
+# supervisor. Nothing in this file names one.
 members = ["crates/*"]
 
 # Shared package metadata. Every member (and the root package above) inherits
@@ -63,16 +62,6 @@ libxml = "0.3"
 # Insertion-order-preserving map: Cardigann `fields` reference earlier fields
 # (`.Result.x`), so field order is load-bearing.
 indexmap = { version = "2", features = ["serde"] }
-# Candle ML stack + tokenizer, shared by kroma-whisper (whisper) and kroma-vector
-# (semantic). CPU-only pure-Rust by default (default-features off) so the musl
-# single binary keeps linking; the macos target block in each crate adds `metal`.
-candle-core = { version = "0.11", default-features = false }
-candle-nn = { version = "0.11", default-features = false }
-candle-transformers = { version = "0.11", default-features = false }
-# `onig` (Oniguruma, C) is enabled: tokenizers 0.20's regex pre-tokenizer
-# references it unconditionally. C-on-musl is fine. default-features off drops the
-# heavier progressbar/http extras.
-tokenizers = { version = "0.23", default-features = false, features = ["onig"] }
 # mDNS / DNS-SD advertising (kroma-mdns). Pure Rust.
 mdns-sd = "0.20"
 # Shared by kroma-primitives (and the binary). Unpinned now that the toolchain is
@@ -147,21 +136,13 @@ kroma-module-host = { path = "crates/kroma-module-host" }
 # every module's manifest + collects their ServerModule behaviors).
 kroma-module-kernel = { path = "crates/kroma-module-kernel" }
 kroma-engine = { path = "crates/kroma-engine" }
-# The only three modules the server tree still LINKS, reached across the
-# workspace boundary at <repo>/modules/<id>/server. Every other module is
-# reached at runtime over HTTP by the supervisor and is named nowhere here.
-# scene is a pure library module the SDK re-exports; whisper and vector back the
-# `whisper-*` / `semantic-embeddings` features below.
-kroma-scene = { path = "../modules/tv.kroma.scene/server" }
-kroma-whisper = { path = "../modules/tv.kroma.whisper/server" }
-kroma-vector = { path = "../modules/tv.kroma.vector/server" }
+# No module is named here. Every one of them is reached at runtime over HTTP by
+# the supervisor, resolved from a point name the core holds and a manifest it
+# reads, so nothing in this tree links a module or knows what one is for.
 
 [features]
-# Feature knobs are unchanged for callers (`cargo build`, CI, the Synology .spk),
-# but the code they toggle now lives in kroma-engine and its leaf crates, so each
-# just forwards to `kroma-engine/<feature>`. Cargo unifies features globally, so
-# flipping these enables the right candle graph wherever it's used.
-default = ["whisper-local"]
+# Nothing here selects a module's build any more; see the note above `[features]`.
+default = []
 
 # NB: there is no `torrent-rqbit` knob here any more. The download engine is a
 # SIDECAR (tv.kroma.torrents), and its `.kmod` turns librqbit on through its own
@@ -169,22 +150,12 @@ default = ["whisper-local"]
 # cargo. The core forwarding the same feature only pulled librqbit into the
 # server binary's dependency graph for code nothing in `src/` reaches.
 
-# Multilingual semantic embeddings (MiniLM via candle). OFF by default (the
-# dependency-free lexical embedder is the default). Forwarded straight to the
-# vector module crate now that the engine names it only through a port.
-semantic-embeddings = ["kroma-vector/semantic"]
-
-# In-process Whisper transcription (candle, no external whisper.cpp). ON by
-# default. Off compiles a stub and the "transcribe" capability reports false.
-# Forwarded straight to the whisper module crate (the engine drives it via a port).
-whisper-local = ["kroma-whisper/local"]
-
-# GPU-accelerated Whisper for local dev builds (never the musl single binary).
-# metal = Apple-Silicon, cuda = NVIDIA, accelerate = Apple vecLib BLAS. The engine
-# picks the device at runtime and falls back to CPU. See kroma-whisper.
-whisper-metal = ["kroma-whisper/metal"]
-whisper-cuda = ["kroma-whisper/cuda"]
-whisper-accelerate = ["kroma-whisper/accelerate"]
+# `semantic-embeddings` and `whisper-local` / `-metal` / `-cuda` / `-accelerate`
+# are gone. They forwarded into the vector and whisper module crates, which
+# compiled candle into THIS binary for code no file under `src/` reaches: both are
+# reached over a point, and each sidecar's `.kmod` selects its own backend through
+# its `[package.metadata.kmod] features`. A build flag here could not change what
+# a separately packed sidecar links, so the flags only cost build time and bytes.
 
 [dependencies]
 # The binary is now a thin HTTP shell: the router + handlers (src/api) over the
@@ -229,15 +200,11 @@ sysinfo = { workspace = true }
 # `MODULE` const, collects their ServerModules, and drives the enable/disable +
 # admin-mount lifecycle. Formerly server/src/modules; now its own crate.
 kroma-module-kernel = { workspace = true }
-# Named only to register its stateless TorznabPort engine at the composition root.
-# The core reaches the out-of-process embedder (tv.kroma.vector .kmod) over HTTP.
 kroma-http = { workspace = true }
-kroma-whisper = { workspace = true }
-kroma-vector = { workspace = true }
-# The admin modules endpoint names ModuleManifest for its flattened response.
-kroma-module-sdk = { workspace = true }
 # The store endpoints normalize registry catalogs and run the compat/version
-# helpers (server_satisfies / range_matches / is_newer) against manifests.
+# helpers (server_satisfies / range_matches / is_newer) against manifests, and the
+# module list endpoints name `ModuleManifest`. NOT `kroma-module-sdk`: that is the
+# facade a MODULE depends on, and the binary has no business holding it.
 kroma-module-manifest = { workspace = true }
 # Out-of-process module supervisor: spawn/proxy installed .kmod module processes.
 kroma-module-supervisor = { workspace = true }

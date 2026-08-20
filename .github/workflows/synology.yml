@@ -204,7 +204,7 @@ jobs:
             -w /home/rust/repo/server \
             -v "$PWD/.cargo-registry":/root/.cargo/registry \
             "$RUST_IMAGE" \
-            cargo build --release --locked --target "$TARGET" --features whisper-local
+            cargo build --release --locked --target "$TARGET"
 
       # The container runs as root; hand the tree back so actions/cache can save.
       - name: Fix cache permissions

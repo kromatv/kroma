@@ -4,10 +4,10 @@
 //! path, so renaming to a cleaner (still-parseable) name preserves watched
 //! state / progress / my-list.
 
-// The naming engine lives in the SDK (kroma_module_sdk::ports::naming), shared
+// The naming engine is the `kroma-naming` library, shared
 // with acquisition's import; re-exported here so this crate's own callers keep
 // using crate::organize::naming.
-pub use kroma_module_sdk::ports::naming;
+pub use kroma_naming as naming;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -100,7 +100,7 @@ struct OrganizeInputs {
 fn inputs<S: HostStorage>(state: &S) -> Result<OrganizeInputs> {
     let shows = db::list_shows(state.db(), None)?;
     Ok(OrganizeInputs {
-        tpl: NamingTemplates::from_host(state),
+        tpl: NamingTemplates::read(|k, d| state.setting_str(k, d)),
         folders: state
             .library_folders()
             .into_iter()
@@ -190,7 +190,7 @@ fn expected_rel(
 ) -> Option<(PathBuf, String)> {
     let abs = current_abs(file)?;
     let ext = abs.extension()?.to_str()?.to_string();
-    let parsed = kroma_module_sdk::scene::parse_release_name(abs.file_stem()?.to_str()?);
+    let parsed = kroma_scene::parse_release_name(abs.file_stem()?.to_str()?);
     // The quality + MediaInfo fields shared by movies and episodes: resolution/
     // codec/streams from the probe, source/group/proper from the current name.
     let base = quality_ctx(file, &parsed);
@@ -229,7 +229,7 @@ fn expected_rel(
 
 // Quality + MediaInfo naming context from a probed file, minus the
 // title/year/season/ids the caller fills per kind.
-fn quality_ctx(file: &MediaFile, parsed: &kroma_module_sdk::scene::ParsedRelease) -> NameContext {
+fn quality_ctx(file: &MediaFile, parsed: &kroma_scene::ParsedRelease) -> NameContext {
     let width = file.video.as_ref().and_then(|v| v.width).map(|w| w as i64);
     let (_, _, source) = naming::quality_from_parsed(parsed);
     let hdr = file.video.as_ref().is_some_and(|v| v.hdr);

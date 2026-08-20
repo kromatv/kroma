@@ -6,7 +6,42 @@ mod write;
 pub use read::*;
 pub use write::*;
 
-pub use kroma_module_sdk::ports::DownloadRow;
+/// A stored download row.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct DownloadRow {
+    pub id: String,
+    pub client_id: String,
+    pub client_ref: String,
+    pub request_id: Option<String>,
+    pub kind: String,
+    pub tmdb_id: u64,
+    pub title: Option<String>,
+    pub year: Option<u32>,
+    pub season: Option<u32>,
+    pub episodes: Option<Vec<u32>>,
+    pub release_title: String,
+    pub indexer_id: Option<String>,
+    pub info_hash: Option<String>,
+    pub magnet_or_url: String,
+    pub size_bytes: Option<u64>,
+    pub score: Option<i32>,
+    pub score_breakdown: Option<String>,
+    pub status: String,
+    pub progress: f64,
+    pub save_path: Option<String>,
+    // Persisted for the record / a future "reveal in library"; not read yet.
+    #[allow(dead_code)]
+    pub imported_paths: Option<Vec<String>>,
+    pub error: Option<String>,
+    pub grabbed_at: i64,
+    pub completed_at: Option<i64>,
+    pub imported_at: Option<i64>,
+    pub details_url: Option<String>,
+    pub only_files: Option<Vec<usize>>,
+    /// Replaces media already on disk (see [`GrabSpec::upgrade`]).
+    #[serde(default)]
+    pub upgrade: bool,
+}
 
 const DL_COLS: &str = "id, client_id, client_ref, request_id, kind, tmdb_id, title, year, \
     season, episodes, release_title, indexer_id, info_hash, magnet_or_url, size_bytes, score, \

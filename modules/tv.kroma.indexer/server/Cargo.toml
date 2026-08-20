@@ -55,6 +55,8 @@ kroma-module-host = { path = "../../../server/crates/kroma-module-host", feature
 kroma-db = { path = "../../../server/crates/kroma-db", features = ["testing"] }
 # Self-deleting scratch dirs for the definition-store fixtures.
 kroma-testing = { path = "../../../server/crates/kroma-testing" }
+# `oneshot`, to drive the point's routes without binding a port.
+tower = { version = "0.5", features = ["util"] }
 
 # The profile `bun run modules:pack` builds this sidecar with: release + `panic =
 # "abort"`. Dropping the unwinding tables makes the binary ~11% smaller at NO

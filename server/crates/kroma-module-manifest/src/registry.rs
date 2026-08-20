@@ -1,27 +1,28 @@
-//! The module registry: gathering, dependency resolution, capability lookup.
+//! The module registry: gathering, dependency resolution, point lookup.
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
-use crate::manifest::{Capability, CapabilityReq, Dependency, ModuleManifest};
+use crate::manifest::{Contribution, Dependency, ModuleManifest, PointReq};
 use crate::Module;
 
 /// Handed to [`Module::register`](crate::Module::register) so a module can record
-/// the capabilities it provides; everything recorded is attributed to that module.
+/// what it contributes; everything recorded is attributed to that module.
 #[derive(Default)]
 pub struct ModuleRegistration {
-    capabilities: Vec<Capability>,
+    contributions: Vec<Contribution>,
 }
 
 impl ModuleRegistration {
-    /// Declare a provided capability, e.g. `reg.provide("download-client", "rqbit")`.
-    pub fn provide(&mut self, kind: impl Into<String>, id: impl Into<String>) -> &mut Self {
-        self.capabilities.push(Capability::new(kind, id));
+    /// Answer a point under an instance name, e.g.
+    /// `reg.contribute("tv.kroma.torrents/download-client", "rqbit")`.
+    pub fn contribute(&mut self, point: impl Into<String>, id: impl Into<String>) -> &mut Self {
+        self.contributions.push(Contribution::instance(point, id));
         self
     }
 
-    pub fn capabilities(&self) -> &[Capability] {
-        &self.capabilities
+    pub fn contributions(&self) -> &[Contribution] {
+        &self.contributions
     }
 }
 
@@ -35,7 +36,7 @@ struct Entry {
 pub enum ResolveError {
     MissingDependency { module: String, needs: String },
     VersionMismatch { module: String, needs: String, req: String, found: String },
-    UnsatisfiedCapability { module: String, kind: String, id: Option<String> },
+    UnmetPoint { module: String, point: String, id: Option<String> },
     DuplicateId(String),
     Cycle(Vec<String>),
 }
@@ -50,9 +51,9 @@ impl fmt::Display for ResolveError {
                 f,
                 "module {module:?} needs {needs:?} {req} but {found} is registered",
             ),
-            ResolveError::UnsatisfiedCapability { module, kind, id } => match id {
-                Some(id) => write!(f, "module {module:?} needs capability {kind:?}:{id:?}, which no module provides"),
-                None => write!(f, "module {module:?} needs capability {kind:?}, which no module provides"),
+            ResolveError::UnmetPoint { module, point, id } => match id {
+                Some(id) => write!(f, "{module} needs {point} answered under {id}, and nothing does"),
+                None => write!(f, "{module} needs {point} answered, and nothing does"),
             },
             ResolveError::DuplicateId(id) => write!(f, "two modules registered the id {id:?}"),
             ResolveError::Cycle(ids) => write!(f, "module dependency cycle among {ids:?}"),
@@ -79,10 +80,10 @@ impl Registry {
         let mut reg = ModuleRegistration::default();
         module.register(&mut reg);
         let mut manifest = module.manifest();
-        // A module that declares `provides` in its module.json and keeps the default
-        // no-op register() keeps them.
-        if !reg.capabilities.is_empty() {
-            manifest.provides = reg.capabilities;
+        // A module that declares `contributes` in its module.json and keeps the
+        // default no-op register() keeps them.
+        if !reg.contributions.is_empty() {
+            manifest.contributes = reg.contributions;
         }
         self.entries.push(Entry { manifest, module });
         self
@@ -93,11 +94,11 @@ impl Registry {
         self.entries.iter().map(|e| e.manifest.clone()).collect()
     }
 
-    pub fn provider_of(&self, kind: &str, id: &str) -> Option<&ModuleManifest> {
-        self.entries
-            .iter()
-            .map(|e| &e.manifest)
-            .find(|m| m.provides.iter().any(|c| c.kind == kind && c.id == id))
+    /// The module answering `point` under `id`.
+    pub fn contributor_of(&self, point: &str, id: &str) -> Option<&ModuleManifest> {
+        self.entries.iter().map(|e| &e.manifest).find(|m| {
+            m.contributes.iter().any(|c| c.point == point && c.id.as_deref() == Some(id))
+        })
     }
 
     pub fn icon_of(&self, id: &str) -> Option<crate::ModuleIcon> {
@@ -155,17 +156,20 @@ impl Registry {
                 deps.push(dep.id.clone());
             }
         }
-        for req in &m.requires {
-            match self.provider_for(req) {
+        for req in &m.consumes {
+            match self.contributor_for(req) {
+                // An optional need going unmet is not an error: the module runs
+                // without it, which is the whole reason it said so.
+                None if req.optional => {}
                 None => {
-                    return Err(ResolveError::UnsatisfiedCapability {
+                    return Err(ResolveError::UnmetPoint {
                         module: m.id.clone(),
-                        kind: req.kind.clone(),
+                        point: req.point.clone(),
                         id: req.id.clone(),
                     })
                 }
                 Some(provider) if provider != m.id => deps.push(provider),
-                _ => {} // self-provided: no edge
+                _ => {} // answered by itself: no edge
             }
         }
         deps.sort();
@@ -173,14 +177,14 @@ impl Registry {
         Ok(deps)
     }
 
-    fn provider_for(&self, req: &CapabilityReq) -> Option<String> {
+    fn contributor_for(&self, req: &PointReq) -> Option<String> {
         self.entries
             .iter()
             .find(|e| {
-                e.manifest
-                    .provides
-                    .iter()
-                    .any(|c| c.kind == req.kind && req.id.as_deref().is_none_or(|id| c.id == id))
+                e.manifest.contributes.iter().any(|c| {
+                    c.point == req.point
+                        && req.id.as_deref().is_none_or(|id| c.id.as_deref() == Some(id))
+                })
             })
             .map(|e| e.manifest.id.clone())
     }
@@ -261,20 +265,20 @@ mod tests {
 
     struct Fake {
         manifest: ModuleManifest,
-        provides: Vec<(&'static str, &'static str)>,
+        contributes: Vec<(&'static str, &'static str)>,
     }
 
     impl Fake {
         fn boxed(
             id: &str,
             deps: &[&str],
-            provides: &[(&'static str, &'static str)],
+            contributes: &[(&'static str, &'static str)],
         ) -> Box<dyn Module> {
             let mut manifest = ModuleManifest::new(id, id, "0.1.0");
             for d in deps {
                 manifest = manifest.needs(*d);
             }
-            Box::new(Fake { manifest, provides: provides.to_vec() })
+            Box::new(Fake { manifest, contributes: contributes.to_vec() })
         }
     }
 
@@ -283,10 +287,14 @@ mod tests {
             self.manifest.clone()
         }
         fn register(&self, reg: &mut ModuleRegistration) {
-            for (kind, id) in &self.provides {
-                reg.provide(*kind, *id);
+            for (point, id) in &self.contributes {
+                reg.contribute(*point, *id);
             }
         }
+    }
+
+    fn req(point: &str) -> PointReq {
+        PointReq { point: point.into(), version: None, id: None, optional: false }
     }
 
     fn index_of(order: &[String], id: &str) -> usize {
@@ -340,22 +348,28 @@ mod tests {
     }
 
     #[test]
-    fn register_populates_provides_and_lookup() {
+    fn register_populates_contributions_and_lookup() {
         let mut reg = Registry::new();
         reg.register(Fake::boxed(
             "torrents",
             &[],
-            &[("download-client", "rqbit"), ("download-client", "transmission")],
+            &[
+                ("tv.kroma.torrents/download-client", "rqbit"),
+                ("tv.kroma.torrents/download-client", "transmission"),
+            ],
         ));
 
         let manifests = reg.manifests();
-        assert_eq!(manifests[0].provides.len(), 2);
-        assert_eq!(reg.provider_of("download-client", "rqbit").unwrap().id, "torrents");
-        assert!(reg.provider_of("download-client", "unknown").is_none());
+        assert_eq!(manifests[0].contributes.len(), 2);
+        assert_eq!(
+            reg.contributor_of("tv.kroma.torrents/download-client", "rqbit").unwrap().id,
+            "torrents"
+        );
+        assert!(reg.contributor_of("tv.kroma.torrents/download-client", "nope").is_none());
     }
 
     fn boxed_manifest(manifest: ModuleManifest) -> Box<dyn Module> {
-        Box::new(Fake { manifest, provides: Vec::new() })
+        Box::new(Fake { manifest, contributes: Vec::new() })
     }
 
     #[test]
@@ -393,31 +407,38 @@ mod tests {
     }
 
     #[test]
-    fn capability_dependency_resolves_to_a_provider() {
+    fn a_consumed_point_orders_its_contributor_first() {
         let mut reg = Registry::new();
-        reg.register(Fake::boxed("engine", &[], &[("download-client", "rqbit")]));
+        reg.register(Fake::boxed(
+            "engine",
+            &[],
+            &[("tv.kroma.torrents/download-client", "rqbit")],
+        ));
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.requires.push(CapabilityReq { kind: "download-client".into(), id: None });
+        app.consumes.push(req("tv.kroma.torrents/download-client"));
         reg.register(boxed_manifest(app));
         let order = reg.resolve().expect("resolves");
         assert!(index_of(&order, "engine") < index_of(&order, "app"));
 
         let mut reg = Registry::new();
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.requires.push(CapabilityReq { kind: "download-client".into(), id: None });
+        app.consumes.push(req("tv.kroma.torrents/download-client"));
         reg.register(boxed_manifest(app));
-        assert!(matches!(reg.resolve(), Err(ResolveError::UnsatisfiedCapability { .. })));
+        assert!(matches!(reg.resolve(), Err(ResolveError::UnmetPoint { .. })));
     }
 
     #[test]
-    fn a_module_that_provides_what_it_requires_is_not_a_cycle() {
+    fn a_module_that_answers_what_it_consumes_is_not_a_cycle() {
         let mut reg = Registry::new();
         reg.register(Fake::boxed("indexers", &[], &[("indexer", "torznab")]));
         let mut manifest = ModuleManifest::new("indexers", "indexers", "0.1.0");
-        manifest.requires.push(CapabilityReq { kind: "indexer".into(), id: None });
+        manifest.consumes.push(req("tv.kroma.indexer/search"));
 
         let mut solo = Registry::new();
-        solo.register(Box::new(Fake { manifest, provides: vec![("indexer", "torznab")] }));
+        solo.register(Box::new(Fake {
+            manifest,
+            contributes: vec![("tv.kroma.indexer/search", "torznab")],
+        }));
         assert_eq!(solo.resolve().expect("a self-provided capability adds no edge"), vec!["indexers"]);
     }
 
@@ -447,12 +468,18 @@ mod tests {
     }
 
     #[test]
-    fn registration_collects_the_capabilities_in_declaration_order() {
+    fn registration_collects_the_contributions_in_declaration_order() {
         let mut reg = ModuleRegistration::default();
-        reg.provide("download-client", "rqbit").provide("indexer", "torznab");
-        let kinds: Vec<&str> = reg.capabilities().iter().map(|c| c.kind.as_str()).collect();
-        assert_eq!(kinds, vec!["download-client", "indexer"]);
-        assert_eq!(reg.capabilities()[1].id, "torznab");
+        reg.contribute("tv.kroma.torrents/download-client", "rqbit")
+            .contribute("tv.kroma.indexer/search", "torznab");
+
+        let points: Vec<&str> =
+            reg.contributions().iter().map(|c| c.point.as_str()).collect();
+
+        assert_eq!(points, vec!["tv.kroma.torrents/download-client", "tv.kroma.indexer/search"]);
+        assert_eq!(reg.contributions()[1].id.as_deref(), Some("torznab"));
+        // The local half is what the wire path is built from.
+        assert_eq!(reg.contributions()[0].local(), "download-client");
     }
 
     #[test]
@@ -477,24 +504,26 @@ mod tests {
             r#"module "acquisition" needs "torrents" ^2 but 0.1.0 is registered"#
         );
 
-        let any = ResolveError::UnsatisfiedCapability {
+        let any = ResolveError::UnmetPoint {
             module: "acquisition".into(),
-            kind: "download-client".into(),
+            point: "tv.kroma.torrents/download-client".into(),
             id: None,
         };
         assert_eq!(
             any.to_string(),
-            r#"module "acquisition" needs capability "download-client", which no module provides"#
+            "acquisition needs tv.kroma.torrents/download-client answered, and nothing does"
         );
 
-        let named = ResolveError::UnsatisfiedCapability {
+        // Named, because a point several modules answer is unmet by the WRONG one
+        // answering it, and the message has to say which was wanted.
+        let named = ResolveError::UnmetPoint {
             module: "acquisition".into(),
-            kind: "download-client".into(),
+            point: "tv.kroma.torrents/download-client".into(),
             id: Some("rqbit".into()),
         };
         assert_eq!(
             named.to_string(),
-            r#"module "acquisition" needs capability "download-client":"rqbit", which no module provides"#
+            "acquisition needs tv.kroma.torrents/download-client answered under rqbit, and nothing does"
         );
 
         assert_eq!(

@@ -65,10 +65,10 @@ pub async fn analyze<S: HostStorage + Clone + Send + Sync + 'static>(
         return Err(json_error(StatusCode::BAD_REQUEST, "a magnet or .torrent URL is required"));
     }
     let analysis = match tokio::task::spawn_blocking(move || {
-        let entries = crate::downloads(&state)?.list_files(&state, &magnet)?;
+        let entries = crate::peers::downloads::list_files(&state, &magnet)?;
         let files: Vec<(String, u64)> =
             entries.iter().map(|e| (e.path.clone(), e.size_bytes)).collect();
-        let content = kroma_module_sdk::scene::classify(&files);
+        let content = kroma_scene::classify(&files);
         anyhow::Ok((entries, content))
     })
     .await
@@ -115,7 +115,7 @@ pub async fn manual_add<S: HostStorage + Clone + Send + Sync + 'static>(
         .unwrap_or_else(|| "manual".to_string());
     let episodes = body.episode.map(|e| vec![e]);
     let only_files = body.only_files.filter(|f| !f.is_empty());
-    let spec = kroma_module_sdk::ports::GrabSpec {
+    let spec = crate::peers::downloads::GrabSpec {
         magnet_or_url: magnet,
         kind: body.kind,
         tmdb_id: body.tmdb_id.unwrap_or(0),
@@ -130,15 +130,13 @@ pub async fn manual_add<S: HostStorage + Clone + Send + Sync + 'static>(
     };
     let grab_state = state.clone();
     let result =
-        blocking(move || Ok(crate::downloads(&grab_state).and_then(|d| d.grab(&grab_state, spec))))
-            .await?;
+        blocking(move || Ok(crate::peers::downloads::grab(&grab_state, &spec))).await?;
     match result {
         Ok(row) => {
             let id = row.id.clone();
             // Slow engine add runs in the background so the request returns now.
-            tokio::task::spawn_blocking(move || match crate::downloads(&state) {
-                Ok(downloads) => downloads.activate(&state, &row),
-                Err(e) => tracing::warn!(target: "acquisition", "grabbed but not started: {e:#}"),
+            tokio::task::spawn_blocking(move || {
+                crate::peers::downloads::activate(&state, &row.id)
             });
             Ok(Json(json!({ "id": id })).into_response())
         }

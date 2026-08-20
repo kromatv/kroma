@@ -6,7 +6,7 @@ use std::collections::HashSet;
 
 use anyhow::{anyhow, Result};
 use kroma_module_sdk::host::HostStorage;
-use kroma_module_sdk::ports::Query;
+use crate::peers::indexers::Query;
 
 use crate::dtos::{ManualReleaseView, ManualSearchBody, ManualSearchView};
 
@@ -36,7 +36,7 @@ pub fn manual_search<S: HostStorage>(state: &S, body: &ManualSearchBody) -> Resu
     if q.is_empty() {
         return Ok(ManualSearchView { releases: Vec::new(), indexers: Vec::new() });
     }
-    let indexers = crate::indexer_db(state)?.enabled_indexers(state)?;
+    let indexers = crate::peers::indexers::enabled(state)?;
     if indexers.is_empty() {
         return Err(anyhow!("no enabled indexer; add one under Admin > Indexeurs"));
     }
@@ -65,11 +65,11 @@ pub fn manual_search<S: HostStorage>(state: &S, body: &ManualSearchBody) -> Resu
 }
 
 fn to_view(
-    r: &kroma_module_sdk::ports::Release,
+    r: &crate::peers::indexers::Release,
     indexer_id: &str,
     indexer_name: &str,
 ) -> ManualReleaseView {
-    let p = kroma_module_sdk::scene::parse_release_name(&r.title);
+    let p = kroma_scene::parse_release_name(&r.title);
     ManualReleaseView {
         title: r.title.clone(),
         guid: r.guid.clone(),
@@ -105,8 +105,8 @@ mod tests {
         }
     }
 
-    fn release(title: &str, magnet: Option<&str>, link: Option<&str>) -> kroma_module_sdk::ports::Release {
-        kroma_module_sdk::ports::Release {
+    fn release(title: &str, magnet: Option<&str>, link: Option<&str>) -> crate::peers::indexers::Release {
+        crate::peers::indexers::Release {
             title: title.into(),
             guid: "g1".into(),
             link: link.map(str::to_string),

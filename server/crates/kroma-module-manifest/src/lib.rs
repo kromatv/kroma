@@ -1,6 +1,7 @@
 //! The KROMA server module contract: a module describes itself and declares
-//! what it needs and provides. [`Registry`] resolves the dependency graph;
-//! [`ModuleManifest`]/[`Capability`] is the wire shape the frontend `@kroma/module-sdk` mirrors.
+//! what it needs and answers. [`Registry`] resolves the dependency graph;
+//! [`ModuleManifest`]/[`Contribution`] is the wire shape the frontend
+//! `@kroma/module-sdk` mirrors.
 
 mod compat;
 mod embedded;
@@ -11,12 +12,12 @@ mod registry;
 pub use embedded::EmbeddedModule;
 /// `embedded_module!()` builds a module's `MODULE` const from the `module.json`
 /// and `icon.<ext>` beside it. Re-exported here (as well as from
-/// `kroma_module_sdk`) so the capability-provider modules that sit below the SDK
-/// facade (e.g. scene) can use it without depending on the facade.
+/// `kroma_module_sdk`) so the modules that sit below the SDK facade (e.g. scene)
+/// can use it without depending on the facade.
 pub use kroma_module_macros::embedded_module;
 pub use event::ModuleEvent;
 pub use manifest::{
-    Capability, CapabilityReq, ConfigField, CoreScope, Dependency, FeRemote, ModuleManifest,
+    ConfigField, Contribution, CoreScope, Dependency, FeRemote, ModuleManifest, PointDef, PointReq,
     Storage, Version,
 };
 pub use compat::{engines_satisfied, is_newer, range_matches, version_satisfies, KNOWN_ENGINES};

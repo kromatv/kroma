@@ -1,8 +1,8 @@
 //! The install planner: resolve a root's hard `dependencies` closure against what
 //! is already present (compiled-in + runtime installed) and the registry
 //! catalog, dependencies first, and derive the opt-in rows the install dialog
-//! offers (declared optional deps, plus providers for capability requirements
-//! nothing satisfies). Pure plan math: nothing here downloads.
+//! offers (declared optional deps, plus contributors for the points a planned
+//! module consumes and nothing answers). Pure plan math: nothing here downloads.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -32,9 +32,9 @@ pub(super) struct Planned<'a> {
 pub(super) struct Planner<'a> {
     by_id: HashMap<&'a str, &'a CatalogModule>,
     present: HashMap<String, String>,
-    // `(kind, id)` capabilities the present modules provide, for `requires`
+    // `(point, instance)` the present modules answer, for `consumes`
     // satisfaction. Disabled modules count: the admin can enable them.
-    present_provides: Vec<(String, String)>,
+    present_answers: Vec<(String, Option<String>)>,
     pub plan: Vec<Planned<'a>>,
     planned: HashSet<String>,
     stack: Vec<String>,
@@ -45,23 +45,23 @@ impl<'a> Planner<'a> {
         // Everything already on this server (compiled-in roster + installed
         // .kmod), with its version: a satisfied dependency is not reinstalled.
         let manifests = kroma_module_kernel::manifests(state);
-        let present_provides = manifests
+        let present_answers = manifests
             .iter()
-            .flat_map(|m| m.provides.iter().map(|c| (c.kind.clone(), c.id.clone())))
+            .flat_map(|m| m.contributes.iter().map(|c| (c.point.clone(), c.id.clone())))
             .collect();
         let present = manifests.into_iter().map(|m| (m.id, m.version)).collect();
-        Self::with_present(modules, present, present_provides)
+        Self::with_present(modules, present, present_answers)
     }
 
     fn with_present(
         modules: &'a [CatalogModule],
         present: HashMap<String, String>,
-        present_provides: Vec<(String, String)>,
+        present_answers: Vec<(String, Option<String>)>,
     ) -> Self {
         Self {
             by_id: modules.iter().map(|m| (m.id.as_str(), m)).collect(),
             present,
-            present_provides,
+            present_answers,
             plan: Vec::new(),
             planned: HashSet::new(),
             stack: Vec::new(),
@@ -136,21 +136,21 @@ impl<'a> Planner<'a> {
     }
 
     /// The install dialog's opt-in rows: declared `optionalDependencies` targets,
-    /// plus, for every capability a planned module `requires` that nothing
-    /// installed or planned provides, the catalog's compatible providers.
-    /// The second list is the requirements no available module can satisfy.
+    /// plus, for every point a planned module `consumes` that nothing installed
+    /// or planned answers, the catalog's compatible contributors. The second list
+    /// is the needs no available module can satisfy.
     fn optional(&self) -> (Vec<Value>, Vec<Value>) {
         let mut seen = HashSet::new();
         let mut rows = self.declared_optional_rows(&mut seen);
-        let provided = self.provided_after_plan();
+        let answered = self.answered_after_plan();
         let mut missing = Vec::new();
         for p in &self.plan {
-            for (kind, want) in &p.entry.requires {
-                if let Some(gap) = self.requirement_rows(
-                    kind,
+            for (point, want) in &p.entry.consumes {
+                if let Some(gap) = self.need_rows(
+                    point,
                     want.as_deref(),
                     &p.entry.name,
-                    &provided,
+                    &answered,
                     &mut seen,
                     &mut rows,
                 ) {
@@ -180,44 +180,48 @@ impl<'a> Planner<'a> {
         rows
     }
 
-    // What the server will provide once this plan lands: the present
-    // capabilities plus everything the planned modules declare.
-    fn provided_after_plan(&self) -> Vec<(String, String)> {
-        self.present_provides
+    // What the server will answer once this plan lands: what is present plus
+    // everything the planned modules declare.
+    fn answered_after_plan(&self) -> Vec<(String, Option<String>)> {
+        self.present_answers
             .iter()
             .cloned()
-            .chain(self.plan.iter().flat_map(|p| p.entry.provides.iter().cloned()))
+            .chain(self.plan.iter().flat_map(|p| p.entry.contributes.iter().cloned()))
             .collect()
     }
 
-    fn requirement_rows(
+    fn need_rows(
         &self,
-        kind: &str,
+        point: &str,
         want: Option<&str>,
         for_name: &str,
-        provided: &[(String, String)],
+        answered: &[(String, Option<String>)],
         seen: &mut HashSet<String>,
         rows: &mut Vec<Value>,
     ) -> Option<Value> {
-        let matches = |k: &str, id: &str| k == kind && want.is_none_or(|w| w == id);
-        if provided.iter().any(|(k, id)| matches(k, id)) {
+        // A need naming no instance takes any contributor; one that names an
+        // instance is answered only by that instance.
+        let matches = |p: &str, id: Option<&str>| {
+            p == point && want.is_none_or(|w| id == Some(w))
+        };
+        if answered.iter().any(|(p, id)| matches(p, id.as_deref())) {
             return None;
         }
         let candidates: Vec<&CatalogModule> = self
             .by_id
             .values()
-            .filter(|e| e.provides.iter().any(|(k, id)| matches(k, id)))
+            .filter(|e| e.contributes.iter().any(|(p, id)| matches(p, id.as_deref())))
             .filter_map(|e| self.offerable(&e.id))
             .collect();
         if candidates.is_empty() {
-            return Some(json!({ "kind": kind, "id": want, "for": for_name }));
+            return Some(json!({ "point": point, "id": want, "for": for_name }));
         }
-        // A lone candidate arrives pre-checked in the dialog: it is the
-        // only way to satisfy the requirement.
+        // A lone candidate arrives pre-checked in the dialog: it is the only way
+        // to answer the need.
         let suggested = candidates.len() == 1;
         for entry in candidates {
             if seen.insert(entry.id.clone()) {
-                rows.push(optional_row(entry, Some(kind), for_name, suggested));
+                rows.push(optional_row(entry, Some(point), for_name, suggested));
             }
         }
         None
@@ -265,13 +269,13 @@ fn plan_row(p: &Planned<'_>) -> Value {
 
 fn optional_row(
     entry: &CatalogModule,
-    capability: Option<&str>,
+    point: Option<&str>,
     for_name: &str,
     suggested: bool,
 ) -> Value {
     let mut row = row_base(entry);
     row.insert("description".into(), json!(entry.description));
-    row.insert("capability".into(), json!(capability));
+    row.insert("point".into(), json!(point));
     row.insert("for".into(), json!(for_name));
     row.insert("suggested".into(), json!(suggested));
     Value::Object(row)
@@ -334,11 +338,11 @@ mod tests {
     }
 
     #[test]
-    fn a_lone_provider_is_suggested_for_an_unsatisfied_requirement() {
+    fn a_lone_contributor_is_suggested_for_an_unanswered_point() {
         let mut root = module("tv.x.app", "1.0.0");
-        root.requires = vec![("indexer-engine".into(), None)];
+        root.consumes = vec![("tv.kroma.indexer/search".into(), None)];
         let mut provider = module("tv.x.indexer", "1.0.0");
-        provider.provides = vec![("indexer-engine".into(), "builtin".into())];
+        provider.contributes = vec![("tv.kroma.indexer/search".into(), Some("builtin".into()))];
         let modules = vec![root, provider];
         let mut p = planner(&modules);
         p.roots(&["tv.x.app"]).unwrap();
@@ -346,19 +350,22 @@ mod tests {
         assert!(missing.is_empty());
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].get("id").and_then(Value::as_str), Some("tv.x.indexer"));
-        assert_eq!(rows[0].get("capability").and_then(Value::as_str), Some("indexer-engine"));
+        assert_eq!(
+            rows[0].get("point").and_then(Value::as_str),
+            Some("tv.kroma.indexer/search")
+        );
         assert_eq!(rows[0].get("for").and_then(Value::as_str), Some("tv.x.app"));
         assert_eq!(rows[0].get("suggested").and_then(Value::as_bool), Some(true));
     }
 
     #[test]
-    fn competing_providers_are_offered_but_not_suggested() {
+    fn competing_contributors_are_offered_but_not_suggested() {
         let mut root = module("tv.x.app", "1.0.0");
-        root.requires = vec![("download-client".into(), None)];
+        root.consumes = vec![("tv.kroma.torrents/download-client".into(), None)];
         let mut a = module("tv.x.engine-a", "1.0.0");
-        a.provides = vec![("download-client".into(), "a".into())];
+        a.contributes = vec![("tv.kroma.torrents/download-client".into(), Some("a".into()))];
         let mut b = module("tv.x.engine-b", "1.0.0");
-        b.provides = vec![("download-client".into(), "b".into())];
+        b.contributes = vec![("tv.kroma.torrents/download-client".into(), Some("b".into()))];
         let modules = vec![root, a, b];
         let mut p = planner(&modules);
         p.roots(&["tv.x.app"]).unwrap();
@@ -369,12 +376,12 @@ mod tests {
     }
 
     #[test]
-    fn a_requirement_the_plan_itself_satisfies_is_not_suggested() {
+    fn a_point_the_plan_itself_answers_is_not_suggested() {
         let mut root = module("tv.x.app", "1.0.0");
         root.dependencies = vec![("tv.x.engine".into(), None)];
-        root.requires = vec![("download-client".into(), None)];
+        root.consumes = vec![("tv.kroma.torrents/download-client".into(), None)];
         let mut dep = module("tv.x.engine", "1.0.0");
-        dep.provides = vec![("download-client".into(), "builtin".into())];
+        dep.contributes = vec![("tv.kroma.torrents/download-client".into(), Some("builtin".into()))];
         let modules = vec![root, dep];
         let mut p = planner(&modules);
         p.roots(&["tv.x.app"]).unwrap();
@@ -384,14 +391,14 @@ mod tests {
     }
 
     #[test]
-    fn an_installed_provider_satisfies_a_requirement() {
+    fn an_installed_contributor_answers_a_consumed_point() {
         let mut root = module("tv.x.app", "1.0.0");
-        root.requires = vec![("indexer-engine".into(), None)];
+        root.consumes = vec![("tv.kroma.indexer/search".into(), None)];
         let modules = vec![root];
         let mut p = Planner::with_present(
             &modules,
             HashMap::from([("tv.x.other".to_string(), "1.0.0".to_string())]),
-            vec![("indexer-engine".to_string(), "builtin".to_string())],
+            vec![("tv.kroma.indexer/search".to_string(), Some("builtin".to_string()))],
         );
         p.roots(&["tv.x.app"]).unwrap();
         let (rows, missing) = p.optional();
@@ -400,16 +407,19 @@ mod tests {
     }
 
     #[test]
-    fn an_unsatisfiable_requirement_is_reported_missing() {
+    fn an_unanswerable_point_is_reported_missing() {
         let mut root = module("tv.x.app", "1.0.0");
-        root.requires = vec![("subtitle-engine".into(), Some("whisper".into()))];
+        root.consumes = vec![("tv.kroma.whisper/transcribe".into(), Some("whisper".into()))];
         let modules = vec![root];
         let mut p = planner(&modules);
         p.roots(&["tv.x.app"]).unwrap();
         let (rows, missing) = p.optional();
         assert!(rows.is_empty());
         assert_eq!(missing.len(), 1);
-        assert_eq!(missing[0].get("kind").and_then(Value::as_str), Some("subtitle-engine"));
+        assert_eq!(
+            missing[0].get("point").and_then(Value::as_str),
+            Some("tv.kroma.whisper/transcribe")
+        );
         assert_eq!(missing[0].get("id").and_then(Value::as_str), Some("whisper"));
     }
 
@@ -559,6 +569,6 @@ mod tests {
         let (rows, _) = p.optional();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].get("id").and_then(Value::as_str), Some("tv.x.vpn"));
-        assert!(rows[0].get("capability").unwrap().is_null());
+        assert!(rows[0].get("point").unwrap().is_null());
     }
 }

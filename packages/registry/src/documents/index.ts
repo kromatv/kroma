@@ -18,10 +18,11 @@ export const DOCUMENT_SCHEMAS: Record<number, Record<string, z.ZodType>> = {
 };
 
 export {
-  Capability,
-  CapabilityReq,
+  Contribution,
   Integrity,
   ModuleRecord,
+  PointDef,
+  PointReq,
   RegistryArtifact,
   RegistryDescriptor,
   RegistryEntry,

@@ -17,12 +17,13 @@ import { useModuleData } from '#web/features/admin/module-data';
 import { InstallModal } from '#web/features/admin/module-install';
 import { InstalledList } from '#web/features/admin/module-installed';
 import { useStoreOps } from '#web/features/admin/module-ops';
+import { PointsList } from '#web/features/admin/module-points-list';
 import { RegistriesDrawer } from '#web/features/admin/module-registries';
 import { StoreGrid } from '#web/features/admin/module-store';
 import { UpdatesList } from '#web/features/admin/module-updates';
 import { Denied, PageHeader, useAsyncAction, useCap } from '#web/features/admin/shell';
 
-type Tab = 'discover' | 'installed' | 'updates';
+type Tab = 'discover' | 'installed' | 'points' | 'updates';
 
 export function ModulesAdminPage() {
   if (!useCap('settings.manage')) return <Denied />;
@@ -72,6 +73,7 @@ function ModulesInner() {
   const tabs: { value: Tab; label: string }[] = [
     { value: 'discover', label: t('admin.modulesTabDiscover') },
     { value: 'installed', label: `${t('admin.modulesTabInstalled')} · ${installed.length}` },
+    { value: 'points', label: t('admin.modulesTabPoints') },
     {
       value: 'updates',
       label:
@@ -165,6 +167,7 @@ function ModulesInner() {
             onChanged={() => void refreshAll()}
           />
         )}
+        {tab === 'points' && <PointsList modules={modules} query={query} />}
         {tab === 'updates' && (
           <UpdatesList
             updates={updates}

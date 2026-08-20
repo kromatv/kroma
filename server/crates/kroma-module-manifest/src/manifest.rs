@@ -8,13 +8,59 @@ use serde::{Deserialize, Serialize};
 /// [`crate::range_matches`], which treats anything unparseable as no constraint.
 pub type Version = String;
 
-/// One thing a module contributes to the running server, as a (`kind`, `id`)
-/// pair. `kind` is the interface ("download-client", "indexer-engine"); `id` is
-/// the concrete implementation ("rqbit", "transmission", "builtin").
+/// A point this module DEFINES: somewhere other modules can plug in. `name` is
+/// local, and the point's full name is `<this module's id>/<name>`, so ownership
+/// is legible from the name alone and two authors cannot collide.
+///
+/// Any module may define one. That is the whole trick: the core resolves a point
+/// by matching a string against the installed manifests, so a module defining a
+/// point is not a special case of the core defining one.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Capability {
-    pub kind: String,
-    pub id: String,
+#[serde(rename_all = "camelCase")]
+pub struct PointDef {
+    pub name: String,
+    /// The major this module serves. A consumer declaring another major is not
+    /// resolved to it. Within a major, evolution is additive only: the two ends
+    /// were built at different times, so a new field must default.
+    #[serde(default = "one")]
+    pub version: u32,
+    /// The methods a contributor is expected to answer, as
+    /// `/_port/<point>/<method>`. Introspection today; what lets the Store warn
+    /// about a consumer wanting a method the installed provider lacks.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub methods: Vec<String>,
+}
+
+fn one() -> u32 {
+    1
+}
+
+impl PointDef {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self { name: name.into(), version: 1, methods: Vec::new() }
+    }
+}
+
+/// One thing a module contributes: it answers `point` (a full
+/// `<definer>/<name>`), under `id` when several contributions to that point can
+/// be live at once.
+///
+/// This is one declaration where there used to be three. `provides` described a
+/// user-configurable capability for the admin picker, `ports` described the RPC
+/// name resolution matched on, and they were the same fact written twice — an
+/// engine advertised `download-client` under both. The UI metadata rides along
+/// because the admin's add-form is data-driven off it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Contribution {
+    pub point: String,
+    /// The major this contribution was built against.
+    #[serde(default = "one")]
+    pub version: u32,
+    /// The instance name, for a point several modules answer at once: a consumer
+    /// picks a download client by it. Absent when the point takes one answer.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -23,9 +69,27 @@ pub struct Capability {
     pub flow: Option<String>,
 }
 
-impl Capability {
-    pub fn new(kind: impl Into<String>, id: impl Into<String>) -> Self {
-        Self { kind: kind.into(), id: id.into(), label: None, fields: Vec::new(), flow: None }
+impl Contribution {
+    pub fn new(point: impl Into<String>) -> Self {
+        Self {
+            point: point.into(),
+            version: 1,
+            id: None,
+            label: None,
+            fields: Vec::new(),
+            flow: None,
+        }
+    }
+
+    /// The same, under an instance name.
+    pub fn instance(point: impl Into<String>, id: impl Into<String>) -> Self {
+        Self { id: Some(id.into()), ..Self::new(point) }
+    }
+
+    /// The point's local name, i.e. without the defining module's id. What the
+    /// wire path is built from.
+    pub fn local(&self) -> &str {
+        self.point.rsplit_once('/').map_or(self.point.as_str(), |(_, name)| name)
     }
 }
 
@@ -163,14 +227,26 @@ mod dep_map {
     }
 }
 
-/// A dependency on a CAPABILITY rather than a specific module: satisfied by any
-/// module whose `provides` matches `kind` (and `id` when given).
+/// A point this module CALLS, rather than a dependency on a specific module:
+/// satisfied by whichever module contributes `point` (under `id`, when given).
+///
+/// This is what makes a module's needs legible without naming a peer. A module id
+/// in `dependencies` says "install that one"; this says "something has to answer
+/// this", which is what a marketplace can resolve.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CapabilityReq {
-    pub kind: String,
+pub struct PointReq {
+    pub point: String,
+    /// The majors this module can speak, as a semver range over the point's
+    /// version (`^1`). Absent takes any.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
+    /// The module works without it, so an unmet optional need is not reported as
+    /// leaving the module inert.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub optional: bool,
 }
 
 /// The module manifest contract this build speaks.
@@ -258,18 +334,15 @@ pub struct ModuleManifest {
     pub dependencies: Vec<Dependency>,
     #[serde(default, with = "dep_map", skip_serializing_if = "Vec::is_empty")]
     pub optional_dependencies: Vec<Dependency>,
-    #[serde(default)]
-    pub requires: Vec<CapabilityReq>,
-    #[serde(default)]
-    pub provides: Vec<Capability>,
-    /// The cross-module RPC contracts this module SERVES, by name
-    /// (`"torznab"`, `"indexer-db"`). Distinct from [`Self::provides`], which
-    /// describes user-configurable capabilities: this is machine wiring, and it
-    /// is what lets a consumer reach a provider without naming its module id.
+    /// Points this module invents, for other modules to plug into.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub ports: Vec<String>,
-    #[serde(default)]
-    pub permissions: Vec<String>,
+    pub defines_points: Vec<PointDef>,
+    /// Points this module answers, its own included.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub contributes: Vec<Contribution>,
+    /// Points this module calls.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub consumes: Vec<PointReq>,
     #[serde(default)]
     pub config: Vec<ConfigField>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -294,10 +367,9 @@ impl ModuleManifest {
             engines: BTreeMap::new(),
             dependencies: Vec::new(),
             optional_dependencies: Vec::new(),
-            requires: Vec::new(),
-            provides: Vec::new(),
-            ports: Vec::new(),
-            permissions: Vec::new(),
+            defines_points: Vec::new(),
+            contributes: Vec::new(),
+            consumes: Vec::new(),
             config: Vec::new(),
             fe_remote: None,
             storage: None,

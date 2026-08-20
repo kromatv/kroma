@@ -1,6 +1,6 @@
 use serde_json::{json, Value};
 
-use kroma_module_sdk::ports::{DownloadClient, TorrentState};
+use crate::types::TorrentState;
 
 use crate::fake_transmission::{add_req, FakeTransmission, Reply};
 use crate::{KIND, STATUS_FIELDS};
@@ -230,8 +230,6 @@ fn a_failing_verb_is_not_swallowed() {
 }
 
 #[test]
-fn kind_is_the_registry_key() {
-    let fake = FakeTransmission::start(|_, _, _| Reply::ok(json!({})));
-    assert_eq!(fake.client().kind(), KIND);
+fn the_kind_is_the_instance_name_the_manifest_declares() {
     assert_eq!(KIND, "transmission");
 }

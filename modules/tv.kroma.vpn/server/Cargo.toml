@@ -36,6 +36,11 @@ anyhow = "1"
 # workspace root, and this module is its own workspace, so `inherits = "release"`
 # below would otherwise pick up cargo's DEFAULT release: no LTO, 16 codegen
 # units, unstripped.
+[dev-dependencies]
+# `testing::StubHost`, for the point tests: a host that answers nothing, which is
+# what a server with no download engine installed looks like.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
+
 [profile.release]
 opt-level = 3
 # ThinLTO, not fat: measured at 1116 vs 1117 ns/pair on the parse+score hot path

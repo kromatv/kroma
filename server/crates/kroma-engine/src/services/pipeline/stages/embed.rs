@@ -10,6 +10,7 @@ use crate::services::jobs::{JobContext, JobKey, Trigger};
 use crate::state::SharedState;
 
 use super::common::stage;
+use crate::services::embeddings;
 
 // BERT embedding is in-process CPU work, so it yields to live playback.
 stage! {
@@ -22,7 +23,7 @@ stage! {
 }
 
 fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
-    let sig = state.embedder.dim().to_string();
+    let sig = embeddings::dim(&state.embedder).to_string();
     let (items, shows) = crate::db::index_snapshot(&state.db)?;
     let mut out = Vec::new();
     for i in items {
@@ -40,7 +41,7 @@ fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
 
 fn process(ctx: &JobContext, id: &str) -> Result<()> {
     let embedder = ctx.state.embedder.clone();
-    let target = embedder.dim();
+    let target = embeddings::dim(&embedder);
     // A single-row lookup, not the whole `item_vectors` table, so a full re-embed
     // stays O(N) rather than O(N^2).
     if crate::db::vector_dim(&ctx.state.db, id)? == Some(target) {
@@ -49,7 +50,7 @@ fn process(ctx: &JobContext, id: &str) -> Result<()> {
     let Some((title, year, meta)) = title_year_meta(&ctx.state, id)? else {
         return Ok(()); // gone, or no metadata yet
     };
-    let vec = embedder.embed(&build_doc(&title, year, &meta));
+    let vec = embeddings::embed(&embedder, &build_doc(&title, year, &meta));
     crate::db::set_item_vector(&ctx.state.db, id, &vec).map_err(|e| anyhow!(e))
 }
 
@@ -69,30 +70,15 @@ fn title_year_meta(
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use super::*;
-    use crate::ports::Embedder;
-    use crate::test_support::{seed_movie, seed_show_episode, test_state_with_embedder};
+    use crate::test_support::{
+        fixed_dim_embedder, seed_movie, seed_show_episode, test_state_with_embedder,
+    };
 
-    // A fixed width, because NoopEmbedder reports 0 and makes every dimension
-    // comparison vacuous.
-    struct FixedDim(usize);
-
-    impl Embedder for FixedDim {
-        fn dim(&self) -> usize {
-            self.0
-        }
-        fn embed(&self, _text: &str) -> Vec<f32> {
-            vec![0.5; self.0]
-        }
-        fn relevance_floor(&self) -> f32 {
-            0.1
-        }
-    }
-
+    // A fixed width, because an unanswered point reports 0 and makes every
+    // dimension comparison vacuous.
     fn state(dim: usize) -> SharedState {
-        test_state_with_embedder(Arc::new(FixedDim(dim)))
+        test_state_with_embedder(fixed_dim_embedder(dim))
     }
 
     const META: &str = r#"{"tmdbId":1,"title":"T","overview":"o","genres":["Drama"],"tmdbUrl":"https://x/1"}"#;

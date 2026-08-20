@@ -14,7 +14,7 @@ use kroma_module_sdk::host::HostStorage;
 use serde::Deserialize;
 
 pub fn whisper_routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
-    Router::new().route("/_port/whisper/transcribe", post(transcribe_h::<S>))
+    Router::new().route("/_port/transcriber/transcribe", post(transcribe_h::<S>))
 }
 
 #[derive(Deserialize)]

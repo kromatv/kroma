@@ -1,10 +1,9 @@
-//! The out-of-process provider side of the acquisition search / grab surface:
-//! the routes the acquisition `.kmod` serves for the core's
-//! `/api/requests/:id/search` + `/grab` endpoints (via `AcquisitionSearchPort`).
+//! The `acquisition-search` point: the routes this `.kmod` serves behind the
+//! core's `/api/requests/:id/search` and `/grab`.
 //!
-//! These live here (not in the generic bridge) because `grab` backgrounds the
-//! slow engine add with the owned host -- the handler's `State<S>` gives it one,
-//! which the generic bridge can't.
+//! The core forwards opaque JSON to whichever module answers the point, so what
+//! is owed back is the shape below and not a Rust type. The scored-releases view
+//! crosses as JSON the client reads and the core only passes along.
 
 use axum::extract::State;
 use axum::routing::post;
@@ -12,11 +11,15 @@ use axum::{Json, Router};
 use kroma_module_sdk::host::HostStorage;
 use serde::Deserialize;
 
-/// The routes the acquisition sidecar mounts for its search port.
+/// The point this module answers. A method's URL is `/_port/<point>/<method>`,
+/// so a consumer holds the point name and derives the rest.
+pub const POINT: &str = "acquisition";
+
+/// The routes the acquisition sidecar mounts for the point.
 pub fn acqsearch_routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
-        .route("/_port/acqsearch/search", post(search_h::<S>))
-        .route("/_port/acqsearch/grab", post(grab_h::<S>))
+        .route("/_port/acquisition/search", post(search_h::<S>))
+        .route("/_port/acquisition/grab", post(grab_h::<S>))
 }
 
 async fn blocking_env<T: Send + 'static>(
@@ -70,10 +73,7 @@ async fn grab_h<S: HostStorage + Clone + Send + Sync + 'static>(
         let id = row.id.clone();
         // Background the slow engine add so the grab returns immediately; `activate`
         // is a blocking HTTP call, so a plain thread (no runtime needed) is enough.
-        std::thread::spawn(move || match crate::downloads(&host) {
-            Ok(downloads) => downloads.activate(&host, &row),
-            Err(e) => tracing::warn!(target: "acquisition", "grabbed but not started: {e:#}"),
-        });
+        std::thread::spawn(move || crate::peers::downloads::activate(&host, &row.id));
         Ok(id)
     })
     .await
@@ -110,14 +110,14 @@ mod tests {
 
     #[tokio::test]
     async fn both_routes_are_mounted_where_the_core_calls_them() {
-        // The consumer builds `/_port/acqsearch/<method>` by hand in another
+        // The consumer derives `/_port/<point>/<method>` from the point name in another
         // crate, so a path renamed on one side only fails at runtime, in a
         // different process, with no compile error anywhere.
-        let (status, _) = post("/_port/acqsearch/search", serde_json::json!({ "request_id": "r1" })).await;
+        let (status, _) = post("/_port/acquisition/search", serde_json::json!({ "request_id": "r1" })).await;
         assert_eq!(status, StatusCode::OK);
 
         let (status, _) = post(
-            "/_port/acqsearch/grab",
+            "/_port/acquisition/grab",
             serde_json::json!({ "request_id": "r1", "guid": "g", "indexer_id": "i" }),
         )
         .await;
@@ -134,7 +134,7 @@ mod tests {
             serde_json::json!({ "kind": "episode", "season": 2, "episode": 5 }),
         ] {
             let (status, body) =
-                post("/_port/acqsearch/search", serde_json::json!({ "request_id": "r1", "scope": scope }))
+                post("/_port/acquisition/search", serde_json::json!({ "request_id": "r1", "scope": scope }))
                     .await;
             assert_eq!(status, StatusCode::OK, "{scope}");
             // No such request in the stub db, so it answers Err -- what matters
@@ -146,7 +146,7 @@ mod tests {
     #[tokio::test]
     async fn an_unknown_scope_shape_is_rejected_by_the_extractor() {
         let (status, _) = post(
-            "/_port/acqsearch/search",
+            "/_port/acquisition/search",
             serde_json::json!({ "request_id": "r1", "scope": { "kind": "sideways" } }),
         )
         .await;
@@ -160,7 +160,7 @@ mod tests {
         // client deserializes. A 500 would surface as a transport error and lose
         // the reason.
         let (status, body) =
-            post("/_port/acqsearch/search", serde_json::json!({ "request_id": "nope" })).await;
+            post("/_port/acquisition/search", serde_json::json!({ "request_id": "nope" })).await;
         assert_eq!(status, StatusCode::OK);
         let err = body["Err"].as_str().expect("an Err envelope");
         assert!(err.contains("request not found"), "{err}");
@@ -169,7 +169,7 @@ mod tests {
     #[tokio::test]
     async fn a_grab_for_a_request_that_is_not_there_answers_err_too() {
         let (status, body) = post(
-            "/_port/acqsearch/grab",
+            "/_port/acquisition/grab",
             serde_json::json!({ "request_id": "nope", "guid": "g", "indexer_id": "i" }),
         )
         .await;
@@ -181,11 +181,11 @@ mod tests {
     async fn a_malformed_body_is_rejected_by_the_extractor() {
         // The body keys are half the contract with the client; a missing one
         // must fail loudly here rather than be read as an empty request id.
-        let (status, _) = post("/_port/acqsearch/search", serde_json::json!({})).await;
+        let (status, _) = post("/_port/acquisition/search", serde_json::json!({})).await;
         assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 
         let (status, _) = post(
-            "/_port/acqsearch/grab",
+            "/_port/acquisition/grab",
             serde_json::json!({ "request_id": "r1", "guid": "g" }),
         )
         .await;

@@ -67,32 +67,40 @@ function DepChips({ entry, all }: Readonly<{ entry: StoreModule; all: AdminModul
   );
 }
 
-// What a catalog-only entry provides / needs provided, as neutral chips; the
+// The local half of a point plus its instance: `tv.kroma.torrents/download-client`
+// with `rqbit` reads as `download-client:rqbit`, and the definer's id is noise in
+// a chip that already sits under the module.
+function pointLabel(c: { point: string; id?: string | null }): string {
+  const local = c.point.split('/').pop() ?? c.point;
+  return c.id ? `${local}:${c.id}` : local;
+}
+
+// What a catalog-only entry answers / needs answered, as neutral chips; the
 // install dialog does the real satisfaction math.
-function CapabilityChips({ entry }: Readonly<{ entry: StoreModule }>) {
+function PointChips({ entry }: Readonly<{ entry: StoreModule }>) {
   const t = useT();
-  if (entry.provides.length === 0 && entry.requires.length === 0) return null;
+  if (entry.contributes.length === 0 && entry.consumes.length === 0) return null;
   return (
     <Box gap={12}>
-      {entry.provides.length > 0 && (
+      {entry.contributes.length > 0 && (
         <Box>
-          <Label>{t('admin.modulesProvides')}</Label>
+          <Label>{t('admin.modulesAnswers')}</Label>
           <Row wrap gap={6}>
-            {entry.provides.map((c) => (
-              <Badge key={`${c.kind}:${c.id}`} tone="neutral">
-                {c.kind}:{c.id}
+            {entry.contributes.map((c) => (
+              <Badge key={`${c.point}:${c.id ?? ''}`} tone="neutral">
+                {pointLabel(c)}
               </Badge>
             ))}
           </Row>
         </Box>
       )}
-      {entry.requires.length > 0 && (
+      {entry.consumes.length > 0 && (
         <Box>
-          <Label>{t('admin.modulesRequires')}</Label>
+          <Label>{t('admin.modulesNeeds')}</Label>
           <Row wrap gap={6}>
-            {entry.requires.map((r) => (
-              <Badge key={`${r.kind}:${r.id ?? ''}`} tone="neutral">
-                {r.id ? `${r.kind}:${r.id}` : r.kind}
+            {entry.consumes.map((r) => (
+              <Badge key={`${r.point}:${r.id ?? ''}`} tone="neutral">
+                {pointLabel(r)}
               </Badge>
             ))}
           </Row>
@@ -116,7 +124,7 @@ export function DepsSection({
     return (
       <>
         <DepChips entry={entry} all={all} />
-        <CapabilityChips entry={entry} />
+        <PointChips entry={entry} />
       </>
     );
   }

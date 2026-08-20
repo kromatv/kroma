@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use crate::config::Config;
 use crate::db;
-use crate::ports::{Embedder, NoopEmbedder};
+use crate::point::Point;
 use crate::services::settings::Settings;
 use crate::state::{AppState, SharedState};
 
@@ -36,14 +36,14 @@ fn test_config(data_dir: PathBuf) -> Config {
 // The state takes the scratch dir over, so it is removed once the last handle
 // goes rather than when the test body ends - jobs the test triggers keep
 // writing into it from their own threads.
-fn build_state(embedder: Arc<dyn Embedder>, tmdb_api_key: Option<&str>) -> SharedState {
+fn build_state(embedder: Point, tmdb_api_key: Option<&str>) -> SharedState {
     let scratch = kroma_testing::temp_dir("engine-test");
     let db = db::init(&scratch.path().join("kroma.db")).expect("init db");
     let mut config = test_config(scratch.path().to_path_buf());
     config.tmdb_api_key = tmdb_api_key.map(str::to_string);
     let settings = Settings::load(&db);
     let state =
-        AppState::new(config, false, db, settings, embedder, HashMap::new(), &[], Arc::new(|_| None));
+        AppState::new(config, false, db, settings, embedder, HashMap::new(), &[], Arc::new(|_| Vec::new()));
     state.own_scratch_dir(scratch);
     state
 }
@@ -55,24 +55,51 @@ fn build_state(embedder: Arc<dyn Embedder>, tmdb_api_key: Option<&str>) -> Share
 /// its "TMDB is not configured" guard, so the paths that never reach a request
 /// (an empty library, an un-enriched show, a cancelled run) can be exercised.
 pub(crate) fn test_state_with_tmdb(key: &str) -> SharedState {
-    build_state(Arc::new(NoopEmbedder), Some(key))
+    build_state(Point::absent("embedder"), Some(key))
 }
 
-/// Like [`test_state`], but with a real (if trivial) embedder.
+/// Like [`test_state`], but with a point that answers.
 ///
-/// [`NoopEmbedder`] reports dim 0 and returns empty vectors, which makes every
+/// An absent point embeds to nothing and reports dim 0, which makes every
 /// dimension comparison vacuous - a pass that stored nothing looks identical to
-/// one that stored everything. This one produces a vector of the requested
-/// length so "already at the active dim" is actually distinguishable.
-pub(crate) fn test_state_with_embedder(embedder: Arc<dyn Embedder>) -> SharedState {
+/// one that stored everything. A stub that produces vectors of a known width
+/// makes "already at the active dim" distinguishable.
+pub(crate) fn test_state_with_embedder(embedder: Point) -> SharedState {
     build_state(embedder, None)
 }
 
-/// Build a minimal, real [`SharedState`]: fresh temp DB, loaded settings, a no-op
-/// embedder, empty module services, no module jobs, `ffprobe_available = false`.
+/// A stubbed `embedder` point of a fixed width, whose vectors carry a call
+/// counter in their first component so a re-embed is distinguishable from a skip.
+pub(crate) fn fixed_dim_embedder(dim: usize) -> Point {
+    let calls = std::sync::atomic::AtomicUsize::new(0);
+    Point::stub("embedder", move |method, body| match method {
+        "meta" => Some(serde_json::json!({ "dim": dim, "relevance_floor": 0.1 })),
+        "embed" => Some(serde_json::json!(stamped(dim, &calls))),
+        "embed_batch" => {
+            let n = body["texts"].as_array().map_or(0, Vec::len);
+            Some(serde_json::json!(
+                (0..n).map(|_| stamped(dim, &calls)).collect::<Vec<_>>()
+            ))
+        }
+        _ => None,
+    })
+}
+
+fn stamped(dim: usize, calls: &std::sync::atomic::AtomicUsize) -> Vec<f32> {
+    let n = calls.fetch_add(1, Ordering::Relaxed) + 1;
+    let mut v = vec![0.0f32; dim];
+    if let Some(first) = v.first_mut() {
+        *first = n as f32;
+    }
+    v
+}
+
+/// Build a minimal, real [`SharedState`]: fresh temp DB, loaded settings, an
+/// unanswered `embedder` point, empty module services, no module jobs, and
+/// `ffprobe_available = false`.
 /// The state owns the scratch `data_dir`, which goes when its last clone does.
 pub(crate) fn test_state() -> SharedState {
-    build_state(Arc::new(NoopEmbedder), None)
+    build_state(Point::absent("embedder"), None)
 }
 
 /// Insert a library row (idempotent). `kind` is `"movies" | "shows" | "mixed"`.

@@ -1,7 +1,7 @@
 use serde_json::{json, Value};
 use std::sync::Mutex;
 
-use kroma_module_sdk::ports::{AddTorrentReq, ClientDef};
+use crate::types::{AddTorrentReq, ClientDef};
 
 use crate::rpc::SESSION_HEADER;
 use crate::{Transmission, KIND};

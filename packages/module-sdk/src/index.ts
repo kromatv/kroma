@@ -4,7 +4,7 @@
 // surface shares.
 
 export type {
-  EngineCapability,
+  EngineContribution,
   KromaClient,
   MessageKey,
   ModuleApi,
@@ -24,7 +24,7 @@ export { useLocale, useT } from '@kroma/ui';
 export type { AdminHostValue } from './admin/context';
 export { AdminHostProvider, useAdminHost } from './admin/context';
 export { Denied } from './admin/denied';
-export type { AddEngineOptions } from './admin/engines';
+export type { AddEngineOptions, EngineChoice } from './admin/engines';
 export {
   AddEngineHost,
   addEngine,
@@ -65,12 +65,12 @@ export { depEntries, ModuleRegistry } from './registry';
 export { ModuleScope, moduleApiHook, useModuleApi } from './scope';
 export { ModuleSlot, ModuleSlotProvider, useSlotEntries } from './slot';
 export type {
-  Capability,
-  CapabilityReq,
   ConfigField,
+  Contribution,
   Dependencies,
   FeRemote,
   ModuleManifest,
+  PointReq,
 } from './types';
 export type { TableActionProps, TableCellProps, TableRootProps, TableRowProps } from './ui/table';
 export { TABULAR, Table } from './ui/table';

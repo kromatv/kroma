@@ -22,6 +22,7 @@ use crate::model::Section;
 use crate::state::SharedState;
 
 use context::Context;
+use crate::services::embeddings;
 
 const SECTION_CAP: usize = 20;
 // Over-fetch margin so a row still fills after cross-row de-duplication.
@@ -40,7 +41,7 @@ pub fn build_home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str)
     let ctx = Context::build(pool, user_id);
     // Themed rows must clear this cosine floor or they're noise (the lexical
     // backend's "christmas" → random-classics row is what this kills).
-    let floor = state.embedder.relevance_floor();
+    let floor = embeddings::relevance_floor(&state.embedder);
 
     let mut out = Builder { pool, sections: Vec::new(), seen: HashSet::new() };
 
@@ -106,7 +107,7 @@ fn push_ai_rows(
         if out.sections.len() >= discretionary_cap {
             break;
         }
-        let query = state.embedder.embed(&gs.query);
+        let query = embeddings::embed(&state.embedder, &gs.query);
         let ranked = state.vectors.nearest(&query, FETCH, &HashSet::new());
         let reason = (!gs.reason.is_empty()).then_some(gs.reason);
         out.push(&format!("ai:{}", gs.key), gs.title, reason, ranked, floor);
@@ -139,7 +140,7 @@ fn push_themed_rows(
         if themed >= MAX_THEMED || out.sections.len() >= discretionary_cap {
             break;
         }
-        let query = state.embedder.embed(phrase.query);
+        let query = embeddings::embed(&state.embedder, phrase.query);
         let ranked = state.vectors.nearest(&query, FETCH, &HashSet::new());
         if out.push(&format!("themed:{}", phrase.key), i18n::t(locale, phrase.title_key, &[]), None, ranked, floor) {
             themed += 1;
@@ -382,27 +383,23 @@ mod tests {
         assert!(b.seen.is_empty(), "a row that was not emitted claims no titles");
     }
 
-    struct Uniform;
-
-    impl crate::ports::Embedder for Uniform {
-        fn dim(&self) -> usize {
-            2
-        }
-        fn embed(&self, _text: &str) -> Vec<f32> {
-            vec![1.0, 0.0]
-        }
-        fn relevance_floor(&self) -> f32 {
-            0.5
-        }
+    // Every document on the same unit vector, so every pair is a perfect match
+    // and the row is decided by the floor rather than by the similarity.
+    fn uniform() -> crate::point::Point {
+        crate::point::Point::stub("embedder", |method, _| match method {
+            "meta" => Some(serde_json::json!({ "dim": 2, "relevance_floor": 0.5 })),
+            "embed" => Some(serde_json::json!([1.0, 0.0])),
+            _ => None,
+        })
     }
 
     #[test]
     fn a_themed_phrase_the_library_answers_becomes_a_row() {
-        let state = crate::test_support::test_state_with_embedder(std::sync::Arc::new(Uniform));
+        let state = crate::test_support::test_state_with_embedder(uniform());
         let ids = ["a", "b", "c", "d", "e"];
         seed_movies(&state.db, &ids);
-        let vector = state.embedder.embed("anything");
-        assert_eq!(vector.len(), state.embedder.dim(), "a stored vector of another width is noise");
+        let vector = embeddings::embed(&state.embedder, "anything");
+        assert_eq!(vector.len(), embeddings::dim(&state.embedder), "a stored vector of another width is noise");
         for id in ids {
             crate::db::set_item_vector(&state.db, id, &vector).unwrap();
         }
@@ -410,7 +407,7 @@ mod tests {
         let ctx = Context::build(&state.db, "u1");
         let mut out = Builder { pool: &state.db, sections: Vec::new(), seen: HashSet::new() };
 
-        push_themed_rows(&mut out, &state, &ctx, "en", MAX_SECTIONS, state.embedder.relevance_floor());
+        push_themed_rows(&mut out, &state, &ctx, "en", MAX_SECTIONS, embeddings::relevance_floor(&state.embedder));
 
         assert_eq!(out.sections.len(), 1);
         assert!(out.sections[0].id.starts_with("themed:"), "{}", out.sections[0].id);

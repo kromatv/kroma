@@ -4,8 +4,8 @@
 
 use kroma_module_sdk::db::WantedRow;
 use kroma_module_sdk::engine::model::RequestKind;
-use kroma_module_sdk::ports::Query;
-use kroma_module_sdk::scene::Target;
+use crate::peers::indexers::Query;
+use kroma_scene::Target;
 
 /// One thing worth searching for: the Torznab query + the decision target +
 /// what a grab of it would cover.

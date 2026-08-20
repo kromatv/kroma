@@ -3,16 +3,26 @@
   "schemaVersion": 2,
   "id": "tv.kroma.vpn",
   "name": "VPN",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Managed WireGuard bridge (any provider) that torrent traffic routes through, with a live seal test. Disable it to stop the bridge and hide its page + routes.",
   "engines": {
-    "server": ">=0.1.38"
+    "server": ">=0.1.39"
   },
-  "provides": [
+  "definesPoints": [
     {
-      "kind": "vpn",
-      "id": "wireguard"
+      "name": "proxy",
+      "methods": ["url"]
     }
   ],
-  "ports": ["vpn-proxy"]
+  "contributes": [
+    {
+      "point": "tv.kroma.vpn/proxy"
+    }
+  ],
+  "consumes": [
+    {
+      "point": "tv.kroma.torrents/vpn",
+      "optional": true
+    }
+  ]
 }

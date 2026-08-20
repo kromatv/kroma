@@ -72,8 +72,9 @@ kroma-server(bin) → kroma-engine → { kroma-db, kroma-whisper, kroma-vector, 
   Purity is compiler-enforced, so no CI grep is needed.
 - The layer modules keep their historical paths (`crate::db`, `crate::services`,
   `crate::model`, …) via crate aliases, so call sites were untouched by the split.
-- Heavy or optional dependencies (candle, mdns) live in leaf crates behind the
-  `whisper-*` / `semantic-embeddings` features, forwarded binary → engine → leaf.
+- Heavy or optional dependencies (candle, mdns) live in the module that needs
+  them, and each `.kmod` selects its own backend through its
+  `[package.metadata.kmod] features`. The binary has no feature flags for them.
 - `services/` may use db/infra/domain; never api. `api/` translates HTTP↔services, holds no business logic.
 - `main.rs` + `state.rs` are the only composition points.
 - **Cross-cutting joins** are owned by the consuming domain (e.g. `continue_watching` in `db/playback.rs`, admin history in `db/admin.rs`). One Pool; "a domain owns its tables" is a convention, not a wall.

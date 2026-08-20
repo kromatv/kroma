@@ -7,7 +7,10 @@ use std::sync::Mutex;
 use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
 
-use kroma_module_sdk::ports::{AddTorrentReq, ClientDef, DownloadClient, TorrentState, TorrentStatus};
+pub mod port;
+pub mod types;
+
+pub use types::{AddTorrentReq, ClientDef, TorrentState, TorrentStatus};
 
 mod base64;
 mod rpc;
@@ -55,18 +58,16 @@ impl Transmission {
     }
 }
 
-impl DownloadClient for Transmission {
-    fn kind(&self) -> &'static str {
-        "transmission"
-    }
-
-    fn test(&self) -> Result<String> {
+/// The engine itself. [`port`] serves these over the `download-client` point;
+/// nothing here implements a trait another crate owns.
+impl Transmission {
+    pub fn test(&self) -> Result<String> {
         let args = self.rpc("session-get", json!({}))?;
         let version = args.get("version").and_then(Value::as_str).unwrap_or("?");
         Ok(format!("Transmission {version}"))
     }
 
-    fn add(&self, req: &AddTorrentReq) -> Result<String> {
+    pub fn add(&self, req: &AddTorrentReq) -> Result<String> {
         let mut arguments = json!({ "filename": req.magnet_or_url });
         if let Some(dir) = req.download_dir {
             arguments["download-dir"] = json!(dir);
@@ -94,7 +95,7 @@ impl DownloadClient for Transmission {
             .ok_or_else(|| anyhow!("torrent-add returned no hash"))
     }
 
-    fn status(&self, client_ref: &str) -> Result<Option<TorrentStatus>> {
+    pub fn status(&self, client_ref: &str) -> Result<Option<TorrentStatus>> {
         let args = self.rpc(
             "torrent-get",
             json!({ "ids": [client_ref], "fields": STATUS_FIELDS }),
@@ -150,19 +151,19 @@ impl DownloadClient for Transmission {
         }))
     }
 
-    fn pause(&self, client_ref: &str) -> Result<()> {
+    pub fn pause(&self, client_ref: &str) -> Result<()> {
         self.rpc("torrent-stop", json!({ "ids": [client_ref] })).map(|_| ())
     }
 
-    fn resume(&self, client_ref: &str) -> Result<()> {
+    pub fn resume(&self, client_ref: &str) -> Result<()> {
         self.rpc("torrent-start", json!({ "ids": [client_ref] })).map(|_| ())
     }
 
-    fn reannounce(&self, client_ref: &str) -> Result<()> {
+    pub fn reannounce(&self, client_ref: &str) -> Result<()> {
         self.rpc("torrent-reannounce", json!({ "ids": [client_ref] })).map(|_| ())
     }
 
-    fn remove(&self, client_ref: &str, delete_data: bool) -> Result<()> {
+    pub fn remove(&self, client_ref: &str, delete_data: bool) -> Result<()> {
         self.rpc(
             "torrent-remove",
             json!({ "ids": [client_ref], "delete-local-data": delete_data }),
@@ -171,23 +172,20 @@ impl DownloadClient for Transmission {
     }
 }
 
+/// The client `kind` this module answers for, and the instance name the download
+/// module resolves it under. It is declared in `module.json` as well, which is
+/// what the supervisor reads.
 pub const KIND: &str = "transmission";
-
-/// Registers the Transmission factory (called by the engine module's ServerModule on enable).
-pub fn register(reg: &mut kroma_module_sdk::ports::DownloadClientRegistry) {
-    reg.register(KIND, |def, _ctx| {
-        Ok(Box::new(Transmission::new(def)) as Box<dyn DownloadClient>)
-    });
-}
 
 pub const MODULE_ID: &str = "tv.kroma.engine.transmission";
 
 use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
 
-/// Lifecycle-only [`ServerModule`]: registers/unregisters the Transmission
-/// download-client kind on enable/disable, reaching the host's registry so the
-/// binary itself wires nothing.
+/// The Transmission engine has no lifecycle and no admin routes of its own:
+/// being installed and enabled IS the registration, because the download module
+/// resolves whoever answers the point when it needs an engine. Disabling it stops
+/// the process, and the point stops resolving to it.
 pub struct TransmissionModule;
 
 #[kroma_module_sdk::host::async_trait]
@@ -196,18 +194,6 @@ impl<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'static>
 {
     fn id(&self) -> &'static str {
         MODULE_ID
-    }
-
-    async fn on_enable(&self, host: S) {
-        if let Some(dm) = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::DownloadClientHost>(&host) {
-            dm.register_engine(register);
-        }
-    }
-
-    async fn on_disable(&self, host: S) {
-        if let Some(dm) = kroma_module_sdk::host::resolve_port::<dyn kroma_module_sdk::ports::DownloadClientHost>(&host) {
-            dm.unregister_engine(KIND);
-        }
     }
 }
 

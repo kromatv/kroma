@@ -5,7 +5,7 @@
 
 use std::time::Instant;
 
-use kroma_module_sdk::ports::IndexerRow;
+use crate::peers::indexers::IndexerRef;
 
 use crate::dtos::IndexerReport;
 
@@ -16,10 +16,10 @@ const MAX_PARALLEL: usize = 8;
 /// Run `ask` against every indexer concurrently, in indexer order, and report
 /// what each one answered. Never fails as a whole: an indexer that errors or
 /// panics contributes a report and no rows.
-pub fn sweep<T, F>(indexers: &[IndexerRow], ask: F) -> (Vec<T>, Vec<IndexerReport>)
+pub fn sweep<T, F>(indexers: &[IndexerRef], ask: F) -> (Vec<T>, Vec<IndexerReport>)
 where
     T: Send,
-    F: Fn(&IndexerRow) -> anyhow::Result<Vec<T>> + Sync,
+    F: Fn(&IndexerRef) -> anyhow::Result<Vec<T>> + Sync,
 {
     let mut rows: Vec<T> = Vec::new();
     let mut reports: Vec<IndexerReport> = Vec::new();
@@ -44,7 +44,7 @@ where
 /// The report for a sweep that never ran: the scope selected nothing to ask for.
 /// The indexers still appear, because "there was nothing to search" is a fact
 /// about the request, not about them.
-pub fn unasked(indexers: &[IndexerRow]) -> Vec<IndexerReport> {
+pub fn unasked(indexers: &[IndexerRef]) -> Vec<IndexerReport> {
     indexers
         .iter()
         .map(|indexer| IndexerReport {
@@ -57,9 +57,9 @@ pub fn unasked(indexers: &[IndexerRow]) -> Vec<IndexerReport> {
         .collect()
 }
 
-fn ask_one<T, F>(indexer: &IndexerRow, ask: &F) -> (IndexerReport, Vec<T>)
+fn ask_one<T, F>(indexer: &IndexerRef, ask: &F) -> (IndexerReport, Vec<T>)
 where
-    F: Fn(&IndexerRow) -> anyhow::Result<Vec<T>>,
+    F: Fn(&IndexerRef) -> anyhow::Result<Vec<T>>,
 {
     let started = Instant::now();
     let (found, error) = match ask(indexer) {
@@ -79,7 +79,7 @@ where
     (report(indexer, found.len(), error, started), found)
 }
 
-fn panicked<T>(indexer: &IndexerRow) -> (IndexerReport, Vec<T>) {
+fn panicked<T>(indexer: &IndexerRef) -> (IndexerReport, Vec<T>) {
     (
         IndexerReport {
             id: indexer.id.clone(),
@@ -93,7 +93,7 @@ fn panicked<T>(indexer: &IndexerRow) -> (IndexerReport, Vec<T>) {
 }
 
 fn report(
-    indexer: &IndexerRow,
+    indexer: &IndexerRef,
     found: usize,
     error: Option<String>,
     started: Instant,
@@ -111,27 +111,19 @@ fn report(
 mod tests {
     use super::*;
 
-    fn row(id: &str) -> IndexerRow {
-        IndexerRow {
+    fn row(id: &str) -> IndexerRef {
+        IndexerRef {
             id: id.into(),
             name: id.to_uppercase(),
-            url: String::new(),
-            api_key: String::new(),
-            categories: Vec::new(),
+            kind: "torznab".into(),
             enabled: true,
             priority: 0,
-            kind: "torznab".into(),
-            definition_id: None,
-            settings: String::new(),
-            last_ok_at: None,
-            last_error: None,
-            created_at: 0,
         }
     }
 
     #[test]
     fn results_keep_indexer_order_however_they_finish() {
-        let indexers: Vec<IndexerRow> = ["a", "b", "c"].iter().map(|id| row(id)).collect();
+        let indexers: Vec<IndexerRef> = ["a", "b", "c"].iter().map(|id| row(id)).collect();
         let (rows, reports) = sweep(&indexers, |i| Ok(vec![i.id.clone()]));
         assert_eq!(rows, vec!["a", "b", "c"]);
         assert_eq!(reports.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(), ["a", "b", "c"]);
@@ -139,7 +131,7 @@ mod tests {
 
     #[test]
     fn a_failing_indexer_reports_and_the_others_still_answer() {
-        let indexers: Vec<IndexerRow> = ["good", "bad"].iter().map(|id| row(id)).collect();
+        let indexers: Vec<IndexerRef> = ["good", "bad"].iter().map(|id| row(id)).collect();
         let (rows, reports) = sweep(&indexers, |i| {
             if i.id == "bad" {
                 anyhow::bail!("connection refused");
@@ -155,7 +147,7 @@ mod tests {
 
     #[test]
     fn more_indexers_than_the_cap_all_get_asked() {
-        let indexers: Vec<IndexerRow> =
+        let indexers: Vec<IndexerRef> =
             (0..MAX_PARALLEL * 2 + 1).map(|n| row(&format!("i{n}"))).collect();
         let (rows, reports) = sweep(&indexers, |i| Ok(vec![i.id.clone()]));
         assert_eq!(rows.len(), indexers.len());
@@ -164,7 +156,7 @@ mod tests {
 
     #[test]
     fn a_scope_with_nothing_to_ask_still_names_every_indexer() {
-        let indexers: Vec<IndexerRow> = ["a", "b"].iter().map(|id| row(id)).collect();
+        let indexers: Vec<IndexerRef> = ["a", "b"].iter().map(|id| row(id)).collect();
         let reports = unasked(&indexers);
         assert_eq!(reports.len(), 2);
         assert!(reports.iter().all(|r| r.found == 0 && r.error.is_none()));

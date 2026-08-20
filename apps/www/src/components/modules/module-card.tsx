@@ -7,7 +7,7 @@ export interface ModuleCardProps {
 
 /** One catalog entry: its icon, name, version, and what it needs to be useful. */
 export function ModuleCard({ mod }: Readonly<ModuleCardProps>) {
-  const needs = [...mod.requires, ...mod.dependencies.map((id) => id.replace(/^tv\.kroma\./, ''))];
+  const needs = [...mod.needs, ...mod.dependencies.map((id) => id.replace(/^tv\.kroma\./, ''))];
 
   return (
     <div className="flex gap-4 bg-surface-1/40 p-5 transition-colors duration-200 hover:bg-surface-1">

@@ -1,14 +1,14 @@
 // Data-driven engine add-flows for the admin console. `GET /api/modules`
-// reports each module's enabled flag and the capabilities it provides; each
-// capability carries an add-form schema (`fields`) or a custom `flow` (e.g.
-// the Cardigann definition picker). A host page lists one add-flow per
-// enabled engine and awaits `addEngine(...)`, so adding an engine needs no
-// frontend change. One <AddEngineHost/> is mounted by the shell, the same
-// shape as the kit's `toast()`/`confirm()`.
+// reports each module's enabled flag and the points it answers; a contribution
+// carries an add-form schema (`fields`) or a custom `flow` (e.g. the Cardigann
+// definition picker). A host page lists one add-flow per enabled contributor to
+// its point and awaits `addEngine(...)`, so adding an engine needs no frontend
+// change. One <AddEngineHost/> is mounted by the shell, the same shape as the
+// kit's `toast()`/`confirm()`.
 
 import {
   apiErrorText,
-  type EngineCapability,
+  type EngineContribution,
   type EngineField,
   type MessageKey,
   type ModuleInfo,
@@ -20,8 +20,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAdminHost } from './context';
 import { useAsyncAction } from './hooks';
 
-function hasAddFlow(cap: EngineCapability): boolean {
-  return cap.flow != null || (cap.fields?.length ?? 0) > 0;
+/** A contribution the add-picker can offer: it names the instance an added row
+ * stores, and it has either a field form or a custom flow. */
+export type EngineChoice = EngineContribution & { id: string };
+
+function hasAddFlow(c: EngineContribution): c is EngineChoice {
+  return c.id != null && (c.flow != null || (c.fields?.length ?? 0) > 0);
 }
 
 // Keyed on `['modules']` so this reuses the module host's existing
@@ -37,16 +41,17 @@ function useModules(): ModuleInfo[] {
   return data ?? [];
 }
 
-/** The enabled engines that provide `kind` and expose an add-flow. A disabled
+/** The enabled contributors to `point` that expose an add-flow. A disabled
  * module contributes nothing, so its add-flow disappears from the page. */
-export function useEnabledEngines(kind: string): EngineCapability[] {
+export function useEnabledEngines(point: string): EngineChoice[] {
   const modules = useModules();
   return useMemo(
     () =>
       modules
         .filter((m) => m.enabled !== false)
-        .flatMap((m) => (m.provides ?? []).filter((c) => c.kind === kind && hasAddFlow(c))),
-    [modules, kind],
+        .flatMap((m) => (m.contributes ?? []).filter((c) => c.point === point))
+        .filter(hasAddFlow),
+    [modules, point],
   );
 }
 
@@ -144,7 +149,7 @@ function EngineSelect({
 }
 
 export interface AddEngineOptions {
-  engines: EngineCapability[];
+  engines: EngineChoice[];
   title: string;
   onSubmit: (engineId: string, values: Record<string, string>) => Promise<void>;
 }

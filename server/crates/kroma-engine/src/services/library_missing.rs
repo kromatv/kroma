@@ -37,7 +37,7 @@ pub fn scan<S: HostStorage>(
     progress: &dyn Fn(usize, usize),
     cancelled: &dyn Fn() -> bool,
 ) -> Result<MissingScanSummary> {
-    let key = state.tmdb_api_key().ok_or_else(|| anyhow!("TMDB is not configured"))?;
+    let key = state.secret("tmdb").ok_or_else(|| anyhow!("TMDB is not configured"))?;
     let lang = state.metadata_language();
     let today = today_ymd();
     let shows = db::list_shows(state.db(), None)?;

@@ -9,8 +9,8 @@ use anyhow::{anyhow, Result};
 use kroma_module_sdk::db;
 use kroma_module_sdk::engine::services::requests::today_ymd;
 use kroma_module_sdk::host::HostStorage;
-use kroma_module_sdk::ports::{IndexerRow, Release};
-use kroma_module_sdk::scene::{Candidate, Profile};
+use crate::peers::indexers::{IndexerRef, Release};
+use kroma_scene::{Candidate, Profile};
 
 use crate::dtos::{InteractiveSearchView, ScoreLineView, ScoredReleaseView};
 use crate::search::targets::{targets_for_scope, SearchScope, SearchTarget};
@@ -65,18 +65,18 @@ fn cache_results(request_id: &str, scope: SearchScope, releases: Vec<CachedRelea
 
 pub fn score_release(
     release: &Release,
-    indexer: &IndexerRow,
+    indexer: &IndexerRef,
     st: &SearchTarget,
     profile: &Profile,
 ) -> ScoredReleaseView {
-    let parsed = kroma_module_sdk::scene::parse_release_name(&release.title);
+    let parsed = kroma_scene::parse_release_name(&release.title);
     let candidate = Candidate {
         size_bytes: release.size_bytes,
         seeders: release.seeders,
         indexer_priority: indexer.priority,
     };
     let (score, breakdown, rejected) =
-        match kroma_module_sdk::scene::score(&parsed, &candidate, &st.target, profile, &release.title)
+        match kroma_scene::score(&parsed, &candidate, &st.target, profile, &release.title)
         {
             Ok(s) => (
                 Some(s.score),
@@ -124,7 +124,7 @@ pub fn interactive_search<S: HostStorage>(
     let conn = state.db().get()?;
     let req = db::get_request(&conn, request_id)?.ok_or_else(|| anyhow!("request not found"))?;
     let mut wanted = db::wanted_for_request(&conn, request_id)?;
-    let indexers = crate::indexer_db(state)?.enabled_indexers(state)?;
+    let indexers = crate::peers::indexers::enabled(state)?;
     drop(conn);
     if indexers.is_empty() {
         return Err(anyhow!("no enabled indexer; add one under Admin > Indexeurs"));
@@ -211,7 +211,7 @@ struct Hit {
 
 fn collect_search_hits<S: HostStorage>(
     state: &S,
-    indexers: &[IndexerRow],
+    indexers: &[IndexerRef],
     targets: &[SearchTarget],
     profile: &Profile,
     tmdb_id: u64,
@@ -237,7 +237,7 @@ fn collect_search_hits<S: HostStorage>(
         Ok(found)
     });
 
-    let by_id: HashMap<&str, &IndexerRow> =
+    let by_id: HashMap<&str, &IndexerRef> =
         indexers.iter().map(|i| (i.id.as_str(), i)).collect();
     let mut seen: HashSet<(String, String)> = HashSet::new();
     let mut cached: Vec<CachedRelease> = Vec::new();
@@ -257,23 +257,15 @@ fn collect_search_hits<S: HostStorage>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kroma_module_sdk::scene::{Profile, Res, Target};
+    use kroma_scene::{Profile, Res, Target};
 
-    fn indexer(priority: i32) -> IndexerRow {
-        IndexerRow {
+    fn indexer(priority: i32) -> IndexerRef {
+        IndexerRef {
             id: "idx1".into(),
             name: "Tracker".into(),
-            url: String::new(),
-            api_key: String::new(),
-            categories: Vec::new(),
+            kind: "torznab".into(),
             enabled: true,
             priority,
-            kind: "torznab".into(),
-            definition_id: None,
-            settings: String::new(),
-            last_ok_at: None,
-            last_error: None,
-            created_at: 0,
         }
     }
 
@@ -291,7 +283,7 @@ mod tests {
 
     fn target() -> SearchTarget {
         SearchTarget {
-            query: kroma_module_sdk::ports::Query::Episode {
+            query: crate::peers::indexers::Query::Episode {
                 tmdb_id: Some(42),
                 title: "Show".into(),
                 season: 1,

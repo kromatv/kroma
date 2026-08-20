@@ -1895,10 +1895,16 @@ dependencies = [
  "kroma-module-macros",
  "kroma-module-manifest",
  "kroma-primitives",
- "kroma-scene",
  "serde",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "kroma-naming"
+version = "0.1.0"
+dependencies = [
+ "kroma-scene",
 ]
 
 [[package]]
@@ -1928,15 +1934,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kroma-qbittorrent"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "kroma-module-sdk",
- "serde_json",
-]
-
-[[package]]
 name = "kroma-scene"
 version = "0.1.0"
 dependencies = [
@@ -1962,26 +1959,18 @@ dependencies = [
  "kroma-module-host",
  "kroma-module-runtime",
  "kroma-module-sdk",
- "kroma-qbittorrent",
+ "kroma-naming",
+ "kroma-scene",
  "kroma-testing",
- "kroma-transmission",
  "librqbit",
  "rusqlite",
  "serde",
  "serde_json",
  "sha1",
  "tokio",
+ "tower",
  "tracing",
  "tracing-subscriber",
-]
-
-[[package]]
-name = "kroma-transmission"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "kroma-module-sdk",
- "serde_json",
 ]
 
 [[package]]

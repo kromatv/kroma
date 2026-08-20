@@ -1,6 +1,11 @@
-//! On-device subtitle generation (Whisper transcription, LLM translation),
-//! producing WebVTT cached under `<data>/subs/downloaded/` and recorded in the
-//! DB. Both engines are blocking and report progress through a [`progress::Handle`].
+//! On-device subtitle generation (transcription, LLM translation), producing
+//! WebVTT cached under `<data>/subs/downloaded/` and recorded in the DB. Both
+//! are blocking and report progress through a [`progress::Handle`].
+//!
+//! Transcription itself is NOT here, and has no type here either: the caller
+//! passes a [`Transcribe`] step, which the composition root points at whichever
+//! module answers the `transcriber` point. This crate declares what a generation
+//! is and what it does with the text, never who produced it.
 
 mod translate;
 
@@ -10,6 +15,27 @@ use std::path::Path;
 
 use crate::db::{self, DownloadedSub, Pool};
 use crate::services::settings::Settings;
+
+/// One audio track to turn into text, with the hooks this generation owns: the
+/// progress it reports and the flag it watches for a cancel.
+pub struct TranscribeJob<'a> {
+    pub data_dir: &'a Path,
+    /// The model the quality tier asked for, as the answering module spells it.
+    pub model_spec: &'a str,
+    pub input: &'a Path,
+    /// Audio-relative track index.
+    pub track: u32,
+    /// ISO code of the spoken language, `None` to let the module detect it.
+    pub lang: Option<&'a str>,
+    pub on_stage: &'a dyn Fn(&str),
+    pub on_progress: &'a dyn Fn(usize, usize),
+    pub cancel: &'a std::sync::atomic::AtomicBool,
+}
+
+/// The transcription step. `None` means nothing produced text (no module answers,
+/// or the one that does failed), and the generation fails with a reason rather
+/// than writing an empty subtitle.
+pub type Transcribe<'a> = &'a dyn Fn(TranscribeJob<'_>) -> Option<String>;
 
 pub use progress::{GenRegistry, Handle};
 
@@ -90,26 +116,25 @@ pub fn generate(
     input: &Path,
     spec: &GenSpec,
     handle: &Handle,
-    whisper: &dyn crate::ports::Whisper,
+    transcribe: Transcribe<'_>,
 ) -> std::result::Result<DownloadedSub, String> {
     let vtt = match spec.mode {
         GenMode::Transcribe => {
             let code = spec.spoken_lang.as_deref().and_then(lang_to_code);
             let cancel = handle.cancel_flag();
-            whisper
-                .transcribe(
-                    data_dir,
-                    spec.quality.model(),
-                    input,
-                    spec.audio_track,
-                    code,
-                    &|stage| handle.stage(stage),
-                    &|done, total| handle.progress(done, total),
-                    &cancel,
-                )
-                .ok_or_else(|| {
-                    "transcription produced no text (wrong audio track, or the Whisper model failed to load; see server logs)".to_string()
-                })?
+            transcribe(TranscribeJob {
+                data_dir,
+                model_spec: spec.quality.model(),
+                input,
+                track: spec.audio_track,
+                lang: code,
+                on_stage: &|stage| handle.stage(stage),
+                on_progress: &|done, total| handle.progress(done, total),
+                cancel: &cancel,
+            })
+            .ok_or_else(|| {
+                "transcription produced no text (wrong audio track, or the model failed to load; see server logs)".to_string()
+            })?
         }
         GenMode::Translate => {
             handle.stage("translate");
@@ -287,7 +312,6 @@ mod tests {
         assert!(stable_id("a", "whisper", "French").starts_with("dl"));
     }
 
-    use std::sync::atomic::AtomicBool;
     use std::sync::Arc;
 
     use crate::services::subtitles::progress::GenRegistry;
@@ -307,26 +331,20 @@ mod tests {
         }
     }
 
-    impl crate::ports::Whisper for FakeWhisper {
-        fn transcribe(
-            &self,
-            _data_dir: &Path,
-            model_spec: &str,
-            _input: &Path,
-            track: u32,
-            lang: Option<&str>,
-            on_stage: &dyn Fn(&str),
-            on_progress: &dyn Fn(usize, usize),
-            _cancel: &AtomicBool,
-        ) -> Option<String> {
-            self.asked.lock().unwrap().push((
-                model_spec.to_string(),
-                track,
-                lang.map(str::to_string),
-            ));
-            on_stage("transcribe");
-            on_progress(1, 1);
-            self.output.clone()
+    impl FakeWhisper {
+        // The step as the composition root supplies it: a closure, so the engine
+        // holds no type for who transcribes.
+        fn step(&self) -> impl Fn(TranscribeJob<'_>) -> Option<String> + '_ {
+            move |job| {
+                self.asked.lock().unwrap().push((
+                    job.model_spec.to_string(),
+                    job.track,
+                    job.lang.map(str::to_string),
+                ));
+                (job.on_stage)("transcribe");
+                (job.on_progress)(1, 1);
+                self.output.clone()
+            }
         }
     }
 
@@ -375,7 +393,11 @@ mod tests {
         }
     }
 
-    fn run(env: &Env, spec: &GenSpec, whisper: &dyn crate::ports::Whisper) -> Result<DownloadedSub, String> {
+    fn run(
+        env: &Env,
+        spec: &GenSpec,
+        transcribe: Transcribe<'_>,
+    ) -> Result<DownloadedSub, String> {
         generate(
             &env.settings,
             env.dir.path(),
@@ -384,7 +406,7 @@ mod tests {
             Path::new("/media/itm-1.mkv"),
             spec,
             &handle(),
-            whisper,
+            transcribe,
         )
     }
 
@@ -394,7 +416,7 @@ mod tests {
         let llm = FakeLlm::always("1. Bonjour à tous\n");
         llm.configure_settings(&env.settings, &env.pool);
 
-        let sub = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None)).unwrap();
+        let sub = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None).step()).unwrap();
         assert_eq!(sub.item_id, "itm-1");
         assert_eq!(sub.language.as_deref(), Some("fr"));
         assert_eq!(sub.label, "Français");
@@ -411,12 +433,12 @@ mod tests {
         let llm = FakeLlm::always("1. Bonjour\n");
         llm.configure_settings(&env.settings, &env.pool);
 
-        let first = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None)).unwrap();
-        let second = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None)).unwrap();
+        let first = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None).step()).unwrap();
+        let second = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None).step()).unwrap();
         assert_eq!(first.id, second.id);
         assert_eq!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().len(), 1);
 
-        let other = run(&env, &spec(GenMode::Translate, "Deutsch"), &FakeWhisper::saying(None)).unwrap();
+        let other = run(&env, &spec(GenMode::Translate, "Deutsch"), &FakeWhisper::saying(None).step()).unwrap();
         assert_ne!(other.id, first.id);
         assert_eq!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().len(), 2);
     }
@@ -427,7 +449,7 @@ mod tests {
         let llm = FakeLlm::always("1. Something\n");
         llm.configure_settings(&env.settings, &env.pool);
 
-        let sub = run(&env, &spec(GenMode::Translate, "Klingon"), &FakeWhisper::saying(None)).unwrap();
+        let sub = run(&env, &spec(GenMode::Translate, "Klingon"), &FakeWhisper::saying(None).step()).unwrap();
         assert_eq!(sub.language, None, "an unknown label must not become a code");
         assert_eq!(sub.label, "Klingon");
     }
@@ -437,7 +459,7 @@ mod tests {
         let env = env();
         let mut spec = spec(GenMode::Translate, "Français");
         spec.source_vtt = None;
-        let err = run(&env, &spec, &FakeWhisper::saying(None)).unwrap_err();
+        let err = run(&env, &spec, &FakeWhisper::saying(None).step()).unwrap_err();
         assert!(err.contains("no source subtitle"), "{err}");
     }
 
@@ -447,7 +469,7 @@ mod tests {
         let whisper = FakeWhisper::saying(Some(
             "WEBVTT\n\n00:00:01.000 --> 00:00:04.000\nHello there\n\n",
         ));
-        let sub = run(&env, &spec(GenMode::Transcribe, "English"), &whisper).unwrap();
+        let sub = run(&env, &spec(GenMode::Transcribe, "English"), &whisper.step()).unwrap();
         assert_eq!(sub.language.as_deref(), Some("en"));
 
         let asked = whisper.asked.lock().unwrap();
@@ -460,7 +482,7 @@ mod tests {
     #[test]
     fn a_whisper_that_produced_nothing_explains_the_usual_causes() {
         let env = env();
-        let err = run(&env, &spec(GenMode::Transcribe, "English"), &FakeWhisper::saying(None))
+        let err = run(&env, &spec(GenMode::Transcribe, "English"), &FakeWhisper::saying(None).step())
             .unwrap_err();
         assert!(err.contains("audio track"), "{err}");
         assert!(err.contains("model"), "{err}");
@@ -469,7 +491,7 @@ mod tests {
     #[test]
     fn a_result_too_short_to_be_a_subtitle_is_refused() {
         let env = env();
-        let err = run(&env, &spec(GenMode::Transcribe, "English"), &FakeWhisper::saying(Some("WEBVTT")))
+        let err = run(&env, &spec(GenMode::Transcribe, "English"), &FakeWhisper::saying(Some("WEBVTT")).step())
             .unwrap_err();
         assert!(err.contains("empty"), "{err}");
         assert!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().is_empty());
@@ -478,7 +500,7 @@ mod tests {
     #[test]
     fn a_failing_translation_surfaces_the_reason_rather_than_a_blank_failure() {
         let env = env();
-        let err = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None))
+        let err = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None).step())
             .unwrap_err();
         assert!(err.contains("admin"), "{err}");
         assert!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().is_empty());

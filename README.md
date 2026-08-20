@@ -310,7 +310,6 @@ Lighter variants, and separate terminals:
 ```bash
 bun run dev:webonly           # server + web only
 bun run dev:module            # server + web + module hot-reload
-bun run server:watch:lexical  # no ML features at all, the fastest rebuild
 bun run server && bun run dev:web
 ```
 

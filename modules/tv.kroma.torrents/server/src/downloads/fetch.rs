@@ -29,12 +29,10 @@ pub(super) fn fetch_torrent_for(host: &dyn HostCtx, row: &db::DownloadRow) -> Re
 // through its authenticated Cardigann session rather than plainly.
 fn fetch_torrent_once(host: &dyn HostCtx, row: &db::DownloadRow) -> Result<Vec<u8>> {
     if let Some(indexer_id) = &row.indexer_id {
-        if let Some(port) =
-            kroma_module_sdk::ports::torrent_fetch(host)
+        if let Some(bytes) =
+            crate::port::indexers::fetch_torrent(host, indexer_id, &row.magnet_or_url)?
         {
-            if let Some(result) = port.fetch_torrent(host, indexer_id, &row.magnet_or_url) {
-                return result;
-            }
+            return Ok(bytes);
         }
     }
     fetch_torrent_file(&row.magnet_or_url)

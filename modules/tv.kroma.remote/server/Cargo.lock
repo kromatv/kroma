@@ -439,7 +439,6 @@ dependencies = [
  "kroma-module-macros",
  "kroma-module-manifest",
  "kroma-primitives",
- "kroma-scene",
  "serde",
  "serde_json",
  "tokio",
@@ -466,15 +465,6 @@ dependencies = [
  "serde_json",
  "tokio",
  "tracing",
-]
-
-[[package]]
-name = "kroma-scene"
-version = "0.1.0"
-dependencies = [
- "kroma-module-manifest",
- "serde",
- "serde_json",
 ]
 
 [[package]]

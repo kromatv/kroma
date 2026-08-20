@@ -16,7 +16,7 @@
 // stays in kroma-db; re-exported so `crate::db::get_request` etc. keep resolving.
 pub use kroma_module_sdk::db::*;
 // The indexers table is owned by the indexer module; the queue view + acquisition
-// reach it through kroma_module_sdk::ports::IndexerDbPort, not a re-export here.
+// reach it over the indexer module's own db point, not a re-export here.
 
 mod clients;
 mod downloads;

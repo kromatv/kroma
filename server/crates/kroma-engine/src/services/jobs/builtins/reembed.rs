@@ -3,6 +3,7 @@
 //! TMDB. Recommendations stay empty until a dimension change is reconciled here.
 
 use super::prelude::*;
+use crate::services::embeddings;
 
 pub(super) const SPEC: Builtin = Builtin {
     key: JobKey("recommendations.reembed"),
@@ -19,7 +20,7 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
 
     let state = &ctx.state;
     let embedder = state.embedder.clone();
-    let target = embedder.dim();
+    let target = embeddings::dim(&embedder);
     let current = crate::db::vector_dims(&state.db)?;
     let (items, shows) = crate::db::index_snapshot(&state.db)?;
     // Movies/loose videos + shows carry metadata; episodes inherit (no vector).
@@ -57,7 +58,7 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
         let docs: Vec<String> = chunk.iter().map(|(_, doc)| doc.clone()).collect();
         // An absent sidecar returns an empty batch, so the zip yields nothing and
         // the pass is a graceful no-op.
-        for ((id, _), vec) in chunk.iter().zip(embedder.embed_batch(&docs)) {
+        for ((id, _), vec) in chunk.iter().zip(embeddings::embed_batch(&embedder, &docs)) {
             match crate::db::set_item_vector(&state.db, id, &vec) {
                 Ok(()) => embedded += 1,
                 Err(e) => ctx.error(format!("{id}: failed to store vector: {e}")),
@@ -75,43 +76,13 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use super::run;
-    use crate::ports::Embedder;
     use crate::services::jobs::JobContext;
     use crate::state::SharedState;
-    use crate::test_support::{seed_movie, test_state_with_embedder};
-
-    // Stamps a call counter into every vector, so a re-embed is distinguishable
-    // from a skip.
-    struct FixedDim {
-        dim: usize,
-        calls: std::sync::atomic::AtomicUsize,
-    }
-
-    impl Embedder for FixedDim {
-        fn dim(&self) -> usize {
-            self.dim
-        }
-        fn embed(&self, _text: &str) -> Vec<f32> {
-            let n = self.calls.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
-            let mut v = vec![0.0f32; self.dim];
-            if let Some(first) = v.first_mut() {
-                *first = n as f32;
-            }
-            v
-        }
-        fn relevance_floor(&self) -> f32 {
-            0.1
-        }
-    }
+    use crate::test_support::{fixed_dim_embedder, seed_movie, test_state_with_embedder};
 
     fn state_with_dim(dim: usize) -> SharedState {
-        test_state_with_embedder(Arc::new(FixedDim {
-            dim,
-            calls: std::sync::atomic::AtomicUsize::new(0),
-        }))
+        test_state_with_embedder(fixed_dim_embedder(dim))
     }
 
     fn vector_of(state: &SharedState, id: &str) -> Option<Vec<f32>> {
@@ -270,42 +241,29 @@ mod tests {
         assert_eq!(stored_dims(&bigger), vec![16], "the 4-dim vector was left behind");
     }
 
-    // A missing sidecar: `embed_batch` answers with no vectors at all, rather
-    // than with one empty vector per document.
-    struct SilentBatch;
-
-    impl Embedder for SilentBatch {
-        fn dim(&self) -> usize {
-            384
-        }
-        fn embed(&self, _text: &str) -> Vec<f32> {
-            Vec::new()
-        }
-        fn embed_batch(&self, _texts: &[String]) -> Vec<Vec<f32>> {
-            Vec::new()
-        }
-        fn relevance_floor(&self) -> f32 {
-            1.0
-        }
-    }
-
     #[test]
-    fn an_unreachable_sidecar_stores_nothing_instead_of_failing() {
-        // A hard error here would be a red job on every install running without
-        // the vector module.
-        let state = test_state_with_embedder(Arc::new(SilentBatch));
+    fn a_module_that_answers_no_vectors_stores_nothing_instead_of_failing() {
+        // It reports a width but hands back an empty batch, which is what a
+        // sidecar mid-restart does. A hard error here would be a red job.
+        let state = test_state_with_embedder(crate::point::Point::stub("embedder", |method, _| {
+            match method {
+                "meta" => Some(serde_json::json!({ "dim": 384, "relevance_floor": 1.0 })),
+                "embed_batch" => Some(serde_json::json!(Vec::<Vec<f32>>::new())),
+                _ => None,
+            }
+        }));
         seed_enriched_movie(&state, "itm-1");
         run(&JobContext::for_test(state.clone())).unwrap();
         assert!(stored_dims(&state).is_empty());
     }
 
     #[test]
-    fn the_in_process_fallback_writes_placeholder_vectors_rather_than_none() {
-        // Unlike the unreachable-sidecar case, NoopEmbedder's inherited
-        // embed_batch loops `embed`, so a zero-length row is stored per title.
+    fn no_module_at_all_stores_nothing_and_the_job_still_passes() {
+        // The state of every install running without the vector module: nothing
+        // answers the point, so there is no vector to store and nothing to fail.
         let state = crate::test_support::test_state();
         seed_enriched_movie(&state, "itm-1");
         run(&JobContext::for_test(state.clone())).unwrap();
-        assert_eq!(stored_dims(&state), vec![0]);
+        assert!(stored_dims(&state).is_empty());
     }
 }

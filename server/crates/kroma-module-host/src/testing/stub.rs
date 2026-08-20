@@ -50,7 +50,7 @@ pub struct StubHost {
     settings: Arc<Mutex<BTreeMap<String, serde_json::Value>>>,
     string_settings: Option<StringSettings>,
     services: Arc<Mutex<Vec<Service>>>,
-    ports: Arc<Mutex<BTreeMap<String, (String, String)>>>,
+    points: Arc<Mutex<Vec<crate::Contribution>>>,
     log: Arc<Log>,
 }
 
@@ -91,7 +91,7 @@ impl StubHost {
             settings: Arc::new(Mutex::new(BTreeMap::new())),
             string_settings: None,
             services: Arc::new(Mutex::new(Vec::new())),
-            ports: Arc::new(Mutex::new(BTreeMap::new())),
+            points: Arc::new(Mutex::new(Vec::new())),
             log: Arc::new(Log::default()),
         }
     }
@@ -105,6 +105,15 @@ impl StubHost {
         Self { db: Some(pool), store: Some(store), ..Self::new() }
     }
 
+    /// A host whose MODULE store is `pool`, with a fresh core database beside it.
+    /// For a module testing its own tables: those live in its own file, so a test
+    /// that seeded them has to hand them over as the store and not as the core.
+    pub fn with_store(pool: Pool) -> Self {
+        let data_dir = kroma_testing::temp_dir("stub-core");
+        let db = kroma_db::init(&data_dir.path().join("kroma.db")).expect("init test db");
+        Self { db: Some(db), store: Some(pool), ..Self::in_dir(data_dir) }
+    }
+
     /// Answer `session_user(token)` with `user`. Without a seeded token the host
     /// falls back to a real lookup against its core pool, so a test that created
     /// a genuine session still authenticates through the seam.
@@ -113,7 +122,7 @@ impl StubHost {
         self
     }
 
-    /// Answer `tmdb_api_key()` with `key`.
+    /// Answer `secret("tmdb")` with `key`.
     pub fn with_tmdb_key(mut self, key: &str) -> Self {
         self.tmdb_key = Some(key.into());
         self
@@ -173,14 +182,17 @@ impl StubHost {
         self
     }
 
-    /// Point a port contract at a provider this test stood up (see the SDK's
-    /// `testing::serve`). Ports resolve over HTTP now, so a fake is served
-    /// rather than injected.
-    pub fn with_port(self, port: &str, base: &str, token: &str) -> Self {
-        self.ports
-            .lock()
-            .unwrap()
-            .insert(port.to_string(), (base.to_string(), token.to_string()));
+    /// Answer `point` with a provider this test stood up (see
+    /// [`test_serve::serve`](crate::test_serve::serve)). A point resolves over
+    /// HTTP, so a fake is served rather than injected. Call it again with another
+    /// `instance` to give the point two contributors and exercise fan-out.
+    pub fn with_point(self, point: &str, instance: Option<&str>, base: &str, token: &str) -> Self {
+        self.points.lock().unwrap().push(crate::Contribution {
+            module_id: format!("test.{point}"),
+            instance: instance.map(str::to_string),
+            base_url: base.to_string(),
+            token: token.to_string(),
+        });
         self
     }
 
@@ -269,14 +281,17 @@ impl HostCtx for StubHost {
     fn library_folders(&self) -> Vec<LibraryFolders> {
         self.libraries.clone()
     }
-    fn tmdb_api_key(&self) -> Option<String> {
-        self.tmdb_key.clone()
+    fn secret(&self, name: &str) -> Option<String> {
+        // One secret is enough for a double; a name it was not given is absent,
+        // which is what a host that has none answers.
+        self.tmdb_key.clone().filter(|_| name == "tmdb")
     }
     fn metadata_language(&self) -> String {
         self.metadata_language.clone()
     }
-    fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
-        self.ports.lock().unwrap().get(port).cloned()
+    fn contributions(&self, point: &str) -> Vec<crate::Contribution> {
+        let prefix = format!("test.{point}");
+        self.points.lock().unwrap().iter().filter(|c| c.module_id == prefix).cloned().collect()
     }
 
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
@@ -318,7 +333,7 @@ mod tests {
 
         assert!(host.module_enabled("tv.kroma.anything"));
         assert!(host.library_folders().is_empty());
-        assert!(host.tmdb_api_key().is_none());
+        assert!(host.secret("tmdb").is_none());
         assert_eq!(host.metadata_language(), "en");
         assert!(host.get_service(TypeId::of::<u32>()).is_none());
         assert!(host.data_dir().is_dir());
@@ -340,7 +355,7 @@ mod tests {
             .with_setting("flag", json!(true))
             .with_setting("num", json!(42));
 
-        assert_eq!(host.tmdb_api_key().as_deref(), Some("k"));
+        assert_eq!(host.secret("tmdb").as_deref(), Some("k"));
         assert_eq!(host.metadata_language(), "fr-FR");
         assert!(!host.module_enabled("tv.kroma.anything"));
         assert_eq!(host.library_folders()[0].folders, ["/media/films"]);
@@ -451,7 +466,7 @@ mod tests {
         assert_eq!(host.lerr(&user(), StatusCode::NOT_FOUND, "k").status(), StatusCode::NOT_FOUND);
         assert!(host.module_enabled("x"));
         assert!(host.library_folders().is_empty());
-        assert!(host.tmdb_api_key().is_none());
+        assert!(host.secret("tmdb").is_none());
         assert_eq!(host.metadata_language(), "en");
         assert!(host.get_service(TypeId::of::<u32>()).is_none());
         assert!(host.data_dir().is_dir());

@@ -10,7 +10,11 @@ license.workspace = true
 # Compiles `testing::{StubHost, Recording}`, the shared HostCtx doubles. Off by
 # default so nothing reaches a release build; crates that test against the seam
 # turn it on in their dev-dependencies.
-testing = ["dep:kroma-testing", "storage"]
+testing = ["dep:kroma-testing", "storage", "test-serve"]
+# `test_serve::{serve, blocking}` alone: an axum router on an ephemeral localhost
+# port. Separate from `testing` because a port contract's round-trip test needs
+# the wire and not a database.
+test-serve = []
 # The `storage` capability: `HostStorage`, the two pools, and the `query` helper.
 # Off by default, and that default is the point -- a module that declares no
 # storage must not link `kroma-db`, which is what drags the whole bundled SQLite

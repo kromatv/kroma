@@ -10,7 +10,7 @@ use axum::response::Response;
 
 use kroma_domain::{Audience, NotificationSpec, Permission, User};
 
-use super::{Event, LibraryFolders};
+use super::{Contribution, Event, LibraryFolders};
 
 /// The slice of the running app a module's backend can reach. The binary's
 /// `AppState` (as `Arc<AppState>` = `SharedState`) implements it; a module crate
@@ -59,9 +59,14 @@ pub trait HostCtx: Send + Sync + 'static {
     // the env-configured media dirs on first run. Empty when none configured.
     fn library_folders(&self) -> Vec<LibraryFolders>;
 
-    // The TMDB v3 API key, from the app's env config rather than settings.
-    // `None` when TMDB is not set up.
-    fn tmdb_api_key(&self) -> Option<String>;
+    // A credential the operator configured, by name (`"tmdb"`). `None` when that
+    // one is not set up.
+    //
+    // Named rather than one method per provider: the host contract must not grow
+    // a method every time something needs an API key, and a module asking for a
+    // vendor by name is a module naming its own dependency rather than the core
+    // naming it for everyone.
+    fn secret(&self, name: &str) -> Option<String>;
 
     // The metadata language tag (e.g. `"fr-FR"`) for TMDB lookups.
     fn metadata_language(&self) -> String;
@@ -69,11 +74,16 @@ pub trait HostCtx: Send + Sync + 'static {
     // Prefer the typed [`service`] helper.
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>>;
 
-    /// `(base_url, auth_token)` of the installed, enabled, running module that
-    /// serves `port`, a contract name and never a module id. This is the ONE hook
-    /// the core offers for cross-module calls, which is what keeps it from
-    /// naming any module.
-    fn port_endpoint(&self, port: &str) -> Option<(String, String)>;
+    /// Every installed, enabled, running module contributing `point`. This is the
+    /// ONE hook the core offers for cross-module calls, and the reason it can
+    /// route between modules whose purpose it cannot name: `point` is a contract
+    /// name, never a module id, and the answer is a list because more than one
+    /// module may answer the same point.
+    ///
+    /// Resolved per call rather than cached, so a provider that was just
+    /// installed, restarted, or moved to another localhost port is picked up with
+    /// nothing re-wired.
+    fn contributions(&self, point: &str) -> Vec<Contribution>;
 }
 
 // The router state is `Arc<AppState>`, but the orphan rule forbids
@@ -125,8 +135,8 @@ impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
     fn library_folders(&self) -> Vec<LibraryFolders> {
         (**self).library_folders()
     }
-    fn tmdb_api_key(&self) -> Option<String> {
-        (**self).tmdb_api_key()
+    fn secret(&self, name: &str) -> Option<String> {
+        (**self).secret(name)
     }
     fn metadata_language(&self) -> String {
         (**self).metadata_language()
@@ -134,8 +144,8 @@ impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
         (**self).get_service(type_id)
     }
-    fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
-        (**self).port_endpoint(port)
+    fn contributions(&self, point: &str) -> Vec<Contribution> {
+        (**self).contributions(point)
     }
 }
 
@@ -238,16 +248,16 @@ mod tests {
             self.note("library_folders");
             Vec::new()
         }
-        fn tmdb_api_key(&self) -> Option<String> {
-            self.note("tmdb_api_key");
+        fn secret(&self, name: &str) -> Option<String> {
+            self.note(&format!("secret:{name}"));
             Some("key".into())
         }
         fn metadata_language(&self) -> String {
             self.note("metadata_language");
             "fr-FR".into()
         }
-        fn port_endpoint(&self, _port: &str) -> Option<(String, String)> {
-            None
+        fn contributions(&self, _point: &str) -> Vec<Contribution> {
+            Vec::new()
         }
         fn get_service(&self, _t: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
             self.note("get_service");
@@ -292,7 +302,7 @@ mod tests {
         host.trigger_job("acquisition.search", "test");
         assert!(!host.module_enabled("tv.kroma.indexer"));
         assert!(host.library_folders().is_empty());
-        assert_eq!(host.tmdb_api_key().as_deref(), Some("key"));
+        assert_eq!(host.secret("tmdb").as_deref(), Some("key"));
         assert_eq!(host.metadata_language(), "fr-FR");
         assert!(host.get_service(TypeId::of::<u8>()).is_none());
 
@@ -312,7 +322,7 @@ mod tests {
                 "trigger_job:acquisition.search",
                 "module_enabled",
                 "library_folders",
-                "tmdb_api_key",
+                "secret:tmdb",
                 "metadata_language",
                 "get_service",
             ]

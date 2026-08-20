@@ -1,6 +1,6 @@
-// Dependency chips for the admin Modules page: a module's hard + optional
-// deps and capability requirements (colored by whether each is satisfied),
-// plus the reverse edges (who depends on this module).
+// Dependency chips for the admin Modules page: a module's hard + optional deps
+// and the points it consumes (colored by whether each is answered), plus the
+// reverse edges (who depends on this module).
 
 import { depEntries } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
@@ -37,34 +37,40 @@ export function DepChip({ label, state }: Readonly<{ label: string; state: DepSt
   );
 }
 
-// The reverse edges of the dependency graph, so a provider (e.g. Downloads)
-// shows who needs it: a hard/optional `dependencies` on its id, or a capability
-// `requires` this module's `provides` satisfies.
+// The reverse edges of the dependency graph, so a contributor (e.g. Downloads)
+// shows who needs it: a hard/optional `dependencies` on its id, or a `consumes`
+// this module's `contributes` answers.
 function dependents(module: AdminModule, all: AdminModule[]): AdminModule[] {
-  const provides = module.provides ?? [];
+  const answers = module.contributes ?? [];
   return all.filter((other) => {
     if (other.id === module.id) return false;
     const deps = [...depEntries(other.dependencies), ...depEntries(other.optionalDependencies)];
     if (deps.some((d) => d.id === module.id)) return true;
-    return (other.requires ?? []).some((r) =>
-      provides.some((c) => c.kind === r.kind && (!r.id || c.id === r.id)),
+    return (other.consumes ?? []).some((r) =>
+      answers.some((c) => c.point === r.point && (!r.id || c.id === r.id)),
     );
   });
 }
 
 /** A module's dependency status in both directions: what it depends on
  * (colored by whether each is satisfied), plus what depends on it. */
-type Requirement = { kind: string; id?: string | null };
+type Need = { point: string; id?: string | null };
 
-const capability = (r: Requirement) => (r.id ? `${r.kind}:${r.id}` : r.kind);
+// The local half is what a reader recognises; the defining module's id is already
+// visible as the module this need points at.
+const label = (r: Need) => {
+  const local = r.point.split('/').pop() ?? r.point;
+  return r.id ? `${local}:${r.id}` : local;
+};
 
-// A requirement names a CAPABILITY, not a module: any enabled module that
-// provides it satisfies it. Naming the one that currently does is the whole
-// answer to "what is filling this?".
-function provider(all: AdminModule[], r: Requirement): AdminModule | undefined {
+// A need names a POINT, not a module: any enabled module that answers it
+// satisfies it. Naming the one that currently does is the whole answer to "what
+// is filling this?".
+function contributor(all: AdminModule[], r: Need): AdminModule | undefined {
   return all.find(
     (m) =>
-      m.enabled && (m.provides ?? []).some((c) => c.kind === r.kind && (!r.id || c.id === r.id)),
+      m.enabled &&
+      (m.contributes ?? []).some((c) => c.point === r.point && (!r.id || c.id === r.id)),
   );
 }
 
@@ -75,7 +81,7 @@ export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all:
     ...depEntries(module.dependencies).map((d) => ({ ...d, optional: false })),
     ...depEntries(module.optionalDependencies).map((d) => ({ ...d, optional: true })),
   ];
-  const reqs = module.requires ?? [];
+  const reqs = module.consumes ?? [];
   const requiredBy = dependents(module, all);
   if (deps.length === 0 && reqs.length === 0 && requiredBy.length === 0) return null;
   return (
@@ -99,15 +105,15 @@ export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all:
       {reqs.length > 0 && (
         <Box gap={4}>
           <Text variant="overline" color="textDim">
-            {t('admin.modulesRequires')}
+            {t('admin.modulesNeeds')}
           </Text>
           <Row wrap gap={6}>
             {reqs.map((r) => {
-              const by = provider(all, r);
+              const by = contributor(all, r);
               return (
                 <DepChip
-                  key={`cap:${r.kind}:${r.id ?? ''}`}
-                  label={by ? `${capability(r)} · ${by.name}` : capability(r)}
+                  key={`need:${r.point}:${r.id ?? ''}`}
+                  label={by ? `${label(r)} · ${by.name}` : label(r)}
                   state={by ? 'ok' : 'missing'}
                 />
               );
@@ -118,7 +124,7 @@ export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all:
       {requiredBy.length > 0 && (
         <Box gap={4}>
           <Text variant="overline" color="textDim">
-            {t('admin.modulesRequiredBy')}
+            {t('admin.modulesNeededBy')}
           </Text>
           <Row wrap gap={6}>
             {requiredBy.map((d) => (

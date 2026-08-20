@@ -28,15 +28,17 @@ export function sriFromHex(hexSha256: string | null | undefined): string | null 
 const some = <T>(list: T[] | null | undefined) => (list && list.length > 0 ? list : undefined);
 const someMap = (map: Record<string, string>) => (Object.keys(map).length > 0 ? map : undefined);
 
-// Explicit manifest tags, else the capability kinds it provides, so a store can
-// filter by "download-client" without hand-authored tags.
+// Explicit manifest tags, else the points it answers, so a store can filter by
+// "download-client" without hand-authored tags. The local half of the point name
+// is the filterable word; the defining module's id is not what someone browses by.
 function tagsOf(entry: DescribedModule): string[] | undefined {
   const explicit = some(entry.tags);
   if (explicit) return explicit;
-  const kinds = (entry.provides ?? [])
-    .map((p) => (p && typeof p === 'object' ? (p as { kind?: string }).kind : undefined))
-    .filter((k): k is string => typeof k === 'string');
-  return some([...new Set(kinds)]);
+  const points = (entry.contributes ?? [])
+    .map((c) => (c && typeof c === 'object' ? (c as { point?: string }).point : undefined))
+    .filter((p): p is string => typeof p === 'string')
+    .map((p) => p.split('/').pop() as string);
+  return some([...new Set(points)]);
 }
 
 function metaOf(entry: DescribedModule) {
@@ -60,8 +62,9 @@ function versionOf(entry: DescribedModule): RegistryVersion {
     library: entry.library,
     dependencies: someMap(dependenciesOf(entry)),
     optionalDependencies: someMap(optionalDependenciesOf(entry)),
-    provides: some(entry.provides),
-    requires: some(entry.requires),
+    definesPoints: some(entry.definesPoints),
+    contributes: some(entry.contributes),
+    consumes: some(entry.consumes),
     artifacts: entry.artifacts.flatMap((a) => {
       const integrity = sriFromHex(a.sha256);
       if (!integrity) return [];

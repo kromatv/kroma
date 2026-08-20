@@ -39,14 +39,7 @@ pub fn auto_search_pass<S: kroma_module_sdk::host::HostStorage>(
         log("automatic acquisition is disabled (acqEnabled)".into());
         return Ok(summary);
     }
-    let downloads = match crate::downloads(state) {
-        Ok(downloads) => downloads,
-        Err(e) => {
-            log(format!("{e:#}; skipping the search pass"));
-            return Ok(summary);
-        }
-    };
-    if !downloads.gate_open() {
+    if !crate::peers::downloads::gate_open(state) {
         log("VPN kill switch is closed; skipping the search pass".into());
         return Ok(summary);
     }
@@ -55,7 +48,7 @@ pub fn auto_search_pass<S: kroma_module_sdk::host::HostStorage>(
     let now = now_ms();
     let conn = state.db().get()?;
     let due = db::wanted_searchable(&conn, &today, now, BATCH)?;
-    let indexers = crate::indexer_db(state)?.enabled_indexers(state)?;
+    let indexers = crate::peers::indexers::enabled(state)?;
     drop(conn);
     if due.is_empty() {
         log("nothing wanted right now".into());
@@ -159,8 +152,8 @@ fn target_label(st: &crate::search::SearchTarget) -> String {
 fn search_request<S: kroma_module_sdk::host::HostStorage>(
     state: &S,
     request_id: &str,
-    indexers: &[kroma_module_sdk::ports::IndexerRow],
-    profile: &kroma_module_sdk::scene::Profile,
+    indexers: &[crate::peers::indexers::IndexerRef],
+    profile: &kroma_scene::Profile,
     due_ids: &HashSet<String>,
     summary: &mut AutoSummary,
     searched: &mut HashSet<String>,
@@ -216,11 +209,10 @@ fn search_request<S: kroma_module_sdk::host::HostStorage>(
             // deliberate act from the request page.
             false,
         );
-        let downloads = crate::downloads(state)?;
-        match downloads.grab(state, spec) {
+        match crate::peers::downloads::grab(state, &spec) {
             Ok(row) => {
                 // Background job: fine to add synchronously here.
-                downloads.activate(state, &row);
+                crate::peers::downloads::activate(state, &row.id);
                 summary.grabbed += 1;
                 covered.extend(target_rows);
             }
@@ -239,9 +231,9 @@ struct Outcome {
 
 fn best_candidate<S: kroma_module_sdk::host::HostStorage>(
     state: &S,
-    indexers: &[kroma_module_sdk::ports::IndexerRow],
+    indexers: &[crate::peers::indexers::IndexerRef],
     st: &crate::search::SearchTarget,
-    profile: &kroma_module_sdk::scene::Profile,
+    profile: &kroma_scene::Profile,
     tmdb_id: u64,
     errors: &mut Vec<String>,
 ) -> Outcome {
@@ -261,10 +253,10 @@ fn best_candidate<S: kroma_module_sdk::host::HostStorage>(
 }
 
 fn take_best(
-    found: Vec<kroma_module_sdk::ports::Release>,
-    indexer: &kroma_module_sdk::ports::IndexerRow,
+    found: Vec<crate::peers::indexers::Release>,
+    indexer: &crate::peers::indexers::IndexerRef,
     st: &crate::search::SearchTarget,
-    profile: &kroma_module_sdk::scene::Profile,
+    profile: &kroma_scene::Profile,
     tmdb_id: u64,
     out: &mut Outcome,
 ) {
@@ -290,8 +282,8 @@ fn take_best(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kroma_module_sdk::ports::Query;
-    use kroma_module_sdk::scene::Target;
+    use crate::peers::indexers::Query;
+    use kroma_scene::Target;
 
     fn target(kind: &'static str, season: Option<u32>, episodes: Option<Vec<u32>>) -> crate::search::SearchTarget {
         crate::search::SearchTarget {

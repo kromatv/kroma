@@ -3,24 +3,65 @@
   "schemaVersion": 2,
   "id": "tv.kroma.torrents",
   "name": "Torrent downloads",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "The embedded librqbit download engine + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one.",
   "engines": {
-    "server": ">=0.1.38"
+    "server": ">=0.1.39"
   },
   "dependencies": {
-    "tv.kroma.indexer": "^0.2.0"
+    "tv.kroma.indexer": "^0.3.0"
   },
   "optionalDependencies": {
-    "tv.kroma.vpn": "^0.2.0"
+    "tv.kroma.vpn": "^0.3.0"
   },
-  "provides": [
+  "definesPoints": [
     {
-      "kind": "download-client",
-      "id": "rqbit"
+      "name": "client",
+      "methods": ["test", "add", "status", "pause", "resume", "reannounce", "remove"]
+    },
+    {
+      "name": "grab",
+      "methods": ["grab", "list-files", "gate-open", "activate", "drop-data"]
+    },
+    {
+      "name": "db",
+      "methods": ["completed", "mark-imported", "set-status"]
+    },
+    {
+      "name": "vpn",
+      "methods": ["status", "seal-check", "restart"]
     }
   ],
-  "ports": ["download-grab", "download-db", "download-vpn"],
+  "contributes": [
+    {
+      "point": "tv.kroma.torrents/client",
+      "id": "rqbit"
+    },
+    {
+      "point": "tv.kroma.torrents/grab"
+    },
+    {
+      "point": "tv.kroma.torrents/db"
+    },
+    {
+      "point": "tv.kroma.torrents/vpn"
+    }
+  ],
+  "consumes": [
+    {
+      "point": "tv.kroma.torrents/client"
+    },
+    {
+      "point": "tv.kroma.indexer/torrent-fetch"
+    },
+    {
+      "point": "tv.kroma.indexer/db"
+    },
+    {
+      "point": "tv.kroma.vpn/proxy",
+      "optional": true
+    }
+  ],
   "storage": {
     "core": {
       "read": [

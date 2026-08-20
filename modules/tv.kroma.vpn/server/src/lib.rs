@@ -19,6 +19,7 @@
 //! including the pass that finds no config at all.
 
 mod provision;
+pub mod port;
 pub mod routes;
 
 use std::path::PathBuf;
@@ -308,19 +309,14 @@ pub fn wg_configured(host: &dyn HostCtx) -> bool {
     !host.setting_str("vpnWgConfig", "").trim().is_empty()
 }
 
-/// The [`VpnProxyPort`](kroma_module_sdk::ports::VpnProxyPort) impl: the local SOCKS5 URL
-/// this module's bridge exposes, derived from settings. The composition root
-/// registers it so downloads / indexers route through the bridge without ever
-/// depending on this crate.
-pub struct VpnProxy;
-
-impl kroma_module_sdk::ports::VpnProxyPort for VpnProxy {
-    fn proxy_url(&self, host: &dyn HostCtx) -> Option<String> {
-        wg_configured(host).then(|| {
-            let port = host.setting_i64("vpnLocalPort", 25345).clamp(1, 65535);
-            format!("socks5://127.0.0.1:{port}")
-        })
-    }
+/// The local SOCKS5 URL this module's bridge exposes, derived from settings, and
+/// what [`port::VPN_PROXY`] answers with. `None` when no WireGuard config is
+/// stored, so a consumer routes directly rather than through a dead bridge.
+pub fn proxy_url(host: &dyn HostCtx) -> Option<String> {
+    wg_configured(host).then(|| {
+        let port = host.setting_i64("vpnLocalPort", 25345).clamp(1, 65535);
+        format!("socks5://127.0.0.1:{port}")
+    })
 }
 
 /// `GET /vpn` the VPN configuration card's state. VPN routing is
@@ -334,7 +330,7 @@ pub struct VpnAdminView {
     // The bridge child is currently alive.
     pub bridge_running: bool,
     pub local_port: u16,
-    pub status: Option<kroma_module_sdk::ports::VpnStatusView>,
+    pub status: Option<port::EngineVpnStatus>,
 }
 
 /// `PUT /vpn` body. `wgConfig` is write-only: pass the full WireGuard

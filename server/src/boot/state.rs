@@ -9,8 +9,7 @@ use kroma_engine::services::settings::Settings;
 use kroma_engine::{infra, state};
 use kroma_module_supervisor::{Supervisor, SupervisorConfig};
 
-use crate::boot::embedder::EmbedderClient;
-use crate::boot::whisper::WhisperClient;
+use crate::boot::transcriber::TranscriberClient;
 
 /// Build the supervisor and the app state. The state is handed a FUNCTION for
 /// reaching modules, never the supervisor and never a module id: which module
@@ -51,20 +50,20 @@ pub fn build(
         supervisor.clone() as Arc<dyn std::any::Any + Send + Sync>,
     );
 
-    // The ONE thing the core knows about modules: how to reach whoever serves a
-    // named contract. Which module that is, or whether one is installed at all,
-    // it never learns.
-    let port_endpoint: state::PortEndpoint = {
+    // The ONE thing the core knows about modules: how to reach whoever contributes
+    // a named point. Which module that is, or whether one is installed at all, it
+    // never learns.
+    let contributions: state::Contributions = {
         let supervisor = supervisor.clone();
-        Arc::new(move |port: &str| supervisor.port_endpoint(port))
+        Arc::new(move |point: &str| supervisor.contributions(point))
     };
 
-    // The core's own two consumers name a CONTRACT, never a provider.
-    let whisper =
-        Arc::new(WhisperClient::new(contract(&port_endpoint, "whisper"), db.clone()));
-    services.insert(std::any::TypeId::of::<WhisperClient>(), whisper);
-    let embedder: Arc<dyn kroma_engine::ports::Embedder> =
-        Arc::new(EmbedderClient::new(contract(&port_endpoint, "embedder")));
+    // Transcription is long-running and rides a DB row for progress, so the core
+    // holds a client for it. The embedder needs none: the state builds that point
+    // from the same resolver.
+    let transcriber =
+        Arc::new(TranscriberClient::new(point(&contributions, "transcriber"), db.clone()));
+    services.insert(std::any::TypeId::of::<TranscriberClient>(), transcriber);
 
     // Empty job roster: sidecars register their own jobs over `/_host/register-job`.
     let state = state::AppState::new(
@@ -72,17 +71,20 @@ pub fn build(
         ffprobe_available,
         db,
         settings,
-        embedder,
+        kroma_engine::point::Point::new("embedder", contributions.clone()),
         services,
         &[],
-        port_endpoint,
+        contributions,
     );
     (state, supervisor)
 }
 
-/// A resolver pinned to one contract name. It re-asks on every call, so a
-/// provider installed or restarted later is picked up with nothing re-wired.
-fn contract(endpoint: &state::PortEndpoint, port: &'static str) -> kroma_module_host::Resolver {
-    let endpoint = endpoint.clone();
-    Arc::new(move || endpoint(port))
+/// A resolver for one point name. It re-asks on every call, so a module installed
+/// or restarted later is picked up with nothing re-wired.
+fn point(resolve: &state::Contributions, name: &'static str) -> kroma_module_host::Resolver {
+    let resolve = resolve.clone();
+    Arc::new(move || {
+        let found = resolve(name).into_iter().next()?;
+        Some((found.base_url, found.token))
+    })
 }

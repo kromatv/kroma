@@ -1,13 +1,17 @@
 //! The KROMA module SDK: the ONE crate a server module depends on.
 //!
-//! A module must not depend on `kroma-engine`, `kroma-db`, `kroma-domain`,
-//! `kroma-http`, etc. directly. This facade re-exports the manifest layer at the
-//! crate root (`EmbeddedModule`, `ModuleManifest`, `Registry`, ...) and mirrors
-//! the host / engine / domain / http / db / primitives / ports surface under
-//! submodules, so a module writes `kroma_module_sdk::engine::state::SharedState`
-//! instead of reaching into the core crate. Cross-module capabilities go through
-//! `kroma_module_sdk::ports` (runtime-resolved traits), never a direct dependency
-//! on another module's crate.
+//! A module must not depend on `kroma-engine`, `kroma-db`, `kroma-domain` or
+//! `kroma-http` directly. This facade re-exports the manifest layer at the crate
+//! root (`EmbeddedModule`, `ModuleManifest`, `Registry`, ...) and mirrors the
+//! host / engine / domain / http / db / primitives surface under submodules, so a
+//! module writes `kroma_module_sdk::engine::state::SharedState` instead of
+//! reaching into the core crate.
+//!
+//! What is NOT here is any description of what a module is for. A module reaches
+//! a peer by asking [`host::HostCtx::contributions`] for a point NAME and calling
+//! it with JSON both sides declare themselves; there is no trait here for
+//! torznab, or downloads, or anything else, because the core cannot enumerate the
+//! things modules will do. See docs/module-plugin-model.md.
 
 // Manifest layer (below engine): EmbeddedModule / Module / ModuleManifest /
 // Registry / capability + config types. Re-exported at the crate root.
@@ -18,16 +22,11 @@ pub use kroma_module_manifest::*;
 /// `pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();`.
 pub use kroma_module_macros::embedded_module;
 
-/// Host contract: the `ServerModule` trait, `HostCtx`, `service` / `resolve_port`
-/// helpers, and the `async_trait` re-export module impls need.
+/// Host contract: the `ServerModule` trait, `HostCtx`, the point resolvers and
+/// the `service` helper, and the `async_trait` re-export module impls need.
 pub mod host {
     pub use kroma_module_host::*;
 }
-
-/// Cross-module capability ports + their shared contract types (runtime-resolved
-/// traits), e.g. `VpnProxyPort`, `DownloadClientHost`, `TorznabPort`. A module
-/// depends on these instead of another module's crate.
-pub mod ports;
 
 /// The application surface: `state::SharedState`, `services::*`, `model::*`.
 /// Behind the `engine` feature: this is the whole core, and only the two modules
@@ -60,40 +59,8 @@ pub mod primitives {
     pub use kroma_primitives::*;
 }
 
-/// The scene module's pure release-name parser / scorer (`parse_release_name`,
-/// `ParsedRelease`, `score`, `classify`, ...). Re-exported so consumer modules
-/// use `kroma_module_sdk::scene::*` instead of depending on kroma-scene directly.
-pub mod scene {
-    pub use kroma_scene::*;
-}
-
-/// Test helpers for port contracts. A port is reached over HTTP now, so a test
-/// that needs a fake provider SERVES one rather than injecting a trait object.
+/// Standing a point's provider up on a real socket, for a test that drives both
+/// ends. Re-exported from the host crate, where it lives behind its own feature so
+/// a module with no database does not link one to run a round-trip test.
 #[cfg(any(test, feature = "testing"))]
-pub mod testing {
-    use std::sync::Arc;
-
-    use axum::Router;
-    use kroma_module_host::Resolver;
-
-    /// Serve a provider's port routes on an ephemeral localhost port and hand
-    /// back a [`Resolver`] pointing at it, so a port's two ends can be tested
-    /// against each other over the real wire.
-    pub async fn serve<S: Clone + Send + Sync + 'static>(
-        router: Router<S>,
-        state: S,
-    ) -> Resolver {
-        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        let app = router.with_state(state);
-        tokio::spawn(async move {
-            let _ = axum::serve(listener, app).await;
-        });
-        let base = format!("http://{addr}");
-        Arc::new(move || Some((base.clone(), "test-token".to_string())))
-    }
-
-    pub async fn blocking<T: Send + 'static>(job: impl FnOnce() -> T + Send + 'static) -> T {
-        tokio::task::spawn_blocking(job).await.unwrap()
-    }
-}
+pub use kroma_module_host::test_serve as testing;

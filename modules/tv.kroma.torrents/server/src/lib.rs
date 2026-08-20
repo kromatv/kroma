@@ -27,6 +27,7 @@ pub mod downloads;
 pub mod dtos;
 pub mod module;
 pub mod organize;
+pub mod port;
 pub mod proxycheck;
 pub mod routes;
 #[cfg(feature = "rqbit")]
@@ -116,61 +117,12 @@ pub fn server_module<S: kroma_module_sdk::host::HostStorage + Clone + Send + Syn
     Box::new(DownloadsModule)
 }
 
-// The download-client contract (engine trait + shared types + magnet_info_hash)
-// lives in the SDK ports module, so download engine modules depend only on the
-// SDK; re-exported here so this crate's own modules keep using
-// crate::DownloadClient etc.
-pub use kroma_module_sdk::ports::{
-    magnet_info_hash, AddTorrentReq, ClientDef, DownloadClient, DownloadClientCtx,
-    DownloadClientHost, DownloadClientRegistry, TorrentFileEntry, TorrentState, TorrentStatus,
-    VpnStatusView,
+pub mod engine;
+pub use engine::{
+    magnet_info_hash, AddTorrentReq, ClientDef, DownloadClient, TorrentFileEntry, TorrentState,
+    TorrentStatus,
 };
-
-
-/// Register the built-in factory for ONE client `kind` (returns false for an
-/// unknown kind). This is the single-kind entry point the download-engine
-/// sub-modules use to add their kind when toggled on (`rqbit` stays part of the
-/// Downloads module; `transmission` / `qbittorrent` are their own modules).
-/// `rqbit` registers a real factory when compiled in and a clear "not compiled"
-/// stub otherwise (so the error is actionable).
-pub fn register_client_kind(reg: &mut DownloadClientRegistry, kind: &str) -> bool {
-    match kind {
-        "rqbit" => {
-            #[cfg(feature = "rqbit")]
-            reg.register("rqbit", |_def, ctx| {
-                // The ctx carries the embedded engine as an opaque `dyn Any` (the
-                // contract lives in the SDK ports module (kroma_module_sdk::ports) and knows nothing of RqbitEngine).
-                let any = ctx.rqbit.as_ref().ok_or_else(|| anyhow::anyhow!("embedded engine not started"))?;
-                let engine = any
-                    .clone()
-                    .downcast::<RqbitEngine>()
-                    .map_err(|_| anyhow::anyhow!("rqbit handle type mismatch"))?;
-                Ok(engine.client())
-            });
-            #[cfg(not(feature = "rqbit"))]
-            reg.register("rqbit", |_def, _ctx| {
-                anyhow::bail!("embedded engine not compiled (torrent-rqbit feature off)")
-            });
-            true
-        }
-        _ => false,
-    }
-}
-
-/// Register the core download engine (embedded librqbit). Transmission and
-/// qBittorrent are their own crates now (`kroma-transmission` / `kroma-qbittorrent`)
-/// that register their own kind; the binary wires them at boot + on toggle.
-pub fn register_download_clients(reg: &mut DownloadClientRegistry) {
-    register_client_kind(reg, "rqbit");
-}
-
-/// A registry with the core (rqbit) engine registered. The binary layers the
-/// external engine crates on top.
-pub fn builtin_download_clients() -> DownloadClientRegistry {
-    let mut reg = DownloadClientRegistry::default();
-    register_download_clients(&mut reg);
-    reg
-}
+pub use dtos::VpnStatusView;
 
 #[cfg(test)]
 mod tests {
@@ -187,53 +139,15 @@ mod tests {
         assert_eq!(magnet_info_hash("https://example.com/file.torrent"), None);
     }
 
+    // What used to be three registry tests is one dispatch rule now: this module
+    // answers for the embedded engine, and everything else resolves to whoever
+    // contributes the point under that kind.
     #[test]
-    fn only_the_kind_this_module_owns_registers() {
-        // transmission and qBittorrent are their OWN modules now. Claiming their
-        // kinds here would shadow the real factory and hand every download to a
-        // stub.
-        let mut reg = DownloadClientRegistry::default();
-        assert!(register_client_kind(&mut reg, "rqbit"));
-        assert!(!register_client_kind(&mut reg, "transmission"));
-        assert!(!register_client_kind(&mut reg, "qbittorrent"));
-        assert!(!register_client_kind(&mut reg, ""));
-    }
-
-    #[test]
-    fn the_builtin_registry_carries_exactly_the_embedded_engine() {
-        // The binary layers the external engine crates on top of this, so it
-        // starts with one kind - not zero (nothing would be downloadable) and
-        // not several (the layering would be silently overwritten).
-        let reg = builtin_download_clients();
-        assert!(reg.kinds().contains(&"rqbit"), "{:?}", reg.kinds());
-        assert_eq!(reg.kinds().len(), 1, "{:?}", reg.kinds());
-    }
-
-    #[test]
-    fn asking_for_the_engine_without_starting_it_fails_with_a_reason() {
-        // Whether or not `rqbit` is compiled in, constructing the client before
-        // the engine is up must say WHY rather than panic - one of the two
-        // messages, both actionable.
-        let reg = builtin_download_clients();
-        let def = ClientDef {
-            kind: "rqbit".into(),
-            url: String::new(),
-            username: String::new(),
-            password: String::new(),
-        };
-        let ctx = DownloadClientCtx { rqbit: None, state_dir: std::path::Path::new("/tmp") };
-        let Err(e) = reg.build(&def, &ctx) else { panic!("no engine is running in a test") };
-        let err = e.to_string();
-        assert!(
-            err.contains("not started") || err.contains("not compiled"),
-            "unhelpful error: {err}"
-        );
-
-        // An unknown kind names the kind, so a typo in a saved client row is
-        // diagnosable from the log alone.
-        let unknown = ClientDef { kind: "nope".into(), ..def };
-        let Err(e) = reg.build(&unknown, &ctx) else { panic!("an unknown kind must not build") };
-        assert!(e.to_string().contains("nope"), "{e}");
+    fn this_module_answers_only_for_the_embedded_engine() {
+        // Claiming another engine's kind here would hand its downloads to the
+        // wrong engine, so the constant is the whole rule.
+        assert_eq!(engine::EMBEDDED_KIND, "rqbit");
+        assert_eq!(engine::remote::DOWNLOAD_CLIENT, "tv.kroma.torrents/client");
     }
 
     // The shared stub. These hooks stop at the service lookup, so the neutral

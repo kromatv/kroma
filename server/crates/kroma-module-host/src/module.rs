@@ -46,6 +46,26 @@ where
         Vec::new()
     }
 
+    // Event topics this module wants delivered, as they appear in an event's
+    // `type`. Opt-in one topic at a time rather than by wildcard, because the bus
+    // carries high-rate traffic (playback progress) a module has no use for and
+    // each delivery is an HTTP call to its process.
+    //
+    // Without this a module could publish onto the bus and never hear it, so it
+    // could be called BY another module but never react to one.
+    fn events(&self) -> Vec<&'static str> {
+        Vec::new()
+    }
+
+    // One event this module subscribed to. `payload` is the whole event object
+    // including its `type`, because a module that subscribed to several topics
+    // dispatches on it.
+    //
+    // Delivery is best-effort and unordered: it is an HTTP call to this process,
+    // and a module that was restarting missed whatever fired meanwhile. Anything
+    // that must not be missed belongs in a job that reconciles state, not here.
+    async fn on_event(&self, _host: S, _topic: String, _payload: serde_json::Value) {}
+
     // Called when the module is enabled at runtime AND at boot for an
     // already-enabled module. Awaited, not detached, so a slow start completes
     // before a following disable can race it. Takes the state itself rather than
@@ -79,6 +99,7 @@ mod tests {
         assert_eq!(Bare.migrations(), "");
         assert!(Bare.admin_routes(&Arc::new(testing::StubHost::new())).is_none());
         assert!(Bare.jobs().is_empty());
+        assert!(Bare.events().is_empty());
 
         let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
         rt.block_on(async {

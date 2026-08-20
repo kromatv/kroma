@@ -33,7 +33,7 @@ const s = styles({
 export function DownloadClientsSection() {
   const t = useT();
   const torrents = useTorrentsApi();
-  const engines = useEnabledEngines('download-client');
+  const engines = useEnabledEngines('tv.kroma.torrents/client');
   const [tests, setTests] = useState<Record<string, TestState>>({});
   const { data, reload } = usePoll(['admin', 'downloadClients'], () => torrents.clients(), 30000);
   const clients = data?.clients ?? [];

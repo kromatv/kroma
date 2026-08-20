@@ -8,15 +8,30 @@ name = "kroma-qbittorrent"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.88"
-description = "KROMA qBittorrent download sub-engine: a DownloadClient over the qBittorrent WebUI. Plugs into the kroma-torrent registry."
+description = "KROMA qBittorrent download engine: a sidecar answering the download-client point over the qBittorrent WebUI."
 license = "MIT"
+
+[[bin]]
+# This module's `.kmod` entrypoint: a point-provider-only sidecar serving the
+# qBittorrent engine over HTTP (see src/bin/module.rs).
+name = "kroma-module-qbittorrent"
+path = "src/bin/module.rs"
 
 [dependencies]
 kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
+# The out-of-process runtime + axum for the point's routes.
+kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
 anyhow = "1"
 serde_json = "1"
 
 [dev-dependencies]
+# `oneshot`, to drive the point's routes without binding a port.
+tower = { version = "0.5", features = ["util"] }
+# The shared HostCtx double, for the routes' state.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
 # The fake WebUI's cookie jar lives in a directory that removes itself.
 kroma-testing = { path = "../../../server/crates/kroma-testing" }
 

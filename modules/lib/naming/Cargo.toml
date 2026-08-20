@@ -1,0 +1,12 @@
+[package]
+name = "kroma-naming"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "Sonarr/Radarr-style file naming: render a path template against a title's facts. A library, not an extension point: one call per imported file."
+license.workspace = true
+
+[dependencies]
+# The release parser, for turning a parsed release name into naming facts. Also a
+# library rather than a point, and for the same reason.
+kroma-scene = { path = "../../tv.kroma.scene/server" }

@@ -18,7 +18,7 @@ pub fn grab_cached<S: HostStorage>(
     scope: SearchScope,
     guid: &str,
     indexer_id: &str,
-) -> Result<kroma_module_sdk::ports::DownloadRow> {
+) -> Result<crate::peers::downloads::DownloadRow> {
     // The search cache is in-memory, so a restart or a direct grab with no
     // prior search would miss it; on a miss, re-run the search and retry.
     let cached = match cached_release(request_id, scope, guid, indexer_id) {
@@ -56,21 +56,23 @@ pub fn grab_cached<S: HostStorage>(
         wanted_ids,
         upgrade,
     );
-    crate::downloads(state)?.grab(state, spec)
+    crate::peers::downloads::grab(state, &spec)
 }
 
 // A built-in indexer may need a details-page fetch to turn a search row into a
 // magnet / .torrent link.
 fn resolve_grab_target<S: HostStorage>(state: &S, cached: &CachedRelease) -> Result<String> {
-    let row = crate::indexer_db(state)?.get_indexer(state, &cached.view.indexer_id)?;
-    match row {
-        Some(r) if r.kind == kroma_module_sdk::ports::KIND_BUILTIN => crate::resolve_builtin_download(
-            state,
-            &r,
-            &cached.view.title,
-            cached.view.details_url.as_deref(),
-            &cached.magnet_or_url,
-        ),
+    let indexer = crate::peers::indexers::get(state, &cached.view.indexer_id)?;
+    match indexer {
+        Some(i) if i.kind == crate::peers::indexers::KIND_BUILTIN => {
+            crate::resolve_builtin_download(
+                state,
+                &i.id,
+                &cached.view.title,
+                cached.view.details_url.as_deref(),
+                &cached.magnet_or_url,
+            )
+        }
         _ => Ok(cached.magnet_or_url.clone()),
     }
 }

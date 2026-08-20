@@ -1,5 +1,6 @@
-//! Cross-module port plumbing: resolving whichever module currently serves a
-//! contract, calling it over the wire, and the service-registry side of a port.
+//! Cross-module point plumbing: resolving whichever modules currently answer a
+//! point, calling one over the wire, and the service registry a host reaches its
+//! own singletons through.
 
 use std::any::{Any, TypeId};
 use std::sync::Arc;
@@ -8,18 +9,55 @@ use axum::Json;
 
 use super::HostCtx;
 
-/// Resolves the module currently serving a port: its `(base_url, auth_token)`,
-/// or `None` when nothing installed and running serves it. Called on EVERY
+/// One live answer to a point: which module contributes it, under which instance
+/// name (`None` when the point takes a single contribution), and where to reach
+/// that module's process.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct Contribution {
+    pub module_id: String,
+    #[serde(default)]
+    pub instance: Option<String>,
+    pub base_url: String,
+    pub token: String,
+}
+
+/// Resolves the module currently answering a point: its `(base_url, auth_token)`,
+/// or `None` when nothing installed and running answers it. Called on EVERY
 /// cross-module request, so a provider that restarted on a new port is picked
 /// up without anyone re-wiring.
 pub type Resolver = Arc<dyn Fn() -> Option<(String, String)> + Send + Sync>;
 
-/// A [`Resolver`] for whichever module serves `port`. The port is a contract
-/// name (`"torznab"`, `"indexer-db"`), never a module id: which module answers
-/// is the supervisor's business, and changes as modules are installed.
-pub fn port_resolver(host: Arc<dyn HostCtx>, port: &str) -> Resolver {
-    let port = port.to_string();
-    Arc::new(move || host.port_endpoint(&port))
+/// A [`Resolver`] for whichever module contributes `point`
+/// (`"tv.kroma.indexer/engine"`), narrowed to one `instance` when the point takes
+/// several. Which module answers is the supervisor's business and changes as
+/// modules are installed, so this re-resolves on every call rather than pinning
+/// an endpoint.
+pub fn point_resolver(host: Arc<dyn HostCtx>, point: &str, instance: Option<&str>) -> Resolver {
+    let point = point.to_string();
+    let want = instance.map(str::to_string);
+    Arc::new(move || {
+        let found = host.contributions(&point).into_iter().find(|c| match &want {
+            Some(id) => c.instance.as_deref() == Some(id.as_str()),
+            None => true,
+        })?;
+        Some((found.base_url, found.token))
+    })
+}
+
+/// A [`Resolver`] pinned to `point`'s contribution as it is right now, for a
+/// caller holding a bare `&dyn HostCtx` and making one call. It does not
+/// re-resolve, so anything outliving the call should hold a [`point_resolver`].
+pub fn pinned_resolver(
+    host: &dyn HostCtx,
+    point: &str,
+    instance: Option<&str>,
+) -> Option<Resolver> {
+    let found = host.contributions(point).into_iter().find(|c| match instance {
+        Some(id) => c.instance.as_deref() == Some(id),
+        None => true,
+    })?;
+    let endpoint = (found.base_url, found.token);
+    Some(Arc::new(move || Some(endpoint.clone())))
 }
 
 /// Serialize `body`, POST it to the provider's `/_port/<path>` with the bearer
@@ -33,15 +71,26 @@ pub fn call<B: serde::Serialize, T: serde::de::DeserializeOwned>(
     out.map_err(|e| anyhow::anyhow!(e))
 }
 
+/// [`call`] with the path derived from the point name, as `<point>/<method>`, so
+/// a caller holds one string rather than a point name and an unrelated URL prefix.
+pub fn call_point<B: serde::Serialize, T: serde::de::DeserializeOwned>(
+    resolve: &Resolver,
+    point: &str,
+    method: &str,
+    body: &B,
+) -> anyhow::Result<T> {
+    call(resolve, &format!("{point}/{method}"), body)
+}
+
 /// Like [`call`] but the provider returns `T` directly (no `Result` envelope),
-/// for port methods returning `Option<_>` / infallible values.
+/// for point methods returning `Option<_>` / infallible values.
 pub fn call_raw<B: serde::Serialize, T: serde::de::DeserializeOwned>(
     resolve: &Resolver,
     path: &str,
     body: &B,
 ) -> anyhow::Result<T> {
     let (base, token) =
-        resolve().ok_or_else(|| anyhow::anyhow!("no module serves this port"))?;
+        resolve().ok_or_else(|| anyhow::anyhow!("no module contributes this point"))?;
     let resp = kroma_http::Fetch::new()
         .header("authorization", format!("Bearer {token}"))
         .post_json(&format!("{base}/_port/{path}"), &serde_json::to_value(body)?)?
@@ -49,7 +98,7 @@ pub fn call_raw<B: serde::Serialize, T: serde::de::DeserializeOwned>(
     resp.json()
 }
 
-/// Wrap a provider-side port handler: run the blocking work off the runtime and
+/// Wrap a provider-side point handler: run the blocking work off the runtime and
 /// answer with the `Result<T, String>` envelope [`call`] expects.
 pub async fn port_reply<T>(
     job: impl FnOnce() -> anyhow::Result<T> + Send + 'static,
@@ -62,22 +111,6 @@ where
         .map_err(|e| e.to_string())
         .and_then(|r| r.map_err(|e| format!("{e:#}")));
     Json(out)
-}
-
-/// Register a peer port (a trait object) for the service registry: returns the
-/// `(TypeId, value)` to insert. The registry stores concrete `Any` values, so the
-/// port `Arc<dyn P>` is wrapped in an outer `Arc` keyed by `Arc<dyn P>`'s TypeId.
-pub fn port_service<P: ?Sized + Any + Send + Sync>(
-    port: Arc<P>,
-) -> (TypeId, Arc<dyn Any + Send + Sync>) {
-    (TypeId::of::<Arc<P>>(), Arc::new(port))
-}
-
-/// Resolve a peer port registered via [`port_service`]. `None` when no provider
-/// registered it (e.g. the providing module is absent / disabled).
-pub fn resolve_port<P: ?Sized + Any + Send + Sync>(host: &dyn HostCtx) -> Option<Arc<P>> {
-    let any = host.get_service(TypeId::of::<Arc<P>>())?;
-    any.downcast::<Arc<P>>().ok().map(|boxed| (*boxed).clone())
 }
 
 pub fn service<T: Any + Send + Sync>(host: &dyn HostCtx) -> Option<Arc<T>> {
@@ -95,55 +128,17 @@ mod tests {
     }
 
     #[test]
-    fn call_errors_when_nothing_serves_the_port() {
+    fn call_errors_when_nothing_contributes_the_point() {
         let err = call::<_, serde_json::Value>(&offline(), "any/path", &serde_json::json!({}))
             .unwrap_err();
-        assert!(err.to_string().contains("no module serves this port"));
+        assert!(err.to_string().contains("no module contributes this point"));
     }
 
     #[test]
-    fn call_raw_errors_when_nothing_serves_the_port() {
+    fn call_raw_errors_when_nothing_contributes_the_point() {
         let err = call_raw::<_, serde_json::Value>(&offline(), "any/path", &serde_json::json!({}))
             .unwrap_err();
-        assert!(err.to_string().contains("no module serves this port"));
-    }
-
-    #[test]
-    fn peer_port_round_trips_through_the_service_registry() {
-        trait Greeter: Send + Sync {
-            fn hi(&self) -> &'static str;
-        }
-        struct G;
-        impl Greeter for G {
-            fn hi(&self) -> &'static str {
-                "hi"
-            }
-        }
-        let port: Arc<dyn Greeter> = Arc::new(G);
-        let (tid, stored) = port_service(port);
-        assert_eq!(tid, TypeId::of::<Arc<dyn Greeter>>());
-        let back = stored.downcast::<Arc<dyn Greeter>>().expect("stored value downcasts back");
-        assert_eq!((*back).hi(), "hi");
-    }
-
-    #[test]
-    fn resolve_port_finds_a_registered_port_and_misses_otherwise() {
-        trait Greeter: Send + Sync {
-            fn hi(&self) -> &'static str;
-        }
-        struct G;
-        impl Greeter for G {
-            fn hi(&self) -> &'static str {
-                "hi"
-            }
-        }
-        let port: Arc<dyn Greeter> = Arc::new(G);
-        let host = testing::StubHost::new().with_service_raw(port_service(port));
-        let resolved = resolve_port::<dyn Greeter>(&host).expect("port resolves");
-        assert_eq!(resolved.hi(), "hi");
-
-        let empty = testing::StubHost::new();
-        assert!(resolve_port::<dyn Greeter>(&empty).is_none());
+        assert!(err.to_string().contains("no module contributes this point"));
     }
 
     #[test]

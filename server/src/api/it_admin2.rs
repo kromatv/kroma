@@ -375,14 +375,14 @@ async fn the_install_plan_pulls_dependencies_first_and_offers_the_rest() {
             { "schemaVersion": 2, "id": "tv.x.app", "name": "App", "version": "1.0.0",
               "dependencies": { "tv.x.lib": "^1.0.0" },
               "optionalDependencies": { "tv.x.vpn": "*" },
-              "requires": [{ "kind": "download-client" }],
+              "consumes": [{ "point": "tv.x.app/download-client" }],
               "artifacts": [{ "target": null, "url": "https://x/app.kmod", "size": 30 }] },
             { "schemaVersion": 2, "id": "tv.x.lib", "name": "Lib", "version": "1.4.0", "library": true,
               "artifacts": [{ "target": null, "url": "https://x/lib.kmod", "size": 12 }] },
             { "schemaVersion": 2, "id": "tv.x.vpn", "name": "VPN", "version": "1.0.0",
               "artifacts": [{ "target": null, "url": "https://x/vpn.kmod", "size": 7 }] },
             { "schemaVersion": 2, "id": "tv.x.engine", "name": "Engine", "version": "1.0.0",
-              "provides": [{ "kind": "download-client", "id": "rqbit" }],
+              "contributes": [{ "point": "tv.x.app/download-client", "id": "rqbit" }],
               "artifacts": [{ "target": null, "url": "https://x/engine.kmod", "size": 5 }] }
         ]))
     .await;
@@ -410,9 +410,9 @@ async fn the_install_plan_pulls_dependencies_first_and_offers_the_rest() {
     let optional = body["optional"].as_array().unwrap();
     let by_id = |id: &str| optional.iter().find(|o| o["id"] == json!(id)).unwrap();
     assert_eq!(optional.len(), 2);
-    assert!(by_id("tv.x.vpn")["capability"].is_null());
+    assert!(by_id("tv.x.vpn")["point"].is_null());
     assert_eq!(by_id("tv.x.vpn")["suggested"], json!(false));
-    assert_eq!(by_id("tv.x.engine")["capability"], json!("download-client"));
+    assert_eq!(by_id("tv.x.engine")["point"], json!("tv.x.app/download-client"));
     assert_eq!(by_id("tv.x.engine")["suggested"], json!(true));
     assert_eq!(body["missing"].as_array().unwrap().len(), 0);
 

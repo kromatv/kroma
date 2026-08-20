@@ -4,7 +4,7 @@
 // `/api/events`. The server hand-builds these responses (no ts-rs), so there is
 // no drift guard: the zod parse at the trust boundary IS the check.
 
-import { Capability, CapabilityReq } from '@kroma/registry';
+import { Contribution, PointReq } from '@kroma/registry';
 import { z } from 'zod';
 
 /** A `{ id: range }` dependency map, the one shape a dependency has anywhere:
@@ -24,8 +24,8 @@ export const StoreModule = z.object({
   engines: z.record(z.string(), z.string()).default({}),
   dependencies: DependencyMap,
   optionalDependencies: DependencyMap,
-  provides: z.array(Capability),
-  requires: z.array(CapabilityReq),
+  contributes: z.array(Contribution),
+  consumes: z.array(PointReq),
   target: z.string().nullish(),
   url: z.string().nullish(),
   size: z.number().nullish(),
@@ -81,37 +81,37 @@ export const StorePlanModule = z.object({
 export type StorePlanModule = z.infer<typeof StorePlanModule>;
 
 /** A compatible, not-yet-installed opt-in the install dialog offers: a
- * declared optional dependency (`capability` null), or a provider for a
- * capability the plan `requires` but nothing satisfies (`capability` = the
- * kind it would provide). `for` names the module asking. */
+ * declared optional dependency (`point` null), or a contributor to a point the
+ * plan `consumes` and nothing answers (`point` = the one it would answer).
+ * `for` names the module asking. */
 export const StoreOptionalModule = z.object({
   id: z.string(),
   name: z.string(),
   version: z.string(),
   size: z.number().nullish(),
   description: z.string().nullish(),
-  capability: z.string().nullish(),
+  point: z.string().nullish(),
   for: z.string().nullish(),
-  /** True when this row is the only way to satisfy a required capability; the
-   * dialog pre-checks it. */
+  /** True when this row is the only way to answer a consumed point; the dialog
+   * pre-checks it. */
   suggested: z.boolean(),
 });
 export type StoreOptionalModule = z.infer<typeof StoreOptionalModule>;
 
-/** A required capability no installed, planned or available module provides. */
-export const StoreMissingCapability = z.object({
-  kind: z.string(),
+/** A point no installed, planned or available module answers. */
+export const StoreMissingPoint = z.object({
+  point: z.string(),
   id: z.string().nullish(),
   for: z.string(),
 });
-export type StoreMissingCapability = z.infer<typeof StoreMissingCapability>;
+export type StoreMissingPoint = z.infer<typeof StoreMissingPoint>;
 
 /** `POST /api/admin/store/plan`: the dry-run behind the install dialog. */
 export const StorePlan = z.object({
   requested: z.string(),
   modules: z.array(StorePlanModule),
   optional: z.array(StoreOptionalModule),
-  missing: z.array(StoreMissingCapability),
+  missing: z.array(StoreMissingPoint),
   totalSize: z.number(),
 });
 export type StorePlan = z.infer<typeof StorePlan>;

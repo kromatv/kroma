@@ -7,15 +7,15 @@ function ctxAnswering(payload: unknown): RequestContext {
 }
 
 describe('listModules', () => {
-  it('reads a module list with its capabilities and add-form fields', async () => {
+  it('reads a module list with its contributions and add-form fields', async () => {
     const ctx = ctxAnswering([
       {
         id: 'tv.kroma.torrents',
         name: 'Torrents',
         enabled: true,
-        provides: [
+        contributes: [
           {
-            kind: 'download-client',
+            point: 'tv.kroma.torrents/client',
             id: 'rqbit',
             label: 'rqbit',
             fields: [{ key: 'url', label: 'field.url', type: 'string', default: null }],
@@ -29,9 +29,9 @@ describe('listModules', () => {
         id: 'tv.kroma.torrents',
         name: 'Torrents',
         enabled: true,
-        provides: [
+        contributes: [
           {
-            kind: 'download-client',
+            point: 'tv.kroma.torrents/client',
             id: 'rqbit',
             label: 'rqbit',
             fields: [{ key: 'url', label: 'field.url', type: 'string' }],
@@ -46,15 +46,19 @@ describe('listModules', () => {
       {
         id: 'tv.kroma.notes',
         name: 'Notes',
-        provides: [
-          { kind: 'indexer-engine', id: 'x', fields: [{ key: 'k', label: 'l', type: 'textarea' }] },
+        contributes: [
+          {
+            point: 'tv.kroma.indexer/engine',
+            id: 'x',
+            fields: [{ key: 'k', label: 'l', type: 'textarea' }],
+          },
         ],
       },
     ]);
 
     const [mod] = await listModules(ctx);
 
-    expect(mod?.provides?.[0]?.fields?.[0]?.type).toBe('string');
+    expect(mod?.contributes?.[0]?.fields?.[0]?.type).toBe('string');
   });
 
   it('drops a module whose manifest the schema rejects and keeps the rest', async () => {

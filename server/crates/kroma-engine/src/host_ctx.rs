@@ -128,8 +128,11 @@ impl HostCtx for AppState {
             .collect()
     }
 
-    fn tmdb_api_key(&self) -> Option<String> {
-        self.config.tmdb_api_key.clone()
+    fn secret(&self, name: &str) -> Option<String> {
+        match name {
+            "tmdb" => self.config.tmdb_api_key.clone(),
+            _ => None,
+        }
     }
 
     fn metadata_language(&self) -> String {
@@ -143,8 +146,8 @@ impl HostCtx for AppState {
         self.services.get(&type_id).cloned()
     }
 
-    fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
-        (self.port_endpoint)(port)
+    fn contributions(&self, point: &str) -> Vec<kroma_module_host::Contribution> {
+        (self.contributions)(point)
     }
 }
 
@@ -262,11 +265,16 @@ mod tests {
     }
 
     #[test]
-    fn reports_the_tmdb_key_the_app_was_configured_with() {
-        assert_eq!(HostCtx::tmdb_api_key(&*test_state()), None);
+    fn a_secret_is_answered_by_name_and_an_unknown_one_is_none() {
+        assert_eq!(HostCtx::secret(&*test_state(), "tmdb"), None);
         assert_eq!(
-            HostCtx::tmdb_api_key(&*crate::test_support::test_state_with_tmdb("k")),
+            HostCtx::secret(&*crate::test_support::test_state_with_tmdb("k"), "tmdb"),
             Some("k".to_string())
+        );
+        // A name the host does not know is absent, never a different secret.
+        assert_eq!(
+            HostCtx::secret(&*crate::test_support::test_state_with_tmdb("k"), "invented"),
+            None
         );
     }
 
@@ -358,11 +366,11 @@ mod tests {
     #[test]
     fn the_tmdb_key_and_language_come_from_the_apps_config() {
         let state = test_state();
-        assert_eq!(HostCtx::tmdb_api_key(&*state), None);
+        assert_eq!(HostCtx::secret(&*state, "tmdb"), None);
         assert_eq!(HostCtx::metadata_language(&*state), state.config.tmdb_language);
 
         let keyed = crate::test_support::test_state_with_tmdb("abc123");
-        assert_eq!(HostCtx::tmdb_api_key(&*keyed).as_deref(), Some("abc123"));
+        assert_eq!(HostCtx::secret(&*keyed, "tmdb").as_deref(), Some("abc123"));
     }
 
     #[test]

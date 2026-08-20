@@ -61,12 +61,7 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
     };
     // Resolved before the blocking closure, which cannot borrow the host.
     let indexers: std::collections::HashMap<String, String> =
-        kroma_module_sdk::ports::indexer_db(&state)
-            .and_then(|p| p.list_indexers(&state).ok())
-            .unwrap_or_default()
-            .into_iter()
-            .map(|i| (i.id, i.name))
-            .collect();
+        crate::port::indexers::names(&state).into_iter().map(|i| (i.id, i.name)).collect();
     // The client names come from this module's OWN database; the ledger below
     // from the shared one. Two files, so two lookups: resolved here because the
     // blocking closure gets only the one pool.

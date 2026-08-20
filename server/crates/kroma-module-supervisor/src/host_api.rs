@@ -28,14 +28,17 @@ where
         .route("/_host/job", post(trigger_job::<S>))
         .route("/_host/enabled", get(module_enabled::<S>))
         .route("/_host/libraries", get(library_folders::<S>))
-        .route("/_host/tmdb", get(tmdb_config::<S>))
+        .route("/_host/metadata-language", get(metadata_language::<S>))
+        // By NAME: a sidecar asks for the credential it needs, and this route
+        // never learns which vendors exist.
+        .route("/_host/secret", get(secret::<S>))
         // Authentication, so a sidecar resolves the caller of one of its routes
         // without reading the `sessions` table -- the last thing that made a
         // module with no storage of its own open a database.
         .route("/_host/session", post(session_user::<S>))
         // How a module reaches a peer: it asks for a CONTRACT and the core
         // answers with whoever serves it. No module id crosses this wire.
-        .route("/_host/port", get(port_endpoint::<S>))
+        .route("/_host/contributions", get(contributions::<S>))
         .route_layer(from_fn_with_state(HostToken(token), require_host_token))
 }
 
@@ -54,18 +57,15 @@ async fn session_user<S: HostCtx + Clone>(
 }
 
 #[derive(serde::Deserialize)]
-struct PortQuery {
-    port: String,
+struct PointQuery {
+    point: String,
 }
 
-async fn port_endpoint<S: HostCtx>(
+async fn contributions<S: HostCtx>(
     State(host): State<S>,
-    axum::extract::Query(q): axum::extract::Query<PortQuery>,
-) -> Json<Value> {
-    match host.port_endpoint(&q.port) {
-        Some((base, token)) => Json(json!({ "base": base, "token": token })),
-        None => Json(Value::Null),
-    }
+    axum::extract::Query(q): axum::extract::Query<PointQuery>,
+) -> Json<Vec<kroma_module_host::Contribution>> {
+    Json(host.contributions(&q.point))
 }
 
 #[derive(serde::Deserialize)]
@@ -205,8 +205,20 @@ async fn library_folders<S: HostCtx>(State(host): State<S>) -> Json<Value> {
     Json(json!(host.library_folders()))
 }
 
-async fn tmdb_config<S: HostCtx>(State(host): State<S>) -> Json<Value> {
-    Json(json!({ "key": host.tmdb_api_key(), "language": host.metadata_language() }))
+#[derive(serde::Deserialize)]
+struct SecretQuery {
+    name: String,
+}
+
+async fn secret<S: HostCtx>(
+    State(host): State<S>,
+    axum::extract::Query(q): axum::extract::Query<SecretQuery>,
+) -> Json<Option<String>> {
+    Json(host.secret(&q.name))
+}
+
+async fn metadata_language<S: HostCtx>(State(host): State<S>) -> Json<String> {
+    Json(host.metadata_language())
 }
 
 #[cfg(test)]

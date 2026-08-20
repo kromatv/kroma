@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use axum::routing::{get, post};
+use axum::routing::post;
 use axum::{Extension, Json, Router};
 use serde::Deserialize;
 use serde_json::json;
@@ -20,7 +20,7 @@ pub fn embedder_routes<S: Clone + Send + Sync + 'static>(emb: Arc<dyn Embedder>)
     Router::new()
         .route("/_port/embedder/embed", post(embed_h))
         .route("/_port/embedder/embed_batch", post(embed_batch_h))
-        .route("/_port/embedder/meta", get(meta_h))
+        .route("/_port/embedder/meta", post(meta_h))
         .layer(Extension(emb))
 }
 
@@ -141,14 +141,8 @@ mod tests {
         // `dim` is what the reembed job compares against to decide whether a
         // stored vector is stale, and the floor is backend-specific - a sidecar
         // that misreported either would leave recommendations quietly wrong.
-        let req = Request::builder()
-            .uri("/_port/embedder/meta")
-            .body(Body::empty())
-            .unwrap();
-        let resp = app().oneshot(req).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK);
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
-        let meta: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let (status, meta) = post("/_port/embedder/meta", json!({})).await;
+        assert_eq!(status, StatusCode::OK);
         assert_eq!(meta["dim"], 3);
         assert_eq!(meta["relevance_floor"], 0.25);
     }
@@ -157,7 +151,7 @@ mod tests {
     async fn the_routes_are_mounted_where_the_client_looks_for_them() {
         // The consumer-side proxy builds `/_port/embedder/<method>` by hand, so
         // a path renamed on one side only fails at runtime in another process.
-        for path in ["/_port/embedder/embed", "/_port/embedder/embed_batch"] {
+        for path in ["/_port/embedder/embed", "/_port/embedder/embed_batch", "/_port/embedder/meta"] {
             let (status, _) = post(path, json!({ "text": "x", "texts": [] })).await;
             assert_eq!(status, StatusCode::OK, "{path}");
         }

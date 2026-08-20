@@ -97,8 +97,7 @@ impl DownloadManager {
 /// The local wireproxy SOCKS5 bridge peers are routed through (librqbit only
 /// proxies via SOCKS5). `None` = no VPN, torrent traffic goes out directly.
 pub fn active_proxy_url(host: &dyn HostCtx) -> Option<String> {
-    kroma_module_sdk::ports::vpn_proxy(host)
-        .and_then(|p| p.proxy_url(host))
+    crate::port::vpn::proxy_url(host)
 }
 
 pub(super) fn vpn_sealed_expected(host: &dyn HostCtx) -> bool {

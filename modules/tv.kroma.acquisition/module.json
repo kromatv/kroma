@@ -3,23 +3,33 @@
   "schemaVersion": 2,
   "id": "tv.kroma.acquisition",
   "name": "Acquisition",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "The acquisition feature: interactive/manual release search, quality scoring, grab + import, and the automatic wanted-list pass. Rides on the Downloads engine and the indexers. Disable it to remove search/grab/auto and hide the settings page.",
   "engines": {
-    "server": ">=0.1.38"
+    "server": ">=0.1.39"
   },
   "dependencies": {
-    "tv.kroma.torrents": "^0.2.0"
+    "tv.kroma.torrents": "^0.3.0"
   },
-  "requires": [
+  "contributes": [
     {
-      "kind": "indexer-engine"
-    },
-    {
-      "kind": "download-client"
+      "point": "acquisition"
     }
   ],
-  "ports": ["acquisition-search"],
+  "consumes": [
+    {
+      "point": "tv.kroma.indexer/search"
+    },
+    {
+      "point": "tv.kroma.indexer/db"
+    },
+    {
+      "point": "tv.kroma.torrents/grab"
+    },
+    {
+      "point": "tv.kroma.torrents/db"
+    }
+  ],
   "storage": {
     "core": {
       "read": [

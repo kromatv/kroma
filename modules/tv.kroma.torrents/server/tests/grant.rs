@@ -135,8 +135,16 @@ fn the_client_configs_are_read_from_this_modules_own_database() {
         db::apply_migrations(&conn, kroma_torrent::db::MIGRATIONS).unwrap();
     }
     let dir = kroma_testing::temp_dir("torrents-clients-dir");
-    let manager =
-        kroma_torrent::DownloadManager::new(dir.path(), (*core).clone(), store.clone());
+    // No engine is resolved in this test: the host answers nothing, which is a
+    // server with no download-engine module installed.
+    let host: std::sync::Arc<dyn kroma_module_sdk::host::HostCtx> =
+        std::sync::Arc::new(kroma_module_sdk::host::testing::StubHost::new());
+    let manager = kroma_torrent::DownloadManager::new(
+        host,
+        dir.path(),
+        (*core).clone(),
+        store.clone(),
+    );
 
     // Seeding the embedded engine writes the module's own file. Without the
     // `rqbit` feature there is no embedded engine to seed, so the seed is a

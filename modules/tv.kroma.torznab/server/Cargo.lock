@@ -439,7 +439,6 @@ dependencies = [
  "kroma-module-macros",
  "kroma-module-manifest",
  "kroma-primitives",
- "kroma-scene",
  "serde",
  "serde_json",
  "tokio",
@@ -455,19 +454,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "kroma-scene"
-version = "0.1.0"
-dependencies = [
- "kroma-module-manifest",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "kroma-torznab"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
+ "kroma-module-host",
  "kroma-module-runtime",
  "kroma-module-sdk",
  "quick-xml",

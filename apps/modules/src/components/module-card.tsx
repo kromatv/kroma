@@ -113,9 +113,9 @@ export function ModuleCard({ module: m }: Readonly<{ module: ModuleEntry }>) {
             <Row gap={6} shrink={0}>
               <Badge tone="neutral">v{m.version}</Badge>
               {m.library ? <Badge tone="info">Library</Badge> : null}
-              {(m.provides ?? []).map((c) => (
-                <Badge key={`${c.kind}:${c.id}`} tone="success">
-                  {c.kind}
+              {(m.contributes ?? []).map((c: { point: string; id?: string | null }) => (
+                <Badge key={`${c.point}:${c.id ?? ''}`} tone="success">
+                  {c.point.split('/').pop()}
                 </Badge>
               ))}
             </Row>

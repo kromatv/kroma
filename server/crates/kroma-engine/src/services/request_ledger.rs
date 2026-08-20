@@ -176,7 +176,7 @@ fn season_episodes<S: HostStorage>(
 }
 
 fn tmdb_key<S: HostStorage>(state: &S) -> Result<String> {
-    state.tmdb_api_key().ok_or_else(|| anyhow!("TMDB is not configured"))
+    state.secret("tmdb").ok_or_else(|| anyhow!("TMDB is not configured"))
 }
 
 fn on_disk(conn: &db::PooledConn, req: &MediaRequest) -> Result<OnDisk> {

@@ -66,7 +66,7 @@ pub async fn get_naming<S: HostStorage + Clone + Send + Sync + 'static>(
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     require(&state, &user)?;
-    let tpl = NamingTemplates::from_host(&state);
+    let tpl = NamingTemplates::read(|k, d| state.setting_str(k, d));
     Ok(Json(NamingView { templates: view_of(&tpl), sample: organize::sample(&tpl) }).into_response())
 }
 

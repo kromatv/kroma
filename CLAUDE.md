@@ -65,9 +65,8 @@ bun run dev:web          # web alone (Vite proxies /api -> :4040)
 bun run dev:tizen        # :5174   Samsung   (arrow keys + Enter act as the remote)
 bun run dev:webos        # :5175   LG
 bun run dev:kit          # design-system workbench
-bun run server           # cargo run --features semantic-embeddings,whisper-metal
-bun run server:watch:cpu # whisper-local instead of metal (non-Apple)
-bun run server:watch:lexical  # no ML features at all, fastest rebuild
+bun run server           # cargo run  (no feature flags: the ML backends are the
+                         # whisper and vector sidecars' own build choice)
 ```
 
 With no media configured the server seeds demo titles. Point it at real files with
@@ -114,8 +113,11 @@ server/
     kroma-engine      infra + services + state + model, the business logic
     kroma-http kroma-i18n kroma-push
     kroma-module-*    the module host: kernel, manifest, macros, sdk, runtime,
-                      host, supervisor, port-bridge, modules-generated
+                      host, supervisor, modules-generated. It carries the
+                      MECHANISM and never the meaning: nothing here names a
+                      module's domain (see docs/module-plugin-model.md)
 modules/<id>/       NOT in this workspace, see below
+modules/lib/        shared Rust libraries, not modules: naming (and scene, in its own dir)
 ```
 
 `api/` translates HTTP↔services and holds no business logic; `main.rs` and the
@@ -128,6 +130,21 @@ KROMA's core is playback + catalog; everything else (downloads, indexers,
 acquisition, VPN, whisper, vector, mDNS, remote, scene) is a **module** with a
 reverse-DNS id like `tv.kroma.torrents`.
 
+No module is a dependency of the server binary, and no crate under `server/`
+names a module's domain in a type, trait or function. A module reaches a peer by
+asking the host which modules answer a POINT name and speaking JSON both sides
+declare themselves; each side owns its structs, because the two ends ship on
+separate tags.
+
+A point is named by whoever defines it: a module writes `definesPoints` for what
+it invents (`<its id>/<local name>`), `contributes` for what it answers, and
+`consumes` for what it calls. The three the CORE calls are bare — `acquisition`,
+`transcriber`, `embedder` — because the core has no manifest to define one in and
+nothing else may. See [`docs/module-plugin-model.md`](docs/module-plugin-model.md)
+for the model and what is still missing from it, and
+[`modules/README.md`](modules/README.md#calling-another-module) for how to write
+one end.
+
 `modules/roster.yaml` (the compile-time roster) is **empty on purpose**: this is
 the zero-module base build. Every first-party module ships as an installable
 `.kmod` (a zstd bundle of `module.json` + a native `module` binary + icon + `fe/`).
@@ -139,8 +156,7 @@ capability**, not something every sidecar gets: a module with no `storage` in it
 `module.json` does not link SQLite at all, and one that has it gets its own file
 plus whatever slice of the core database it declared, enforced per connection by
 SQLite's authorizer. See [`docs/modules-as-kmod.md`](docs/modules-as-kmod.md) and
-[`modules/README.md`](modules/README.md#storage). The former also tracks the
-remaining cross-module port conversions.
+[`modules/README.md`](modules/README.md#storage).
 
 Modules release **independently of the server**, each on its own tag
 `<module-id>@<version>`, from `.github/workflows/modules.yml`. So **bump

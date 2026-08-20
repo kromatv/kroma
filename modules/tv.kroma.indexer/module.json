@@ -3,20 +3,55 @@
   "schemaVersion": 2,
   "id": "tv.kroma.indexer",
   "name": "Indexers",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Native Cardigann indexer engine: searches trackers from community YAML definitions, no external Torznab aggregator.",
   "engines": {
-    "server": ">=0.1.38"
+    "server": ">=0.1.39"
   },
-  "provides": [
+  "definesPoints": [
     {
-      "kind": "indexer-engine",
+      "name": "engine",
+      "methods": ["caps", "search"]
+    },
+    {
+      "name": "search",
+      "methods": ["search", "resolve-download"]
+    },
+    {
+      "name": "db",
+      "methods": ["list", "enabled", "get", "note-result"]
+    },
+    {
+      "name": "torrent-fetch",
+      "methods": ["fetch"]
+    }
+  ],
+  "contributes": [
+    {
+      "point": "tv.kroma.indexer/engine",
       "id": "builtin",
       "label": "indexers.builtin",
       "flow": "definition"
+    },
+    {
+      "point": "tv.kroma.indexer/search"
+    },
+    {
+      "point": "tv.kroma.indexer/db"
+    },
+    {
+      "point": "tv.kroma.indexer/torrent-fetch"
     }
   ],
-  "ports": ["indexer-db", "indexer-search", "torrent-fetch"],
+  "consumes": [
+    {
+      "point": "tv.kroma.indexer/engine"
+    },
+    {
+      "point": "tv.kroma.vpn/proxy",
+      "optional": true
+    }
+  ],
   "storage": {
     "adopt": ["indexers"]
   }

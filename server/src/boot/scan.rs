@@ -46,6 +46,12 @@ pub fn plan(
     config: &kroma_config::Config,
     settings: &services::settings::Settings,
 ) -> anyhow::Result<Plan> {
+    // Written before the definitions are read, because with nothing configured
+    // the definitions ARE the demo library and a scan of folders that do not
+    // exist yet would find nothing.
+    if demo_media_wanted(config, settings) {
+        services::demo::media::ensure(&config.data_dir);
+    }
     let library_defs = services::settings::library_defs(settings, config);
     let has_folders = library_defs.iter().any(|d| !d.folders.is_empty());
     let media_dirs = config.media_dirs.len();
@@ -58,6 +64,21 @@ pub fn plan(
         services::scan::Scanned::Applied(data) => Plan::Applied(data),
         services::scan::Scanned::MountOffline => Plan::Offline,
     })
+}
+
+// Only for a server with no library of its own: nothing configured, nothing
+// persisted, and the operator has not turned it off (`KROMA_DEMO_MEDIA=0`).
+fn demo_media_wanted(
+    config: &kroma_config::Config,
+    settings: &services::settings::Settings,
+) -> bool {
+    if !config.demo_media {
+        return false;
+    }
+    config.media_dirs.is_empty()
+        && config.movies_dirs.is_empty()
+        && config.series_dirs.is_empty()
+        && !matches!(settings.get("libraries"), serde_json::Value::Array(_))
 }
 
 // Phase 1: walk + stat only, no ffprobe; codecs/duration/HDR fill in later.
@@ -160,4 +181,63 @@ fn spawn_startup_scan(
         state.events.publish(ServerEvent::ScanCompleted { items, shows, libraries });
         state.events.publish(ServerEvent::LibraryUpdated);
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn cfg() -> kroma_config::Config {
+        kroma_config::Config { demo_media: true, ..Default::default() }
+    }
+
+    fn settings() -> (kroma_db::testing::TempPool, services::settings::Settings) {
+        let pool = kroma_db::testing::temp_pool("boot-demo");
+        let settings = services::settings::Settings::load(&pool);
+        (pool, settings)
+    }
+
+    #[test]
+    fn a_server_with_nothing_configured_writes_the_demo_library() {
+        let (_pool, s) = settings();
+
+        assert!(demo_media_wanted(&cfg(), &s));
+    }
+
+    #[test]
+    fn a_configured_root_of_any_kind_means_the_operator_has_a_library() {
+        let (_pool, s) = settings();
+        let dir = std::path::PathBuf::from("/media");
+        for c in [
+            kroma_config::Config { media_dirs: vec![dir.clone()], ..cfg() },
+            kroma_config::Config { movies_dirs: vec![dir.clone()], ..cfg() },
+            kroma_config::Config { series_dirs: vec![dir], ..cfg() },
+        ] {
+            assert!(!demo_media_wanted(&c, &s));
+        }
+    }
+
+    #[test]
+    fn libraries_defined_in_settings_are_the_operators_too() {
+        // Even an EMPTY list: it means they went to the Libraries page and left
+        // it empty, which is a decision, not an unconfigured server.
+        let (pool, s) = settings();
+        s.set_patch(
+            &pool,
+            std::collections::BTreeMap::from([(
+                "libraries".to_string(),
+                serde_json::json!([]),
+            )]),
+        );
+
+        assert!(!demo_media_wanted(&cfg(), &s));
+    }
+
+    #[test]
+    fn the_operator_can_turn_the_written_demo_off() {
+        let (_pool, s) = settings();
+        let off = kroma_config::Config { demo_media: false, ..cfg() };
+
+        assert!(!demo_media_wanted(&off, &s));
+    }
 }

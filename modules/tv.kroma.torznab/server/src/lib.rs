@@ -7,11 +7,9 @@
 //! The public surface is stable from day one; the transport + XML parsing land
 //! with the indexer milestone.
 
-// The Torznab types now live in the SDK ports module (kroma_module_sdk::ports) (so indexer / acquisition use
-// them without depending on this crate); re-exported here for this crate's fns.
-pub use kroma_module_sdk::ports::{
-    Caps, IndexerEndpoint, Query, Release, CAT_MOVIES, CAT_TV,
-};
+pub mod port;
+pub mod types;
+pub use types::{Caps, IndexerEndpoint, Query, Release, CAT_MOVIES, CAT_TV};
 
 mod xml;
 
@@ -522,8 +520,7 @@ mod tests {
     }
 
     #[test]
-    fn the_registered_port_is_the_same_engine_behind_the_trait() {
-        use kroma_module_sdk::ports::TorznabPort;
+    fn caps_then_search_is_one_probe_and_one_query() {
         let jackett = FakeJackett::routed(|q| {
             if q.contains("t=caps") {
                 (200, CAPS_XML.to_string())
@@ -531,13 +528,12 @@ mod tests {
                 (200, ONE_ITEM.to_string())
             }
         });
-        let port: &dyn TorznabPort = &TorznabEngine;
 
-        let caps = port.caps(&jackett.endpoint()).unwrap();
+        let caps = caps(&jackett.endpoint()).unwrap();
         assert_eq!(caps.server_title.as_deref(), Some("Jackett"));
         assert!(caps.search_tmdb && caps.search_imdb);
 
-        let releases = port.search(&jackett.endpoint(), &movie_query(), &caps).unwrap();
+        let releases = search(&jackett.endpoint(), &movie_query(), &caps).unwrap();
         assert_eq!(releases.len(), 1);
         assert_eq!(releases[0].title, "The.Matrix.1999.1080p");
         assert!(jackett.queries()[1].contains("tmdbid=603"), "{}", jackett.queries()[1]);
@@ -546,22 +542,3 @@ mod tests {
 
 pub mod module;
 pub use module::MODULE;
-
-/// The Torznab port implementation: a stateless engine the composition root
-/// registers so consumer modules resolve `kroma_module_sdk::ports::TorznabPort`.
-pub struct TorznabEngine;
-
-impl kroma_module_sdk::ports::TorznabPort for TorznabEngine {
-    fn caps(&self, endpoint: &IndexerEndpoint) -> anyhow::Result<Caps> {
-        caps(endpoint)
-    }
-
-    fn search(
-        &self,
-        endpoint: &IndexerEndpoint,
-        query: &Query,
-        caps: &Caps,
-    ) -> anyhow::Result<Vec<Release>> {
-        search(endpoint, query, caps)
-    }
-}

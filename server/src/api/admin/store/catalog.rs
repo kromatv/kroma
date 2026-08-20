@@ -42,11 +42,12 @@ pub struct CatalogModule {
     pub dependencies: Vec<(String, Option<String>)>,
     // Same shape; offered as an opt-in at install time, never auto-pulled.
     pub optional_dependencies: Vec<(String, Option<String>)>,
-    // `(kind, id)` capabilities this module provides (e.g. download-client).
-    pub provides: Vec<(String, String)>,
+    // `(point, instance)` this module answers. The instance is absent for a
+    // point that takes one answer.
+    pub contributes: Vec<(String, Option<String>)>,
     // `(kind, optional provider id)` capabilities it needs SOMEONE to provide;
     // the install planner suggests providers for the unsatisfied ones.
-    pub requires: Vec<(String, Option<String>)>,
+    pub consumes: Vec<(String, Option<String>)>,
     pub artifacts: Vec<Artifact>,
 }
 
@@ -106,34 +107,8 @@ fn parse_module(m: &Value) -> Option<CatalogModule> {
         .unwrap_or_default();
     let dependencies = parse_deps(m, "dependencies");
     let optional_dependencies = parse_deps(m, "optionalDependencies");
-    let provides = m
-        .get("provides")
-        .and_then(Value::as_array)
-        .map(|caps| {
-            caps.iter()
-                .filter_map(|c| {
-                    Some((
-                        c.get("kind")?.as_str()?.to_string(),
-                        c.get("id")?.as_str()?.to_string(),
-                    ))
-                })
-                .collect()
-        })
-        .unwrap_or_default();
-    let requires = m
-        .get("requires")
-        .and_then(Value::as_array)
-        .map(|reqs| {
-            reqs.iter()
-                .filter_map(|r| {
-                    Some((
-                        r.get("kind")?.as_str()?.to_string(),
-                        r.get("id").and_then(Value::as_str).map(str::to_string),
-                    ))
-                })
-                .collect()
-        })
-        .unwrap_or_default();
+    let contributes = parse_points(m, "contributes");
+    let consumes = parse_points(m, "consumes");
     // Only an inline data image of a sane size may reach the admin page's
     // <img>; anything else from a third-party catalog is dropped.
     let icon = m
@@ -160,10 +135,29 @@ fn parse_module(m: &Value) -> Option<CatalogModule> {
         icon,
         dependencies,
         optional_dependencies,
-        provides,
-        requires,
+        contributes,
+        consumes,
         artifacts,
     })
+}
+
+// `contributes` and `consumes` are the same shape on the wire: a point, and an
+// optional instance. An entry naming no point is not addressable and is dropped
+// rather than guessed at.
+fn parse_points(m: &Value, key: &str) -> Vec<(String, Option<String>)> {
+    m.get(key)
+        .and_then(Value::as_array)
+        .map(|list| {
+            list.iter()
+                .filter_map(|e| {
+                    Some((
+                        e.get("point")?.as_str()?.to_string(),
+                        e.get("id").and_then(Value::as_str).map(str::to_string),
+                    ))
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 // A `{ "<id>": "<range>" }` dependency map; `"*"`/blank ranges normalize away.
@@ -234,8 +228,8 @@ fn dep_map(deps: &[(String, Option<String>)]) -> Value {
     )
 }
 
-fn cap_rows<I: serde::Serialize>(caps: &[(String, I)]) -> Vec<Value> {
-    caps.iter().map(|(kind, id)| json!({ "kind": kind, "id": id })).collect()
+fn point_rows(points: &[(String, Option<String>)]) -> Vec<Value> {
+    points.iter().map(|(point, id)| json!({ "point": point, "id": id })).collect()
 }
 pub fn compat_verdict(m: &CatalogModule) -> (bool, Option<String>) {
     // Refused at unpack anyway (see the supervisor's install gate); said here so
@@ -285,8 +279,8 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
                 "engines": m.engines,
                 "dependencies": dep_map(&m.dependencies),
                 "optionalDependencies": dep_map(&m.optional_dependencies),
-                "provides": cap_rows(&m.provides),
-                "requires": cap_rows(&m.requires),
+                "contributes": point_rows(&m.contributes),
+                "consumes": point_rows(&m.consumes),
                 "target": artifact.and_then(|a| a.target.clone()),
                 "url": artifact.map(|a| a.url.clone()),
                 "size": artifact.and_then(|a| a.size),
@@ -326,8 +320,8 @@ pub(super) fn test_module(id: &str, version: &str) -> CatalogModule {
         icon: None,
         dependencies: Vec::new(),
         optional_dependencies: Vec::new(),
-        provides: Vec::new(),
-        requires: Vec::new(),
+        contributes: Vec::new(),
+        consumes: Vec::new(),
         artifacts: Vec::new(),
     }
 }
@@ -434,8 +428,8 @@ mod tests {
                  "engines": { "server": ">=0.1.4" }, "library": false,
                  "dependencies": { "c.d": "^0.1.0", "e.f": "*" },
                  "optionalDependencies": { "g.h": "^0.2.0" },
-                 "provides": [{ "kind": "download-client", "id": "qbittorrent", "label": "qBittorrent" }],
-                 "requires": [{ "kind": "indexer-engine" }, { "kind": "download-client", "id": "rqbit" }],
+                 "contributes": [{ "point": "tv.kroma.torrents/download-client", "id": "qbittorrent", "label": "qBittorrent" }],
+                 "consumes": [{ "point": "tv.kroma.indexer/search" }, { "point": "tv.kroma.torrents/download-client", "id": "rqbit" }],
                  "artifacts": [{ "target": "x86_64-unknown-linux-musl",
                                  "url": "https://x/a.b-x86_64-unknown-linux-musl.kmod",
                                  "size": 5, "sha256": "ab" }] }"#,
@@ -451,12 +445,21 @@ mod tests {
             vec![("c.d".to_string(), Some("^0.1.0".to_string())), ("e.f".to_string(), None)]
         );
         assert_eq!(m.optional_dependencies, vec![("g.h".to_string(), Some("^0.2.0".to_string()))]);
-        assert_eq!(m.provides, vec![("download-client".to_string(), "qbittorrent".to_string())]);
         assert_eq!(
-            m.requires,
+            m.contributes,
+            vec![(
+                "tv.kroma.torrents/download-client".to_string(),
+                Some("qbittorrent".to_string())
+            )]
+        );
+        assert_eq!(
+            m.consumes,
             vec![
-                ("indexer-engine".to_string(), None),
-                ("download-client".to_string(), Some("rqbit".to_string())),
+                ("tv.kroma.indexer/search".to_string(), None),
+                (
+                    "tv.kroma.torrents/download-client".to_string(),
+                    Some("rqbit".to_string())
+                ),
             ]
         );
         assert_eq!(m.artifacts.len(), 1);

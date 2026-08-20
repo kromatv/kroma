@@ -157,26 +157,25 @@ generic `ServerModule<S: HostCtx>` behind `RemoteHost`.
 1. ~~**Native install path**~~ shipped: `/api/admin/store/install` (upload) and
    the Store's install-by-id both unpack a native `.kmod` under
    `<data>/modules/<id>/` via the supervisor and spawn it.
-2. **The coupled cluster**: `torrents`, `acquisition`, `indexer`, `torznab`,
-   `vpn`, and the two engines are wired by **9 cross-module ports**. Out-of-process
-   these become HTTP: the provider exposes `/_port/<name>/<method>`, the consumer
-   resolves a client proxy. Boundary types need serde derives. Hard cases:
-   - `DownloadClientHost::register_engine(fn(&mut Registry))` is a raw **function
-     pointer**, so the engine-plugin model must change to expose the `DownloadClient`
-     trait itself as the RPC surface.
-   - `AddTorrentReq`/`DownloadClientCtx` carry borrowed bytes + `Arc<dyn Any>`
-     (the librqbit handle), so they need owned, serde mirrors.
-   - the `ports/naming` engine is a **shared compile-time library** (torrents +
-     acquisition), so it stays vendored into each process.
-3. **Core → module direct calls**: `api/requests.rs`, `discover.rs`,
-   `online_subs.rs` call module functions in-process (active downloads, transcribe,
-   interactive search); these become proxied/port calls.
-4. **Zero-module base build**: `roster.yaml` and the generated aggregator are
-   empty, and modules now live at `modules/<id>`, each its own cargo workspace
-   outside `server/`. Three are still linked into the binary and are what is
-   left of this item: `kroma-scene` (a pure library the SDK re-exports) and
-   `kroma-whisper` / `kroma-vector` (behind the `whisper-*` and
-   `semantic-embeddings` features).
+2. ~~**The coupled cluster**~~ shipped: every one of the nine cross-module ports
+   is HTTP now, provider at `/_port/<point>/<method>` and consumer resolving by
+   point name. Each side declares the JSON it reads or writes, so no crate sits
+   between two modules and none of it is in `server/`. The engine-plugin model
+   changed as this item predicted: the function pointer and the `Arc<dyn Any>`
+   handle are gone, and qBittorrent and Transmission are sidecars answering
+   `tv.kroma.torrents/client` under their own kind. The naming engine stayed a compile-time
+   library, in `modules/lib/`. See
+   [`module-plugin-model.md`](module-plugin-model.md).
+3. ~~**Core → module direct calls**~~ shipped: `api/requests/acquisition.rs`
+   forwards opaque JSON to whatever answers a point, and `boot/embedder.rs` /
+   `boot/transcriber.rs` resolve theirs by name. No crate under `server/` names a module.
+4. ~~**Zero-module base build**~~ shipped: `roster.yaml` and the generated
+   aggregator are empty, modules live at `modules/<id>` as their own cargo
+   workspaces outside `server/`, and no module is a dependency of the binary any
+   more. `kroma-scene` became a library its consumers link; `kroma-whisper` and
+   `kroma-vector` were only there so the `whisper-*` / `semantic-embeddings`
+   feature flags could forward into them, which compiled candle into the binary
+   for code no file under `src/` reached.
 5. **More per-platform binaries**: the matrix packs `x86_64-unknown-linux-musl`
    and `aarch64-unknown-linux-musl` (both static: between them they cover the
    .spk, both Docker arches and any Linux host) plus `aarch64-apple-darwin`; the

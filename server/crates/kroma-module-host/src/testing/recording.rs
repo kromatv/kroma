@@ -99,14 +99,14 @@ impl<H: HostCtx> HostCtx for Recording<H> {
     fn library_folders(&self) -> Vec<LibraryFolders> {
         self.inner.library_folders()
     }
-    fn tmdb_api_key(&self) -> Option<String> {
-        self.inner.tmdb_api_key()
+    fn secret(&self, name: &str) -> Option<String> {
+        self.inner.secret(name)
     }
     fn metadata_language(&self) -> String {
         self.inner.metadata_language()
     }
-    fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
-        self.inner.port_endpoint(port)
+    fn contributions(&self, point: &str) -> Vec<crate::Contribution> {
+        self.inner.contributions(point)
     }
 
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
@@ -128,7 +128,7 @@ mod tests {
         let host = Recording::new(inner);
 
         // Forwarded, so the test still sees the real host's answers.
-        assert_eq!(host.tmdb_api_key().as_deref(), Some("k"));
+        assert_eq!(host.secret("tmdb").as_deref(), Some("k"));
         assert_eq!(host.metadata_language(), "fr-FR");
         assert_eq!(host.setting_str("k", "fallback"), "fallback");
         assert!(host.require(&user(), Permission::LibraryManage).is_ok());

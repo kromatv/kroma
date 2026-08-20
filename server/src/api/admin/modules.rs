@@ -31,7 +31,7 @@ pub fn routes() -> Router<SharedState> {
 #[serde(rename_all = "camelCase")]
 struct AdminModule {
     #[serde(flatten)]
-    manifest: kroma_module_sdk::ModuleManifest,
+    manifest: kroma_module_manifest::ModuleManifest,
     enabled: bool,
     config_values: BTreeMap<String, Value>,
     removable: bool,
@@ -45,6 +45,11 @@ struct AdminModule {
     /// code is co-linked into another sidecar: it is never "running", and
     /// reporting it as stopped would be a false alarm.
     has_sidecar: bool,
+    /// Points this module `consumes` that no ENABLED module answers, as `point` or
+    /// `point#id`. A module with entries here is installed, running and inert,
+    /// which is otherwise silent: it answers nothing useful and nothing says why.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    unmet: Vec<String>,
 }
 
 async fn list_modules(
@@ -56,10 +61,13 @@ async fn list_modules(
     // Runtime-installed `.kmod` modules are removable; compile-time ones are not.
     let removable_ids: std::collections::HashSet<String> =
         kroma_module_kernel::installed_ids(&state).into_iter().collect();
-    let mods: Vec<AdminModule> = kroma_module_kernel::manifests(&state)
+    let all = kroma_module_kernel::manifests(&state);
+    let answered = crate::api::modules::answered_by(&all, &state);
+    let mods: Vec<AdminModule> = all
         .into_iter()
         .map(|m| {
             let enabled = kroma_engine::modules::module_enabled(&state.settings, &m.id);
+            let unmet = crate::api::modules::unmet_of(&m, &answered);
             let removable = removable_ids.contains(&m.id);
             let stored = kroma_engine::modules::module_config(&state.settings, &m.id);
             let config_values = m
@@ -83,6 +91,7 @@ async fn list_modules(
                 origin,
                 running,
                 has_sidecar,
+                unmet,
             }
         })
         .collect();

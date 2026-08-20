@@ -18,6 +18,7 @@ mod downloads_overlay;
 mod extract;
 mod handoff;
 mod home;
+pub mod host_events;
 mod host_jobs;
 mod images;
 mod invites;
@@ -36,6 +37,7 @@ mod search;
 pub mod online_subs;
 mod passkeys;
 mod plugin;
+mod point;
 mod stream;
 mod suggest;
 mod themes;
@@ -145,7 +147,12 @@ async fn module_proxy(
 /// Build the application router: `/api` route groups (public + session-gated),
 /// the module reverse proxy and host callbacks, static module/SPA assets, then
 /// CORS, compression and tracing layers.
-pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
+pub fn router(
+    state: SharedState,
+    supervisor: Arc<Supervisor>,
+    subscriptions: Arc<host_events::Subscriptions>,
+) -> Router {
+
     // Public endpoints reachable before (or without) a session: the auth
     // handshake + roster + invites, uploaded avatars/art, liveness, and the media
     // byte streams (a `<video>`/hls element can't attach a bearer these carry no
@@ -205,6 +212,9 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         // A sidecar registers its scheduled jobs with the core JobManager here, so
         // they appear in admin Tâches like in-core jobs (same host-token guard).
         .merge(host_jobs::routes(supervisor.host_token().to_string()))
+        // And the topics it wants delivered, so it can react to what other
+        // modules and the core publish rather than only being called.
+        .merge(host_events::routes(supervisor.host_token().to_string(), subscriptions.clone()))
         .route("/module/{id}/{*rest}", axum::routing::any(module_proxy))
         .nest("/admin", admin::routes(state.clone()))
         .layer(Extension(supervisor));

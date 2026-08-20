@@ -10,9 +10,32 @@ export const Integrity = z.string().regex(/^sha256-[A-Za-z0-9+/]{43}=$/, 'not an
 // Loose, not stripped: a provider entry carries admin UI metadata beyond
 // `kind`/`id` (`label`, `flow`, `fields`) that drives the "add engine" picker,
 // and parsing must carry it through rather than quietly drop it.
-export const Capability = z.object({ kind: z.string(), id: z.string() }).catchall(z.json());
-export const CapabilityReq = z
-  .object({ kind: z.string(), id: z.string().nullish() })
+// A point a module defines: the local name, the major it serves, and the methods
+// a contributor is expected to answer.
+export const PointDef = z
+  .object({
+    name: z.string(),
+    version: z.number().int().positive().nullish(),
+    methods: z.array(z.string()).nullish(),
+  })
+  .catchall(z.json());
+// A contribution carries the UI metadata beyond `point`/`id` (`label`, `flow`,
+// `fields`) that drives the "add engine" picker, and parsing must carry it
+// through rather than quietly drop it.
+export const Contribution = z
+  .object({
+    point: z.string(),
+    version: z.number().int().positive().nullish(),
+    id: z.string().nullish(),
+  })
+  .catchall(z.json());
+export const PointReq = z
+  .object({
+    point: z.string(),
+    version: z.string().nullish(),
+    id: z.string().nullish(),
+    optional: z.boolean().nullish(),
+  })
   .catchall(z.json());
 
 export const RegistryArtifact = z.object({
@@ -39,8 +62,9 @@ export const RegistryVersion = z.object({
   library: z.boolean().nullish(),
   dependencies: DependencyMap.nullish(),
   optionalDependencies: DependencyMap.nullish(),
-  provides: z.array(Capability).nullish(),
-  requires: z.array(CapabilityReq).nullish(),
+  definesPoints: z.array(PointDef).nullish(),
+  contributes: z.array(Contribution).nullish(),
+  consumes: z.array(PointReq).nullish(),
   artifacts: z.array(RegistryArtifact),
 });
 export type RegistryVersion = z.infer<typeof RegistryVersion>;

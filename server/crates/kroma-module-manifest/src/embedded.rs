@@ -58,9 +58,9 @@ impl Module for EmbeddedModule {
         serde_json::from_str(self.manifest_json).expect("valid embedded module.json")
     }
 
-    // Deliberately no `register` override: `ModuleRegistration::provide` records
-    // only `(kind, id)`, so re-providing would drop the `label` / `fields` /
-    // `flow` the manifest declared.
+    // Deliberately no `register` override: `ModuleRegistration::contribute`
+    // records only `(point, id)`, so re-declaring would drop the `label` /
+    // `fields` / `flow` the manifest declared.
 
     fn icon(&self) -> Option<ModuleIcon> {
         self.icon.map(|i| ModuleIcon { content_type: i.content_type, bytes: i.bytes })
@@ -73,13 +73,13 @@ mod tests {
     use crate::Registry;
 
     #[test]
-    fn embedded_provides_keep_ui_metadata() {
+    fn embedded_contributions_keep_ui_metadata() {
         const MANIFEST: &str = r#"{
             "id": "tv.kroma.engine.example",
             "name": "Example engine",
             "version": "0.1.0",
-            "provides": [{
-                "kind": "download-client",
+            "contributes": [{
+                "point": "tv.kroma.torrents/download-client",
                 "id": "example",
                 "label": "Example",
                 "fields": [
@@ -91,11 +91,11 @@ mod tests {
         let mut reg = Registry::new();
         reg.register(Box::new(EmbeddedModule::iconless(MANIFEST)));
         let m = reg.manifests().into_iter().find(|m| m.id == "tv.kroma.engine.example").unwrap();
-        let cap = &m.provides[0];
-        assert_eq!(cap.kind, "download-client");
-        assert_eq!(cap.label.as_deref(), Some("Example"));
-        assert_eq!(cap.fields.len(), 2);
-        assert!(cap.fields[1].secret, "the secret flag must survive registration");
+        let contribution = &m.contributes[0];
+        assert_eq!(contribution.point, "tv.kroma.torrents/download-client");
+        assert_eq!(contribution.label.as_deref(), Some("Example"));
+        assert_eq!(contribution.fields.len(), 2);
+        assert!(contribution.fields[1].secret, "the secret flag must survive registration");
     }
 
     const BARE: &str = r#"{ "id": "tv.kroma.example", "name": "Example", "version": "0.1.0" }"#;

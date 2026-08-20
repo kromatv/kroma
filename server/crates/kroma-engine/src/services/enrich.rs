@@ -11,7 +11,7 @@ use tracing::{info, warn};
 
 use crate::services::activity::{self, Shared as Activity};
 use crate::db::{self, Pool};
-use crate::ports::Embedder;
+use crate::point::Point;
 use crate::infra::events::{Bus, ServerEvent};
 use crate::infra::image;
 use crate::infra::metadata::{self, Cache, Target};
@@ -45,7 +45,7 @@ struct Engine {
     data_dir: PathBuf,
     theme_songs: bool,
     bus: Bus,
-    embedder: Arc<dyn Embedder>,
+    embedder: Point,
 }
 
 #[derive(Default)]
@@ -363,7 +363,7 @@ fn process_job(eng: &Engine, counters: &Counters, total: usize, activity: Option
     // cached while the feature was on.
     let meta = if eng.theme_songs { theme::localize(&eng.data_dir, meta) } else { meta };
     let doc = kroma_domain::build_doc(&job.title, job.year, &meta);
-    let vector = eng.embedder.embed(&doc);
+    let vector = crate::services::embeddings::embed(&eng.embedder, &doc);
     let write = if job.is_show {
         db::set_show_metadata(&eng.pool, &job.id, &meta)
     } else {

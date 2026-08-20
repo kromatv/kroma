@@ -47,7 +47,6 @@ impl Transmission {
 mod tests {
     use super::*;
     use crate::fake_transmission::{FakeTransmission, Reply};
-    use kroma_module_sdk::ports::DownloadClient;
 
     #[test]
     fn test_reports_the_server_version() {

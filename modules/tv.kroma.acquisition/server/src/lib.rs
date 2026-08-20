@@ -4,10 +4,9 @@
 //! search / grab / auto feature.
 //!
 //! SDK-only: acquisition names no sibling crate. It reaches the Downloads module
-//! (grab / ledger) through [`DownloadGrabPort`](kroma_module_sdk::ports::DownloadGrabPort)
-//! + [`DownloadDbPort`](kroma_module_sdk::ports::DownloadDbPort), the Indexers
-//! module through [`IndexerSearchPort`](kroma_module_sdk::ports::IndexerSearchPort)
-//! + [`IndexerDbPort`](kroma_module_sdk::ports::IndexerDbPort), all resolved at
+//! (grab / ledger) through the `download-grab` and `download-db` points, and the
+//! Indexers module through `indexer-search` and `indexer-db` (see [`peers`]),
+//! all resolved at
 //! runtime through the host port registry. The coupling stays one-way (those
 //! modules never call acquisition), so there is no cycle.
 
@@ -20,6 +19,7 @@ pub mod auto;
 pub mod dtos;
 pub mod import;
 pub mod jobs;
+pub mod peers;
 pub mod routes;
 pub mod search;
 mod serve;
@@ -28,10 +28,10 @@ pub use dtos::*;
 pub use serve::acqsearch_routes;
 
 use kroma_module_sdk::host::HostStorage;
-use kroma_module_sdk::scene::{Profile, Res};
+use kroma_scene::{Profile, Res};
 
 use kroma_module_sdk::engine::services::jobs::now_ms;
-use kroma_module_sdk::ports::IndexerRow;
+use peers::indexers::IndexerRef;
 
 const GB: u64 = 1_073_741_824;
 
@@ -42,39 +42,6 @@ pub const MODULE_ID: &str = "tv.kroma.acquisition";
 
 use kroma_module_sdk::EmbeddedModule;
 pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();
-
-/// Resolve the Downloads module's grab surface (grab / gate / activate / drop /
-/// list-files) from the host port registry. Acquisition reaches it only through
-/// the SDK port, so it never names the torrents crate.
-///
-/// Resolution is a live lookup, so this answers with an error whenever no module
-/// currently serves the contract (disabled, not installed, or restarting).
-pub(crate) fn downloads<S: HostStorage>(
-    state: &S,
-) -> anyhow::Result<std::sync::Arc<dyn kroma_module_sdk::ports::DownloadGrabPort>> {
-    kroma_module_sdk::ports::download_grab(state)
-        .ok_or_else(|| anyhow::anyhow!("downloads module unavailable"))
-}
-
-/// Resolve the downloads-ledger read/write port (completed rows + status flips)
-/// the import pass needs, through the SDK port registry. Fallible for the same
-/// reason as [`downloads`].
-pub(crate) fn download_db<S: HostStorage>(
-    state: &S,
-) -> anyhow::Result<std::sync::Arc<dyn kroma_module_sdk::ports::DownloadDbPort>> {
-    kroma_module_sdk::ports::download_db(state)
-        .ok_or_else(|| anyhow::anyhow!("downloads module unavailable"))
-}
-
-/// Resolve the Indexers module's data port. Unlike the download ports this one
-/// is optional at runtime (the module can be disabled), so it answers with an
-/// error the search surfaces rather than panicking.
-pub(crate) fn indexer_db<S: HostStorage>(
-    state: &S,
-) -> anyhow::Result<std::sync::Arc<dyn kroma_module_sdk::ports::IndexerDbPort>> {
-    kroma_module_sdk::ports::indexer_db(state)
-        .ok_or_else(|| anyhow::anyhow!("indexer module unavailable"))
-}
 
 /// Build the decision engine's profile from the admin settings.
 pub fn profile_from_settings<S: HostStorage>(state: &S) -> Profile {
@@ -105,31 +72,24 @@ pub fn profile_from_settings<S: HostStorage>(state: &S) -> Profile {
 
 /// Run one query against one indexer, whatever its kind, returning normalized
 /// releases. This is the single dispatch point the search pipelines call; the
-/// native-vs-Torznab dispatch + type conversions live behind the indexer's
-/// `IndexerSearchPort`, so acquisition never names the indexer/torznab crates.
+/// native-vs-Torznab dispatch lives behind the `indexer-search` point, so this
+/// module names neither engine.
 pub fn search_indexer<S: HostStorage>(
     state: &S,
-    row: &IndexerRow,
-    query: &kroma_module_sdk::ports::Query,
-) -> anyhow::Result<Vec<kroma_module_sdk::ports::Release>> {
-    let search =
-        kroma_module_sdk::ports::indexer_search(state)
-            .ok_or_else(|| anyhow::anyhow!("indexer module unavailable"))?;
-    let outcome = search.search(state, row, query, &row.categories)?;
+    indexer: &IndexerRef,
+    query: &peers::indexers::Query,
+) -> anyhow::Result<Vec<peers::indexers::Release>> {
+    let outcome = peers::indexers::search(state, &indexer.id, query)?;
     // A partial per-path error alongside real results must not flag the indexer
     // as broken.
     let note_ok = !outcome.releases.is_empty() || outcome.errors.is_empty();
-    if let Some(idx) =
-        kroma_module_sdk::ports::indexer_db(state)
-    {
-        let _ = idx.note_indexer_result(
-            state,
-            &row.id,
-            note_ok,
-            if note_ok { None } else { outcome.errors.first().map(String::as_str) },
-            now_ms(),
-        );
-    }
+    let _ = peers::indexers::note_result(
+        state,
+        &indexer.id,
+        note_ok,
+        if note_ok { None } else { outcome.errors.first().map(String::as_str) },
+        now_ms(),
+    );
     // Surface an all-error, no-result sweep as an error (so it reads as a broken
     // indexer, not "nothing found").
     if outcome.releases.is_empty() && !outcome.errors.is_empty() {
@@ -143,18 +103,13 @@ pub fn search_indexer<S: HostStorage>(
 /// direct link.
 pub fn resolve_builtin_download<S: HostStorage>(
     state: &S,
-    row: &IndexerRow,
+    indexer_id: &str,
     title: &str,
     details_url: Option<&str>,
     magnet_or_url: &str,
 ) -> anyhow::Result<String> {
-    let search =
-        kroma_module_sdk::ports::indexer_search(state)
-            .ok_or_else(|| anyhow::anyhow!("indexer module unavailable"))?;
-    Ok(match search.resolve_download(state, row, title, details_url, magnet_or_url)? {
-        kroma_module_sdk::ports::DownloadTarget::Magnet(m) => m,
-        kroma_module_sdk::ports::DownloadTarget::TorrentUrl(u) => u,
-    })
+    Ok(peers::indexers::resolve_download(state, indexer_id, title, details_url, magnet_or_url)?
+        .link())
 }
 
 /// The Acquisition module's backend behavior: serves the search / analyze / add

@@ -24,6 +24,12 @@ path = "src/bin/module.rs"
 # `storage` + `engine`: this module orchestrates the core's request /
 # wanted ledger, so it reaches both, within the grant module.json declares.
 kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage", "engine"] }
+# The two shared libraries, linked rather than reached over a point: naming
+# renders one path per imported file and the release parser scores every release
+# of every search, so a localhost round trip per call would be slower than the
+# code it replaced.
+kroma-naming = { path = "../../lib/naming" }
+kroma-scene = { path = "../../tv.kroma.scene/server" }
 # The `.kmod` binary: the out-of-process runtime + the cross-module port bridges
 # (client proxies to the Downloads + Indexer sidecars).
 kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime", features = ["storage"] }

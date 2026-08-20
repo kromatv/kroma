@@ -10,12 +10,13 @@ import type { ConfigField, Manifest } from '@kroma/registry';
 
 export type { ConfigField } from '@kroma/registry';
 
-/** One capability a backend module provides. `kind`+`id` are the interface and
- *  implementation; engine capabilities (download-client, indexer-engine) may also
- *  carry UI metadata so the admin's add-picker is data-driven. */
-export interface Capability {
-  kind: string;
-  id: string;
+/** One thing a backend module contributes: the `point` it answers, and the `id`
+ *  of this instance when the point takes several. A contribution the admin can
+ *  add an instance of also carries UI metadata, so the add-picker is
+ *  data-driven. */
+export interface Contribution {
+  point: string;
+  id?: string;
   label?: string;
   fields?: ConfigField[];
   flow?: string;
@@ -26,9 +27,9 @@ export interface Capability {
  *  setup ordering. */
 export type Dependencies = Record<string, string>;
 
-/** A capability dependency: satisfied by any module whose `provides` matches. */
-export interface CapabilityReq {
-  kind: string;
+/** A point a module calls: answered by any module whose `contributes` matches. */
+export interface PointReq {
+  point: string;
   id?: string;
 }
 
@@ -44,4 +45,9 @@ export type ModuleManifest = Manifest & {
   feRemote?: FeRemote;
   /** Whether the server currently has it enabled; runtime state, not manifest. */
   enabled?: boolean;
+  /** Points this module `consumes` that no enabled module answers, as `point` or
+   *  `point#id`. Absent when there are none. A module with entries here is
+   *  installed and INERT: it runs and answers nothing useful, which is otherwise
+   *  silent. */
+  unmet?: string[];
 };

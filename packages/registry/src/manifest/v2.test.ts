@@ -18,17 +18,28 @@ describe('Manifest', () => {
     expect(parsed.description).toBeNull();
   });
 
-  it('carries a provider entry whole, admin UI metadata included', () => {
+  it('carries a contribution whole, admin UI metadata included', () => {
     const parsed = Manifest.parse({
       ...base,
-      provides: [{ kind: 'download-client', id: 'qbittorrent', label: 'qBittorrent', fields: [] }],
+      contributes: [
+        {
+          point: 'tv.kroma.torrents/download-client',
+          id: 'qbittorrent',
+          label: 'qBittorrent',
+          fields: [],
+        },
+      ],
     });
     // Stripping these would silently break the "add engine" picker.
-    expect(parsed.provides?.[0]).toMatchObject({ label: 'qBittorrent', fields: [] });
+    expect(parsed.contributes?.[0]).toMatchObject({ label: 'qBittorrent', fields: [] });
   });
 
-  it('refuses a capability that is not one', () => {
-    expect(() => Manifest.parse({ ...base, provides: [{ id: 'no-kind' }] })).toThrow();
+  it('refuses a contribution that names no point', () => {
+    expect(() => Manifest.parse({ ...base, contributes: [{ id: 'no-point' }] })).toThrow();
+  });
+
+  it('refuses a need that names no point', () => {
+    expect(() => Manifest.parse({ ...base, consumes: [{ version: '^1' }] })).toThrow();
   });
 });
 
@@ -92,10 +103,14 @@ describe('the shape a real manifest declares', () => {
     library: false,
     dependencies: { 'tv.kroma.indexer': '^0.1.0' },
     optionalDependencies: { 'tv.kroma.vpn': '^0.1.0' },
-    provides: [{ kind: 'download-client', id: 'rqbit', label: 'rqbit' }],
-    requires: [{ kind: 'indexer-engine' }],
-    ports: ['download-grab', 'download-db'],
-    permissions: ['library.manage'],
+    definesPoints: [
+      { name: 'download-grab', version: 1, methods: ['grab', 'gate-open'] },
+      { name: 'download-client', version: 1 },
+    ],
+    contributes: [
+      { point: 'tv.kroma.torrents/download-client', version: 1, id: 'rqbit', label: 'rqbit' },
+    ],
+    consumes: [{ point: 'tv.kroma.indexer/search', version: '^1' }],
     config: [{ key: 'host', label: 'Host', type: 'string', placeholder: 'localhost' }],
     feRemote: { module: './Module' },
     storage: {

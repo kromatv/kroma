@@ -85,7 +85,9 @@ struct Inner {
     core_url: String,
     host_token: String,
     services: RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>,
-    tmdb: RwLock<Option<serde_json::Value>>,
+    // The metadata language, cached: it is one env-derived string, and every
+    // caller that renames a file asks for it.
+    language: RwLock<Option<String>>,
 }
 
 impl RemoteHost {
@@ -103,25 +105,11 @@ impl RemoteHost {
                 core_url: env.core_url.clone(),
                 host_token: env.host_token.clone(),
                 services: RwLock::new(HashMap::new()),
-                tmdb: RwLock::new(None),
+                language: RwLock::new(None),
             }),
         })
     }
 
-    fn tmdb_config(&self) -> serde_json::Value {
-        if let Some(v) = self.inner.tmdb.read().unwrap().clone() {
-            return v;
-        }
-        let v = self
-            .callback()
-            .get_json::<serde_json::Value>(&self.host_url("tmdb"))
-            .unwrap_or(serde_json::Value::Null);
-        // Only cache a real answer so a transient failure retries next call.
-        if !v.is_null() {
-            *self.inner.tmdb.write().unwrap() = Some(v.clone());
-        }
-        v
-    }
 
     pub fn module_id(&self) -> &str {
         &self.inner.module_id
@@ -136,14 +124,6 @@ impl RemoteHost {
             .write()
             .unwrap()
             .insert(TypeId::of::<T>(), service as Arc<dyn Any + Send + Sync>);
-    }
-
-    /// Register a cross-module PORT provider (a `dyn Trait` object), keyed like
-    /// [`kroma_module_host::port_service`] so consumers resolve it via
-    /// `resolve_port::<dyn Trait>(host)`.
-    pub fn register_port<P: ?Sized + Any + Send + Sync>(&self, port: Arc<P>) {
-        let (tid, val) = kroma_module_host::port_service(port);
-        self.inner.services.write().unwrap().insert(tid, val);
     }
 
     fn callback(&self) -> kroma_http::Fetch {
@@ -292,28 +272,41 @@ impl HostCtx for RemoteHost {
         self.callback().get_json(&self.host_url("libraries")).unwrap_or_default()
     }
 
-    fn tmdb_api_key(&self) -> Option<String> {
-        self.tmdb_config().get("key").and_then(|x| x.as_str().map(str::to_string))
+    fn secret(&self, name: &str) -> Option<String> {
+        self.callback()
+            .query("name", name)
+            .get_json::<Option<String>>(&self.host_url("secret"))
+            .ok()
+            .flatten()
     }
 
     fn metadata_language(&self) -> String {
-        self.tmdb_config()
-            .get("language")
-            .and_then(|x| x.as_str().map(str::to_string))
-            .unwrap_or_else(|| "en-US".to_string())
+        if let Some(v) = self.inner.language.read().unwrap().clone() {
+            return v;
+        }
+        let asked = self
+            .callback()
+            .get_json::<String>(&self.host_url("metadata-language"))
+            .ok()
+            .filter(|v| !v.is_empty());
+        // Only a real answer is cached, so a transient failure retries rather
+        // than pinning the fallback for the life of the process.
+        match asked {
+            Some(v) => {
+                *self.inner.language.write().unwrap() = Some(v.clone());
+                v
+            }
+            None => "en-US".to_string(),
+        }
     }
 
     // Asked of the core, which owns the supervisor: a sidecar cannot see which
     // of its peers is installed or running, and must not care.
-    fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
-        let v = self
-            .callback()
-            .query("port", port)
-            .get_json::<serde_json::Value>(&self.host_url("port"))
-            .ok()?;
-        let base = v.get("base")?.as_str()?.to_string();
-        let token = v.get("token")?.as_str()?.to_string();
-        Some((base, token))
+    fn contributions(&self, point: &str) -> Vec<kroma_module_host::Contribution> {
+        self.callback()
+            .query("point", point)
+            .get_json::<Vec<kroma_module_host::Contribution>>(&self.host_url("contributions"))
+            .unwrap_or_default()
     }
 
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
@@ -371,25 +364,17 @@ pub async fn serve(
     tracing::info!(module = %env.module_id, port = env.port, "module process starting");
 
     apply_module_migrations(&host, &modules)?;
+    // Shared from here on: the event delivery route dispatches to a module at
+    // request time, so the set has to outlive this function.
+    let modules = Arc::new(modules);
     let extra = wire(&host);
 
-    for module in &modules {
+    for module in modules.iter() {
         module.on_enable(host.clone()).await;
     }
 
-    // job_fns backs /_job/run/{key}; job_specs registers with the core scheduler.
-    let mut job_fns: HashMap<&'static str, JobFn> = HashMap::new();
-    let mut job_specs: Vec<JobSpec> = Vec::new();
-    for module in &modules {
-        for job in module.jobs() {
-            job_fns.insert(job.key, job.run);
-            job_specs.push(JobSpec {
-                key: job.key.to_string(),
-                category: job.category.to_string(),
-                schedule: job.schedule.map(str::to_string),
-            });
-        }
-    }
+    let (job_fns, job_specs) = collect_jobs(&modules);
+    let topics = wanted_topics(&modules);
 
     // `extra`'s `/_port/*` routes are ALSO reachable through the core reverse
     // proxy, which sits outside the session gate — without this guard an
@@ -405,13 +390,17 @@ pub async fn serve(
         ));
 
     let mut app = extra.route("/_health", axum::routing::get(|| async { "ok" }));
-    for module in &modules {
+    for module in modules.iter() {
         if let Some(routes) = module.admin_routes(&host) {
             app = app.merge(routes);
         }
     }
     if !job_fns.is_empty() {
         app = app.merge(job_router(job_fns, env.host_token.clone()));
+    }
+    if !topics.is_empty() {
+        let subscribers = Arc::new(Subscribers::new(modules.clone(), &topics));
+        app = app.merge(event_router(subscribers, env.host_token.clone()));
     }
     let shutdown_host = host.clone();
     let app = app.with_state(host);
@@ -420,17 +409,7 @@ pub async fn serve(
     let listener = tokio::net::TcpListener::bind(addr).await?;
     tracing::info!(%addr, "module listening");
 
-    // Registered only after the listener is bound, so a run the core fires
-    // immediately queues on the accept backlog rather than failing to connect.
-    // Best-effort: a failed registration just leaves the job absent until respawn.
-    if !job_specs.is_empty() {
-        let register_url = format!("{}/api/_host/register-job", env.core_url.trim_end_matches('/'));
-        let module_id = env.module_id.clone();
-        let host_token = env.host_token.clone();
-        tokio::task::spawn_blocking(move || {
-            register_jobs(&register_url, &module_id, &host_token, &job_specs);
-        });
-    }
+    announce_to_core(&env, job_specs, &topics);
 
     let module_id = env.module_id.clone();
     axum::serve(listener, app)
@@ -442,12 +421,69 @@ pub async fn serve(
             // outside this process (the remote module's `cloudflared` child)
             // must be released while we still have a process to release it from.
             tracing::info!(module = %module_id, "stopping: releasing module resources");
-            for module in &modules {
+            for module in modules.iter() {
                 module.on_disable(shutdown_host.clone()).await;
             }
         })
         .await?;
     Ok(())
+}
+
+// What this process serves and what it asks the core for, gathered before the
+// router is built. Kept out of [`serve`] because each is a loop over the modules
+// with its own rule, and `serve`'s own job is the order the parts come up in.
+fn collect_jobs(
+    modules: &[Box<dyn ServerModule<RemoteHost>>],
+) -> (HashMap<&'static str, JobFn>, Vec<JobSpec>) {
+    // job_fns backs /_job/run/{key}; job_specs registers with the core scheduler.
+    let mut job_fns: HashMap<&'static str, JobFn> = HashMap::new();
+    let mut job_specs: Vec<JobSpec> = Vec::new();
+    for job in modules.iter().flat_map(|module| module.jobs()) {
+        job_fns.insert(job.key, job.run);
+        job_specs.push(JobSpec {
+            key: job.key.to_string(),
+            category: job.category.to_string(),
+            schedule: job.schedule.map(str::to_string),
+        });
+    }
+    (job_fns, job_specs)
+}
+
+// Deduplicated: two modules in one process may both want a topic, and the core
+// should be told about it once.
+fn wanted_topics(modules: &[Box<dyn ServerModule<RemoteHost>>]) -> Vec<String> {
+    let mut seen: Vec<String> = Vec::new();
+    for topic in modules.iter().flat_map(|module| module.events()) {
+        if !seen.iter().any(|t| t == topic) {
+            seen.push(topic.to_string());
+        }
+    }
+    seen
+}
+
+// Jobs and event topics, announced only after the listener is bound, so a run the
+// core fires immediately queues on the accept backlog rather than failing to
+// connect. Best-effort: a failed registration leaves the job or the subscription
+// absent until respawn.
+fn announce_to_core(env: &Env, job_specs: Vec<JobSpec>, topics: &[String]) {
+    let host_url = |path: &str| format!("{}/api/_host/{path}", env.core_url.trim_end_matches('/'));
+    if !job_specs.is_empty() {
+        let url = host_url("register-job");
+        let module_id = env.module_id.clone();
+        let host_token = env.host_token.clone();
+        tokio::task::spawn_blocking(move || {
+            register_jobs(&url, &module_id, &host_token, &job_specs);
+        });
+    }
+    if !topics.is_empty() {
+        let url = host_url("register-events");
+        let module_id = env.module_id.clone();
+        let host_token = env.host_token.clone();
+        let topics = topics.to_vec();
+        tokio::task::spawn_blocking(move || {
+            register_events(&url, &module_id, &host_token, &topics);
+        });
+    }
 }
 
 // A module's `migrations()` run against its OWN database, never the shared one:
@@ -550,6 +586,80 @@ async fn run_job(
             tracing::error!(job = %key, elapsed_ms, error = %e, "job panicked");
             (StatusCode::INTERNAL_SERVER_ERROR, format!("job panicked: {e}")).into_response()
         }
+    }
+}
+
+// Which modules in this process asked for which topic. Held as trait objects
+// because delivery dispatches on the topic at request time, not at wiring time.
+struct Subscribers {
+    modules: Arc<Vec<Box<dyn ServerModule<RemoteHost>>>>,
+    by_topic: HashMap<String, Vec<usize>>,
+}
+
+impl Subscribers {
+    fn new(modules: Arc<Vec<Box<dyn ServerModule<RemoteHost>>>>, topics: &[String]) -> Self {
+        let mut by_topic: HashMap<String, Vec<usize>> = HashMap::new();
+        for topic in topics {
+            let want = modules
+                .iter()
+                .enumerate()
+                .filter(|(_, m)| m.events().iter().any(|t| t == topic))
+                .map(|(i, _)| i)
+                .collect();
+            by_topic.insert(topic.clone(), want);
+        }
+        Self { modules, by_topic }
+    }
+}
+
+fn event_router(
+    subscribers: Arc<Subscribers>,
+    token: String,
+) -> axum::Router<RemoteHost> {
+    axum::Router::new()
+        .route("/_event/{topic}", axum::routing::post(deliver_event))
+        .route_layer(axum::middleware::from_fn_with_state(HostToken(token), require_host_token))
+        .layer(axum::Extension(subscribers))
+}
+
+// Answers before the handlers run: the core is fanning out to every subscriber
+// and must not be held up by one module's work, and it has nothing to do with a
+// failure anyway. A handler that needs to report something publishes or notifies.
+async fn deliver_event(
+    axum::extract::State(host): axum::extract::State<RemoteHost>,
+    axum::Extension(subscribers): axum::Extension<Arc<Subscribers>>,
+    axum::extract::Path(topic): axum::extract::Path<String>,
+    axum::Json(payload): axum::Json<serde_json::Value>,
+) -> StatusCode {
+    let Some(want) = subscribers.by_topic.get(&topic) else {
+        tracing::debug!(%topic, "event delivered for a topic this process did not ask for");
+        return StatusCode::NOT_FOUND;
+    };
+    let want = want.clone();
+    let modules = subscribers.modules.clone();
+    tokio::spawn(async move {
+        for index in want {
+            modules[index].on_event(host.clone(), topic.clone(), payload.clone()).await;
+        }
+    });
+    StatusCode::ACCEPTED
+}
+
+fn register_events(url: &str, module_id: &str, host_token: &str, topics: &[String]) {
+    let body = serde_json::json!({ "moduleId": module_id, "topics": topics });
+    match kroma_http::Fetch::new()
+        .header("authorization", format!("Bearer {host_token}"))
+        .post_json(url, &body)
+    {
+        Ok(resp) if (200..300).contains(&resp.status) => {
+            tracing::info!(?topics, "subscribed to core events");
+        }
+        Ok(resp) => tracing::warn!(
+            status = resp.status,
+            "core rejected the event subscription: {}",
+            resp.text()
+        ),
+        Err(e) => tracing::warn!("could not subscribe to core events: {e:#}"),
     }
 }
 

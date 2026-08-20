@@ -1,5 +1,5 @@
 //! Import: move completed downloads into the library with the configured
-//! Sonarr/Radarr-style naming (see kroma_module_sdk::ports::naming), so the
+//! Sonarr/Radarr-style naming (see the `kroma-naming` library), so the
 //! regular scan/enrich/pipeline takes over. Hardlink first (the torrent keeps
 //! seeding from its download folder for free), copy across filesystems.
 
@@ -11,8 +11,8 @@ use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::host::{HostStorage, LibraryFolders};
 use kroma_module_sdk::db as db;
-use kroma_module_sdk::ports::naming;
-use kroma_module_sdk::ports::DownloadRow;
+use kroma_naming as naming;
+use crate::peers::downloads::DownloadRow;
 
 mod place;
 mod replace;
@@ -44,10 +44,7 @@ fn finalize_import<S: HostStorage>(state: &S, row: &DownloadRow, written: &[Stri
         record_file_tmdb(state, row.tmdb_id, written);
     }
     if state.setting_bool("acqDeleteAfterImport", false) {
-        match crate::downloads(state) {
-            Ok(downloads) => downloads.drop_data(state, row),
-            Err(e) => tracing::warn!(target: "acquisition", "imported but not cleaned up: {e:#}"),
-        }
+        crate::peers::downloads::drop_data(state, &row.id);
     }
 }
 
@@ -67,8 +64,7 @@ fn record_file_tmdb<S: HostStorage>(state: &S, tmdb_id: u64, written: &[String])
 /// Import every `completed` download. Failures land on the row's `error`
 /// (visible in the queue) without blocking the others.
 pub fn import_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<ImportSummary> {
-    let ledger = crate::download_db(state)?;
-    let ready = ledger.completed_downloads(state)?;
+    let ready = crate::peers::downloads::completed(state)?;
     let mut summary = ImportSummary::default();
     for row in ready {
         match import_one(state, &row) {
@@ -76,13 +72,13 @@ pub fn import_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<Im
                 log(format!("imported \"{}\" ({} files)", row.release_title, paths.len()));
                 summary.imported += 1;
                 summary.files += paths.len();
-                ledger.mark_download_imported(state, &row.id, &paths, now_ms())?;
+                crate::peers::downloads::mark_imported(state, &row.id, &paths, now_ms())?;
                 finalize_import(state, &row, &paths);
             }
             Err(e) => {
                 log(format!("import failed for \"{}\": {e:#}", row.release_title));
                 summary.failed += 1;
-                ledger.set_download_status(
+                crate::peers::downloads::set_status(
                     state,
                     &row.id,
                     "completed",
@@ -112,7 +108,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
     let lib = target_library_def(state, meta.kind)?;
     let lib_root =
         PathBuf::from(lib.folders.first().ok_or_else(|| anyhow!("library {} has no folder", lib.name))?);
-    let tpl = naming::NamingTemplates::from_host(state);
+    let tpl = naming::NamingTemplates::read(|k, d| state.setting_str(k, d));
     let replacing = row.upgrade && state.setting_bool("acqReplaceOnUpgrade", true);
     let mode = match (row.upgrade, replacing) {
         (true, true) => Placement::Replace,
@@ -130,7 +126,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
             placed.push((Replaced::Movie, at.to_string_lossy().into_owned()));
         }
         "episode" => {
-            let parsed = kroma_module_sdk::scene::parse_release_name(stem_of(largest_video));
+            let parsed = kroma_scene::parse_release_name(stem_of(largest_video));
             let episode = row
                 .episodes
                 .as_ref()
@@ -146,7 +142,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
         "season" => {
             let mut skipped_other_season = 0usize;
             for src in &videos {
-                let parsed = kroma_module_sdk::scene::parse_release_name(stem_of(src));
+                let parsed = kroma_scene::parse_release_name(stem_of(src));
                 let Some(episode) = parsed.episode else {
                     tracing::debug!(file = %src.display(), "season pack: no episode marker, skipped");
                     continue;
@@ -190,7 +186,7 @@ enum Replaced {
 }
 
 fn movie_ctx(meta: &ImportMeta, src: &Path) -> naming::NameContext {
-    let parsed = kroma_module_sdk::scene::parse_release_name(stem_of(src));
+    let parsed = kroma_scene::parse_release_name(stem_of(src));
     let ctx = base_ctx(meta, &parsed);
     naming::NameContext { title: meta.title.clone(), year: meta.year, ..ctx }
 }
@@ -199,7 +195,7 @@ fn episode_ctx(
     meta: &ImportMeta,
     season: u32,
     episode: u32,
-    parsed: &kroma_module_sdk::scene::ParsedRelease,
+    parsed: &kroma_scene::ParsedRelease,
 ) -> naming::NameContext {
     let ctx = base_ctx(meta, parsed);
     naming::NameContext {
@@ -211,7 +207,7 @@ fn episode_ctx(
     }
 }
 
-fn base_ctx(meta: &ImportMeta, parsed: &kroma_module_sdk::scene::ParsedRelease) -> naming::NameContext {
+fn base_ctx(meta: &ImportMeta, parsed: &kroma_scene::ParsedRelease) -> naming::NameContext {
     let (resolution, codec, source) = naming::quality_from_parsed(parsed);
     naming::NameContext {
         resolution,
@@ -240,7 +236,7 @@ fn resolve_meta<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<ImportMe
         return Ok(ImportMeta { kind, title: title.to_string(), year: row.year, tmdb_id });
     }
     // Last resort: derive from the release name (bare magnet with no metadata).
-    let parsed = kroma_module_sdk::scene::parse_release_name(&row.release_title);
+    let parsed = kroma_scene::parse_release_name(&row.release_title);
     if parsed.title.trim().is_empty() {
         bail!("could not determine a title to import under (no request, no metadata, unparseable name)");
     }

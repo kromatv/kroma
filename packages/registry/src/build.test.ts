@@ -11,7 +11,7 @@ function entry(over: Partial<DescribedModule> = {}): DescribedModule {
     description: 'Torrent stuff',
     engines: { server: '>=0.1.4' },
     icon: 'data:image/svg+xml,…',
-    provides: [{ kind: 'download-client', id: 'builtin' }],
+    contributes: [{ point: 'tv.kroma.torrents/download-client', id: 'builtin' }],
     artifacts: [
       {
         target: 'x86_64-linux',
@@ -71,7 +71,7 @@ describe('buildModuleRecord', () => {
     expect(version?.artifacts[0]?.integrity).toBe(sriFromHex('ab'.repeat(32)));
   });
 
-  it('derives tags from provided capability kinds when none are explicit', () => {
+  it('derives tags from the points it answers when none are explicit', () => {
     expect(buildModuleRecord(entry()).tags).toEqual(['download-client']);
   });
 

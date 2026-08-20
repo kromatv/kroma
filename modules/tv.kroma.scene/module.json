@@ -3,16 +3,10 @@
   "schemaVersion": 2,
   "id": "tv.kroma.scene",
   "name": "Release parser",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Scene / P2P release-name parsing and scoring for the acquisition stack.",
   "engines": {
-    "server": ">=0.1.38"
+    "server": ">=0.1.39"
   },
-  "library": true,
-  "provides": [
-    {
-      "kind": "release-parser",
-      "id": "scene"
-    }
-  ]
+  "library": true
 }

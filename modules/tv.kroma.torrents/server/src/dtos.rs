@@ -6,7 +6,15 @@
 
 use serde::{Deserialize, Serialize};
 
-use kroma_module_sdk::ports::VpnStatusView;
+/// The tunnel's state as this module sees it, reported on the `download-vpn`
+/// point and drawn on the download queue.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VpnStatusView {
+    pub connected: bool,
+    pub exit_ip: Option<String>,
+    pub paused: bool,
+}
 
 /// One configured download client, as listed to admins (password write-only).
 #[derive(Debug, Clone, Serialize)]

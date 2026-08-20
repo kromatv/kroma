@@ -9,7 +9,7 @@ use std::path::Path;
 use kroma_module_sdk::db;
 use kroma_module_sdk::domain::media::{detect_edition, edition_cut};
 use kroma_module_sdk::host::HostStorage;
-use kroma_module_sdk::ports::DownloadRow;
+use crate::peers::downloads::DownloadRow;
 
 use super::Replaced;
 

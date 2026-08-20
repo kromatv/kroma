@@ -9,6 +9,7 @@ pub mod loginguard;
 pub mod markers;
 pub mod pipeline;
 pub mod scan;
+pub mod embeddings;
 pub mod enrich;
 pub mod rematch;
 pub mod search;

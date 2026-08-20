@@ -28,8 +28,8 @@ pub fn grab_spec_from_release(
     request_id: Option<String>,
     wanted_ids: Vec<String>,
     upgrade: bool,
-) -> kroma_module_sdk::ports::GrabSpec {
-    kroma_module_sdk::ports::GrabSpec {
+) -> crate::peers::downloads::GrabSpec {
+    crate::peers::downloads::GrabSpec {
         magnet_or_url: magnet_or_url.to_string(),
         kind: release.target.clone(),
         tmdb_id,

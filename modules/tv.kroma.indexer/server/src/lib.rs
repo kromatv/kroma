@@ -12,6 +12,9 @@ pub mod dtos;
 pub mod engine;
 pub mod filters;
 pub mod module;
+pub mod peers;
+pub mod port;
+pub mod search;
 pub mod selector;
 pub mod session;
 pub mod store;
@@ -58,48 +61,6 @@ pub fn server_module<S: kroma_module_sdk::host::HostStorage + Clone + Send + Syn
     Box::new(IndexersModule)
 }
 
-/// The [`TorrentFetchPort`](kroma_module_sdk::ports::TorrentFetchPort) impl: fetches a
-/// `.torrent` through a built-in Cardigann indexer's authenticated session.
-///
-/// Holds this module's own database, like its two siblings below: the port
-/// contracts name only `HostCtx`, because a consumer of a contract holds no
-/// capability just because the provider does.
-pub struct IndexerTorrentFetch(kroma_module_sdk::db::Pool);
-
-impl IndexerTorrentFetch {
-    pub fn new(store: kroma_module_sdk::db::Pool) -> Self {
-        Self(store)
-    }
-}
-
-impl kroma_module_sdk::ports::TorrentFetchPort for IndexerTorrentFetch {
-    fn fetch_torrent(
-        &self,
-        host: &dyn kroma_module_sdk::host::HostCtx,
-        indexer_id: &str,
-        url: &str,
-    ) -> Option<anyhow::Result<Vec<u8>>> {
-        let conn = match self.0.get() {
-            Ok(conn) => conn,
-            Err(e) => return Some(Err(e)),
-        };
-        let row = match crate::db::get_indexer(&conn, indexer_id) {
-            Ok(Some(row)) => row,
-            Ok(None) => return None,
-            Err(e) => return Some(Err(e.into())),
-        };
-        drop(conn);
-        // Only built-in indexers cookie-gate downloads; Torznab/manual grabs use the caller's plain fetch.
-        if row.kind != admin::KIND_BUILTIN {
-            return None;
-        }
-        Some((|| {
-            let session = admin::builtin_session(host, &row)?;
-            session.fetch_torrent(url)
-        })())
-    }
-}
-
 /// A configured built-in indexer: the chosen base link plus admin-entered
 /// settings (`.Config.<name>` resolves against this, falling back to definition defaults).
 #[derive(Debug, Clone, Default)]
@@ -108,8 +69,8 @@ pub struct IndexerConfig {
     pub settings: std::collections::HashMap<String, String>,
 }
 
-/// One search request. Mirrors [`kroma_torznab::Query`] so the acquisition layer
-/// builds one query shape for both engines.
+/// One search request, for either engine. `Text` is the native engine's own: the
+/// `torznab` point has no free-text variant, so [`peers`] maps it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Query {
     Movie { tmdb_id: Option<u64>, imdb_id: Option<String>, title: String, year: Option<u32> },
@@ -148,9 +109,14 @@ impl Query {
     }
 }
 
-/// A normalized release, field-compatible with [`kroma_torznab::Release`] plus
-/// the richer attributes Cardigann exposes (categories, freeleech factors).
+/// A normalized release: the fields every engine reports plus the richer
+/// attributes Cardigann exposes (categories, freeleech factors).
+///
+/// Tolerant on purpose. It carries answers from the `torznab` point, whose
+/// provider is a separately released module that knows nothing of the extra
+/// fields, so a missing one has to default rather than fail the whole search.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Release {
     pub title: String,
     pub guid: String,
@@ -170,9 +136,12 @@ pub struct Release {
     pub upload_volume_factor: Option<f64>,
 }
 
-/// What a definition advertises it can do, derived from `caps.modes`. Mirrors
-/// [`kroma_torznab::Caps`] so capability-aware query building is shared.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+/// What an indexer advertises it can do: derived from `caps.modes` for a
+/// definition, read off the `torznab` point for an external endpoint. Serde
+/// because it crosses that point, and tolerant because the two ends version
+/// apart.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Caps {
     pub search_tmdb: bool,
     pub search_imdb: bool,
@@ -193,158 +162,6 @@ impl Caps {
             tv_search_season: has("tv-search", "season"),
             server_title: Some(def.name.clone()),
         }
-    }
-}
-
-/// The IndexerDbPort implementation: reads/updates the `indexers` table in this
-/// module's own database, so callers avoid depending on this crate directly.
-pub struct IndexerDb(kroma_module_sdk::db::Pool);
-
-impl IndexerDb {
-    pub fn new(store: kroma_module_sdk::db::Pool) -> Self {
-        Self(store)
-    }
-}
-
-impl kroma_module_sdk::ports::IndexerDbPort for IndexerDb {
-    fn list_indexers(
-        &self,
-        _host: &dyn kroma_module_sdk::host::HostCtx,
-    ) -> anyhow::Result<Vec<kroma_module_sdk::ports::IndexerRow>> {
-        let conn = self.0.get()?;
-        Ok(db::list_indexers(&conn)?)
-    }
-
-    fn enabled_indexers(
-        &self,
-        _host: &dyn kroma_module_sdk::host::HostCtx,
-    ) -> anyhow::Result<Vec<kroma_module_sdk::ports::IndexerRow>> {
-        let conn = self.0.get()?;
-        Ok(db::enabled_indexers(&conn)?)
-    }
-
-    fn get_indexer(
-        &self,
-        _host: &dyn kroma_module_sdk::host::HostCtx,
-        id: &str,
-    ) -> anyhow::Result<Option<kroma_module_sdk::ports::IndexerRow>> {
-        let conn = self.0.get()?;
-        Ok(db::get_indexer(&conn, id)?)
-    }
-
-    fn note_indexer_result(
-        &self,
-        _host: &dyn kroma_module_sdk::host::HostCtx,
-        id: &str,
-        ok: bool,
-        error: Option<&str>,
-        now_ms: i64,
-    ) -> anyhow::Result<()> {
-        db::note_indexer_result(&self.0, id, ok, error, now_ms)
-    }
-}
-
-/// The IndexerSearchPort implementation: runs native (Cardigann) searches and
-/// resolves grab targets, hiding the stateful `Session` behind the SDK contract shapes.
-pub struct IndexerSearch(kroma_module_sdk::db::Pool);
-
-impl IndexerSearch {
-    pub fn new(store: kroma_module_sdk::db::Pool) -> Self {
-        Self(store)
-    }
-}
-
-impl kroma_module_sdk::ports::IndexerSearchPort for IndexerSearch {
-    fn search(
-        &self,
-        host: &dyn kroma_module_sdk::host::HostCtx,
-        row: &kroma_module_sdk::ports::IndexerRow,
-        query: &kroma_module_sdk::ports::Query,
-        categories: &[u32],
-    ) -> anyhow::Result<kroma_module_sdk::ports::SearchOutcome> {
-        tracing::info!(
-            indexer = %row.name,
-            id = %row.id,
-            kind = %row.kind,
-            categories = ?categories,
-            "indexer search",
-        );
-        if row.kind == admin::KIND_BUILTIN {
-            let session = admin::builtin_session(host, row)?;
-            let outcome = session.search(&to_native_query(query), categories);
-            Ok(kroma_module_sdk::ports::SearchOutcome {
-                releases: outcome.releases.into_iter().map(release_to_port).collect(),
-                errors: outcome.errors,
-            })
-        } else {
-            // External Torznab endpoint.
-            let caps = admin::indexer_caps(host, &self.0, row)?;
-            let endpoint = admin::endpoint_of(row);
-            let tz = kroma_module_sdk::ports::torznab(host)
-                .ok_or_else(|| anyhow::anyhow!("torznab search engine unavailable"))?;
-            let releases = tz.search(&endpoint, query, &caps)?;
-            tracing::info!(indexer = %row.name, releases = releases.len(), "torznab answered");
-            Ok(kroma_module_sdk::ports::SearchOutcome { releases, errors: Vec::new() })
-        }
-    }
-
-    fn resolve_download(
-        &self,
-        host: &dyn kroma_module_sdk::host::HostCtx,
-        row: &kroma_module_sdk::ports::IndexerRow,
-        title: &str,
-        details_url: Option<&str>,
-        magnet_or_url: &str,
-    ) -> anyhow::Result<kroma_module_sdk::ports::DownloadTarget> {
-        if magnet_or_url.starts_with("magnet:") {
-            return Ok(kroma_module_sdk::ports::DownloadTarget::Magnet(magnet_or_url.to_string()));
-        }
-        let session = admin::builtin_session(host, row)?;
-        let release = Release {
-            title: title.to_string(),
-            magnet: magnet_or_url.starts_with("magnet:").then(|| magnet_or_url.to_string()),
-            link: magnet_or_url.starts_with("http").then(|| magnet_or_url.to_string()),
-            details_url: details_url.map(str::to_string),
-            ..Default::default()
-        };
-        Ok(match session.resolve_download(&release)? {
-            DownloadTarget::Magnet(m) => kroma_module_sdk::ports::DownloadTarget::Magnet(m),
-            DownloadTarget::TorrentUrl(u) => kroma_module_sdk::ports::DownloadTarget::TorrentUrl(u),
-        })
-    }
-}
-
-fn to_native_query(q: &kroma_module_sdk::ports::Query) -> Query {
-    match q {
-        kroma_module_sdk::ports::Query::Movie { tmdb_id, imdb_id, title, year } => Query::Movie {
-            tmdb_id: *tmdb_id,
-            imdb_id: imdb_id.clone(),
-            title: title.clone(),
-            year: *year,
-        },
-        kroma_module_sdk::ports::Query::Episode { tmdb_id, title, season, episode } => {
-            Query::Episode { tmdb_id: *tmdb_id, title: title.clone(), season: *season, episode: *episode }
-        }
-        kroma_module_sdk::ports::Query::Season { tmdb_id, title, season } => {
-            Query::Season { tmdb_id: *tmdb_id, title: title.clone(), season: *season }
-        }
-    }
-}
-
-fn release_to_port(r: Release) -> kroma_module_sdk::ports::Release {
-    kroma_module_sdk::ports::Release {
-        title: r.title,
-        guid: r.guid,
-        link: r.link,
-        magnet: r.magnet,
-        info_hash: r.info_hash,
-        size_bytes: r.size_bytes,
-        seeders: r.seeders,
-        leechers: r.leechers,
-        tmdb_id: r.tmdb_id,
-        imdb_id: r.imdb_id,
-        published_at: r.published_at,
-        details_url: r.details_url,
     }
 }
 
@@ -422,75 +239,10 @@ search:
         assert_eq!(caps.server_title.as_deref(), Some("The Tracker"));
     }
 
-    #[test]
-    fn to_native_query_maps_all_shapes() {
-        use kroma_module_sdk::ports::Query as PQ;
-        assert_eq!(
-            to_native_query(&PQ::Movie {
-                tmdb_id: Some(603),
-                imdb_id: Some("tt0133093".into()),
-                title: "The Matrix".into(),
-                year: Some(1999),
-            }),
-            Query::Movie {
-                tmdb_id: Some(603),
-                imdb_id: Some("tt0133093".into()),
-                title: "The Matrix".into(),
-                year: Some(1999),
-            }
-        );
-        assert_eq!(
-            to_native_query(&PQ::Episode {
-                tmdb_id: Some(1),
-                title: "S".into(),
-                season: 2,
-                episode: 5,
-            }),
-            Query::Episode { tmdb_id: Some(1), title: "S".into(), season: 2, episode: 5 }
-        );
-        assert_eq!(
-            to_native_query(&PQ::Season { tmdb_id: None, title: "S".into(), season: 4 }),
-            Query::Season { tmdb_id: None, title: "S".into(), season: 4 }
-        );
-    }
 
-    #[test]
-    fn release_to_port_keeps_shared_fields() {
-        let r = Release {
-            title: "T".into(),
-            guid: "g".into(),
-            link: Some("l".into()),
-            magnet: Some("m".into()),
-            info_hash: Some("h".into()),
-            size_bytes: Some(5),
-            seeders: Some(3),
-            leechers: Some(1),
-            grabs: Some(9),
-            tmdb_id: Some(2),
-            imdb_id: Some("tt1".into()),
-            published_at: Some("d".into()),
-            details_url: Some("u".into()),
-            categories: vec![2040],
-            download_volume_factor: Some(0.5),
-            upload_volume_factor: Some(1.0),
-        };
-        let p = release_to_port(r);
-        assert_eq!(p.title, "T");
-        assert_eq!(p.guid, "g");
-        assert_eq!(p.link.as_deref(), Some("l"));
-        assert_eq!(p.magnet.as_deref(), Some("m"));
-        assert_eq!(p.info_hash.as_deref(), Some("h"));
-        assert_eq!(p.size_bytes, Some(5));
-        assert_eq!(p.seeders, Some(3));
-        assert_eq!(p.leechers, Some(1));
-        assert_eq!(p.tmdb_id, Some(2));
-        assert_eq!(p.imdb_id.as_deref(), Some("tt1"));
-        assert_eq!(p.published_at.as_deref(), Some("d"));
-        assert_eq!(p.details_url.as_deref(), Some("u"));
-    }
 
-    fn port_row() -> kroma_module_sdk::ports::IndexerRow {
-        kroma_module_sdk::ports::IndexerRow {
+    fn port_row() -> db::IndexerRow {
+        db::IndexerRow {
             id: "a".into(),
             name: "N".into(),
             url: "http://x".into(),
@@ -509,11 +261,11 @@ search:
 
     #[test]
     fn resolve_download_short_circuits_on_magnet_without_touching_host() {
-        use kroma_module_sdk::ports::{DownloadTarget, IndexerSearchPort};
+        use port::DownloadTarget;
         let magnet = "magnet:?xt=urn:btih:deadbeef";
-        let out = IndexerSearch::new(db_pool().clone())
-            .resolve_download(&DbHost::new(), &port_row(), "Some Title", None, magnet)
-            .expect("magnet resolves without a session");
+        let out =
+            search::resolve_download(&DbHost::new(), &port_row(), "Some Title", None, magnet)
+                .expect("magnet resolves without a session");
         assert!(matches!(out, DownloadTarget::Magnet(ref m) if m == magnet), "{out:?}");
     }
 
@@ -528,7 +280,7 @@ search:
 
     type DbHost = kroma_module_sdk::host::testing::StubHost;
 
-    fn seed_row(id: &str, kind: &str, enabled: bool, created_at: i64) -> kroma_module_sdk::ports::IndexerRow {
+    fn seed_row(id: &str, kind: &str, enabled: bool, created_at: i64) -> db::IndexerRow {
         let mut r = port_row();
         r.id = id.into();
         r.kind = kind.into();
@@ -539,36 +291,37 @@ search:
 
     #[test]
     fn indexer_db_port_lists_gets_and_notes_against_a_real_db() {
-        use kroma_module_sdk::ports::IndexerDbPort;
         let pool = db_pool();
         db::insert_indexer(&pool, &seed_row("a", admin::KIND_BUILTIN, true, 100)).unwrap();
         db::insert_indexer(&pool, &seed_row("b", "torznab", false, 200)).unwrap();
-        let host = DbHost::with_pool(pool.clone());
-        let port = IndexerDb::new(pool.clone());
+        let conn = pool.get().unwrap();
 
-        assert_eq!(port.list_indexers(&host).unwrap().len(), 2);
-        assert_eq!(port.get_indexer(&host, "a").unwrap().unwrap().id, "a");
-        assert!(port.get_indexer(&host, "ghost").unwrap().is_none());
-        let enabled = port.enabled_indexers(&host).unwrap();
+        assert_eq!(db::list_indexers(&conn).unwrap().len(), 2);
+        assert_eq!(db::get_indexer(&conn, "a").unwrap().unwrap().id, "a");
+        assert!(db::get_indexer(&conn, "ghost").unwrap().is_none());
+        let enabled = db::enabled_indexers(&conn).unwrap();
         assert_eq!(enabled.len(), 1);
         assert_eq!(enabled[0].id, "a");
-        port.note_indexer_result(&host, "a", true, None, 4242).unwrap();
-        assert_eq!(port.get_indexer(&host, "a").unwrap().unwrap().last_ok_at, Some(4242));
+        drop(conn);
+        db::note_indexer_result(&pool, "a", true, None, 4242).unwrap();
+        let conn = pool.get().unwrap();
+        assert_eq!(db::get_indexer(&conn, "a").unwrap().unwrap().last_ok_at, Some(4242));
     }
 
     #[test]
     fn torrent_fetch_returns_none_for_unknown_or_non_builtin_indexer() {
-        use kroma_module_sdk::ports::TorrentFetchPort;
         let pool = db_pool();
         db::insert_indexer(&pool, &seed_row("tz", "torznab", true, 100)).unwrap();
-        let host = DbHost::with_pool(pool.clone());
-        let port = IndexerTorrentFetch::new(pool.clone());
-        assert!(port.fetch_torrent(&host, "nope", "http://x/f.torrent").is_none());
-        assert!(port.fetch_torrent(&host, "tz", "http://x/f.torrent").is_none());
+        let host = DbHost::with_store(pool.clone());
+
+        // Neither needs this module's authenticated session, so the caller does a
+        // plain fetch: `None`, not an error.
+        assert_eq!(search::fetch_torrent(&host, "nope", "http://x/f.torrent").unwrap(), None);
+        assert_eq!(search::fetch_torrent(&host, "tz", "http://x/f.torrent").unwrap(), None);
     }
 
-    fn port_query() -> kroma_module_sdk::ports::Query {
-        kroma_module_sdk::ports::Query::Movie {
+    fn port_query() -> Query {
+        Query::Movie {
             tmdb_id: Some(603),
             imdb_id: None,
             title: "The Matrix".into(),
@@ -579,7 +332,7 @@ search:
     #[test]
     fn the_module_declares_its_id_migrations_and_admin_routes() {
         let pool = db_pool();
-        let host = DbHost::with_pool(pool.clone());
+        let host = DbHost::with_store(pool.clone());
         let module = server_module::<DbHost>();
         // The id is the manifest id: the host keys enable/disable state on it, so
         // a drift here silently detaches every stored setting.
@@ -596,18 +349,16 @@ search:
     fn a_torznab_search_without_the_torznab_engine_names_the_missing_piece() {
         // A disabled engine's failure must be recorded on the indexer row,
         // because that is where the admin looks when results stop coming.
-        use kroma_module_sdk::ports::IndexerSearchPort;
         let pool = db_pool();
         let mut row = seed_row("tz-no-engine", "torznab", true, 100);
         row.url = "http://tracker.invalid/api".into();
         db::insert_indexer(&pool, &row).unwrap();
-        let host = DbHost::with_pool(pool.clone());
+        let host = DbHost::with_store(pool.clone());
 
-        let err = IndexerSearch::new(pool.clone())
-            .search(&host, &row, &port_query(), &[2000])
+        let err = search::run(&host, &row, &port_query(), &[2000])
             .unwrap_err()
             .to_string();
-        assert!(err.contains("torznab search engine unavailable"), "{err}");
+        assert!(err.contains("no module answers tv.kroma.indexer/engine as torznab"), "{err}");
 
         let stored = db::get_indexer(&pool.get().unwrap(), "tz-no-engine").unwrap().unwrap();
         assert_eq!(stored.last_ok_at, None);
@@ -618,63 +369,72 @@ search:
         );
     }
 
-    struct FakeTorznab;
+    // The engine is reached over this module's own point, so the fake is SERVED
+    // on a real localhost port and the host is pointed at it. It parses the
+    // request with its own structs, exactly as a real contributor does.
+    fn fake_torznab() -> axum::Router<()> {
+        use axum::routing::post;
+        use axum::Json;
+        use serde_json::{json, Value};
 
-    impl kroma_module_sdk::ports::TorznabPort for FakeTorznab {
-        fn caps(
-            &self,
-            endpoint: &kroma_module_sdk::ports::IndexerEndpoint,
-        ) -> anyhow::Result<kroma_module_sdk::ports::Caps> {
-            Ok(kroma_module_sdk::ports::Caps {
-                search_tmdb: true,
-                server_title: Some(endpoint.url.clone()),
-                ..Default::default()
-            })
+        async fn caps(Json(endpoint): Json<Value>) -> Json<Result<Value, String>> {
+            let url = endpoint["url"].as_str().unwrap_or_default().to_string();
+            Json(Ok(json!({ "search_tmdb": true, "server_title": url })))
         }
 
-        fn search(
-            &self,
-            endpoint: &kroma_module_sdk::ports::IndexerEndpoint,
-            _query: &kroma_module_sdk::ports::Query,
-            caps: &kroma_module_sdk::ports::Caps,
-        ) -> anyhow::Result<Vec<kroma_module_sdk::ports::Release>> {
-            assert!(caps.search_tmdb, "the caps probe result must reach the search call");
-            Ok(vec![kroma_module_sdk::ports::Release {
-                title: "From The Endpoint".into(),
-                guid: endpoint.url.clone(),
-                ..Default::default()
-            }])
+        async fn search(Json(req): Json<Value>) -> Json<Result<Vec<Value>, String>> {
+            assert_eq!(
+                req["caps"]["search_tmdb"], true,
+                "the caps probe result must reach the search call"
+            );
+            let url = req["endpoint"]["url"].as_str().unwrap_or_default().to_string();
+            assert!(req["query"]["Movie"].is_object(), "the query crossed as {:?}", req["query"]);
+            Json(Ok(vec![json!({ "title": "From The Endpoint", "guid": url })]))
         }
+
+        axum::Router::new()
+            .route("/_port/tv.kroma.indexer/engine/caps", post(caps))
+            .route("/_port/tv.kroma.indexer/engine/search", post(search))
     }
 
-    // The engine is reached over the `torznab` contract, so the fake is SERVED
-    // on a real localhost port and the host is pointed at it.
     #[tokio::test]
-    async fn a_torznab_search_goes_out_through_the_resolved_engine() {
-        use kroma_module_sdk::ports::{torznab_routes, IndexerSearchPort, TorznabPort};
+    async fn a_row_of_a_kind_this_module_never_heard_of_reaches_its_contributor() {
+        let pool = db_pool();
+        let mut row = seed_row("pl-1", "prowlarr", true, 100);
+        row.url = "http://prowlarr.example/api".into();
+        db::insert_indexer(&pool, &row).unwrap();
+        let resolve = kroma_module_host::test_serve::serve(fake_torznab(), ()).await;
+        let (base, token) = resolve().expect("the fake engine is up");
+        let host = DbHost::with_store(pool.clone())
+            .with_point(peers::ENGINE, Some("prowlarr"), &base, &token);
+
+        let outcome = kroma_module_host::test_serve::blocking(move || {
+            search::run(&host, &row, &port_query(), &[2000])
+        })
+        .await
+        .unwrap();
+
+        assert_eq!(outcome.releases.len(), 1);
+        assert_eq!(outcome.releases[0].guid, "http://prowlarr.example/api");
+    }
+
+    #[tokio::test]
+    async fn a_torznab_search_goes_out_through_the_resolved_provider() {
         let pool = db_pool();
         let mut row = seed_row("tz-engine", "torznab", true, 100);
         row.url = "http://tracker.example/api".into();
         db::insert_indexer(&pool, &row).unwrap();
-        let port: std::sync::Arc<dyn TorznabPort> = std::sync::Arc::new(FakeTorznab);
-        let resolve =
-            kroma_module_sdk::testing::serve(torznab_routes::<()>(port), ()).await;
+        let resolve = kroma_module_host::test_serve::serve(fake_torznab(), ()).await;
         let (base, token) = resolve().expect("the fake provider is up");
-        let host = DbHost::with_pool(pool.clone()).with_port(
-            kroma_module_sdk::ports::TORZNAB,
-            &base,
-            &token,
-        );
+        let host = DbHost::with_store(pool.clone())
+            .with_point(peers::ENGINE, Some("torznab"), &base, &token);
 
-        let (host, row) = (host, row);
-        let search = IndexerSearch::new(pool.clone());
-        let outcome = kroma_module_sdk::testing::blocking(move || {
-            search.search(&host, &row, &port_query(), &[2000]).map(|o| (o, host))
+        let outcome = kroma_module_host::test_serve::blocking(move || {
+            search::run(&host, &row, &port_query(), &[2000])
         })
         .await
         .unwrap();
-        let (outcome, host) = outcome;
-        let _ = &host;
+
         assert!(outcome.errors.is_empty());
         assert_eq!(outcome.releases.len(), 1);
         assert_eq!(outcome.releases[0].title, "From The Endpoint");
@@ -689,29 +449,26 @@ search:
     fn a_builtin_search_for_a_definition_that_is_not_installed_fails_loudly() {
         // A row can outlive its Cardigann definition; erroring beats reporting
         // "no results", which reads as "nothing to grab".
-        use kroma_module_sdk::ports::IndexerSearchPort;
         let pool = db_pool();
         let mut row = seed_row("builtin-gone", admin::KIND_BUILTIN, true, 100);
         row.definition_id = Some("a-tracker-that-does-not-exist".into());
         db::insert_indexer(&pool, &row).unwrap();
-        let host = DbHost::with_pool(pool.clone());
+        let host = DbHost::with_store(pool.clone());
 
-        assert!(IndexerSearch::new(pool.clone()).search(&host, &row, &port_query(), &[2000]).is_err());
+        assert!(search::run(&host, &row, &port_query(), &[2000]).is_err());
     }
 
     #[test]
     fn resolving_a_plain_url_needs_the_indexers_session() {
         // Cookie-gated, unlike a magnet: a session failure must surface rather
         // than hand back an unauthenticated URL that downloads an HTML login page.
-        use kroma_module_sdk::ports::IndexerSearchPort;
         let pool = db_pool();
         let mut row = seed_row("builtin-nodef", admin::KIND_BUILTIN, true, 100);
         row.definition_id = Some("also-missing".into());
         db::insert_indexer(&pool, &row).unwrap();
-        let host = DbHost::with_pool(pool.clone());
+        let host = DbHost::with_store(pool.clone());
 
-        assert!(IndexerSearch::new(pool.clone())
-            .resolve_download(&host, &row, "Some.Release", None, "http://tracker.invalid/dl/1")
+        assert!(search::resolve_download(&host, &row, "Some.Release", None, "http://tracker.invalid/dl/1")
             .is_err());
     }
 
@@ -719,42 +476,39 @@ search:
     fn fetching_a_torrent_from_a_builtin_indexer_reports_a_session_failure() {
         // A built-in row IS cookie-gated, so the caller must not silently fall
         // back to a plain fetch on a session failure.
-        use kroma_module_sdk::ports::TorrentFetchPort;
         let pool = db_pool();
         let mut row = seed_row("builtin-fetch", admin::KIND_BUILTIN, true, 100);
         row.definition_id = Some("nowhere-to-be-found".into());
         db::insert_indexer(&pool, &row).unwrap();
-        let host = DbHost::with_pool(pool.clone());
+        let host = DbHost::with_store(pool.clone());
 
-        let outcome = IndexerTorrentFetch::new(pool.clone()).fetch_torrent(&host, "builtin-fetch", "http://x/f.torrent");
-        assert!(matches!(outcome, Some(Err(_))), "a built-in grab must not degrade to a plain fetch");
+        let outcome = search::fetch_torrent(&host, "builtin-fetch", "http://x/f.torrent");
+        assert!(outcome.is_err(), "a built-in grab must not degrade to a plain fetch");
     }
 
     #[test]
     fn a_grab_whose_database_is_gone_reports_the_failure_instead_of_no_such_indexer() {
-        use kroma_module_sdk::ports::TorrentFetchPort;
         let dir = kroma_testing::temp_dir("indexer-lib-nopool");
         let pool = kroma_module_sdk::db::init(&dir.path().join("kroma.db")).unwrap();
         let held = pool.get().unwrap();
         std::fs::remove_dir_all(dir.path()).unwrap();
-        let host = DbHost::with_pool(pool.clone());
+        let host = DbHost::with_store(pool.clone());
 
-        let outcome = IndexerTorrentFetch::new(pool.clone()).fetch_torrent(&host, "any", "http://x/f.torrent");
+        let outcome = search::fetch_torrent(&host, "any", "http://x/f.torrent");
 
-        assert!(matches!(outcome, Some(Err(_))));
+        assert!(outcome.is_err());
         drop(held);
     }
 
     #[test]
     fn a_grab_whose_indexers_table_is_gone_reports_the_failure() {
-        use kroma_module_sdk::ports::TorrentFetchPort;
         let pool = db_pool();
         pool.get().unwrap().execute_batch("DROP TABLE indexers").unwrap();
-        let host = DbHost::with_pool(pool.clone());
+        let host = DbHost::with_store(pool.clone());
 
-        let outcome = IndexerTorrentFetch::new(pool.clone()).fetch_torrent(&host, "any", "http://x/f.torrent");
+        let outcome = search::fetch_torrent(&host, "any", "http://x/f.torrent");
 
-        assert!(matches!(outcome, Some(Err(_))));
+        assert!(outcome.is_err());
     }
 
     const SEARCH_DEF: &str = r#"
@@ -823,7 +577,7 @@ download:
         std::fs::write(dir.join(format!("{id}.yml")), yaml).unwrap();
     }
 
-    fn builtin_row(id: &str, definition_id: &str, url: String) -> kroma_module_sdk::ports::IndexerRow {
+    fn builtin_row(id: &str, definition_id: &str, url: String) -> db::IndexerRow {
         let mut row = seed_row(id, admin::KIND_BUILTIN, true, 100);
         row.definition_id = Some(definition_id.into());
         row.url = url;
@@ -832,9 +586,8 @@ download:
 
     #[test]
     fn a_builtin_search_runs_the_definition_and_hands_back_the_rows_it_parsed() {
-        use kroma_module_sdk::ports::IndexerSearchPort;
         let pool = db_pool();
-        let host = DbHost::with_pool(pool.clone());
+        let host = DbHost::with_store(pool.clone());
         install_definition(&host, "search-def", SEARCH_DEF);
         let row = builtin_row(
             "builtin-search",
@@ -845,7 +598,7 @@ download:
             ),
         );
 
-        let outcome = IndexerSearch::new(pool.clone()).search(&host, &row, &port_query(), &[2000]).unwrap();
+        let outcome = search::run(&host, &row, &port_query(), &[2000]).unwrap();
 
         assert!(outcome.errors.is_empty(), "{:?}", outcome.errors);
         assert_eq!(outcome.releases.len(), 1);
@@ -854,9 +607,9 @@ download:
 
     #[test]
     fn a_details_page_that_only_carries_a_magnet_resolves_to_that_magnet() {
-        use kroma_module_sdk::ports::{DownloadTarget, IndexerSearchPort};
+        use port::DownloadTarget;
         let pool = db_pool();
-        let host = DbHost::with_pool(pool.clone());
+        let host = DbHost::with_store(pool.clone());
         install_definition(&host, "download-def", DOWNLOAD_DEF);
         let base = serve(
             br#"<html><body><a class="dl" href="magnet:?xt=urn:btih:cafebabe">grab</a></body></html>"#,
@@ -865,8 +618,7 @@ download:
         let details = format!("{base}/details/1");
         let row = builtin_row("builtin-details", "download-def", base);
 
-        let out = IndexerSearch::new(pool.clone())
-            .resolve_download(&host, &row, "Some.Release", Some(&details), &details)
+        let out = search::resolve_download(&host, &row, "Some.Release", Some(&details), &details)
             .unwrap();
 
         assert!(
@@ -877,14 +629,13 @@ download:
 
     #[test]
     fn a_definition_with_no_download_rule_hands_the_url_back_untouched() {
-        use kroma_module_sdk::ports::{DownloadTarget, IndexerSearchPort};
+        use port::DownloadTarget;
         let pool = db_pool();
-        let host = DbHost::with_pool(pool.clone());
+        let host = DbHost::with_store(pool.clone());
         install_definition(&host, "search-def", SEARCH_DEF);
         let row = builtin_row("builtin-plain", "search-def", "http://tracker.invalid".into());
 
-        let out = IndexerSearch::new(pool.clone())
-            .resolve_download(&host, &row, "Some.Release", None, "http://tracker.invalid/dl/1")
+        let out = search::resolve_download(&host, &row, "Some.Release", None, "http://tracker.invalid/dl/1")
             .unwrap();
 
         assert!(
@@ -895,16 +646,14 @@ download:
 
     #[test]
     fn a_builtin_grab_goes_out_through_the_indexers_own_session() {
-        use kroma_module_sdk::ports::TorrentFetchPort;
         let pool = db_pool();
         let base = serve(b"d8:announce9:udp://x:0e", "application/x-bittorrent");
         let row = builtin_row("builtin-ok", "search-def", base.clone());
         db::insert_indexer(&pool, &row).unwrap();
-        let host = DbHost::with_pool(pool.clone());
+        let host = DbHost::with_store(pool.clone());
         install_definition(&host, "search-def", SEARCH_DEF);
 
-        let bytes = IndexerTorrentFetch::new(pool.clone())
-            .fetch_torrent(&host, "builtin-ok", &format!("{base}/dl/1.torrent"))
+        let bytes = search::fetch_torrent(&host, "builtin-ok", &format!("{base}/dl/1.torrent"))
             .expect("a built-in row is this port's to answer")
             .expect("the fake tracker served the file");
 

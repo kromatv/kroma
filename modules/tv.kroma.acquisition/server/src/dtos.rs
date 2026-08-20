@@ -4,7 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 
-/// One score-explanation line (mirrors `kroma_module_sdk::scene::ScoreLine` on the wire).
+/// One score-explanation line (mirrors `kroma_scene::ScoreLine` on the wire).
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScoreLineView {

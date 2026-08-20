@@ -10,8 +10,8 @@ export interface SiteModule {
   icon: string | null;
   /** A library module is linked by the sidecars that use it; it runs no process of its own. */
   library: boolean;
-  provides: string[];
-  requires: string[];
+  answers: string[];
+  needs: string[];
   dependencies: string[];
 }
 
@@ -20,8 +20,10 @@ export interface SiteCatalog {
   modules: SiteModule[];
 }
 
-const kinds = (xs: { kind: string }[] | null | undefined) => [
-  ...new Set((xs ?? []).map((x) => x.kind).filter(Boolean)),
+// The local half of each point, deduped: `tv.kroma.torrents/client` reads as
+// `client` on a marketing page, where the defining module's id is noise.
+const points = (xs: { point: string }[] | null | undefined) => [
+  ...new Set((xs ?? []).map((x) => x.point?.split('/').pop()).filter(Boolean) as string[]),
 ];
 
 const depIds = (d: Catalog['modules'][number]['dependencies']) => Object.keys(d ?? {});
@@ -38,8 +40,8 @@ export function toSiteCatalog(raw: Catalog): SiteCatalog {
         description: e.description ?? null,
         icon: e.icon ?? null,
         library: e.library === true,
-        provides: kinds(e.provides),
-        requires: kinds(e.requires),
+        answers: points(e.contributes),
+        needs: points(e.consumes),
         dependencies: depIds(e.dependencies),
       }))
       .sort((a, b) => a.id.localeCompare(b.id)),
@@ -47,7 +49,7 @@ export function toSiteCatalog(raw: Catalog): SiteCatalog {
 }
 
 /** How much has to be installed before a module is useful: its own prerequisites. */
-const depth = (mod: SiteModule): number => mod.requires.length + mod.dependencies.length;
+const depth = (mod: SiteModule): number => mod.needs.length + mod.dependencies.length;
 
 /**
  * The catalog in the order the page reads: what stands on its own first, then

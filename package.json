@@ -77,10 +77,8 @@
     "sonar:precheck": "git diff --name-only --diff-filter=ACMR origin/main...HEAD | bun packages/sonar-tools/src/precheck.ts",
     "sonar:lint": "bun packages/sonar-tools/src/config-lint.ts",
     "check:fix": "biome check --write .",
-    "server": "bun server/preflight.ts && cd server && cargo run --features semantic-embeddings,whisper-metal",
-    "server:watch": "bun server/preflight.ts && cd server && cargo watch -x 'run --features semantic-embeddings,whisper-metal'",
-    "server:watch:cpu": "bun server/preflight.ts && cd server && cargo watch -x 'run --features semantic-embeddings,whisper-local'",
-    "server:watch:lexical": "bun server/preflight.ts && cd server && cargo watch -x run",
+    "server": "bun server/preflight.ts && cd server && cargo run",
+    "server:watch": "bun server/preflight.ts && cd server && cargo watch -x run",
     "server:build": "cd server && cargo build --release",
     "prepare": "git config core.hooksPath .githooks || true",
     "hooks:install": "git config core.hooksPath .githooks"

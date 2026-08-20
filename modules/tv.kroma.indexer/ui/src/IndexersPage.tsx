@@ -6,7 +6,7 @@ import {
   addEngine,
   apiErrorText,
   Denied,
-  type EngineCapability,
+  type EngineChoice,
   type MessageKey,
   ModuleFailed,
   ModuleLoading,
@@ -45,7 +45,7 @@ export default function IndexersPage() {
   const t = useT();
   const indexerApi = useIndexerApi();
   const canManage = useCap('settings.manage');
-  const engines = useEnabledEngines('indexer-engine');
+  const engines = useEnabledEngines('tv.kroma.indexer/engine');
   const [tests, setTests] = useState<Record<string, TestState>>({});
 
   const { data, failed, reload } = usePoll(['admin', 'indexers'], () => indexerApi.list(), 30000);
@@ -93,7 +93,7 @@ export default function IndexersPage() {
   };
 
   // Generic engine (e.g. Torznab): the shared field form over the engine's schema.
-  const openAddEngine = async (engine: EngineCapability) => {
+  const openAddEngine = async (engine: EngineChoice) => {
     const changed = await addEngine({
       engines: [engine],
       title: t('indexers.addTitle'),

@@ -21,6 +21,10 @@ pub struct Config {
     pub tmdb_api_key: Option<String>,
     pub tmdb_language: String,
     pub tmdb_enrich: bool,
+    /// Write the demo library to `<data>/demo-media` when nothing else is
+    /// configured, so a first look has files it can actually play. `0` leaves the
+    /// demo as rows with no bytes behind them.
+    pub demo_media: bool,
     pub web_url: Option<String>,
     pub web_dir: Option<PathBuf>,
     // Every `*_override` is `None` = defer to the stored admin setting, `Some` =
@@ -99,6 +103,10 @@ impl Config {
             .map(|v| !matches!(v.trim(), "0" | "false" | "no" | "off"))
             .unwrap_or(true);
 
+        let demo_media = env::var("KROMA_DEMO_MEDIA")
+            .map(|v| !matches!(v.trim(), "0" | "false" | "no" | "off"))
+            .unwrap_or(true);
+
         let web_url = env::var("KROMA_WEB_URL")
             .ok()
             .map(|s| s.trim().trim_end_matches('/').to_string())
@@ -151,6 +159,7 @@ impl Config {
             tmdb_api_key,
             tmdb_language,
             tmdb_enrich,
+            demo_media,
             web_url,
             web_dir,
             https_override,
@@ -281,6 +290,7 @@ mod tests {
         "KROMA_TMDB_API_KEY",
         "KROMA_TMDB_LANGUAGE",
         "KROMA_TMDB_ENRICH",
+        "KROMA_DEMO_MEDIA",
         "KROMA_WEB_URL",
         "KROMA_WEB_DIR",
         "KROMA_TRUSTED_PROXIES",

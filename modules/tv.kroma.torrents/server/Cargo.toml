@@ -32,12 +32,16 @@ rqbit = ["dep:librqbit", "tokio/rt-multi-thread"]
 # on, and `download_clients` is its own. `engine`: the organize vertical
 # names the catalog model.
 kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage", "engine"] }
-# The `.kmod` binary only (guarded to the bin's use): the out-of-process runtime,
-# the cross-module port bridges, and the sibling torrent-engine modules co-hosted
-# in this process so they register their kind into the shared DownloadManager.
+# The two shared libraries, linked rather than reached over a point: naming
+# renders one path per imported file and the release parser scores every release
+# of every search, so a localhost round trip per call would be slower than the
+# code it replaced.
+kroma-naming = { path = "../../lib/naming" }
+kroma-scene = { path = "../../tv.kroma.scene/server" }
+# The `.kmod` binary only (guarded to the bin's use): the out-of-process runtime.
+# The sibling torrent engines are NOT deps any more: each is its own sidecar
+# answering the `download-client` point, resolved by kind at the point of use.
 kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime", features = ["storage"] }
-kroma-transmission = { path = "../../tv.kroma.engine.transmission/server" }
-kroma-qbittorrent = { path = "../../tv.kroma.engine.qbittorrent/server" }
 # The download manager + monitor (formerly the kroma-downloads crate) live here now,
 # so the module owns its whole backend and nothing download-related sits in crates/.
 # The admin routes (queue / clients / organize) moved into this crate need the
@@ -77,6 +81,8 @@ kroma-db = { path = "../../../server/crates/kroma-db", features = ["testing"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # The scratch directory the storage-grant test builds its two pools in.
 kroma-testing = { path = "../../../server/crates/kroma-testing" }
+# `oneshot`, to drive the points' routes without binding a port.
+tower = { version = "0.5", features = ["util"] }
 
 [[example]]
 name = "engine_probe"

@@ -17,6 +17,11 @@ pub mod storage;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
 
+/// [`test_serve::serve`] and [`test_serve::blocking`]: the wire-level helpers a
+/// point contract's round-trip test needs, without the database `testing` drags in.
+#[cfg(any(test, feature = "test-serve"))]
+pub mod test_serve;
+
 mod auth;
 mod host_ctx;
 mod module;

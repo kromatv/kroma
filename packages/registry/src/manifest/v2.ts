@@ -5,7 +5,7 @@
 // checked, not asserted.
 
 import { z } from 'zod';
-import { Capability, CapabilityReq } from '../documents/v1.ts';
+import { Contribution, PointDef, PointReq } from '../documents/v1.ts';
 
 // Any optional field may arrive as an explicit null.
 const DependencyMap = z.record(z.string(), z.string()).nullish();
@@ -116,29 +116,24 @@ export const Manifest = z.object({
   optionalDependencies: DependencyMap.describe(
     'Soft dependencies, same shape: version-checked and ordered first when present, but not required.',
   ),
-  provides: z
-    .array(Capability)
+  definesPoints: z
+    .array(PointDef)
     .nullish()
     .describe(
-      'Capabilities this module implements, as (kind, id). May carry admin UI metadata so the add-picker is data-driven.',
+      "Points this module INVENTS, for other modules to plug into. `name` is local; the full name is `<this module's id>/<name>`, so ownership reads off the name and two authors cannot collide.",
     ),
-  requires: z
-    .array(CapabilityReq)
-    .nullish()
-    .describe('Capability dependencies, satisfied by any module providing the (kind[, id]).'),
-  /** Cross-module RPC contracts this module SERVES, by name. Distinct from
-   *  `provides`: this is the machine wiring a consumer resolves against, so no
-   *  one has to name a module id. */
-  ports: z
-    .array(z.string())
+  contributes: z
+    .array(Contribution)
     .nullish()
     .describe(
-      'Cross-module RPC contracts this module SERVES, by name (e.g. torznab, indexer-db). Distinct from provides, which describes user-configurable capabilities: this is the machine wiring a consumer resolves against, so no one has to name a module id.',
+      'Points this module answers, its own included. One declaration where there used to be three: `provides` described a capability for the admin picker and `ports` described the RPC name resolution matched on, and an engine advertised the same fact under both.',
     ),
-  permissions: z
-    .array(z.string())
+  consumes: z
+    .array(PointReq)
     .nullish()
-    .describe("Permissions this module's own routes require."),
+    .describe(
+      'Points this module CALLS. Unlike a module id in `dependencies`, this says "something has to answer this", which is what a store can resolve without naming a peer.',
+    ),
   config: z
     .array(ConfigField)
     .nullish()
@@ -164,7 +159,7 @@ export const Manifest = z.object({
     .array(z.string())
     .nullish()
     .describe(
-      'Capability kinds for filtering. Defaults to the kinds this module provides, so it rarely needs writing by hand.',
+      'Words a store filters by. Defaults to the local half of each point this module answers, so it rarely needs writing by hand.',
     ),
 });
 export type Manifest = z.infer<typeof Manifest>;

@@ -1,215 +1,426 @@
-# The module system as a plugin system
+# The module system
 
-Where the module system stops being a plugin system, and the shape that fixes it.
+How a module extends KROMA, how a module extends another module, and why the
+core knows none of it.
 
-[`docs/modules-as-kmod.md`](modules-as-kmod.md) covers how a module is packaged,
-spawned, supervised and released. That part works. This document is about the
-contract layer, which does not: the core still names the modules it hosts, and a
-module type nobody has written yet has nowhere to declare itself.
+[`modules-as-kmod.md`](modules-as-kmod.md) covers packaging, spawning,
+supervision and release. That layer works. This document is the contract layer,
+which did not: the core compiled every module's vocabulary, and a module type
+nobody had written yet had nowhere to declare itself.
 
-## The rule being broken
+## What a module has to be able to do
 
-The core hosts modules. It must not know what a module is for.
+These are the acceptance tests for the whole design. A module can:
 
-Today it does. `server/crates/kroma-module-sdk/src/ports/` is 3990 lines of
-module vocabulary living inside the core cargo workspace:
+1. Add HTTP routes, user-facing UI and admin UI.
+2. Own its data, and reach a declared slice of the core's.
+3. Read and write settings, declare and run scheduled jobs, send notifications,
+   publish events AND react to them, act as the signed-in user under the
+   permissions it declares.
+4. Call another module without naming it, without linking it, and without either
+   one being installed when the other was built.
+5. **Define an extension point of its own, and be extended by modules that did
+   not exist when it shipped.** The download manager defines
+   `tv.kroma.torrents/client`; qBittorrent and Transmission answer it. Neither
+   the core nor the download manager was edited to add the second one.
+6. Ship, version and release on its own tag, with no core release.
 
-```
-ports/torznab.rs          ports/download.rs      ports/vpn.rs
-ports/indexer.rs          ports/download_client.rs
-ports/acquisition.rs      ports/naming/
-```
+And the constraint that shapes everything: **the core knows the mechanism and
+never the meaning.** It routes calls between modules whose purpose it cannot
+name.
 
-`ports/mod.rs` claims "only generic contracts live here, never a module's own
-types". That is not what is there. `AcquisitionSearchPort`'s own doc comment
-opens with "The acquisition module's interactive-search contract". Each of these
-files is one module's domain, and adding a module type means editing a crate the
-core compiles.
+## The kernel
 
-Four places where the leak is load-bearing:
+Five primitives. None of them mentions a domain.
 
-1. The server binary depends on `kroma-module-sdk` (`server/Cargo.toml:238`) and
-   `src/api/requests.rs:61` resolves `AcquisitionSearchPort`. `/api/requests/:id/search`
-   and `/grab` are core routes that 404 unless one specific module is installed.
-2. `kroma-module-sdk` depends on `kroma-scene`, which is
-   `modules/tv.kroma.scene/server` (`server/Cargo.toml:155`), and re-exports it
-   as `kroma_module_sdk::scene`. A core crate depending on a module.
-3. The binary links `kroma-whisper` and `kroma-vector` (`server/Cargo.toml:235-236`)
-   behind the `whisper-*` and `semantic-embeddings` features, with
-   `src/boot/embedder.rs` and `src/api/online_subs.rs` naming the sidecars in code.
-4. `HostCtx::get_service(TypeId)` and `kroma_module_host::resolve_port<P>` pass
-   trait objects between modules in-process. A `TypeId` only matches when both
-   ends compiled the same trait from the same crate, so this mechanism *requires*
-   a shared trait crate the core can see. It is the reason `ports/` exists.
+| Primitive | What the core does | Where it lives |
+| --- | --- | --- |
+| Lifecycle | install, enable, spawn, supervise, health, uninstall | `kroma-module-supervisor` |
+| Declaration | read each manifest's defines / contributes / consumes | `kroma-module-manifest` |
+| Resolution | point name to the live contributions answering it | `Supervisor::contributions` |
+| Transport | an authenticated JSON call to one contribution | `kroma-module-host` |
+| Host capabilities | settings, storage, events, jobs, notifications, session | `/api/_host/*` |
 
-The mechanism that does not require any of this already ships and already works.
-`Supervisor::port_endpoint(name)` reads every installed manifest's `ports`,
-finds a running module that declares the name, and answers with its base URL and
-token. `kroma_module_host::call` POSTs JSON to `/_port/<method>` there. No core
-type is involved and no caller names a module id. Every typed trait in `ports/`
-is a convenience wrapper over that, bought at the price of the core's ignorance.
+Everything a module does with another module is resolution plus transport.
+Everything a module does to the server is a host capability. There is no third
+thing, and no place for a trait describing what a module is for.
 
-## Three declarations for one idea
+## The extension point
 
-A manifest advertises the same thing three ways.
-
-`provides: [{kind, id}]` is the capability advertisement, and what `requires`
-gates on. `ports: [string]` is the RPC advertisement, and what `port_endpoint`
-resolves. `dependencies: {module-id: semver}` is a hard link to another module by
-id. So `tv.kroma.torznab` says `provides: indexer-engine/torznab` and
-`ports: ["torznab"]`, which are the same fact written twice, and
-`tv.kroma.engine.qbittorrent` says `dependencies: {tv.kroma.torrents: ^0.2.0}`
-purely to import a trait, which is the same fact written a third way and the
-wrong way round: an engine plugin should not depend on the module that consumes it.
-
-Three problems follow.
-
-Port names carry no version. A provider built against an older shape of
-`indexer-search` resolves fine and fails at the first request. `engines`
-versions the host, not the contract.
-
-`port_endpoint` returns the first match. Two modules provide `indexer-engine`
-today (`tv.kroma.indexer` as `builtin`, `tv.kroma.torznab` as `torznab`) and
-three provide `download-client` (rqbit, qbittorrent, transmission), but a port
-has no instance id, so a consumer can neither fan out over all providers nor ask
-for the one the operator picked. `tv.kroma.acquisition` requires
-`indexer-engine` and needs every one of them.
-
-The Store resolves dependencies by module id. A plugin marketplace resolves them
-by contract: "this needs something that provides `kroma.indexer.engine@1`, here
-are the two modules that do."
-
-## Target shape
-
-One concept. A module declares which extension points it answers and which it
-calls. The core resolves a point name to a set of live endpoints and forwards
-opaque JSON. It never deserializes a payload and never names a point.
-
-The prior art worth copying is VS Code's contribution points for the manifest
-side, HashiCorp's go-plugin for the process and handshake side (already how the
-supervisor works), and LSP for versioning a JSON contract that two independently
-released binaries have to agree on.
-
-### 1. Contracts move out of the core tree
-
-A contract belongs to whoever defines the point, and lives beside the modules:
+A point is a named, versioned place where behaviour can be plugged in. Its name
+is namespaced by the module that defines it, so ownership is legible and two
+authors cannot collide:
 
 ```
-modules/contracts/
-  torznab/            kroma-contract-torznab
-  download-client/    kroma-contract-download-client
-  indexer/            kroma-contract-indexer
-  download-ledger/    kroma-contract-download-ledger
-  vpn/                kroma-contract-vpn
-  acquisition-search/ kroma-contract-acquisition-search
+tv.kroma.torrents/client
+tv.kroma.indexer/engine
 ```
 
-Each is a leaf: serde types, a client built from a `Resolver`, a router builder
-for the provider side, and the point's name and major version as constants. It
-depends on `kroma-module-host` and nothing else, never on `kroma-engine` or
-`kroma-db`. Provider and consumer both path-dep it. The core deps none of them,
-and a third-party contract is the same kind of crate in someone else's repo.
+The handful the CORE calls are bare — `acquisition`, `transcriber`, `embedder` —
+because the core has no manifest to define one in and nothing else may define
+one. A bare name is the core's; a name with a `/` belongs to the module before
+it.
 
-### 2. Two kinds of thing, currently confused
-
-A **service point** is stateful, owned by one process, reached over RPC. Torznab
-search, a download client, the VPN bridge.
-
-A **compute library** is a pure function, versioned as a crate and linked by its
-consumers. `kroma-scene`'s release parser and the naming engine are these, which
-is why the RPC treatment goes badly for them: acquisition parses every release of
-every search, and a localhost round trip per release is slower than the code it
-replaced. They should not be points at all. `scene` becomes an ordinary crate
-dependency of the modules that parse release names, dropped from the SDK.
-`naming` becomes pure by taking its templates as arguments instead of reading the
-core's `Settings`, which is also what lets it stop needing the `engine` feature.
-
-Making the distinction explicit in the manifest (`library: true` already exists)
-stops the next contract from picking wrong.
-
-### 3. Points are versioned and resolution returns a set
+Three manifest verbs, and every module may use all three:
 
 ```jsonc
-// provider
-"contributes": [{ "point": "kroma.download.client", "version": 1, "id": "qbittorrent" }]
-// consumer
-"consumes":    [{ "point": "kroma.download.client", "version": "^1" }]
+// tv.kroma.torrents — defines a point, and answers it itself
+"definesPoints": [
+  { "name": "client",
+    "methods": ["test", "add", "status", "pause", "resume", "reannounce", "remove"] }
+],
+"contributes": [
+  { "point": "tv.kroma.torrents/client", "id": "rqbit" }
+],
+"consumes": [
+  { "point": "tv.kroma.indexer/torrent-fetch" },
+  { "point": "tv.kroma.vpn/proxy", "optional": true }
+]
 ```
 
-The supervisor refuses to resolve a consumer to a provider whose major does not
-match, and logs it on the module's own log at spawn rather than failing a request
-an hour later. That is go-plugin's handshake, moved into the manifest where an
-operator can read it before installing.
+```jsonc
+// tv.kroma.engine.qbittorrent — answers someone else's point
+"contributes": [
+  { "point": "tv.kroma.torrents/client",
+    "id": "qbittorrent", "label": "qBittorrent", "fields": [ /* its own config */ ] }
+]
+```
 
-Resolution grows the two shapes that are missing:
+`version` defaults to 1 on both sides, so it is written only when a point moves
+past its first major.
 
-- `resolve_all(point)` for a consumer that fans out. Acquisition over every indexer.
-- `resolve_one(point, instance)` for a consumer that wants the one the operator chose.
+This replaced three overlapping declarations that all said the same thing.
+`provides` was the capability advertisement the admin UI read, `ports` was the
+RPC advertisement resolution read, and `requires` was a capability KIND with no
+owner. One fact, written three ways: an engine advertised `download-client`
+under two of them and the third was the same fact a third time.
 
-Which provider wins when several answer is the operator's decision, so it belongs
-in a core setting keyed by point name, not in a consumer's code.
+### Why this is recursive, and why that is the whole trick
 
-### 4. The in-process registry goes away
+The core resolves `tv.kroma.torrents/client` by matching a string against
+installed manifests and answering with endpoints. It does not know that
+the string means torrents, or downloads, or anything. So a module defining a
+point is not a special case of the core defining one: **it is the only case, and
+the core is just a module that happens to ship in the binary.**
 
-Delete `HostCtx::get_service`, `resolve_port`, `port_service`, and the `TypeId`
-plumbing behind them. One dispatch mechanism, and with it the only reason a
-contract had to sit where the core could see it.
+The old model could not do this. `DownloadClientHost::register_engine` took a
+`fn(&mut DownloadClientRegistry)`, so an engine plugged a factory into the
+manager's process by function pointer. That requires one address space, which is
+why qBittorrent and Transmission do not work as sidecars today. Inverting it
+fixes the break and removes the registry: an engine serves the methods, and the
+manager calls whichever endpoints resolution hands it.
 
-### 5. The core's module-shaped routes become one generic handler
+### How many answers a point has
 
-`/api/requests/:id/search` and `/grab` keep their URLs. The core resolves
-`kroma.acquisition.search@1` by name and forwards the body as opaque JSON.
-Roughly forty lines of `proxy_point(point, method)`, reused for the embedder in
-`boot/embedder.rs` and the transcriber in `api/online_subs.rs`. That closes item
-4 of the kmod doc: `kroma-scene`, `kroma-whisper` and `kroma-vector` leave
-`server/Cargo.toml`, and the `whisper-metal` / `whisper-cuda` /
-`whisper-accelerate` / `whisper-local` / `semantic-embeddings` features leave the
-server build. The ML backend becomes the whisper module's own build choice, which
-the per-target artifact catalog already handles.
+A point that takes one answer is contributed without an `id`; one that takes
+several has an `id` per contribution, and that is the whole declaration — there
+is no separate cardinality field to keep in step with it. A consumer either takes
+what resolution hands it or names the instance it wants:
 
-### 6. What the SDK is afterwards
+- **All of them.** Acquisition searches every indexer the
+  `tv.kroma.indexer/search` contribution reports and merges.
+- **The one the operator picked.** A download goes to the client chosen in
+  settings, keyed by point name. That choice is the operator's, so it lives in a
+  core setting and never in a consumer's code.
 
-Keeps the manifest re-export, `embedded_module!`, `host`, `domain`, `http`, `db`
-behind `storage`, and `primitives`. Loses `ports` and `scene`. `engine` is next
-after that: it is the whole core behind one feature flag, two modules use it, and
-the kmod doc already names splitting it into a thin client as the prerequisite
-for a lean sidecar.
+Resolution therefore returns a list, always. `Supervisor::port_endpoint`
+returning the first manifest that matched was silently wrong the moment two
+modules answered the same name, which is already true of
+`tv.kroma.torrents/client` (three answers) and `tv.kroma.indexer/engine` (two).
 
-### 7. The host contract has its own smaller leak
+### Versions
 
-`HostCtx::tmdb_api_key()` names a specific third-party service in a general
-contract. `library_folders()` and `metadata_language()` are core facts and fine
-to offer. `trigger_job(&'static str)` cannot carry a job key a module invented.
-Worth fixing after the above, not before: a generic `secret(name)` and
-`setting(key)`, and metadata lookup as a point like any other.
+A point declares a major. A contribution declares the major it was built
+against. The supervisor finds the definer from the point's own name and skips a
+contribution that answers another major, saying so on that module's own log
+rather than failing a request an hour later. Within a major, evolution is additive only:
+a new field must default, because the two ends were built at different times from
+different sources and the operator installed whichever pair they installed.
 
-## Order of work
+## The rule that keeps the core ignorant
 
-Each phase leaves the tree green and shippable.
+The core does define a few points, because a host with no hooks cannot be
+extended in any way that touches it. The test for whether a hook belongs to the
+core is one question:
 
-0. Freeze. No new file under `kroma-module-sdk/src/ports/`.
-1. `resolve_all` / `resolve_one`, and `contributes` / `consumes` with versions in
-   manifest schema 3. Purely additive; `kroma-module-manifest/src/compat.rs`
-   already migrates schema versions.
-2. Move the six service contracts to `modules/contracts/*`, one per PR. Each move
-   is a new crate, a path dep swapped at both ends, and a deletion from the SDK.
-   `scene` and `naming` become plain libraries in the same pass.
-3. Delete `get_service`, `resolve_port`, `port_service`, the SDK's `ports` module
-   and its `kroma-scene` dep. The core's remaining need is `ModuleManifest`, so it
-   names `kroma-module-manifest` and drops `kroma-module-sdk`.
-4. `proxy_point` in the core. Delete the acquisition, whisper, vector and scene
-   special cases, three path deps and five cargo features.
-5. Generate both halves of a contract from one declaration, so contract number
-   seven costs a declaration instead of 400 lines. Split the SDK's `engine`
-   surface into a thin client.
-6. Show the operator the point graph in Admin -> Modules: every point, who
-   answers it, who calls it, which version. Ship a conformance test kit a
-   third-party contract can run against both ends.
+> Can you name it without naming a module or a vendor?
 
-## How to tell it worked
+`tmdb_api_key` fails badly. `whisper` fails: it is a model's name, so only one
+implementation could ever answer it. `embedder` and `transcriber` pass — the
+search pipeline genuinely needs embeddings and the subtitle service genuinely
+needs transcription, and neither word names who provides it. `pipeline-stage`
+passes. `metadata-provider` passes. `search-ranker` passes.
 
-A module type nobody here has thought of ships without a core release. Mechanically:
-`server/` deps no crate under `modules/`, no crate under `server/` names a module
-domain in a type or a function, and the only module string the core resolves is a
-point name it was handed. The remaining hits for `tv.kroma.*` under `server/` are
-test fixtures and prose, which is where they belong.
+An earlier draft of this rule failed `embedder` and `transcriber` too, on the
+grounds that they exist because a vector module and a whisper module exist. That
+was too strong, and worth recording as a correction rather than quietly fixing:
+the core's outbound calls are allowed to name a CAPABILITY it needs. What they may
+not name is a vendor, a model or a module. By that reading `Whisper` was the only
+real offender, and `HostCtx::tmdb_api_key()` is now `secret(name)`.
+
+### The core names them, and declares nothing
+
+Naming a capability is as far as it goes: there is no trait a module implements.
+`kroma-engine/src/ports.rs` used to hold `Embedder` and `Transcriber` — two
+traits, in the core, describing what a module does — and it is gone. What the
+engine has instead is one generic type:
+
+```rust
+// kroma-engine/src/point.rs
+pub struct Point { /* a name, and how it resolves */ }
+impl Point {
+    pub fn call<B: Serialize, T: DeserializeOwned>(&self, method: &str, body: &B) -> Option<T>;
+}
+```
+
+`state.embedder` is a `Point`, and `services/embeddings.rs` is how the core's own
+search uses it: four free functions over JSON, which nothing outside the crate
+implements. Subtitle generation takes the transcription step as a closure the
+composition root supplies, so the engine holds no type for who transcribes. A
+module answering either point implements nothing this repo declares.
+
+`None` is the whole absence story: no module, an unreachable one, or an answer
+this build cannot read all read the same to the caller, and the feature degrades —
+no recommendations, or a generation that fails with a reason. `NoopEmbedder`, the
+in-process stand-in that used to exist for this, is gone with the trait.
+
+So the core's hook set is small, closed, about the core's own concerns, and
+type-free. Everything else is a point some module defined, and the core has no
+opinion about any of it.
+
+## The wire
+
+```
+POST http://127.0.0.1:<port>/_port/<point>/<method>
+Authorization: Bearer <per-process host token>
+{ ...request json... }
+->  { "Ok": ...json... } | { "Err": "message" }
+```
+
+Each side declares its own structs for the JSON it reads or writes. There is no
+shared type, and that is deliberate: the two ends ship on separate tags at
+separate versions and the operator installs them independently, so a shared Rust
+type proves the ends agreed *at build time in this repo* and says nothing about
+the pair actually running. The old contract crates admitted it in their own doc
+comments while carrying 4000 lines of hand-written client, trait and route
+boilerplate over `call()` and `contributions()`, which are ten lines and already
+generic.
+
+The path carries the point's FULL name, which is the same string the caller
+resolved with (`call_point` builds it), so nothing has to hold a point name and
+an unrelated URL prefix and keep the two in step.
+
+What holds the wire together instead:
+
+- Unknown fields are ignored, missing fields default. Tolerance is the contract.
+- Each side pins the JSON it sends or expects in a test, so a rename fails
+  locally rather than in someone's install.
+- A point's method list lives in the definer's manifest, so the store can warn
+  when a consumer wants a method the installed provider does not serve.
+
+One consequence worth stating: with JSON on the wire and no crate to link, a
+module does not have to be Rust. It has to read the runtime env, speak
+`/api/_host/*`, and serve `/_port/*`. That was theoretically true before and
+practically false.
+
+## Points are not libraries
+
+Shared *computation* is not an extension point and must not become one. The
+release-name parser scores every release of every search; a localhost round trip
+per release is slower than the code it replaced. Same for the naming engine.
+
+The rule: **a point method is a coarse operation. If you would call it in a
+loop, it is a library.** A library is an ordinary versioned crate that its
+consumers link, exactly like serde, and it has no manifest, no point and no
+endpoint. `kroma-scene` and the naming engine are libraries. They were listed
+under `ports/` and should not have been.
+
+## What the host offers a module
+
+Shipped and generic: settings read/write, its own SQLite file plus a declared and
+authorizer-enforced slice of the core database, event publish, notifications,
+session lookup and permission checks, i18n with the module's own catalogue first,
+admin routes reverse-proxied under `/api/module/<id>/*`, a frontend remote.
+
+Four gaps stand between that and "a module can do whatever we want":
+
+- **A module cannot define a permission.** `Permission` is a closed enum whose
+  `parse` DROPS an unrecognised stored string, so opening it would turn every
+  value previously dropped from a user's row into a live permission on existing
+  data. That is an auth change on stored records, not a refactor, and it is the
+  one gap here still worth a deliberate decision. `manifest.permissions` used to
+  advertise it: no module ever populated the field and nothing read it, so it is
+  removed rather than left lying.
+- **`tmdb_api_key()` named a vendor** in a general contract. Closed: `HostCtx`
+  now has `secret(name)`, the callback API answers `/_host/secret?name=` and
+  `/_host/metadata-language`, and the core's three callers ask for `"tmdb"`. The
+  contract no longer grows a method per provider, and a host that does not know a
+  name answers `None` rather than a different secret.
+
+Two of the four gaps this list used to name were wrong, and checking them is what
+found it. **Jobs already work**: the runtime registers a module's `jobs()` with
+the core scheduler over `/api/_host/register-job`, and the core fires them by
+POSTing `/_job/run/{key}`, so they appear in the admin job list like an in-core
+one. And **events are two-way now** — see below.
+
+## Extending a module's frontend
+
+The backend recursion above has no frontend half yet. A module ships a Module
+Federation remote and can add routes and admin pages, but it cannot declare a
+slot another module fills, so qBittorrent's settings panel cannot appear inside
+the download manager's page without the download manager importing it.
+
+The shape that matches the backend: a frontend point is a named slot, declared by
+the module that renders it, filled by `contributes` entries whose remote exports
+a component. The registry already resolves remotes by module id; what is missing
+is the slot name and the lookup. Not built.
+
+## Trust, stated honestly
+
+A module is a native process running as the same user. The storage grant is a
+privilege *declaration*, enforced per connection by SQLite's authorizer, and it
+is real for anything going through the SDK. It is not a sandbox: the process
+could open the file itself. What the model buys is that reach is declared where
+an operator reads it before installing, and that the official registry is pinned
+and every artifact sha256-verified. For a third-party registry, that is the whole
+of the protection, and the consent screen should say so in those words.
+
+## Not solved here
+
+**Cross-module workflows have no transaction.** Acquisition grabs, torrents
+records, the import runs. Three processes, no rollback. Today this is implicit;
+it needs idempotency keys on the grab and a reconciliation job, or an explicit
+statement that the ledger is eventually consistent and how it heals.
+
+**Startup order.** A consumer already has to handle "nothing answers this point"
+on every call, which is the right shape. Telling the OPERATOR is done: both module
+list endpoints report `unmet`, the points a module consumes that no enabled module
+answers, and the admin row draws an "Inert" chip naming them. Before that,
+disabling the last download engine left acquisition running, answering nothing,
+and reporting itself healthy.
+
+## What changed, and what has not
+
+Phases 1 through 5 have landed. Each was green on `cargo clippy --workspace`,
+`cargo test --workspace`, `bun run modules:clippy` and `bun run modules:test`.
+
+1. **Resolution, done.** `HostCtx::contributions(point) -> Vec<Contribution>`
+   replaced `port_endpoint`, which answered with the FIRST manifest that matched
+   and was therefore wrong the moment two modules answered one name. A
+   contribution carries the instance it registered under, so a consumer can fan
+   out over every indexer or pick the download client the operator chose.
+   `point_resolver` re-resolves per call; `/api/_host/contributions` is the
+   callback.
+2. **The contract layer, deleted.** `kroma-module-sdk/src/ports/` is gone: 4000
+   lines of trait, client, route builder and resolver, inside the core workspace,
+   describing what six modules were for. Each module declares the structs it
+   reads, calls a peer by point name, and serves its own `/_port/<point>/<method>`
+   routes. The naming engine and the release parser became libraries under
+   `modules/lib/`, because a function called once per imported file or once per
+   scored release is not an extension point.
+3. **The core stops naming modules.** `server/Cargo.toml` deps no crate under
+   `modules/`. `api/requests/acquisition.rs` forwards opaque JSON to whatever
+   answers `acquisition`; `boot/embedder.rs` and `boot/transcriber.rs` resolve by
+   point name. `kroma-whisper` and `kroma-vector` left the binary
+   along with `semantic-embeddings` and the four `whisper-*` features, which had
+   been compiling candle into the server for code no file under `src/` reaches.
+4. **The engines inverted, and the recursion is real.** The download module
+   defines `tv.kroma.torrents/client` and answers it in-process for the embedded
+   librqbit engine. qBittorrent and Transmission are their own sidecars answering
+   the same point under their own kind, each with its own binary, its own routes
+   and its own structs; the download module deps neither, and resolves whichever answers
+   the kind a client row names.
+
+   This one fixed a bug rather than only a shape. `register_engine` took a
+   `fn(&mut DownloadClientRegistry)` and `DownloadClientCtx` carried the embedded
+   handle as an `Arc<dyn Any>`, so an engine had to share the download module's
+   address space, and both `.kmod`s shipped with NO binary at all: the supervisor
+   could never have spawned them. They were installable in name only. Inverting it
+   deleted the registry, the ctx and the host trait, and now `bun run modules plan`
+   emits a binary for each.
+
+   The engine is stateless about which client it serves: an operator may have two
+   qBittorrents, so the row's URL and credentials travel with every call rather
+   than being held by the sidecar. `RemoteEngine` pins its endpoint for the one
+   call it is built for, because the monitor builds one per active download every
+   five seconds and re-resolving per method would double the callbacks to learn the
+   same answer twice.
+
+Three things the deletion bought that were not the point but are worth naming.
+An indexer's `api_key`, base URL and settings JSON stopped crossing a process
+boundary to consumers that read none of them. Eight fields of engine bookkeeping
+stopped crossing to the import pass. And the first consumer-side wire test failed
+immediately, because a struct was not `#[serde(default)]` and a leaner provider
+payload would have broken every external search: a shared type had been hiding
+that, since the two modules release on separate tags.
+
+5. **Events are two-way.** A module declares topics on its `ServerModule` and
+   handles them in `on_event`; the runtime registers them at boot and serves
+   `/_event/{topic}`, and the core reads its own bus, matches each event's `type`
+   against what modules asked for, and POSTs it to each subscriber. Before this a
+   module could publish onto the bus and never hear it, so it could be called BY
+   another module but never react to one.
+
+   Push rather than a stream a module holds open, for the same reason jobs are
+   push: the supervisor already knows every module's port, a restarted module
+   needs no reconnection, and there is no connection to leak. The costs are
+   stated where an author will read them — opt in per topic because the bus
+   carries playback progress, delivery is best-effort so anything that must not
+   be missed belongs in a job, and an event addressed to one user is not
+   delivered to a module because a module is not a user.
+
+   The core still learns nothing about what a topic means. It matches a string it
+   was handed against a string a module asked for.
+
+Two things an engine sidecar does not do yet, both because no engine reads them:
+`only_files` (file selection is the embedded engine's) and a pre-fetched
+`torrent_bytes` (an external client takes a URL). Adding either is a new key,
+which is additive; `list_files` answers "unsupported" without a round trip,
+because no external client exposes a list-only add.
+
+6. **The manifest says it once.** `definesPoints` / `contributes` / `consumes`
+   replaced `provides` / `ports` / `requires` across the Rust manifest,
+   `packages/registry`'s zod schema, the admin UI and twelve `module.json` files.
+   Every point a module defines is namespaced by its id, so resolution reads one
+   declaration and a major mismatch is caught against the definer's own number.
+
+   The schema stays at **2**. Nothing is deployed, so there is no bundle in the
+   wild spelling these fields the old way, and a version whose only purpose is to
+   describe a state that never shipped is a version to maintain for nothing. What
+   guards an old server reading a new bundle is `engines.server`: every module
+   floors at `>=0.1.39`, and the twelve move to 0.3.0 together with their
+   dependency ranges, because the point names changed and a 0.2.x peer resolves
+   nothing.
+
+   The indexer's Torznab point went with it. `torznab` was a protocol name at the
+   top level; it is now a contribution to `tv.kroma.indexer/engine` under the kind
+   an indexer row stores, so a module answering a protocol nobody here has heard
+   of is reached with nothing changed on the indexer's side. A `prowlarr` row pins
+   that.
+
+7. **The core's two traits are gone.** `kroma-engine/src/ports.rs` declared
+   `Embedder` and `Transcriber`; the engine now holds a generic `Point` and calls
+   JSON on it (see [the rule](#the-core-names-them-and-declares-nothing) above).
+   A module answering `embedder` or `transcriber` implements nothing declared
+   here, which is what makes a capability nobody has thought of — a video encoder,
+   say — no different from these two: a point name, a payload, and no core edit.
+
+What has NOT landed:
+
+8. **Module-declared permissions** (see above — it needs a decision about stored
+   auth data, not a refactor) and **frontend slots** are untouched. The point graph
+   in Admin has since landed.
+
+## How we know it worked
+
+A module type nobody here has thought of ships without a core release, and a
+module can be extended by one that did not exist when it shipped. The second half
+is now true out of process: a `.kmod` contributing `tv.kroma.torrents/client`
+under a new id is picked up by the download module at runtime, and neither the
+core nor the download module is edited to accept it.
+
+Mechanically, today: `server/Cargo.toml` deps no crate under `modules/`; no crate
+under `server/` names a module's domain in a type, trait or function; the three
+point names the core holds — `acquisition`, `transcriber`, `embedder` — are bare
+capability names in its own route table and composition root. The remaining
+`tv.kroma.*` and point-name hits under `server/` are test fixtures and prose.

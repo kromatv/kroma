@@ -112,7 +112,7 @@ pub fn targets_for_scope(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use kroma_module_sdk::scene::Target;
+    use kroma_scene::Target;
 
     fn ep(season: u32, episode: u32, air_date: Option<&str>) -> WantedRow {
         row(season, episode, air_date, "wanted")

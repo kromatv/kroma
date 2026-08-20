@@ -20,6 +20,13 @@ const SOURCE_KEY = {
   unknown: 'admin.modulesSourceUnknown',
 } as const satisfies Record<ModuleOrigin['kind'], MessageKey>;
 
+// The local half of the point plus the instance, when there is one:
+// `tv.kroma.torrents/download-client` + `rqbit` reads as `download-client:rqbit`.
+function pointLabel(c: { point: string; id?: string | null }): string {
+  const local = c.point.split('/').pop() ?? c.point;
+  return c.id ? `${local}:${c.id}` : local;
+}
+
 function sourceKey(origin: ModuleOrigin | undefined): MessageKey {
   return origin ? SOURCE_KEY[origin.kind] : 'admin.modulesSourceBuiltIn';
 }
@@ -42,11 +49,15 @@ function InstalledRow({
 }>) {
   const t = useT();
   const { busy, error, toggle } = useModuleToggle(m.id, onChanged);
-  const provides = m.provides ?? [];
+  const answers = m.contributes ?? [];
   const localBuild = m.origin?.localBuild === true;
   // Only a module that HAS a process can be stopped. A library module is code
   // co-linked into another sidecar, so "not running" is its normal state.
   const stalled = m.enabled && m.hasSidecar && !m.running;
+  // Running but useless: something it needs is not installed or is switched off.
+  // Only worth saying while it is enabled, since a disabled module is inert by
+  // choice.
+  const unmet = m.enabled ? (m.unmet ?? []) : [];
   const stateKey = m.enabled ? 'admin.modulesEnabled' : 'admin.modulesDisabled';
   const source = localBuild || m.origin?.kind === 'unknown' ? null : t(sourceKey(m.origin));
   return (
@@ -73,6 +84,13 @@ function InstalledRow({
                   {t('admin.modulesUpdateChip', { version: update })}
                 </Pill>
               )}
+              {unmet.length > 0 && (
+                <Tooltip label={t('admin.modulesUnmetHint', { needs: unmet.join(', ') })}>
+                  <Pill ink="danger" bg="danger/13" variant="overline">
+                    {t('admin.modulesUnmet')}
+                  </Pill>
+                </Tooltip>
+              )}
             </Row>
             <Text variant="meta" color="textDim" lines={1}>
               {m.id} · v{m.version}
@@ -81,9 +99,9 @@ function InstalledRow({
           </Box>
         </Table.Cell>
         <Table.Cell wide row wrap align="center" gap={6} justify="flex-end">
-          {provides.slice(0, 3).map((c) => (
-            <Badge key={`${c.kind}:${c.id}`} tone="neutral">
-              {c.kind}:{c.id}
+          {answers.slice(0, 3).map((c) => (
+            <Badge key={`${c.point}:${c.id ?? ''}`} tone="neutral">
+              {pointLabel(c)}
             </Badge>
           ))}
         </Table.Cell>

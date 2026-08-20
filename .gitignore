@@ -30,6 +30,8 @@ server/target/
 # makes that artifact reproducible. Plus the built frontend remote and the
 # staging dir modules:pack assembles bundles in.
 modules/*/server/target/
+# The shared-library workspace (modules/lib) is one workspace, not one per crate.
+modules/lib/target/
 modules/*/ui/dist/
 modules/*/.bundle/
 server/data/

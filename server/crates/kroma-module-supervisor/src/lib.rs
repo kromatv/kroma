@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
+use kroma_module_host::Contribution;
 use kroma_module_manifest::ModuleManifest;
 use serde_json::Value;
 
@@ -115,25 +116,72 @@ impl Supervisor {
         self.procs.read().unwrap().get(id).map(|p| p.port)
     }
 
-    /// `(base_url, auth_token)` of the running module that serves the `port`
-    /// contract, found by reading every installed manifest's `ports`. Resolved
-    /// per call, so a provider that was just installed, restarted, or moved to
-    /// a different localhost port is picked up with nothing re-wired, and no
-    /// caller anywhere names a module id.
+    /// Every running module that contributes `point`, found by reading the
+    /// installed manifests. Resolved per call, so a contributor that was just
+    /// installed, restarted, or moved to a different localhost port is picked up
+    /// with nothing re-wired, and no caller anywhere names a module id.
     ///
-    /// A manifest that declares the contract but whose module is not running is
-    /// passed over rather than resolved to, so a second provider still answers.
-    pub fn port_endpoint(&self, port: &str) -> Option<(String, String)> {
-        self.installed_manifests().into_iter().find_map(|m| {
-            if !m.ports.iter().any(|p| p == port) {
-                return None;
+    /// A manifest that declares the point but whose module is not running is
+    /// passed over rather than answered with, so a second contributor still
+    /// answers. ONE declaration is read now, not two: a `contributes` entry
+    /// carries the instance name when the point takes several and `None` when it
+    /// takes one, so a module can no longer say the same thing twice.
+    ///
+    /// A contribution built against a different MAJOR than the definer serves is
+    /// skipped, and said so on that module's own log, rather than resolved to and
+    /// failing a request an hour later. The definer is found from the point's own
+    /// name, which is why a point carries one.
+    pub fn contributions(&self, point: &str) -> Vec<Contribution> {
+        let installed = self.installed_manifests();
+        let defined_at = point_major(&installed, point);
+        let mut out = Vec::new();
+        for m in &installed {
+            let answers: Vec<&kroma_module_manifest::Contribution> =
+                m.contributes.iter().filter(|c| c.point == point).collect();
+            if answers.is_empty() {
+                continue;
             }
-            let live = self.port_of(&m.id)?;
-            Some((format!("http://127.0.0.1:{live}"), self.cfg.host_token.clone()))
-        })
+            let Some(live) = self.port_of(&m.id) else { continue };
+            let base = format!("http://127.0.0.1:{live}");
+            for answer in answers {
+                if defined_at.is_some_and(|major| answer.version != major) {
+                    self.say(
+                        &m.id,
+                        &format!(
+                            "ERROR answers {point} at v{} but it is defined at v{}; not resolved",
+                            answer.version,
+                            defined_at.unwrap_or(0)
+                        ),
+                    );
+                    continue;
+                }
+                out.push(Contribution {
+                    module_id: m.id.clone(),
+                    instance: answer.id.clone(),
+                    base_url: base.clone(),
+                    token: self.cfg.host_token.clone(),
+                });
+            }
+        }
+        out
     }
 
     pub fn host_token(&self) -> &str {
         &self.cfg.host_token
     }
+}
+
+/// The major the module that DEFINES `point` serves, or `None` when no installed
+/// manifest defines it — in which case a contribution's version has nothing to be
+/// checked against and is taken as given. A bare name (no `/`) is one of the
+/// handful the CORE calls, which no manifest defines.
+fn point_major(installed: &[ModuleManifest], point: &str) -> Option<u32> {
+    let (definer, local) = point.split_once('/')?;
+    installed
+        .iter()
+        .find(|m| m.id == definer)?
+        .defines_points
+        .iter()
+        .find(|d| d.name == local)
+        .map(|d| d.version)
 }
