@@ -30,7 +30,7 @@ assembles the `.spk`. Re-run faster with `SKIP_WEB=1` / `SKIP_RUST=1`.
 
 KROMA runs a **dynamic package source** (SynoCommunity-style: a Cloudflare Worker,
 `apps/packages`) that answers DSM directly and lists EVERY
-release, both channels, live from the GitHub Releases API - nothing is rebuilt
+release, both channels, live from the GitHub Releases API. Nothing is rebuilt
 or redeployed when a release ships. The `.spk` itself is hosted on the GitHub
 Release (GitHub's CDN).
 
@@ -104,7 +104,7 @@ worker source needs nothing: it reads the releases live.
 
 The musl target dir is cached between runs (`synology-v2-*` cache) and the
 cross image is digest-pinned, so a warm push build takes minutes, not a cold
-~15-minute compile. The full client fleet (desktop + TV + modules) additionally
+~15-minute compile. The full client fleet (desktop + TV + modules) also
 ships nightly at 03:00 UTC onto the same `nightly` prerelease via
 `.github/workflows/release.yml` (skipped when main has not moved).
 

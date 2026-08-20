@@ -16,7 +16,7 @@ export const story = defineStory({
   ),
 });
 
-One fact, read: an overline naming it and the value under it. Not a `Field` - nothing here is editable, so there is no shell, no focus ring and no error state. The label is always the ramp's overline role, which is what stops six screens drifting to six label sizes.
+One fact, read: an overline naming it and the value under it. Not a `Field`. Nothing here is editable, so there is no shell, no focus ring and no error state. The label is always the ramp's overline role, which is what stops six screens drifting to six label sizes.
 
 ```tsx
 <DataField.Root>
@@ -74,6 +74,6 @@ One fact, read: an overline naming it and the value under it. Not a `Field` - no
 </Do>
 
 <Dont>
-- Use it to label a control - that is `Field`, which owns the shell and the error.
+- Use it to label a control. That is `Field`, which owns the shell and the error.
 - Put a sentence in the value; a readout is a fact, not a paragraph.
 </Dont>

@@ -6,20 +6,19 @@ author: "Maxime Scharwath"
 tags: ["Design système", "Technique"]
 ---
 
-Une tuile de film a exactement la même allure sur un Apple TV, sur un téléviseur
-Samsung et dans votre navigateur. Ce n'est pas trois composants tenus en phase à
-la main : c'est **le même composant**. Voici comment.
+Une tuile de film a la même allure sur un Apple TV, sur un téléviseur Samsung et
+dans votre navigateur. C'est un seul composant, pas trois tenus en phase à la
+main.
 
 ## Écrit une fois, contre React Native
 
-Le kit `@kroma/ui` est écrit contre **React Native**. Sur les cibles natives
-(Apple TV, Android TV, iPhone, Android) il se rend nativement ; sur le web, les
-téléviseurs Tizen et webOS, l'app desktop Tauri et le client web, il passe par
-**react-native-web**. Le même fichier, deux moteurs de rendu.
+Le kit `@kroma/ui` est écrit contre React Native. Sur Apple TV, Android TV,
+iPhone et Android il se rend nativement. Sur le web, sur les téléviseurs Tizen et
+webOS, dans l'app desktop Tauri et dans le client web, il passe par
+react-native-web. Un fichier, deux moteurs de rendu.
 
-Les jetons de design, couleurs, typographie, élévations, focus, vivent aussi
-une seule fois, en TypeScript, et génèrent les variables CSS que consomment les
-cibles web :
+Les couleurs, la typographie, les élévations et le focus vivent aussi une seule
+fois, en TypeScript, et génèrent les variables CSS que lisent les cibles web :
 
 ```ts
 import { colors, type } from '@kroma/ui/tokens';
@@ -29,30 +28,26 @@ colors.bg;     // #0A0A0C, le charbon profond
 type.hero;     // 66px / 700, Bricolage Grotesque
 ```
 
-Ce site en est la preuve la plus simple : il ne redéfinit aucune couleur. Il
-importe le thème Tailwind v4 du kit, et rend donc dans exactement le même charbon
-et le même ambre que l'application.
+Ce site ne définit aucune couleur propre. Il importe le thème Tailwind v4 du kit,
+et rend donc dans le même charbon et le même ambre que l'application.
 
-## Le focus, la seule vraie fracture
+## Le focus est la seule vraie coupure
 
-Ce qui diffère réellement entre un téléviseur et un navigateur, ce n'est pas
-l'apparence, c'est la **navigation**. Une télécommande n'a pas de curseur.
+Ce qui diffère entre un téléviseur et un navigateur, c'est la navigation, pas
+l'apparence. Une télécommande n'a pas de curseur.
 
-- **En natif**, le moteur de focus de l'OS gère les déplacements directionnels
-  (UIFocusEngine sur tvOS, résolution `nextFocus` sur Android TV).
-- **Sur le web**, il n'y a pas de moteur de focus : le déplacement est
-  géométrique, le prochain focusable dans la direction pressée, avec la dérive
-  latérale pénalisée pour que les voisins en ligne droite gagnent.
+En natif, le moteur de focus de l'OS gère les déplacements directionnels :
+UIFocusEngine sur tvOS, résolution `nextFocus` sur Android TV. Sur le web il n'y
+a aucun moteur de focus, donc le déplacement est géométrique. Le prochain
+focusable dans la direction pressée gagne, avec la dérive latérale pénalisée pour
+qu'un voisin en ligne droite batte un voisin sur le côté.
 
-Cette fracture est isolée dans quelques fichiers `.web.ts`, et rien d'autre dans
-le kit n'a à en connaître l'existence.
+Cette coupure tient dans une poignée de fichiers `.web.ts`. Rien d'autre dans le
+kit n'en connaît l'existence.
 
-## Pourquoi ça compte
+## Ce que ça coûte, et ce que ça rapporte
 
-Parce que « multi-plateforme » ne veut pas dire « réécrit N fois ». Chaque écran
-que KROMA touche parle le même langage visuel parce qu'il partage littéralement le
-même code, et une amélioration de design profite à toutes les plateformes d'un
-coup, le jour même.
-
-> Les composants et les jetons existent une seule fois. Le reste n'est qu'une
-> coquille par plateforme.
+Écrire contre React Native coûte une étape de résolution dans chaque bundler et
+un second chemin de rendu à tenir honnête. Ce que ça rapporte : un changement sur
+la tuile de film est un seul commit, et tous les écrans que KROMA dessine
+l'ont le jour même. Six coquilles, un composant.

@@ -23,9 +23,9 @@ export const story = defineStory({
   ),
 });
 
-The brand film every client opens with: a chromatic light tunnel landing on the KR-wheel-MA lockup, full-screen with sound. It ships as **4K60 HEVC only** - fitting for an HEVC-first product - and anything without a hardware decoder falls back to a pure-CSS scene that needs no codec at all.
+The brand film every client opens with: a chromatic light tunnel landing on the KR-wheel-MA lockup, full-screen with sound. It ships as 4K60 HEVC only, fitting for an HEVC-first product, and anything without a hardware decoder falls back to a pure-CSS scene that needs no codec at all.
 
-It is a DOM component, deliberately: a real `<video>`, `document` visibility handling, and inline styles rather than a framework so it renders identically on the SSR shell and on a 2016 TV webview. **On native it renders `null`** - the Apple TV and phone clients play the same film through `expo-video` in their own shell, which is why this story is a note rather than a film in the native workbench.
+It is a DOM component, deliberately: a real `<video>`, `document` visibility handling, and inline styles rather than a framework so it renders identically on the SSR shell and on a 2016 TV webview. On native it renders `null`. The Apple TV and phone clients play the same film through `expo-video` in their own shell, which is why this story is a note rather than a film in the native workbench.
 
 ```tsx
 {showIntro && <KromaIntro onDone={() => setShowIntro(false)} />}
@@ -49,11 +49,11 @@ It is a DOM component, deliberately: a real `<video>`, `document` visibility han
 </Scene>
 
 <Do>
-- Mount it as a full-screen overlay and let `onDone` hand off to the app - it ends itself if playback stalls.
+- Mount it as a full-screen overlay and let `onDone` hand off to the app. It ends itself if playback stalls.
 - Reach for `lite` on a weak TV GPU: the CSS fallback then stays compositor-only.
 </Do>
 
 <Dont>
-- Add controls or a visible skip button - any key already skips, and the film is five seconds long.
+- Add controls or a visible skip button. Any key already skips, and the film is five seconds long.
 - Expect sound from the first frame: browsers block autoplay-with-sound until a gesture, so it starts muted and unmutes on the first one.
 </Dont>

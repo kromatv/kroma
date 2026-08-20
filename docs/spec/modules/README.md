@@ -1,19 +1,19 @@
 # Modules
 
-Status: **SHIPPED** overall — the out-of-process model, the `.kmod` bundle, the Store,
+Status: **SHIPPED** overall. The out-of-process model, the `.kmod` bundle, the Store,
 install-by-id and by-upload, checksum verification, dependency resolution and the
 compatibility gate are all released. Two sections stay open and carry their own status:
 the trust model for third-party registries, and the abandonment story. Every section
 carries a status; the file-level label is the floor.
 
-The base build ships **zero modules**. Everything past playback and catalogue —
+The base build ships **zero modules**. Everything past playback and catalogue,
 downloads, indexers, acquisition, VPN, transcription, embeddings, network discovery,
-remote access — arrives as an installable `.kmod` whose backend runs *out of the server
+remote access, arrives as an installable `.kmod` whose backend runs *out of the server
 process*. That is what makes every module uninstallable from Admin, and it is the
 load-bearing decision of this domain, chosen for three reasons:
 
 - **Isolation.** A module is a separate program the server spawns and supervises. A
-  module that crashes, hangs or is incompatible takes down *itself* — the server keeps
+  module that crashes, hangs or is incompatible takes down *itself*. The server keeps
   serving, and every other module keeps running.
 - **Native dependencies a sandbox can't hold.** Modules carry real native code
   (torrent engines, ML runtimes, native TLS, raw sockets) that no in-process sandbox can
@@ -21,7 +21,7 @@ load-bearing decision of this domain, chosen for three reasons:
 - **Runtime installability.** A capability is added or removed on a running server
   without rebuilding or replacing the server binary. The base build never grows.
 
-Mechanics — how a sidecar is spawned, supervised and reverse-proxied — live in
+Mechanics, meaning how a sidecar is spawned, supervised and reverse-proxied, live in
 [`../modules-as-kmod.md`](../../modules-as-kmod.md); registry wiring lives in
 [`../module-registries.md`](../../module-registries.md). This file states the product rules.
 
@@ -39,7 +39,7 @@ What it may **not** do:
 
 - **It may not reach into the server's process or another module's process.** Every
   cross-boundary call is an explicit, typed request over the local callback API or a named
-  port — never a direct function call into core internals. The boundary is a wire, not a
+  port, never a direct function call into core internals. The boundary is a wire, not a
   linker symbol.
 - **It may not replace core.** Playback, catalogue, accounts and the library's
   read/observe contract are the server's; a module extends the server, it does not
@@ -61,9 +61,9 @@ contract, and it declares:
 
 - **Identity and version.** The reverse-DNS id and a hand-set version. The version is the
   source of truth for whether an update exists, and the release process refuses to publish
-  changed bytes under an unchanged version — so "there is a newer version" always means
+  changed bytes under an unchanged version, so "there is a newer version" always means
   "there is genuinely newer code", never a silent re-issue.
-- **`minServer` — the compatibility floor.** The minimum server version the module needs,
+- **`minServer`, the compatibility floor.** The minimum server version the module needs,
   as a bare version or a range. This is the whole compatibility contract (see below).
 - **Dependencies.** Hard dependencies that must be installed alongside it, and optional
   ones offered but not required.
@@ -80,7 +80,7 @@ registry named, not that they are trustworthy.
 
 Status: **SHIPPED**
 
-Two paths, one outcome — the module is unpacked under the server's data directory and its
+Two paths, one outcome: the module is unpacked under the server's data directory and its
 sidecar is spawned:
 
 - **From the Store**, by id. The server resolves hard dependencies automatically,
@@ -88,7 +88,7 @@ sidecar is spawned:
   engine is offered the engines the catalogue advertises), verifies every download's
   checksum, and enforces `minServer` before it installs anything.
 - **By upload**, handing the server a `.kmod` by hand. Same unpack, same spawn, same
-  `minServer` gate — for an air-gapped server, a private build, or a module not on any
+  `minServer` gate. This is for an air-gapped server, a private build, or a module not on any
   registry.
 
 Both are admin actions on the [`admin.md`](../admin/README.md) surface.
@@ -123,7 +123,7 @@ proposed position:
 - **First-party is trusted by default.** The official registry is pinned, first-party,
   and curated. A module from it installs without a trust prompt.
 - **A third-party registry is an explicit operator opt-in.** Adding one is admin-only and
-  is *not* a trust grant to its modules — it only makes them visible. The operator is told,
+  is *not* a trust grant to its modules; it only makes them visible. The operator is told,
   in plain terms, that a module is a native binary the server will execute, so adding a
   registry they do not control is equivalent to trusting its operator with code execution
   on the host.
@@ -140,21 +140,21 @@ Status: **SHIPPED**
 
 Four actions, and what each does to the module's data:
 
-- **Enable** — the server spawns the sidecar; the module's routes, jobs and UI become
+- **Enable.** The server spawns the sidecar; the module's routes, jobs and UI become
   live. Enabled is the state that survives a reboot: enabled modules are re-spawned at boot.
-- **Disable** — the sidecar is stopped. The module stops running; its **data is kept
+- **Disable.** The sidecar is stopped. The module stops running; its **data is kept
   untouched**. Enabling again resumes where it left off. Disable is the reversible off
   switch.
-- **Update** — a newer version replaces the bundle and the sidecar is re-spawned. The
+- **Update.** A newer version replaces the bundle and the sidecar is re-spawned. The
   module's migrations carry its data forward; settings and stored state persist across the
   update. `minServer` is re-checked, so an update that outgrows the server is refused with
   a reason rather than installed into a crash.
-- **Uninstall** — the module is removed entirely. The server refuses to uninstall a module
+- **Uninstall.** The module is removed entirely. The server refuses to uninstall a module
   another enabled module still depends on, naming the dependant. Uninstall is the one
   destructive action: it is the deliberate way to remove a module *and* its data, and it is
   presented as such.
 
-Uninstalling a module never touches media on disk — a downloads module leaves the files it
+Uninstalling a module never touches media on disk. A downloads module leaves the files it
 fetched exactly where they are, and the library keeps observing them,
 [`library.md`](../library/README.md).
 
@@ -179,7 +179,7 @@ Status: **SHIPPED**
 
 The promise, grounded in `minServer`: **the server is forward-compatible with older
 modules; a module declares the oldest server it can run against, and nothing below that
-floor is ever allowed to run.** Concretely — a module installed today keeps working as the
+floor is ever allowed to run.** Concretely, a module installed today keeps working as the
 server is updated, because the server does not retroactively break the boundary its
 modules were built against. What can require action is the other direction: a *newer*
 module may raise its `minServer`, and the Store says so before you install it. The floor is
@@ -194,7 +194,7 @@ A module **may** ship UI, and the position is deliberate: a module's frontend mo
 **inside Admin**, under that module's own section, as pages, navigation and settings for
 the capability it provides. The boundary:
 
-- A module renders **its own admin surface** — configuration, status, and controls for
+- A module renders **its own admin surface**: configuration, status, and controls for
   what it does. It does not reskin core, inject into other modules' surfaces, or take over
   the end-user playback experience.
 - Its UI is served through the same reverse-proxy as its backend and lives and dies with
@@ -212,8 +212,8 @@ their data must never be at risk. The designed visible signal:
 
 - **The compatibility gate is the early warning.** As the server moves forward, an
   unmaintained module eventually fails its `minServer` against a newer server it was never
-  updated for. That mismatch is surfaced by name on the Modules surface — an
-  **incompatible / unmaintained** state — rather than a silent failure to spawn.
+  updated for. That mismatch is surfaced by name on the Modules surface, as an
+  **incompatible / unmaintained** state, rather than a silent failure to spawn.
 - **Their data is retained.** An incompatible or abandoned module is not auto-removed. It
   is stopped and flagged, its data kept, so a later fixed build (or a downgrade, or a
   fork) can pick it back up. Only an explicit uninstall discards module data.
@@ -229,8 +229,8 @@ publisher sets, versus inferring abandonment purely from the compatibility gate.
 Status: **SHIPPED**
 
 Every capability below could have been core. Each is a module instead, for the same three
-reasons the base build ships empty — isolation, unsandboxable native dependencies, and
-runtime installability — plus one product reason: a server that only ever plays a curated
+reasons the base build ships empty, meaning isolation, unsandboxable native dependencies and
+runtime installability, plus one product reason: a server that only ever plays a curated
 library has no need to carry any of it.
 
 - **Downloads and acquisition** (`tv.kroma.torrents`, `tv.kroma.acquisition`,
@@ -239,14 +239,14 @@ library has no need to carry any of it.
   is out of scope for the library, which only *observes* what appears, [`library.md`](../library/README.md).
   This stack carries the heaviest and most legally sensitive native code in the product; it
   is exactly what should be optional, isolated and removable.
-- **Transcription** (`tv.kroma.whisper`). A speech-to-text ML runtime — a large native
+- **Transcription** (`tv.kroma.whisper`). A speech-to-text ML runtime, a large native
   dependency most servers will never enable. Its process can be spawned only when used.
 - **Semantic search** (`tv.kroma.vector`). Vector embeddings and search, again a native
   ML stack, and a feature a plain catalogue does not need.
 - **Network discovery** (`tv.kroma.mdns`). Advertising the server on the LAN for pairing,
-  [`discovery.md`](../discovery/README.md) — a capability an operator may deliberately not want
+  [`discovery.md`](../discovery/README.md), a capability an operator may deliberately not want
   running, so it is opt-in.
-- **Remote access** (`tv.kroma.remote`). Reaching the server from outside the LAN — a
+- **Remote access** (`tv.kroma.remote`). Reaching the server from outside the LAN, a
   security-relevant surface that should be an explicit, removable choice, not always-on.
 - **Scene parsing** (`tv.kroma.scene`). A shared library the acquisition and downloads
   sidecars co-link, rather than a spawned sidecar, because it sits on a hot path that must
@@ -254,11 +254,11 @@ library has no need to carry any of it.
 
 ## Not in scope
 
-- **Getting bytes onto disk** as a library concern — matching, scanning, deletions — is
+- **Getting bytes onto disk** as a library concern, covering matching, scanning and deletions, is
   [`library.md`](../library/README.md). The library observes; modules acquire.
-- **Running the server** — installing, enabling and diagnosing modules from the admin
-  surface — is [`admin.md`](../admin/README.md).
-- **Registry wiring and precedence** — official-vs-added, shadowing, https and
-  autodiscovery — is [`../module-registries.md`](../../module-registries.md).
+- **Running the server**, meaning installing, enabling and diagnosing modules from the
+  admin surface, is [`admin.md`](../admin/README.md).
+- **Registry wiring and precedence**, covering official-vs-added, shadowing, https and
+  autodiscovery, is [`../module-registries.md`](../../module-registries.md).
 - **How a sidecar is built, packed, spawned and released** is
   [`../modules-as-kmod.md`](../../modules-as-kmod.md).

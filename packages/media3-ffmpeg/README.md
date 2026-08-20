@@ -1,12 +1,12 @@
 # @kroma/media3-ffmpeg
 
-Media3's FFmpeg **audio** decoders, prebuilt for Android and shipped with the app.
+Media3's FFmpeg audio decoders, prebuilt for Android and shipped with the app.
 
 ## Why this exists
 
 When a client cannot decode a track, the server re-encodes it: audio to stereo AAC,
 and video to H.264 where the client declares it cannot take the picture. Every such
-re-encode is server CPU. A decoder on the television removes that branch - the file
+re-encode is server CPU. A decoder on the television removes that branch: the file
 direct-plays and the server stays at stream-copy.
 
 The gap on Android is DTS, TrueHD, and E-AC3 on sets without the licence. Video is
@@ -14,7 +14,7 @@ not the problem: H.264, HEVC, VP9 and AV1 are hardware on any modern Android TV 
 and software-decoding video is not something a Chromecast-class device can do anyway.
 
 This package is one of two halves. The other is `patches/expo-video@57.0.2.patch`,
-which sets `EXTENSION_RENDERER_MODE_ON` - `DefaultRenderersFactory` finds these
+which sets `EXTENSION_RENDERER_MODE_ON`. `DefaultRenderersFactory` finds these
 decoders by reflection, but only when the mode is not `OFF`, and `OFF` is the
 default. Ship one without the other and nothing changes.
 
@@ -52,7 +52,7 @@ regression to chase.
 
 **On every expo-video upgrade, both halves must be re-applied and re-verified.** The
 version bump renames the patch file and moves the publication version, so the
-renderer-mode hunk can apply cleanly while the config hunk does not - which looks like
+renderer-mode hunk can apply cleanly while the config hunk does not, which looks like
 a working build that has quietly gone back to the prebuilt AAR.
 
 ### Check the copy the client actually builds
@@ -72,7 +72,7 @@ The first must print the `setExtensionRendererMode` line; the second must print 
 
 ## Rebuilding the .aar
 
-Media3 publishes this module as source only - there is no Maven artifact carrying the
+Media3 publishes this module as source only. There is no Maven artifact carrying the
 native code, because which decoders to compile in is a build-time choice. Rebuild
 when the media3 runtime version moves (keep the two in step; the version is in the
 filename), or when a decoder needs adding.
@@ -97,7 +97,7 @@ cp libraries/decoder_ffmpeg/buildout/outputs/aar/lib-decoder-ffmpeg-release.aar 
 command leaves behind are ~46 MB; the linker cuts them to ~1.5 MB per ABI, which is
 what the 3.2 MB `.aar` actually carries.
 
-All of the decoders above are FFmpeg's own, so the build stays LGPL - no
+All of the decoders above are FFmpeg's own, so the build stays LGPL, with no
 `--enable-gpl`, nothing that would put a stricter licence on the artifact than the
 GPL-2.0-or-later this repository already carries.
 
@@ -116,5 +116,5 @@ instead of failing, so there is no symptom to read in its place.
 
 The second signal is ExoPlayer's `Init`/`Release` line, which lists the modules linked
 into the player: `media3.decoder.ffmpeg` appears there once the `.aar` is in the APK.
-That only says the decoders shipped - the first line is the one that settles whether
+That only says the decoders shipped. The first line is the one that settles whether
 they were loaded.

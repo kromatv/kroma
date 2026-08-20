@@ -34,7 +34,7 @@ export const story = defineStory({
   ),
 });
 
-One number that matters, on a card: the dashboard's active sessions, a module's disk usage, a queue depth. Label above, display-size value, an optional `unit` at the baseline. The value keeps the text colour unless the number has a hue of its own - a red CPU, a green success rate - stated through `color`. The same `Label` / `Value` pair as `DataField`, raised onto a `Surface`.
+One number that matters, on a card: the dashboard's active sessions, a module's disk usage, a queue depth. Label above, display-size value, an optional `unit` at the baseline. The value keeps the text colour unless the number has a hue of its own, a red CPU or a green success rate, stated through `color`. The same `Label` / `Value` pair as `DataField`, raised onto a `Surface`.
 
 ```tsx
 <StatCard.Root>
@@ -62,7 +62,7 @@ One number that matters, on a card: the dashboard's active sessions, a module's 
 </Scene>
 
 <Do>
-- Keep the label a noun ("Storage", "Sessions") - the value is the sentence.
+- Keep the label a noun ("Storage", "Sessions"). The value is the sentence.
 - Use `color` only when the number itself carries state; a wall of tinted stats reads as noise.
 </Do>
 

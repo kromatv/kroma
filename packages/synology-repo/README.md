@@ -2,8 +2,8 @@
 
 Everything that makes KROMA installable from Synology's Package Center:
 
-- **`apps/packages`** (not here) the DYNAMIC package source (a Cloudflare
-  Worker, SynoCommunity style): paste the bare worker URL under **Package
+- **`apps/packages`** (not here) is the DYNAMIC package source, a Cloudflare
+  Worker in SynoCommunity style. Paste the bare worker URL under **Package
   Center > Settings > Package Sources** and DSM's POST gets a live catalog
   assembled from the GitHub Releases API (all releases, stable + nightly
   channels, arch/DSM filtered, edge-cached 5 min). Publishing a release is the
@@ -11,12 +11,12 @@ Everything that makes KROMA installable from Synology's Package Center:
   page listing EVERY version. Deploy:
   `bun run --filter '@kroma/package-source' deploy`
   (CI: `.github/workflows/repo-worker.yml`, on app changes only).
-- **`src/gen-catalog.ts`** the STATIC catalog generator (`catalog.json` +
+- **`src/gen-catalog.ts`** is the STATIC catalog generator (`catalog.json` +
   landing page + icon) for GitHub Pages, kept as a zero-infra fallback.
 - **`src/gen-spk-info.ts`** emits the `<spk>.info.json` sidecar CI attaches
   next to every released `.spk` (version, md5, size, description read from the
   package itself); the package source aggregates these.
-- **`src/backfill-info.ts`** one-time backfill of those sidecars onto
+- **`src/backfill-info.ts`** is a one-time backfill of those sidecars onto
   pre-existing releases: `bun packages/synology-repo/src/backfill-info.ts`.
 
 Everything is self-contained (reads version + icon straight out of the `.spk`)
@@ -41,7 +41,7 @@ bun run --filter @kroma/synology-repo preview   # http://localhost:4321
 ```
 
 Serves the landing page rendered from `src/landing.template.html` with sample
-values and reloads the browser on every save no `.spk` or build needed. `PORT`
+values and reloads the browser on every save; no `.spk` or build is needed. `PORT`
 overrides the port; `CATALOG_BETA=true` previews the nightly variant.
 
 ## Config (env / `.env`)

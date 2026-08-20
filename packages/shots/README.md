@@ -31,7 +31,7 @@ routings:
 | Target | Routing | How a screen is named |
 |---|---|---|
 | `web` | `url` | `--path /settings` |
-| `tizen`, `webos` | `dev-nav` | `--route about`. A DEV build of the TV router mirrors its in-memory stack to `sessionStorage['kroma:dev-nav']` and restores it on mount (see `packages/tv/src/app/router.tsx`), so seeding that key lands on any screen with no key presses. This is why the TV targets drive a **dev server**, not a preview build. |
+| `tizen`, `webos` | `dev-nav` | `--route about`. A DEV build of the TV router mirrors its in-memory stack to `sessionStorage['kroma:dev-nav']` and restores it on mount (see `packages/tv/src/app/router.tsx`), so seeding that key lands on any screen with no key presses. This is why the TV targets drive a dev server rather than a preview build. |
 | `appletv`, `androidtv` | `keys` | `--keys ArrowDown,Enter`. A native shell has neither, so a screen is reached the way a viewer reaches it. |
 
 Route names are `RouteName` in `packages/tv/src/app/router.tsx`. A route that

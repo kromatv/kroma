@@ -26,9 +26,10 @@ export const story = defineStory({
 });
 
 The edge-anchored slide-in sheet: a detail inspector, an edit form, the phone
-nav. The same overlay contract as **Dialog** - portalled, scroll-locked, focus
+nav. It has the same overlay contract as Dialog, meaning portalled,
+scroll-locked, focus
 locked behind it, Esc/Back and outside-press dismiss, `role="dialog"` with
-`title` as its accessible name - but anchored to a side with its own enter/exit
+`title` as its accessible name, but anchored to a side with its own enter/exit
 slide. It stays mounted through the exit, so callers just flip `open`.
 
 ## Three bands, one scroller
@@ -48,8 +49,8 @@ It takes the rest of an icon button's props, so a sheet whose header already
 carries controls can match their size.
 
 `Panel` scrolls through a `ScrollView`, so a sheet written once works on a
-television and a phone as well as in a browser. A pane of the caller's own -
-a `<div>` with `overflow-y`, say - is the one thing that will not.
+television and a phone as well as in a browser. A pane of the caller's own,
+a `<div>` with `overflow-y`, is the one thing that will not.
 
 The pinned bands draw their own hairline against the panel, so a sheet is
 three parts rather than five. A band holding nothing draws neither, so a footer
@@ -163,7 +164,7 @@ component of your own is wrapped at the call site
 - Give `title` a real name: it is what a screen reader announces, and what the default header draws.
 - Put the long body in `<Drawer.Panel>`; it is the one band that scrolls, and it scrolls on a television too.
 - Use it for edit-in-context panels; a decision between two actions is a `<Dialog>`.
-- Put a `<Drawer.Close />` in a header of your own: it carries the Root’s onClose, so the sheet keeps one way out rather than two.
+- Put a `<Drawer.Close />` in a header of your own: it carries the Root's onClose, so the sheet keeps one way out rather than two.
 </Do>
 
 <Dont>

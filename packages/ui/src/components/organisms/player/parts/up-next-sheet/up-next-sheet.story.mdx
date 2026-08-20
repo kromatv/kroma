@@ -8,7 +8,7 @@ import { episode, recommendation, DATA } from './up-next-sheet.fixtures';
 export const story = defineStory({
   group: 'Player',
   // The sheet derives its three-across card width from the row it MEASURES, so
-  // it must be given a real width and never scaled - and a range is the honest
+  // it must be given a real width and never scaled, and a range is the honest
   // one, since that arithmetic is the thing worth watching as the surface moves.
   width: { min: 720, max: 1280 },
   args: { open: true, revealed: true, empty: false },
@@ -53,7 +53,7 @@ What plays after this one. It has three states rather than two: parked (a **peek
 </Scene>
 
 <Do>
-- Show the peek only when the chrome is revealed AND there is data - an empty peek is a lie.
+- Show the peek only when the chrome is revealed AND there is data. An empty peek is a lie.
 - Let it capture the D-pad while open; a half-focused sheet is unnavigable on a remote.
 </Do>
 

@@ -1,8 +1,8 @@
-# @kroma/webos LG TV (webOS)
+# @kroma/webos: LG TV (webOS)
 
-> Part of the [KROMA](../../README.md) monorepo the LG TV shell.
+> Part of the [KROMA](../../README.md) monorepo: the LG TV shell.
 
-Thin shell over **`@kroma/tv`** (the shared 10-foot experience). webOS TVs decode
+Thin shell over `@kroma/tv`, the shared 10-foot experience. webOS TVs decode
 HEVC/H.265 (incl. HDR) in hardware, so playback is direct-play.
 
 ## Two bundles, one package (old-TV support)
@@ -12,7 +12,7 @@ LG freezes Chromium per webOS major (webOS 4.x = 53, 5.0 = 68, 6 = 79, 22 = 87,
 therefore emits **two bundles** and `dist/index.html` picks one at runtime (an
 ES5 loader gated on `CSSLayerBlockRule`):
 
-- **modern** (`dist/assets/`): ESM, ES2020, Lightning CSS @ Chrome 99 - untouched.
+- **modern** (`dist/assets/`): ESM, ES2020, Lightning CSS @ Chrome 99, untouched.
 - **legacy** (`dist/legacy/`): one ES2015 IIFE + a flattened stylesheet for
   Chromium 53-94 (webOS 4.x-23, 2018-2023 models). `vite.config.legacy.ts`
   lowers the JS (core-js + AbortController + IntersectionObserver polyfills);
@@ -24,7 +24,7 @@ ES5 loader gated on `CSSLayerBlockRule`):
   Chromium 53 sneaks back.
 
 The whole thing is driven by `tv.target.ts` (platform, dev port, engine
-floors) through the shared factory in `packages/bundler/src/shell.ts` - see that
+floors) through the shared factory in `packages/bundler/src/shell.ts`. See that
 file for how to give any shell a legacy tier.
 
 Playback on those engines: MSE cannot decode HEVC there, so `useDirectPlayback`
@@ -65,11 +65,11 @@ ares-launch -s 26 clients/webos/dist        # -sp is remembered after the first 
 
 This is worth doing before touching a TV for one reason the dev server cannot
 reproduce: the simulator loads `dist/` over `file://`, which is the origin shape
-a packaged app gets on the set - **no server configured, empty localStorage**,
+a packaged app gets on the set: no server configured, empty localStorage,
 i.e. genuine first-launch state.
 
 To drive it from a terminal (screenshots, console, remote keys), run the binary
-yourself and put Chromium's debugging switch **after** the app directory - the
+yourself and put Chromium's debugging switch AFTER the app directory, because the
 simulator takes its first argument as the app dir, so a leading flag makes it
 look for `appinfo.json` inside the flag:
 
@@ -84,7 +84,7 @@ and `Input.dispatchKeyEvent` for the remote (arrows, Enter, Back = keyCode 461).
 
 What it does NOT give you: the engine is the simulator's own Chromium (120 /
 Electron 28 for the webOS 26 build), not the frozen Chromium of the webOS major
-it is named after. It exercises the **modern** tier only - the legacy tier is
+it is named after. It exercises the modern tier only. The legacy tier is
 covered by `check:legacy` and, in the end, by a real 2018-2023 set.
 
 ## Package an .ipk and install on a TV
@@ -107,7 +107,7 @@ passing it since `_release-tv.yml`). Vite has already minified the output.
 ## Publishing to the LG Content Store
 
 See [STORE.md](./STORE.md) for the Seller Lounge account, assets, listing fields, the
-self-checklist items that need real attention, and what LG's QA needs in order to
+self-checklist items that need real attention, and what LG's QA needs to
 be able to test a client for a server it cannot reach.
 
 Notes:

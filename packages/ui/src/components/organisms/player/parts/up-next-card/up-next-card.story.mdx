@@ -7,8 +7,8 @@ import { ROW } from './up-next-card.fixtures';
 
 export const story = defineStory({
   group: 'Player',
-  // The card is `width: 100%` of its cell by default - the sheet computes the
-  // cell from the row it measures - so the story is given a range and passes the
+  // The card is `width: 100%` of its cell by default, and the sheet computes the
+  // cell from the row it measures, so the story is given a range and passes the
   // width down the same way, rather than pinning the card to one size.
   width: { min: 360, max: 960 },
   args: {

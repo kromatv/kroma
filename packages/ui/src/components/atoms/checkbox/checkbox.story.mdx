@@ -11,7 +11,7 @@ export const story = defineStory({
   component: Demo,
 });
 
-The many-of-N control: a `<Switch>` says "this is on", a checkbox says "this one is included", which is why a list of them is a selection and a list of switches is a settings page. Announced as `checkbox` with its checked state, and as **mixed** when `indeterminate` - the parent of a partly selected group, which fills amber like a checked one because it has been acted on either way. A press from mixed checks everything under it.
+The many-of-N control: a `<Switch>` says "this is on", a checkbox says "this one is included", which is why a list of them is a selection and a list of switches is a settings page. Announced as `checkbox` with its checked state, and as mixed when `indeterminate`, the parent of a partly selected group, which fills amber like a checked one because it has been acted on either way. A press from mixed checks everything under it.
 
 ```tsx
 <Checkbox label="Subtitles" checked={subs} onCheckedChange={setSubs} />
@@ -24,6 +24,6 @@ The many-of-N control: a `<Switch>` says "this is on", a checkbox says "this one
 </Do>
 
 <Dont>
-- Use it for a setting that takes effect immediately - that is a `<Switch>`.
+- Use it for a setting that takes effect immediately. That is a `<Switch>`.
 - Put one on every row by hand: a selectable list is a `<ChoiceList>`.
 </Dont>

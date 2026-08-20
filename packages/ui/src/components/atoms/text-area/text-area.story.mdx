@@ -52,7 +52,7 @@ export const story = defineStory({
   ),
 });
 
-The multi-line entry, under `<Field.Textarea>`, and the same two spellings as `<TextField>`: a live `TextInput` where a keyboard exists, a display plus a caret on a television, so nothing there can be tapped into and summon the platform IME. It opens `rows` tall and **grows with what is typed**, up to `maxRows`, past which it scrolls instead of pushing the rest of the form off the screen. The growth is the browser's own `field-sizing: content` on the web, where a measured callback would cost a state write per keystroke for the same layout, and a measured content height on native. The box aligns its content to the TOP rather than the centre, because a field that grows downwards has to keep its first line where the reader left it, and the whole box - padding included - is the caret's landing zone.
+The multi-line entry, under `<Field.Textarea>`, and the same two spellings as `<TextField>`: a live `TextInput` where a keyboard exists, a display plus a caret on a television, so nothing there can be tapped into and summon the platform IME. It opens `rows` tall and **grows with what is typed**, up to `maxRows`, past which it scrolls instead of pushing the rest of the form off the screen. The growth is the browser's own `field-sizing: content` on the web, where a measured callback would cost a state write per keystroke for the same layout, and a measured content height on native. The box aligns its content to the TOP rather than the centre, because a field that grows downwards has to keep its first line where the reader left it, and the whole box, padding included, is the caret's landing zone.
 
 ```tsx
 <Field.Root label="Notes">
@@ -80,7 +80,7 @@ The multi-line entry, under `<Field.Textarea>`, and the same two spellings as `<
 </Scene>
 
 <Scene name="Past the cap">
-  More text than `maxRows` allows: the box stops growing and the content scrolls inside it. That cap is the whole reason the prop exists - without it a pasted paragraph walks the submit button off the bottom of the screen.
+  More text than `maxRows` allows: the box stops growing and the content scrolls inside it. That cap is the whole reason the prop exists. Without it a pasted paragraph walks the submit button off the bottom of the screen.
 
   <Box gap={10}>
     <TextArea label="Report" rows={3} maxRows={5} defaultValue={LONG} physicalKeyboard />

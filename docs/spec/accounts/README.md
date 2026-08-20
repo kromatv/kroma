@@ -14,7 +14,7 @@ An **account** is a person. It has credentials, its own watch state, its own
 settings, and a set of signed-in devices. Nothing else hangs off it.
 
 The first account created at first-run is the **owner**. The owner is an account
-like any other that additionally holds the server itself — see the roles below.
+like any other that also holds the server itself. See the roles below.
 Every subsequent account is an ordinary **user**, created by invitation from
 [`admin.md`](../admin/README.md); a KROMA server is never self-signup.
 
@@ -22,7 +22,7 @@ Every subsequent account is an ordinary **user**, created by invitation from
 in other media servers is a login you do not have to type a password for: a way
 to split one household login into several viewing identities. KROMA already gives
 every person their own account, so a profile would be a second, weaker identity
-mechanism sitting beside the real one — two ways to be "someone", one of which
+mechanism sitting beside the real one: two ways to be "someone", one of which
 carries no authentication. For a single-NAS household where making an account is
 one invitation, that buys nothing and costs the confusion of two overlapping
 concepts. A person who wants their own Continue Watching gets an account. A shared
@@ -47,13 +47,13 @@ A successful authentication mints a **session**: a long-lived, server-issued tok
 bound to one device. Every request carries the session; the password is typed once
 per device and, in the ordinary case, never again.
 
-**Sessions do not expire on a clock.** A session lives until it is revoked — by the
+**Sessions do not expire on a clock.** A session lives until it is revoked, by the
 account that owns it, by an admin, or by the person signing out. There is no forced
 periodic re-authentication. A session can be individually revoked without disturbing
 any other session the same account holds, because a session is per-device, not
 per-account.
 
-Rationale — see the television rule below, which is the hard case this policy is
+Rationale: see the television rule below, which is the hard case this policy is
 built around.
 
 ## Devices and pairing
@@ -66,7 +66,7 @@ list** with enough to recognise it (shell, rough location, last-seen) and one
 action: revoke.
 
 A television binds to an account through the pairing handshake, not a typed
-password — the mechanics of that handshake are [`discovery.md`](../discovery/README.md), and
+password. The mechanics of that handshake are [`discovery.md`](../discovery/README.md), and
 its raw material [`tv-pairing.md`](../../tv-pairing.md). The product rule that matters
 here: **pairing ends in an ordinary session.** A paired television is not a special
 class of trust; it lands in the same device list as everything else and revokes the
@@ -87,7 +87,7 @@ re-authenticate on a schedule.** A television has no keyboard worth using and of
 no practical way to re-run the pairing dance unattended; an expiring session would
 mean a screen that silently signs itself out and a person hunting for a phone to fix
 it. So the television keeps its session until a human revokes it. The revocation
-path — the device list — is the control that replaces expiry: security comes from
+path, the device list, is the control that replaces expiry: security comes from
 being able to cut a specific screen off instantly from any other device, not from
 making every screen prove itself again on a timer. This is the same rule as every
 other device; the television is only the case that makes forced expiry obviously
@@ -99,19 +99,19 @@ Status: **AGREED**
 
 Two roles, and a per-user visibility rule layered on top.
 
-- **Owner / admin** — runs the server. Manages users, settings, jobs, and modules.
+- **Owner / admin.** Runs the server. Manages users, settings, jobs, and modules.
   The owner is the founding admin; the owner may grant admin to another account, and
   there is always at least one admin. Admin rights are server-wide, not per-library.
-- **User** — uses the server. Browses and plays what they are permitted to see,
+- **User.** Uses the server. Browses and plays what they are permitted to see,
   owns their own watch state and preferences, and manages their own devices.
 
 **Library visibility is per-user.** An admin decides which libraries a given user
 may see; a user sees exactly those and cannot discover the rest. Visibility gates
-browsing, search, and playback alike — a title a user cannot see is a title they
+browsing, search, and playback alike. A title a user cannot see is a title they
 cannot play, resume, or find.
 
 Module installation is an **admin** right, because installing a module runs new
-out-of-process code on the server — see [`modules.md`](../modules/README.md). A plain user
+out-of-process code on the server. See [`modules.md`](../modules/README.md). A plain user
 may use whatever modules an admin has installed and enabled, within their own
 library visibility; they may not install, update, or remove them.
 
@@ -128,12 +128,12 @@ Status: **AGREED**
 | Manage own devices (list, revoke) | ✓ | ✓ |
 | Pair a television to own account | ✓ | ✓ |
 | See all libraries | ✓ | only those granted |
-| Invite / remove users | ✓ | — |
-| Set another user's library visibility | ✓ | — |
-| Revoke another account's device | ✓ | — |
-| Grant / revoke admin | owner | — |
-| Install / update / remove modules | ✓ | — |
-| Change server settings, run and cancel jobs | ✓ | — |
+| Invite / remove users | ✓ | no |
+| Set another user's library visibility | ✓ | no |
+| Revoke another account's device | ✓ | no |
+| Grant / revoke admin | owner | no |
+| Install / update / remove modules | ✓ | no |
+| Change server settings, run and cancel jobs | ✓ | no |
 
 A user's power over their own account is total; their power over anyone else's, or
 over the server, is none. Everything in the admin column is [`admin.md`](../admin/README.md)'s
@@ -145,12 +145,12 @@ Status: **AGREED**
 
 The dividing line is ownership of the experience versus ownership of the machine.
 
-**Per-user** — watch state (resume points, watched flags, Continue Watching),
+**Per-user.** Watch state (resume points, watched flags, Continue Watching),
 personal preferences (playback defaults, language, subtitle choices, interface
 settings), the device list, and library visibility as it applies to them. Two
 people on one server share nothing here.
 
-**Per-server** — the libraries and their contents, metadata and artwork, the set of
+**Per-server.** The libraries and their contents, metadata and artwork, the set of
 installed modules, transcode and job policy, and every setting under
 [`admin.md`](../admin/README.md). One person's Continue Watching is theirs; the library that
 row points into is everyone's.
@@ -165,12 +165,12 @@ Status: **AGREED**
 
 Deleting an account destroys the person, not the media.
 
-**Destroyed** — the account's credentials, all of its sessions and paired devices
+**Destroyed.** The account's credentials, all of its sessions and paired devices
 (every one is revoked in the act of deletion), its watch state, and its personal
 preferences. After deletion the person cannot sign in, and none of their screens can
 refresh access.
 
-**Survives** — everything per-server. Libraries, media, metadata, and installed
+**Survives.** Everything per-server. Libraries, media, metadata, and installed
 modules are untouched, because they were never the deleted account's to take.
 Another user's watch state is untouched even where it points at the same titles.
 
@@ -184,7 +184,7 @@ request deletion of their own account, which revokes their access on the spot.
 Status: **AGREED**
 
 Honestly: not immediately, and the server cannot make it. Revocation stops a
-session from doing anything new — it cannot fetch, refresh, or stream another byte.
+session from doing anything new. It cannot fetch, refresh, or stream another byte.
 But bytes already downloaded for offline viewing sit in local storage on the device,
 and the server has no reach into that storage. What enforces removal is the **app**:
 on discovering its session is dead, the client is required to purge downloaded media

@@ -6,19 +6,18 @@ author: "Maxime Scharwath"
 tags: ["Design system", "Engineering"]
 ---
 
-A movie tile looks exactly the same on an Apple TV, on a Samsung television and in
-your browser. This is not three components kept in sync by hand: it is **the same
-component**. Here is how.
+A movie tile looks the same on an Apple TV, on a Samsung television and in your
+browser. It is one component, not three kept in step by hand.
 
 ## Written once, against React Native
 
-The `@kroma/ui` kit is written against **React Native**. On native targets (Apple
-TV, Android TV, iPhone, Android) it renders natively; on the web, Tizen and webOS
-televisions, the Tauri desktop app and the web client, it goes through
-**react-native-web**. The same file, two rendering engines.
+The `@kroma/ui` kit is written against React Native. On Apple TV, Android TV,
+iPhone and Android it renders natively. On the web, on Tizen and webOS
+televisions, in the Tauri desktop app and in the web client it goes through
+react-native-web. One file, two rendering engines.
 
-The design tokens, colors, typography, elevations, focus, also live once, in
-TypeScript, and generate the CSS variables the web targets consume:
+Colors, typography, elevations and focus live once too, in TypeScript, and
+generate the CSS variables the web targets read:
 
 ```ts
 import { colors, type } from '@kroma/ui/tokens';
@@ -28,28 +27,26 @@ colors.bg;     // #0A0A0C, the deep charcoal
 type.hero;     // 66px / 700, Bricolage Grotesque
 ```
 
-This site is the simplest proof of it: it redefines no color. It imports the kit's
-Tailwind v4 theme, and therefore renders in exactly the same charcoal and the same
-amber as the application.
+This site defines no color of its own. It imports the kit's Tailwind v4 theme,
+so it renders in the same charcoal and the same amber as the application.
 
-## Focus, the only real fracture
+## Focus is the only real split
 
-What actually differs between a television and a browser is not the appearance, it
-is the **navigation**. A remote has no cursor.
+What differs between a television and a browser is the navigation, not the
+appearance. A remote has no cursor.
 
-- **On native**, the OS focus engine handles directional moves (UIFocusEngine on
-  tvOS, `nextFocus` resolution on Android TV).
-- **On the web**, there is no focus engine: movement is geometric, the next
-  focusable in the pressed direction, with lateral drift penalized so that
-  neighbors in a straight line win.
+On native, the OS focus engine handles directional moves: UIFocusEngine on tvOS,
+`nextFocus` resolution on Android TV. On the web there is no focus engine at all,
+so movement is geometric. The next focusable in the pressed direction wins, with
+lateral drift penalised so that a neighbour in a straight line beats one off to
+the side.
 
-That fracture is isolated in a few `.web.ts` files, and nothing else in the kit
-has to know it exists.
+That split lives in a handful of `.web.ts` files. Nothing else in the kit knows
+it exists.
 
-## Why it matters
+## What it costs, and what it buys
 
-Because "multi-platform" does not mean "rewritten N times." Every screen KROMA
-touches speaks the same visual language because it literally shares the same code,
-and one design improvement benefits every platform at once, the same day.
-
-> The components and the tokens exist once. The rest is just a shell per platform.
+Writing against React Native costs a resolver step in every bundler and a second
+rendering path to keep honest. What it buys is that a change to the movie tile is
+one commit, and every screen KROMA draws has it the same day. Six shells, one
+component.

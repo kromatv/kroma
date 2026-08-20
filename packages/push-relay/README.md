@@ -1,12 +1,12 @@
 # KROMA push relay
 
-The Cloudflare Worker at **push.kroma.tv** that lets a self-hosted KROMA server
+The Cloudflare Worker at push.kroma.tv that lets a self-hosted KROMA server
 notify a phone.
 
 ## Why this exists
 
 A KROMA server is self-hosted by anybody. The KROMA app is published by one team.
-Apple and Google only accept credentials **they** issued to the account that owns
+Apple and Google only accept credentials THEY issued to the account that owns
 the app, so an operator's own Apple key can never push to `tv.kroma.mobile`, no
 matter what they paste into an admin form. That is why the admin console asks for
 nothing: the question was unanswerable, not merely tedious.
@@ -17,9 +17,9 @@ The relay holds the published app's credentials so a server does not have to.
 
 The server's source is public, so there is no shared secret to authenticate it
 with. Anything committed is world-readable the day it lands. Instead the relay
-issues **capabilities**:
+issues capabilities:
 
-1. The app trades its raw APNs/FCM token at `POST /v1/grant` for a **grant**,
+1. The app trades its raw APNs/FCM token at `POST /v1/grant` for a grant,
    an AES-256-GCM sealed blob naming exactly one device.
 2. The app registers that grant with whatever server the reader signed into.
 3. The server spends it at `POST /v1/push`.
@@ -30,7 +30,7 @@ leaked server database is not a pile of push tokens, because the server never
 learned them. Compromising one server yields grants for that server's own users,
 who already trusted it and whom it could already reach.
 
-Rate limits key on a **hash of the device token**, so re-minting a grant buys no
+Rate limits key on a hash of the device token, so re-minting a grant buys no
 fresh budget.
 
 See `worker/grant.ts` for the seal, `worker/index.ts` for the routes.
@@ -71,7 +71,7 @@ bundle id, `tv.kroma.mobile`. It must change in lockstep with the bundle id.
 
 ### Cloudflare is not a backup
 
-Worker secrets are **write-only**: `wrangler secret list` returns names, never
+Worker secrets are write-only: `wrangler secret list` returns names, never
 values. Keep a readable copy of every secret in your own password manager, and
 pipe it in from there so it never lands on disk:
 
@@ -88,12 +88,12 @@ matters most for the APNs `.p8`, which Apple also refuses to re-issue.
 
 ### The trap, first
 
-Apple names **two different things** `AuthKey_XXXXXXXXXX.p8`, and both are P-256
+Apple names two different things `AuthKey_XXXXXXXXXX.p8`, and both are P-256
 PKCS#8 private keys. The file itself cannot tell you which you have:
 
-- an **APNs auth key**: Developer portal → Certificates, Identifiers & Profiles
+- an APNs auth key: Developer portal → Certificates, Identifiers & Profiles
   → **Keys**. This is the one that sends pushes.
-- an **App Store Connect API key**: App Store Connect → Users and Access →
+- an App Store Connect API key: App Store Connect → Users and Access →
   **Integrations**. This is for the API and CI. It will *never* send a push.
 
 Using the wrong one gives `403 InvalidProviderToken`, which looks like a
@@ -107,13 +107,13 @@ misconfiguration rather than the wrong file. Always probe before uploading.
 
    | Field | Choose | Why |
    |---|---|---|
-   | Environment | **Sandbox & Production** | The relay serves every server at once, so it sees TestFlight and Xcode tokens in the same second. It tries production and falls back to sandbox per token (`worker/apns.ts`). Apple suggests separate per-environment keys; that advice assumes one key per workflow and does not fit a shared relay. |
-   | Key Restriction | **Team Scoped (All Topics)** | Survives a bundle-id rename. A topic-scoped key dies permanently if `tv.kroma.mobile` is ever renamed, and cannot be edited. |
+   | Environment | Sandbox & Production | The relay serves every server at once, so it sees TestFlight and Xcode tokens in the same second. It tries production and falls back to sandbox per token (`worker/apns.ts`). Apple suggests separate per-environment keys; that advice assumes one key per workflow and does not fit a shared relay. |
+   | Key Restriction | Team Scoped (All Topics) | Survives a bundle-id rename. A topic-scoped key dies permanently if `tv.kroma.mobile` is ever renamed, and cannot be edited. |
 
    **Both settings are irreversible once saved.** Apple says so on the page.
 4. **Continue** → **Register** → **Download**.
 
-   The download happens **once**: Apple deletes its copy. Back the file up
+   The download happens once: Apple deletes its copy. Back the file up
    somewhere durable before doing anything else.
 
 ### Verify before uploading
@@ -128,7 +128,7 @@ real phone. The rejection is the answer:
 
 | Response | Meaning |
 |---|---|
-| `400 BadDeviceToken` on **both** hosts | ✅ the key is good, and both environments are enabled |
+| `400 BadDeviceToken` on both hosts | good: the key works, and both environments are enabled |
 | `403 InvalidProviderToken` | wrong kind of key, or wrong team |
 | `403 TopicDisallowed` | valid APNs key, wrong bundle id |
 
@@ -144,14 +144,14 @@ printf 'XXXXXXXXXX' | bunx wrangler secret put APNS_KEY_ID
 printf '29729UWWP2' | bunx wrangler secret put APNS_TEAM_ID
 ```
 
-Apple allows **two** APNs keys per account. Revoking is the only way to free a
+Apple allows two APNs keys per account. Revoking is the only way to free a
 slot, and it kills every push signed with that key immediately.
 
 ---
 
 ## Creating the Google credential
 
-Android needs **two** things, and only one of them is the relay's. Without the
+Android needs two things, and only one of them is the relay's. Without the
 first, `getDevicePushTokenAsync()` cannot mint a token at all and the relay never
 gets a chance to matter.
 
@@ -163,8 +163,8 @@ The app must be registered in a Firebase project under the exact package name in
 1. <https://console.firebase.google.com> → the project (KROMA is `kroma-media`)
    → **Project settings** → **General**
 2. Under **Your apps**, select the Android app whose package is
-   **`tv.kroma.mobile`**, or **Add app** if it is not there
-3. Download **`google-services.json`** to `clients/mobile/`
+   `tv.kroma.mobile`, or **Add app** if it is not there
+3. Download `google-services.json` to `clients/mobile/`
 4. Point the app at it in `clients/mobile/app.json`:
 
 ```jsonc
@@ -174,14 +174,14 @@ The app must be registered in a Firebase project under the exact package name in
 }
 ```
 
-This is a **native** change: `expo prebuild` + `expo run:android`, not a JS
+This is a native change: `expo prebuild` + `expo run:android`, not a JS
 reload. A build made before this lands cannot register for push no matter what
 the relay holds.
 
 One file can serve several packages: KROMA's carries both `tv.kroma.mobile` and
 `tv.kroma.androidtv`. It is safe to commit: the Android API key inside it is
 public by design (it ships inside the APK) and is scoped by package name. FCM
-does **not** need a SHA-1 fingerprint registered; other Firebase products do.
+does NOT need a SHA-1 fingerprint registered; other Firebase products do.
 
 ### 2. The relay side: the service account
 
@@ -204,13 +204,13 @@ failure, because two very different things both surface as a non-2xx:
 
 | Relay says | Meaning |
 |---|---|
-| `push service returned 400` | ✅ auth worked. Google authenticated the request and rejected the fake token: `"The registration token is not a valid FCM registration token"` |
-| `upstream push service failed` | ❌ the OAuth2 exchange itself failed: bad or unauthorised service account |
+| `push service returned 400` | good: auth worked. Google authenticated the request and rejected the fake token: `"The registration token is not a valid FCM registration token"` |
+| `upstream push service failed` | bad: the OAuth2 exchange itself failed, from a bad or unauthorised service account |
 
 `bunx wrangler tail` shows Google's full reply in the `relay.rejected` log line.
 
-Note that FCM answers a bad token with **400 `INVALID_ARGUMENT`**, not 404, and
-`worker/fcm.ts` deliberately does **not** treat that as "device gone": the same
+Note that FCM answers a bad token with 400 `INVALID_ARGUMENT` rather than 404, and
+`worker/fcm.ts` deliberately does NOT treat that as "device gone": the same
 400 also means *our* payload was malformed, and evicting on that would
 unsubscribe every Android device at once. Only `404`/`UNREGISTERED` evicts;
 everything else is left to the consecutive-failure counter in `push_subs`.
@@ -233,7 +233,7 @@ curl -s -w '\n[%{http_code}]\n' -X POST https://push.kroma.tv/v1/push \
 # [410]
 ```
 
-`410` on a bogus token is the **success** case for an end-to-end check: the relay
+`410` on a bogus token is the success case for an end-to-end check: the relay
 sealed and opened a grant, signed a real ES256 assertion, reached Apple, flipped
 to the other host, and mapped the verdict. A real device token returns
 `{"delivered":true}`.

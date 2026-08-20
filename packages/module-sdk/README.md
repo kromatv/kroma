@@ -13,11 +13,11 @@ only what a module's FRONTEND may reach for.
 ## `src/admin/` is shared page furniture, not a design system
 
 `context`, `hooks`, `settings`, `engines`, `page-states` and `denied` are the
-pieces every module admin page needs in order to look like part of the same
+pieces every module admin page needs to look like part of the same
 product: the host handle, the settings form, the empty and error states, the
 permission wall.
 
-A component here earns its place by being needed by **more than one module**. One
+A component here earns its place by being needed by more than one module. One
 module's own screen stays in that module's `ui/`. An arrangement that would also
 serve the TV, the phone or the web client belongs in
 [`@kroma/ui`](../ui/README.md) instead, at whichever level
@@ -32,7 +32,7 @@ import { Box, Field, PageHeader } from '@kroma/ui/kit';
 import { Button } from '@kroma/ui/kit/atoms/button';
 ```
 
-**`#ui/*` is the kit's own internal alias and is not for consumers.** The two
+`#ui/*` is the kit's own internal alias and is not for consumers. The two
 public doors emit identical bytes (measured: same raw size, gzip within 0.3%), so
 reaching past them buys nothing and couples a module to the kit's file layout.
 
@@ -48,5 +48,5 @@ survives a palette swap as a stain. Colours, radii and type come from token name
 See `CONVENTIONS.md`.
 
 Every user-visible string is a translation key, resolved against the module's own
-`locales/{en,fr}.json` first. That is a hard rule, not a preference: a module
+`locales/{en,fr}.json` first. That is a hard rule rather than a preference: a module
 ships to operators who did not write it.

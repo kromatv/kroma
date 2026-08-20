@@ -24,7 +24,7 @@ export const story = defineStory({
   ),
 });
 
-A collapsible section with a divider header - the "Advanced" tail of a form that most visits never need. The trigger is a button announcing its **expanded** state, so assistive tech hears what the chevron shows. Uncontrolled by default (`defaultOpen`); pass `open`/`onOpenChange` to own it.
+A collapsible section with a divider header, the "Advanced" tail of a form that most visits never need. The trigger is a button announcing its **expanded** state, so assistive tech hears what the chevron shows. Uncontrolled by default (`defaultOpen`); pass `open`/`onOpenChange` to own it.
 
 Composed: `Root` owns the open state, `Trigger` is the whole header row (one D-pad stop, with the chevron as a face) and `Panel` is the region it swaps in. The rule belongs to the `Trigger`, so a section written without one carries none.
 
@@ -47,10 +47,10 @@ Composed: `Root` owns the open state, `Trigger` is the whole header row (one D-p
 
 <Do>
 - Put the rarely-needed tail of a form behind it, closed by default.
-- Keep the title short and scannable - it reads as a section heading.
+- Keep the title short and scannable. It reads as a section heading.
 </Do>
 
 <Dont>
-- Hide the form's primary fields in one - a closed section reads as absent.
+- Hide the form's primary fields in one. A closed section reads as absent.
 - Nest disclosures; two levels of maybe is a navigation problem.
 </Dont>

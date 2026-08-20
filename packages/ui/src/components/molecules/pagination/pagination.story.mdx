@@ -17,7 +17,7 @@ export const story = defineStory({
   render: (props) => <Demo key={props.pageCount} {...props} />,
 });
 
-Paging controls for a list that arrives one page at a time. A **navigation** landmark to assistive tech, named by `label`, whose current page carries `aria-current="page"` and reads as filled rather than merely tinted. The page run is windowed - first and last are always there, an ellipsis marks what is hidden - and the window is the same width on every page, so the row never reflows under the cursor. Previous and next stay in place and go dim at the ends rather than disappearing. Every target is a `<Focusable>` inside a `<FocusRegion>`, so the D-pad walks the row on a television exactly as Tab walks it in a browser.
+Paging controls for a list that arrives one page at a time. A **navigation** landmark to assistive tech, named by `label`, whose current page carries `aria-current="page"` and reads as filled rather than merely tinted. The page run is windowed. First and last are always there, an ellipsis marks what is hidden, and the window is the same width on every page, so the row never reflows under the cursor. Previous and next stay in place and go dim at the ends rather than disappearing. Every target is a `<Focusable>` inside a `<FocusRegion>`, so the D-pad walks the row on a television exactly as Tab walks it in a browser.
 
 ```tsx
 <Pagination.Root page={page} pageCount={20} onPageChange={setPage} label="Releases" />
@@ -76,11 +76,11 @@ Paging controls for a list that arrives one page at a time. A **navigation** lan
 
 <Do>
 - Name it: `label` is what a screen reader announces for the landmark.
-- Keep `siblings` at 1 unless the row has real room - it is what makes the window one D-pad sweep.
+- Keep `siblings` at 1 unless the row has real room. It is what makes the window one D-pad sweep.
 - Translate the accessible names through `pageLabel` and a `label` on each part.
 </Do>
 
 <Dont>
-- Hide previous and next at the ends - the row would reflow under the pointer.
+- Hide previous and next at the ends. The row would reflow under the pointer.
 - Reach for it when the whole list fits: that is a scroll, not a page.
 </Dont>

@@ -127,7 +127,7 @@ The whole chrome, assembled. `Player.Root` owns no playback of its own: it is ha
 </Do>
 
 <Dont>
-- Render two - it owns the remote, the key handling and the fullscreen element.
+- Render two. It owns the remote, the key handling and the fullscreen element.
 - Wrap it in a fixed-width box: the chrome would size itself for a stage it isn't on.
 - Wrap `<Player.Media>` in a box of your own: the surface must stay a direct child of the stage.
 </Dont>

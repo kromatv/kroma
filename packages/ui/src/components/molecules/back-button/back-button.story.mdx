@@ -8,7 +8,7 @@ export const story = defineStory({
   controls: { diameter: { min: 32, max: 64, step: 2 } },
 });
 
-The way back, drawn once: a scrimmed chevron disc that floats over artwork, fills amber on focus for the 10-foot targets, and grows a touch halo on the phone. Pass `label={t('common.back')}` - the default is plain English.
+The way back, drawn once: a scrimmed chevron disc that floats over artwork, fills amber on focus for the 10-foot targets, and grows a touch halo on the phone. Pass `label={t('common.back')}`, since the default is plain English.
 
 ```tsx
 <BackButton onPress={router.back} label={t('common.back')} />
@@ -16,7 +16,7 @@ The way back, drawn once: a scrimmed chevron disc that floats over artwork, fill
 ```
 
 <Do>
-- Use `scrim` (the default) over artwork - a hero backdrop, the player.
+- Use `scrim` (the default) over artwork: a hero backdrop, the player.
 - Use `ghost` in a page header that already sits on the page colour.
 </Do>
 

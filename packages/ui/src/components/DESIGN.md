@@ -1,8 +1,8 @@
 # Designing a component's API
 
-This document owns **the shape of a component's public surface**: what becomes a
-part, what stays a prop, what those things are called, and how a caller gets out
-when the API does not cover them.
+This document owns the shape of a component's public API: what becomes a part,
+what stays a prop, what those things are called, and how a caller gets out when
+the API does not cover them.
 
 It deliberately does not repeat what other documents own. One link each:
 
@@ -13,7 +13,7 @@ It deliberately does not repeat what other documents own. One link each:
 - Comments, naming, file size: [`CODE_STYLE.md`](../../../../CODE_STYLE.md).
 
 The rules below are drawn from Radix, Base UI, Ark UI, shadcn/ui and React Aria,
-and from the two facts that make this kit different from all of them: it is
+and from the two facts that make this kit different from all of them. It is
 authored against React Native, and it is driven by a D-pad as often as by a
 pointer.
 
@@ -21,32 +21,31 @@ pointer.
 
 ## 1. One vocabulary, and it is law
 
-A component that is a set of parts exposes them as a **namespace object**:
+A component that is a set of parts exposes them as a namespace object:
 
 ```tsx
 const Select = { Root, Trigger, Value, Item, Indicator };
 export { Select };
 ```
 
-Not `Object.assign(Select, { … })`. The bare name is never renderable, so there
-is exactly one way to write every component and no ambiguity about whether
-`<Select>` means anything. A face lives on the **part** that names it (§4), never
-on a callable root.
+Not `Object.assign(Select, { … })`. The bare name is never renderable, so there is
+exactly one way to write every component and no ambiguity about whether `<Select>`
+means anything. A face lives on the part that names it (§4), never on a callable
+root.
 
-**The object is not tree-shakable, and that is accepted knowingly.** Measured on
-the repo's own Vite: a five-part namespace whose parts are 9.8 KB each emits
-50,106 bytes when a caller touches one of them, against 9,825 for the same parts
-exported individually. `/*#__PURE__*/`, `Object.freeze` and getters change
-nothing; exporting the parts beside the object recovers the bytes only for a
-caller who stops writing `Select.Root`, which is the API. What it costs in this
-kit is small, because a compound's parts are nearly always used together: the
-worst is `InputGroup` at 4.0 KB gzipped (its `Textarea`, `Button` and
-`IconButton` parts are the only reason those atoms enter the graph), then `Field`
-at 0.7 KB, and every other compound is under 300 bytes. Do not trade the
-vocabulary for that.
+The object is not tree-shakable, and that is accepted knowingly. Measured on the
+repo's own Vite, a five-part namespace whose parts are 9.8 KB each emits 50,106
+bytes when a caller touches one of them, against 9,825 for the same parts exported
+individually. `/*#__PURE__*/`, `Object.freeze` and getters change nothing.
+Exporting the parts beside the object recovers the bytes only for a caller who
+stops writing `Select.Root`, which is the API. What it costs in this kit is small,
+because a compound's parts are nearly always used together. The worst is
+`InputGroup` at 4.0 KB gzipped, since its `Textarea`, `Button` and `IconButton`
+parts are the only reason those atoms enter the graph, then `Field` at 0.7 KB, and
+every other compound is under 300 bytes. Do not trade the vocabulary for that.
 
-Part names come from this table. A name denotes a **role**, never a position,
-never an input device, never a boolean spelled as a string.
+Part names come from this table. A name denotes a role, never a position, never an
+input device, never a boolean spelled as a string.
 
 | Part | Means | Notes |
 | --- | --- | --- |
@@ -57,7 +56,7 @@ never an input device, never a boolean spelled as a string.
 | `Backdrop` | The scrim over inert content. | Not `Overlay`, which reads as the popup. |
 | `Item` | One entry of a collection: selectable, actionable, or simply listed. | Namespaced (`Menu.Item`), never prefixed. A document's bullet is an `Item` too: an entry does not have to be pressable to be one. |
 | `Leading` / `Trailing` | The head and tail of a row: media, a face, a chevron. | Named for the end of the row, not for what is put there. Neither is a second focus stop. |
-| `Indicator` | The selected/checked face. | **Never pressable.** See §2. |
+| `Indicator` | The selected/checked face. | Never pressable. See §2. |
 | `Label` | The accessible name for the control. | |
 | `GroupLabel` | A section heading inside the surface. | Never overload `Label` for this. |
 | `Hint` | Help text about a CONTROL, wired to the description role. | The one spelling. `Description` and `HelperText` are banned as synonyms. |
@@ -67,13 +66,13 @@ never an input device, never a boolean spelled as a string.
 | `Input` / `Textarea` | The text entry a field owns. | Named for the entry, not the field. |
 | `Value` | The thing being reported: a selection inside a trigger, a readout beside its `Label`. | Reports, never controls. `Select.Value` and `DataField.Value` are the same role. |
 | `Media` | The mark that stands for the thing: a glyph, a poster, an avatar, an illustration. | A leaf: `name` for a glyph the kit can size, children for media it cannot. shadcn's `EmptyMedia` is the same idea. |
-| `Icon` | A glyph that is an affordance on a control. | A **prop** (`<Button icon>`), never a part. Where the mark is the subject rather than an affordance, it is `Media`. |
+| `Icon` | A glyph that is an affordance on a control. | A prop (`<Button icon>`), never a part. Where the mark is the subject rather than an affordance, it is `Media`. |
 | `Group` / `Separator` | A section of items; a divider. | A separator is always semantic. |
 | `Slot` | One fixed position in a composite value: a character of a code. | Never pressable. Its place comes from its position in its `Group`, never from an index prop, because a hand-written index duplicates what the tree already says and a wrong one fails silently. |
 | `Close` / `Title` | Dismisses; names the surface. | |
 | `List` | The scrollable container of items. | Only where a virtualiser needs a real node. |
 | `Empty` | What a collection shows in place of itself when it holds nothing. | A sibling of the `List`, never a child of it: exactly one of the two draws. Distinct from `<EmptyState>`, the molecule it is usually made of. |
-| `Handle` | The grip on a boundary a reader may move: a seam between panels. | The WHOLE strip is the control, so nothing inside it is pressable. Not `Resizer`, not `Splitter`, not `Divider` - a divider draws, a handle moves. |
+| `Handle` | The grip on a boundary a reader may move: a seam between panels. | The WHOLE strip is the control, so nothing inside it is pressable. Not `Resizer`, not `Splitter`, not `Divider`: a divider draws, a handle moves. |
 | `Addon` | A member of a group that nothing can press, shaped like the controls beside it: a protocol, a unit, a suffix. | Named for the role, not the content. `InputGroup.Addon` and `ButtonGroup.Addon` are the same thing. |
 | `Previous` / `Next` | A step backwards or forwards through a sequence. | Named for the direction, never for the glyph that draws it. |
 | `Pages` / `Ellipsis` / `Status` | The run of page entries; the gap standing for the pages it skips; the "12 of 40" readout. | Pagination's own three. `Status` reports, it does not control. |
@@ -87,18 +86,17 @@ never an input device, never a boolean spelled as a string.
 | `Row` | One band across a table: a record, read left to right. | The rule between two rows belongs to the row UNDER it, so the last one cannot double the frame. |
 | `Cell` | One field of a row, in the column its position gives it. | Its column comes from where it sits, never from an index prop: Yoga lines up the nth children of two rows, and nothing else does. |
 
-**Banned**: `Content` (meant a floating box in one library and an in-flow region
-in another) and `Viewport` (meant two different things in two libraries). Use
+Banned: `Content`, which meant a floating box in one library and an in-flow region
+in another, and `Viewport`, which meant two different things in two libraries. Use
 `Panel` or `Popup`, and `List`.
 
-`Portal`, `Positioner` and `Anchor` are **not parts here**. React Native has no
-portal, so a `Portal` part a caller must remember to write is a native bug
-waiting to happen. `Popup` mounts itself. A positioner's transform is owned by
-the layout engine and must not also be a caller's; keep it internal. An anchor
-is one node with one position and no children, so it is a prop on the Root
-(`anchor={ref}`).
+`Portal`, `Positioner` and `Anchor` are not parts here. React Native has no
+portal, so a `Portal` part a caller must remember to write is a native bug waiting
+to happen. `Popup` mounts itself. A positioner's transform is owned by the layout
+engine and must not also be a caller's; keep it internal. An anchor is one node
+with one position and no children, so it is a prop on the Root (`anchor={ref}`).
 
-Adding a part means adding a row to this table **in the same commit**.
+Adding a part means adding a row to this table in the same commit.
 
 ---
 
@@ -107,51 +105,51 @@ Adding a part means adding a row to this table **in the same commit**.
 A caller must not be able to arrange the parts into something that lies to a
 screen reader or steals a D-pad stop.
 
-- **The Root draws the group role**, the parts carry their own. Nobody can
-  compose a `radiogroup` that contains checkboxes.
+- **The Root draws the group role**, the parts carry their own. Nobody can compose
+  a `radiogroup` that contains checkboxes.
 - **The whole row is the control.** A television has one D-pad stop per row and a
   pointer deserves a hit area the size of the thing it is aiming at. So an
   indicator is a FACE (`<CheckboxFace>`, `<SwitchFace>`) with nothing pressable
   about it, and the row carries the semantics.
 - **A container DECLARES to its parts; it cannot read them.** There is no
   `:first-child` here and Yoga has no `order`. A Root that needs to know its own
-  contents walks its **direct** children once, sorts them, and publishes what it
+  contents walks its direct children once, sorts them, and publishes what it
   learned through context: a position (`first`/`middle`/`last`), a padding, the
   layout the shell takes. `<ButtonGroup>` and `<InputGroup>` are both this.
 
-The corollary is real API, and it must be documented on the component: a part
-must be a **direct child** to be sorted, and only a part that reads the context
-takes part in the shape.
+The corollary is real API, and it must be documented on the component. A part must
+be a direct child to be sorted, and only a part that reads the context takes part
+in the shape.
 
 ---
 
 ## 3. Composition by default; data by named exception
 
-Composition is the default. Take a `data` array plus a render function **only**
-when one of these six tests forces it, and say which test in the commit
-message, so the exception does not spread by imitation.
+Composition is the default. Take a `data` array plus a render function only when
+one of these six tests forces it, and say which test in the commit message, so the
+exception does not spread by imitation.
 
 | Test | When it forces data |
 | --- | --- |
-| **T1 Leaf** | The part has no addressable child and exactly one sensible position. `<Button icon>` beats `<Button.Icon>`. Ask: could a caller want two, or one elsewhere? If no, it is a prop. |
-| **T2 Virtualiser** | The collection can be long enough to need windowing. `FlatList`/`FlashList` **require** a `data` array; materialising N children to hand to a virtualiser defeats it. |
+| **T1 Leaf** | The part has no addressable child and exactly one sensible position. `<Button icon>` beats `<Button.Icon>`. Ask whether a caller could want two, or one elsewhere. If no, it is a prop. |
+| **T2 Virtualiser** | The collection can be long enough to need windowing. `FlatList`/`FlashList` require a `data` array; materialising N children to hand to a virtualiser defeats it. |
 | **T3 Provenance** | The collection comes off the wire: a server-driven menu, a module manifest, a locale catalogue. Rendering data as children means writing a JSX interpreter over a parsed array. |
 | **T4 Order-is-policy** | The arrangement must vary by locale, direction or platform. Dialog action order and RTL are policy; a caller cannot be asked to encode policy in JSX order, and there is no `order` to fix it afterwards. |
 | **T5 Invalid arrangement** | Some arrangement a caller could write would break semantics or D-pad traversal. Then do not expose the parts that permit it. |
 | **T6 Identity** | A data collection needs stable ids. If you cannot name one, you probably have a static collection and children are correct. |
 
 T2 is the boundary that does not exist on the web, and it is the one that bites
-hardest here. React Aria kept children syntax for collections and paid for it
-with an entire fake-DOM implementation: a miniature `createElement`/
-`appendChild` that the collection renders into before a second pass into the real
-tree. That cost is the proof: children *and* data is not free. Do not pay it.
+hardest here. React Aria kept children syntax for collections and paid for it with
+an entire fake-DOM implementation, a miniature `createElement`/`appendChild` that
+the collection renders into before a second pass into the real tree. That cost is
+the proof: children *and* data is not free. Do not pay it.
 
 ---
 
 ## 4. A face is written as its part
 
-**If a part exists for a face, that face has no prop.** There is one spelling,
-and it is the part:
+If a part exists for a face, that face has no prop. There is one spelling, and it
+is the part:
 
 ```tsx
 <ChoiceList.Item value="fr">
@@ -160,35 +158,34 @@ and it is the part:
 </ChoiceList.Item>
 ```
 
-This document used to say the opposite: keep a `label`/`hint` shorthand so the
-common row stays one line. That is withdrawn, for three reasons the kit paid for
-before the rule changed.
+This document used to say the opposite, that a `label`/`hint` shorthand was worth
+keeping so the common row stayed one line. That is withdrawn, for three reasons the
+kit paid for before the rule changed.
 
-**Two spellings are two APIs.** Every reader learns both, every review allows
-both, and they drift. The shorthand was the road nearly every call site took, so
-the parts were the untested one: `<Callout>`'s `title` and `<Callout.Title>` were
-kept in step by a test asserting the two render byte-identical HTML, which is the
-cost of the second API written down.
+**Two spellings are two APIs.** Every reader learns both, every review allows both,
+and they drift. The shorthand was the road nearly every call site took, so the
+parts were the untested one: `<Callout>`'s `title` and `<Callout.Title>` were kept
+in step by a test asserting the two render byte-identical HTML, which is the cost
+of the second API written down.
 
 **The shorthand hides the shape.** A caller who only ever writes `title=` never
 learns the component is a set of parts, so the first time the design wants a badge
-beside the title they ask for another prop. That is how `<PageHeader.Root>`
-arrived at `title`, `suffix`, `icon`, `subtitle` and `actions`: five props
-forwarding to three parts, two of them existing only to decorate one of the
-others. Written as parts it is `<PageHeader.Title icon suffix>` and the question
-never comes up.
+beside the title they ask for another prop. That is how `<PageHeader.Root>` arrived
+at `title`, `suffix`, `icon`, `subtitle` and `actions`: five props forwarding to
+three parts, two of them existing only to decorate one of the others. Written as
+parts it is `<PageHeader.Title icon suffix>` and the question never comes up.
 
-**A prop cannot be arranged.** The moment a row is a label AND a badge, or a
-title with a chip after it, the shorthand is spent and the caller rewrites the
-whole call site into parts anyway. Composition is what the component is for; the
-shorthand only delays reaching it.
+**A prop cannot be arranged.** The moment a row is a label AND a badge, or a title
+with a chip after it, the shorthand is spent and the caller rewrites the whole call
+site into parts anyway. Composition is what the component is for. The shorthand
+only delays reaching it.
 
 ### The test that survives, inverted
 
-The old rule's test was: delete the sugar and every behaviour must still be
-reachable through the parts. That test is now the migration's obligation.
-**Deleting a prop must leave nothing unreachable.** Where it would, the answer is
-a **new part**, never the prop back.
+The old rule's test was that deleting the sugar had to leave every behaviour
+reachable through the parts. That test is now the migration's obligation. Deleting
+a prop must leave nothing unreachable, and where it would, the answer is a new
+part, never the prop back.
 
 `<Drawer.Root>`'s header drew a close button; composing `<Drawer.Header>` silently
 dropped it, and nine call sites had already hand-rolled their own and wired
@@ -196,8 +193,8 @@ dropped it, and nine call sites had already hand-rolled their own and wired
 the shell context and renders nothing when the sheet cannot be dismissed. The
 behaviour became reachable; it did not become a prop again.
 
-Where the thing being deleted was also **semantics**, keep the semantics. A row's
-accessible name comes from the plain text of its `<ListRow.Label>`; a row whose
+Where the thing being deleted was also semantics, keep the semantics. A row's
+accessible name comes from the plain text of its `<ListRow.Label>`. A row whose
 middle column is a component that says its words through props has no text for the
 row to read, so `<ListRow.Root label>` survives as a name that draws nothing.
 
@@ -213,42 +210,42 @@ The rule is about faces. It does not strip the kit of props.
   `<InputGroup.Root label>`, `<Dialog.Root title>`, `<Field.Root label>`. These
   name the thing to assistive tech, and the fact that a Root may ALSO draw a
   default header or label row from one does not make it a face a part exists for.
-  The test is whether a part exists to write it instead: there is no
-  `Dialog.Title` and no `Field.Label`, and none should be added.
-- **A `data` collection is §3's question, not this one.**
+  The test is whether a part exists to write it instead: there is no `Dialog.Title`
+  and no `Field.Label`, and none should be added.
+- **A `data` collection is §3's question**, not this one.
 
 ### The escape-hatch ladder
 
-1. **A named part.**
-2. **`render={(props, state) => ReactElement}`**, the **function form only**, on
-   **leaf parts only**. The caller spreads explicitly.
-3. **An exported context hook** (`useChoiceItem()`, `useMenuItem()`). No prop
-   merging at all, and unlike a cloned child it survives arbitrary wrapper depth.
+1. A named part.
+2. `render={(props, state) => ReactElement}`, the function form only, on leaf parts
+   only. The caller spreads explicitly.
+3. An exported context hook (`useChoiceItem()`, `useMenuItem()`). No prop merging
+   at all, and unlike a cloned child it survives arbitrary wrapper depth.
 
 ### `asChild` is `<Slot>`, and its merge is defined
 
 The kit has one slot primitive, [`lib/slot.tsx`](../lib/slot.tsx), and `asChild`
 on a component means exactly `<Slot {...itsProps}>`. Radix leans on an implicit
-merge; this kit cannot (`style` is a positional array, press is a family, a host
-ref is a component instance), so the merge is written down and it is deliberately
-small:
+merge. This kit cannot, because `style` is a positional array, press is a family
+and a host ref is a component instance, so the merge is written down and it is
+deliberately small:
 
 - the child's own props win, prop by prop;
-- `style` composes as `[slot, child]` - the child's declarations last, which is
+- `style` composes as `[slot, child]`, the child's declarations last, which is
   React Native's own precedence for an array;
 - two handlers for the same event both run, the child's first;
 - two refs both attach.
 
-Anything subtler - state-dependent coats, `sv` slots, focus scales - is not a
-merge and stays on the component that owns it. `<Box asChild>` is the workhorse:
-a wrapper whose only job is layout its child could carry hands that layout to
-the child and renders nothing. It exists to DELETE elements; a component whose
-wrapper paints, animates or carries semantics keeps its element.
+Anything subtler, meaning state-dependent coats, `sv` slots or focus scales, is not
+a merge and stays on the component that owns it. `<Box asChild>` is the workhorse.
+A wrapper whose only job is layout its child could carry hands that layout to the
+child and renders nothing. It exists to DELETE elements; a component whose wrapper
+paints, animates or carries semantics keeps its element.
 
 `asChild` never appears on a control. A `<Focusable>` owns interaction state no
 merge can hand over, so composition there stays the ladder above: a named part,
-the `render` function form, or the context hook. Router delegation keeps its
-typed prop (`as={RouterLink}`).
+the `render` function form, or the context hook. Router delegation keeps its typed
+prop (`as={RouterLink}`).
 
 ---
 
@@ -269,8 +266,8 @@ Giving the pairs `value`/`defaultValue`/`onValueChange`,
 - **Never `onChange`.** In React DOM `value` + `onChange` means a form input with
   its own semantics, and reusing it invites `e.target.value`.
 - **Controlled-ness is per prop and fixed at mount.** `useControllable`
-  (`#ui/lib/use-controllable`) pins the mode on first render for exactly the
-  reason React warns about an input flipping between the two.
+  (`#ui/lib/use-controllable`) pins the mode on first render for exactly the reason
+  React warns about an input flipping between the two.
 - **Value first, details second.** `(next, details)` keeps the 95% call site as
   `onValueChange={setPicked}`; a details-only object costs every call site a
   destructure.
@@ -290,16 +287,16 @@ equivalent. Three channels, in order:
    everything and costs nothing.
 2. **Render-prop-with-state**, for a caller who must render *differently* rather
    than paint differently: `children` as a function of a state object.
-3. **An exported context hook**, for a subtree several levels below the part,
-   where a render prop at every level is unbearable.
+3. **An exported context hook**, for a subtree several levels below the part, where
+   a render prop at every level is unbearable.
 
-Use **one state vocabulary** across all three, matching the recipe: `hover`,
-`focus`, `press`, `disabled`, bare and unprefixed. Extend the render-prop state
-object with the semantic states the recipe treats as variants: `selected`,
-`open`, `checked`, `expanded`, `invalid`, `first`, `last`.
+Use one state vocabulary across all three, matching the recipe: `hover`, `focus`,
+`press`, `disabled`, bare and unprefixed. Extend the render-prop state object with
+the semantic states the recipe treats as variants: `selected`, `open`, `checked`,
+`expanded`, `invalid`, `first`, `last`.
 
-The distinction that decides which is which: **interaction state is a state,
-semantic state is a variant.** A toggle's pressed-in reading is owned by the
+The distinction that decides which is which is that interaction state is a state
+and semantic state is a variant. A toggle's pressed-in reading is owned by the
 component's props, not by the pointer.
 
 On react-native-web targets, also emit `dataSet` for the same states. It costs a
@@ -333,16 +330,16 @@ Law 3 is the one this kit has broken worst, and `size` is where. It has meant a
 control size, two different distance scales, a px diameter and a px thickness.
 Everything but the first two is now spelled for what it measures.
 
-**`thickness` is the width of anything the kit draws**: the rule of a
-`<Divider>`, the track of a `<Progress>`, the outline of an `<Icon>`, the arc of
-a `<ProgressRing>`. `stroke` is not a prop name here. It survives only as the
-SVG attribute a renderer writes, where on native it means the paint rather than
-the width, which is exactly why it is the wrong word for a caller.
+`thickness` is the width of anything the kit draws: the rule of a `<Divider>`, the
+track of a `<Progress>`, the outline of an `<Icon>`, the arc of a `<ProgressRing>`.
+`stroke` is not a prop name here. It survives only as the SVG attribute a renderer
+writes, where on native it means the paint rather than the width, which is exactly
+why it is the wrong word for a caller.
 
-**`diameter` is a px box on a control that also wears a shell**, which is why
-`<IconButton>` takes one. That component reads a `sm | md | tv` step off its
-group, so `size` on it would have to mean the step and the box at once, and one
-word cannot do both.
+`diameter` is a px box on a control that also wears a shell, which is why
+`<IconButton>` takes one. That component reads a `sm | md | tv` step off its group,
+so `size` on it would have to mean the step and the box at once, and one word
+cannot do both.
 
 What `size` still means is the settled pair, and there are exactly two:
 
@@ -352,9 +349,8 @@ What `size` still means is the settled pair, and there are exactly two:
   `<ProgressRing>`), `size` is the diameter in px, because that is the only
   measurement it has.
 
-**A distance is never `size`** - it takes a name for what it measures. A
-component that genuinely has its own ladder names its own type, but keeps the
-same three words.
+A distance is never `size`. It takes a name for what it measures. A component that
+genuinely has its own ladder names its own type, but keeps the same three words.
 
 A prop that is only ever set one way is deleted, not defaulted. A handler whose
 only job is to redirect focus takes the target, not the event.
@@ -363,21 +359,20 @@ only job is to redirect focus takes the target, not the event.
 
 ## 8. Adding, promoting, renaming
 
-**Adding.** The trigger is: *has this arrangement now been written twice?* Then
-it earns a level. Which level is [`README.md`](./README.md)'s question, not this
-document's.
+**Adding.** The trigger is whether this arrangement has now been written twice. If
+so, it earns a level. Which level is [`README.md`](./README.md)'s question, not
+this document's.
 
 **Promoting from an app.** A component moves out of `clients/*/src` or
-`packages/tv/src` and into the kit when it is a reusable arrangement rather than
-a product decision. Move the folder, bring its story and its demos with it, and
-delete the original. A promoted component that leaves a copy behind has made
-things worse. If it names a route, a server call or a session, it is a page and
-it stays where it is.
+`packages/tv/src` and into the kit when it is a reusable arrangement rather than a
+product decision. Move the folder, bring its story and its demos with it, and
+delete the original. A promoted component that leaves a copy behind has made things
+worse. If it names a route, a server call or a session, it is a page and it stays
+where it is.
 
-**Renaming.** Rename in one commit across the whole tree; there are no
-deprecation shims. Every call site is in this repo, `bun run typecheck` is the
-gate, and a shim that outlives the migration is a second API nobody is
-maintaining.
+**Renaming.** Rename in one commit across the whole tree; there are no deprecation
+shims. Every call site is in this repo, `bun run typecheck` is the gate, and a shim
+that outlives the migration is a second API nobody is maintaining.
 
 ---
 

@@ -2,16 +2,16 @@
 
 KROMA's core is playback + catalog. Everything else (downloads, indexers,
 acquisition, VPN, transcription, embeddings, discovery, remote access) is a
-**module**: a separate program with a reverse-DNS id (`tv.kroma.torrents`) that
+module: a separate program with a reverse-DNS id (`tv.kroma.torrents`) that
 the server installs, spawns and reverse-proxies.
 
-Modules are **not** compiled into the server. `roster.yaml` is empty on purpose:
+Modules are NOT compiled into the server. `roster.yaml` is empty on purpose:
 this is the zero-module base build. A module reaches users as a `.kmod` bundle
 installed from Admin → Modules, either from a registry or by upload.
 
 ## Layout
 
-Every module is one directory here, and it is **its own cargo workspace**: it
+Every module is one directory here, and it is its own cargo workspace: it
 builds standalone, with its own `Cargo.lock`, outside the server tree:
 
 ```
@@ -55,7 +55,7 @@ dependency graph they have in common (axum, tokio, candle, librqbit) compiles
 once rather than once per module. Cargo holds an exclusive lock on it, so module
 builds run in sequence.
 
-A `.kmod` carries a **native** binary, so it must match the server's platform.
+A `.kmod` carries a native binary, so it must match the server's platform.
 Cross-compile with `KMOD_TARGET`, which also suffixes the bundle with the triple:
 
 ```bash
@@ -70,7 +70,7 @@ line, because `modules:pack` reads them:
 features = ["rqbit"]
 ```
 
-A module with **no `[[bin]]`** is a *library module*: manifest + frontend only,
+A module with no `[[bin]]` is a *library module*: manifest + frontend only,
 no spawned process. Its Rust code is co-linked into whatever uses it
 (`tv.kroma.scene`, the release-name parser, is one).
 
@@ -124,15 +124,15 @@ async fn main() -> anyhow::Result<()> {
 }
 ```
 
-Depend on **`kroma-module-sdk`** and, for a sidecar, **`kroma-module-runtime`**,
-never on core crates directly. The SDK re-exports the surface a module is allowed
+Depend on `kroma-module-sdk` and, for a sidecar, `kroma-module-runtime`, never
+on core crates directly. The SDK re-exports the surface a module is allowed
 to touch, plus pure library modules like `kroma_module_sdk::scene`. In this repo
 they are path deps back into `server/crates/`.
 
 ### Frontend
 
 `defineModule` takes id / version / dependsOn from the manifest, so they are
-never restated. Each page is a `path` + `component`; the nav URL is **derived**
+never restated. Each page is a `path` + `component`; the nav URL is derived
 from `section` + `path`, so a route and its link cannot drift:
 
 ```ts
@@ -161,7 +161,7 @@ against the module's own catalog first, then the core ones.
 The supervisor scans `<data>/modules/*`, spawns each enabled module as its own
 process on a free localhost port, and reverse-proxies `/api/module/<id>/*` to it.
 A module calls back into the core over the token-authed `/api/_host/*` API for
-settings, events, jobs and **session lookup** (`AuthUser` resolves through the
+settings, events, jobs and session lookup (`AuthUser` resolves through the
 host, so authenticating a caller costs no database).
 
 - **`dependencies`** is a hard dependency, as a `{ "<id>": "<range>" }` map.
@@ -178,7 +178,7 @@ host, so authenticating a caller costs no database).
 **A module has no database unless it declares one.** That is what `storage` in
 `module.json` is, and leaving it out is the normal case: eight of the twelve
 first-party modules never open a database, and a sidecar that declares none does
-not link SQLite at all -- which is half of what its binary used to be.
+not link SQLite at all, which is half of what its binary used to be.
 
 ```jsonc
 "storage": {
@@ -199,12 +199,12 @@ kroma-module-sdk = { path = "...", features = ["storage"] }
 kroma-module-runtime = { path = "...", features = ["storage"] }
 ```
 
-The capability gives a module **two** databases, and they are not
+The capability gives a module TWO databases, and they are not
 interchangeable:
 
 - `host.store()` is the module's own file, `<data>/modules/<id>/module.sqlite`.
   It owns it outright, `migrations()` are applied there, and nothing else reads
-  it. This is where a table only that module uses belongs -- especially one
+  it. This is where a table only that module uses belongs, especially one
   holding credentials.
 - `host.db()` is the shared core database, and every statement prepared on it
   passes an authorizer built from the `core` grant above. A module that declared
@@ -213,8 +213,8 @@ interchangeable:
 
 Two rules about a grant come from SQLite rather than from us, and both have bitten:
 a column named in a `WHERE` is reached as much as one that is projected, and a
-foreign key drags its other table in -- writing a child row reads the parent, and
-a cascading delete writes the child.
+foreign key drags its other table in, so writing a child row reads the parent
+and a cascading delete writes the child.
 
 A `write` entry scoped to a column (`"write": ["users.language"]`) authorises
 UPDATE of that column and nothing else. INSERT and DELETE act on a whole row, so
@@ -222,8 +222,8 @@ they need the whole table (`"write": ["users"]`) and are refused otherwise. A
 module that inserts or deletes under a column-scoped grant must widen it.
 
 A table the core itself reads (`downloads`, for the progress overlay) or that is
-a channel between the core and the module (`whisper_jobs`) is **shared by
-definition**: it lives in the core schema, and the module holds a grant on it. A
+a channel between the core and the module (`whisper_jobs`) is shared by
+definition: it lives in the core schema, and the module holds a grant on it. A
 module cannot create a table in the core database, which is the same statement
 said in enforcement.
 
@@ -248,12 +248,12 @@ bun run modules serve --from ./bundles --port 8080
 ```
 
 It serves the RFC 110 documents live off the directory, re-read per request, with
-artifact URLs taken from the origin each request arrived at — so the same tree is
+artifact URLs taken from the origin each request arrived at, so the same tree is
 right on localhost, on a LAN address and behind a tunnel. Add
 `http://localhost:4173` under Admin → Modules → Registries to browse it.
 
-To actually **install** a local build, upload it rather than pointing a server at
-that registry — a server refuses an artifact URL that is not https, which a local
+To actually install a local build, upload it rather than pointing a server at
+that registry. A server refuses an artifact URL that is not https, which a local
 registry never is:
 
 ```bash
@@ -263,7 +263,7 @@ bun run modules install tv.kroma.vpn --server http://192.168.1.20:4040
 ```
 
 It picks this machine's build out of `dist/modules` when a module was packed for
-several targets, and the server applies the same gates the Store does — a bundle
+several targets, and the server applies the same gates the Store does. A bundle
 built against an older manifest schema is refused with what to do about it.
 
 To serve modules to others, host them: `bun run modules registry` writes the same
@@ -276,7 +276,7 @@ static host can serve. See
 **Bump `version` in `module.json` in the same commit as the change.** Modules
 release on their own tags (`<module-id>@<version>`) from
 `.github/workflows/modules.yml`, and it refuses a module whose bundle changed
-while its version stood still — the Store decides "update available" by comparing
+while its version stood still. The Store decides "update available" by comparing
 versions, so a silent republish reaches nobody. `bun run modules release
 --dry-run --repo <owner/repo>` gives the same verdict locally, against whatever
 `dist/modules` currently holds. Full shape in

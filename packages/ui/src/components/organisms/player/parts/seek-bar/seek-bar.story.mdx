@@ -56,15 +56,15 @@ The progress bar, aware of what it is scrubbing through. Each chapter is its OWN
 </Scene>
 
 <Scene name="No chapters" args={{ withChapters: false }}>
-  One continuous segment: the graceful fallback for a file with no markers. Still scrubbable - the single segment is the whole runtime.
+  One continuous segment: the graceful fallback for a file with no markers. Still scrubbable, since the single segment is the whole runtime.
 </Scene>
 
 <Do>
 - Pass real `chapters` when the file has them: the segments are the navigation.
-- Keep `seekPreview` separate from `cur` - the bar must show the target, not jump playback.
+- Keep `seekPreview` separate from `cur`. The bar must show the target, not jump playback.
 </Do>
 
 <Dont>
 - Hide the bar when there are no chapters; one segment is the designed fallback.
-- Compute the labels here - `elapsed`, `total` and `endsAt` arrive already formatted.
+- Compute the labels here. `elapsed`, `total` and `endsAt` arrive already formatted.
 </Dont>

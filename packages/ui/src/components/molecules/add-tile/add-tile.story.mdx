@@ -16,9 +16,9 @@ export const story = defineStory({
   ),
 });
 
-The trailing "one more" slot of a tile row - add a profile, add a server. A dashed square with a plus and its caption, as **one control**: a single focus stop, one hit area, and the caption doubles as the accessible name so the two cannot drift apart.
+The trailing "one more" slot of a tile row: add a profile, add a server. A dashed square with a plus and its caption, as **one control**: a single focus stop, one hit area, and the caption doubles as the accessible name so the two cannot drift apart.
 
-It is a **real glass tile, not a ghost outline**. These rows sit over the sign-in artwork, where a bare dashed border disappears against a bright frame - so the well takes the same translucent fill, blur and lift every other control wears, and the dashes read against that instead of against whatever the splash is showing.
+It is a **real glass tile, not a ghost outline**. These rows sit over the sign-in artwork, where a bare dashed border disappears against a bright frame, so the well takes the same translucent fill, blur and lift every other control wears, and the dashes read against that instead of against whatever the splash is showing.
 
 The plus is drawn in a **solid** ink rather than an alpha: it is two crossing strokes, and a translucent colour double-paints where they overlap into a brighter knot at the centre.
 
@@ -31,11 +31,11 @@ The plus is drawn in a **solid** ink rather than an alpha: it is two crossing st
 
 <Do>
 - Put it last in the row it adds to, so focus reaches it after the real tiles.
-- Use `size="md"` on a phone and the default `tv` at ten feet - they match the profile tiles beside them.
+- Use `size="md"` on a phone and the default `tv` at ten feet. They match the profile tiles beside them.
 - Give it the same caption you would give the destination ("Add a profile"), since that caption is the accessible name.
 </Do>
 
 <Dont>
-- Wrap it in your own pressable - it is already the control, and a second one steals the focus stop.
+- Wrap it in your own pressable. It is already the control, and a second one steals the focus stop.
 - Put it on an opaque panel expecting the ghost look; the fill is deliberate.
 </Dont>

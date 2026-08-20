@@ -14,7 +14,7 @@ export const story = defineStory({
   // PORTRAIT art in a landscape frame, deliberately. `fit` and `position` only
   // do anything when the artwork and its box disagree about shape, and with the
   // 16:9 still this story used to show inside a 16:9 frame, `cover` and
-  // `contain` were the same picture to the pixel - which reads as a broken
+  // `contain` were the same picture to the pixel, which reads as a broken
   // control rather than as a ratio that happened to match.
   args: { src: posterArt(0), fit: 'cover', position: '50% 50%', radius: 13, duration: 400 },
   controls: {
@@ -49,7 +49,7 @@ Every piece of artwork goes through here. The component owns the instant gradien
 </Scene>
 
 <Scene name="Ratio already matches" args={{ src: stillArt(0) }}>
-  A 16:9 still in the 16:9 frame. Here `cover` and `contain` are the SAME picture, and `position` does nothing - there is nothing to crop. Art the server sized for the box is the case worth aiming for.
+  A 16:9 still in the 16:9 frame. Here `cover` and `contain` are the SAME picture, and `position` does nothing, because there is nothing to crop. Art the server sized for the box is the case worth aiming for.
 </Scene>
 
 <Scene name="No artwork" args={{ src: '' }}>
@@ -62,5 +62,5 @@ Every piece of artwork goes through here. The component owns the instant gradien
 </Do>
 
 <Dont>
-- Rewrite the URL here - hand it art the server already sized.
+- Rewrite the URL here. Hand it art the server already sized.
 </Dont>

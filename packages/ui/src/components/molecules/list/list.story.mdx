@@ -16,7 +16,7 @@ export const story = defineStory({
   ),
 });
 
-The bulleted, numbered or ticked list a piece of prose is written in. It owns the marker column, and a number is the one thing an item cannot know about itself: the Root walks its direct children once and hands each one its position. It is the list a DOCUMENT has - a run of settings is `<ListRow>`, and a collection long enough to scroll is `<VirtualGrid>`.
+The bulleted, numbered or ticked list a piece of prose is written in. It owns the marker column, and a number is the one thing an item cannot know about itself: the Root walks its direct children once and hands each one its position. It is the list a DOCUMENT has. A run of settings is `<ListRow>`, and a collection long enough to scroll is `<VirtualGrid>`.
 
 ```tsx
 <List.Root>
@@ -67,11 +67,11 @@ The bulleted, numbered or ticked list a piece of prose is written in. It owns th
 
 <Do>
 - Write one `<List.Item>` per entry and let the Root number them: a hand-written number goes wrong the moment an item moves.
-- Give an item a block of its own when it is more than a sentence - a paragraph, a snippet, a nested list.
+- Give an item a block of its own when it is more than a sentence: a paragraph, a snippet, a nested list.
 - Use `checked` for a task list, where the state is part of what the document says.
 </Do>
 
 <Dont>
 - Use it for a list of controls: a row that can be pressed is `<ListRow>`.
-- Tick a task box expecting a control - it is a face, and a document is not a form.
+- Tick a task box expecting a control. It is a face, and a document is not a form.
 </Dont>

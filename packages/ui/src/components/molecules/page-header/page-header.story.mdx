@@ -20,9 +20,9 @@ export const story = defineStory({
   ),
 });
 
-A page's opening line: the display title (with an optional quiet `suffix` - a count, a category), a subtitle under it, and the page-level actions pinned to the other end. The title is a real **heading** to assistive tech, so a screen reader can land on it.
+A page's opening line: the display title (with an optional quiet `suffix`, a count or a category), a subtitle under it, and the page-level actions pinned to the other end. The title is a real **heading** to assistive tech, so a screen reader can land on it.
 
-Composed: `Root` owns the row, and `Title`, `Subtitle` and `Actions` are named parts. `Root` sorts its direct children once, so an `Actions` reaches the far end wherever it was written and everything else joins the title column - Yoga has no `order` to fix it afterwards.
+Composed: `Root` owns the row, and `Title`, `Subtitle` and `Actions` are named parts. `Root` sorts its direct children once, so an `Actions` reaches the far end wherever it was written and everything else joins the title column. Yoga has no `order` to fix it afterwards.
 
 ```tsx
 <PageHeader.Root>
@@ -41,18 +41,18 @@ Composed: `Root` owns the row, and `Title`, `Subtitle` and `Actions` are named p
 </Scene>
 
 <Scene name="A glyph in the title">
-  A page whose subject IS the glyph - trending, downloads, a live channel - takes it on the title, in the accent and at heading scale. It sits outside the heading text, so a screen reader still reads the words alone.
+  A page whose subject IS the glyph, such as trending, downloads or a live channel, takes it on the title, in the accent and at heading scale. It sits outside the heading text, so a screen reader still reads the words alone.
 
   <Glyph />
 </Scene>
 
 <Do>
-- One PageHeader per page, at the top - it is the h1.
+- One PageHeader per page, at the top. It is the h1.
 - Put a glyph and a count on the title itself: `<PageHeader.Title icon suffix>`.
 - Keep the actions to one cluster; a whole toolbar up here belongs under the header.
 </Do>
 
 <Dont>
-- Use it mid-page - that is a `<Section>`.
+- Use it mid-page. That is a `<Section>`.
 - Wrap `<PageHeader.Actions>` in a layout view: only a direct child is pinned to the far end.
 </Dont>

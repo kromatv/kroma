@@ -8,7 +8,7 @@
 Find it, download it, organize it, stream it. One Rust server for playback and
 catalog, and everything else (indexers · torrent engine · VPN + kill switch · AI)
 as a module you install in a click. No Sonarr, no Radarr, no Jackett, no
-qBittorrent, no Gluetun. **Just KROMA.**
+qBittorrent, no Gluetun. Just KROMA.
 
 [![CI](https://github.com/maxscharwath/kroma/actions/workflows/ci.yml/badge.svg)](https://github.com/maxscharwath/kroma/actions/workflows/ci.yml)
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=maxscharwath_kroma&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maxscharwath_kroma)
@@ -30,14 +30,13 @@ qBittorrent, no Gluetun. **Just KROMA.**
 
 ---
 
-KROMA is a self-hosted, multi-platform **media stack that does the whole job**:
-the *arr suite, your indexer aggregator, your torrent client, your VPN wrapper
-and your media server, in **one server and a set of first-party modules**.
-Turn the modules on and KROMA searches your trackers, scores the releases, grabs
-the best one, tunnels it through your VPN behind a kill switch, imports and
-renames it Plex-style, enriches it from **TMDB**, and direct-play streams it to
-the web, your phone and your living-room TV, wrapped in one calm, cinematic,
-amber-on-charcoal design language.
+KROMA is a self-hosted, multi-platform media stack that does the whole job: the
+*arr suite, your indexer aggregator, your torrent client, your VPN wrapper and
+your media server, in one server and a set of first-party modules. Turn the
+modules on and KROMA searches your trackers, scores the releases, grabs the best
+one, tunnels it through your VPN behind a kill switch, imports and renames it
+Plex-style, enriches it from TMDB, and direct-play streams it to the web, your
+phone and your living-room TV, in one amber-on-charcoal design language.
 
 **Nothing to wire together.** Where a typical setup bolts together Sonarr +
 Radarr + Prowlarr/Jackett + qBittorrent + Gluetun + Jellyfin + Overseerr (six
@@ -46,7 +45,7 @@ once. The rest are modules: you pick them from the Store inside the app, they
 install with one click, and they find each other by capability. No compose file,
 no ports to map, no credentials to copy between services.
 
-The trade this makes, said plainly: a fresh install is a **media server**, not a
+The trade this makes, said plainly: a fresh install is a media server, not a
 download stack. Everything past playback and catalog is opt-in.
 
 <div align="center">
@@ -60,59 +59,59 @@ download stack. Everything past playback and catalog is opt-in.
 
 ## What the server ships, and what you install
 
-`modules/roster.yaml` is empty on purpose: the server is the **zero-module base
-build**. It is a complete media server on its own, and every acquisition feature
-is a module you add from Admin → Modules.
+`modules/roster.yaml` is empty on purpose: the server is the zero-module base
+build. It is a complete media server on its own, and every acquisition feature is
+a module you add from Admin → Modules.
 
-**In the server, with nothing installed:**
+In the server, with nothing installed:
 
 | | | |
 | --- | --- | --- |
-| ▶️ **Player** | direct-play, HEVC-first: original files range-streamed, decoded natively | no transcode farm |
-| 📚 **Library** | Plex-style scan, movie/show/season/episode grouping, SQLite (WAL) | |
-| 🎬 **Metadata** | TMDB overviews, posters, backdrops, genres, ratings, IMDb ids, cached as WebP | built-in key |
-| 🔤 **Search** | typo-tolerant fuzzy/prefix matching over titles, cast and genres | in-process, no index server |
-| 🏠 **Home** | Continue watching, Recently added, Trending, curated rows | see the note below |
-| 📺 **Clients** | web, mobile, Samsung, LG, Apple TV, Android TV, desktop, Synology | one codebase |
-| 📱 **Cast & pairing** | start a title on the TV from your phone, then drive it; QR + Quick Connect | no Chromecast needed |
-| 👥 **Multi-user** | accounts, profiles, PIN locks, passkeys, invites, per-user permissions | share safely |
-| 📨 **Requests** | ask for a title, browse what's wanted | fulfilling one needs the modules below |
-| 📊 **Live bus** | scan/library/playback dashboards over a real-time WebSocket | at a glance |
-| 🧩 **Module store** | registries, sha256-verified installs, the sidecar supervisor | how the rest arrives |
+| **Player** | direct-play, HEVC-first: original files range-streamed, decoded natively | no transcode farm |
+| **Library** | Plex-style scan, movie/show/season/episode grouping, SQLite (WAL) | |
+| **Metadata** | TMDB overviews, posters, backdrops, genres, ratings, IMDb ids, cached as WebP | built-in key |
+| **Search** | typo-tolerant fuzzy/prefix matching over titles, cast and genres | in-process, no index server |
+| **Home** | Continue watching, Recently added, Trending, curated rows | see the note below |
+| **Clients** | web, mobile, Samsung, LG, Apple TV, Android TV, desktop, Synology | one codebase |
+| **Cast & pairing** | start a title on the TV from your phone, then drive it; QR + Quick Connect | no Chromecast needed |
+| **Multi-user** | accounts, profiles, PIN locks, passkeys, invites, per-user permissions | share safely |
+| **Requests** | ask for a title, browse what's wanted | fulfilling one needs the modules below |
+| **Live bus** | scan/library/playback dashboards over a real-time WebSocket | at a glance |
+| **Module store** | registries, sha256-verified installs, the sidecar supervisor | how the rest arrives |
 
-**Modules, one click from the Store.** The official catalog is
+Modules install one click from the Store. The official catalog is
 [`modules.kroma.tv/modules.json`](https://modules.kroma.tv/modules.json):
 
 | Module | What it adds | Needs |
 | --- | --- | --- |
-| 🔎 **Indexers** `tv.kroma.indexer` | native Cardigann engine, running Jackett/Prowlarr tracker definitions directly | - |
-| 🔎 **Torznab** `tv.kroma.torznab` | external Torznab/Newznab indexers (Jackett, Prowlarr) | - |
-| ⬇️ **Torrent downloads** `tv.kroma.torrents` | the embedded librqbit engine + the download queue | an indexer |
-| ⬇️ **qBittorrent** · **Transmission** | those clients as download sub-engines | Torrent downloads |
-| 🧠 **Acquisition** `tv.kroma.acquisition` | release search, quality scoring, grab + import, automatic wanted-list | an indexer + a download client |
-| 🔒 **VPN** `tv.kroma.vpn` | managed WireGuard→SOCKS5 bridge with a live seal test and kill switch | - |
-| ✨ **Embeddings** `tv.kroma.vector` | content embeddings behind For You, themed rows and semantic search | - |
-| ✨ **Whisper** `tv.kroma.whisper` | on-device subtitle transcription (candle) | - |
-| 🌐 **Remote access** `tv.kroma.remote` | public HTTPS share URL + optional managed Cloudflare Tunnel | - |
-| 📡 **mDNS** `tv.kroma.mdns` | DNS-SD advertising so LAN clients find the server automatically | - |
-| 🎞️ **Release parser** `tv.kroma.scene` | scene/P2P release-name parsing and scoring | - |
+| **Indexers** `tv.kroma.indexer` | native Cardigann engine, running Jackett/Prowlarr tracker definitions directly | nothing |
+| **Torznab** `tv.kroma.torznab` | external Torznab/Newznab indexers (Jackett, Prowlarr) | nothing |
+| **Torrent downloads** `tv.kroma.torrents` | the embedded librqbit engine + the download queue | an indexer |
+| **qBittorrent** · **Transmission** | those clients as download sub-engines | Torrent downloads |
+| **Acquisition** `tv.kroma.acquisition` | release search, quality scoring, grab + import, automatic wanted-list | an indexer + a download client |
+| **VPN** `tv.kroma.vpn` | managed WireGuard→SOCKS5 bridge with a live seal test and kill switch | nothing |
+| **Embeddings** `tv.kroma.vector` | content embeddings behind For You, themed rows and semantic search | nothing |
+| **Whisper** `tv.kroma.whisper` | on-device subtitle transcription (candle) | nothing |
+| **Remote access** `tv.kroma.remote` | public HTTPS share URL + optional managed Cloudflare Tunnel | nothing |
+| **mDNS** `tv.kroma.mdns` | DNS-SD advertising so LAN clients find the server automatically | nothing |
+| **Release parser** `tv.kroma.scene` | scene/P2P release-name parsing and scoring | nothing |
 
 > **The one thing to know about the home screen.** Continue watching, Recently
-> added and Trending are plain database rows and always work. **For You and the
-> themed/semantic rows need the Embeddings module**. Without it the core's
-> embedder resolves to nothing, and those rows are simply not emitted rather than
-> breaking the page. The module ships a dependency-free lexical embedder by
-> default; a multilingual semantic build is available for better themed rows.
+> added and Trending are plain database rows and always work. For You and the
+> themed/semantic rows need the Embeddings module. Without it the core's embedder
+> resolves to nothing, and those rows are simply not emitted rather than breaking
+> the page. The module ships a dependency-free lexical embedder by default; a
+> multilingual semantic build is available for better themed rows.
 
-All of it self-hosted, private, and offline-capable: your library and your
+All of it self-hosted, private, and offline-capable. Your library and your
 activity never leave your network.
 
-> **Playback is direct-play, HEVC-first.** The server never transcodes video: it
-> **range-streams the original files** and every client decodes HEVC/H.265 (incl.
-> 10-bit / HDR) natively (Samsung & LG TVs in hardware, modern browsers where
-> supported), so your NAS CPU stays idle. The one exception is an **audio-only**
-> HLS path for browsers that can't decode AC3/EAC3/DTS (video is copied, only the
-> audio is re-encoded to stereo AAC).
+> **Playback is direct-play, HEVC-first.** The server never transcodes video. It
+> range-streams the original files and every client decodes HEVC/H.265 (incl.
+> 10-bit / HDR) natively, Samsung and LG TVs in hardware and modern browsers where
+> supported, so your NAS CPU stays idle. The one exception is an audio-only HLS
+> path for browsers that cannot decode AC3/EAC3/DTS, where video is copied and
+> only the audio is re-encoded to stereo AAC.
 
 ## Features
 
@@ -120,48 +119,48 @@ activity never leave your network.
   in milliseconds, idles near-zero CPU, has no JVM, no container orchestra and no
   transcode farm to keep warm.
 - **Everything else is a module.** Downloads, indexers, acquisition, VPN, Whisper,
-  embeddings, mDNS and remote access ship as **out-of-process `.kmod` sidecars**
-  you install from Admin → Modules. Install what you use, uninstall what you don't,
+  embeddings, mDNS and remote access ship as out-of-process `.kmod` sidecars you
+  install from Admin → Modules. Install what you use, uninstall what you don't,
   and update a module without updating the server.
 - **A native indexer engine** *(module: Indexers)*. A reimplementation of
-  **Cardigann** runs the same community-maintained tracker definitions
+  Cardigann runs the same community-maintained tracker definitions
   Jackett/Prowlarr use, fetched at runtime, with HTML/JSON/XML scraping, logins
-  and Cloudflare (FlareSolverr), so you search real trackers with **no aggregator
-  to install**. External Torznab endpoints are their own module and work side by side.
+  and Cloudflare (FlareSolverr), so you search real trackers with no aggregator to
+  install. External Torznab endpoints are their own module and work side by side.
 - **An embedded torrent engine** *(module: Torrent downloads)*. A librqbit
   BitTorrent client grabs releases in the module's own process; Transmission and
   qBittorrent plug in as sub-engines.
 - **Automatic acquisition** *(module: Acquisition)*. Request a movie or show and
-  KROMA searches every indexer, **scores each release** against a quality profile
+  KROMA searches every indexer, scores each release against a quality profile
   (resolution, codec, size, seeders, keywords), grabs the best, then imports and
   renames it into the library. Manual search and one-click grab, with override,
   for the picky.
 - **VPN with a real kill switch** *(module: VPN)*. Paste a WireGuard config and
   KROMA runs a managed WireGuard→SOCKS5 bridge; torrent traffic is tunneled, a
-  live seal test watches it, and a failed check **pauses every download
-  instantly**. No leaks, no Gluetun sidecar.
+  live seal test watches it, and a failed check pauses every download instantly.
+  No leaks, no Gluetun sidecar.
 - **A home screen the server assembles.** Continue watching, Recently added,
   Trending and curated rows come from the database. For You, "because you
   watched…" and the themed rows come from on-device content embeddings and watch
   history *(module: Embeddings)*. No cloud, no per-user training.
 - **On-device AI.** Typo-tolerant fuzzy search over titles, cast and genres (in
   the core, tuned for TV voice queries); semantic themed rows *(module:
-  Embeddings)*; **Whisper** subtitle generation *(module: Whisper)*. All on your
-  box, none of it in the cloud.
+  Embeddings)*; Whisper subtitle generation *(module: Whisper)*. All on your box,
+  none of it in the cloud.
 - **Plex-style library scan.** Detects movies vs. TV shows, parses `S01E02` /
   `1x02` / multi-episode markers, strips release junk from titles, groups shows →
   seasons → episodes. Hardened against 4000+ real-world filenames.
 - **TMDB metadata + artwork.** Overviews, posters, backdrops, genres, ratings,
-  keywords, IMDb IDs; cached to disk as WebP. Works out of the box with a
-  built-in key.
+  keywords, IMDb IDs; cached to disk as WebP. Works out of the box with a built-in
+  key.
 - **Multi-user and private.** Accounts, profiles, PIN-locked profiles, WebAuthn
   passkeys, invite links, per-user permissions and resume-anywhere.
-- **Live everything.** A WebSocket bus streams scan, enrich and library progress
-  to admin dashboards and clients in real time. Posters appear as TMDB resolves
-  them, with no client relaunch. Download progress, speed and ETA join the same
-  bus once the download modules are installed.
+- **Live everything.** A WebSocket bus streams scan, enrich and library progress to
+  admin dashboards and clients in real time. Posters appear as TMDB resolves them,
+  with no client relaunch. Download progress, speed and ETA join the same bus once
+  the download modules are installed.
 - **Zero-config discovery and one-tap pairing.** Clients subnet-scan the LAN, so
-  TVs find the server with no manual IP entry; the **mDNS module** adds DNS-SD
+  TVs find the server with no manual IP entry; the mDNS module adds DNS-SD
   advertising on top. A TV on the same network appears in the phone app and signs
   in with one tap; the QR code and Quick Connect code are still there for
   everything else (see [`docs/tv-pairing.md`](docs/tv-pairing.md)).
@@ -175,12 +174,12 @@ activity never leave your network.
 ## Architecture
 
 Three ideas carry the whole repo. [`ARCHITECTURE.md`](ARCHITECTURE.md) is the
-structural north-star; this is the short version.
+structural reference; this is the short version.
 
 ### 1. The server is layered, and the compiler enforces it
 
-`server/` is a cargo workspace whose layers **are crates**, so the inward-only
-dependency rule is checked by `cargo build`, not by a CI grep.
+`server/` is a cargo workspace whose layers are crates, so the inward-only
+dependency rule is checked by `cargo build` rather than by a CI grep.
 
 ```
 kroma-server (bin)  main.rs + api/   router and handlers, no business logic
@@ -197,7 +196,7 @@ Integration tests live beside the handlers as `src/api/it_*.rs`.
 
 ### 2. Everything that isn't playback or catalog is a module
 
-Modules are **out-of-process sidecars** with reverse-DNS ids. The supervisor scans
+Modules are out-of-process sidecars with reverse-DNS ids. The supervisor scans
 `<data>/modules/*`, spawns each enabled one on a free localhost port and
 reverse-proxies `/api/module/<id>/*` to it; modules call back into the core over
 the token-authed `/api/_host/*` API and open the shared SQLite directly (WAL, so
@@ -212,19 +211,19 @@ multi-process is safe).
 | `tv.kroma.scene` | release-name parser | `tv.kroma.remote` | remote access |
 | `tv.kroma.engine.qbittorrent` · `tv.kroma.engine.transmission` | external download clients | | |
 
-`modules/roster.yaml` is **empty on purpose**: this is the zero-module base
-build. Every first-party module ships as an installable `.kmod` (a zstd bundle of
+`modules/roster.yaml` is empty on purpose: this is the zero-module base build.
+Every first-party module ships as an installable `.kmod` (a zstd bundle of
 `module.json` + a native binary + icon + `fe/`), releases on its own tag
-`<module-id>@<version>`, and installs from a **registry**: one pinned official
-catalog plus any https catalog the operator adds. Every artifact is sha256-verified
-before it is unpacked. See [`docs/modules-as-kmod.md`](docs/modules-as-kmod.md),
+`<module-id>@<version>`, and installs from a registry: one pinned official catalog
+plus any https catalog the operator adds. Every artifact is sha256-verified before
+it is unpacked. See [`docs/modules-as-kmod.md`](docs/modules-as-kmod.md),
 [`docs/module-registries.md`](docs/module-registries.md) and
 [`modules/README.md`](modules/README.md).
 
 ### 3. One component library, thin shells
 
-`@kroma/ui` is authored **against React Native** and renders natively on Apple TV,
-Android TV, iOS and Android, and through **react-native-web** on Tizen, webOS, the
+`@kroma/ui` is authored against React Native and renders natively on Apple TV,
+Android TV, iOS and Android, and through react-native-web on Tizen, webOS, the
 Tauri desktop shell and the web client. Clients ship the product and stay thin: UI
 belongs in `@kroma/ui`, logic in `@kroma/core`, the whole TV experience in
 `@kroma/tv`. Both `clients/web/src` and `packages/tv/src` are feature-sliced, with
@@ -259,8 +258,8 @@ kroma/
    └─ packages/ @kroma/package-source    the release listing DSM downloads from
 ```
 
-A **client** ships the product; an **app** is a website about it. The two never
-import each other, and both reach a library by its `@kroma/*` name.
+A client ships the product; an app is a website about it. The two never import
+each other, and both reach a library by its `@kroma/*` name.
 
 | Package / app | What it is | README |
 | ------------- | ---------- | ------ |
@@ -317,14 +316,14 @@ bun run server && bun run dev:web
 
 ## Platforms
 
-Every root script is `<verb>:<target>`. **`dev:`** starts a dev server (Vite, or
-Metro for the native apps), **`build:`** and **`deploy:`** ship it. `bun run` with
-no argument lists them all. Anything targeting a single workspace is
+Every root script is `<verb>:<target>`. `dev:` starts a dev server (Vite, or Metro
+for the native apps), `build:` and `deploy:` ship it. `bun run` with no argument
+lists them all. Anything targeting a single workspace is
 `bun run --filter '@kroma/<name>' <script>`, which is how the native apps are
 compiled onto a simulator or device (`ios`, `android`).
 
-Each TV *shell* runs in a normal desktop browser for development, where **arrow
-keys and Enter act as the remote**:
+Each TV *shell* runs in a normal desktop browser for development, where arrow keys
+and Enter act as the remote:
 
 ```bash
 bun run dev:tizen      # :5174   Samsung
@@ -339,7 +338,7 @@ bun run dev:webos      # :5175   LG
 | **Apple TV / Android TV** | `bun run --filter '@kroma/tv-native' ios` · `android` | Expo prebuild + native build; `bun run build:tv-native` is the JS-only gate ([tv-native](clients/tv-native)) |
 | **iPhone / iPad / Android** | `bun run --filter '@kroma/mobile' ios` · `android` | Expo prebuild + native build; `bun run build:mobile` is the JS-only gate ([mobile README](clients/mobile/README.md)) |
 | **Desktop** (macOS / Windows / Linux) | `bun run dev:desktop` | `bun run build:desktop` → Tauri bundle, mpv-backed ([desktop README](clients/desktop/README.md)) |
-| **Synology NAS** | - | `.spk` from the package source ([synology README](clients/synology/README.md)) |
+| **Synology NAS** | none | `.spk` from the package source ([synology README](clients/synology/README.md)) |
 | **TV on the web** | `bun run dev:tv-web` | `bun run deploy:tv-web` → tv.kroma.tv |
 | **Design system workbench** | `bun run dev:kit` (:5180) · `kit:ios` · `kit:tv` | `bun run deploy:kit` → ui.kroma.tv ([kit README](apps/kit/README.md)) |
 
@@ -348,16 +347,16 @@ The Expo scripts pass extra flags straight through: a physical device is
 `--configuration Release` installs a standalone build that needs no Metro at all.
 `bun run dev:mobile` (and the `start` script of any Expo workspace) launches Metro
 alone, for when the app is already installed. Two Expo apps at once collide on
-Metro's port: `--port 8083` moves the *server*, but a debug build still asks
-:8081 until you tell that install otherwise:
+Metro's port: `--port 8083` moves the *server*, but a debug build still asks :8081
+until you tell that install otherwise:
 `xcrun simctl spawn <udid> defaults write tv.kroma.mobile RCT_jsLocation localhost:8083`.
 
 Every TV shell is driven by its `tv.target.ts` (platform, dev port, engine floors)
 through the shared pipeline in
-[`packages/bundler/src/shell.ts`](packages/bundler/src/shell.ts). webOS additionally
-ships a **legacy tier** (ES2015 + flattened CSS, runtime-gated) for Chromium 53–94
-TVs (2018–2023), with a compat guard that fails the build on anything a legacy
-engine cannot parse. `bun run build:tv` builds all TV shells.
+[`packages/bundler/src/shell.ts`](packages/bundler/src/shell.ts). webOS
+also ships a legacy tier (ES2015 + flattened CSS, runtime-gated) for
+Chromium 53–94 TVs (2018–2023), with a compat guard that fails the build on
+anything a legacy engine cannot parse. `bun run build:tv` builds all TV shells.
 
 **Installing on real devices** (TV developer mode, macOS quarantine, sideloading):
 see [INSTALL.md](INSTALL.md). **Joining the beta as a tester** (TestFlight,
@@ -404,16 +403,16 @@ that put it there.
 Configure via `KROMA_HOST` / `KROMA_PORT` / `KROMA_MEDIA_DIRS` / `KROMA_DATA_DIR` /
 `KROMA_TMDB_API_KEY`. The library is persisted in SQLite (`<data>/kroma.db`, WAL),
 which installed modules open directly rather than proxying through the core.
-Embeddings and transcription are reached as **contracts**: the core asks the
-supervisor who serves `embedder` and `whisper`, and re-asks on every call, so a
-module installed later is picked up with nothing re-wired.
+Embeddings and transcription are reached as contracts: the core asks the supervisor
+who serves `embedder` and `whisper`, and re-asks on every call, so a module
+installed later is picked up with nothing re-wired.
 **Full reference → [server/README.md](server/README.md).**
 
 ## Deploy on a Synology NAS, Docker host or Raspberry Pi
 
 Synology: install the `.spk` from the package source (see [INSTALL.md](INSTALL.md)).
-Everything else runs the **multi-arch** Docker image (`linux/amd64` + `linux/arm64`,
-so a Raspberry Pi 4/5 on a 64-bit OS works):
+Everything else runs the multi-arch Docker image (`linux/amd64` + `linux/arm64`, so
+a Raspberry Pi 4/5 on a 64-bit OS works):
 
 ```bash
 docker run -d -p 4040:4040 \

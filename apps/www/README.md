@@ -11,7 +11,7 @@
 
 ## What it is
 
-A **TanStack Start** app built in **fully static** mode: every page is prerendered
+A TanStack Start app built in fully static mode: every page is prerendered
 to its own `index.html` at build time (no server runtime), so Cloudflare serves it
 straight from the edge, the same assets-only pattern as
 [`clients/tv-web`](../../clients/tv-web).
@@ -19,7 +19,7 @@ Chosen because it matches the house web stack ([`clients/web`](../../clients/web
 TanStack Start) while giving a marketing site the SEO of real per-page HTML.
 
 - **Framework:** TanStack Start + TanStack Router (file-based routes in `src/routes`).
-- **Styling:** Tailwind **v4**, importing `@kroma/ui/css` (the kit's
+- **Styling:** Tailwind v4, importing `@kroma/ui/css` (the kit's
   `@theme`): utilities like `bg-bg`, `text-accent`, `font-display` are the KROMA tokens.
 - **Blog:** `.mdx` files in [`content/blog/`](./content/blog), compiled with
   `@mdx-js/rollup` (frontmatter, GFM, anchored headings, Shiki code). See the
@@ -67,7 +67,7 @@ sorted automatically. Full details and the frontmatter fields are in the
 
 ## Languages
 
-i18n is [**Paraglide JS**](https://paraglidejs.com) (inlang). Strings never live in
+i18n is [Paraglide JS](https://paraglidejs.com) (inlang). Strings never live in
 components: the words are in `messages/<locale>.json`, and a component calls a
 generated, typed function for the one it needs.
 
@@ -140,7 +140,7 @@ a reader gets the page rather than a 404. See the
 ## Social cards
 
 `ogPlugin()` renders `public/og.png` and `public/og.fr.png` during the build, from
-a **TSX component** ([`vite/og-card.tsx`](./vite/og-card.tsx)) with
+a TSX component ([`vite/og-card.tsx`](./vite/og-card.tsx)) with
 [Satori](https://github.com/vercel/satori) (JSX → SVG) and resvg (SVG → PNG). No
 browser and no network: the brand faces are read from `@kroma/ui`'s own font files,
 and the colours come from its tokens, so a card cannot drift from the design.
@@ -150,7 +150,7 @@ the only way a link shared in French previews in French.
 
 ## Deploy
 
-The site is an **assets-only Cloudflare Worker** ([`wrangler.jsonc`](./wrangler.jsonc)),
+The site is an assets-only Cloudflare Worker ([`wrangler.jsonc`](./wrangler.jsonc)),
 served at `kroma.tv` + `www.kroma.tv` (the 10-foot app lives at `tv.kroma.tv`,
 see `clients/tv-web`). Requires the `kroma.tv` zone on the Cloudflare account;
 `wrangler` provisions the custom domains on deploy.

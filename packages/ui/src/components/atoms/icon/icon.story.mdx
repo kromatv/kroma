@@ -8,8 +8,8 @@ import { IN_USE, SIZES, UNKNOWN, asName } from './icon.fixtures';
 export const story = defineStory({
   group: 'Foundations',
   // For the sheets below: they wrap, so they need to be told how much room they
-  // have. The cells inside keep a width - that is the grid's pitch, not a
-  // layout guess - but how many fit on a line follows the canvas.
+  // have. The cells inside keep a width, which is the grid's pitch rather than
+  // a layout guess, but how many fit on a line follows the canvas.
   width: { min: 360, max: 760 },
   args: {
     name: 'player-play',
@@ -28,7 +28,7 @@ export const story = defineStory({
   ),
 });
 
-Any Tabler glyph (`tabler.io/icons`), by name. There is no registry to add to and no generated file: `wave-sine` draws because Tabler exports `IconWaveSine`, and the name is translated into the export. A name the package does not have draws `help-circle` instead of crashing, which is what makes it safe to take an icon name from **data** - a server-installed module names its glyph in its own manifest, and no list could ever be complete.
+Any Tabler glyph (`tabler.io/icons`), by name. There is no registry to add to and no generated file: `wave-sine` draws because Tabler exports `IconWaveSine`, and the name is translated into the export. A name the package does not have draws `help-circle` instead of crashing, which is what makes it safe to take an icon name from data. A server-installed module names its glyph in its own manifest, and no list could ever be complete.
 
 This story is the component: sizes, weight, colour, and what an unknown name does. For **which glyphs exist**, the searchable catalogue is `Foundations / Icons`.
 
@@ -97,6 +97,6 @@ This story is the component: sizes, weight, colour, and what an unknown name doe
 </Do>
 
 <Dont>
-- Wrap it to make it pressable - that is `IconButton`, which owns the hit area and the focus ring.
+- Wrap it to make it pressable. That is `IconButton`, which owns the hit area and the focus ring.
 - Hard-code a hex where a token exists; the glyph then misses a palette change.
 </Dont>

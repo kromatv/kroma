@@ -12,14 +12,14 @@ export const story = defineStory({
   // it needs and the range above it is what the surface behind it can be.
   width: { min: 820, max: 1200 },
   // 768pt of table on a stage that can be 326 (a phone): the scroller shows a
-  // third of it. The TV frame shows the whole read-out - which is how it is
-  // read - and `Fit` stays one press away.
+  // third of it. The TV frame shows the whole read-out, which is how it is
+  // read, and `Fit` stays one press away.
   viewport: 'tv',
   args: {},
   // The WEB snapshot, which is the richest one any surface builds: headline
   // fields, media / transport / client diagnostics, and three live series. The
   // meters wander on their own, so the charts are drawing here exactly as they do
-  // over a real stream - including the window filling in from the right, which is
+  // over a real stream, including the window filling in from the right, which is
   // what the first forty seconds of every playback actually looks like.
   render: () => (
     <Surface>
@@ -105,5 +105,5 @@ meters: [
 <Dont>
 - Put two units on one chart. Buffer (seconds) against bandwidth (kb/s) flattens the smaller series to a dead line and invents a crossover that is not in the data.
 - Report a charted value as an `extra` row as well: the panel drops the duplicate row, and the chart already carries the number plus its history.
-- Leave it open in a shipped session - it polls, and a TV has nothing to spare.
+- Leave it open in a shipped session. It polls, and a TV has nothing to spare.
 </Dont>

@@ -6,7 +6,7 @@ import { TINT } from './grid.fixtures';
 export const story = defineStory({
   group: 'Media',
   // Dynamic, the way it ships: the stage's width, clamped. Drag the window and
-  // the row re-measures - which is the behaviour a fixed width hid.
+  // the row re-measures, which is the behaviour a fixed width hid.
   width: { min: 560, max: 1400 },
   args: { width: 1000, columns: 5, gap: 24, count: 10 },
   controls: {

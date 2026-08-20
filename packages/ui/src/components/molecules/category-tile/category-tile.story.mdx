@@ -26,7 +26,7 @@ export const story = defineStory({
   ),
 });
 
-A labelled artwork tile for something that GROUPS titles - a genre, a collection, a channel - rather than being one. Two gradients do two jobs: `background` is the instant fill behind the art, and `wash` is the veil **over** it, which is what keeps white text readable on a photograph nobody picked for its contrast.
+A labelled artwork tile for something that GROUPS titles rather than being one: a genre, a collection, a channel. Two gradients do two jobs: `background` is the instant fill behind the art, and `wash` is the veil **over** it, which is what keeps white text readable on a photograph nobody picked for its contrast.
 
 ```tsx
 <CategoryTile
@@ -71,6 +71,6 @@ A labelled artwork tile for something that GROUPS titles - a genre, a collection
 </Do>
 
 <Dont>
-- Use it for a single title - that is `MediaCard` (landscape) or `PosterCard` (portrait).
+- Use it for a single title. That is `MediaCard` for landscape, `PosterCard` for portrait.
 - Put the count in the label; `meta` is the line for it.
 </Dont>

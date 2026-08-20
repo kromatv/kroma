@@ -41,7 +41,7 @@ export const story = defineStory({
   ),
 });
 
-THE text entry. There is no second input component to choose between - `<TextField>` and `<TextArea>` exist behind `Field.Input` and `Field.Textarea` as the controls they render, and are not exported, because a screen that reaches past the label also tends to lose the hint and the error. The **Root** owns the label, the shell size, the value and the invalid presentation; the parts read all four through context. Multi-line is a different PART, not a boolean. `type` wires the platform correctly (keyboard, autofill, masking) and `password` grows its reveal eye. The rule the molecule enforces: an error **replaces** the help text instead of stacking below it, because two lines of small text under a field is the start of a broken form. On a television the entry renders the value plus a caret and the on-screen keyboard does the typing; where a real keyboard exists, `physicalKeyboard` makes it a live input.
+THE text entry. There is no second input component to choose between. `<TextField>` and `<TextArea>` exist behind `Field.Input` and `Field.Textarea` as the controls they render, and are not exported, because a screen that reaches past the label also tends to lose the hint and the error. The **Root** owns the label, the shell size, the value and the invalid presentation; the parts read all four through context. Multi-line is a different PART, not a boolean. `type` wires the platform correctly (keyboard, autofill, masking) and `password` grows its reveal eye. The rule the molecule enforces: an error **replaces** the help text instead of stacking below it, because two lines of small text under a field is the start of a broken form. On a television the entry renders the value plus a caret and the on-screen keyboard does the typing; where a real keyboard exists, `physicalKeyboard` makes it a live input.
 
 ```tsx
 <Field.Root label="Server address">
@@ -57,7 +57,7 @@ THE text entry. There is no second input component to choose between - `<TextFie
   <Field.Textarea rows={4} value={notes} onValueChange={setNotes} />
 </Field.Root>
 
-// A control that is not a text entry - the label, hint and error still apply:
+// A control that is not a text entry: the label, hint and error still apply:
 <Field.Root label="PIN" error={wrong ? 'Incorrect PIN' : undefined}>
   <PinField onComplete={verify} />
 </Field.Root>
@@ -70,7 +70,7 @@ THE text entry. There is no second input component to choose between - `<TextFie
 ```
 
 <Scene name="With error" args={{ error: 'The server did not answer.', hint: '' }}>
-  The error takes the hint’s place and paints the entry’s border, rather than adding a second line under it.
+  The error takes the hint's place and paints the entry's border, rather than adding a second line under it.
 </Scene>
 
 <Scene name="Password" args={{ label: 'Password', type: 'password', value: 'hunter2', hint: '', icon: 'lock' }}>
@@ -86,7 +86,7 @@ THE text entry. There is no second input component to choose between - `<TextFie
   placeholder: 'Search',
   hint: '',
 }}>
-  What the 10-foot search boxes and the workbench’s own filter use, and the case that used to justify exporting the raw control. `hideLabel` drops the label ROW only - the input is still named for VoiceOver and for the browser.
+  What the 10-foot search boxes and the workbench's own filter use, and the case that used to justify exporting the raw control. `hideLabel` drops the label ROW only. The input is still named for VoiceOver and for the browser.
 </Scene>
 
 <Scene name="Multi-line">
@@ -104,7 +104,7 @@ THE text entry. There is no second input component to choose between - `<TextFie
 </Scene>
 
 <Scene name="Around another control">
-  Give the Root a control of your own and it keeps the label, hint and error - which is how a `<Select>` gets the same label row as the entry beside it. Wrap it: a bare `block` select dropped into a grid cell is stretched by whatever is tallest in the row, and arrives taller than the field next to it. Wrapped, both cells are a label over a control off the same shell table, so they line up on both edges.
+  Give the Root a control of your own and it keeps the label, hint and error, which is how a `<Select>` gets the same label row as the entry beside it. Wrap it: a bare `block` select dropped into a grid cell is stretched by whatever is tallest in the row, and arrives taller than the field next to it. Wrapped, both cells are a label over a control off the same shell table, so they line up on both edges.
 
   <Box row gap={14}>
     <Box flex>
@@ -146,12 +146,12 @@ THE text entry. There is no second input component to choose between - `<TextFie
 - Let the Root render the entry: label, error tint and spacing stay in step.
 - Pick a `type` on the entry; the keyboard and autofill follow from it.
 - Pass `value` to own the state, or `defaultValue` to let the field run itself.
-- Put the entry’s own presentation (height, fill, type scale) on `Field.Input`; box props on `Field.Root` lay out the field itself.
+- Put the entry's own presentation (height, fill, type scale) on `Field.Input`; box props on `Field.Root` lay out the field itself.
 </Do>
 
 <Dont>
-- Stack a hint under an error - the error takes the hint's place.
+- Stack a hint under an error. The error takes the hint's place.
 - Drop the `label` to hide it. `hideLabel` stops it being drawn and keeps it as the accessible name; an unnamed input is a bug on every platform.
-- Reach for `keyboardType` directly - that's what `type` derives.
+- Reach for `keyboardType` directly. That is what `type` derives.
 - Set `size` on a part: the Root owns the shell, so a form stays one family.
 </Dont>

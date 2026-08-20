@@ -16,7 +16,7 @@ export const story = defineStory({
   controls: { letters: KEYBOARD_LAYOUTS },
 });
 
-The remote-driven search grid: the layout's letters as-is, with space / backspace / close on the short tail row, and a digits row above them. Letters insert lowercase, since search is case-insensitive. Every key is a `<Focusable>`, so the spatial focus nav reaches it and OK activates it. **The letter order is the caller's**: a keyboard that read a settings store would tie the kit to one app's preferences, so the host passes `letters` (the TV reads its persisted device preference once per mount). Its sibling is `<UrlKeyboard>` - two components, not one with a `layout` switch.
+The remote-driven search grid: the layout's letters as-is, with space / backspace / close on the short tail row, and a digits row above them. Letters insert lowercase, since search is case-insensitive. Every key is a `<Focusable>`, so the spatial focus nav reaches it and OK activates it. **The letter order is the caller's**: a keyboard that read a settings store would tie the kit to one app's preferences, so the host passes `letters` (the TV reads its persisted device preference once per mount). Its sibling is `<UrlKeyboard>`: two components, not one with a `layout` switch.
 
 ```tsx
 <SearchKeyboard

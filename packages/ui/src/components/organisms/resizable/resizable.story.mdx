@@ -30,7 +30,7 @@ export const story = defineStory({
   ),
 });
 
-Panels a reader can re-proportion, and the seams they meet at. shadcn's shape - a group, its panels and a handle between them - over this kit's own machinery, because react-resizable-panels is DOM-only and this seam has to work under a D-pad.
+Panels a reader can re-proportion, and the seams they meet at. shadcn's shape, meaning a group, its panels and a handle between them, over this kit's own machinery, because react-resizable-panels is DOM-only and this seam has to work under a D-pad.
 
 The whole strip is the control: drag it with a pointer, **press** it to take the arrow keys, and press it again (or hold it) to put its two panels back. A size is a share of the group (`25`) or points (`"280px"`), and the layout is held as shares, so a panel dragged wide on a desk comes back whole after a spell on a laptop.
 
@@ -59,12 +59,12 @@ The whole strip is the control: drag it with a pointer, **press** it to take the
 </Scene>
 
 <Do>
-- Give every panel the `minSize` its contents actually stop working at - the seam stops there instead of somewhere arbitrary.
+- Give every panel the `minSize` its contents actually stop working at. The seam stops there instead of somewhere arbitrary.
 - Label each handle for what it resizes: a seam announces itself to assistive tech as a slider.
 - Pass `autoSaveId` when the reader would resent re-dragging it every visit.
 </Do>
 
 <Dont>
 - Put anything pressable inside the seam: it is one D-pad stop, and a second target inside it cannot be reached.
-- Reach for it to lay out a screen that has one right arrangement - a seam is for a reader with a preference, not for a designer without one.
+- Reach for it to lay out a screen that has one right arrangement. A seam is for a reader with a preference, not for a designer without one.
 </Dont>

@@ -27,7 +27,7 @@ export const story = defineStory({
 
 A titled band: an overline, a rule, and the content. Every settings screen had its own copy of this arrangement, with slightly different spacing each time.
 
-Composed: `Root` owns the column, and `Header`, `Title` and `Actions` are named parts. The rule belongs to the `Header` - it is what separates the header from the content - so a band written without one has no rule to explain. `Root` sorts its direct children once: a `Header` sits at the top, everything else is content spaced by `gap`.
+Composed: `Root` owns the column, and `Header`, `Title` and `Actions` are named parts. The rule belongs to the `Header`, which is what separates the header from the content, so a band written without one has no rule to explain. `Root` sorts its direct children once: a `Header` sits at the top, everything else is content spaced by `gap`.
 
 ```tsx
 <Section.Root>
@@ -67,6 +67,6 @@ Composed: `Root` owns the column, and `Header`, `Title` and `Actions` are named 
 </Do>
 
 <Dont>
-- Open a page with one - that is a `<PageHeader>`.
+- Open a page with one. That is a `<PageHeader>`.
 - Wrap `<Section.Header>` in a layout view: only a direct child sits above the rule.
 </Dont>

@@ -24,7 +24,7 @@ export const story = defineStory({
 The one-time-code entry: a row of character slots with the caret on the next
 empty one. It replaces the web client's `input-otp` wrapper, which was a hidden
 DOM `input` and therefore could never run on a television. Here one off-screen
-entry owns the text - so paste, SMS autofill and typing all still work - while
+entry owns the text, so paste, SMS autofill and typing all still work, while
 the slots are ordinary views.
 
 <OtpField.Root maxLength={4} defaultValue="12" physicalKeyboard>
@@ -102,7 +102,7 @@ there is nothing typing into it.
 </Do>
 
 <Dont>
-- Set a `pattern` the keyboard contradicts - `REGEXP_ONLY_DIGITS` and a text keypad fight each other.
+- Set a `pattern` the keyboard contradicts. `REGEXP_ONLY_DIGITS` and a text keypad fight each other.
 - Leave `invalid` on after the user starts retyping; clear it in `onValueChange`.
 - Put a separator inside a group: it would take a slot's place in the code.
 </Dont>

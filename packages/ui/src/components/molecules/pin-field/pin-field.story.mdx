@@ -14,7 +14,7 @@ export const story = defineStory({
   render: (props) => <PinField key={String(props.maxLength)} {...props} />,
 });
 
-The fixed-length code entry, one dot per digit. It is `<OtpField>` wearing another face: the same Root holds the code, and each dot is an `<OtpField.Group>` child reading `useOtpSlot()`. What is its own is the capture - a television cannot mount the off-screen entry `<OtpField>` types into, because a focused text input summons the platform keyboard over the screen, so a hardware keyboard is read window-wide instead. With this preview focused, just type digits.
+The fixed-length code entry, one dot per digit. It is `<OtpField>` wearing another face: the same Root holds the code, and each dot is an `<OtpField.Group>` child reading `useOtpSlot()`. What is its own is the capture. A television cannot mount the off-screen entry `<OtpField>` types into, because a focused text input summons the platform keyboard over the screen, so a hardware keyboard is read window-wide instead. With this preview focused, just type digits.
 
 ```tsx
 <PinField onComplete={(pin) => verify(pin)} physicalKeyboard={physicalKeyboard} />
@@ -32,5 +32,5 @@ The fixed-length code entry, one dot per digit. It is `<OtpField>` wearing anoth
 </Do>
 
 <Dont>
-- Show what went wrong in the dots alone - pair `invalid` with a message.
+- Show what went wrong in the dots alone. Pair `invalid` with a message.
 </Dont>

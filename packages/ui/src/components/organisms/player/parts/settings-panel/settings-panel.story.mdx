@@ -14,13 +14,13 @@ export const story = defineStory({
   width: { min: 640, max: 1100 },
   // Right-anchored on a 10-foot surface: on a stage narrower than `min` (a
   // phone) the scroller opens at the EMPTY left half and the drawer is off
-  // canvas, so the story opens in the TV frame - seen whole, like the player's
-  // other overlays - and `Fit` remains one press away.
+  // canvas, so the story opens in the TV frame, seen whole like the player's
+  // other overlays, and `Fit` remains one press away.
   viewport: 'tv',
   args: { statsOn: false, canReport: true, narrow: false },
   render: ({ statsOn, canReport, narrow }) => (
     // The drawer is inset to the full height of the surface it slides over, so
-    // the frame is the picture's shape with a floor under it - a menu shown 300pt
+    // the frame is the picture's shape with a floor under it: a menu shown 300pt
     // tall would be scrolling for a reason no surface has.
     <Ground tone="dark">
       <Box aspect={16 / 9} minH={560} bg="surface2" radius="lg" overflow="hidden">
@@ -74,5 +74,5 @@ Everything you can change without leaving the film: audio track, subtitles and t
 </Do>
 
 <Dont>
-- Pass `onReport` on a surface with no reporting flow - the row is conditional for that reason.
+- Pass `onReport` on a surface with no reporting flow. The row is conditional for that reason.
 </Dont>

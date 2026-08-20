@@ -78,9 +78,9 @@ use a SegmentGroup, and for a set of toggles a ChoiceList.
 </Scene>
 
 <Scene name="An entry welded to a button">
-  A `<TextField>` is a member like any button: it takes the group's size, drops the corners and the border edge it shares, and lifts itself over its neighbour while it wears the focus ring. That last part is why the field reads the slot rather than the group styling it - only the field knows it is focused, and a collapsed border would otherwise let the member after it overpaint the ring.
+  A `<TextField>` is a member like any button: it takes the group's size, drops the corners and the border edge it shares, and lifts itself over its neighbour while it wears the focus ring. That last part is why the field reads the slot rather than the group styling it. Only the field knows it is focused, and a collapsed border would otherwise let the member after it overpaint the ring.
 
-  Where this is the whole control rather than a row of them - a search box with a count welded inside its own well - reach for an `<InputGroup>` instead: there the shell is one well and the addons live *inside* it, so the field draws no fill, frost or edge of its own.
+  Where this is the whole control rather than a row of them, a search box with a count welded inside its own well, reach for an `<InputGroup>` instead: there the shell is one well and the addons live *inside* it, so the field draws no fill, frost or edge of its own.
 
   <WithEntry />
 </Scene>
@@ -106,7 +106,7 @@ use a SegmentGroup, and for a set of toggles a ChoiceList.
 </Do>
 
 <Dont>
-- Use it to pick one option among several - that is a `<SegmentGroup>`.
+- Use it to pick one option among several. That is a `<SegmentGroup>`.
 - Wrap a member in a layout `<Box>`: the wrapper becomes the member and takes the shape.
 - Clip the group (`overflow`): a focused member's ring is painted outside its box.
 </Dont>

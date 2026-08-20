@@ -1,43 +1,43 @@
 # KROMA Server
 
-> Part of the [KROMA](../README.md) monorepo self-hosted, direct-play, HEVC-first media streaming.
+> Part of the [KROMA](../README.md) monorepo: self-hosted, direct-play, HEVC-first media streaming.
 
-A self-hosted, **direct-play** media streaming server for the KROMA project
-think a minimal, Plex-like backend.
+A self-hosted, direct-play media streaming server for the KROMA project. Think
+a minimal, Plex-like backend.
 
 It does three things:
 
-1. **Scans** one or more media library roots, detecting **movies vs TV shows**
+1. Scans one or more media library roots, detecting movies vs TV shows
    (Plex-style) and grouping episodes into shows → seasons → episodes.
-2. **Exposes metadata** over a small JSON REST API.
-3. **Range-streams the original media files** to clients.
+2. Exposes metadata over a small JSON REST API.
+3. Range-streams the original media files to clients.
 
 It **never transcodes**. Playback is always direct-play: the client (web / TV)
 decodes HEVC/H.265, AV1, H.264, etc. itself. `ffprobe` is used *only* to read
-metadata there is no ffmpeg encode pipeline. If `ffprobe` is missing, the
+metadata, and there is no ffmpeg encode pipeline. If `ffprobe` is missing, the
 server still runs and infers the codec from the file extension.
 
-The library is persisted in **SQLite** (`<data>/kroma.db`, WAL mode). A scan
+The library is persisted in SQLite (`<data>/kroma.db`, WAL mode). A scan
 computes the full set of libraries/shows/items and atomically swaps it in; reads
 run on a small connection pool. The storage layer is a hand-rolled WAL pool over
-`rusqlite` (bundled SQLite) no system libsqlite3 required.
+`rusqlite` (bundled SQLite), so no system libsqlite3 is required.
 
 If no media dirs are configured (or a scan finds nothing), the server seeds
-built-in **demo** content (movies + two shows) so clients render out of the box.
+built-in demo content (movies + two shows) so clients render out of the box.
 Demo items cannot be streamed (their `/stream` endpoint returns a JSON 404).
 
 ## Library detection (Plex-style)
 
 The scanner recognises these layouts and naming cues:
 
-- **Movies** `Movies/Blade Runner 2049 (2017)/Blade Runner 2049 (2017) 2160p BluRay x265.mkv`
+- Movies: `Movies/Blade Runner 2049 (2017)/Blade Runner 2049 (2017) 2160p BluRay x265.mkv`
   or flat `The.Matrix.1999.1080p.x264-GROUP.mp4`. A parenthesised `(YYYY)` is the
   authoritative year, so "Blade Runner 2049 (2017)" → title *Blade Runner 2049*,
   year *2017* (not 2049). Release junk (resolution / source / codec / group) is
   stripped from titles. The `Title (Year)` folder name is used when the filename
   is generic.
-- **Episodes** `S01E02`, `s1e2`, `S01E02-E03` (multi-episode), `1x02`. The
-  **top-level folder under the library root** is the show identity
+- Episodes: `S01E02`, `s1e2`, `S01E02-E03` (multi-episode), `1x02`. The
+  top-level folder under the library root is the show identity
   (`TV Shows/The Office (2005)/Season 02/The Office - S02E01 - The Dundies.mkv`),
   with the text after the marker becoming the episode title. Episodes are grouped
   into shows and seasons.
@@ -115,7 +115,7 @@ only one the proxy itself vouched for.
 
 A page open in a browser on your network reaches this server from inside it, so
 the address it arrives from says nothing about who wrote it. What decides
-whether it may **read** the answer is CORS, and the policy is a list rather than
+whether it may READ the answer is CORS, and the policy is a list rather than
 the wildcard it used to be:
 
 - this machine and this network: `localhost`, anything under `.localhost`, a
@@ -160,17 +160,17 @@ address, far above any cadence a television keeps. See
 ## HTTPS on the LAN (optional)
 
 By default the server speaks plain HTTP, which is usually fine on a LAN. But a
-browser refuses the **Web Crypto API** (`crypto.subtle`, WebAuthn/passkeys) on a
+browser refuses the Web Crypto API (`crypto.subtle`, WebAuthn/passkeys) on a
 non-`localhost` HTTP origin, so a phone hitting `http://192.168.x.y:4040` can't
 use those. A LAN box has no public DNS name for Let's Encrypt, so KROMA can
-instead serve HTTPS with an **auto-generated self-signed certificate**:
+instead serve HTTPS with an auto-generated self-signed certificate:
 
 - Enable it with `KROMA_HTTPS=1` (or the `httpsEnabled` admin setting; the env
-  wins). The plain-HTTP listener keeps running in parallel HTTPS is additive.
+  wins). The plain-HTTP listener keeps running in parallel, since HTTPS is additive.
 - The cert is generated once and persisted under `<data>/tls/` (`cert.pem` +
   `key.pem`, key `0600`), then reused on restart. Delete that folder to force a
   regen (e.g. after changing the SANs below).
-- The listener binds `KROMA_HTTPS_PORT` (default **4443**).
+- The listener binds `KROMA_HTTPS_PORT` (default 4443).
 - Its SANs cover the box's local identities automatically: `localhost`,
   loopback, the hostname, `<hostname>.local`, and the primary LAN IP.
 - Download the public cert from `/api/tls/cert.pem` to trust it once per device.
@@ -178,7 +178,7 @@ instead serve HTTPS with an **auto-generated self-signed certificate**:
 If the cert can't be prepared, HTTPS is skipped and HTTP keeps serving (logged);
 the feature never blocks startup.
 
-**Redirect HTTP → HTTPS (optional).** By default HTTP keeps serving the app
+**Redirect HTTP to HTTPS, optionally.** By default HTTP keeps serving the app
 directly. Set `KROMA_HTTPS_REDIRECT=1` (or the `httpsRedirect` admin toggle) to
 make the HTTP listener 307-redirect everything to HTTPS instead. It is off by
 default on purpose: a self-signed origin shows a trust prompt until the cert is
@@ -197,7 +197,7 @@ name; separate them with commas, spaces or `;`:
 KROMA_TLS_SANS="192.168.1.50, nas.home, kroma.example.com"
 ```
 
-This matters most **in Docker**: on the default bridge network the container's
+This matters most in Docker: on the default bridge network the container's
 hostname is its random ID and its "primary LAN IP" is the Docker bridge address
 (`172.x`), not your host's LAN IP, so the auto-detected SANs won't match the
 address clients use. Pass the host's real IP / DNS name here (or run with
@@ -262,7 +262,7 @@ is a list, not a wildcard: see [Which browsers are answered](#which-browsers-are
 | GET    | `/api/shows/:id`           | One show + `seasons[]` of `{ number, episodes }`. |
 | GET    | `/api/shows/:id/poster`    | Deterministic SVG show poster.                |
 | GET    | `/api/shows/:id/metadata`  | TMDB details + IDs for the show.              |
-| GET    | `/api/items/:id`           | One item movie or episode (404 if missing). |
+| GET    | `/api/items/:id`           | One item, movie or episode (404 if missing). |
 | GET    | `/api/items/:id/stream`    | Range-streamed original file.                 |
 | GET    | `/api/items/:id/poster`    | Deterministic SVG placeholder poster.         |
 | GET    | `/api/items/:id/metadata`  | TMDB details + IDs (episode → parent show).   |
@@ -272,12 +272,12 @@ is a list, not a wildcard: see [Which browsers are answered](#which-browsers-are
 
 Items are enriched from [TMDB](https://www.themoviedb.org). KROMA ships a built-in
 application key (`BUILTIN_TMDB_API_KEY` in `crates/kroma-config/src/lib.rs`) so this works out of
-the box with no per-install token the same approach Overseerr/Jellyseerr/Seerr
+the box with no per-install token, the same approach Overseerr/Jellyseerr/Seerr
 take. Override it for your own install with `KROMA_TMDB_API_KEY`.
 
 The server resolves a movie/show by its parsed title + year, then returns the
-overview, poster/backdrop URLs, genres, rating, and both the **TMDB** and
-**IMDb** IDs (via TMDB's `external_ids`). Lookups are cached in memory.
+overview, poster/backdrop URLs, genres, rating, and both the TMDB and
+IMDb IDs (via TMDB's `external_ids`). Lookups are cached in memory.
 
 No new dependency is pulled in: like `ffprobe` for media metadata, the lookup
 shells out to `curl` (HTTPS). With no key set, the `/metadata` routes return
@@ -345,9 +345,9 @@ curl -s -X POST http://localhost:4040/api/scan
 
 ## Docker
 
-The published image is **multi-arch** (`linux/amd64` + `linux/arm64`): the same
+The published image is multi-arch (`linux/amd64` + `linux/arm64`): the same
 `docker pull` works on an Intel/AMD NAS or server and on ARM64 boards such as a
-**Raspberry Pi 4/5** (64-bit OS required). It bundles the static `kroma-server`
+Raspberry Pi 4/5 (64-bit OS required). It bundles the static `kroma-server`
 binary, the web SPA (served on the same port) and static `ffmpeg`/`ffprobe`.
 
 ```bash
@@ -360,7 +360,7 @@ docker run -d --name kroma \
 ```
 
 Or the same as compose (a ready-to-run [`docker-compose.yml`](../docker-compose.yml)
-sits at the repo root run `docker compose up -d`):
+sits at the repo root; run `docker compose up -d`):
 
 ```yaml
 services:
@@ -379,7 +379,7 @@ volumes:
 ### HTTPS in Docker
 
 To also serve the self-signed HTTPS listener (see
-[HTTPS on the LAN](#https-on-the-lan-optional)), **publish its port** and turn it
+[HTTPS on the LAN](#https-on-the-lan-optional)), publish its port and turn it
 on. The base image only `EXPOSE`s HTTP, so map `4443` yourself. And because the
 bridge network hides your host's real identity, pass it via `KROMA_TLS_SANS` so
 the cert is valid from other devices:
@@ -407,7 +407,7 @@ services:
     environment:
       KROMA_MEDIA_DIRS: /media
       KROMA_HTTPS: "1"
-      # Your host's real LAN IP / DNS name(s) the bridge can't detect them.
+      # Your host's real LAN IP / DNS name(s); the bridge cannot detect them.
       KROMA_TLS_SANS: "192.168.1.50,nas.home"
     volumes:
       - kroma-data:/data
@@ -428,7 +428,7 @@ the host's real hostname/IP, so `KROMA_TLS_SANS` isn't needed.
   installed modules, Whisper models AND the torrent download staging area
   (`/data/torrents/downloads`). Give it enough space for in-flight downloads,
   or bind-mount a big disk.
-- **Media mounts**: mount them **read-write** if you use the built-in
+- **Media mounts**: mount them read-write if you use the built-in
   requests/downloads stack: the import step writes the finished files into the
   library (hardlink when possible, else reflink/copy, so separate mounts are
   fine, just slower to import). `:ro` is only safe for a purely pre-existing
@@ -439,7 +439,7 @@ Tags: `latest` (main), `X.Y.Z` / `X.Y` (releases). Then point every client at
 
 ### Building the image yourself
 
-The from-source build needs the **repo root** as context (the server embeds the
+The from-source build needs the repo root as context (the server embeds the
 shared locale catalogs from `packages/` and the web SPA from `clients/`):
 
 ```bash

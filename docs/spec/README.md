@@ -17,7 +17,7 @@ it belongs in architecture.
 
 ## The domains
 
-One **space** per domain - a folder under `docs/spec/`, using the domain nouns
+One **space** per domain: a folder under `docs/spec/`, using the domain nouns
 `ARCHITECTURE.md` already uses (the same words name the server's crates, the
 clients' feature folders, and the `area/` labels). A space's landing chapter is
 its `README.md`; as a domain grows it splits into further chapter files in the
@@ -39,24 +39,24 @@ same folder. Learn the vocabulary once, use it everywhere.
 Every spec file and every section carries one, matching the style already used in
 `docs/architecture/`:
 
-- **SHIPPED** - implemented and released. The spec describes today's behaviour.
-- **AGREED** - decided, not built. Someone could implement it from this text.
-- **DRAFT** - being written. Do not implement from it yet.
-- **DESIGN, NOT IMPLEMENTED** - deliberately deferred. The section must say *why*, and
+- **SHIPPED.** Implemented and released. The spec describes today's behaviour.
+- **AGREED.** Decided, not built. Someone could implement it from this text.
+- **DRAFT.** Being written. Do not implement from it yet.
+- **DESIGN, NOT IMPLEMENTED.** Deliberately deferred. The section must say *why*, and
   what shipped instead. See `docs/architecture/mobile-offline-system-storage.md` for the
-  shape to imitate - that record is worth more than the design was.
+  shape to imitate. That record is worth more than the design was.
 
 A spec section without a status is a bug in the spec.
 
 ## Requirement IDs
 
-Every normative statement in a spec - anything a reader could implement or test -
+Every normative statement in a spec, anything a reader could implement or test,
 carries a stable **requirement ID**, so the board can point at it instead of
 copying it.
 
     <DOMAIN>-<N>  (STATUS) - one testable statement.
 
-- `DOMAIN` is a short prefix the **space** picks for itself - no central list. The
+- `DOMAIN` is a short prefix the **space** picks for itself, with no central list. The
   only rules the tooling enforces are the ones that keep IDs unambiguous: a space
   uses **one** prefix (every chapter in the folder agrees), and a prefix belongs to
   **one** space. Pick something legible (`LIB`, `MEDIA`, …) and stay consistent.
@@ -71,7 +71,7 @@ Example:
 
 The ID is the join key between the spec and the board: an epic or story writes
 `Implements: LIB-4, LIB-7` rather than restating the rule. This keeps the earlier
-promise - *never copy spec text into an issue* - while still letting work trace
+promise, *never copy spec text into an issue*, while still letting work trace
 back to exactly what it satisfies.
 
 The `spec-reviewer` agent (`.claude/agents/spec-reviewer.md`) checks that every
@@ -83,14 +83,14 @@ and that nothing leaks architecture.
 The prose is for humans; the index is for machines. `bun run spec:index` walks
 every space (recursively, all chapters) and regenerates two artefacts:
 
-- [`requirements.json`](requirements.json) - one record per requirement:
+- [`requirements.json`](requirements.json) holds one record per requirement:
   `{ id, domain, space, status, text, file, line }`. An agent resolves any ID to
-  its exact chapter and line in a single lookup - no grepping prose, no anchors.
-- [`INDEX.md`](INDEX.md) - the same list for a human to skim.
+  its exact chapter and line in a single lookup, with no grepping prose and no anchors.
+- [`INDEX.md`](INDEX.md) is the same list for a human to skim.
 
 Both are generated; never edit them by hand. Run `bun run spec:index` whenever
 you change a requirement and commit the result. `bun run spec:check` verifies
-without writing - it fails if the committed index is stale or if any requirement
+without writing. It fails if the committed index is stale or if any requirement
 has a duplicate ID, a prefix used in two spaces, a space mixing prefixes, or a
 missing status. Run it before you open the PR; the reviewer runs it too.
 
@@ -100,7 +100,7 @@ The spec changes only through a pull request, and a PR that changes behaviour ch
 spec in the same PR. That is the whole enforcement mechanism: review is where a
 requirement gets argued, and `git blame` is where you find out why it says what it says.
 
-For anything large or contested, write it as an RFC first - see [`../rfcs/`](../rfcs/).
+For anything large or contested, write it as an RFC first; see [`../rfcs/`](../rfcs/).
 Small clarifications go straight to a spec PR.
 
 ## How the spec becomes work

@@ -21,7 +21,7 @@ export const story = defineStory({
   ),
 });
 
-The anchored action menu behind a "..." trigger: a download row's pause/retry/remove, a card's overflow. Composed rather than configured: **Root** owns the open state, **Trigger** opens it, **Item** is one action and **Separator** is a part rather than a string in a list. Under a pointer it is an anchored panel with the full **menu keyboard** - arrows, type-ahead, Enter fires, Esc returns to the trigger - announced as `role="menu"` through `aria-activedescendant`; under a D-pad the items open in a dialog, confined to the remote. Every way out is reported: `onOpenChange(open, { reason })` says `select`, `outside`, `escape` or `back` - the remote's Back button.
+The anchored action menu behind a "..." trigger: a download row's pause/retry/remove, a card's overflow. Composed rather than configured: **Root** owns the open state, **Trigger** opens it, **Item** is one action and **Separator** is a part rather than a string in a list. Under a pointer it is an anchored panel with the full menu keyboard, meaning arrows, type-ahead, Enter to fire and Esc to return to the trigger, announced as `role="menu"` through `aria-activedescendant`; under a D-pad the items open in a dialog, confined to the remote. Every way out is reported: `onOpenChange(open, { reason })` says `select`, `outside`, `escape` or `back`, the remote's Back button.
 
 ```tsx
 <Menu.Root label={t('downloads.rowActions')} align="end">
@@ -41,12 +41,12 @@ The anchored action menu behind a "..." trigger: a download row's pause/retry/re
 
 <Do>
 - Order by frequency, destructive last after a `<Menu.Separator>`.
-- Name the menu with Root's `label` - the trigger takes it as its accessible name.
+- Name the menu with Root's `label`. The trigger takes it as its accessible name.
 - Reach for `render` when the trigger is not a round icon button; spread `bind` onto the control itself.
 </Do>
 
 <Dont>
-- Hide the row's ONE primary action in the overflow - promote it to its own button.
+- Hide the row's ONE primary action in the overflow. Promote it to its own button.
 - Use a menu for navigation; menus fire actions.
 - Nest a pressable inside `<Menu.Trigger>`: the trigger already presses.
 </Dont>

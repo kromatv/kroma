@@ -4,10 +4,10 @@ export const title = 'What changed';
 export const summary = 'Every component and guide in the kit, most recently changed first.';
 export const width = 'wide';
 
-The kit is read out of git at build time: each component's folder and each
-guide's file is traced through the log, renames included, so a component that
-was moved by a restructure still reports the day it was written rather than the
-day it was moved.
+The kit is read out of git at build time. Each component's folder and each guide's
+file is traced through the log, renames included, so a component that was moved by
+a restructure still reports the day it was written rather than the day it was
+moved.
 
 <DocFigure>
   <RecentChanges />
@@ -15,11 +15,11 @@ day it was moved.
 
 ## What the dates mean
 
-**Added** is the first commit that touched anything in the component's folder -
-its code, its story, its demos or its tests - and **Changed** the most recent.
-A dot beside a row says the working tree this build was made from carried edits
-on top of that commit, which no date can show.
+Added is the first commit that touched anything in the component's folder, its
+code, its story, its demos or its tests. Changed is the most recent. A dot beside a
+row says the working tree this build was made from carried edits on top of that
+commit, which no date can show.
 
-A build made outside a checkout lists nothing, and so does one made from a
-shallow clone: the earliest commit such a clone holds is the depth of the fetch
-rather than the day a file was written, and a wrong date is worse than none.
+A build made outside a checkout lists nothing, and so does one made from a shallow
+clone. The earliest commit such a clone holds is the depth of the fetch rather than
+the day a file was written, and a wrong date is worse than none.

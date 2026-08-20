@@ -1,17 +1,17 @@
 # @kroma/desktop
 
-KROMA's **native desktop client**: a [Tauri](https://tauri.app) shell over the shared
-`@kroma/tv` 10-foot experience, with native **mpv** playback and a **gamepad** input
-bridge. The **Steam Deck is the primary target** (shipped as an AppImage), but the same
-shell is a native Linux app and the architecture is not Deck-specific.
+KROMA's native desktop client: a [Tauri](https://tauri.app) shell over the shared
+`@kroma/tv` 10-foot experience, with native mpv playback and a gamepad input bridge.
+The Steam Deck is the primary target, shipped as an AppImage, but the same shell is a
+native Linux app and the architecture is not Deck-specific.
 
 ## Architecture (why mpv)
 
 Modelled on how Jellyfin Media Player runs on the Deck: the web UI renders in the app
-window, but **video is decoded by a native mpv process, not the browser**. mpv
-hardware-decodes HEVC (incl. 10-bit) and surround audio via **VA-API**, sidestepping the
+window, but video is decoded by a native mpv process rather than by the browser. mpv
+hardware-decodes HEVC (incl. 10-bit) and surround audio via VA-API, sidestepping the
 weak/gated HEVC support of a Linux webview. This is KROMA's "server just sends bytes, the
-client decodes" model - the desktop analog of the Tizen build's AVPlay.
+client decodes" model, the desktop analog of the Tizen build's AVPlay.
 
 It rides KROMA's existing player-engine seam:
 
@@ -20,30 +20,30 @@ It rides KROMA's existing player-engine seam:
   `AvplayEngine` / `HtmlEngine`: direct-play the original file, native seeks, in-place
   audio switching (`aid`), with a direct→HLS-master fallback for anything mpv can't demux.
 - The Rust shell (`src-tauri/`) launches mpv once (idle, fullscreen, `hwdec=auto-safe`,
-  `vo=gpu-next`) and bridges its **JSON IPC** to the webview: two commands (`mpv_load`,
+  `vo=gpu-next`) and bridges its JSON IPC to the webview: two commands (`mpv_load`,
   `mpv_command`) and forwarded property/lifecycle events (`mpv://property`,
-  `mpv://file-loaded`, `mpv://end-file`). No libmpv build dependency - it drives the
+  `mpv://file-loaded`, `mpv://end-file`). No libmpv build dependency: it drives the
   mpv binary over a unix socket.
 
 **Compositing:** the Tauri window is `transparent` + `alwaysOnTop`; mpv renders to its
 own fullscreen window behind it. Browsing screens paint an opaque background (hiding
-idle mpv); the player screen is transparent so the video shows through - the same
-"video plane behind the page" trick AVPlay uses. See **Known risks** below.
+idle mpv); the player screen is transparent so the video shows through, the same
+"video plane behind the page" trick AVPlay uses. See Known risks below.
 
 ### Playback per OS
 
 The client uses the best native decoder for each platform, via the same `TvEngine` seam:
 
-- **Linux / Steam Deck → native mpv** (VA-API HW decode). The Linux webview can't do
+- **Linux / Steam Deck: native mpv** (VA-API HW decode). The Linux webview can't do
   HEVC, so mpv is essential. mpv is gated to Linux (`#[cfg(target_os = "linux")]`).
-- **macOS → in-webview `<video>`** (`HtmlEngine`). WKWebView decodes HEVC via
-  VideoToolbox, so **no mpv is spawned** and the app stays a single, normal window.
+- **macOS: in-webview `<video>`** (`HtmlEngine`). WKWebView decodes HEVC via
+  VideoToolbox, so no mpv is spawned and the app stays a single, normal window.
   `detectTvEnv` reports macOS Tauri as Safari-class so codec selection is correct.
 - **Windows** (later): WebView2 does HEVC with the HEVC Video Extension, so it would
   also use the `<video>` path.
 
-So on macOS you're testing the full UI + gamepad + `<video>` playback; the **mpv engine
-is exercised on Linux/the Deck**, where it matters.
+So on macOS you are testing the full UI, gamepad and `<video>` playback. The mpv engine
+is exercised on Linux and the Deck, where it matters.
 
 ## Layout
 
@@ -57,7 +57,7 @@ clients/desktop/
     src/main.rs   # Tauri app: window + mpv lifecycle
     src/mpv.rs     # mpv process + JSON-IPC bridge (commands + forwarded events)
     tauri.conf.json, Cargo.toml, capabilities/
-  scripts/kroma-kiosk.sh   # alternative: plain Chromium kiosk (no mpv) - see below
+  scripts/kroma-kiosk.sh   # alternative: plain Chromium kiosk (no mpv), see below
 ```
 
 The mpv engine itself lives with the shared player:
@@ -79,13 +79,13 @@ bun run tauri:dev           # builds the frontend, opens the Tauri window, launc
 ```
 
 Needs the [Tauri v2 prerequisites](https://v2.tauri.app/start/prerequisites/) (Rust +
-WebKitGTK 4.1) and the **mpv binary** on PATH (dev only; release bundles carry their
+WebKitGTK 4.1) and the mpv binary on PATH (dev only; release bundles carry their
 own, see below).
 
 ## Build the AppImage
 
-Only builds on **Linux** (Ubuntu 22.04 base recommended - the oldest with WebKitGTK
-4.1, which keeps the AppImage's glibc floor low enough for SteamOS):
+Only builds on Linux. Ubuntu 22.04 is the recommended base, the oldest with WebKitGTK
+4.1, which keeps the AppImage's glibc floor low enough for SteamOS:
 
 ```bash
 cd clients/desktop
@@ -119,8 +119,8 @@ so it needs a real GUI session (it fails in headless/automated shells).
 
 1. Copy `KROMA_*.AppImage` to the Deck and `chmod +x` it. (mpv is bundled inside;
    nothing else to install.)
-2. In Desktop mode: **Steam → Add a Non-Steam Game → Browse** → pick the AppImage.
-3. Launch it from Game Mode. Set the controller layout to **Gamepad** so the sticks and
+2. In Desktop mode: Steam → Add a Non-Steam Game → Browse → pick the AppImage.
+3. Launch it from Game Mode. Set the controller layout to Gamepad so the sticks and
    D-pad reach the app's Gamepad API. Point it at your KROMA server via the connect flow.
 
 ### Controls
@@ -135,13 +135,13 @@ so it needs a real GUI session (it fails in headless/automated shells).
 | R1 / R2              | Seek forward  |
 
 Directions and seek auto-repeat while held; A/B/X are discrete. (This handles both
-D-pad and stick - JMP's client is stick-only.)
+D-pad and stick, where JMP's client is stick-only.)
 
 ## AppImage post-processing (required)
 
 CI runs `scripts/fix-appimage.sh` on every Linux AppImage after `tauri build`
 (release.yml and desktop-autoupdate.yml; the autoupdate flow also re-signs and
-patches `latest.json`). It fixes two bundler defects - do the same for any
+patches `latest.json`). It fixes two bundler defects. Do the same for any
 hand-built AppImage you distribute:
 
 - **Over-bundled infra libs** (tauri-apps/tauri#15665): the default bundler
@@ -152,14 +152,14 @@ hand-built AppImage you distribute:
   strips them; the system copies are drop-in compatible.
 - **patchelf-corrupted mpv sidecar**: linuxdeploy patchelf's every executable
   in `usr/bin`, which corrupts the static-pie runtime of the `kroma-mpv`
-  AppImage - the bundled copy segfaults instantly on EVERY machine (all VO
+  AppImage, so the bundled copy segfaults instantly on EVERY machine (all VO
   rungs "fail", `socket-timeout`). The script restores the pristine bytes from
   `src-tauri/bin/` (run `scripts/fetch-mpv.sh` first). The `.deb` is unaffected
   (no linuxdeploy pass; verified pristine).
 
 The bundled mpv AppImage also ships a `get-yt-dlp.hook` (and a self-updater
-hook) that pops a **modal** kdialog before mpv starts when yt-dlp is missing -
-which blocks the IPC socket, times out every VO rung, and re-nags on each
+hook) that pops a modal kdialog before mpv starts when yt-dlp is missing, which
+blocks the IPC socket, times out every VO rung, and re-nags on each
 re-spawn ("popup every 5s" on the Deck). KROMA never plays online video, so
 `mpv.rs` neutralizes both: a no-op `yt-dlp` shim on the child's PATH (the hook
 only probes it with `command -v`), `DISABLE_AUTO_UPDATES=1`, and `--ytdl=no`.
@@ -187,7 +187,7 @@ Ubuntu suite. GTK3 is deliberately NOT listed: `libgtk-3-0` was renamed
 Related in-app guards (also part of this fix): `main.rs` drops the stock
 AppRun's stale `GST_PLUGIN_SYSTEM_PATH(_1_0)` export (else webview audio dies
 with "GStreamer element autoaudiosink not found" AND the user's
-`~/.cache/gstreamer-1.0` registry is rebuilt empty - if a broken build already
+`~/.cache/gstreamer-1.0` registry is rebuilt empty; if a broken build already
 ran, delete that cache dir once); `mpv.rs` scrubs `LD_LIBRARY_PATH`/
 `LD_PRELOAD`/`APPDIR` from the mpv child so the outer AppImage env can't
 poison it.
@@ -200,13 +200,13 @@ poison it.
   window hints, or driving mpv via `--wid` embedding instead).
 - **mpv GPU context / EGL.** mpv's default `--vo=gpu-next` needs an EGL/GL context that
   aborts on some driver stacks (the Deck's KDE-Wayland *desktop* session: "Could not
-  create default EGL display: EGL_BAD_PARAMETER" - the same driver bug the webview dodges
+  create default EGL display: EGL_BAD_PARAMETER", the same driver bug the webview dodges
   with `WEBKIT_DISABLE_DMABUF_RENDERER`). `mpv.rs` now walks a fallback ladder
   (`gpu-next` → `gpu-next`+Vulkan → `gpu`+GLX/X11 → software `x11`) and keeps the first
   rung whose IPC socket comes up; the winning args are printed as `KROMA: mpv up [...]`.
   Override with `KROMA_MPV_VO` (+ optional `KROMA_MPV_GPU_API` / `KROMA_MPV_GPU_CONTEXT`) to
   pin one output and skip the ladder.
-- **HEVC via VA-API** - expected to work on the APU; confirm no software-decode fallback
+- **HEVC via VA-API.** Expected to work on the APU; confirm no software-decode fallback
   kicks in on 10-bit HEVC.
 - **HDR** is OLED-only (LCD Decks are SDR); a hardware limit, not ours.
 - **Audio-track mapping** assumes mpv assigns `aid` 1,2,3… in file order (rendition R →
@@ -218,5 +218,5 @@ poison it.
 
 `scripts/kroma-kiosk.sh` serves the built frontend over http and opens it in a fullscreen
 Chromium kiosk (add as a Non-Steam Game). This path uses the browser's own `<video>`
-decode - simpler, but relies on Chromium-on-Linux HEVC, which is exactly what the mpv
+decode. Simpler, but it relies on Chromium-on-Linux HEVC, which is exactly what the mpv
 build avoids. Kept as a quick stepping stone; the AppImage is the intended client.

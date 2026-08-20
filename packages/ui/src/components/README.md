@@ -1,8 +1,8 @@
 # The component hierarchy
 
 Six levels, built bottom-up. Each one is only allowed to know about the levels
-below it, which is the whole reason the split earns its keep: you can read a
-level without reading the app.
+below it, which is the whole reason the split earns its keep. You can read a level
+without reading the app.
 
 | Level | Where | What earns a place |
 | --- | --- | --- |
@@ -11,21 +11,21 @@ level without reading the app.
 | 3. Molecules | [`molecules/`](./molecules) | A few atoms bonded into one arrangement the design names. |
 | 4. Organisms | [`organisms/`](./organisms) | A whole region of a screen, usually owning behaviour. |
 | 5. Templates | [`templates/`](./templates) | A page skeleton: where things go, with no data. |
-| 6. Pages | **not here** | A template filled with real data. See below. |
+| 6. Pages | not here | A template filled with real data. See below. |
 
 ## Pages are not in the kit
 
-A page knows the server, the router and the session, so it belongs to an app, not
-to a design system: `packages/tv/src/features/*` for the 10-foot screens,
-`clients/*/src` for the browser and phone ones. A kit that shipped pages would be
-shipping the product, and every screen would have to be re-approved by the design
-system to change a string.
+A page knows the server, the router and the session, so it belongs to an app
+rather than to a design system: `packages/tv/src/features/*` for the 10-foot
+screens, `clients/*/src` for the browser and phone ones. A kit that shipped pages
+would be shipping the product, and every screen would have to be re-approved by
+the design system to change a string.
 
 ## Composed, not configured
 
-The kit's components follow **Radix's shape**: a component that is a *set of
-parts* exposes them by name and lets the caller arrange them, rather than
-growing a prop for every arrangement anyone might want.
+The kit's components follow Radix's shape. A component that is a *set of parts*
+exposes them by name and lets the caller arrange them, rather than growing a prop
+for every arrangement anyone might want.
 
 ```tsx
 // Configured: every new demand is another prop, and the component becomes a
@@ -41,11 +41,11 @@ growing a prop for every arrangement anyone might want.
 </ChoiceList.Root>
 ```
 
-That is the whole of it here. **[`DESIGN.md`](./DESIGN.md) owns the rest**: the
-part vocabulary and what each name means, the six tests that decide when a `data`
-prop beats children, the controlled/uncontrolled signature, why a face a part
-exists for is never also a prop, the escape-hatch ladder (and why this kit has no
-`asChild`), prop naming, and the checklist a component passes before it is done.
+That is the whole of it here. [`DESIGN.md`](./DESIGN.md) owns the rest: the part
+vocabulary and what each name means, the six tests that decide when a `data` prop
+beats children, the controlled/uncontrolled signature, why a face a part exists
+for is never also a prop, the escape-hatch ladder and why this kit has no
+`asChild`, prop naming, and the checklist a component passes before it is done.
 
 Read it before adding a component or changing one's props.
 
@@ -60,7 +60,7 @@ atoms/button/
   index.ts                          re-export, so importers write './button'
 ```
 
-Everything about one component sits together: change it and its story and its
+Everything about one component sits together. Change it and its story and its
 examples are in the same folder, so there is nowhere for them to rot unnoticed.
 The `index.ts` is what lets the level barrel keep saying `from './button'`.
 
@@ -74,32 +74,31 @@ import { Button } from '@kroma/ui/kit/atoms/button';          // 2. one componen
 import { colors } from '#ui/core/tokens';                      // 3. inside the kit only
 ```
 
-1. **`@kroma/ui/kit`** re-exports all four component levels flat. App code should
-   use this and never learn which level something is at: the levels are for the
-   people editing the kit.
-2. **`@kroma/ui/kit/<level>/<name>`** is one component, for a package that wants
-   `Button` and nothing else. It is a single wildcard in `package.json`, so no
-   list is maintained: add a folder and it is importable.
+1. `@kroma/ui/kit` re-exports all four component levels flat. App code should use
+   this and never learn which level something is at. The levels are for the people
+   editing the kit.
+2. `@kroma/ui/kit/<level>/<name>` is one component, for a package that wants
+   `Button` and nothing else. It is a single wildcard in `package.json`, so no list
+   is maintained: add a folder and it is importable.
+3. `#ui/*` is the kit's own internal alias (package.json `imports`) so its files
+   never climb `../../..`. It is NOT for consumers. Four resolvers have to be told
+   about it separately, because none of them reads the others' config:
+   `tsconfig.base.json`, `vitest.config.ts`, `packages/bundler/src/rnw.ts` (every
+   web target) and `clients/expo-build/metro-workspace.ts` (Metro).
 
-3. **`#ui/*`** is the kit's own internal alias (package.json `imports`) so its
-   files never climb `../../..`. It is NOT for consumers. Four resolvers have to
-   be told about it separately, because none of them reads the others' config:
-   `tsconfig.base.json`, `vitest.config.ts`, `packages/bundler/src/rnw.ts` (every web
-   target) and `clients/expo-build/metro-workspace.ts` (Metro).
-
-Doors 1 and 2 cost the same, which is why door 1 can be the default. Measured
-with the repo's own Vite, `import { Button } from '@kroma/ui/kit'` and
-`import { Button } from '@kroma/ui/kit/atoms/button'` emit the same 478,646
-bytes before gzip; `Text` and `ListRow` agree to the byte too, and gzip differs
-between them by 0.3%, which is chunk ordering. What buys that is
-`"sideEffects": false` in [`package.json`](../../package.json), the one thing
-that lets a bundler drop a barrel's untouched re-exports. Delete it and door 1
-keeps the whole kit: a single `<Text>` off the flat barrel goes from 33 KB
-gzipped to 166 KB, and `<Button>` from 120 KB to 191 KB. Nothing in this package
-runs at import time, so the field is true; do not "tidy" it away.
+Doors 1 and 2 cost the same, which is why door 1 can be the default. Measured with
+the repo's own Vite, `import { Button } from '@kroma/ui/kit'` and
+`import { Button } from '@kroma/ui/kit/atoms/button'` emit the same 478,646 bytes
+before gzip. `Text` and `ListRow` agree to the byte too, and gzip differs between
+them by 0.3%, which is chunk ordering. What buys that is `"sideEffects": false` in
+[`package.json`](../../package.json), the one thing that lets a bundler drop a
+barrel's untouched re-exports. Delete it and door 1 keeps the whole kit: a single
+`<Text>` off the flat barrel goes from 33 KB gzipped to 166 KB, and `<Button>`
+from 120 KB to 191 KB. Nothing in this package runs at import time, so the field is
+true. Do not "tidy" it away.
 
 ## Moving a component between levels
 
-Move the folder, fix the two barrels, and that is all: the workbench follows on
-its own, because it reads the level from the file's path rather than from a field
+Move the folder and fix the two barrels. That is all. The workbench follows on its
+own, because it reads the level from the file's path rather than from a field
 anything could get wrong. See `tierFor` in `@kroma/workbench`.
