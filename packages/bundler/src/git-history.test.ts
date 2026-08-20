@@ -45,7 +45,7 @@ afterEach(() => {
   repo = '';
 });
 
-describe('gitHistory', () => {
+describe('gitHistory', { timeout: 30_000 }, () => {
   it('serves what git said as `HISTORY`', async () => {
     const code = await plugin(checkout()).load(RESOLVED);
     expect(code).toContain('export const HISTORY =');

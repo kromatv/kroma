@@ -229,7 +229,6 @@ mod tests {
         assert!(parse_dir_list("").is_empty());
         assert!(parse_dir_list("   ").is_empty());
         assert!(parse_dir_list(":::").is_empty());
-        assert_eq!(parse_dir_list(":/only:").into_iter().count(), 1);
         assert_eq!(parse_dir_list(":/only:"), vec![PathBuf::from("/only")]);
     }
 
@@ -286,6 +285,10 @@ mod tests {
         "KROMA_WEB_DIR",
         "KROMA_TRUSTED_PROXIES",
         "KROMA_ALLOWED_ORIGINS",
+        "KROMA_HTTPS",
+        "KROMA_HTTPS_PORT",
+        "KROMA_HTTPS_REDIRECT",
+        "KROMA_TLS_SANS",
     ];
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -321,6 +324,36 @@ mod tests {
         assert!(c.web_dir.is_none());
         assert!(c.trusted_proxies.is_empty());
         assert!(c.allowed_origins.is_empty());
+        assert!(c.https_override.is_none());
+        assert!(c.https_port_override.is_none());
+        assert!(c.https_redirect_override.is_none());
+        assert!(c.tls_extra_sans.is_empty());
+
+        clear_env();
+    }
+
+    #[test]
+    fn the_tls_vars_pin_what_the_stored_setting_would_otherwise_decide() {
+        let _g = env_guard();
+        clear_env();
+
+        env::set_var("KROMA_HTTPS", "1");
+        env::set_var("KROMA_HTTPS_PORT", "8443");
+        env::set_var("KROMA_HTTPS_REDIRECT", "off");
+        env::set_var("KROMA_TLS_SANS", "kroma.lan, 192.168.1.10");
+
+        let c = Config::from_env();
+        assert_eq!(c.https_override, Some(true));
+        assert_eq!(c.https_port_override, Some(8443));
+        assert_eq!(c.https_redirect_override, Some(false));
+        assert_eq!(c.tls_extra_sans, vec!["kroma.lan", "192.168.1.10"]);
+
+        for off in ["0", "false", "no", "off", ""] {
+            env::set_var("KROMA_HTTPS", off);
+            assert_eq!(Config::from_env().https_override, Some(false), "{off} should pin HTTPS off");
+        }
+        env::set_var("KROMA_HTTPS_PORT", "not-a-port");
+        assert!(Config::from_env().https_port_override.is_none());
 
         clear_env();
     }

@@ -102,8 +102,6 @@ mod tests {
 
     #[test]
     fn an_engine_this_build_cannot_check_is_refused_rather_than_ignored() {
-        // Ignoring it is how a module lands on a host that cannot run it and
-        // then fails somewhere with no trace back to the requirement.
         let err = engines_satisfied(&engines(&[("ffmpeg", ">=6")]), "0.2.0").unwrap_err();
         assert!(err.contains("cannot check"), "{err}");
         assert!(err.contains("ffmpeg"), "{err}");

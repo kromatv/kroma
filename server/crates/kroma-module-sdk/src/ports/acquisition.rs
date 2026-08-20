@@ -27,12 +27,6 @@ pub trait AcquisitionSearchPort: Send + Sync {
     ) -> anyhow::Result<String>;
 }
 
-// ---------------------------------------------------------------------------
-// Both ends of the contract: the client a consumer resolves, and the routes a
-// provider mounts. They live beside the trait so the core never links either.
-// ---------------------------------------------------------------------------
-
-
 use kroma_module_host::{call, HostCtx, Resolver};
 use serde_json::json;
 
@@ -80,6 +74,19 @@ impl AcquisitionSearchPort for AcquisitionSearchClient {
             }),
         )
     }
+}
+
+/// The contract name for [`AcquisitionSearchPort`]. A consumer asks the host for THIS, and
+/// whichever module declares it in its manifest `ports` answers.
+pub const ACQUISITION_SEARCH: &str = "acquisition-search";
+
+/// The [`AcquisitionSearchPort`] served by whichever module currently provides it, or `None`
+/// when none is installed, enabled and running.
+pub fn acquisition_search(host: &dyn HostCtx) -> Option<std::sync::Arc<dyn AcquisitionSearchPort>> {
+    let endpoint = host.port_endpoint(ACQUISITION_SEARCH)?;
+    let resolve: kroma_module_host::Resolver =
+        std::sync::Arc::new(move || Some(endpoint.clone()));
+    Some(std::sync::Arc::new(AcquisitionSearchClient::new(resolve)))
 }
 
 #[cfg(test)]
@@ -222,18 +229,4 @@ mod tests {
             .to_string();
         assert!(err.contains("rejected the credentials"), "{err}");
     }
-}
-
-
-/// The contract name for [`AcquisitionSearchPort`]. A consumer asks the host for THIS, and
-/// whichever module declares it in its manifest `ports` answers.
-pub const ACQUISITION_SEARCH: &str = "acquisition-search";
-
-/// The [`AcquisitionSearchPort`] served by whichever module currently provides it, or `None`
-/// when none is installed, enabled and running.
-pub fn acquisition_search(host: &dyn HostCtx) -> Option<std::sync::Arc<dyn AcquisitionSearchPort>> {
-    let endpoint = host.port_endpoint(ACQUISITION_SEARCH)?;
-    let resolve: kroma_module_host::Resolver =
-        std::sync::Arc::new(move || Some(endpoint.clone()));
-    Some(std::sync::Arc::new(AcquisitionSearchClient::new(resolve)))
 }

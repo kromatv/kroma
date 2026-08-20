@@ -6,7 +6,7 @@
 
 use std::io::{Cursor, Read, Write};
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
@@ -17,6 +17,10 @@ pub type Assets = Vec<(String, Vec<u8>)>;
 
 const MANIFEST: &str = "backup.json";
 const ASSET_DIR: &str = "assets/";
+// A ZIP's header states an uncompressed size it need not honour, so the bound
+// has to be on what is actually inflated. Well past any real backup, and far
+// short of exhausting the box the import runs on.
+const MAX_INFLATED: u64 = 512 * 1024 * 1024;
 
 /// Serialize a backup to ZIP bytes: `backup.json` + one `assets/<name>` per file.
 pub fn write_zip(doc: &BackupDoc, assets: &Assets) -> Result<Vec<u8>> {
@@ -39,18 +43,29 @@ pub fn write_zip(doc: &BackupDoc, assets: &Assets) -> Result<Vec<u8>> {
 
 /// Read a ZIP backup → the document + its asset files.
 pub fn read_zip(bytes: &[u8]) -> Result<(BackupDoc, Assets)> {
+    read_zip_within(bytes, MAX_INFLATED)
+}
+
+fn read_zip_within(bytes: &[u8], mut budget: u64) -> Result<(BackupDoc, Assets)> {
     let mut za = ZipArchive::new(Cursor::new(bytes)).context("open backup zip")?;
     let mut doc: Option<BackupDoc> = None;
     let mut assets = Assets::new();
     for i in 0..za.len() {
         let mut entry = za.by_index(i)?;
         let name = entry.name().to_string();
+        let asset = name.strip_prefix(ASSET_DIR).filter(|a| !a.is_empty()).map(str::to_string);
+        if name != MANIFEST && asset.is_none() {
+            continue;
+        }
         let mut buf = Vec::new();
-        entry.read_to_end(&mut buf)?;
-        if name == MANIFEST {
-            doc = Some(serde_json::from_slice(&buf).context("parse backup.json")?);
-        } else if let Some(asset) = name.strip_prefix(ASSET_DIR).filter(|a| !a.is_empty()) {
-            assets.push((asset.to_string(), buf));
+        let read = Read::take(&mut entry, budget + 1).read_to_end(&mut buf)? as u64;
+        if read > budget {
+            bail!("backup archive inflates past what an import will read");
+        }
+        budget -= read;
+        match asset {
+            Some(asset) => assets.push((asset, buf)),
+            None => doc = Some(serde_json::from_slice(&buf).context("parse backup.json")?),
         }
     }
     Ok((doc.context("backup.json missing from archive")?, assets))
@@ -91,6 +106,31 @@ mod tests {
         let (back, got) = read_zip(&bytes).unwrap();
         assert_eq!(back.tables["users"][0]["id"], serde_json::json!("u1"));
         assert_eq!(got, assets);
+    }
+
+    #[test]
+    fn an_archive_that_inflates_past_the_budget_is_refused_rather_than_read() {
+        let assets = vec![("big.webp".to_string(), vec![0u8; 64 * 1024])];
+        let bytes = write_zip(&doc(), &assets).unwrap();
+
+        let err = read_zip_within(&bytes, 4096).unwrap_err();
+
+        assert!(err.to_string().contains("inflates past"), "{err}");
+    }
+
+    #[test]
+    fn an_entry_that_is_neither_the_manifest_nor_an_asset_is_never_inflated() {
+        let mut zw = ZipWriter::new(Cursor::new(Vec::new()));
+        zw.start_file("padding.bin", SimpleFileOptions::default()).unwrap();
+        zw.write_all(&vec![0u8; 64 * 1024]).unwrap();
+        zw.start_file(MANIFEST, SimpleFileOptions::default()).unwrap();
+        zw.write_all(&serde_json::to_vec(&doc()).unwrap()).unwrap();
+        let bytes = zw.finish().unwrap().into_inner();
+
+        let (back, assets) = read_zip_within(&bytes, 4096).unwrap();
+
+        assert_eq!(back.tables["users"][0]["id"], serde_json::json!("u1"));
+        assert!(assets.is_empty());
     }
 
     #[test]

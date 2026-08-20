@@ -48,7 +48,7 @@ pub fn probe_duration_ms(path: &Path) -> Option<u64> {
         return None;
     }
     let secs: f64 = String::from_utf8_lossy(&out.stdout).trim().parse().ok()?;
-    (secs > 0.0).then(|| (secs * 1000.0) as u64)
+    (secs > 0.0).then_some((secs * 1000.0) as u64)
 }
 
 /// Best effort: on any failure this falls back to a container-extension guess

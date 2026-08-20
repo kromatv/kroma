@@ -18,6 +18,10 @@ const VER: u8 = 1;
 const KDF_PBKDF2: u8 = 1;
 // Independent of the login KDF's iteration count.
 const ITERS: u32 = 210_000;
+// The envelope names its own iteration count, and the header is authenticated
+// only after the key is derived from it, so a count chosen by whoever supplied
+// the file is honoured before the tag can reject it.
+const MAX_ITERS: u32 = 1_000_000;
 const SALT_LEN: usize = 16;
 const NONCE_LEN: usize = 12;
 const HEADER_LEN: usize = MAGIC.len() + 1 + 1 + 4 + SALT_LEN + NONCE_LEN;
@@ -66,6 +70,9 @@ pub fn open(bytes: &[u8], password: &str) -> anyhow::Result<Option<Vec<u8>>> {
         anyhow::bail!("unsupported backup envelope (ver {ver}, kdf {kdf})");
     }
     let iters = u32::from_be_bytes(bytes[m + 2..m + 6].try_into().unwrap());
+    if iters == 0 || iters > MAX_ITERS {
+        anyhow::bail!("backup envelope asks for {iters} KDF iterations");
+    }
     let salt = &bytes[m + 6..m + 6 + SALT_LEN];
     let nonce = &bytes[m + 6 + SALT_LEN..HEADER_LEN];
     let header = &bytes[..HEADER_LEN];
@@ -97,6 +104,20 @@ mod tests {
         let mut tampered = sealed.clone();
         *tampered.last_mut().unwrap() ^= 0x01;
         assert_eq!(open(&tampered, "correct horse").unwrap(), None);
+    }
+
+    #[test]
+    fn an_envelope_asking_for_more_kdf_work_than_the_server_will_do_is_refused() {
+        let sealed = seal(b"PK\x03\x04", "correct horse").unwrap();
+        let m = MAGIC.len();
+
+        let mut greedy = sealed.clone();
+        greedy[m + 2..m + 6].copy_from_slice(&u32::MAX.to_be_bytes());
+        assert!(open(&greedy, "correct horse").is_err());
+
+        let mut none_at_all = sealed;
+        none_at_all[m + 2..m + 6].copy_from_slice(&0u32.to_be_bytes());
+        assert!(open(&none_at_all, "correct horse").is_err());
     }
 
     #[test]

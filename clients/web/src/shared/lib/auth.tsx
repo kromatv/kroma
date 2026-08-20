@@ -1,9 +1,5 @@
-// Client-side authentication context. The catalogue is rendered publicly via
-// SSR loaders; this layers a per-user session on top (login gate, profile,
-// playback progress). The session state machine lives in the shared
-// `useAuthSession` hook (@kroma/ui); this adds the web-specific bits: a single
-// authed `KromaClient`, email/password login, and invite-gated registration with
-// an optional avatar upload.
+// Client-side authentication context: one authed KromaClient plus the
+// web-specific login, passkey and registration flows over `useAuthSession`.
 
 import { KromaClient, type StoredSession, type User } from '@kroma/core';
 import { type ActivateResult, useAuthSession } from '@kroma/ui';
@@ -37,29 +33,19 @@ interface AuthValue {
 const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  // One authed client for the app's lifetime; the token is swapped in/out.
   const client = useMemo(() => new KromaClient({ baseUrl: apiBase() }), []);
-  // Web is SSR-rendered, so hydrate the session in an effect (not synchronously).
   const auth = useAuthSession(client);
   const router = useRouter();
 
-  // Signing in flips the catalogue from auth-gated-empty to authorised: re-run
-  // the route loaders so the now-authorised data loads. A reload while already
-  // signed in doesn't need this, since loaders see `isAuthed()` and fetch
-  // normally; invalidate only on the sign-in transition itself.
   const login = useCallback(
     async (email: string, password: string) => {
       auth.apply(await client.login(email, password));
-      // Re-run loaders AND drop cached (signed-out-empty) query data so per-user
-      // catalogue/home/continue refetch with the new session.
       void router.invalidate();
       void queryClient.invalidateQueries();
     },
     [client, auth, router],
   );
 
-  // Usernameless sign-in: run a discoverable WebAuthn assertion (the browser
-  // shows the account picker), then apply the issued session like a login.
   const loginPasskey = useCallback(async () => {
     const { ceremonyId, options } = await client.passkeyAuthStart();
     const credential = await getPasskey(options);
@@ -78,7 +64,6 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     ) => {
       const res = await client.register(email, username, password, inviteToken);
       auth.apply(res);
-      // Optional avatar upload uses the just-issued token, then patches the user.
       if (avatar) {
         try {
           const { avatarUrl } = await client.uploadAvatar(avatar);
@@ -93,7 +78,6 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     [client, auth, router],
   );
 
-  // Switch into a remembered account, then re-run loaders on success.
   const activate = useCallback(
     async (s: StoredSession, pin?: string): Promise<ActivateResult> => {
       const res = await auth.activate(s, pin);
@@ -106,10 +90,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     [auth, router],
   );
 
-  // Leaving the current account (full sign-out or back to the profile picker)
-  // must drop every cached per-user entry so nothing leaks into the next session.
   const logout = useCallback(async () => {
     await auth.logout();
+    // Every cached per-user entry must go, or it leaks into the next session.
     queryClient.clear();
   }, [auth]);
 

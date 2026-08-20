@@ -1,12 +1,6 @@
-// Which servers a TV shell starts with, decided once per launch: the migration
-// runs BEFORE the list is read (else an upgrading device with a saved server
-// would see an empty list), and the build-time default only seeds when nothing
-// is saved (else a removed appliance address would come back).
-//
 // `VITE_KROMA_SERVER` is inlined by Vite at transform time, so under the test
-// runner it is always empty and no `stubEnv`/`resetModules` changes that. The
-// appliance-seeding path itself is exercised by building an appliance; this
-// file covers everything around it.
+// runner it is always empty and no `stubEnv`/`resetModules` changes that: the
+// appliance-seeding path is exercised by building an appliance instead.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

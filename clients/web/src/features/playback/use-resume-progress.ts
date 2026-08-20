@@ -26,7 +26,6 @@ export function useResumeProgress(
   const [resumeAt, setResumeAt] = useState<number | null>(null);
   const [showResume, setShowResume] = useState(false);
 
-  // Fetch the saved position for this item (per-user) → offer to resume.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
@@ -54,8 +53,6 @@ export function useResumeProgress(
     return () => clearTimeout(hide);
   }, [resumeAt]);
 
-  // Persist progress: every 10 s while watching, on pause, on close/unmount, and
-  // clear it once the item is ~finished (drops it from "Reprendre").
   const saveProgress = useCallback(() => {
     const v = videoRef.current;
     if (!v || !user) return;
@@ -70,7 +67,7 @@ export function useResumeProgress(
     const creditsMs = (item.markers ?? []).find((m) => m.kind === 'credits')?.startMs;
     const finished = pos > durSec * 0.97 || (creditsMs != null && pos >= creditsMs / 1000);
     if (finished) setWatched(item.id, true);
-    else void client.saveProgress(item.id, pos * 1000, durSec * 1000);
+    else void client.saveProgress(item.id, pos * 1000, durSec * 1000).catch(() => undefined);
   }, [videoRef, client, user, item.id, item.durationMs, item.markers, position, setWatched]);
 
   useEffect(() => {

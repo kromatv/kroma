@@ -1,18 +1,10 @@
 // The remote's off switch, for the moments something full-screen owns it.
 //
-// On the browser targets an overlay takes the remote by listening on the capture
-// phase and stopping the event, so the app underneath never sees the key. Native
-// has no capture phase: `useTVEventHandler` is additive, and both platforms hand
-// a Select straight to whichever control holds focus, so an overlay would still
-// show over an app that answers every button underneath it.
-//
-// So an overlay HOLDS the input instead: the three places that turn a remote
-// event into behaviour (the navigator bridge, the Back / PlayPause bridge and a
-// control's press) do nothing while it does.
-//
-// Counted, so two overlays cannot release each other's hold, and releasing arms
-// the press guard: the button that ends an overlay must not also land on what
-// was underneath it.
+// Native has no capture phase to stop a key on (`useTVEventHandler` is additive,
+// and Select goes straight to whichever control holds focus), so an overlay
+// HOLDS the input instead and the three places that turn a remote event into
+// behaviour do nothing while it does. Counted, so two overlays cannot release
+// each other's hold; releasing arms the press guard.
 
 import { armPressGuard } from './press-guard';
 

@@ -1,8 +1,9 @@
 //! Managed Cloudflare Tunnel connector.
 //!
 //! Optional and off by default. When the admin enables it and stores a tunnel
-//! token, the server supervises a `cloudflared tunnel run --token <TOKEN>` child
-//! so a box with no existing tunnel gets a public HTTPS endpoint (e.g.
+//! token, the server supervises a `cloudflared tunnel run` child (the token
+//! reaches it through `TUNNEL_TOKEN`, never argv, which any local user reads
+//! from `ps`) so a box with no existing tunnel gets a public HTTPS endpoint (e.g.
 //! `https://kroma.example.com`) with no port-forwarding. Installs that already run
 //! their own `cloudflared` leave this off and just set the public URL.
 //!
@@ -187,10 +188,7 @@ impl RemoteAccess {
     // resolved binary path is safe: nothing else on the box runs it. Best-effort.
     #[cfg(unix)]
     fn kill_all_cloudflared(&self) {
-        let bin = self.resolve_binary();
-        // The exact invocation is `<bin> tunnel ...`; match that adjacent
-        // substring so a shell line that merely mentions the path isn't caught.
-        let needle = format!("{bin} tunnel");
+        let needle = tunnel_needle(&self.resolve_binary());
         let Ok(out) = std::process::Command::new("ps").arg("aux").output() else { return };
         for line in String::from_utf8_lossy(&out.stdout).lines() {
             if line.contains(&needle) {
@@ -250,12 +248,9 @@ impl RemoteAccess {
     // start/running state (the caller does).
     async fn spawn_child(self: &Arc<Self>, token: String) -> Result<Child, String> {
         let bin = self.ensure_binary().await?;
-        let mut cmd = Command::new(&bin);
-        cmd.args(["tunnel", "--no-autoupdate", "run", "--token", token.trim()])
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .kill_on_drop(true);
-        let mut child = cmd.spawn().map_err(|e| format!("failed to launch cloudflared ({bin}): {e}"))?;
+        let mut child = tunnel_command(&bin, &token)
+            .spawn()
+            .map_err(|e| format!("failed to launch cloudflared ({bin}): {e}"))?;
         // Drain stdout + stderr into the log ring so the panel shows connection
         // progress ("Registered tunnel connection …") and any error.
         if let Some(out) = child.stdout.take() {
@@ -417,6 +412,23 @@ async fn save_remote<S: HostCtx>(
     Ok(Json(status_value(&state, &remote).await).into_response())
 }
 
+// The adjacent substring `kill_all_cloudflared` sweeps `ps aux` for, so a shell
+// line that merely mentions the binary path isn't caught.
+#[cfg(any(unix, test))]
+fn tunnel_needle(bin: &str) -> String {
+    format!("{bin} tunnel")
+}
+
+fn tunnel_command(bin: &str, token: &str) -> Command {
+    let mut cmd = Command::new(bin);
+    cmd.args(["tunnel", "--no-autoupdate", "run"])
+        .env("TUNNEL_TOKEN", token.trim())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .kill_on_drop(true);
+    cmd
+}
+
 async fn drain<R: tokio::io::AsyncRead + Unpin>(me: Arc<RemoteAccess>, stream: R) {
     let mut lines = BufReader::new(stream).lines();
     while let Ok(Some(l)) = lines.next_line().await {
@@ -474,4 +486,51 @@ impl<S: HostCtx + Clone + Send + Sync + 'static> ServerModule<S> for RemoteModul
 /// This module's backend behavior, for the host's generic module roster.
 pub fn server_module<S: HostCtx + Clone + Send + Sync + 'static>() -> Box<dyn ServerModule<S>> {
     Box::new(RemoteModule)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{tunnel_command, tunnel_needle};
+
+    const BIN: &str = "/opt/kroma/bin/cloudflared";
+    const TOKEN: &str = "eyJhIjoiZmFrZS10dW5uZWwtdG9rZW4ifQ";
+
+    fn command_line(bin: &str, cmd: &tokio::process::Command) -> String {
+        let args = cmd.as_std().get_args().map(|a| a.to_string_lossy().into_owned());
+        std::iter::once(bin.to_string()).chain(args).collect::<Vec<_>>().join(" ")
+    }
+
+    #[test]
+    fn keeps_the_tunnel_token_out_of_the_command_line() {
+        let cmd = tunnel_command(BIN, TOKEN);
+
+        let line = command_line(BIN, &cmd);
+
+        assert!(!line.contains(TOKEN), "token leaked into argv: {line}");
+        assert!(!line.contains("--token"));
+    }
+
+    #[test]
+    fn hands_the_trimmed_token_to_cloudflared_through_the_environment() {
+        let cmd = tunnel_command(BIN, &format!("  {TOKEN}\n"));
+
+        let env: Vec<_> = cmd
+            .as_std()
+            .get_envs()
+            .map(|(k, v)| {
+                (k.to_string_lossy().into_owned(), v.map(|v| v.to_string_lossy().into_owned()))
+            })
+            .collect();
+
+        assert_eq!(env, vec![("TUNNEL_TOKEN".to_string(), Some(TOKEN.to_string()))]);
+    }
+
+    #[test]
+    fn launches_a_command_line_the_orphan_sweep_still_matches() {
+        let cmd = tunnel_command(BIN, TOKEN);
+
+        let line = command_line(BIN, &cmd);
+
+        assert!(line.contains(&tunnel_needle(BIN)), "sweep needle no longer matches: {line}");
+    }
 }

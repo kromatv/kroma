@@ -1,23 +1,5 @@
 // The fast half of "connect a device": the TVs waiting on this network, one tap
 // each. Everything it decides lives in `useNearbyTvs`; this brings the rows.
-//
-// A browser cannot listen to its own link, so the server is this shell's only
-// source. The phone app passes a second one.
-//
-// Every row carries the check string that television is printing on its own
-// screen. Usually nobody is asked to type it: it is there so a device that named
-// itself after yours can be told from yours. A row the server could not PLACE is
-// the exception, and asks for it (see <CheckPrompt>).
-//
-// The outcome of a click is shown on the row that was clicked, the way the phone
-// shows it: a spinner, then a tick or the reason it failed. Either ending can
-// pull the row out from under the reader (a granted beacon is spent, and a
-// lapsed one leaves on the next server poll), so the clicked row is held here
-// for a few seconds whichever way it went.
-//
-// It renders nothing at all when nothing is waiting and nothing was clicked: an
-// empty box above the code field would only ask the reader to work out whether
-// it is broken.
 
 import type { DiscoveredTv, GrantResult } from '@kroma/core';
 import { HANDOFF_CHECK_LENGTH } from '@kroma/core';
@@ -72,9 +54,6 @@ export function NearbyTvs() {
   );
 }
 
-// The one television the server could not place, and the code it is printing.
-// Replaces the list rather than sitting under it: the reader has picked, and
-// what is left to do is read five characters off a screen across the room.
 function CheckPrompt({
   device,
   onGrant,

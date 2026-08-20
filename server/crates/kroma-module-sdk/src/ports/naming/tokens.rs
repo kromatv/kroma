@@ -2,6 +2,8 @@
 //! honoring the optional `:spec` suffix (zero-pad width for numbers, byte
 //! truncation for strings, `EN+DE` language filter for MediaInfo tokens).
 
+use super::title::{clean_title, first_character, title_the};
+use super::truncate::truncate;
 use super::NameContext;
 
 // Characters that may decorate a token inside the braces (`{[Quality Full]}`,
@@ -16,8 +18,11 @@ pub fn resolve_token(inner: &str, ctx: &NameContext) -> String {
     let prefix: String = inner.chars().take_while(|c| DECO.contains(c)).collect();
     let suffix: String =
         inner.chars().rev().take_while(|c| DECO.contains(c)).collect::<Vec<_>>().into_iter().rev().collect();
-    // DECO chars are all ASCII, so byte offsets equal char counts here.
-    let core = &inner[prefix.len()..inner.len() - suffix.len()];
+    // Decoration alone leaves the two halves overlapping, and there is no token
+    // between them to resolve.
+    let Some(core) = inner.get(prefix.len()..inner.len().saturating_sub(suffix.len())) else {
+        return String::new();
+    };
     let value = resolve_core(core, ctx);
     if value.is_empty() {
         String::new()
@@ -87,41 +92,6 @@ fn resolve_core(inner: &str, ctx: &NameContext) -> String {
     }
 }
 
-// Radarr's CleanTitle: drop apostrophes/quotes and turn the punctuation that
-// would clutter a filename into spaces, keeping the words.
-fn clean_title(title: &str) -> String {
-    let mut out = String::with_capacity(title.len());
-    for c in title.chars() {
-        match c {
-            '\'' | '"' | '`' | '\u{2019}' | '\u{2018}' => {} // dropped, no gap
-            ',' | ':' | ';' | '!' | '?' | '.' | '*' | '|' | '<' | '>' | '/' | '\\' => out.push(' '),
-            c => out.push(c),
-        }
-    }
-    out.split_whitespace().collect::<Vec<_>>().join(" ")
-}
-
-// "The Matrix" -> "Matrix, The"; titles without a leading article are left
-// unchanged.
-fn title_the(title: &str) -> String {
-    for article in ["The ", "A ", "An "] {
-        if let Some(rest) = title.strip_prefix(article) {
-            return format!("{}, {}", rest.trim_start(), article.trim_end());
-        }
-    }
-    title.to_string()
-}
-
-// The first alphanumeric character of the sort title, upper-cased (for
-// `A/`, `B/`, `0/` folder buckets).
-fn first_character(title: &str) -> String {
-    title_the(title)
-        .chars()
-        .find(|c| c.is_alphanumeric())
-        .map(|c| c.to_uppercase().to_string())
-        .unwrap_or_default()
-}
-
 // Render a `[EN+FR]` language tag with Radarr's include/exclude filter and the
 // "hide a sole-English audio track" rule (footnote 2 in the token modal).
 fn langs(all: &[String], spec: Option<&str>, keep_sole_english: bool) -> String {
@@ -154,48 +124,6 @@ fn langs(all: &[String], spec: Option<&str>, keep_sole_english: bool) -> String 
     }
 }
 
-// Truncate `s` to `max_bytes` bytes including a trailing `...` (Radarr's
-// `{Token:30}`). A negative width keeps the END of the string, with a
-// leading ellipsis instead. Respects UTF-8 char boundaries.
-fn truncate(s: &str, max_bytes: i32) -> String {
-    let budget = max_bytes.unsigned_abs() as usize;
-    if s.len() <= budget {
-        return s.to_string();
-    }
-    const ELLIPSIS: &str = "...";
-    if budget <= ELLIPSIS.len() {
-        return ELLIPSIS[..budget].to_string();
-    }
-    let keep = budget - ELLIPSIS.len();
-    if max_bytes >= 0 {
-        let end = floor_char_boundary(s, keep);
-        format!("{}{ELLIPSIS}", &s[..end])
-    } else {
-        let start = ceil_char_boundary(s, s.len() - keep);
-        format!("{ELLIPSIS}{}", &s[start..])
-    }
-}
-
-fn floor_char_boundary(s: &str, mut idx: usize) -> usize {
-    if idx >= s.len() {
-        return s.len();
-    }
-    while idx > 0 && !s.is_char_boundary(idx) {
-        idx -= 1;
-    }
-    idx
-}
-
-fn ceil_char_boundary(s: &str, mut idx: usize) -> usize {
-    if idx >= s.len() {
-        return s.len();
-    }
-    while idx < s.len() && !s.is_char_boundary(idx) {
-        idx += 1;
-    }
-    idx
-}
-
 #[cfg(test)]
 mod tests {
     use super::super::render;
@@ -220,16 +148,6 @@ mod tests {
             subtitle_languages: vec!["FR".into()],
             ..Default::default()
         }
-    }
-
-    #[test]
-    fn clean_title_and_the() {
-        assert_eq!(clean_title("Mission: Impossible"), "Mission Impossible");
-        assert_eq!(clean_title("Marvel's Avengers"), "Marvels Avengers");
-        assert_eq!(title_the("The Matrix"), "Matrix, The");
-        assert_eq!(title_the("A Serious Man"), "Serious Man, A");
-        assert_eq!(title_the("Inception"), "Inception");
-        assert_eq!(first_character("The Matrix"), "M");
     }
 
     #[test]
@@ -273,44 +191,6 @@ mod tests {
         // Sole English is hidden for AudioLanguages but kept for AudioLanguagesAll.
         assert_eq!(langs(&["EN".to_string()], None, false), "");
         assert_eq!(langs(&["EN".to_string()], None, true), "[EN]");
-    }
-
-    #[test]
-    fn truncation_keeps_boundaries() {
-        assert_eq!(truncate("A Very Long Movie Title Here", 13), "A Very Lon...");
-        assert_eq!(truncate("A Very Long Movie Title Here", -13), "...Title Here");
-        assert_eq!(truncate("Short", 30), "Short");
-        // Accented chars must not be split mid-byte.
-        let out = truncate("Amélie Poulain Deluxe", 8);
-        assert!(out.is_char_boundary(out.len()) && out.ends_with("..."));
-    }
-
-    #[test]
-    fn truncation_tiny_budget_is_partial_ellipsis() {
-        // Budget at or below the ellipsis length yields a (possibly partial) ellipsis.
-        assert_eq!(truncate("abcdef", 3), "...");
-        assert_eq!(truncate("abcdef", 2), "..");
-        assert_eq!(truncate("abcdef", 1), ".");
-        // A negative tail keep respects UTF-8 boundaries too.
-        let tail = truncate("héllo wörld tail", -7);
-        assert!(tail.starts_with("...") && tail.is_char_boundary(tail.len()));
-    }
-
-    #[test]
-    fn title_the_handles_all_articles() {
-        assert_eq!(title_the("An Officer and a Gentleman"), "Officer and a Gentleman, An");
-        // No leading article: unchanged.
-        assert_eq!(title_the("Blade Runner"), "Blade Runner");
-        // First-character bucket uses the sort title (article moved to the end).
-        assert_eq!(first_character("A Bug's Life"), "B");
-        assert_eq!(first_character("2001: A Space Odyssey"), "2");
-        assert_eq!(first_character(""), "");
-    }
-
-    #[test]
-    fn clean_title_drops_curly_quotes_without_gaps() {
-        assert_eq!(clean_title("It\u{2019}s Complicated"), "Its Complicated");
-        assert_eq!(clean_title("Who? What! Why."), "Who What Why");
     }
 
     #[test]
@@ -374,12 +254,14 @@ mod tests {
     }
 
     #[test]
-    fn truncation_never_splits_a_multi_byte_character() {
-        let title = "日本語の映画";
-        let head = truncate(title, 8);
-        assert_eq!(head, "日...");
-        let tail = truncate(title, -8);
-        assert_eq!(tail, "...画");
+    fn a_token_that_is_only_decoration_renders_empty_rather_than_panicking() {
+        let c = ctx();
+
+        assert_eq!(render("{Movie Title} { } {Release Year}", &c), "The Matrix 1999");
+        assert_eq!(render("{-}", &c), "");
+        assert_eq!(render("{[]}", &c), "");
+        assert_eq!(render("{...}", &c), "");
+        assert_eq!(render("{}", &c), "");
     }
 
     #[test]

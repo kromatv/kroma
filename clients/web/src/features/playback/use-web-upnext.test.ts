@@ -1,15 +1,4 @@
 // @vitest-environment jsdom
-//
-// The browser's half of "À suivre". Same three decisions as the TV's, and the
-// same reason each is worth a test: every one of them fails silently.
-//
-// An EPISODE is recommended against its SHOW (episodes carry no embedding of
-// their own, so `similar(episodeId)` comes back empty and reads as "nothing to
-// watch next"); the runtime sits on the subtitle line and nowhere else; and the
-// artwork is asked for at the width the card draws it.
-//
-// The client is reached through `kromaClient()` rather than a parameter here,
-// which is the one thing this shell does differently from the television.
 
 import type { MediaItem } from '@kroma/core';
 import { renderHook, waitFor } from '@testing-library/react';

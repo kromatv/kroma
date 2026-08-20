@@ -33,12 +33,10 @@ import {
 } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { useIndexerApi } from './api';
-import {
-  BuiltinIndexerModal,
-  DefinitionPickerModal,
-  IndexerModal,
-  parseCats,
-} from './indexer-modals';
+import { BuiltinIndexerModal } from './builtin-indexer-modal';
+import { DefinitionPickerModal } from './definition-picker-modal';
+import { IndexerModal } from './indexer-modal';
+import { parseCats } from './parse-cats';
 import type { IndexerTestResult, IndexerView } from './schemas';
 
 type TestState = { busy?: boolean; result?: IndexerTestResult; error?: string };

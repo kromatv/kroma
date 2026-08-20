@@ -1,10 +1,5 @@
 // KROMA API origin resolution.
-//
-// Production (the single-binary Synology package): the Rust server serves THIS
-// SPA *and* the API on the same origin, so we call the page's own origin and
-// there's nothing to configure. Dev: the web (vite :3000) and API (:4040) are
-// separate origins, so a build-time `VITE_KROMA_SERVER` points at the API.
-// `window.__KROMA_API__` (if injected) still wins, for embedding flexibility.
+
 import {
   isTextSubtitle,
   KromaClient,
@@ -34,25 +29,17 @@ function stripTrailingSlashes(s: string): string {
 
 /** The KROMA server origin (no trailing slash). */
 export function apiBase(): string {
-  // 1) Explicit runtime override (rare).
   if (typeof window !== 'undefined' && window.__KROMA_API__) {
     return stripTrailingSlashes(window.__KROMA_API__);
   }
-  // 2) Build-time override set in dev/staging to point at a specific API.
   const envBase = import.meta.env?.VITE_KROMA_SERVER;
   if (envBase) return stripTrailingSlashes(envBase);
-  // 3) Dev (vite): same-origin the Vite dev server reverse-proxies `/api`
-  //    (incl. the events WebSocket) to the Rust server, so the whole app lives
-  //    on one port (`:3000`). Just call the page origin, like production. SSR /
-  //    prerender (no window) falls back to the conventional local API.
   if (import.meta.env?.DEV) {
     return typeof window !== 'undefined'
       ? stripTrailingSlashes(window.location.origin)
       : DEFAULT_BASE;
   }
-  // 4) Production SPA: same origin as the page (the Rust server serves both).
   if (typeof window !== 'undefined') return stripTrailingSlashes(window.location.origin);
-  // 5) SSR / prerender fallback.
   const env = typeof process !== 'undefined' ? process.env.KROMA_SERVER_URL : undefined;
   return stripTrailingSlashes(env ?? DEFAULT_BASE);
 }
@@ -83,12 +70,6 @@ function exchangeStoredSession(): Promise<string | undefined> {
     });
 }
 
-// Silent refresh shared by every ad-hoc `kromaClient()`: on a 401 they exchange
-// the stored access token for a fresh bearer.
-function refreshSession(): Promise<string | undefined> {
-  return exchangeStoredSession();
-}
-
 /** Ensure an in-memory session bearer exists, running the boot token exchange if
  * it hasn't happened yet. Route loaders `await` this so their first authed
  * request carries a bearer instead of racing the boot exchange and 401-then-
@@ -100,12 +81,8 @@ export function ensureSession(): Promise<void> {
 }
 
 export function kromaClient(): KromaClient {
-  // The bearer is the in-memory session token (never persisted); a 401 refreshes
-  // it from the stored access token. `sessionToken()` is null during the shell
-  // prerender / before the boot exchange, which is fine those requests either
-  // hit public endpoints or trigger a refresh.
   const c = new KromaClient({ baseUrl: apiBase(), authToken: sessionToken() });
-  c.setRefreshHandler(refreshSession);
+  c.setRefreshHandler(exchangeStoredSession);
   return c;
 }
 

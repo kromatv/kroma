@@ -1,23 +1,3 @@
-// Siri, and the URL that stands in for it.
-//
-// Apple TV has no microphone an app may open, so Siri IS the voice input: the
-// user holds the remote's Siri button, says "cherche Blade Runner dans KROMA",
-// and the spoken title arrives here.
-//
-// Siri does not exist in the tvOS simulator. That is why `kroma://search?q=...`
-// is a first-class door rather than a convenience - it is the only way to
-// exercise this whole path anywhere but on a real Apple TV with a real remote,
-// which also makes it the only way this file can be tested at all.
-//
-// Both arrival times matter on both doors, because neither Siri nor a launcher
-// cares whether the app was running: a request that LAUNCHED the app is waiting
-// as a pending query, and one made while it was open comes in as an event.
-// Handling only the second is a feature that works exactly when nobody tries it.
-//
-// The parsing is by hand because React Native only partly implements `URL`, and
-// a spoken title is exactly the input that finds the gaps: spaces, accents and
-// apostrophes all arrive encoded.
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requestSearch = vi.hoisted(() => vi.fn());
@@ -25,12 +5,16 @@ vi.mock('@kroma/tv', () => ({ requestSearch }));
 
 const linking = vi.hoisted(() => ({
   initial: null as string | null,
+  initialFails: false,
   handler: null as ((event: { url: string }) => void) | null,
   removed: 0,
 }));
 vi.mock('react-native', () => ({
   Linking: {
-    getInitialURL: async () => linking.initial,
+    getInitialURL: async () => {
+      if (linking.initialFails) throw new Error('no activity attached');
+      return linking.initial;
+    },
     addEventListener: (_event: string, handler: (e: { url: string }) => void) => {
       linking.handler = handler;
       return {
@@ -69,6 +53,7 @@ import { parseSearchUrl, startSiriSearch } from './siri-search';
 
 beforeEach(() => {
   linking.initial = null;
+  linking.initialFails = false;
   linking.handler = null;
   linking.removed = 0;
   siri.present = true;
@@ -179,6 +164,18 @@ describe('a request made while the app was open', () => {
     siri.handler?.({ text: 'one' });
     siri.handler?.({ text: 'two' });
     expect(requestSearch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('a platform that cannot say what launched the app', () => {
+  it('still opens the link door', async () => {
+    linking.initialFails = true;
+
+    expect(() => startSiriSearch()).not.toThrow();
+
+    await vi.waitFor(() => expect(linking.handler).not.toBeNull());
+    linking.handler?.({ url: 'kroma://search?q=dune' });
+    expect(requestSearch).toHaveBeenCalledWith('dune');
   });
 });
 

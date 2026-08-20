@@ -11,7 +11,6 @@ import { createCallable } from 'react-call';
 import { Pill } from '#web/features/admin/pill';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
 
-// Shares the row like the old `flex-1` CTAs.
 const FLEX_1 = { flex: 1 } as const;
 
 function Identity({ report }: Readonly<{ report: Report }>) {
@@ -66,8 +65,6 @@ export const ReportDrawer = createCallable<
   // which is the window the kit Drawer's slide-out plays in.
   const close = () => call.end();
 
-  // Reflect the new status locally; the parent reloads the list behind us.
-  // Failures leave the report untouched (the callback surfaced its own toast).
   const run = (fn: (r: Report) => Promise<void>, next: ReportStatus) => {
     setBusy(true);
     fn(report)
@@ -190,5 +187,4 @@ export const ReportDrawer = createCallable<
   );
 }, 400);
 
-// The drawers' darker fill, kept from the hand-rolled asides they replace.
 const DRAWER_FILL = { backgroundColor: color('bg') } as const;

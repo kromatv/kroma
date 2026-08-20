@@ -64,6 +64,7 @@ fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Option<String
         let dl = Command::new("curl")
             .args(["-sf", "-L", "--max-time", "25", "-o"])
             .arg(&tmp)
+            .arg("--")
             .arg(remote_url)
             .status();
         if !matches!(dl, Ok(s) if s.success()) || !tmp.exists() {
@@ -347,6 +348,7 @@ fn transcode(remote_url: &str, out: &Path) -> bool {
     let dl = Command::new("curl")
         .args(["-sf", "-L", "--max-time", "25", "-o"])
         .arg(&src_tmp)
+        .arg("--")
         .arg(remote_url)
         .status();
     if !matches!(dl, Ok(s) if s.success()) {

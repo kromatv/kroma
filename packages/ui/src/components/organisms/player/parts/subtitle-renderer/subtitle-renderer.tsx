@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
@@ -17,6 +17,8 @@ interface Cue {
 }
 
 const TAG = /<[^<>]*>/g;
+
+const MAX_VTT_BYTES = 8 * 1024 * 1024;
 
 const NO_POINTER: ViewStyle = { pointerEvents: 'none' };
 
@@ -41,11 +43,6 @@ function toSeconds(v: string): number {
   return sec;
 }
 
-/**
- * Minimal WebVTT parser: splits on blank lines, reads each block's
- * `start --> end` line (skipping `WEBVTT`/`NOTE`/cue-id lines), joins the rest
- * as text and strips inline tags. Times are absolute seconds.
- */
 function parseVtt(raw: string): Cue[] {
   const cues: Cue[] = [];
   for (const block of raw.replace(/\r\n?/g, '\n').split('\n\n')) {
@@ -128,6 +125,10 @@ export function SubtitleRenderer({
   const activeUrl =
     activeIndex == null ? null : (subtitles.find((s) => s.index === activeIndex)?.url ?? null);
 
+  const reportFailed = useEffectEvent(() => {
+    if (activeIndex != null) onTrackFailed?.(activeIndex);
+  });
+
   // Fetch + parse the active track only when its url changes; a per-url ref cache
   // makes switching back to a previously-loaded track instant. Errors → nothing.
   useEffect(() => {
@@ -143,8 +144,15 @@ export function SubtitleRenderer({
     }
     let cancelled = false;
     fetch(activeUrl)
-      .then((r) => (r.ok ? r.text() : Promise.reject(new Error(String(r.status)))))
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        if (Number(r.headers.get('content-length')) > MAX_VTT_BYTES) {
+          throw new Error('track too large');
+        }
+        return r.text();
+      })
       .then((raw) => {
+        if (raw.length > MAX_VTT_BYTES) throw new Error('track too large');
         const parsed = parseVtt(raw);
         if (parsed.length === 0) throw new Error('empty track');
         cache.current.set(activeUrl, parsed);
@@ -154,14 +162,12 @@ export function SubtitleRenderer({
       .catch(() => {
         if (cancelled) return;
         setCues([]);
-        if (activeIndex != null) onTrackFailed?.(activeIndex);
+        reportFailed();
       });
     return () => {
       cancelled = true;
     };
-    // `activeIndex`/`onTrackFailed` ride along for the failure report only; the
-    // fetch itself is keyed on the url.
-  }, [activeUrl, activeIndex, onTrackFailed]);
+  }, [activeUrl]);
 
   // Re-anchor the moving cue pointer on every committed seek.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset only on the seek signal.

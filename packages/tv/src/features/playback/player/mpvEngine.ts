@@ -26,6 +26,17 @@ import {
 /** A single mpv IPC command: `{"command": args}` (fire-and-forget). */
 type MpvArg = string | number | boolean;
 
+function isAudioTrack(track: unknown): track is { id: number } {
+  return (
+    typeof track === 'object' &&
+    track !== null &&
+    'type' in track &&
+    track.type === 'audio' &&
+    'id' in track &&
+    typeof track.id === 'number'
+  );
+}
+
 // `af` chains tuned to match the Web Audio compressor in @kroma/ui
 // `audio-filter.ts`, so every engine sounds the same. `lavfi=[...]` is
 // explicit so the bracket body is plain ffmpeg filter syntax on every mpv build.
@@ -45,6 +56,7 @@ export class MpvEngine extends BaseTvEngine {
   // embedded fonts/attachments/cover art take ids too.
   private audioIds: number[] = [];
   private pendingSeek: number | null = null;
+  private openSeq = 0;
   private readonly unlisten: Array<() => void> = [];
 
   constructor(opts: EngineOptions) {
@@ -159,10 +171,7 @@ export class MpvEngine extends BaseTvEngine {
    * so a rendition maps to the right track, then re-assert the wanted one. */
   private onTrackList(data: unknown): void {
     if (!Array.isArray(data)) return;
-    const audio = (data as Array<{ id?: number; type?: string }>).filter(
-      (t) => t?.type === 'audio' && typeof t.id === 'number',
-    );
-    this.audioIds = audio.map((t) => t.id as number);
+    this.audioIds = data.filter(isAudioTrack).map((t) => t.id);
     // Re-assert the wanted track now that the real ids are known (idempotent).
     if (this.audioIds.length) this.selectAudio(this.rendition);
   }
@@ -203,9 +212,10 @@ export class MpvEngine extends BaseTvEngine {
   // open at once, at the current position, so mpv seeks during load.
   private open(): void {
     const url = this.sourceUrl();
+    const seq = ++this.openSeq;
     if (this.mode === 'master' && this.baseSec > 0.5) {
       void resolveMasterStart(url, this.baseSec).then((real) => {
-        if (this.destroyed) return;
+        if (this.destroyed || seq !== this.openSeq) return;
         this.baseSec = real;
         this.load(url);
       });

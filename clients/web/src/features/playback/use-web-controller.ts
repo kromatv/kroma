@@ -12,7 +12,7 @@ import {
   useT,
 } from '@kroma/ui';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { WebEnginePref } from '#web/features/playback/engine-pref';
+import { isWebEnginePref } from '#web/features/playback/engine-pref';
 import { makeFpsSampler, readEngineStats } from '#web/features/playback/engine-stats';
 import { useVideoPlayback } from '#web/features/playback/use-video-playback';
 import { useWebSubtitles } from '#web/features/playback/use-web-subtitles';
@@ -58,8 +58,6 @@ export function useWebController(item: MovieView): WebController {
     [pickAudio, rememberAudio, audioTracks],
   );
 
-  // Scrub preview (absolute seconds) for the shared chapter bar: preview follows
-  // the drag, one seek commits on release.
   const [scrubSec, setScrubSec] = useState<number | null>(null);
   const scrubRef = useRef<number | null>(null);
   const scrubPreview = useCallback((abs: number | null) => {
@@ -131,7 +129,6 @@ export function useWebController(item: MovieView): WebController {
     return () => v.removeEventListener('ended', onEnded);
   }, [pb.anchor, pb.audioIndex, pb.videoRef]);
 
-  // One-shot stream-size probe for the average-bitrate stat.
   const [bytes, setBytes] = useState(0);
   useEffect(() => {
     let cancelled = false;
@@ -147,9 +144,7 @@ export function useWebController(item: MovieView): WebController {
     };
   }, [item.stream]);
 
-  // Measured-FPS sampler (stateful across polls) + engine live-stats reader.
   const fpsSamplerRef = useRef(makeFpsSampler());
-  // Stats snapshot via a stable getter reading the latest values.
   const statsRef = useRef<() => PlayerStats>(() => ({}));
   statsRef.current = () =>
     buildWebStats({
@@ -177,9 +172,6 @@ export function useWebController(item: MovieView): WebController {
     return [{ id: 'auto', label: `${t('player.qualityAuto')}${badgeSuffix}` }];
   }, [item.video, t]);
 
-  // The remux plays through Shaka Player by default (`shaka` forces it even for
-  // direct-play-able files); hls.js is the `remux` escape hatch; `auto` defers
-  // to the runtime-cap decision.
   const engines = useMemo(
     () => [
       { id: 'auto', label: t('playbackEngine.auto') },
@@ -224,8 +216,9 @@ export function useWebController(item: MovieView): WebController {
     setQuality: () => undefined,
     engines,
     engineId: pb.enginePref,
-    // ids come from `engines` above, so the cast to the narrow union is safe.
-    setEngine: (id: string) => pb.setEnginePref(id as WebEnginePref),
+    setEngine: (id: string) => {
+      if (isWebEnginePref(id)) pb.setEnginePref(id);
+    },
     audioFilter: filter.mode,
     setAudioFilter: filter.setMode,
     audioFilterSupported: filter.supported,

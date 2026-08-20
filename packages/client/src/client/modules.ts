@@ -3,11 +3,18 @@
 // admin console reads this to render engine add-flows data-driven, so disabling a
 // module hides its add-UI and adding an engine needs no frontend change.
 
-import type { ModuleInfo } from '../types';
+import { z } from 'zod';
+import { ModuleInfo } from '../schemas';
 import type { RequestContext } from './base';
 
 /** Every module the server reports, with its enabled flag + provided capabilities
- * (each engine capability carries its add-form schema). */
-export function listModules(ctx: RequestContext): Promise<ModuleInfo[]> {
-  return ctx.json<ModuleInfo[]>('/modules');
+ * (each engine capability carries its add-form schema). Validated: what it relays
+ * is a third-party module's own manifest, so an entry that fails the schema is
+ * dropped rather than failing the whole list. */
+export async function listModules(ctx: RequestContext): Promise<ModuleInfo[]> {
+  const relayed = z.array(z.unknown()).parse(await ctx.json('/modules'));
+  return relayed.flatMap((entry) => {
+    const parsed = ModuleInfo.safeParse(entry);
+    return parsed.success ? [parsed.data] : [];
+  });
 }

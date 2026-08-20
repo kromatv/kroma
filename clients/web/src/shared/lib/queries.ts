@@ -3,10 +3,6 @@
 // share the exact same cache entry. Each fetcher goes through the ad-hoc
 // `kromaClient()` (in-memory bearer, self-refreshing on 401), so these work the
 // same whether called from a loader or a component.
-//
-// View-shaped queries (`moviesView`, `showsView`) pre-resolve art/stream URLs via
-// the existing `toMovieView`/`toShowView` mappers so consumers keep the same data
-// shape the old loaders returned.
 import type { DiscoverDetail, DiscoverType, Show, ShowDetail, UpNext } from '@kroma/core';
 import { queryOptions } from '@tanstack/react-query';
 import {

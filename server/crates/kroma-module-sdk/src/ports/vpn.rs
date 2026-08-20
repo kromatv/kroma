@@ -43,11 +43,6 @@ pub trait DownloadVpnPort: Send + Sync {
     async fn restart_engine(&self, host: &dyn HostCtx);
 }
 
-// ---------------------------------------------------------------------------
-// Both ends of the contract: the client a consumer resolves, and the routes a
-// provider mounts. They live beside the trait so the core never links either.
-// ---------------------------------------------------------------------------
-
 use std::sync::Arc;
 
 use axum::extract::State;
@@ -145,6 +140,32 @@ impl DownloadVpnPort for DownloadVpnClient {
     async fn restart_engine(&self, _host: &dyn HostCtx) {
         let _: anyhow::Result<()> = call_raw(&self.resolve, "downloadvpn/restart", &json!({}));
     }
+}
+
+/// The contract name for [`VpnProxyPort`]. A consumer asks the host for THIS, and
+/// whichever module declares it in its manifest `ports` answers.
+pub const VPN_PROXY: &str = "vpn-proxy";
+
+/// The [`VpnProxyPort`] served by whichever module currently provides it, or `None`
+/// when none is installed, enabled and running.
+pub fn vpn_proxy(host: &dyn HostCtx) -> Option<std::sync::Arc<dyn VpnProxyPort>> {
+    let endpoint = host.port_endpoint(VPN_PROXY)?;
+    let resolve: kroma_module_host::Resolver =
+        std::sync::Arc::new(move || Some(endpoint.clone()));
+    Some(std::sync::Arc::new(VpnProxyClient::new(resolve)))
+}
+
+/// The contract name for [`DownloadVpnPort`]. A consumer asks the host for THIS, and
+/// whichever module declares it in its manifest `ports` answers.
+pub const DOWNLOAD_VPN: &str = "download-vpn";
+
+/// The [`DownloadVpnPort`] served by whichever module currently provides it, or `None`
+/// when none is installed, enabled and running.
+pub fn download_vpn(host: &dyn HostCtx) -> Option<std::sync::Arc<dyn DownloadVpnPort>> {
+    let endpoint = host.port_endpoint(DOWNLOAD_VPN)?;
+    let resolve: kroma_module_host::Resolver =
+        std::sync::Arc::new(move || Some(endpoint.clone()));
+    Some(std::sync::Arc::new(DownloadVpnClient::new(resolve)))
 }
 
 #[cfg(test)]
@@ -256,31 +277,4 @@ mod tests {
         // Fire-and-forget: it must reach the provider without erroring.
         DownloadVpnClient::new(resolve).restart_engine(&StubHost::new()).await;
     }
-}
-
-
-/// The contract name for [`VpnProxyPort`]. A consumer asks the host for THIS, and
-/// whichever module declares it in its manifest `ports` answers.
-pub const VPN_PROXY: &str = "vpn-proxy";
-
-/// The [`VpnProxyPort`] served by whichever module currently provides it, or `None`
-/// when none is installed, enabled and running.
-pub fn vpn_proxy(host: &dyn HostCtx) -> Option<std::sync::Arc<dyn VpnProxyPort>> {
-    let endpoint = host.port_endpoint(VPN_PROXY)?;
-    let resolve: kroma_module_host::Resolver =
-        std::sync::Arc::new(move || Some(endpoint.clone()));
-    Some(std::sync::Arc::new(VpnProxyClient::new(resolve)))
-}
-
-/// The contract name for [`DownloadVpnPort`]. A consumer asks the host for THIS, and
-/// whichever module declares it in its manifest `ports` answers.
-pub const DOWNLOAD_VPN: &str = "download-vpn";
-
-/// The [`DownloadVpnPort`] served by whichever module currently provides it, or `None`
-/// when none is installed, enabled and running.
-pub fn download_vpn(host: &dyn HostCtx) -> Option<std::sync::Arc<dyn DownloadVpnPort>> {
-    let endpoint = host.port_endpoint(DOWNLOAD_VPN)?;
-    let resolve: kroma_module_host::Resolver =
-        std::sync::Arc::new(move || Some(endpoint.clone()));
-    Some(std::sync::Arc::new(DownloadVpnClient::new(resolve)))
 }

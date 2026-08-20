@@ -1,7 +1,6 @@
-// Request/URL/error plumbing shared by every KromaClient domain module. The
-// per-domain request implementations live in sibling files (media, accounts,
-// playback, library, admin) as thin functions over a {@link RequestContext};
-// `KromaClient` (in ../api) is the public facade that wires them together.
+// Request/URL/error plumbing shared by every KromaClient domain module.
+
+import { ApiErrorBody } from '../schemas';
 
 /** Header set for every JSON-bodied request; `sendApiRequest` adds auth and
  * locale itself but never a content type. */
@@ -38,15 +37,55 @@ export class KromaApiError extends Error {
   }
 }
 
+/** The server's error payload behind a thrown request error, validated. Empty
+ * for anything that is not a {@link KromaApiError} and for a body the server
+ * did not shape (so a caller reads a flag without ever casting). */
+export function apiErrorBody(e: unknown): ApiErrorBody {
+  if (!(e instanceof KromaApiError)) return {};
+  const parsed = ApiErrorBody.safeParse(e.body);
+  return parsed.success ? parsed.data : {};
+}
+
 /** The human-facing message for a thrown request error: the server's `{ error }`
  * text when present (far more useful than the generic "GET … failed (400)"),
  * otherwise the provided localized `fallback`. */
 export function apiErrorText(e: unknown, fallback: string): string {
-  if (e instanceof KromaApiError && e.body && typeof e.body === 'object') {
-    const msg = (e.body as { error?: unknown }).error;
-    if (typeof msg === 'string' && msg.trim()) return msg;
+  return apiErrorBody(e).error?.trim() || fallback;
+}
+
+// ~2 KB of JSON per title on the unpaginated `/api/items` catalogue, so 64 MiB is 30k+ titles.
+const MAX_JSON_BODY_BYTES = 64 * 1024 * 1024;
+
+function bodyTooLarge(path: string, bytes: number): Error {
+  return new Error(`${path} answered more than ${MAX_JSON_BODY_BYTES} bytes (${bytes})`);
+}
+
+async function readBoundedText(res: Response, path: string): Promise<string> {
+  const reader = res.body?.getReader();
+  if (!reader) {
+    const text = await res.text();
+    if (text.length > MAX_JSON_BODY_BYTES) throw bodyTooLarge(path, text.length);
+    return text;
   }
-  return fallback;
+  const decoder = new TextDecoder();
+  let text = '';
+  let read = 0;
+  for (;;) {
+    const chunk = await reader.read();
+    if (chunk.done) break;
+    read += chunk.value.byteLength;
+    if (read > MAX_JSON_BODY_BYTES) {
+      await reader.cancel();
+      throw bodyTooLarge(path, read);
+    }
+    text += decoder.decode(chunk.value, { stream: true });
+  }
+  return text + decoder.decode();
+}
+
+async function readBoundedJson(res: Response, path: string): Promise<unknown> {
+  const text = await readBoundedText(res, path);
+  return text ? JSON.parse(text) : undefined;
 }
 
 /** The request plumbing a domain module needs: the resolved server origin, the
@@ -74,9 +113,7 @@ async function sendApiRequest(
   if (locale) headers.set('Accept-Language', locale);
   const res = await fetchFn(`${baseUrl}/api${path}`, { ...init, headers });
   if (!res.ok) {
-    // Attach the error body (e.g. PIN verify's `{ error, retryAfter }`) so
-    // callers can react without a second read.
-    const body = await res.json().catch(() => undefined);
+    const body = await readBoundedJson(res, path).catch(() => undefined);
     throw new KromaApiError(
       res.status,
       `${init?.method ?? 'GET'} ${path} failed (${res.status})`,
@@ -98,14 +135,10 @@ export async function requestJson<T>(
   init?: RequestInit,
 ): Promise<T> {
   const res = await sendApiRequest(fetchFn, baseUrl, authToken, locale, path, init);
-  // 204/205 carry no body by spec; a 202 Accepted ack (e.g. a rematch that
-  // queues re-enrichment) has an empty body too. Read the body as text and
-  // parse it only when there's something there, so an empty 2xx resolves to
-  // `undefined` instead of `res.json()` throwing "Unexpected end of JSON input"
-  // and turning a success into a spurious error toast.
+  // An empty 2xx (204/205 by spec, and a bare 202 ack) is not a parse failure:
+  // read the body as text and parse only when there is something there.
   if (res.status === 204 || res.status === 205) return undefined as T;
-  const text = await res.text();
-  return (text ? JSON.parse(text) : undefined) as T;
+  return (await readBoundedJson(res, path)) as T;
 }
 
 /** Like {@link requestJson} but returns the raw body as a `Blob` for file

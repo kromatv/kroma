@@ -89,20 +89,24 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
 
 // Reverse-proxy `/api/admin/m/<id>/*` to module `<id>`'s sidecar; 404 when no
 // such module is running. The sidecar sees the path below its own mount, so it
-// serves the same routes whether or not the core still proxies to it.
+// serves the same routes whether or not the core still proxies to it. The
+// sidecar gates the specific capability itself; the floor is applied here so an
+// unauthenticated caller never reaches one that forgot to.
 async fn admin_module_proxy(
     Extension(sup): Extension<Arc<Supervisor>>,
+    AuthUser(user): AuthUser,
     OriginalUri(uri): OriginalUri,
     req: Request,
-) -> Response {
+) -> Result<Response, Response> {
+    require_any_admin(&user)?;
     let tail = uri.path().strip_prefix("/api/admin/m/").unwrap_or_default();
     let (id, rest) = tail.split_once('/').unwrap_or((tail, ""));
     match sup.port_of(id) {
         Some(port) => {
             let query = uri.query().map(|q| format!("?{q}")).unwrap_or_default();
-            kroma_module_supervisor::proxy_to(port, &format!("/{rest}{query}"), req).await
+            Ok(kroma_module_supervisor::proxy_to(port, &format!("/{rest}{query}"), req).await)
         }
-        None => (StatusCode::NOT_FOUND, "not found").into_response(),
+        None => Ok((StatusCode::NOT_FOUND, "not found").into_response()),
     }
 }
 

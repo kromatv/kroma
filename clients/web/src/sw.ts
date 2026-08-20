@@ -28,7 +28,6 @@ const Action = z.object({
 
 const actions = z.catch(z.array(Action), []);
 
-// The decrypted push body: what the server builds in `notify/push.rs`.
 const Payload = z.object({
   title: text,
   body: text,
@@ -38,10 +37,8 @@ const Payload = z.object({
   actions,
 });
 
-// What we put in `notification.data`, read back after a structured clone.
 const NotificationData = z.pick(Payload, { link: true, actions: true });
 
-// Also covers a payload that is valid JSON but not an object (`"hi"`, `[]`).
 const EMPTY = Payload.parse({});
 
 type PushAction = z.infer<typeof Action>;
@@ -72,7 +69,6 @@ self.addEventListener('push', (event) => {
     body: data.body ?? '',
     icon: '/apple-touch-icon.png',
     badge: '/favicon-32.png',
-    // The poster, when there is one: a film's artwork is the point.
     image: data.imageUrl,
     // Collapse a retried delivery instead of stacking duplicates.
     tag: data.id,
@@ -93,16 +89,23 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(handleClick(chosen, clicked?.link));
 });
 
-// A tap on the body opens `link`. A tap on an action button either navigates
-// (`kind: 'link'`) or calls the server directly (`kind: 'api'`). The latter
-// is what lets a moderator approve a request from the lock screen without the
-// app ever coming to the foreground.
+// Every url in the payload is resolved against this origin and rejected if it
+// leaves it: the api call below carries the browser's credentials, and a
+// notification is opened long after the push that carried it was trusted.
+function sameOriginUrl(path: string): string | null {
+  try {
+    const url = new URL(path, self.location.origin);
+    return url.origin === self.location.origin ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 async function handleClick(action: PushAction | undefined, link: string | undefined) {
-  if (action?.kind === 'api' && action.href) {
+  const href = action?.kind === 'api' ? action.href : undefined;
+  if (href && sameOriginUrl(href)) {
     try {
-      // The session cookie is not readable here, but the API is on this origin
-      // and the request carries the browser's credentials.
-      await fetch(action.href, { method: action.method ?? 'POST', credentials: 'include' });
+      await fetch(href, { method: action?.method ?? 'POST', credentials: 'include' });
       return;
     } catch {
       // Fall through to opening the app so the user can act by hand.
@@ -112,7 +115,7 @@ async function handleClick(action: PushAction | undefined, link: string | undefi
 }
 
 async function openApp(path: string) {
-  const url = new URL(path, self.location.origin).href;
+  const url = sameOriginUrl(path) ?? self.location.origin;
   const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   const existing = open.find((client) => new URL(client.url).origin === self.location.origin);
   if (!existing) {
@@ -127,8 +130,6 @@ async function openApp(path: string) {
   }
 }
 
-// The browser can rotate a subscription without asking. Re-register with the
-// server, or that device silently stops receiving anything.
 self.addEventListener('pushsubscriptionchange', (event) => {
   event.waitUntil(
     (async () => {

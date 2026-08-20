@@ -105,9 +105,9 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
         .as_deref()
         .ok_or_else(|| anyhow!("download folder unknown (external client did not report it)"))?;
     let videos = video_files(Path::new(save_path))?;
-    if videos.is_empty() {
+    let Some(largest_video) = largest(&videos) else {
         bail!("no video file found under {save_path}");
-    }
+    };
 
     let lib = target_library_def(state, meta.kind)?;
     let lib_root =
@@ -124,15 +124,13 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
     let mut placed: Vec<(Replaced, String)> = Vec::new();
     match row.kind.as_str() {
         "movie" => {
-            let src = largest(&videos);
-            let ctx = movie_ctx(&meta, src);
-            let dest = lib_root.join(tpl.movie_rel_path(&ctx, ext_of(src)));
-            let at = place(src, &dest, mode)?;
+            let ctx = movie_ctx(&meta, largest_video);
+            let dest = lib_root.join(tpl.movie_rel_path(&ctx, ext_of(largest_video)));
+            let at = place(largest_video, &dest, mode)?;
             placed.push((Replaced::Movie, at.to_string_lossy().into_owned()));
         }
         "episode" => {
-            let src = largest(&videos);
-            let parsed = kroma_module_sdk::scene::parse_release_name(stem_of(src));
+            let parsed = kroma_module_sdk::scene::parse_release_name(stem_of(largest_video));
             let episode = row
                 .episodes
                 .as_ref()
@@ -141,8 +139,8 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
                 .ok_or_else(|| anyhow!("could not determine the episode number"))?;
             let season = row.season.or(parsed.season).unwrap_or(1);
             let ctx = episode_ctx(&meta, season, episode, &parsed);
-            let dest = lib_root.join(tpl.episode_rel_path(&ctx, ext_of(src)));
-            let at = place(src, &dest, mode)?;
+            let dest = lib_root.join(tpl.episode_rel_path(&ctx, ext_of(largest_video)));
+            let at = place(largest_video, &dest, mode)?;
             placed.push((Replaced::Episode(season, episode), at.to_string_lossy().into_owned()));
         }
         "season" => {

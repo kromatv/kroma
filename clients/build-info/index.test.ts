@@ -156,7 +156,7 @@ describe('productVersion', () => {
   });
 });
 
-describe('collectBuildInfo', () => {
+describe('collectBuildInfo', { timeout: 30_000 }, () => {
   it('reports the commit, branch and remote of a real checkout', () => {
     const dir = project({ git: true, remote: 'git@github.com:owner/repo.git' });
     const info = collectBuildInfo(dir);

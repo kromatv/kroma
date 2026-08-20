@@ -147,7 +147,7 @@ mod tests {
         assert_eq!(got[0].titles.get("fr").map(String::as_str), Some("Spielberg"));
         assert_eq!(got[0].titles.get("en").map(String::as_str), Some("Spielberg"));
         assert_eq!(got[0].reasons.get("fr").map(String::as_str), Some("le maitre"));
-        assert!(got[0].reasons.get("en").is_none());
+        assert!(!got[0].reasons.contains_key("en"));
         assert_eq!(got[1].key, "horror");
 
         // Replace-all: a fresh set supersedes the previous one entirely.

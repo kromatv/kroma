@@ -114,7 +114,7 @@ export type { AccountPatch } from './client/accounts';
 export type { AdminFsEntry, AdminFsList } from './client/admin';
 export { artworkScaleValue, artworkWidth, setArtworkScale } from './client/artwork';
 export type { KromaClientOptions } from './client/base';
-export { apiErrorText, KromaApiError } from './client/base';
+export { apiErrorBody, apiErrorText, KromaApiError } from './client/base';
 export type { DiscoverType } from './client/discovery';
 export type { HandoffAnnounce, HandoffEvidence } from './client/handoff';
 export type { HlsAudioFilter, HlsMasterDeclaration, StoryboardManifest } from './client/media';
@@ -160,7 +160,6 @@ export class KromaClient {
   constructor(options: KromaClientOptions) {
     this.baseUrl = options.baseUrl.replace(/(^|[^/])\/+$/, '$1');
     const fetchFn = options.fetch ?? globalThis.fetch.bind(globalThis);
-    // Wrapped once so every route carries the device's name, including calls that bypass json/blob.
     this.fetchFn = options.userAgent ? withUserAgent(fetchFn, options.userAgent) : fetchFn;
     this.authToken = options.authToken;
     this.locale = options.locale;
@@ -222,13 +221,12 @@ export class KromaClient {
         init,
       );
     } catch (e) {
-      // A 401 on an authed endpoint refreshes once from the access token and retries.
       if (
         !retried &&
         e instanceof KromaApiError &&
         e.status === 401 &&
         this.refreshHandler &&
-        !NO_REFRESH.has(path.split('?')[0] as string)
+        !NO_REFRESH.has(path.split('?')[0] ?? path)
       ) {
         const token = await this.refreshHandler();
         if (token) {

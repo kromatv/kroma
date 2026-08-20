@@ -1,33 +1,13 @@
-import {
-  episodeTag,
-  formatRuntime,
-  type KromaClient,
-  type MediaItem,
-  posterColors,
-  qualityBadge,
-  qualityBadgeForVideo,
-  type Section,
-  type SectionItem,
-  type Show,
-} from '@kroma/core';
+import { episodeTag, type MediaItem, posterColors, type SectionItem, type Show } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
-  Badge,
   Box,
-  Button,
-  colors,
-  FocusRegion,
   FocusScroll,
   FocusSlot,
-  gradient,
-  Img,
   MediaCard,
-  qualityTone,
   RAIL_GAP,
   Rail,
   styles,
-  Text,
-  tintGradient,
   useFocusNav,
   useGrowingCount,
 } from '@kroma/ui/kit';
@@ -38,19 +18,13 @@ import { useMyList } from '#tv/app/providers/mylist';
 import { useRecommend } from '#tv/app/providers/recommend';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav } from '#tv/app/router';
+import { computeHero, Hero } from '#tv/features/catalog/home/Hero';
 import { HintBar } from '#tv/features/catalog/home/HintBar';
+import { entryId } from '#tv/features/catalog/home/sectionEntry';
 
 const RAIL_LIMIT = 20;
 
 const ROW_CHUNK = 3;
-
-// Two layers rather than one comma-separated background-image: a multi-value
-// background is a CSS-only luxury React Native's gradient support lacks.
-const HERO_VEIL_HORIZONTAL = `linear-gradient(90deg, ${colors.bg} 5%, transparent 60%)`;
-const HERO_VEIL_VERTICAL = `linear-gradient(0deg, ${colors.bg} 1%, transparent 48%)`;
-
-const HERO_HEIGHT = 691;
-const HERO_EMPTY_HEIGHT = 432;
 
 // What one home tile occupies, so the row can be virtualised: a <MediaCard>
 // at its default 328 width, 16:9, plus the 24px gap after it.
@@ -62,9 +36,6 @@ const s = styles({
   pageScroll: { flex: true, minH: 0 },
   // Padding belongs on the content, not the scroller box.
   pageContent: { pb: 40 },
-  heroActions: { row: true, gap: 18 },
-  heroTitle: { fontSize: 82, lineHeight: 79, fontWeight: '700', letterSpacing: -1.64 },
-  featuredLabel: { fontSize: 14 },
   rowTitle: { fontSize: 28, lineHeight: 30, fontWeight: '700', letterSpacing: -0.56 },
 });
 
@@ -72,46 +43,6 @@ interface Row {
   key: string;
   title: string;
   cards: React.ReactNode[];
-}
-
-// A recommendation row entry is a movie *or* a show (the server mixes them).
-const entryId = (e: SectionItem): string => (e.type === 'show' ? e.show.id : e.item.id);
-const entryMetadata = (e: SectionItem) => (e.type === 'show' ? e.show.metadata : e.item.metadata);
-
-interface HeroInfo {
-  hero: SectionItem | null;
-  heroId: string | null;
-  heroMeta: ReturnType<typeof entryMetadata> | null;
-  heroBackdrop: string | null;
-  heroBadge: string | null;
-}
-
-// The featured spotlight: the server's daily pick, falling back to the first
-// entry of the top server section, then to the first catalog movie so the
-// hero is never empty.
-function computeHero(
-  featured: SectionItem | null,
-  sections: Section[],
-  movies: MediaItem[],
-  client: KromaClient,
-): HeroInfo {
-  const hero: SectionItem | null =
-    featured ?? sections[0]?.items[0] ?? (movies[0] ? { type: 'movie', item: movies[0] } : null);
-  const heroId = hero ? entryId(hero) : null;
-  const heroMeta = hero ? entryMetadata(hero) : null;
-  let heroBackdrop: string | null = null;
-  if (hero) {
-    heroBackdrop =
-      hero.type === 'show'
-        ? (client.backdropFor(hero.show, HERO_W) ?? client.showPosterFor(hero.show, HERO_W))
-        : (client.backdropFor(hero.item, HERO_W) ?? client.posterFor(hero.item, HERO_W));
-  }
-  let heroBadge: string | null = null;
-  if (hero) {
-    heroBadge =
-      hero.type === 'show' ? qualityBadgeForVideo(hero.show.video) : qualityBadge(hero.item);
-  }
-  return { hero, heroId, heroMeta, heroBackdrop, heroBadge };
 }
 
 /** The 10-foot home: a cinematic hero over a vertical stack of horizontal
@@ -187,12 +118,8 @@ export function TvHome() {
   );
 
   // Featured spotlight (hero) + its backdrop art and quality badge, computed once.
-  const { hero, heroId, heroMeta, heroBackdrop, heroBadge } = computeHero(
-    featured,
-    sections,
-    movies,
-    client,
-  );
+  const heroInfo = computeHero(featured, sections, movies, client);
+  const heroId = heroInfo.heroId;
 
   const rows = useMemo<Row[]>(() => {
     const continueRow: Row | null = continueItems.length
@@ -282,72 +209,12 @@ export function TvHome() {
             the first rails have already mounted, and the navigator orders rows
             by the order they mount. */}
         <FocusSlot>
-          {hero && heroId ? (
-            <Box h={HERO_HEIGHT}>
-              <Img
-                src={heroBackdrop}
-                background={tintGradient(posterColors(heroId))}
-                position="50% 22%"
-                priority
-                fill
-              />
-              <Box fill pointerEvents="none" style={gradient(HERO_VEIL_HORIZONTAL)} />
-              <Box fill pointerEvents="none" style={gradient(HERO_VEIL_VERTICAL)} />
-              <Box absolute left={64} bottom={36} z={2} maxW={820}>
-                <Text variant="overlineTv" style={s.featuredLabel} color="accentText">
-                  {t('content.featured')}
-                </Text>
-                <Text variant="hero" style={[s.heroTitle, { marginTop: 16, marginBottom: 14 }]}>
-                  {hero.type === 'show' ? hero.show.title : hero.item.title}
-                </Text>
-                <Box row wrap align="center" gap={12} mb={14}>
-                  {heroMeta?.rating ? (
-                    <>
-                      <Text variant="strongTv" color="accentText">
-                        {`${heroMeta.rating.toFixed(1)}\u2605`}
-                      </Text>
-                      <Text variant="labelTv" color="textDim">
-                        ·
-                      </Text>
-                    </>
-                  ) : null}
-                  <Text variant="labelTv" color="textMuted">
-                    {heroLine(hero)}
-                  </Text>
-                  {heroBadge ? <Badge tone={qualityTone(heroBadge)}>{heroBadge}</Badge> : null}
-                </Box>
-                {heroMeta?.overview ? (
-                  <Text lines={3} variant="bodyTv" maxW={720} mb={22} color="text/82">
-                    {heroMeta.overview}
-                  </Text>
-                ) : null}
-                {/* The hero's two actions are one row: Left and Right move
-                  between them, Up and Down leave for the bar or the rails. */}
-                <FocusRegion style={s.heroActions}>
-                  <Button
-                    size="tv"
-                    // Home's entry point: the hero's own action, which is what the
-                    // design puts the eye on.
-                    autoFocus
-                    icon="player-play-filled"
-                    label={hero.type === 'movie' ? t('player.play') : t('content.moreInfo')}
-                    onPress={() =>
-                      hero.type === 'movie' ? onPlay(hero.item) : onSelectShow(hero.show)
-                    }
-                  />
-                  <Button
-                    size="tv"
-                    variant="outline"
-                    label={t('content.moreInfo')}
-                    onPress={() => onSelectEntry(hero)}
-                    style={{ paddingHorizontal: 34 }}
-                  />
-                </FocusRegion>
-              </Box>
-            </Box>
-          ) : (
-            <Box h={HERO_EMPTY_HEIGHT} />
-          )}
+          <Hero
+            info={heroInfo}
+            onPlay={onPlay}
+            onSelectShow={onSelectShow}
+            onSelectEntry={onSelectEntry}
+          />
         </FocusSlot>
 
         {/* Rails below the fold mount only once focus comes near them. Bench
@@ -371,23 +238,6 @@ export function TvHome() {
   );
 }
 
-// Year · runtime · genre (quality lives in the badge). Shows have no
-// runtime, so it's just year · genre.
-function heroLine(e: SectionItem): string {
-  if (e.type === 'show') {
-    return [e.show.year ? String(e.show.year) : null, e.show.metadata?.genres?.[0]]
-      .filter(Boolean)
-      .join(' · ');
-  }
-  const m = e.item;
-  return [m.year ? String(m.year) : null, formatRuntime(m.durationMs), m.metadata?.genres?.[0]]
-    .filter(Boolean)
-    .join(' · ');
-}
-
 // A rail tile is drawn 330pt wide, but the server's next rendition bucket above
 // 320 is 480: those pixels cost more than the 3% upscale shows.
 const TILE_W = 320;
-// The hero fills the 1920 stage, but a backdrop master is a TMDB w1280 and the
-// server's widest bucket is 960, so there is nothing sharper to ask for.
-const HERO_W = 960;

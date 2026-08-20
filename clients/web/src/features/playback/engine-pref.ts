@@ -7,13 +7,17 @@
 export type WebEnginePref = 'auto' | 'direct' | 'remux' | 'shaka';
 
 const KEY = 'kroma:web-engine';
-const ALL: readonly WebEnginePref[] = ['auto', 'direct', 'remux', 'shaka'];
+const ALL: ReadonlySet<string> = new Set(['auto', 'direct', 'remux', 'shaka']);
+
+export function isWebEnginePref(value: string): value is WebEnginePref {
+  return ALL.has(value);
+}
 
 /** The saved engine preference for this device, or `auto`. */
 export function getWebEnginePref(): WebEnginePref {
   try {
     const v = localStorage.getItem(KEY);
-    if (v && (ALL as readonly string[]).includes(v)) return v as WebEnginePref;
+    if (v && isWebEnginePref(v)) return v;
   } catch {
     /* storage unavailable */
   }

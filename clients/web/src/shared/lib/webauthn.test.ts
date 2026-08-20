@@ -194,6 +194,13 @@ describe('converting the server’s options for the browser', () => {
     expect(received?.publicKey).not.toHaveProperty('allowCredentials');
     expect(received?.publicKey).not.toHaveProperty('user');
   });
+
+  it('refuses options whose challenge the server left out', async () => {
+    authenticator(attestation(), 'create');
+    await expect(createPasskey(options({ rp: { id: 'kroma.test' } }))).rejects.toThrow(
+      /challenge/i,
+    );
+  });
 });
 
 describe('the registration ceremony', () => {

@@ -58,6 +58,14 @@ describe('validateBrowseSearch', () => {
     expect(validateBrowseSearch({})).toEqual({});
   });
 
+  it('drops a genre longer than any the catalogue names', () => {
+    expect(validateBrowseSearch({ genre: 'a'.repeat(65) })).toEqual({});
+  });
+
+  it('keeps a genre right at the bound', () => {
+    expect(validateBrowseSearch({ genre: 'a'.repeat(64) })).toEqual({ genre: 'a'.repeat(64) });
+  });
+
   it('OMITS a dropped key rather than setting it undefined', () => {
     // The router serialises the result back into the url; an explicit
     // `undefined` is a `?sort=` that comes straight back here next navigation.

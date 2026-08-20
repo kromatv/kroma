@@ -20,9 +20,13 @@ use rusqlite::Connection;
 /// never created) is skipped, which is what makes this safe to call on every
 /// spawn. One that cannot be moved leaves the core copy untouched and reports
 /// why: losing the rows would be worse than starting the module without them.
+///
+/// A name the core schema owns, or one that is not a plain identifier, fails the
+/// whole call before anything is touched.
 pub fn adopt_tables(core: &Connection, store_path: &std::path::Path, tables: &[String]) -> Result<usize> {
-    let pending: Vec<&String> =
-        tables.iter().filter(|t| table_exists(core, "main", t).unwrap_or(false)).collect();
+    let names = adoptable(tables)?;
+    let pending: Vec<&str> =
+        names.into_iter().filter(|t| table_exists(core, "main", t).unwrap_or(false)).collect();
     if pending.is_empty() {
         return Ok(0);
     }
@@ -36,7 +40,30 @@ pub fn adopt_tables(core: &Connection, store_path: &std::path::Path, tables: &[S
     outcome
 }
 
-fn move_each(core: &Connection, tables: &[&String]) -> Result<usize> {
+// A denylist of the core's own tables, not an allowlist of adoptable ones: only
+// the module knows which names it once created here, while the core knows its
+// own from its DDL, so only the denylist can be complete.
+fn adoptable(tables: &[String]) -> Result<Vec<&str>> {
+    let mut out = Vec::with_capacity(tables.len());
+    for declared in tables {
+        let name = declared.trim();
+        anyhow::ensure!(is_identifier(name), "'{declared}' is not a table name");
+        anyhow::ensure!(
+            !kroma_db::is_core_table(name),
+            "'{declared}' belongs to the core schema and cannot be moved into a module",
+        );
+        out.push(name);
+    }
+    Ok(out)
+}
+
+fn is_identifier(name: &str) -> bool {
+    !name.is_empty()
+        && !name.starts_with(|c: char| c.is_ascii_digit())
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+}
+
+fn move_each(core: &Connection, tables: &[&str]) -> Result<usize> {
     let mut moved = 0;
     for table in tables {
         // Not an error: the module created it itself on a boot where the move
@@ -222,24 +249,57 @@ mod tests {
 
     #[test]
     fn a_table_with_a_foreign_key_into_the_core_stays_where_it_is() {
-        // `downloads.request_id` references `requests`: the parent cannot travel,
-        // so neither can the child. It must survive in the core rather than be
+        // `grabs.request_id` references `requests`: the parent cannot travel, so
+        // neither can the child. It must survive in the core rather than be
         // half-moved.
         let dir = kroma_testing::temp_dir("adopt-fk");
         let core = Connection::open(dir.path().join("kroma.db")).unwrap();
         core.execute_batch(
             "CREATE TABLE requests (id TEXT PRIMARY KEY);
-             CREATE TABLE downloads (id TEXT PRIMARY KEY, request_id TEXT REFERENCES requests(id));
+             CREATE TABLE grabs (id TEXT PRIMARY KEY, request_id TEXT REFERENCES requests(id));
              INSERT INTO requests VALUES ('rq1');
-             INSERT INTO downloads VALUES ('d1','rq1');",
+             INSERT INTO grabs VALUES ('g1','rq1');",
         )
         .unwrap();
 
         assert_eq!(
-            adopt_tables(&core, &store_path(dir.path()), &["downloads".to_string()]).unwrap(),
+            adopt_tables(&core, &store_path(dir.path()), &["grabs".to_string()]).unwrap(),
             0
         );
-        assert_eq!(count(&core, "main", "downloads").unwrap(), 1, "the rows are still there");
+        assert_eq!(count(&core, "main", "grabs").unwrap(), 1, "the rows are still there");
+    }
+
+    #[test]
+    fn a_manifest_naming_a_core_table_is_refused_however_it_spells_it() {
+        let dir = kroma_testing::temp_dir("adopt-core-table");
+        let core = Connection::open(dir.path().join("kroma.db")).unwrap();
+        core.execute_batch(
+            "CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT NOT NULL, pin_hash TEXT);
+             INSERT INTO users VALUES ('u1','a@b.c','pbkdf2');",
+        )
+        .unwrap();
+        let store = store_path(dir.path());
+
+        for declared in ["users", "USERS", "  Users  ", "\"users\"", "users; DROP TABLE users"] {
+            let error = adopt_tables(&core, &store, &[declared.to_string()]).unwrap_err();
+            assert!(format!("{error:#}").contains(declared), "{error:#}");
+        }
+
+        assert_eq!(count(&core, "main", "users").unwrap(), 1, "the accounts stayed in the core");
+        assert!(!store.exists(), "no module database was opened");
+    }
+
+    #[test]
+    fn one_refused_name_stops_the_whole_adoption() {
+        let dir = kroma_testing::temp_dir("adopt-mixed");
+        let core = core_with_indexers(dir.path());
+        core.execute_batch("CREATE TABLE sessions (token TEXT PRIMARY KEY)").unwrap();
+        let store = store_path(dir.path());
+
+        assert!(adopt_tables(&core, &store, &["indexers".into(), "sessions".into()]).is_err());
+
+        assert!(table_exists(&core, "main", "indexers").unwrap(), "nothing moved");
+        assert!(table_exists(&core, "main", "sessions").unwrap());
     }
 
     #[test]

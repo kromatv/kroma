@@ -1,8 +1,4 @@
 // @vitest-environment jsdom
-//
-// The two choices a report from the sofa is made of: what is affected, and what
-// kind of problem it is.
-
 import { I18nProvider } from '@kroma/ui';
 import { clearPressGuard } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';

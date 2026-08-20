@@ -10,6 +10,7 @@
 
 import {
   type AuthResult,
+  apiErrorBody,
   apiErrorText,
   clearSession,
   forgetAccount,
@@ -34,10 +35,18 @@ import {
 
 /** Outcome of an {@link AuthSession.activate}. `needsPin` asks the UI to collect
  * the profile PIN and call `activate` again with it; `retryAfter` (seconds) is
- * set when the PIN was rate-limited (429) so the UI can show a cooldown. */
+ * set when the PIN was rate-limited (429) so the UI can show a cooldown;
+ * `unreachable` means the server never answered, which says nothing about the
+ * token, so the UI should offer a retry rather than route to a full re-login. */
 export type ActivateResult =
   | { ok: true }
-  | { ok: false; needsPin: boolean; error?: string; retryAfter?: number };
+  | {
+      ok: false;
+      needsPin: boolean;
+      error?: string;
+      retryAfter?: number;
+      unreachable?: boolean;
+    };
 
 export interface AuthSession {
   /** The active account (access token + user), or null when signed out. */
@@ -162,40 +171,34 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
 
   const activate = useCallback(
     async (s: StoredSession, pin?: string): Promise<ActivateResult> => {
-      if (!client) return { ok: false, needsPin: false };
+      if (!client) return { ok: false, needsPin: false, unreachable: true };
       try {
         const res = await client.exchangeToken(s.accessToken, pin);
         adopt(s, res.token, res.user);
         return { ok: true };
       } catch (e) {
-        if (e instanceof KromaApiError) {
-          // Rate-limited (429): too many wrong PINs. Keep the PIN screen and pass
-          // the cooldown so the UI can count it down.
-          if (e.status === 429) {
-            const retryAfter = Number(
-              (e.body as { retryAfter?: number } | undefined)?.retryAfter ?? 30,
-            );
-            return { ok: false, needsPin: true, retryAfter, error: apiErrorText(e, '') };
-          }
-          // A dead/expired access token is tagged `tokenInvalid` by the server. A
-          // PIN can't rescue it (even for a PIN profile), so DON'T ask for one
-          // report it as a non-PIN failure so the UI routes to a full re-login.
-          const tokenInvalid =
-            (e.body as { tokenInvalid?: boolean } | undefined)?.tokenInvalid === true;
-          if (e.status === 401 && tokenInvalid) {
-            return { ok: false, needsPin: false, error: apiErrorText(e, '') };
-          }
-          // A PIN-locked profile 401s until the correct PIN is supplied ask the
-          // UI to collect it. Trust the server's `pinRequired` flag (so a PIN
-          // added on another device is handled even if our cached `hasPin` is
-          // stale), falling back to that cached flag.
-          const pinRequired =
-            (e.body as { pinRequired?: boolean } | undefined)?.pinRequired === true;
-          if (e.status === 401 && (pinRequired || s.user.hasPin)) {
-            return { ok: false, needsPin: true, error: apiErrorText(e, '') };
-          }
+        // Nothing came back from the server (offline, DNS, TLS): the token is
+        // not implicated, so this is not a dead-token failure.
+        if (!(e instanceof KromaApiError)) return { ok: false, needsPin: false, unreachable: true };
+        const { retryAfter, tokenInvalid, pinRequired } = apiErrorBody(e);
+        const error = apiErrorText(e, '');
+        // Rate-limited (429): too many wrong PINs. Keep the PIN screen and pass
+        // the cooldown so the UI can count it down.
+        if (e.status === 429) {
+          return { ok: false, needsPin: true, retryAfter: retryAfter ?? 30, error };
         }
-        return { ok: false, needsPin: false, error: apiErrorText(e, '') };
+        // A dead/expired access token is tagged `tokenInvalid` by the server. A
+        // PIN can't rescue it (even for a PIN profile), so DON'T ask for one
+        // report it as a non-PIN failure so the UI routes to a full re-login.
+        if (e.status === 401 && tokenInvalid) return { ok: false, needsPin: false, error };
+        // A PIN-locked profile 401s until the correct PIN is supplied ask the
+        // UI to collect it. Trust the server's `pinRequired` flag (so a PIN
+        // added on another device is handled even if our cached `hasPin` is
+        // stale), falling back to that cached flag.
+        if (e.status === 401 && (pinRequired || s.user.hasPin)) {
+          return { ok: false, needsPin: true, error };
+        }
+        return { ok: false, needsPin: false, error };
       }
     },
     [client, adopt],

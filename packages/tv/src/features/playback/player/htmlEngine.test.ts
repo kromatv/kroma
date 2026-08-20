@@ -470,6 +470,33 @@ describe('HtmlEngine seek (master)', () => {
     expect(engine.isPaused()).toBe(true);
   });
 
+  it('ignores a superseded re-anchor whose master start resolves last', async () => {
+    const fv = fakeVideo();
+    const pending: Array<(start: string) => void> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            pending.push((start) => resolve({ headers: { get: () => start } }));
+          }),
+      ),
+    );
+    const { engine } = makeEngine({ fv, direct: false });
+    await tick();
+
+    fv.setBuffered([]);
+    engine.seekTo(600);
+    engine.seekTo(900);
+    pending[1]?.('900');
+    await tick();
+    pending[0]?.('600');
+    await tick();
+
+    expect(engine.position()).toBe(900);
+    expect(fv.get('src')).toBe('master:vid1:false:900:0');
+  });
+
   it('re-anchors on a backward seek before the anchor', async () => {
     const fv = fakeVideo();
     const { engine, hlsMasterUrl } = makeEngine({ fv, direct: false, startSec: 0 });
@@ -561,6 +588,22 @@ describe('HtmlEngine destroy', () => {
     fv.fire('loadedmetadata');
     expect(listeners.onAspect).not.toHaveBeenCalled();
     engine.destroy();
+  });
+
+  it('disarms the re-anchor resume so the next item does not start itself', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false });
+    await tick();
+    engine.play();
+    fv.setBuffered([]);
+    engine.seekTo(600);
+
+    engine.destroy();
+    fv.set('paused', true);
+    fv.fire('canplay');
+
+    expect(fv.listenerCount('canplay')).toBe(0);
+    expect(engine.isPaused()).toBe(true);
   });
 
   it('drops the pending direct-play resume seek so the next item is not moved', () => {

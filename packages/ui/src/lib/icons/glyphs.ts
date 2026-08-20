@@ -72,7 +72,8 @@ function glyphFor(name: string): Glyph {
   const hit = RESOLVED.get(name);
   if (hit) return hit;
   const found = glyphs[exportName(name)];
-  const glyph = typeof found === 'function' || typeof found === 'object' ? found : FALLBACK;
+  const glyph =
+    typeof found === 'function' || (found != null && typeof found === 'object') ? found : FALLBACK;
   RESOLVED.set(name, glyph);
   return glyph;
 }

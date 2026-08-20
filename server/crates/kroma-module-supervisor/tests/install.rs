@@ -140,3 +140,24 @@ fn checksum_verification_accepts_match_and_rejects_mismatch() {
     let err = verify_sha256(bytes, "deadbeef").unwrap_err().to_string();
     assert!(err.contains("checksum mismatch"), "unexpected error: {err}");
 }
+
+#[test]
+fn upgrading_a_module_keeps_the_database_it_owns() {
+    let scratch = temp_modules_dir("keep-store");
+    let dir = scratch.path();
+    let sup = supervisor(dir, "0.1.4");
+    let bundle = |version: &str| {
+        tar_with_manifest(&current(&format!(
+            r#""id": "com.example.demo", "name": "Demo", "version": "{version}",
+                 "storage": {{}}, "library": true"#
+        )))
+    };
+
+    sup.install(&bundle("1.0.0"), None, ("upload", None)).unwrap();
+    let store = dir.join("com.example.demo").join("module.sqlite");
+    std::fs::write(&store, b"the module's own rows").unwrap();
+    sup.install(&bundle("2.0.0"), None, ("upload", None)).unwrap();
+
+    assert_eq!(std::fs::read(&store).unwrap(), b"the module's own rows");
+    assert_eq!(sup.installed_manifests()[0].version, "2.0.0");
+}

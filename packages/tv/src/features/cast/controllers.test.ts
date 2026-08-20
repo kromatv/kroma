@@ -1,9 +1,4 @@
 // @vitest-environment jsdom
-//
-// The server sends this TV's whole row every time anything about it changes
-// (a film starting, one remote leaving), so the store must diff rather than
-// announce the list it was handed.
-
 import type { CastController } from '@kroma/core';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

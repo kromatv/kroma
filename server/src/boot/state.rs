@@ -9,8 +9,8 @@ use kroma_engine::services::settings::Settings;
 use kroma_engine::{infra, state};
 use kroma_module_supervisor::{Supervisor, SupervisorConfig};
 
-use crate::api;
 use crate::boot::embedder::EmbedderClient;
+use crate::boot::whisper::WhisperClient;
 
 /// Build the supervisor and the app state. The state is handed a FUNCTION for
 /// reaching modules, never the supervisor and never a module id: which module
@@ -61,8 +61,8 @@ pub fn build(
 
     // The core's own two consumers name a CONTRACT, never a provider.
     let whisper =
-        Arc::new(api::online_subs::WhisperClient::new(contract(&port_endpoint, "whisper"), db.clone()));
-    services.insert(std::any::TypeId::of::<api::online_subs::WhisperClient>(), whisper);
+        Arc::new(WhisperClient::new(contract(&port_endpoint, "whisper"), db.clone()));
+    services.insert(std::any::TypeId::of::<WhisperClient>(), whisper);
     let embedder: Arc<dyn kroma_engine::ports::Embedder> =
         Arc::new(EmbedderClient::new(contract(&port_endpoint, "embedder")));
 

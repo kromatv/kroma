@@ -90,7 +90,7 @@ export function AuthProvider({
       if (!s) return Promise.resolve(undefined);
       const p = client
         .exchangeToken(s.accessToken)
-        .then((r) => r.token as string | undefined)
+        .then((r) => r.token)
         .catch(() => undefined)
         .finally(() => {
           refreshingRef.current = null;

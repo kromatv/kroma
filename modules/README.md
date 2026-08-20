@@ -216,6 +216,11 @@ a column named in a `WHERE` is reached as much as one that is projected, and a
 foreign key drags its other table in -- writing a child row reads the parent, and
 a cascading delete writes the child.
 
+A `write` entry scoped to a column (`"write": ["users.language"]`) authorises
+UPDATE of that column and nothing else. INSERT and DELETE act on a whole row, so
+they need the whole table (`"write": ["users"]`) and are refused otherwise. A
+module that inserts or deletes under a column-scoped grant must widen it.
+
 A table the core itself reads (`downloads`, for the progress overlay) or that is
 a channel between the core and the module (`whisper_jobs`) is **shared by
 definition**: it lives in the core schema, and the module holds a grant on it. A

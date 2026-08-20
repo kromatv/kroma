@@ -1,21 +1,5 @@
-// Siri -> the app's search screen.
-//
-// Apple TV has no microphone an app may open, so Siri IS the voice input here:
-// the user holds the remote's Siri button and says "cherche Blade Runner dans
-// KROMA", the system resolves it against the app (KromaMediaIntents, in the
-// local siri-search module) and the spoken title arrives here.
-//
-// Both arrival times are covered, because Siri does not care whether the app was
-// running: a request that launched the app is waiting as a pending query, and
-// one spoken while it was open comes in as an event.
-//
-// The same door also opens for `kroma://search?q=...`. That is not decoration:
-// Siri does not exist in the tvOS simulator, so a URL is the only way to
-// exercise this whole path (native bridge -> requestSearch -> the search screen)
-// anywhere but on a real Apple TV with a real remote:
-//
-//   xcrun simctl openurl <udid> 'kroma://search?q=blade%20runner'
-
+// Siri -> the app's search screen. Apple TV has no microphone an app may open,
+// so Siri is the voice input; `kroma://search?q=...` reaches the same door.
 import { requestSearch } from '@kroma/tv';
 import { Linking } from 'react-native';
 import { SiriSearch } from '../../modules/siri-search';
@@ -44,10 +28,12 @@ export function startSiriSearch(): () => void {
   // handle an intent, and a link launches it the same way.
   const pending = SiriSearch?.takePendingQuery();
   if (pending) requestSearch(pending);
-  void Linking.getInitialURL().then((url) => {
-    const q = searchInUrl(url);
-    if (q) requestSearch(q);
-  });
+  void Linking.getInitialURL()
+    .then((url) => {
+      const q = searchInUrl(url);
+      if (q) requestSearch(q);
+    })
+    .catch(() => undefined);
 
   const subs = [
     SiriSearch?.addListener('query', ({ text }) => requestSearch(text)),

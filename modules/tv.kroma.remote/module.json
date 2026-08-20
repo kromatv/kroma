@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "id": "tv.kroma.remote",
   "name": "Remote access",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Public HTTPS access: the share / Quick Connect URL plus an optional managed Cloudflare Tunnel connector. Disable it to hide the page + routes.",
   "engines": {
     "server": ">=0.1.38"

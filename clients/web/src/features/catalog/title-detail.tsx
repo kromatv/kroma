@@ -1,37 +1,22 @@
 // The single detail page for a title, owned or not. Fed a normalized `TitleView`
-// it renders one hero (Play for owned, Request/status for not-owned), the merged
-// season section (play owned episodes + request missing/partial seasons), cast,
-// similar, and the owned-only Treatments + AI rails. Replaces the old split
-// movie/show fiche vs discover fiche.
 
-import { apiErrorText, type EpisodeRef, formatRuntime, type ItemId } from '@kroma/core';
+import type { ItemId } from '@kroma/core';
 import { useCast, useT } from '@kroma/ui';
-import { Button, Text } from '@kroma/ui/kit';
+import { Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { type CSSProperties, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { AiSuggestRail } from '#web/features/catalog/ai-suggest-rail';
-import {
-  audioFlagLabel,
-  audioString,
-  CastRail,
-  DetailHero,
-  langName,
-  qualityBadges,
-  type SimilarItem,
-  SimilarRail,
-  subString,
-} from '#web/features/catalog/detail';
-import { EPISODES_ANCHOR, SeasonSection } from '#web/features/catalog/episode-list';
-import { epKey, toEpisodeRefs, toggle } from '#web/features/catalog/episode-selection';
-import { ReportDialog } from '#web/features/catalog/report-dialog';
+import { CastRail, type SimilarItem, SimilarRail } from '#web/features/catalog/detail';
+import { SeasonSection } from '#web/features/catalog/episode-list';
+import { TitleHero } from '#web/features/catalog/title-hero';
 import { TreatmentsPanel } from '#web/features/catalog/treatments-panel';
+import { useTitleRequest } from '#web/features/catalog/use-title-request';
 import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
 import { userQueries } from '#web/shared/lib/queries';
-import { type TitleView, tmdbMetaLine } from '#web/shared/lib/titleView';
+import type { TitleView } from '#web/shared/lib/titleView';
 import { useWatched } from '#web/shared/lib/watched';
-import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 // The page gutter is a fluid CSS custom property, which no style number can
 // carry, so anything indented by it stays a plain element.
@@ -53,122 +38,6 @@ function progressMap(entries: readonly ProgressEntry[]): Record<string, number> 
     }
   }
   return map;
-}
-
-function nextViewAfterRequest(
-  v: TitleView,
-  status: TitleView['requestStatus'],
-  seasons: number[] | null,
-  episodes?: EpisodeRef[],
-): TitleView {
-  if (episodes?.length) return { ...v, requestStatus: status };
-  const target = new Set(
-    seasons ?? v.seasons.filter((s) => !s.available && !s.requested).map((s) => s.number),
-  );
-  return {
-    ...v,
-    requestStatus: status,
-    seasons: v.seasons.map((s) => (target.has(s.number) ? { ...s, requested: true } : s)),
-  };
-}
-
-function addPendingEpisodes(prev: Set<string>, episodes: EpisodeRef[]): Set<string> {
-  const next = new Set(prev);
-  for (const e of episodes) next.add(epKey(e.season, e.episode));
-  return next;
-}
-
-function TitleHero({
-  view,
-  owned,
-  localId,
-  busy,
-  overline,
-  isWatched,
-  toggleWatched,
-  inList,
-  toggleList,
-  onPlay,
-  onRequest,
-  onBack,
-}: Readonly<{
-  view: TitleView;
-  owned: boolean;
-  localId: string | null | undefined;
-  busy: boolean;
-  overline: string;
-  isWatched: (id: string) => boolean;
-  toggleWatched: (id: string) => void;
-  inList: (id: string) => boolean;
-  toggleList: (id: string) => void;
-  onPlay: (id: string) => void;
-  onRequest: () => void;
-  onBack: () => void;
-}>) {
-  const t = useT();
-  const playable = owned ? view.playable : null;
-  const listState: {
-    watched?: boolean;
-    onToggleWatched?: () => void;
-    inList?: boolean;
-    onToggleList?: () => void;
-  } =
-    owned && localId
-      ? {
-          watched: isWatched(localId),
-          onToggleWatched: () => toggleWatched(localId),
-          inList: inList(localId),
-          onToggleList: () => toggleList(localId),
-        }
-      : {};
-  const trackInfo: { audio?: string; subtitles?: string } = playable
-    ? { audio: audioString(t, playable), subtitles: subString(t, playable) }
-    : {};
-  return (
-    <DetailHero
-      art={{
-        id: localId ?? String(view.tmdbId ?? view.title),
-        backdrop: view.backdrop,
-        poster: view.poster,
-      }}
-      overline={overline}
-      title={view.title}
-      rating={view.rating}
-      meta={metaLine(t, view)}
-      badges={view.video ? qualityBadges(view.video) : []}
-      audioFlag={owned ? audioFlagLabel(t, view.playable) : null}
-      directors={view.directors}
-      tagline={view.tagline}
-      overview={view.overview}
-      audio={trackInfo.audio}
-      subtitles={trackInfo.subtitles}
-      playable={playable}
-      playLabel={view.playLabel ?? undefined}
-      themeUrl={view.themeUrl}
-      watched={listState.watched}
-      // Owned titles only: there is nothing to start on a TV until the file is
-      // in the library.
-      castItemId={owned && localId ? (localId as ItemId) : undefined}
-      onToggleWatched={listState.onToggleWatched}
-      inList={listState.inList}
-      onToggleList={listState.onToggleList}
-      primaryAction={
-        owned ? undefined : <RequestCta view={view} busy={busy} onRequest={onRequest} />
-      }
-      onBack={onBack}
-      onPlay={playable ? () => onPlay(playable.id) : undefined}
-      onReport={
-        owned && localId
-          ? () =>
-              void ReportDialog.call({
-                subjectKind: view.kind,
-                subjectId: localId,
-                subjectTitle: view.title,
-              })
-          : undefined
-      }
-    />
-  );
 }
 
 function TitleBody({
@@ -260,16 +129,21 @@ function TitleBody({
 
 export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
   const t = useT();
-  const { client, user } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [view, setView] = useState(initial);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // Episodes ticked on the season list, as `"season-episode"` keys.
-  const [selected, setSelected] = useState<Set<string>>(() => new Set());
-  // Individual episodes optimistically marked pending (`"season-episode"` keys),
-  // since the view carries no per-episode request flag.
-  const [pendingEps, setPendingEps] = useState<Set<string>>(() => new Set());
+  const {
+    view,
+    busy,
+    error,
+    selected,
+    pendingEps,
+    toggleEpisode,
+    requestSelected,
+    requestSeason,
+    requestAllSeasons,
+    clearSelection,
+    onRequestClick,
+  } = useTitleRequest(initial);
   const { isWatched, toggleWatched } = useWatched();
   const { inList, toggle: toggleList } = useMyList();
 
@@ -278,15 +152,12 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
   let backTo: '/' | '/series' | '/search' = '/search';
   if (owned) backTo = view.kind === 'show' ? '/series' : '/';
 
-  // Per-episode resume progress for an owned show (one fetch, mapped by item id).
   const { data: epProgress = {} } = useQuery({
     ...userQueries.progress(),
     enabled: !!user && !!localId && view.kind === 'show',
     select: (entries) => progressMap(entries),
   });
 
-  // With a TV connected, Play means play THERE - the same rule the phone uses.
-  // Otherwise it opens this browser's player.
   const { active: castDevice, playOn } = useCast();
   const play = (id: string) => {
     if (castDevice) {
@@ -294,43 +165,6 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
       return;
     }
     navigate({ to: '/watch/$id', params: { id } });
-  };
-
-  const doRequest = (seasons: number[] | null, episodes?: EpisodeRef[]) => {
-    if (view.tmdbId == null) return;
-    setBusy(true);
-    setError(null);
-    client
-      .createRequest({ kind: view.kind, tmdbId: view.tmdbId, seasons, episodes })
-      .then((req) => {
-        setView((v) => nextViewAfterRequest(v, req.status, seasons, episodes));
-        if (episodes?.length) setPendingEps((prev) => addPendingEpisodes(prev, episodes));
-        setSelected(new Set());
-      })
-      .catch((e) => setError(apiErrorText(e, t('discover.requestFailed'))))
-      .finally(() => setBusy(false));
-  };
-
-  const toggleEpisode = (season: number, episode: number) =>
-    setSelected((prev) => toggle(prev, epKey(season, episode)));
-  const requestSelected = () => {
-    const episodes = toEpisodeRefs(selected);
-    if (episodes.length > 0) doRequest(null, episodes);
-  };
-  const requestSeason = (season: number) => doRequest([season]);
-  // `null` seasons with no episodes is the whole show, which is what the API
-  // reads as "every season".
-  const requestAllSeasons = () => doRequest(null);
-  // A movie has nothing to pick; a show scrolls to the season list, where the
-  // per-episode ticks and the two shortcuts live.
-  const onRequestClick = () => {
-    // With no season list there is no section to scroll to and nothing to pick,
-    // so the button asks for the whole show rather than doing nothing at all.
-    if (view.kind !== 'show' || view.seasons.length === 0) {
-      doRequest(null);
-      return;
-    }
-    document.getElementById(EPISODES_ANCHOR)?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const openSimilar = (key: string) => {
@@ -392,56 +226,9 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
         onRequestSelected={requestSelected}
         onRequestSeason={requestSeason}
         onRequestAll={requestAllSeasons}
-        onClearSelection={() => setSelected(new Set())}
+        onClearSelection={clearSelection}
         onOpenSimilar={openSimilar}
       />
     </main>
   );
-}
-
-function RequestCta({
-  view,
-  busy,
-  onRequest,
-}: Readonly<{ view: TitleView; busy: boolean; onRequest: () => void }>) {
-  const t = useT();
-  if (view.requestStatus && view.requestStatus !== 'denied') {
-    return (
-      <RequestStatusChip status={view.requestStatus} size="hero" progress={view.requestProgress} />
-    );
-  }
-  if (!view.canRequest) return null;
-  return (
-    <Button
-      icon="plus"
-      label={view.kind === 'show' ? t('discover.requestShow') : t('discover.request')}
-      onPress={onRequest}
-      loading={busy}
-    />
-  );
-}
-
-// Owned movie: year · runtime · audio lang. Show: year · seasons · episodes.
-// Not-owned movie: year · TMDB runtime.
-function metaLine(t: ReturnType<typeof useT>, view: TitleView): string {
-  if (view.kind === 'show') {
-    const episodes = view.seasons.reduce((n, s) => n + (s.episodes.length || s.episodeCount), 0);
-    return [
-      view.year ? String(view.year) : null,
-      t('content.seasonCount', { count: view.seasons.length }),
-      t('content.episodeCount', { count: episodes }),
-    ]
-      .filter(Boolean)
-      .join(' · ');
-  }
-  if (view.playable) {
-    return [
-      view.year ? String(view.year) : null,
-      formatRuntime(view.playable.durationMs),
-      langName(t, view.playable.audio?.language),
-    ]
-      .filter(Boolean)
-      .join(' · ');
-  }
-  return tmdbMetaLine(view.year, view.runtimeMin);
 }

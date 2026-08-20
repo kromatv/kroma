@@ -246,6 +246,21 @@ describe('MpvEngine audio track mapping', () => {
     expect(t.cmds()).toContainEqual(['set_property', 'aid', 4]);
   });
 
+  it('skips an audio entry mpv reported without a numeric id', () => {
+    const { t } = started(1);
+    t.emit(
+      'mpv://property',
+      props('track-list', [
+        { type: 'audio' },
+        null,
+        { id: '3', type: 'audio' },
+        { id: 3, type: 'audio' },
+        { id: 4, type: 'audio' },
+      ]),
+    );
+    expect(t.cmds()).toContainEqual(['set_property', 'aid', 4]);
+  });
+
   it('falls back to rendition+1 before the track-list arrives', () => {
     const { t } = started(0);
     t.emit('mpv://file-loaded', null); // onLoaded selects audio with no list yet
@@ -304,6 +319,30 @@ describe('MpvEngine seek + play/pause', () => {
     e.seekTo(600); // beyond the ahead window -> re-anchor
     await tick();
     expect(t.loads().some((l) => l.url === 'master:v9:false:600:0')).toBe(true);
+  });
+
+  it('ignores a superseded re-anchor whose master start resolves last', async () => {
+    const { e, t } = started({ direct: false, startSec: 0 });
+    const pending: Array<(start: string) => void> = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            pending.push((start) => resolve({ headers: { get: () => start } }));
+          }),
+      ),
+    );
+
+    e.seekTo(600);
+    e.seekTo(900);
+    pending[1]?.('900');
+    await tick();
+    pending[0]?.('600');
+    await tick();
+
+    expect(t.loads().some((l) => l.url === 'master:v9:false:600:0')).toBe(false);
+    expect(e.position()).toBe(900);
   });
 
   it('play / pause emit the IPC + optimistic state', () => {

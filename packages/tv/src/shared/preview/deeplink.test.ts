@@ -71,6 +71,21 @@ describe('readDeepLink', () => {
     expect(readDeepLink()).toBeNull();
   });
 
+  it('returns null for an id longer than the server ever mints', () => {
+    stubTizen({ payload: JSON.stringify({ type: 'movie', id: 'x'.repeat(129) }) });
+    expect(readDeepLink()).toBeNull();
+  });
+
+  it('returns null for an empty id', () => {
+    stubTizen({ payload: JSON.stringify({ type: 'movie', id: '' }) });
+    expect(readDeepLink()).toBeNull();
+  });
+
+  it('returns null for a payload larger than a tile selection can be', () => {
+    stubTizen({ payload: `${JSON.stringify({ type: 'movie', id: 'ok' })}${' '.repeat(9000)}` });
+    expect(readDeepLink()).toBeNull();
+  });
+
   it('returns null when the id is not a string', () => {
     stubTizen({ payload: JSON.stringify({ type: 'movie', id: 42 }) });
     expect(readDeepLink()).toBeNull();

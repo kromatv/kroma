@@ -23,10 +23,12 @@ export function linkInUrl(url: string | null): LauncherLink | null {
 }
 
 export function startLauncherLinks(): () => void {
-  void Linking.getInitialURL().then((url) => {
-    const link = linkInUrl(url);
-    if (link) requestDeepLink(link);
-  });
+  void Linking.getInitialURL()
+    .then((url) => {
+      const link = linkInUrl(url);
+      if (link) requestDeepLink(link);
+    })
+    .catch(() => undefined);
 
   const sub = Linking.addEventListener('url', ({ url }) => {
     const link = linkInUrl(url);

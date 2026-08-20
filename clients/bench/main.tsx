@@ -1,5 +1,6 @@
 // The performance bench: the browse screens' real components over generated data.
-// Served by `clients/tv-build/perf-bench.ts`; size it with `?rails=8&tiles=20`.
+// Served by `clients/tv-build/perf-bench.ts`; size it with `?rails=8&tiles=20` and
+// point `?art=` at an https image so the tiles actually decode.
 
 import {
   Box,
@@ -22,7 +23,8 @@ const params = new URLSearchParams(location.search);
 const RAILS = Number(params.get('rails') ?? 8);
 const TILES = Number(params.get('tiles') ?? 20);
 // Cache-busted per tile so each tile actually decodes, instead of reusing one image.
-const ART = params.get('art');
+const artParam = params.get('art');
+const ART = artParam?.startsWith('https://') ? artParam : null;
 const WIDTH = params.get('w');
 // react-native-web has no native animation driver: each loader is a JS timer writing
 // an inline style every frame, so `?loaders=N` stress-tests that cost.

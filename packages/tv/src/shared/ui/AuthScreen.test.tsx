@@ -1,13 +1,4 @@
 // @vitest-environment jsdom
-//
-// The gate's Back button is drawn in the top-left corner, and this navigator has
-// no geometry - a control is where the TREE puts it. Rendered after the scroll
-// it was the LAST stop of the screen's vertical chain, so the only way to the
-// button in the corner was Down past every row of the screen.
-//
-// The gate also prints the beacon a phone would list this television under, so
-// that a person facing two of them can tell which row is which.
-
 import type { HandoffBeaconView } from '@kroma/core';
 import { configureRemote, Focusable } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';

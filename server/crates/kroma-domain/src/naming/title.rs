@@ -164,7 +164,7 @@ pub fn find_year_index(s: &str) -> Option<usize> {
     let bytes = s.as_bytes();
     let mut i = 0;
     while i + 4 <= bytes.len() {
-        if bytes[i].is_ascii_digit() {
+        if bytes[i..i + 4].iter().all(u8::is_ascii_digit) {
             let boundary_before = i == 0 || !bytes[i - 1].is_ascii_alphanumeric();
             let boundary_after = i + 4 == bytes.len() || !bytes[i + 4].is_ascii_alphanumeric();
             if boundary_before && boundary_after && is_plausible_year(&s[i..i + 4]) {
@@ -241,6 +241,15 @@ mod tests {
         // Embedded in a larger token is not a year.
         assert_eq!(find_year_index("abc1999def"), None);
         assert_eq!(find_year_index("no digits here"), None);
+    }
+
+    #[test]
+    fn a_year_scan_never_splits_a_multibyte_character() {
+        assert_eq!(find_year_index("12 émissions"), None);
+        assert_eq!(find_year_index("10 話"), None);
+        assert_eq!(parse_year("12 émissions"), None);
+        assert_eq!(clean_title("12 émissions"), "12 émissions");
+        assert_eq!(parse_year("Amélie 2001 1080p"), Some(2001));
     }
 
     #[test]

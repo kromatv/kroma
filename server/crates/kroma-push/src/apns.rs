@@ -1,7 +1,7 @@
 //! Apple Push Notification service. The server holds a `.p8` auth key, not a
 //! certificate; each request carries a short-lived ES256 JWT signed with it.
 
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 
 use anyhow::{Context, Result};
 use p256::pkcs8::DecodePrivateKey;
@@ -97,7 +97,7 @@ impl ApnsKey {
     }
 
     fn token(&self, now_secs: i64) -> String {
-        let mut cached = self.cached.lock().unwrap();
+        let mut cached = self.cached.lock().unwrap_or_else(PoisonError::into_inner);
         if let Some((token, minted_at)) = cached.as_ref() {
             if now_secs - minted_at < TOKEN_LIFETIME_SECS {
                 return token.clone();
@@ -174,8 +174,9 @@ pub fn build_request(
 }
 
 /// Whether an APNs response means "this device token is dead, stop sending".
-/// 410 always is; for 400, only `BadDeviceToken` / `DeviceTokenNotForTopic`
-/// are — other 400s are our bug, not the device's, and must not evict it.
+/// 410 always is. A 400 only when the reason names the token itself
+/// (`BadDeviceToken`, `DeviceTokenNotForTopic`, `Unregistered`): any other 400
+/// is our bug, not the device's, and must not evict it.
 pub fn is_gone(status: u16, body: &str) -> bool {
     if status == 410 {
         return true;

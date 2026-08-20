@@ -246,15 +246,12 @@ mod tests {
         // Unique uid so the process-global attempt map can't collide with peers.
         let uid = "test-pin-fixed-cooldown";
         pin_reset(uid);
-        // Below the threshold: each fail is recorded but does not lock.
         for _ in 0..PIN_MAX_FAILS - 1 {
             assert_eq!(pin_record_fail(uid), 0);
         }
-        // The PIN_MAX_FAILS-th consecutive fail locks for the fixed window.
         assert_eq!(pin_record_fail(uid), PIN_COOLDOWN_SECS);
         let rem = pin_lock_remaining(uid).expect("should be locked");
         assert!(rem > 0 && rem <= PIN_COOLDOWN_SECS);
-        // A correct PIN (or PIN change) resets the record.
         pin_reset(uid);
         assert!(pin_lock_remaining(uid).is_none());
     }

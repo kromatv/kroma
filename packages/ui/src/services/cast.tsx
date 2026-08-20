@@ -15,21 +15,15 @@
 import {
   type CastCommand,
   type CastReceiver,
-  type DiscoveredTv,
   type ItemId,
   KromaApiError,
   type KromaClient,
   KromaEvents,
   type LanDiscoveryBridge,
-  type ServerEvent,
 } from '@kroma/core';
 import {
-  createContext,
-  type Dispatch,
   type ReactNode,
-  type SetStateAction,
   useCallback,
-  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -38,53 +32,11 @@ import {
   useState,
 } from 'react';
 import { useLanCast } from '#ui/services/cast-lan';
+import { type Cast, CastCtx } from './cast-context';
+import { applyCastEvent } from './cast-events';
+import { livePosition, type PositionBase } from './cast-position';
 
 const TICK_MS = 500;
-
-/** What a sender can do with the TV it is driving. */
-export interface Cast {
-  /** Live receivers on this server, the caller's own devices first. */
-  receivers: CastReceiver[];
-  /** Televisions heard in the room that have no account yet, so cannot be cast
-   * to until someone gives them one. Empty on a shell that cannot listen to its
-   * own link, which is every shell without the native module. */
-  pairable: DiscoveredTv[];
-  /** The receiver this sender is driving, or null when playing locally. */
-  active: CastReceiver | null;
-  /** Whether any TV is available to cast to (drives the button's visibility). */
-  available: boolean;
-  /** The active receiver's position, interpolated between heartbeats (ms). */
-  positionMs: number;
-  /** Start driving a receiver (or `null` to go back to local playback). */
-  select: (receiverId: string | null) => void;
-  /** Start a title on `receiverId`, and drive that TV from now on. */
-  playOn: (receiverId: string, itemId: ItemId, positionMs?: number) => Promise<boolean>;
-  /** Send an order to the active receiver. False when it failed / went away. */
-  send: (command: CastCommand) => Promise<boolean>;
-  /** The last failure, as a message key, or null. Cleared on the next success.
-   * `cast.kicked` is not a failure exactly - the TV chose to let this remote go. */
-  error: 'cast.gone' | 'cast.failed' | 'cast.kicked' | null;
-}
-
-const CastCtx = createContext<Cast | null>(null);
-
-/** The cast session. Outside a provider it reads as "no TVs", so a screen can
- * use it unconditionally on a client that never mounted one. */
-export function useCast(): Cast {
-  return useContext(CastCtx) ?? IDLE;
-}
-
-const IDLE: Cast = {
-  receivers: [],
-  pairable: [],
-  active: null,
-  available: false,
-  positionMs: 0,
-  select: () => undefined,
-  playOn: async () => false,
-  send: async () => false,
-  error: null,
-};
 
 export interface CastProviderProps {
   /** Null while a shell is still resolving its session; treated as "not yet". */
@@ -99,42 +51,6 @@ export interface CastProviderProps {
    * the ones with no account at all. */
   lan?: LanDiscoveryBridge;
   children: ReactNode;
-}
-
-/** The state a [`applyCastEvent`] fold writes through. Grouped rather than
- * passed positionally: four same-shaped setters in a row is an argument list
- * nobody can read, and two of them are only touched by one event. */
-interface CastEventSetters {
-  receivers: Dispatch<SetStateAction<CastReceiver[]>>;
-  activeId: Dispatch<SetStateAction<string | null>>;
-  error: Dispatch<SetStateAction<Cast['error']>>;
-  base: Dispatch<SetStateAction<PositionBase | null>>;
-}
-
-/** Fold one bus event into the roster / position state.
- *
- * At module scope rather than inside the effect: rows arrive whole (a play or
- * pause on one TV costs every sender a patch instead of a refetch), and keeping
- * the fold here means the effect stays a flat wiring step.
- */
-function applyCastEvent(e: ServerEvent, set: CastEventSetters): void {
-  if (e.type === 'cast.receiver') {
-    set.receivers((list) => upsert(list, e.receiver));
-  } else if (e.type === 'cast.receiver.gone') {
-    set.receivers((list) => list.filter((r) => r.id !== e.receiverId));
-  } else if (e.type === 'cast.kicked') {
-    // The television let this remote go. Stand down rather than keep showing a
-    // set we no longer drive.
-    set.activeId((id) => (id === e.receiverId ? null : id));
-    set.error('cast.kicked');
-  } else if (e.type === 'cast.position') {
-    set.base({
-      id: e.receiverId,
-      positionMs: e.positionMs,
-      playing: e.state === 'playing',
-      at: Date.now(),
-    });
-  }
 }
 
 export function CastProvider({
@@ -336,36 +252,5 @@ export function CastProvider({
   return <CastCtx.Provider value={value}>{children}</CastCtx.Provider>;
 }
 
-/** Replace a receiver's row, or add it, keeping the list sorted by name (the
- * server's own order, so a patched list and a refetched one agree). */
-function upsert(list: CastReceiver[], row: CastReceiver): CastReceiver[] {
-  const next = list.some((r) => r.id === row.id)
-    ? list.map((r) => (r.id === row.id ? row : r))
-    : [...list, row];
-  return next.sort((a, b) => a.name.localeCompare(b.name));
-}
-
-/** What a receiver last reported, and when this sender heard it. */
-interface PositionBase {
-  id: string;
-  positionMs: number;
-  playing: boolean;
-  at: number;
-}
-
-/** Where the TV is *now*: what it last told us, plus the wall time since. The
- * roster snapshot and the position event race, so the fresher of the two wins,
- * and the result never runs past the title's own duration. */
-function livePosition(
-  active: CastReceiver | null,
-  base: PositionBase | null,
-  playing: boolean,
-): number {
-  const reported = active?.nowPlaying?.positionMs ?? 0;
-  const from = base && base.id === active?.id ? base : null;
-  const start = from ? Math.max(from.positionMs, reported) : reported;
-  const elapsed = from && (from.playing || playing) ? Math.max(0, Date.now() - from.at) : 0;
-  const duration = active?.nowPlaying?.durationMs;
-  const out = start + elapsed;
-  return duration ? Math.min(out, duration) : out;
-}
+export type { Cast } from './cast-context';
+export { useCast } from './cast-context';

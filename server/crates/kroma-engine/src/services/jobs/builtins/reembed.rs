@@ -264,7 +264,7 @@ mod tests {
 
         let bigger = state_with_dim(16);
         seed_enriched_movie(&bigger, "itm-1");
-        crate::db::set_item_vector(&bigger.db, "itm-1", &vec![0.5f32; 4]).unwrap();
+        crate::db::set_item_vector(&bigger.db, "itm-1", &[0.5f32; 4]).unwrap();
         assert_eq!(stored_dims(&bigger), vec![4]);
         run(&JobContext::for_test(bigger.clone())).unwrap();
         assert_eq!(stored_dims(&bigger), vec![16], "the 4-dim vector was left behind");

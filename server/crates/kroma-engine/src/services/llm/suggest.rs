@@ -379,7 +379,7 @@ mod tests {
         let llm = FakeLlm::always(&reply(&["itm-1", "itm-2", "itm-3"]));
         llm.configure(&state);
         assert!(suggest_for(&state, "itm-0", 512).unwrap().is_none());
-        assert!(MIN_MEMBERS > 3);
+        const { assert!(MIN_MEMBERS > 3) };
     }
 
     #[test]

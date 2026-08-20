@@ -16,6 +16,9 @@
 // download engine modules depend on the SDK, not on the torrents crate.
 pub mod download_client;
 pub use download_client::*;
+// The magnet-URI info hash, shared by the download engines and the ledger.
+pub mod magnet;
+pub use magnet::*;
 // The Torznab search contract (types + port), so the indexer / acquisition
 // modules search without depending on the torznab crate.
 pub mod torznab;

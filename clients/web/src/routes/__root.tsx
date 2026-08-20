@@ -24,8 +24,6 @@ const ReactQueryDevtools = import.meta.env.DEV
     )
   : () => null;
 
-// The router context every route (incl. loaders) receives; carries the shared
-// TanStack Query client for `ensureQueryData` prefetch.
 export interface RouterContext {
   queryClient: QueryClient;
 }
@@ -82,12 +80,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
           <AuthProvider>
             <WatchedProvider>
               <MyListProvider>
-                {/* Each route picks its own frame (the `_app` layout, or its own
-                    chrome for login/join/admin); ModuleHostProvider runs app-wide
-                    so every shell can read module-contributed nav + pages. */}
                 <LocaleProvider>
-                  {/* The bell is stated once here, for the catalogue's
-                      navigation and the console's alike. */}
                   <NavActionsProvider actions={<NotificationBell />}>
                     <ModuleHostProvider>{children}</ModuleHostProvider>
                   </NavActionsProvider>
@@ -95,10 +88,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
               </MyListProvider>
             </WatchedProvider>
           </AuthProvider>
-          {/* Brand intro overlay sits above everything, plays once per session. */}
           <Intro />
-          {/* Single root for the app-wide imperative confirm dialog (react-call);
-              call it anywhere with `confirm(...)`, no open-state needed. */}
           <ConfirmHost />
           <Suspense fallback={null}>
             <ReactQueryDevtools buttonPosition="bottom-left" />

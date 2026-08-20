@@ -8,8 +8,9 @@ import {
   createDownloadTask,
   type DownloadTask,
 } from '@kesha-antonov/react-native-background-downloader';
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { type KromaClient, MediaItem } from '@kroma/core';
 import * as FileSystem from 'expo-file-system/legacy';
+import { z } from 'zod';
 import { canRawDownload, downloadCopyCodecs, downloadVideoCodecs } from '#mobile/player/caps';
 import { fetchSidecars } from './sidecars';
 import { type DownloadEntry, ensureDir, mediaPath } from './store';
@@ -53,14 +54,15 @@ export interface TransferHooks {
   onProgress(frac: number): void;
 }
 
+const TransferMeta = z.object({
+  item: MediaItem,
+  fileUri: z.string().min(1),
+  raw: z.boolean(),
+  estimatedTotal: z.number().nullable(),
+});
 /** Stored as the native task's metadata, so a transfer that outlives the app
  * can be re-adopted from its own snapshot on the next launch. */
-export interface TransferMeta {
-  item: MediaItem;
-  fileUri: string;
-  raw: boolean;
-  estimatedTotal: number | null;
-}
+export type TransferMeta = z.infer<typeof TransferMeta>;
 
 function buildMeta(item: MediaItem): TransferMeta {
   // Raw original only when everything in it plays offline on this device;
@@ -80,10 +82,8 @@ function buildMeta(item: MediaItem): TransferMeta {
 
 /** Null when the task was not created by this code, or predates this format. */
 export function transferMetaOf(task: DownloadTask): TransferMeta | null {
-  const meta = task.metadata as Partial<TransferMeta> | null;
-  return meta?.item && typeof meta.fileUri === 'string' && typeof meta.raw === 'boolean'
-    ? (meta as TransferMeta)
-    : null;
+  const meta = TransferMeta.safeParse(task.metadata);
+  return meta.success ? meta.data : null;
 }
 
 // A remux is a live ffmpeg stream that can never resume mid-byte; iOS quietly

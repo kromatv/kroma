@@ -3,24 +3,30 @@
 import { tizen } from '#tv/shared/preview/tizen';
 import type { DeepLink } from '#tv/shared/preview/types';
 
-function asDeepLink(obj: unknown): DeepLink | null {
-  if (obj && typeof obj === 'object') {
-    const o = obj as Record<string, unknown>;
-    if ((o.type === 'movie' || o.type === 'show') && typeof o.id === 'string') {
-      return { type: o.type, id: o.id };
-    }
-  }
-  return null;
+// A launcher payload is written by the platform, not by KROMA, so both the
+// bytes and the id inside them are bounded before either reaches a URL.
+const MAX_PAYLOAD_LEN = 8192;
+const MAX_ID_LEN = 128;
+
+function asDeepLink(value: unknown): DeepLink | null {
+  if (typeof value !== 'object' || value === null) return null;
+  if (!('type' in value) || !('id' in value)) return null;
+  const { type, id } = value;
+  if (type !== 'movie' && type !== 'show') return null;
+  if (typeof id !== 'string' || id.length === 0 || id.length > MAX_ID_LEN) return null;
+  return { type, id };
 }
 
 // Tizen delivers `action_data` either verbatim or wrapped as
 // `{"values": "<uri-encoded JSON>"}`; handle both.
 function parsePayload(raw: string): DeepLink | null {
+  if (raw.length > MAX_PAYLOAD_LEN) return null;
   try {
-    const first = JSON.parse(raw) as unknown;
+    const first: unknown = JSON.parse(raw);
     const direct = asDeepLink(first);
     if (direct) return direct;
-    const values = (first as { values?: unknown })?.values;
+    const values =
+      typeof first === 'object' && first !== null && 'values' in first ? first.values : undefined;
     if (typeof values === 'string') {
       return asDeepLink(JSON.parse(decodeURIComponent(values)));
     }

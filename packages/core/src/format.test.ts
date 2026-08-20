@@ -402,6 +402,13 @@ describe('safeImageUrl', () => {
     expect(safeImageUrl('\n')).toBeNull();
   });
 
+  it('reads the scheme only up to the first delimiter', () => {
+    expect(safeImageUrl('/api/images/abc?to=10:30')).toBe('/api/images/abc?to=10:30');
+    expect(safeImageUrl('?season=1:2')).toBe('?season=1:2');
+    expect(safeImageUrl('C:/Users/art.jpg')).toBeNull();
+    expect(safeImageUrl('custom:poster.jpg')).toBeNull();
+  });
+
   it('treats absent artwork as absent', () => {
     expect(safeImageUrl(null)).toBeNull();
     expect(safeImageUrl(undefined)).toBeNull();

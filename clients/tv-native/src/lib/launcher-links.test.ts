@@ -1,25 +1,3 @@
-// A launcher row the user selected, turned into a screen.
-//
-// Every program KROMA publishes to the television's home screen carries
-// `kroma://item/<id>` (or `kroma://show/<id>`) as its intent, and selecting one
-// launches or re-targets the app with that URL. Nothing inside @kroma/tv can
-// subscribe to that, so the shell parses it and pushes the result in.
-//
-// Two things here are easy to get wrong and impossible to notice from a desk.
-//
-// BOTH arrival times have to work, because the launcher does not care whether
-// the app was running: a tile that cold-started it is waiting in
-// `getInitialURL`, and one selected while it was already open arrives as a `url`
-// event. Handling only the second is the bug where selecting a Continue
-// Watching tile from a cold home screen opens the app on the home screen.
-//
-// And the two link forms are two CATALOGUES, not decoration. A launcher
-// publishes an EPISODE with its show's id, because the movie lookup cannot
-// resolve an episode id - so reading `kroma://show/<id>` as a movie silently
-// resolves nothing and lands nowhere.
-//
-// The URL is hand-parsed because React Native only partly implements `URL`.
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const requestDeepLink = vi.hoisted(() => vi.fn());
@@ -27,13 +5,17 @@ vi.mock('@kroma/tv', () => ({ requestDeepLink }));
 
 const linking = vi.hoisted(() => ({
   initial: null as string | null,
+  initialFails: false,
   handler: null as ((event: { url: string }) => void) | null,
   removed: 0,
 }));
 
 vi.mock('react-native', () => ({
   Linking: {
-    getInitialURL: async () => linking.initial,
+    getInitialURL: async () => {
+      if (linking.initialFails) throw new Error('no activity attached');
+      return linking.initial;
+    },
     addEventListener: (_event: string, handler: (e: { url: string }) => void) => {
       linking.handler = handler;
       return {
@@ -50,6 +32,7 @@ import { linkInUrl, startLauncherLinks } from './launcher-links';
 
 beforeEach(() => {
   linking.initial = null;
+  linking.initialFails = false;
   linking.handler = null;
   linking.removed = 0;
   vi.clearAllMocks();
@@ -128,6 +111,15 @@ describe('forwarding a selection', () => {
     linking.initial = null;
     startLauncherLinks();
     await Promise.resolve();
+    expect(requestDeepLink).not.toHaveBeenCalled();
+  });
+
+  it('survives a platform that cannot say what launched the app', async () => {
+    linking.initialFails = true;
+
+    expect(() => startLauncherLinks()).not.toThrow();
+
+    await vi.waitFor(() => expect(linking.handler).not.toBeNull());
     expect(requestDeepLink).not.toHaveBeenCalled();
   });
 

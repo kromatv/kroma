@@ -586,7 +586,7 @@ mod tests {
 
     #[test]
     fn prompts_mention_locales_and_min_items() {
-        let cat = vec![entry("a", "A", 1.0, "")];
+        let cat = [entry("a", "A", 1.0, "")];
         let refs: Vec<&CatalogEntry> = cat.iter().collect();
         let (system, user) = build_curate_prompt(&refs);
         assert!(system.contains("\"en\":string"));

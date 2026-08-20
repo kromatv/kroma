@@ -1,32 +1,5 @@
-// The performance HUD: the numbers, on the screen they are about.
-//
-// A television is the only place these numbers mean anything, and it is the one
-// place a profiler is hardest to attach - Samsung blocks the log, the simulator
-// lies about the CPU, and a laptop browser is ten times too fast. So the app
-// carries its own read-out: turn it on in the device settings, walk the remote
-// around, and read what the viewer is actually getting.
-//
-// What to look at, in order:
-//   RESPONSE   press-to-focus. Over ~120ms the remote feels heavy, whatever the
-//             frame rate says.
-//   WORST     the worst frame in the window. One 200ms frame is a visible jolt
-//             even at "60 fps" on average.
-//   JANK      how many frames blew two 60Hz budgets. Zero is the target.
-//   CHART     the shape of the last ~48 frames. An average hides a stall; this
-//             shows whether the second was evenly slow or one long hitch.
-//   FOCUS     the grid cell that has focus, `row,col`. Press a direction and
-//             watch it: this is what a remote bug looks like as a number.
-//   HEAP      JS heap in use. Watch the trend, not the value: a number that
-//             only climbs while you sit still is a leak.
-//   SCREEN    the surface actually being drawn, in device pixels, and the
-//             DEVICE pixel ratio. A panel rendering 4K under a 1080p layout pays
-//             four times the fill for every full-screen effect, and nothing else
-//             on this list says so. It is a property of the panel: the artwork
-//             setting does not move it, and on a television it reads @1x either
-//             way.
-//   ART       what the artwork setting is asking the server for, as a fraction
-//             of the size each image is drawn at. THIS is the row that moves
-//             when the resolution setting changes.
+// The performance HUD: frame timings, focus response, heap and surface size,
+// read on the television they are about. Turned on in the device settings.
 
 import { artworkScaleValue } from '@kroma/core';
 import { useEffect, useState } from 'react';

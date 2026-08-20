@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  apiErrorBody,
   apiErrorText,
   KromaApiError,
   libraryQuery,
@@ -65,6 +66,23 @@ describe('apiErrorText', () => {
   });
 });
 
+describe('apiErrorBody', () => {
+  it('reads the flags the server tags an auth failure with', () => {
+    const e = new KromaApiError(401, 'm', { error: 'PIN', pinRequired: true, retryAfter: 45 });
+    expect(apiErrorBody(e)).toEqual({ error: 'PIN', pinRequired: true, retryAfter: 45 });
+  });
+
+  it('drops a field the server did not shape and keeps the rest', () => {
+    const e = new KromaApiError(429, 'm', { error: 'slow down', retryAfter: 'soon' });
+    expect(apiErrorBody(e)).toEqual({ error: 'slow down' });
+  });
+
+  it('is empty for a non-KromaApiError and for a body that is not an object', () => {
+    expect(apiErrorBody(new Error('boom'))).toEqual({});
+    expect(apiErrorBody(new KromaApiError(500, 'm', 'plain text'))).toEqual({});
+  });
+});
+
 describe('requestJson', () => {
   it('hits <baseUrl>/api<path> with auth + locale headers and parses JSON', async () => {
     const { fetch, calls } = stubFetch({ json: () => ({ ok: true, n: 1 }) });
@@ -126,6 +144,51 @@ describe('requestJson', () => {
       status: 500,
       body: undefined,
     });
+  });
+});
+
+describe('requestJson body bound', () => {
+  function streamFetch(chunks: Uint8Array[]) {
+    const cancel = vi.fn(async () => undefined);
+    let next = 0;
+    const reader = {
+      read: async () =>
+        next < chunks.length ? { done: false, value: chunks[next++] } : { done: true },
+      cancel,
+    };
+    const fetch = vi.fn(
+      async () =>
+        ({ ok: true, status: 200, body: { getReader: () => reader } }) as unknown as Response,
+    ) as unknown as typeof globalThis.fetch;
+    return { fetch, cancel };
+  }
+
+  it('decodes a streamed body split across chunks, multi-byte characters included', async () => {
+    const bytes = new TextEncoder().encode('{"title":"Amélie"}');
+    const { fetch } = streamFetch([bytes.slice(0, 12), bytes.slice(12)]);
+
+    await expect(requestJson(fetch, 'http://nas', 't', 'en', '/items')).resolves.toEqual({
+      title: 'Amélie',
+    });
+  });
+
+  it('gives up on a streamed body past the cap instead of buffering it whole', async () => {
+    const megabyte = new Uint8Array(1024 * 1024);
+    const { fetch, cancel } = streamFetch(new Array(65).fill(megabyte));
+
+    await expect(requestJson(fetch, 'http://nas', 't', 'en', '/items')).rejects.toThrow(
+      /more than/,
+    );
+    expect(cancel).toHaveBeenCalled();
+  });
+
+  it('gives up on an oversized body when the response carries no stream', async () => {
+    const oversized = 'x'.repeat(64 * 1024 * 1024 + 1);
+    const { fetch } = stubFetch({ text: () => oversized });
+
+    await expect(requestJson(fetch, 'http://nas', 't', 'en', '/items')).rejects.toThrow(
+      /more than/,
+    );
   });
 });
 

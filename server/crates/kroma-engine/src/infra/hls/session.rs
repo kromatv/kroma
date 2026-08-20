@@ -198,7 +198,7 @@ impl Sessions {
         self.reap_superseded(&mut map, key).await;
         self.make_room(&mut map, key).await;
         let dir = self.root.join(session_dir(key));
-        let _ = std::fs::remove_dir_all(&dir);
+        super::reclaim::discard_dir(&dir);
         std::fs::create_dir_all(&dir)?;
         let child = spawn_stream(input, &dir, audio, mode, start_secs, self.burst)?;
         info!(session = %key, audio, mode = ?mode, anchor = start_secs, start, "started HLS remux");

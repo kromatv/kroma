@@ -2,231 +2,26 @@
 // visual language (icon rows, sub-views, same glyphs and shapes), but stays
 // touch-driven: a modal or bottom sheet, no focus engine.
 
-import {
-  audioTrackLabel,
-  audioTracksOf,
-  LANG_OFF,
-  langName,
-  type MediaItem,
-  refineTrackLang,
-} from '@kroma/core';
+import { LANG_OFF, langName, type MediaItem } from '@kroma/core';
 import type { SubtitleAppearance } from '@kroma/ui';
-import { AUDIO_FILTER_KEY, SUB_COLORS } from '@kroma/ui';
-import { Box, Chip, Icon, type IconName, SwitchFace, styles, Text } from '@kroma/ui/kit';
+import { AUDIO_FILTER_KEY } from '@kroma/ui';
+import { Box } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing } from 'react-native';
 import { useT } from '#mobile/lib/i18n';
 import { useLangPrefs } from '#mobile/lib/langPrefs';
-import { colors, spacing, type } from '#mobile/lib/theme';
 import { PlayerPanel } from '#mobile/player/PlayerPanel';
 import type { Engine } from './engine';
+import { SheetMenu, type SheetView } from './SheetMenu';
+import { SubAppearanceView, sizeName } from './SubAppearanceView';
+import { Row, SubHeader } from './TrackSheetRows';
+import { audioOptions, qualityBadge, subNote, subtitleLabel } from './trackOptions';
 import type { Subtitles } from './useSubtitles';
 
 const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
 
-export type SheetView =
-  | 'menu'
-  | 'quality'
-  | 'audio'
-  | 'audioFilter'
-  | 'subtitles'
-  | 'appearance'
-  | 'speed';
-
-function Row({
-  label,
-  selected,
-  disabled,
-  note,
-  onPress,
-}: Readonly<{
-  label: string;
-  selected: boolean;
-  disabled?: boolean;
-  note?: string;
-  onPress(): void;
-}>) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => [
-        s.row,
-        selected && s.rowOn,
-        pressed && { backgroundColor: colors.surfaceHigh },
-        disabled && s.rowDisabled,
-      ]}
-    >
-      <Text style={[s.rowLabel, selected && s.rowLabelOn]}>{label}</Text>
-      {note ? <Text style={s.rowNote}>{note}</Text> : null}
-      {selected ? <Icon name="check" size={17} thickness={2.4} color={colors.accent} /> : null}
-    </Pressable>
-  );
-}
-
-function MenuRow({
-  icon,
-  label,
-  value,
-  toggle,
-  on,
-  onPress,
-}: Readonly<{
-  icon: IconName;
-  label: string;
-  value?: string;
-  toggle?: boolean;
-  on?: boolean;
-  onPress(): void;
-}>) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={toggle ? { checked: Boolean(on) } : undefined}
-      style={({ pressed }) => [s.menuRow, pressed && { backgroundColor: colors.surfaceHigh }]}
-    >
-      <Icon name={icon} size={20} thickness={1.8} color={colors.textDim} />
-      <Box style={s.menuText}>
-        <Text style={s.menuLabel}>{label}</Text>
-        {!toggle && value ? (
-          <Text lines={1} style={s.menuValue}>
-            {value}
-          </Text>
-        ) : null}
-      </Box>
-      {toggle ? (
-        <SwitchFace checked={Boolean(on)} style={s.noShrink} />
-      ) : (
-        <Icon name="chevron-right" size={18} thickness={2.2} color={colors.textFaint} />
-      )}
-    </Pressable>
-  );
-}
-
-function SubHeader({ title, onBack }: Readonly<{ title: string; onBack(): void }>) {
-  return (
-    <Pressable onPress={onBack} style={({ pressed }) => [s.subHeader, pressed && { opacity: 0.7 }]}>
-      <Icon name="chevron-left" size={20} thickness={2.4} color={colors.text} />
-      <Text style={s.subTitle}>{title}</Text>
-    </Pressable>
-  );
-}
-
-function ChipGroup({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
-  return (
-    <Box style={s.chipGroup}>
-      <Text style={s.group}>{label}</Text>
-      <Box style={s.chipRow}>{children}</Box>
-    </Box>
-  );
-}
-
-interface AudioOption {
-  index: number;
-  prefCode: string | null;
-  label: string;
-}
-
-// `prefCode` is the language refined by the variant in the track's title
-// ('fre' + "VFF …" -> 'fr-FR'), so picking the France dub never auto-picks
-// the Quebec one on the next title.
-function audioOptions(engine: Engine, item: MediaItem, t: ReturnType<typeof useT>): AudioOption[] {
-  const itemAudio = audioTracksOf(item);
-  if (!engine.offline) {
-    return itemAudio.map((track, i) => ({
-      index: track.index,
-      prefCode: refineTrackLang(track.language, track.title),
-      label: audioTrackLabel(t, track) ?? `#${i + 1}`,
-    }));
-  }
-  const aligned = engine.localAudio.length === itemAudio.length;
-  return engine.localAudio.map((native, i) => ({
-    index: i,
-    prefCode: refineTrackLang(native.language, native.label),
-    label:
-      (aligned ? audioTrackLabel(t, itemAudio[i]) : undefined) ??
-      (native.label?.trim() || langName(t, native.language) || `#${i + 1}`),
-  }));
-}
-
-function subtitleLabel(subs: Subtitles, t: ReturnType<typeof useT>): string {
-  if (subs.active === null) return t('player.subtitlesOff');
-  const track = subs.tracks.find((s) => s.index === subs.active);
-  return track?.label?.trim() ?? langName(t, track?.language) ?? `#${(subs.active ?? 0) + 1}`;
-}
-
-function SheetMenu(
-  at: Readonly<{
-    t: ReturnType<typeof useT>;
-    quality: string;
-    audioCount: number;
-    audio: string | undefined;
-    filter: string | null;
-    subtitles: string;
-    appearance: string;
-    speed: string;
-    statsOn: boolean;
-    onToggleStats(): void;
-    go(view: SheetView): void;
-    onReport(): void;
-  }>,
-) {
-  return (
-    <Box style={s.menuList}>
-      <MenuRow
-        icon="badge-4k"
-        label={at.t('player.quality')}
-        value={at.quality}
-        onPress={() => at.go('quality')}
-      />
-      {at.audioCount > 1 ? (
-        <MenuRow
-          icon="wave-sine"
-          label={at.t('player.audioTracks')}
-          value={at.audio}
-          onPress={() => at.go('audio')}
-        />
-      ) : null}
-      {at.filter === null ? null : (
-        <MenuRow
-          icon="adjustments-horizontal"
-          label={at.t('player.audioFilters')}
-          value={at.filter}
-          onPress={() => at.go('audioFilter')}
-        />
-      )}
-      <MenuRow
-        icon="badge-cc"
-        label={at.t('player.subtitles')}
-        value={at.subtitles}
-        onPress={() => at.go('subtitles')}
-      />
-      <MenuRow
-        icon="typography"
-        label={at.t('player.subAppearance')}
-        value={at.appearance}
-        onPress={() => at.go('appearance')}
-      />
-      <MenuRow
-        icon="gauge"
-        label={at.t('player.speed')}
-        value={at.speed}
-        onPress={() => at.go('speed')}
-      />
-      <MenuRow
-        icon="chart-bar"
-        label={at.t('player.stats')}
-        toggle
-        on={at.statsOn}
-        onPress={at.onToggleStats}
-      />
-      <MenuRow icon="flag" label={at.t('reports.sheet')} onPress={at.onReport} />
-    </Box>
-  );
-}
+export type { SheetView };
 
 export function TrackSheet({
   visible,
@@ -297,13 +92,6 @@ export function TrackSheet({
   const qualityLabel = `${t('player.qualityAuto')}${qualityBadge(item)}`;
   const filterLabel = t(AUDIO_FILTER_KEY[engine.filter]);
   const speedLabel = engine.rate === 1 ? t('player.normalSpeed') : `${engine.rate}x`;
-  const sizeName: Record<SubtitleAppearance['size'], string> = {
-    sm: 'S',
-    md: 'M',
-    lg: 'L',
-    xl: 'XL',
-  };
-
   const menu = (
     <SheetMenu
       t={t}
@@ -412,50 +200,12 @@ export function TrackSheet({
       ) : null}
 
       {view === 'appearance' ? (
-        <Box>
-          <SubHeader title={t('player.subAppearance')} onBack={backToMenu} />
-          <ChipGroup label={t('player.subSize')}>
-            {(['sm', 'md', 'lg', 'xl'] as const).map((size) => (
-              <Chip
-                key={size}
-                label={sizeName[size]}
-                active={appearance.size === size}
-                onPress={() => onAppearance({ size })}
-              />
-            ))}
-          </ChipGroup>
-          <ChipGroup label={t('player.subColor')}>
-            {SUB_COLORS.map((color) => (
-              <Pressable
-                key={color}
-                onPress={() => onAppearance({ color })}
-                style={[
-                  s.swatch,
-                  { backgroundColor: color },
-                  appearance.color === color && s.swatchOn,
-                ]}
-              />
-            ))}
-          </ChipGroup>
-          <ChipGroup label={t('player.subEdge')}>
-            {(
-              [
-                ['shadow', t('subtitle.shadow')],
-                ['uniform', t('subtitle.uniform')],
-                ['raised', t('subtitle.raised')],
-                ['depressed', t('subtitle.depressed')],
-                ['none', t('subtitle.none')],
-              ] as const
-            ).map(([edge, label]) => (
-              <Chip
-                key={edge}
-                label={label}
-                active={appearance.edge === edge}
-                onPress={() => onAppearance({ edge })}
-              />
-            ))}
-          </ChipGroup>
-        </Box>
+        <SubAppearanceView
+          t={t}
+          appearance={appearance}
+          onAppearance={onAppearance}
+          onBack={backToMenu}
+        />
       ) : null}
 
       {view === 'speed' ? (
@@ -489,54 +239,3 @@ export function TrackSheet({
     </PlayerPanel>
   );
 }
-
-function subNote(t: ReturnType<typeof useT>, subs: Subtitles, index: number): string | undefined {
-  if (subs.failed.has(index)) return t('error.subtitleUnavailable');
-  if (subs.active === index && subs.loading) return t('player.subPreparing');
-  return undefined;
-}
-
-function qualityBadge(item: MediaItem): string {
-  const v = item.video;
-  if (!v) return '';
-  const res = v.height ? `${v.height}p` : null;
-  const codec = v.codec ? v.codec.toUpperCase() : null;
-  const parts = [res, codec, v.hdr ? 'HDR' : null].filter(Boolean);
-  return parts.length ? ` · ${parts.join(' ')}` : '';
-}
-
-const s = styles({
-  menuList: { gap: 2 },
-  menuRow: { row: true, align: 'center', gap: 14, minH: 54, px: spacing.md, py: 8, radius: 14 },
-  menuText: { flex: true, minW: 0 },
-  menuLabel: { ...type.body, color: 'text', fontWeight: '700' },
-  menuValue: { ...type.small, mt: 1 },
-  noShrink: { shrink: 0 },
-  subHeader: { row: true, align: 'center', gap: 8, px: spacing.sm, py: 10, mb: spacing.xs },
-  subTitle: { ...type.section, color: 'text' },
-  group: {
-    ...type.small,
-    mb: spacing.xs,
-    color: 'accent',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  chipGroup: { px: spacing.sm, mb: spacing.md },
-  chipRow: { row: true, wrap: true, align: 'center', gap: 8 },
-  row: {
-    row: true,
-    between: true,
-    align: 'center',
-    gap: spacing.sm,
-    minH: 48,
-    px: spacing.md,
-    radius: 14,
-  },
-  rowOn: { bg: 'white/10' },
-  rowDisabled: { opacity: 0.45 },
-  rowLabel: { ...type.body, shrink: 1, color: 'textMuted' },
-  rowLabelOn: { color: 'text', fontWeight: '600' },
-  rowNote: { ...type.small, color: 'textDim' },
-  swatch: { w: 30, h: 30, radius: 15, border: 'transparent', borderWidth: 2 },
-  swatchOn: { borderColor: 'accent' },
-});

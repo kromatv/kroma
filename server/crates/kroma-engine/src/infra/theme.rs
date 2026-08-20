@@ -57,6 +57,7 @@ fn download(tvdb_id: u64, out: &Path) -> bool {
     let dl = Command::new("curl")
         .args(["-sf", "-L", "--max-time", "25", "--max-filesize", "30M", "-o"])
         .arg(&tmp)
+        .arg("--")
         .arg(&url)
         .status();
     let ok = matches!(dl, Ok(s) if s.success())

@@ -18,19 +18,12 @@ import { PAGE_MAIN } from '#web/shared/ui';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
 
 export { PageHeader } from '@kroma/ui/kit';
-// Data hooks + capability helpers, the page header and the console's context
-// live in sibling modules; re-exported here so call sites keep importing them
-// from this shell module.
 export { Denied, isAnyAdmin, useAsyncAction, useCap, usePoll } from '#web/features/admin/hooks';
 export { useAdmin } from '#web/features/admin/shell-context';
 
 export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { client, user } = useAuth();
   const queryClient = useQueryClient();
-  // So both built-in and module admin pages share one data + capability surface
-  // without importing app internals.
-  // `openMediaInfo` is the console lending a module its own dialog: a module
-  // page can offer "media details" without knowing anything about the catalog.
   const kit = useMemo(
     () => ({
       client,
@@ -91,7 +84,6 @@ export function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
       <div className={ADMIN_SHELL}>
         <AdminSidebar />
         <AdminMobileTopbar />
-        {/* Same gutter + vertical rhythm as the catalogue pages (PAGE_MAIN) so every page aligns. */}
         <main className={PAGE_MAIN}>{children}</main>
       </div>
       <AdminModalHosts />

@@ -8,6 +8,7 @@
   "files": {
     "includes": [
       "**",
+      "!.claude/worktrees",
       "!**/dist",
       "!**/dist-*",
       "!**/build",

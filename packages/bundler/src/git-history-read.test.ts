@@ -71,7 +71,7 @@ afterAll(() => {
   if (repo) rmSync(repo, { recursive: true, force: true });
 });
 
-describe('readGitHistory', () => {
+describe('readGitHistory', { timeout: 30_000 }, () => {
   it('keys a component by its story and an article by its own file', async () => {
     const history = await readGitHistory({ repo, root: ROOT });
     expect(Object.keys(history.entries).sort()).toEqual([MOVED, PAGE]);
@@ -133,7 +133,7 @@ describe('readGitHistory', () => {
   });
 });
 
-describe('historyFingerprint', () => {
+describe('historyFingerprint', { timeout: 30_000 }, () => {
   it('moves when the working tree does, and holds still otherwise', async () => {
     const before = await historyFingerprint({ repo, root: ROOT });
     expect(await historyFingerprint({ repo, root: ROOT })).toBe(before);

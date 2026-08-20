@@ -69,7 +69,6 @@ export function styles<const S extends Record<string, StyleDecl>>(decls: S): Sty
       const desc = Object.getOwnPropertyDescriptor(resolve(), key);
       return desc ? { ...desc, configurable: true } : undefined;
     },
-    // A shared style must stay immutable, exactly as the frozen set used to be.
     set: () => false,
     defineProperty: () => false,
     deleteProperty: () => false,

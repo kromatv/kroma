@@ -3,7 +3,7 @@
 //! both steps are handed to the caller as plain requests (the crate does no I/O).
 //! The legacy `key=AAAA…` server key is unsupported — Google turned it off in 2024.
 
-use std::sync::Mutex;
+use std::sync::{Mutex, PoisonError};
 
 use anyhow::{Context, Result};
 use rsa::pkcs8::DecodePrivateKey;
@@ -75,7 +75,7 @@ impl FcmKey {
 
     /// The cached access token, unless it is inside [`REFRESH_MARGIN_SECS`] of expiry.
     pub fn cached_token(&self, now_secs: i64) -> Option<String> {
-        let cached = self.cached.lock().unwrap();
+        let cached = self.cached.lock().unwrap_or_else(PoisonError::into_inner);
         cached
             .as_ref()
             .filter(|(_, expires_at)| now_secs + REFRESH_MARGIN_SECS < *expires_at)
@@ -123,7 +123,8 @@ impl FcmKey {
         // Treat a missing/odd expiry as one minute so a broken reply refreshes
         // promptly rather than pinning a stale token.
         let ttl = if reply.expires_in > 0 { reply.expires_in } else { 60 };
-        *self.cached.lock().unwrap() = Some((reply.access_token.clone(), now_secs + ttl));
+        *self.cached.lock().unwrap_or_else(PoisonError::into_inner) =
+            Some((reply.access_token.clone(), now_secs + ttl));
         Ok(reply.access_token)
     }
 }

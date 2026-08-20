@@ -3,7 +3,8 @@
 // WebAuthn needs a secure context, so callers gate on `passkeysSupported()`.
 
 import type { WebAuthnCredential, WebAuthnOptions } from '@kroma/core';
-import { bytesToBase64Url } from '#web/shared/lib/base64url';
+import { z } from 'zod';
+import { base64UrlToBytes, bytesToBase64Url } from '#web/shared/lib/base64url';
 
 export function passkeysSupported(): boolean {
   return (
@@ -14,29 +15,22 @@ export function passkeysSupported(): boolean {
   );
 }
 
-function decode(s: string): Uint8Array {
-  const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
-  const bin = atob((s + pad).replaceAll('-', '+').replaceAll('_', '/'));
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i += 1) out[i] = bin.codePointAt(i) ?? 0;
-  return out;
-}
+const Base64UrlBytes = z.string().transform(base64UrlToBytes);
+
+const CredentialDescriptors = z.array(z.looseObject({ id: Base64UrlBytes })).optional();
+
+const PublicKeyOptions = z.looseObject({
+  challenge: Base64UrlBytes,
+  user: z.looseObject({ id: Base64UrlBytes }).optional(),
+  excludeCredentials: CredentialDescriptors,
+  allowCredentials: CredentialDescriptors,
+});
 
 function toBufferOptions(
   publicKey: Record<string, unknown>,
 ): PublicKeyCredentialCreationOptions & PublicKeyCredentialRequestOptions {
-  const pk: Record<string, unknown> = { ...publicKey };
-  pk.challenge = decode(pk.challenge as string);
-  if (pk.user) {
-    const user = { ...(pk.user as Record<string, unknown>) };
-    user.id = decode(user.id as string);
-    pk.user = user;
-  }
-  const convert = (list: unknown) =>
-    (list as { id: string }[] | undefined)?.map((c) => ({ ...c, id: decode(c.id) }));
-  if (pk.excludeCredentials) pk.excludeCredentials = convert(pk.excludeCredentials);
-  if (pk.allowCredentials) pk.allowCredentials = convert(pk.allowCredentials);
-  return pk as unknown as PublicKeyCredentialCreationOptions & PublicKeyCredentialRequestOptions;
+  return PublicKeyOptions.parse(publicKey) as unknown as PublicKeyCredentialCreationOptions &
+    PublicKeyCredentialRequestOptions;
 }
 
 /** Runs the registration ceremony; the result is the JSON `finish` expects. */

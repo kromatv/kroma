@@ -81,7 +81,10 @@ function PermPicker({
       size="sm"
       label={t('admin.permissions')}
       value={[...selected]}
-      onValueChange={(next) => toggle(diff(selected, next))}
+      onValueChange={(next) => {
+        const moved = diff(selected, next);
+        if (moved) toggle(moved);
+      }}
     >
       {PERMISSIONS.map((p) => (
         <ChoiceList.Item key={p.key} value={p.key}>
@@ -95,10 +98,9 @@ function PermPicker({
 
 // <ChoiceList> reports the whole next selection; the caller's toggle takes the
 // one entry that moved.
-function diff(before: Set<Permission>, after: string[]): Permission {
-  const added = after.find((p) => !before.has(p as Permission));
-  if (added) return added as Permission;
-  return [...before].find((p) => !after.includes(p)) as Permission;
+function diff(before: Set<Permission>, after: string[]): Permission | null {
+  const next = new Set(after);
+  return PERMISSIONS.find((p) => next.has(p.key) !== before.has(p.key))?.key ?? null;
 }
 
 function usePermissionSet(

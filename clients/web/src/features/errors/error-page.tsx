@@ -125,7 +125,6 @@ const NUMERAL = {
 export function RouteError({ error, reset }: Readonly<{ error: Error; reset: () => void }>) {
   const router = useRouter();
   const navigate = useNavigate();
-  // Where to return to after signing in (the current path + query).
   const href = useRouterState({ select: (s) => s.location.href });
   const kind = kindOf(error);
 

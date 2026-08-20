@@ -30,7 +30,7 @@ export interface LocaleSet<L extends string, D extends L = L> {
 export function interpolate(template: string, vars?: TVars): string {
   if (!vars) return template;
   return template.replace(/\{(\w+)}/g, (whole, name: string) =>
-    name in vars ? String(vars[name]) : whole,
+    Object.hasOwn(vars, name) ? String(vars[name]) : whole,
   );
 }
 

@@ -389,18 +389,17 @@ fn go_layout_to_chrono(layout: &str) -> String {
         ("PM", "%p"),
     ];
     let mut out = String::new();
-    let bytes = layout.as_bytes();
-    let mut i = 0;
-    'outer: while i < bytes.len() {
+    let mut rest = layout;
+    'outer: while let Some(ch) = rest.chars().next() {
         for (go, cr) in SUBS {
-            if layout[i..].starts_with(go) {
+            if let Some(tail) = rest.strip_prefix(go) {
                 out.push_str(cr);
-                i += go.len();
+                rest = tail;
                 continue 'outer;
             }
         }
-        out.push(bytes[i] as char);
-        i += 1;
+        out.push(ch);
+        rest = &rest[ch.len_utf8()..];
     }
     out
 }
@@ -663,5 +662,16 @@ mod tests {
         assert_eq!(go_layout_to_chrono("03:04 PM"), "%I:%M %p");
         assert_eq!(go_layout_to_chrono("-0700"), "%z");
         assert_eq!(go_layout_to_chrono("-07:00"), "%:z");
+    }
+
+    #[test]
+    fn go_layout_to_chrono_keeps_non_ascii_literals_intact() {
+        assert_eq!(go_layout_to_chrono("02 января 2006 г."), "%d января %Y г.");
+        assert_eq!(go_layout_to_chrono("02.01.2006 à 15:04"), "%d.%m.%Y à %H:%M");
+    }
+
+    #[test]
+    fn dateparse_with_a_non_ascii_layout_falls_back_instead_of_panicking() {
+        assert_eq!(run("pas une date", &[f("dateparse", &["02 января 2006"])]), "pas une date");
     }
 }

@@ -155,6 +155,20 @@ describe('KromaEvents messages', () => {
     ws?.onmessage?.({ data: { some: 'object' } } as unknown as MessageEvent);
     expect(onEvent).not.toHaveBeenCalled();
   });
+
+  it('ignores a well-formed JSON frame that names no event type', () => {
+    const onEvent = vi.fn();
+    new KromaEvents('http://h', { WebSocketImpl: WSImpl, token: () => 't', onEvent }).connect();
+    const ws = FakeWS.instances[0];
+
+    ws?.onmessage?.({ data: 'null' } as MessageEvent);
+    ws?.onmessage?.({ data: '42' } as MessageEvent);
+    ws?.onmessage?.({ data: '["hello"]' } as MessageEvent);
+    ws?.onmessage?.({ data: '{"version":"9"}' } as MessageEvent);
+    ws?.onmessage?.({ data: '{"type":""}' } as MessageEvent);
+
+    expect(onEvent).not.toHaveBeenCalled();
+  });
 });
 
 describe('KromaEvents lifecycle', () => {

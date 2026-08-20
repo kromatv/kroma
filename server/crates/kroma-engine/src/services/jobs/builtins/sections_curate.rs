@@ -340,7 +340,7 @@ mod tests {
         let llm =
             ScriptedLlm::saying(&reply_with(&["itm-1", "itm-2", "itm-3", "itm-4"])).with_tools();
         assert!(curate_with_tools(&ctx, &llm, &catalog(), 4096).unwrap().is_empty());
-        assert!(curate::MIN_ITEMS > 4);
+        const { assert!(curate::MIN_ITEMS > 4) };
     }
 
     #[test]

@@ -1,18 +1,7 @@
-// What a picker of nearby televisions DOES, for the two shells that draw one.
-//
-// `useNearbyTvs` answers what is out there and what a grant returns. Everything
-// between a tap and a row that says how it went is here instead of in either
-// shell, because it is the same sequence on both and it is all edges:
-//
-// a beacon the server could not place is asked for its check string before
-// anything is sent; a refusal the next code could fix belongs to the prompt and
-// leaves the row standing; every other refusal is shown ON the tapped row; and
-// the tapped row is held in the list for a few seconds either way, because both
-// endings remove it (a granted beacon is spent, a lapsed one leaves on the next
-// poll) and a row that vanishes under a thumb has told nobody anything.
-//
-// The shells keep what is genuinely theirs: pixels, and whatever else the
-// platform answers with (a phone also buzzes).
+// What a picker of nearby televisions DOES, for the two shells that draw one:
+// everything between a tap and a row that says how it went, since it is the same
+// sequence on both. The shells keep what is genuinely theirs: pixels, and
+// whatever else the platform answers with (a phone also buzzes).
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DiscoveredTv, FinalRefusal, GrantRefusal, GrantResult } from '../handoff';
@@ -154,11 +143,14 @@ export function useCheckPrompt(opts: CheckPromptOptions): CheckPrompt {
     async (value: string) => {
       setBusy(true);
       setRefused(null);
-      const result = await onGrant(device, value.toUpperCase());
-      setBusy(false);
-      if (result === 'granted' || result === 'dropped') return;
-      setRefused(result);
-      setCode('');
+      try {
+        const result = await onGrant(device, value.toUpperCase());
+        if (result === 'granted' || result === 'dropped') return;
+        setRefused(result);
+        setCode('');
+      } finally {
+        setBusy(false);
+      }
     },
     [device, onGrant],
   );

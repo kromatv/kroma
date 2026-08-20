@@ -109,11 +109,11 @@ pub(super) fn video_files(root: &Path) -> Result<Vec<PathBuf>> {
     Ok(out)
 }
 
-pub(super) fn largest(files: &[PathBuf]) -> &Path {
+pub(super) fn largest(files: &[PathBuf]) -> Option<&Path> {
     files
         .iter()
         .max_by_key(|p| std::fs::metadata(p).map(|m| m.len()).unwrap_or(0))
-        .expect("caller checked non-empty")
+        .map(PathBuf::as_path)
 }
 
 #[cfg(test)]
@@ -193,5 +193,21 @@ mod tests {
         let at = place(&src, &dest, Placement::Skip).unwrap();
         assert_eq!(std::fs::read_to_string(&dest).unwrap(), "new");
         assert_eq!(at, dest);
+    }
+
+    #[test]
+    fn the_largest_of_no_video_file_is_nothing() {
+        assert!(largest(&[]).is_none());
+    }
+
+    #[test]
+    fn the_largest_video_is_the_one_with_the_most_bytes() {
+        let scratch = tmp("largest");
+        let (sample, feature) = (scratch.path().join("sample.mkv"), scratch.path().join("feature.mkv"));
+        write(&sample, "x");
+        write(&feature, "xxxxxxxx");
+        let files = vec![sample, feature.clone()];
+
+        assert_eq!(largest(&files), Some(feature.as_path()));
     }
 }

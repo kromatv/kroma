@@ -1,12 +1,4 @@
 // @vitest-environment jsdom
-//
-// The browse bar is drawn left to right - Back, the section pill, the account -
-// and the remote must walk it that way. The bar OUTLIVES the screens under it,
-// so the Back button joins it late (home has nowhere to go back to), and this
-// navigator orders siblings by the order they REGISTER: the button drawn in the
-// top-left corner used to sit at the far RIGHT end of the row, reached only by
-// walking past the pill and the account.
-
 import { Focusable } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';
 import { act, cleanup, render, screen } from '@testing-library/react';

@@ -25,6 +25,7 @@ vi.mock('expo-secure-store', () => ({
   canUseBiometricAuthentication: vi.fn(() => true),
 }));
 
+import { UserId } from '@kroma/core';
 import * as SecureStore from 'expo-secure-store';
 import {
   canStoreBiometricPin,
@@ -53,7 +54,13 @@ const LEGACY_KEY = 'kroma.mobile.session';
 const account = (over: Partial<MobileAccount> = {}): MobileAccount => ({
   serverUrl: 'https://kroma.local',
   accessToken: 'tok',
-  user: { id: 'u1', username: 'max', email: null, avatarUrl: null, hasPin: false } as never,
+  user: {
+    id: UserId.of('u1'),
+    username: 'max',
+    email: 'max@kroma.local',
+    avatarUrl: null,
+    hasPin: false,
+  },
   ...over,
 });
 
@@ -104,6 +111,15 @@ describe('accounts', () => {
     await expect(loadAccounts()).resolves.toEqual([]);
   });
 
+  it('drops a stored entry that is no longer a usable account and keeps the rest', async () => {
+    store.set(
+      ACCOUNTS_KEY,
+      JSON.stringify([{ serverUrl: 'https://gone', user: { id: 'u9' } }, account()]),
+    );
+
+    await expect(loadAccounts()).resolves.toEqual([account()]);
+  });
+
   it('keeps the migrated account even when the legacy blob cannot be erased', async () => {
     store.set(LEGACY_KEY, JSON.stringify(account({ accessToken: 'old' })));
     undeletable.add(LEGACY_KEY);
@@ -121,6 +137,12 @@ describe('servers and the active pointer', () => {
 
   it('reads an empty list rather than throwing on corrupt json', async () => {
     await savePref('servers', '{not json');
+    await expect(loadServers()).resolves.toEqual([]);
+  });
+
+  it('drops a saved server whose entry lost its url', async () => {
+    await savePref('servers', JSON.stringify([{ lastUsedAt: 1 }]));
+
     await expect(loadServers()).resolves.toEqual([]);
   });
 

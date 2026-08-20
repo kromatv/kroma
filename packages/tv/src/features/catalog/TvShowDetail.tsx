@@ -1,4 +1,4 @@
-import { episodeTag, qualityBadgeForVideo, type ShowDetail, type UpNext } from '@kroma/core';
+import { episodeTag, qualityBadgeForVideo } from '@kroma/core';
 import { useT, useThemeAudio } from '@kroma/ui';
 import {
   Box,
@@ -14,7 +14,6 @@ import {
   Text,
   useFocusNav,
 } from '@kroma/ui/kit';
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';
@@ -28,6 +27,7 @@ import {
   ThemeButton,
   WatchedButton,
 } from '#tv/features/catalog/detail/parts';
+import { useShowDetail } from '#tv/features/catalog/detail/useShowDetail';
 
 // The backdrop fills the stage and no more: the original is several times
 // this on a modern release.
@@ -38,101 +38,18 @@ export function TvShowDetail() {
   const { show } = useParams('show');
   const client = useClient();
   const t = useT();
-  const [detail, setDetail] = useState<ShowDetail | null>(null);
-  const [season, setSeason] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const myList = useMyList();
   const watched = useWatched();
+  const { detail, error, setSeason, activeSeason, epProgress, toggleEpisodeWatched, upNext } =
+    useShowDetail(show.id);
 
-  // Per-episode resume progress (mapped by item id) for the episode thumbnails.
-  const [epProgress, setEpProgress] = useState<Record<string, number>>({});
-  // biome-ignore lint/correctness/useExhaustiveDependencies: show.id intentionally re-fetches when switching shows (the screen is reused on this route); it gates the effect even though the body reads it only indirectly.
-  useEffect(() => {
-    let cancelled = false;
-    client
-      .progress()
-      .then((entries) => {
-        if (cancelled) return;
-        const map: Record<string, number> = {};
-        for (const e of entries) {
-          const dur = e.durationMs ?? 0;
-          if (dur > 0 && e.positionMs > 0) {
-            map[e.itemId] = Math.min(100, Math.round((e.positionMs / dur) * 100));
-          }
-        }
-        setEpProgress(map);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [client, show.id]);
-
-  // Marking an episode watched also clears its resume position server-side, so
-  // drop the local progress bar with it instead of leaving a stale one under a
-  // watched badge.
-  const toggleEpisodeWatched = useCallback(
-    (id: string) => {
-      const nowWatched = !watched.has(id);
-      watched.toggle(id);
-      if (nowWatched) {
-        setEpProgress((cur) => {
-          if (cur[id] == null) return cur;
-          const { [id]: _gone, ...rest } = cur;
-          return rest;
-        });
-      }
-    },
-    [watched],
-  );
-
-  useFocusNav({ onBack: nav.back, resetKey: detail });
-
-  useEffect(() => {
-    let cancelled = false;
-    setDetail(null);
-    setSeason(null);
-    setError(null);
-    client
-      .show(show.id)
-      .then((d) => {
-        if (cancelled) return;
-        setDetail(d);
-        setSeason(d.seasons[0]?.number ?? null);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [client, show.id]);
+  useFocusNav({ onBack: nav.back });
 
   const meta = show.metadata;
   const backdrop = client.backdropFor(show, STAGE_W) ?? client.showPosterFor(show, STAGE_W);
   const theme = useThemeAudio(client.themeFor(show));
 
-  const activeSeason = useMemo(
-    () => detail?.seasons.find((entry) => entry.number === season) ?? detail?.seasons[0] ?? null,
-    [detail, season],
-  );
   const firstEpisode = activeSeason?.episodes[0] ?? null;
-
-  // "Continue the series": resume in-progress, else next unwatched (per-user,
-  // server-computed). Falls back to the first episode while loading.
-  const [upNext, setUpNext] = useState<UpNext | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    client
-      .upNext(show.id)
-      .then((r) => {
-        if (!cancelled) setUpNext(r);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [client, show.id]);
   const playTarget = upNext?.item ?? firstEpisode;
   const playLabelKey = upNext?.resume ? 'player.resumeEpisode' : 'player.playEpisode';
 

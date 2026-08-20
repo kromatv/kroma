@@ -1,6 +1,5 @@
 // Adapts the web app's providers (auth, i18n, router, session) into the neutral
-// KromaHost the module SDK defines, then resolves + starts the registry. A
-// module only ever sees this host surface, never the app internals.
+// KromaHost the module SDK defines, then resolves + starts the registry.
 
 import { hasPermission, type MessageKey, sessionToken, type TVars } from '@kroma/core';
 import {
@@ -49,11 +48,6 @@ export function useModuleHost(revision = 0): KromaHost | null {
   });
 
   const [host, setHost] = useState<KromaHost | null>(null);
-  // Only wire modules once there is a session: a module's setup() must not run on
-  // the pre-auth login screen, and `/api/modules` would 401 anyway.
-  // Re-running on a `revision` bump (from refresh(): install / uninstall / a live
-  // enable) is safe, since loadRuntimeRemotes + start() are idempotent via the
-  // registry's `has`/`setupDone`.
   const authed = auth.user != null;
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; revision re-wires modules after install/uninstall/enable
   useEffect(() => {
@@ -74,8 +68,6 @@ export function useModuleHost(revision = 0): KromaHost | null {
         },
       },
       i18n: {
-        // Core-catalog translator; the per-module catalog overlay is applied by
-        // ModuleRouteOutlet.
         t: (key, vars) => latest.current.t(key as MessageKey, vars as TVars | undefined),
         get locale() {
           return latest.current.locale;
@@ -88,10 +80,7 @@ export function useModuleHost(revision = 0): KromaHost | null {
     };
     void (async () => {
       try {
-        // Runtime-loaded (Module Federation) modules resolve first, so they set
-        // up alongside the compile-time ones.
         await loadRuntimeRemotes(moduleRegistry);
-        // Don't run a disabled module's setup() (its panel is hidden too).
         let skip: Set<string> | undefined;
         try {
           const listed = await apiGet<ModuleManifest[]>('/modules');
@@ -102,8 +91,6 @@ export function useModuleHost(revision = 0): KromaHost | null {
         const wired = await moduleRegistry.start(base, skip);
         if (alive) setHost(wired);
       } catch (e) {
-        // Don't hang the page on "Wiring modules..." forever; fall back to a
-        // no-op module API.
         console.error('[modules] host start failed', e);
         if (alive) setHost({ ...base, getModuleApi: () => undefined });
       }

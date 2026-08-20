@@ -20,6 +20,7 @@ pub fn is_lan(ip: &str, local_nets: &[String]) -> bool {
     let Ok(addr) = ip.parse::<IpAddr>() else {
         return false;
     };
+    let addr = addr.to_canonical();
     if addr.is_loopback() || is_private(&addr) {
         return true;
     }
@@ -37,8 +38,8 @@ fn is_private(addr: &IpAddr) -> bool {
 /// prefixes. Public because the trusted-proxy list is matched the same way, and
 /// two parsers for one syntax is one too many.
 pub fn cidr_contains(net: &str, addr: &IpAddr) -> bool {
-    let IpAddr::V4(ip) = addr else { return false };
-    let ip = u32::from(*ip);
+    let IpAddr::V4(ip) = addr.to_canonical() else { return false };
+    let ip = u32::from(ip);
     if let Some((base, bits)) = net.split_once('/') {
         let Ok(base_ip) = base.trim().parse::<std::net::Ipv4Addr>() else {
             return false;
@@ -87,6 +88,22 @@ mod tests {
         assert_eq!(classify_network("198.51.100.7", &nets()), "LAN");
         // Just outside both.
         assert_eq!(classify_network("203.0.114.1", &nets()), "WAN");
+    }
+
+    #[test]
+    fn a_dual_stack_bind_hands_a_lan_client_over_mapped_and_it_is_still_lan() {
+        assert_eq!(classify_network("::ffff:192.168.1.10", &nets()), "LAN");
+        assert_eq!(classify_network("::ffff:127.0.0.1", &nets()), "LAN");
+        assert_eq!(classify_network("::ffff:203.0.113.42", &nets()), "LAN");
+        assert_eq!(classify_network("::ffff:8.8.8.8", &nets()), "WAN");
+    }
+
+    #[test]
+    fn a_mapped_address_matches_an_ipv4_cidr() {
+        let mapped: IpAddr = "::ffff:10.0.0.5".parse().unwrap();
+
+        assert!(cidr_contains("10.0.0.0/8", &mapped));
+        assert!(!cidr_contains("172.16.0.0/12", &mapped));
     }
 
     #[test]

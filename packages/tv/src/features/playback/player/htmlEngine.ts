@@ -63,6 +63,8 @@ export class HtmlEngine implements TvEngine {
   private hls: HlsInstance | null = null;
   private shaka: ShakaPlayerLike | null = null;
   private destroyed = false;
+  private attachSeq = 0;
+  private resumeOnCanPlay: (() => void) | null = null;
   private readonly cleanupEvents: () => void;
 
   constructor(opts: HtmlOptions) {
@@ -139,6 +141,7 @@ export class HtmlEngine implements TvEngine {
 
   private attachMaster(): void {
     const v = this.v;
+    const seq = ++this.attachSeq;
     // The URL must carry both the anchor and the audio track: without the anchor
     // the server always starts at t=0 and the picture ignores every seek.
     const url = this.opts.client.hlsMasterUrl(
@@ -155,7 +158,7 @@ export class HtmlEngine implements TvEngine {
     // The stream really starts at the keyframe AT-OR-BEFORE the anchor; correct
     // `baseSec` from X-Hls-Start so the clock + subtitle cues don't drift a GOP.
     void resolveMasterStart(url, this.baseSec).then((realStart) => {
-      if (this.destroyed) return;
+      if (this.destroyed || seq !== this.attachSeq) return;
       this.baseSec = realStart;
       if (useNative) {
         v.src = url;
@@ -163,29 +166,29 @@ export class HtmlEngine implements TvEngine {
         return;
       }
       if (this.opts.masterShaka) {
-        this.attachShaka(url);
+        this.attachShaka(url, seq);
         return;
       }
-      this.attachHls(url);
+      this.attachHls(url, seq);
     });
   }
 
-  private attachShaka(url: string): void {
+  private attachShaka(url: string, seq: number): void {
     // Spelled inline (not shakaAvailable()) so the legacy IIFE build, which
     // defines the global and inlines dynamic imports, folds this to `if (true)`
     // and drops the unreachable import below: Shaka never reaches a bundle
     // whose engines cannot run it.
     if ((globalThis as { __KROMA_LEGACY_TIER__?: boolean }).__KROMA_LEGACY_TIER__) {
-      this.attachHls(url);
+      this.attachHls(url, seq);
       return;
     }
     void import('shaka-player/dist/shaka-player.compiled.js').then((mod) => {
-      if (this.destroyed) return;
+      if (this.destroyed || seq !== this.attachSeq) return;
       const shaka = (mod as unknown as { default: ShakaStatic }).default;
       shaka.polyfill.installAll();
       // A TV Chromium Shaka rejects still plays the same master through hls.js.
       if (!shaka.Player.isBrowserSupported()) {
-        this.attachHls(url);
+        this.attachHls(url, seq);
         return;
       }
       const player = new shaka.Player();
@@ -204,10 +207,10 @@ export class HtmlEngine implements TvEngine {
     });
   }
 
-  private attachHls(url: string): void {
+  private attachHls(url: string, seq: number): void {
     const v = this.v;
     void import('hls.js').then(({ default: Hls }) => {
-      if (this.destroyed) return;
+      if (this.destroyed || seq !== this.attachSeq) return;
       if (!Hls.isSupported()) {
         v.src = url;
         v.preload = 'auto';
@@ -220,6 +223,12 @@ export class HtmlEngine implements TvEngine {
     });
   }
 
+  private dropResumeOnCanPlay(): void {
+    if (!this.resumeOnCanPlay) return;
+    this.v.removeEventListener('canplay', this.resumeOnCanPlay);
+    this.resumeOnCanPlay = null;
+  }
+
   private reanchor(absSec: number): void {
     const wasPlaying = !this.v.paused;
     this.baseSec = absSec;
@@ -228,8 +237,17 @@ export class HtmlEngine implements TvEngine {
     void this.shaka?.destroy();
     this.shaka = null;
     this.v.removeAttribute('src');
+    this.dropResumeOnCanPlay();
     this.attachMaster();
-    if (wasPlaying) this.v.addEventListener('canplay', () => this.play(), { once: true });
+    if (!wasPlaying) return;
+    // The <video> outlives this engine, so a resume left armed would start the
+    // NEXT item by itself.
+    const resume = () => {
+      this.resumeOnCanPlay = null;
+      this.play();
+    };
+    this.resumeOnCanPlay = resume;
+    this.v.addEventListener('canplay', resume, { once: true });
   }
 
   play(): void {
@@ -285,6 +303,7 @@ export class HtmlEngine implements TvEngine {
 
   destroy(): void {
     this.destroyed = true;
+    this.dropResumeOnCanPlay();
     this.cleanupEvents();
     this.hls?.destroy();
     this.hls = null;

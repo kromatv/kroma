@@ -9,3 +9,4 @@ pub mod serve;
 pub mod startup;
 pub mod state;
 pub mod tracing;
+pub mod whisper;

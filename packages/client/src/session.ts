@@ -1,17 +1,20 @@
 // Client-side session persistence: the ACTIVE session, the accounts that have
-// signed in on this device (Netflix-style instant switch-back), and the saved
-// KROMA servers (TV is multi-server). Multi-server is opt-in per record: a
-// `StoredSession.serverUrl` scopes an account to one server, and the
-// single-origin web app never sets it, so the de-dupe/forget helpers degrade
-// to "by user id". Guarded by `typeof` so it's a no-op off-DOM (SSR / native).
+// signed in on this device, and the saved KROMA servers (TV is multi-server).
+// Multi-server is opt-in per record: a `StoredSession.serverUrl` scopes an
+// account to one server, and the single-origin web app never sets it, so the
+// de-dupe/forget helpers degrade to "by user id".
 
-import type { User } from './types';
+import { z } from 'zod';
+import { deviceStorage, readJson, writeJson } from './device-storage';
+import { User } from './schemas';
+
+export * from './device-storage';
+export * from './session-token';
 
 const KEY = 'kroma.session';
 const ACCOUNTS_KEY = 'kroma.accounts';
 const SERVERS_KEY = 'kroma.servers';
 const LEGACY_SERVER_KEY = 'kroma.serverUrl';
-const LOCALE_KEY = 'kroma.locale';
 
 export interface StoredSession {
   accessToken: string;
@@ -19,47 +22,29 @@ export interface StoredSession {
   serverUrl?: string;
 }
 
-// The short-lived bearer obtained by exchanging the access token. Kept in
-// memory only (never persisted) so a stolen localStorage dump can't be
-// replayed as a live session.
-let memorySessionToken: string | undefined;
+// Storage is a trust boundary. `id` decides the record: an entry without one is
+// junk and is dropped. Every other field falls back rather than failing, so a
+// blob written before `User` gained a field survives the upgrade instead of
+// signing its account out.
+const StoredUser = User.extend({
+  email: z.string().catch(''),
+  username: z.string().catch(''),
+  createdAt: z.string().catch(''),
+  hasPin: z.boolean().catch(false),
+  permissions: z.array(z.string()).catch([]),
+});
 
-/** The current in-memory session bearer, or undefined when not (yet) exchanged. */
-export function sessionToken(): string | undefined {
-  return memorySessionToken;
-}
+const StoredAccount = z.object({
+  accessToken: z.string().min(1),
+  user: StoredUser,
+  serverUrl: z.string().optional(),
+});
 
-/** Set (or clear, with `undefined`) the in-memory session bearer. */
-export function setSessionToken(token: string | undefined): void {
-  memorySessionToken = token;
-}
-
-// A reload starts from only the persisted access token; several parts of the
-// app then each want to exchange it (auth provider, data layer, a mid-session
-// 401), which uncoordinated would fire several concurrent POST /auth/token
-// calls. This coalesces overlapping exchanges into one in-flight request.
-
-/** The shape returned by a session-token exchange (`KromaClient.exchangeToken`). */
-export interface TokenExchange<U = unknown> {
-  token: string;
-  user: U;
-}
-
-let inflightExchange: Promise<TokenExchange> | null = null;
-
-/** Run `exchange` unless one is already in flight, in which case share it. Only
- * for the no-PIN boot/refresh exchange (a PIN-gated switch-in is a distinct user
- * action and must not coalesce with the ambient boot exchange). */
-export function sharedTokenExchange<U>(
-  exchange: () => Promise<TokenExchange<U>>,
-): Promise<TokenExchange<U>> {
-  if (inflightExchange) return inflightExchange as Promise<TokenExchange<U>>;
-  const p = exchange().finally(() => {
-    if (inflightExchange === p) inflightExchange = null;
-  });
-  inflightExchange = p as Promise<TokenExchange>;
-  return p;
-}
+const StoredServer = z.object({
+  url: z.string().min(1),
+  name: z.string().nullish(),
+  lastUsedAt: z.number().optional(),
+});
 
 /** A KROMA server the TV remembers, so it can hold profiles from several at once
  * and order the picker by most-recently-used. */
@@ -69,59 +54,22 @@ export interface SavedServer {
   lastUsedAt: number;
 }
 
-/**
- * The key/value store sessions live in. Only the three methods used here are
- * required, so a client can supply anything: the browsers pass `localStorage`
- * (the default), and the native apps pass their own device store.
- */
-export interface SessionStorage {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
+function storedAccounts(): StoredSession[] {
+  const value = readJson(ACCOUNTS_KEY);
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    const parsed = StoredAccount.safeParse(entry);
+    return parsed.success ? [parsed.data] : [];
+  });
 }
 
-let installed: SessionStorage | null = null;
-
-/** Install the device store for a platform with no `localStorage` (React
- * Native has none; without this every save here is a silent no-op). Call it
- * once, before the app reads a session. */
-export function setSessionStorage(storage: SessionStorage | null): void {
-  installed = storage;
-}
-
-/** The device store this platform is using, or null where there is none.
- * Exported so other per-device state (language, keyboard layout, recent
- * searches) can share it instead of hard-coding `localStorage`. */
-export function deviceStorage(): SessionStorage | null {
-  return storage();
-}
-
-function storage(): SessionStorage | null {
-  if (installed) return installed;
-  try {
-    return typeof localStorage !== 'undefined' ? localStorage : null;
-  } catch {
-    // Access to localStorage can throw (privacy mode / sandboxed iframe).
-    return null;
-  }
-}
-
-function readJson<T>(key: string, fallback: T): T {
-  const raw = storage()?.getItem(key);
-  if (!raw) return fallback;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJson(key: string, value: unknown): void {
-  try {
-    storage()?.setItem(key, JSON.stringify(value));
-  } catch {
-    /* quota / disabled storage non-fatal */
-  }
+function storedServers(): Array<z.infer<typeof StoredServer>> {
+  const value = readJson(SERVERS_KEY);
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    const parsed = StoredServer.safeParse(entry);
+    return parsed.success ? [parsed.data] : [];
+  });
 }
 
 /** Normalize a server origin for comparison (drop trailing slashes). Tolerates
@@ -130,15 +78,14 @@ export function normalizeServerUrl(u?: string | null): string {
   return (u ?? '').replace(/(^|[^/])\/+$/, '$1');
 }
 
-/** The server scope of a stored account, normalized, or `null` (web / legacy). */
 function scopeOf(a: Pick<StoredSession, 'serverUrl'>): string | null {
   return a.serverUrl ? normalizeServerUrl(a.serverUrl) : null;
 }
 
 /** The active session, or null when signed out. */
 export function loadSession(): StoredSession | null {
-  const s = readJson<StoredSession | null>(KEY, null);
-  return s?.accessToken && s.user ? s : null;
+  const parsed = StoredAccount.safeParse(readJson(KEY));
+  return parsed.success ? parsed.data : null;
 }
 
 /** Set the active session AND remember the account on this device. De-dupes by
@@ -159,7 +106,7 @@ export function saveSession(session: StoredSession): void {
  * stay, so switching back to one is still password-free. */
 export function clearSession(): void {
   try {
-    storage()?.removeItem(KEY);
+    deviceStorage()?.removeItem(KEY);
   } catch {
     /* ignore */
   }
@@ -168,7 +115,7 @@ export function clearSession(): void {
 /** Accounts that have signed in on this device (most-recent first). Pass a
  * `serverUrl` to get only that server's remembered profiles. */
 export function loadAccounts(serverUrl?: string): StoredSession[] {
-  const all = readJson<StoredSession[]>(ACCOUNTS_KEY, []).filter((a) => a?.accessToken && a?.user);
+  const all = storedAccounts();
   if (serverUrl == null) return all;
   const scope = normalizeServerUrl(serverUrl);
   return all.filter((a) => scopeOf(a) === scope);
@@ -192,8 +139,7 @@ export function forgetAccount(userId: string, serverUrl?: string): void {
 
 /** Saved KROMA servers, most-recently-used first. */
 export function loadServers(): SavedServer[] {
-  return readJson<SavedServer[]>(SERVERS_KEY, [])
-    .filter((s) => s?.url)
+  return storedServers()
     .map((s) => ({
       url: normalizeServerUrl(s.url),
       name: s.name ?? null,
@@ -209,9 +155,7 @@ export function saveServer(server: {
   lastUsedAt?: number;
 }): SavedServer[] {
   const url = normalizeServerUrl(server.url);
-  const existing = readJson<SavedServer[]>(SERVERS_KEY, []).find(
-    (s) => normalizeServerUrl(s.url) === url,
-  );
+  const existing = storedServers().find((s) => normalizeServerUrl(s.url) === url);
   const list = loadServers().filter((s) => s.url !== url);
   list.unshift({
     url,
@@ -247,7 +191,7 @@ export function forgetServer(url: string): void {
  * the old single `kroma.serverUrl`, stamp legacy accounts/session with it, then
  * drop the legacy key. A no-op once migrated or on a fresh (web) install. */
 export function migrateStorage(): void {
-  const s = storage();
+  const s = deviceStorage();
   if (!s) return;
   let legacy: string | null = null;
   try {
@@ -261,16 +205,16 @@ export function migrateStorage(): void {
   if (!s.getItem(SERVERS_KEY)) {
     writeJson(SERVERS_KEY, [{ url, name: null, lastUsedAt: Date.now() }]);
   }
-  const accounts = readJson<StoredSession[]>(ACCOUNTS_KEY, []);
+  const accounts = storedAccounts();
   let changed = false;
   for (const a of accounts) {
-    if (a && !a.serverUrl) {
+    if (!a.serverUrl) {
       a.serverUrl = url;
       changed = true;
     }
   }
   if (changed) writeJson(ACCOUNTS_KEY, accounts);
-  const active = readJson<StoredSession | null>(KEY, null);
+  const active = loadSession();
   if (active && !active.serverUrl) {
     active.serverUrl = url;
     writeJson(KEY, active);
@@ -279,26 +223,5 @@ export function migrateStorage(): void {
     s.removeItem(LEGACY_SERVER_KEY);
   } catch {
     /* ignore */
-  }
-}
-
-/** The device-level UI locale override (what the user last picked on THIS
- * device), or null. Used before sign-in and as a fallback when the account has
- * no preference. */
-export function loadLocalePref(): string | null {
-  try {
-    return storage()?.getItem(LOCALE_KEY) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/** Persist (or clear, with `null`) the device-level UI locale override. */
-export function saveLocalePref(locale: string | null): void {
-  try {
-    if (locale) storage()?.setItem(LOCALE_KEY, locale);
-    else storage()?.removeItem(LOCALE_KEY);
-  } catch {
-    /* quota / disabled storage non-fatal */
   }
 }

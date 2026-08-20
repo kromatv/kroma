@@ -96,7 +96,7 @@ mod tests {
         let row = get_suggestion(&p, "m1").unwrap().unwrap();
         assert_eq!(row.item_ids, vec!["a".to_string(), "b".to_string()]);
         assert_eq!(row.reasons.get("fr").map(String::as_str), Some("parce que"));
-        assert!(row.reasons.get("en").is_none(), "blank reason not stored");
+        assert!(!row.reasons.contains_key("en"), "blank reason not stored");
 
         // Regeneration replaces the reasons wholesale.
         let mut reasons2 = HashMap::new();
@@ -104,7 +104,7 @@ mod tests {
         set_suggestion(&p, "m1", &["c".into()], &reasons2).unwrap();
         let row = get_suggestion(&p, "m1").unwrap().unwrap();
         assert_eq!(row.item_ids, vec!["c".to_string()]);
-        assert!(row.reasons.get("fr").is_none(), "old fr reason superseded");
+        assert!(!row.reasons.contains_key("fr"), "old fr reason superseded");
         assert_eq!(row.reasons.get("en").map(String::as_str), Some("now english"));
 
         // Empty item_ids is a valid terminal "nothing found" marker (Some, not None).

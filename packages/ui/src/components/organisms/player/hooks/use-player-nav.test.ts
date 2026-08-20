@@ -285,6 +285,26 @@ describe('usePlayerNav auto-hide timer', () => {
     expect(result.current.revealed).toBe(true);
   });
 
+  it('keeps the chrome up while paused after a key press', () => {
+    const { result, key } = nav(WEB_FLAGS, false);
+
+    key('Right');
+    act(() => vi.advanceTimersByTime(10_000));
+
+    expect(result.current.revealed).toBe(true);
+  });
+
+  it('does not arm the auto-hide while a panel is open', () => {
+    const { result, key } = nav(WEB_FLAGS, true);
+
+    act(() => result.current.openOverlay('settings'));
+    key('Right');
+    act(() => vi.advanceTimersByTime(10_000));
+
+    expect(result.current.revealed).toBe(true);
+    expect(result.current.overlay).toBe('settings');
+  });
+
   it('TV flags drop the volume/pip/fullscreen focus stops', () => {
     const { result } = nav(TV_FLAGS, false);
     expect(result.current.controls).not.toContain('volume');

@@ -19,15 +19,9 @@ type CssDrift = ViewStyle & {
   willChange?: string;
 };
 
-// A CSS percentage inside `translate` is taken against the element's OWN box,
-// and the artwork layer is inset to exactly the measured box - so the same
-// fractions the native half multiplies out by hand are already the right
-// numbers here, and the keyframes do not depend on a measurement at all. Only
-// the duration does, and that is a plain inline style.
-// How often the pan is allowed to advance. Ten times a second moves artwork
-// crawling at a few pixels per second by well under half a pixel a step, which
-// no eye resolves at across-the-room distance - and leaves five frames in six
-// with no full-screen work at all.
+// How often the pan is allowed to advance. At a few pixels per second, ten
+// steps a second stays sub-pixel and leaves five frames in six with no
+// full-screen work at all.
 const STEP_HZ = 10;
 
 /** Steps per keyframe leg: the leg's duration at `STEP_HZ`, never fewer than
@@ -38,11 +32,8 @@ function steps(spec: Readonly<DriftSpec>): number {
 
 function frames(spec: Readonly<DriftSpec>): CssDrift {
   const { x, y, zoom } = spec;
-  // The scale is CONSTANT across the keyframes, and that is the whole point. A
-  // compositor moves an existing texture for free, but it must RE-RASTERISE a
-  // layer whose scale is changing - a full-screen still, every frame, on a
-  // television. The overscan is what keeps an edge out of frame; nothing about
-  // the effect needed that overscan to breathe.
+  // The scale is CONSTANT across the keyframes: a compositor moves an existing
+  // texture for free, but re-rasterises a layer whose scale is changing.
   const out = `translate(${x * 100}%, ${y * 100}%) scale(${zoom})`;
   const back = `translate(${-x * 100}%, ${-y * 100}%) scale(${zoom})`;
   return {
@@ -51,16 +42,9 @@ function frames(spec: Readonly<DriftSpec>): CssDrift {
     animationKeyframes: [
       { '0%': { transform: out }, '50%': { transform: back }, '100%': { transform: out } },
     ],
-    // Stepped, not continuous, and this is what buys the frame rate back.
-    //
-    // A full-screen layer in motion is re-composited under every overlay above
-    // it on each frame it moves, and that is the whole cost here: a television
-    // measured 60fps with this artwork held still and 40fps with it drifting.
-    // But the drift travels at DRIFT_PX_PER_S - single digits - so a 60Hz pan
-    // advances it by a FRACTION OF A PIXEL per frame. It was paying a
-    // full-screen recomposite sixty times a second to move nothing the eye can
-    // resolve. Quantised to `STEP_HZ`, each move is still sub-pixel to
-    // fractions of a pixel, and the compositor is idle in between.
+    // Stepped, not continuous: a full-screen layer in motion is re-composited
+    // under every overlay above it, and a 60Hz pan at single-digit px/s pays
+    // that sixty times a second to move less than a pixel (40fps against 60).
     animationTimingFunction: `steps(${steps(spec)}, end)`,
     animationIterationCount: 'infinite',
     // The compositor is asked for its own layer up front, so the first frame of
@@ -73,10 +57,6 @@ function frames(spec: Readonly<DriftSpec>): CssDrift {
 // `StyleSheet.create` is what turns `animationKeyframes` into a real @keyframes
 // rule, and its results are registry keys: spread one into a new object and the
 // animation is silently lost. Hence the array returned below, not a spread.
-//
-// Cached because a sheet per render would mint a new rule every frame the box
-// is measured. The geometry is a handful of constants in practice, so this
-// holds one entry.
 const sheets = new Map<string, ViewStyle>();
 function sheet(spec: Readonly<DriftSpec>): ViewStyle {
   const key = `${spec.x}|${spec.y}|${spec.zoom}|${steps(spec)}`;

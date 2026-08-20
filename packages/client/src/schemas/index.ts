@@ -6,6 +6,7 @@ export * from './admin';
 export * from './cast';
 export * from './crash';
 export * from './discovery';
+export * from './errors';
 export * from './handoff';
 export * from './ids';
 export * from './media';

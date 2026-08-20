@@ -9,6 +9,7 @@
 // is not spelt here at all: `lib/splash-motion` answers both with one API, and
 // its web half compiles the drift to @keyframes so the compositor owns it.
 
+import { safeImageUrl } from '@kroma/core';
 import { useEffect, useState } from 'react';
 import {
   Animated,
@@ -33,12 +34,9 @@ const FADE_MS = 2800;
 
 // The grade that keeps a centred form readable over ANY artwork, in two parts:
 // a vertical veil that seats the frame top and bottom, and a radial one that
-// sinks the middle, where the form is.
-// Two layers, not one comma-separated background: a multi-value background-image
-// is CSS-only and React Native's gradients cannot do it (same reason
-// <AmbientBackdrop> keeps its two veils apart). What keeps them cheap is that
-// each is promoted, so a full-screen gradient is rasterised once instead of
-// again on every frame the artwork drifts underneath it.
+// sinks the middle, where the form is. Two layers rather than one
+// comma-separated background, which React Native's gradients cannot express;
+// each is promoted so a full-screen gradient is rasterised once.
 const VEIL = [
   gradient(
     'linear-gradient(180deg, rgba(8, 8, 10, 0.86) 0%, rgba(8, 8, 10, 0.5) 20%, rgba(8, 8, 10, 0.3) 38%, rgba(8, 8, 10, 0.72) 62%, rgba(8, 8, 10, 0.97) 88%)',
@@ -68,12 +66,10 @@ const PAN_X = 0.06;
 const PAN_Y = 0.04;
 const ZOOM = 1.14;
 
-// That travel is a FRACTION of the box, so the drift has to be given a speed
-// rather than a duration: one fixed duration walks 82px on a phone and 246px
-// on a 1080p panel, which reads as frozen on the one and as a pan on the
-// other. The duration comes from the measured travel instead, so every screen
-// drifts at the same pixels per second; the bounds keep a hairline box from
-// strobing and a wall-sized one from stalling.
+// The travel is a FRACTION of the box, so the drift is given a speed rather
+// than a duration: one duration walks 82px on a phone and 246px on a 1080p
+// panel. The bounds keep a hairline box from strobing and a wall-sized one
+// from stalling.
 const DRIFT_PX_PER_S = 4;
 const DRIFT_MIN_MS = 8000;
 const DRIFT_MAX_MS = 60000;
@@ -117,16 +113,16 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
   // against a half-loaded image.
   useEffect(() => {
     if (covers.length < 2) return;
-    const next = covers[(slide + 1) % covers.length];
+    const next = safeImageUrl(covers[(slide + 1) % covers.length]?.url ?? null);
     if (!next) return;
     if (WEB) {
       const img = (globalThis as { document?: Document }).document?.createElement('img');
       if (img) {
-        img.src = next.url;
+        img.src = next;
         img.decode?.().catch(() => undefined);
       }
     } else {
-      RNImage.prefetch(next.url).catch(() => undefined);
+      RNImage.prefetch(next).catch(() => undefined);
     }
   }, [slide, covers]);
 

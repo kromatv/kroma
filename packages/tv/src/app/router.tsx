@@ -76,13 +76,25 @@ const NavCtx = createContext<TvNav | null>(null);
 const IS_DEV = (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true;
 const DEV_NAV_KEY = 'kroma:dev-nav';
 
-function loadDevStack(): TvRoute[] | null {
+function isTvRoute(entry: unknown, screens: TvScreens): entry is TvRoute {
+  if (typeof entry !== 'object' || entry === null) return false;
+  if (!('name' in entry) || typeof entry.name !== 'string') return false;
+  if (!Object.hasOwn(screens, entry.name)) return false;
+  return !('params' in entry) || entry.params === undefined || typeof entry.params === 'object';
+}
+
+function loadDevStack(screens: TvScreens): TvRoute[] | null {
   if (!IS_DEV) return null;
   try {
     // biome-ignore lint/style/noRestrictedGlobals: audited - dev-only (IS_DEV) and inside try/catch, so React Native simply keeps the default stack.
     const saved = sessionStorage.getItem(DEV_NAV_KEY);
-    const parsed = saved ? (JSON.parse(saved) as TvRoute[]) : null;
-    return parsed?.length ? parsed : null;
+    if (!saved) return null;
+    const parsed: unknown = JSON.parse(saved);
+    // All or nothing: a stack the running build no longer knows every screen of
+    // would render `undefined` as a component.
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    const known = (entry: unknown): entry is TvRoute => isTvRoute(entry, screens);
+    return parsed.every(known) ? parsed : null;
   } catch {
     return null;
   }
@@ -122,7 +134,7 @@ export function TvNavProvider({
   chrome,
   children,
 }: Readonly<{ screens: TvScreens; chrome?: readonly TvChrome[]; children: ReactNode }>) {
-  const [stack, setStack] = useState<TvRoute[]>(() => loadDevStack() ?? [PROFILES]);
+  const [stack, setStack] = useState<TvRoute[]>(() => loadDevStack(screens) ?? [PROFILES]);
 
   useEffect(() => {
     if (!IS_DEV) return;
@@ -206,6 +218,17 @@ export function useClient(): KromaClient {
   return c;
 }
 
+// Two routes can replace their own subject without changing name: an "up next"
+// swap, a suggestion opened from a film's page. Keyed by name alone they would
+// reconcile in place, keeping the previous engine and leaving the ring on a card
+// that has just unmounted; keyed by the subject they remount.
+function subjectKey(route: TvRoute): string {
+  if (route.name === 'player' || route.name === 'movie') {
+    return `${route.name}:${route.params.item.id}`;
+  }
+  return route.name;
+}
+
 export function TvOutlet() {
   const { route } = useNav();
   const screens = useContext(ScreensCtx);
@@ -215,9 +238,7 @@ export function TvOutlet() {
   const here = (chrome ?? []).filter((layer) => layer.routes.includes(route.name));
   const under = here.filter((layer) => layer.under);
   const inScope = here.filter((layer) => !layer.under);
-  // Keyed by item id so an "up next" swap remounts the player into clean
-  // engine/resume state even though the route itself doesn't change.
-  const key = route.name === 'player' ? `player:${route.params.item.id}` : route.name;
+  const key = subjectKey(route);
   // The focus engine on Apple TV / Android TV invents no entry point on its own;
   // without <FocusScope> a screen with no `autoFocus` control mounts with focus
   // nowhere and the remote does nothing.

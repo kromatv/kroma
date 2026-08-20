@@ -116,7 +116,6 @@ enum ClientMessage {
 async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer) {
     let mut rx = state.events.subscribe();
 
-    // Greet so the client can confirm the stream is live.
     let Ok(hello) = serde_json::to_string(&ServerEvent::Hello {
         version: env!("CARGO_PKG_VERSION"),
     }) else {
@@ -151,7 +150,7 @@ async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer) {
                         continue;
                     };
                     if socket.send(Message::Text(payload.to_string().into())).await.is_err() {
-                        break; // client gone
+                        break;
                     }
                 }
                 Err(RecvError::Lagged(_)) => continue,
@@ -183,7 +182,7 @@ async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer) {
                     state.cast.touch(id);
                 }
                 if socket.send(Message::Ping(Default::default())).await.is_err() {
-                    break; // client gone
+                    break;
                 }
             }
         }

@@ -14,6 +14,12 @@ describe('interpolate', () => {
   it('handles missing vars', () => {
     expect(interpolate('Hello {name}!')).toBe('Hello {name}!');
   });
+
+  it('leaves a token naming an inherited property alone', () => {
+    expect(interpolate('{toString} {constructor}', { name: 'World' })).toBe(
+      '{toString} {constructor}',
+    );
+  });
 });
 
 describe('translateIn', () => {

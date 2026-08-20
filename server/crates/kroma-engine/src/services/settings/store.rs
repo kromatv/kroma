@@ -270,7 +270,7 @@ mod tests {
         assert_eq!(d.get("moduleStates"), Some(&json!({})));
         assert_eq!(d.get("watchIntervalSecs"), Some(&json!(-1)));
         assert_eq!(d.get("llmTemperature"), Some(&json!(0.7)));
-        assert!(d.get("nonexistentKey").is_none());
+        assert!(!d.contains_key("nonexistentKey"));
     }
 
     #[test]

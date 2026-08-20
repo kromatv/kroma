@@ -17,7 +17,7 @@ use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_supervisor::Supervisor;
 
 use crate::model::Category;
-use crate::services::jobs::{JobContext, RemoteRun};
+use crate::services::jobs::{Cron, JobContext, RemoteRun};
 use crate::state::SharedState;
 
 /// The `/_host/register-job` route, guarded by the shared host token the same way
@@ -43,22 +43,32 @@ async fn register_job(
     Extension(supervisor): Extension<Arc<Supervisor>>,
     Json(body): Json<RegisterJobBody>,
 ) -> Response {
-    let key = leak_key(&body.key);
+    let Some(key) = leak_key(&body.key) else {
+        tracing::warn!(module = %body.module_id, key = %body.key, "refusing job key");
+        return (StatusCode::BAD_REQUEST, "unusable job key").into_response();
+    };
+    let schedule = match body.schedule {
+        Some(expr) if !Cron::is_valid(&expr) => {
+            tracing::warn!(module = %body.module_id, key, "job is manual-only: bad cron");
+            None
+        }
+        given => given,
+    };
     let category = body.category.parse::<Category>().unwrap_or_else(|()| {
         tracing::warn!(
             category = %body.category,
-            key = %body.key,
+            key,
             "unknown job category from module; defaulting to acquisition"
         );
         Category::Acquisition
     });
-    let run = remote_run(supervisor.clone(), body.module_id.clone(), body.key.clone());
-    state.jobs.register_remote(key, category, body.schedule, run);
+    let run = remote_run(supervisor.clone(), body.module_id.clone(), key.to_string());
+    state.jobs.register_remote(key, category, schedule, run);
     // register_remote seeds only the module's default schedule; overlay any
     // persisted admin override now that the key exists in the schedules map (the
     // startup load_schedules ran before this sidecar was up, so it skipped it).
     state.jobs.load_schedules(&state.db);
-    tracing::info!(module = %body.module_id, key = %body.key, "registered remote job");
+    tracing::info!(module = %body.module_id, key, "registered remote job");
     StatusCode::NO_CONTENT.into_response()
 }
 
@@ -90,16 +100,117 @@ fn remote_run(supervisor: Arc<Supervisor>, module_id: String, key: String) -> Re
     })
 }
 
-// Leaks to `&'static str` (what `register_remote` needs for its `'static` maps),
-// caching by key so a respawn reuses the same leak. Job keys are a small fixed
-// set, so the total leak is bounded.
-fn leak_key(key: &str) -> &'static str {
-    static CACHE: OnceLock<Mutex<HashMap<String, &'static str>>> = OnceLock::new();
-    let mut map = CACHE.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap();
-    if let Some(&leaked) = map.get(key) {
-        return leaked;
+type KeyPool = Mutex<HashMap<String, &'static str>>;
+
+// Leaked to reach the `&'static str` `register_remote` keeps: bounded in count
+// and length so a module respawning with generated keys cannot grow the core one
+// callback at a time, and in charset so it stays one segment of `/_job/run/{key}`.
+const MAX_KEY_LEN: usize = 64;
+const MAX_KEYS: usize = 512;
+
+fn leak_key_in(pool: &KeyPool, key: &str) -> Option<&'static str> {
+    if key.is_empty() || key.len() > MAX_KEY_LEN || !key.bytes().all(is_key_byte) {
+        return None;
+    }
+    let mut pool = pool.lock().unwrap();
+    if let Some(&leaked) = pool.get(key) {
+        return Some(leaked);
+    }
+    if pool.len() >= MAX_KEYS {
+        return None;
     }
     let leaked: &'static str = Box::leak(key.to_string().into_boxed_str());
-    map.insert(key.to_string(), leaked);
-    leaked
+    pool.insert(key.to_string(), leaked);
+    Some(leaked)
+}
+
+fn is_key_byte(b: u8) -> bool {
+    b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-')
+}
+
+fn leak_key(key: &str) -> Option<&'static str> {
+    static CACHE: OnceLock<KeyPool> = OnceLock::new();
+    leak_key_in(CACHE.get_or_init(|| Mutex::new(HashMap::new())), key)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::api::test_support::{send, test_app};
+
+    fn pool() -> KeyPool {
+        Mutex::new(HashMap::new())
+    }
+
+    #[test]
+    fn a_key_seen_twice_is_leaked_once() {
+        let pool = pool();
+
+        let first = leak_key_in(&pool, "acquisition.import");
+        let second = leak_key_in(&pool, "acquisition.import");
+
+        assert_eq!(first, Some("acquisition.import"));
+        assert_eq!(first.map(str::as_ptr), second.map(str::as_ptr));
+    }
+
+    #[test]
+    fn a_key_no_job_could_be_named_is_refused_before_anything_is_leaked() {
+        let pool = pool();
+
+        assert_eq!(leak_key_in(&pool, ""), None);
+        assert_eq!(leak_key_in(&pool, "../../../etc/passwd"), None);
+        assert_eq!(leak_key_in(&pool, "acquisition import"), None);
+        assert_eq!(leak_key_in(&pool, &"k".repeat(MAX_KEY_LEN + 1)), None);
+
+        assert!(pool.lock().unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_module_sending_endless_new_keys_stops_being_leaked_to() {
+        let pool = pool();
+
+        for n in 0..MAX_KEYS {
+            assert!(leak_key_in(&pool, &format!("flood.{n}")).is_some(), "{n}");
+        }
+
+        assert_eq!(leak_key_in(&pool, "flood.past-the-ceiling"), None);
+        assert_eq!(pool.lock().unwrap().len(), MAX_KEYS);
+    }
+
+    #[tokio::test]
+    async fn a_registration_the_core_will_not_leak_for_registers_no_job() {
+        let t = test_app();
+        let body = serde_json::json!({
+            "moduleId": "tv.kroma.flood",
+            "key": "not a job key",
+            "category": "maintenance",
+        });
+
+        let (status, _) =
+            send(&t.app, "POST", "/api/_host/register-job", Some("test-host-token"), Some(body))
+                .await;
+
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert_eq!(t.state.jobs.resolve("not a job key"), None);
+    }
+
+    #[tokio::test]
+    async fn a_schedule_no_scheduler_could_read_leaves_the_job_manual_only() {
+        let t = test_app();
+        let body = serde_json::json!({
+            "moduleId": "tv.kroma.flood",
+            "key": "flood.hourly",
+            "category": "maintenance",
+            "schedule": "whenever you like",
+        });
+
+        let (status, _) =
+            send(&t.app, "POST", "/api/_host/register-job", Some("test-host-token"), Some(body))
+                .await;
+
+        assert_eq!(status, StatusCode::NO_CONTENT);
+        let listed = t.state.jobs.list(&t.state);
+        let job = listed.iter().find(|j| j.key == "flood.hourly").expect("job registered");
+        assert_eq!(job.schedule, None);
+    }
 }

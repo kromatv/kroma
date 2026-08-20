@@ -24,6 +24,19 @@ async fn admin_users_forbids_a_non_admin() {
 }
 
 #[tokio::test]
+async fn a_module_admin_route_is_out_of_reach_without_an_admin_session() {
+    let t = test_app();
+    let (_, member) = seed_session(&t.state, "member@test.dev", "member", &[Permission::Playback]);
+
+    let (anonymous, _) = get(&t.app, "/api/admin/m/tv.kroma.torrents/clients", None).await;
+    let (non_admin, _) =
+        get(&t.app, "/api/admin/m/tv.kroma.torrents/clients", Some(&member)).await;
+
+    assert_eq!(anonymous, StatusCode::UNAUTHORIZED);
+    assert_eq!(non_admin, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
 async fn server_info_reports_identity_for_an_admin() {
     let t = test_app();
     let (status, body) = get(&t.app, "/api/admin/server", Some(&t.token)).await;

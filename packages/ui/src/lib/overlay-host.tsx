@@ -1,30 +1,14 @@
 // <OverlayHost>: where a surface that must float over a whole SCREEN renders.
 //
-// React Native has no portal, and the thing it offers instead - <Modal> - cannot
-// be used on a television. On tvOS a modal is presented as its own UIViewController
-// with its own remote handler, and that handler only receives presses once the
-// system's focus engine has moved focus into that window. This app's focus is
-// VIRTUAL (see components/atoms/focusable): nothing on a screen is natively
-// focusable, so the engine has no reason to move, the modal's window never gets a
-// press, and every dialog is a picture of a dialog - no directions, no OK, and no
-// way out, because the menu key is disabled inside a modal too (RN disables it and
-// closes natively instead, which also never fires).
+// A television cannot use React Native's <Modal>: on tvOS it is presented as its
+// own UIViewController whose remote handler only fires once the system focus
+// engine moves into that window, and this app's focus is VIRTUAL (nothing is
+// natively focusable), so the modal never receives a press. Dialogs therefore
+// render inside the app, above everything, through the mount function this host
+// publishes by context.
 //
-// So a television renders its dialogs INSIDE the app, above everything, and the
-// remote never leaves the window it was already working in.
-//
-// It is a wrapper rather than a free-floating root because that is what lets a
-// dialog find it: the host provides the mount function by context, so a <Dialog>
-// anywhere below - a settings row inside a scroll view, a chip in the top bar -
-// renders its panel up here instead of where it was written, and is neither
-// clipped by an ancestor nor laid out inside a list.
-//
-// NOT lib/portal.tsx, which reads similarly and answers a different question.
-// That one is a WINDOW portal: on the web it escapes to `document.body`, which
-// is what a surface has to do to get OUT of <TvStage>'s transform (the brand
-// intro), and on native it is the identity. This is a STAGE overlay: it stays
-// inside the stage, because a dialog is measured in the same 1920 coordinates
-// as the screen it covers.
+// NOT lib/portal.tsx, which is a WINDOW portal out of <TvStage>'s transform;
+// this stays inside the stage, in the same 1920 coordinates as the screen.
 
 import {
   createContext,

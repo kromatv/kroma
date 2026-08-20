@@ -1,57 +1,33 @@
-import {
-  formatTimecode as fmtTime,
-  type Marker,
-  type RemoteKey,
-  type ReportCategory,
-} from '@kroma/core';
-import {
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import type { LayoutChangeEvent, View, ViewStyle } from 'react-native';
-import { Animated, Dimensions, Pressable } from 'react-native';
+import type { Marker, RemoteKey, ReportCategory } from '@kroma/core';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { LayoutChangeEvent, View } from 'react-native';
+import { Dimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
-import { Spinner } from '#ui/components/atoms/spinner';
 import { styles } from '#ui/core';
-import { gradient } from '#ui/lib/css';
-import { ease } from '#ui/lib/ease';
-import { useLocale, useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard';
 import { usePlayerCredits } from './hooks/use-player-credits';
 import { usePlayerKeys } from './hooks/use-player-keys';
 import { usePlayerNav } from './hooks/use-player-nav';
 import { useSeekNudge } from './hooks/use-seek-nudge';
-import { currentChapter, normalizeChapters } from './lib/chapters';
-import { clamp01, endsAtClock, sliderToVolume, volumeToSlider } from './lib/fmt';
-import { chromeMetrics, GUTTER, panelGeometry, scaler, TRANSPORT_HEIGHT } from './lib/metrics';
+import { clamp01, sliderToVolume, volumeToSlider } from './lib/fmt';
+import { chromeMetrics, panelGeometry, scaler, TRANSPORT_HEIGHT } from './lib/metrics';
 import { type ControlId, controlOrder, type PanelHandle } from './lib/nav';
-import { stageCard } from './lib/stage-card';
-import { useStageRatio } from './lib/stage-ratio';
-import { injectStageStyles } from './lib/styles';
 import type { SubtitleAppearance } from './lib/subtitle-appearance';
-import { VIRTUAL_FOCUS } from './lib/virtual-focus';
-import { ControlCluster } from './parts/control-cluster';
 import { CreditsCard, type CreditsCardItem } from './parts/credits-card';
-import { SeekBar } from './parts/seek-bar';
 import { SettingsPanel } from './parts/settings-panel';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
 import { SkipIntroButton } from './parts/skip-intro-button';
+import { Stage } from './parts/stage';
 import { StatsPanel } from './parts/stats-panel';
-import { SubtitleRenderer } from './parts/subtitle-renderer';
-import { SurfaceRadiusProvider } from './parts/surface-radius';
 import { TopBar } from './parts/top-bar';
+import { Transport } from './parts/transport';
 import { PEEK_HEIGHT, type UpNextData, type UpNextItem, UpNextSheet } from './parts/up-next-sheet';
+import { deriveChrome, initialSettingsView } from './player-chrome-state';
+import { handleCreditsKey, playerInputHandlers } from './player-input';
 import { Actions, Media, Panel, PlayerSlotContext, sortSlots } from './player-parts';
 import type {
   Chapter,
-  PlaneRect,
   PlayerCloseDetails,
   PlayerCloseReason,
   PlayerController,
@@ -90,131 +66,8 @@ export interface PlayerRootProps {
   children?: ReactNode;
 }
 
-function initialSettingsView(overlay: string | null): 'audio' | 'subtitles' | 'menu' {
-  if (overlay === 'audio') return 'audio';
-  if (overlay === 'subtitles') return 'subtitles';
-  return 'menu';
-}
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 const SKIP_GAP = 24;
 const SKIP_REST = 56;
-const CARD_RADIUS = 72;
-const ZOOM_MS = 340;
-
-const pct = (fraction: number): `${number}%` => `${fraction * 100}%`;
-
-// The JS driver, deliberately: `borderRadius` is not a native-driver property,
-// and the corners have to round in step with the scale.
-function useStageZoom(settingsShrink: boolean, card: { scale: number; origin: number }) {
-  const [zoom] = useState(() => new Animated.Value(settingsShrink ? 1 : 0));
-  useEffect(() => {
-    const anim = Animated.timing(zoom, {
-      toValue: settingsShrink ? 1 : 0,
-      duration: ZOOM_MS,
-      easing: ease.out.native,
-      useNativeDriver: false,
-    });
-    anim.start();
-    return () => anim.stop();
-  }, [settingsShrink, zoom]);
-
-  const radius = zoom.interpolate({ inputRange: [0, 1], outputRange: [0, CARD_RADIUS] });
-  return {
-    radius,
-    // A scale alone: `stageCard` picked the origin that lands the picture on the
-    // card, so there is no translate to state in pixels the shell may have
-    // scaled away under us.
-    style: {
-      transformOrigin: `${pct(card.origin)} 50%`,
-      transform: [
-        { scale: zoom.interpolate({ inputRange: [0, 1], outputRange: [1, card.scale] }) },
-      ],
-      borderRadius: radius,
-    },
-  };
-}
-
-// A hardware plane behind the page can't be CSS-transformed, and animating its
-// display rect reconfigures the hardware scaler on every call and lags badly on
-// real TVs, so the plane snaps and only the rounded mask over it fades.
-function useNativePlaneShrink(
-  active: boolean,
-  rect: PlaneRect,
-  setPlaneRect: PlayerController['setPlaneRect'],
-): void {
-  useEffect(() => {
-    setPlaneRect?.(active ? rect : null);
-  }, [active, rect, setPlaneRect]);
-  // Restore fullscreen on teardown, or leaving with settings open strands the
-  // plane at card size behind the next screen.
-  useEffect(() => () => setPlaneRect?.(null), [setPlaneRect]);
-}
-
-function deriveChrome(
-  nav: ReturnType<typeof usePlayerNav>,
-  c: PlayerController,
-  upNext: UpNextData,
-  panelCovers: boolean,
-) {
-  const settingsOpen =
-    nav.overlay === 'settings' || nav.overlay === 'audio' || nav.overlay === 'subtitles';
-  const sheetOpen = nav.overlay === 'sheet';
-  const settingsShrink = settingsOpen && c.surface === 'video' && !panelCovers;
-  const hasUpNext = upNext.nextEpisodes.length + upNext.recommendations.length > 0;
-  const peekVisible = nav.revealed && hasUpNext && !settingsShrink && !nav.overlay;
-  const chromeShown = nav.revealed && !nav.overlay;
-  return { settingsOpen, sheetOpen, settingsShrink, peekVisible, chromeShown };
-}
-
-function handleCreditsKey(
-  key: RemoteKey,
-  focus: 'play' | 'cancel',
-  setFocus: Dispatch<SetStateAction<'play' | 'cancel'>>,
-  onPlay: () => void,
-  onCancel: () => void,
-): boolean {
-  if (key === 'Left' || key === 'Right') {
-    setFocus((f) => (f === 'play' ? 'cancel' : 'play'));
-    return true;
-  }
-  if (key === 'Enter') {
-    if (focus === 'play') onPlay();
-    else onCancel();
-    return true;
-  }
-  if (key === 'Back') {
-    onCancel();
-    return true;
-  }
-  return false;
-}
-
-function playerInputHandlers(
-  nav: ReturnType<typeof usePlayerNav>,
-  c: PlayerController,
-  flags: PlayerFlags,
-  locked: boolean,
-) {
-  return {
-    onPointerMove: (e: { nativeEvent?: { pointerType?: string } }) => {
-      // On a TV (flags.pointer false) a magic-remote cursor emits phantom
-      // pointer moves that would keep the chrome pinned open.
-      if (flags.pointer && e.nativeEvent?.pointerType !== 'touch') nav.poke();
-    },
-    onStagePress: () => {
-      if (!locked) {
-        nav.poke();
-        c.togglePlay();
-      }
-    },
-    // A long press is the cross-platform spelling of double-click-to-fullscreen.
-    onStageLongPress: () => {
-      if (flags.fullscreen) c.toggleFullscreen();
-    },
-  };
-}
 
 /**
  * The unified player chrome (§14): one component for web + TV. The platform
@@ -249,38 +102,21 @@ function Root({
   ref,
   children,
 }: Readonly<PlayerRootProps>) {
-  useEffect(injectStageStyles, []);
   const slots = useMemo(() => sortSlots(children), [children]);
   // Seeded from the window so the first frame is not measured at zero, then kept
   // honest by the root's own layout. Read once rather than through
   // `useWindowDimensions`, which would subscribe to every resize event.
   const [stageSize, setStageSize] = useState(() => {
-    const win = Dimensions.get('window');
-    return { width: win.width, height: win.height };
+    const window = Dimensions.get('window');
+    return { width: window.width, height: window.height };
   });
   const onStageLayout = useCallback((e: LayoutChangeEvent) => {
-    const width = Math.round(e.nativeEvent.layout.width);
-    const height = Math.round(e.nativeEvent.layout.height);
+    const { width, height } = e.nativeEvent.layout;
+    const next = { width: Math.round(width), height: Math.round(height) };
     setStageSize((prev) =>
-      (prev.width === width || width <= 0) && (prev.height === height || height <= 0)
-        ? prev
-        : { width: width > 0 ? width : prev.width, height: height > 0 ? height : prev.height },
+      (prev.width === next.width && prev.height === next.height) || next.width <= 0 ? prev : next,
     );
   }, []);
-  const stageWidth = stageSize.width;
-  // The stage's shape, which a television shell's window does not share: it fits
-  // a 1920x1080 canvas into the window it was given and keeps a surround.
-  const stageRatio = useStageRatio(
-    STAGE_ID,
-    stageSize.height > 0 ? stageSize.width / stageSize.height : 16 / 9,
-  );
-  const card = useMemo(
-    () => stageCard(stageWidth, stageWidth / stageRatio, c.aspect),
-    [stageWidth, stageRatio, c.aspect],
-  );
-  const t = useT();
-  const locale = useLocale();
-
   const [statsOn, setStatsOn] = useState(false);
   const panelRef = useRef<PanelHandle>(null);
   const locked = slots.panel != null;
@@ -290,13 +126,6 @@ function Root({
     () => (onSkipIntro ? { active: introActive === true, onSkip: onSkipIntro } : undefined),
     [introActive, onSkipIntro],
   );
-
-  const chapters = useMemo(
-    () => normalizeChapters(rawChapters, c.dur * 1000),
-    [rawChapters, c.dur],
-  );
-  const shown = c.seekPreview ?? c.cur;
-  const curChapter = currentChapter(chapters, shown * 1000);
 
   const credits = usePlayerCredits({
     markers,
@@ -315,7 +144,7 @@ function Root({
   // Measured BEFORE the nav machine, which is then given the row that is drawn:
   // a shed control must not keep a focus stop.
   const row = useMemo(() => controlOrder(flags, Boolean(onPlayNext)), [flags, onPlayNext]);
-  const metrics = useMemo(() => chromeMetrics(row, stageWidth), [row, stageWidth]);
+  const metrics = useMemo(() => chromeMetrics(row, stageSize.width), [row, stageSize.width]);
   const px = scaler(metrics.scale);
 
   const seekNudge = useSeekNudge(c);
@@ -350,7 +179,7 @@ function Root({
     credits: { active: credits.show, onKey: creditsKey },
   });
 
-  const panel = useMemo(() => panelGeometry(stageWidth), [stageWidth]);
+  const panel = useMemo(() => panelGeometry(stageSize.width), [stageSize.width]);
 
   const { settingsOpen, sheetOpen, settingsShrink, peekVisible, chromeShown } = deriveChrome(
     nav,
@@ -359,36 +188,7 @@ function Root({
     panel.covers,
   );
   const nativeShrink = settingsOpen && c.surface !== 'video' && !panel.covers;
-  const hasPlane = c.surface !== 'video' && Boolean(c.setPlaneRect);
-  useNativePlaneShrink(nativeShrink, card.rect, c.setPlaneRect);
   const initialView = initialSettingsView(nav.overlay);
-  // Only an in-page `video` surface transforms: some firmwares drag the hardware
-  // layer around if the native plane's <object> placeholder is CSS-transformed.
-  const stage = useStageZoom(settingsShrink, card);
-  // Clipped, so the card's corners round whatever the host mounted; a surface
-  // that must round ITSELF (a hardware plane is not clipped by a parent) still
-  // reads the same radius off SurfaceRadiusProvider.
-  const pictureBox: ViewStyle = card.picture
-    ? {
-        position: 'absolute',
-        overflow: 'hidden',
-        left: pct(card.picture.x),
-        top: pct(card.picture.y),
-        width: pct(card.picture.width),
-        height: pct(card.picture.height),
-      }
-    : s.picture;
-  // On a native shrink the stage stays put, so this wrapper carries the spinner
-  // and subtitles down itself - on the picture's box, which is what the transform
-  // maps onto the card, so they land on the shrunken picture rather than beside it.
-  const contentShrink: ViewStyle | undefined = nativeShrink
-    ? {
-        ...pictureBox,
-        transformOrigin: `${pct(card.origin)} 50%`,
-        transform: [{ scale: card.scale }],
-      }
-    : undefined;
-  const endsAt = c.dur ? endsAtClock(Math.max(0, c.dur - c.cur) * 1000, locale) : '';
   // Measured rather than assumed, and it falls back to the design height:
   // `onLayout` is a ResizeObserver under react-native-web, and the legacy TV tier
   // has none, so there the measurement never arrives at all.
@@ -422,60 +222,19 @@ function Root({
         onPointerMove={input.onPointerMove}
       >
         <Ground tone="dark" flex>
-          {/* The id is what injectStageStyles hooks to size an in-page <video>; a
-            native surface sizes itself and never sees that rule. */}
-          <AnimatedPressable
-            {...VIRTUAL_FOCUS}
-            accessibilityRole="button"
-            accessibilityLabel={c.playing ? t('player.pause') : t('player.play')}
+          <Stage
+            controller={c}
+            stageSize={stageSize}
+            settingsShrink={settingsShrink}
+            nativeShrink={nativeShrink}
+            appearance={appearance}
+            raised={nav.revealed}
+            locked={locked}
             onPress={input.onStagePress}
             onLongPress={input.onStageLongPress}
-            nativeID={STAGE_ID}
-            style={[s.stage, stage.style]}
           >
-            {/* The picture's own box, so the shrink card hugs the film's shape
-              instead of the window's. The surface rounds ITSELF on top of it: a
-              rounded parent does not clip a native video layer. */}
-            <Animated.View
-              style={[pictureBox, { borderRadius: stage.radius }, settingsShrink ? s.card : null]}
-            >
-              <SurfaceRadiusProvider radius={stage.radius}>{slots.media}</SurfaceRadiusProvider>
-            </Animated.View>
-            {/* Carries the spinner + subtitles into the card when a native plane
-              shrinks; the stage itself must not move then. */}
-            <Box style={[contentShrink ?? s.picture, s.inert]}>
-              <SubtitleRenderer
-                positionSec={c.cur}
-                playing={c.playing}
-                subtitles={c.subtitles}
-                activeIndex={c.subtitleIndex}
-                appearance={appearance}
-                raised={nav.revealed}
-              />
-              {c.waiting && !locked ? (
-                <Box fill z={4} center>
-                  <Spinner size={56} thickness={3} />
-                </Box>
-              ) : null}
-            </Box>
-          </AnimatedPressable>
-
-          {/* A hardware plane has no corner radius of its own, so this masks the
-            card. Static geometry with only the opacity animated, so the surround
-            shadow rasterizes once instead of repainting every frame. */}
-          {hasPlane ? (
-            <Box
-              absolute
-              left={`${card.rect.x * 100}%`}
-              top={`${card.rect.y * 100}%`}
-              w={`${card.rect.w * 100}%`}
-              h={`${card.rect.h * 100}%`}
-              z={3}
-              radius={24}
-              opacity={nativeShrink ? 1 : 0}
-              style={s.maskSurround}
-            />
-          ) : null}
+            {slots.media}
+          </Stage>
 
           {/* skip intro (§13) */}
           {intro ? (
@@ -537,55 +296,16 @@ function Root({
             onPlay={playUpNextItem}
           />
 
-          {/* The gradient stays anchored to the screen bottom and the controls are
-            lifted above the up-next peek with padding instead, so the peek overlays
-            its dark foot rather than the gradient ending in a hard band. */}
-          <Box
-            absolute
-            left={0}
-            right={0}
-            bottom={0}
-            z={15}
-            px={px(GUTTER)}
-            pt={px(80)}
-            // Not scaled: it is the peek's own height, from the sheet that draws it.
-            pb={bottomInset}
-            opacity={chromeShown ? 1 : 0}
-            style={[chromeShown ? s.chromeLive : s.inert, BOTTOM_SCRIM]}
-          >
-            {/* Measured so the skip-intro pill can sit clear of it; the layout is
-              kept while the chrome fades (opacity, not display). */}
-            <Box onLayout={onTransportLayout}>
-              <SeekBar
-                cur={c.cur}
-                dur={c.dur}
-                bufEnd={c.bufEnd}
-                seekPreview={c.seekPreview}
-                chapters={chapters}
-                tileAt={tileAt}
-                focused={nav.zone === 'progress'}
-                elapsed={fmtTime(shown)}
-                chapterLabel={curChapter?.title || undefined}
-                total={fmtTime(c.dur)}
-                endsAt={endsAt ? t('content.endsAtShort', { time: endsAt }) : ''}
-                scale={metrics.scale}
-                onScrub={c.scrubPreview}
-                onScrubCommit={c.scrubCommit}
-              />
-              <ControlCluster
-                focused={nav.focusedControl}
-                playing={c.playing}
-                muted={c.muted}
-                volume={c.volume}
-                pipActive={c.pipActive}
-                fullscreen={c.fullscreen}
-                metrics={metrics}
-                onActivate={nav.activate}
-                onFocus={nav.focusControl}
-                onVolume={c.setVolume}
-              />
-            </Box>
-          </Box>
+          <Transport
+            controller={c}
+            chapters={rawChapters}
+            tileAt={tileAt}
+            metrics={metrics}
+            nav={nav}
+            chromeShown={chromeShown}
+            bottomInset={bottomInset}
+            onLayout={onTransportLayout}
+          />
 
           {/* settings / audio / subtitles panel (§5) */}
           {settingsOpen ? (
@@ -616,16 +336,7 @@ function Root({
   );
 }
 
-const STAGE_ID = 'kroma-player-stage';
-
-const STAGE_SHADOW = '0 20px 50px rgba(0, 0, 0, 0.55)';
-const BOTTOM_SCRIM = gradient('linear-gradient(0deg, rgba(0,0,0,0.82), transparent)');
-
 const s = styles({
-  stage: { fill: true, z: 2, overflow: 'hidden' },
-  picture: { fill: true, overflow: 'hidden' },
-  card: { bg: '#000000', boxShadow: STAGE_SHADOW },
-  maskSurround: { boxShadow: '0 0 0 100vmax #000', pointerEvents: 'none' },
   inert: { pointerEvents: 'none' },
   chromeLive: { pointerEvents: 'box-none' },
 });

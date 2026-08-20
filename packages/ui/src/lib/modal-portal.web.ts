@@ -1,23 +1,8 @@
-// Repair for react-native-web's <Modal> under React StrictMode.
-//
-// THE BUG (react-native-web 0.21, ModalPortal): the portal's container div is
-// created and appended to `document.body` during RENDER, and removed in an
-// effect cleanup. StrictMode runs every mount as mount → cleanup → mount, so the
-// cleanup detaches the container and the second mount never rebuilds it - the
-// rebuild only happens in render, which does not run again. The modal's children
-// keep rendering happily into a node that is no longer in the document, so
-// nothing appears, nothing throws, and nothing is logged.
-//
-// It is dev-only (StrictMode does not double-invoke in production), which is
-// exactly why it went unnoticed: the workbench is the one shell with StrictMode
-// on, and every <Dialog> in it silently refused to open while the same dialog
-// worked in the apps.
-//
-// THE REPAIR: one extra render once the modal is mounted. ModalPortal rebuilds
-// its container on any render that finds the ref empty, which by then it is.
-// A modal is a rare, deliberately-mounted thing, so a second render of it costs
-// nothing measurable - and this stays correct if the upstream bug is ever fixed,
-// because a container that is still attached is left alone.
+// Repair for react-native-web 0.21's ModalPortal under React StrictMode: the
+// container div is appended to `document.body` during RENDER and removed in an
+// effect cleanup, so StrictMode's mount -> cleanup -> mount leaves the modal
+// rendering into a detached node, silently. One extra render after mount makes
+// ModalPortal rebuild the container, and is a no-op once upstream is fixed.
 
 import { useEffect, useReducer } from 'react';
 

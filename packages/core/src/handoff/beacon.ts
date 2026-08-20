@@ -5,10 +5,6 @@
 // server, which any phone can list, and on the link itself as a DNS-SD record,
 // which only a phone in the same room can hear. The second is optional and the
 // first is not, because the grant travels through the server either way.
-//
-// Kept out of React on purpose. This is a loop with several ways to go wrong
-// (the server does not answer, the beacon lapses, the grant arrives, the screen
-// goes away), and every one of them is worth a test that needs no renderer.
 
 import { type AuthResult, KromaApiError, type KromaClient } from '@kroma/client';
 import { beaconTxt, type LanDiscoveryBridge } from './sources';
@@ -160,12 +156,8 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
         ...(secret ? { prevSecret: secret } : {}),
       });
       if (stale(mine)) {
-        // Nothing holds this reply any more: the loop was stopped (the
-        // television signed in some other way, or the screen went) or a rename
-        // has already announced a newer one. The server minted a beacon nobody
-        // now holds, and leaving it would keep a row in every nearby picker for
-        // its full TTL, offering a grant the television will never collect.
-        // Take it down.
+        // Nothing holds this reply any more, and a beacon left standing keeps a
+        // row in every nearby picker for its full TTL. Take it down.
         client.handoffLeave(beacon.secret).catch(() => undefined);
         return;
       }

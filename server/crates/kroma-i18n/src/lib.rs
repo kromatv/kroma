@@ -7,10 +7,16 @@
 //! normalization/detection, and a default→raw-key fallback chain.
 
 use std::collections::HashMap;
-use std::error::Error;
-use std::fmt;
 
+mod builder;
+mod interpolate;
+mod locale;
 mod plural;
+#[cfg(test)]
+mod test_support;
+
+pub use builder::{BuildError, Builder};
+pub use interpolate::interpolate;
 pub use plural::{one_other, Category, PluralRule};
 
 /// A configured translation engine. Cheap to share behind an `Arc`/`OnceLock`;
@@ -32,102 +38,6 @@ struct Locale {
 pub struct LocaleInfo<'a> {
     pub code: &'a str,
     pub label_key: &'a str,
-}
-
-/// Why [`Builder::build`] failed.
-#[derive(Debug)]
-pub enum BuildError {
-    MissingDefault,
-    DefaultNotLoaded(String),
-    Catalog(String, serde_json::Error),
-}
-
-impl fmt::Display for BuildError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            BuildError::MissingDefault => write!(f, "no default locale set"),
-            BuildError::DefaultNotLoaded(c) => write!(f, "no catalog for default locale `{c}`"),
-            BuildError::Catalog(c, e) => write!(f, "catalog `{c}` is not a flat string map: {e}"),
-        }
-    }
-}
-
-impl Error for BuildError {}
-
-/// Builds an [`I18n`]. See [`I18n::builder`].
-pub struct Builder {
-    default: Option<String>,
-    raw: Vec<(String, String)>,
-    parsed: Vec<(String, HashMap<String, String>)>,
-    plural: PluralRule,
-    label_key: fn(&str) -> String,
-}
-
-impl Default for Builder {
-    fn default() -> Self {
-        Builder {
-            default: None,
-            raw: Vec::new(),
-            parsed: Vec::new(),
-            plural: one_other,
-            // Native display name lives at `lang.<code>` by convention.
-            label_key: |code| format!("lang.{code}"),
-        }
-    }
-}
-
-impl Builder {
-    /// The fallback locale: a key missing in the active locale resolves here,
-    /// then to the raw key. Must have a catalog. Required.
-    pub fn default_locale(mut self, code: impl Into<String>) -> Self {
-        self.default = Some(code.into());
-        self
-    }
-
-    /// Use a custom plural rule instead of the default [`one_other`].
-    pub fn plural_rule(mut self, rule: PluralRule) -> Self {
-        self.plural = rule;
-        self
-    }
-
-    /// Override how a locale's native-label key is derived from its code
-    /// (default: `|c| format!("lang.{c}")`). Used by [`I18n::normalize_locale`].
-    pub fn label_key(mut self, f: fn(&str) -> String) -> Self {
-        self.label_key = f;
-        self
-    }
-
-    /// Add a locale from a flat `{ "key": "value" }` JSON catalog. Parsed at
-    /// [`build`](Self::build).
-    pub fn catalog_json(mut self, code: impl Into<String>, json: impl Into<String>) -> Self {
-        self.raw.push((code.into(), json.into()));
-        self
-    }
-
-    /// Add a locale from an already-parsed map.
-    pub fn catalog(mut self, code: impl Into<String>, entries: HashMap<String, String>) -> Self {
-        self.parsed.push((code.into(), entries));
-        self
-    }
-
-    /// Parse/validate everything and construct the engine.
-    pub fn build(self) -> Result<I18n, BuildError> {
-        let default = self.default.ok_or(BuildError::MissingDefault)?;
-        let mut locales = Vec::with_capacity(self.raw.len() + self.parsed.len());
-        for (code, json) in self.raw {
-            let entries = serde_json::from_str(&json).map_err(|e| BuildError::Catalog(code.clone(), e))?;
-            locales.push(Locale { label_key: (self.label_key)(&code), code, entries });
-        }
-        for (code, entries) in self.parsed {
-            locales.push(Locale { label_key: (self.label_key)(&code), code, entries });
-        }
-        if !locales.iter().any(|l| l.code == default) {
-            return Err(BuildError::DefaultNotLoaded(default));
-        }
-        // Default locale leads the ordering.
-        locales.sort_by_key(|l| l.code != default);
-        Ok(I18n { default, locales, plural: self.plural })
-    }
 }
 
 impl I18n {
@@ -167,51 +77,6 @@ impl I18n {
 
     fn has_key(&self, code: &str, key: &str) -> bool {
         self.lookup(code, key).is_some() || self.lookup(&self.default, key).is_some()
-    }
-
-    // An exact match wins first (so a regional catalog like `fr-CH` wins if
-    // shipped), else the base language with region and case normalized.
-    fn resolve_code(&self, tag: &str) -> Option<&str> {
-        let trimmed = tag.trim();
-        if trimmed.is_empty() {
-            return None;
-        }
-        if let Some(l) = self.locales.iter().find(|l| l.code == trimmed) {
-            return Some(&l.code);
-        }
-        let base = base_language(trimmed);
-        self.locales.iter().find(|l| base_language(&l.code) == base).map(|l| l.code.as_str())
-    }
-
-    /// Map a BCP-47 tag (`"en-US"`, `"FR"`, `"fr_CH"`) or a native display name
-    /// (from the `label_key` catalog entry) to a supported locale, or `None`.
-    pub fn normalize_locale(&self, tag: &str) -> Option<&str> {
-        if let Some(code) = self.resolve_code(tag) {
-            return Some(code);
-        }
-        // Native display name (data-driven from each locale's own label entry).
-        let trimmed = tag.trim();
-        self.locales
-            .iter()
-            .find(|l| l.entries.get(&l.label_key).map(String::as_str) == Some(trimmed))
-            .map(|l| l.code.as_str())
-    }
-
-    /// Best locale: an explicit `preferred` wins, then the first resolvable
-    /// `Accept-Language` entry, else the default.
-    pub fn detect_locale(&self, preferred: Option<&str>, accept_language: Option<&str>) -> &str {
-        if let Some(loc) = preferred.and_then(|p| self.normalize_locale(p)) {
-            return loc;
-        }
-        if let Some(header) = accept_language {
-            for part in header.split(',') {
-                let tag = part.split(';').next().unwrap_or("").trim();
-                if let Some(loc) = self.normalize_locale(tag) {
-                    return loc;
-                }
-            }
-        }
-        &self.default
     }
 
     // The plural category uses the caller's original `tag` (so a custom rule
@@ -278,84 +143,10 @@ impl<'a> Translator<'a> {
     }
 }
 
-// The base language subtag, region stripped and lowercased: `"fr_CH"` → `"fr"`,
-// `"en-US"` → `"en"`, `"FR"` → `"fr"`.
-fn base_language(tag: &str) -> String {
-    tag.split(['-', '_']).next().unwrap_or("").to_ascii_lowercase()
-}
-
-/// Replace `{name}` tokens in `template` from `vars` (`name` is `[A-Za-z0-9_]+`,
-/// matching the TS `\{(\w+)\}`). Unknown tokens are kept verbatim; single pass,
-/// so a substituted value is never re-scanned.
-pub fn interpolate(template: &str, vars: &[(&str, &str)]) -> String {
-    if vars.is_empty() || !template.contains('{') {
-        return template.to_string();
-    }
-    let mut out = String::with_capacity(template.len());
-    let mut rest = template;
-    while let Some(open) = rest.find('{') {
-        out.push_str(&rest[..open]);
-        let after = &rest[open + 1..];
-        match after.find('}') {
-            Some(close) => {
-                let name = &after[..close];
-                let is_token =
-                    !name.is_empty() && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_');
-                match vars.iter().find(|(k, _)| *k == name) {
-                    Some((_, value)) if is_token => out.push_str(value),
-                    _ => {
-                        out.push('{');
-                        out.push_str(name);
-                        out.push('}');
-                    }
-                }
-                rest = &after[close + 1..];
-            }
-            None => {
-                out.push('{');
-                out.push_str(after);
-                return out;
-            }
-        }
-    }
-    out.push_str(rest);
-    out
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn fixture() -> I18n {
-        // A tiny app-agnostic catalog set, exercising the engine generically.
-        I18n::builder()
-            .default_locale("fr")
-            .catalog_json(
-                "fr",
-                r#"{ "lang.fr": "Français", "lang.en": "Anglais",
-                     "hi": "Salut {name}", "seasons": "{count} saisons", "seasons_one": "{count} saison" }"#,
-            )
-            .catalog_json(
-                "en",
-                r#"{ "lang.en": "English", "hi": "Hi {name}",
-                     "seasons": "{count} seasons", "seasons_one": "{count} season" }"#,
-            )
-            .build()
-            .unwrap()
-    }
-
-    #[test]
-    fn builder_validates() {
-        assert!(matches!(I18n::builder().build(), Err(BuildError::MissingDefault)));
-        assert!(matches!(
-            I18n::builder().default_locale("de").catalog_json("en", "{}").build(),
-            Err(BuildError::DefaultNotLoaded(_))
-        ));
-        assert!(matches!(
-            I18n::builder().default_locale("en").catalog_json("en", "not json").build(),
-            Err(BuildError::Catalog(..))
-        ));
-    }
+    use crate::test_support::fixture;
 
     #[test]
     fn default_leads_and_supported() {
@@ -364,43 +155,6 @@ mod tests {
         assert_eq!(i.supported().collect::<Vec<_>>(), vec!["fr", "en"]);
         assert!(i.is_locale("en") && !i.is_locale("de"));
         assert!(i.is_message_key("hi") && !i.is_message_key("nope"));
-    }
-
-    #[test]
-    fn interpolation_keeps_unknown_tokens() {
-        assert_eq!(interpolate("hi {name}", &[("name", "Max")]), "hi Max");
-        assert_eq!(interpolate("keep {unknown}", &[("name", "x")]), "keep {unknown}");
-        assert_eq!(interpolate("{a}", &[("a", "{b}"), ("b", "!")]), "{b}");
-    }
-
-    #[test]
-    fn normalize_and_detect() {
-        let i = fixture();
-        assert_eq!(i.normalize_locale("en-US"), Some("en"));
-        assert_eq!(i.normalize_locale("FR"), Some("fr"));
-        assert_eq!(i.normalize_locale("Français"), Some("fr"));
-        assert_eq!(i.normalize_locale("English"), Some("en"));
-        assert_eq!(i.normalize_locale("de"), None);
-        assert_eq!(i.detect_locale(Some("de"), Some("en-US,en;q=0.9")), "en");
-        assert_eq!(i.detect_locale(None, None), "fr");
-    }
-
-    #[test]
-    fn regional_variants_resolve_to_base() {
-        let i = fixture();
-        for tag in ["fr", "fr_FR", "fr-CH", "FR", "fr_CA"] {
-            assert_eq!(i.normalize_locale(tag), Some("fr"), "tag {tag}");
-            assert_eq!(i.t(tag, "seasons", &[("count", "2")]), "2 saisons", "tag {tag}");
-        }
-        assert_eq!(i.t("en-GB", "hi", &[("name", "Jo")]), "Hi Jo");
-        let r = I18n::builder()
-            .default_locale("en")
-            .catalog_json("en", r#"{ "color": "color" }"#)
-            .catalog_json("en-GB", r#"{ "color": "colour" }"#)
-            .build()
-            .unwrap();
-        assert_eq!(r.t("en-GB", "color", &[]), "colour"); // exact
-        assert_eq!(r.t("en-AU", "color", &[]), "color"); // base fallback
     }
 
     #[test]
@@ -457,61 +211,6 @@ mod tests {
     }
 
     #[test]
-    fn every_build_error_says_which_catalog_is_wrong() {
-        // These surface at boot, where the only diagnostic is the message, so
-        // each one has to name the locale it is talking about.
-        let Err(missing) = I18n::builder().build() else { panic!("no default is an error") };
-        let missing = missing.to_string();
-        assert!(missing.contains("default locale"), "{missing}");
-
-        let Err(not_loaded) = I18n::builder().default_locale("de").catalog_json("en", "{}").build()
-        else {
-            panic!("a default with no catalog is an error")
-        };
-        let not_loaded = not_loaded.to_string();
-        assert!(not_loaded.contains("de"), "{not_loaded}");
-
-        // A catalog that is not a flat string map names the catalog AND carries
-        // the parse error, so the broken line is findable.
-        let Err(nested) =
-            I18n::builder().default_locale("fr").catalog_json("fr", r#"{ "a": { "b": "c" } }"#).build()
-        else {
-            panic!("a nested catalog is an error")
-        };
-        let nested = nested.to_string();
-        assert!(nested.contains("fr"), "{nested}");
-        assert!(nested.contains("flat"), "{nested}");
-    }
-
-    #[test]
-    fn a_catalog_can_be_supplied_already_parsed() {
-        // The app embeds its catalogs as JSON, but a module can hand over a map
-        // it built itself - both doors must reach the same engine.
-        let mut entries = HashMap::new();
-        entries.insert("hi".to_string(), "Hallo {name}".to_string());
-        let i18n = I18n::builder()
-            .default_locale("de")
-            .catalog("de", entries)
-            .build()
-            .unwrap();
-        assert_eq!(i18n.translate("de", "hi", &[("name", "Ana")]), "Hallo Ana");
-    }
-
-    #[test]
-    fn the_label_key_derivation_is_overridable() {
-        // The app decides where its native language names live; the engine only
-        // derives the key.
-        let i18n = I18n::builder()
-            .default_locale("fr")
-            .label_key(|c| format!("locales.{c}.native"))
-            .catalog_json("fr", r#"{ "locales.fr.native": "Français" }"#)
-            .build()
-            .unwrap();
-        let info: Vec<_> = i18n.locales().collect();
-        assert_eq!(info[0].label_key, "locales.fr.native");
-    }
-
-    #[test]
     fn the_supported_list_puts_the_default_first() {
         // The picker renders in this order, and the default is what an
         // unconfigured client gets - showing it first is the point.
@@ -522,49 +221,5 @@ mod tests {
 
         let labelled: Vec<&str> = i18n.locales().map(|l| l.code).collect();
         assert_eq!(codes, labelled, "both views agree on the order");
-    }
-
-    #[test]
-    fn a_browser_header_picks_the_first_locale_we_actually_have() {
-        // Accept-Language is a ranked list of things the browser wants, most of
-        // which we will not have. Taking the first ENTRY rather than the first
-        // SUPPORTED one would drop everyone whose top choice we lack to the
-        // default.
-        let i18n = fixture();
-        assert_eq!(i18n.detect_locale(None, Some("de-DE,de;q=0.9,en;q=0.8")), "en");
-        // Quality values are stripped before matching.
-        assert_eq!(i18n.detect_locale(None, Some("en;q=0.8")), "en");
-        // Region and case are normalized away.
-        assert_eq!(i18n.detect_locale(None, Some("EN-GB")), "en");
-        // Nothing we have -> the default.
-        assert_eq!(i18n.detect_locale(None, Some("de,it,ja")), "fr");
-        assert_eq!(i18n.detect_locale(None, None), "fr");
-    }
-
-    #[test]
-    fn an_account_preference_outranks_the_browser() {
-        // The user chose this in their profile; the browser's header is a guess.
-        let i18n = fixture();
-        assert_eq!(i18n.detect_locale(Some("en"), Some("fr")), "en");
-        // ...but a preference we cannot serve falls through to the header
-        // rather than to the default.
-        assert_eq!(i18n.detect_locale(Some("de"), Some("en")), "en");
-        assert_eq!(i18n.detect_locale(Some(""), Some("en")), "en");
-    }
-
-    #[test]
-    fn an_unclosed_placeholder_is_left_alone_rather_than_eating_the_rest() {
-        // A translator typo must not truncate the sentence: whatever follows the
-        // stray `{` is still shown.
-        assert_eq!(interpolate("Salut {name", &[("name", "Ana")]), "Salut {name");
-        assert_eq!(interpolate("a {b c", &[]), "a {b c");
-    }
-
-    #[test]
-    fn an_unknown_placeholder_is_left_visible_so_it_gets_noticed() {
-        // Substituting an empty string would silently drop a word; leaving the
-        // token shows a translator exactly what is missing.
-        assert_eq!(interpolate("Salut {name}", &[]), "Salut {name}");
-        assert_eq!(interpolate("{a} et {b}", &[("a", "x")]), "x et {b}");
     }
 }

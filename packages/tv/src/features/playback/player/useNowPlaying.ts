@@ -124,7 +124,8 @@ export function useNowPlaying({
       .then((u) => {
         if (dead) u();
         else un = u;
-      });
+      })
+      .catch(() => undefined);
     return () => {
       dead = true;
       un?.();

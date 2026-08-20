@@ -217,18 +217,27 @@ pub async fn retry<S: HostStorage + Clone + Send + Sync + 'static>(
     AxPath(id): AxPath<String>,
 ) -> Result<Response, Response> {
     require_downloads(&state, &user)?;
-    let status = {
-        let conn = state.db().get().map_err(|_| json_error(StatusCode::INTERNAL_SERVER_ERROR, "db"))?;
-        match db::get_download(&conn, &id).ok().flatten() {
-            Some(row) => row.status,
-            None => return Err(json_error(StatusCode::NOT_FOUND, "download not found")),
-        }
+    let ledger = state.db().clone();
+    let lookup_id = id.clone();
+    let status = blocking(move || {
+        let conn = ledger.get()?;
+        Ok(db::get_download(&conn, &lookup_id)?.map(|row| row.status))
+    })
+    .await?;
+    let Some(status) = status else {
+        return Err(json_error(StatusCode::NOT_FOUND, "download not found"));
     };
     if status == "completed" || status == "imported" {
         // The import pass only considers `completed` rows, so an already-imported
         // row is flipped back first; the import itself is idempotent.
         if status == "imported" {
-            let _ = db::set_download_status(state.db(), &id, "completed", None);
+            let ledger = state.db().clone();
+            let flip_id = id.clone();
+            blocking(move || {
+                db::set_download_status(&ledger, &flip_id, "completed", None)?;
+                Ok(())
+            })
+            .await?;
         }
         state.trigger_job("acquisition.import", "retry-import");
         return Ok(Json(json!({ "ok": true })).into_response());

@@ -202,11 +202,37 @@ describe('activate', () => {
     expect(out).toMatchObject({ retryAfter: 30 });
   });
 
-  it('fails without a client', async () => {
+  it('defaults the cooldown when the server names one it cannot count down', async () => {
+    const client = fakeClient({
+      exchangeToken: vi.fn(async () => {
+        throw apiError(429, { retryAfter: 'in a minute' });
+      }),
+    });
+    const { result } = renderHook(() => useAuthSession(client));
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    const out = await result.current.activate(stored());
+    expect(out).toMatchObject({ retryAfter: 30 });
+  });
+
+  // A server that never answered says nothing about the token: routing to a
+  // full re-login here strands a viewer whose wifi dropped for a second.
+  it('reports a transport failure as unreachable rather than a dead token', async () => {
+    const client = fakeClient({
+      exchangeToken: vi.fn(async () => {
+        throw new TypeError('Failed to fetch');
+      }),
+    });
+    const { result } = renderHook(() => useAuthSession(client));
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    const out = await result.current.activate(stored({ user: user({ hasPin: true }) }));
+    expect(out).toEqual({ ok: false, needsPin: false, unreachable: true });
+  });
+
+  it('fails as unreachable without a client', async () => {
     const { result } = renderHook(() => useAuthSession(null));
     await waitFor(() => expect(result.current.ready).toBe(true));
     const out = await result.current.activate(stored());
-    expect(out).toEqual({ ok: false, needsPin: false });
+    expect(out).toEqual({ ok: false, needsPin: false, unreachable: true });
   });
 });
 

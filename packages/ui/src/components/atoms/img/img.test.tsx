@@ -81,6 +81,32 @@ describe('Img', () => {
     expect(main(container)).toBeNull();
   });
 
+  it('paints an https artwork url unchanged', () => {
+    const { container } = render(el({ src: 'https://cdn.example.test/a.jpg?w=320' }));
+    expect(main(container)?.getAttribute('src')).toBe('https://cdn.example.test/a.jpg?w=320');
+  });
+
+  it('paints a path on the server unchanged', () => {
+    const { container } = render(el({ src: '/api/images/abc.webp?w=320' }));
+    expect(main(container)?.getAttribute('src')).toBe('/api/images/abc.webp?w=320');
+  });
+
+  it('paints an object url and a data image unchanged', () => {
+    const { container } = render(el({ src: 'blob:https://app.test/9f2c' }));
+    expect(main(container)?.getAttribute('src')).toBe('blob:https://app.test/9f2c');
+
+    const data = render(el({ src: 'data:image/png;base64,iVBORw0KGgo=' }));
+    expect(main(data.container)?.getAttribute('src')).toBe('data:image/png;base64,iVBORw0KGgo=');
+  });
+
+  it('keeps a script scheme out of the src attribute however it is spelled', () => {
+    for (const hostile of ['JaVaScRiPt:alert(1)', 'java\nscript:alert(1)', 'vbscript:msgbox']) {
+      const { container, unmount } = render(el({ src: hostile }));
+      expect(container.querySelector('img')).toBeNull();
+      unmount();
+    }
+  });
+
   it('cross-fades on src change: holds the previous image underneath until the new one settles', () => {
     vi.useFakeTimers();
     try {

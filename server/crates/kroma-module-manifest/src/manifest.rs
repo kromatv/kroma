@@ -4,18 +4,13 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-/// A module's reported version. Kept as a plain string for now; a real build
-/// would parse and range-check it during dependency resolution.
+/// A module's reported version, unparsed: ranges are checked against it by
+/// [`crate::range_matches`], which treats anything unparseable as no constraint.
 pub type Version = String;
 
 /// One thing a module contributes to the running server, as a (`kind`, `id`)
 /// pair. `kind` is the interface ("download-client", "indexer-engine"); `id` is
 /// the concrete implementation ("rqbit", "transmission", "builtin").
-///
-/// The host dispatches on these today through hand-written `match`es (e.g. the
-/// `DownloadClientRegistry` in `kroma_torrent`). Recording them in the registry
-/// makes the set introspectable now, and is the natural home for the dispatch
-/// table itself later.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Capability {
     pub kind: String,
@@ -365,14 +360,11 @@ mod tests {
         .unwrap();
         assert_eq!(m.dependencies.len(), 2);
         assert_eq!(m.dependencies[0], Dependency { id: "tv.kroma.torrents".into(), version: Some("^0.1.0".into()) });
-        // A "*" range normalizes to "no constraint".
         assert_eq!(m.dependencies[1], Dependency::new("tv.kroma.lib"));
     }
 
     #[test]
     fn the_pre_v2_array_form_is_refused_rather_than_read() {
-        // Refused LOUDLY on purpose. Accepting it was the compatibility this
-        // build dropped; reading it silently as empty would be worse than either.
         let err = serde_json::from_str::<ModuleManifest>(
             r#"{ "schemaVersion": 2, "id": "a", "name": "A", "version": "1.0.0",
                  "dependencies": ["bare", "with@^1.2"] }"#,
@@ -389,12 +381,9 @@ mod tests {
         m.dependencies.push(Dependency::new("plain"));
         let json = serde_json::to_value(&m).unwrap();
         assert_eq!(json["dependencies"]["lib"], "^1");
-        // No declared range serializes back as the wildcard.
         assert_eq!(json["dependencies"]["plain"], "*");
-        // Empty optionalDependencies is skipped entirely (not written as {} or []).
         assert!(json.get("optionalDependencies").is_none());
 
-        // And the map round-trips back to the same in-memory shape.
         let back: ModuleManifest = serde_json::from_value(json).unwrap();
         assert_eq!(back.dependencies, m.dependencies);
     }
@@ -426,8 +415,6 @@ mod tests {
         assert_eq!(fresh.schema_version, MODULE_SCHEMA_VERSION);
         assert_eq!(serde_json::to_value(&fresh).unwrap()["schemaVersion"], MODULE_SCHEMA_VERSION);
 
-        // Absent reads as 0, which is every bundle predating the field - the
-        // supervisor's install gate turns that into a refusal with a reason.
         let old: ModuleManifest =
             serde_json::from_str(r#"{ "id": "a", "name": "A", "version": "1.0.0" }"#).unwrap();
         assert_eq!(old.schema_version, 0);

@@ -1,5 +1,6 @@
 // Live server events over WebSocket (`/api/events`), with reconnect backoff.
 
+import { z } from 'zod';
 import { sessionToken } from './session';
 import type { CastClientMessage, CastCommand, CastReceiver, CastState, StageStat } from './types';
 
@@ -46,6 +47,21 @@ export type ServerEvent =
 // socket but are NOT part of this union: core does not model module events.
 // A module declares its own frame types in its package and a listener that
 // wants them widens the socket: `new KromaEvents<ServerEvent | TheirEvent>()`.
+
+// Anything the socket carries is off-device, so a frame is dispatched only once
+// it is an object naming its type; the union member itself is the listener's to
+// narrow.
+const Frame = z.object({ type: z.string().min(1) });
+
+function decodeFrame<E extends { type: string }>(data: string): E | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(data);
+  } catch {
+    return null;
+  }
+  return Frame.safeParse(parsed).success ? (parsed as E) : null;
+}
 
 export interface KromaEventsOptions<E extends { type: string } = ServerEvent> {
   token?: () => string | undefined;
@@ -98,15 +114,11 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
 
     let ws: WebSocket;
     // A browser can't set headers on a WS handshake, so the bearer rides as a
-    // subprotocol the server validates and echoes back (see server ws.rs). Read
-    // fresh on each (re)connect so a refreshed token is picked up. A
-    // multi-server client (the TV) must supply `token`: the fallback reads the
-    // default store, which would authenticate it against the wrong server.
+    // subprotocol the server validates and echoes back (see server ws.rs), read
+    // fresh on each (re)connect. A multi-server client (the TV) must supply
+    // `token`: the fallback reads the default store, which would authenticate it
+    // against the wrong server.
     const token = this.opts.token?.() ?? sessionToken();
-    // The bearer lives in memory only, so a reload has none until the stored
-    // access token has been exchanged. The server rejects an unauthenticated
-    // upgrade, so opening one now only burns a retry: wait for the token
-    // instead, and keep the wait short since it arrives within a tick or two.
     if (!token) {
       this.waitForToken();
       return;
@@ -126,11 +138,8 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
     };
     ws.onmessage = (ev: MessageEvent) => {
       if (typeof ev.data !== 'string') return;
-      try {
-        this.opts.onEvent?.(JSON.parse(ev.data) as E);
-      } catch {
-        /* ignore malformed frames */
-      }
+      const frame = decodeFrame<E>(ev.data);
+      if (frame) this.opts.onEvent?.(frame);
     };
     ws.onclose = () => {
       this.opts.onClose?.();
@@ -146,10 +155,7 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
   }
 
   // Not a failed connection: nothing was attempted, so this leaves the
-  // reconnect backoff where it is and climbs a ladder of its own. The first
-  // re-checks stay at `tokenWaitMs` because that is how long a normal exchange
-  // takes; the ceiling is what keeps a client that will never get a token (a
-  // television booting with the server unreachable) from waking all outage.
+  // reconnect backoff where it is and climbs a ladder of its own.
   private waitForToken(): void {
     if (this.closed) return;
     const base = this.opts.tokenWaitMs ?? 150;

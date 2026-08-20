@@ -171,9 +171,7 @@ impl HostCtx for RemoteHost {
         &self.inner.data_dir
     }
 
-    // Asked of the core rather than read from the `sessions` table: this is what
-    // a module used to open a database for, and the reason eight sidecars that
-    // never had a row of their own still linked the whole of SQLite.
+    // Asked of the core rather than read from the `sessions` table.
     fn session_user(&self, token: &str) -> Option<User> {
         // POSTed, not queried: the token is the caller's live session.
         self.callback()
@@ -264,12 +262,7 @@ impl HostCtx for RemoteHost {
         spec: &kroma_module_host::NotificationSpec,
     ) -> usize {
         // The core resolves, filters, persists and pushes; this only ships the intent.
-        let Ok(body) = serde_json::to_value(serde_json::json!({
-            "audience": audience,
-            "spec": spec,
-        })) else {
-            return 0;
-        };
+        let body = serde_json::json!({ "audience": audience, "spec": spec });
         self.callback()
             .post_json(&self.host_url("notify"), &body)
             .ok()

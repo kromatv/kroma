@@ -133,6 +133,11 @@ __pycache__/
 # line, `bun run check` fails on a file nobody wrote and nobody can commit.
 .claude/settings.local.json
 
+# Scratch worktrees Claude Code creates for parallel work (`.claude/worktrees/<name>`).
+# Each is a registered git worktree, so its contents belong to that checkout, not
+# to this one.
+.claude/worktrees/
+
 # Emitted from clients/web/src/sw.ts by the Vite plugin in
 # clients/web/service-worker.ts, on both `dev` and `build`.
 clients/web/public/sw.js

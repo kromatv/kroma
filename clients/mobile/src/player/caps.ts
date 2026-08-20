@@ -73,6 +73,12 @@ const IOS_CONTAINERS = new Set(['mp4', 'mov', 'm4v', 'isom']);
 // Containers ExoPlayer demuxes from a plain ranged URL.
 const ANDROID_CONTAINERS = new Set(['mp4', 'mov', 'm4v', 'isom', 'mkv', 'webm', 'ts', 'm2ts']);
 
+// Strict, unlike `canDecodeAudioCodec`: a codec the runtime does not name is
+// not decodable, because an offline file has no master to fall back to.
+function decodableAudioCodecs(caps: PlaybackCapabilities): Set<string> {
+  return new Set(Object.entries(caps.audio).flatMap(([codec, ok]) => (ok ? [codec] : [])));
+}
+
 export interface SourceDecision {
   direct: boolean;
   aacMaster: boolean;
@@ -82,8 +88,9 @@ export interface SourceDecision {
  * ffmpeg can stream-copy into fMP4. The rest transcode to stereo AAC
  * server-side, since offline playback has no fallback for an unplayable track. */
 export function downloadCopyCodecs(): string[] {
-  const audio = mobileCaps().audio as unknown as Record<string, boolean | undefined>;
-  return [...FMP4_COPY_CODECS].filter((codec) => audio[codec] === true);
+  const caps = mobileCaps();
+  const decodable = decodableAudioCodecs(caps);
+  return [...FMP4_COPY_CODECS].filter((codec) => decodable.has(codec));
 }
 
 /** The `?video=` set for `/download`: video codecs this runtime decodes in
@@ -108,8 +115,7 @@ export function canRawDownload(item: MediaItem): boolean {
   const tracks = audioTracksOf(item);
   if (tracks.length === 0) return false;
   if (Platform.OS === 'ios' && tracks.length > 1) return false;
-  const audio = caps.audio as unknown as Record<string, boolean | undefined>;
-  return tracks.every((t) => !!t.codec && audio[t.codec] === true);
+  return tracks.every((t) => !!t.codec && decodableAudioCodecs(caps).has(t.codec));
 }
 
 export function decideSource(item: MediaItem): SourceDecision {

@@ -225,8 +225,6 @@ function oneGroup(maxLength: number): ReactNode {
   );
 }
 
-// Invisible, not `display: none`: it has to stay in the tree to receive the
-// paste, the autofill and the keystrokes.
 const s = styles({
   entry: {
     absolute: true,

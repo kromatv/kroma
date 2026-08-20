@@ -1,8 +1,4 @@
 // @vitest-environment jsdom
-//
-// The route guard behind every authenticated layout: it must wait for the
-// session to hydrate, then redirect, then recognise it has already arrived at
-// /login and stand down. Each wrong at the wrong moment is a bug.
 
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -36,8 +32,6 @@ describe('while the session is still hydrating', () => {
   it('does not redirect', () => {
     auth.ready = false;
     guard();
-    // There is no user yet AND no proof there is no user. Redirecting here signs
-    // out every visitor on every hard refresh.
     expect(navigate).not.toHaveBeenCalled();
   });
 
@@ -77,8 +71,6 @@ describe('once the session has resolved', () => {
   it('remembers where they were going, query string and all', () => {
     auth.ready = true;
     guard('/browse/films?sort=added&genre=Drama');
-    // After signing in they land on the page they asked for, not on the home
-    // screen - which is the difference between a shared link working and not.
     expect(navigate).toHaveBeenCalledWith(
       expect.objectContaining({ search: { redirect: '/browse/films?sort=added&genre=Drama' } }),
     );
@@ -87,15 +79,12 @@ describe('once the session has resolved', () => {
   it('REPLACES rather than pushes', () => {
     auth.ready = true;
     guard();
-    // Otherwise Back from the login page returns to a guarded route that
-    // immediately bounces forward again, and the button appears broken.
     expect(navigate).toHaveBeenCalledWith(expect.objectContaining({ replace: true }));
   });
 
   it('reports authed:false while the redirect settles', () => {
     auth.ready = true;
     const { result } = guard();
-    // The layout keeps showing its loader rather than flashing protected chrome.
     expect(result.current).toEqual({ ready: true, authed: false });
   });
 });
@@ -104,8 +93,6 @@ describe('once it has arrived at the login page', () => {
   it('stands down instead of nesting the url into itself', () => {
     auth.ready = true;
     guard('/login?redirect=/library');
-    // THE BUG: navigating again folds the login url into its own `redirect`,
-    // once per render - /login?redirect=/login?redirect=/login?...
     expect(navigate).not.toHaveBeenCalled();
   });
 
@@ -120,7 +107,6 @@ describe('once it has arrived at the login page', () => {
     const { rerender } = guard('/library');
     expect(navigate).toHaveBeenCalledOnce();
 
-    // The navigation settles: the layout re-renders with the new location.
     router.href = '/login?redirect=/library';
     rerender();
     expect(navigate).toHaveBeenCalledOnce();
@@ -128,7 +114,6 @@ describe('once it has arrived at the login page', () => {
 
   it('still guards a route that merely BEGINS like a word for login', () => {
     auth.ready = true;
-    // A prefix test is what stands down, so a real route has to be checked.
     guard('/library/logins');
     expect(navigate).toHaveBeenCalledWith(
       expect.objectContaining({ search: { redirect: '/library/logins' } }),

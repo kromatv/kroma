@@ -21,9 +21,6 @@ import { useExactTime, useRelativeTime } from '#web/features/notifications/notif
 import { useReadState } from '#web/features/notifications/use-notifications';
 import { NotificationCard } from '#web/shared/ui/notification-card';
 
-/** One notification, or the run of repeats folded into it. */
-// What a folded run says beyond its head: how many times, and over what span.
-//
 // Items arrive newest-first, so the run started at the last of them. A burst
 // that fits inside one unit of the format reads "from 7 min ago to 7 min ago",
 // which says less than the count already does, so it says nothing.
@@ -115,9 +112,6 @@ export function NotificationEntry({
   );
 }
 
-// A sibling of the row rather than a part of it: the row is one control with
-// one press, and this is a second verb on the same notification, so it takes
-// its own focus stop beside it and never inside it.
 function ReadToggle({
   unread,
   title,
@@ -145,12 +139,10 @@ function ReadToggle({
   );
 }
 
-// The card draws its own gutter, so the row's leading inset is the gutter's.
 const ROW_PAD = { paddingLeft: 8 } as const;
 
 const TABULAR = { fontVariantNumeric: 'tabular-nums' } as const;
 
-// Indented under the folded row's tile, so the times read as belonging to it.
 const OCCURRENCE_PAD = { paddingLeft: 30, paddingTop: 4, paddingBottom: 4 } as const;
 
 function Occurrences({

@@ -1,10 +1,7 @@
 // The phone's half of the nearby handoff, as a hook: the TVs it can find by any
-// means, and the one call that signs one of them in.
-//
-// Web and mobile render this very differently and decide identically, so the
-// deciding lives here and each shell brings only its own rows. What differs
-// between them is what they can look WITH: a browser has the server and nothing
-// else, a phone with the native module also has its own link.
+// means, and the one call that signs one of them in. Web and mobile render this
+// very differently and decide identically, so the deciding lives here and each
+// shell brings only the rows its platform can find.
 
 import type { KromaClient } from '@kroma/client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

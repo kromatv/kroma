@@ -7,10 +7,13 @@ import { LoginGate } from '#web/features/accounts/auth-gate';
 import { useAuth } from '#web/shared/lib/auth';
 
 // Only a single-leading-slash internal path, which guards against open
-// redirects to another origin. /login itself is dropped: arriving there clears
-// the fresh session, looping the sign-in forever.
+// redirects to another origin. A backslash counts as a slash to the URL parser
+// (`/\evil.com` resolves to `https://evil.com/`), so the second character is
+// rejected either way. /login itself is dropped: arriving there clears the
+// fresh session, looping the sign-in forever.
 function safeRedirect(v: unknown): string | undefined {
-  if (typeof v !== 'string' || !v.startsWith('/') || v.startsWith('//')) return undefined;
+  if (typeof v !== 'string' || !v.startsWith('/')) return undefined;
+  if (v[1] === '/' || v[1] === '\\') return undefined;
   return v.startsWith('/login') ? undefined : v;
 }
 

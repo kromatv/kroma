@@ -80,9 +80,6 @@ mod tests {
 
     #[tokio::test]
     async fn everything_else_is_rejected() {
-        // This guard is the ONLY thing standing between a local process and the
-        // host callback API, which can register jobs and publish events. Each of
-        // these is a way a request could look almost right.
         assert_eq!(call(None).await, StatusCode::UNAUTHORIZED, "no header at all");
         assert_eq!(call(Some("")).await, StatusCode::UNAUTHORIZED, "empty header");
         assert_eq!(call(Some(TOKEN)).await, StatusCode::UNAUTHORIZED, "no Bearer scheme");
@@ -101,8 +98,6 @@ mod tests {
 
     #[tokio::test]
     async fn a_token_that_merely_starts_right_is_rejected() {
-        // The comparison is over the WHOLE token, so a shared prefix - or a
-        // token with something appended - is not close enough.
         assert_eq!(call(Some("Bearer s3cret")).await, StatusCode::UNAUTHORIZED);
         assert_eq!(
             call(Some(&format!("Bearer {TOKEN}-extra"))).await,
@@ -116,9 +111,6 @@ mod tests {
 
     #[test]
     fn the_comparison_is_length_checked_then_constant_time() {
-        // Length first (there is nothing to leak about a wrong length), then a
-        // branch-free compare over every byte so a shared PREFIX cannot be
-        // discovered by timing one hop at a time.
         assert!(ct_eq(b"", b""));
         assert!(ct_eq(b"abc", b"abc"));
         assert!(!ct_eq(b"abc", b"abd"), "last byte differs");

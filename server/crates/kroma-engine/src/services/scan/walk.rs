@@ -2,8 +2,9 @@
 //! folder that `stat`s each video file and groups it (via [`crate::domain::naming`])
 //! into the shared logical-item / show maps.
 
-use std::collections::HashMap;
-use std::path::Path;
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 use jwalk::{Parallelism, WalkDirGeneric};
 use tracing::debug;
@@ -47,11 +48,14 @@ pub(super) fn scan_root(
     // files *in that pool*, so the readdir/stat network round-trips over SMB run
     // concurrently instead of serially (minutes → seconds). Synology `@eaDir`
     // and hidden dirs are pruned from the descent.
+    let descended = Arc::new(Mutex::new(HashSet::from([abs_root.clone()])));
     let walk = WalkDirGeneric::<((), FileMeta)>::new(root)
         .follow_links(true)
         .skip_hidden(false)
         .parallelism(Parallelism::RayonNewPool(walk_threads()))
-        .process_read_dir(|_depth, _path, _state, children| prepare_children(children));
+        .process_read_dir(move |_depth, _path, _state, children| {
+            prepare_children(&descended, children);
+        });
 
     for entry in walk.into_iter().filter_map(Result::ok) {
         if !entry.file_type().is_file() {
@@ -70,7 +74,6 @@ pub(super) fn scan_root(
         // path no extra stat / symlink resolution per file.
         let abs = abs_root.join(&rel);
 
-        // size + mtime were fetched during the parallel walk (above).
         let (size, mtime) = match entry.client_state {
             Some((s, m)) => (Some(s), Some(m)),
             None => (None, None),
@@ -99,9 +102,6 @@ pub(super) fn scan_root(
             probed: false,
             abs_path: Some(abs.to_string_lossy().to_string()),
         };
-        // Carry mtime alongside the file for the DB sync (not part of the JSON
-        // contract). We stash it in a parallel map keyed by file id below.
-
         index_parsed(
             naming::parse(root, &path),
             lib_id,
@@ -120,9 +120,13 @@ pub(super) fn scan_root(
     }
 }
 
-// jwalk `process_read_dir` body: prune Synology/hidden dirs from the descent and
-// stat each file *in the walk's thread pool* (so the SMB round-trips overlap).
-fn prepare_children(children: &mut Vec<jwalk::Result<jwalk::DirEntry<((), FileMeta)>>>) {
+// jwalk `process_read_dir` body: prune Synology/hidden dirs and already-visited
+// symlink targets from the descent, and stat each file *in the walk's thread
+// pool* (so the SMB round-trips overlap).
+fn prepare_children(
+    descended: &Mutex<HashSet<PathBuf>>,
+    children: &mut Vec<jwalk::Result<jwalk::DirEntry<((), FileMeta)>>>,
+) {
     children.retain(|res| match res {
         Ok(e) => !(e.file_type().is_dir() && is_pruned_dir(&e.file_name)),
         Err(_) => true,
@@ -130,7 +134,23 @@ fn prepare_children(children: &mut Vec<jwalk::Result<jwalk::DirEntry<((), FileMe
     for e in children.iter_mut().flatten() {
         if e.file_type().is_file() {
             e.client_state = file_meta(&e.path());
+        } else if e.file_type().is_dir() && e.path_is_symlink() && !first_descent(descended, &e.path()) {
+            e.read_children_path = None;
         }
+    }
+}
+
+// jwalk's own guard compares a symlink's raw target against the ancestor paths,
+// so `link -> /abs/ancestor` is caught and `link -> .` is not: the kernel's
+// 32-symlink ceiling then bounds the depth, which two such links in one
+// directory turn into 2^32 paths.
+fn first_descent(descended: &Mutex<HashSet<PathBuf>>, dir: &Path) -> bool {
+    let Ok(resolved) = dir.canonicalize() else {
+        return false;
+    };
+    match descended.lock() {
+        Ok(mut seen) => seen.insert(resolved),
+        Err(poisoned) => poisoned.into_inner().insert(resolved),
     }
 }
 
@@ -401,6 +421,34 @@ mod tests {
             items.values().filter(|i| i.kind == Kind::Episode).collect();
         assert_eq!(episodes.len(), 2);
         assert!(episodes.iter().all(|e| e.show_id.as_deref() == Some(show.id.as_str())));
+    }
+
+    #[test]
+    fn a_directory_symlinked_to_itself_is_walked_once() {
+        let root_dir = temp_scan_dir();
+        let root = root_dir.path();
+        std::fs::write(root.join("The Matrix (1999).mkv"), b"x").unwrap();
+        std::os::unix::fs::symlink(".", root.join("loop")).unwrap();
+
+        let mut items: HashMap<String, MediaItem> = HashMap::new();
+        let mut shows: HashMap<String, Show> = HashMap::new();
+        let mut mtimes: HashMap<String, Option<i64>> = HashMap::new();
+        let mut lib_item_ids = std::collections::HashSet::new();
+        let mut movie_seen = false;
+        let mut episode_seen = false;
+        scan_root(
+            "lib1",
+            root,
+            &mut items,
+            &mut shows,
+            &mut mtimes,
+            &mut lib_item_ids,
+            &mut movie_seen,
+            &mut episode_seen,
+        );
+
+        assert_eq!(items.len(), 1);
+        assert_eq!(items.values().next().unwrap().files.len(), 1, "the loop yielded the file again");
     }
 
     #[test]

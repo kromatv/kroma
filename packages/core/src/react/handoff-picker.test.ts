@@ -1,11 +1,4 @@
 // @vitest-environment jsdom
-//
-// Everything a picker of nearby televisions does between a tap and a row that
-// says how it went. It lives here rather than in either shell because it is the
-// same sequence on both, and it is all edges: a beacon the server could not
-// place must be asked for its code BEFORE anything is sent, a refusal the next
-// code could fix must leave the row standing, and a row that has just been
-// tapped must not vanish out from under the thumb that tapped it.
 
 import type { Translate } from '@kroma/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
@@ -164,6 +157,19 @@ describe('the code, typed', () => {
     const { result } = prompt(r);
     await act(async () => result.current.submit('K7QMR'));
     expect(result.current.refused).toBeNull();
+  });
+
+  it('takes another code after a grant that threw instead of answering', async () => {
+    const onGrant = vi.fn(async () => {
+      throw new Error('offline');
+    });
+    const { result } = renderHook(() => useCheckPrompt({ device: UNPLACEABLE, onGrant }));
+
+    await act(async () => {
+      await result.current.submit('K7QMR').catch(() => undefined);
+    });
+
+    expect(result.current.busy).toBe(false);
   });
 });
 

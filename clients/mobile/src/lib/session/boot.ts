@@ -3,6 +3,7 @@
 
 import { KromaApiError, type KromaClient, normalizeServerUrl } from '@kroma/core';
 import { useEffect } from 'react';
+import { z } from 'zod';
 import { passBootBiometricGate } from '#mobile/lib/biometricGate';
 import { loadAccounts, loadActive, loadServers, type MobileAccount } from '#mobile/lib/storage';
 import { type AccountStore, type ServerStore, sameAccount } from './stores';
@@ -19,15 +20,12 @@ interface BootDeps {
 // True once the component unmounted; every `await` must re-check it.
 type Cancelled = () => boolean;
 
+const PinGate = z.object({ pinRequired: z.literal(true) });
+
 // A PIN-locked profile answers 401 with `{ pinRequired: true }`, which must
 // NOT be treated as a dead credential.
 function isPinGated(err: unknown): boolean {
-  return (
-    err instanceof KromaApiError &&
-    typeof err.body === 'object' &&
-    err.body !== null &&
-    (err.body as { pinRequired?: boolean }).pinRequired === true
-  );
+  return err instanceof KromaApiError && PinGate.safeParse(err.body).success;
 }
 
 // __DEV__-gated so release builds never bake in the .env.local rig.

@@ -1,15 +1,4 @@
 // @vitest-environment jsdom
-//
-// The up-next data for the TV player. Three decisions are pinned, each of which
-// is silent when it goes wrong:
-//
-// an EPISODE is recommended against its SHOW, because episodes carry no
-// embedding of their own and `similar(episodeId)` comes back empty, which reads
-// as "nothing to watch next" rather than as a bug; the runtime belongs to the
-// subtitle line and nowhere else, because the card used to print it twice; and
-// the artwork is asked for at the width the card draws, which is the whole point
-// of `UP_NEXT_ART_W` existing.
-
 import type { KromaClient, MediaItem } from '@kroma/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';

@@ -1,7 +1,4 @@
-// This TV's identity on the network. Minting a new one on each launch would
-// make the TV appear twice in the phone's pickers; trusting a stored value
-// blindly would let a hand-edited or stale value wedge casting and handoff
-// permanently. Must match the server's shape rule: 8-64 of `[A-Za-z0-9._-]`.
+// A device id must match the server's shape rule: 8-64 of `[A-Za-z0-9._-]`.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

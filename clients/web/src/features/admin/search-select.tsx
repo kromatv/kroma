@@ -164,7 +164,6 @@ function SearchPanel({
     background: theme.colors.surface1,
     boxShadow: theme.shadow.pop,
   };
-  // The role carries the face and the size; only the reset around it is stated.
   const entry: CSSProperties = {
     font: 'var(--type-meta)',
     width: '100%',
@@ -176,7 +175,6 @@ function SearchPanel({
     outline: 'none',
   };
 
-  // Keep the current value selectable even if it's not in the loaded list.
   const all = useMemo(
     () => (value && !options.includes(value) ? [value, ...options] : options),
     [value, options],
@@ -190,7 +188,6 @@ function SearchPanel({
     input.current?.focus();
   }, []);
 
-  // Typing refilters; the highlight goes back to the top of the new list.
   // biome-ignore lint/correctness/useExhaustiveDependencies: q is an intentional re-run key, not something the effect reads
   useEffect(() => setActive(0), [q]);
 
@@ -221,7 +218,6 @@ function SearchPanel({
 
   return (
     <Portal>
-      {/* The world behind the panel: one press anywhere out there closes it. */}
       <button
         type="button"
         aria-label={t('common.close')}
@@ -238,7 +234,6 @@ function SearchPanel({
           width: at.width,
         }}
       >
-        {/* The popup itself is the box, so this row takes no field ring (see styles.css). */}
         <Row gap={8} px={12} py={10} dataSet={FOCUS_RING_OFF}>
           <Icon name="search" size={14} color="textDim" />
           <input

@@ -1,30 +1,57 @@
 // Device persistence: remembered accounts (in SecureStore, they hold device
 // credentials), saved servers and small prefs.
 
-import type { User } from '@kroma/core';
+import { User } from '@kroma/core';
 import * as SecureStore from 'expo-secure-store';
+import { z } from 'zod';
 
 const ACCOUNTS_KEY = 'kroma.mobile.accounts';
 const LEGACY_SESSION_KEY = 'kroma.mobile.session';
 const PREF_PREFIX = 'kroma.mobile.pref.';
 
-export type SlimUser = Pick<User, 'id' | 'username' | 'email' | 'avatarUrl' | 'hasPin'>;
+// `id` decides the account; the rest fall back rather than failing, so a blob
+// written before `User` gained a field is not signed out on upgrade.
+const SlimUser = User.pick({
+  id: true,
+  username: true,
+  email: true,
+  avatarUrl: true,
+  hasPin: true,
+}).extend({
+  username: z.string().catch(''),
+  email: z.string().catch(''),
+  hasPin: z.boolean().catch(false),
+});
+export type SlimUser = z.infer<typeof SlimUser>;
 
-export interface MobileAccount {
-  serverUrl: string;
-  accessToken: string;
-  user: SlimUser;
-}
+const MobileAccount = z.object({
+  serverUrl: z.string().min(1),
+  accessToken: z.string().min(1),
+  user: SlimUser,
+});
+export type MobileAccount = z.infer<typeof MobileAccount>;
 
-export interface ServerEntry {
-  url: string;
-  name?: string;
-  lastUsedAt: number;
-}
+const ServerEntry = z.object({
+  url: z.string().min(1),
+  name: z.string().optional(),
+  lastUsedAt: z.number(),
+});
+export type ServerEntry = z.infer<typeof ServerEntry>;
 
-export interface ActivePointer {
-  serverUrl: string;
-  userId: string;
+const ActivePointer = z.object({
+  serverUrl: z.string().min(1),
+  userId: z.string().min(1),
+});
+export type ActivePointer = z.infer<typeof ActivePointer>;
+
+function stored<S extends z.ZodType>(schema: S, raw: string | null): z.infer<S> | null {
+  if (!raw) return null;
+  try {
+    const parsed = schema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
 }
 
 function slim(user: SlimUser): SlimUser {
@@ -37,19 +64,25 @@ function slim(user: SlimUser): SlimUser {
   };
 }
 
+function usableAccounts(raw: string | null): MobileAccount[] | null {
+  const entries = stored(z.array(z.unknown()), raw);
+  if (!entries) return null;
+  return entries.flatMap((entry) => {
+    const account = MobileAccount.safeParse(entry);
+    return account.success ? [account.data] : [];
+  });
+}
+
 export async function loadAccounts(): Promise<MobileAccount[]> {
   try {
-    const raw = await SecureStore.getItemAsync(ACCOUNTS_KEY);
-    if (raw) return JSON.parse(raw) as MobileAccount[];
+    const accounts = usableAccounts(await SecureStore.getItemAsync(ACCOUNTS_KEY));
+    if (accounts) return accounts;
     // One-time migration from the single-session era.
-    const legacy = await SecureStore.getItemAsync(LEGACY_SESSION_KEY);
+    const legacy = stored(MobileAccount, await SecureStore.getItemAsync(LEGACY_SESSION_KEY));
     if (legacy) {
-      const parsed = JSON.parse(legacy) as MobileAccount;
-      if (parsed.serverUrl && parsed.accessToken) {
-        await saveAccounts([parsed]);
-        await SecureStore.deleteItemAsync(LEGACY_SESSION_KEY).catch(() => undefined);
-        return [parsed];
-      }
+      await saveAccounts([legacy]);
+      await SecureStore.deleteItemAsync(LEGACY_SESSION_KEY).catch(() => undefined);
+      return [legacy];
     }
     return [];
   } catch {
@@ -63,12 +96,7 @@ export async function saveAccounts(accounts: MobileAccount[]): Promise<void> {
 }
 
 export async function loadServers(): Promise<ServerEntry[]> {
-  try {
-    const raw = await loadPref('servers');
-    return raw ? (JSON.parse(raw) as ServerEntry[]) : [];
-  } catch {
-    return [];
-  }
+  return stored(z.array(ServerEntry), await loadPref('servers')) ?? [];
 }
 
 export async function saveServers(servers: ServerEntry[]): Promise<void> {
@@ -76,12 +104,7 @@ export async function saveServers(servers: ServerEntry[]): Promise<void> {
 }
 
 export async function loadActive(): Promise<ActivePointer | null> {
-  try {
-    const raw = await loadPref('active');
-    return raw ? (JSON.parse(raw) as ActivePointer) : null;
-  } catch {
-    return null;
-  }
+  return stored(ActivePointer, await loadPref('active'));
 }
 
 export async function saveActive(active: ActivePointer | null): Promise<void> {

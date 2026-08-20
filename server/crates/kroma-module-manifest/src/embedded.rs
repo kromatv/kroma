@@ -58,10 +58,9 @@ impl Module for EmbeddedModule {
         serde_json::from_str(self.manifest_json).expect("valid embedded module.json")
     }
 
-    // No `register` override: the default no-op keeps the manifest's declared
-    // `provides` verbatim (with their `label` / `fields` / `flow` UI metadata).
-    // Re-providing them here would flatten each back to a bare `(kind, id)`, since
-    // `ModuleRegistration::provide` only records those two (see `Registry::register`).
+    // Deliberately no `register` override: `ModuleRegistration::provide` records
+    // only `(kind, id)`, so re-providing would drop the `label` / `fields` /
+    // `flow` the manifest declared.
 
     fn icon(&self) -> Option<ModuleIcon> {
         self.icon.map(|i| ModuleIcon { content_type: i.content_type, bytes: i.bytes })
@@ -73,9 +72,6 @@ mod tests {
     use super::*;
     use crate::Registry;
 
-    // Regression guard: the old `register()` override flattened every
-    // capability back to a bare `(kind, id)`, losing the UI metadata that
-    // `/api/modules` needs to drive the admin's add-pickers.
     #[test]
     fn embedded_provides_keep_ui_metadata() {
         const MANIFEST: &str = r#"{

@@ -77,11 +77,6 @@ pub trait TorznabPort: Send + Sync {
     ) -> anyhow::Result<Vec<Release>>;
 }
 
-// ---------------------------------------------------------------------------
-// Both ends of the contract: the client a consumer resolves, and the routes a
-// provider mounts. They live beside the trait so the core never links either.
-// ---------------------------------------------------------------------------
-
 use std::sync::Arc;
 
 use axum::routing::post;
@@ -155,6 +150,19 @@ impl TorznabPort for TorznabClient {
             &serde_json::json!({ "endpoint": endpoint, "query": query, "caps": caps }),
         )
     }
+}
+
+/// The contract name for [`TorznabPort`]. A consumer asks the host for THIS, and
+/// whichever module declares it in its manifest `ports` answers.
+pub const TORZNAB: &str = "torznab";
+
+/// The [`TorznabPort`] served by whichever module currently provides it, or `None`
+/// when none is installed, enabled and running.
+pub fn torznab(host: &dyn HostCtx) -> Option<std::sync::Arc<dyn TorznabPort>> {
+    let endpoint = host.port_endpoint(TORZNAB)?;
+    let resolve: kroma_module_host::Resolver =
+        std::sync::Arc::new(move || Some(endpoint.clone()));
+    Some(std::sync::Arc::new(TorznabClient::new(resolve)))
 }
 
 #[cfg(test)]
@@ -285,18 +293,4 @@ mod tests {
         let err = blocking(move || client.caps(&endpoint())).await.unwrap_err().to_string();
         assert!(err.contains("boom"), "{err}");
     }
-}
-
-
-/// The contract name for [`TorznabPort`]. A consumer asks the host for THIS, and
-/// whichever module declares it in its manifest `ports` answers.
-pub const TORZNAB: &str = "torznab";
-
-/// The [`TorznabPort`] served by whichever module currently provides it, or `None`
-/// when none is installed, enabled and running.
-pub fn torznab(host: &dyn HostCtx) -> Option<std::sync::Arc<dyn TorznabPort>> {
-    let endpoint = host.port_endpoint(TORZNAB)?;
-    let resolve: kroma_module_host::Resolver =
-        std::sync::Arc::new(move || Some(endpoint.clone()));
-    Some(std::sync::Arc::new(TorznabClient::new(resolve)))
 }

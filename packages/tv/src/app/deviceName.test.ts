@@ -1,11 +1,4 @@
 // @vitest-environment jsdom
-//
-// What a television is called, and what it is called when the platform will not
-// say. Two halves matter: the fallback - a vendor API that throws, returns
-// padding, or is simply absent must leave the caller with the platform label
-// rather than an empty row in someone's picker - and the LATE answer, because
-// on webOS and Tizen the real name only ever arrives after the first render.
-
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { type DeviceNameSource, lateDeviceName, useDeviceName } from './deviceName';

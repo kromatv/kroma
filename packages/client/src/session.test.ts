@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { MemStorage } from './device-storage.fixture';
 import {
   clearSession,
-  deviceStorage,
   forgetAccount,
   forgetServer,
   loadAccounts,
@@ -14,36 +14,10 @@ import {
   saveLocalePref,
   saveServer,
   saveSession,
-  sessionToken,
   setSessionStorage,
-  setSessionToken,
-  sharedTokenExchange,
   touchServer,
 } from './session';
 import type { User } from './types';
-
-// Minimal in-memory localStorage so the DOM-guarded helpers have real storage.
-class MemStorage {
-  private m = new Map<string, string>();
-  get length(): number {
-    return this.m.size;
-  }
-  getItem(k: string): string | null {
-    return this.m.has(k) ? (this.m.get(k) as string) : null;
-  }
-  setItem(k: string, v: string): void {
-    this.m.set(k, String(v));
-  }
-  removeItem(k: string): void {
-    this.m.delete(k);
-  }
-  clear(): void {
-    this.m.clear();
-  }
-  key(i: number): string | null {
-    return [...this.m.keys()][i] ?? null;
-  }
-}
 
 beforeEach(() => {
   (globalThis as { localStorage?: Storage }).localStorage = new MemStorage() as unknown as Storage;
@@ -57,33 +31,6 @@ const session = (id: string, serverUrl?: string): StoredSession => ({
   accessToken: `tok-${id}`,
   user: U(id),
   serverUrl,
-});
-
-describe('the in-memory session bearer', () => {
-  it('is never persisted: it starts empty, is set, and clears again', () => {
-    expect(sessionToken()).toBeUndefined();
-    setSessionToken('short-lived');
-    expect(sessionToken()).toBe('short-lived');
-    expect(
-      (globalThis as { localStorage: Storage }).localStorage.getItem('kroma.session'),
-    ).toBeNull();
-    setSessionToken(undefined);
-    expect(sessionToken()).toBeUndefined();
-  });
-});
-
-describe('deviceStorage', () => {
-  afterEach(() => setSessionStorage(null));
-
-  it('hands out the installed store, the browser one, or null where there is neither', () => {
-    expect(deviceStorage()).toBe((globalThis as { localStorage: Storage }).localStorage);
-    const custom = { getItem: () => null, setItem() {}, removeItem() {} };
-    setSessionStorage(custom);
-    expect(deviceStorage()).toBe(custom);
-    setSessionStorage(null);
-    delete (globalThis as { localStorage?: Storage }).localStorage;
-    expect(deviceStorage()).toBeNull();
-  });
 });
 
 describe('normalizeServerUrl', () => {
@@ -188,16 +135,6 @@ describe('saved servers', () => {
   });
 });
 
-describe('locale preference', () => {
-  it('persists and clears the device locale', () => {
-    expect(loadLocalePref()).toBeNull();
-    saveLocalePref('en');
-    expect(loadLocalePref()).toBe('en');
-    saveLocalePref(null);
-    expect(loadLocalePref()).toBeNull();
-  });
-});
-
 describe('migrateStorage', () => {
   it('seeds servers, stamps accounts/session and drops the legacy key', () => {
     const ls = (globalThis as { localStorage: Storage }).localStorage;
@@ -236,9 +173,43 @@ describe('migrateStorage', () => {
 });
 
 describe('malformed storage', () => {
+  const store = () => (globalThis as { localStorage: Storage }).localStorage;
+
   it('falls back gracefully on unparseable JSON', () => {
-    (globalThis as { localStorage: Storage }).localStorage.setItem('kroma.session', '{not json');
+    store().setItem('kroma.session', '{not json');
     expect(loadSession()).toBeNull();
+  });
+
+  it('reads a roster that is valid JSON but not a list as an empty roster', () => {
+    store().setItem('kroma.accounts', '{"0":"tampered"}');
+    expect(loadAccounts()).toEqual([]);
+    expect(() => saveSession(session('a'))).not.toThrow();
+    expect(loadAccounts().map((a) => a.user.id)).toEqual(['a']);
+  });
+
+  it('drops roster entries whose account is not an account', () => {
+    store().setItem(
+      'kroma.accounts',
+      JSON.stringify([{ accessToken: 'tok', user: 'not-an-object' }, session('b')]),
+    );
+    expect(loadAccounts().map((a) => a.user.id)).toEqual(['b']);
+  });
+
+  it('reads a session whose user is not an account as signed out', () => {
+    store().setItem('kroma.session', JSON.stringify({ accessToken: 'tok', user: 42 }));
+    expect(loadSession()).toBeNull();
+  });
+
+  it('reads a server list that is not a list as no saved servers', () => {
+    store().setItem('kroma.servers', '"https://tv.example"');
+    expect(loadServers()).toEqual([]);
+  });
+
+  it('migrates over a roster that is not a list without throwing', () => {
+    store().setItem('kroma.serverUrl', 'https://tv.example/');
+    store().setItem('kroma.accounts', '17');
+    expect(() => migrateStorage()).not.toThrow();
+    expect(loadServers().map((s) => s.url)).toEqual(['https://tv.example']);
   });
 });
 
@@ -276,46 +247,5 @@ describe('a store that refuses to answer', () => {
     expect(loadLocalePref()).toBeNull();
     expect(() => migrateStorage()).not.toThrow();
     expect(() => saveLocalePref('fr')).not.toThrow();
-  });
-});
-
-describe('sharedTokenExchange', () => {
-  it('leaves the newer in-flight exchange alone when a nested one settles', async () => {
-    let release: (v: { token: string; user: string }) => void = () => {};
-    let nested: Promise<{ token: string; user: string }> | undefined;
-
-    const outer = sharedTokenExchange<string>(() => {
-      nested = sharedTokenExchange<string>(async () => ({ token: 'inner', user: 'i' }));
-      return new Promise<{ token: string; user: string }>((r) => {
-        release = r;
-      });
-    });
-
-    await expect(nested).resolves.toEqual({ token: 'inner', user: 'i' });
-
-    const joined = sharedTokenExchange<string>(async () => ({ token: 'never', user: 'n' }));
-    expect(joined).toBe(outer);
-
-    release({ token: 'outer', user: 'o' });
-    await expect(outer).resolves.toEqual({ token: 'outer', user: 'o' });
-  });
-
-  it('coalesces overlapping exchanges into one, then allows a fresh one after settle', async () => {
-    let resolveFn: (v: { token: string; user: unknown }) => void = () => {};
-    const exchange = vi.fn(
-      () => new Promise<{ token: string; user: unknown }>((r) => (resolveFn = r)),
-    );
-
-    const p1 = sharedTokenExchange(exchange);
-    const p2 = sharedTokenExchange(exchange);
-    expect(p1).toBe(p2);
-    expect(exchange).toHaveBeenCalledTimes(1);
-
-    resolveFn({ token: 'tok', user: { id: 'u1' } });
-    await p1;
-
-    // Once the in-flight exchange settled, a new call starts a new one.
-    sharedTokenExchange(exchange);
-    expect(exchange).toHaveBeenCalledTimes(2);
   });
 });

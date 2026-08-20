@@ -223,6 +223,15 @@ describe('useCatalogue discovery', () => {
     expect(H.saveServer).toHaveBeenCalledTimes(1);
   });
 
+  it('stops reporting a sweep that failed rather than one still running', async () => {
+    H.discoverServer.mockRejectedValue(new Error('no multicast'));
+
+    const { result } = renderHook(() => useCatalogue('tizen'));
+    await settle();
+
+    expect(result.current.connection.discovering).toBe(false);
+  });
+
   it('drops a sweep that only finishes after the screen is gone', async () => {
     let finish: (url: string | null) => void = () => {};
     H.discoverServer.mockReturnValue(
@@ -239,6 +248,31 @@ describe('useCatalogue discovery', () => {
 });
 
 describe('useCatalogue server management', () => {
+  it('ignores a catalogue that only arrives after the TV moved to another server', async () => {
+    H.initialServers.mockReturnValue([{ url: 'http://a.local', name: 'A' }]);
+    let releaseA: (items: unknown[]) => void = () => {};
+    H.movies.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseA = resolve;
+        }),
+    );
+    H.movies.mockResolvedValue([{ id: 'b1' }]);
+
+    const { result } = renderHook(() => useCatalogue('tizen'));
+    act(() => result.current.setSignedIn(true));
+    await settle();
+    act(() => result.current.setActiveServer('http://b.local'));
+    await settle();
+
+    await act(async () => {
+      releaseA([{ id: 'a1' }]);
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+
+    expect(result.current.connection.movies).toEqual([{ id: 'b1' }]);
+  });
+
   it('setActiveServer normalizes the URL and rebuilds the client', async () => {
     H.initialServers.mockReturnValue([{ url: 'http://a.local', name: 'A' }]);
     const { result } = renderHook(() => useCatalogue('tizen'));

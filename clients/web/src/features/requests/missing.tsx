@@ -1,9 +1,5 @@
-// "Manquants" (Wanted / Missing), modeled on Sonarr's Wanted > Missing: episode-
-// level rows grouped under their series (or a single movie row), each with its
-// air date (relative) and a search action, plus row/series checkboxes driving a
-// "search selected" toolbar and a "search all". A library-scan gap (no request
-// yet) becomes a request on search ("ask to watch"); a requested title just
-// re-runs its grab. The group card itself lives in `missing-group.tsx`.
+// "Manquants": episode-level rows grouped under their series (or a single movie
+// row), with the search actions that turn a library gap into a request.
 
 import { type CalendarEntry, hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';

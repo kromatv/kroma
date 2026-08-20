@@ -1,10 +1,4 @@
 // @vitest-environment jsdom
-//
-// The settings menu, one step deeper. Signed in, the flat menu was twelve rows
-// on a 1080 screen: the profile's own name scrolled off the top and "Sign out"
-// sat below the fold. These lock in what the step buys - a menu that fits - and
-// what it must not cost: every setting still reachable, still declared once.
-
 import { I18nProvider } from '@kroma/ui';
 import { clearPressGuard } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';

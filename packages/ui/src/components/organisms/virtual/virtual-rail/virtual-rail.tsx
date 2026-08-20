@@ -21,7 +21,6 @@ import {
   useState,
 } from 'react';
 import {
-  Animated,
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -34,20 +33,16 @@ import { SpatialNavigationView } from 'react-tv-space-navigation';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { styles } from '#ui/core';
 import { maskImage } from '#ui/lib/css';
-import { webDocument } from '#ui/lib/dom';
 import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusReporter } from '#ui/lib/focus-report';
 import { WEB } from '#ui/lib/platform';
 import { edgeScrollOffset, fitPitch, horizontalInset, maxOffset } from './edge-scroll';
+import { MovingRow } from './moving-row';
 import { edgeWidth, RailEdge, railMask } from './rail-edge';
-import { EASE_CSS, EASE_NATIVE, SETTLE_MS } from './rail-motion';
+import { KEY_GRACE_MS, useKeyGrace } from './use-key-grace';
 
 const TOUCH = !WEB && !Platform.isTV;
-
-const KEY_GRACE_MS = 400;
-
-const DIRECTIONS = new Set(['ArrowLeft', 'ArrowRight', 'Left', 'Right']);
 
 interface VirtualRailProps<T> {
   data: readonly T[];
@@ -90,19 +85,7 @@ function VirtualRail<T>({
   // delivers faster than React commits).
   const at = useRef(0);
   const measured = useRef(0);
-  const keyAt = useRef(0);
-
-  // Capture phase: react-native-web's TextInput stops propagation on keydown, so
-  // a bubbling listener would miss every press made while a field holds focus.
-  useEffect(() => {
-    const dom = webDocument();
-    if (!WEB || !scoped || !dom) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (DIRECTIONS.has(e.key)) keyAt.current = Date.now();
-    };
-    dom.addEventListener('keydown', onKey, true);
-    return () => dom.removeEventListener('keydown', onKey, true);
-  }, [scoped]);
+  const keyAt = useKeyGrace(scoped);
 
   const count = data.length;
   const contentInset = useMemo(() => horizontalInset(contentStyle), [contentStyle]);
@@ -292,71 +275,6 @@ function VirtualRail<T>({
         </>
       ) : null}
     </View>
-  );
-}
-
-// Web: a CSS transition on `transform`, since react-native-web has no native
-// driver and an Animated value there is a rAF loop competing with React for the
-// main thread. Native: `Animated`, where the driver is real.
-function MovingRow({
-  offset,
-  style,
-  children,
-}: Readonly<{
-  offset: number;
-  style?: ViewStyle;
-  children: ReactElement;
-}>) {
-  if (WEB) {
-    return (
-      <View
-        style={[
-          s.row,
-          style,
-          {
-            transform: [{ translateX: -offset }],
-            // CSS-only props react-native-web understands and RN's types do not.
-            transitionProperty: 'transform',
-            transitionDuration: `${SETTLE_MS}ms`,
-            transitionTimingFunction: EASE_CSS,
-          } as ViewStyle,
-        ]}
-      >
-        {children}
-      </View>
-    );
-  }
-  return (
-    <MovingRowNative offset={offset} style={style}>
-      {children}
-    </MovingRowNative>
-  );
-}
-
-function MovingRowNative({
-  offset,
-  style,
-  children,
-}: Readonly<{
-  offset: number;
-  style?: ViewStyle;
-  children: ReactElement;
-}>) {
-  const [slide] = useState(() => new Animated.Value(0));
-
-  useEffect(() => {
-    Animated.timing(slide, {
-      toValue: -offset,
-      duration: SETTLE_MS,
-      easing: EASE_NATIVE,
-      useNativeDriver: true,
-    }).start();
-  }, [offset, slide]);
-
-  return (
-    <Animated.View style={[s.row, style, { transform: [{ translateX: slide }] }]}>
-      {children}
-    </Animated.View>
   );
 }
 

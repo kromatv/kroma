@@ -3,6 +3,7 @@
 //! session's retention window.
 
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -25,6 +26,7 @@ impl Sessions {
     // a sibling of `key` (almost certainly the arriving client's own superseded
     // stream, so no other viewer is cut off), else the plain LRU.
     pub(super) async fn make_room(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) {
+        let mut freed = 0;
         while map.len() >= self.cap {
             let Some((oldest, la)) = lru(map.iter()).await else { break };
             let victim = if Instant::now().duration_since(la) >= BUDGET_GRACE {
@@ -32,12 +34,12 @@ impl Sessions {
             } else {
                 lru_sibling(map, key).await.unwrap_or(oldest)
             };
-            self.evict(map, &victim).await;
+            freed += self.evict(map, &victim).await;
         }
         // `bytes()` walks the whole cache and this runs with the sessions lock
         // held, so an unlimited budget must not pay for a figure nothing reads.
         if self.budget_bytes() != 0 {
-            let total = self.bytes();
+            let total = self.bytes().saturating_sub(freed);
             self.enforce_budget(map, total).await;
         }
     }
@@ -75,38 +77,36 @@ impl Sessions {
             if Instant::now().duration_since(la) < BUDGET_GRACE {
                 break; // the oldest is live, so the rest are too
             }
-            if let Some(s) = map.get(&k) {
-                total = total.saturating_sub(dir_bytes(&s.dir));
-            }
-            self.evict(map, &k).await;
+            total = total.saturating_sub(self.evict(map, &k).await);
         }
     }
 
-    async fn evict(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) {
-        if let Some(s) = map.remove(key) {
-            let _ = s.child.lock().await.start_kill();
-            let _ = std::fs::remove_dir_all(&s.dir);
-        }
+    // Returns the bytes the session was holding, so a caller measuring the cache
+    // afterwards can discount a directory the discard has not unlinked yet.
+    async fn evict(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) -> u64 {
+        let Some(s) = map.remove(key) else { return 0 };
+        let _ = s.child.lock().await.start_kill();
+        let held = if self.budget_bytes() == 0 { 0 } else { dir_bytes(&s.dir) };
+        discard_dir(&s.dir);
+        held
     }
 
     // The idle list is drawn up, the lock is released for the slow work, and by
     // the time it is taken back a viewer may have pressed play again. Killing
     // them then is worse than a 404: a `master()` racing this would poll a
     // directory that no longer exists for the whole of FILE_WAIT.
-    async fn evict_if_still_idle(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) {
+    async fn evict_if_still_idle(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) -> u64 {
         let idle = match map.get(key) {
             Some(s) => Instant::now().duration_since(*s.last_access.lock().await) > IDLE_TIMEOUT,
-            None => return,
+            None => return 0,
         };
-        if idle {
-            self.evict(map, key).await;
-        }
+        if idle { self.evict(map, key).await } else { 0 }
     }
 
     // Deleting segments and walking the cache are the two slow things here, and
-    // every in-flight segment request needs the same lock: both are done with it
-    // released, which on a network mount is the difference between a pause and a
-    // stall for everyone on the box.
+    // every in-flight segment request needs the same lock: neither runs under it,
+    // which on a network mount is the difference between a pause and a stall for
+    // everyone on the box.
     async fn reap_once(&self) {
         let now = Instant::now();
         let (dead, plans) = {
@@ -130,17 +130,18 @@ impl Sessions {
             })
             .await;
         }
+        let mut freed = 0;
         {
             let mut map = self.inner.lock().await;
             for id in dead {
-                self.evict_if_still_idle(&mut map, &id).await;
+                freed += self.evict_if_still_idle(&mut map, &id).await;
             }
         }
         // Measured AFTER the idle evictions, or the budget would be enforced
         // against directories that no longer exist and take a live viewer with
         // them. Outside the lock: it is a full walk of the cache.
         if self.budget_bytes() != 0 {
-            let total = self.bytes();
+            let total = self.bytes().saturating_sub(freed);
             let mut map = self.inner.lock().await;
             self.enforce_budget(&mut map, total).await;
         }
@@ -171,6 +172,23 @@ async fn lru<'a>(sessions: impl Iterator<Item = (&'a String, &'a Arc<Session>)>)
 
 async fn lru_sibling(map: &HashMap<String, Arc<Session>>, key: &str) -> Option<String> {
     lru(map.iter().filter(|(k, _)| k.as_str() != key && same_program(k, key))).await.map(|(k, _)| k)
+}
+
+// Renaming is one metadata operation; the recursive delete behind it is a walk,
+// so that runs on a blocking thread. The session's own name is free the moment
+// this returns, so a key played again gets a clean directory rather than one the
+// pending delete is about to empty.
+pub(super) fn discard_dir(dir: &Path) {
+    let Some(name) = dir.file_name().and_then(OsStr::to_str) else {
+        return;
+    };
+    let doomed = dir.with_file_name(format!("{name}.gone-{}", kroma_primitives::random_token()));
+    if std::fs::rename(dir, &doomed).is_err() {
+        return;
+    }
+    tokio::task::spawn_blocking(move || {
+        let _ = std::fs::remove_dir_all(&doomed);
+    });
 }
 
 // The playlist keeps listing pruned entries; a request for one 404s rather than
@@ -330,6 +348,31 @@ mod tests {
             s.evict_if_still_idle(&mut map, "itA:copy:0:a0").await;
         }
         assert!(keys(&s).await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn discarding_a_directory_frees_its_name_before_it_returns() {
+        let data = kroma_testing::temp_dir("hls-test-discard");
+        let dir = data.path().join("s");
+        std::fs::create_dir_all(&dir).expect("session dir");
+        std::fs::write(dir.join("seg_00001.m4s"), b"x").expect("segment");
+
+        discard_dir(&dir);
+
+        assert!(!dir.exists());
+    }
+
+    #[tokio::test]
+    async fn eviction_reports_the_bytes_it_frees() {
+        let (s, _dir) = registry_with_budget("freed", 8, 500, &[("itA:copy:0:a0", QUIET)]).await;
+        fill(&s, "itA:copy:0:a0", 300);
+
+        let freed = {
+            let mut map = s.inner.lock().await;
+            s.evict(&mut map, "itA:copy:0:a0").await
+        };
+
+        assert_eq!(freed, 300);
     }
 
     #[tokio::test]

@@ -1,14 +1,3 @@
-// The Tizen Smart Hub preview, foreground half. The carousel is drawn by a
-// background service that cannot reach KROMA on its own, so this module
-// writes the tile JSON to a package-private file the service reads. Every
-// failure here is silent on a real television, which is exactly what makes it
-// worth testing.
-//
-// The throttle is a Samsung policy, not an optimisation: preview data should
-// not refresh more than about once per ten minutes. The file is still kept
-// current on every catalog change, since the TV also polls the service on its
-// own schedule.
-
 import type { ContinueItem, KromaClient, MediaItem } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

@@ -82,15 +82,31 @@ pub(crate) fn ct_eq(a: &[u8], b: &[u8]) -> bool {
 pub(crate) use kroma_primitives::random_bytes;
 pub use kroma_primitives::{random_token, random_u32};
 
+// 600k PBKDF2 iterations hold a thread for hundreds of ms and `/auth/login`
+// reaches them without a session, so the worker's core is handed to another
+// thread. `block_in_place` panics on a current-thread runtime, hence the flavour check.
+fn without_blocking_the_runtime<T>(work: impl FnOnce() -> T) -> T {
+    match tokio::runtime::Handle::try_current() {
+        Ok(handle)
+            if !matches!(handle.runtime_flavor(), tokio::runtime::RuntimeFlavor::CurrentThread) =>
+        {
+            tokio::task::block_in_place(work)
+        }
+        _ => work(),
+    }
+}
+
 /// Hash a plaintext password to the storable form `pbkdf2$<iters>$<salt_hex>$<dk_hex>`.
+/// Safe to call from an async task: the derivation runs off the runtime's worker.
 pub fn hash_password(password: &str) -> String {
     let salt = random_bytes(SALT_LEN);
-    let dk = pbkdf2_sha256(password.as_bytes(), &salt, PBKDF2_ITERS);
+    let dk = without_blocking_the_runtime(|| pbkdf2_sha256(password.as_bytes(), &salt, PBKDF2_ITERS));
     format!("pbkdf2${PBKDF2_ITERS}${}${}", hex::encode(&salt), hex::encode(dk))
 }
 
 /// Verify `password` against a stored `pbkdf2$…` hash. Returns false on any
-/// malformed hash.
+/// malformed hash. Safe to call from an async task: the derivation runs off the
+/// runtime's worker.
 pub fn verify_password(password: &str, stored: &str) -> bool {
     let mut parts = stored.split('$');
     if parts.next() != Some("pbkdf2") {
@@ -105,7 +121,7 @@ pub fn verify_password(password: &str, stored: &str) -> bool {
     let Some(expected) = parts.next().and_then(|s| hex::decode(s).ok()) else {
         return false;
     };
-    let dk = pbkdf2_sha256(password.as_bytes(), &salt, iters);
+    let dk = without_blocking_the_runtime(|| pbkdf2_sha256(password.as_bytes(), &salt, iters));
     ct_eq(&dk, &expected)
 }
 
@@ -178,6 +194,34 @@ mod tests {
         ] {
             assert!(!verify_password("s3cret!", broken), "{broken:?} must not authenticate");
         }
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
+    async fn work_moved_off_the_runtime_lets_another_task_run_on_the_only_worker() {
+        let (tx, rx) = std::sync::mpsc::channel::<u8>();
+
+        let blocking = tokio::spawn(async move {
+            without_blocking_the_runtime(move || rx.recv_timeout(std::time::Duration::from_secs(5)))
+        });
+        tokio::spawn(async move {
+            let _ = tx.send(7);
+        });
+
+        assert_eq!(blocking.await.unwrap().ok(), Some(7));
+    }
+
+    #[tokio::test]
+    async fn hashing_on_a_current_thread_runtime_still_round_trips() {
+        let stored = hash_password("s3cret!");
+
+        assert!(verify_password("s3cret!", &stored));
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn hashing_inside_a_blocking_task_still_round_trips() {
+        let stored = tokio::task::spawn_blocking(|| hash_password("s3cret!")).await.unwrap();
+
+        assert!(tokio::task::spawn_blocking(move || verify_password("s3cret!", &stored)).await.unwrap());
     }
 
     #[test]

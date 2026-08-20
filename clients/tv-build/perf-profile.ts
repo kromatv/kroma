@@ -23,7 +23,9 @@
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { type CDPSession, chromium, type Page } from 'playwright';
+import { chromium, type Page } from 'playwright';
+import { bottomUp, type CpuProfile } from './perf-cpuprofile';
+import { collectTrace, longestTaskWindow, traceSummary } from './perf-trace';
 
 const args = process.argv.slice(2);
 const flag = (name: string, fallback: string): string => {
@@ -110,137 +112,6 @@ const SCENARIOS: Record<string, Scenario> = {
   // No input at all: the cost of simply being on screen.
   idle: (page) => page.waitForTimeout(RECORD_MS),
 };
-
-interface CpuProfileNode {
-  id: number;
-  callFrame: { functionName: string; url: string; lineNumber: number };
-  hitCount?: number;
-  children?: number[];
-}
-interface CpuProfile {
-  nodes: CpuProfileNode[];
-  startTime: number;
-  endTime: number;
-  samples?: number[];
-  timeDeltas?: number[];
-}
-
-// Self time per function, the Performance panel's "Bottom-Up" view. Frames are
-// merged by name + script so the same function called from ten places reads as
-// one line, which is what makes a regression obvious.
-function bottomUp(
-  profile: CpuProfile,
-  window?: { start: number; end: number } | null,
-): { label: string; ms: number; pct: number }[] {
-  const byNode = new Map<number, CpuProfileNode>();
-  for (const n of profile.nodes) byNode.set(n.id, n);
-
-  // Sample-accurate self time: each sample's delta belongs to the node it hit.
-  // `timeDeltas` are gaps BETWEEN samples, so walking them also reconstructs each
-  // sample's timestamp - which is what lets a window select part of the run.
-  const self = new Map<number, number>();
-  const samples = profile.samples ?? [];
-  const deltas = profile.timeDeltas ?? [];
-  let at = profile.startTime;
-  let counted = 0;
-  for (let i = 0; i < samples.length; i += 1) {
-    at += deltas[i] ?? 0;
-    if (window && (at < window.start || at > window.end)) continue;
-    const id = samples[i] as number;
-    const ms = Math.max(0, (deltas[i] ?? 0) / 1000);
-    self.set(id, (self.get(id) ?? 0) + ms);
-    counted += ms;
-  }
-  const total = window
-    ? Math.max(1, counted)
-    : Math.max(1, profile.endTime - profile.startTime) / 1000;
-
-  const merged = new Map<string, number>();
-  for (const [id, ms] of self) {
-    const node = byNode.get(id);
-    if (!node) continue;
-    const frame = node.callFrame;
-    const where = frame.url ? frame.url.split('/').pop() : '';
-    const name = frame.functionName || '(anonymous)';
-    const label = where ? `${name}  ${where}:${frame.lineNumber + 1}` : name;
-    merged.set(label, (merged.get(label) ?? 0) + ms);
-  }
-
-  return [...merged]
-    .map(([label, ms]) => ({
-      label,
-      ms: Math.round(ms),
-      pct: Math.round((ms / total) * 1000) / 10,
-    }))
-    .sort((a, b) => b.ms - a.ms);
-}
-
-interface TraceEvent {
-  name: string;
-  ph: string;
-  ts?: number;
-  dur?: number;
-  args?: { data?: { type?: string } };
-}
-
-// The worst task's window, in trace microseconds. A long task IS the stutter -
-// the frame the eye sees - so it deserves attribution rather than a number.
-function longestTaskWindow(events: TraceEvent[]): { start: number; end: number } | null {
-  let best: TraceEvent | null = null;
-  for (const e of events) {
-    if (e.ph !== 'X' || e.name !== 'RunTask' || e.dur == null || e.ts == null) continue;
-    if (!best || e.dur > (best.dur ?? 0)) best = e;
-  }
-  if (!best?.ts || !best.dur) return null;
-  return { start: best.ts, end: best.ts + best.dur };
-}
-
-// What the Performance panel calls the summary: how long the main thread spent
-// in each kind of work, plus the long tasks that are the visible stutters.
-function traceSummary(events: TraceEvent[]): Record<string, number> {
-  const KINDS = new Set([
-    'RunTask',
-    'FunctionCall',
-    'UpdateLayoutTree', // "Recalculate Style"
-    'Layout',
-    'Paint',
-    'UpdateLayerTree',
-    'CompositeLayers',
-    'ParseHTML',
-    'GCEvent',
-    'MajorGC',
-    'MinorGC',
-  ]);
-  const out: Record<string, number> = {};
-  let longTasks = 0;
-  let longest = 0;
-  for (const e of events) {
-    if (e.ph !== 'X' || e.dur == null) continue;
-    if (e.name === 'RunTask') {
-      const ms = e.dur / 1000;
-      if (ms >= 50) longTasks += 1;
-      longest = Math.max(longest, ms);
-    }
-    if (KINDS.has(e.name)) out[e.name] = Math.round((out[e.name] ?? 0) + e.dur / 1000);
-  }
-  out.longTasks = longTasks;
-  out.longestTaskMs = Math.round(longest);
-  return out;
-}
-
-// Collect the tracing stream the Tracing domain emits after `Tracing.end`.
-function collectTrace(cdp: CDPSession): { events: Promise<TraceEvent[]> } {
-  const chunks: TraceEvent[] = [];
-  let settle: (v: TraceEvent[]) => void = () => {};
-  const events = new Promise<TraceEvent[]>((resolve) => {
-    settle = resolve;
-  });
-  cdp.on('Tracing.dataCollected', (e) => {
-    chunks.push(...((e as { value: TraceEvent[] }).value ?? []));
-  });
-  cdp.on('Tracing.tracingComplete', () => settle(chunks));
-  return { events };
-}
 
 const scenario = SCENARIOS[SCENARIO];
 if (!scenario) {
