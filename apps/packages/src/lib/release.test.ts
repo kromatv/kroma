@@ -63,8 +63,8 @@ describe('toRelease', () => {
     expect(toRelease(entry({ publishedAt: '' })).day).toBe('');
   });
 
-  it('carries the channel through, so the nightly row can be labelled', () => {
-    expect(toRelease(entry({ channel: 'nightly', tag: 'nightly' })).channel).toBe('nightly');
+  it('carries the channel through, so the canary row can be labelled', () => {
+    expect(toRelease(entry({ channel: 'canary', tag: 'canary' })).channel).toBe('canary');
   });
 
   it('keeps a four-segment feature version, which is what the .spk stamps', () => {

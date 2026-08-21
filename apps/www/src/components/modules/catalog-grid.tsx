@@ -6,7 +6,6 @@ import { Section } from '#site/components/section';
 import { catalogDay, ordered } from '#site/lib/modules';
 import { m } from '#site/paraglide/messages';
 
-/** The official catalog as it read when this page was built. */
 export function CatalogGrid() {
   const mods = ordered(catalog.modules);
   const day = catalogDay(catalog.generatedAt);
@@ -33,7 +32,7 @@ export function CatalogGrid() {
               href={site.modulesUrl}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center gap-2 font-sans text-sm font-semibold text-accent transition-colors hover:text-accent-hover"
+              className="inline-flex items-center gap-2 font-sans text-sm font-semibold text-accent-text transition-colors hover:text-accent-hover"
             >
               {m.modules_catalog_link()}
               <IconArrowNarrowRight size={18} stroke={1.75} aria-hidden />
@@ -45,12 +44,16 @@ export function CatalogGrid() {
   );
 }
 
-/** What is checked before a bundle is ever unpacked. */
 export function RegistryNote() {
   return (
     <Section>
       <div className="mx-auto flex max-w-3xl gap-4 rounded-2xl border border-border bg-surface-1/40 p-6">
-        <IconShieldCheck size={24} stroke={1.75} aria-hidden className="shrink-0 text-accent" />
+        <IconShieldCheck
+          size={24}
+          stroke={1.75}
+          aria-hidden
+          className="shrink-0 text-accent-text"
+        />
         <div>
           <h2 className="font-display text-lg font-bold leading-snug text-text">
             {m.modules_registry_title()}

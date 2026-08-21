@@ -18,8 +18,8 @@ name: Release Apple TV beta channel
 # iOS and tvOS as two platforms of one listing (a universal purchase), which is
 # why both sign as `tv.kroma.mobile` - see clients/tv-native/app.config.ts.
 #
-# Stable tags or an explicit manual run, never a nightly: a TestFlight build
-# number is spent for good, and a nightly that burned one would also mail every
+# Stable tags or an explicit manual run, never an untagged build: a TestFlight
+# number is spent for good, and a build that burned one would also mail every
 # tester about it.
 #
 # `expo prebuild` runs under NODE, never under the bun runtime: bun's runtime
@@ -34,7 +34,7 @@ on:
   workflow_call:
     inputs:
       version:
-        description: 'Full release version (may carry a -nightly.YYYYMMDD suffix).'
+        description: 'Full release version.'
         type: string
         required: true
       triplet:
@@ -42,11 +42,7 @@ on:
         type: string
         required: true
       channel:
-        description: 'stable | nightly | none. Only `stable` reaches TestFlight.'
-        type: string
-        required: true
-      proceed:
-        description: 'false when a nightly has nothing new to build.'
+        description: 'stable | candidate | none. Only `stable` reaches TestFlight.'
         type: string
         required: true
 
@@ -56,7 +52,7 @@ env:
 jobs:
   appletv:
     name: Apple TV .ipa (TestFlight)
-    if: ${{ inputs.proceed == 'true' && (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    if: ${{ (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     # macos-26, NOT macos-15, for the reason the phone job spells out: Expo SDK
     # 57 pulls Swift packages built with Swift tools 6.2 (expo-modules-jsi), and
     # the macos-15 image tops out at Xcode 16.4 / Swift 6.1. The guard step below
@@ -138,7 +134,7 @@ jobs:
       # than a stamping script, because that file already had to compute them for
       # Android. KROMA_VERSION pins the plain x.y.z App Store Connect will accept
       # (its default source, server/Cargo.toml, is not what the caller resolved
-      # for a nightly); KROMA_VERSION_CODE is the monotonic build number, minutes
+      # for an untagged build); KROMA_VERSION_CODE is the monotonic build number, minutes
       # since 2020 - the same base the Android TV and phone jobs use. Reusing a
       # (version, build) pair is refused on upload, an hour after the archive
       # that produced it began.
@@ -361,3 +357,4 @@ jobs:
           name: kroma-appletv-ipa
           path: out/*.ipa
           if-no-files-found: error
+          retention-days: 30

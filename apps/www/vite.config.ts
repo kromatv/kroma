@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url';
+import { cloudflare } from '@cloudflare/vite-plugin';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import { kromaUI } from '@kroma/ui/vite';
 import tailwindcss from '@tailwindcss/vite';
@@ -8,15 +9,18 @@ import { defineConfig } from 'vite';
 import { mdxPlugin } from './vite/mdx.ts';
 import { modulesPlugin } from './vite/modules.ts';
 import { ogPlugin } from './vite/og.tsx';
+import { releasesPlugin } from './vite/releases.ts';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
 export default defineConfig({
   plugins: [
+    cloudflare({ configPath: './wrangler.jsonc', viteEnvironment: { name: 'ssr' } }),
     kromaUI(),
     tailwindcss(),
     mdxPlugin(),
     modulesPlugin(),
+    releasesPlugin(),
     ogPlugin(),
     tanstackStart({
       pages: [

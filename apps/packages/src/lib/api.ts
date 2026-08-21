@@ -38,17 +38,17 @@ function dsmPackages(catalog: Catalog, params: URLSearchParams, origin: string) 
 
   const beta = params.get('package_update_channel') === 'beta';
   const stable = catalog.entries.find((e) => e.channel === 'stable');
-  const nightly = catalog.entries.find((e) => e.channel === 'nightly');
+  const canary = catalog.entries.find((e) => e.channel === 'canary');
 
   // On a tie stable wins: its .spk is the released one.
   let pick: Entry | undefined = stable;
   if (
     beta &&
-    nightly &&
+    canary &&
     (!stable ||
-      cmpDsmVersion(dsmVersion(entryVersion(nightly)), dsmVersion(entryVersion(stable))) > 0)
+      cmpDsmVersion(dsmVersion(entryVersion(canary)), dsmVersion(entryVersion(stable))) > 0)
   ) {
-    pick = nightly;
+    pick = canary;
   }
   return { packages: pick ? [toDsmPackage(pick, origin, catalog.repo)] : [] };
 }
@@ -97,7 +97,7 @@ export async function machineResponse(
     return Response.redirect(new URL('/favicon.svg', url), 301);
   }
 
-  const isFeed = path === '/catalog.json' || path === '/nightly.json' || path === '/all.json';
+  const isFeed = path === '/catalog.json' || path === '/canary.json' || path === '/all.json';
   if (path !== '/' && !isFeed) return null;
 
   // DSM's add-source probe sends a browser-like Accept with no arch/unique params,
@@ -122,9 +122,9 @@ export async function machineResponse(
       const stable = catalog.entries.find((e) => e.channel === 'stable');
       return json({ packages: stable ? [toDsmPackage(stable, origin, catalog.repo)] : [] });
     }
-    case '/nightly.json': {
-      const nightly = catalog.entries.find((e) => e.channel === 'nightly');
-      return json({ packages: nightly ? [toDsmPackage(nightly, origin, catalog.repo)] : [] });
+    case '/canary.json': {
+      const canary = catalog.entries.find((e) => e.channel === 'canary');
+      return json({ packages: canary ? [toDsmPackage(canary, origin, catalog.repo)] : [] });
     }
     case '/all.json':
       return json({

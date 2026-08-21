@@ -8,8 +8,6 @@ import { BandHeading } from '#site/components/home/heading';
 import { WheelMark } from '#site/components/wheel-mark';
 import { m } from '#site/paraglide/messages';
 
-// Product names are language-invariant; only the one-word job each used to own
-// is localized.
 const REPLACED: readonly { id: string; name: string; job: () => string }[] = [
   { id: 'acquisition', name: 'Sonarr · Radarr', job: m.home_one_binary_replaces_acquisition },
   { id: 'indexers', name: 'Prowlarr / Jackett', job: m.home_one_binary_replaces_indexers },
@@ -20,8 +18,6 @@ const REPLACED: readonly { id: string; name: string; job: () => string }[] = [
 ];
 
 export function OneBinary() {
-  // Two groups, because the panel would otherwise read as "all of this is in the
-  // binary". Only the first group is; the second is what the server installs.
   const groups = [
     {
       id: 'core',
@@ -54,7 +50,6 @@ export function OneBinary() {
         </div>
 
         <div className="mt-14 grid items-center gap-6 lg:grid-cols-[1fr_auto_1fr] lg:gap-8">
-          {/* Dimmed and struck to read as "gone", not as a competing feature list. */}
           <div className="opacity-80">
             <p className="mb-3 font-mono text-[0.7rem] uppercase tracking-[0.2em] text-dim">
               {m.home_one_binary_before_label()}
@@ -71,7 +66,7 @@ export function OneBinary() {
             </ul>
           </div>
 
-          <div className="flex items-center justify-center text-accent" aria-hidden>
+          <div className="flex items-center justify-center text-accent-text" aria-hidden>
             <IconArrowNarrowDown size={30} stroke={1.5} className="lg:hidden" />
             <IconArrowNarrowRight size={44} stroke={1.5} className="hidden lg:block" />
           </div>
@@ -99,7 +94,7 @@ export function OneBinary() {
                         size={16}
                         stroke={1.75}
                         aria-hidden
-                        className="mt-0.5 shrink-0 text-accent"
+                        className="mt-0.5 shrink-0 text-accent-text"
                       />
                       <span>{n}</span>
                     </li>

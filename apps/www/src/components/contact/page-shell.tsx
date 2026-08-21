@@ -10,8 +10,6 @@ export interface PageShellProps {
   children: ReactNode;
 }
 
-/** The standalone-page frame the site's non-landing pages share: a page
- *  supplies its strings and body; the chrome around them is decided once, here. */
 export function PageShell({
   eyebrow,
   title,
@@ -21,13 +19,12 @@ export function PageShell({
   children,
 }: Readonly<PageShellProps>) {
   const prose = size === 'prose';
-  // A legal document is an <article>; a hub page like support is not.
   const Root = prose ? 'article' : 'div';
   return (
     <Container size={size}>
       <Root className="py-16 sm:py-20">
         <header className={prose ? undefined : 'max-w-2xl'}>
-          <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.18em] text-accent">
+          <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.18em] text-accent-text">
             {eyebrow}
           </p>
           <h1

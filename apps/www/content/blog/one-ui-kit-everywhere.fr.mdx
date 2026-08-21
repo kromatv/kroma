@@ -1,5 +1,5 @@
 ---
-title: "Un seul kit d'interface, six plateformes"
+title: "Un seul kit d’interface, six plateformes"
 date: "2026-02-03"
 excerpt: "Comment le même composant se rend sur un Apple TV, un panneau Samsung et dans un navigateur, sans jamais être réécrit."
 author: "Maxime Scharwath"
@@ -7,14 +7,14 @@ tags: ["Design système", "Technique"]
 ---
 
 Une tuile de film a la même allure sur un Apple TV, sur un téléviseur Samsung et
-dans votre navigateur. C'est un seul composant, pas trois tenus en phase à la
+dans votre navigateur. C’est un seul composant, pas trois tenus en phase à la
 main.
 
 ## Écrit une fois, contre React Native
 
 Le kit `@kroma/ui` est écrit contre React Native. Sur Apple TV, Android TV,
 iPhone et Android il se rend nativement. Sur le web, sur les téléviseurs Tizen et
-webOS, dans l'app desktop Tauri et dans le client web, il passe par
+webOS, dans l’app desktop Tauri et dans le client web, il passe par
 react-native-web. Un fichier, deux moteurs de rendu.
 
 Les couleurs, la typographie, les élévations et le focus vivent aussi une seule
@@ -29,25 +29,25 @@ type.hero;     // 66px / 700, Bricolage Grotesque
 ```
 
 Ce site ne définit aucune couleur propre. Il importe le thème Tailwind v4 du kit,
-et rend donc dans le même charbon et le même ambre que l'application.
+et rend donc dans le même charbon et le même ambre que l’application.
 
 ## Le focus est la seule vraie coupure
 
-Ce qui diffère entre un téléviseur et un navigateur, c'est la navigation, pas
-l'apparence. Une télécommande n'a pas de curseur.
+Ce qui diffère entre un téléviseur et un navigateur, c’est la navigation, pas
+l’apparence. Une télécommande n’a pas de curseur.
 
-En natif, le moteur de focus de l'OS gère les déplacements directionnels :
-UIFocusEngine sur tvOS, résolution `nextFocus` sur Android TV. Sur le web il n'y
+En natif, le moteur de focus de l’OS gère les déplacements directionnels :
+UIFocusEngine sur tvOS, résolution `nextFocus` sur Android TV. Sur le web il n’y
 a aucun moteur de focus, donc le déplacement est géométrique. Le prochain
 focusable dans la direction pressée gagne, avec la dérive latérale pénalisée pour
-qu'un voisin en ligne droite batte un voisin sur le côté.
+qu’un voisin en ligne droite batte un voisin sur le côté.
 
-Cette coupure tient dans une poignée de fichiers `.web.ts`. Rien d'autre dans le
-kit n'en connaît l'existence.
+Cette coupure tient dans une poignée de fichiers `.web.ts`. Rien d’autre dans le
+kit n’en connaît l’existence.
 
 ## Ce que ça coûte, et ce que ça rapporte
 
 Écrire contre React Native coûte une étape de résolution dans chaque bundler et
-un second chemin de rendu à tenir honnête. Ce que ça rapporte : un changement sur
+un second chemin de rendu à garder en état. Ce que ça rapporte : un changement sur
 la tuile de film est un seul commit, et tous les écrans que KROMA dessine
-l'ont le jour même. Six coquilles, un composant.
+l’ont le jour même. Six coquilles, un composant.

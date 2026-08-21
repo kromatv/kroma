@@ -19,7 +19,6 @@ interface Feature {
   title: () => string;
   body: () => string;
   tag: () => string;
-  /** Where the feature lives. A card that does not say this would read as "in the server". */
   where: 'core' | 'module';
 }
 
@@ -118,12 +117,12 @@ export function FeatureGrid() {
                   size={22}
                   stroke={1.75}
                   aria-hidden
-                  className="text-accent transition-transform duration-300 ease-out group-hover:-translate-y-0.5"
+                  className="text-accent-text transition-transform duration-300 ease-out group-hover:-translate-y-0.5"
                 />
                 <span
                   className={`rounded-full border px-2 py-0.5 font-mono text-[0.62rem] uppercase tracking-[0.12em] ${
                     where === 'module'
-                      ? 'border-accent/30 text-accent'
+                      ? 'border-accent/30 text-accent-text'
                       : 'border-border-strong text-dim'
                   }`}
                 >

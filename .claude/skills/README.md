@@ -43,6 +43,7 @@ For this repository that means [`CLAUDE.md`](../../CLAUDE.md),
 
 | Agent | What it does |
 |-------|--------------|
+| [`house-style`](../agents/house-style.md) | Does the work with the writing, naming and structure skills loaded first, picks up the language and test ones the task needs, and hunts its own comments before handing back. |
 | [`comment-hunter`](../agents/comment-hunter.md) | Hunts comments that narrate code, spares the few that carry a reason, edits comment lines only. |
 | [`spec-reviewer`](../agents/spec-reviewer.md) | Reviews `docs/spec` for readability, status and ID nomenclature, architecture leakage, and whether a requirement is atomic enough to become work. |
 

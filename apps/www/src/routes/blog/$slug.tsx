@@ -31,12 +31,10 @@ export const Route = createFileRoute('/blog/$slug')({
   component: BlogPost,
 });
 
-export function BlogPost() {
-  // `strict: false` so one component serves both /blog/$slug and /en/blog/$slug.
+function BlogPost() {
   const slug = useParams({ strict: false }).slug;
   const lang = useLang();
   const post = slug ? getPost(slug, lang) : undefined;
-  // The loader already 404s on an unknown slug: a type guard, not a real path.
   if (!post) return null;
   const { Component } = post;
 
@@ -57,7 +55,7 @@ export function BlogPost() {
               {post.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent"
+                  className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-text"
                 >
                   {tag}
                 </span>

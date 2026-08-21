@@ -59,12 +59,12 @@ export function seo({ lang, title, description, path = '/', image, type = 'websi
       // language we do not publish.
       ...locales.map((l) => ({
         rel: 'alternate',
-        hreflang: l,
+        hrefLang: l,
         href: `${site.url}${localizePath(path, l)}`,
       })),
       {
         rel: 'alternate',
-        hreflang: 'x-default',
+        hrefLang: 'x-default',
         href: `${site.url}${localizePath(path, defaultLocale)}`,
       },
     ],

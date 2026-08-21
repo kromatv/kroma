@@ -13,7 +13,7 @@ on:
   workflow_call:
     inputs:
       version:
-        description: 'Full release version (may carry a -nightly.YYYYMMDD suffix).'
+        description: 'Full release version.'
         type: string
         required: true
       triplet:
@@ -21,11 +21,7 @@ on:
         type: string
         required: true
       channel:
-        description: 'stable | candidate | nightly | none. Only `stable` attaches to a Release.'
-        type: string
-        required: true
-      proceed:
-        description: 'false when a nightly has nothing new to build.'
+        description: 'stable | candidate | none. Only `stable` attaches to a Release.'
         type: string
         required: true
 
@@ -35,7 +31,7 @@ env:
 jobs:
   webos:
     name: webOS .ipk (modern + legacy tiers)
-    if: ${{ inputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write # attach assets to the Release
@@ -77,6 +73,7 @@ jobs:
           name: kroma-webos-ipk
           path: clients/webos/out/*.ipk
           if-no-files-found: error
+          retention-days: 30
 
       - name: Attach to the Release
         # Only a STABLE release attaches here. A candidate build (push to main)
@@ -92,7 +89,7 @@ jobs:
 
   tizen:
     name: Tizen .wgt (dev-certificate signed)
-    if: ${{ inputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write # attach assets to the Release
@@ -159,7 +156,7 @@ jobs:
 
       # `tizen package` names the .wgt after <name> in config.xml, so every
       # channel produced the same KROMA.wgt: indistinguishable once downloaded,
-      # and a nightly overwrote a stable in ~/Downloads. Carry the version, in
+      # and one build overwrote another in ~/Downloads. Carry the version, in
       # the shape the .apk/.ipa of the same fleet already use.
       - name: Package .wgt
         env:
@@ -177,6 +174,7 @@ jobs:
           name: kroma-tizen-wgt
           path: clients/tizen/dist/*.wgt
           if-no-files-found: error
+          retention-days: 30
 
       - name: Attach to the Release
         # Only a STABLE release attaches here. A candidate build (push to main)
@@ -192,7 +190,7 @@ jobs:
 
   tv-native:
     name: Android TV .apk (native app)
-    if: ${{ inputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write # attach assets to the Release
@@ -264,6 +262,7 @@ jobs:
           name: kroma-androidtv-apk
           path: out/*.apk
           if-no-files-found: error
+          retention-days: 30
 
       - name: Attach to the Release
         # Only a STABLE release attaches here. A candidate build (push to main)

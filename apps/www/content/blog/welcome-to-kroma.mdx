@@ -11,32 +11,30 @@ services: an indexer, a tracker aggregator, a BitTorrent client, a VPN wrapper, 
 media server, a request interface. Six containers, six configuration files, six
 things that break, each in its own way, and never at the same time.
 
-KROMA starts from a simple refusal: **none of that should be your problem.**
+KROMA refuses the premise. None of that should be your problem.
 
 ## One server, written in Rust
 
-Where a classic setup bolts together Sonarr, Radarr, Prowlarr, qBittorrent,
-Gluetun and Jellyfin, KROMA is **a single server** that starts in a few
-milliseconds and stays light on memory. The indexer, the download engine, the VPN
-bridge with a kill-switch and the player are orchestrated by that server, which
-you install once: capabilities are added as modules, without a stack of
-containers to cable together.
+A classic setup bolts together Sonarr, Radarr, Prowlarr, qBittorrent, Gluetun and
+Jellyfin. KROMA is one server, and it starts in a few milliseconds. The indexer,
+the download engine, the VPN bridge with its kill-switch and the player all run
+under it. You install the server once; everything past playback and catalog
+arrives as a module, not as another container to cable up.
 
-No transcoding farm to keep warm either: the video is never re-encoded. The server
-**streams the original files** by byte range, and each client decodes HEVC/H.265
-natively, in hardware on Samsung and LG televisions. Your NAS stays at rest.
+There is no transcoding farm to keep warm either. The server streams the original
+files by byte range, and each client decodes HEVC/H.265 itself, in hardware on
+Samsung and LG televisions. Your NAS stays at rest.
 
 ## The same design, everywhere
 
-The other stance is visual. KROMA speaks a single design language, deep charcoal
-and warm amber, two type families, no emoji, and holds it on every screen: the
-web, mobile, and the "10-foot" experience driven by remote control on the living
-room television.
+The other decision is visual. KROMA speaks one design language, deep charcoal and
+warm amber, two type families, no emoji, and holds it on the web, on mobile, and
+on the 10-foot experience driven by a remote in the living room.
 
-This is no coincidence: the components and the design tokens exist **once**, in a
-shared kit, and render natively on React Native as well as in the browser through
-react-native-web. A tile looks the same on an Apple TV and on a Samsung panel
-because it is *the same* tile.
+The components and the design tokens exist once, in a shared kit, and render
+natively on React Native as well as in the browser through react-native-web. A
+tile looks the same on an Apple TV and on a Samsung panel because it is *the same*
+tile.
 
 ## Free, and built to be owned
 
@@ -46,6 +44,6 @@ central service that could shut down.
 
 > Built to be owned, not rented.
 
-The rest of this blog will tell the technical choices behind all of it: the
-spatial focus engine for the remote, direct-play decoding, the WireGuard bridge,
-and how a single UI kit serves six platforms. Stick around.
+Later posts take the technical choices one at a time: the spatial focus engine
+for the remote, direct-play decoding, the WireGuard bridge, and how one UI kit
+serves six platforms.

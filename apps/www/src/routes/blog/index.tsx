@@ -6,8 +6,6 @@ import { getAllPosts } from '#site/lib/posts';
 import { seo } from '#site/lib/seo';
 import { m } from '#site/paraglide/messages';
 
-// A route's head runs outside React, but a message function resolves the ambient
-// locale from Paraglide on its own, so the same `m.*()` calls work here.
 export const Route = createFileRoute('/blog/')({
   head: () =>
     seo({
@@ -19,7 +17,7 @@ export const Route = createFileRoute('/blog/')({
   component: BlogIndex,
 });
 
-export function BlogIndex() {
+function BlogIndex() {
   const lang = useLang();
   const posts = getAllPosts(lang);
 
@@ -27,7 +25,7 @@ export function BlogIndex() {
     <Container>
       <div className="py-20 sm:py-28">
         <header className="max-w-2xl">
-          <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.18em] text-accent">
+          <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.18em] text-accent-text">
             {m.blog_eyebrow()}
           </p>
           <h1 className="font-display text-4xl font-extrabold leading-[1.05] text-text sm:text-5xl">
@@ -58,14 +56,14 @@ export function BlogIndex() {
                         {post.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent"
+                            className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-text"
                           >
                             {tag}
                           </span>
                         ))}
                       </div>
                     )}
-                    <h2 className="font-display text-2xl font-bold leading-snug text-text transition-colors group-hover:text-accent">
+                    <h2 className="font-display text-2xl font-bold leading-snug text-text transition-colors group-hover:text-accent-text">
                       {post.title}
                     </h2>
                     {post.excerpt && (

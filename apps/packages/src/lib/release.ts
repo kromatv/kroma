@@ -1,7 +1,7 @@
 import { dsmVersion, type Entry, entryVersion } from '#site/lib/catalog';
 
 export type Release = {
-  channel: 'stable' | 'nightly';
+  channel: 'stable' | 'canary';
   version: string;
   day: string;
   size: string;

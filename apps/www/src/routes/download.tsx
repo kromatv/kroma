@@ -18,7 +18,7 @@ export const Route = createFileRoute('/download')({
 });
 
 /** Shared with /fr/download, which renders this component under the French locale. */
-export function Download() {
+function Download() {
   return (
     <>
       <DownloadHero />

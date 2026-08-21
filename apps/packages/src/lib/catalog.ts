@@ -20,7 +20,7 @@ export type SpkInfo = {
 };
 
 export type Entry = {
-  channel: 'stable' | 'nightly';
+  channel: 'stable' | 'canary';
   tag: string;
   releaseName: string;
   releaseUrl: string;
@@ -92,11 +92,11 @@ async function fetchCatalogFromGitHub(env: Env): Promise<Catalog> {
     if (r.draft) continue;
     const spk = newestSpk(r.assets);
     if (!spk) continue; // desktop-latest & friends carry no package
-    const nonNightly = r.prerelease ? null : 'stable';
-    const channel = r.tag_name === 'nightly' ? 'nightly' : nonNightly;
+    const nonCanary = r.prerelease ? null : 'stable';
+    const channel = r.tag_name === 'canary' ? 'canary' : nonCanary;
     if (!channel) continue;
-    // The rolling `nightly` tag keeps the date it was first cut; its asset does not.
-    const rolling = channel === 'nightly' ? spk.updated_at : null;
+    // The rolling `canary` tag keeps the date it was first cut; its asset does not.
+    const rolling = channel === 'canary' ? spk.updated_at : null;
     entries.push({
       channel,
       tag: r.tag_name,
@@ -182,7 +182,7 @@ export function entryVersion(e: Entry): string {
 }
 
 // The build is the FIRST dashed segment, not everything after the first dash: a
-// nightly carries two (`1.2.3-nightly-20260811`) and DSM shows the first.
+// a canary carries two (`1.2.3-canary-20260811`) and DSM shows the first.
 const splitBuild = (raw: string): [string, string | undefined] => {
   const cut = raw.indexOf('-');
   if (cut < 0) return [raw, undefined];

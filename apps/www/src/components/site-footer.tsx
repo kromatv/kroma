@@ -89,7 +89,7 @@ export function SiteFooter() {
               href={site.repo}
               target="_blank"
               rel="noreferrer noopener"
-              className="mt-5 inline-flex items-center gap-2 rounded-lg border border-border-strong px-3 py-2 text-sm text-muted transition-colors hover:border-accent hover:text-accent"
+              className="mt-5 inline-flex items-center gap-2 rounded-lg border border-border-strong px-3 py-2 text-sm text-muted transition-colors hover:border-accent hover:text-accent-text"
             >
               <IconBrandGithub size={18} stroke={1.75} aria-hidden />
               {m.footer_star()}

@@ -21,7 +21,7 @@ export const Route = createFileRoute('/privacy')({
   component: Privacy,
 });
 
-export function Privacy() {
+function Privacy() {
   const Policy = getLegalDoc('privacy', useLang());
   return (
     <PageShell

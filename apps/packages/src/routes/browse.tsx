@@ -17,8 +17,8 @@ export const Route = createFileRoute('/browse')({
 function Browse() {
   const { rows, repo, fetchedAt, source } = Route.useLoaderData();
   const latest = rows.find((r) => r.channel === 'stable');
-  const nightly = rows.find((r) => r.channel === 'nightly');
-  const current = [latest, nightly].filter((r) => r !== undefined);
+  const canary = rows.find((r) => r.channel === 'canary');
+  const current = [latest, canary].filter((r) => r !== undefined);
   const freshness = fetchedAt
     ? `catalog refreshed ${fetchedAt.slice(0, 16)}`
     : 'the release list is unavailable right now';
@@ -41,7 +41,7 @@ function Browse() {
 
             <Row gap={16} wrap align="stretch">
               {latest ? <ReleaseHeadline label="Latest stable" release={latest} /> : null}
-              {nightly ? <ReleaseHeadline label="Nightly" release={nightly} /> : null}
+              {canary ? <ReleaseHeadline label="Canary" release={canary} /> : null}
             </Row>
 
             <ReleaseList releases={rows} current={current} />

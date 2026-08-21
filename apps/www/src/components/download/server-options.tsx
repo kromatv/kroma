@@ -3,20 +3,15 @@ import { IconBrandDocker, IconBrandRust, IconInfoCircle, IconServer } from '@tab
 import { Callout } from '#site/components/download/callout';
 import { CodeBlock } from '#site/components/download/code-block';
 import type { IconComponent } from '#site/components/download/icon';
+import { IMAGE, ImageChannels } from '#site/components/download/image-channels';
 import { Panel } from '#site/components/download/panel';
 import { StepList } from '#site/components/download/step-list';
 import { Rich } from '#site/components/rich';
 import { m } from '#site/paraglide/messages';
 
-// Kept in step with the repo's docker-compose.yml.
-const IMAGE = 'ghcr.io/maxscharwath/kroma:latest';
-
-// Trimmed but runnable: the same image, port, volume layout and
-// KROMA_MEDIA_DIRS, without the optional HTTPS block. The full version ships
-// in the repo.
 const COMPOSE = `services:
   kroma:
-    image: ${IMAGE}
+    image: ${IMAGE}:latest
     restart: unless-stopped
     ports:
       - "4040:4040"
@@ -44,12 +39,12 @@ function OptionHead({
 }>) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-2 text-accent">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-2 text-accent-text">
         <Icon size={20} stroke={1.75} aria-hidden />
       </div>
       <h3 className="font-display text-lg font-bold text-text">{title}</h3>
       {tag && (
-        <span className="ml-auto rounded-full bg-accent-soft px-2.5 py-0.5 text-[0.68rem] font-bold uppercase tracking-wider text-accent">
+        <span className="ml-auto rounded-full bg-accent-soft px-2.5 py-0.5 text-[0.68rem] font-bold uppercase tracking-wider text-accent-text">
           {tag}
         </span>
       )}
@@ -57,8 +52,6 @@ function OptionHead({
   );
 }
 
-/** Step 1's body: the three ways to stand the server up. Docker leads, full
- *  width; Synology and cargo sit beneath as a pair. */
 export function ServerOptions() {
   return (
     <div className="space-y-5">
@@ -71,6 +64,7 @@ export function ServerOptions() {
         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted">
           <Rich>{m.download_server_docker_body()}</Rich>
         </p>
+        <ImageChannels />
         <div className="mt-5 grid gap-4 lg:grid-cols-[1.55fr_1fr]">
           <CodeBlock label="docker-compose.yml" code={COMPOSE} />
           <div className="flex flex-col gap-4">
@@ -111,7 +105,7 @@ export function ServerOptions() {
             href={`${site.repo}/blob/main/server/README.md`}
             target="_blank"
             rel="noreferrer noopener"
-            className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent transition-opacity hover:opacity-80"
+            className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-accent-text transition-opacity hover:opacity-80"
           >
             {m.download_server_cargo_link()}
           </a>

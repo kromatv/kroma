@@ -2,9 +2,8 @@ const url = 'https://kroma.tv';
 const repo = 'https://github.com/maxscharwath/kroma';
 
 /**
- * The facts every KROMA web property repeats: the domain, the subdomains, the
- * repository, the mailboxes, and the pages a footer links to. Language-invariant
- * only: translated copy stays in each site's own catalogue.
+ * The facts every KROMA web property repeats. Language-invariant only:
+ * translated copy stays in each site's own catalogue.
  */
 export const site = {
   name: 'KROMA',

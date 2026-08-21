@@ -1,15 +1,22 @@
-// KROMA on the web — the showcase site (kroma.tv), served static from the edge.
+// KROMA on the web — the public site (kroma.tv), served static from the edge.
 //
-// Like clients/tv-web this is an assets-only Worker (no `main`): TanStack Start
-// prerenders every page to HTML at build time, so Cloudflare serves the built
-// files straight from the edge with no script to run and nothing to keep warm.
-// Deploy from this directory:
-//   bun run deploy          (builds dist/ first, then wrangler deploy)
-//   bunx wrangler@4 deploy  (assumes dist/ is already built)
+// TanStack Start prerenders every page to HTML at build time, so Cloudflare
+// serves the built files straight from the edge with no script to run and
+// nothing to keep warm. `main` exists for `/api/*` alone (see run_worker_first):
+// the canary channel needs a GitHub token, and a run artifact is the one
+// document a public repository still refuses to serve anonymously.
+// This file is the SOURCE config. The Vite plugin reads it and writes the one
+// that ships to dist/server/wrangler.json, with `main` pointing at the built
+// worker rather than at worker.ts. Deploy from this directory:
+//   bun run deploy   (builds, then deploys dist/server/wrangler.json)
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "kroma-site",
+  "main": "./worker.ts",
   "compatibility_date": "2026-07-01",
+  // TanStack's SSR handler streams through `node:stream/web`, which workerd
+  // only exposes behind this flag.
+  "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
   // Keep the <name>.workers.dev URL alongside the custom domain (fallback +
   // while the kroma.tv cert provisions).
@@ -31,7 +38,10 @@
     // every URL in the sitemap took a 307 to a URL the page's own `<link
     // rel="canonical">` disowns. `seo()` builds canonicals from `localizePath`, which is
     // slashless, so this is the mode that agrees with what the HTML advertises.
-    "html_handling": "drop-trailing-slash"
+    "html_handling": "drop-trailing-slash",
+    // Everything else is an asset and never wakes the script. Without this the
+    // asset router would answer /api/* with the prerendered 404 document.
+    "run_worker_first": ["/api/*"]
   },
   // Served at https://kroma.tv/ and https://www.kroma.tv/. Requires the kroma.tv
   // zone on this Cloudflare account; wrangler provisions the custom domains + DNS

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_REPO } from './catalog';
 
 vi.mock('@tanstack/react-start/server', () => ({
-  getRequest: () => new Request('https://packages.kroma.tv/browse?channel=nightly'),
+  getRequest: () => new Request('https://packages.kroma.tv/browse?channel=canary'),
 }));
 
 const RELEASES = [

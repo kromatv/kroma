@@ -17,7 +17,13 @@ export function mdxPlugin(): Plugin {
       remarkPlugins: [remarkFrontmatter, remarkMdxFrontmatter, remarkGfm, remarkReadingTime],
       rehypePlugins: [
         rehypeSlug,
-        [rehypePrettyCode, { theme: 'github-dark-default', keepBackground: false }],
+        [
+          rehypePrettyCode,
+          {
+            theme: { dark: 'github-dark-default', light: 'github-light-default' },
+            keepBackground: false,
+          },
+        ],
       ],
     }),
   } as Plugin;

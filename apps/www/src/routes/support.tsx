@@ -12,8 +12,6 @@ import { seo } from '#site/lib/seo';
 import { m } from '#site/paraglide/messages';
 
 export const Route = createFileRoute('/support')({
-  // `head` runs outside React, but a message function resolves the ambient locale
-  // on its own, so the same `m.*()` calls work here.
   head: () =>
     seo({
       lang: getLocale(),
@@ -24,8 +22,6 @@ export const Route = createFileRoute('/support')({
   component: Support,
 });
 
-// Message functions are referenced, not called: they resolve the active
-// locale when the component renders them.
 const channels = [
   {
     icon: IconBrandGithub,
@@ -59,7 +55,7 @@ const bugItems = [
 
 const installHref = `${site.repo}/blob/main/INSTALL.md`;
 
-export function Support() {
+function Support() {
   // Built here, not at module scope, so every string resolves in the locale
   // being rendered.
   const faqItems = [
@@ -91,7 +87,7 @@ export function Support() {
     <PageShell eyebrow={m.support_eyebrow()} title={m.support_title()} intro={m.support_intro()}>
       <div className="surface-hairline mt-14 flex flex-col gap-6 rounded-2xl border border-border-strong bg-surface-1 p-8 sm:flex-row sm:items-center sm:justify-between sm:p-10">
         <div className="max-w-xl">
-          <div className="flex size-12 items-center justify-center rounded-xl bg-accent-soft text-accent">
+          <div className="flex size-12 items-center justify-center rounded-xl bg-accent-soft text-accent-text">
             <IconMail size={24} stroke={1.75} aria-hidden />
           </div>
           <h2 className="mt-5 font-display text-2xl font-bold text-text">
@@ -122,7 +118,7 @@ export function Support() {
 
       <section className="mt-20">
         <div className="max-w-2xl">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-accent-soft text-accent">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-accent-soft text-accent-text">
             <IconBug size={22} stroke={1.75} aria-hidden />
           </div>
           <h2 className="mt-5 font-display text-2xl font-bold text-text sm:text-3xl">
@@ -139,7 +135,7 @@ export function Support() {
                 <IconCircleCheck
                   size={22}
                   stroke={1.75}
-                  className="mt-0.5 shrink-0 text-accent"
+                  className="mt-0.5 shrink-0 text-accent-text"
                   aria-hidden
                 />
                 <span className="leading-relaxed text-muted">

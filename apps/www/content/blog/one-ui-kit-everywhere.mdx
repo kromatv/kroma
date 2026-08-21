@@ -38,7 +38,7 @@ appearance. A remote has no cursor.
 On native, the OS focus engine handles directional moves: UIFocusEngine on tvOS,
 `nextFocus` resolution on Android TV. On the web there is no focus engine at all,
 so movement is geometric. The next focusable in the pressed direction wins, with
-lateral drift penalised so that a neighbour in a straight line beats one off to
+lateral drift penalized so that a neighbor in a straight line beats one off to
 the side.
 
 That split lives in a handful of `.web.ts` files. Nothing else in the kit knows

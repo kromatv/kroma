@@ -8,12 +8,10 @@ import { preload } from 'react-dom';
 import { SiteFooter } from '#site/components/site-footer';
 import { SiteHeader } from '#site/components/site-header';
 import { useLang } from '#site/lib/i18n';
+import { THEME_BOOTSTRAP } from '#site/lib/theme';
 import appCss from '#site/styles.css?url';
 
 export const Route = createRootRoute({
-  // Only the language-neutral base head lives here. Each page owns its title,
-  // description, canonical URL, hreflang alternates and per-page Open Graph via
-  // seo(lang), so those are never emitted twice.
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -24,9 +22,6 @@ export const Route = createRootRoute({
       { title: site.name },
     ],
     links: [
-      // The two faces are preloaded from the shell instead, which is the only
-      // way they land ahead of the stylesheet; stated here as well they emit a
-      // second, duplicate pair of tags.
       { rel: 'stylesheet', href: appCss },
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
     ],
@@ -35,8 +30,6 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
-  // The shell renders inside the router, so the active locale is known from the
-  // URL at prerender time: `/en/*` documents ship `<html lang="en">`.
   const lang = useLang();
   // React hoists a `data-precedence` stylesheet to the top of the head, and a
   // <link rel="preload"> rendered through <HeadContent> is not hoisted at all,
@@ -50,6 +43,8 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
     <html lang={lang}>
       <head>
         <HeadContent />
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a literal, and it has to run before the first paint */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
       </head>
       <body className="page-grain bg-bg text-text antialiased">
         <div className="relative z-10 flex min-h-screen flex-col">

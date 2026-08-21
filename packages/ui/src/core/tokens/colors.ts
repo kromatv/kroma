@@ -1,14 +1,9 @@
-// KROMA colour tokens. THIS FILE IS THE SINGLE SOURCE OF TRUTH: kromaUI()
-// (@kroma/ui/vite) emits the CSS custom properties from it at build time, so
-// there is no stylesheet copy to edit or to keep in step.
-//
 // Values are plain strings so they drop straight into a React Native StyleSheet
 // and into CSS alike. No color-mix()/oklch(): those cannot be expressed in RN,
 // and the old webOS tier could not parse them either.
 
 import type { TokenOf } from './registry';
 export const colors = {
-  /* Surfaces: deep cinematic charcoal */
   bg: '#0A0A0C',
   surface1: '#121216',
   surface2: '#1C1C22',
@@ -23,7 +18,6 @@ export const colors = {
   /** The direction a wash moves in: lighter on a dark ground, darker on paper. */
   tint: '#FFFFFF',
 
-  /* Text on dark */
   text: '#F4F3F0',
   textMuted: 'rgba(244, 243, 240, 0.62)',
   textDim: 'rgba(244, 243, 240, 0.48)',
@@ -33,7 +27,6 @@ export const colors = {
   glyph: '#9B9B99',
   glyphDim: '#7A7A79',
 
-  /* Brand accent: warm amber */
   accent: '#F4B642',
   accentHover: '#FFC862',
   /** The step UNDER the finger: deeper than rest, where hover is lighter. */
@@ -44,8 +37,7 @@ export const colors = {
    *  the page ground, which the fill hue does not on paper. */
   accentText: '#F4B642',
   /** The soft-amber base. A different hue from `accent` (244, 182, 66): every
-   *  wash, glow and edge in the accent family is built on this one, so it is a
-   *  token rather than eight hand-written rgba() literals. */
+   *  wash, glow and edge in the accent family is built on this one. */
   accentWash: '#F2B442',
   accentSoft: 'rgba(242, 180, 66, 0.16)',
   /** The lit step of `accentSoft`: a pointer resting on a toggle that is already
@@ -55,7 +47,6 @@ export const colors = {
    *  accentHover. */
   accentSoftHover: 'rgba(242, 180, 66, 0.26)',
 
-  /* Semantic + quality badges */
   success: '#46D08D',
   info: '#86A8FF',
   hdr: '#C792EA',
@@ -70,8 +61,6 @@ export const colors = {
   dangerPress: '#D43E55',
 } as const;
 
-/** The light palette. `accent` deepens because one token is both fill and text,
- *  and `accentInk` flips with it. */
 export const lightColors: Record<keyof typeof colors, string> = {
   bg: '#F7F5F1',
   surface1: '#FFFEFB',
@@ -94,10 +83,10 @@ export const lightColors: Record<keyof typeof colors, string> = {
   accentPress: '#C98D1F',
   accentBright: '#FFC862',
   accentInk: '#0A0A0C',
-  accentText: '#8A5A05',
-  accentWash: '#B8811F',
-  accentSoft: 'rgba(184, 129, 31, 0.18)',
-  accentSoftHover: 'rgba(184, 129, 31, 0.28)',
+  accentText: '#9E4A08',
+  accentWash: '#C05E14',
+  accentSoft: 'rgba(192, 94, 20, 0.18)',
+  accentSoftHover: 'rgba(192, 94, 20, 0.28)',
 
   success: '#136B41',
   info: '#2F4FAE',
@@ -125,26 +114,15 @@ export type ColorToken = TokenOf<typeof colors, ColorRegistry>;
 /**
  * Chart series colours, in assignment order.
  *
- * A DATA palette, which is a different job from the badge colours above: those
- * only have to be legible on their own, while these have to stay tellable apart
- * from each other, including by a colourblind reader, on the surface they are
- * drawn on. So they are not eyeballed - the set is checked against the six
- * standard palette checks (OKLCH lightness band, chroma floor, adjacent CVD
- * separation under protan/deutan/tritan, normal-vision separation, and contrast
- * against the surface) and passes all of them on the player's stats card in both
- * the darkest and the brightest frame it can sit over.
+ * A DATA palette: these have to stay tellable apart from each other, including
+ * by a colourblind reader, on the surface they are drawn on.
  *
  * Assign by POSITION and never cycle: a reader who learned that blue is
  * bandwidth must not find it repainted when a series drops out.
  *
- * THREE slots, and that is a measured limit rather than a placeholder. The band
- * the checks leave usable here is narrow - deeper than the badge palette, because
- * a 2px trace reads lighter than a filled pill of the same hue and the light end
- * is where CVD separation fails - and no fourth hue fits in it: every candidate
- * tried collapsed against blue or against green under deutan/protan (best was
- * ΔE 6.7, inside the 6-8 floor band). So a fourth series does not get a fourth
- * colour. It gets its own chart, which is the correct answer anyway - facet
- * rather than invent a hue that a colourblind reader cannot separate.
+ * THREE slots is a measured limit: every fourth hue tried collapsed against blue
+ * or against green under deutan/protan (best was ΔE 6.7, inside the 6-8 floor
+ * band). A fourth series gets its own chart, not a fourth colour.
  */
 export const SERIES_COLORS = ['#3B7FD4', '#C08420', '#2E9E6E'] as const;
 
@@ -158,8 +136,7 @@ export const WHEEL_COLORS = [
   '#A855F7',
 ] as const;
 
-/** Billboard / poster shade stops (transparent to page background). Used by the
- * hero gradients, which are a LinearGradient on native and on web alike. */
+/** Billboard / poster shade stops (transparent to page background). */
 export const SHADE = {
   transparent: 'rgba(10, 10, 12, 0)',
   mid: 'rgba(10, 10, 12, 0.55)',
@@ -207,7 +184,6 @@ function withHexAlpha(value: string, alpha: number): string {
 export function splitAlpha(value: string): { color: string; opacity: number } {
   const body = /^rgba?\((.+)\)$/i.exec(value)?.[1];
   if (body) {
-    // Both spellings, `rgba(r, g, b, a)` and the newer `rgb(r g b / a)`.
     const parts = body.split(/[\s,/]+/).filter(Boolean);
     if (parts.length < 4) return { color: value, opacity: 1 };
     const raw = parts[3] as string;

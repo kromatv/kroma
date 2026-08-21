@@ -4,11 +4,10 @@ import { Button } from '#site/components/button';
 import { LangSwitcher } from '#site/components/lang-switcher';
 import { L } from '#site/components/localized-link';
 import { Logo } from '#site/components/logo';
+import { ThemeSwitcher } from '#site/components/theme-switcher';
 import { localizePath, useLang } from '#site/lib/i18n';
 import { m } from '#site/paraglide/messages';
 
-// Built per-render from the active locale: the anchors point at the localized
-// home, and the routes go through <L>, which adds the `/en` prefix itself.
 function useNav() {
   const lang = useLang();
   const home = localizePath('/', lang);
@@ -50,7 +49,8 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <LangSwitcher className="hidden sm:inline-flex" />
+          <ThemeSwitcher className="max-sm:hidden" />
+          <LangSwitcher className="max-sm:hidden" />
           <a
             href={site.repo}
             target="_blank"
@@ -66,7 +66,6 @@ export function SiteHeader() {
             </Button>
           </div>
 
-          {/* JS-free: <details> holds open state, so the menu works pre-hydration. */}
           <details className="relative md:hidden">
             <summary
               className="flex size-9 cursor-pointer list-none items-center justify-center rounded-lg text-text transition-colors hover:bg-wash [&::-webkit-details-marker]:hidden"
@@ -103,8 +102,9 @@ export function SiteHeader() {
                 >
                   <IconBrandGithub size={18} stroke={1.75} aria-hidden /> GitHub
                 </a>
-                <div className="mt-1 border-t border-border px-3 pt-3">
+                <div className="mt-1 flex items-center gap-2 border-t border-border px-3 pt-3">
                   <LangSwitcher />
+                  <ThemeSwitcher />
                 </div>
               </nav>
             </div>

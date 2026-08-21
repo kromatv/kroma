@@ -14,15 +14,11 @@ on:
   workflow_call:
     inputs:
       version:
-        description: 'Full release version (may carry a -nightly.YYYYMMDD suffix).'
+        description: 'Full release version.'
         type: string
         required: true
       channel:
-        description: 'stable | nightly | none (none = build-only dispatch).'
-        type: string
-        required: true
-      proceed:
-        description: 'false when a nightly has nothing new to build.'
+        description: 'stable | candidate | none (none = build-only dispatch).'
         type: string
         required: true
 
@@ -32,7 +28,7 @@ env:
 jobs:
   desktop:
     name: Desktop ${{ matrix.label }}
-    if: ${{ inputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","desktop"]'), github.event.inputs.targets)) }}
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","desktop"]'), github.event.inputs.targets)) }}
     strategy:
       fail-fast: false
       matrix:
@@ -45,12 +41,10 @@ jobs:
             artifact: kroma-desktop-macos
             files: |
               clients/desktop/src-tauri/target/release/bundle/dmg/*.dmg
-          # NSIS .exe installer + .msi. Nightly builds drop the .msi: WiX wants
-          # a numeric a.b.c[.d] and rejects the -nightly.YYYYMMDD prerelease.
+          # NSIS .exe installer + .msi.
           - os: windows-latest
             label: 'Windows (.exe + .msi)'
             bundles: nsis,msi
-            nightly_bundles: nsis
             artifact: kroma-desktop-windows
             files: |
               clients/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
@@ -111,7 +105,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       # Stamp the release version into the installers so a desktop build always
-      # matches the release (stable tag = X.Y.Z, nightly = X.Y.Z-nightly.DATE).
+      # matches the release (a stable tag is X.Y.Z).
       # Skipped only for a bare build-only dispatch (channel none).
       - name: Stamp release version
         if: inputs.channel != 'none'
@@ -205,7 +199,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
         # `--no-default-features` is a cargo flag: the Tauri v2 CLI only forwards it
         # to the runner after `--` (a bare `--no-default-features` is rejected).
-        run: bun run tauri build --bundles ${{ inputs.channel == 'nightly' && matrix.nightly_bundles || matrix.bundles }} ${{ runner.os == 'Linux' && '-- --no-default-features' || '' }}
+        run: bun run tauri build --bundles ${{ matrix.bundles }} ${{ runner.os == 'Linux' && '-- --no-default-features' || '' }}
 
       # macOS: build the .app UNSIGNED, embed libmpv so it is self-contained, THEN sign
       # + notarize + package the dmg. This order is REQUIRED: dylibbundler rewrites the
@@ -259,6 +253,7 @@ jobs:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.files }}
           if-no-files-found: error
+          retention-days: 30
 
       - name: Attach to the Release
         # Only a STABLE release attaches here. A candidate build (push to main)

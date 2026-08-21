@@ -8,7 +8,7 @@ export const Route = createRootRoute({
       appCss,
       title: 'KROMA package source',
       description:
-        'Add KROMA to Synology Package Center: a live package source serving every release, stable and nightly.',
+        'Add KROMA to Synology Package Center: a live package source serving every release, stable and canary.',
     }),
   shellComponent: SiteDocument,
 });

@@ -4,8 +4,8 @@
   site.
 - L’application tourne chez vous : votre médiathèque, vos comptes et votre historique
   de lecture ne quittent jamais votre réseau. Il n’existe pas de « cloud KROMA ».
-- Une seule exception, assumée : les notifications push transitent par un relais que
-  nous opérons sur Cloudflare, il transmet des notifications, jamais vos médias ni
+- Une seule exception, assumée. Les notifications push transitent par un relais que
+  nous opérons sur Cloudflare. Il transmet des notifications, jamais vos médias ni
   votre bibliothèque.
 
 ## Ce que ce site collecte
@@ -15,64 +15,64 @@ utilisateur, ni formulaire d’inscription, ni outil de mesure d’audience, ni 
 publicitaire. Nous ne déposons aucun cookie de suivi et n’exécutons aucun script de
 traçage.
 
-Comme tout site, il génère des **journaux techniques** ordinaires côté serveur et CDN
-(adresse IP, agent utilisateur, page demandée, horodatage). Cloudflare les traite
-pour livrer les pages, absorber les attaques et assurer la sécurité du service. Ces
+Comme tout site, il génère des journaux techniques ordinaires côté serveur et CDN :
+adresse IP, agent utilisateur, page demandée, horodatage. Cloudflare les traite pour
+livrer les pages, absorber les attaques et assurer la sécurité du service. Ces
 journaux sont éphémères et ne servent ni à vous profiler, ni à vous recontacter.
 
 ## Ce que l’application collecte (rien qui quitte votre réseau)
 
 L’application KROMA s’exécute sur du matériel que vous possédez, votre NAS, un hôte
 Docker, un Raspberry Pi. Votre bibliothèque, vos fichiers, vos comptes et profils,
-votre historique de lecture et vos statistiques y sont stockés **localement** et n’en
-sortent pas. Nous n’y avons aucun accès, et aucune télémétrie ne nous est renvoyée :
-il n’existe pas de service central vers lequel remonter quoi que ce soit.
+votre historique de lecture et vos statistiques y sont stockés localement et n’en
+sortent pas. Nous n’y avons aucun accès, et l’application ne nous envoie aucune
+télémétrie : il n’existe pas de service central vers lequel remonter quoi que ce
+soit.
 
-Pour ces données, c’est vous, l’opérateur du serveur, qui en avez la maîtrise
-complète. Vous décidez qui y accède, où elles résident et quand les effacer.
+Vous opérez le serveur, donc vous maîtrisez ces données. Vous décidez qui y accède,
+où elles résident et quand les effacer.
 
 ## Notifications push via le relais Cloudflare
 
 C’est le seul composant qui touche un service que nous opérons, et nous préférons le
-dire franchement. Les applications mobile et TV peuvent recevoir des **notifications
-push** (par exemple « votre téléchargement est prêt »). Apple et Google exigent pour
+dire franchement. Les applications mobile et TV peuvent recevoir des notifications
+push, par exemple « votre téléchargement est prêt ». Apple et Google exigent pour
 cela des identifiants confidentiels qui ne peuvent pas vivre dans un code source
-public et auto-hébergé. Ils sont donc détenus par un petit **relais** (« push
-relay ») que nous exécutons sur Cloudflare.
+public et auto-hébergé. Un petit relais que nous exécutons sur Cloudflare les détient
+à la place.
 
 Ce relais reçoit le jeton de notification de votre appareil (fourni par Apple ou
 Google) et le message à afficher, puis les transmet au service push du fabricant. Il
-**ne voit pas**, et ne transporte pas, vos médias, votre bibliothèque, ni votre
+ne voit pas, et ne transporte pas, vos médias, votre bibliothèque, ni votre
 historique. Si vous n’activez pas les notifications, rien ne transite par lui.
 
 ## Cookies
 
-Ce site n’utilise aucun cookie de mesure d’audience ou de publicité, il n’y a donc
-pas de bandeau de consentement, parce qu’il n’y a rien à consentir. Cloudflare peut
-poser un cookie strictement nécessaire à la sécurité (protection anti-abus) ; il ne
-sert pas à vous suivre d’un site à l’autre.
+Ce site ne dépose aucun cookie de mesure d’audience ou de publicité, il n’y a donc
+pas de bandeau de consentement. Il n’y a rien à consentir. Cloudflare peut poser un
+cookie strictement nécessaire à la sécurité (protection anti-abus) ; il ne vous suit
+pas d’un site à l’autre.
 
 ## Services tiers
 
-**Cloudflare** héberge ce site et le relais de notifications ; à ce titre il traite
-les journaux techniques évoqués plus haut. Les métadonnées de films et séries
-proviennent de **TMDB**, mais c’est *votre* serveur qui les interroge, sur votre
-réseau, pas nous.
+Cloudflare héberge ce site et le relais de notifications, et traite à ce titre les
+journaux techniques évoqués plus haut. Les métadonnées de films et séries proviennent
+de TMDB, mais c’est *votre* serveur qui les interroge, sur votre réseau, pas nous.
 
 ## Vos droits
 
-Nous ne détenons quasiment aucune donnée personnelle vous concernant : il y a donc
+Nous ne détenons quasiment aucune donnée personnelle vous concernant, il y a donc
 très peu de matière sur laquelle exercer un droit d’accès, de rectification ou
 d’effacement du côté de kroma.tv. Si vous pensez que nous détenons malgré tout une
 information vous concernant, écrivez-nous et nous y donnerons suite.
 
-Pour les données de l’application, elles vivent sur votre installation : vous les
-consultez, les corrigez et les supprimez directement, sans passer par nous.
+Les données de l’application vivent sur votre installation : vous les consultez, les
+corrigez et les supprimez directement, sans passer par nous.
 
 ## Contact
 
 Une question sur cette politique ou sur vos données ? Écrivez à
 [privacy@kroma.tv](mailto:privacy@kroma.tv).
 
-Cette politique peut évoluer si le site change ; la date de dernière mise à jour en
+Cette politique peut évoluer si le site change. La date de dernière mise à jour en
 haut de page fait foi.

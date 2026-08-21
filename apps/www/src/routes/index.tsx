@@ -19,7 +19,7 @@ export const Route = createFileRoute('/')({
   component: Home,
 });
 
-export function Home() {
+function Home() {
   return (
     <>
       <Hero />

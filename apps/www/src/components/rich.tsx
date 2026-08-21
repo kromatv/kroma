@@ -2,7 +2,7 @@ import { parseRich, type RichToken } from '#site/lib/rich';
 
 const CLASS: Record<Exclude<RichToken['kind'], 'text'>, string> = {
   accent: 'text-gradient-amber',
-  code: 'font-mono text-[0.92em] text-accent',
+  code: 'font-mono text-[0.92em] text-accent-text',
   bright: 'text-text',
 };
 
@@ -10,8 +10,6 @@ export interface RichProps {
   children: string;
 }
 
-/** Renders a message's markers as styled runs, so a translated sentence stays
- * ONE string in the `.json`. */
 export function Rich({ children }: Readonly<RichProps>) {
   return (
     <>

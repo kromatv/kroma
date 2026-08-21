@@ -43,8 +43,6 @@ const POINTS: readonly {
   },
 ];
 
-// Kept on-palette: the "window controls" are neutral, not the decorative
-// traffic lights that would drag a second colour in.
 export function SelfHostBand() {
   return (
     <section className="py-20 sm:py-28">
@@ -68,7 +66,7 @@ export function SelfHostBand() {
                       size={20}
                       stroke={1.75}
                       aria-hidden
-                      className="mt-0.5 shrink-0 text-accent"
+                      className="mt-0.5 shrink-0 text-accent-text"
                     />
                     <div>
                       <dt className="font-display text-sm font-bold text-text">{title()}</dt>
@@ -96,7 +94,7 @@ export function SelfHostBand() {
               </div>
               <pre className="overflow-x-auto px-4 py-4 font-mono text-[0.82rem] leading-relaxed text-muted">
                 <code>
-                  <span className="text-accent">$</span> docker run -d -p 4040:4040 \{'\n'}
+                  <span className="text-accent-text">$</span> docker run -d -p 4040:4040 \{'\n'}
                   {'    '}-v /volume1/video:/media \{'\n'}
                   {'    '}-v kroma-data:/data \{'\n'}
                   {'    '}ghcr.io/maxscharwath/kroma

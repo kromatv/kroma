@@ -4,8 +4,8 @@ name: Package-source worker
 #   apps/packages  -> packages.kroma.tv  (kroma-packages)
 #   apps/modules  -> modules.kroma.tv  (kroma-modules)
 # Only when the worker code changes; releases never touch these (they read the
-# GitHub Releases API live). The two workers are gated SEPARATELY: a push that
-# touches one no longer redeploys the other (a dispatch still ships both).
+# GitHub Releases API live). Each worker is gated SEPARATELY: a push that
+# touches one does not redeploy the others (a dispatch still ships all three).
 #
 # Needs the CLOUDFLARE_API_TOKEN repo secret (Workers Scripts: Edit). WITHOUT it
 # the job SKIPS the deploys with a notice instead of failing red - the workers
@@ -86,3 +86,4 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: bun run deploy:modules
+

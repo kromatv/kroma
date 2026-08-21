@@ -6,9 +6,6 @@ import { L } from '#site/components/localized-link';
 import { ordered } from '#site/lib/modules';
 import { m } from '#site/paraglide/messages';
 
-// A teaser, not the catalog: names and icons only, with the reading continuing
-// on /modules. The list is baked in at build time (vite/modules.ts), so it costs
-// no request and renders before hydration.
 export function Modules() {
   const mods = ordered(catalog.modules);
 
@@ -23,7 +20,7 @@ export function Modules() {
             </p>
             <L
               to="/modules"
-              className="mt-6 inline-flex items-center gap-2 font-sans text-sm font-semibold text-accent transition-colors hover:text-accent-hover"
+              className="mt-6 inline-flex items-center gap-2 font-sans text-sm font-semibold text-accent-text transition-colors hover:text-accent-hover"
             >
               {m.home_modules_cta()}
               <IconArrowNarrowRight size={18} stroke={1.75} aria-hidden />

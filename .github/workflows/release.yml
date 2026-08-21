@@ -37,12 +37,8 @@ name: Build & Release
 # All bundles are PRODUCTION builds: `vite build`, console/debugger stripped by
 # the shared TV shell factory, no KROMA_TV_DEVICE dev mode.
 #
-# NIGHTLY channel: the nightly schedule (or a manual run with publish=nightly)
-# builds the SAME artifact set versioned `X.Y.Z-nightly.YYYYMMDD` and publishes
-# it to the rolling `nightly` prerelease (which also carries the per-push canary
-# .spk from synology.yml). Nights with no new commits on main skip everything
-# (~30s guard run). The nightly is the one channel that still publishes from
-# here, because it costs no version number to get wrong.
+# Nothing here publishes on a schedule. The per-push canary lives in
+# synology.yml, on its own rolling `canary` tag.
 #
 # Manual runs build artifacts without publishing a Release; `targets` scopes the
 # run (all | spk | desktop | tv | mobile).
@@ -79,8 +75,6 @@ on:
       - '.github/workflows/desktop-autoupdate.yml'
       - '.github/workflows/apple-signing-doctor.yml'
       - '.github/workflows/deploy.yml'
-  schedule:
-    - cron: '0 3 * * *' # nightly, 03:00 UTC
   workflow_dispatch:
     inputs:
       version:
@@ -92,19 +86,13 @@ on:
         options: [all, spk, desktop, tv, mobile]
         default: all
         required: false
-      publish:
-        description: 'Publish the artifacts (none = build only)'
-        type: choice
-        options: [none, nightly]
-        default: none
-        required: false
       distribute:
         description: 'Also push the mobile/TV builds to TestFlight + Firebase'
         type: boolean
         default: false
         required: false
 
-# Candidates supersede; nightlies queue.
+# Candidates supersede.
 #
 # This used to queue unconditionally, because a superseded run could leave a
 # partially-uploaded Release. That reason is gone: a candidate build publishes
@@ -112,9 +100,6 @@ on:
 # is a result nobody wants any more. Queuing them cost real time; four pushes in
 # an afternoon meant the fourth waited an hour behind three builds of code that
 # had already been replaced.
-#
-# The nightly still publishes from here, so it keeps the old behaviour: `push`
-# is the candidate leg, `schedule` is the nightly one.
 concurrency:
   group: release-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'push' }}
@@ -126,9 +111,7 @@ jobs:
   # One version for every artifact: the tag, the manual input, or the
   # server/Cargo.toml base. `triplet` is the sanitized x.y.z the TV stores
   # require (appinfo.json / config.xml reject suffixes). Also decides the
-  # channel (stable tag / nightly / build-only) and, for nightlies, whether
-  # there is anything new to build (proceed=false when main hasn't moved since
-  # the last published nightly-manifest.json).
+  # channel: stable tag, candidate, or build-only.
   version:
     name: Resolve version
     runs-on: ubuntu-latest
@@ -142,18 +125,16 @@ jobs:
       version: ${{ steps.v.outputs.version }}
       triplet: ${{ steps.v.outputs.triplet }}
       channel: ${{ steps.v.outputs.channel }}
-      proceed: ${{ steps.v.outputs.proceed }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - id: v
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          PUBLISH_INPUT: ${{ github.event.inputs.publish }}
           VERSION_INPUT: ${{ github.event.inputs.version }}
         run: .github/scripts/resolve-version.sh
 
-  # NB: the Synology .spk + its GitHub Pages "package source" (stable + nightly)
+  # NB: the Synology .spk + its GitHub Pages "package source" (stable + canary)
   # live in their own workflow, .github/workflows/synology.yml. So do the module
   # .kmod bundles and the store catalog: modules release on their own
   # `<module-id>@<version>` tags from .github/workflows/modules.yml, on their own
@@ -166,7 +147,7 @@ jobs:
   tv:
     name: TV
     needs: version
-    if: ${{ needs.version.outputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-tv.yml
     permissions:
       contents: write # passed down to the called workflow
@@ -174,7 +155,6 @@ jobs:
       version: ${{ needs.version.outputs.version }}
       triplet: ${{ needs.version.outputs.triplet }}
       channel: ${{ needs.version.outputs.channel }}
-      proceed: ${{ needs.version.outputs.proceed }}
     secrets: inherit
 
   # The fourth television, kept out of the job above because it ships to
@@ -185,7 +165,7 @@ jobs:
   appletv:
     name: Apple TV
     needs: version
-    if: ${{ needs.version.outputs.proceed == 'true' && (contains(fromJSON('["stable","candidate"]'), needs.version.outputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
+    if: ${{ (contains(fromJSON('["stable","candidate"]'), needs.version.outputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-appletv.yml
     permissions:
       contents: read # passed down to the called workflow
@@ -193,19 +173,16 @@ jobs:
       version: ${{ needs.version.outputs.version }}
       triplet: ${{ needs.version.outputs.triplet }}
       channel: ${{ needs.version.outputs.channel }}
-      proceed: ${{ needs.version.outputs.proceed }}
     secrets: inherit
 
   # ---------------------------------------------------------------- Mobile ---
 
-  # Firebase App Distribution + TestFlight. Present in the publish `needs` below
-  # (a broken mobile build must not reach a tag), absent from publish-nightly's:
-  # this job is stable-only, so on the nightly channel it is SKIPPED, and a
-  # skipped dependency skips its dependents.
+  # Firebase App Distribution + TestFlight. Present in the publish `needs` below:
+  # a broken mobile build must not reach a tag.
   mobile:
     name: Mobile
     needs: version
-    if: ${{ needs.version.outputs.proceed == 'true' && (contains(fromJSON('["stable","candidate"]'), needs.version.outputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
+    if: ${{ (contains(fromJSON('["stable","candidate"]'), needs.version.outputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-mobile.yml
     permissions:
       contents: write # passed down to the called workflow
@@ -213,7 +190,6 @@ jobs:
       version: ${{ needs.version.outputs.version }}
       triplet: ${{ needs.version.outputs.triplet }}
       channel: ${{ needs.version.outputs.channel }}
-      proceed: ${{ needs.version.outputs.proceed }}
     secrets: inherit
 
   # --------------------------------------------------------------- Desktop ---
@@ -222,14 +198,13 @@ jobs:
   desktop:
     name: Desktop
     needs: version
-    if: ${{ needs.version.outputs.proceed == 'true' && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","desktop"]'), github.event.inputs.targets)) }}
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","desktop"]'), github.event.inputs.targets)) }}
     uses: ./.github/workflows/_release-desktop.yml
     permissions:
       contents: write # passed down to the called workflow
     with:
       version: ${{ needs.version.outputs.version }}
       channel: ${{ needs.version.outputs.channel }}
-      proceed: ${{ needs.version.outputs.proceed }}
     secrets: inherit
 
   # ------------------------------------------------------------- Publish ---
@@ -265,36 +240,3 @@ jobs:
         run: |
           echo "::notice::Candidate ${{ needs.version.outputs.version }} is complete and promotable."
           echo "Promote it with: gh workflow run deploy.yml -f build_run_id=${{ github.run_id }}"
-
-  # Nightly channel: gather EVERY artifact this run built and publish them onto
-  # the rolling `nightly` prerelease - the same release the per-push canary .spk
-  # (synology.yml) lives on, so one URL carries the whole nightly fleet. Old
-  # installers are cleared first (the canary .spk pair is preserved), then the
-  # new set + nightly-manifest.json (sha/version/date - also the no-new-commits
-  # guard for the next scheduled run) go up. Plain `needs` = publish only when
-  # every build succeeded, mirroring the stable draft-flip atomicity.
-  publish-nightly:
-    name: Publish the nightly prerelease
-    needs: [version, tv, desktop]
-    if: needs.version.outputs.channel == 'nightly'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # attach assets to the Release
-    timeout-minutes: 15
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GH_REPO: ${{ github.repository }}
-      VERSION: ${{ needs.version.outputs.version }}
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          fetch-depth: 0 # full history for the commit log in the release notes
-
-      - name: Collect every artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          path: assets
-          merge-multiple: true
-
-      - name: Publish onto the rolling nightly release
-        run: .github/scripts/publish-nightly.sh

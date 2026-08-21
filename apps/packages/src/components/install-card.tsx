@@ -23,7 +23,7 @@ export function InstallCard({ url }: Readonly<{ url: string }>) {
       </Box>
       <Text color="textDim" variant="meta">
         KROMA shows up in the Community tab and updates itself with every release. Enable beta
-        packages to follow the nightly channel.
+        packages to follow the canary channel.
       </Text>
     </Column>
   );

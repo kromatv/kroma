@@ -63,6 +63,9 @@ clients/webos/*.ipk
 .env
 .env.*
 !.env.example
+# wrangler's local secret file, same class as .env
+.dev.vars
+.dev.vars.*
 *.local
 
 # Signing material, by extension rather than by location. The rules above cover

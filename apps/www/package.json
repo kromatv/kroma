@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "KROMA showcase site (kroma.tv) TanStack Start, prerendered to static assets on Cloudflare. Marketing pages + an MD/MDX blog, styled from the @kroma/ui design tokens.",
+  "description": "KROMA's public site (kroma.tv). TanStack Start, prerendered to static assets on Cloudflare. Marketing pages and an MD/MDX blog, styled from the @kroma/ui design tokens.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "license": "GPL-2.0-or-later",
   "repository": {
@@ -19,7 +19,7 @@
     "build": "vite build",
     "preview": "vite preview --port 3100",
     "preview:edge": "bunx wrangler@4 dev",
-    "deploy": "bun run build && bunx wrangler@4 deploy",
+    "deploy": "bun run build && bunx wrangler@4 deploy -c dist/server/wrangler.json",
     "generate-routes": "tsr generate",
     "typecheck": "bun run paraglide && tsr generate && tsc --noEmit",
     "paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy url --emit-ts-declarations --silent"
@@ -33,9 +33,11 @@
     "@tanstack/react-router": "^1.170.29",
     "@tanstack/react-start": "^1.168.46",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.53.1",
     "@inlang/paraglide-js": "^2.24.0",
     "@mdx-js/rollup": "^3.1.1",
     "@tailwindcss/vite": "^4.3.3",
@@ -54,7 +56,6 @@
     "tailwindcss": "^4.3.3",
     "takumi-js": "^2.9.2",
     "typescript": "^7.0.2",
-    "vite": "^8.2.1",
-    "zod": "^4.4.3"
+    "vite": "^8.2.1"
   }
 }

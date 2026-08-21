@@ -161,7 +161,7 @@ jobs:
           - name: web
             build: bun run build:web
             dist: clients/web/dist
-          # The showcase site (kroma.tv). Its build IS the prerender, so a broken
+          # The marketing site (kroma.tv). Its build IS the prerender, so a broken
           # page, a bad link in the crawl or an .mdx that will not compile fails
           # here rather than at deploy time.
           - name: site
@@ -185,8 +185,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # The site's build reads the published release from the GitHub API to bake
+      # /download's buttons. Anonymous GitHub allows sixty requests an hour per
+      # IP and runners share them, so the token is what keeps this off a limit
+      # someone else spent.
       - name: Build (production)
         run: ${{ matrix.build }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

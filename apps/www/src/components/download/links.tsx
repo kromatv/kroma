@@ -1,13 +1,19 @@
 import { site } from '@kroma/site-meta';
 import type { ReactNode } from 'react';
 
-/** The off-site destinations this page links to. Language-neutral, so they live
- *  with the components rather than in the catalog: the hero, the family panels and
- *  the closing CTA all import them from here and cannot drift apart. */
 export const docs = {
   releases: `${site.repo}/releases`,
   installGuide: `${site.repo}/blob/main/INSTALL.md`,
   beta: `${site.repo}/blob/main/BETA.md`,
+} as const;
+
+/**
+ * One TestFlight beta serves both Apple platforms: an Apple TV cannot open a
+ * link, so a tester joins on a phone and the television offers the same app.
+ */
+export const join = {
+  testflight: 'https://testflight.apple.com/join/RvvRxgvV',
+  firebase: 'https://appdistribution.firebase.dev/i/3aa500cefb6aeb83',
 } as const;
 
 export interface ProseLinkProps {
@@ -15,20 +21,13 @@ export interface ProseLinkProps {
   children: ReactNode;
 }
 
-/**
- * An external link beside prose: the same amber-underline treatment everywhere.
- *
- * It sits NEXT TO a sentence rather than inside one - a Paraglide message is a
- * plain string, so the anchor cannot live in the middle of it. The sentence ends,
- * then this link carries its own label (its own message key, arrow included).
- */
 export function ProseLink({ href, children }: Readonly<ProseLinkProps>) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer noopener"
-      className="text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent"
+      className="text-accent-text underline decoration-accent-text/40 underline-offset-2 hover:decoration-accent-text"
     >
       {children}
     </a>

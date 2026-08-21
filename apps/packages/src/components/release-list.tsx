@@ -47,7 +47,7 @@ export function ReleaseList({ releases, current = [] }: Readonly<ReleaseListProp
         <EmptyState.Root size="sm" icon="search-off">
           <EmptyState.Title>No matching release</EmptyState.Title>
           <EmptyState.Hint>
-            Try a version number such as 0.1.36, or a channel such as nightly.
+            Try a version number such as 0.1.36, or a channel such as canary.
           </EmptyState.Hint>
         </EmptyState.Root>
       ) : (

@@ -2,7 +2,7 @@ name: Release mobile beta channels
 
 # The phone/tablet client goes to the two beta channels BETA.md points testers
 # at: Firebase App Distribution (Android) and TestFlight (iOS). Stable tags or
-# an explicit manual run - never a nightly, which would burn a TestFlight build
+# an explicit manual run - never an untagged build, which would burn a TestFlight build
 # number and spam every tester.
 #
 # Both legs stamp the release version and a monotonic build number INTO
@@ -27,7 +27,7 @@ on:
   workflow_call:
     inputs:
       version:
-        description: 'Full release version (may carry a -nightly.YYYYMMDD suffix).'
+        description: 'Full release version.'
         type: string
         required: true
       triplet:
@@ -35,11 +35,7 @@ on:
         type: string
         required: true
       channel:
-        description: 'stable | nightly | none. Only `stable` reaches the beta channels.'
-        type: string
-        required: true
-      proceed:
-        description: 'false when a nightly has nothing new to build.'
+        description: 'stable | candidate | none. Only `stable` reaches the beta channels.'
         type: string
         required: true
 
@@ -49,7 +45,7 @@ env:
 jobs:
   mobile-android:
     name: Mobile .apk (Firebase)
-    if: ${{ inputs.proceed == 'true' && (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
+    if: ${{ (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write # attach assets to the Release
@@ -112,6 +108,7 @@ jobs:
           name: kroma-mobile-apk
           path: out/*.apk
           if-no-files-found: error
+          retention-days: 30
 
       # Skipped (not failed) without the secrets, like every other optional
       # signing/publishing step in this workflow: the APK is still built and
@@ -159,7 +156,7 @@ jobs:
 
   mobile-ios:
     name: Mobile .ipa (TestFlight)
-    if: ${{ inputs.proceed == 'true' && (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
+    if: ${{ (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
     # macos-26, NOT macos-15: Expo SDK 57 pulls Swift packages built with Swift
     # tools 6.2 (expo-modules-jsi), and the macos-15 image tops out at Xcode 16.4
     # / Swift 6.1. That mismatch fails as "Could not resolve package
@@ -456,3 +453,4 @@ jobs:
           name: kroma-mobile-ipa
           path: out/*.ipa
           if-no-files-found: error
+          retention-days: 30

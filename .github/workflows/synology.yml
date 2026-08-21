@@ -3,7 +3,7 @@ name: Synology
 # Everything for the server deliverables in ONE workflow:
 #   tag vX.Y.Z  -> build the stable .spk + attach it (+ its .info.json sidecar)
 #                  to that GitHub Release
-#   push main   -> build a canary .spk -> rolling `nightly` prerelease
+#   push main   -> build a canary .spk -> rolling `canary` prerelease
 #   either      -> push the MULTI-ARCH Docker image (linux/amd64 + linux/arm64)
 #                  ASSEMBLED FROM static musl binaries + the web SPA (no
 #                  from-source docker compile): amd64 reuses the .spk payload,
@@ -12,7 +12,7 @@ name: Synology
 #
 # The package source is the DYNAMIC Cloudflare Worker at packages.kroma.tv
 # (apps/packages); it reads releases + the .info.json sidecars
-# straight from the GitHub API, so it needs NO deploy here. Stable + nightly
+# straight from the GitHub API, so it needs NO deploy here. Stable + canary
 # share one build job (only the version differs).
 on:
   push:
@@ -77,7 +77,7 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # Tag -> that version minus the leading `v`. main / dispatch -> empty, so
-      # build.sh derives it from server/Cargo.toml and stamps the nightly build.
+      # build.sh derives it from server/Cargo.toml and stamps the canary build.
       - id: ver
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
@@ -172,7 +172,7 @@ jobs:
       FFMPEG_URL: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz
       # Same stance as build.sh's amd64 pair: the primary stays first, and BtbN's
       # GPL static build (different machine, different network) only decides
-      # whether an outage of the primary costs a nightly.
+      # whether an outage of the primary costs a canary build.
       FFMPEG_FALLBACK_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linuxarm64-gpl.tar.xz
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -360,14 +360,14 @@ jobs:
   # commit being promoted, so the .spk on a Release is the artifact that was
   # built and approved rather than a same-source rebuild.
 
-  # main -> rolling `nightly` prerelease, one asset per build, named for the
+  # main -> rolling `canary` prerelease, one asset per build, named for the
   # version it carries. It used to be a single fixed name clobbered on every
   # push: DSM records the md5 it read from the catalog and verifies the bytes it
   # downloads against that, so the next push silently made every already-listed
   # build uninstallable ("Failed to verify the package ... by MD5"). A build now
   # keeps its own URL until it ages out, and a client holding a slightly stale
   # catalog still downloads bytes whose md5 matches. The .info.json sidecar
-  # rides along so the dynamic source knows the real nightly version + md5
+  # rides along so the dynamic source knows the real canary version + md5
   # without downloading the .spk.
   #
   # Retention is by AGE, not by count. It was "keep the newest two", which is a
@@ -378,12 +378,12 @@ jobs:
   # which is what made packages.kroma.tv hand out 404s. KEEP_DAYS must stay
   # comfortably above that stale window; the floor keeps the last few builds
   # whatever their age, so a quiet fortnight cannot empty the release.
-  publish-nightly:
-    name: Publish nightly prerelease
+  publish-canary:
+    name: Publish canary prerelease
     if: always() && !cancelled() && needs.build.result == 'success' && github.ref == 'refs/heads/main'
     needs: build
     permissions:
-      contents: write # create/update the rolling nightly release + assets
+      contents: write # create/update the rolling canary release + assets
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -398,15 +398,15 @@ jobs:
         with:
           name: kroma-synology-spk
           path: dist
-      - name: Upload to the nightly prerelease
+      - name: Upload to the canary prerelease
         run: |
           SPK="$(ls dist/*.spk | head -1)"
           NAME="$(basename "$SPK")"
           bun packages/synology-repo/src/gen-spk-info.ts "$SPK" --beta
-          gh release view nightly >/dev/null 2>&1 \
-            || gh release create nightly --prerelease --title "KROMA nightly" \
-                 --notes "Rolling nightly build from main. Unstable; auto-updates via the nightly package source."
-          gh release upload nightly "$SPK" "$SPK.info.json" --clobber
+          gh release view canary >/dev/null 2>&1 \
+            || gh release create canary --prerelease --title "KROMA canary" \
+                 --notes "Rolling canary build, one per push to main. Unstable; auto-updates via the canary package source."
+          gh release upload canary "$SPK" "$SPK.info.json" --clobber
 
           # Older than KEEP_DAYS *and* outside the newest KEEP_MIN. Both have to
           # hold, so neither a burst of pushes nor a quiet fortnight can strand a
@@ -414,14 +414,14 @@ jobs:
           KEEP_DAYS=14
           KEEP_MIN=5
           CUTOFF="$(date -u -d "${KEEP_DAYS} days ago" +%s)"
-          gh api "repos/${GH_REPO}/releases/tags/nightly" \
+          gh api "repos/${GH_REPO}/releases/tags/canary" \
             --jq '.assets[] | select(.name | endswith(".spk")) | [.name, .created_at] | @tsv' \
             | awk -F'\t' -v cur="$NAME" '$1 != cur' | sort -Vr | tail -n "+${KEEP_MIN}" \
             | while IFS="$(printf '\t')" read -r OLD CREATED; do
                 [ -n "$OLD" ] || continue
                 if [ "$(date -u -d "$CREATED" +%s)" -lt "$CUTOFF" ]; then
                   echo "pruning $OLD (created $CREATED)"
-                  gh release delete-asset nightly "$OLD" -y || true
-                  gh release delete-asset nightly "$OLD.info.json" -y || true
+                  gh release delete-asset canary "$OLD" -y || true
+                  gh release delete-asset canary "$OLD.info.json" -y || true
                 fi
               done

@@ -11,7 +11,6 @@ export interface SectionProps {
   align?: 'center' | 'left';
 }
 
-/** A vertical band with the site's rhythm and an optional titled header. */
 export function Section({
   children,
   id,
@@ -31,7 +30,7 @@ export function Section({
         {hasHeader && (
           <div className={['max-w-2xl', align === 'center' ? 'mx-auto text-center' : ''].join(' ')}>
             {eyebrow && (
-              <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.18em] text-accent">
+              <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.18em] text-accent-text">
                 {eyebrow}
               </p>
             )}

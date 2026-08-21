@@ -136,8 +136,8 @@ describe('dsmVersion', () => {
     expect(dsmVersion('23.10-3')).toBe('23.10-3');
   });
 
-  it('takes the first dashed segment of a nightly, not the rest of the string', () => {
-    expect(dsmVersion('1.2.3-nightly-20260811')).toBe('1.2.3-nightly');
+  it('takes the first dashed segment of a canary, not the rest of the string', () => {
+    expect(dsmVersion('1.2.3-canary-20260811')).toBe('1.2.3-canary');
   });
 });
 
@@ -158,9 +158,9 @@ describe('toDsmPackage', () => {
     expect(pkg.changelog).toBe(entry().releaseUrl);
   });
 
-  it('prefers sidecar fields and never emits a beta flag for a nightly', () => {
+  it('prefers sidecar fields and never emits a beta flag for a canary', () => {
     const pkg = toDsmPackage(
-      entry({ info, channel: 'nightly' }),
+      entry({ info, channel: 'canary' }),
       'https://pkg.kroma.tv',
       'maxscharwath/kroma',
     );
@@ -272,7 +272,7 @@ describe('loadCatalog', () => {
     await expect(loadCatalog({}, () => undefined)).rejects.toThrow('GitHub releases API 403');
   });
 
-  it('skips a draft, a release with no .spk, and a prerelease that is not the nightly', async () => {
+  it('skips a draft, a release with no .spk, and a prerelease that is not the canary', async () => {
     ghServing([
       release({ tag_name: 'v9.9.9', draft: true }),
       release({ tag_name: 'desktop-latest', assets: [asset('KROMA.dmg')] }),
@@ -283,12 +283,12 @@ describe('loadCatalog', () => {
     expect(catalog.entries.map((e) => e.tag)).toEqual(['v1.0.0']);
   });
 
-  it('treats the moving `nightly` tag as the nightly channel', async () => {
+  it('treats the moving `canary` tag as the canary channel', async () => {
     ghServing([
       release({ tag_name: 'v1.0.0', published_at: '2026-07-01T00:00:00Z' }),
       release({ tag_name: 'v1.1.0', published_at: '2026-07-05T00:00:00Z' }),
       release({
-        tag_name: 'nightly',
+        tag_name: 'canary',
         prerelease: true,
         published_at: '2026-06-01T00:00:00Z',
         assets: [asset('kroma-1.2.0-2-x86_64.spk')],
@@ -296,7 +296,7 @@ describe('loadCatalog', () => {
     ]);
     const catalog = await loadCatalog({}, () => undefined);
     expect(catalog.entries.map((e) => [e.channel, e.tag])).toEqual([
-      ['nightly', 'nightly'],
+      ['canary', 'canary'],
       ['stable', 'v1.1.0'],
       ['stable', 'v1.0.0'],
     ]);
@@ -325,23 +325,23 @@ describe('loadCatalog', () => {
     expect(catalog.entries.map((e) => e.tag)).toEqual(['v1.10.0', 'v1.9.0', 'v1.2.0']);
   });
 
-  it('sorts a nightly below a stable it is behind, channel notwithstanding', async () => {
+  it('sorts a canary below a stable it is behind, channel notwithstanding', async () => {
     ghServing([
       release({ tag_name: 'v2.0.0', assets: [asset('kroma-2.0.0-9-x86_64.spk')] }),
       release({
-        tag_name: 'nightly',
+        tag_name: 'canary',
         prerelease: true,
         assets: [asset('kroma-1.0.0-1-x86_64.spk')],
       }),
     ]);
     const catalog = await loadCatalog({}, () => undefined);
-    expect(catalog.entries.map((e) => e.channel)).toEqual(['stable', 'nightly']);
+    expect(catalog.entries.map((e) => e.channel)).toEqual(['stable', 'canary']);
   });
 
-  it('dates the rolling nightly by its .spk asset, not the tag it reuses', async () => {
+  it('dates the rolling canary by its .spk asset, not the tag it reuses', async () => {
     ghServing([
       release({
-        tag_name: 'nightly',
+        tag_name: 'canary',
         prerelease: true,
         published_at: '2026-07-10T19:42:27Z',
         assets: [
@@ -354,17 +354,17 @@ describe('loadCatalog', () => {
       release({ tag_name: 'v1.0.0', published_at: '2026-07-31T00:00:00Z' }),
     ]);
     const catalog = await loadCatalog({}, () => undefined);
-    const nightly = catalog.entries.find((e) => e.channel === 'nightly');
+    const canary = catalog.entries.find((e) => e.channel === 'canary');
     const stable = catalog.entries.find((e) => e.channel === 'stable');
-    expect(nightly?.publishedAt).toBe('2026-08-10T11:27:55Z');
+    expect(canary?.publishedAt).toBe('2026-08-10T11:27:55Z');
     // A tagged release keeps the release date; only the rolling tag is special.
     expect(stable?.publishedAt).toBe('2026-07-31T00:00:00Z');
   });
 
-  it('lists the newest .spk when the nightly tag holds several builds', async () => {
+  it('lists the newest .spk when the canary tag holds several builds', async () => {
     ghServing([
       release({
-        tag_name: 'nightly',
+        tag_name: 'canary',
         prerelease: true,
         assets: [
           { ...asset('kroma-0.1.36.100-x86_64.spk'), updated_at: '2026-08-09T00:00:00Z' },

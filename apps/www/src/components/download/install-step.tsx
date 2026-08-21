@@ -9,8 +9,6 @@ export interface InstallStepProps {
   children: ReactNode;
 }
 
-/** One numbered chapter of the install flow. The route stacks two of these
- *  (server, then apps). */
 export function InstallStep({ step, title, intro, id, children }: Readonly<InstallStepProps>) {
   return (
     <section id={id} className="scroll-mt-24 border-t border-border/60 py-16 sm:py-20">
@@ -18,7 +16,7 @@ export function InstallStep({ step, title, intro, id, children }: Readonly<Insta
         <header className="flex items-baseline gap-4 sm:gap-6">
           <span
             aria-hidden
-            className="font-display text-5xl font-extrabold leading-none text-accent/25 sm:text-6xl"
+            className="font-display text-5xl font-extrabold leading-none text-accent-text/25 sm:text-6xl"
           >
             {step}
           </span>

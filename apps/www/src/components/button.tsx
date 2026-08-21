@@ -12,7 +12,7 @@ const base =
 const variants: Record<Variant, string> = {
   primary:
     'bg-accent text-accent-ink shadow-[var(--glow-play)] hover:bg-accent-hover hover:-translate-y-0.5',
-  outline: 'border border-border-strong text-text hover:border-accent hover:text-accent',
+  outline: 'border border-border-strong text-text hover:border-accent hover:text-accent-text',
   ghost: 'text-muted hover:text-text',
 };
 
@@ -31,9 +31,6 @@ export interface ButtonProps {
   href?: string;
 }
 
-/** One CTA that renders as a router <Link> for internal paths and a plain <a>
- *  for external URLs and in-page anchors, so a call site never has to pick the
- *  element, only the destination. */
 export function Button({
   children,
   variant = 'primary',

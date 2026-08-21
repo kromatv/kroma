@@ -17,7 +17,7 @@ const release = (over: Partial<Release> = {}): Release => ({
 const catalog = [
   release(),
   release({ version: '0.1.35-3400000', day: '2026-06-02' }),
-  release({ channel: 'nightly', version: '0.1.37-3470000' }),
+  release({ channel: 'canary', version: '0.1.37-3470000' }),
 ];
 
 describe('filterReleases', () => {
@@ -30,7 +30,7 @@ describe('filterReleases', () => {
   });
 
   it('matches a channel, whatever the case', () => {
-    expect(filterReleases(catalog, 'NIGHTLY')).toHaveLength(1);
+    expect(filterReleases(catalog, 'CANARY')).toHaveLength(1);
   });
 
   it('matches the day', () => {

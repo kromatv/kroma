@@ -18,14 +18,13 @@ export const Route = createFileRoute('/modules')({
   component: Modules,
 });
 
-/** Shared with /fr/modules, which renders this component under the French locale. */
-export function Modules() {
+function Modules() {
   return (
     <>
       <section className="pt-20 pb-4 sm:pt-28">
         <Container>
           <div className="max-w-3xl">
-            <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.18em] text-accent">
+            <p className="mb-3 font-sans text-xs font-bold uppercase tracking-[0.18em] text-accent-text">
               {m.modules_hero_eyebrow()}
             </p>
             <h1 className="text-balance font-display text-4xl font-extrabold leading-[1.05] text-text sm:text-5xl">

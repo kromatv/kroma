@@ -2,7 +2,7 @@ import { SiteFooter as Footer, footerColumns } from '@kroma/site-kit/site-footer
 import { site } from '@kroma/site-meta';
 
 const BLURB =
-  'The Synology package source for KROMA: every release, stable and nightly, served straight to DSM Package Center.';
+  'The Synology package source for KROMA: every release, stable and canary, served straight to DSM Package Center.';
 
 const COLUMNS = footerColumns({
   sibling: { label: 'Modules', href: site.modulesUrl },

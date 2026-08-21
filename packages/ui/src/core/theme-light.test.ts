@@ -14,6 +14,16 @@ const luminance = (hex: string): number => {
   return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
 };
 
+const blend = (rgba: string, ground: string): string => {
+  const [r = 0, g = 0, b = 0, alpha = 1] = (rgba.match(/[\d.]+/g) ?? []).map(Number);
+  const base = /^#([0-9a-f]{6})$/i.exec(ground)?.[1] ?? '';
+  const channel = (value: number, i: number) =>
+    Math.round(value * alpha + Number.parseInt(base.slice(i, i + 2), 16) * (1 - alpha));
+  return `#${[channel(r, 0), channel(g, 2), channel(b, 4)]
+    .map((v) => v.toString(16).padStart(2, '0'))
+    .join('')}`;
+};
+
 const contrast = (a: string, b: string): number => {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05);
@@ -32,6 +42,14 @@ describe('the light palette', () => {
   it('keeps body text readable on the page ground', () => {
     expect(contrast(lightColors.text, lightColors.bg)).toBeGreaterThan(4.5);
     expect(contrast(colors.text, colors.bg)).toBeGreaterThan(4.5);
+  });
+
+  it('keeps the ink readable on paper it is raised above, and on its own wash', () => {
+    const wash = blend(lightColors.accentSoft, lightColors.bg);
+
+    expect(contrast(lightColors.accentText, lightColors.surface2)).toBeGreaterThan(4.5);
+    expect(contrast(lightColors.accentText, lightColors.surface3)).toBeGreaterThan(4.5);
+    expect(contrast(lightColors.accentText, wash)).toBeGreaterThan(4.5);
   });
 
   it('keeps the accent usable as a fill and, separately, as ink', () => {

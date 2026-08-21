@@ -23,6 +23,7 @@
     "./testing": "./src/testing.tsx",
     "./bundler": "./bundler/index.ts",
     "./workbench-config": "./src/workbench-config.tsx",
+    "./lockup": "./src/lib/lockup-paths.ts",
     "./tokens": "./src/core/tokens/index.ts",
     "./tokens/colors": "./src/core/tokens/colors.ts",
     "./tokens/*": "./src/core/tokens/*.ts",

@@ -2,7 +2,6 @@ import { Container } from '#site/components/container';
 import { BandHeading } from '#site/components/home/heading';
 import { m } from '#site/paraglide/messages';
 
-// Identifiers, not prose, so they stay out of the message catalogue.
 const CODECS: readonly { label: string; hero?: true }[] = [
   { label: 'HEVC / H.265', hero: true },
   { label: '10-bit · HDR' },
@@ -40,7 +39,7 @@ export function DirectPlay() {
                   key={c.label}
                   className={`rounded-md border px-2.5 py-1 font-mono text-xs ${
                     c.hero
-                      ? 'border-accent/40 bg-accent-soft text-accent'
+                      ? 'border-accent/40 bg-accent-soft text-accent-text'
                       : 'border-border bg-bg text-muted'
                   }`}
                 >
@@ -56,7 +55,7 @@ export function DirectPlay() {
                 <span className="font-mono text-xs text-muted">
                   {m.home_direct_play_cpu_label()}
                 </span>
-                <span className="font-mono text-xs text-accent">
+                <span className="font-mono text-xs text-accent-text">
                   {m.home_direct_play_cpu_state()}
                 </span>
               </div>

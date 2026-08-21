@@ -6,8 +6,6 @@ import { useLang } from '#site/lib/i18n';
 import { getAllPosts } from '#site/lib/posts';
 import { m } from '#site/paraglide/messages';
 
-// Renders nothing when the blog is empty: a "coming soon" placeholder on the
-// home page would read as unfinished, which is worse than absence.
 export function BlogTeaser() {
   const lang = useLang();
   const posts = getAllPosts(lang).slice(0, 2);
@@ -25,7 +23,7 @@ export function BlogTeaser() {
           </div>
           <L
             to="/blog"
-            className="group inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-accent"
+            className="group inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-accent-text"
           >
             {m.home_blog_teaser_all()}
             <IconArrowRight
@@ -49,14 +47,14 @@ export function BlogTeaser() {
                   {post.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent"
+                      className="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-text"
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
               )}
-              <h3 className="font-display text-xl font-bold leading-snug text-text transition-colors group-hover:text-accent sm:text-2xl">
+              <h3 className="font-display text-xl font-bold leading-snug text-text transition-colors group-hover:text-accent-text sm:text-2xl">
                 {post.title}
               </h3>
               {post.excerpt && (

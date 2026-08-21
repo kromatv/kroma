@@ -1,39 +1,32 @@
 import { site } from '@kroma/site-meta';
 import { Button } from '#site/components/button';
 import { Container } from '#site/components/container';
-import { docs } from '#site/components/download/links';
+import { docs, ProseLink } from '#site/components/download/links';
 import { Panel } from '#site/components/download/panel';
+import { L } from '#site/components/localized-link';
 import { m } from '#site/paraglide/messages';
 
-/** The last word: why the one-time setup exists, and where to go next. */
+/** Where to go next, and the one failure worth pre-empting. */
 export function Closing() {
   return (
     <section className="border-t border-border/60 py-20">
       <Container>
         <Panel pad="lg">
-          <div className="max-w-2xl">
-            <h2 className="font-display text-2xl font-extrabold text-text">
-              {m.download_closing_title()}
-            </h2>
-            <p className="mt-4 text-pretty leading-relaxed text-muted">
-              {m.download_closing_body()}
-            </p>
-            <p className="mt-4 text-sm leading-relaxed text-dim">{m.download_closing_note()}</p>
-          </div>
+          <p className="max-w-2xl text-pretty leading-relaxed text-muted">
+            {m.download_closing_note()}
+          </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Button href={docs.releases} size="lg">
-              {m.download_closing_releases()}
-            </Button>
-            <Button href={docs.installGuide} variant="outline" size="lg">
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <Button href={docs.installGuide} size="lg">
               {m.download_closing_guide()}
             </Button>
-            <Button href={site.tvUrl} variant="outline" size="lg">
-              {m.download_closing_tv_demo()}
-            </Button>
-            <Button to="/support" variant="ghost" size="lg">
+            <ProseLink href={site.tvUrl}>{m.download_closing_tv_demo()}</ProseLink>
+            <L
+              to="/support"
+              className="text-accent-text underline decoration-accent-text/40 underline-offset-2 hover:decoration-accent-text"
+            >
               {m.download_closing_help()}
-            </Button>
+            </L>
           </div>
         </Panel>
       </Container>

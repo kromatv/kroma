@@ -6,15 +6,13 @@ interface FaqEntry {
   answer: ReactNode;
 }
 
-/** Built on native `<details>`/`<summary>`, so the disclosure works from the
- *  prerendered HTML, before and without hydration. */
 export function Faq({ items }: Readonly<{ items: readonly FaqEntry[] }>) {
   return (
     <div className="border-t border-border/70">
       {items.map((item) => (
         <details key={item.question} className="group border-b border-border/70">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 [&::-webkit-details-marker]:hidden">
-            <span className="font-display text-lg font-semibold text-text transition-colors group-hover:text-accent">
+            <span className="font-display text-lg font-semibold text-text transition-colors group-hover:text-accent-text">
               {item.question}
             </span>
             <IconChevronRight

@@ -18,14 +18,13 @@ const POINTS = [
   { id: 'release', Icon: IconTag, title: m.modules_what_3_title, body: m.modules_what_3_body },
 ] as const;
 
-/** The three properties that make a module a module, rather than a plugin. */
 export function HowItWorks() {
   return (
     <Section title={m.modules_what_title()}>
       <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-3">
         {POINTS.map(({ id, Icon, title, body }) => (
           <div key={id} className="bg-surface-1/40 p-6">
-            <Icon size={22} stroke={1.75} aria-hidden className="text-accent" />
+            <Icon size={22} stroke={1.75} aria-hidden className="text-accent-text" />
             <h3 className="mt-4 font-display text-lg font-bold leading-snug text-text">
               {title()}
             </h3>
@@ -37,7 +36,6 @@ export function HowItWorks() {
   );
 }
 
-/** The three steps an install actually takes, numbered. */
 export function InstallFlow() {
   const steps = [m.modules_install_1(), m.modules_install_2(), m.modules_install_3()];
 
@@ -49,7 +47,7 @@ export function InstallFlow() {
             key={step}
             className="rounded-2xl border border-border bg-surface-1/40 p-6 text-sm leading-relaxed text-muted"
           >
-            <span className="font-mono text-[0.7rem] font-bold tracking-[0.16em] text-accent">
+            <span className="font-mono text-[0.7rem] font-bold tracking-[0.16em] text-accent-text">
               {String(i + 1).padStart(2, '0')}
             </span>
             <p className="mt-3">{step}</p>

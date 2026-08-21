@@ -136,7 +136,7 @@ export function Platforms() {
                   key={id}
                   className="flex items-center gap-3.5 rounded-xl border border-border bg-surface-1/40 px-4 py-3.5 transition-colors duration-200 hover:border-border-strong hover:bg-surface-1"
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent-text">
                     <Icon size={19} stroke={1.75} aria-hidden />
                   </span>
                   <div className="min-w-0">

@@ -52,9 +52,9 @@ const release = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-const NIGHTLY = release({
-  tag_name: 'nightly',
-  name: 'nightly',
+const CANARY = release({
+  tag_name: 'canary',
+  name: 'canary',
   prerelease: true,
   published_at: '2026-07-02T00:00:00Z',
   assets: [asset('kroma-1.3.0-9000001-x86_64.spk')],
@@ -141,15 +141,15 @@ describe('machineResponse', () => {
     expect(packages[0]?.version).toBe('1.2.3-3439372');
   });
 
-  it('answers /nightly.json with the nightly, and /catalog.json with neither', async () => {
-    ghServing([NIGHTLY]);
-    expect((await packagesOf(await machine('/nightly.json')))[0]?.version).toBe('1.3.0-9000001');
+  it('answers /canary.json with the canary, and /catalog.json with neither', async () => {
+    ghServing([CANARY]);
+    expect((await packagesOf(await machine('/canary.json')))[0]?.version).toBe('1.3.0-9000001');
     expect(await packagesOf(await machine('/catalog.json'))).toEqual([]);
   });
 
-  it('answers /nightly.json with an empty list while no nightly has been cut', async () => {
+  it('answers /canary.json with an empty list while no canary has been cut', async () => {
     ghServing([release()]);
-    expect(await packagesOf(await machine('/nightly.json'))).toEqual([]);
+    expect(await packagesOf(await machine('/canary.json'))).toEqual([]);
   });
 
   it('warms the edge cache in the background, so the next probe skips GitHub', async () => {
@@ -171,7 +171,7 @@ describe('machineResponse', () => {
   });
 
   it('lists every channel with its release detail on /all.json', async () => {
-    ghServing([release(), NIGHTLY]);
+    ghServing([release(), CANARY]);
     const body = (await (await machine('/all.json')).json()) as {
       fetchedAt: string;
       repo: string;
@@ -179,7 +179,7 @@ describe('machineResponse', () => {
     };
     expect(body.repo).toBe('maxscharwath/kroma');
     expect(body.fetchedAt).toBeTruthy();
-    expect(body.packages.map((p) => p.channel)).toEqual(['nightly', 'stable']);
+    expect(body.packages.map((p) => p.channel)).toEqual(['canary', 'stable']);
     expect(body.packages[1]).toMatchObject({
       version: '1.2.3-3439372',
       link: 'https://dl/kroma-1.2.3-3439372-x86_64.spk',
@@ -260,8 +260,8 @@ describe('the DSM feed at the root', () => {
     expect(await packagesOf(blank)).toHaveLength(1);
   });
 
-  it('prefers the nightly for a beta subscriber only when it is ahead of stable', async () => {
-    ghServing([release(), NIGHTLY]);
+  it('prefers the canary for a beta subscriber only when it is ahead of stable', async () => {
+    ghServing([release(), CANARY]);
     const beta = await machine('/', {
       method: 'POST',
       body: 'arch=x86_64&package_update_channel=beta',
@@ -275,11 +275,11 @@ describe('the DSM feed at the root', () => {
     expect((await packagesOf(stable))[0]?.version).toBe('1.2.3-3439372');
   });
 
-  it('falls back to stable for a beta subscriber when the nightly is behind', async () => {
+  it('falls back to stable for a beta subscriber when the canary is behind', async () => {
     ghServing([
       release(),
       release({
-        tag_name: 'nightly',
+        tag_name: 'canary',
         prerelease: true,
         assets: [asset('kroma-0.0.9-1-x86_64.spk')],
       }),
