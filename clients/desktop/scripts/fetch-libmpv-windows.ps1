@@ -16,14 +16,21 @@ Outputs (for the caller / CI):
   - sets KROMA_MPV_LIB_DIR (GITHUB_ENV) = <outdir>, consumed by build.rs
 
 Idempotent: skips the download when the archive is already present with the right sha.
-Bump VERSION_TAG + ASSET + SHA256 together to upgrade.
+Bump ASSET + SHA256 together to upgrade.
+
+FROM SOURCEFORGE, NOT GITHUB. This used to pull zhongfly/mpv-winbuild releases,
+which are a rolling ~30-day window: everything older is deleted, so the pin
+eventually stopped resolving and the Windows job failed on a 404 with nothing in
+the diff to explain it. mpv-player-windows is shinchiro's own distribution and
+keeps every build ever published - the 2020-01-05 archive still downloads - so a
+pin here stays good and the build breaks only when we choose to move it.
 #>
 $ErrorActionPreference = 'Stop'
 
-# --- pin (bump the three together) --------------------------------------------
-$VersionTag = '2026-07-21-94335ab87a'
-$Asset      = 'mpv-dev-x86_64-20260721-git-94335ab87a.7z'
-$Sha256     = '0377122DB231BF2AB1B708524C15F8D3FAF2E4FA8199318B33A921AEF7BBA83A'
+# --- pin (bump the two together) ----------------------------------------------
+# Listing: https://sourceforge.net/projects/mpv-player-windows/files/libmpv/
+$Asset  = 'mpv-dev-x86_64-20260809-git-dd5d17d328.7z'
+$Sha256 = 'C6AEBF40BB722EFE79090BFEB61E68625F0837770347E5A8B610AEF78900CF12'
 # ------------------------------------------------------------------------------
 
 $here   = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -37,7 +44,7 @@ function Get-Sha256($path) {
 }
 
 if (-not (Test-Path $archive) -or (Get-Sha256 $archive) -ne $Sha256) {
-  $url = "https://github.com/zhongfly/mpv-winbuild/releases/download/$VersionTag/$Asset"
+  $url = "https://downloads.sourceforge.net/project/mpv-player-windows/libmpv/$Asset"
   Write-Host "fetch-libmpv-windows: downloading $Asset"
   Invoke-WebRequest -Uri $url -OutFile $archive
   $got = Get-Sha256 $archive

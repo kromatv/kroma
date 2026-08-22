@@ -5,6 +5,9 @@ import { SCREEN_PAD, STAGE_W } from '#tv/shared/stage';
 export interface GridCard {
   id: string;
   title: string;
+  /** The word above the name saying what the tile is. Omit it in a grid that
+   *  holds one kind, where every tile would repeat the same word. */
+  overline?: string;
   /** Portrait art at the width of the cell the tile lands in: the column is
    *  measured, so the rendition asked for follows it. */
   poster: (width: number) => string;
@@ -42,6 +45,7 @@ function PosterGridImpl({ cards }: Readonly<{ cards: GridCard[] }>) {
           // DOM order without one, so neither lands where the design says.
           autoFocus={index === 0}
           title={c.title}
+          overline={c.overline}
           art={c.poster(width)}
           tint={c.colors}
           watched={c.watched}

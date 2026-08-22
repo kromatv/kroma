@@ -106,11 +106,13 @@ export function ModuleCard({ module: m }: Readonly<{ module: ModuleEntry }>) {
           <Img src={m.icon ?? null} fill fit="cover" radius={ICON_RADIUS} />
         </Box>
         <Column gap={4} grow={1} shrink={1} basis={220} minW={0}>
-          <Row gap={8} align="baseline">
-            <Box shrink={1} minW={0}>
-              <Text variant="title">{m.name}</Text>
+          <Row gap={8} align="baseline" wrap>
+            <Box grow={1} shrink={1} basis={180} minW={0}>
+              <Text variant="title" lines={2}>
+                {m.name}
+              </Text>
             </Box>
-            <Row gap={6} shrink={0}>
+            <Row gap={6} shrink={0} wrap>
               <Badge tone="neutral">v{m.version}</Badge>
               {m.library ? <Badge tone="info">Library</Badge> : null}
               {(m.contributes ?? []).map((c: { point: string; id?: string | null }) => (

@@ -15,6 +15,9 @@ import { styles, useTheme } from '#ui/core';
 
 interface PosterCardProps {
   title: string;
+  /** A word above the title naming what the tile is - `FILM`, `SERIES`. Cased by
+   *  the style, so pass it in the reading case. Omit it and the title sits alone. */
+  overline?: string;
   /** Portrait key art. Falls back to the `tint` gradient. */
   art: string | null;
   tint: readonly [string, string];
@@ -32,6 +35,7 @@ interface PosterCardProps {
 
 function PosterCard({
   title,
+  overline,
   art,
   tint,
   progress = null,
@@ -58,7 +62,12 @@ function PosterCard({
         <Img src={art} background={tintGradient(tint)} radius={radius.lg} fill />
         <ArtScrim variant="deep" radius="lg" />
         {watched ? <WatchedBadge size={26} /> : null}
-        <Box absolute left={14} right={14} bottom={12}>
+        <Box absolute left={14} right={14} bottom={12} gap={3}>
+          {overline ? (
+            <Text style={s.overline} lines={1}>
+              {overline}
+            </Text>
+          ) : null}
           <Text style={s.title} lines={2}>
             {title}
           </Text>
@@ -74,6 +83,15 @@ function PosterCard({
 }
 
 const s = styles({
+  overline: {
+    font: 'ui',
+    fontWeight: '700',
+    fontSize: 11,
+    lineHeight: 13,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: 'white/65',
+  },
   title: {
     font: 'display',
     fontWeight: '700',

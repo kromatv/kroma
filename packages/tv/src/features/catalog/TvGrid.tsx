@@ -93,6 +93,7 @@ export function TvGrid() {
       entries.map((e) => ({
         id: e.item.id,
         title: e.item.title,
+        overline: t(e.kind === 'show' ? 'content.series' : 'content.film'),
         poster: (width: number) => entryPoster(client, e, width),
         colors: posterColors(e.item.id),
         watched: watched.has(e.item.id),
@@ -101,7 +102,7 @@ export function TvGrid() {
           e.kind === 'movie' ? nav.go('movie', { item: e.item }) : nav.go('show', { show: e.item }),
         onFocus: () => setFocusId(e.item.id),
       })),
-    [entries, client, nav, watched],
+    [entries, client, nav, watched, t],
   );
 
   const focused = useMemo<Entry | null>(
