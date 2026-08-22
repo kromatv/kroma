@@ -156,8 +156,8 @@ function statsRows(s: WebStatsInput, m: StatsMetrics): ExtraRow[] {
   return rows;
 }
 
-// A low-water mark, not the goal: the engines buffer 120 s ahead, and 10 s is
-// Shaka's own default `bufferingGoal`.
+// A low-water mark, not the goal: the goal is per-title (see `itemBufferPlan`),
+// and 10 s is Shaka's own default `bufferingGoal`.
 const LOW_BUFFER_SEC = 10;
 
 // Bandwidth and bitrate share one chart: the gap between them is the

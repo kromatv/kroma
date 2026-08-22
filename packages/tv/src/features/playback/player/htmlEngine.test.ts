@@ -394,15 +394,29 @@ describe('HtmlEngine transport getters', () => {
     expect(makeEngine({ fv: c, direct: false, durationSec: 0 }).engine.duration()).toBe(0);
   });
 
-  it('bufferedEnd adds the anchor to the last buffered range end', () => {
+  it('bufferedEnd reports the reachable end, not the far side of a hole', () => {
     const fv = fakeVideo();
     const { engine } = makeEngine({ fv, direct: false });
     expect(engine.bufferedEnd()).toBe(0);
+
     fv.setBuffered([
       [0, 10],
       [20, 55],
     ]);
-    expect(engine.bufferedEnd()).toBe(55);
+
+    expect(engine.bufferedEnd()).toBe(10);
+  });
+
+  it('bufferedEnd carries across a hole the engines skip', () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false, startSec: 30 });
+
+    fv.setBuffered([
+      [0, 10],
+      [10.3, 55],
+    ]);
+
+    expect(engine.bufferedEnd()).toBe(85);
   });
 
   it('isPaused reflects the element and play/pause drive it', () => {
@@ -560,7 +574,7 @@ describe('HtmlEngine destroy', () => {
   it('detaches every listener and clears the source', () => {
     const fv = fakeVideo();
     const { engine, listeners } = makeEngine({ fv, direct: false });
-    expect(fv.listenerCount('timeupdate')).toBe(1);
+    expect(fv.listenerCount('timeupdate')).toBeGreaterThan(0);
     engine.destroy();
     expect(fv.listenerCount('timeupdate')).toBe(0);
     expect(fv.get('src')).toBe('');

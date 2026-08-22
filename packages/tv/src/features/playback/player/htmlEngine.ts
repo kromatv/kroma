@@ -6,9 +6,14 @@
 
 import {
   attachDirectPlay,
+  type BufferPlan,
   decodableAudioCodecs,
+  hlsBufferConfig,
+  itemBufferPlan,
   type KromaClient,
   type MediaItem,
+  reachableBufferEnd,
+  shakaStreamingConfig,
 } from '@kroma/core';
 import {
   type EngineListeners,
@@ -58,6 +63,7 @@ export class HtmlEngine implements TvEngine {
   private readonly v: HTMLVideoElement;
   private readonly opts: HtmlOptions;
   private readonly durSec: number;
+  private readonly plan: BufferPlan;
   private baseSec: number;
   private rendition: number;
   private hls: HlsInstance | null = null;
@@ -71,6 +77,9 @@ export class HtmlEngine implements TvEngine {
     this.opts = opts;
     this.v = opts.video;
     this.durSec = opts.durationSec;
+    // Sized from THIS title's bitrate: a flat seconds goal that a web-dl fits in
+    // asks a remux for gigabytes, and the browser answers by evicting all film.
+    this.plan = itemBufferPlan(opts.item);
     this.baseSec = opts.startSec;
     this.rendition = opts.initialRendition;
     const v = this.v;
@@ -82,8 +91,10 @@ export class HtmlEngine implements TvEngine {
       if (total > 0) L.onDuration(total);
       else if (Number.isFinite(v.duration)) L.onDuration(v.duration);
     };
-    const onProg = () =>
-      L.onBuffered(v.buffered.length ? this.baseSec + v.buffered.end(v.buffered.length - 1) : 0);
+    const onProg = () => {
+      const end = reachableBufferEnd(v.buffered, v.currentTime);
+      L.onBuffered(end > 0 ? this.baseSec + end : 0);
+    };
     const onPlay = () => L.onPlay();
     const onPause = () => L.onPause();
     const onWaiting = () => L.onWaiting();
@@ -101,6 +112,9 @@ export class HtmlEngine implements TvEngine {
       ['timeupdate', onTime],
       ['durationchange', onDur],
       ['progress', onProg],
+      // Also on `timeupdate`: the reachable end jumps when the playhead crosses a
+      // hole, and nothing is downloading at that moment for `progress` to fire.
+      ['timeupdate', onProg],
       ['play', onPlay],
       ['pause', onPause],
       ['waiting', onWaiting],
@@ -193,11 +207,7 @@ export class HtmlEngine implements TvEngine {
       }
       const player = new shaka.Player();
       this.shaka = player;
-      // Buffer far ahead: Shaka's default bufferingGoal is only 10s, too stingy
-      // for the server's readrate-1.5 remux (the web client's numbers).
-      player.configure({
-        streaming: { bufferingGoal: 120, bufferBehind: 60, rebufferingGoal: 4 },
-      });
+      player.configure({ streaming: shakaStreamingConfig(this.plan) });
       // Shaka reports the same relative clock as hls.js, so `baseSec` applies
       // unchanged.
       player
@@ -216,7 +226,12 @@ export class HtmlEngine implements TvEngine {
         v.preload = 'auto';
         return;
       }
-      const hls = new Hls({ enableWorker: true, lowLatencyMode: false, startPosition: 0 });
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        startPosition: 0,
+        ...hlsBufferConfig(this.plan),
+      });
       this.hls = hls;
       hls.loadSource(url);
       hls.attachMedia(v);
@@ -268,9 +283,8 @@ export class HtmlEngine implements TvEngine {
     return Number.isFinite(this.v.duration) ? this.v.duration : 0;
   }
   bufferedEnd(): number {
-    return this.v.buffered.length
-      ? this.baseSec + this.v.buffered.end(this.v.buffered.length - 1)
-      : 0;
+    const end = reachableBufferEnd(this.v.buffered, this.v.currentTime);
+    return end > 0 ? this.baseSec + end : 0;
   }
 
   seekTo(absSec: number): void {

@@ -5,18 +5,17 @@
 // so the absolute position is `baseSec + currentTime`, where `baseSec` is the
 // keyframe start the server reports rather than the anchor that was asked for.
 
-import type { AudioTrack, EngineDecision } from '@kroma/core';
+import {
+  type AudioTrack,
+  type EngineDecision,
+  hlsBufferConfig,
+  itemBufferPlan,
+  shakaStreamingConfig,
+} from '@kroma/core';
 import type { WebEnginePref } from '#web/features/playback/engine-pref';
 import { kromaClient, type MovieView } from '#web/shared/lib/api';
 
 export type HlsInstance = import('hls.js').default;
-
-// hls.js defaults cap at 30s/60MB and Shaka's bufferingGoal is only 10s, both
-// too stingy for the server's readrate-1.5 remux, which produces well ahead.
-const FORWARD_BUFFER_SEC = 120;
-const MAX_FORWARD_BUFFER_SEC = 600;
-const BACK_BUFFER_SEC = 60;
-const MAX_BUFFER_BYTES = 500 * 1000 * 1000;
 
 /** The subset of Shaka's live `getStats()` snapshot the stats panel reads; bandwidth
  * is bits/s, times are seconds. */
@@ -152,6 +151,9 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
   }
 
   setUseHls(true);
+  // Sized from THIS title's bitrate: a flat seconds goal that a web-dl fits in
+  // asks a remux for gigabytes, and the browser answers by evicting all film.
+  const plan = itemBufferPlan(item);
   // Remuxed from `startSec`; hls.js plays it from relative 0 and the hook adds
   // the server's reported start back to report the absolute position.
   const url = kromaClient().hlsMasterUrl(item.id, decision.aacMaster, startSec, audioRel);
@@ -171,13 +173,7 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
       }
       const player = new shaka.Player();
       shakaRef.current = player;
-      player.configure({
-        streaming: {
-          bufferingGoal: FORWARD_BUFFER_SEC,
-          bufferBehind: BACK_BUFFER_SEC,
-          rebufferingGoal: 4,
-        },
-      });
+      player.configure({ streaming: shakaStreamingConfig(plan) });
       player
         .attach(v)
         .then(() => player.load(url))
@@ -212,10 +208,7 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
       enableWorker: true,
       lowLatencyMode: false,
       startPosition: 0,
-      maxBufferLength: FORWARD_BUFFER_SEC,
-      maxMaxBufferLength: MAX_FORWARD_BUFFER_SEC,
-      maxBufferSize: MAX_BUFFER_BYTES,
-      backBufferLength: BACK_BUFFER_SEC,
+      ...hlsBufferConfig(plan),
     });
     hlsRef.current = hls;
     hls.loadSource(url);

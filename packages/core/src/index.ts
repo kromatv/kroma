@@ -17,6 +17,7 @@ export * from './people';
 export * from './permissions';
 export * from './person-facts';
 export * from './platform';
+export * from './playback-buffer';
 export * from './player';
 export * from './push-labels';
 export * from './remote';

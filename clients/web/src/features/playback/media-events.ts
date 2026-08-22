@@ -1,6 +1,7 @@
 // The `<video>` element event wiring; `useVideoPlayback` owns the React
 // state/effects that drive these helpers.
 
+import { reachableBufferEnd } from '@kroma/core';
 import type { MovieView } from '#web/shared/lib/api';
 
 export interface MediaEventSetters {
@@ -44,8 +45,10 @@ export function bindMediaEvents(
     if (total > 0) setDur(total);
     else if (Number.isFinite(v.duration)) setDur(baseSec + v.duration);
   };
-  const onProg = () =>
-    setBufEnd(v.buffered.length ? baseSec + v.buffered.end(v.buffered.length - 1) : 0);
+  const onProg = () => {
+    const end = reachableBufferEnd(v.buffered, v.currentTime);
+    setBufEnd(end > 0 ? baseSec + end : 0);
+  };
   const onPause = () => setPlaying(false);
   const onWaiting = () => setWaiting(true);
   const onPlaying = () => setWaiting(false);
@@ -71,6 +74,9 @@ export function bindMediaEvents(
   v.addEventListener('timeupdate', onTime);
   v.addEventListener('durationchange', onDur);
   v.addEventListener('progress', onProg);
+  // Also on `timeupdate`: the reachable end jumps when the playhead crosses a
+  // hole, and nothing is downloading at that moment for `progress` to fire.
+  v.addEventListener('timeupdate', onProg);
   v.addEventListener('play', onStarted);
   v.addEventListener('pause', onPause);
   v.addEventListener('waiting', onWaiting);
@@ -84,6 +90,7 @@ export function bindMediaEvents(
     v.removeEventListener('timeupdate', onTime);
     v.removeEventListener('durationchange', onDur);
     v.removeEventListener('progress', onProg);
+    v.removeEventListener('timeupdate', onProg);
     v.removeEventListener('play', onStarted);
     v.removeEventListener('pause', onPause);
     v.removeEventListener('waiting', onWaiting);

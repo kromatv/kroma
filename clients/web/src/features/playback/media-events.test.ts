@@ -52,18 +52,59 @@ describe('bindMediaEvents', () => {
     expect(s.setDur).toHaveBeenCalledWith(5885);
   });
 
-  it('reports the buffered end (anchor + last range), or 0 when empty', () => {
+  it('reports the buffer the playhead can reach, not the far side of a hole', () => {
     const fv = fakeVideo();
     const s = mkSetters();
     bindMediaEvents(fv.el, item, s, 100);
     fv.fire('progress');
     expect(s.setBufEnd).toHaveBeenCalledWith(0);
+
     fv.setBuffered([
       [0, 30],
       [50, 80],
     ]);
     fv.fire('progress');
+
+    expect(s.setBufEnd).toHaveBeenCalledWith(130);
+  });
+
+  it('carries the readout across a hole small enough for the engines to skip', () => {
+    const fv = fakeVideo();
+    const s = mkSetters();
+    bindMediaEvents(fv.el, item, s, 100);
+
+    fv.setBuffered([
+      [0, 30],
+      [30.2, 80],
+    ]);
+    fv.fire('progress');
+
     expect(s.setBufEnd).toHaveBeenCalledWith(180);
+  });
+
+  it('reports nothing reachable while the playhead sits in a hole', () => {
+    const fv = fakeVideo({ currentTime: 40 });
+    const s = mkSetters();
+    bindMediaEvents(fv.el, item, s, 100);
+
+    fv.setBuffered([
+      [0, 30],
+      [50, 80],
+    ]);
+    fv.fire('progress');
+
+    expect(s.setBufEnd).toHaveBeenCalledWith(0);
+  });
+
+  it('re-reads the buffer on timeupdate, when no download is in flight', () => {
+    const fv = fakeVideo();
+    const s = mkSetters();
+    bindMediaEvents(fv.el, item, s, 100);
+    fv.setBuffered([[0, 30]]);
+
+    fv.fire('timeupdate');
+
+    expect(s.setBufEnd).toHaveBeenCalledWith(130);
   });
 
   it('maps pause / waiting / playing / volume / rate events', () => {
