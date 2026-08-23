@@ -1,0 +1,94 @@
+name: Site
+
+# kroma.tv. The site is PRERENDERED: `vite build` reads the releases feed and
+# bakes /download and /download/archive into static pages, so the download
+# page is exactly as old as the last deploy. Nothing deployed it until this
+# workflow existed, and the live page sat on 0.1.30 while main shipped 0.1.39.
+#
+# So it deploys on three occasions, all of which change what a visitor sees:
+# the site's own sources changed, a run published a release, or a run put a
+# build on the canary channel.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/www/**'
+      - 'packages/bundler/**'
+      - 'packages/registry/**'
+      - 'packages/site-kit/**'
+      - 'packages/site-meta/**'
+      - 'packages/ui/**'
+      - 'bun.lock'
+      - '.bun-version'
+      - '.github/workflows/site.yml'
+  # The fleet's canary uploads, the Synology .spk's, and a promoted release.
+  workflow_run:
+    workflows: [Build & Release, Synology, Deploy]
+    types: [completed]
+    branches: [main]
+  pull_request:
+    paths:
+      - 'apps/www/**'
+      - '.github/workflows/site.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Build + deploy (kroma.tv)
+    # A finished run that failed published nothing, so there is nothing new to
+    # bake. Every other trigger always builds: the build IS the gate.
+    if: >-
+      github.event_name != 'workflow_run'
+      || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+
+      - run: bun install --frozen-lockfile
+
+      # The gate: the build IS the prerender, so a broken page, a bad link in
+      # the crawl or a release missing a platform's file fails here rather
+      # than at deploy time. The token is what keeps the releases feed off the
+      # sixty-an-hour anonymous limit runners share.
+      - name: Build the site
+        run: bun run build:site
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # Soft gate: no token -> skip with a notice rather than a red run.
+      # Secrets cannot be read in a job-level `if`.
+      - name: Check for the Cloudflare token
+        id: guard
+        if: github.event_name != 'pull_request'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN not set; skipping the kroma.tv deploy (deploy by hand with 'bun run deploy:site')."
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # dist/ is already built above, so deploy it directly rather than through
+      # the workspace `deploy` script, which would build it again.
+      - name: Deploy the site (kroma.tv)
+        if: steps.guard.outputs.has_token == 'true'
+        working-directory: apps/www
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: bunx wrangler@4 deploy -c dist/server/wrangler.json

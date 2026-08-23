@@ -129,16 +129,16 @@ public repository refuses to serve anonymously. With the channel on a release
 tag that path is redundant: the tag's `browser_download_url`s need no token,
 no zip wrapper and no thirty-day expiry.
 
-Two things still stand between a push and a visitor seeing it on /download:
+`site.yml` deploys it: on a change to the site's own sources, and on a
+`workflow_run` after Build & Release, Synology or Deploy, because each of
+those changes what a visitor sees. Until it existed nothing did, and the live
+page sat on 0.1.30 while main shipped 0.1.39.
 
-1. **Nothing deploys the site.** `bun run deploy:site` is run by hand, so the
-   prerendered download page is as old as the last deploy. A `site.yml` on the
-   `site` lane (already in `lanes.ts`), plus a `workflow_run` trigger after a
-   Release or a canary upload, closes that.
-2. **/download offers stable only.** The data is there (`canary` from
-   `virtual:kroma-releases`); the page needs a channel switch, the way the
-   archive already has one, and a "last canary, built N hours ago" line under
-   each platform.
+One thing still stands between a push and a visitor seeing it on /download:
+the page offers **stable only**. The data is there (`canary` from
+`virtual:kroma-releases`, which is what /download/archive renders); the page
+needs a channel switch the way the archive already has one, and a "last
+canary, built N hours ago" line under each platform.
 
 `desktop-autoupdate.yml` builds the three desktop installers a second time per
 push (without libmpv on macOS) for the updater's `desktop-latest` tag. Folding

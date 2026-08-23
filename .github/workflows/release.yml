@@ -74,6 +74,7 @@ on:
       - '.github/workflows/kit.yml'
       - '.github/workflows/tv-web.yml'
       - '.github/workflows/repo-worker.yml'
+      - '.github/workflows/site.yml'
       - '.github/workflows/desktop-autoupdate.yml'
       - '.github/workflows/apple-signing-doctor.yml'
       - '.github/workflows/deploy.yml'
