@@ -18,19 +18,27 @@ Outputs (for the caller / CI):
 Idempotent: skips the download when the archive is already present with the right sha.
 Bump ASSET + SHA256 together to upgrade.
 
-FROM SOURCEFORGE, NOT GITHUB. This used to pull zhongfly/mpv-winbuild releases,
-which are a rolling ~30-day window: everything older is deleted, so the pin
-eventually stopped resolving and the Windows job failed on a 404 with nothing in
-the diff to explain it. mpv-player-windows is shinchiro's own distribution and
-keeps every build ever published - the 2020-01-05 archive still downloads - so a
-pin here stays good and the build breaks only when we choose to move it.
+FROM OUR OWN MIRROR. The upstreams each fail one of the two things this needs.
+zhongfly/mpv-winbuild on GitHub keeps a rolling ~30-day window and deletes the
+rest, so the pin stopped resolving and the job failed on a 404. SourceForge
+(shinchiro's own channel) keeps every build ever published, but answers a
+non-browser user-agent with a 131 KB HTML interstitial, so the job downloaded a
+web page and failed on the sha instead.
+
+So the archive is mirrored byte-for-byte onto a `vendor-libmpv-*` release of
+this repo, which is neither rolling nor user-agent sniffed. To move it: take the
+build you want from
+  https://sourceforge.net/projects/mpv-player-windows/files/libmpv/
+in a BROWSER, upload it to a new `vendor-libmpv-<date>` prerelease, and bump the
+two values below. Keep it a prerelease with no `.spk`: that is what keeps it out
+of the download page and the Synology package source.
 #>
 $ErrorActionPreference = 'Stop'
 
-# --- pin (bump the two together) ----------------------------------------------
-# Listing: https://sourceforge.net/projects/mpv-player-windows/files/libmpv/
-$Asset  = 'mpv-dev-x86_64-20260809-git-dd5d17d328.7z'
-$Sha256 = 'C6AEBF40BB722EFE79090BFEB61E68625F0837770347E5A8B610AEF78900CF12'
+# --- pin (bump the three together) --------------------------------------------
+$VendorTag = 'vendor-libmpv-20260809'
+$Asset     = 'mpv-dev-x86_64-20260809-git-dd5d17d328.7z'
+$Sha256    = 'C6AEBF40BB722EFE79090BFEB61E68625F0837770347E5A8B610AEF78900CF12'
 # ------------------------------------------------------------------------------
 
 $here   = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -44,9 +52,18 @@ function Get-Sha256($path) {
 }
 
 if (-not (Test-Path $archive) -or (Get-Sha256 $archive) -ne $Sha256) {
-  $url = "https://downloads.sourceforge.net/project/mpv-player-windows/libmpv/$Asset"
+  $url = "https://github.com/maxscharwath/kroma/releases/download/$VendorTag/$Asset"
   Write-Host "fetch-libmpv-windows: downloading $Asset"
   Invoke-WebRequest -Uri $url -OutFile $archive
+  # A mismatch is usually not a tampered archive, it is not an archive at all:
+  # a host that answers a script with an HTML page still writes 200 bytes to
+  # disk. Say which of the two happened.
+  $magic = [System.IO.File]::ReadAllBytes($archive)[0..1]
+  if ($magic[0] -ne 0x37 -or $magic[1] -ne 0x7A) {
+    $head = (Get-Content $archive -TotalCount 1 -ErrorAction SilentlyContinue)
+    throw "fetch-libmpv-windows: $url did not answer with a 7z archive " +
+          "($((Get-Item $archive).Length) bytes, starts: $head)"
+  }
   $got = Get-Sha256 $archive
   if ($got -ne $Sha256) {
     throw "fetch-libmpv-windows: sha256 MISMATCH for $Asset (got $got, want $Sha256)"
