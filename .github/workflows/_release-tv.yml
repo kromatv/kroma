@@ -43,6 +43,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -107,6 +108,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
 
       - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
@@ -125,21 +127,15 @@ jobs:
           sed -i -E 's/(<widget[^>]*version=")[^"]*/\1${{ inputs.triplet }}/' clients/tizen/dist/config.xml
           grep -o 'version="[^"]*"' clients/tizen/dist/config.xml | head -1
 
-      - name: Cache Tizen Studio installer
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: web-cli.bin
-          key: tizen-cli-${{ env.TIZEN_STUDIO_VER }}
-
+      # Downloaded every run rather than cached: the 259 MB installer restored
+      # no faster than it downloads, and the install itself is the slow part.
       - name: Install Tizen Studio CLI
         run: |
-          if [ ! -f web-cli.bin ]; then
-            # --max-redirect=0: the URL serves the installer directly (200, no
-            # hops), so nothing legitimate needs a redirect - and refusing them
-            # outright is what stops one being pointed somewhere else.
-            # --https-only backs it up: TLS cannot be downgraded to plain http.
-            wget -q --https-only --max-redirect=0 -O web-cli.bin "https://download.tizen.org/sdk/Installer/tizen-studio_${TIZEN_STUDIO_VER}/web-cli_Tizen_Studio_${TIZEN_STUDIO_VER}_ubuntu-64.bin"
-          fi
+          # --max-redirect=0: the URL serves the installer directly (200, no
+          # hops), so nothing legitimate needs a redirect - and refusing them
+          # outright is what stops one being pointed somewhere else.
+          # --https-only backs it up: TLS cannot be downgraded to plain http.
+          wget -q --https-only --max-redirect=0 --tries=3 --waitretry=10 -O web-cli.bin "https://download.tizen.org/sdk/Installer/tizen-studio_${TIZEN_STUDIO_VER}/web-cli_Tizen_Studio_${TIZEN_STUDIO_VER}_ubuntu-64.bin"
           chmod +x web-cli.bin
           ./web-cli.bin --accept-license --no-java-check "$HOME/tizen-studio"
           echo "$HOME/tizen-studio/tools/ide/bin" >> "$GITHUB_PATH"
@@ -203,6 +199,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
 
       - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
@@ -212,6 +209,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           gradle-version: '8.13'
+          # Transforms (extracted AARs, instrumented jars) are derived from the
+          # dependencies and come back in about a minute; as a cache entry they
+          # were 0.6 GB per app, the largest single item in the repository's
+          # 10 GB quota after the Rust trees.
+          gradle-home-cache-excludes: |
+            caches/transforms-*
+            caches/*/transforms*
 
       - name: Install dependencies
         run: bun install --frozen-lockfile

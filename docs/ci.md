@@ -152,22 +152,48 @@ signing secrets to verify, which is why it is not part of this rebuild.
 
 | entry | size | written by |
 |---|---|---|
-| `rust` (server + modules, instrumented) | ~1.7 GB | ci.yml on main |
+| `rust` (server + modules, instrumented) | ~1.0 GB | ci.yml on main |
 | `desktop-check` | ~0.4 GB | ci.yml on main |
 | `desktop-release` x3 OS | ~1.2 GB | _release-desktop.yml, desktop-autoupdate.yml |
 | `dd-tvnative-v1-*`, `dd-mobile-v1-*` | ~0.8 + 0.6 GB, one each | the Apple jobs, pruned to one |
-| `ios-tvnative-v2-*`, `ios-mobile-v2-*` | ~0.9 GB | the Apple jobs, keyed by config hash |
-| Gradle home + dependencies | ~1.5 GB | the release Android jobs |
-| `synology-*`, `kmod-*`, scanner, bun | ~1 GB | synology.yml, modules.yml |
+| `ios-tvnative-v3-*`, `ios-mobile-v3-*` | ~0.2 GB each | the Apple jobs, keyed by config hash |
+| Gradle dependencies + build cache, per app | ~0.8 GB each | the release Android jobs |
+| `synology-v3`, `synology-arm64-v2` | ~0.8 GB | synology.yml |
+| `kmod-*` x3 targets | ~0.35 GB | modules.yml |
 
-About 8 GB when every entry is warm. If it grows past 10 GB again, the Rust
-entry is the first to go (it is the largest and the oldest between Rust
-pushes), and the symptom is a ten-minute `rust` job. `gh cache list` shows
-what is there; `bun run ci cache prune --prefix <key>-` retires duplicates.
+About 7 GB when every entry is warm, down from 11.9 GB. What went, and why
+it was not worth its space:
 
-A longer-term option is `sccache` with an R2 bucket (S3-compatible): per-object
-caching off the Actions quota, warm for pull requests too. Not done here
-because it needs bucket credentials as repository secrets.
+- Gradle transforms (0.6 GB per app, and two copies of each while the old
+  entry aged out): extracted AARs and instrumented jars, derived from the
+  dependencies in about a minute. Excluded through `gradle-home-cache-excludes`.
+- A second Gradle distribution: the phone build ran `./gradlew` (a wrapper
+  zip, 130 MB) while the TV build ran the `gradle` setup-gradle installs
+  (another 130 MB). Both use the latter now.
+- `~/Library/Caches/CocoaPods` inside the iOS project entries (about 0.25 GB
+  each): a hit skips `pod install`, and a miss on an exact key restores
+  nothing, so nothing ever read it.
+- CodeQL's overlay base database (190 MB per push to main, two copies at any
+  time): `CODEQL_OVERLAY_DATABASE_MODE=none`; the scan is three minutes
+  either way.
+- The Tizen Studio installer (259 MB): restored no faster than it downloads.
+- The bun binary (20 to 37 MB per platform and version, five copies): a
+  GitHub release download of the same size.
+- `server/target/release` in the Synology entry: the .spk build only ever
+  writes the musl target dir.
+- Earlier: two DerivedData copies per Apple app and a separate instrumented
+  Rust tree for Sonar (see above).
+
+If usage climbs past 10 GB again, the Rust entry is the first to go (it is
+the largest and the oldest between Rust pushes), and the symptom is a
+ten-minute `rust` job. `gh cache list` shows what is there;
+`bun run ci cache prune --prefix <key>-` retires duplicates.
+
+The remaining 3 GB of Rust trees are the next step, and it leaves the quota
+entirely: `sccache` with an R2 bucket (S3-compatible, no egress fees) caches
+per object, is warm for pull requests too, and needs only an access key pair
+and the bucket name as repository secrets. Not done here because the bucket
+and its token have to be created in the Cloudflare dashboard.
 
 ## Bun
 

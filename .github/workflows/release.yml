@@ -129,6 +129,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
       - id: v
         run: bun run ci version
@@ -277,6 +278,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:

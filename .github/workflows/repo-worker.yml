@@ -68,6 +68,7 @@ jobs:
         if: steps.guard.outputs.has_token == 'true'
         with:
           bun-version-file: .bun-version
+          no-cache: true
 
       # Both are SSR apps now: `deploy` builds the client + server bundles first,
       # and wrangler serves the handler with the client assets beside it.

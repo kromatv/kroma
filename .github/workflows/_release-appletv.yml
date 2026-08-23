@@ -70,6 +70,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
 
       - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
         with:
@@ -153,16 +154,17 @@ jobs:
         id: ios-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
+          # Not ~/Library/Caches/CocoaPods: a hit skips pod install, and a miss
+          # (exact key) restores nothing, so it was weight nothing ever read.
           path: |
             clients/tv-native/ios
-            ~/Library/Caches/CocoaPods
           # The config PLUGINS are hashed too. They generate part of the
           # project - the Top Shelf extension's whole Info.plist comes from
           # one - so a plugin edit changes prebuild's output while leaving
           # every manifest untouched. Without them in the key, a cache hit
           # skips prebuild and silently rebuilds the OLD project: the arm64
           # fix would have been cached straight over.
-          key: ios-tvnative-v2-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'clients/tv-native/package.json', 'clients/tv-native/app.config.ts', 'clients/tv-native/plugins/**') }}
+          key: ios-tvnative-v3-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'clients/tv-native/package.json', 'clients/tv-native/app.config.ts', 'clients/tv-native/plugins/**') }}
 
       # The build number is minutes-since-2020, so a restored project carries
       # the one from the run that cached it and App Store Connect would refuse

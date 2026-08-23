@@ -48,6 +48,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
       - id: lanes
         run: bun run ci lanes
@@ -87,6 +88,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run check
@@ -106,6 +108,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - run: bun install --frozen-lockfile
       - run: bun run ci test --shard ${{ matrix.shard }}/${{ env.SHARDS }}
       # A dot-directory: without include-hidden-files the upload finds nothing.
@@ -132,6 +135,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - run: bun install --frozen-lockfile
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -161,6 +165,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - run: bun install --frozen-lockfile
       # The site's build reads the published releases from the GitHub API to
       # bake /download. Anonymous GitHub allows sixty requests an hour per IP
@@ -190,7 +195,12 @@ jobs:
   # JS-only check compiles. `android/` is generated, so prebuild first. Only
   # a change under clients/tv-native or to the install can reach it; the
   # Metro bundle check in `build` covers the TypeScript for everything else.
-  android:
+  #
+  # The job id is the release job's (`tv-native` in _release-tv.yml) because
+  # setup-gradle keys a Gradle home on it and falls back across workflows by
+  # it: named anything else, this job restored the PHONE app's home and
+  # compiled the TV app against it.
+  tv-native:
     name: Android TV compile
     needs: lanes
     if: needs.lanes.outputs.android == 'true'
@@ -201,17 +211,27 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: temurin
           java-version: '17'
-      # Read-only: the release build on main writes the Gradle home this job
-      # restores, so a second copy of the dependency set never lands in the
-      # repository's 10 GB cache quota.
+      # Writes from main like every other cache here. Read-only, the job
+      # restored a Gradle home with neither this app's dependencies nor its
+      # task outputs and compiled everything (592 tasks, 74 from cache, 8.5
+      # min). Dependencies and task outputs are content-hashed entries that
+      # setup-gradle shares between jobs, so writing adds one small home
+      # entry rather than a second copy of the set.
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           gradle-version: '8.13'
-          cache-read-only: true
+          # Transforms (extracted AARs, instrumented jars) are derived from the
+          # dependencies and come back in about a minute; as a cache entry they
+          # were 0.6 GB per app, the largest single item in the repository's
+          # 10 GB quota after the Rust trees.
+          gradle-home-cache-excludes: |
+            caches/transforms-*
+            caches/*/transforms*
       - run: bun install --frozen-lockfile
       - run: bun run --filter '@kroma/tv-native' prebuild -- --platform android
       # --build-cache reuses task outputs keyed on their inputs, which the
@@ -236,6 +256,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
@@ -264,6 +285,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
         with:
           components: clippy, rustfmt, llvm-tools-preview
@@ -313,6 +335,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
+          no-cache: true
       - run: bun install --frozen-lockfile
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
