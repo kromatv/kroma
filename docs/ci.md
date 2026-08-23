@@ -157,12 +157,17 @@ signing secrets to verify, which is why it is not part of this rebuild.
 | `desktop-release` x3 OS | ~1.2 GB | _release-desktop.yml, desktop-autoupdate.yml |
 | `dd-tvnative-v1-*`, `dd-mobile-v1-*` | ~0.8 + 0.6 GB, one each | the Apple jobs, pruned to one |
 | `ios-tvnative-v3-*`, `ios-mobile-v3-*` | ~0.2 GB each | the Apple jobs, keyed by config hash |
-| Gradle dependencies + build cache, per app | ~0.8 GB each | the release Android jobs |
+| Gradle dependencies + build cache, per app | ~0.9 GB each | the release Android jobs |
 | `synology-v3`, `synology-arm64-v2` | ~0.8 GB | synology.yml |
 | `kmod-*` x3 targets | ~0.35 GB | modules.yml |
 
-About 7 GB when every entry is warm, down from 11.9 GB. What went, and why
-it was not worth its space:
+About 9 GB with every entry warm, down from 11.9 GB, and the run that used
+to evict the Rust tree no longer does. Half of what is left is two pairs
+that earn their space: the Apple DerivedData entries (1.4 GB, worth about
+ten minutes per archive) and the Rust target dirs (2.6 GB across the
+server, the desktop check and the three desktop release builds).
+
+What went, and why it was not worth its space:
 
 - Gradle transforms (0.6 GB per app, and two copies of each while the old
   entry aged out): extracted AARs and instrumented jars, derived from the
