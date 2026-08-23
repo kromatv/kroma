@@ -25,6 +25,8 @@
     "modules:test": "bun run modules cargo test",
     "modules:clippy": "bun run modules cargo clippy --all-targets",
     "modules:check": "bun run modules:validate && bun run modules:gen && git diff --exit-code -- modules server/crates/kroma-modules-generated packages/modules-generated",
+    "tv": "bun packages/tv-installer/src/cli.ts",
+    "build:tv-cli": "bun run --filter '@kroma/tv-installer' compile",
     "spec:index": "bun docs/spec/scripts/spec-index.ts",
     "spec:check": "bun docs/spec/scripts/spec-index.ts --check",
     "shots": "bun run --filter '@kroma/ui' shots",

@@ -1,0 +1,36 @@
+{
+  "name": "@kroma/tv-installer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Finds the televisions on this network, installs the toolchain each platform needs, then sideloads KROMA onto them: a Samsung .wgt, an LG .ipk, an Android TV .apk.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/tv-installer"
+  },
+  "exports": {
+    ".": "./src/cli.ts"
+  },
+  "bin": {
+    "kroma-tv": "./src/cli.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "compile": "bun scripts/compile.ts"
+  },
+  "dependencies": {
+    "@clack/core": "1.4.3",
+    "@clack/prompts": "1.7.0",
+    "citty": "0.2.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "bun-types": "^1.4.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

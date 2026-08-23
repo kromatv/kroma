@@ -357,6 +357,10 @@ also ships a legacy tier (ES2015 + flattened CSS, runtime-gated) for
 Chromium 53–94 TVs (2018–2023), with a compat guard that fails the build on
 anything a legacy engine cannot parse. `bun run build:tv` builds all TV shells.
 
+`bun run tv` finds the televisions on your network and sideloads onto them
+(Samsung, LG, Android TV), toolchain included
+([tv-installer](packages/tv-installer/README.md)).
+
 **Installing on real devices** (TV developer mode, macOS quarantine, sideloading):
 see [INSTALL.md](INSTALL.md). **Joining the beta as a tester** (TestFlight,
 Firebase, sideloading on a beamer), written for non-technical users: see

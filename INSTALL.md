@@ -59,6 +59,23 @@ the server address on first launch and remembers it.
 
 ---
 
+## The easy path for TVs (`bun run tv`)
+
+From a clone of the repo (`bun install` once), one command sweeps the network for
+televisions, installs the Samsung, LG or Android tooling it needs, finds the
+newest package built here or pulls the latest release asset with `gh`, and
+installs KROMA on the sets you tick:
+
+```bash
+bun run tv
+```
+
+The developer-mode steps below still have to be done once on each television:
+nothing turns them on over the network. What the scan probes, the commands it
+takes without the picker, where each toolchain lands and the Local Network
+permission macOS asks for on the first sweep are in
+[packages/tv-installer/README.md](packages/tv-installer/README.md).
+
 ## Samsung TV (Tizen) `.wgt`
 
 One-time **developer mode** on the TV:
@@ -73,10 +90,13 @@ One-time **developer mode** on the TV:
 
 There is **no npm package** for Samsung's tooling (unlike LG's
 `@webos-tools/cli`): the `tizen` and `sdb` commands only ship with
-**Tizen Studio**. You do NOT need the IDE though - the **CLI-only**
-installer is enough, and installing a prebuilt `.wgt` needs **no
-certificate** (ours is already signed; certificates are only required to
-*package*):
+**Tizen Studio**. You do NOT need the IDE, the **CLI-only** installer is enough.
+
+You DO need a **certificate of your own**. A retail Samsung accepts only a
+distributor certificate Samsung issued against that set's DUID, so the release
+`.wgt` has to be re-signed before it installs; ours carries a build certificate
+that every retail set refuses with `Invalid certificate chain with certificate
+in signature`. `bun run tv` does the re-signing for you. By hand:
 
 ```bash
 # 1. Get the .wgt
@@ -93,8 +113,14 @@ export PATH="$PATH:$HOME/tizen-studio/tools:$HOME/tizen-studio/tools/ide/bin"
 sdb connect 192.168.1.50
 sdb devices                                # note the device id, e.g. UE50AU7172...
 
-# 4. Install
-tizen install -n KROMA-tizen-*.wgt -t <device-id>
+# 4. One-time: Tizen Studio > Tools > Certificate Manager > + > Samsung > TV.
+#    Sign in with a Samsung account, with the TV connected so it reads the DUID.
+
+# 5. Re-sign the release package with that profile, then install
+mkdir stage && cd stage && unzip -q ../KROMA-tizen-*.wgt
+rm -f author-signature.xml signature1.xml
+tizen package -t wgt -s <your-profile> -- .
+tizen install -n KROMA.wgt -- .
 ```
 
 ### Or build + deploy from the repo
@@ -104,10 +130,11 @@ make -C clients/tizen deploy TV_IP=192.168.1.50   # build + sign + install + lau
 ```
 
 Notes:
-- The release `.wgt` is signed with a **throwaway developer certificate**. A TV
-  in developer mode accepts it, but if a KROMA build signed with a *different*
-  certificate is already installed, uninstall that one first (Apps > long-press
-  the KROMA tile > Delete), or the install fails with a signature error.
+- The release `.wgt` is signed with a **build certificate**, which is enough for
+  the emulator and refused by every retail set. Re-sign it with your own profile,
+  as above. If a KROMA signed with a *different* certificate is already on the
+  set, uninstall that one first (Apps > long-press the KROMA tile > Delete), or
+  the install fails with a signature error.
 - Developer mode survives reboots; the app stays installed like any other.
 - Community GUI installers that skip Tizen Studio exist (they speak the sdb
   protocol directly), but nothing official or maintained enough to recommend

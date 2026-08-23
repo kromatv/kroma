@@ -1,0 +1,94 @@
+name: Release the television installer
+
+# `bun run tv` as a single executable, for a machine that has no checkout of
+# this repository. Called by release.yml; never triggered on its own.
+#
+# Three targets, and Windows is not one of them: the installer drives sdb, adb,
+# ares and devicectl, and reads an ARP table, a keychain and a System Settings
+# pane, which is a POSIX machine's worth of assumptions.
+#
+# The macOS binaries are built ON macOS rather than cross-compiled, because
+# `bun build --compile` leaves an ad-hoc signature the system refuses to run
+# ("killed: 9") until `codesign --force --sign -` replaces it, and codesign
+# exists nowhere else. scripts/compile.ts does that as part of the build.
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+      channel:
+        type: string
+        required: true
+
+jobs:
+  installer:
+    name: kroma-tv ${{ matrix.label }}
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tools"]'), github.event.inputs.targets)) }}
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write # attach assets to the Release
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: bun-darwin-arm64
+            label: macOS (Apple silicon)
+            runner: macos-15
+          - target: bun-darwin-x64
+            label: macOS (Intel)
+            runner: macos-15
+          - target: bun-linux-x64
+            label: Linux (x86_64)
+            runner: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+
+      # The installer's own dependencies and nothing else: it links no client.
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --filter '@kroma/tv-installer'
+
+      - name: Compile
+        run: bun run build:tv-cli --target=${{ matrix.target }}
+
+      # The version is in the name because nothing inside the binary carries it
+      # and a downloaded tool outlives the tab it came from.
+      - name: Name it after this build
+        id: binary
+        run: |
+          BUILT="packages/tv-installer/dist/kroma-tv-${{ matrix.target }}"
+          BUILT="${BUILT/bun-/}"
+          NAMED="packages/tv-installer/dist/kroma-tv-${{ inputs.version }}-${{ matrix.target }}"
+          NAMED="${NAMED/bun-/}"
+          mv "$BUILT" "$NAMED"
+          echo "path=$NAMED" >> "$GITHUB_OUTPUT"
+          ls -l "$NAMED"
+
+      - name: Check it runs
+        # A cross-compiled binary cannot be, so only the host's own is tried.
+        if: matrix.target != 'bun-darwin-x64'
+        run: ${{ steps.binary.outputs.path }} --help
+
+      - name: Upload the binary
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kroma-tv-${{ matrix.target }}
+          path: ${{ steps.binary.outputs.path }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attach to the Release
+        # Only a STABLE release attaches here. A candidate build uploads its
+        # artifacts and stops; deploy.yml publishes them later.
+        if: inputs.channel == 'stable'
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          draft: true
+          files: ${{ steps.binary.outputs.path }}

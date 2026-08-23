@@ -86,7 +86,7 @@ on:
       targets:
         description: 'What to build'
         type: choice
-        options: [all, spk, desktop, tv, mobile]
+        options: [all, spk, desktop, tv, mobile, tools]
         default: all
         required: false
       distribute:
@@ -143,6 +143,23 @@ jobs:
   # `<module-id>@<version>` tags from .github/workflows/modules.yml, on their own
   # cadence, so a module fix no longer waits for a server version to ship. A
   # server release therefore neither builds nor gates on them.
+
+  # ----------------------------------------------------------------- TOOLS ---
+
+  # `bun run tv` as a downloadable executable. Not a client, and not in the
+  # candidate gate below: a television ships whether or not the tool that
+  # installs it compiled.
+  tools:
+    name: Installer
+    needs: version
+    if: ${{ (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tools"]'), github.event.inputs.targets)) }}
+    uses: ./.github/workflows/_release-tools.yml
+    permissions:
+      contents: write # passed down to the called workflow
+    with:
+      version: ${{ needs.version.outputs.version }}
+      channel: ${{ needs.version.outputs.channel }}
+    secrets: inherit
 
   # -------------------------------------------------------------------- TV ---
 
