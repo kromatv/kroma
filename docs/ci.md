@@ -167,9 +167,10 @@ it was not worth its space:
 - Gradle transforms (0.6 GB per app, and two copies of each while the old
   entry aged out): extracted AARs and instrumented jars, derived from the
   dependencies in about a minute. Excluded through `gradle-home-cache-excludes`.
-- A second Gradle distribution: the phone build ran `./gradlew` (a wrapper
-  zip, 130 MB) while the TV build ran the `gradle` setup-gradle installs
-  (another 130 MB). Both use the latter now.
+(The phone build keeps its own `./gradlew`. Running it on the `gradle`
+setup-gradle installs would save the 130 MB wrapper zip, and it cost four
+minutes and a fresh 798 MB dependency set instead: the generated project's
+wrapper is the version its task outputs were built with.)
 - `~/Library/Caches/CocoaPods` inside the iOS project entries (about 0.25 GB
   each): a hit skips `pod install`, and a miss on an exact key restores
   nothing, so nothing ever read it.
