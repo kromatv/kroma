@@ -22,9 +22,6 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-
 env:
   SHARDS: 4
 
@@ -64,6 +61,8 @@ jobs:
   branch-name:
     name: Branch name
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: github.event_name == 'pull_request'
     timeout-minutes: 5
     steps:
@@ -82,6 +81,8 @@ jobs:
     needs: lanes
     if: needs.lanes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -98,6 +99,8 @@ jobs:
     needs: lanes
     if: needs.lanes.outputs.code == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -129,6 +132,8 @@ jobs:
     needs: [lanes, test]
     if: ${{ !cancelled() && needs.lanes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -155,6 +160,8 @@ jobs:
     needs: lanes
     if: needs.lanes.outputs.fleet == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -205,6 +212,8 @@ jobs:
     needs: lanes
     if: needs.lanes.outputs.android == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -250,6 +259,8 @@ jobs:
     needs: lanes
     if: needs.lanes.outputs.desktop == 'true'
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -279,6 +290,8 @@ jobs:
     needs: lanes
     if: needs.lanes.outputs.rust == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -326,6 +339,8 @@ jobs:
       && needs.rust.result != 'failure'
       && needs.rust.result != 'cancelled'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

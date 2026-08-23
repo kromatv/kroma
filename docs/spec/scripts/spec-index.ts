@@ -211,7 +211,8 @@ const check = process.argv.includes('--check');
 const { reqs, errors } = await collect();
 
 if (errors.length) {
-  console.error(`Spec index found problems:\n${errors.map((e) => `  ✗ ${e}`).join('\n')}`);
+  const listed = errors.map((error) => `  ✗ ${error}`).join('\n');
+  console.error(`Spec index found problems:\n${listed}`);
   process.exit(1);
 }
 

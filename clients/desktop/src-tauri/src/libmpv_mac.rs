@@ -39,8 +39,10 @@ static MEDIA_APP: Mutex<Option<AppHandle>> = Mutex::new(None);
 
 /// Called by the Obj-C MPRemoteCommandCenter handlers; forwards the media-key action to
 /// the UI as a `media-key` event.
+/// # Safety
+/// `action` is either null or a NUL-terminated string that outlives the call.
 #[no_mangle]
-pub extern "C" fn kroma_media_key_pressed(action: *const c_char) {
+pub unsafe extern "C" fn kroma_media_key_pressed(action: *const c_char) {
     if action.is_null() {
         return;
     }
