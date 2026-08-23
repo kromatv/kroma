@@ -25,7 +25,7 @@
 # render server and the `build:web` script's precompress step calls `node`, both
 # absent from oven/bun. bun does the workspace install + runs the scripts.
 FROM node:22-bookworm-slim AS web
-RUN npm install -g bun@1.3.14
+RUN npm install -g bun@1.4.0
 WORKDIR /app
 COPY . .
 # TanStack Start's SPA prerender spawns a render server on `localhost`; in a

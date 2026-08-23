@@ -1,108 +1,65 @@
 name: CI
 
-# Every push/PR proves the client fleet it can affect builds in PRODUCTION
-# mode (the `changes` job skips the halves a change cannot touch):
-#  - web SPA
-#  - Samsung Tizen bundle
-#  - LG webOS bundle - BOTH tiers: modern (Chrome 99+) AND legacy (Chromium
-#    53-94, 2018-2023 TVs), with the check-legacy guard that fails the build if
-#    anything a legacy engine can't parse/render sneaks in
-#  - Android TV web bundle + the Kotlin shell compiled to an APK
-#  - the desktop (Tauri) shell via cargo check on Linux, which compiles the
-#    Linux/Steam-Deck mpv path
-#  - the Rust server (clippy + tests + architecture guards)
+# The gate every push and pull request passes, and the one place the tree is
+# measured. Every step is `bun run ci <command>` (packages/ci-tools), so a job
+# is the list of commands a laptop runs too; docs/ci.md explains the shape.
 #
-# No dev mode anywhere: `vite build` runs in production mode, the shared TV
-# shell factory (clients/tv-build/shell.ts) strips console/debugger on build,
-# and KROMA_TV_DEVICE (on-device dev HMR) is never set in CI.
+# `lanes` decides which jobs a change can reach. A skipped job reports as
+# successful, which is what lets `checks` and `rust` stay required on main
+# while a docs-only pull request builds nothing.
+#
+# workflow_dispatch runs every lane: the Rust caches save only from main, so
+# once evicted they stay cold until a Rust-touching push lands there. A manual
+# run on main rebuilds and saves them.
 
-# Docs-only changes build nothing and check nothing, but the run still starts:
-# `quality` and `server` are required checks on main, and a workflow skipped by
-# `paths-ignore` never reports, which would leave a docs-only PR blocked for
-# ever. The `changes` job does the skipping instead — a skipped job reports as
-# successful, so the gate is satisfied and the docs PR pays ~20s.
-#
-# workflow_dispatch exists to re-warm the rust caches: they save only from main
-# (see the rust-cache comments below), so once evicted they stay dead until a
-# rust-touching push lands on main. A manual run on main rebuilds and saves them.
 on:
   workflow_dispatch:
   push:
     branches: [main]
   pull_request:
 
-# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR).
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 env:
-  BUN_VERSION: '1.3.14'
+  SHARDS: 4
 
 jobs:
-  # Which half of the fleet the change can actually touch. `rust` gates the
-  # server job (a JS-only PR pays no clippy+test), `fleet` gates the client
-  # builds (a server-only PR pays no vite/gradle/tauri), `code` gates `quality`
-  # and stands in for the `paths-ignore` this workflow can no longer carry:
-  # its inputs (biome, vitest, tokens) span too much of the tree for a narrower
-  # filter, so it runs for anything that is not prose.
-  changes:
-    name: Detect relevant changes
+  lanes:
+    name: Lanes
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     timeout-minutes: 5
     outputs:
-      # A manual dispatch has no diff to filter on; it exists to re-warm the
-      # caches, so it runs everything.
-      rust: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.f.outputs.rust }}
-      fleet: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.f.outputs.fleet }}
-      code: ${{ github.event_name == 'workflow_dispatch' && 'true' || steps.f.outputs.code }}
+      code: ${{ steps.lanes.outputs.code }}
+      fleet: ${{ steps.lanes.outputs.fleet }}
+      android: ${{ steps.lanes.outputs.android }}
+      desktop: ${{ steps.lanes.outputs.desktop }}
+      rust: ${{ steps.lanes.outputs.rust }}
+      sonar: ${{ steps.sonar.outputs.run }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
-        id: f
-        if: github.event_name != 'workflow_dispatch'
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          filters: |
-            rust:
-              - 'server/**'
-              # Modules are their own cargo workspaces at the repo root now, so
-              # they are NOT covered by `server/**` — without this a module-only
-              # change would skip clippy and its tests entirely.
-              - 'modules/**'
-              - 'packages/module-tools/**'
-              # kroma-engine include_str!s these catalogs at compile time.
-              - 'packages/core/src/locales/**'
-              - 'rust-toolchain.toml'
-              - '.github/workflows/ci.yml'
-            fleet:
-              - 'apps/**'
-              - 'clients/**'
-              - 'packages/**'
-              # clients/web bundles the modules/*/ui workspaces at build time.
-              - 'modules/*/ui/**'
-              # bun patches change what an install produces.
-              - 'patches/**'
-              - 'bun.lock'
-              - 'package.json'
-              - 'tsconfig.base.json'
-              # desktop-shell compiles Rust under the repo toolchain pin.
-              - 'rust-toolchain.toml'
-              - '.github/workflows/ci.yml'
-            code:
-              - '!**/*.md'
-              - '!docs/**'
-              - '!.claude/**'
-              - '!LICENSE'
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
+      - id: lanes
+        run: bun run ci lanes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      # Secrets cannot be read in a job-level `if`, so the scan's precondition
+      # is an output here. A fork's pull request has no token and skips clean.
+      - id: sonar
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: echo "run=${{ env.SONAR_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
 
-  # A ruleset would be the right home for this, but branch-name patterns are a
-  # metadata restriction and those need an org on Team or Enterprise; this repo
-  # is user-owned. So the PR head branch is checked here instead. It only fires
-  # on a pull request — a push to main is skipped, which reports as successful.
   branch-name:
     name: Branch name
     runs-on: ubuntu-latest
@@ -119,310 +76,255 @@ jobs:
             exit 1
           fi
 
-  quality:
-    name: Typecheck + unit tests + lint
+  checks:
+    name: Typecheck + lint
+    needs: lanes
+    if: needs.lanes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    needs: changes
-    if: needs.changes.outputs.code == 'true'
-    timeout-minutes: 45
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run check
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      # Hard gate: every workspace must type-check (@kroma/core, ui, tv, web, shells).
-      - name: Typecheck
-        run: bun run typecheck
-
-      # Hard gate: unit tests (engine selection, direct-play planning, formatters).
-      - name: Unit tests (vitest)
-        run: bun run test
-
-      # Hard gate: the Biome backlog is cleared (`bun run check` is clean), so
-      # lint + format regressions now fail CI.
-      - name: Biome (lint + format)
-        run: bun run check
-
-  clients:
-    name: Client / ${{ matrix.name }}
-    needs: changes
-    if: needs.changes.outputs.fleet == 'true'
+  test:
+    name: Unit tests ${{ matrix.shard }}/4
+    needs: lanes
+    if: needs.lanes.outputs.code == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: web
-            build: bun run build:web
-            dist: clients/web/dist
-          # The marketing site (kroma.tv). Its build IS the prerender, so a broken
-          # page, a bad link in the crawl or an .mdx that will not compile fails
-          # here rather than at deploy time.
-          - name: site
-            build: bun run build:site
-            dist: apps/www/dist/client
-          - name: tizen
-            build: bun run build:tizen
-            dist: clients/tizen/dist
-          # Builds BOTH tiers (modern ESM + legacy ES2015/flattened-CSS for old
-          # models) and runs the Chromium-53 compat guard as part of the script.
-          - name: webos
-            build: bun run build:webos
-            dist: clients/webos/dist
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - run: bun run ci test --shard ${{ matrix.shard }}/${{ env.SHARDS }}
+      # A dot-directory: without include-hidden-files the upload finds nothing.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: vitest-blob-${{ matrix.shard }}
+          path: .vitest-reports/
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
 
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
+  # One report from the four shards: the lcov Sonar reads and the summary the
+  # run page shows. Required on main in place of the shards themselves, so a
+  # shard that never ran (a cancelled runner) cannot pass as a green run.
+  test-report:
+    name: Unit tests
+    needs: [lanes, test]
+    if: ${{ !cancelled() && needs.lanes.outputs.code == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: vitest-blob-*
+          path: .vitest-reports
+          merge-multiple: true
+      - run: bun run ci test --merge --expect ${{ env.SHARDS }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-js
+          path: coverage/lcov.info
+          retention-days: 1
+          if-no-files-found: error
 
-      # The site's build reads the published release from the GitHub API to bake
-      # /download's buttons. Anonymous GitHub allows sixty requests an hour per
-      # IP and runners share them, so the token is what keeps this off a limit
-      # someone else spent.
-      - name: Build (production)
-        run: ${{ matrix.build }}
+  build:
+    name: Build ${{ matrix.target }}
+    needs: lanes
+    if: needs.lanes.outputs.fleet == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [web, site, tizen, webos, tv-native]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      # The site's build reads the published releases from the GitHub API to
+      # bake /download. Anonymous GitHub allows sixty requests an hour per IP
+      # and runners share them; the token keeps this off a limit someone else
+      # spent.
+      - id: build
+        run: bun run ci build ${{ matrix.target }} ${{ matrix.target == 'tizen' && '--slice' || '' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Upload bundle
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: steps.build.outputs.dist != ''
         with:
-          name: kroma-${{ matrix.name }}-ci
-          path: ${{ matrix.dist }}
+          name: kroma-${{ matrix.target }}-ci
+          path: ${{ steps.build.outputs.dist }}
           retention-days: 7
           if-no-files-found: error
-
-      # One build, three packages, rather than a build per generation: the three
-      # tiers come out of the same sources and the same run, so rebuilding for
-      # each would cost triple and prove nothing extra. What differs is only
-      # which tier a package keeps, and that is a slice of what was just built.
-      #
-      # The gated `dist` above stays: a Store submission needs the one package
-      # that serves every model group. These are for sideloading, where the set's
-      # Tizen version is known and the other two bundles are pure download.
-      - name: Slice per Tizen generation
-        if: matrix.name == 'tizen'
-        run: |
-          cd clients/tizen
-          for tier in modern legacy deep; do bun run slice "$tier"; done
-
-      - name: Upload per-generation packages
-        if: matrix.name == 'tizen'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      # Sideloading sets: one build, one package per Tizen generation.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: steps.build.outputs.slices != ''
         with:
           name: kroma-tizen-generations-ci
-          path: clients/tizen/dist-*
+          path: ${{ steps.build.outputs.slices }}
           retention-days: 7
           if-no-files-found: error
 
-  # The native TV app (Apple TV + Android TV). The Android half is the gate for
-  # the local Expo modules' Kotlin - the launcher rows in particular, which no
-  # JS-only check compiles. `android/` is generated (gitignored), so prebuild
-  # first. The Apple TV half needs a macOS runner and is not built here.
-  tv-native:
-    name: Native TV app (Android compile)
-    needs: changes
-    if: needs.changes.outputs.fleet == 'true'
+  # The native TV app's Kotlin (the launcher rows in particular), which no
+  # JS-only check compiles. `android/` is generated, so prebuild first. Only
+  # a change under clients/tv-native or to the install can reach it; the
+  # Metro bundle check in `build` covers the TypeScript for everything else.
+  android:
+    name: Android TV compile
+    needs: lanes
+    if: needs.lanes.outputs.android == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
-
+          bun-version-file: .bun-version
       - uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: temurin
           java-version: '17'
-
+      # Read-only: the release build on main writes the Gradle home this job
+      # restores, so a second copy of the dependency set never lands in the
+      # repository's 10 GB cache quota.
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         with:
           gradle-version: '8.13'
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      # The JS gate: the Metro bundle must resolve on both platforms.
-      - name: Bundle check
-        run: bun run build:tv-native
-
-      - name: Prebuild the Android project
-        run: bun run --filter '@kroma/tv-native' prebuild -- --platform android
-
-      # Same two knobs the release APK already uses (_release-tv.yml).
-      # --build-cache: without it every run reported "368 actionable tasks: 368
-      # executed" and recompiled the whole Expo/RN module graph. setup-gradle
-      # already persists ~/.gradle/caches, which is where the local build cache
-      # lives. Entries are keyed on task inputs, so a hit means those exact
-      # inputs compiled before - the gate is as strict, the recompile is not.
-      # The heap is raised because the generated gradle.properties asks for 2GB,
-      # a third of what this runner has, which costs GC time on C++ and Hermes.
-      - name: Compile the APK
+          cache-read-only: true
+      - run: bun install --frozen-lockfile
+      - run: bun run --filter '@kroma/tv-native' prebuild -- --platform android
+      # --build-cache reuses task outputs keyed on their inputs, which the
+      # dependency cache alone does not. The heap is raised because the
+      # generated gradle.properties asks for 2 GB, a third of the runner.
+      - run: gradle -p clients/tv-native/android assembleDebug --build-cache
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g
-        run: gradle -p clients/tv-native/android assembleDebug --build-cache
 
-  desktop-shell:
-    name: Desktop shell (cargo check, Linux/mpv path)
-    needs: changes
-    if: needs.changes.outputs.fleet == 'true'
+  # The Linux binary-engine path (mpv IPC) a macOS laptop cannot check.
+  # --no-default-features leaves the in-process libmpv out: ubuntu-22.04's
+  # libmpv is too old for the libmpv2 crate, and the Linux release ships the
+  # binary engine anyway.
+  desktop:
+    name: Desktop shell (cargo check)
+    needs: lanes
+    if: needs.lanes.outputs.desktop == 'true'
     runs-on: ubuntu-22.04
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
-
+          bun-version-file: .bun-version
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
-
-      # shared-key (not the default per-job key) so this cache is one stable
-      # entry instead of a per-job copy; save only from main so PR runs restore
-      # but never add 400 MB entries to the 10 GB repo quota (going over it
-      # LRU-evicts everything, which is what made every Rust job build cold).
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: clients/desktop/src-tauri
           shared-key: desktop-check
           save-if: ${{ github.ref == 'refs/heads/main' }}
-
-      # Tauri v2 Linux system deps (compile-time only; mpv stays a runtime dep).
-      - name: Install Linux system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libgtk-3-dev \
-            librsvg2-dev \
-            libayatana-appindicator3-dev
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      # tauri's generate_context! needs the frontend dist to exist.
-      - name: Build desktop frontend
-        run: bun run --filter '@kroma/desktop' build
-
-      # tauri.linux.conf.json declares the `kroma-mpv` externalBin sidecar; fetch it
-      # so the merged config always points at a real file (skips when already there).
-      - name: Fetch bundled mpv (Linux sidecar)
-        run: bash clients/desktop/scripts/fetch-mpv.sh
-
-      # Compiles the Linux binary-engine path (mpv.rs IPC + mpv_dispatch routing)
-      # that macOS dev machines cannot check. --no-default-features = WITHOUT the
-      # in-process libmpv engine: ubuntu-22.04's libmpv is too old for the libmpv2
-      # crate (needs .so.2 / mpv 0.35+), and the Linux release ships the binary
-      # engine anyway. The libmpv paths are compile-checked cross-platform (macOS
-      # dev / Windows via cargo-xwin); the Linux libmpv build needs a modern distro.
-      - name: cargo check
+      - run: bun install --frozen-lockfile
+      - run: bun run ci tools tauri-deps
+      - run: bun run ci build desktop
+      - run: bash clients/desktop/scripts/fetch-mpv.sh
+      - run: cargo check --all-targets --no-default-features
         working-directory: clients/desktop/src-tauri
-        run: cargo check --all-targets --no-default-features
 
-  server:
-    name: Server (Rust) clippy + test
-    needs: changes
-    if: needs.changes.outputs.rust == 'true'
+  # clippy, then every test under coverage, across the server workspace and
+  # each module's. One cache entry holds both: the check artifacts and the
+  # instrumented build live in one target dir, saved from main only (a copy
+  # per pull request is what used to evict every Rust cache in the repo).
+  rust:
+    name: Rust
+    needs: lanes
+    if: needs.lanes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    env:
-      # Debug info is most of the bytes in a dev/test target dir (this cache was
-      # 1.0-1.5 GB per copy). CI only needs pass/fail, not symbolized backtraces,
-      # so drop it: smaller cache, faster linking, less quota pressure.
-      CARGO_PROFILE_DEV_DEBUG: '0'
-    defaults:
-      run:
-        working-directory: server
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
-        with:
-          components: clippy, rustfmt
-
-      # Only to drive the per-module cargo runs below (`bun run modules cargo`).
-      # No `bun install`: that ONE command reaches nothing outside module-tools.
-      # Adding an import from another workspace package to it - the way `release`
-      # now reaches `@kroma/registry` - breaks this job, so check before you do.
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          bun-version: ${{ env.BUN_VERSION }}
-
-      # One stable entry (shared-key), written only from main: PRs used to save a
-      # ~1.4 GB copy each, and four of them alone exceeded half the 10 GB repo
-      # cache quota - which evicted the .spk/module/desktop caches and forced
-      # cold builds everywhere. See the same pattern in sonar.yml/release.yml.
-      # The shared build dir the module workspaces compile into goes through
-      # `cache-directories`, NOT a second `workspaces` entry: there is no cargo
-      # manifest at the repo root, so a `. -> target/kmod` entry made the
-      # action's `cargo metadata` call fail on every run.
+          bun-version-file: .bun-version
+      - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
+        with:
+          components: clippy, rustfmt, llvm-tools-preview
+      - uses: taiki-e/install-action@07b4745e0c39a41822af610387492e3e53aa222b # v2
+        with:
+          tool: cargo-llvm-cov
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
           workspaces: server
           cache-directories: ${{ github.workspace }}/target/kmod
-          shared-key: server
+          shared-key: rust
           save-if: ${{ github.ref == 'refs/heads/main' }}
-
+      - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
       # Non-blocking: the codebase uses a custom import grouping, not rustfmt's.
-      - name: rustfmt --check
-        run: cargo fmt --check
+      - run: cargo fmt --check
+        working-directory: server
         continue-on-error: true
+      - run: bun run ci tools ffmpeg
+      - run: bun run ci rust clippy
+      - run: bun run ci rust test
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-rust
+          path: server/lcov.info
+          retention-days: 1
+          if-no-files-found: error
 
-      # The loudness and fingerprint stages measure real audio through a real
-      # decoder, so their tests need the binary the server itself requires
-      # (see CONTRIBUTING.md); the runner image does not ship it.
-      - name: Install ffmpeg
-        timeout-minutes: 6
-        run: |
-          if command -v ffmpeg >/dev/null 2>&1; then
-            echo "already on the image: $(ffmpeg -version | head -1)"
-            exit 0
-          fi
-          for attempt in 1 2 3; do
-            if timeout 120 sudo apt-get update \
-              && timeout 180 sudo apt-get install -y --no-install-recommends ffmpeg; then
-              exit 0
-            fi
-            echo "::warning::ffmpeg apt attempt $attempt stalled or failed, retrying"
-            sleep 10
-          done
-          echo "::error::could not install ffmpeg after 3 attempts"
-          exit 1
-
-      # Hard gates. clippy without `-D warnings` (a couple of pre-existing
-      # warnings are surfaced in the log but don't fail the build).
-      - name: clippy
-        run: cargo clippy --workspace --all-targets
-
-      - name: test
-        run: cargo test --workspace
-
-      # Modules are NOT members of the workspace above (each is its own, at
-      # modules/<id>/server), so the two gates above do not reach them. These
-      # run the same checks per module against one shared target dir. Run from
-      # the repo root, not server/.
-      - name: clippy (modules)
-        working-directory: ${{ github.workspace }}
-        run: bun run modules:clippy
-
-      - name: test (modules)
-        working-directory: ${{ github.workspace }}
-        run: bun run modules:test
-
-      # Domain purity is now enforced by the compiler, not a grep: the entities +
-      # pure rules live in the `kroma-domain` crate (crates/kroma-domain), which
-      # depends only on serde. An accidental `use axum::`/`use rusqlite::` there
-      # won't resolve and `cargo build` above fails. Dependencies still point
-      # inward (api → services → {db,infra} → domain). See ARCHITECTURE.md.
+  # The scan reads the coverage the gates above produced; nothing runs twice.
+  # Rust coverage is absent on a change that touched no Rust, and the scan
+  # carries JS/TS coverage alone, which is what the new-code gate scores.
+  sonar:
+    name: SonarCloud
+    needs: [lanes, test-report, rust]
+    if: >-
+      !cancelled()
+      && needs.lanes.outputs.sonar == 'true'
+      && needs.test-report.result == 'success'
+      && needs.rust.result != 'failure'
+      && needs.rust.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Blame and new-code detection need the history.
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: coverage-js
+          path: coverage
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: needs.rust.result == 'success'
+        with:
+          name: coverage-rust
+          path: server
+      - run: bun run ci sonar prepare
+      - uses: SonarSource/sonarqube-scan-action@2f77a1ec69fb1d595b06f35ab27e97605bdef703 # v5.3.2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io

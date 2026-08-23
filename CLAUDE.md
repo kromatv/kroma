@@ -34,18 +34,23 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
 
 ## Checks
 
-These are the CI hard gates (`.github/workflows/ci.yml`):
+These are the CI hard gates (`.github/workflows/ci.yml`, see
+[`docs/ci.md`](docs/ci.md)):
 
 ```bash
-bun run typecheck        # every TS workspace
+bun run typecheck        # every TS workspace (= `bun run ci typecheck`, a bounded pool)
 bun run test             # vitest (two projects: web + native)
 bun run check            # biome format + lint  (check:fix to write)
-cd server && cargo clippy --workspace --all-targets && cargo test --workspace
-bun run modules:clippy && bun run modules:test   # the module workspaces
+bun run ci rust clippy   # server workspace + every module workspace
+bun run ci rust test     # the same, under coverage (cargo llvm-cov)
 ```
 
-The last line is not redundant: modules are separate cargo workspaces, so
-`--workspace` from `server/` does not reach them (see below).
+`bun run ci <command>` is `packages/ci-tools`, the CLI every workflow step
+runs; `bun run ci lanes --json` tells you which jobs a branch will trigger.
+The Rust commands walk the module workspaces too: modules are separate cargo
+workspaces, so `--workspace` from `server/` does not reach them (see below).
+`cargo clippy --workspace --all-targets` and `cargo test --workspace` in
+`server/` are still the quick local loop for the server alone.
 
 `bun run modules:check` (manifests valid + generated output in sync) and
 `bun run deadcode` (knip) are **not** wired into any workflow today. Run them by

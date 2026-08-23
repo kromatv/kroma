@@ -37,8 +37,11 @@ name: Build & Release
 # All bundles are PRODUCTION builds: `vite build`, console/debugger stripped by
 # the shared TV shell factory, no KROMA_TV_DEVICE dev mode.
 #
-# Nothing here publishes on a schedule. The per-push canary lives in
-# synology.yml, on its own rolling `canary` tag.
+# Nothing here publishes a Release. What a push to main DOES publish is the
+# canary channel: the `canary` job copies the installers a tester can sideload
+# onto the rolling `canary` prerelease, under a dated version, where the site's
+# archive and /download read them. The Synology .spk joins that same tag from
+# synology.yml.
 #
 # Manual runs build artifacts without publishing a Release; `targets` scopes the
 # run (all | spk | desktop | tv | mobile).
@@ -67,7 +70,6 @@ on:
       - 'apps/kit/**'
       - 'apps/www/**'
       - '.github/workflows/ci.yml'
-      - '.github/workflows/sonar.yml'
       - '.github/workflows/codeql.yml'
       - '.github/workflows/kit.yml'
       - '.github/workflows/tv-web.yml'
@@ -104,35 +106,34 @@ concurrency:
   group: release-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'push' }}
 
-env:
-  BUN_VERSION: '1.3.14'
-
 jobs:
   # One version for every artifact: the tag, the manual input, or the
   # server/Cargo.toml base. `triplet` is the sanitized x.y.z the TV stores
-  # require (appinfo.json / config.xml reject suffixes). Also decides the
-  # channel: stable tag, candidate, or build-only.
+  # require (appinfo.json / config.xml reject suffixes); `build` is the one
+  # monotonic build number every store-bound package in this run carries.
+  # Also decides the channel: stable tag, candidate, or build-only.
   version:
     name: Resolve version
     runs-on: ubuntu-latest
     permissions:
       contents: read # only reads the repo and uploads run artifacts
     timeout-minutes: 5
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
     outputs:
       version: ${{ steps.v.outputs.version }}
       triplet: ${{ steps.v.outputs.triplet }}
       channel: ${{ steps.v.outputs.channel }}
+      build: ${{ steps.v.outputs.build }}
+      canary: ${{ steps.v.outputs.canary }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
       - id: v
-        shell: bash
+        run: bun run ci version
         env:
-          EVENT_NAME: ${{ github.event_name }}
           VERSION_INPUT: ${{ github.event.inputs.version }}
-        run: .github/scripts/resolve-version.sh
 
   # NB: the Synology .spk + its GitHub Pages "package source" (stable + canary)
   # live in their own workflow, .github/workflows/synology.yml. So do the module
@@ -155,6 +156,7 @@ jobs:
       version: ${{ needs.version.outputs.version }}
       triplet: ${{ needs.version.outputs.triplet }}
       channel: ${{ needs.version.outputs.channel }}
+      build: ${{ needs.version.outputs.build }}
     secrets: inherit
 
   # The fourth television, kept out of the job above because it ships to
@@ -169,10 +171,12 @@ jobs:
     uses: ./.github/workflows/_release-appletv.yml
     permissions:
       contents: read # passed down to the called workflow
+      actions: write # the DerivedData cache prune
     with:
       version: ${{ needs.version.outputs.version }}
       triplet: ${{ needs.version.outputs.triplet }}
       channel: ${{ needs.version.outputs.channel }}
+      build: ${{ needs.version.outputs.build }}
     secrets: inherit
 
   # ---------------------------------------------------------------- Mobile ---
@@ -186,10 +190,12 @@ jobs:
     uses: ./.github/workflows/_release-mobile.yml
     permissions:
       contents: write # passed down to the called workflow
+      actions: write # the DerivedData cache prune
     with:
       version: ${{ needs.version.outputs.version }}
       triplet: ${{ needs.version.outputs.triplet }}
       channel: ${{ needs.version.outputs.channel }}
+      build: ${{ needs.version.outputs.build }}
     secrets: inherit
 
   # --------------------------------------------------------------- Desktop ---
@@ -240,3 +246,47 @@ jobs:
         run: |
           echo "::notice::Candidate ${{ needs.version.outputs.version }} is complete and promotable."
           echo "Promote it with: gh workflow run deploy.yml -f build_run_id=${{ github.run_id }}"
+
+  # ---------------------------------------------------------------- Canary ---
+
+  # The sideloadable half of what this push built, on the rolling `canary`
+  # prerelease: Samsung, LG, Android TV, Android, and the three desktop
+  # installers. Not the two .ipa bundles (TestFlight is the only way onto an
+  # Apple device) and not a gate: a canary that fails to upload must not make a
+  # candidate look unpromotable. The files keep the candidate's bytes and take a
+  # dated version in their name, so two pushes of 0.1.39 stay two builds;
+  # `bun run ci canary` retires what is older than two weeks past the newest
+  # five of each kind. apps/www reads this tag into /download/archive.
+  canary:
+    name: Canary channel
+    needs: [version, tv, desktop, mobile]
+    if: >-
+      !cancelled()
+      && needs.version.outputs.channel == 'candidate'
+      && needs.tv.result == 'success'
+      && needs.desktop.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile --filter '@kroma/ci-tools'
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: kroma-{tizen-wgt,webos-ipk,androidtv-apk,mobile-apk,desktop-macos,desktop-windows,desktop-linux}
+          path: canary
+          merge-multiple: true
+      - run: |
+          files=()
+          while IFS= read -r -d '' f; do files+=("$f"); done < <(find canary -type f -print0)
+          bun run ci canary publish --rename \
+            --triplet "${{ needs.version.outputs.triplet }}" \
+            --version "${{ needs.version.outputs.canary }}" \
+            "${files[@]}"

@@ -25,19 +25,17 @@ import {
 } from 'node:fs';
 import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { TIER_NAMES, TIERS, type Tier } from './tiers';
 
-type Tier = 'modern' | 'legacy' | 'deep';
-
-const TIERS: readonly Tier[] = ['modern', 'legacy', 'deep'];
 const SHELL = fileURLToPath(new URL('..', import.meta.url));
 const DIST = join(SHELL, 'dist');
 const TEXT = /\.(js|css|html|json)$/;
 
 // Matched against the list rather than cast from it: what the rest of the file
 // builds paths from is then one of these literals, never the argument.
-const tier = TIERS.find((known) => known === process.argv[2]);
+const tier = TIER_NAMES.find((known) => known === process.argv[2]);
 if (!tier) {
-  console.error(`usage: slice.ts <${TIERS.join('|')}>`);
+  console.error(`usage: slice.ts <${TIER_NAMES.join('|')}>`);
   process.exit(1);
 }
 if (!existsSync(join(DIST, 'index.html'))) {
@@ -95,6 +93,18 @@ for (const name of ['config.xml', 'icon.png', 'service']) {
   const from = join(DIST, name);
   if (existsSync(from)) cpSync(from, join(OUT, name), { recursive: true });
 }
+
+// The whole package floors at 3.0 and lets the gate choose; a slice has nothing
+// to fall back to, so its manifest floors at the first version its one bundle
+// runs on and a set below it refuses the install outright.
+const manifest = join(OUT, 'config.xml');
+writeFileSync(
+  manifest,
+  readFileSync(manifest, 'utf8').replace(
+    /required_version="[^"]*"/,
+    `required_version="${TIERS[tier].requiredVersion}"`,
+  ),
+);
 if (tier !== 'modern') cpSync(join(DIST, tier), join(OUT, tier), { recursive: true });
 for (const file of reached) {
   if (file.startsWith(join(DIST, 'assets'))) cpSync(file, join(OUT, 'assets', basename(file)));

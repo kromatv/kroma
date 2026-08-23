@@ -15,6 +15,7 @@
     "modules/*/ui"
   ],
   "scripts": {
+    "ci": "bun packages/ci-tools/src/cli.ts",
     "modules": "bun packages/module-tools/src/cli.ts",
     "modules:gen": "bun run modules gen",
     "modules:new": "bun run modules new",
@@ -66,7 +67,7 @@
     "build:desktop": "bun run --filter '@kroma/desktop' build",
     "deploy:tizen": "bun run --filter '@kroma/tizen' deploy",
     "tizen:prepare": "bun run build:tizen && echo \"\u2713 Tizen app ready \u2192 clients/tizen/dist  (package: cd clients/tizen && tizen build-web && tizen package -t wgt -s <cert-profile> -- dist)\"",
-    "typecheck": "bun run --filter '*' typecheck",
+    "typecheck": "bun run ci typecheck",
     "test": "bun run test:codegen && vitest run",
     "test:coverage": "bun run test:codegen && vitest run --coverage",
     "test:codegen": "bun run --filter '@kroma/site' paraglide",
@@ -107,8 +108,9 @@
     "vite": "8.2.1",
     "vitest": "^4.1.10"
   },
+  "packageManager": "bun@1.4.0",
   "engines": {
-    "bun": ">=1.3.0"
+    "bun": ">=1.4.0"
   },
   "//react-native": [
     "Every client runs the tvOS fork, so `react-native` is an ALIAS everywhere.",

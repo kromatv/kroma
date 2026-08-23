@@ -27,6 +27,25 @@ by `tv.target.ts` through the shared factory in `packages/bundler/src/shell.ts`.
 Authoring rules that keep the legacy tier working: flex only (no CSS grid), no
 `/opacity` colour modifiers, spacing via `gap-*` (shimmed) or margins.
 
+## One package per Tizen version
+
+`dist/` carries every tier because a Store submission has to: Samsung offers one
+package to a range of models. A sideloaded set is the opposite case, its Tizen
+version is known, so the release job also packages each tier on its own
+(`TIZEN_PROFILE=<profile> bun run package:all`, into `out/`, with the version
+`dist/config.xml` carries):
+
+| file | runs on | floor in its `config.xml` |
+|---|---|---|
+| `KROMA-tizen-<v>.wgt` | every model, the gate chooses | 3.0 |
+| `KROMA-tizen8-<v>.wgt` | Tizen 8.0 and newer (2024+) | 8.0 |
+| `KROMA-tizen4to7-<v>.wgt` | Tizen 4.0 to 7.0 (2018 to 2023) | 4.0 |
+| `KROMA-tizen3-<v>.wgt` | Tizen 3.0 (2017) | 3.0 |
+
+The floor is what makes the wrong download fail at install rather than show a
+black screen. `scripts/tiers.ts` is the table; `scripts/slice.ts` cuts one tier
+out of `dist/` and stamps the floor.
+
 ## Develop (in a desktop browser)
 
 ```bash

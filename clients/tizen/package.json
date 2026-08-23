@@ -18,6 +18,7 @@
     "check:legacy": "bun ../tv-build/check-legacy.ts",
     "check:simulator": "bun scripts/simulator-check.ts",
     "slice": "bun scripts/slice.ts",
+    "package:all": "bun scripts/package-all.ts",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "doctor": "make doctor",

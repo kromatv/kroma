@@ -150,3 +150,9 @@ clients/web/public/sw.js
 # Kit DOM audit output (bun run kit:dom): review artefacts, not sources.
 .dom/
 .shots/
+
+# vitest blob reports (CI test shards)
+.vitest-reports/
+
+# Signed Tizen packages (clients/tizen/scripts/package-all.ts)
+clients/tizen/out/
