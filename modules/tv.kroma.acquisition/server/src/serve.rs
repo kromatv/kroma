@@ -68,8 +68,13 @@ async fn grab_h<S: HostStorage + Clone + Send + Sync + 'static>(
     Json(req): Json<GrabReq>,
 ) -> Json<Result<String, String>> {
     blocking_env(move || {
-        let row =
-            crate::search::grab_cached(&host, &req.request_id, req.scope, &req.guid, &req.indexer_id)?;
+        let row = crate::search::grab_cached(
+            &host,
+            &req.request_id,
+            req.scope,
+            &req.guid,
+            &req.indexer_id,
+        )?;
         let id = row.id.clone();
         // Background the slow engine add so the grab returns immediately; `activate`
         // is a blocking HTTP call, so a plain thread (no runtime needed) is enough.
@@ -104,8 +109,13 @@ mod tests {
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
         let status = resp.status();
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
-        (status, serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null))
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        (
+            status,
+            serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null),
+        )
     }
 
     #[tokio::test]
@@ -113,7 +123,11 @@ mod tests {
         // The consumer derives `/_port/<point>/<method>` from the point name in another
         // crate, so a path renamed on one side only fails at runtime, in a
         // different process, with no compile error anywhere.
-        let (status, _) = post("/_port/acquisition/search", serde_json::json!({ "request_id": "r1" })).await;
+        let (status, _) = post(
+            "/_port/acquisition/search",
+            serde_json::json!({ "request_id": "r1" }),
+        )
+        .await;
         assert_eq!(status, StatusCode::OK);
 
         let (status, _) = post(
@@ -133,9 +147,11 @@ mod tests {
             serde_json::json!({ "kind": "season", "season": 2 }),
             serde_json::json!({ "kind": "episode", "season": 2, "episode": 5 }),
         ] {
-            let (status, body) =
-                post("/_port/acquisition/search", serde_json::json!({ "request_id": "r1", "scope": scope }))
-                    .await;
+            let (status, body) = post(
+                "/_port/acquisition/search",
+                serde_json::json!({ "request_id": "r1", "scope": scope }),
+            )
+            .await;
             assert_eq!(status, StatusCode::OK, "{scope}");
             // No such request in the stub db, so it answers Err -- what matters
             // here is that the extractor accepted the scope shape.
@@ -159,8 +175,11 @@ mod tests {
         // the failure travels INSIDE the envelope, because that is what the
         // client deserializes. A 500 would surface as a transport error and lose
         // the reason.
-        let (status, body) =
-            post("/_port/acquisition/search", serde_json::json!({ "request_id": "nope" })).await;
+        let (status, body) = post(
+            "/_port/acquisition/search",
+            serde_json::json!({ "request_id": "nope" }),
+        )
+        .await;
         assert_eq!(status, StatusCode::OK);
         let err = body["Err"].as_str().expect("an Err envelope");
         assert!(err.contains("request not found"), "{err}");

@@ -67,7 +67,10 @@ impl Context {
         }
         // Templates always expect the site link as `.Config.sitelink`.
         config.insert("sitelink".to_string(), Value::Str(cfg.base_url.clone()));
-        Context { config, ..Default::default() }
+        Context {
+            config,
+            ..Default::default()
+        }
     }
 
     /// `[]` is the bare dot; unknown paths resolve to [`Value::Nil`].
@@ -79,12 +82,16 @@ impl Context {
             ["Keywords"] => Value::Str(self.keywords.clone()),
             ["Categories"] => Value::List(self.categories.clone()),
             ["Config", key] => self.config.get(*key).cloned().unwrap_or(Value::Nil),
-            ["Query", key] => {
-                self.query.get(*key).map(|s| Value::Str(s.clone())).unwrap_or(Value::Nil)
-            }
-            ["Result", key] => {
-                self.result.get(*key).map(|s| Value::Str(s.clone())).unwrap_or(Value::Nil)
-            }
+            ["Query", key] => self
+                .query
+                .get(*key)
+                .map(|s| Value::Str(s.clone()))
+                .unwrap_or(Value::Nil),
+            ["Result", key] => self
+                .result
+                .get(*key)
+                .map(|s| Value::Str(s.clone()))
+                .unwrap_or(Value::Nil),
             _ => Value::Nil,
         }
     }
@@ -98,13 +105,19 @@ mod tests {
     fn a_list_value_is_truthy_only_when_it_has_members_and_renders_space_joined() {
         assert!(Value::List(vec!["a".into(), "b".into()]).truthy());
         assert!(!Value::List(Vec::new()).truthy());
-        assert_eq!(Value::List(vec!["100".into(), "200".into()]).render(), "100 200");
+        assert_eq!(
+            Value::List(vec!["100".into(), "200".into()]).render(),
+            "100 200"
+        );
         assert_eq!(Value::List(Vec::new()).render(), "");
     }
 
     #[test]
     fn a_path_the_context_does_not_model_resolves_to_nil_rather_than_panicking() {
-        let ctx = Context { keywords: "kw".into(), ..Context::default() };
+        let ctx = Context {
+            keywords: "kw".into(),
+            ..Context::default()
+        };
         assert_eq!(ctx.resolve(&["Keywords"]), Value::Str("kw".into()));
         assert_eq!(ctx.resolve(&["Config", "sitelink", "extra"]), Value::Nil);
         assert_eq!(ctx.resolve(&["Whatever"]), Value::Nil);

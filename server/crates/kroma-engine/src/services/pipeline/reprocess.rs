@@ -84,7 +84,13 @@ fn stage_embed(db: &db::Pool, id: &str, now: i64) -> Result<()> {
 
 // Storyboards live per episode, not on the show id: fan out just like
 // `reprocess_show` so each episode is actually rebuilt.
-fn stage_storyboard(state: &SharedState, db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
+fn stage_storyboard(
+    state: &SharedState,
+    db: &db::Pool,
+    kind: &str,
+    id: &str,
+    now: i64,
+) -> Result<()> {
     if kind == "show" {
         for ep in show_episodes(db, id)? {
             state.storyboard.invalidate(&ep);
@@ -100,7 +106,13 @@ fn stage_storyboard(state: &SharedState, db: &db::Pool, kind: &str, id: &str, no
 }
 
 // Subtitles live per episode: fan out to the show's episodes.
-fn stage_subtitles(state: &SharedState, db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
+fn stage_subtitles(
+    state: &SharedState,
+    db: &db::Pool,
+    kind: &str,
+    id: &str,
+    now: i64,
+) -> Result<()> {
     if kind == "show" {
         for ep in show_episodes(db, id)? {
             if let Some(abs) = ep.abs_path.as_deref() {
@@ -141,7 +153,12 @@ fn stage_probe(db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
 fn stage_markers(db: &db::Pool, kind: &str, id: &str, now: i64) -> Result<()> {
     let seasons: Vec<String> = if kind == "show" {
         db::get_show(db, id)?
-            .map(|d| d.seasons.iter().map(|s| format!("{id}#{}", s.number)).collect())
+            .map(|d| {
+                d.seasons
+                    .iter()
+                    .map(|s| format!("{id}#{}", s.number))
+                    .collect()
+            })
             .unwrap_or_default()
     } else {
         db::get_item(db, id)?
@@ -207,10 +224,22 @@ fn reprocess_item(
     } else {
         // An episode: markers are per season, and metadata/embed live on the show.
         if let (Some(show_id), Some(season)) = (item.show_id.clone(), item.season) {
-            db::pipeline::enqueue(db, "markers", "season", &format!("{show_id}#{season}"), HIGH, now)?;
+            db::pipeline::enqueue(
+                db,
+                "markers",
+                "season",
+                &format!("{show_id}#{season}"),
+                HIGH,
+                now,
+            )?;
             *subjects += 1;
         }
-        Ok(vec!["pipeline.probe", "pipeline.storyboard", "pipeline.subtitles", "pipeline.markers"])
+        Ok(vec![
+            "pipeline.probe",
+            "pipeline.storyboard",
+            "pipeline.subtitles",
+            "pipeline.markers",
+        ])
     }
 }
 
@@ -232,7 +261,14 @@ fn reprocess_show(
     *subjects += 2;
 
     for season in &detail.seasons {
-        db::pipeline::enqueue(db, "markers", "season", &format!("{id}#{}", season.number), HIGH, now)?;
+        db::pipeline::enqueue(
+            db,
+            "markers",
+            "season",
+            &format!("{id}#{}", season.number),
+            HIGH,
+            now,
+        )?;
         *subjects += 1;
         for ep in &season.episodes {
             db::unprobe_item_files(db, &ep.id)?;
@@ -344,8 +380,16 @@ mod tests {
             [],
         )
         .unwrap();
-        conn.execute("INSERT INTO files (id,item_id,abs_path) VALUES ('f1','it1','/a/1.mkv')", []).unwrap();
-        conn.execute("INSERT INTO files (id,item_id,abs_path) VALUES ('f2','it1','/a/2.mkv')", []).unwrap();
+        conn.execute(
+            "INSERT INTO files (id,item_id,abs_path) VALUES ('f1','it1','/a/1.mkv')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO files (id,item_id,abs_path) VALUES ('f2','it1','/a/2.mkv')",
+            [],
+        )
+        .unwrap();
         drop(conn);
 
         stage_probe(&pool, "item", "it1", 1_000).unwrap();
@@ -375,7 +419,9 @@ mod tests {
             )
             .unwrap();
             conn.execute(
-                &format!("INSERT INTO files (id,item_id,abs_path) VALUES ('{id}f','{id}','/a/{id}.mkv')"),
+                &format!(
+                    "INSERT INTO files (id,item_id,abs_path) VALUES ('{id}f','{id}','/a/{id}.mkv')"
+                ),
                 [],
             )
             .unwrap();
@@ -413,7 +459,11 @@ mod tests {
         drop(conn);
 
         let eps = show_episodes(&pool, "s1").unwrap();
-        assert_eq!(eps.len(), 3, "all episodes across both seasons are flattened");
+        assert_eq!(
+            eps.len(),
+            3,
+            "all episodes across both seasons are flattened"
+        );
     }
 
     // These enqueue tasks + invalidate caches but do not trigger the drains: the
@@ -455,9 +505,18 @@ mod tests {
         assert_eq!(subjects, 4);
         assert_eq!(
             stages,
-            vec!["pipeline.probe", "pipeline.storyboard", "pipeline.subtitles", "pipeline.markers"]
+            vec![
+                "pipeline.probe",
+                "pipeline.storyboard",
+                "pipeline.subtitles",
+                "pipeline.markers"
+            ]
         );
-        assert_eq!(pending(&state.db, "markers"), 1, "the episode's season key is queued");
+        assert_eq!(
+            pending(&state.db, "markers"),
+            1,
+            "the episode's season key is queued"
+        );
         // Episodes carry no item-level metadata/embed row.
         assert_eq!(pending(&state.db, "metadata"), 0);
         assert_eq!(pending(&state.db, "embed"), 0);
@@ -540,7 +599,10 @@ mod tests {
             .db
             .get()
             .unwrap()
-            .execute("UPDATE items SET show_id = NULL, season = NULL WHERE id = 'ep1'", [])
+            .execute(
+                "UPDATE items SET show_id = NULL, season = NULL WHERE id = 'ep1'",
+                [],
+            )
             .unwrap();
 
         let outcome = reprocess_item(&state, &state.db, "ep1", now_ms(), &mut 0).unwrap();
@@ -559,7 +621,10 @@ mod tests {
         assert_eq!(outcome.subjects, 5);
         assert!(!outcome.stages.is_empty());
         for key in &outcome.stages {
-            assert!(state.jobs.resolve(key).is_some(), "{key} is not a registered job");
+            assert!(
+                state.jobs.resolve(key).is_some(),
+                "{key} is not a registered job"
+            );
         }
     }
 

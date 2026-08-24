@@ -72,14 +72,16 @@ pub(super) fn emit_stats(stage: &Stage, ctx: &JobContext) {
     if let Ok(stat) =
         db::pipeline::stage_stat(&ctx.state.db, stage.short, stage.key, stage.subject_kind)
     {
-        ctx.state.events.publish(ServerEvent::PipelineStats { stages: vec![stat] });
+        ctx.state
+            .events
+            .publish(ServerEvent::PipelineStats { stages: vec![stat] });
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::pipeline::dispatcher::test_support::{log_lines, test_stage, process_ok};
+    use crate::services::pipeline::dispatcher::test_support::{log_lines, process_ok, test_stage};
     use crate::test_support;
 
     #[test]
@@ -109,21 +111,32 @@ mod tests {
 
         let mut last = now_ms();
         maybe_log_progress(&ctx, "teststage", 5, 10, 0, started, &mut last);
-        assert!(log_lines(&mut rx).is_empty(), "a line inside the window is skipped");
+        assert!(
+            log_lines(&mut rx).is_empty(),
+            "a line inside the window is skipped"
+        );
 
         let mut last = now_ms() - LOG_EVERY_MS;
         maybe_log_progress(&ctx, "teststage", 0, 10, 0, started, &mut last);
         let lines = log_lines(&mut rx);
         assert_eq!(lines.len(), 1);
         assert!(lines[0].contains("0/10, 0 failed"), "{}", lines[0]);
-        assert!(lines[0].contains("~? left"), "nothing done yet, so no rate: {}", lines[0]);
+        assert!(
+            lines[0].contains("~? left"),
+            "nothing done yet, so no rate: {}",
+            lines[0]
+        );
         assert!(now_ms() - last < LOG_EVERY_MS, "the throttle re-armed");
 
         let mut last = now_ms() - LOG_EVERY_MS;
         maybe_log_progress(&ctx, "teststage", 4, 10, 1, started, &mut last);
         let lines = log_lines(&mut rx);
         assert!(lines[0].contains("4/10, 1 failed"), "{}", lines[0]);
-        assert!(!lines[0].contains("~? left"), "a rate is known now: {}", lines[0]);
+        assert!(
+            !lines[0].contains("~? left"),
+            "a rate is known now: {}",
+            lines[0]
+        );
     }
 
     #[test]
@@ -135,7 +148,10 @@ mod tests {
 
         let mut last = now_ms();
         maybe_emit_stats(&stage, &ctx, &mut last);
-        assert!(rx.try_recv().is_err(), "the count query is a round-trip; don't repeat it");
+        assert!(
+            rx.try_recv().is_err(),
+            "the count query is a round-trip; don't repeat it"
+        );
 
         let mut last = now_ms() - 1000;
         maybe_emit_stats(&stage, &ctx, &mut last);

@@ -66,8 +66,15 @@ pub fn from_settings(settings: &Settings) -> Arc<dyn LlmClient> {
     let clients: Vec<Arc<dyn LlmClient>> = crate::services::settings::ordered_providers(settings)
         .iter()
         .filter_map(|p| {
-            http::HttpLlm::from_config(&p.provider, p.base_url.trim(), p.model.trim(), p.api_key.trim(), p.temperature, p.reasoning)
-                .map(|c| Arc::new(c) as Arc<dyn LlmClient>)
+            http::HttpLlm::from_config(
+                &p.provider,
+                p.base_url.trim(),
+                p.model.trim(),
+                p.api_key.trim(),
+                p.temperature,
+                p.reasoning,
+            )
+            .map(|c| Arc::new(c) as Arc<dyn LlmClient>)
         })
         .collect();
     match clients.len() {

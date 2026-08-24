@@ -10,7 +10,9 @@ impl Session {
         let mut outcome = SearchOutcome::default();
         if let Err(e) = self.ensure_login() {
             tracing::warn!(indexer = %self.def.name, error = %format!("{e:#}"), "login failed");
-            outcome.errors.push(format!("{}: login: {e:#}", self.def.name));
+            outcome
+                .errors
+                .push(format!("{}: login: {e:#}", self.def.name));
             return outcome;
         }
         let requests = engine::build_requests(&self.def, &self.cfg, query, wanted_cats);
@@ -94,7 +96,9 @@ impl Session {
                     error = %format!("{e:#}"),
                     "parse failed",
                 );
-                outcome.errors.push(format!("{}: parse: {e:#}", self.def.name));
+                outcome
+                    .errors
+                    .push(format!("{}: parse: {e:#}", self.def.name));
             }
         }
     }

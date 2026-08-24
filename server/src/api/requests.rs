@@ -46,14 +46,21 @@ pub fn routes() -> Router<SharedState> {
 }
 
 fn locale(user: &User) -> &'static str {
-    user.language.as_deref().and_then(i18n::normalize).unwrap_or(i18n::DEFAULT_LOCALE)
+    user.language
+        .as_deref()
+        .and_then(i18n::normalize)
+        .unwrap_or(i18n::DEFAULT_LOCALE)
 }
 
 fn require(user: &User, perm: Permission) -> Result<(), Response> {
     if user.can(perm) {
         Ok(())
     } else {
-        Err(lerr(locale(user), StatusCode::FORBIDDEN, "error.permissionDenied"))
+        Err(lerr(
+            locale(user),
+            StatusCode::FORBIDDEN,
+            "error.permissionDenied",
+        ))
     }
 }
 
@@ -73,7 +80,10 @@ where
     match tokio::task::spawn_blocking(f).await {
         Ok(Ok(v)) => Ok(v),
         Ok(Err(e)) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
-        Err(_) => Err(json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal error")),
+        Err(_) => Err(json_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "internal error",
+        )),
     }
 }
 
@@ -135,7 +145,11 @@ fn overlay_active_downloads(
             continue;
         }
         if let Some(a) = active.get(&r.id) {
-            r.status = if a.importing { RequestStatus::Importing } else { RequestStatus::Downloading };
+            r.status = if a.importing {
+                RequestStatus::Importing
+            } else {
+                RequestStatus::Downloading
+            };
             r.progress = Some(a.progress);
         }
     }
@@ -223,8 +237,8 @@ pub async fn remove(
         let Some(req) = db::get_request(&conn, &id)? else {
             return Ok(Outcome::NotFound);
         };
-        let own_pending =
-            req.requested_by.as_deref() == Some(uid.as_str()) && req.status == RequestStatus::Pending;
+        let own_pending = req.requested_by.as_deref() == Some(uid.as_str())
+            && req.status == RequestStatus::Pending;
         if !(manager || own_pending) {
             return Ok(Outcome::Forbidden);
         }
@@ -237,10 +251,12 @@ pub async fn remove(
         Outcome::NotFound => Err(lerr(loc, StatusCode::NOT_FOUND, "error.requestNotFound")),
         Outcome::Forbidden => Err(lerr(loc, StatusCode::FORBIDDEN, "error.permissionDenied")),
         Outcome::Deleted => {
-            state.events.publish(crate::infra::events::ServerEvent::RequestUpdated {
-                id: id_for_event,
-                status: "deleted".into(),
-            });
+            state
+                .events
+                .publish(crate::infra::events::ServerEvent::RequestUpdated {
+                    id: id_for_event,
+                    status: "deleted".into(),
+                });
             Ok(Json(json!({ "ok": true })).into_response())
         }
     }
@@ -272,7 +288,9 @@ pub async fn deny(
     body: Option<Json<DenyBody>>,
 ) -> Result<Response, Response> {
     require(&user, Permission::RequestsManage)?;
-    let note = body.and_then(|Json(b)| b.note).filter(|n| !n.trim().is_empty());
+    let note = body
+        .and_then(|Json(b)| b.note)
+        .filter(|n| !n.trim().is_empty());
     let reviewer = user.id.clone();
     let req = service(move || {
         crate::services::requests::deny_request(&state, &id, &reviewer, note.as_deref())
@@ -283,7 +301,6 @@ pub async fn deny(
 
 #[cfg(test)]
 mod route_tests {
-    
 
     // `/requests/calendar` (static) must coexist with `/requests/{id}` (param):
     // building the router panics on a real matchit conflict, so this is enough.

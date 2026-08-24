@@ -70,7 +70,9 @@ fn urgency_of(n: &Notification) -> Urgency {
 }
 
 pub fn is_subscribed<S: HostStorage>(state: &S, user_id: &str) -> bool {
-    let Ok(conn) = state.db().get() else { return false };
+    let Ok(conn) = state.db().get() else {
+        return false;
+    };
     db::push_subs::has_subscription(&conn, user_id).unwrap_or(false)
 }
 
@@ -79,8 +81,8 @@ mod tests {
     use kroma_module_host::HostCtx;
     use serde_json::json;
 
-    use super::*;
     use super::test_support::notification;
+    use super::*;
     use kroma_domain::NotificationCategory;
 
     #[test]
@@ -101,7 +103,11 @@ mod tests {
     fn the_payload_fits_a_single_push_record() {
         // Push services cap a message around 4 KiB.
         let raw = payload_of(&notification(NotificationCategory::Requests));
-        assert!(raw.len() < kroma_push::webpush::MAX_PAYLOAD, "payload was {} bytes", raw.len());
+        assert!(
+            raw.len() < kroma_push::webpush::MAX_PAYLOAD,
+            "payload was {} bytes",
+            raw.len()
+        );
     }
 
     #[test]
@@ -113,13 +119,21 @@ mod tests {
             "remoteUrl".to_string(),
             json!("   "),
         )]));
-        assert_eq!(subject_of(&state), DEFAULT_SUBJECT, "whitespace is still no address");
+        assert_eq!(
+            subject_of(&state),
+            DEFAULT_SUBJECT,
+            "whitespace is still no address"
+        );
 
         state.set_settings(std::collections::BTreeMap::from([(
             "remoteUrl".to_string(),
             json!("https://kroma.example.com/"),
         )]));
-        assert_eq!(subject_of(&state), "https://kroma.example.com", "trailing slash trimmed");
+        assert_eq!(
+            subject_of(&state),
+            "https://kroma.example.com",
+            "trailing slash trimmed"
+        );
 
         // A bare hostname is not a valid `sub`.
         state.set_settings(std::collections::BTreeMap::from([(
@@ -131,9 +145,21 @@ mod tests {
 
     #[test]
     fn urgency_follows_how_much_the_user_is_waiting() {
-        assert_eq!(urgency_of(&notification(NotificationCategory::Requests)), Urgency::High);
-        assert_eq!(urgency_of(&notification(NotificationCategory::Reports)), Urgency::High);
-        assert_eq!(urgency_of(&notification(NotificationCategory::Downloads)), Urgency::Normal);
-        assert_eq!(urgency_of(&notification(NotificationCategory::Media)), Urgency::Low);
+        assert_eq!(
+            urgency_of(&notification(NotificationCategory::Requests)),
+            Urgency::High
+        );
+        assert_eq!(
+            urgency_of(&notification(NotificationCategory::Reports)),
+            Urgency::High
+        );
+        assert_eq!(
+            urgency_of(&notification(NotificationCategory::Downloads)),
+            Urgency::Normal
+        );
+        assert_eq!(
+            urgency_of(&notification(NotificationCategory::Media)),
+            Urgency::Low
+        );
     }
 }

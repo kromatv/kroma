@@ -158,7 +158,8 @@ mod tests {
     fn admin_users_roles_and_mutations() {
         let p = pool();
         let owner = crate::create_user(&p, "o@b.c", "owner", "h", &Permission::all()).unwrap();
-        let member = crate::create_user(&p, "m@b.c", "member", "h", &[Permission::Playback]).unwrap();
+        let member =
+            crate::create_user(&p, "m@b.c", "member", "h", &[Permission::Playback]).unwrap();
 
         let admins = admin_users(&p).unwrap();
         assert_eq!(admins.len(), 2);
@@ -169,15 +170,34 @@ mod tests {
         assert!(!owner_row.online);
         assert!(owner_row.last_seen.is_none());
 
-        assert_eq!(get_user(&p, &member.id).unwrap().unwrap().username, "member");
+        assert_eq!(
+            get_user(&p, &member.id).unwrap().unwrap().username,
+            "member"
+        );
         assert!(get_user(&p, "missing").unwrap().is_none());
-        update_user_permissions(&p, &member.id, &[Permission::Playback, Permission::RequestsCreate]).unwrap();
-        assert!(get_user(&p, &member.id).unwrap().unwrap().can(Permission::RequestsCreate));
+        update_user_permissions(
+            &p,
+            &member.id,
+            &[Permission::Playback, Permission::RequestsCreate],
+        )
+        .unwrap();
+        assert!(get_user(&p, &member.id)
+            .unwrap()
+            .unwrap()
+            .can(Permission::RequestsCreate));
         set_user_username(&p, &member.id, "renamed").unwrap();
-        assert_eq!(get_user(&p, &member.id).unwrap().unwrap().username, "renamed");
+        assert_eq!(
+            get_user(&p, &member.id).unwrap().unwrap().username,
+            "renamed"
+        );
         touch_last_seen(&p, &member.id).unwrap();
         let after = admin_users(&p).unwrap();
-        assert!(after.iter().find(|u| u.id == member.id).unwrap().last_seen.is_some());
+        assert!(after
+            .iter()
+            .find(|u| u.id == member.id)
+            .unwrap()
+            .last_seen
+            .is_some());
 
         delete_user(&p, &member.id).unwrap();
         assert_eq!(admin_users(&p).unwrap().len(), 1);

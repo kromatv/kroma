@@ -127,8 +127,9 @@ pub fn loudness_target(pool: &Pool, file_id: &str) -> Result<Option<(String, Str
     let conn = pool.get()?;
     let mut stmt =
         conn.prepare("SELECT abs_path, audio_tracks FROM files WHERE id = ?1 AND probed = 1")?;
-    let mut rows =
-        stmt.query_map(params![file_id], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
+    let mut rows = stmt.query_map(params![file_id], |r| {
+        Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
+    })?;
     match rows.next() {
         Some(r) => Ok(Some(r?)),
         None => Ok(None),
@@ -160,7 +161,13 @@ mod tests {
     }
 
     fn analysis(verdict: AudioVerdict) -> AudioAnalysis {
-        AudioAnalysis { lufs_i: -18.0, lra: 12.5, true_peak: -1.2, dialog_lufs: Some(-24.0), verdict }
+        AudioAnalysis {
+            lufs_i: -18.0,
+            lra: 12.5,
+            true_peak: -1.2,
+            dialog_lufs: Some(-24.0),
+            verdict,
+        }
     }
 
     #[test]
@@ -179,7 +186,13 @@ mod tests {
         // Upsert the same (file, track) replaces the verdict.
         set_audio_analysis(&p, "f1", 0, &analysis(AudioVerdict::Ok)).unwrap();
         let conn = p.get().unwrap();
-        assert_eq!(audio_analysis_for_file(&conn, "f1").unwrap().unwrap().verdict, AudioVerdict::Ok);
+        assert_eq!(
+            audio_analysis_for_file(&conn, "f1")
+                .unwrap()
+                .unwrap()
+                .verdict,
+            AudioVerdict::Ok
+        );
     }
 
     #[test]
@@ -189,7 +202,13 @@ mod tests {
         set_audio_analysis(&p, "f1", 0, &analysis(AudioVerdict::Ok)).unwrap();
         let conn = p.get().unwrap();
         // The default (lowest index) track's analysis is the representative one.
-        assert_eq!(audio_analysis_for_file(&conn, "f1").unwrap().unwrap().verdict, AudioVerdict::Ok);
+        assert_eq!(
+            audio_analysis_for_file(&conn, "f1")
+                .unwrap()
+                .unwrap()
+                .verdict,
+            AudioVerdict::Ok
+        );
         let batch = audio_analysis_for_files(&conn, &["f1", "ghost"]).unwrap();
         assert_eq!(batch.len(), 1);
         assert_eq!(batch["f1"].verdict, AudioVerdict::Ok);
@@ -213,7 +232,11 @@ mod tests {
         let p = pool_with_file();
         set_audio_analysis(&p, "f1", 0, &analysis(AudioVerdict::QuietDialog)).unwrap();
         let conn = p.get().unwrap();
-        conn.execute("UPDATE audio_analysis SET verdict='clipping' WHERE file_id='f1'", []).unwrap();
+        conn.execute(
+            "UPDATE audio_analysis SET verdict='clipping' WHERE file_id='f1'",
+            [],
+        )
+        .unwrap();
 
         assert!(audio_analysis_for_file(&conn, "f1").unwrap().is_none());
         assert!(audio_analysis_for_files(&conn, &["f1"]).unwrap().is_empty());

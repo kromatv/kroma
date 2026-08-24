@@ -97,7 +97,9 @@ pub fn delete_passkey(pool: &Pool, user_id: &str, id: &str) -> Result<bool> {
 pub fn passkey_exists(pool: &Pool, id: &str) -> Result<bool> {
     let conn = pool.get()?;
     let found: Option<i64> = conn
-        .query_row("SELECT 1 FROM passkeys WHERE id = ?1", params![id], |r| r.get(0))
+        .query_row("SELECT 1 FROM passkeys WHERE id = ?1", params![id], |r| {
+            r.get(0)
+        })
         .optional()?;
     Ok(found.is_some())
 }
@@ -143,9 +145,15 @@ mod tests {
 
         touch_passkey(&p, "cred-a1", Some("{\"blob\":9}")).unwrap();
         assert!(list_passkeys(&p, &alice).unwrap()[0].last_used.is_some());
-        assert_eq!(passkey_credentials(&p, &alice).unwrap(), vec!["{\"blob\":9}".to_string()]);
+        assert_eq!(
+            passkey_credentials(&p, &alice).unwrap(),
+            vec!["{\"blob\":9}".to_string()]
+        );
         touch_passkey(&p, "cred-a1", None).unwrap();
-        assert_eq!(passkey_credentials(&p, &alice).unwrap(), vec!["{\"blob\":9}".to_string()]);
+        assert_eq!(
+            passkey_credentials(&p, &alice).unwrap(),
+            vec!["{\"blob\":9}".to_string()]
+        );
 
         assert!(!delete_passkey(&p, &bob, "cred-a1").unwrap());
         assert!(delete_passkey(&p, &alice, "cred-a1").unwrap());

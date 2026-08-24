@@ -7,7 +7,9 @@
 use axum::http::StatusCode;
 use serde_json::json;
 
-use crate::api::test_support::{demo_item_id, demo_show_id, get, raw, test_app, test_app_with_tmdb};
+use crate::api::test_support::{
+    demo_item_id, demo_show_id, get, raw, test_app, test_app_with_tmdb,
+};
 use serde_json::Value;
 
 async fn movies_library_id(t: &crate::api::test_support::TestApp) -> String {
@@ -32,11 +34,21 @@ async fn items_and_movies_filter_by_library() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(all.as_array().map(Vec::len), Some(10));
 
-    let (status, scoped) = get(&t.app, &format!("/api/items?library={movies}"), Some(&t.token)).await;
+    let (status, scoped) = get(
+        &t.app,
+        &format!("/api/items?library={movies}"),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(scoped.as_array().map(Vec::len), Some(6));
 
-    let (_, m) = get(&t.app, &format!("/api/movies?library={movies}"), Some(&t.token)).await;
+    let (_, m) = get(
+        &t.app,
+        &format!("/api/movies?library={movies}"),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(m.as_array().map(Vec::len), Some(6));
 
     // An unknown library filters everything out (not an error).
@@ -69,7 +81,8 @@ async fn logs_tail_returns_plain_text_from_the_newest_file() {
     let t = test_app();
 
     // No log files yet -> an empty (but well-formed, 200 text/plain) body.
-    let (status, headers, _) = raw(&t.app, "GET", "/api/logs?tail=5", Some(&t.token), None, &[]).await;
+    let (status, headers, _) =
+        raw(&t.app, "GET", "/api/logs?tail=5", Some(&t.token), None, &[]).await;
     assert_eq!(status, StatusCode::OK);
     assert!(headers
         .get("content-type")
@@ -80,7 +93,8 @@ async fn logs_tail_returns_plain_text_from_the_newest_file() {
     let dir = t.state.config.logs_dir();
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("kroma.log"), "line-1\nline-2\nline-3\n").unwrap();
-    let (status, _headers, body) = raw(&t.app, "GET", "/api/logs?tail=2", Some(&t.token), None, &[]).await;
+    let (status, _headers, body) =
+        raw(&t.app, "GET", "/api/logs?tail=2", Some(&t.token), None, &[]).await;
     assert_eq!(status, StatusCode::OK);
     // A text/plain body isn't JSON, so the harness parses it to null; the code
     // path (read newest file + tail) is what this exercises. Sanity-check the
@@ -108,9 +122,18 @@ async fn shows_list_carries_progress_for_an_authed_caller() {
 async fn shows_scoped_to_the_movies_library_is_empty() {
     let t = test_app();
     let movies = movies_library_id(&t).await;
-    let (status, shows) = get(&t.app, &format!("/api/shows?library={movies}"), Some(&t.token)).await;
+    let (status, shows) = get(
+        &t.app,
+        &format!("/api/shows?library={movies}"),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(shows.as_array().map(Vec::len), Some(0), "no shows live in the movies library");
+    assert_eq!(
+        shows.as_array().map(Vec::len),
+        Some(0),
+        "no shows live in the movies library"
+    );
 }
 
 #[tokio::test]
@@ -128,10 +151,20 @@ async fn search_scoped_to_a_library_excludes_other_libraries() {
     let movies = movies_library_id(&t).await;
 
     // Matrix lives in the movies library, so scoping to it still finds the hit.
-    let (_, in_scope) = get(&t.app, &format!("/api/search?q=Matrix&library={movies}"), Some(&t.token)).await;
+    let (_, in_scope) = get(
+        &t.app,
+        &format!("/api/search?q=Matrix&library={movies}"),
+        Some(&t.token),
+    )
+    .await;
     assert!(in_scope["results"].as_array().map(Vec::len).unwrap_or(0) >= 1);
 
-    let (status, out) = get(&t.app, "/api/search?q=Matrix&library=ghost-lib", Some(&t.token)).await;
+    let (status, out) = get(
+        &t.app,
+        "/api/search?q=Matrix&library=ghost-lib",
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(out["results"].as_array().map(Vec::len), Some(0));
 }
@@ -143,7 +176,10 @@ async fn search_surfaces_an_episode_hit_as_episode() {
     assert_eq!(status, StatusCode::OK);
     let results = body["results"].as_array().expect("results");
     assert!(
-        results.iter().any(|r| r["type"] == json!("episode") && r["item"]["episodeTitle"] == json!("The Dundies")),
+        results
+            .iter()
+            .any(|r| r["type"] == json!("episode")
+                && r["item"]["episodeTitle"] == json!("The Dundies")),
         "expected an episode hit for 'The Dundies': {results:?}"
     );
 }
@@ -182,7 +218,9 @@ async fn metadata_routes_require_a_session() {
 fn enable_theme_songs(t: &crate::api::test_support::TestApp) {
     t.state.settings.set_patch(
         &t.state.db,
-        [("themeSongs".to_string(), json!(true))].into_iter().collect(),
+        [("themeSongs".to_string(), json!(true))]
+            .into_iter()
+            .collect(),
     );
 }
 
@@ -213,8 +251,12 @@ async fn people_lookup_accepts_a_library_scope() {
     let t = test_app();
     // Demo carries no cast, so this is an empty-but-200 envelope; it exercises the
     // library-scoped query path.
-    let (status, body): (StatusCode, Value) =
-        get(&t.app, "/api/people?name=Nobody&library=ghost", Some(&t.token)).await;
+    let (status, body): (StatusCode, Value) = get(
+        &t.app,
+        "/api/people?name=Nobody&library=ghost",
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["name"], json!("Nobody"));
     assert_eq!(body["results"].as_array().map(Vec::len), Some(0));
@@ -241,8 +283,16 @@ async fn people_lookup_merges_movie_and_show_credits() {
     let cast = r#"{"tmdbId":1,"tmdbUrl":"","genres":[],"cast":[{"name":"Ada Lovelace"}]}"#;
     {
         let conn = t.state.db.get().unwrap();
-        conn.execute("UPDATE items SET metadata = ?2 WHERE id = ?1", (movie.as_str(), cast)).unwrap();
-        conn.execute("UPDATE shows SET metadata = ?2 WHERE id = ?1", (show.as_str(), cast)).unwrap();
+        conn.execute(
+            "UPDATE items SET metadata = ?2 WHERE id = ?1",
+            (movie.as_str(), cast),
+        )
+        .unwrap();
+        conn.execute(
+            "UPDATE shows SET metadata = ?2 WHERE id = ?1",
+            (show.as_str(), cast),
+        )
+        .unwrap();
     }
 
     let (status, body): (StatusCode, Value) =
@@ -255,8 +305,12 @@ async fn people_lookup_merges_movie_and_show_credits() {
     assert!(results.iter().any(|r| r["type"] == json!("show")));
 
     let matrix_lib = movies_library_id(&t).await;
-    let (_, scoped): (StatusCode, Value) =
-        get(&t.app, &format!("/api/people?name=Ada%20Lovelace&library={matrix_lib}"), Some(&t.token)).await;
+    let (_, scoped): (StatusCode, Value) = get(
+        &t.app,
+        &format!("/api/people?name=Ada%20Lovelace&library={matrix_lib}"),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(scoped["results"].as_array().map(Vec::len), Some(1));
     assert_eq!(scoped["results"][0]["type"], json!("movie"));
 }
@@ -264,8 +318,12 @@ async fn people_lookup_merges_movie_and_show_credits() {
 #[tokio::test]
 async fn person_details_are_a_soft_miss_without_a_provider() {
     let t = test_app(); // no TMDB key configured
-    let (status, body): (StatusCode, Value) =
-        get(&t.app, "/api/people/details?name=Ada%20Lovelace", Some(&t.token)).await;
+    let (status, body): (StatusCode, Value) = get(
+        &t.app,
+        "/api/people/details?name=Ada%20Lovelace",
+        Some(&t.token),
+    )
+    .await;
     // A biography nobody can fetch is not an error: the page still has a
     // filmography to render, so the envelope comes back with a null person.
     assert_eq!(status, StatusCode::OK);
@@ -276,7 +334,8 @@ async fn person_details_are_a_soft_miss_without_a_provider() {
 #[tokio::test]
 async fn person_details_with_a_blank_name_never_reaches_the_provider() {
     let t = test_app_with_tmdb();
-    let (status, body): (StatusCode, Value) = get(&t.app, "/api/people/details", Some(&t.token)).await;
+    let (status, body): (StatusCode, Value) =
+        get(&t.app, "/api/people/details", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["name"], json!(""));
     assert_eq!(body["person"], Value::Null);
@@ -307,7 +366,11 @@ async fn splash_is_public_and_serves_only_backdrop_captions() {
             )
             .unwrap();
         }
-        conn.execute("UPDATE shows SET year = NULL WHERE id = ?1", (show.as_str(),)).unwrap();
+        conn.execute(
+            "UPDATE shows SET year = NULL WHERE id = ?1",
+            (show.as_str(),),
+        )
+        .unwrap();
     }
 
     let (status, body) = get(&t.app, "/api/splash", None).await;
@@ -321,7 +384,10 @@ async fn splash_is_public_and_serves_only_backdrop_captions() {
         assert!(e.get("id").is_none());
         assert!(e.get("metadata").is_none());
     }
-    let kinds: Vec<_> = entries.iter().map(|e| e["kind"].as_str().unwrap()).collect();
+    let kinds: Vec<_> = entries
+        .iter()
+        .map(|e| e["kind"].as_str().unwrap())
+        .collect();
     assert!(kinds.contains(&"movie") && kinds.contains(&"show"));
     let show_entry = entries.iter().find(|e| e["kind"] == json!("show")).unwrap();
     assert_eq!(show_entry["year"], json!(2005));
@@ -349,7 +415,10 @@ async fn a_log_file_that_cannot_be_read_as_text_still_answers_an_empty_body() {
 
     let (status, headers, _) = raw(&t.app, "GET", "/api/logs", Some(&t.token), None, &[]).await;
     assert_eq!(status, StatusCode::OK);
-    assert!(headers["content-type"].to_str().unwrap().starts_with("text/plain"));
+    assert!(headers["content-type"]
+        .to_str()
+        .unwrap()
+        .starts_with("text/plain"));
 }
 
 #[tokio::test]
@@ -358,29 +427,44 @@ async fn search_surfaces_a_show_hit_as_show() {
     let (status, body) = get(&t.app, "/api/search?q=Office", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     let results = body["results"].as_array().expect("results");
-    let show = results.iter().find(|r| r["type"] == json!("show")).expect("a show hit");
+    let show = results
+        .iter()
+        .find(|r| r["type"] == json!("show"))
+        .expect("a show hit");
     assert_eq!(show["show"]["title"], json!("The Office"));
 
     let movies = movies_library_id(&t).await;
-    let (_, scoped) =
-        get(&t.app, &format!("/api/search?q=Office&library={movies}"), Some(&t.token)).await;
+    let (_, scoped) = get(
+        &t.app,
+        &format!("/api/search?q=Office&library={movies}"),
+        Some(&t.token),
+    )
+    .await;
     let results = scoped["results"].as_array().expect("results");
-    assert!(!results.iter().any(|r| r["type"] == json!("show")), "{scoped}");
+    assert!(
+        !results.iter().any(|r| r["type"] == json!("show")),
+        "{scoped}"
+    );
 }
 
 #[tokio::test]
 async fn a_manual_scan_goes_through_the_tracked_job_so_it_cannot_race_a_watcher() {
     let t = test_app();
-    let (status, body) = crate::api::test_support::send(&t.app, "POST", "/api/scan", Some(&t.token), None).await;
+    let (status, body) =
+        crate::api::test_support::send(&t.app, "POST", "/api/scan", Some(&t.token), None).await;
     assert_eq!(status, StatusCode::OK);
-    assert!(body["runId"].as_str().is_some_and(|id| !id.is_empty()), "{body}");
+    assert!(
+        body["runId"].as_str().is_some_and(|id| !id.is_empty()),
+        "{body}"
+    );
 }
 
 #[tokio::test]
 async fn a_second_manual_scan_is_refused_while_the_first_still_holds_the_slot() {
     let t = test_app();
     let held = t.state.db.get().expect("a connection");
-    held.execute_batch("BEGIN IMMEDIATE").expect("take the write lock");
+    held.execute_batch("BEGIN IMMEDIATE")
+        .expect("take the write lock");
 
     let (status, _) =
         crate::api::test_support::send(&t.app, "POST", "/api/scan", Some(&t.token), None).await;

@@ -40,7 +40,10 @@ pub(crate) fn attach_files(conn: &Connection, item: &mut MediaItem) -> rusqlite:
 /// Every multi-item read path (listings, home rows, continue watching, search
 /// and recommendation hydration) goes through this; on an HDD-backed NAS the
 /// per-query overhead of the N+1 pattern dominated those endpoints.
-pub(crate) fn attach_files_batch(conn: &Connection, items: &mut [MediaItem]) -> rusqlite::Result<()> {
+pub(crate) fn attach_files_batch(
+    conn: &Connection,
+    items: &mut [MediaItem],
+) -> rusqlite::Result<()> {
     if items.is_empty() {
         return Ok(());
     }
@@ -82,8 +85,10 @@ pub(crate) fn attach_files_batch(conn: &Connection, items: &mut [MediaItem]) -> 
     }
 
     // Loudness analysis of each item's representative file, batched like files.
-    let rep_ids: Vec<&str> =
-        items.iter().filter_map(|i| i.default_file_id.as_deref()).collect();
+    let rep_ids: Vec<&str> = items
+        .iter()
+        .filter_map(|i| i.default_file_id.as_deref())
+        .collect();
     let mut analysis_by_file = audio_analysis::audio_analysis_for_files(conn, &rep_ids)?;
     for item in items.iter_mut() {
         if let Some(fid) = item.default_file_id.as_deref() {
@@ -98,18 +103,12 @@ pub(crate) fn attach_files_batch(conn: &Connection, items: &mut [MediaItem]) -> 
 fn apply_files(item: &mut MediaItem, files: Vec<MediaFile>) {
     // Representative = first probed file (files are ordered probed-first,
     // highest-res-first), else the first file.
-    let rep = files
-        .iter()
-        .find(|f| f.probed)
-        .or_else(|| files.first());
+    let rep = files.iter().find(|f| f.probed).or_else(|| files.first());
     if let Some(rep) = rep {
         item.default_file_id = Some(rep.id.clone());
         // Demo files carry a synthetic `demo://` path and aren't streamable; keep
         // `abs_path` None for them so `/stream` returns the demo error.
-        item.abs_path = rep
-            .abs_path
-            .clone()
-            .filter(|p| !p.starts_with("demo://"));
+        item.abs_path = rep.abs_path.clone().filter(|p| !p.starts_with("demo://"));
         if rep.probed {
             item.container = rep.container.clone();
             item.duration_ms = rep.duration_ms;
@@ -129,7 +128,10 @@ fn apply_files(item: &mut MediaItem, files: Vec<MediaFile>) {
 
 /// Hydrate ids into full [`MediaItem`]s (files + markers batched), preserving
 /// the input order and silently dropping unknown ids.
-pub(crate) fn items_by_ids_ordered(conn: &Connection, ids: &[&str]) -> rusqlite::Result<Vec<MediaItem>> {
+pub(crate) fn items_by_ids_ordered(
+    conn: &Connection,
+    ids: &[&str],
+) -> rusqlite::Result<Vec<MediaItem>> {
     use std::collections::HashMap;
     if ids.is_empty() {
         return Ok(Vec::new());
@@ -156,7 +158,13 @@ mod apply_files_tests {
     use kroma_domain::VideoStream;
 
     fn video() -> VideoStream {
-        VideoStream { codec: "hevc".into(), width: Some(3840), height: Some(2160), hdr: false, bit_depth: Some(10) }
+        VideoStream {
+            codec: "hevc".into(),
+            width: Some(3840),
+            height: Some(2160),
+            hdr: false,
+            bit_depth: Some(10),
+        }
     }
 
     fn file(id: &str, abs: &str, probed: bool) -> MediaFile {
@@ -222,7 +230,10 @@ mod apply_files_tests {
         let mut item = bare_item();
         // Files arrive probed-first, highest-res-first - but an unprobed one can
         // still lead if it was added later, so the choice is explicit.
-        apply_files(&mut item, vec![file("b", "/m/b.mkv", false), file("a", "/m/a.mkv", true)]);
+        apply_files(
+            &mut item,
+            vec![file("b", "/m/b.mkv", false), file("a", "/m/a.mkv", true)],
+        );
 
         assert_eq!(item.default_file_id.as_deref(), Some("a"));
         // A probed rep publishes the stream fields clients read directly.
@@ -233,7 +244,10 @@ mod apply_files_tests {
     #[test]
     fn falls_back_to_the_first_file_when_none_is_probed() {
         let mut item = bare_item();
-        apply_files(&mut item, vec![file("a", "/m/a.mkv", false), file("b", "/m/b.mkv", false)]);
+        apply_files(
+            &mut item,
+            vec![file("a", "/m/a.mkv", false), file("b", "/m/b.mkv", false)],
+        );
 
         assert_eq!(item.default_file_id.as_deref(), Some("a"));
         // Browsable - container and path - but no stream data invented for it.
@@ -268,7 +282,11 @@ mod apply_files_tests {
         let mut item = bare_item();
         apply_files(
             &mut item,
-            vec![file("a", "/m/a.mkv", false), file("b", "/m/b.mkv", true), file("c", "/m/c.mkv", false)],
+            vec![
+                file("a", "/m/a.mkv", false),
+                file("b", "/m/b.mkv", true),
+                file("c", "/m/c.mkv", false),
+            ],
         );
         // The picker offers all of them (Director's Cut + Theatrical, 1080p + 4K);
         // only the representative fills the legacy top-level fields.

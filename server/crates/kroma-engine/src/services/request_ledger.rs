@@ -46,7 +46,10 @@ pub fn ledger<S: HostStorage>(state: &S, request_id: &str) -> Result<RequestLedg
             air_date: s.air_date.clone(),
             episode_count: s.episode_count,
             requested: wanted.iter().filter(|w| w.season == Some(s.season)).count() as u32,
-            on_disk: present.keys().filter(|(season, _)| *season == s.season).count() as u32,
+            on_disk: present
+                .keys()
+                .filter(|(season, _)| *season == s.season)
+                .count() as u32,
         })
         .collect();
 
@@ -79,7 +82,10 @@ pub fn season_ledger<S: HostStorage>(
 ) -> Result<SeasonLedgerView> {
     let req = load_request(state, request_id)?;
     if req.kind != RequestKind::Show {
-        return Ok(SeasonLedgerView { season, episodes: Vec::new() });
+        return Ok(SeasonLedgerView {
+            season,
+            episodes: Vec::new(),
+        });
     }
     let conn = state.db().get()?;
     let wanted = db::wanted_for_request(&conn, &req.id)?;
@@ -159,7 +165,10 @@ fn load_request<S: HostStorage>(state: &S, request_id: &str) -> Result<MediaRequ
     db::get_request(&conn, request_id)?.ok_or_else(|| anyhow!("request not found"))
 }
 
-fn fetch_detail<S: HostStorage>(state: &S, req: &MediaRequest) -> Result<discover::DiscoverRawDetail> {
+fn fetch_detail<S: HostStorage>(
+    state: &S,
+    req: &MediaRequest,
+) -> Result<discover::DiscoverRawDetail> {
     let key = tmdb_key(state)?;
     discover::detail(&key, &state.metadata_language(), req.kind, req.tmdb_id)
         .map_err(|()| anyhow!("TMDB lookup failed"))?
@@ -176,7 +185,9 @@ fn season_episodes<S: HostStorage>(
 }
 
 fn tmdb_key<S: HostStorage>(state: &S) -> Result<String> {
-    state.secret("tmdb").ok_or_else(|| anyhow!("TMDB is not configured"))
+    state
+        .secret("tmdb")
+        .ok_or_else(|| anyhow!("TMDB is not configured"))
 }
 
 fn on_disk(conn: &db::PooledConn, req: &MediaRequest) -> Result<OnDisk> {
@@ -223,7 +234,13 @@ mod tests {
         }
     }
 
-    fn seed_request(host: &StubHost, id: &str, kind: RequestKind, tmdb: u64, seasons: Option<Vec<u32>>) {
+    fn seed_request(
+        host: &StubHost,
+        id: &str,
+        kind: RequestKind,
+        tmdb: u64,
+        seasons: Option<Vec<u32>>,
+    ) {
         db::insert_request(
             host.db(),
             &db::NewRequest {
@@ -299,7 +316,10 @@ mod tests {
     #[test]
     fn an_unknown_request_is_an_error_not_an_empty_ledger() {
         let host = host(Some("k"));
-        assert!(ledger(&host, "nope").unwrap_err().to_string().contains("request not found"));
+        assert!(ledger(&host, "nope")
+            .unwrap_err()
+            .to_string()
+            .contains("request not found"));
     }
 
     #[test]
@@ -307,24 +327,51 @@ mod tests {
         let host = host(Some("k"));
         seed_show(&host, "show1", 42, &[(1, 1), (1, 2)]);
         seed_request(&host, "r1", RequestKind::Show, 42, Some(vec![1]));
-        wanted(&host, "r1", &[(1, 1, "available"), (1, 2, "available"), (1, 3, "wanted")]);
+        wanted(
+            &host,
+            "r1",
+            &[(1, 1, "available"), (1, 2, "available"), (1, 3, "wanted")],
+        );
         let _tmdb = FakeTmdb::start(|path| match path {
             "/tv/42" => (200, show_json(&[(1, 3), (2, 8)])),
             _ => (404, serde_json::json!({})),
         });
 
         let view = ledger(&host, "r1").unwrap();
-        let s1 = view.seasons.iter().find(|s| s.season == 1).expect("season 1");
+        let s1 = view
+            .seasons
+            .iter()
+            .find(|s| s.season == 1)
+            .expect("season 1");
         assert_eq!(s1.episode_count, 3, "what TMDB says the season holds");
         assert_eq!(s1.requested, 3, "the request covers three of them");
         assert_eq!(s1.on_disk, 2, "the library holds two");
 
-        let s2 = view.seasons.iter().find(|s| s.season == 2).expect("season 2");
-        assert_eq!((s2.requested, s2.on_disk), (0, 0), "a season outside the request still shows");
+        let s2 = view
+            .seasons
+            .iter()
+            .find(|s| s.season == 2)
+            .expect("season 2");
+        assert_eq!(
+            (s2.requested, s2.on_disk),
+            (0, 0),
+            "a season outside the request still shows"
+        );
 
-        assert_eq!(view.coverage.seasons, Some(vec![1]), "the editor reads the coverage back");
-        assert_eq!(view.local_id.as_deref(), Some("show1"), "linked to the show it already is");
-        assert!(!view.on_disk, "on_disk answers for a movie, never for a show");
+        assert_eq!(
+            view.coverage.seasons,
+            Some(vec![1]),
+            "the editor reads the coverage back"
+        );
+        assert_eq!(
+            view.local_id.as_deref(),
+            Some("show1"),
+            "linked to the show it already is"
+        );
+        assert!(
+            !view.on_disk,
+            "on_disk answers for a movie, never for a show"
+        );
     }
 
     #[test]
@@ -335,7 +382,10 @@ mod tests {
         exec(&host, "INSERT INTO metadata_core (subject_kind,subject_id,tmdb_id,updated_at) VALUES ('item','m1',7,0)");
         seed_request(&host, "r1", RequestKind::Movie, 7, None);
         let _tmdb = FakeTmdb::start(|path| match path {
-            "/movie/7" => (200, serde_json::json!({ "title": "Film", "release_date": "2020-01-01" })),
+            "/movie/7" => (
+                200,
+                serde_json::json!({ "title": "Film", "release_date": "2020-01-01" }),
+            ),
             _ => (404, serde_json::json!({})),
         });
 
@@ -362,18 +412,29 @@ mod tests {
 
         let e1 = &view.episodes[0];
         assert!(e1.on_disk, "on disk");
-        assert_eq!(e1.item_id.as_deref(), Some("show1-s1e1"), "links to the file it already is");
+        assert_eq!(
+            e1.item_id.as_deref(),
+            Some("show1-s1e1"),
+            "links to the file it already is"
+        );
         assert_eq!(e1.video.as_ref().map(|v| v.codec.as_str()), Some("hevc"));
         assert_eq!(e1.duration_ms, Some(1_200_000));
         assert_eq!(e1.wanted_status.as_deref(), Some("available"));
 
         let e2 = &view.episodes[1];
         assert!(!e2.on_disk);
-        assert_eq!(e2.wanted_status.as_deref(), Some("grabbed"), "a download is queued for it");
+        assert_eq!(
+            e2.wanted_status.as_deref(),
+            Some("grabbed"),
+            "a download is queued for it"
+        );
         assert!(e2.item_id.is_none());
 
         let e3 = &view.episodes[2];
-        assert!(e3.wanted_id.is_none(), "the request does not cover it, so it is untracked");
+        assert!(
+            e3.wanted_id.is_none(),
+            "the request does not cover it, so it is untracked"
+        );
         assert_eq!(e3.name.as_deref(), Some("E3"), "TMDB still describes it");
     }
 
@@ -399,7 +460,9 @@ mod tests {
 
         let rows = preview_season_rows(&host, &req, 2).unwrap();
         assert_eq!(rows.len(), 2, "a searchable row per episode of the season");
-        assert!(rows.iter().all(|r| r.season == Some(2) && r.status == "wanted"));
+        assert!(rows
+            .iter()
+            .all(|r| r.season == Some(2) && r.status == "wanted"));
         // Never persisted: the request still covers only what it covered.
         let conn = host.db().get().unwrap();
         assert!(db::wanted_for_request(&conn, "r1").unwrap().is_empty());

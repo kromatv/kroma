@@ -87,7 +87,11 @@ pub fn search_indexer<S: HostStorage>(
         state,
         &indexer.id,
         note_ok,
-        if note_ok { None } else { outcome.errors.first().map(String::as_str) },
+        if note_ok {
+            None
+        } else {
+            outcome.errors.first().map(String::as_str)
+        },
         now_ms(),
     );
     // Surface an all-error, no-result sweep as an error (so it reads as a broken
@@ -108,8 +112,10 @@ pub fn resolve_builtin_download<S: HostStorage>(
     details_url: Option<&str>,
     magnet_or_url: &str,
 ) -> anyhow::Result<String> {
-    Ok(peers::indexers::resolve_download(state, indexer_id, title, details_url, magnet_or_url)?
-        .link())
+    Ok(
+        peers::indexers::resolve_download(state, indexer_id, title, details_url, magnet_or_url)?
+            .link(),
+    )
 }
 
 /// The Acquisition module's backend behavior: serves the search / analyze / add
@@ -177,7 +183,11 @@ impl<S: HostStorage + Clone + Send + Sync + 'static> kroma_module_sdk::host::Ser
 fn run_search<S: HostStorage>(host: &S) -> anyhow::Result<()> {
     // No JobContext-driven cancellation across the process boundary (MVP): the
     // pass runs to completion once the core fires it.
-    auto::auto_search_pass(host, &|l| tracing::info!(target: "acquisition", "{l}"), &|| false)?;
+    auto::auto_search_pass(
+        host,
+        &|l| tracing::info!(target: "acquisition", "{l}"),
+        &|| false,
+    )?;
     Ok(())
 }
 

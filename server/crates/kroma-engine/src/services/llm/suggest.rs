@@ -30,7 +30,11 @@ pub struct Suggestion {
 /// when the LLM is unconfigured / can't tool-call, the seed is unknown, or the
 /// reply was unusable / too thin; `Err` only on a hard LLM failure so the
 /// caller can cache `None` as a terminal "nothing" but retry on `Err`.
-pub fn suggest_for(state: &SharedState, seed_id: &str, max_tokens: u32) -> Result<Option<Suggestion>> {
+pub fn suggest_for(
+    state: &SharedState,
+    seed_id: &str,
+    max_tokens: u32,
+) -> Result<Option<Suggestion>> {
     let pool = &state.db;
     let Some(seed) = crate::db::get_title(pool, seed_id)? else {
         return Ok(None);
@@ -42,7 +46,14 @@ pub fn suggest_for(state: &SharedState, seed_id: &str, max_tokens: u32) -> Resul
 
     let (system, user) = build_prompt(&seed);
     let tools = CatalogTools::new(pool.clone(), None);
-    let reply = llm.run_tools(&system, &user, &tools.defs(), &tools, max_tokens, MAX_TOOL_STEPS)?;
+    let reply = llm.run_tools(
+        &system,
+        &user,
+        &tools.defs(),
+        &tools,
+        max_tokens,
+        MAX_TOOL_STEPS,
+    )?;
 
     let Some(spec) = parse(&reply) else {
         return Ok(None);
@@ -57,8 +68,10 @@ pub fn suggest_for(state: &SharedState, seed_id: &str, max_tokens: u32) -> Resul
     // Gate on the resolved count, not the raw one: an invented/stale id would
     // otherwise pass, get cached as terminal, and vanish silently at hydration.
     let refs: Vec<&str> = claimed.iter().map(String::as_str).collect();
-    let ids: Vec<String> =
-        crate::db::entities_by_ids(pool, &refs)?.iter().map(|e| e.id().to_string()).collect();
+    let ids: Vec<String> = crate::db::entities_by_ids(pool, &refs)?
+        .iter()
+        .map(|e| e.id().to_string())
+        .collect();
     if ids.len() < MIN_MEMBERS {
         return Ok(None);
     }
@@ -73,8 +86,11 @@ pub fn suggest_for(state: &SharedState, seed_id: &str, max_tokens: u32) -> Resul
 
 // Members come back as catalog ids resolved from the tools, not free text.
 fn build_prompt(s: &TitleFull) -> (String, String) {
-    let reason_fields =
-        i18n::SUPPORTED_LOCALES.iter().map(|l| format!("\"{l}\":string")).collect::<Vec<_>>().join(",");
+    let reason_fields = i18n::SUPPORTED_LOCALES
+        .iter()
+        .map(|l| format!("\"{l}\":string"))
+        .collect::<Vec<_>>()
+        .join(",");
     let codes = i18n::SUPPORTED_LOCALES.join(", ");
     let system = format!(
         "You are the resident film & TV concierge of a personal library. Given one title the viewer \
@@ -90,10 +106,28 @@ fn build_prompt(s: &TitleFull) -> (String, String) {
          ONE short clause each on what ties them to the seed."
     );
     let directors = s.directors.join(", ");
-    let cast = s.cast.iter().take(5).cloned().collect::<Vec<_>>().join(", ");
+    let cast = s
+        .cast
+        .iter()
+        .take(5)
+        .cloned()
+        .collect::<Vec<_>>()
+        .join(", ");
     let genres = s.genres.join(", ");
-    let overview: String = s.overview.as_deref().unwrap_or("").chars().take(280).collect();
-    let dash = |s: &str| if s.trim().is_empty() { "-".to_string() } else { s.to_string() };
+    let overview: String = s
+        .overview
+        .as_deref()
+        .unwrap_or("")
+        .chars()
+        .take(280)
+        .collect();
+    let dash = |s: &str| {
+        if s.trim().is_empty() {
+            "-".to_string()
+        } else {
+            s.to_string()
+        }
+    };
     let user = format!(
         "Seed (id {}): \"{}\"{}\n- genres: {}\n- director: {}\n- cast: {}\n- synopsis: {}\n\n\
          Suggest library titles a fan of this would enjoy. Return the JSON now.",
@@ -176,7 +210,10 @@ mod tests {
         // A locale added to the app but missing from the prompt is a rail whose
         // reason line is blank for exactly those users, and nothing else says so.
         for locale in i18n::SUPPORTED_LOCALES {
-            assert!(system.contains(&format!("\"{locale}\":string")), "{locale} missing:\n{system}");
+            assert!(
+                system.contains(&format!("\"{locale}\":string")),
+                "{locale} missing:\n{system}"
+            );
             assert!(system.contains(locale), "{locale} not listed in the codes");
         }
     }
@@ -208,7 +245,10 @@ mod tests {
         let (_, user) = build_prompt(&seed());
         // Five names, not the whole call sheet: the rest is prompt budget spent
         // on people nobody chose the film for.
-        assert!(user.contains("Stellan Skarsgård"), "the fifth name is included");
+        assert!(
+            user.contains("Stellan Skarsgård"),
+            "the fifth name is included"
+        );
         assert!(!user.contains("Zendaya"), "the sixth is not:\n{user}");
         assert!(!user.contains("Jason Momoa"));
     }
@@ -251,7 +291,10 @@ mod tests {
     fn parses_a_plain_json_reply() {
         let spec = parse(r#"{"reason":{"en":"Same director."},"members":["a","b"]}"#).unwrap();
         assert_eq!(spec.members, vec!["a", "b"]);
-        assert_eq!(spec.reason.get("en").map(String::as_str), Some("Same director."));
+        assert_eq!(
+            spec.reason.get("en").map(String::as_str),
+            Some("Same director.")
+        );
     }
 
     #[test]
@@ -304,7 +347,11 @@ mod tests {
 
     // A model reply in the shape `parse` expects.
     fn reply(members: &[&str]) -> String {
-        let list = members.iter().map(|m| format!("\"{m}\"")).collect::<Vec<_>>().join(",");
+        let list = members
+            .iter()
+            .map(|m| format!("\"{m}\""))
+            .collect::<Vec<_>>()
+            .join(",");
         format!(r#"{{"reason":{{"en":"Because they rhyme."}},"members":[{list}]}}"#)
     }
 
@@ -331,8 +378,13 @@ mod tests {
         let state = seeded();
         let llm = FakeLlm::always(&reply(&["itm-1", "itm-2", "itm-3", "itm-4"]));
         llm.configure(&state);
-        assert!(suggest_for(&state, "does-not-exist", 512).unwrap().is_none());
-        assert!(llm.requests().is_empty(), "an unknown seed should cost no request");
+        assert!(suggest_for(&state, "does-not-exist", 512)
+            .unwrap()
+            .is_none());
+        assert!(
+            llm.requests().is_empty(),
+            "an unknown seed should cost no request"
+        );
     }
 
     #[test]
@@ -341,9 +393,14 @@ mod tests {
         let llm = FakeLlm::always(&reply(&["itm-1", "itm-2", "itm-3", "itm-4"]));
         llm.configure(&state);
 
-        let out = suggest_for(&state, "itm-0", 512).unwrap().expect("a suggestion");
+        let out = suggest_for(&state, "itm-0", 512)
+            .unwrap()
+            .expect("a suggestion");
         assert_eq!(out.ids, ["itm-1", "itm-2", "itm-3", "itm-4"]);
-        assert_eq!(out.reasons.get("en").map(String::as_str), Some("Because they rhyme."));
+        assert_eq!(
+            out.reasons.get("en").map(String::as_str),
+            Some("Because they rhyme.")
+        );
     }
 
     #[test]
@@ -356,7 +413,9 @@ mod tests {
         ]));
         llm.configure(&state);
 
-        let out = suggest_for(&state, "itm-0", 512).unwrap().expect("a suggestion");
+        let out = suggest_for(&state, "itm-0", 512)
+            .unwrap()
+            .expect("a suggestion");
         assert_eq!(out.ids, ["itm-1", "itm-2", "itm-3", "itm-4"]);
     }
 
@@ -400,8 +459,16 @@ mod tests {
         );
         llm.configure(&state);
 
-        let out = suggest_for(&state, "itm-0", 512).unwrap().expect("a suggestion");
-        assert!(!out.reasons.contains_key("en"), "an empty reason reached the UI");
-        assert_eq!(out.reasons.get("fr").map(String::as_str), Some("Parce que."));
+        let out = suggest_for(&state, "itm-0", 512)
+            .unwrap()
+            .expect("a suggestion");
+        assert!(
+            !out.reasons.contains_key("en"),
+            "an empty reason reached the UI"
+        );
+        assert_eq!(
+            out.reasons.get("fr").map(String::as_str),
+            Some("Parce que.")
+        );
     }
 }

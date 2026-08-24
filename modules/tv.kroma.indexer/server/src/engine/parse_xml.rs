@@ -10,7 +10,11 @@ use super::release::to_release;
 
 /// Parse an XML search response (Torznab/Newznab feeds) into releases. Uses the
 /// crate's namespaced-XML DOM rather than the HTML engine.
-pub fn parse_xml(def: &Definition, cfg: &IndexerConfig, body: &str) -> anyhow::Result<Vec<Release>> {
+pub fn parse_xml(
+    def: &Definition,
+    cfg: &IndexerConfig,
+    body: &str,
+) -> anyhow::Result<Vec<Release>> {
     let doc = crate::xmltree::parse(body);
     let base_ctx = base_context(def, cfg);
 
@@ -96,8 +100,8 @@ fn eval_case_xml(field: &Field, row: &crate::xmltree::XmlEl, ctx: &Context) -> O
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::test_support::{build_def, cfg};
+    use super::*;
 
     const XML_FEED: &str = r#"<?xml version="1.0"?>
       <rss xmlns:torznab="http://torznab.com/">
@@ -180,7 +184,6 @@ search:
         assert_eq!(rels[0].seeders, Some(100));
         assert_eq!(rels[1].seeders, Some(100));
     }
-
 
     #[test]
     fn an_xml_row_missing_a_required_field_is_dropped_and_defaults_fill_the_rest() {
@@ -292,7 +295,8 @@ search:
         "[name=freeleech]": "100"
 "#,
         );
-        assert!(parse_xml(&def, &cfg("https://x/"), XML_FEED).unwrap().is_empty());
+        assert!(parse_xml(&def, &cfg("https://x/"), XML_FEED)
+            .unwrap()
+            .is_empty());
     }
-
 }

@@ -38,13 +38,18 @@ pub fn auto_capacity() -> usize {
     {
         return n;
     }
-    let cores = std::thread::available_parallelism().map(std::num::NonZeroUsize::get).unwrap_or(4);
+    let cores = std::thread::available_parallelism()
+        .map(std::num::NonZeroUsize::get)
+        .unwrap_or(4);
     cores.saturating_sub(1).max(1)
 }
 
 fn gate() -> &'static Gate {
     GATE.get_or_init(|| Gate {
-        inner: Mutex::new(Inner { capacity: auto_capacity(), in_use: 0 }),
+        inner: Mutex::new(Inner {
+            capacity: auto_capacity(),
+            in_use: 0,
+        }),
         changed: Condvar::new(),
     })
 }

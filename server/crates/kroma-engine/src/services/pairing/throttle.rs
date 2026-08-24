@@ -30,7 +30,11 @@ fn now() -> i64 {
 
 impl Throttle {
     pub fn new(limit: u32, window_secs: i64) -> Self {
-        Self { windows: Mutex::new(HashMap::new()), limit, window_secs }
+        Self {
+            windows: Mutex::new(HashMap::new()),
+            limit,
+            window_secs,
+        }
     }
 
     /// Count one attempt by `key` and say whether it is still inside the
@@ -40,10 +44,15 @@ impl Throttle {
         let mut windows = self.windows.lock().unwrap();
         let now = now();
         self.prune(&mut windows, now);
-        let window =
-            windows.entry(key.to_string()).or_insert(Window { started_at: now, hits: 0 });
+        let window = windows.entry(key.to_string()).or_insert(Window {
+            started_at: now,
+            hits: 0,
+        });
         if now - window.started_at >= self.window_secs {
-            *window = Window { started_at: now, hits: 0 };
+            *window = Window {
+                started_at: now,
+                hits: 0,
+            };
         }
         window.hits += 1;
         window.hits <= self.limit
@@ -83,7 +92,10 @@ mod tests {
             assert!(throttle.admit(CALLER), "refused attempt {attempt}");
         }
         assert!(!throttle.admit(CALLER));
-        assert!(!throttle.admit(CALLER), "asking again does not buy a slot back");
+        assert!(
+            !throttle.admit(CALLER),
+            "asking again does not buy a slot back"
+        );
     }
 
     #[test]

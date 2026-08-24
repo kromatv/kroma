@@ -9,8 +9,8 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 
-use crate::api::util::{client_ip, query};
 use crate::api::extract::AuthUser;
+use crate::api::util::{client_ip, query};
 use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::services::playback::{self, Ping};
@@ -116,7 +116,12 @@ pub async fn ping(
             let subs = item.subtitles.clone();
             let data_dir = state.config.data_dir.clone();
             tokio::task::spawn_blocking(move || {
-                let _ = crate::infra::subtitles::extract_pending_locked(&data_dir, &abs, &subs, &|| false);
+                let _ = crate::infra::subtitles::extract_pending_locked(
+                    &data_dir,
+                    &abs,
+                    &subs,
+                    &|| false,
+                );
             });
         }
     }
@@ -189,8 +194,10 @@ pub async fn save_progress(
     Json(body): Json<ProgressBody>,
 ) -> Response {
     let pos = body.position_ms.max(0);
-    match query(&state.db, move |pool| db::upsert_progress(&pool, &user.id, &item_id, pos, body.duration_ms))
-        .await
+    match query(&state.db, move |pool| {
+        db::upsert_progress(&pool, &user.id, &item_id, pos, body.duration_ms)
+    })
+    .await
     {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(resp) => resp,
@@ -203,7 +210,11 @@ pub async fn delete_progress(
     AuthUser(user): AuthUser,
     Path(item_id): Path<String>,
 ) -> Response {
-    match query(&state.db, move |pool| db::delete_progress(&pool, &user.id, &item_id)).await {
+    match query(&state.db, move |pool| {
+        db::delete_progress(&pool, &user.id, &item_id)
+    })
+    .await
+    {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(resp) => resp,
     }
@@ -216,7 +227,11 @@ pub async fn get_progress(
     AuthUser(user): AuthUser,
     Path(item_id): Path<String>,
 ) -> Response {
-    match query(&state.db, move |pool| db::get_progress(&pool, &user.id, &item_id)).await {
+    match query(&state.db, move |pool| {
+        db::get_progress(&pool, &user.id, &item_id)
+    })
+    .await
+    {
         Ok(entry) => Json(entry).into_response(),
         Err(resp) => resp,
     }
@@ -235,7 +250,11 @@ pub async fn continue_watching(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
 ) -> Response {
-    match query(&state.db, move |pool| db::continue_watching(&pool, &user.id)).await {
+    match query(&state.db, move |pool| {
+        db::continue_watching(&pool, &user.id)
+    })
+    .await
+    {
         Ok(items) => Json(items).into_response(),
         Err(resp) => resp,
     }
@@ -248,7 +267,11 @@ pub async fn up_next(
     AuthUser(user): AuthUser,
     Path(show_id): Path<String>,
 ) -> Response {
-    match query(&state.db, move |pool| db::up_next_episode(&pool, &user.id, &show_id)).await {
+    match query(&state.db, move |pool| {
+        db::up_next_episode(&pool, &user.id, &show_id)
+    })
+    .await
+    {
         Ok(Some((item, resume))) => Json(crate::model::UpNext { item, resume }).into_response(),
         Ok(None) => Json(Option::<crate::model::UpNext>::None).into_response(),
         Err(resp) => resp,
@@ -257,7 +280,10 @@ pub async fn up_next(
 
 /// `GET /api/items/:id/next` → `MediaItem | null`. The next episode in the show
 /// (sequence-based; public, drives player autoplay).
-pub async fn next_episode(State(state): State<SharedState>, Path(item_id): Path<String>) -> Response {
+pub async fn next_episode(
+    State(state): State<SharedState>,
+    Path(item_id): Path<String>,
+) -> Response {
     match query(&state.db, move |pool| db::next_episode(&pool, &item_id)).await {
         Ok(item) => Json(item).into_response(),
         Err(resp) => resp,
@@ -273,8 +299,10 @@ pub async fn following_episodes(
     State(state): State<SharedState>,
     Path(item_id): Path<String>,
 ) -> Response {
-    match query(&state.db, move |pool| db::following_episodes(&pool, &item_id, UP_NEXT_EPISODES))
-        .await
+    match query(&state.db, move |pool| {
+        db::following_episodes(&pool, &item_id, UP_NEXT_EPISODES)
+    })
+    .await
     {
         Ok(items) => Json(items).into_response(),
         Err(resp) => resp,
@@ -288,7 +316,11 @@ pub async fn mark_watched(
     AuthUser(user): AuthUser,
     Path(item_id): Path<String>,
 ) -> Response {
-    match query(&state.db, move |pool| db::mark_watched(&pool, &user.id, &item_id)).await {
+    match query(&state.db, move |pool| {
+        db::mark_watched(&pool, &user.id, &item_id)
+    })
+    .await
+    {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(resp) => resp,
     }
@@ -300,7 +332,11 @@ pub async fn unmark_watched(
     AuthUser(user): AuthUser,
     Path(item_id): Path<String>,
 ) -> Response {
-    match query(&state.db, move |pool| db::unmark_watched(&pool, &user.id, &item_id)).await {
+    match query(&state.db, move |pool| {
+        db::unmark_watched(&pool, &user.id, &item_id)
+    })
+    .await
+    {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(resp) => resp,
     }
@@ -320,7 +356,11 @@ pub async fn add_to_list(
     AuthUser(user): AuthUser,
     Path(item_id): Path<String>,
 ) -> Response {
-    match query(&state.db, move |pool| db::add_to_list(&pool, &user.id, &item_id)).await {
+    match query(&state.db, move |pool| {
+        db::add_to_list(&pool, &user.id, &item_id)
+    })
+    .await
+    {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(resp) => resp,
     }
@@ -332,7 +372,11 @@ pub async fn remove_from_list(
     AuthUser(user): AuthUser,
     Path(item_id): Path<String>,
 ) -> Response {
-    match query(&state.db, move |pool| db::remove_from_list(&pool, &user.id, &item_id)).await {
+    match query(&state.db, move |pool| {
+        db::remove_from_list(&pool, &user.id, &item_id)
+    })
+    .await
+    {
         Ok(()) => StatusCode::NO_CONTENT.into_response(),
         Err(resp) => resp,
     }

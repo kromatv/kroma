@@ -34,14 +34,25 @@ async fn an_episode_card_falls_back_to_the_show_art() {
     let show_id = ep.show_id.clone().expect("episode show id");
 
     // The demo episode has no metadata at all: nothing to select from.
-    let (status, body) = get(&t.app, &format!("/api/items/{}/card", ep.id), Some(&t.token)).await;
+    let (status, body) = get(
+        &t.app,
+        &format!("/api/items/{}/card", ep.id),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["error"], json!("no artwork for card"));
 
     // With art on the SHOW only, selection succeeds and the request proceeds
     // to compositing, which 404s differently on the missing cache file.
-    crate::db::set_show_metadata(&t.state.db, &show_id, &art_metadata()).expect("set show metadata");
-    let (status, body) = get(&t.app, &format!("/api/items/{}/card", ep.id), Some(&t.token)).await;
+    crate::db::set_show_metadata(&t.state.db, &show_id, &art_metadata())
+        .expect("set show metadata");
+    let (status, body) = get(
+        &t.app,
+        &format!("/api/items/{}/card", ep.id),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["error"], json!("artwork unavailable"));
 }

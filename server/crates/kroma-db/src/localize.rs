@@ -26,12 +26,19 @@ pub use items::*;
 pub use shows::*;
 
 // Overlay one season's cast character names from its `season_cast` translation.
-fn overlay_season_cast(conn: &Connection, show_id: &str, season: &mut Season, locale: &str) -> Result<()> {
+fn overlay_season_cast(
+    conn: &Connection,
+    show_id: &str,
+    season: &mut Season,
+    locale: &str,
+) -> Result<()> {
     if season.cast.is_empty() {
         return Ok(());
     }
     let sc_id = format!("{show_id}:{}", season.number);
-    if let Some(t) = translations::resolve_many(conn, "season_cast", &[sc_id.as_str()], locale)?.get(&sc_id) {
+    if let Some(t) =
+        translations::resolve_many(conn, "season_cast", &[sc_id.as_str()], locale)?.get(&sc_id)
+    {
         apply_characters(&mut season.cast, &t.characters);
     }
     Ok(())

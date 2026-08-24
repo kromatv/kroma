@@ -115,12 +115,16 @@ impl Fetch {
             .prefix("kroma-http-body-")
             .tempfile()
             .context("create the curl request body")?;
-        file.write_all(body).context("write the curl request body")?;
+        file.write_all(body)
+            .context("write the curl request body")?;
         file.flush().context("write the curl request body")?;
 
         let mut config = self.base_config();
         config.push_str(&header_line("content-type", content_type));
-        config.push_str(&option_line("data-binary", &format!("@{}", file.path().display())));
+        config.push_str(&option_line(
+            "data-binary",
+            &format!("@{}", file.path().display()),
+        ));
         config.push_str(&option_line("url", url));
         run(config)
     }
@@ -178,16 +182,24 @@ mod tests {
 
     #[test]
     fn socks5_forces_ipv4() {
-        let config = Fetch::new().socks5("socks5://127.0.0.1:25345").base_config();
+        let config = Fetch::new()
+            .socks5("socks5://127.0.0.1:25345")
+            .base_config();
         assert!(config.contains("\nipv4\n"), "{config}");
-        assert!(config.contains(r#"socks5-hostname = "socks5://127.0.0.1:25345""#), "{config}");
+        assert!(
+            config.contains(r#"socks5-hostname = "socks5://127.0.0.1:25345""#),
+            "{config}"
+        );
         assert!(!Fetch::new().base_config().contains("ipv4"), "{config}");
     }
 
     #[test]
     fn base_config_carries_headers_cookie_jar_and_max_time() {
-        let config =
-            Fetch::new().header("X-Test", "v").max_time(99).cookie_jar("/tmp/jar").base_config();
+        let config = Fetch::new()
+            .header("X-Test", "v")
+            .max_time(99)
+            .cookie_jar("/tmp/jar")
+            .base_config();
         assert!(config.contains(r#"header = "X-Test: v""#), "{config}");
         assert!(config.contains(r#"max-time = "99""#), "{config}");
         assert!(config.contains(r#"cookie-jar = "/tmp/jar""#), "{config}");
@@ -207,13 +219,19 @@ mod tests {
 
         let options: Vec<&str> = config.lines().collect();
         assert_eq!(options.len(), 5, "one line per option: {config}");
-        assert!(options[4].starts_with(r#"header = "X-Api-Key: k\""#), "{config}");
+        assert!(
+            options[4].starts_with(r#"header = "X-Api-Key: k\""#),
+            "{config}"
+        );
         assert!(options[4].ends_with(r#"X-Injected: 1\\""#), "{config}");
     }
 
     #[test]
     fn builder_setters_record_options() {
-        let f = Fetch::new().query("q", "hello world").header("A", "b").max_time(5);
+        let f = Fetch::new()
+            .query("q", "hello world")
+            .header("A", "b")
+            .max_time(5);
         assert_eq!(f.query, vec![("q".to_string(), "hello world".to_string())]);
         assert_eq!(f.headers, vec![("A".to_string(), "b".to_string())]);
         assert_eq!(f.max_time_secs, 5);

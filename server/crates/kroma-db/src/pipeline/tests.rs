@@ -1,6 +1,6 @@
+use super::ops::{retry_backoff_ms, Subject, MAX_ATTEMPTS};
 use super::*;
 use crate::testing::TempPool;
-use super::ops::{retry_backoff_ms, Subject, MAX_ATTEMPTS};
 use crate::Pool;
 
 fn pool() -> TempPool {
@@ -13,7 +13,10 @@ fn c(p: &Pool) -> (i64, i64, i64, i64, i64) {
 }
 
 fn subj(pairs: &[(&str, &str)]) -> Vec<Subject> {
-    pairs.iter().map(|(id, sig)| (id.to_string(), sig.to_string())).collect()
+    pairs
+        .iter()
+        .map(|(id, sig)| (id.to_string(), sig.to_string()))
+        .collect()
 }
 
 #[test]
@@ -26,8 +29,14 @@ fn reconcile_is_incremental_and_idempotent() {
 
     let batch = claim_batch(&p, "s", 10, 2).unwrap();
     assert_eq!(batch.len(), 2);
-    let ok: Vec<TaskResult> =
-        batch.iter().map(|(id, _)| TaskResult { id: id.clone(), error: None, duration_ms: 1 }).collect();
+    let ok: Vec<TaskResult> = batch
+        .iter()
+        .map(|(id, _)| TaskResult {
+            id: id.clone(),
+            error: None,
+            duration_ms: 1,
+        })
+        .collect();
     finish_batch(&p, "s", &ok, 3).unwrap();
     assert_eq!(c(&p), (0, 0, 2, 0, 0));
 
@@ -43,8 +52,12 @@ fn reconcile_is_incremental_and_idempotent() {
     reconcile(&p, "s", "item", &subj(&[("b", "v1")]), 8).unwrap();
     let all: i64 = {
         let conn = p.get().unwrap();
-        conn.query_row("SELECT COUNT(*) FROM pipeline_tasks WHERE subject_id='a'", [], |r| r.get(0))
-            .unwrap()
+        conn.query_row(
+            "SELECT COUNT(*) FROM pipeline_tasks WHERE subject_id='a'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap()
     };
     assert_eq!(all, 0);
 }
@@ -53,7 +66,10 @@ fn reconcile_is_incremental_and_idempotent() {
 fn a_task_a_worker_already_claimed_is_left_alone_when_its_input_changes() {
     let p = pool();
     reconcile(&p, "s", "item", &subj(&[("a", "v1")]), 1).unwrap();
-    assert_eq!(claim_batch(&p, "s", 10, 2).unwrap(), vec![("a".to_string(), "v1".to_string())]);
+    assert_eq!(
+        claim_batch(&p, "s", 10, 2).unwrap(),
+        vec![("a".to_string(), "v1".to_string())]
+    );
     assert_eq!(c(&p), (0, 1, 0, 0, 0));
 
     reconcile(&p, "s", "item", &subj(&[("a", "v2")]), 3).unwrap();
@@ -77,17 +93,31 @@ fn failures_retry_up_to_max_then_stick() {
 
     for i in 0..MAX_ATTEMPTS {
         let batch = claim_batch(&p, "s", 10, 10 + i).unwrap();
-        assert_eq!(batch.len(), 1, "attempt {i} should have a pending task to claim");
+        assert_eq!(
+            batch.len(),
+            1,
+            "attempt {i} should have a pending task to claim"
+        );
         let failed_at = 20 + i;
         finish_batch(
             &p,
             "s",
-            &[TaskResult { id: "a".into(), error: Some("boom".into()), duration_ms: 1 }],
+            &[TaskResult {
+                id: "a".into(),
+                error: Some("boom".into()),
+                duration_ms: 1,
+            }],
             failed_at,
         )
         .unwrap();
-        reconcile(&p, "s", "item", &subj(&[("a", "v1")]), failed_at + retry_backoff_ms(i + 1))
-            .unwrap();
+        reconcile(
+            &p,
+            "s",
+            "item",
+            &subj(&[("a", "v1")]),
+            failed_at + retry_backoff_ms(i + 1),
+        )
+        .unwrap();
     }
     assert_eq!(c(&p), (0, 0, 0, 1, 0));
     assert!(claim_batch(&p, "s", 10, 99).unwrap().is_empty());
@@ -104,7 +134,11 @@ fn auto_retry_waits_for_the_backoff_window() {
     finish_batch(
         &p,
         "s",
-        &[TaskResult { id: "a".into(), error: Some("boom".into()), duration_ms: 1 }],
+        &[TaskResult {
+            id: "a".into(),
+            error: Some("boom".into()),
+            duration_ms: 1,
+        }],
         3,
     )
     .unwrap();
@@ -112,7 +146,14 @@ fn auto_retry_waits_for_the_backoff_window() {
     reconcile(&p, "s", "item", &subj(&[("a", "v1")]), 4).unwrap();
     assert_eq!(c(&p), (0, 0, 0, 1, 0));
 
-    reconcile(&p, "s", "item", &subj(&[("a", "v1")]), 3 + retry_backoff_ms(1)).unwrap();
+    reconcile(
+        &p,
+        "s",
+        "item",
+        &subj(&[("a", "v1")]),
+        3 + retry_backoff_ms(1),
+    )
+    .unwrap();
     assert_eq!(c(&p), (1, 0, 0, 0, 0));
 }
 
@@ -124,7 +165,11 @@ fn changed_signature_requeues_despite_backoff() {
     finish_batch(
         &p,
         "s",
-        &[TaskResult { id: "a".into(), error: Some("boom".into()), duration_ms: 1 }],
+        &[TaskResult {
+            id: "a".into(),
+            error: Some("boom".into()),
+            duration_ms: 1,
+        }],
         3,
     )
     .unwrap();
@@ -141,7 +186,11 @@ fn manual_retry_ignores_the_backoff_window() {
     finish_batch(
         &p,
         "s",
-        &[TaskResult { id: "a".into(), error: Some("boom".into()), duration_ms: 1 }],
+        &[TaskResult {
+            id: "a".into(),
+            error: Some("boom".into()),
+            duration_ms: 1,
+        }],
         3,
     )
     .unwrap();
@@ -167,7 +216,10 @@ fn manual_retry_jumps_the_queue() {
     }
     assert_eq!(retry(&p, "s", Some("boom")).unwrap(), 1);
     let batch = claim_batch(&p, "s", 1, 5).unwrap();
-    assert_eq!(batch.iter().map(|(id, _)| id.as_str()).collect::<Vec<_>>(), vec!["boom"]);
+    assert_eq!(
+        batch.iter().map(|(id, _)| id.as_str()).collect::<Vec<_>>(),
+        vec!["boom"]
+    );
 }
 
 #[test]
@@ -177,8 +229,17 @@ fn enqueue_null_sig_is_backfilled_not_rerun() {
     enqueue(&p, "s", "item", "a", 100, 1).unwrap();
     let batch = claim_batch(&p, "s", 10, 2).unwrap();
     assert_eq!(batch.len(), 1);
-    finish_batch(&p, "s", &[TaskResult { id: "a".into(), error: None, duration_ms: 1 }], 3)
-        .unwrap();
+    finish_batch(
+        &p,
+        "s",
+        &[TaskResult {
+            id: "a".into(),
+            error: None,
+            duration_ms: 1,
+        }],
+        3,
+    )
+    .unwrap();
     assert_eq!(c(&p), (0, 0, 1, 0, 0));
 
     reconcile(&p, "s", "item", &subj(&[("a", "v1")]), 4).unwrap();
@@ -206,8 +267,14 @@ fn unreadable_signature_never_requeues_or_deletes() {
     let p = pool();
     reconcile(&p, "s", "item", &subj(&[("a", "v1")]), 1).unwrap();
     let batch = claim_batch(&p, "s", 10, 2).unwrap();
-    let ok: Vec<TaskResult> =
-        batch.iter().map(|(id, _)| TaskResult { id: id.clone(), error: None, duration_ms: 1 }).collect();
+    let ok: Vec<TaskResult> = batch
+        .iter()
+        .map(|(id, _)| TaskResult {
+            id: id.clone(),
+            error: None,
+            duration_ms: 1,
+        })
+        .collect();
     finish_batch(&p, "s", &ok, 3).unwrap();
     assert_eq!(c(&p), (0, 0, 1, 0, 0));
 
@@ -226,8 +293,14 @@ fn requeue_stage_rebuilds_done_tasks_after_cache_wipe() {
     let p = pool();
     reconcile(&p, "s", "item", &subj(&[("a", "v1"), ("b", "v1")]), 1).unwrap();
     let batch = claim_batch(&p, "s", 10, 2).unwrap();
-    let ok: Vec<TaskResult> =
-        batch.iter().map(|(id, _)| TaskResult { id: id.clone(), error: None, duration_ms: 1 }).collect();
+    let ok: Vec<TaskResult> = batch
+        .iter()
+        .map(|(id, _)| TaskResult {
+            id: id.clone(),
+            error: None,
+            duration_ms: 1,
+        })
+        .collect();
     finish_batch(&p, "s", &ok, 3).unwrap();
     assert_eq!(c(&p), (0, 0, 2, 0, 0));
 

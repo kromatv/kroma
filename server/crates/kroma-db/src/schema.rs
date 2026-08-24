@@ -28,7 +28,11 @@ pub fn open(path: &Path) -> Result<Pool> {
 ///
 /// Opens one connection before returning, so a path that cannot be opened fails
 /// here rather than at whatever query happens to run first.
-pub(crate) fn pool_at(path: &Path, max_idle: usize, scope: Option<crate::grant::Scope>) -> Result<Pool> {
+pub(crate) fn pool_at(
+    path: &Path,
+    max_idle: usize,
+    scope: Option<crate::grant::Scope>,
+) -> Result<Pool> {
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).ok();
     }
@@ -45,7 +49,8 @@ pub(crate) fn pool_at(path: &Path, max_idle: usize, scope: Option<crate::grant::
 pub fn init(path: &Path) -> Result<Pool> {
     let pool = pool_at(path, 8, None)?;
     let conn = pool.get()?;
-    conn.execute_batch(SCHEMA).context("failed to apply schema")?;
+    conn.execute_batch(SCHEMA)
+        .context("failed to apply schema")?;
     migrate(&conn);
     Ok(pool)
 }
@@ -63,7 +68,8 @@ fn migrate(conn: &Connection) {
 /// here (rather than a raw `execute_batch` at the call site) so a module owns its
 /// tables while the core stays the single place that touches the connection.
 pub fn apply_migrations(conn: &Connection, sql: &str) -> Result<()> {
-    conn.execute_batch(sql).context("failed to apply module schema")
+    conn.execute_batch(sql)
+        .context("failed to apply module schema")
 }
 
 #[cfg(test)]
@@ -81,15 +87,27 @@ mod tests {
              CREATE INDEX IF NOT EXISTS idx_notes_body ON notes(body);",
         )
         .unwrap();
-        conn.execute("INSERT INTO notes (id, body) VALUES ('n1', 'hi')", []).unwrap();
-
-        apply_migrations(&conn, "CREATE TABLE IF NOT EXISTS notes (id TEXT PRIMARY KEY, body TEXT NOT NULL);")
+        conn.execute("INSERT INTO notes (id, body) VALUES ('n1', 'hi')", [])
             .unwrap();
-        let rows: i64 = conn.query_row("SELECT COUNT(*) FROM notes", [], |r| r.get(0)).unwrap();
-        assert_eq!(rows, 1, "re-applying the schema must not drop the module's data");
+
+        apply_migrations(
+            &conn,
+            "CREATE TABLE IF NOT EXISTS notes (id TEXT PRIMARY KEY, body TEXT NOT NULL);",
+        )
+        .unwrap();
+        let rows: i64 = conn
+            .query_row("SELECT COUNT(*) FROM notes", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(
+            rows, 1,
+            "re-applying the schema must not drop the module's data"
+        );
 
         let err = apply_migrations(&conn, "CREATE TABL oops (").unwrap_err();
-        assert!(format!("{err:#}").contains("failed to apply module schema"), "{err:#}");
+        assert!(
+            format!("{err:#}").contains("failed to apply module schema"),
+            "{err:#}"
+        );
     }
 
     #[test]
@@ -122,7 +140,11 @@ mod tests {
         let conn = pool.get().unwrap();
 
         let due: i64 = conn
-            .query_row("SELECT COUNT(*) FROM wanted WHERE next_search_at IS NULL", [], |r| r.get(0))
+            .query_row(
+                "SELECT COUNT(*) FROM wanted WHERE next_search_at IS NULL",
+                [],
+                |r| r.get(0),
+            )
             .unwrap();
         assert_eq!(due, 1, "rows from before the column keep their turn");
 
@@ -134,6 +156,9 @@ mod tests {
             .collect::<std::result::Result<_, _>>()
             .unwrap();
         assert!(indexes.iter().any(|n| n == "idx_wanted_due"), "{indexes:?}");
-        assert!(!indexes.iter().any(|n| n == "idx_wanted_search"), "{indexes:?}");
+        assert!(
+            !indexes.iter().any(|n| n == "idx_wanted_search"),
+            "{indexes:?}"
+        );
     }
 }

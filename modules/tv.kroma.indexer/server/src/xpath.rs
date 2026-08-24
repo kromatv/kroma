@@ -84,7 +84,9 @@ fn resolve_field(field: &Field, xctx: &mut XpathCtx, row: &Node, ctx: &Context) 
         hit.or(default).map(|v| template::render(v, ctx))
     } else if let Some(sel) = &field.selector {
         let sel = template::render(sel, ctx);
-        eval_nodes(xctx, &sel, Some(row)).first().map(|n| read_node(field, n))
+        eval_nodes(xctx, &sel, Some(row))
+            .first()
+            .map(|n| read_node(field, n))
     } else {
         Some(read_node(field, row))
     };
@@ -102,7 +104,10 @@ fn resolve_field(field: &Field, xctx: &mut XpathCtx, row: &Node, ctx: &Context) 
 
 fn read_node(field: &Field, node: &Node) -> String {
     if let Some(attr) = &field.attribute {
-        node.get_attribute(attr).unwrap_or_default().trim().to_string()
+        node.get_attribute(attr)
+            .unwrap_or_default()
+            .trim()
+            .to_string()
     } else {
         normalize_ws(&node.get_content())
     }

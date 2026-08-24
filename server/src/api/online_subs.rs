@@ -13,10 +13,10 @@ use serde::Serialize;
 
 use crate::api::error::json_error;
 use crate::api::util::query;
+use crate::boot::transcriber::TranscriberClient;
 use crate::db;
 use crate::services::settings;
 use crate::state::SharedState;
-use crate::boot::transcriber::TranscriberClient;
 use axum::routing::{delete, get, post};
 use axum::Router;
 
@@ -31,9 +31,15 @@ pub fn routes() -> Router<SharedState> {
         .route("/items/{id}/subtitles/generate", post(generate))
         .route("/items/{id}/subtitles/capabilities", get(capabilities))
         .route("/items/{id}/subtitles/generations", get(generations))
-        .route("/items/{id}/subtitles/generations/{gen}", delete(cancel_generation))
+        .route(
+            "/items/{id}/subtitles/generations/{gen}",
+            delete(cancel_generation),
+        )
         .route("/items/{id}/subtitles/downloaded", get(list))
-        .route("/items/{id}/subtitles/downloaded/{dl}", delete(delete_downloaded))
+        .route(
+            "/items/{id}/subtitles/downloaded/{dl}",
+            delete(delete_downloaded),
+        )
 }
 
 /// Public: serve a generated/downloaded subtitle's WebVTT bytes. The player
@@ -78,7 +84,11 @@ pub struct SubCapabilities {
 pub async fn capabilities(State(state): State<SharedState>, Path(_id): Path<String>) -> Response {
     let transcribe = transcriber_available(&state);
     let translate = settings::default_provider(&state.settings).is_some();
-    Json(SubCapabilities { transcribe, translate }).into_response()
+    Json(SubCapabilities {
+        transcribe,
+        translate,
+    })
+    .into_response()
 }
 
 // Transcription runs in whichever module answers the `transcriber` point, so it
@@ -98,20 +108,34 @@ pub async fn list(State(state): State<SharedState>, Path(id): Path<String>) -> R
     })
     .await
     {
-        Ok(subs) => Json(subs.into_iter().map(|s| to_view(&id, s)).collect::<Vec<_>>()).into_response(),
+        Ok(subs) => Json(
+            subs.into_iter()
+                .map(|s| to_view(&id, s))
+                .collect::<Vec<_>>(),
+        )
+        .into_response(),
         Err(resp) => resp,
     }
 }
 
 /// `DELETE /api/items/:id/subtitles/downloaded/:dl` → remove a generated track
 /// (DB row + cached WebVTT file).
-pub async fn delete_downloaded(State(state): State<SharedState>, Path((_id, dl)): Path<(String, String)>) -> Response {
+pub async fn delete_downloaded(
+    State(state): State<SharedState>,
+    Path((_id, dl)): Path<(String, String)>,
+) -> Response {
     let dl_id = dl.trim_end_matches(".vtt").to_string();
     let pool = state.db.clone();
-    let path = match tokio::task::spawn_blocking(move || db::delete_downloaded_sub(&pool, &dl_id)).await {
-        Ok(Ok(p)) => p,
-        _ => return json_error(StatusCode::INTERNAL_SERVER_ERROR, "could not delete subtitle"),
-    };
+    let path =
+        match tokio::task::spawn_blocking(move || db::delete_downloaded_sub(&pool, &dl_id)).await {
+            Ok(Ok(p)) => p,
+            _ => {
+                return json_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "could not delete subtitle",
+                )
+            }
+        };
     match path {
         Some(p) => {
             let _ = tokio::fs::remove_file(&p).await;
@@ -122,7 +146,10 @@ pub async fn delete_downloaded(State(state): State<SharedState>, Path((_id, dl))
 }
 
 /// `GET /api/items/:id/subtitles/dl/:dl.vtt` → serve a cached generated WebVTT.
-pub async fn file(State(state): State<SharedState>, Path((_id, dl)): Path<(String, String)>) -> Response {
+pub async fn file(
+    State(state): State<SharedState>,
+    Path((_id, dl)): Path<(String, String)>,
+) -> Response {
     let dl_id = dl.trim_end_matches(".vtt").to_string();
     let sub = match query(&state.db, move |pool| {
         let conn = pool.get()?;

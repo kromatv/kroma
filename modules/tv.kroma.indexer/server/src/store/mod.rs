@@ -48,7 +48,10 @@ pub struct DefinitionStore {
 impl DefinitionStore {
     /// Cache lives at `<data_dir>/indexer-defs`.
     pub fn new(data_dir: &Path) -> Self {
-        DefinitionStore { dir: data_dir.join("indexer-defs"), source: DEFAULT_SOURCE.to_string() }
+        DefinitionStore {
+            dir: data_dir.join("indexer-defs"),
+            source: DEFAULT_SOURCE.to_string(),
+        }
     }
 
     pub fn dir(&self) -> &Path {
@@ -78,7 +81,11 @@ impl DefinitionStore {
                     // Key on the file stem, not the internal `id`: a definition's
                     // internal id can differ from its filename (`darkpeers-api.yml`
                     // -> `id: darkpeers`), and the stem is what `load` resolves.
-                    if let Some(stem) = entry.path().file_stem().map(|s| s.to_string_lossy().into_owned()) {
+                    if let Some(stem) = entry
+                        .path()
+                        .file_stem()
+                        .map(|s| s.to_string_lossy().into_owned())
+                    {
                         meta.id = stem;
                         out.push(meta);
                     }
@@ -112,17 +119,22 @@ fn is_definition_id(id: &str) -> bool {
         && id.len() <= 128
         && !id.starts_with('.')
         && !id.contains("..")
-        && id.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
 }
 
 pub(super) fn is_yml(entry: &std::fs::DirEntry) -> bool {
-    entry.path().extension().is_some_and(|e| e == "yml" || e == "yaml")
+    entry
+        .path()
+        .extension()
+        .is_some_and(|e| e == "yml" || e == "yaml")
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::test_support::{scratch, store_for, tmpdir, valid_definition, DEMO_YML};
+    use super::*;
 
     // A fresh install has never synced, so the cache directory does not exist at
     // all. Reading it has to come back EMPTY rather than as an error: the module
@@ -133,11 +145,13 @@ mod tests {
         let dir = kroma_testing::temp_dir("defs-empty");
         let store = DefinitionStore::new(dir.path());
         assert!(!store.is_populated());
-        assert!(store.list().expect("listing a store that never synced").is_empty());
+        assert!(store
+            .list()
+            .expect("listing a store that never synced")
+            .is_empty());
         // Asking for one by name is still an error: nothing is there to load.
         assert!(store.load("thepiratebay").is_err());
     }
-
 
     #[test]
     fn meta_parses_minimal_yaml() {
@@ -191,7 +205,11 @@ links:
         std::fs::write(store.dir().join("zebra.yml"), b"id: zebra\nname: Zebra").unwrap();
         std::fs::write(store.dir().join("apple.yml"), b"id: apple\nname: apple").unwrap();
         // Internal id differs from the file stem: the stem must win.
-        std::fs::write(store.dir().join("darkpeers-api.yml"), b"id: darkpeers\nname: Dark").unwrap();
+        std::fs::write(
+            store.dir().join("darkpeers-api.yml"),
+            b"id: darkpeers\nname: Dark",
+        )
+        .unwrap();
         std::fs::write(store.dir().join("notes.txt"), b"skip me").unwrap();
 
         let metas = store.list().unwrap();
@@ -208,7 +226,11 @@ links:
         let data = tmpdir("load");
         let store = DefinitionStore::new(data.path());
         std::fs::create_dir_all(store.dir()).unwrap();
-        std::fs::write(store.dir().join("mytracker.yml"), valid_definition("t").as_bytes()).unwrap();
+        std::fs::write(
+            store.dir().join("mytracker.yml"),
+            valid_definition("t").as_bytes(),
+        )
+        .unwrap();
 
         let def = store.load("mytracker").expect("loads and parses");
         // The id comes from the file body, not the file name.
@@ -222,9 +244,11 @@ links:
         let store = DefinitionStore::new(data.path());
         std::fs::create_dir_all(store.dir()).unwrap();
         let err = store.load("ghost").unwrap_err();
-        assert!(format!("{err:#}").contains("not found"), "unexpected error: {err:#}");
+        assert!(
+            format!("{err:#}").contains("not found"),
+            "unexpected error: {err:#}"
+        );
     }
-
 
     #[test]
     fn yaml_extension_is_recognized_like_yml() {
@@ -232,7 +256,11 @@ links:
         let store = DefinitionStore::new(data.path());
         std::fs::create_dir_all(store.dir()).unwrap();
         // `.yaml` counts for population + listing; `load` resolves `.yml` only.
-        std::fs::write(store.dir().join("tracker.yaml"), valid_definition("t").as_bytes()).unwrap();
+        std::fs::write(
+            store.dir().join("tracker.yaml"),
+            valid_definition("t").as_bytes(),
+        )
+        .unwrap();
         assert!(store.is_populated());
         let metas = store.list().unwrap();
         assert_eq!(metas.len(), 1);
@@ -243,8 +271,10 @@ links:
     fn listing_a_cache_that_was_never_synced_is_empty_not_an_error() {
         // The admin opens the browse page before ever syncing.
         let empty = scratch("empty");
-        let store =
-            DefinitionStore { dir: empty.path().join("never-created"), source: String::new() };
+        let store = DefinitionStore {
+            dir: empty.path().join("never-created"),
+            source: String::new(),
+        };
         assert!(store.list().unwrap().is_empty());
         assert!(!store.is_populated());
     }

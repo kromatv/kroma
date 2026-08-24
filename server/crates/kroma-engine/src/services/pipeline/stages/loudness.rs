@@ -36,8 +36,11 @@ fn process(ctx: &JobContext, file_id: &str) -> Result<()> {
     let Some(track) = track_to_measure(&tracks) else {
         return Ok(());
     };
-    let result =
-        crate::infra::loudness::measure(std::path::Path::new(&abs_path), track.index, track.channels)?;
+    let result = crate::infra::loudness::measure(
+        std::path::Path::new(&abs_path),
+        track.index,
+        track.channels,
+    )?;
     let analysis = crate::infra::loudness::to_analysis(&result);
     crate::db::set_audio_analysis(&ctx.state.db, file_id, track.index, &analysis)?;
     ctx.info(format!(
@@ -142,7 +145,12 @@ mod tests {
     fn a_demo_row_is_skipped_rather_than_decoded() {
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m1");
-        set_target(&state, "m1-f", "demo://m1.mkv", r#"[{"index":0,"codec":"aac","default":true}]"#);
+        set_target(
+            &state,
+            "m1-f",
+            "demo://m1.mkv",
+            r#"[{"index":0,"codec":"aac","default":true}]"#,
+        );
 
         let ctx = JobContext::for_test(state.clone());
         assert!(process(&ctx, "m1-f").is_ok());
@@ -178,26 +186,41 @@ mod tests {
             .unwrap()
     }
 
-    fn seeded_with_wav(tag: &str, channels: u16, tracks: &str) -> (crate::state::SharedState, kroma_testing::TempDir) {
+    fn seeded_with_wav(
+        tag: &str,
+        channels: u16,
+        tracks: &str,
+    ) -> (crate::state::SharedState, kroma_testing::TempDir) {
         let dir = kroma_testing::temp_dir(tag);
         let media = dir.path().join("tone.wav");
         test_support::write_test_wav(&media, 2.0, channels);
 
         let state = test_support::test_state();
         test_support::seed_movie(&state, tag);
-        set_target(&state, &format!("{tag}-f"), &media.to_string_lossy(), tracks);
+        set_target(
+            &state,
+            &format!("{tag}-f"),
+            &media.to_string_lossy(),
+            tracks,
+        );
         (state, dir)
     }
 
     #[test]
     fn a_stereo_mix_is_measured_and_stored_without_a_dialogue_reading() {
-        let (state, _dir) =
-            seeded_with_wav("mono", 1, r#"[{"index":0,"codec":"pcm","channels":2,"default":true}]"#);
+        let (state, _dir) = seeded_with_wav(
+            "mono",
+            1,
+            r#"[{"index":0,"codec":"pcm","channels":2,"default":true}]"#,
+        );
 
         process(&JobContext::for_test(state.clone()), "mono-f").unwrap();
 
         let (lufs, dialog) = measured(&state, "mono-f");
-        assert!(lufs.is_finite() && lufs < 0.0, "a real measurement, got {lufs}");
+        assert!(
+            lufs.is_finite() && lufs < 0.0,
+            "a real measurement, got {lufs}"
+        );
         assert!(dialog.is_none(), "there is no centre channel to read");
     }
 
@@ -220,9 +243,20 @@ mod tests {
     fn enumerate_offers_only_probed_files() {
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m3");
-        assert!(enumerate(&state).unwrap().iter().all(|(id, _)| id != "m3-f"));
+        assert!(enumerate(&state)
+            .unwrap()
+            .iter()
+            .all(|(id, _)| id != "m3-f"));
 
-        set_target(&state, "m3-f", "/media/m3.mkv", r#"[{"index":0,"codec":"aac"}]"#);
-        assert!(enumerate(&state).unwrap().iter().any(|(id, _)| id == "m3-f"));
+        set_target(
+            &state,
+            "m3-f",
+            "/media/m3.mkv",
+            r#"[{"index":0,"codec":"aac"}]"#,
+        );
+        assert!(enumerate(&state)
+            .unwrap()
+            .iter()
+            .any(|(id, _)| id == "m3-f"));
     }
 }

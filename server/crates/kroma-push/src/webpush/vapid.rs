@@ -30,13 +30,16 @@ impl VapidKey {
     /// Mint a new identity. Done once, on the first push subscription; rotating
     /// it invalidates every existing browser subscription, so it is persisted.
     pub fn generate() -> Self {
-        Self { secret: SecretKey::random(&mut rand_core::OsRng) }
+        Self {
+            secret: SecretKey::random(&mut rand_core::OsRng),
+        }
     }
 
     /// Restore from the stored base64url private scalar.
     pub fn from_base64url(private: &str) -> Result<Self> {
         let bytes = b64::decode(private).context("VAPID private key is not base64url")?;
-        let secret = SecretKey::from_slice(&bytes).context("VAPID private key is not a P-256 scalar")?;
+        let secret =
+            SecretKey::from_slice(&bytes).context("VAPID private key is not a P-256 scalar")?;
         Ok(Self { secret })
     }
 
@@ -72,7 +75,10 @@ impl VapidKey {
 
         let signing_key = SigningKey::from(&self.secret);
         let signature: Signature = signing_key.sign(signing_input.as_bytes());
-        Ok(format!("{signing_input}.{}", b64::encode(signature.to_bytes())))
+        Ok(format!(
+            "{signing_input}.{}",
+            b64::encode(signature.to_bytes())
+        ))
     }
 }
 
@@ -107,9 +113,15 @@ mod tests {
             "https://updates.push.services.mozilla.com"
         );
         // A port is part of the origin.
-        assert_eq!(origin_of("https://push.example:8443/x").unwrap(), "https://push.example:8443");
+        assert_eq!(
+            origin_of("https://push.example:8443/x").unwrap(),
+            "https://push.example:8443"
+        );
         // No path at all is fine.
-        assert_eq!(origin_of("https://push.example").unwrap(), "https://push.example");
+        assert_eq!(
+            origin_of("https://push.example").unwrap(),
+            "https://push.example"
+        );
     }
 
     #[test]
@@ -145,7 +157,11 @@ mod tests {
     fn the_authorization_header_carries_a_verifiable_token_and_the_public_key() {
         let key = VapidKey::generate();
         let header = key
-            .authorization("https://push.example/wpush/v2/abc", "mailto:ops@example.com", 1_700_000_000)
+            .authorization(
+                "https://push.example/wpush/v2/abc",
+                "mailto:ops@example.com",
+                1_700_000_000,
+            )
             .unwrap();
 
         let (t, k) = header
@@ -171,9 +187,18 @@ mod tests {
         let key = VapidKey::generate();
         let now = 1_700_000_000;
         let header = key
-            .authorization("https://push.example/wpush/v2/abc", "mailto:ops@example.com", now)
+            .authorization(
+                "https://push.example/wpush/v2/abc",
+                "mailto:ops@example.com",
+                now,
+            )
             .unwrap();
-        let jwt = header.strip_prefix("vapid t=").unwrap().split(", k=").next().unwrap();
+        let jwt = header
+            .strip_prefix("vapid t=")
+            .unwrap()
+            .split(", k=")
+            .next()
+            .unwrap();
         let claims: serde_json::Value =
             serde_json::from_slice(&b64::decode(jwt.split('.').nth(1).unwrap()).unwrap()).unwrap();
 
@@ -187,9 +212,15 @@ mod tests {
     #[test]
     fn the_jwt_header_declares_es256() {
         let key = VapidKey::generate();
-        let header =
-            key.authorization("https://push.example/x", "mailto:a@b.c", 0).unwrap();
-        let jwt = header.strip_prefix("vapid t=").unwrap().split(", k=").next().unwrap();
+        let header = key
+            .authorization("https://push.example/x", "mailto:a@b.c", 0)
+            .unwrap();
+        let jwt = header
+            .strip_prefix("vapid t=")
+            .unwrap()
+            .split(", k=")
+            .next()
+            .unwrap();
         let jose: serde_json::Value =
             serde_json::from_slice(&b64::decode(jwt.split('.').next().unwrap()).unwrap()).unwrap();
         assert_eq!(jose["alg"], "ES256");

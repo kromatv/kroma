@@ -50,7 +50,9 @@ impl JobManager {
         let manager = self.clone();
         let returned_id = run_id.clone();
         tokio::task::spawn_blocking(move || {
-            run_job(manager, state, runner, handle, run_id, key, trigger, job, started_ms)
+            run_job(
+                manager, state, runner, handle, run_id, key, trigger, job, started_ms,
+            )
         });
 
         Ok(returned_id)

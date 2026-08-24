@@ -8,9 +8,11 @@ use crate::Pool;
 pub fn user_password_hash(pool: &Pool, user_id: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     let hash = conn
-        .query_row("SELECT password_hash FROM users WHERE id = ?1", params![user_id], |r| {
-            r.get::<_, String>(0)
-        })
+        .query_row(
+            "SELECT password_hash FROM users WHERE id = ?1",
+            params![user_id],
+            |r| r.get::<_, String>(0),
+        )
         .optional()?;
     Ok(hash)
 }
@@ -28,9 +30,11 @@ pub fn set_user_password(pool: &Pool, user_id: &str, password_hash: &str) -> Res
 pub fn user_pin_hash(pool: &Pool, user_id: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     let hash = conn
-        .query_row("SELECT pin_hash FROM users WHERE id = ?1", params![user_id], |r| {
-            r.get::<_, Option<String>>(0)
-        })
+        .query_row(
+            "SELECT pin_hash FROM users WHERE id = ?1",
+            params![user_id],
+            |r| r.get::<_, Option<String>>(0),
+        )
         .optional()?
         .flatten();
     Ok(hash)
@@ -55,10 +59,16 @@ mod tests {
     fn password_and_email_updates() {
         let p = pool();
         let u = mk_user(&p, "a@b.c", "alice");
-        assert_eq!(user_password_hash(&p, &u.id).unwrap().as_deref(), Some("hash"));
+        assert_eq!(
+            user_password_hash(&p, &u.id).unwrap().as_deref(),
+            Some("hash")
+        );
         assert!(user_password_hash(&p, "missing").unwrap().is_none());
         set_user_password(&p, &u.id, "new-hash").unwrap();
-        assert_eq!(user_password_hash(&p, &u.id).unwrap().as_deref(), Some("new-hash"));
+        assert_eq!(
+            user_password_hash(&p, &u.id).unwrap().as_deref(),
+            Some("new-hash")
+        );
 
         set_user_email(&p, &u.id, "new@b.c").unwrap();
         assert!(find_user_by_email(&p, "new@b.c").unwrap().is_some());
@@ -73,7 +83,10 @@ mod tests {
         assert!(!user_by_id(&p, &u.id).unwrap().unwrap().has_pin);
 
         set_user_pin(&p, &u.id, Some("pin-hash")).unwrap();
-        assert_eq!(user_pin_hash(&p, &u.id).unwrap().as_deref(), Some("pin-hash"));
+        assert_eq!(
+            user_pin_hash(&p, &u.id).unwrap().as_deref(),
+            Some("pin-hash")
+        );
         assert!(user_by_id(&p, &u.id).unwrap().unwrap().has_pin);
         assert!(list_users(&p).unwrap()[0].has_pin);
 

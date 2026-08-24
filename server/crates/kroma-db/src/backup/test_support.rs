@@ -13,13 +13,19 @@ pub(super) fn fresh_pool(tag: &str) -> TempPool {
 // The data directory the pool's database sits in, which is also where a
 // module's own store lives.
 pub(super) fn data_dir(pool: &Pool) -> std::path::PathBuf {
-    pool.path().parent().expect("the database has a directory").to_path_buf()
+    pool.path()
+        .parent()
+        .expect("the database has a directory")
+        .to_path_buf()
 }
 
 // Stand up one module's own database the way a running module would: the
 // indexer's table, holding an API key nobody wants to lose in a restore.
 pub(super) fn seed_indexer_store(dir: &std::path::Path, rows: &str) -> std::path::PathBuf {
-    let store = dir.join("modules").join("tv.kroma.indexer").join("module.sqlite");
+    let store = dir
+        .join("modules")
+        .join("tv.kroma.indexer")
+        .join("module.sqlite");
     std::fs::create_dir_all(store.parent().unwrap()).unwrap();
     let conn = Connection::open(&store).unwrap();
     conn.execute_batch(&format!(

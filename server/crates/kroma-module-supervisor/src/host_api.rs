@@ -6,11 +6,11 @@ use std::sync::RwLock;
 
 use axum::extract::State;
 use axum::http::StatusCode;
+use axum::middleware::from_fn_with_state;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use kroma_module_host::host_token::{require_host_token, HostToken};
 use kroma_module_host::{Event, HostCtx};
-use axum::middleware::from_fn_with_state;
 use serde_json::{json, Value};
 
 /// The `/_host/*` callback router modules call back into (mount under `/api`),
@@ -53,7 +53,12 @@ async fn session_user<S: HostCtx + Clone>(
     State(host): State<S>,
     Json(body): Json<SessionBody>,
 ) -> Json<Option<kroma_domain::User>> {
-    Json(tokio::task::spawn_blocking(move || host.session_user(&body.token)).await.ok().flatten())
+    Json(
+        tokio::task::spawn_blocking(move || host.session_user(&body.token))
+            .await
+            .ok()
+            .flatten(),
+    )
 }
 
 #[derive(serde::Deserialize)]
@@ -92,7 +97,10 @@ struct SettingsPatch {
     patch: std::collections::BTreeMap<String, Value>,
 }
 
-async fn set_settings<S: HostCtx>(State(host): State<S>, Json(body): Json<SettingsPatch>) -> StatusCode {
+async fn set_settings<S: HostCtx>(
+    State(host): State<S>,
+    Json(body): Json<SettingsPatch>,
+) -> StatusCode {
     host.set_settings(body.patch);
     StatusCode::NO_CONTENT
 }
@@ -103,8 +111,14 @@ struct EventBody {
     payload: Value,
 }
 
-async fn publish_event<S: HostCtx>(State(host): State<S>, Json(body): Json<EventBody>) -> StatusCode {
-    host.publish(Event { topic: body.topic, payload: body.payload });
+async fn publish_event<S: HostCtx>(
+    State(host): State<S>,
+    Json(body): Json<EventBody>,
+) -> StatusCode {
+    host.publish(Event {
+        topic: body.topic,
+        payload: body.payload,
+    });
     StatusCode::NO_CONTENT
 }
 
@@ -120,7 +134,13 @@ async fn publish_event_to<S: HostCtx>(
     State(host): State<S>,
     Json(body): Json<AddressedEventBody>,
 ) -> StatusCode {
-    host.publish_to(&body.user_id, Event { topic: body.topic, payload: body.payload });
+    host.publish_to(
+        &body.user_id,
+        Event {
+            topic: body.topic,
+            payload: body.payload,
+        },
+    );
     StatusCode::NO_CONTENT
 }
 

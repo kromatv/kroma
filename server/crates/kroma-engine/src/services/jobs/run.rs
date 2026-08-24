@@ -7,9 +7,7 @@ use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::state::SharedState;
 
-use super::{
-    now_ms, JobContext, JobKey, JobManager, RunHandle, Runner, Trigger, RUNS_KEPT,
-};
+use super::{now_ms, JobContext, JobKey, JobManager, RunHandle, Runner, Trigger, RUNS_KEPT};
 
 #[cfg(test)]
 mod tests;
@@ -62,7 +60,9 @@ pub(super) fn run_job(
     manager.running.write().unwrap().remove(&job);
 
     match status {
-        "failed" => warn!(job = key, run = %run_id, error = error.as_deref().unwrap_or(""), "job failed"),
+        "failed" => {
+            warn!(job = key, run = %run_id, error = error.as_deref().unwrap_or(""), "job failed")
+        }
         other => info!(job = key, run = %run_id, status = other, "job finished"),
     }
     state.events.publish(ServerEvent::JobFinished {
@@ -121,7 +121,9 @@ fn finalize_run(
             Ok(_) => return true,
             Err(e) => {
                 warn!(job = key, run = %run_id, attempt, error = %e, "failed to record job run finish; retrying");
-                std::thread::sleep(std::time::Duration::from_millis(200 * u64::from(attempt + 1)));
+                std::thread::sleep(std::time::Duration::from_millis(
+                    200 * u64::from(attempt + 1),
+                ));
             }
         }
     }
@@ -130,7 +132,13 @@ fn finalize_run(
 
 // A failed or cancelled upstream must not start its dependents: they consume its
 // outputs, and a cancel must not kick off more work.
-fn chain_after(manager: &Arc<JobManager>, state: &SharedState, job: JobKey, key: &'static str, status: &str) {
+fn chain_after(
+    manager: &Arc<JobManager>,
+    state: &SharedState,
+    job: JobKey,
+    key: &'static str,
+    status: &str,
+) {
     if status != "success" {
         return;
     }

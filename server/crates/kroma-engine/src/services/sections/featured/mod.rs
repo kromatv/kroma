@@ -34,7 +34,11 @@ pub fn pick(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Op
     let taste: HashMap<String, f32> = if recent.is_empty() {
         HashMap::new()
     } else {
-        state.vectors.for_you(&recent, usize::MAX).into_iter().collect()
+        state
+            .vectors
+            .for_you(&recent, usize::MAX)
+            .into_iter()
+            .collect()
     };
     let trend = gather::trend_scores(pool);
     let (day, day_start) = today(now_ms());
@@ -50,13 +54,19 @@ pub fn pick(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Op
 // Relaxes strict -> presentable-only -> anything, so a small or fully-watched
 // library still yields a hero.
 fn gate<'a>(all: &'a [SectionItem], seen: &HashSet<String>) -> Vec<&'a SectionItem> {
-    let strict: Vec<&SectionItem> =
-        all.iter().filter(|e| presentable(e) && !seen.contains(e.id())).collect();
+    let strict: Vec<&SectionItem> = all
+        .iter()
+        .filter(|e| presentable(e) && !seen.contains(e.id()))
+        .collect();
     if !strict.is_empty() {
         return strict;
     }
     let presentable_only: Vec<&SectionItem> = all.iter().filter(|e| presentable(e)).collect();
-    if presentable_only.is_empty() { all.iter().collect() } else { presentable_only }
+    if presentable_only.is_empty() {
+        all.iter().collect()
+    } else {
+        presentable_only
+    }
 }
 
 // Scoring runs on the day start, not the wall clock: freshness moves
@@ -151,7 +161,11 @@ mod tests {
             .unwrap();
 
         let picked = pick(&state, &state.db, "en", "u1").expect("a hero");
-        assert_eq!(picked.id(), "fresh", "the title they just finished is not the hero");
+        assert_eq!(
+            picked.id(),
+            "fresh",
+            "the title they just finished is not the hero"
+        );
     }
 
     #[test]

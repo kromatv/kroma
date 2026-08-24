@@ -39,8 +39,12 @@ fn probe_path() -> Option<PathBuf> {
 // GPU is the default; only an explicit opt-out (`{"dmabuf": false}`) selects
 // software. An absent, unreadable, or malformed settings file reads as enabled.
 fn gpu_enabled() -> bool {
-    let Some(path) = settings_path() else { return DEFAULT_GPU };
-    let Ok(raw) = std::fs::read_to_string(path) else { return DEFAULT_GPU };
+    let Some(path) = settings_path() else {
+        return DEFAULT_GPU;
+    };
+    let Ok(raw) = std::fs::read_to_string(path) else {
+        return DEFAULT_GPU;
+    };
     serde_json::from_str::<serde_json::Value>(&raw)
         .ok()
         .and_then(|v| v.get("dmabuf").and_then(serde_json::Value::as_bool))
@@ -51,7 +55,10 @@ fn gpu_enabled() -> bool {
 fn write_enabled(on: bool) {
     let Some(dir) = config_dir() else { return };
     let _ = std::fs::create_dir_all(&dir);
-    let _ = std::fs::write(dir.join("webview.json"), serde_json::json!({ "dmabuf": on }).to_string());
+    let _ = std::fs::write(
+        dir.join("webview.json"),
+        serde_json::json!({ "dmabuf": on }).to_string(),
+    );
 }
 
 /// Decide the renderer for this boot. Called by `prepare_linux_env` BEFORE any

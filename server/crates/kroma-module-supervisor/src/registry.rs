@@ -68,7 +68,6 @@ fn no_downgrade() -> reqwest::redirect::Policy {
     })
 }
 
-
 impl Supervisor {
     /// Download a `.kmod` artifact, streaming byte progress to `on_progress`,
     /// and verify it against the published checksum before returning the bytes.
@@ -80,8 +79,13 @@ impl Supervisor {
         expected_sha256: Option<&str>,
         on_progress: FetchProgress<'_>,
     ) -> anyhow::Result<Vec<u8>> {
-        let bytes =
-            fetch_bounded(self.artifact_client(), url, MAX_BUNDLE_BYTES, Some(on_progress)).await?;
+        let bytes = fetch_bounded(
+            self.artifact_client(),
+            url,
+            MAX_BUNDLE_BYTES,
+            Some(on_progress),
+        )
+        .await?;
         if let Some(expected) = expected_sha256.map(str::trim).filter(|s| !s.is_empty()) {
             verify_sha256(&bytes, expected)?;
         }
@@ -152,7 +156,11 @@ pub const DESCRIPTOR_PATH: &str = "registry.json";
 /// at one, else the descriptor at the well-known path beneath it.
 pub fn registry_document_url(url: &str) -> String {
     let trimmed = url.trim().trim_end_matches('/');
-    if trimmed.rsplit('/').next().is_some_and(|last| last.ends_with(".json")) {
+    if trimmed
+        .rsplit('/')
+        .next()
+        .is_some_and(|last| last.ends_with(".json"))
+    {
         return trimmed.to_string();
     }
     format!("{trimmed}/{DESCRIPTOR_PATH}")
@@ -162,7 +170,9 @@ pub fn registry_document_url(url: &str) -> String {
 /// sibling document (a registry's index beside its descriptor) is reached
 /// without trusting a URL that document declares about itself.
 pub fn sibling_url(fetched_from: &str, relative: &str) -> anyhow::Result<String> {
-    Ok(reqwest::Url::parse(fetched_from)?.join(relative)?.to_string())
+    Ok(reqwest::Url::parse(fetched_from)?
+        .join(relative)?
+        .to_string())
 }
 
 /// Verify `bytes` against a hex SHA-256. Refusing on mismatch is what keeps a
@@ -188,7 +198,10 @@ mod tests {
             "https://mods.example.com/",
             "  https://mods.example.com  ",
         ] {
-            assert_eq!(registry_document_url(root), "https://mods.example.com/registry.json");
+            assert_eq!(
+                registry_document_url(root),
+                "https://mods.example.com/registry.json"
+            );
         }
         assert_eq!(
             registry_document_url("https://example.com/kroma/"),

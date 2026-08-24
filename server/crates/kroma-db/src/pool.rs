@@ -95,9 +95,15 @@ mod pool_tests {
 
         {
             let first = pool.get().unwrap();
-            first.query_row("SELECT 1", [], |r| r.get::<_, i64>(0)).unwrap();
+            first
+                .query_row("SELECT 1", [], |r| r.get::<_, i64>(0))
+                .unwrap();
         }
-        assert_eq!(pool.idle.lock().unwrap().len(), 1, "a dropped connection goes back");
+        assert_eq!(
+            pool.idle.lock().unwrap().len(),
+            1,
+            "a dropped connection goes back"
+        );
 
         let checked_out: Vec<_> = (0..max_idle + 3).map(|_| pool.get().unwrap()).collect();
         assert!(pool.idle.lock().unwrap().is_empty());

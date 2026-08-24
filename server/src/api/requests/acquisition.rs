@@ -11,10 +11,8 @@ use serde_json::json;
 
 use crate::api::error::{json_error, lerr};
 use crate::api::extract::AuthUser;
-use crate::model::{
-    Permission, User,
-};
 use crate::api::point;
+use crate::model::{Permission, User};
 use crate::services::jobs::TriggerError;
 use crate::state::SharedState;
 
@@ -80,18 +78,24 @@ pub async fn search_all_missing(
     require(&user, Permission::RequestsManage)?;
     // The job only exists while a module has registered it, so resolving it is
     // the gate: no acquisition module, no pass to trigger.
-    let job = state
-        .jobs
-        .resolve("acquisition.search")
-        .ok_or_else(|| lerr(super::locale(&user), StatusCode::NOT_FOUND, "error.moduleDisabled"))?;
+    let job = state.jobs.resolve("acquisition.search").ok_or_else(|| {
+        lerr(
+            super::locale(&user),
+            StatusCode::NOT_FOUND,
+            "error.moduleDisabled",
+        )
+    })?;
     match state.jobs.trigger(state.clone(), job, "manual") {
         Ok(run_id) => Ok(Json(json!({ "runId": run_id })).into_response()),
-        Err(TriggerError::AlreadyRunning) => {
-            Err(json_error(StatusCode::CONFLICT, "a search pass is already running"))
-        }
-        Err(TriggerError::Unknown) => {
-            Err(lerr(super::locale(&user), StatusCode::NOT_FOUND, "error.moduleDisabled"))
-        }
+        Err(TriggerError::AlreadyRunning) => Err(json_error(
+            StatusCode::CONFLICT,
+            "a search pass is already running",
+        )),
+        Err(TriggerError::Unknown) => Err(lerr(
+            super::locale(&user),
+            StatusCode::NOT_FOUND,
+            "error.moduleDisabled",
+        )),
     }
 }
 
@@ -127,13 +131,21 @@ fn best_release(view: &serde_json::Value) -> Option<(String, String, String)> {
     view.get("releases")?
         .as_array()?
         .iter()
-        .filter(|r| r.get("grabbable").and_then(serde_json::Value::as_bool).unwrap_or(false))
+        .filter(|r| {
+            r.get("grabbable")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false)
+        })
         .filter(|r| r.get("rejected").is_none_or(serde_json::Value::is_null))
         .filter_map(|r| {
             let score = r.get("score")?.as_i64()?;
             let guid = r.get("guid")?.as_str()?.to_string();
             let indexer_id = r.get("indexerId")?.as_str()?.to_string();
-            let title = r.get("title").and_then(|v| v.as_str()).unwrap_or_default().to_string();
+            let title = r
+                .get("title")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .to_string();
             Some((score, guid, indexer_id, title))
         })
         .max_by_key(|(score, ..)| *score)
@@ -161,12 +173,18 @@ fn scope_value(params: &ScopeParams) -> Result<serde_json::Value, Response> {
         "all" => Ok(json!({ "kind": "all" })),
         "movie" => Ok(json!({ "kind": "movie" })),
         "season" => {
-            let season = params.season.ok_or_else(|| bad("a season scope needs a season"))?;
+            let season = params
+                .season
+                .ok_or_else(|| bad("a season scope needs a season"))?;
             Ok(json!({ "kind": "season", "season": season }))
         }
         "episode" => {
-            let season = params.season.ok_or_else(|| bad("an episode scope needs a season"))?;
-            let episode = params.episode.ok_or_else(|| bad("an episode scope needs an episode"))?;
+            let season = params
+                .season
+                .ok_or_else(|| bad("an episode scope needs a season"))?;
+            let episode = params
+                .episode
+                .ok_or_else(|| bad("an episode scope needs an episode"))?;
             Ok(json!({ "kind": "episode", "season": season, "episode": episode }))
         }
         other => Err(bad(&format!("unknown search scope {other:?}"))),
@@ -223,7 +241,11 @@ mod tests {
     use super::*;
 
     fn params(scope: Option<&str>, season: Option<u32>, episode: Option<u32>) -> ScopeParams {
-        ScopeParams { scope: scope.map(str::to_string), season, episode }
+        ScopeParams {
+            scope: scope.map(str::to_string),
+            season,
+            episode,
+        }
     }
 
     fn ok(scope: Option<&str>, season: Option<u32>, episode: Option<u32>) -> serde_json::Value {
@@ -242,7 +264,10 @@ mod tests {
     #[test]
     fn a_narrowed_scope_carries_its_numbers() {
         assert_eq!(ok(Some("movie"), None, None), json!({ "kind": "movie" }));
-        assert_eq!(ok(Some("season"), Some(2), None), json!({ "kind": "season", "season": 2 }));
+        assert_eq!(
+            ok(Some("season"), Some(2), None),
+            json!({ "kind": "season", "season": 2 })
+        );
         assert_eq!(
             ok(Some("episode"), Some(2), Some(5)),
             json!({ "kind": "episode", "season": 2, "episode": 5 })
@@ -254,8 +279,14 @@ mod tests {
         // `?scope=all&season=2` is a client bug; answering with a season sweep
         // would grab a pack nobody asked for.
         assert_eq!(ok(Some("all"), Some(2), Some(5)), json!({ "kind": "all" }));
-        assert_eq!(ok(Some("movie"), Some(2), Some(5)), json!({ "kind": "movie" }));
-        assert_eq!(ok(Some("season"), Some(2), Some(5)), json!({ "kind": "season", "season": 2 }));
+        assert_eq!(
+            ok(Some("movie"), Some(2), Some(5)),
+            json!({ "kind": "movie" })
+        );
+        assert_eq!(
+            ok(Some("season"), Some(2), Some(5)),
+            json!({ "kind": "season", "season": 2 })
+        );
     }
 
     #[test]

@@ -9,7 +9,11 @@ use sha2::{Digest, Sha256};
 // OWASP's current recommendation for PBKDF2-HMAC-SHA256 in release builds;
 // debug builds use a lighter factor so tests don't crawl. The count is stored
 // in each hash, so changing it never invalidates existing ones.
-const PBKDF2_ITERS: u32 = if cfg!(debug_assertions) { 20_000 } else { 600_000 };
+const PBKDF2_ITERS: u32 = if cfg!(debug_assertions) {
+    20_000
+} else {
+    600_000
+};
 const SALT_LEN: usize = 16;
 const SHA256_BLOCK: usize = 64;
 // Refreshed from the access token via `/auth/token` before this lapses.
@@ -88,7 +92,10 @@ pub use kroma_primitives::{random_token, random_u32};
 fn without_blocking_the_runtime<T>(work: impl FnOnce() -> T) -> T {
     match tokio::runtime::Handle::try_current() {
         Ok(handle)
-            if !matches!(handle.runtime_flavor(), tokio::runtime::RuntimeFlavor::CurrentThread) =>
+            if !matches!(
+                handle.runtime_flavor(),
+                tokio::runtime::RuntimeFlavor::CurrentThread
+            ) =>
         {
             tokio::task::block_in_place(work)
         }
@@ -100,8 +107,13 @@ fn without_blocking_the_runtime<T>(work: impl FnOnce() -> T) -> T {
 /// Safe to call from an async task: the derivation runs off the runtime's worker.
 pub fn hash_password(password: &str) -> String {
     let salt = random_bytes(SALT_LEN);
-    let dk = without_blocking_the_runtime(|| pbkdf2_sha256(password.as_bytes(), &salt, PBKDF2_ITERS));
-    format!("pbkdf2${PBKDF2_ITERS}${}${}", hex::encode(&salt), hex::encode(dk))
+    let dk =
+        without_blocking_the_runtime(|| pbkdf2_sha256(password.as_bytes(), &salt, PBKDF2_ITERS));
+    format!(
+        "pbkdf2${PBKDF2_ITERS}${}${}",
+        hex::encode(&salt),
+        hex::encode(dk)
+    )
 }
 
 /// Verify `password` against a stored `pbkdf2$…` hash. Returns false on any
@@ -167,7 +179,10 @@ mod tests {
 
     #[test]
     fn a_key_longer_than_the_hmac_block_is_hashed_down_first() {
-        let mac = hmac_sha256(&[0xaa; 131], b"Test Using Larger Than Block-Size Key - Hash Key First");
+        let mac = hmac_sha256(
+            &[0xaa; 131],
+            b"Test Using Larger Than Block-Size Key - Hash Key First",
+        );
         assert_eq!(
             hex::encode(mac),
             "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
@@ -192,7 +207,10 @@ mod tests {
             "pbkdf2$20000$00$nothex",
             "pbkdf2$20000$00",
         ] {
-            assert!(!verify_password("s3cret!", broken), "{broken:?} must not authenticate");
+            assert!(
+                !verify_password("s3cret!", broken),
+                "{broken:?} must not authenticate"
+            );
         }
     }
 
@@ -219,9 +237,15 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn hashing_inside_a_blocking_task_still_round_trips() {
-        let stored = tokio::task::spawn_blocking(|| hash_password("s3cret!")).await.unwrap();
+        let stored = tokio::task::spawn_blocking(|| hash_password("s3cret!"))
+            .await
+            .unwrap();
 
-        assert!(tokio::task::spawn_blocking(move || verify_password("s3cret!", &stored)).await.unwrap());
+        assert!(
+            tokio::task::spawn_blocking(move || verify_password("s3cret!", &stored))
+                .await
+                .unwrap()
+        );
     }
 
     #[test]

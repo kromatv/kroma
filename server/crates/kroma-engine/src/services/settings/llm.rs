@@ -93,7 +93,10 @@ pub fn ordered_providers(settings: &Settings) -> Vec<LlmProvider> {
             out.push(def.clone());
         }
     }
-    out.extend(all.into_iter().filter(|p| Some(&p.id) != default_id.as_ref()));
+    out.extend(
+        all.into_iter()
+            .filter(|p| Some(&p.id) != default_id.as_ref()),
+    );
     out
 }
 
@@ -184,7 +187,10 @@ mod tests {
         assert_eq!(list[0].id, "default");
         assert_eq!(list[0].model, "qwen2.5");
 
-        s.set_patch(&pool, BTreeMap::from([("llmProviders".to_string(), json!([1, 2, 3]))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("llmProviders".to_string(), json!([1, 2, 3]))]),
+        );
         assert_eq!(llm_providers(&s).len(), 1);
     }
 
@@ -192,11 +198,14 @@ mod tests {
     fn providers_migrate_from_flat_keys() {
         let pool = test_pool();
         let s = settings(&pool);
-        s.set_patch(&pool, BTreeMap::from([
-            ("llmModel".to_string(), json!("qwen2.5")),
-            ("llmBaseUrl".to_string(), json!("http://localhost:11434/v1")),
-            ("llmProvider".to_string(), json!("openai")),
-        ]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([
+                ("llmModel".to_string(), json!("qwen2.5")),
+                ("llmBaseUrl".to_string(), json!("http://localhost:11434/v1")),
+                ("llmProvider".to_string(), json!("openai")),
+            ]),
+        );
         let list = llm_providers(&s);
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].id, "default");
@@ -208,7 +217,13 @@ mod tests {
     fn set_llm_persists_and_default_selection() {
         let pool = test_pool();
         let s = settings(&pool);
-        set_llm(&s, &pool, true, vec![provider("a", "k1"), provider("b", "k2")], "b");
+        set_llm(
+            &s,
+            &pool,
+            true,
+            vec![provider("a", "k1"), provider("b", "k2")],
+            "b",
+        );
         let list = llm_providers(&s);
         assert_eq!(list.len(), 2);
         assert_eq!(default_provider(&s).unwrap().id, "b");
@@ -222,7 +237,13 @@ mod tests {
     fn default_provider_falls_back_to_first_when_id_missing() {
         let pool = test_pool();
         let s = settings(&pool);
-        set_llm(&s, &pool, true, vec![provider("a", "k1"), provider("b", "k2")], "nonexistent");
+        set_llm(
+            &s,
+            &pool,
+            true,
+            vec![provider("a", "k1"), provider("b", "k2")],
+            "nonexistent",
+        );
         assert_eq!(default_provider(&s).unwrap().id, "a");
     }
 

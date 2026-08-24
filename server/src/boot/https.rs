@@ -65,7 +65,10 @@ pub fn https_redirect_router(
     }
     router.fallback(move |headers: HeaderMap, uri: Uri| async move {
         // The request's own Host header works whether the client reached us by IP or by name.
-        let host = headers.get(header::HOST).and_then(|v| v.to_str().ok()).unwrap_or("");
+        let host = headers
+            .get(header::HOST)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
         let hostname = host.split(':').next().unwrap_or("").trim();
         if hostname.is_empty() {
             return StatusCode::BAD_REQUEST.into_response();
@@ -83,7 +86,11 @@ pub fn https_redirect_router(
 // `None` when disabled or when cert/config setup fails (logged; HTTP still serves).
 pub async fn build_https(
     state: &state::SharedState,
-) -> Option<(std::path::PathBuf, axum_server::tls_rustls::RustlsConfig, std::net::SocketAddr)> {
+) -> Option<(
+    std::path::PathBuf,
+    axum_server::tls_rustls::RustlsConfig,
+    std::net::SocketAddr,
+)> {
     let config = &state.config;
     let enabled = config
         .https_override
@@ -103,18 +110,16 @@ pub async fn build_https(
         }
     };
 
-    let rustls_config = match axum_server::tls_rustls::RustlsConfig::from_pem_file(
-        &paths.cert_pem,
-        &paths.key_pem,
-    )
-    .await
-    {
-        Ok(c) => c,
-        Err(e) => {
-            warn!(error = %e, "failed to load the TLS certificate; serving HTTP only");
-            return None;
-        }
-    };
+    let rustls_config =
+        match axum_server::tls_rustls::RustlsConfig::from_pem_file(&paths.cert_pem, &paths.key_pem)
+            .await
+        {
+            Ok(c) => c,
+            Err(e) => {
+                warn!(error = %e, "failed to load the TLS certificate; serving HTTP only");
+                return None;
+            }
+        };
 
     let port = config
         .https_port_override

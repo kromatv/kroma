@@ -25,14 +25,21 @@ pub fn routes() -> Router<SharedState> {
 }
 
 fn locale(user: &User) -> &'static str {
-    user.language.as_deref().and_then(i18n::normalize).unwrap_or(i18n::DEFAULT_LOCALE)
+    user.language
+        .as_deref()
+        .and_then(i18n::normalize)
+        .unwrap_or(i18n::DEFAULT_LOCALE)
 }
 
 fn require_manage(user: &User) -> Result<(), Response> {
     if user.can(Permission::LibraryManage) {
         Ok(())
     } else {
-        Err(lerr(locale(user), StatusCode::FORBIDDEN, "error.permissionDenied"))
+        Err(lerr(
+            locale(user),
+            StatusCode::FORBIDDEN,
+            "error.permissionDenied",
+        ))
     }
 }
 
@@ -56,8 +63,8 @@ pub async fn candidates(
 ) -> Result<Response, Response> {
     require_manage(&user)?;
     let subject = subject_of(&user, &kind)?;
-    let out = blocking(move || rematch::candidates(&state, subject, &id, params.q.as_deref()))
-        .await?;
+    let out =
+        blocking(move || rematch::candidates(&state, subject, &id, params.q.as_deref())).await?;
     Ok(Json(out).into_response())
 }
 

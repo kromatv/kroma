@@ -37,7 +37,12 @@ fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
         let pin = show_pins.get(&s.id).copied().unwrap_or(0);
         out.push((
             s.id,
-            format!("{}:{}:{}:{pin}", s.title, s.year.unwrap_or(0), s.episode_count),
+            format!(
+                "{}:{}:{}:{pin}",
+                s.title,
+                s.year.unwrap_or(0),
+                s.episode_count
+            ),
         ));
     }
     Ok(out)

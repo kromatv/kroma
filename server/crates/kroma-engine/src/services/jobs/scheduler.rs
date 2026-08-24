@@ -36,12 +36,20 @@ impl JobManager {
         });
     }
 
-    fn trigger_due(self: &Arc<Self>, state: &SharedState, last: OffsetDateTime, now: OffsetDateTime) {
+    fn trigger_due(
+        self: &Arc<Self>,
+        state: &SharedState,
+        last: OffsetDateTime,
+        now: OffsetDateTime,
+    ) {
         for job in self.due_jobs(last, now) {
             match self.trigger(state.clone(), job, "schedule") {
                 Ok(_) => {}
                 Err(TriggerError::AlreadyRunning) => {
-                    info!(job = job.as_str(), "skipped scheduled run; previous run still active")
+                    info!(
+                        job = job.as_str(),
+                        "skipped scheduled run; previous run still active"
+                    )
                 }
                 Err(TriggerError::Unknown) => {}
             }
@@ -109,30 +117,69 @@ mod tests {
     fn fires_once_across_the_boundary() {
         let jm = with_job(Some("0 4 * * *"));
         // 04:00 falls in (03:59:50, 04:00:10] → fires.
-        assert_eq!(due(&jm, datetime!(2026-06-29 03:59:50 UTC), datetime!(2026-06-29 04:00:10 UTC)), [CACHE_CLEANUP]);
+        assert_eq!(
+            due(
+                &jm,
+                datetime!(2026-06-29 03:59:50 UTC),
+                datetime!(2026-06-29 04:00:10 UTC)
+            ),
+            [CACHE_CLEANUP]
+        );
         // The immediately-following window must NOT re-fire it.
-        assert!(due(&jm, datetime!(2026-06-29 04:00:10 UTC), datetime!(2026-06-29 04:00:40 UTC)).is_empty());
+        assert!(due(
+            &jm,
+            datetime!(2026-06-29 04:00:10 UTC),
+            datetime!(2026-06-29 04:00:40 UTC)
+        )
+        .is_empty());
     }
 
     #[test]
     fn fire_exactly_at_now_is_included_once() {
         let jm = with_job(Some("0 4 * * *"));
         // A window ENDING exactly at the fire time includes it…
-        assert_eq!(due(&jm, datetime!(2026-06-29 03:59:50 UTC), datetime!(2026-06-29 04:00:00 UTC)), [CACHE_CLEANUP]);
+        assert_eq!(
+            due(
+                &jm,
+                datetime!(2026-06-29 03:59:50 UTC),
+                datetime!(2026-06-29 04:00:00 UTC)
+            ),
+            [CACHE_CLEANUP]
+        );
         // …and the next window STARTING at it excludes it (no double-fire).
-        assert!(due(&jm, datetime!(2026-06-29 04:00:00 UTC), datetime!(2026-06-29 04:00:10 UTC)).is_empty());
+        assert!(due(
+            &jm,
+            datetime!(2026-06-29 04:00:00 UTC),
+            datetime!(2026-06-29 04:00:10 UTC)
+        )
+        .is_empty());
     }
 
     #[test]
     fn manual_only_and_disabled_never_fire() {
         // No schedule (manual-only) → never due.
         let jm = with_job(None);
-        assert!(due(&jm, datetime!(2026-06-29 00:00:00 UTC), datetime!(2026-06-30 00:00:00 UTC)).is_empty());
+        assert!(due(
+            &jm,
+            datetime!(2026-06-29 00:00:00 UTC),
+            datetime!(2026-06-30 00:00:00 UTC)
+        )
+        .is_empty());
 
         // Disabled job → never due even inside its window.
         let jm = with_job(Some("0 4 * * *"));
-        jm.schedules.write().unwrap().get_mut("cache.cleanup").unwrap().enabled = false;
-        assert!(due(&jm, datetime!(2026-06-29 03:59:50 UTC), datetime!(2026-06-29 04:00:10 UTC)).is_empty());
+        jm.schedules
+            .write()
+            .unwrap()
+            .get_mut("cache.cleanup")
+            .unwrap()
+            .enabled = false;
+        assert!(due(
+            &jm,
+            datetime!(2026-06-29 03:59:50 UTC),
+            datetime!(2026-06-29 04:00:10 UTC)
+        )
+        .is_empty());
     }
 
     #[tokio::test]
@@ -152,7 +199,10 @@ mod tests {
         let jm = Arc::new(jm);
         jm.running.write().unwrap().insert(
             ARTWORK_SWEEP,
-            Arc::new(RunHandle::new("run-1".into(), ARTWORK_SWEEP.as_str().into())),
+            Arc::new(RunHandle::new(
+                "run-1".into(),
+                ARTWORK_SWEEP.as_str().into(),
+            )),
         );
         let mut events = state.events.subscribe();
 
@@ -162,12 +212,18 @@ mod tests {
             datetime!(2026-06-29 04:00:10 UTC),
         );
 
-        let announced = events.try_recv().expect("the job that could start announced itself");
+        let announced = events
+            .try_recv()
+            .expect("the job that could start announced itself");
         let payload = announced.payload_unrouted();
         assert!(payload.contains("job.started"), "{payload}");
         assert!(payload.contains(CACHE_CLEANUP.as_str()), "{payload}");
-        assert!(db::list_job_runs(&state.db, ARTWORK_SWEEP.as_str(), 10).unwrap().is_empty());
-        assert!(db::list_job_runs(&state.db, NEVER_REGISTERED.as_str(), 10).unwrap().is_empty());
+        assert!(db::list_job_runs(&state.db, ARTWORK_SWEEP.as_str(), 10)
+            .unwrap()
+            .is_empty());
+        assert!(db::list_job_runs(&state.db, NEVER_REGISTERED.as_str(), 10)
+            .unwrap()
+            .is_empty());
     }
 
     #[tokio::test(start_paused = true)]
@@ -183,7 +239,10 @@ mod tests {
             tokio::task::yield_now().await;
         }
 
-        assert!(events.try_recv().is_err(), "no schedule was due, so no run was announced");
+        assert!(
+            events.try_recv().is_err(),
+            "no schedule was due, so no run was announced"
+        );
         assert_eq!(jm.running_count(), 0);
     }
 }

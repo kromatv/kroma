@@ -46,7 +46,10 @@ mod tests {
     #[test]
     fn hold_reason_depends_on_source() {
         assert_eq!(hold_reason(true), "paused (pipeline held by admin)");
-        assert_eq!(hold_reason(false), "playback active, pausing (playback has priority)");
+        assert_eq!(
+            hold_reason(false),
+            "playback active, pausing (playback has priority)"
+        );
     }
 
     #[test]

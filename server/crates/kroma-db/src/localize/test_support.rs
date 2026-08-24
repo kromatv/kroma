@@ -22,7 +22,11 @@ pub(super) fn meta(title: &str) -> Metadata {
         backdrop_url: None,
         logo_url: None,
         theme_url: None,
-        cast: vec![CastMember { name: "Actor".into(), character: Some("Orig Char".into()), profile_url: None }],
+        cast: vec![CastMember {
+            name: "Actor".into(),
+            character: Some("Orig Char".into()),
+            profile_url: None,
+        }],
         crew: vec![],
         keywords: vec![],
         tvdb_id: None,
@@ -76,5 +80,9 @@ pub(super) fn show(id: &str) -> Show {
 }
 
 pub(super) fn td(title: &str, characters: Vec<Option<String>>) -> TransData {
-    TransData { title: Some(title.into()), characters, ..Default::default() }
+    TransData {
+        title: Some(title.into()),
+        characters,
+        ..Default::default()
+    }
 }

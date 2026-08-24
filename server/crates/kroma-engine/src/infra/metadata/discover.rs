@@ -130,7 +130,10 @@ pub fn trending(
         DiscoverScope::Shows => "trending/tv/week",
         DiscoverScope::All => "trending/all/week",
     };
-    let params = vec![("language", language.to_string()), ("page", page.max(1).to_string())];
+    let params = vec![
+        ("language", language.to_string()),
+        ("page", page.max(1).to_string()),
+    ];
     let resp: PageResp = curl_json(&format!("{}/{path}", api()), api_key, &params)?;
     Ok(map_page(resp, scope))
 }
@@ -161,13 +164,14 @@ pub fn detail(
         ("language", language.to_string()),
         ("append_to_response", append.to_string()),
     ];
-    let mut d: DetailResp = match curl_json(&format!("{}/{path}/{tmdb_id}", api()), api_key, &params) {
-        Ok(d) => d,
-        // curl -f turns TMDB 404s into exit 22; treat any failure on the detail
-        // endpoint as "not found" only when the id namespace mismatched is
-        // indistinguishable, so callers surface a uniform not-found.
-        Err(()) => return Err(()),
-    };
+    let mut d: DetailResp =
+        match curl_json(&format!("{}/{path}/{tmdb_id}", api()), api_key, &params) {
+            Ok(d) => d,
+            // curl -f turns TMDB 404s into exit 22; treat any failure on the detail
+            // endpoint as "not found" only when the id namespace mismatched is
+            // indistinguishable, so callers surface a uniform not-found.
+            Err(()) => return Err(()),
+        };
     let title = match d.title.or(d.name) {
         Some(t) => t,
         None => return Ok(None),
@@ -200,10 +204,16 @@ pub fn detail(
     let status = d.status.take().filter(|s| !s.is_empty());
     let next_air = d.next_episode_to_air.take().and_then(|e| {
         let date = e.air_date.filter(|s| !s.is_empty())?;
-        Some((date, e.season_number.unwrap_or(0), e.episode_number.unwrap_or(0)))
+        Some((
+            date,
+            e.season_number.unwrap_or(0),
+            e.episode_number.unwrap_or(0),
+        ))
     });
     let available_date = match kind {
-        RequestKind::Movie => movie_available_date(d.release_dates.take(), d.release_date.as_deref()),
+        RequestKind::Movie => {
+            movie_available_date(d.release_dates.take(), d.release_date.as_deref())
+        }
         RequestKind::Show => None,
     };
     Ok(Some(DiscoverRawDetail {
@@ -304,7 +314,11 @@ fn map_page(resp: PageResp, scope: DiscoverScope) -> DiscoverPage {
             hit_from(kind, h)
         })
         .collect();
-    DiscoverPage { hits, page: resp.page.max(1), total_pages: resp.total_pages.max(1) }
+    DiscoverPage {
+        hits,
+        page: resp.page.max(1),
+        total_pages: resp.total_pages.max(1),
+    }
 }
 
 fn year_of(date: Option<&str>) -> Option<u32> {
@@ -496,7 +510,10 @@ mod tests {
         // Sorted by `order`; empty characters dropped; profile URL absolutized.
         assert_eq!(cast[0].name, "First");
         assert_eq!(cast[0].character.as_deref(), Some("A"));
-        assert_eq!(cast[0].profile_url.as_deref(), Some("https://image.tmdb.org/t/p/w185/a.jpg"));
+        assert_eq!(
+            cast[0].profile_url.as_deref(),
+            Some("https://image.tmdb.org/t/p/w185/a.jpg")
+        );
         assert_eq!(cast[2].character, None);
 
         let crew = build_crew(raw_crew, d.created_by, MAX_CREW);
@@ -538,7 +555,10 @@ mod tests {
             Some("2024-04-16")
         );
         // No typed windows: fall back to the basic release_date.
-        assert_eq!(movie_available_date(None, Some("2025-01-09")).as_deref(), Some("2025-01-09"));
+        assert_eq!(
+            movie_available_date(None, Some("2025-01-09")).as_deref(),
+            Some("2025-01-09")
+        );
     }
 
     #[test]
@@ -565,7 +585,11 @@ mod tests {
             "credits": {"cast": [], "crew": []}
         }"#;
         let d: DetailResp = serde_json::from_str(raw).unwrap();
-        let crew = build_crew(d.credits.map(|c| c.crew).unwrap_or_default(), d.created_by, MAX_CREW);
+        let crew = build_crew(
+            d.credits.map(|c| c.crew).unwrap_or_default(),
+            d.created_by,
+            MAX_CREW,
+        );
         assert_eq!(crew.len(), 1);
         assert_eq!(crew[0].name, "Dan Erickson");
         assert_eq!(crew[0].job, "Creator");

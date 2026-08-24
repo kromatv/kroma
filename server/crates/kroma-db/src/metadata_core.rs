@@ -53,7 +53,10 @@ pub(crate) fn write_core(conn: &Connection, kind: &str, id: &str, core: &MetaCor
         .cast
         .iter()
         .cloned()
-        .map(|c| CastMember { character: None, ..c })
+        .map(|c| CastMember {
+            character: None,
+            ..c
+        })
         .collect();
     let cast_json = serde_json::to_string(&cast).unwrap_or_else(|_| "[]".into());
     let crew_json = serde_json::to_string(&core.crew).unwrap_or_else(|_| "[]".into());
@@ -176,7 +179,11 @@ mod tests {
                 character: Some("Neo".into()),
                 profile_url: Some("/api/images/k.webp".into()),
             }],
-            crew: vec![CrewMember { name: "Wachowski".into(), job: "Director".into(), profile_url: None }],
+            crew: vec![CrewMember {
+                name: "Wachowski".into(),
+                job: "Director".into(),
+                profile_url: None,
+            }],
         }
     }
 
@@ -194,7 +201,10 @@ mod tests {
         assert_eq!(got.cast.len(), 1);
         assert_eq!(got.cast[0].name, "Keanu");
         assert!(got.cast[0].character.is_none());
-        assert_eq!(got.cast[0].profile_url.as_deref(), Some("/api/images/k.webp"));
+        assert_eq!(
+            got.cast[0].profile_url.as_deref(),
+            Some("/api/images/k.webp")
+        );
         assert_eq!(got.crew.len(), 1);
         assert_eq!(got.crew[0].job, "Director");
 
@@ -219,7 +229,10 @@ mod tests {
         set_core(&p, SHOW, "x", &show).unwrap();
         // Same id, different kind: no collision.
         assert_eq!(get_core(&p, ITEM, "x").unwrap().unwrap().tmdb_id, Some(603));
-        assert_eq!(get_core(&p, SHOW, "x").unwrap().unwrap().tmdb_id, Some(1396));
+        assert_eq!(
+            get_core(&p, SHOW, "x").unwrap().unwrap().tmdb_id,
+            Some(1396)
+        );
     }
 
     #[test]
@@ -246,7 +259,10 @@ mod tests {
     #[test]
     fn a_core_table_that_is_gone_errors_on_every_operation() {
         let p = pool();
-        p.get().unwrap().execute_batch("DROP TABLE metadata_core").unwrap();
+        p.get()
+            .unwrap()
+            .execute_batch("DROP TABLE metadata_core")
+            .unwrap();
 
         assert!(set_core(&p, ITEM, "m1", &sample_core()).is_err());
         let conn = p.get().unwrap();

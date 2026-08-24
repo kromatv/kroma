@@ -83,7 +83,9 @@ fn generate(extra_sans: &[String]) -> Result<(String, String)> {
     params.subject_alt_names = collect_sans(extra_sans);
 
     let key = KeyPair::generate().context("failed to generate a TLS key pair")?;
-    let cert = params.self_signed(&key).context("failed to self-sign the TLS certificate")?;
+    let cert = params
+        .self_signed(&key)
+        .context("failed to self-sign the TLS certificate")?;
     Ok((cert.pem(), key.serialize_pem()))
 }
 
@@ -94,7 +96,10 @@ fn collect_sans(extra: &[String]) -> Vec<rcgen::SanType> {
     use rcgen::SanType;
 
     let mut dns: Vec<String> = vec!["localhost".to_string()];
-    let mut ips: Vec<IpAddr> = vec![IpAddr::from([127, 0, 0, 1]), IpAddr::from([0, 0, 0, 0, 0, 0, 0, 1])];
+    let mut ips: Vec<IpAddr> = vec![
+        IpAddr::from([127, 0, 0, 1]),
+        IpAddr::from([0, 0, 0, 0, 0, 0, 0, 1]),
+    ];
 
     if let Ok(host) = hostname::get() {
         dns.extend(host_names(&host.to_string_lossy()));
@@ -141,8 +146,13 @@ fn host_names(host: &str) -> Vec<String> {
 // offline / has no default route.
 fn primary_lan_ip() -> Option<IpAddr> {
     let sock = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
-    sock.connect("192.168.255.255:9").or_else(|_| sock.connect("8.8.8.8:53")).ok()?;
-    sock.local_addr().ok().map(|a| a.ip()).filter(|ip| !ip.is_unspecified())
+    sock.connect("192.168.255.255:9")
+        .or_else(|_| sock.connect("8.8.8.8:53"))
+        .ok()?;
+    sock.local_addr()
+        .ok()
+        .map(|a| a.ip())
+        .filter(|ip| !ip.is_unspecified())
 }
 
 /// The HTTPS socket address to bind, from the config/host + resolved port.
@@ -158,10 +168,12 @@ mod tests {
     #[test]
     fn sans_always_include_localhost_and_loopback() {
         let sans = collect_sans(&[]);
-        let has_localhost = sans.iter().any(|s| matches!(s, rcgen::SanType::DnsName(n) if n.as_str() == "localhost"));
-        let has_loopback = sans
+        let has_localhost = sans
             .iter()
-            .any(|s| matches!(s, rcgen::SanType::IpAddress(ip) if ip == &IpAddr::from([127, 0, 0, 1])));
+            .any(|s| matches!(s, rcgen::SanType::DnsName(n) if n.as_str() == "localhost"));
+        let has_loopback = sans.iter().any(
+            |s| matches!(s, rcgen::SanType::IpAddress(ip) if ip == &IpAddr::from([127, 0, 0, 1])),
+        );
         assert!(has_localhost, "localhost DNS SAN missing");
         assert!(has_loopback, "127.0.0.1 IP SAN missing");
     }
@@ -169,9 +181,9 @@ mod tests {
     #[test]
     fn extra_sans_split_ip_vs_dns() {
         let sans = collect_sans(&["10.1.2.3".to_string(), "nas.home".to_string()]);
-        assert!(sans
-            .iter()
-            .any(|s| matches!(s, rcgen::SanType::IpAddress(ip) if ip == &IpAddr::from([10, 1, 2, 3]))));
+        assert!(sans.iter().any(
+            |s| matches!(s, rcgen::SanType::IpAddress(ip) if ip == &IpAddr::from([10, 1, 2, 3]))
+        ));
         assert!(sans
             .iter()
             .any(|s| matches!(s, rcgen::SanType::DnsName(n) if n.as_str() == "nas.home")));
@@ -195,8 +207,14 @@ mod tests {
 
     #[test]
     fn a_hostname_that_is_not_an_ip_binds_every_interface() {
-        assert_eq!(https_addr("127.0.0.1", 4443), SocketAddr::from(([127, 0, 0, 1], 4443)));
-        assert_eq!(https_addr("kroma.local", 4443), SocketAddr::from(([0, 0, 0, 0], 4443)));
+        assert_eq!(
+            https_addr("127.0.0.1", 4443),
+            SocketAddr::from(([127, 0, 0, 1], 4443))
+        );
+        assert_eq!(
+            https_addr("kroma.local", 4443),
+            SocketAddr::from(([0, 0, 0, 0], 4443))
+        );
     }
 
     #[test]
@@ -220,7 +238,10 @@ mod tests {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            let mode = std::fs::metadata(&b.key_pem).expect("key metadata").permissions().mode();
+            let mode = std::fs::metadata(&b.key_pem)
+                .expect("key metadata")
+                .permissions()
+                .mode();
             assert_eq!(mode & 0o777, 0o600);
         }
     }

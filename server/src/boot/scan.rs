@@ -18,7 +18,11 @@ pub enum Plan {
     /// still starts: it is what notices the mount coming back.
     Offline,
     /// The stored index is being served; the walk runs behind the open port.
-    Deferred { library_defs: Vec<services::settings::LibraryDef>, has_folders: bool, media_dirs: usize },
+    Deferred {
+        library_defs: Vec<services::settings::LibraryDef>,
+        has_folders: bool,
+        media_dirs: usize,
+    },
 }
 
 impl Plan {
@@ -33,7 +37,12 @@ impl Plan {
 
     /// Start the deferred walk. Called after the port is open, never before.
     pub fn deferred(self, state: &state::SharedState) {
-        if let Plan::Deferred { library_defs, has_folders, media_dirs } = self {
+        if let Plan::Deferred {
+            library_defs,
+            has_folders,
+            media_dirs,
+        } = self
+        {
             spawn_startup_scan(state.clone(), library_defs, has_folders, media_dirs);
         }
     }
@@ -57,13 +66,22 @@ pub fn plan(
     let media_dirs = config.media_dirs.len();
     let indexed = db::counts(db).map(|(_, items, _)| items).unwrap_or(0);
     if indexed > 0 {
-        info!(items = indexed, "serving the stored index; rescanning after the port opens");
-        return Ok(Plan::Deferred { library_defs, has_folders, media_dirs });
+        info!(
+            items = indexed,
+            "serving the stored index; rescanning after the port opens"
+        );
+        return Ok(Plan::Deferred {
+            library_defs,
+            has_folders,
+            media_dirs,
+        });
     }
-    Ok(match startup_scan(db, &library_defs, has_folders, media_dirs)? {
-        services::scan::Scanned::Applied(data) => Plan::Applied(data),
-        services::scan::Scanned::MountOffline => Plan::Offline,
-    })
+    Ok(
+        match startup_scan(db, &library_defs, has_folders, media_dirs)? {
+            services::scan::Scanned::Applied(data) => Plan::Applied(data),
+            services::scan::Scanned::MountOffline => Plan::Offline,
+        },
+    )
 }
 
 // Only for a server with no library of its own: nothing configured, nothing
@@ -124,7 +142,10 @@ fn apply_startup_scan(state: &state::SharedState, data: &services::scan::ScanDat
         services::scan::now_iso8601(),
     );
     services::enrich::maybe_spawn(state, &data.items, &data.shows);
-    infra::watch::spawn(state.clone(), infra::watch::signature(&data.items, &data.mtimes));
+    infra::watch::spawn(
+        state.clone(),
+        infra::watch::signature(&data.items, &data.mtimes),
+    );
 }
 
 // The same walk, behind the open port. Blocking (it stats every file), so it
@@ -159,7 +180,11 @@ fn spawn_startup_scan(
                     items,
                     services::scan::now_iso8601(),
                 );
-                state.events.publish(ServerEvent::ScanCompleted { items, shows, libraries });
+                state.events.publish(ServerEvent::ScanCompleted {
+                    items,
+                    shows,
+                    libraries,
+                });
                 infra::watch::spawn(state.clone(), 0);
                 return;
             }
@@ -172,13 +197,20 @@ fn spawn_startup_scan(
             items,
             services::scan::now_iso8601(),
         );
-        infra::watch::spawn(state.clone(), infra::watch::signature(&data.items, &data.mtimes));
+        infra::watch::spawn(
+            state.clone(),
+            infra::watch::signature(&data.items, &data.mtimes),
+        );
         // The probe pass and the reindex `boot::background` started ran against
         // the index as it was BEFORE this walk, so the files it just added need
         // both again. Enrichment is in there too, which is why this path does
         // not go through `apply_startup_scan`.
         services::scan::spawn_follow_ups(&state, &data);
-        state.events.publish(ServerEvent::ScanCompleted { items, shows, libraries });
+        state.events.publish(ServerEvent::ScanCompleted {
+            items,
+            shows,
+            libraries,
+        });
         state.events.publish(ServerEvent::LibraryUpdated);
     });
 }
@@ -188,7 +220,10 @@ mod tests {
     use super::*;
 
     fn cfg() -> kroma_config::Config {
-        kroma_config::Config { demo_media: true, ..Default::default() }
+        kroma_config::Config {
+            demo_media: true,
+            ..Default::default()
+        }
     }
 
     fn settings() -> (kroma_db::testing::TempPool, services::settings::Settings) {
@@ -209,9 +244,18 @@ mod tests {
         let (_pool, s) = settings();
         let dir = std::path::PathBuf::from("/media");
         for c in [
-            kroma_config::Config { media_dirs: vec![dir.clone()], ..cfg() },
-            kroma_config::Config { movies_dirs: vec![dir.clone()], ..cfg() },
-            kroma_config::Config { series_dirs: vec![dir], ..cfg() },
+            kroma_config::Config {
+                media_dirs: vec![dir.clone()],
+                ..cfg()
+            },
+            kroma_config::Config {
+                movies_dirs: vec![dir.clone()],
+                ..cfg()
+            },
+            kroma_config::Config {
+                series_dirs: vec![dir],
+                ..cfg()
+            },
         ] {
             assert!(!demo_media_wanted(&c, &s));
         }
@@ -224,10 +268,7 @@ mod tests {
         let (pool, s) = settings();
         s.set_patch(
             &pool,
-            std::collections::BTreeMap::from([(
-                "libraries".to_string(),
-                serde_json::json!([]),
-            )]),
+            std::collections::BTreeMap::from([("libraries".to_string(), serde_json::json!([]))]),
         );
 
         assert!(!demo_media_wanted(&cfg(), &s));
@@ -236,7 +277,10 @@ mod tests {
     #[test]
     fn the_operator_can_turn_the_written_demo_off() {
         let (_pool, s) = settings();
-        let off = kroma_config::Config { demo_media: false, ..cfg() };
+        let off = kroma_config::Config {
+            demo_media: false,
+            ..cfg()
+        };
 
         assert!(!demo_media_wanted(&off, &s));
     }

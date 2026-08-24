@@ -91,7 +91,11 @@ mod tests {
         let state = test_state();
         let infos = state.jobs.list(&state);
         assert!(!infos.is_empty(), "the built-ins are registered at startup");
-        assert!(infos.iter().any(|i| i.key == KNOWN), "{:?}", infos.iter().map(|i| &i.key).collect::<Vec<_>>());
+        assert!(
+            infos.iter().any(|i| i.key == KNOWN),
+            "{:?}",
+            infos.iter().map(|i| &i.key).collect::<Vec<_>>()
+        );
     }
 
     #[test]
@@ -118,9 +122,17 @@ mod tests {
     #[test]
     fn schedules_a_next_run_for_an_enabled_job() {
         let state = test_state();
-        let info = state.jobs.list(&state).into_iter().find(|i| i.key == KNOWN).unwrap();
+        let info = state
+            .jobs
+            .list(&state)
+            .into_iter()
+            .find(|i| i.key == KNOWN)
+            .unwrap();
         assert!(info.enabled, "built-ins start enabled");
-        assert!(info.next_run_at.is_some(), "a cron'd job knows when it fires next");
+        assert!(
+            info.next_run_at.is_some(),
+            "a cron'd job knows when it fires next"
+        );
         assert!(!info.customized, "and says so until an admin changes it");
     }
 
@@ -128,9 +140,17 @@ mod tests {
     fn a_disabled_job_has_no_next_run() {
         let state = test_state();
         let job = state.jobs.resolve(KNOWN).unwrap();
-        state.jobs.update_schedule(&state.db, job, None, Some(false)).unwrap();
+        state
+            .jobs
+            .update_schedule(&state.db, job, None, Some(false))
+            .unwrap();
 
-        let info = state.jobs.list(&state).into_iter().find(|i| i.key == KNOWN).unwrap();
+        let info = state
+            .jobs
+            .list(&state)
+            .into_iter()
+            .find(|i| i.key == KNOWN)
+            .unwrap();
         assert!(!info.enabled);
         assert!(info.next_run_at.is_none());
         assert!(info.customized, "an admin touched it");
@@ -141,9 +161,17 @@ mod tests {
         let state = test_state();
         let job = state.jobs.resolve(KNOWN).unwrap();
         // `update_schedule` rejects invalid cron, so the only holdable value is None.
-        state.jobs.update_schedule(&state.db, job, Some(None), None).unwrap();
+        state
+            .jobs
+            .update_schedule(&state.db, job, Some(None), None)
+            .unwrap();
 
-        let info = state.jobs.list(&state).into_iter().find(|i| i.key == KNOWN).unwrap();
+        let info = state
+            .jobs
+            .list(&state)
+            .into_iter()
+            .find(|i| i.key == KNOWN)
+            .unwrap();
         assert!(info.schedule.is_none());
         assert!(info.next_run_at.is_none());
     }
@@ -152,9 +180,17 @@ mod tests {
     fn keeps_the_builtin_default_alongside_an_admins_override() {
         let state = test_state();
         let job = state.jobs.resolve(KNOWN).unwrap();
-        state.jobs.update_schedule(&state.db, job, Some(Some("0 5 * * *".into())), None).unwrap();
+        state
+            .jobs
+            .update_schedule(&state.db, job, Some(Some("0 5 * * *".into())), None)
+            .unwrap();
 
-        let info = state.jobs.list(&state).into_iter().find(|i| i.key == KNOWN).unwrap();
+        let info = state
+            .jobs
+            .list(&state)
+            .into_iter()
+            .find(|i| i.key == KNOWN)
+            .unwrap();
         assert_eq!(info.schedule.as_deref(), Some("0 5 * * *"));
         assert!(info.default_schedule.is_some());
         assert_ne!(info.schedule, info.default_schedule);
@@ -164,7 +200,10 @@ mod tests {
     fn detail_carries_the_info_plus_an_empty_history() {
         let state = test_state();
         let job = state.jobs.resolve(KNOWN).unwrap();
-        let detail = state.jobs.detail(&state, job).expect("a known job has a detail view");
+        let detail = state
+            .jobs
+            .detail(&state, job)
+            .expect("a known job has a detail view");
 
         assert_eq!(detail.info.key, KNOWN);
         assert!(detail.runs.is_empty());
@@ -187,7 +226,10 @@ mod tests {
 
         let infos = state.jobs.list(&state);
         let listed = infos.last().expect("at least one job");
-        assert_eq!(listed.key, "mod.listed", "module jobs come after the built-ins");
+        assert_eq!(
+            listed.key, "mod.listed",
+            "module jobs come after the built-ins"
+        );
         assert_eq!(listed.default_schedule.as_deref(), Some("0 4 * * *"));
         assert!(listed.next_run_at.is_some());
     }
@@ -205,9 +247,13 @@ mod tests {
             }
             Ok(())
         });
-        state.jobs.register_remote("mod.progressing", Category::Maintenance, None, run);
-        let run_id =
-            state.jobs.trigger(state.clone(), JobKey("mod.progressing"), "manual").expect("triggered");
+        state
+            .jobs
+            .register_remote("mod.progressing", Category::Maintenance, None, run);
+        let run_id = state
+            .jobs
+            .trigger(state.clone(), JobKey("mod.progressing"), "manual")
+            .expect("triggered");
 
         let mut info = None;
         for _ in 0..300 {

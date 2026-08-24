@@ -18,7 +18,12 @@ async fn admin_users_requires_authentication() {
 #[tokio::test]
 async fn admin_users_forbids_a_non_admin() {
     let t = test_app();
-    let (_, member) = seed_session(&t.state, "viewer@test.dev", "viewer", &[Permission::Playback]);
+    let (_, member) = seed_session(
+        &t.state,
+        "viewer@test.dev",
+        "viewer",
+        &[Permission::Playback],
+    );
     let (status, _) = get(&t.app, "/api/admin/users", Some(&member)).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
@@ -26,11 +31,20 @@ async fn admin_users_forbids_a_non_admin() {
 #[tokio::test]
 async fn a_module_admin_route_is_out_of_reach_without_an_admin_session() {
     let t = test_app();
-    let (_, member) = seed_session(&t.state, "member@test.dev", "member", &[Permission::Playback]);
+    let (_, member) = seed_session(
+        &t.state,
+        "member@test.dev",
+        "member",
+        &[Permission::Playback],
+    );
 
     let (anonymous, _) = get(&t.app, "/api/admin/m/tv.kroma.torrents/clients", None).await;
-    let (non_admin, _) =
-        get(&t.app, "/api/admin/m/tv.kroma.torrents/clients", Some(&member)).await;
+    let (non_admin, _) = get(
+        &t.app,
+        "/api/admin/m/tv.kroma.torrents/clients",
+        Some(&member),
+    )
+    .await;
 
     assert_eq!(anonymous, StatusCode::UNAUTHORIZED);
     assert_eq!(non_admin, StatusCode::FORBIDDEN);
@@ -90,8 +104,14 @@ async fn settings_view_returns_grouped_schema() {
 #[tokio::test]
 async fn settings_put_persists_a_known_key() {
     let t = test_app();
-    let (status, body) =
-        send(&t.app, "PUT", "/api/admin/settings", Some(&t.token), Some(json!({ "serverName": "Ma Kroma" }))).await;
+    let (status, body) = send(
+        &t.app,
+        "PUT",
+        "/api/admin/settings",
+        Some(&t.token),
+        Some(json!({ "serverName": "Ma Kroma" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     let updated = body["updated"].as_array().expect("updated array");
     assert!(updated.iter().any(|k| k == &json!("serverName")));
@@ -104,8 +124,14 @@ async fn settings_put_persists_a_known_key() {
 #[tokio::test]
 async fn settings_put_ignores_an_unknown_key() {
     let t = test_app();
-    let (status, body) =
-        send(&t.app, "PUT", "/api/admin/settings", Some(&t.token), Some(json!({ "totallyMadeUp": 1 }))).await;
+    let (status, body) = send(
+        &t.app,
+        "PUT",
+        "/api/admin/settings",
+        Some(&t.token),
+        Some(json!({ "totallyMadeUp": 1 })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     // Unknown keys are dropped (not persisted), so nothing is reported written.
     assert_eq!(body["updated"], json!([]));
@@ -189,7 +215,13 @@ async fn admin_user_delete_rejects_removing_the_last_owner() {
     let t = test_app();
     // The seeded owner is the only `users.manage` holder; deleting self is barred
     // and it is also the last owner -- the handler returns 400 either way.
-    let (status, _) =
-        send(&t.app, "DELETE", &format!("/api/admin/users/{}", t.user_id), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/admin/users/{}", t.user_id),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }

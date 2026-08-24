@@ -164,7 +164,13 @@ mod tests {
         let titles = item_titles(&p, &["m1".into(), "ghost".into()]).unwrap();
         assert_eq!(titles.get("m1").map(String::as_str), Some("Dune"));
         assert_eq!(titles.len(), 1);
-        assert_eq!(show_titles(&p, &["s1".into()]).unwrap().get("s1").map(String::as_str), Some("Show"));
+        assert_eq!(
+            show_titles(&p, &["s1".into()])
+                .unwrap()
+                .get("s1")
+                .map(String::as_str),
+            Some("Show")
+        );
         assert!(item_titles(&p, &[]).unwrap().is_empty());
     }
 
@@ -181,7 +187,9 @@ mod tests {
             )
             .unwrap();
         }
-        let mut ids: Vec<String> = (0..=SQLITE_BIND_LIMIT).map(|n| format!("absent{n}")).collect();
+        let mut ids: Vec<String> = (0..=SQLITE_BIND_LIMIT)
+            .map(|n| format!("absent{n}"))
+            .collect();
         ids.push("m1".to_string());
 
         let titles = item_titles(&p, &ids).unwrap();

@@ -203,7 +203,10 @@ mod tests {
     fn every_request_kind_round_trips_through_its_stored_spelling() {
         for kind in [RequestKind::Movie, RequestKind::Show] {
             let stored = kind.as_str();
-            assert_eq!(serde_json::to_string(&kind).unwrap(), format!("\"{stored}\""));
+            assert_eq!(
+                serde_json::to_string(&kind).unwrap(),
+                format!("\"{stored}\"")
+            );
             assert_eq!(RequestKind::parse(stored), Some(kind));
         }
         assert_eq!(RequestKind::parse("season"), None);
@@ -223,7 +226,10 @@ mod tests {
             RequestStatus::Denied,
         ] {
             let stored = status.as_str();
-            assert_eq!(serde_json::to_string(&status).unwrap(), format!("\"{stored}\""));
+            assert_eq!(
+                serde_json::to_string(&status).unwrap(),
+                format!("\"{stored}\"")
+            );
             assert_eq!(RequestStatus::parse(stored), Some(status));
         }
         assert_eq!(RequestStatus::parse("partiallyAvailable"), None);

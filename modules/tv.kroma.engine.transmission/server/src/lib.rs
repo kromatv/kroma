@@ -87,7 +87,9 @@ impl Transmission {
                 self.rpc("torrent-add", bare)?
             }
         };
-        let added = args.get("torrent-added").or_else(|| args.get("torrent-duplicate"));
+        let added = args
+            .get("torrent-added")
+            .or_else(|| args.get("torrent-duplicate"));
         added
             .and_then(|t| t.get("hashString"))
             .and_then(Value::as_str)
@@ -100,7 +102,11 @@ impl Transmission {
             "torrent-get",
             json!({ "ids": [client_ref], "fields": STATUS_FIELDS }),
         )?;
-        let Some(t) = args.get("torrents").and_then(Value::as_array).and_then(|a| a.first()) else {
+        let Some(t) = args
+            .get("torrents")
+            .and_then(Value::as_array)
+            .and_then(|a| a.first())
+        else {
             return Ok(None);
         };
         let progress = t.get("percentDone").and_then(Value::as_f64).unwrap_or(0.0);
@@ -135,8 +141,15 @@ impl Transmission {
             .unwrap_or_default();
         Ok(Some(TorrentStatus {
             client_ref: client_ref.to_string(),
-            name: t.get("name").and_then(Value::as_str).unwrap_or_default().to_string(),
-            info_hash: t.get("hashString").and_then(Value::as_str).map(str::to_string),
+            name: t
+                .get("name")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
+            info_hash: t
+                .get("hashString")
+                .and_then(Value::as_str)
+                .map(str::to_string),
             progress,
             state,
             down_bps: t.get("rateDownload").and_then(Value::as_u64).unwrap_or(0),
@@ -145,22 +158,28 @@ impl Transmission {
             // Transmission doesn't split discovered vs connected here.
             peers_seen: t.get("peersConnected").and_then(Value::as_u64).unwrap_or(0) as u32,
             size_bytes: t.get("totalSize").and_then(Value::as_u64).unwrap_or(0),
-            save_path: t.get("downloadDir").and_then(Value::as_str).map(str::to_string),
+            save_path: t
+                .get("downloadDir")
+                .and_then(Value::as_str)
+                .map(str::to_string),
             files,
             error,
         }))
     }
 
     pub fn pause(&self, client_ref: &str) -> Result<()> {
-        self.rpc("torrent-stop", json!({ "ids": [client_ref] })).map(|_| ())
+        self.rpc("torrent-stop", json!({ "ids": [client_ref] }))
+            .map(|_| ())
     }
 
     pub fn resume(&self, client_ref: &str) -> Result<()> {
-        self.rpc("torrent-start", json!({ "ids": [client_ref] })).map(|_| ())
+        self.rpc("torrent-start", json!({ "ids": [client_ref] }))
+            .map(|_| ())
     }
 
     pub fn reannounce(&self, client_ref: &str) -> Result<()> {
-        self.rpc("torrent-reannounce", json!({ "ids": [client_ref] })).map(|_| ())
+        self.rpc("torrent-reannounce", json!({ "ids": [client_ref] }))
+            .map(|_| ())
     }
 
     pub fn remove(&self, client_ref: &str, delete_data: bool) -> Result<()> {
@@ -215,7 +234,10 @@ mod tests {
             username: String::new(),
             password: String::new(),
         };
-        assert_eq!(Transmission::new(&def("http://nas:9091")).url, "http://nas:9091/transmission/rpc");
+        assert_eq!(
+            Transmission::new(&def("http://nas:9091")).url,
+            "http://nas:9091/transmission/rpc"
+        );
         assert_eq!(
             Transmission::new(&def("http://nas:9091/transmission/rpc")).url,
             "http://nas:9091/transmission/rpc"

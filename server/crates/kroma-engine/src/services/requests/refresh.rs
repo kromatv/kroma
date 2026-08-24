@@ -100,7 +100,10 @@ fn refresh_one<S: HostStorage>(state: &S, req: &MediaRequest) -> Result<Vec<Stri
     // date means "already out", which gets no upcoming badge.
     let next_air_date = match req.kind {
         RequestKind::Show => detail.next_air.as_ref().map(|(d, _, _)| d.clone()),
-        RequestKind::Movie => detail.available_date.clone().filter(|d| d.as_str() > today.as_str()),
+        RequestKind::Movie => detail
+            .available_date
+            .clone()
+            .filter(|d| d.as_str() > today.as_str()),
     };
     db::set_request_air(
         state.db(),
@@ -134,8 +137,10 @@ fn refresh_wanted<S: HostStorage>(
     use std::collections::HashMap;
     // Key on (season, episode), not id: a row minted under an older id formula
     // must still dedup.
-    let have: HashMap<(Option<u32>, Option<u32>), &db::WantedRow> =
-        existing.iter().map(|w| ((w.season, w.episode), w)).collect();
+    let have: HashMap<(Option<u32>, Option<u32>), &db::WantedRow> = existing
+        .iter()
+        .map(|w| ((w.season, w.episode), w))
+        .collect();
 
     let mut to_insert: Vec<db::WantedRow> = Vec::new();
     let mut newly_aired: Vec<String> = Vec::new();
@@ -147,7 +152,9 @@ fn refresh_wanted<S: HostStorage>(
                 }
                 to_insert.push(d);
             }
-            Some(row) => backfill_air_date(state, row, d.air_date.as_deref(), today, &mut newly_aired)?,
+            Some(row) => {
+                backfill_air_date(state, row, d.air_date.as_deref(), today, &mut newly_aired)?
+            }
         }
     }
     db::insert_wanted(state.db(), &to_insert, now_ms())?;

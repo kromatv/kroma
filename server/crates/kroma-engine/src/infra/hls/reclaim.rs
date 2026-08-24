@@ -12,8 +12,8 @@ use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
 use super::naming::seg_index;
-use super::session::{Session, Sessions};
 use super::same_program;
+use super::session::{Session, Sessions};
 
 const IDLE_TIMEOUT: Duration = Duration::from_secs(180);
 const REAP_INTERVAL: Duration = Duration::from_secs(30);
@@ -28,7 +28,9 @@ impl Sessions {
     pub(super) async fn make_room(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) {
         let mut freed = 0;
         while map.len() >= self.cap {
-            let Some((oldest, la)) = lru(map.iter()).await else { break };
+            let Some((oldest, la)) = lru(map.iter()).await else {
+                break;
+            };
             let victim = if Instant::now().duration_since(la) >= BUDGET_GRACE {
                 oldest
             } else {
@@ -73,7 +75,9 @@ impl Sessions {
             return;
         }
         while total > budget && map.len() > 1 {
-            let Some((k, la)) = lru(map.iter()).await else { break };
+            let Some((k, la)) = lru(map.iter()).await else {
+                break;
+            };
             if Instant::now().duration_since(la) < BUDGET_GRACE {
                 break; // the oldest is live, so the rest are too
             }
@@ -86,7 +90,11 @@ impl Sessions {
     async fn evict(&self, map: &mut HashMap<String, Arc<Session>>, key: &str) -> u64 {
         let Some(s) = map.remove(key) else { return 0 };
         let _ = s.child.lock().await.start_kill();
-        let held = if self.budget_bytes() == 0 { 0 } else { dir_bytes(&s.dir) };
+        let held = if self.budget_bytes() == 0 {
+            0
+        } else {
+            dir_bytes(&s.dir)
+        };
         discard_dir(&s.dir);
         held
     }
@@ -100,7 +108,11 @@ impl Sessions {
             Some(s) => Instant::now().duration_since(*s.last_access.lock().await) > IDLE_TIMEOUT,
             None => return 0,
         };
-        if idle { self.evict(map, key).await } else { 0 }
+        if idle {
+            self.evict(map, key).await
+        } else {
+            0
+        }
     }
 
     // Deleting segments and walking the cache are the two slow things here, and
@@ -158,7 +170,9 @@ impl Sessions {
     }
 }
 
-async fn lru<'a>(sessions: impl Iterator<Item = (&'a String, &'a Arc<Session>)>) -> Option<(String, Instant)> {
+async fn lru<'a>(
+    sessions: impl Iterator<Item = (&'a String, &'a Arc<Session>)>,
+) -> Option<(String, Instant)> {
     let mut victim: Option<(String, Instant)> = None;
     for (k, s) in sessions {
         let la = *s.last_access.lock().await;
@@ -171,7 +185,11 @@ async fn lru<'a>(sessions: impl Iterator<Item = (&'a String, &'a Arc<Session>)>)
 }
 
 async fn lru_sibling(map: &HashMap<String, Arc<Session>>, key: &str) -> Option<String> {
-    lru(map.iter().filter(|(k, _)| k.as_str() != key && same_program(k, key))).await.map(|(k, _)| k)
+    lru(map
+        .iter()
+        .filter(|(k, _)| k.as_str() != key && same_program(k, key)))
+    .await
+    .map(|(k, _)| k)
 }
 
 // Renaming is one metadata operation; the recursive delete behind it is a walk,
@@ -231,7 +249,10 @@ mod tests {
         let (s, _dir) = registry(
             "sibling",
             2,
-            &[("itA:copy:0:a0", Duration::from_secs(3)), ("itB:aac:0:a0", LIVE)],
+            &[
+                ("itA:copy:0:a0", Duration::from_secs(3)),
+                ("itB:aac:0:a0", LIVE),
+            ],
         )
         .await;
         {
@@ -244,7 +265,12 @@ mod tests {
 
     #[tokio::test]
     async fn hard_cap_evicts_a_quiet_session_before_a_live_sibling() {
-        let (s, _dir) = registry("quiet", 2, &[("itA:copy:0:a0", QUIET), ("itB:aac:0:a0", LIVE)]).await;
+        let (s, _dir) = registry(
+            "quiet",
+            2,
+            &[("itA:copy:0:a0", QUIET), ("itB:aac:0:a0", LIVE)],
+        )
+        .await;
         {
             let mut map = s.inner.lock().await;
             s.make_room(&mut map, "itB:aac-night:0:a0").await;
@@ -257,7 +283,10 @@ mod tests {
         let (s, _dir) = registry(
             "fallback",
             2,
-            &[("itA:copy:0:a0", Duration::from_secs(3)), ("itB:aac:0:a0", LIVE)],
+            &[
+                ("itA:copy:0:a0", Duration::from_secs(3)),
+                ("itB:aac:0:a0", LIVE),
+            ],
         )
         .await;
         {
@@ -273,10 +302,10 @@ mod tests {
             "supersede",
             8,
             &[
-                ("itA:copy:0:a0", QUIET),  // the same program, gone quiet: superseded
-                ("itA:aac:600:a0", LIVE),  // the same program but still being read
-                ("itA:copy:0:a1", QUIET),  // another language track = another program
-                ("itB:copy:0:a0", QUIET),  // another title
+                ("itA:copy:0:a0", QUIET), // the same program, gone quiet: superseded
+                ("itA:aac:600:a0", LIVE), // the same program but still being read
+                ("itA:copy:0:a1", QUIET), // another language track = another program
+                ("itB:copy:0:a0", QUIET), // another title
             ],
         )
         .await;
@@ -284,7 +313,10 @@ mod tests {
             let mut map = s.inner.lock().await;
             s.reap_superseded(&mut map, "itA:aac-night:900:a0").await;
         }
-        assert_eq!(keys(&s).await, ["itA:aac:600:a0", "itA:copy:0:a1", "itB:copy:0:a0"]);
+        assert_eq!(
+            keys(&s).await,
+            ["itA:aac:600:a0", "itA:copy:0:a1", "itB:copy:0:a0"]
+        );
         assert!(!s.root.join(session_dir("itA:copy:0:a0")).exists());
     }
 
@@ -297,7 +329,11 @@ mod tests {
             "budget-order",
             8,
             500,
-            &[("itA:copy:0:a0", DEAD), ("itB:copy:0:a0", QUIET), ("itC:copy:0:a0", QUIET)],
+            &[
+                ("itA:copy:0:a0", DEAD),
+                ("itB:copy:0:a0", QUIET),
+                ("itC:copy:0:a0", QUIET),
+            ],
         )
         .await;
         fill(&s, "itA:copy:0:a0", 1000);
@@ -323,7 +359,11 @@ mod tests {
 
         s.reap_once().await;
 
-        assert_eq!(keys(&s).await, ["itB:copy:0:a0"], "the quiet one goes, the live one stays");
+        assert_eq!(
+            keys(&s).await,
+            ["itB:copy:0:a0"],
+            "the quiet one goes, the live one stays"
+        );
     }
 
     // The idle list is drawn up, the lock is released for the pruning, and the
@@ -333,11 +373,18 @@ mod tests {
         let (s, _dir) = registry("revived", 8, &[("itA:copy:0:a0", DEAD)]).await;
         {
             let mut map = s.inner.lock().await;
-            *map.get("itA:copy:0:a0").expect("seeded").last_access.lock().await = Instant::now();
+            *map.get("itA:copy:0:a0")
+                .expect("seeded")
+                .last_access
+                .lock()
+                .await = Instant::now();
             s.evict_if_still_idle(&mut map, "itA:copy:0:a0").await;
         }
         assert_eq!(keys(&s).await, ["itA:copy:0:a0"]);
-        assert!(s.root.join(session_dir("itA:copy:0:a0")).exists(), "its segments survive too");
+        assert!(
+            s.root.join(session_dir("itA:copy:0:a0")).exists(),
+            "its segments survive too"
+        );
     }
 
     #[tokio::test]
@@ -380,7 +427,13 @@ mod tests {
         let data = kroma_testing::temp_dir("hls-test-prune");
         let dir = data.path().join("s");
         std::fs::create_dir_all(&dir).expect("session dir");
-        for name in ["seg_00001.m4s", "seg_00009.m4s", "seg_00010.m4s", "init.mp4", "index.m3u8"] {
+        for name in [
+            "seg_00001.m4s",
+            "seg_00009.m4s",
+            "seg_00010.m4s",
+            "init.mp4",
+            "index.m3u8",
+        ] {
             std::fs::write(dir.join(name), b"x").expect("segment");
         }
         prune_dir(&dir, 10);

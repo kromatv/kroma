@@ -47,22 +47,43 @@ pub(super) fn announce(h: &Handoff, device_id: &str, name: &str, ip: &str) -> An
 // A packaged Samsung or LG shell: it presents the `null` a sandboxed page
 // presents, so the server admits its beacon and holds the grant to the check
 // string on the television's own screen.
-pub(super) fn announce_unplaceable(h: &Handoff, device_id: &str, name: &str, ip: &str) -> Announced {
-    let announcement =
-        h.announce(Announce { confirm_required: true, ..request(device_id, name, ip) }).0;
+pub(super) fn announce_unplaceable(
+    h: &Handoff,
+    device_id: &str,
+    name: &str,
+    ip: &str,
+) -> Announced {
+    let announcement = h
+        .announce(Announce {
+            confirm_required: true,
+            ..request(device_id, name, ip)
+        })
+        .0;
     admitted(announcement).expect("this network had room")
 }
 
 pub(super) fn claim(viewer_ip: &str) -> Claim<'_> {
-    Claim { viewer_ip, proof: None, check: None }
+    Claim {
+        viewer_ip,
+        proof: None,
+        check: None,
+    }
 }
 
 pub(super) fn grant(h: &Handoff, handle: &str, viewer_ip: &str) -> Result<(), Refusal> {
     h.grant(handle, claim(viewer_ip), user(), "tok".into(), "acc".into())
 }
 
-pub(super) fn grant_heard(h: &Handoff, handle: &str, viewer_ip: &str, proof: &str) -> Result<(), Refusal> {
-    let heard = Claim { proof: Some(proof), ..claim(viewer_ip) };
+pub(super) fn grant_heard(
+    h: &Handoff,
+    handle: &str,
+    viewer_ip: &str,
+    proof: &str,
+) -> Result<(), Refusal> {
+    let heard = Claim {
+        proof: Some(proof),
+        ..claim(viewer_ip)
+    };
     h.grant(handle, heard, user(), "tok".into(), "acc".into())
 }
 
@@ -72,6 +93,9 @@ pub(super) fn grant_checked(
     viewer_ip: &str,
     check: &str,
 ) -> Result<(), Refusal> {
-    let confirmed = Claim { check: Some(check), ..claim(viewer_ip) };
+    let confirmed = Claim {
+        check: Some(check),
+        ..claim(viewer_ip)
+    };
     h.grant(handle, confirmed, user(), "tok".into(), "acc".into())
 }

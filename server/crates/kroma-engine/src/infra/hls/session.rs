@@ -119,7 +119,14 @@ impl Sessions {
     }
 
     /// Returns the media playlist bytes plus the real stream start (s) for `baseSec`.
-    pub async fn master(&self, key: &str, input: &Path, audio: u32, mode: StreamMode, start_secs: f64) -> Option<(Vec<u8>, f64)> {
+    pub async fn master(
+        &self,
+        key: &str,
+        input: &Path,
+        audio: u32,
+        mode: StreamMode,
+        start_secs: f64,
+    ) -> Option<(Vec<u8>, f64)> {
         let session = match self.ensure(key, input, audio, mode, start_secs).await {
             Ok(s) => s,
             Err(e) => {
@@ -162,7 +169,10 @@ impl Sessions {
         let deadline = Instant::now() + FILE_WAIT;
         loop {
             if let Ok(mut bytes) = tokio::fs::read(&path).await {
-                if name.ends_with(".m3u8") && session.finished().await && !contains(&bytes, b"#EXT-X-ENDLIST") {
+                if name.ends_with(".m3u8")
+                    && session.finished().await
+                    && !contains(&bytes, b"#EXT-X-ENDLIST")
+                {
                     bytes.extend_from_slice(b"#EXT-X-ENDLIST\n");
                 }
                 return Some((bytes, content_type(name)));
@@ -178,7 +188,14 @@ impl Sessions {
         }
     }
 
-    async fn ensure(&self, key: &str, input: &Path, audio: u32, mode: StreamMode, start_secs: f64) -> std::io::Result<Arc<Session>> {
+    async fn ensure(
+        &self,
+        key: &str,
+        input: &Path,
+        audio: u32,
+        mode: StreamMode,
+        start_secs: f64,
+    ) -> std::io::Result<Arc<Session>> {
         // The anchor is part of the key, so an existing session is always the right one.
         {
             let map = self.inner.lock().await;
@@ -273,7 +290,11 @@ mod tests {
         assert_eq!(s.prune_cutoff(), None);
 
         s.note_request(KEEP_BEHIND_SEGS + 200);
-        assert_eq!(s.prune_cutoff(), Some(200), "a servable request still advances it");
+        assert_eq!(
+            s.prune_cutoff(),
+            Some(200),
+            "a servable request still advances it"
+        );
     }
 
     #[tokio::test]

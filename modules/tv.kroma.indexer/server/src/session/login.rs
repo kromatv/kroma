@@ -11,7 +11,9 @@ impl Session {
     /// No-op for public trackers. Verifies via the login `test` selector and
     /// re-logs-in when needed.
     pub fn ensure_login(&self) -> Result<()> {
-        let Some(login) = self.def.login.clone() else { return Ok(()) };
+        let Some(login) = self.def.login.clone() else {
+            return Ok(());
+        };
         let has_test = login.test.is_some();
         // Without a `test` block there is no cheap way to confirm the session, so
         // a login already done in this process is trusted rather than repeated on
@@ -34,7 +36,9 @@ impl Session {
     }
 
     fn login_ok(&self, login: &Login) -> Result<bool> {
-        let Some(test) = &login.test else { return Ok(false) };
+        let Some(test) = &login.test else {
+            return Ok(false);
+        };
         let url = self.url_for(test.path.as_deref().unwrap_or(""));
         let html = self.get_text(&url, &[])?;
         match &test.selector {
@@ -63,16 +67,26 @@ impl Session {
             }
             "get" => {
                 let url = self.url_for(login.path.as_deref().unwrap_or(""));
-                let query: Vec<(String, String)> =
-                    login.inputs.iter().map(|(k, v)| (k.clone(), template::render(v, &ctx))).collect();
+                let query: Vec<(String, String)> = login
+                    .inputs
+                    .iter()
+                    .map(|(k, v)| (k.clone(), template::render(v, &ctx)))
+                    .collect();
                 let html = self.get_text(&url, &query)?;
                 self.check_login_errors(login, &html)
             }
             "post" | "getpost" => {
-                let path = login.submitpath.clone().or_else(|| login.path.clone()).unwrap_or_default();
+                let path = login
+                    .submitpath
+                    .clone()
+                    .or_else(|| login.path.clone())
+                    .unwrap_or_default();
                 let url = self.url_for(&path);
-                let fields: Vec<(String, String)> =
-                    login.inputs.iter().map(|(k, v)| (k.clone(), template::render(v, &ctx))).collect();
+                let fields: Vec<(String, String)> = login
+                    .inputs
+                    .iter()
+                    .map(|(k, v)| (k.clone(), template::render(v, &ctx)))
+                    .collect();
                 let html = self.post_form_text(&url, &fields)?;
                 self.check_login_errors(login, &html)
             }
@@ -85,7 +99,8 @@ impl Session {
         let page_url = self.url_for(login.path.as_deref().unwrap_or(""));
         let page = self.get_text(&page_url, &[])?;
         let form_sel = login.form.as_deref().unwrap_or("form");
-        let ScrapedForm { action, mut fields } = scrape_form(&page, form_sel, &page_url, &self.rendered_base());
+        let ScrapedForm { action, mut fields } =
+            scrape_form(&page, form_sel, &page_url, &self.rendered_base());
 
         // Values scraped from named page elements (CSRF tokens, etc).
         {
@@ -139,7 +154,8 @@ struct ScrapedForm {
 fn scrape_form(html: &str, form_sel: &str, page_url: &str, base_url: &str) -> ScrapedForm {
     let doc = selector::parse_document(html);
     let root = doc.root_element();
-    let form = selector::select_first(root, form_sel).or_else(|| selector::select_first(root, "form"));
+    let form =
+        selector::select_first(root, form_sel).or_else(|| selector::select_first(root, "form"));
     let (action, fields) = match form {
         Some(f) => {
             let action = selector::element_attr(f, "action")
@@ -183,7 +199,10 @@ mod tests {
         "#;
         let form = scrape_form(html, "form#login", "https://x.to/login", "https://x.to/");
         assert_eq!(form.action, "https://x.to/user/login");
-        assert_eq!(form.fields.iter().find(|(k, _)| k == "csrf").unwrap().1, "tok123");
+        assert_eq!(
+            form.fields.iter().find(|(k, _)| k == "csrf").unwrap().1,
+            "tok123"
+        );
         assert!(form.fields.iter().any(|(k, _)| k == "username"));
     }
 

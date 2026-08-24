@@ -1,0 +1,5 @@
+# rustfmt is canonical for this repo. Run `cargo fmt` before every PR; CI enforces it.
+# Only stable rustfmt options live here so `cargo fmt` on the pinned stable toolchain
+# (rust-toolchain.toml) is deterministic. No nightly-only options (group_imports,
+# imports_granularity, etc.) so the output never depends on a nightly rustfmt.
+edition = "2024"

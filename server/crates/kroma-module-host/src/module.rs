@@ -97,11 +97,15 @@ mod tests {
         }
         assert_eq!(Bare.id(), "tv.kroma.bare");
         assert_eq!(Bare.migrations(), "");
-        assert!(Bare.admin_routes(&Arc::new(testing::StubHost::new())).is_none());
+        assert!(Bare
+            .admin_routes(&Arc::new(testing::StubHost::new()))
+            .is_none());
         assert!(Bare.jobs().is_empty());
         assert!(Bare.events().is_empty());
 
-        let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
         rt.block_on(async {
             let host = Arc::new(testing::StubHost::new());
             Bare.on_enable(host.clone()).await;

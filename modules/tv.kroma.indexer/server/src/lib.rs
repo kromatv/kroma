@@ -4,6 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 
+pub mod admin;
 pub mod category;
 pub mod context;
 pub mod db;
@@ -14,12 +15,11 @@ pub mod filters;
 pub mod module;
 pub mod peers;
 pub mod port;
+pub mod routes;
 pub mod search;
 pub mod selector;
 pub mod session;
 pub mod store;
-pub mod admin;
-pub mod routes;
 pub mod template;
 pub mod xmltree;
 #[cfg(feature = "xpath")]
@@ -73,10 +73,26 @@ pub struct IndexerConfig {
 /// `torznab` point has no free-text variant, so [`peers`] maps it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Query {
-    Movie { tmdb_id: Option<u64>, imdb_id: Option<String>, title: String, year: Option<u32> },
-    Episode { tmdb_id: Option<u64>, title: String, season: u32, episode: u32 },
-    Season { tmdb_id: Option<u64>, title: String, season: u32 },
-    Text { query: String },
+    Movie {
+        tmdb_id: Option<u64>,
+        imdb_id: Option<String>,
+        title: String,
+        year: Option<u32>,
+    },
+    Episode {
+        tmdb_id: Option<u64>,
+        title: String,
+        season: u32,
+        episode: u32,
+    },
+    Season {
+        tmdb_id: Option<u64>,
+        title: String,
+        season: u32,
+    },
+    Text {
+        query: String,
+    },
 }
 
 impl Query {
@@ -100,7 +116,12 @@ impl Query {
                 Some(y) => format!("{title} {y}"),
                 None => title.clone(),
             },
-            Query::Episode { title, season, episode, .. } => {
+            Query::Episode {
+                title,
+                season,
+                episode,
+                ..
+            } => {
                 format!("{title} S{season:02}E{episode:02}")
             }
             Query::Season { title, season, .. } => format!("{title} S{season:02}"),
@@ -153,7 +174,10 @@ pub struct Caps {
 impl Caps {
     pub fn from_definition(def: &Definition) -> Self {
         let has = |mode: &str, param: &str| {
-            def.caps.modes.get(mode).is_some_and(|params| params.iter().any(|p| p == param))
+            def.caps
+                .modes
+                .get(mode)
+                .is_some_and(|params| params.iter().any(|p| p == param))
         };
         Caps {
             search_imdb: has("movie-search", "imdbid") || has("search", "imdbid"),
@@ -172,25 +196,51 @@ mod tests {
     #[test]
     fn keywords_render_per_query_kind() {
         assert_eq!(
-            Query::Movie { tmdb_id: None, imdb_id: None, title: "Dune".into(), year: Some(2021) }
-                .keywords(),
+            Query::Movie {
+                tmdb_id: None,
+                imdb_id: None,
+                title: "Dune".into(),
+                year: Some(2021)
+            }
+            .keywords(),
             "Dune 2021"
         );
         assert_eq!(
-            Query::Movie { tmdb_id: None, imdb_id: None, title: "Heat".into(), year: None }
-                .keywords(),
+            Query::Movie {
+                tmdb_id: None,
+                imdb_id: None,
+                title: "Heat".into(),
+                year: None
+            }
+            .keywords(),
             "Heat"
         );
         assert_eq!(
-            Query::Episode { tmdb_id: None, title: "Breaking Bad".into(), season: 1, episode: 2 }
-                .keywords(),
+            Query::Episode {
+                tmdb_id: None,
+                title: "Breaking Bad".into(),
+                season: 1,
+                episode: 2
+            }
+            .keywords(),
             "Breaking Bad S01E02"
         );
         assert_eq!(
-            Query::Season { tmdb_id: None, title: "Breaking Bad".into(), season: 3 }.keywords(),
+            Query::Season {
+                tmdb_id: None,
+                title: "Breaking Bad".into(),
+                season: 3
+            }
+            .keywords(),
             "Breaking Bad S03"
         );
-        assert_eq!(Query::Text { query: "free text".into() }.keywords(), "free text");
+        assert_eq!(
+            Query::Text {
+                query: "free text".into()
+            }
+            .keywords(),
+            "free text"
+        );
     }
 
     fn def_with_modes(modes_yaml: &str) -> Definition {
@@ -239,8 +289,6 @@ search:
         assert_eq!(caps.server_title.as_deref(), Some("The Tracker"));
     }
 
-
-
     fn port_row() -> db::IndexerRow {
         db::IndexerRow {
             id: "a".into(),
@@ -263,10 +311,12 @@ search:
     fn resolve_download_short_circuits_on_magnet_without_touching_host() {
         use port::DownloadTarget;
         let magnet = "magnet:?xt=urn:btih:deadbeef";
-        let out =
-            search::resolve_download(&DbHost::new(), &port_row(), "Some Title", None, magnet)
-                .expect("magnet resolves without a session");
-        assert!(matches!(out, DownloadTarget::Magnet(ref m) if m == magnet), "{out:?}");
+        let out = search::resolve_download(&DbHost::new(), &port_row(), "Some Title", None, magnet)
+            .expect("magnet resolves without a session");
+        assert!(
+            matches!(out, DownloadTarget::Magnet(ref m) if m == magnet),
+            "{out:?}"
+        );
     }
 
     fn db_pool() -> kroma_module_sdk::db::testing::TempPool {
@@ -305,7 +355,10 @@ search:
         drop(conn);
         db::note_indexer_result(&pool, "a", true, None, 4242).unwrap();
         let conn = pool.get().unwrap();
-        assert_eq!(db::get_indexer(&conn, "a").unwrap().unwrap().last_ok_at, Some(4242));
+        assert_eq!(
+            db::get_indexer(&conn, "a").unwrap().unwrap().last_ok_at,
+            Some(4242)
+        );
     }
 
     #[test]
@@ -316,8 +369,14 @@ search:
 
         // Neither needs this module's authenticated session, so the caller does a
         // plain fetch: `None`, not an error.
-        assert_eq!(search::fetch_torrent(&host, "nope", "http://x/f.torrent").unwrap(), None);
-        assert_eq!(search::fetch_torrent(&host, "tz", "http://x/f.torrent").unwrap(), None);
+        assert_eq!(
+            search::fetch_torrent(&host, "nope", "http://x/f.torrent").unwrap(),
+            None
+        );
+        assert_eq!(
+            search::fetch_torrent(&host, "tz", "http://x/f.torrent").unwrap(),
+            None
+        );
     }
 
     fn port_query() -> Query {
@@ -342,7 +401,10 @@ search:
         // and every query fails at runtime rather than at install.
         assert_eq!(module.migrations(), db::MIGRATIONS);
         assert!(!db::MIGRATIONS.trim().is_empty());
-        assert!(module.admin_routes(&host).is_some(), "the admin UI has nowhere to talk to");
+        assert!(
+            module.admin_routes(&host).is_some(),
+            "the admin UI has nowhere to talk to"
+        );
     }
 
     #[test]
@@ -358,12 +420,21 @@ search:
         let err = search::run(&host, &row, &port_query(), &[2000])
             .unwrap_err()
             .to_string();
-        assert!(err.contains("no module answers tv.kroma.indexer/engine as torznab"), "{err}");
+        assert!(
+            err.contains("no module answers tv.kroma.indexer/engine as torznab"),
+            "{err}"
+        );
 
-        let stored = db::get_indexer(&pool.get().unwrap(), "tz-no-engine").unwrap().unwrap();
+        let stored = db::get_indexer(&pool.get().unwrap(), "tz-no-engine")
+            .unwrap()
+            .unwrap();
         assert_eq!(stored.last_ok_at, None);
         assert!(
-            stored.last_error.as_deref().unwrap_or_default().contains("torznab"),
+            stored
+                .last_error
+                .as_deref()
+                .unwrap_or_default()
+                .contains("torznab"),
             "the failure was not recorded on the row: {:?}",
             stored.last_error
         );
@@ -387,9 +458,18 @@ search:
                 req["caps"]["search_tmdb"], true,
                 "the caps probe result must reach the search call"
             );
-            let url = req["endpoint"]["url"].as_str().unwrap_or_default().to_string();
-            assert!(req["query"]["Movie"].is_object(), "the query crossed as {:?}", req["query"]);
-            Json(Ok(vec![json!({ "title": "From The Endpoint", "guid": url })]))
+            let url = req["endpoint"]["url"]
+                .as_str()
+                .unwrap_or_default()
+                .to_string();
+            assert!(
+                req["query"]["Movie"].is_object(),
+                "the query crossed as {:?}",
+                req["query"]
+            );
+            Json(Ok(vec![
+                json!({ "title": "From The Endpoint", "guid": url }),
+            ]))
         }
 
         axum::Router::new()
@@ -405,8 +485,12 @@ search:
         db::insert_indexer(&pool, &row).unwrap();
         let resolve = kroma_module_host::test_serve::serve(fake_torznab(), ()).await;
         let (base, token) = resolve().expect("the fake engine is up");
-        let host = DbHost::with_store(pool.clone())
-            .with_point(peers::ENGINE, Some("prowlarr"), &base, &token);
+        let host = DbHost::with_store(pool.clone()).with_point(
+            peers::ENGINE,
+            Some("prowlarr"),
+            &base,
+            &token,
+        );
 
         let outcome = kroma_module_host::test_serve::blocking(move || {
             search::run(&host, &row, &port_query(), &[2000])
@@ -426,8 +510,12 @@ search:
         db::insert_indexer(&pool, &row).unwrap();
         let resolve = kroma_module_host::test_serve::serve(fake_torznab(), ()).await;
         let (base, token) = resolve().expect("the fake provider is up");
-        let host = DbHost::with_store(pool.clone())
-            .with_point(peers::ENGINE, Some("torznab"), &base, &token);
+        let host = DbHost::with_store(pool.clone()).with_point(
+            peers::ENGINE,
+            Some("torznab"),
+            &base,
+            &token,
+        );
 
         let outcome = kroma_module_host::test_serve::blocking(move || {
             search::run(&host, &row, &port_query(), &[2000])
@@ -440,8 +528,13 @@ search:
         assert_eq!(outcome.releases[0].title, "From The Endpoint");
         assert_eq!(outcome.releases[0].guid, "http://tracker.example/api");
 
-        let stored = db::get_indexer(&pool.get().unwrap(), "tz-engine").unwrap().unwrap();
-        assert!(stored.last_ok_at.is_some(), "a successful probe must clear the row's error state");
+        let stored = db::get_indexer(&pool.get().unwrap(), "tz-engine")
+            .unwrap()
+            .unwrap();
+        assert!(
+            stored.last_ok_at.is_some(),
+            "a successful probe must clear the row's error state"
+        );
         assert_eq!(stored.last_error, None);
     }
 
@@ -468,8 +561,14 @@ search:
         db::insert_indexer(&pool, &row).unwrap();
         let host = DbHost::with_store(pool.clone());
 
-        assert!(search::resolve_download(&host, &row, "Some.Release", None, "http://tracker.invalid/dl/1")
-            .is_err());
+        assert!(search::resolve_download(
+            &host,
+            &row,
+            "Some.Release",
+            None,
+            "http://tracker.invalid/dl/1"
+        )
+        .is_err());
     }
 
     #[test]
@@ -483,7 +582,10 @@ search:
         let host = DbHost::with_store(pool.clone());
 
         let outcome = search::fetch_torrent(&host, "builtin-fetch", "http://x/f.torrent");
-        assert!(outcome.is_err(), "a built-in grab must not degrade to a plain fetch");
+        assert!(
+            outcome.is_err(),
+            "a built-in grab must not degrade to a plain fetch"
+        );
     }
 
     #[test]
@@ -503,7 +605,10 @@ search:
     #[test]
     fn a_grab_whose_indexers_table_is_gone_reports_the_failure() {
         let pool = db_pool();
-        pool.get().unwrap().execute_batch("DROP TABLE indexers").unwrap();
+        pool.get()
+            .unwrap()
+            .execute_batch("DROP TABLE indexers")
+            .unwrap();
         let host = DbHost::with_store(pool.clone());
 
         let outcome = search::fetch_torrent(&host, "any", "http://x/f.torrent");
@@ -633,10 +738,20 @@ download:
         let pool = db_pool();
         let host = DbHost::with_store(pool.clone());
         install_definition(&host, "search-def", SEARCH_DEF);
-        let row = builtin_row("builtin-plain", "search-def", "http://tracker.invalid".into());
+        let row = builtin_row(
+            "builtin-plain",
+            "search-def",
+            "http://tracker.invalid".into(),
+        );
 
-        let out = search::resolve_download(&host, &row, "Some.Release", None, "http://tracker.invalid/dl/1")
-            .unwrap();
+        let out = search::resolve_download(
+            &host,
+            &row,
+            "Some.Release",
+            None,
+            "http://tracker.invalid/dl/1",
+        )
+        .unwrap();
 
         assert!(
             matches!(out, DownloadTarget::TorrentUrl(ref u) if u == "http://tracker.invalid/dl/1"),

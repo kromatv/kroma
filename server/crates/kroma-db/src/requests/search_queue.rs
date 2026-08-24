@@ -3,9 +3,9 @@
 use anyhow::Result;
 use rusqlite::{params, Connection};
 
+use super::wanted::{row_to_wanted, WantedRow, WANTED_COLS};
 use crate::chunked::IN_CHUNK;
 use crate::pool::Pool;
-use super::wanted::{row_to_wanted, WantedRow, WANTED_COLS};
 
 /// Rows ready for an automatic search pass: still wanted, aired or undated, and
 /// past their backoff. Ordered freshest air date first, so an episode that aired
@@ -53,7 +53,12 @@ fn update_wanted_chunked(
 }
 
 pub fn set_wanted_status(pool: &Pool, ids: &[String], status: &str, now_ms: i64) -> Result<()> {
-    update_wanted_chunked(pool, ids, "status = ?1, updated_at = ?2", &[&status, &now_ms])
+    update_wanted_chunked(
+        pool,
+        ids,
+        "status = ?1, updated_at = ?2",
+        &[&status, &now_ms],
+    )
 }
 
 /// Longest a searched row ever waits for its next turn.
@@ -79,7 +84,12 @@ pub fn schedule_next_search(
          last_search_at = ?1, \
          next_search_at = ?1 + MIN(?2 * MIN(search_attempts + 1, ?3), ?4), \
          updated_at = ?1",
-        &[&now_ms, &base_delay_ms, &MAX_ATTEMPT_FACTOR, &MAX_SEARCH_DELAY_MS],
+        &[
+            &now_ms,
+            &base_delay_ms,
+            &MAX_ATTEMPT_FACTOR,
+            &MAX_SEARCH_DELAY_MS,
+        ],
     )
 }
 
@@ -105,20 +115,23 @@ mod tests {
     fn wanted_searchable_gates_on_air_date_and_status() {
         let p = pool();
         insert_request(&p, &new_req("r1", RequestKind::Show, 1396, None), 1000).unwrap();
-        let mk = |id: &str, episode: u32, air: Option<&str>, status: &str, searched: Option<i64>| WantedRow {
-            id: id.into(),
-            request_id: "r1".into(),
-            kind: "episode".into(),
-            tmdb_id: 1396,
-            imdb_id: None,
-            title: "T".into(),
-            year: None,
-            season: Some(1),
-            episode: Some(episode),
-            air_date: air.map(str::to_string),
-            status: status.into(),
-            last_search_at: searched,
-        };
+        let mk =
+            |id: &str, episode: u32, air: Option<&str>, status: &str, searched: Option<i64>| {
+                WantedRow {
+                    id: id.into(),
+                    request_id: "r1".into(),
+                    kind: "episode".into(),
+                    tmdb_id: 1396,
+                    imdb_id: None,
+                    title: "T".into(),
+                    year: None,
+                    season: Some(1),
+                    episode: Some(episode),
+                    air_date: air.map(str::to_string),
+                    status: status.into(),
+                    last_search_at: searched,
+                }
+            };
         let rows = vec![
             mk("w-aired", 1, Some("2020-01-01"), "wanted", Some(500)),
             mk("w-unaired", 2, Some("2999-01-01"), "wanted", None),
@@ -130,7 +143,11 @@ mod tests {
         let conn = p.get().unwrap();
         let due = wanted_searchable(&conn, "2026-07-05", 4000, 10).unwrap();
         let ids: Vec<&str> = due.iter().map(|w| w.id.as_str()).collect();
-        assert_eq!(ids, vec!["w-aired", "w-undated"], "dated rows lead, undated trail");
+        assert_eq!(
+            ids,
+            vec!["w-aired", "w-undated"],
+            "dated rows lead, undated trail"
+        );
         drop(conn);
 
         set_wanted_status(&p, &["w-aired".to_string()], "available", 2000).unwrap();
@@ -165,7 +182,11 @@ mod tests {
         replace_wanted(
             &p,
             "r1",
-            &[mk("w-old", 1, "2019-03-04"), mk("w-fresh", 2, "2026-07-04"), mk("w-mid", 3, "2024-01-01")],
+            &[
+                mk("w-old", 1, "2019-03-04"),
+                mk("w-fresh", 2, "2026-07-04"),
+                mk("w-mid", 3, "2024-01-01"),
+            ],
             1000,
         )
         .unwrap();
@@ -199,21 +220,41 @@ mod tests {
 
         schedule_next_search(&p, &ids, 10_000, 1000).unwrap();
         let conn = p.get().unwrap();
-        assert!(wanted_searchable(&conn, "2026-07-05", 10_500, 10).unwrap().is_empty(), "backed off");
-        assert_eq!(wanted_searchable(&conn, "2026-07-05", 11_000, 10).unwrap().len(), 1, "due again");
+        assert!(
+            wanted_searchable(&conn, "2026-07-05", 10_500, 10)
+                .unwrap()
+                .is_empty(),
+            "backed off"
+        );
+        assert_eq!(
+            wanted_searchable(&conn, "2026-07-05", 11_000, 10)
+                .unwrap()
+                .len(),
+            1,
+            "due again"
+        );
         drop(conn);
 
         // A second fruitless attempt costs twice the base, a third three times.
         schedule_next_search(&p, &ids, 11_000, 1000).unwrap();
         let conn = p.get().unwrap();
-        assert!(wanted_searchable(&conn, "2026-07-05", 12_500, 10).unwrap().is_empty());
-        assert_eq!(wanted_searchable(&conn, "2026-07-05", 13_000, 10).unwrap().len(), 1);
+        assert!(wanted_searchable(&conn, "2026-07-05", 12_500, 10)
+            .unwrap()
+            .is_empty());
+        assert_eq!(
+            wanted_searchable(&conn, "2026-07-05", 13_000, 10)
+                .unwrap()
+                .len(),
+            1
+        );
         drop(conn);
 
         reset_wanted_search(&p, &ids, 12_000).unwrap();
         let conn = p.get().unwrap();
         assert_eq!(
-            wanted_searchable(&conn, "2026-07-05", 12_001, 10).unwrap().len(),
+            wanted_searchable(&conn, "2026-07-05", 12_001, 10)
+                .unwrap()
+                .len(),
             1,
             "a newly aired episode jumps its own backoff"
         );
@@ -249,7 +290,12 @@ mod tests {
             schedule_next_search(&p, &ids, 0, MAX_SEARCH_DELAY_MS).unwrap();
         }
         let conn = p.get().unwrap();
-        assert_eq!(wanted_searchable(&conn, "2026-07-05", MAX_SEARCH_DELAY_MS, 10).unwrap().len(), 1);
+        assert_eq!(
+            wanted_searchable(&conn, "2026-07-05", MAX_SEARCH_DELAY_MS, 10)
+                .unwrap()
+                .len(),
+            1
+        );
     }
 
     #[test]
@@ -276,8 +322,26 @@ mod tests {
         insert_request(&p, &new_req("m2", RequestKind::Movie, 604, None), 1000).unwrap();
         insert_request(&p, &new_req("m3", RequestKind::Movie, 605, None), 1000).unwrap();
         replace_wanted(&p, "m1", &[mk("m-future", Some("2999-01-01"))], 1000).unwrap();
-        replace_wanted(&p, "m2", &[WantedRow { request_id: "m2".into(), ..mk("m-out", Some("2020-01-01")) }], 1000).unwrap();
-        replace_wanted(&p, "m3", &[WantedRow { request_id: "m3".into(), ..mk("m-nodate", None) }], 1000).unwrap();
+        replace_wanted(
+            &p,
+            "m2",
+            &[WantedRow {
+                request_id: "m2".into(),
+                ..mk("m-out", Some("2020-01-01"))
+            }],
+            1000,
+        )
+        .unwrap();
+        replace_wanted(
+            &p,
+            "m3",
+            &[WantedRow {
+                request_id: "m3".into(),
+                ..mk("m-nodate", None)
+            }],
+            1000,
+        )
+        .unwrap();
 
         let conn = p.get().unwrap();
         let due = wanted_searchable(&conn, "2026-07-05", 2000, 10).unwrap();

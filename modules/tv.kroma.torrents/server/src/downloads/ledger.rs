@@ -12,7 +12,11 @@ impl DownloadManager {
         if row.client_ref.is_empty() {
             return;
         }
-        let client = self.store().get().ok().and_then(|c| db::get_download_client(&c, &row.client_id).ok().flatten());
+        let client = self
+            .store()
+            .get()
+            .ok()
+            .and_then(|c| db::get_download_client(&c, &row.client_id).ok().flatten());
         if let Some(client) = client {
             if let Ok(engine) = self.engine_for(&client) {
                 if let Err(e) = engine.remove(&row.client_ref, true) {
@@ -75,7 +79,9 @@ impl DownloadManager {
             }
             match self.pause(&row.id) {
                 Ok(()) => n += 1,
-                Err(e) => tracing::warn!(id = %row.id, error = %format!("{e:#}"), "pause_all: skipped a download"),
+                Err(e) => {
+                    tracing::warn!(id = %row.id, error = %format!("{e:#}"), "pause_all: skipped a download")
+                }
             }
         }
         Ok(n)
@@ -93,7 +99,9 @@ impl DownloadManager {
             }
             match self.resume(&row.id) {
                 Ok(()) => n += 1,
-                Err(e) => tracing::warn!(id = %row.id, error = %format!("{e:#}"), "resume_all: skipped a download"),
+                Err(e) => {
+                    tracing::warn!(id = %row.id, error = %format!("{e:#}"), "resume_all: skipped a download")
+                }
             }
         }
         Ok(n)
@@ -119,7 +127,9 @@ impl DownloadManager {
             }
             match self.reannounce(&row.id) {
                 Ok(()) => n += 1,
-                Err(e) => tracing::warn!(id = %row.id, error = %format!("{e:#}"), "reannounce_all: skipped a download"),
+                Err(e) => {
+                    tracing::warn!(id = %row.id, error = %format!("{e:#}"), "reannounce_all: skipped a download")
+                }
             }
         }
         Ok(n)

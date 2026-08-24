@@ -44,7 +44,11 @@ pub fn select_all<'a>(scope: ElementRef<'a>, sel: &str) -> Vec<ElementRef<'a>> {
     };
     scope
         .select(&parsed)
-        .filter(|el| contains.iter().all(|term| element_text(*el).contains(term.as_str())))
+        .filter(|el| {
+            contains
+                .iter()
+                .all(|term| element_text(*el).contains(term.as_str()))
+        })
         .collect()
 }
 
@@ -126,7 +130,10 @@ fn strip_contains(sel: &str) -> (String, Vec<String>) {
                 other => arg.push(other),
             }
         }
-        let term = arg.trim().trim_matches(|c| c == '"' || c == '\'').to_string();
+        let term = arg
+            .trim()
+            .trim_matches(|c| c == '"' || c == '\'')
+            .to_string();
         if !term.is_empty() {
             terms.push(term);
         }
@@ -253,8 +260,7 @@ mod tests {
 
     #[test]
     fn several_contains_terms_all_survive_and_the_rest_of_the_selector_is_kept() {
-        let (clean, terms) =
-            strip_contains(r#"table tr:contains("HD"):contains("x265") td.name"#);
+        let (clean, terms) = strip_contains(r#"table tr:contains("HD"):contains("x265") td.name"#);
         assert_eq!(clean, "table tr td.name");
         assert_eq!(terms, ["HD", "x265"]);
     }
@@ -295,7 +301,10 @@ mod tests {
         // The last-resort fallback: better to match a superset of rows and
         // filter later than to fail the selector outright and return nothing.
         assert_eq!(strip_has("tr:has(a.download)"), "tr");
-        assert_eq!(strip_has("table tr:has(td.seeds) td.name"), "table tr td.name");
+        assert_eq!(
+            strip_has("table tr:has(td.seeds) td.name"),
+            "table tr td.name"
+        );
     }
 
     #[test]
@@ -327,7 +336,10 @@ mod tests {
     fn a_selector_the_engine_rejects_is_retried_without_its_has_group() {
         let doc = parse_document(DOC);
         let root = doc.root_element();
-        assert!(Selector::parse("tr.torrent:has(td:bogus)").is_err(), "fixture is no longer rejected");
+        assert!(
+            Selector::parse("tr.torrent:has(td:bogus)").is_err(),
+            "fixture is no longer rejected"
+        );
         assert_eq!(select_all(root, "tr.torrent:has(td:bogus)").len(), 2);
     }
 
@@ -339,4 +351,3 @@ mod tests {
         assert!(select_first(root, "tr[[").is_none());
     }
 }
-

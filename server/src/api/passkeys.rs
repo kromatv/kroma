@@ -34,15 +34,26 @@ pub fn routes() -> Router<SharedState> {
         .route("/auth/me/passkeys/{id}", axum::routing::delete(remove))
         .route("/auth/me/passkeys/register/start", post(register_start))
         .route("/auth/me/passkeys/register/finish", post(register_finish))
-        .route("/auth/passkeys/authenticate/start", post(authenticate_start))
-        .route("/auth/passkeys/authenticate/finish", post(authenticate_finish))
+        .route(
+            "/auth/passkeys/authenticate/start",
+            post(authenticate_start),
+        )
+        .route(
+            "/auth/passkeys/authenticate/finish",
+            post(authenticate_finish),
+        )
 }
 
 const CEREMONY_TTL_SECS: i64 = 300;
 
 enum Ceremony {
-    Register { user_id: String, reg: PasskeyRegistration },
-    Discover { auth: DiscoverableAuthentication },
+    Register {
+        user_id: String,
+        reg: PasskeyRegistration,
+    },
+    Discover {
+        auth: DiscoverableAuthentication,
+    },
 }
 
 struct Entry {
@@ -62,7 +73,13 @@ fn stash(ceremony: Ceremony) -> String {
     if let Ok(mut m) = CEREMONIES.lock() {
         let n = now();
         m.retain(|_, e| e.expires > n);
-        m.insert(id.clone(), Entry { expires: n + CEREMONY_TTL_SECS, ceremony });
+        m.insert(
+            id.clone(),
+            Entry {
+                expires: n + CEREMONY_TTL_SECS,
+                ceremony,
+            },
+        );
     }
     id
 }
@@ -83,8 +100,8 @@ fn relying_party(headers: &HeaderMap, loc: &str) -> Result<Webauthn, Response> {
         .get(axum::http::header::ORIGIN)
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| lerr(loc, StatusCode::BAD_REQUEST, "passkey.originMissing"))?;
-    let url =
-        Url::parse(origin).map_err(|_| lerr(loc, StatusCode::BAD_REQUEST, "passkey.originInvalid"))?;
+    let url = Url::parse(origin)
+        .map_err(|_| lerr(loc, StatusCode::BAD_REQUEST, "passkey.originInvalid"))?;
     let rp_id = url
         .host_str()
         .ok_or_else(|| lerr(loc, StatusCode::BAD_REQUEST, "passkey.originInvalid"))?
@@ -121,8 +138,10 @@ pub async fn register_start(
         Ok(v) => v,
         Err(resp) => return resp,
     };
-    let exclude: Vec<CredentialID> =
-        parse_passkeys(&blobs).into_iter().map(|(_, pk)| pk.cred_id().clone()).collect();
+    let exclude: Vec<CredentialID> = parse_passkeys(&blobs)
+        .into_iter()
+        .map(|(_, pk)| pk.cred_id().clone())
+        .collect();
     let exclude = (!exclude.is_empty()).then_some(exclude);
 
     match webauthn.start_passkey_registration(
@@ -132,7 +151,10 @@ pub async fn register_start(
         exclude,
     ) {
         Ok((ccr, reg)) => {
-            let ceremony_id = stash(Ceremony::Register { user_id: user.id, reg });
+            let ceremony_id = stash(Ceremony::Register {
+                user_id: user.id,
+                reg,
+            });
             Json(json!({ "ceremonyId": ceremony_id, "options": ccr })).into_response()
         }
         Err(_) => lerr(loc, StatusCode::BAD_REQUEST, "passkey.startFailed"),
@@ -187,12 +209,21 @@ pub async fn register_finish(
     };
 
     let (uid, id_db, name_db, cred_db) = (user.id.clone(), id.clone(), name.clone(), cred_json);
-    let created_at =
-        match query(&state.db, move |pool| db::insert_passkey(&pool, &id_db, &uid, &name_db, &cred_db)).await {
-            Ok(ts) => ts,
-            Err(resp) => return resp,
-        };
-    Json(super::dto::PasskeyInfo { id, name, created_at, last_used: None }).into_response()
+    let created_at = match query(&state.db, move |pool| {
+        db::insert_passkey(&pool, &id_db, &uid, &name_db, &cred_db)
+    })
+    .await
+    {
+        Ok(ts) => ts,
+        Err(resp) => return resp,
+    };
+    Json(super::dto::PasskeyInfo {
+        id,
+        name,
+        created_at,
+        last_used: None,
+    })
+    .into_response()
 }
 
 /// `GET /api/auth/me/passkeys` (Bearer) → `PasskeyInfo[]`, newest first.
@@ -260,7 +291,9 @@ pub struct AuthFinishBody {
 }
 
 async fn account_for_handle(state: &SharedState, handle: Uuid) -> Option<String> {
-    let ids = query(&state.db, |pool| db::passkey_user_ids(&pool)).await.ok()?;
+    let ids = query(&state.db, |pool| db::passkey_user_ids(&pool))
+        .await
+        .ok()?;
     ids.into_iter().find(|id| user_uuid(id) == handle)
 }
 
@@ -293,7 +326,10 @@ pub async fn authenticate_finish(
         Err(resp) => return resp,
     };
     let mut passkeys = parse_passkeys(&blobs);
-    let keys: Vec<DiscoverableKey> = passkeys.iter().map(|(_, pk)| DiscoverableKey::from(pk)).collect();
+    let keys: Vec<DiscoverableKey> = passkeys
+        .iter()
+        .map(|(_, pk)| DiscoverableKey::from(pk))
+        .collect();
     let result = match webauthn.finish_discoverable_authentication(&body.credential, auth, &keys) {
         Ok(r) => r,
         Err(_) => return lerr(loc, StatusCode::UNAUTHORIZED, "passkey.authFailed"),
@@ -304,10 +340,16 @@ pub async fn authenticate_finish(
     let matched = hex::encode(result.cred_id());
     if let Some((id, pk)) = passkeys.iter_mut().find(|(id, _)| *id == matched) {
         let changed = pk.update_credential(&result) == Some(true);
-        let cred_json = if changed { serde_json::to_string(pk).ok() } else { None };
+        let cred_json = if changed {
+            serde_json::to_string(pk).ok()
+        } else {
+            None
+        };
         let id_db = id.clone();
-        let _ =
-            query(&state.db, move |pool| db::touch_passkey(&pool, &id_db, cred_json.as_deref())).await;
+        let _ = query(&state.db, move |pool| {
+            db::touch_passkey(&pool, &id_db, cred_json.as_deref())
+        })
+        .await;
     }
 
     let user = match query(&state.db, move |pool| db::user_by_id(&pool, &user_id)).await {

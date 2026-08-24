@@ -25,19 +25,19 @@ mod invites;
 mod media;
 mod metadata;
 mod modules;
+mod notifications;
+pub mod online_subs;
+mod origin;
+mod passkeys;
 mod people;
 mod pin;
+mod plugin;
+mod point;
 mod recommend;
 mod rematch;
-mod notifications;
-mod origin;
 mod reports;
 mod requests;
 mod search;
-pub mod online_subs;
-mod passkeys;
-mod plugin;
-mod point;
 mod stream;
 mod suggest;
 mod themes;
@@ -47,35 +47,9 @@ mod util;
 // builds a fully wired router over a temp DB (see its docs); the `it_*` modules
 // drive real endpoints through it. All `#[cfg(test)]`, so nothing ships.
 #[cfg(test)]
-mod test_support;
-#[cfg(test)]
-mod it_auth;
-#[cfg(test)]
 mod it_accounts;
 #[cfg(test)]
 mod it_accounts_faults;
-#[cfg(test)]
-mod it_auth_faults;
-#[cfg(test)]
-mod it_pin;
-#[cfg(test)]
-mod it_content;
-#[cfg(test)]
-mod it_rematch;
-#[cfg(test)]
-mod it_media;
-#[cfg(test)]
-mod it_playback;
-#[cfg(test)]
-mod it_playback_faults;
-#[cfg(test)]
-mod it_cast;
-#[cfg(test)]
-mod it_handoff;
-#[cfg(test)]
-mod it_images;
-#[cfg(test)]
-mod it_invites;
 #[cfg(test)]
 mod it_admin;
 #[cfg(test)]
@@ -83,13 +57,39 @@ mod it_admin2;
 #[cfg(test)]
 mod it_admin_manage;
 #[cfg(test)]
-mod it_reports;
+mod it_auth;
+#[cfg(test)]
+mod it_auth_faults;
+#[cfg(test)]
+mod it_cast;
+#[cfg(test)]
+mod it_content;
 #[cfg(test)]
 mod it_diagnostics;
 #[cfg(test)]
-mod it_notifications;
+mod it_handoff;
+#[cfg(test)]
+mod it_images;
+#[cfg(test)]
+mod it_invites;
+#[cfg(test)]
+mod it_media;
 #[cfg(test)]
 mod it_notification_images;
+#[cfg(test)]
+mod it_notifications;
+#[cfg(test)]
+mod it_pin;
+#[cfg(test)]
+mod it_playback;
+#[cfg(test)]
+mod it_playback_faults;
+#[cfg(test)]
+mod it_rematch;
+#[cfg(test)]
+mod it_reports;
+#[cfg(test)]
+mod test_support;
 
 use std::sync::Arc;
 
@@ -137,7 +137,11 @@ async fn module_proxy(
 ) -> Response {
     match sup.port_of(&id) {
         Some(port) => {
-            let query = req.uri().query().map(|q| format!("?{q}")).unwrap_or_default();
+            let query = req
+                .uri()
+                .query()
+                .map(|q| format!("?{q}"))
+                .unwrap_or_default();
             kroma_module_supervisor::proxy_to(port, &format!("/{rest}{query}"), req).await
         }
         None => (StatusCode::NOT_FOUND, "module not running").into_response(),
@@ -152,7 +156,6 @@ pub fn router(
     supervisor: Arc<Supervisor>,
     subscriptions: Arc<host_events::Subscriptions>,
 ) -> Router {
-
     // Public endpoints reachable before (or without) a session: the auth
     // handshake + roster + invites, uploaded avatars/art, liveness, and the media
     // byte streams (a `<video>`/hls element can't attach a bearer these carry no
@@ -214,7 +217,10 @@ pub fn router(
         .merge(host_jobs::routes(supervisor.host_token().to_string()))
         // And the topics it wants delivered, so it can react to what other
         // modules and the core publish rather than only being called.
-        .merge(host_events::routes(supervisor.host_token().to_string(), subscriptions.clone()))
+        .merge(host_events::routes(
+            supervisor.host_token().to_string(),
+            subscriptions.clone(),
+        ))
         .route("/module/{id}/{*rest}", axum::routing::any(module_proxy))
         .nest("/admin", admin::routes(state.clone()))
         .layer(Extension(supervisor));
@@ -237,7 +243,11 @@ pub fn router(
             ServeDir::new(web_dir)
                 .precompressed_br()
                 .precompressed_gzip()
-                .fallback(ServeFile::new(shell).precompressed_br().precompressed_gzip()),
+                .fallback(
+                    ServeFile::new(shell)
+                        .precompressed_br()
+                        .precompressed_gzip(),
+                ),
         );
     }
 
@@ -293,8 +303,9 @@ fn is_hashed_asset(path: &str) -> bool {
     let Some((stem, _ext)) = name.rsplit_once('.') else {
         return false;
     };
-    stem.rsplit_once('-')
-        .is_some_and(|(_, h)| h.len() >= 8 && h.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_'))
+    stem.rsplit_once('-').is_some_and(|(_, h)| {
+        h.len() >= 8 && h.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
+    })
 }
 
 #[cfg(test)]
@@ -314,7 +325,10 @@ mod tests {
         let (status, headers, _) =
             raw(&t.app, "GET", "/assets/index-DXQwrN_7.js", None, None, &[]).await;
         assert_eq!(status, StatusCode::OK);
-        assert_eq!(headers[CACHE_CONTROL], "public, max-age=31536000, immutable");
+        assert_eq!(
+            headers[CACHE_CONTROL],
+            "public, max-age=31536000, immutable"
+        );
 
         let (status, shell) = text(&t.app, "GET", "/films", None, None).await;
         assert_eq!(status, StatusCode::OK);

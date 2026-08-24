@@ -1,9 +1,9 @@
 use std::sync::atomic::Ordering;
 
 use super::*;
+use crate::model::Category;
 use crate::services::jobs::test_support::{test_pool, wait_idle, TEST_BUILTIN};
 use crate::services::jobs::Builtin;
-use crate::model::Category;
 use crate::test_support;
 
 #[test]
@@ -30,7 +30,10 @@ fn classify_result_maps_every_outcome() {
 
     let payload: Box<dyn std::any::Any + Send> = Box::new("splat");
     let panicked: std::thread::Result<anyhow::Result<()>> = Err(payload);
-    assert_eq!(classify_result(panicked, &handle), ("failed", Some("panicked: splat".to_string())));
+    assert_eq!(
+        classify_result(panicked, &handle),
+        ("failed", Some("panicked: splat".to_string()))
+    );
 
     handle.request_cancel();
     let ok2: std::thread::Result<anyhow::Result<()>> = Ok(Ok(()));
@@ -41,7 +44,9 @@ fn classify_result_maps_every_outcome() {
 fn finalize_run_records_terminal_status() {
     let pool = test_pool();
     db::insert_job_run(&pool, "run-x", "test.job", "manual", 1_000).unwrap();
-    assert!(finalize_run(&pool, "run-x", "test.job", "success", 2_000, None));
+    assert!(finalize_run(
+        &pool, "run-x", "test.job", "success", 2_000, None
+    ));
     let runs = db::list_job_runs(&pool, "test.job", 10).unwrap();
     assert_eq!(runs.len(), 1);
     assert_eq!(runs[0].status, "success");
@@ -52,7 +57,14 @@ fn finalize_run_records_terminal_status() {
 fn finalize_run_records_failure_message() {
     let pool = test_pool();
     db::insert_job_run(&pool, "run-y", "test.job", "manual", 1_000).unwrap();
-    assert!(finalize_run(&pool, "run-y", "test.job", "failed", 3_000, Some("boom")));
+    assert!(finalize_run(
+        &pool,
+        "run-y",
+        "test.job",
+        "failed",
+        3_000,
+        Some("boom")
+    ));
     let runs = db::list_job_runs(&pool, "test.job", 10).unwrap();
     assert_eq!(runs[0].status, "failed");
     assert_eq!(runs[0].error.as_deref(), Some("boom"));
@@ -85,20 +97,43 @@ async fn a_dependent_still_running_from_the_last_pass_is_not_started_twice() {
         m
     });
     CHAIN_GATE.store(false, Ordering::Relaxed);
-    manager.trigger(state.clone(), JobKey("test.chained"), "manual").expect("triggered");
+    manager
+        .trigger(state.clone(), JobKey("test.chained"), "manual")
+        .expect("triggered");
 
     chain_after(&manager, &state, JobKey("test.job"), "test.job", "success");
 
-    assert_eq!(manager.running_count(), 1, "the chain must not queue a second run");
+    assert_eq!(
+        manager.running_count(),
+        1,
+        "the chain must not queue a second run"
+    );
     CHAIN_GATE.store(true, Ordering::Relaxed);
     wait_idle(&manager).await;
-    assert_eq!(db::list_job_runs(&state.db, "test.chained", 10).unwrap().len(), 1);
+    assert_eq!(
+        db::list_job_runs(&state.db, "test.chained", 10)
+            .unwrap()
+            .len(),
+        1
+    );
 }
 
 #[test]
 fn chain_after_does_not_fire_dependents_on_non_success() {
     let state = test_support::test_state();
-    chain_after(&state.jobs, &state, JobKey("test.remote.ok"), "test.remote.ok", "failed");
-    chain_after(&state.jobs, &state, JobKey("test.remote.ok"), "test.remote.ok", "cancelled");
+    chain_after(
+        &state.jobs,
+        &state,
+        JobKey("test.remote.ok"),
+        "test.remote.ok",
+        "failed",
+    );
+    chain_after(
+        &state.jobs,
+        &state,
+        JobKey("test.remote.ok"),
+        "test.remote.ok",
+        "cancelled",
+    );
     assert_eq!(state.jobs.running_count(), 0);
 }

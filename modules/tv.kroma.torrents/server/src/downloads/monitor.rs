@@ -10,8 +10,8 @@ use std::time::Duration;
 
 use crate::db;
 use kroma_module_sdk::host::{Event, HostCtx};
-use serde_json::json;
 use kroma_module_sdk::primitives::now_ms;
+use serde_json::json;
 
 use super::DownloadManager;
 
@@ -113,7 +113,11 @@ impl DownloadManager {
 
     // Returns whether anything is still active (drives the tick cadence).
     fn tick(&self, host: &dyn HostCtx) -> bool {
-        let rows = match self.core().get().and_then(|c| Ok(db::active_downloads(&c)?)) {
+        let rows = match self
+            .core()
+            .get()
+            .and_then(|c| Ok(db::active_downloads(&c)?))
+        {
             Ok(rows) => rows,
             Err(e) => {
                 tracing::warn!(error = %format!("{e:#}"), "downloads monitor: ledger read failed");
@@ -146,19 +150,22 @@ impl DownloadManager {
         if row.client_ref.is_empty() {
             return false;
         }
-        let client =
-            match self.store().get().and_then(|c| Ok(db::get_download_client(&c, &row.client_id)?)) {
-                Ok(Some(c)) => c,
-                _ => {
-                    let _ = db::set_download_status(
-                        self.core(),
-                        &row.id,
-                        "failed",
-                        Some("download client removed"),
-                    );
-                    return false;
-                }
-            };
+        let client = match self
+            .store()
+            .get()
+            .and_then(|c| Ok(db::get_download_client(&c, &row.client_id)?))
+        {
+            Ok(Some(c)) => c,
+            _ => {
+                let _ = db::set_download_status(
+                    self.core(),
+                    &row.id,
+                    "failed",
+                    Some("download client removed"),
+                );
+                return false;
+            }
+        };
         let engine = match self.engine_for(&client) {
             Ok(e) => e,
             Err(e) => {
@@ -190,7 +197,12 @@ impl DownloadManager {
 
     // Mirrors a fresh engine status into the ledger + publishes progress.
     // Returns whether the row just completed.
-    fn apply_status(&self, host: &dyn HostCtx, row: &db::DownloadRow, status: &crate::TorrentStatus) -> bool {
+    fn apply_status(
+        &self,
+        host: &dyn HostCtx,
+        row: &db::DownloadRow,
+        status: &crate::TorrentStatus,
+    ) -> bool {
         // Visibility for "stuck at 0%": show what the swarm looks like. peers=0 &
         // seen=0 -> the tracker returned nothing (dead torrent / announce
         // blocked). seen>0 & peers=0 -> discovered but can't connect (firewall /

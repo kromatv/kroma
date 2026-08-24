@@ -25,13 +25,21 @@ fn supervisor(dir: &Path) -> std::sync::Arc<Supervisor> {
 fn install_module(dir: &Path, id: &str, kind: Option<&str>) {
     let module_dir = dir.join(id);
     std::fs::create_dir_all(&module_dir).unwrap();
-    std::fs::write(module_dir.join("module.json"), format!(r#"{{"id":"{id}","version":"1.0.0"}}"#))
-        .unwrap();
+    std::fs::write(
+        module_dir.join("module.json"),
+        format!(r#"{{"id":"{id}","version":"1.0.0"}}"#),
+    )
+    .unwrap();
     let bin = module_dir.join("module");
     std::fs::write(&bin, b"#!/bin/sh\nsleep 1\n").unwrap();
     let Some(kind) = kind else { return };
     let meta = std::fs::metadata(&bin).unwrap();
-    let mtime = meta.modified().unwrap().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs();
+    let mtime = meta
+        .modified()
+        .unwrap()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
     std::fs::write(
         module_dir.join("origin.json"),
         format!(
@@ -49,8 +57,14 @@ fn a_module_installed_from_a_registry_reports_that_registry() {
 
     let origin = supervisor(dir.path()).origin("tv.example.one");
     assert_eq!(origin.kind, "registry");
-    assert_eq!(origin.url.as_deref(), Some("https://r.example/tv.example.one.kmod"));
-    assert!(!origin.local_build, "an untouched install is not a local build");
+    assert_eq!(
+        origin.url.as_deref(),
+        Some("https://r.example/tv.example.one.kmod")
+    );
+    assert!(
+        !origin.local_build,
+        "an untouched install is not a local build"
+    );
 }
 
 #[test]
@@ -79,6 +93,12 @@ fn a_binary_swapped_after_the_install_is_flagged_as_a_local_build() {
     .unwrap();
 
     let origin = supervisor(dir.path()).origin("tv.example.dev");
-    assert_eq!(origin.kind, "registry", "the source it came from does not change");
-    assert!(origin.local_build, "a rebuilt binary must be visible as a local build");
+    assert_eq!(
+        origin.kind, "registry",
+        "the source it came from does not change"
+    );
+    assert!(
+        origin.local_build,
+        "a rebuilt binary must be visible as a local build"
+    );
 }

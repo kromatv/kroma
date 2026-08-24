@@ -74,7 +74,9 @@ pub(crate) fn run_capturing_cancellable(
     match outcome {
         Ok(status) if status.success() => Ok(()),
         Ok(status) => {
-            let code = status.code().map_or_else(|| "killed by signal".to_string(), |c| format!("exit {c}"));
+            let code = status
+                .code()
+                .map_or_else(|| "killed by signal".to_string(), |c| format!("exit {c}"));
             Err(format!("{code}{}", stderr_tail(&stderr)))
         }
         Err(reason) => Err(reason),

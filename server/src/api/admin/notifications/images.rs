@@ -53,7 +53,10 @@ pub async fn upload_image(
     .await?;
     match url {
         Some(url) => Ok(Json(json!({ "imageUrl": url })).into_response()),
-        None => Err(json_error(StatusCode::UNSUPPORTED_MEDIA_TYPE, "unreadable image")),
+        None => Err(json_error(
+            StatusCode::UNSUPPORTED_MEDIA_TYPE,
+            "unreadable image",
+        )),
     }
 }
 
@@ -96,7 +99,11 @@ fn uploaded_images(dir: &std::path::Path) -> Vec<crate::api::dto::NotificationIm
             })
         })
         .collect();
-    images.sort_by(|a, b| b.uploaded_at.cmp(&a.uploaded_at).then_with(|| a.name.cmp(&b.name)));
+    images.sort_by(|a, b| {
+        b.uploaded_at
+            .cmp(&a.uploaded_at)
+            .then_with(|| a.name.cmp(&b.name))
+    });
     images.truncate(MAX_LISTED_IMAGES);
     images
 }

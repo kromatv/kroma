@@ -164,14 +164,20 @@ mod tests {
         assert!(resume);
 
         // Sequence: next after e2 is e3; e3 is last; movies have no next.
-        assert_eq!(next_episode(&pool, "e2").unwrap().map(|i| i.id), Some("e3".into()));
+        assert_eq!(
+            next_episode(&pool, "e2").unwrap().map(|i| i.id),
+            Some("e3".into())
+        );
         assert!(next_episode(&pool, "e3").unwrap().is_none());
         assert!(next_episode(&pool, "m1").unwrap().is_none());
 
         // The "up next" EPISODE rail: the next N in order, capped by `n`, empty
         // for the last episode / a movie / n == 0.
         let ids = |v: Vec<MediaItem>| v.into_iter().map(|i| i.id).collect::<Vec<_>>();
-        assert_eq!(ids(following_episodes(&pool, "e1", 10).unwrap()), vec!["e2", "e3"]);
+        assert_eq!(
+            ids(following_episodes(&pool, "e1", 10).unwrap()),
+            vec!["e2", "e3"]
+        );
         assert_eq!(ids(following_episodes(&pool, "e1", 1).unwrap()), vec!["e2"]); // capped by n
         assert!(following_episodes(&pool, "e3", 10).unwrap().is_empty()); // last episode
         assert!(following_episodes(&pool, "m1", 10).unwrap().is_empty()); // a movie
@@ -194,6 +200,9 @@ mod tests {
 
         let (item, resume) = up_next_episode(&pool, &uid, "s1").unwrap().unwrap();
         assert_eq!(item.id, "e1");
-        assert!(!resume, "a bonus feature carries no episode resume position");
+        assert!(
+            !resume,
+            "a bonus feature carries no episode resume position"
+        );
     }
 }

@@ -24,13 +24,21 @@ pub struct Filter {
 type Ledger = HashMap<String, (String, Option<String>)>;
 
 fn tr(key: &str, status: &str, error: Option<String>) -> Treatment {
-    Treatment { key: key.to_string(), status: status.to_string(), error }
+    Treatment {
+        key: key.to_string(),
+        status: status.to_string(),
+        error,
+    }
 }
 
 /// The single source of truth for a (subject, stage) status, shared with the
 /// per-element drawer so the two never disagree: a present ledger state always
 /// wins; with no ledger row, `artifact_done`/`assume_done` decide done vs pending.
-pub fn resolve_status(ledger_status: Option<&str>, artifact_done: bool, assume_done: bool) -> &'static str {
+pub fn resolve_status(
+    ledger_status: Option<&str>,
+    artifact_done: bool,
+    assume_done: bool,
+) -> &'static str {
     match ledger_status {
         Some("failed") => "failed",
         Some("running") => "running",
@@ -47,7 +55,11 @@ fn status_of(
     assume_done: bool,
 ) -> (&'static str, Option<String>) {
     let status = resolve_status(ledger.map(|(s, _)| s.as_str()), artifact_done, assume_done);
-    let err = if status == "failed" { ledger.and_then(|(_, e)| e.clone()) } else { None };
+    let err = if status == "failed" {
+        ledger.and_then(|(_, e)| e.clone())
+    } else {
+        None
+    };
     (status, err)
 }
 
@@ -110,8 +122,10 @@ pub fn list(state: &SharedState, f: &Filter) -> Result<PipelineElements> {
     let mark_l: Ledger = db::pipeline::stage_statuses(db, "markers")?;
 
     let ep_by_show = group_episodes_by_show(&items);
-    let show_poster: HashMap<&str, Option<String>> =
-        shows.iter().map(|s| (s.id.as_str(), s.poster.clone())).collect();
+    let show_poster: HashMap<&str, Option<String>> = shows
+        .iter()
+        .map(|s| (s.id.as_str(), s.poster.clone()))
+        .collect();
 
     let lg = Ledgers {
         probed: &probed,
@@ -153,14 +167,24 @@ pub fn list(state: &SharedState, f: &Filter) -> Result<PipelineElements> {
         let seasons: HashSet<i64> = eps.iter().filter_map(|e| e.season).collect();
         let marker_seasons = seasons
             .iter()
-            .filter(|n| mark_l.get(&format!("{}#{}", sh.id, n)).map(|(s, _)| s == "done").unwrap_or(false))
+            .filter(|n| {
+                mark_l
+                    .get(&format!("{}#{}", sh.id, n))
+                    .map(|(s, _)| s == "done")
+                    .unwrap_or(false)
+            })
             .count() as i64;
         let ep_stats = EpStats {
             episodes: eps.len() as i64,
             probed: eps.iter().filter(|e| probed.contains(&e.id)).count() as i64,
             storyboarded: eps
                 .iter()
-                .filter(|e| story_l.get(&e.id).map(|(s, _)| s == "done").unwrap_or(false))
+                .filter(|e| {
+                    story_l
+                        .get(&e.id)
+                        .map(|(s, _)| s == "done")
+                        .unwrap_or(false)
+                })
                 .count() as i64,
             seasons: seasons.len() as i64,
             marker_seasons,
@@ -184,18 +208,27 @@ pub fn list(state: &SharedState, f: &Filter) -> Result<PipelineElements> {
     let counts = tally_counts(&all);
 
     let q = f.query.trim().to_lowercase();
-    let filtered: Vec<&ElementRow> =
-        all.iter().filter(|el| matches_filter(el, f, &q)).collect();
+    let filtered: Vec<&ElementRow> = all.iter().filter(|el| matches_filter(el, f, &q)).collect();
 
     let total = filtered.len() as i64;
     let limit = f.limit.clamp(1, 100);
     let pages = ((total + limit - 1) / limit).max(1);
     let page = f.page.clamp(0, pages - 1);
     let start = (page * limit) as usize;
-    let elements: Vec<ElementRow> =
-        filtered.into_iter().skip(start).take(limit as usize).cloned().collect();
+    let elements: Vec<ElementRow> = filtered
+        .into_iter()
+        .skip(start)
+        .take(limit as usize)
+        .cloned()
+        .collect();
 
-    Ok(PipelineElements { total, page, pages, counts, elements })
+    Ok(PipelineElements {
+        total,
+        page,
+        pages,
+        counts,
+        elements,
+    })
 }
 
 struct Ledgers<'a, 'k> {
@@ -222,7 +255,10 @@ fn group_episodes_by_show(items: &[RawItem]) -> HashMap<&str, Vec<&RawItem>> {
     ep_by_show
 }
 
-fn item_treatments(it: &RawItem, lg: &Ledgers<'_, '_>) -> (Vec<Treatment>, &'static str, Option<String>) {
+fn item_treatments(
+    it: &RawItem,
+    lg: &Ledgers<'_, '_>,
+) -> (Vec<Treatment>, &'static str, Option<String>) {
     if it.kind == "episode" {
         let (p, _) = status_of(None, lg.probed.contains(&it.id), false);
         let (s, se) = status_of(lg.story_l.get(&it.id), false, true);
@@ -236,7 +272,10 @@ fn item_treatments(it: &RawItem, lg: &Ledgers<'_, '_>) -> (Vec<Treatment>, &'sta
             true,
         );
         let (st, ste) = status_of(lg.subs_l.get(&it.id), false, true);
-        let poster = it.show_id.as_deref().and_then(|sid| lg.show_poster.get(sid).cloned().flatten());
+        let poster = it
+            .show_id
+            .as_deref()
+            .and_then(|sid| lg.show_poster.get(sid).cloned().flatten());
         (
             vec![
                 tr("probe", p, None),
@@ -268,7 +307,10 @@ fn item_treatments(it: &RawItem, lg: &Ledgers<'_, '_>) -> (Vec<Treatment>, &'sta
 }
 
 fn tally_counts(all: &[ElementRow]) -> ElementCounts {
-    let mut counts = ElementCounts { total: all.len() as i64, ..Default::default() };
+    let mut counts = ElementCounts {
+        total: all.len() as i64,
+        ..Default::default()
+    };
     for el in all {
         match el.overall.as_str() {
             "ok" => counts.ok += 1,
@@ -354,7 +396,10 @@ mod tests {
     #[test]
     fn status_of_surfaces_error_only_when_failed() {
         let failed = ("failed".to_string(), Some("boom".to_string()));
-        assert_eq!(status_of(Some(&failed), false, false), ("failed", Some("boom".to_string())));
+        assert_eq!(
+            status_of(Some(&failed), false, false),
+            ("failed", Some("boom".to_string()))
+        );
         let running = ("running".to_string(), Some("stale".to_string()));
         assert_eq!(status_of(Some(&running), false, false), ("running", None));
         assert_eq!(status_of(None, true, false), ("done", None));
@@ -437,8 +482,12 @@ mod tests {
         let markset: HashSet<String> = HashSet::new();
         let vecset: HashSet<String> = ["m1".to_string()].into_iter().collect();
         let empty: Ledger = HashMap::new();
-        let meta_l: Ledger =
-            [("m1".to_string(), ("failed".to_string(), Some("boom".to_string())))].into_iter().collect();
+        let meta_l: Ledger = [(
+            "m1".to_string(),
+            ("failed".to_string(), Some("boom".to_string())),
+        )]
+        .into_iter()
+        .collect();
         let show_poster: HashMap<&str, Option<String>> = HashMap::new();
         let lg = Ledgers {
             probed: &probed,
@@ -459,7 +508,10 @@ mod tests {
         assert_eq!(kind, "film");
         assert_eq!(poster.as_deref(), Some("p.jpg"));
         let keys: Vec<&str> = treatments.iter().map(|t| t.key.as_str()).collect();
-        assert_eq!(keys, vec!["probe", "metadata", "storyboard", "subtitles", "embed"]);
+        assert_eq!(
+            keys,
+            vec!["probe", "metadata", "storyboard", "subtitles", "embed"]
+        );
         let by = |k: &str| treatments.iter().find(|t| t.key == k).unwrap();
         assert_eq!(by("probe").status, "done");
         assert_eq!(by("metadata").status, "failed");
@@ -556,7 +608,11 @@ mod tests {
 
         assert!(matches_filter(&el, &f("all", "all", ""), ""));
         assert!(matches_filter(&el, &f("all", "all", "matrix"), "matrix"));
-        assert!(!matches_filter(&el, &f("all", "all", "inception"), "inception"));
+        assert!(!matches_filter(
+            &el,
+            &f("all", "all", "inception"),
+            "inception"
+        ));
 
         assert!(!matches_filter(&el, &f("all", "series", ""), ""));
         assert!(matches_filter(&el, &f("all", "film", ""), ""));
@@ -564,13 +620,23 @@ mod tests {
         assert!(matches_filter(&el, &f("failed", "all", ""), ""));
         assert!(!matches_filter(&el, &f("ok", "all", ""), ""));
         assert!(matches_filter(&el, &f("attention", "all", ""), ""));
-        assert!(!matches_filter(&row("film", "ok"), &f("attention", "all", ""), ""));
+        assert!(!matches_filter(
+            &row("film", "ok"),
+            &f("attention", "all", ""),
+            ""
+        ));
     }
 
     use crate::test_support;
 
     fn all_filter() -> Filter {
-        Filter { status: "all".into(), kind: "all".into(), query: String::new(), page: 0, limit: 50 }
+        Filter {
+            status: "all".into(),
+            kind: "all".into(),
+            query: String::new(),
+            page: 0,
+            limit: 50,
+        }
     }
 
     #[test]
@@ -578,25 +644,47 @@ mod tests {
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m1");
         test_support::seed_show_episode(&state, "sh1", "ep1");
-        test_support::seed_task(&state, "metadata", "item", "m1", "failed", Some("meta boom"));
+        test_support::seed_task(
+            &state,
+            "metadata",
+            "item",
+            "m1",
+            "failed",
+            Some("meta boom"),
+        );
 
         let page = list(&state, &all_filter()).unwrap();
 
         assert_eq!(page.total, 3);
         assert_eq!(page.counts.total, 3);
-        assert_eq!((page.counts.film, page.counts.series, page.counts.episode), (1, 1, 1));
+        assert_eq!(
+            (page.counts.film, page.counts.series, page.counts.episode),
+            (1, 1, 1)
+        );
         assert_eq!(page.counts.failed, 1);
         assert_eq!(page.counts.pending, 2);
         assert_eq!((page.counts.ok, page.counts.running), (0, 0));
 
-        let movie = page.elements.iter().find(|e| e.id == "m1").expect("movie row present");
+        let movie = page
+            .elements
+            .iter()
+            .find(|e| e.id == "m1")
+            .expect("movie row present");
         assert_eq!(movie.kind, "film");
         assert_eq!(movie.overall, "failed");
-        let meta = movie.treatments.iter().find(|t| t.key == "metadata").unwrap();
+        let meta = movie
+            .treatments
+            .iter()
+            .find(|t| t.key == "metadata")
+            .unwrap();
         assert_eq!(meta.status, "failed");
         assert_eq!(meta.error.as_deref(), Some("meta boom"));
 
-        let show = page.elements.iter().find(|e| e.id == "sh1").expect("show row present");
+        let show = page
+            .elements
+            .iter()
+            .find(|e| e.id == "sh1")
+            .expect("show row present");
         assert_eq!(show.kind, "series");
         assert_eq!(show.ep_stats.as_ref().unwrap().episodes, 1);
     }
@@ -610,17 +698,32 @@ mod tests {
 
         let failed = list(
             &state,
-            &Filter { status: "failed".into(), kind: "all".into(), query: String::new(), page: 0, limit: 50 },
+            &Filter {
+                status: "failed".into(),
+                kind: "all".into(),
+                query: String::new(),
+                page: 0,
+                limit: 50,
+            },
         )
         .unwrap();
         assert_eq!(failed.total, 1);
         assert_eq!(failed.elements.len(), 1);
         assert_eq!(failed.elements[0].id, "m1");
-        assert_eq!(failed.counts.total, 3, "counts are over the full catalog, not the filtered page");
+        assert_eq!(
+            failed.counts.total, 3,
+            "counts are over the full catalog, not the filtered page"
+        );
 
         let films = list(
             &state,
-            &Filter { status: "all".into(), kind: "film".into(), query: String::new(), page: 0, limit: 50 },
+            &Filter {
+                status: "all".into(),
+                kind: "film".into(),
+                query: String::new(),
+                page: 0,
+                limit: 50,
+            },
         )
         .unwrap();
         assert_eq!(films.total, 1);

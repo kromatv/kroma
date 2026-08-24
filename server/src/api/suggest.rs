@@ -92,9 +92,19 @@ enum Cached {
     UnknownSeed,
 }
 
-fn section(locale: &str, reason: Option<String>, items: Vec<crate::model::SectionItem>) -> Response {
+fn section(
+    locale: &str,
+    reason: Option<String>,
+    items: Vec<crate::model::SectionItem>,
+) -> Response {
     let title = i18n::t(locale, "content.aiSuggestions", &[]);
-    Json(Some(Section { id: "ai:suggest".to_string(), title, reason, items })).into_response()
+    Json(Some(Section {
+        id: "ai:suggest".to_string(),
+        title,
+        reason,
+        items,
+    }))
+    .into_response()
 }
 
 fn spawn_generation(state: SharedState, id: String) {
@@ -112,7 +122,8 @@ fn spawn_generation(state: SharedState, id: String) {
     tokio::task::spawn_blocking(move || {
         // A panic must not leak the in-flight reservation: the guard above would
         // then block every future attempt for this seed until a restart.
-        let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| generate(&state, &id)));
+        let outcome =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| generate(&state, &id)));
         in_flight().lock().unwrap().remove(&id);
         if outcome.is_err() {
             tracing::error!(item = %id, "AI suggestion generation panicked");
@@ -143,14 +154,20 @@ fn generate(state: &SharedState, id: &str) {
         // Don't cache, so a later view retries, but record the time so polls
         // back off to one attempt per RETRY_COOLDOWN.
         Err(e) => {
-            cooldowns().lock().unwrap().insert(id.to_string(), Instant::now());
+            cooldowns()
+                .lock()
+                .unwrap()
+                .insert(id.to_string(), Instant::now());
             tracing::warn!(item = %id, error = %e, "AI suggestion generation failed");
         }
     }
 }
 
 fn pick_lang(map: &HashMap<String, String>, locale: &str) -> Option<String> {
-    map.get(locale).or_else(|| map.get("en")).or_else(|| map.values().next()).cloned()
+    map.get(locale)
+        .or_else(|| map.get("en"))
+        .or_else(|| map.values().next())
+        .cloned()
 }
 
 #[cfg(test)]
@@ -160,17 +177,26 @@ mod tests {
     use axum::http::StatusCode;
 
     fn reasons(pairs: &[(&str, &str)]) -> HashMap<String, String> {
-        pairs.iter().map(|(k, v)| ((*k).to_string(), (*v).to_string())).collect()
+        pairs
+            .iter()
+            .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
+            .collect()
     }
 
     #[test]
     fn a_reason_falls_back_to_english_then_to_whatever_was_generated() {
-        assert_eq!(pick_lang(&reasons(&[("fr", "parce que")]), "fr").as_deref(), Some("parce que"));
+        assert_eq!(
+            pick_lang(&reasons(&[("fr", "parce que")]), "fr").as_deref(),
+            Some("parce que")
+        );
         assert_eq!(
             pick_lang(&reasons(&[("en", "because"), ("de", "weil")]), "fr").as_deref(),
             Some("because")
         );
-        assert_eq!(pick_lang(&reasons(&[("de", "weil")]), "fr").as_deref(), Some("weil"));
+        assert_eq!(
+            pick_lang(&reasons(&[("de", "weil")]), "fr").as_deref(),
+            Some("weil")
+        );
         assert_eq!(pick_lang(&reasons(&[]), "fr"), None);
     }
 
@@ -184,8 +210,9 @@ mod tests {
 
     #[test]
     fn a_seed_past_the_concurrency_ceiling_waits_for_a_slot_to_free() {
-        let mut in_flight: HashSet<String> =
-            (0..MAX_CONCURRENT_GENERATIONS).map(|n| format!("seed{n}")).collect();
+        let mut in_flight: HashSet<String> = (0..MAX_CONCURRENT_GENERATIONS)
+            .map(|n| format!("seed{n}"))
+            .collect();
 
         assert!(!reserve(&mut in_flight, "one-too-many"));
 
@@ -197,12 +224,15 @@ mod tests {
     async fn a_seed_the_catalogue_does_not_hold_is_terminal_and_caches_nothing() {
         let t = test_app();
 
-        let (status, body) = get(&t.app, "/api/items/no-such-item/ai-suggest", Some(&t.token)).await;
+        let (status, body) =
+            get(&t.app, "/api/items/no-such-item/ai-suggest", Some(&t.token)).await;
 
         assert_eq!(status, StatusCode::OK);
         assert_eq!(body["id"], "ai:suggest");
         assert_eq!(body["items"].as_array().map(Vec::len), Some(0));
-        assert!(db::get_suggestion(&t.state.db, "no-such-item").unwrap().is_none());
+        assert!(db::get_suggestion(&t.state.db, "no-such-item")
+            .unwrap()
+            .is_none());
     }
 
     #[tokio::test]
@@ -210,7 +240,12 @@ mod tests {
         let t = test_app();
         let id = demo_item_id("The Matrix");
 
-        let (status, body) = get(&t.app, &format!("/api/items/{id}/ai-suggest"), Some(&t.token)).await;
+        let (status, body) = get(
+            &t.app,
+            &format!("/api/items/{id}/ai-suggest"),
+            Some(&t.token),
+        )
+        .await;
 
         assert_eq!(status, StatusCode::OK);
         assert!(body.is_null(), "{body}");

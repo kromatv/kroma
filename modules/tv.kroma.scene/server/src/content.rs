@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::parse_release_name;
 
-const VIDEO_EXTS: &[&str] = &["mkv", "mp4", "m4v", "mov", "webm", "avi", "ts", "m2ts", "wmv", "flv"];
+const VIDEO_EXTS: &[&str] = &[
+    "mkv", "mp4", "m4v", "mov", "webm", "avi", "ts", "m2ts", "wmv", "flv",
+];
 
 /// What a torrent holds, overall. `Unknown` means the admin picks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -78,8 +80,10 @@ pub fn classify(files: &[(String, u64)]) -> TorrentContent {
         });
     }
 
-    let episode_files: Vec<&ContentFile> =
-        content_files.iter().filter(|f| f.is_video && f.episode.is_some()).collect();
+    let episode_files: Vec<&ContentFile> = content_files
+        .iter()
+        .filter(|f| f.is_video && f.episode.is_some())
+        .collect();
     let mut seasons: Vec<u32> = episode_files.iter().filter_map(|f| f.season).collect();
     seasons.sort_unstable();
     seasons.dedup();
@@ -100,7 +104,11 @@ pub fn classify(files: &[(String, u64)]) -> TorrentContent {
         ContentKind::Episode
     };
 
-    TorrentContent { kind, seasons, files: content_files }
+    TorrentContent {
+        kind,
+        seasons,
+        files: content_files,
+    }
 }
 
 #[cfg(test)]
@@ -113,11 +121,21 @@ mod tests {
 
     #[test]
     fn detects_a_movie() {
-        let c = classify(&f(&["The.Matrix.1999.1080p.BluRay.x265-GRP.mkv", "sample.mkv", "readme.txt"]));
+        let c = classify(&f(&[
+            "The.Matrix.1999.1080p.BluRay.x265-GRP.mkv",
+            "sample.mkv",
+            "readme.txt",
+        ]));
         assert_eq!(c.kind, ContentKind::Movie);
         assert!(c.seasons.is_empty());
         assert_eq!(c.files.iter().filter(|f| f.is_video).count(), 2);
-        assert!(!c.files.iter().find(|f| f.path == "readme.txt").unwrap().is_video);
+        assert!(
+            !c.files
+                .iter()
+                .find(|f| f.path == "readme.txt")
+                .unwrap()
+                .is_video
+        );
     }
 
     #[test]

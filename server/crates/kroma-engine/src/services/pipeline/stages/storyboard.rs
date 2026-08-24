@@ -51,7 +51,10 @@ fn process(ctx: &JobContext, item_id: &str) -> Result<()> {
     // Thread the stage's cancellation so cancelling the job kills the in-flight
     // ffmpeg pass at the next poll tick instead of running out the full timeout.
     let cancel = || ctx.cancelled();
-    ctx.state.storyboard.generate_blocking_cancellable(&item, &cancel).map_err(|e| anyhow!(e))
+    ctx.state
+        .storyboard
+        .generate_blocking_cancellable(&item, &cancel)
+        .map_err(|e| anyhow!(e))
 }
 
 #[cfg(test)]
@@ -65,7 +68,10 @@ mod tests {
             .db
             .get()
             .unwrap()
-            .execute(&format!("UPDATE items SET duration_ms = {ms} WHERE id = '{item_id}'"), [])
+            .execute(
+                &format!("UPDATE items SET duration_ms = {ms} WHERE id = '{item_id}'"),
+                [],
+            )
             .unwrap();
     }
 
@@ -79,7 +85,10 @@ mod tests {
         let subjects = enumerate(&state).unwrap();
         assert_eq!(subjects.len(), 1);
         assert_eq!(subjects[0].0, "m1");
-        assert!(!subjects[0].1.is_empty(), "signed by the file it was made from");
+        assert!(
+            !subjects[0].1.is_empty(),
+            "signed by the file it was made from"
+        );
     }
 
     #[test]

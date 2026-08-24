@@ -34,7 +34,10 @@ pub fn public_key<S: HostStorage>(state: &S) -> anyhow::Result<String> {
     let public = key.public_base64url();
     state.set_settings(std::collections::BTreeMap::from([
         (VAPID_PUBLIC_KEY.to_string(), json!(public)),
-        (VAPID_PRIVATE_KEY.to_string(), json!(key.private_base64url())),
+        (
+            VAPID_PRIVATE_KEY.to_string(),
+            json!(key.private_base64url()),
+        ),
     ]));
     tracing::info!("minted a VAPID keypair for Web Push");
     Ok(public)
@@ -151,22 +154,25 @@ fn parse(credentials: &Credentials) -> Keys {
 pub fn sender<S: HostStorage>(state: &S) -> Sender {
     let keys = keys_for(&credentials(state));
     transports::Senders {
-        web: keys
-            .web
-            .clone()
-            .map(|key| transports::WebPush { key, subject: subject_of(state) }),
+        web: keys.web.clone().map(|key| transports::WebPush {
+            key,
+            subject: subject_of(state),
+        }),
         apns: keys.apns.clone().map(|key| transports::Apns { key }),
         // The token exchange is a network call: once per emission, not per device.
-        fcm: keys.fcm.clone().and_then(|key| match fcm_access_token(&key) {
-            Ok(access_token) => Some(transports::Fcm { key, access_token }),
-            Err(e) => {
-                tracing::warn!(
-                    error = %e,
-                    "could not obtain an FCM access token; Android push skipped"
-                );
-                None
-            }
-        }),
+        fcm: keys
+            .fcm
+            .clone()
+            .and_then(|key| match fcm_access_token(&key) {
+                Ok(access_token) => Some(transports::Fcm { key, access_token }),
+                Err(e) => {
+                    tracing::warn!(
+                        error = %e,
+                        "could not obtain an FCM access token; Android push skipped"
+                    );
+                    None
+                }
+            }),
     }
 }
 
@@ -178,7 +184,11 @@ fn fcm_access_token(key: &kroma_push::fcm::FcmKey) -> anyhow::Result<String> {
     let request = key.token_request(now)?;
     let response = send(&request)?;
     if !(200..300).contains(&response.status) {
-        anyhow::bail!("token endpoint returned {}: {}", response.status, response.text());
+        anyhow::bail!(
+            "token endpoint returned {}: {}",
+            response.status,
+            response.text()
+        );
     }
     key.store_token(&response.text(), now)
 }

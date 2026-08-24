@@ -104,7 +104,12 @@ fn cleanup(s: &str) -> String {
         }
     }
     r = r.split_whitespace().collect::<Vec<_>>().join(" ");
-    let joined = r.split(" - ").map(str::trim).filter(|p| !p.is_empty()).collect::<Vec<_>>().join(" - ");
+    let joined = r
+        .split(" - ")
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+        .collect::<Vec<_>>()
+        .join(" - ");
     joined.trim().trim_matches('-').trim().to_string()
 }
 
@@ -133,17 +138,29 @@ mod tests {
 
     #[test]
     fn missing_tokens_clean_up() {
-        let ctx = NameContext { title: "Show".into(), season: Some(3), episode: Some(7), ..Default::default() };
+        let ctx = NameContext {
+            title: "Show".into(),
+            season: Some(3),
+            episode: Some(7),
+            ..Default::default()
+        };
         assert_eq!(render("{Title} ({Year})", &ctx), "Show");
         assert_eq!(
-            render("{Title} - S{season:00}E{episode:00} - {Episode Title} {Quality Full}", &ctx),
+            render(
+                "{Title} - S{season:00}E{episode:00} - {Episode Title} {Quality Full}",
+                &ctx
+            ),
             "Show - S03E07"
         );
     }
 
     #[test]
     fn padding_respects_spec() {
-        let ctx = NameContext { season: Some(1), episode: Some(5), ..Default::default() };
+        let ctx = NameContext {
+            season: Some(1),
+            episode: Some(5),
+            ..Default::default()
+        };
         assert_eq!(render("S{season:00}E{episode:00}", &ctx), "S01E05");
         assert_eq!(render("S{season:000}E{episode}", &ctx), "S001E5");
         assert_eq!(render("{season}x{episode:00}", &ctx), "1x05");
@@ -173,41 +190,69 @@ mod tests {
         assert_eq!(base.quality_full(), "Bluray-1080p");
         assert_eq!(base.quality_title(), "Bluray-1080p");
 
-        let proper = NameContext { proper: true, ..base.clone() };
+        let proper = NameContext {
+            proper: true,
+            ..base.clone()
+        };
         assert_eq!(proper.quality_full(), "Bluray-1080p Proper");
         assert_eq!(proper.quality_title(), "Bluray-1080p");
 
-        let repack = NameContext { repack: true, ..base.clone() };
+        let repack = NameContext {
+            repack: true,
+            ..base.clone()
+        };
         assert_eq!(repack.quality_full(), "Bluray-1080p Repack");
 
         // Proper wins over repack when (implausibly) both are set.
-        let both = NameContext { proper: true, repack: true, ..base };
+        let both = NameContext {
+            proper: true,
+            repack: true,
+            ..base
+        };
         assert_eq!(both.quality_full(), "Bluray-1080p Proper");
     }
 
     #[test]
     fn quality_title_partial_and_empty() {
-        let source_only = NameContext { source: Some("WEBDL".into()), ..Default::default() };
+        let source_only = NameContext {
+            source: Some("WEBDL".into()),
+            ..Default::default()
+        };
         assert_eq!(source_only.quality_title(), "WEBDL");
 
-        let res_only = NameContext { resolution: Some("720p".into()), ..Default::default() };
+        let res_only = NameContext {
+            resolution: Some("720p".into()),
+            ..Default::default()
+        };
         assert_eq!(res_only.quality_title(), "720p");
 
         let empty = NameContext::default();
         assert_eq!(empty.quality_title(), "");
         assert_eq!(empty.quality_full(), "");
 
-        let proper_only = NameContext { proper: true, ..Default::default() };
+        let proper_only = NameContext {
+            proper: true,
+            ..Default::default()
+        };
         assert_eq!(proper_only.quality_full(), "Proper");
     }
 
     #[test]
     fn render_cleans_empty_delimiters() {
-        let ctx = NameContext { title: "Show".into(), ..Default::default() };
+        let ctx = NameContext {
+            title: "Show".into(),
+            ..Default::default()
+        };
         assert_eq!(render("{Movie Title} ({Release Year})", &ctx), "Show");
         assert_eq!(render("{Movie Title} [{Resolution}]", &ctx), "Show");
-        assert_eq!(render("{Movie Title} ({Release Year}) [{Resolution}]", &ctx), "Show");
-        assert_eq!(render("{Movie Title} - {Episode Title} - {Resolution}", &ctx), "Show");
+        assert_eq!(
+            render("{Movie Title} ({Release Year}) [{Resolution}]", &ctx),
+            "Show"
+        );
+        assert_eq!(
+            render("{Movie Title} - {Episode Title} - {Resolution}", &ctx),
+            "Show"
+        );
         assert_eq!(render("({Release Year})", &NameContext::default()), "");
     }
 }

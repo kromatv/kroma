@@ -39,7 +39,11 @@ pub fn load(pool: &Pool, user_id: &str) -> Vec<GenSection> {
 /// Build the (system, user) prompt for one user's clusters. `locale` is the
 /// account's UI language code (`"fr"`/`"en"`); `prev_profile` is last run's
 /// profile, if any, so the model refines rather than restarts.
-pub fn build_prompt(locale: &str, prev_profile: Option<&str>, clusters: &[Cluster]) -> (String, String) {
+pub fn build_prompt(
+    locale: &str,
+    prev_profile: Option<&str>,
+    clusters: &[Cluster],
+) -> (String, String) {
     let lang = language_name(locale);
     let system = format!(
         "You are the personalization curator for a home-media library. From a viewer's \
@@ -214,7 +218,12 @@ mod tests {
 
     #[test]
     fn build_prompt_omits_blank_previous_profile_and_uses_french() {
-        let clusters = vec![Cluster { ids: vec![], titles: vec![], genres: vec![], keywords: vec![] }];
+        let clusters = vec![Cluster {
+            ids: vec![],
+            titles: vec![],
+            genres: vec![],
+            keywords: vec![],
+        }];
         let (system, user) = build_prompt("fr", Some("   "), &clusters);
         assert!(system.contains("French"));
         assert!(!user.contains("Previous taste profile")); // blank prev skipped
@@ -249,7 +258,9 @@ mod tests {
     fn parse_response_caps_at_max_sections() {
         let mut secs = String::new();
         for i in 0..10 {
-            secs.push_str(&format!("{{\"title\":\"Row {i}\",\"query\":\"vibe {i} words here\"}},"));
+            secs.push_str(&format!(
+                "{{\"title\":\"Row {i}\",\"query\":\"vibe {i} words here\"}},"
+            ));
         }
         let reply = format!("{{\"sections\":[{}]}}", secs.trim_end_matches(','));
         let (_, sections) = parse_response(&reply).unwrap();

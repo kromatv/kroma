@@ -3,8 +3,8 @@
 //! transport (fetch, login, download resolution) lives in [`crate::session`],
 //! so everything here is unit-testable against a fixed body.
 
-use crate::definition::Definition;
 use crate::context::Context;
+use crate::definition::Definition;
 use crate::selector;
 use crate::{filters, IndexerConfig, Release};
 
@@ -39,13 +39,26 @@ pub fn preprocess(def: &Definition, cfg: &IndexerConfig, body: &str) -> String {
 /// rows selector and every field selector; definitions are internally
 /// consistent, so any hit routes the whole parse to the XPath path.
 pub fn uses_xpath(def: &Definition) -> bool {
-    let row = def.search.rows.selector.as_deref().is_some_and(selector::is_xpath);
-    row || def.search.fields.values().any(|f| f.selector.as_deref().is_some_and(selector::is_xpath))
+    let row = def
+        .search
+        .rows
+        .selector
+        .as_deref()
+        .is_some_and(selector::is_xpath);
+    row || def
+        .search
+        .fields
+        .values()
+        .any(|f| f.selector.as_deref().is_some_and(selector::is_xpath))
 }
 
 /// Parse an HTML search response into releases, routing XPath definitions to
 /// the (optional) libxml path.
-pub fn parse_html_auto(def: &Definition, cfg: &IndexerConfig, body: &str) -> anyhow::Result<Vec<Release>> {
+pub fn parse_html_auto(
+    def: &Definition,
+    cfg: &IndexerConfig,
+    body: &str,
+) -> anyhow::Result<Vec<Release>> {
     if uses_xpath(def) {
         #[cfg(feature = "xpath")]
         {
@@ -68,8 +81,8 @@ fn base_context(def: &Definition, cfg: &IndexerConfig) -> Context {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::test_support::{build_def, cfg};
+    use super::*;
 
     #[test]
     fn preprocess_noop_and_filtered() {
@@ -98,7 +111,10 @@ search:
     selector: "tr"
 "#,
         );
-        assert_eq!(preprocess(&filtered, &cfg("https://x/"), "junkREST"), "REST");
+        assert_eq!(
+            preprocess(&filtered, &cfg("https://x/"), "junkREST"),
+            "REST"
+        );
     }
 
     #[test]
@@ -138,11 +154,12 @@ search:
       selector: "td"
 "#,
         );
-        let err = parse_html_auto(&def, &cfg("https://x/"), "<html></html>").unwrap_err().to_string();
+        let err = parse_html_auto(&def, &cfg("https://x/"), "<html></html>")
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("brokentracker"), "{err}");
         assert!(err.contains("xpath"), "{err}");
     }
-
 
     #[test]
     fn uses_xpath_detection() {

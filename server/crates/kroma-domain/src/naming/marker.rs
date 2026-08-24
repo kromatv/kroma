@@ -152,7 +152,10 @@ mod tests {
     #[test]
     fn multi_episode_dash_concatenated_and_bare() {
         let dash = find_marker("Show.S01E02-E03").unwrap();
-        assert_eq!((dash.season, dash.episode, dash.episode_end), (1, 2, Some(3)));
+        assert_eq!(
+            (dash.season, dash.episode, dash.episode_end),
+            (1, 2, Some(3))
+        );
         // "S01E02E03" (no separator) still yields the second episode.
         let cat = find_marker("Show.S01E02E03").unwrap();
         assert_eq!(cat.episode_end, Some(3));

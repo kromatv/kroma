@@ -91,7 +91,10 @@ pub fn export_portable(pool: &Pool, data_dir: &std::path::Path) -> Result<Backup
         if !table_exists(&conn, t)? {
             continue;
         }
-        tables.insert(t.to_string(), dump_query(&conn, &format!("SELECT * FROM {t}"))?);
+        tables.insert(
+            t.to_string(),
+            dump_query(&conn, &format!("SELECT * FROM {t}"))?,
+        );
     }
     let mut modules = BTreeMap::new();
     for (id, path) in module_stores(data_dir) {
@@ -139,7 +142,10 @@ pub fn import_portable(
     reset: bool,
 ) -> Result<Vec<(String, usize)>> {
     if doc.version > VERSION {
-        anyhow::bail!("backup version {} is newer than supported {VERSION}", doc.version);
+        anyhow::bail!(
+            "backup version {} is newer than supported {VERSION}",
+            doc.version
+        );
     }
     let mut conn = pool.get()?;
     // Insert across the catalogue gap: `progress.item_id` references rows that a
@@ -156,7 +162,11 @@ pub fn import_portable(
 
 // The transactional body of [`import_portable`], split out so the caller can
 // restore `foreign_keys` whether it succeeds or fails.
-fn restore_all(conn: &mut rusqlite::Connection, doc: &BackupDoc, reset: bool) -> Result<Vec<(String, usize)>> {
+fn restore_all(
+    conn: &mut rusqlite::Connection,
+    doc: &BackupDoc,
+    reset: bool,
+) -> Result<Vec<(String, usize)>> {
     let tx = conn.transaction()?;
     if reset {
         for &t in TABLES {
@@ -197,8 +207,16 @@ mod tests {
             c.execute("INSERT INTO settings (key,value,updated_at) VALUES ('serverName','\"My KROMA\"','t')", []).unwrap();
             c.execute("INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) VALUES ('u1','it1',1000,5000,'t')", []).unwrap();
             c.execute("INSERT INTO play_history (id,kind,title,started_at,ended_at) VALUES ('h1','movie','Film',1,2)", []).unwrap();
-            c.execute("INSERT INTO watched (user_id,item_id,watched_at) VALUES ('u1','it1','t')", []).unwrap();
-            c.execute("INSERT INTO my_list (user_id,item_id,added_at) VALUES ('u1','it1','t')", []).unwrap();
+            c.execute(
+                "INSERT INTO watched (user_id,item_id,watched_at) VALUES ('u1','it1','t')",
+                [],
+            )
+            .unwrap();
+            c.execute(
+                "INSERT INTO my_list (user_id,item_id,added_at) VALUES ('u1','it1','t')",
+                [],
+            )
+            .unwrap();
             // A user's media request (wishlist) + its episode ledger.
             c.execute("INSERT INTO requests (id,kind,tmdb_id,title,status,created_at,updated_at) VALUES ('rq1','movie',603,'The Matrix','approved',1,1)", []).unwrap();
             c.execute("INSERT INTO wanted (id,request_id,kind,tmdb_id,title,status,updated_at) VALUES ('wt1','rq1','movie',603,'The Matrix','wanted',1)", []).unwrap();
@@ -232,20 +250,33 @@ mod tests {
         let server_name: String = dst
             .get()
             .unwrap()
-            .query_row("SELECT value FROM settings WHERE key='serverName'", [], |r| r.get(0))
+            .query_row(
+                "SELECT value FROM settings WHERE key='serverName'",
+                [],
+                |r| r.get(0),
+            )
             .unwrap();
         assert_eq!(server_name, "\"My KROMA\"");
 
         // foreign_keys must be back ON for the next user of any pooled connection.
-        let fk: i64 = dst.get().unwrap().query_row("PRAGMA foreign_keys", [], |r| r.get(0)).unwrap();
+        let fk: i64 = dst
+            .get()
+            .unwrap()
+            .query_row("PRAGMA foreign_keys", [], |r| r.get(0))
+            .unwrap();
         assert_eq!(fk, 1);
     }
 
     #[test]
     fn a_backup_from_a_newer_server_is_refused_rather_than_half_restored() {
         let dst = fresh_pool("newer");
-        let doc = BackupDoc { version: VERSION + 1, ..empty_doc() };
-        let err = import_portable(&dst, &data_dir(&dst), &doc, false).unwrap_err().to_string();
+        let doc = BackupDoc {
+            version: VERSION + 1,
+            ..empty_doc()
+        };
+        let err = import_portable(&dst, &data_dir(&dst), &doc, false)
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("newer than supported"), "{err}");
     }
 

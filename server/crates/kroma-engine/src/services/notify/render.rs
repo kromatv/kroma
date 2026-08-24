@@ -23,7 +23,10 @@ fn vars_for(stored: &StoredNotification, locale: &str) -> Vec<(String, String)> 
         .map(|(k, v)| {
             // `None` for anything the catalogs do not know, which is what keeps a
             // legacy bare string literal unless it really was a key.
-            (k.clone(), v.resolve(|key| i18n::is_message_key(key).then(|| i18n::t(locale, key, &[]))))
+            (
+                k.clone(),
+                v.resolve(|key| i18n::is_message_key(key).then(|| i18n::t(locale, key, &[]))),
+            )
         })
         .collect()
 }
@@ -31,8 +34,10 @@ fn vars_for(stored: &StoredNotification, locale: &str) -> Vec<(String, String)> 
 /// Render one stored notification into its wire shape.
 pub fn render(stored: &StoredNotification, locale: &str) -> Notification {
     let resolved = vars_for(stored, locale);
-    let vars: Vec<(&str, &str)> =
-        resolved.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+    let vars: Vec<(&str, &str)> = resolved
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
     Notification {
         id: stored.id.clone(),
         category: stored.category,
@@ -100,8 +105,15 @@ mod tests {
         let out = render(&stored(), "en");
         // The catalogs carry these keys, so the title must not come back as the
         // raw key and must have the film's name substituted in.
-        assert!(out.title.contains("Dune") || out.body.contains("Dune"), "{out:?}");
-        assert!(!out.title.starts_with("notifications."), "unresolved key: {}", out.title);
+        assert!(
+            out.title.contains("Dune") || out.body.contains("Dune"),
+            "{out:?}"
+        );
+        assert!(
+            !out.title.starts_with("notifications."),
+            "unresolved key: {}",
+            out.title
+        );
     }
 
     #[test]
@@ -110,7 +122,10 @@ mod tests {
         let fr = render(&s, "fr");
         let en = render(&s, "en");
         // Same row, two readers, two languages this is why text is not stored.
-        assert_ne!(fr.body, en.body, "fr/en catalogs should differ for this key");
+        assert_ne!(
+            fr.body, en.body,
+            "fr/en catalogs should differ for this key"
+        );
     }
 
     #[test]
@@ -132,10 +147,16 @@ mod tests {
         s.title_key = "notifications.system.job.failed.title".into();
         s.body_key = "notifications.system.job.failed.body".into();
         // The jobs domain names its display strings by key, and says so.
-        s.params =
-            BTreeMap::from([("job".to_string(), ParamValue::Key("jobs.library.scan.name".into()))]);
+        s.params = BTreeMap::from([(
+            "job".to_string(),
+            ParamValue::Key("jobs.library.scan.name".into()),
+        )]);
         let out = render(&s, "en");
-        assert!(!out.body.contains("jobs.library.scan.name"), "raw key leaked: {}", out.body);
+        assert!(
+            !out.body.contains("jobs.library.scan.name"),
+            "raw key leaked: {}",
+            out.body
+        );
     }
 
     #[test]
@@ -157,7 +178,11 @@ mod tests {
             ("title".to_string(), ParamValue::Text("Dune".into())),
         ]);
         let out = render(&s, "en");
-        assert!(out.body.contains("reports.sheet"), "collided param was rewritten: {}", out.body);
+        assert!(
+            out.body.contains("reports.sheet"),
+            "collided param was rewritten: {}",
+            out.body
+        );
         // Sanity: that key really does resolve to something else, so the test
         // would fail under the old value-shape heuristic.
         assert_ne!(crate::i18n::t("en", "reports.sheet", &[]), "reports.sheet");
@@ -171,12 +196,19 @@ mod tests {
         let mut s = stored();
         s.body_key = "notifications.report.submitted.body".into();
         s.params = BTreeMap::from([
-            ("user".to_string(), ParamValue::Legacy("reports.sheet".into())),
+            (
+                "user".to_string(),
+                ParamValue::Legacy("reports.sheet".into()),
+            ),
             ("title".to_string(), ParamValue::Text("Dune".into())),
         ]);
         let out = render(&s, "en");
         let resolved = crate::i18n::t("en", "reports.sheet", &[]);
-        assert!(out.body.contains(&resolved), "legacy key left raw: {}", out.body);
+        assert!(
+            out.body.contains(&resolved),
+            "legacy key left raw: {}",
+            out.body
+        );
     }
 
     #[test]

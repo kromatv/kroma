@@ -21,7 +21,11 @@ async fn content_routes_reject_anonymous_callers() {
         "/api/search?q=x",
     ] {
         let (status, _) = get(&t.app, uri, None).await;
-        assert_eq!(status, StatusCode::UNAUTHORIZED, "{uri} should require a session");
+        assert_eq!(
+            status,
+            StatusCode::UNAUTHORIZED,
+            "{uri} should require a session"
+        );
     }
 }
 
@@ -71,7 +75,11 @@ async fn libraries_movies_and_shows_list_the_demo_catalogue() {
     let (status, movies) = get(&t.app, "/api/movies", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(movies.as_array().map(Vec::len), Some(6));
-    assert!(movies.as_array().unwrap().iter().any(|m| m["title"] == json!("The Matrix")));
+    assert!(movies
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|m| m["title"] == json!("The Matrix")));
 
     let (status, shows) = get(&t.app, "/api/shows", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
@@ -114,7 +122,9 @@ async fn search_finds_a_seeded_title() {
     assert_eq!(body["query"], json!("Matrix"));
     let results = body["results"].as_array().expect("results array");
     assert!(
-        results.iter().any(|r| r["type"] == json!("movie") && r["item"]["title"] == json!("The Matrix")),
+        results
+            .iter()
+            .any(|r| r["type"] == json!("movie") && r["item"]["title"] == json!("The Matrix")),
         "expected 'The Matrix' among results: {results:?}"
     );
 }
@@ -199,7 +209,14 @@ async fn progress_round_trips_per_user() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(list.as_array().map(Vec::len), Some(1));
 
-    let (status, _) = send(&t.app, "DELETE", &format!("/api/progress/{id}"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/progress/{id}"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, list) = get(&t.app, "/api/progress", Some(&t.token)).await;
     assert_eq!(list.as_array().map(Vec::len), Some(0));
@@ -227,12 +244,26 @@ async fn my_list_add_then_remove() {
     let t = test_app();
     let id = demo_item_id("Spirited Away");
 
-    let (status, _) = send(&t.app, "PUT", &format!("/api/my-list/{id}"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "PUT",
+        &format!("/api/my-list/{id}"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, list) = get(&t.app, "/api/my-list", Some(&t.token)).await;
     assert_eq!(list, json!([id]));
 
-    let (status, _) = send(&t.app, "DELETE", &format!("/api/my-list/{id}"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/my-list/{id}"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, list) = get(&t.app, "/api/my-list", Some(&t.token)).await;
     assert_eq!(list.as_array().map(Vec::len), Some(0));
@@ -265,7 +296,12 @@ async fn discover_is_gated_by_permission_then_by_tmdb() {
     let (status, _) = get(&t.app, "/api/discover/search?q=dune", Some(&t.token)).await;
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
 
-    let (_, member) = seed_session(&t.state, "viewer@test.dev", "viewer", &[Permission::Playback]);
+    let (_, member) = seed_session(
+        &t.state,
+        "viewer@test.dev",
+        "viewer",
+        &[Permission::Playback],
+    );
     let (status, _) = get(&t.app, "/api/discover/search?q=dune", Some(&member)).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
@@ -273,7 +309,12 @@ async fn discover_is_gated_by_permission_then_by_tmdb() {
 #[tokio::test]
 async fn discover_trending_and_detail_follow_the_same_gates() {
     let t = test_app();
-    let (_, member) = seed_session(&t.state, "viewer2@test.dev", "viewer2", &[Permission::Playback]);
+    let (_, member) = seed_session(
+        &t.state,
+        "viewer2@test.dev",
+        "viewer2",
+        &[Permission::Playback],
+    );
 
     let (status, _) = get(&t.app, "/api/discover/trending?type=movie", Some(&t.token)).await;
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);

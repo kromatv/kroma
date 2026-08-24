@@ -117,7 +117,13 @@ pub fn considered(official_url: String, stored: Vec<StoredRegistry>) -> Vec<Regi
                 accepted += 1;
                 None
             };
-            Registry { name, url, official: false, enabled: entry.enabled, skipped }
+            Registry {
+                name,
+                url,
+                official: false,
+                enabled: entry.enabled,
+                skipped,
+            }
         }))
         .collect()
 }
@@ -138,7 +144,12 @@ fn merge_one(
         shadowed.push(m.id.clone());
         false
     });
-    Fetched { registry, modules, error, shadowed }
+    Fetched {
+        registry,
+        modules,
+        error,
+        shadowed,
+    }
 }
 
 /// Fetch every registry and resolve id clashes in precedence order. Skipped rows
@@ -152,7 +163,12 @@ pub async fn fetch_all(state: &SharedState, sup: &Supervisor) -> Vec<Fetched> {
     let mut out = Vec::new();
     for registry in considered(catalog::registry_url(state), stored(state)) {
         if registry.skipped.is_some() {
-            out.push(Fetched { registry, modules: Vec::new(), error: None, shadowed: Vec::new() });
+            out.push(Fetched {
+                registry,
+                modules: Vec::new(),
+                error: None,
+                shadowed: Vec::new(),
+            });
             continue;
         }
         let (modules, error) = match catalog::fetch(sup, &registry.url).await {
@@ -170,7 +186,10 @@ pub async fn fetch_all(state: &SharedState, sup: &Supervisor) -> Vec<Fetched> {
 /// ids first, so treating an outage as "official offers nothing" would let a
 /// third-party registry supply a first-party id — and auto-update would then
 /// install it unattended. An extra registry failing is tolerated and logged.
-pub async fn fetch_merged(state: &SharedState, sup: &Supervisor) -> anyhow::Result<Vec<CatalogModule>> {
+pub async fn fetch_merged(
+    state: &SharedState,
+    sup: &Supervisor,
+) -> anyhow::Result<Vec<CatalogModule>> {
     let fetched = fetch_all(state, sup).await;
     for f in &fetched {
         let Some(error) = &f.error else { continue };
@@ -209,7 +228,13 @@ mod tests {
     use super::*;
 
     fn reg(name: &str, url: &str, official: bool) -> Registry {
-        Registry { name: name.into(), url: url.into(), official, enabled: true, skipped: None }
+        Registry {
+            name: name.into(),
+            url: url.into(),
+            official,
+            enabled: true,
+            skipped: None,
+        }
     }
 
     fn module(id: &str, version: &str) -> CatalogModule {
@@ -228,7 +253,10 @@ mod tests {
     #[test]
     fn official_wins_an_id_declared_by_a_later_registry() {
         let merged = merge(vec![
-            (reg(OFFICIAL_NAME, "https://o", true), vec![module("tv.kroma.a", "1.0.0")]),
+            (
+                reg(OFFICIAL_NAME, "https://o", true),
+                vec![module("tv.kroma.a", "1.0.0")],
+            ),
             (
                 reg("Third party", "https://x", false),
                 // A higher version does NOT let a third party take the id over.
@@ -243,7 +271,11 @@ mod tests {
     }
 
     fn stored_entry(name: &str, url: &str, enabled: bool) -> StoredRegistry {
-        StoredRegistry { name: name.into(), url: url.into(), enabled }
+        StoredRegistry {
+            name: name.into(),
+            url: url.into(),
+            enabled,
+        }
     }
 
     #[test]
@@ -267,7 +299,10 @@ mod tests {
         let skipped: Vec<bool> = extras.iter().map(|c| c.skipped.is_some()).collect();
         assert_eq!(skipped, vec![true, true, false, true, true, false]);
         assert_eq!(extras[2].url, "https://good/modules.json", "url is trimmed");
-        assert_eq!(extras[5].name, "https://unnamed/modules.json", "empty name falls back to url");
+        assert_eq!(
+            extras[5].name, "https://unnamed/modules.json",
+            "empty name falls back to url"
+        );
     }
 
     #[test]
@@ -277,8 +312,15 @@ mod tests {
             .collect();
         let out = considered("https://official".into(), many);
         let extras = &out[1..];
-        assert_eq!(extras.iter().filter(|c| c.skipped.is_none()).count(), MAX_EXTRA_REGISTRIES);
-        assert_eq!(extras.len(), MAX_EXTRA_REGISTRIES + 5, "over-cap entries are still listed");
+        assert_eq!(
+            extras.iter().filter(|c| c.skipped.is_none()).count(),
+            MAX_EXTRA_REGISTRIES
+        );
+        assert_eq!(
+            extras.len(),
+            MAX_EXTRA_REGISTRIES + 5,
+            "over-cap entries are still listed"
+        );
     }
 
     #[test]
@@ -293,7 +335,10 @@ mod tests {
     #[test]
     fn an_over_long_url_is_listed_with_its_reason_rather_than_fetched() {
         let long = format!("https://x/{}", "y".repeat(MAX_URL_LEN));
-        let out = considered("https://official".into(), vec![stored_entry("Long", &long, true)]);
+        let out = considered(
+            "https://official".into(),
+            vec![stored_entry("Long", &long, true)],
+        );
         assert_eq!(out[1].skipped, Some("not consulted: the URL is too long"));
     }
 
@@ -315,7 +360,11 @@ mod tests {
         );
 
         let saved = stored(&t.state);
-        assert_eq!(saved.len(), 3, "the editor must be able to see and fix the bad row");
+        assert_eq!(
+            saved.len(),
+            3,
+            "the editor must be able to see and fix the bad row"
+        );
         assert_eq!(saved[0].url, "https://a/modules.json");
         assert!(saved[0].enabled);
         assert!(saved[1].url.is_empty());
@@ -329,7 +378,12 @@ mod tests {
         assert!(stored(&t.state).is_empty(), "unset means none");
         t.state.settings.set_patch(
             &t.state.db,
-            [("moduleRegistries".to_string(), json!("https://a/modules.json"))].into_iter().collect(),
+            [(
+                "moduleRegistries".to_string(),
+                json!("https://a/modules.json"),
+            )]
+            .into_iter()
+            .collect(),
         );
         assert!(stored(&t.state).is_empty());
     }
@@ -338,8 +392,14 @@ mod tests {
     fn earlier_third_party_shadows_a_later_one() {
         let merged = merge(vec![
             (reg(OFFICIAL_NAME, "https://o", true), vec![]),
-            (reg("First", "https://a", false), vec![module("tv.x.b", "1.0.0")]),
-            (reg("Second", "https://b", false), vec![module("tv.x.b", "2.0.0")]),
+            (
+                reg("First", "https://a", false),
+                vec![module("tv.x.b", "1.0.0")],
+            ),
+            (
+                reg("Second", "https://b", false),
+                vec![module("tv.x.b", "2.0.0")],
+            ),
         ]);
         assert_eq!(merged[1].modules[0].version, "1.0.0");
         assert_eq!(merged[2].shadowed, vec!["tv.x.b"]);

@@ -13,13 +13,13 @@ use serde::Deserialize;
 
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
+use crate::api::util::blocking;
 use crate::api::util::query;
 use crate::db;
 use crate::infra::events::ServerEvent;
-use crate::api::util::blocking;
 use crate::model::{
-    Audience, NotificationEvent, NotificationSpec, Permission, Report, ReportCategory, ReportCounts,
-    ReportStatus, ReportSubjectKind, ReportsView, User,
+    Audience, NotificationEvent, NotificationSpec, Permission, Report, ReportCategory,
+    ReportCounts, ReportStatus, ReportSubjectKind, ReportsView, User,
 };
 use crate::services::jobs::now_ms;
 use crate::state::SharedState;
@@ -68,7 +68,12 @@ fn filter_reports(all: Vec<Report>, params: &ListParams) -> Vec<Report> {
     let status = params.status.as_deref().map(|s| ReportStatus::parse(s));
     let category = params.category.as_deref().map(|s| ReportCategory::parse(s));
     let kind = params.kind.as_deref().map(|s| ReportSubjectKind::parse(s));
-    let needle = params.q.as_deref().map(str::trim).filter(|q| !q.is_empty()).map(str::to_lowercase);
+    let needle = params
+        .q
+        .as_deref()
+        .map(str::trim)
+        .filter(|q| !q.is_empty())
+        .map(str::to_lowercase);
     all.into_iter()
         .filter(|r| status.is_none_or(|s| s == Some(r.status)))
         .filter(|r| category.is_none_or(|c| c == Some(r.category)))
@@ -77,7 +82,9 @@ fn filter_reports(all: Vec<Report>, params: &ListParams) -> Vec<Report> {
             needle.as_deref().is_none_or(|q| {
                 r.subject_title.to_lowercase().contains(q)
                     || r.subject_id.to_lowercase().contains(q)
-                    || r.reported_by_name.as_deref().is_some_and(|n| n.to_lowercase().contains(q))
+                    || r.reported_by_name
+                        .as_deref()
+                        .is_some_and(|n| n.to_lowercase().contains(q))
             })
         })
         .collect()
@@ -209,12 +216,16 @@ pub async fn remove(
     super::require(&user, Permission::ReportsManage)?;
     let loc = super::user_locale(&user);
     let id_for_query = id.clone();
-    let deleted =
-        query(&state.db, move |pool| db::delete_report(&pool, &id_for_query).map_err(Into::into))
-            .await?;
+    let deleted = query(&state.db, move |pool| {
+        db::delete_report(&pool, &id_for_query).map_err(Into::into)
+    })
+    .await?;
     if !deleted {
         return Err(lerr(loc, StatusCode::NOT_FOUND, "error.reportNotFound"));
     }
-    state.events.publish(ServerEvent::ReportUpdated { id, status: "deleted".into() });
+    state.events.publish(ServerEvent::ReportUpdated {
+        id,
+        status: "deleted".into(),
+    });
     Ok(StatusCode::NO_CONTENT.into_response())
 }

@@ -14,7 +14,10 @@ pub fn parse_release_name(name: &str) -> ParsedRelease {
         .map(str::to_string)
         .collect();
 
-    let mut out = ParsedRelease { group, ..ParsedRelease::default() };
+    let mut out = ParsedRelease {
+        group,
+        ..ParsedRelease::default()
+    };
     // Index of the first structural token; the title stops there.
     let mut first_marker: Option<usize> = None;
 

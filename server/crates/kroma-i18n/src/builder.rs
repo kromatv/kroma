@@ -87,18 +87,31 @@ impl Builder {
         let default = self.default.ok_or(BuildError::MissingDefault)?;
         let mut locales = Vec::with_capacity(self.raw.len() + self.parsed.len());
         for (code, json) in self.raw {
-            let entries = serde_json::from_str(&json).map_err(|e| BuildError::Catalog(code.clone(), e))?;
-            locales.push(Locale { label_key: (self.label_key)(&code), code, entries });
+            let entries =
+                serde_json::from_str(&json).map_err(|e| BuildError::Catalog(code.clone(), e))?;
+            locales.push(Locale {
+                label_key: (self.label_key)(&code),
+                code,
+                entries,
+            });
         }
         for (code, entries) in self.parsed {
-            locales.push(Locale { label_key: (self.label_key)(&code), code, entries });
+            locales.push(Locale {
+                label_key: (self.label_key)(&code),
+                code,
+                entries,
+            });
         }
         if !locales.iter().any(|l| l.code == default) {
             return Err(BuildError::DefaultNotLoaded(default));
         }
         // Default locale leads the ordering.
         locales.sort_by_key(|l| l.code != default);
-        Ok(I18n { default, locales, plural: self.plural })
+        Ok(I18n {
+            default,
+            locales,
+            plural: self.plural,
+        })
     }
 }
 
@@ -108,13 +121,22 @@ mod tests {
 
     #[test]
     fn builder_validates() {
-        assert!(matches!(I18n::builder().build(), Err(BuildError::MissingDefault)));
         assert!(matches!(
-            I18n::builder().default_locale("de").catalog_json("en", "{}").build(),
+            I18n::builder().build(),
+            Err(BuildError::MissingDefault)
+        ));
+        assert!(matches!(
+            I18n::builder()
+                .default_locale("de")
+                .catalog_json("en", "{}")
+                .build(),
             Err(BuildError::DefaultNotLoaded(_))
         ));
         assert!(matches!(
-            I18n::builder().default_locale("en").catalog_json("en", "not json").build(),
+            I18n::builder()
+                .default_locale("en")
+                .catalog_json("en", "not json")
+                .build(),
             Err(BuildError::Catalog(..))
         ));
     }
@@ -123,11 +145,16 @@ mod tests {
     fn every_build_error_says_which_catalog_is_wrong() {
         // These surface at boot, where the only diagnostic is the message, so
         // each one has to name the locale it is talking about.
-        let Err(missing) = I18n::builder().build() else { panic!("no default is an error") };
+        let Err(missing) = I18n::builder().build() else {
+            panic!("no default is an error")
+        };
         let missing = missing.to_string();
         assert!(missing.contains("default locale"), "{missing}");
 
-        let Err(not_loaded) = I18n::builder().default_locale("de").catalog_json("en", "{}").build()
+        let Err(not_loaded) = I18n::builder()
+            .default_locale("de")
+            .catalog_json("en", "{}")
+            .build()
         else {
             panic!("a default with no catalog is an error")
         };
@@ -136,8 +163,10 @@ mod tests {
 
         // A catalog that is not a flat string map names the catalog AND carries
         // the parse error, so the broken line is findable.
-        let Err(nested) =
-            I18n::builder().default_locale("fr").catalog_json("fr", r#"{ "a": { "b": "c" } }"#).build()
+        let Err(nested) = I18n::builder()
+            .default_locale("fr")
+            .catalog_json("fr", r#"{ "a": { "b": "c" } }"#)
+            .build()
         else {
             panic!("a nested catalog is an error")
         };

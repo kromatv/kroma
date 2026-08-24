@@ -152,9 +152,11 @@ pub fn generate(
     let provider = spec.mode.provider();
     let id = stable_id(item_id, provider, &spec.target_lang);
     let dir = data_dir.join("subs").join("downloaded");
-    std::fs::create_dir_all(&dir).map_err(|e| format!("could not create the subtitle cache dir: {e}"))?;
+    std::fs::create_dir_all(&dir)
+        .map_err(|e| format!("could not create the subtitle cache dir: {e}"))?;
     let path = dir.join(format!("{id}.vtt"));
-    std::fs::write(&path, vtt.as_bytes()).map_err(|e| format!("could not write the subtitle file: {e}"))?;
+    std::fs::write(&path, vtt.as_bytes())
+        .map_err(|e| format!("could not write the subtitle file: {e}"))?;
 
     let sub = DownloadedSub {
         id,
@@ -166,7 +168,8 @@ pub fn generate(
         provider: provider.to_string(),
         path: path.to_string_lossy().into_owned(),
     };
-    db::insert_downloaded_sub(pool, &sub).map_err(|e| format!("could not record the subtitle in the database: {e}"))?;
+    db::insert_downloaded_sub(pool, &sub)
+        .map_err(|e| format!("could not record the subtitle in the database: {e}"))?;
     Ok(sub)
 }
 
@@ -246,8 +249,14 @@ mod tests {
 
     #[test]
     fn stable_id_is_deterministic_and_case_insensitive() {
-        assert_eq!(stable_id("a", "whisper", "French"), stable_id("a", "whisper", "french"));
-        assert_ne!(stable_id("a", "whisper", "French"), stable_id("a", "whisper", "English"));
+        assert_eq!(
+            stable_id("a", "whisper", "French"),
+            stable_id("a", "whisper", "french")
+        );
+        assert_ne!(
+            stable_id("a", "whisper", "French"),
+            stable_id("a", "whisper", "English")
+        );
     }
 
     #[test]
@@ -302,13 +311,22 @@ mod tests {
     #[test]
     fn to_vtt_passthrough_after_bom() {
         let with_bom = "\u{feff}WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n";
-        assert_eq!(to_vtt(with_bom), "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n");
+        assert_eq!(
+            to_vtt(with_bom),
+            "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n"
+        );
     }
 
     #[test]
     fn stable_id_distinguishes_item_and_provider() {
-        assert_ne!(stable_id("a", "whisper", "French"), stable_id("b", "whisper", "French"));
-        assert_ne!(stable_id("a", "whisper", "French"), stable_id("a", "translate", "French"));
+        assert_ne!(
+            stable_id("a", "whisper", "French"),
+            stable_id("b", "whisper", "French")
+        );
+        assert_ne!(
+            stable_id("a", "whisper", "French"),
+            stable_id("a", "translate", "French")
+        );
         assert!(stable_id("a", "whisper", "French").starts_with("dl"));
     }
 
@@ -373,7 +391,11 @@ mod tests {
             .unwrap();
         }
         let settings = Settings::load(&pool);
-        Env { dir, pool, settings }
+        Env {
+            dir,
+            pool,
+            settings,
+        }
     }
 
     fn handle() -> Handle {
@@ -393,11 +415,7 @@ mod tests {
         }
     }
 
-    fn run(
-        env: &Env,
-        spec: &GenSpec,
-        transcribe: Transcribe<'_>,
-    ) -> Result<DownloadedSub, String> {
+    fn run(env: &Env, spec: &GenSpec, transcribe: Transcribe<'_>) -> Result<DownloadedSub, String> {
         generate(
             &env.settings,
             env.dir.path(),
@@ -416,7 +434,12 @@ mod tests {
         let llm = FakeLlm::always("1. Bonjour à tous\n");
         llm.configure_settings(&env.settings, &env.pool);
 
-        let sub = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None).step()).unwrap();
+        let sub = run(
+            &env,
+            &spec(GenMode::Translate, "Français"),
+            &FakeWhisper::saying(None).step(),
+        )
+        .unwrap();
         assert_eq!(sub.item_id, "itm-1");
         assert_eq!(sub.language.as_deref(), Some("fr"));
         assert_eq!(sub.label, "Français");
@@ -433,14 +456,39 @@ mod tests {
         let llm = FakeLlm::always("1. Bonjour\n");
         llm.configure_settings(&env.settings, &env.pool);
 
-        let first = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None).step()).unwrap();
-        let second = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None).step()).unwrap();
+        let first = run(
+            &env,
+            &spec(GenMode::Translate, "Français"),
+            &FakeWhisper::saying(None).step(),
+        )
+        .unwrap();
+        let second = run(
+            &env,
+            &spec(GenMode::Translate, "Français"),
+            &FakeWhisper::saying(None).step(),
+        )
+        .unwrap();
         assert_eq!(first.id, second.id);
-        assert_eq!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().len(), 1);
+        assert_eq!(
+            crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1")
+                .unwrap()
+                .len(),
+            1
+        );
 
-        let other = run(&env, &spec(GenMode::Translate, "Deutsch"), &FakeWhisper::saying(None).step()).unwrap();
+        let other = run(
+            &env,
+            &spec(GenMode::Translate, "Deutsch"),
+            &FakeWhisper::saying(None).step(),
+        )
+        .unwrap();
         assert_ne!(other.id, first.id);
-        assert_eq!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().len(), 2);
+        assert_eq!(
+            crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1")
+                .unwrap()
+                .len(),
+            2
+        );
     }
 
     #[test]
@@ -449,8 +497,16 @@ mod tests {
         let llm = FakeLlm::always("1. Something\n");
         llm.configure_settings(&env.settings, &env.pool);
 
-        let sub = run(&env, &spec(GenMode::Translate, "Klingon"), &FakeWhisper::saying(None).step()).unwrap();
-        assert_eq!(sub.language, None, "an unknown label must not become a code");
+        let sub = run(
+            &env,
+            &spec(GenMode::Translate, "Klingon"),
+            &FakeWhisper::saying(None).step(),
+        )
+        .unwrap();
+        assert_eq!(
+            sub.language, None,
+            "an unknown label must not become a code"
+        );
         assert_eq!(sub.label, "Klingon");
     }
 
@@ -475,15 +531,26 @@ mod tests {
         let asked = whisper.asked.lock().unwrap();
         assert_eq!(asked.len(), 1);
         assert_eq!(asked[0].0, Quality::Balanced.model());
-        assert_eq!(asked[0].1, 2, "the audio track index was not passed through");
-        assert_eq!(asked[0].2.as_deref(), Some("en"), "the spoken language is sent as a CODE");
+        assert_eq!(
+            asked[0].1, 2,
+            "the audio track index was not passed through"
+        );
+        assert_eq!(
+            asked[0].2.as_deref(),
+            Some("en"),
+            "the spoken language is sent as a CODE"
+        );
     }
 
     #[test]
     fn a_whisper_that_produced_nothing_explains_the_usual_causes() {
         let env = env();
-        let err = run(&env, &spec(GenMode::Transcribe, "English"), &FakeWhisper::saying(None).step())
-            .unwrap_err();
+        let err = run(
+            &env,
+            &spec(GenMode::Transcribe, "English"),
+            &FakeWhisper::saying(None).step(),
+        )
+        .unwrap_err();
         assert!(err.contains("audio track"), "{err}");
         assert!(err.contains("model"), "{err}");
     }
@@ -491,18 +558,34 @@ mod tests {
     #[test]
     fn a_result_too_short_to_be_a_subtitle_is_refused() {
         let env = env();
-        let err = run(&env, &spec(GenMode::Transcribe, "English"), &FakeWhisper::saying(Some("WEBVTT")).step())
-            .unwrap_err();
+        let err = run(
+            &env,
+            &spec(GenMode::Transcribe, "English"),
+            &FakeWhisper::saying(Some("WEBVTT")).step(),
+        )
+        .unwrap_err();
         assert!(err.contains("empty"), "{err}");
-        assert!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().is_empty());
+        assert!(
+            crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1")
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
     fn a_failing_translation_surfaces_the_reason_rather_than_a_blank_failure() {
         let env = env();
-        let err = run(&env, &spec(GenMode::Translate, "Français"), &FakeWhisper::saying(None).step())
-            .unwrap_err();
+        let err = run(
+            &env,
+            &spec(GenMode::Translate, "Français"),
+            &FakeWhisper::saying(None).step(),
+        )
+        .unwrap_err();
         assert!(err.contains("admin"), "{err}");
-        assert!(crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1").unwrap().is_empty());
+        assert!(
+            crate::db::downloaded_subs_for_item(&env.pool.get().unwrap(), "itm-1")
+                .unwrap()
+                .is_empty()
+        );
     }
 }

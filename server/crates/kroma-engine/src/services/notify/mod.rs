@@ -41,7 +41,9 @@ fn resolve<S: HostStorage>(audience: &Audience, state: &S) -> anyhow::Result<Vec
         Audience::Everyone => all,
         Audience::Followers { show_id } => {
             let ids: std::collections::HashSet<String> =
-                db::notifications::followers_of_show(&conn, show_id)?.into_iter().collect();
+                db::notifications::followers_of_show(&conn, show_id)?
+                    .into_iter()
+                    .collect();
             all.into_iter().filter(|u| ids.contains(&u.id)).collect()
         }
     })
@@ -140,7 +142,10 @@ fn deliver<S: HostStorage>(
     // browser does not tick for a notification that isn't theirs.
     state.publish_to(
         &user.id,
-        Event::new("notification.created", json!({ "id": id, "unread": unread })),
+        Event::new(
+            "notification.created",
+            json!({ "id": id, "unread": unread }),
+        ),
     );
 
     // Then the device, best-effort: the row is already written, so a push
@@ -163,7 +168,10 @@ fn deliver<S: HostStorage>(
 /// changed it and already know the answer, which keeps this a pure bus publish
 /// and therefore safe to call straight from an async handler.
 pub fn publish_unread<S: HostStorage>(state: &S, user_id: &str, unread: u32) {
-    state.publish_to(user_id, Event::new("notification.read", json!({ "unread": unread })));
+    state.publish_to(
+        user_id,
+        Event::new("notification.read", json!({ "unread": unread })),
+    );
 }
 
 #[cfg(test)]
@@ -191,7 +199,9 @@ mod tests {
     }
 
     fn user(host: &RecordingHost, email: &str, name: &str, perms: &[Permission]) -> String {
-        kroma_db::create_user(host.db(), email, name, "h", perms).unwrap().id
+        kroma_db::create_user(host.db(), email, name, "h", perms)
+            .unwrap()
+            .id
     }
 
     #[test]
@@ -206,14 +216,21 @@ mod tests {
         assert_eq!(db::notifications::unread_count(&conn, &ana).unwrap(), 1);
         assert_eq!(db::notifications::unread_count(&conn, &bo).unwrap(), 0);
         // And the bus event was addressed, not broadcast.
-        assert_eq!(host.published(), vec![(Some(ana), "notification.created".to_string())]);
+        assert_eq!(
+            host.published(),
+            vec![(Some(ana), "notification.created".to_string())]
+        );
     }
 
     #[test]
     fn an_audience_that_cannot_be_resolved_notifies_nobody_rather_than_failing() {
         let host = recording_host();
         user(&host, "ana@t.dev", "Ana", &[]);
-        host.db().get().unwrap().execute("DROP TABLE users", []).unwrap();
+        host.db()
+            .get()
+            .unwrap()
+            .execute("DROP TABLE users", [])
+            .unwrap();
 
         assert_eq!(emit(&host, &Audience::Everyone, &spec()), 0);
         assert!(host.published().is_empty());
@@ -228,10 +245,17 @@ mod tests {
         let recipients = db::notifications::recipients(&conn).unwrap();
         drop(conn);
         assert_eq!(recipients.len(), 2);
-        host.db().get().unwrap().execute("DROP TABLE notifications", []).unwrap();
+        host.db()
+            .get()
+            .unwrap()
+            .execute("DROP TABLE notifications", [])
+            .unwrap();
 
         assert_eq!(emit_to(&host, &recipients, &spec()), 0);
-        assert!(host.published().is_empty(), "{ana} and {bo} were never told");
+        assert!(
+            host.published().is_empty(),
+            "{ana} and {bo} were never told"
+        );
     }
 
     #[test]
@@ -240,7 +264,11 @@ mod tests {
         let mod_ = user(&host, "mod@t.dev", "Mod", &[Permission::RequestsManage]);
         let plain = user(&host, "plain@t.dev", "Plain", &[Permission::Playback]);
 
-        let sent = emit(&host, &Audience::permission(Permission::RequestsManage), &spec());
+        let sent = emit(
+            &host,
+            &Audience::permission(Permission::RequestsManage),
+            &spec(),
+        );
         assert_eq!(sent, 1);
 
         let conn = host.db().get().unwrap();
@@ -277,7 +305,10 @@ mod tests {
         assert_eq!(emit(&host, &Audience::user(ana.clone()), &spec()), 0);
         let conn = host.db().get().unwrap();
         assert_eq!(db::notifications::unread_count(&conn, &ana).unwrap(), 0);
-        assert!(host.published().is_empty(), "muted user should not be woken");
+        assert!(
+            host.published().is_empty(),
+            "muted user should not be woken"
+        );
     }
 
     #[test]
@@ -321,7 +352,11 @@ mod tests {
     fn seed_show(host: &RecordingHost) {
         let conn = host.db().get().unwrap();
         conn.execute("INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','shows','/x','now')", []).unwrap();
-        conn.execute("INSERT INTO shows (id,library,title,added_at) VALUES ('shw','lib','Show','now')", []).unwrap();
+        conn.execute(
+            "INSERT INTO shows (id,library,title,added_at) VALUES ('shw','lib','Show','now')",
+            [],
+        )
+        .unwrap();
         conn.execute(
             "INSERT INTO items (id,kind,title,container,library,show_id,season,episode,added_at) \
              VALUES ('ep1','episode','E','mkv','lib','shw',1,1,'now')",
@@ -372,7 +407,10 @@ mod tests {
                 "follower {follower} was missed"
             );
         }
-        assert_eq!(db::notifications::unread_count(&conn, &stranger).unwrap(), 0);
+        assert_eq!(
+            db::notifications::unread_count(&conn, &stranger).unwrap(),
+            0
+        );
     }
 
     #[test]
@@ -383,8 +421,16 @@ mod tests {
         seed_show(&host);
         let keen = user(&host, "k@t.dev", "Keen", &[]);
         let conn = host.db().get().unwrap();
-        conn.execute("INSERT INTO my_list (user_id,item_id,added_at) VALUES (?1,'shw',0)", [&keen]).unwrap();
-        conn.execute("INSERT INTO watched (user_id,item_id,watched_at) VALUES (?1,'shw',0)", [&keen]).unwrap();
+        conn.execute(
+            "INSERT INTO my_list (user_id,item_id,added_at) VALUES (?1,'shw',0)",
+            [&keen],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO watched (user_id,item_id,watched_at) VALUES (?1,'shw',0)",
+            [&keen],
+        )
+        .unwrap();
         conn.execute(
             "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) VALUES (?1,'ep1',1,2,0)",
             [&keen],
@@ -403,7 +449,10 @@ mod tests {
         seed_show(&host);
         user(&host, "a@t.dev", "A", &[]);
         assert_eq!(emit(&host, &Audience::followers("shw"), &spec()), 0);
-        assert_eq!(emit(&host, &Audience::followers("no-such-show"), &spec()), 0);
+        assert_eq!(
+            emit(&host, &Audience::followers("no-such-show"), &spec()),
+            0
+        );
         assert!(host.published().is_empty());
     }
 

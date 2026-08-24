@@ -29,7 +29,10 @@ mod tests {
     fn a_title_added_since_the_last_build_becomes_searchable() {
         let state = test_state();
         seed_movie(&state, "itm-1");
-        assert!(state.search.search("itm-1", 5).is_empty(), "not indexed yet");
+        assert!(
+            state.search.search("itm-1", 5).is_empty(),
+            "not indexed yet"
+        );
 
         run(&JobContext::for_test(state.clone())).unwrap();
 

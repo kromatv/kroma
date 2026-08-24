@@ -42,8 +42,7 @@ struct ListedModule {
 
 async fn list(State(state): State<SharedState>) -> impl IntoResponse {
     let all = kroma_module_kernel::manifests(&state);
-    let enabled_of =
-        |id: &str| kroma_engine::modules::module_enabled(&state.settings, id);
+    let enabled_of = |id: &str| kroma_engine::modules::module_enabled(&state.settings, id);
     let answered = answered_by(&all, &state);
 
     let mods: Vec<ListedModule> = all
@@ -66,7 +65,11 @@ pub(crate) fn answered_by(
 ) -> Vec<(String, Option<String>)> {
     all.iter()
         .filter(|m| kroma_engine::modules::module_enabled(&state.settings, &m.id))
-        .flat_map(|m| m.contributes.iter().map(|c| (c.point.clone(), c.id.clone())))
+        .flat_map(|m| {
+            m.contributes
+                .iter()
+                .map(|c| (c.point.clone(), c.id.clone()))
+        })
         .collect()
 }
 
@@ -207,6 +210,9 @@ mod tests {
         let live = vec![(contribution.point.clone(), contribution.id.clone())];
 
         assert!(unmet_of(&wanting(POINT, None), &live).is_empty());
-        assert_eq!(unmet_of(&wanting(POINT, None), &[]), vec![POINT.to_string()]);
+        assert_eq!(
+            unmet_of(&wanting(POINT, None), &[]),
+            vec![POINT.to_string()]
+        );
     }
 }

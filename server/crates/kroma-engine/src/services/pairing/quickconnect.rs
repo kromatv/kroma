@@ -33,7 +33,9 @@ pub struct Initiated {
 }
 
 pub fn new() -> QuickConnect {
-    Arc::new(QuickConnectInner { grants: Grants::new(CODE_TTL_SECS, MAX_PENDING) })
+    Arc::new(QuickConnectInner {
+        grants: Grants::new(CODE_TTL_SECS, MAX_PENDING),
+    })
 }
 
 impl QuickConnectInner {
@@ -46,10 +48,21 @@ impl QuickConnectInner {
     /// which is a far better failure than a code that silently stops working.
     pub fn initiate(&self) -> Option<Initiated> {
         let modulo = 10u32.pow(CODE_DIGITS);
-        let Filed { handle: code, secret } = self.grants.insert((), || {
-            format!("{:0>width$}", random_u32() % modulo, width = CODE_DIGITS as usize)
+        let Filed {
+            handle: code,
+            secret,
+        } = self.grants.insert((), || {
+            format!(
+                "{:0>width$}",
+                random_u32() % modulo,
+                width = CODE_DIGITS as usize
+            )
         })?;
-        Some(Initiated { code, secret, expires_in: CODE_TTL_SECS })
+        Some(Initiated {
+            code,
+            secret,
+            expires_in: CODE_TTL_SECS,
+        })
     }
 
     /// Tokens of codes that lapsed, for the caller to delete.
@@ -59,14 +72,16 @@ impl QuickConnectInner {
 
     /// Approve a code for `user`, attaching a freshly-minted session `token` and
     /// the device's long-lived `access_token`. False if unknown/expired.
-    pub fn authorize(
-        &self,
-        code: &str,
-        user: User,
-        token: String,
-        access_token: String,
-    ) -> bool {
-        self.grants.authorize(code, |()| true, Granted { token, access_token, user })
+    pub fn authorize(&self, code: &str, user: User, token: String, access_token: String) -> bool {
+        self.grants.authorize(
+            code,
+            |()| true,
+            Granted {
+                token,
+                access_token,
+                user,
+            },
+        )
     }
 
     /// Forget the pending entry whose secret matches, surrendering any tokens it
@@ -135,8 +150,13 @@ mod tests {
         let qc = new();
         let init = qc.initiate().expect("room in the store");
         assert!(qc.authorize(&init.code, user(), "tok".into(), "acc".into()));
-        let orphan = qc.revoke(&init.secret).expect("approved but never polled for");
-        assert_eq!((orphan.token.as_str(), orphan.access_token.as_str()), ("tok", "acc"));
+        let orphan = qc
+            .revoke(&init.secret)
+            .expect("approved but never polled for");
+        assert_eq!(
+            (orphan.token.as_str(), orphan.access_token.as_str()),
+            ("tok", "acc")
+        );
     }
 
     #[test]

@@ -86,7 +86,10 @@ mod tests {
         upsert_progress(&pool, &uid, "m1", 60_000, Some(120_000)).unwrap();
         mark_watched(&pool, &uid, "m1").unwrap();
         assert_eq!(list_watched(&pool, &uid).unwrap(), vec!["m1".to_string()]);
-        assert!(get_progress(&pool, &uid, "m1").unwrap().is_none(), "marking watched clears resume");
+        assert!(
+            get_progress(&pool, &uid, "m1").unwrap().is_none(),
+            "marking watched clears resume"
+        );
 
         // Idempotent: marking again keeps a single row.
         mark_watched(&pool, &uid, "m1").unwrap();
@@ -99,7 +102,10 @@ mod tests {
         assert_eq!(ids, vec!["m1".to_string(), "show-7".to_string()]);
 
         unmark_watched(&pool, &uid, "m1").unwrap();
-        assert_eq!(list_watched(&pool, &uid).unwrap(), vec!["show-7".to_string()]);
+        assert_eq!(
+            list_watched(&pool, &uid).unwrap(),
+            vec!["show-7".to_string()]
+        );
     }
 
     #[test]
@@ -115,6 +121,9 @@ mod tests {
         assert_eq!(ids, vec!["m1".to_string(), "show-7".to_string()]);
 
         remove_from_list(&pool, &uid, "m1").unwrap();
-        assert_eq!(list_my_list(&pool, &uid).unwrap(), vec!["show-7".to_string()]);
+        assert_eq!(
+            list_my_list(&pool, &uid).unwrap(),
+            vec!["show-7".to_string()]
+        );
     }
 }

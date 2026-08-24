@@ -19,7 +19,9 @@ pub async fn spawn(state: &state::SharedState) {
     services::search::spawn_reindex(state.clone());
 
     state.hls.spawn_reaper();
-    state.playback.spawn_reaper(state.db.clone(), state.events.clone());
+    state
+        .playback
+        .spawn_reaper(state.db.clone(), state.events.clone());
     state.cast.spawn_reaper(state.events.clone());
     state.metrics.spawn_sampler();
     state.jobs.clone().spawn_scheduler(state.clone());

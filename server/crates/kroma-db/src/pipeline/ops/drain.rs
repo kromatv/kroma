@@ -3,8 +3,8 @@
 use anyhow::Result;
 use rusqlite::{params, TransactionBehavior};
 
-use crate::pool::Pool;
 use super::{Subject, RETRY_BASE_MS};
+use crate::pool::Pool;
 
 /// Claim up to `limit` pending tasks for a stage: pick the highest-priority /
 /// oldest, flip them to `running`, and return `(subject_id, input_sig)` for the
@@ -191,7 +191,10 @@ mod tests {
         assert_eq!((status.as_str(), attempts), ("failed", 1));
         // The backoff is computed from the attempt this failure completes, so the
         // first failure waits 5 minutes rather than 0.
-        assert_eq!(next_retry_at(&p, "probe", "a"), Some(1_000 + retry_backoff_ms(1)));
+        assert_eq!(
+            next_retry_at(&p, "probe", "a"),
+            Some(1_000 + retry_backoff_ms(1))
+        );
 
         retry(&p, "probe", Some("a")).unwrap();
         claim_batch(&p, "probe", 10, 2_000).unwrap();

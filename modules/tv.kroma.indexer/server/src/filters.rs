@@ -73,7 +73,11 @@ fn split(value: &str, sep: &str, index: &str) -> String {
     }
     let parts: Vec<&str> = value.split(sep).collect();
     let idx: i64 = index.parse().unwrap_or(0);
-    let i = if idx < 0 { parts.len() as i64 + idx } else { idx };
+    let i = if idx < 0 {
+        parts.len() as i64 + idx
+    } else {
+        idx
+    };
     if i >= 0 && (i as usize) < parts.len() {
         parts[i as usize].to_string()
     } else {
@@ -215,9 +219,9 @@ fn html_decode(s: &str) -> String {
                 "quot" => Some('"'),
                 "apos" => Some('\''),
                 "nbsp" => Some('\u{00a0}'),
-                e if e.starts_with("#x") || e.starts_with("#X") => {
-                    u32::from_str_radix(&e[2..], 16).ok().and_then(char::from_u32)
-                }
+                e if e.starts_with("#x") || e.starts_with("#X") => u32::from_str_radix(&e[2..], 16)
+                    .ok()
+                    .and_then(char::from_u32),
                 e if e.starts_with('#') => e[1..].parse::<u32>().ok().and_then(char::from_u32),
                 _ => None,
             };
@@ -340,7 +344,10 @@ fn parse_relative(v: &str) -> Option<NaiveDateTime> {
     )
     .ok()?;
     let caps = re.captures(lower)?;
-    let n: i64 = caps.get(1).and_then(|m| m.as_str().parse().ok()).unwrap_or(1);
+    let n: i64 = caps
+        .get(1)
+        .and_then(|m| m.as_str().parse().ok())
+        .unwrap_or(1);
     let unit = caps.get(2)?.as_str();
     let dt = match unit {
         "sec" | "second" => now - Duration::seconds(n),
@@ -410,7 +417,10 @@ mod tests {
     use crate::definition::Filter;
 
     fn f(name: &str, args: &[&str]) -> Filter {
-        Filter { name: name.into(), args: args.iter().map(|s| s.to_string()).collect() }
+        Filter {
+            name: name.into(),
+            args: args.iter().map(|s| s.to_string()).collect(),
+        }
     }
 
     fn run(value: &str, filters: &[Filter]) -> String {
@@ -425,7 +435,13 @@ mod tests {
         assert_eq!(run("cat=42&x=1", &[f("regexp", &["cat=(\\d+)"])]), "42");
         assert_eq!(run("/a/b/c", &[f("split", &["/", "2"])]), "b");
         assert_eq!(run("/a/b/c", &[f("split", &["/", "-1"])]), "c");
-        assert_eq!(run("abc", &[f("prepend", &["/dl/"]), f("append", &[".torrent"])]), "/dl/abc.torrent");
+        assert_eq!(
+            run(
+                "abc",
+                &[f("prepend", &["/dl/"]), f("append", &[".torrent"])]
+            ),
+            "/dl/abc.torrent"
+        );
     }
 
     #[test]
@@ -438,19 +454,28 @@ mod tests {
     fn url_and_html() {
         assert_eq!(run("a%20b%2Fc", &[f("urldecode", &[])]), "a b/c");
         assert_eq!(run("a b/c", &[f("urlencode", &[])]), "a%20b%2Fc");
-        assert_eq!(run("Tom &amp; Jerry &#39;s", &[f("htmldecode", &[])]), "Tom & Jerry 's");
+        assert_eq!(
+            run("Tom &amp; Jerry &#39;s", &[f("htmldecode", &[])]),
+            "Tom & Jerry 's"
+        );
     }
 
     #[test]
     fn validate_and_filename() {
-        assert_eq!(run("Action", &[f("validate", &["Action, Drama"])]), "Action");
+        assert_eq!(
+            run("Action", &[f("validate", &["Action, Drama"])]),
+            "Action"
+        );
         assert_eq!(run("Nope", &[f("validate", &["Action, Drama"])]), "");
         assert_eq!(run("a/b:c", &[f("validfilename", &[])]), "abc");
     }
 
     #[test]
     fn querystring_filter() {
-        assert_eq!(run("https://x/dl?id=99&k=v", &[f("querystring", &["id"])]), "99");
+        assert_eq!(
+            run("https://x/dl?id=99&k=v", &[f("querystring", &["id"])]),
+            "99"
+        );
     }
 
     #[test]
@@ -486,7 +511,10 @@ mod tests {
 
     #[test]
     fn querystring_returns_empty_when_the_key_is_absent() {
-        assert_eq!(run("https://x/dl?id=99&k=v", &[f("querystring", &["missing"])]), "");
+        assert_eq!(
+            run("https://x/dl?id=99&k=v", &[f("querystring", &["missing"])]),
+            ""
+        );
         assert_eq!(run("https://x/dl", &[f("querystring", &["id"])]), "");
     }
 
@@ -503,7 +531,10 @@ mod tests {
         use chrono::Datelike;
         let now = chrono::Local::now().naive_local();
         let out = run("2 years ago", &[f("timeago", &[])]);
-        assert!(out.starts_with(&format!("{}-", now.year() - 2)), "got {out}");
+        assert!(
+            out.starts_with(&format!("{}-", now.year() - 2)),
+            "got {out}"
+        );
         let out = run("a month ago", &[f("timeago", &[])]);
         assert!(out.contains('T') && out.len() >= 19, "got {out}");
         assert_eq!(run("whenever", &[f("timeago", &[])]), "whenever");
@@ -517,15 +548,24 @@ mod tests {
         assert_eq!(run("/dl/file", &[f("trimprefix", &["/dl/"])]), "file");
         // A prefix/suffix that is not present leaves the value unchanged.
         assert_eq!(run("file", &[f("trimprefix", &["/dl/"])]), "file");
-        assert_eq!(run("file.torrent", &[f("trimsuffix", &[".torrent"])]), "file");
+        assert_eq!(
+            run("file.torrent", &[f("trimsuffix", &[".torrent"])]),
+            "file"
+        );
         assert_eq!(run("file", &[f("trimsuffix", &[".torrent"])]), "file");
         assert_eq!(run("abc", &[f("toupper", &[])]), "ABC");
     }
 
     #[test]
     fn html_encode_escapes_entities() {
-        assert_eq!(run("1 < 2 & 3", &[f("htmlencode", &[])]), "1 &lt; 2 &amp; 3");
-        assert_eq!(run("say \"hi\"", &[f("htmlencode", &[])]), "say &quot;hi&quot;");
+        assert_eq!(
+            run("1 < 2 & 3", &[f("htmlencode", &[])]),
+            "1 &lt; 2 &amp; 3"
+        );
+        assert_eq!(
+            run("say \"hi\"", &[f("htmlencode", &[])]),
+            "say &quot;hi&quot;"
+        );
     }
 
     #[test]
@@ -575,7 +615,10 @@ mod tests {
     #[test]
     fn querystring_no_match_and_no_question_mark() {
         // A missing key yields empty.
-        assert_eq!(run("https://x/dl?id=99", &[f("querystring", &["missing"])]), "");
+        assert_eq!(
+            run("https://x/dl?id=99", &[f("querystring", &["missing"])]),
+            ""
+        );
         // A bare `k=v&...` (no `?`) is treated as the query itself.
         assert_eq!(run("id=5&k=v", &[f("querystring", &["k"])]), "v");
     }
@@ -591,10 +634,16 @@ mod tests {
     #[test]
     fn dateparse_datetime_layout_and_unparseable_fallback() {
         // A full datetime Go layout parses date + time.
-        let out = run("2023-05-01 14:30:00", &[f("dateparse", &["2006-01-02 15:04:05"])]);
+        let out = run(
+            "2023-05-01 14:30:00",
+            &[f("dateparse", &["2006-01-02 15:04:05"])],
+        );
         assert!(out.starts_with("2023-05-01T14:30:00"), "got {out}");
         // Nothing matches -> the original text is returned verbatim.
-        assert_eq!(run("total garbage", &[f("dateparse", &["2006"])]), "total garbage");
+        assert_eq!(
+            run("total garbage", &[f("dateparse", &["2006"])]),
+            "total garbage"
+        );
     }
 
     #[test]
@@ -606,7 +655,10 @@ mod tests {
         let out = run("2026-06-30T11:19:47+02:00", &[f("timeago", &[])]);
         assert!(out.starts_with("2026-06-30T09:19:47"), "got {out}");
         // A string that is not a date at all is returned unchanged.
-        assert_eq!(run("hello world foobar", &[f("reltime", &[])]), "hello world foobar");
+        assert_eq!(
+            run("hello world foobar", &[f("reltime", &[])]),
+            "hello world foobar"
+        );
     }
 
     #[test]
@@ -646,11 +698,23 @@ mod tests {
     #[test]
     fn sub_months_clamps_day_and_crosses_year_boundary() {
         // 31 Mar - 1 month clamps the day to 28 (no 31 Feb).
-        let dt = NaiveDate::from_ymd_opt(2023, 3, 31).unwrap().and_hms_opt(12, 0, 0).unwrap();
-        assert_eq!(sub_months(dt, 1).date(), NaiveDate::from_ymd_opt(2023, 2, 28).unwrap());
+        let dt = NaiveDate::from_ymd_opt(2023, 3, 31)
+            .unwrap()
+            .and_hms_opt(12, 0, 0)
+            .unwrap();
+        assert_eq!(
+            sub_months(dt, 1).date(),
+            NaiveDate::from_ymd_opt(2023, 2, 28).unwrap()
+        );
         // Subtracting across the year boundary rolls the year back.
-        let dt2 = NaiveDate::from_ymd_opt(2023, 1, 15).unwrap().and_hms_opt(0, 0, 0).unwrap();
-        assert_eq!(sub_months(dt2, 2).date(), NaiveDate::from_ymd_opt(2022, 11, 15).unwrap());
+        let dt2 = NaiveDate::from_ymd_opt(2023, 1, 15)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap();
+        assert_eq!(
+            sub_months(dt2, 2).date(),
+            NaiveDate::from_ymd_opt(2022, 11, 15).unwrap()
+        );
     }
 
     #[test]
@@ -667,11 +731,17 @@ mod tests {
     #[test]
     fn go_layout_to_chrono_keeps_non_ascii_literals_intact() {
         assert_eq!(go_layout_to_chrono("02 января 2006 г."), "%d января %Y г.");
-        assert_eq!(go_layout_to_chrono("02.01.2006 à 15:04"), "%d.%m.%Y à %H:%M");
+        assert_eq!(
+            go_layout_to_chrono("02.01.2006 à 15:04"),
+            "%d.%m.%Y à %H:%M"
+        );
     }
 
     #[test]
     fn dateparse_with_a_non_ascii_layout_falls_back_instead_of_panicking() {
-        assert_eq!(run("pas une date", &[f("dateparse", &["02 января 2006"])]), "pas une date");
+        assert_eq!(
+            run("pas une date", &[f("dateparse", &["02 января 2006"])]),
+            "pas une date"
+        );
     }
 }

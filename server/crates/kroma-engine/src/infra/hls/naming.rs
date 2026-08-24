@@ -8,7 +8,10 @@ use kroma_primitives::short_hash;
 /// The index of a media segment, or `None` for the init file, the playlist, or
 /// anything else.
 pub fn seg_index(name: &str) -> Option<u64> {
-    name.strip_prefix("seg_")?.strip_suffix(".m4s")?.parse().ok()
+    name.strip_prefix("seg_")?
+        .strip_suffix(".m4s")?
+        .parse()
+        .ok()
 }
 
 /// Rejects anything that is not a bare filename: the request path is
@@ -16,7 +19,9 @@ pub fn seg_index(name: &str) -> Option<u64> {
 pub fn is_safe_name(name: &str) -> bool {
     !name.is_empty()
         && !name.contains("..")
-        && name.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
+        && name
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'-'))
 }
 
 /// The on-disk directory for a session key. Hashed rather than sanitised: the
@@ -80,7 +85,10 @@ mod tests {
 
     #[test]
     fn session_dirs_do_not_collide_on_punctuation() {
-        assert_ne!(session_dir("tv:s1e2:copy:0:a0"), session_dir("tv_s1e2_copy_0_a0"));
+        assert_ne!(
+            session_dir("tv:s1e2:copy:0:a0"),
+            session_dir("tv_s1e2_copy_0_a0")
+        );
         assert_eq!(session_dir("it1:copy:0:a0"), session_dir("it1:copy:0:a0"));
         assert!(is_safe_name(&session_dir("tv:s1e2:copy:0:a0")));
     }

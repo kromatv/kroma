@@ -28,17 +28,19 @@ pub fn item_ids_with_markers(pool: &Pool) -> Result<std::collections::HashSet<St
 /// An intro-less episode also has none: combine with the ledger.
 pub fn has_markers(pool: &Pool, item_id: &str) -> Result<bool> {
     let conn = pool.get()?;
-    let n: i64 =
-        conn.query_row("SELECT COUNT(*) FROM markers WHERE item_id=?1", params![item_id], |r| {
-            r.get(0)
-        })?;
+    let n: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM markers WHERE item_id=?1",
+        params![item_id],
+        |r| r.get(0),
+    )?;
     Ok(n > 0)
 }
 
 /// Unknown kinds are skipped, so a future kind cannot break older clients.
 pub fn markers_for_item(conn: &Connection, item_id: &str) -> rusqlite::Result<Vec<Marker>> {
-    let mut stmt = conn
-        .prepare("SELECT kind, start_ms, end_ms FROM markers WHERE item_id = ?1 ORDER BY start_ms")?;
+    let mut stmt = conn.prepare(
+        "SELECT kind, start_ms, end_ms FROM markers WHERE item_id = ?1 ORDER BY start_ms",
+    )?;
     let rows = stmt.query_map(params![item_id], |r| {
         Ok((
             r.get::<_, String>(0)?,
@@ -50,7 +52,11 @@ pub fn markers_for_item(conn: &Connection, item_id: &str) -> rusqlite::Result<Ve
     for r in rows {
         let (kind, start, end) = r?;
         if let Some(kind) = kind_from_str(&kind) {
-            out.push(Marker { kind, start_ms: start.max(0) as u64, end_ms: end.max(0) as u64 });
+            out.push(Marker {
+                kind,
+                start_ms: start.max(0) as u64,
+                end_ms: end.max(0) as u64,
+            });
         }
     }
     Ok(out)
@@ -185,7 +191,11 @@ mod tests {
         .unwrap();
 
         let markers = markers_for_item(&conn, "e1").unwrap();
-        assert_eq!(markers.len(), 2, "the future 'recap' kind is dropped, not surfaced");
+        assert_eq!(
+            markers.len(),
+            2,
+            "the future 'recap' kind is dropped, not surfaced"
+        );
         assert_eq!(markers[0].kind, MarkerKind::Intro);
         assert_eq!(markers[1].kind, MarkerKind::Credits);
         assert_eq!(markers_for_items(&conn, &["e1"]).unwrap()["e1"].len(), 2);

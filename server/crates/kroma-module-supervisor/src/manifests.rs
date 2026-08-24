@@ -74,7 +74,9 @@ impl Supervisor {
     /// The ids of every runtime-installed (`.kmod`) module — not the ones
     /// compiled into this server.
     pub fn installed_ids(&self) -> Vec<String> {
-        self.installed_manifests().into_iter().map(|m| m.id)
+        self.installed_manifests()
+            .into_iter()
+            .map(|m| m.id)
             .collect()
     }
 
@@ -121,7 +123,6 @@ mod tests {
     use super::super::{Supervisor, SupervisorConfig};
     use super::grant_json;
 
-
     #[test]
     fn the_grant_a_module_is_spawned_with_is_the_one_its_manifest_declares() {
         let storage = kroma_module_manifest::Storage {
@@ -140,11 +141,17 @@ mod tests {
     #[test]
     fn a_module_that_declared_no_storage_is_spawned_with_an_empty_grant() {
         let json = grant_json(None);
-        assert_eq!(serde_json::from_str::<kroma_db::Grant>(&json).unwrap(), kroma_db::Grant::none());
+        assert_eq!(
+            serde_json::from_str::<kroma_db::Grant>(&json).unwrap(),
+            kroma_db::Grant::none()
+        );
 
         let private_only = kroma_module_manifest::Storage::default();
         let json = grant_json(Some(&private_only));
-        assert_eq!(serde_json::from_str::<kroma_db::Grant>(&json).unwrap(), kroma_db::Grant::none());
+        assert_eq!(
+            serde_json::from_str::<kroma_db::Grant>(&json).unwrap(),
+            kroma_db::Grant::none()
+        );
     }
 
     #[test]
@@ -186,7 +193,9 @@ mod tests {
             "the listing is still stale, which is the whole point"
         );
 
-        let storage = sup.storage_of("com.example.demo").expect("the grant comes off disk");
+        let storage = sup
+            .storage_of("com.example.demo")
+            .expect("the grant comes off disk");
         assert_eq!(storage.core.read, ["requests"]);
         assert_eq!(storage.core.write, ["wanted"]);
 

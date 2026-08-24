@@ -1,5 +1,5 @@
-use super::*;
 use super::test_support::{log_lines, process_ok, test_pool, test_stage};
+use super::*;
 use crate::state::SharedState;
 use crate::test_support;
 use crate::test_support::test_state;
@@ -21,15 +21,21 @@ fn pending_count_sums_pending_and_running() {
 fn a_stage_with_nothing_in_scope_clears_its_ledger_instead_of_draining() {
     let state = test_state();
     test_support::seed_task(&state, "teststage", "file", "vanished", "pending", None);
-    run(&test_stage(process_ok), &JobContext::for_test(state.clone())).unwrap();
+    run(
+        &test_stage(process_ok),
+        &JobContext::for_test(state.clone()),
+    )
+    .unwrap();
 
     let left: i64 = state
         .db
         .get()
         .unwrap()
-        .query_row("SELECT COUNT(*) FROM pipeline_tasks WHERE stage='teststage'", [], |r| {
-            r.get(0)
-        })
+        .query_row(
+            "SELECT COUNT(*) FROM pipeline_tasks WHERE stage='teststage'",
+            [],
+            |r| r.get(0),
+        )
         .unwrap();
     assert_eq!(left, 0);
 }
@@ -114,8 +120,10 @@ const TEST_STAGE: Stage = Stage {
 
 // Set the subject set, drain once, and return the ids that were processed.
 fn drain(state: &SharedState, subjects: &[(&str, &str)]) -> Vec<String> {
-    *SUBJECTS.lock().unwrap() =
-        subjects.iter().map(|(id, sig)| (id.to_string(), sig.to_string())).collect();
+    *SUBJECTS.lock().unwrap() = subjects
+        .iter()
+        .map(|(id, sig)| (id.to_string(), sig.to_string()))
+        .collect();
     PROCESSED.lock().unwrap().clear();
     run(&TEST_STAGE, &JobContext::for_test(state.clone())).unwrap();
     let mut done = PROCESSED.lock().unwrap().clone();
@@ -178,7 +186,11 @@ fn a_subject_that_left_the_set_is_dropped_from_the_ledger() {
     assert!(status_of(&state, "gone").is_some());
 
     drain(&state, &[("a", "v1")]);
-    assert_eq!(status_of(&state, "gone"), None, "the vanished subject was left behind");
+    assert_eq!(
+        status_of(&state, "gone"),
+        None,
+        "the vanished subject was left behind"
+    );
 }
 
 #[test]
@@ -201,8 +213,9 @@ fn a_cancelled_drain_stops_claiming() {
     let _serial = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let state = test_state();
     *FAIL_ON.lock().unwrap() = None;
-    *SUBJECTS.lock().unwrap() =
-        (0..5).map(|n| (format!("s{n}"), "v1".to_string())).collect();
+    *SUBJECTS.lock().unwrap() = (0..5)
+        .map(|n| (format!("s{n}"), "v1".to_string()))
+        .collect();
     PROCESSED.lock().unwrap().clear();
 
     let handle = std::sync::Arc::new(crate::services::jobs::RunHandle::new(
@@ -212,7 +225,10 @@ fn a_cancelled_drain_stops_claiming() {
     handle.request_cancel();
     run(&TEST_STAGE, &JobContext::from_handle(state, handle)).unwrap();
 
-    assert!(PROCESSED.lock().unwrap().is_empty(), "cancelled before the first claim");
+    assert!(
+        PROCESSED.lock().unwrap().is_empty(),
+        "cancelled before the first claim"
+    );
 }
 
 #[test]
@@ -220,7 +236,12 @@ fn a_ledger_that_is_gone_is_reported_rather_than_drained_blind() {
     let _serial = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let state = test_support::test_state();
     *SUBJECTS.lock().unwrap() = vec![("m1".to_string(), "sig".to_string())];
-    state.db.get().unwrap().execute_batch("DROP TABLE pipeline_tasks").unwrap();
+    state
+        .db
+        .get()
+        .unwrap()
+        .execute_batch("DROP TABLE pipeline_tasks")
+        .unwrap();
 
     assert!(run(&TEST_STAGE, &JobContext::for_test(state)).is_err());
 }
@@ -242,5 +263,9 @@ fn a_batch_whose_result_cannot_be_recorded_still_releases_what_it_claimed() {
         .unwrap();
 
     assert!(run(&TEST_STAGE, &JobContext::for_test(state)).is_err());
-    assert_eq!(PROCESSED.lock().unwrap().as_slice(), ["m1"], "the work itself was attempted");
+    assert_eq!(
+        PROCESSED.lock().unwrap().as_slice(),
+        ["m1"],
+        "the work itself was attempted"
+    );
 }

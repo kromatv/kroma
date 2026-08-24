@@ -41,8 +41,11 @@ pub fn item_ids_with_vector(pool: &Pool) -> Result<HashSet<String>> {
 /// Whether a title has a stored embedding.
 pub fn has_vector(pool: &Pool, id: &str) -> Result<bool> {
     let conn = pool.get()?;
-    let n: i64 =
-        conn.query_row("SELECT COUNT(*) FROM item_vectors WHERE id=?1", params![id], |r| r.get(0))?;
+    let n: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM item_vectors WHERE id=?1",
+        params![id],
+        |r| r.get(0),
+    )?;
     Ok(n > 0)
 }
 
@@ -58,7 +61,11 @@ pub fn clear_item_vector(pool: &Pool, id: &str) -> Result<()> {
 pub fn vector_dim(pool: &Pool, id: &str) -> Result<Option<usize>> {
     let conn = pool.get()?;
     let dim: Option<i64> = conn
-        .query_row("SELECT dim FROM item_vectors WHERE id=?1", params![id], |r| r.get(0))
+        .query_row(
+            "SELECT dim FROM item_vectors WHERE id=?1",
+            params![id],
+            |r| r.get(0),
+        )
         .optional()?;
     Ok(dim.map(|d| d as usize))
 }
@@ -68,7 +75,9 @@ pub fn vector_dim(pool: &Pool, id: &str) -> Result<Option<usize>> {
 pub fn vector_dims(pool: &Pool) -> Result<std::collections::HashMap<String, usize>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT id, dim FROM item_vectors")?;
-    let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)? as usize)))?;
+    let rows = stmt.query_map([], |r| {
+        Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)? as usize))
+    })?;
     Ok(rows.filter_map(std::result::Result::ok).collect())
 }
 
@@ -89,7 +98,10 @@ pub fn load_vectors(pool: &Pool) -> Result<Vec<(String, Vec<f32>)>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT id, vec FROM item_vectors")?;
     let rows = stmt.query_map([], |r| {
-        Ok((r.get::<_, String>(0)?, blob_to_vec(&r.get::<_, Vec<u8>>(1)?)))
+        Ok((
+            r.get::<_, String>(0)?,
+            blob_to_vec(&r.get::<_, Vec<u8>>(1)?),
+        ))
     })?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
@@ -125,7 +137,8 @@ mod tests {
         assert_eq!(vector_dims(&p).unwrap().len(), 3);
 
         // Blob roundtrip is bit-exact.
-        let loaded: std::collections::HashMap<String, Vec<f32>> = load_vectors(&p).unwrap().into_iter().collect();
+        let loaded: std::collections::HashMap<String, Vec<f32>> =
+            load_vectors(&p).unwrap().into_iter().collect();
         assert_eq!(loaded["b"], vec![0.8, 0.6]);
 
         // Upsert overwrites in place (dim can change).

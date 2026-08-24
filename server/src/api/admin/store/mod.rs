@@ -41,7 +41,10 @@ const DEFAULT_REGISTRY: &str = "https://modules.kroma.tv/registry.json";
 
 pub fn routes() -> Router<SharedState> {
     Router::new()
-        .route("/store/install", post(install_upload).layer(DefaultBodyLimit::max(MAX_BUNDLE_BYTES)))
+        .route(
+            "/store/install",
+            post(install_upload).layer(DefaultBodyLimit::max(MAX_BUNDLE_BYTES)),
+        )
         .route("/store/install-url", post(install_url))
         .route("/store/install-id", post(install_id))
         .route("/store/plan", post(plan))
@@ -203,8 +206,7 @@ async fn install_upload(
         return Err(bad("empty bundle"));
     }
     // Unpack + spawn is blocking; keep it off the async runtime.
-    let manifest =
-        tokio::task::spawn_blocking(move || sup.install(&body, None, ("upload", None)))
+    let manifest = tokio::task::spawn_blocking(move || sup.install(&body, None, ("upload", None)))
         .await
         .map_err(|_| bad("install task panicked"))?
         .map_err(|e| bad(&format!("install failed: {e:#}")))?;

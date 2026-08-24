@@ -27,7 +27,14 @@ async fn a_receiver_announces_and_a_sender_drives_it() {
     let t = test_app();
     let item = demo_item_id("The Matrix");
 
-    let (status, reply) = send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
+    let (status, reply) = send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", None)),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(reply["commands"].as_array().map(Vec::len), Some(0));
     assert!(reply["ttlSecs"].as_u64().unwrap_or(0) >= 30);
@@ -55,7 +62,14 @@ async fn a_receiver_announces_and_a_sender_drives_it() {
     assert_eq!(sent["seq"], 1);
 
     // The TV collects it on its next beat, and reports it is now playing.
-    let (_, reply) = send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
+    let (_, reply) = send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", None)),
+    )
+    .await;
     let commands = reply["commands"].as_array().expect("commands");
     assert_eq!(commands.len(), 1);
     assert_eq!(commands[0]["seq"], 1);
@@ -65,7 +79,14 @@ async fn a_receiver_announces_and_a_sender_drives_it() {
     let playing = json!({ "itemId": item, "positionMs": 60_000, "durationMs": 8_160_000, "state": "playing" });
     let mut acked = beat("tv-salon-01", Some(playing));
     acked["lastAppliedSeq"] = json!(1);
-    let (_, reply) = send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(acked)).await;
+    let (_, reply) = send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(acked),
+    )
+    .await;
     // Acked → the inbox is empty; nothing is replayed a second time.
     assert_eq!(reply["commands"].as_array().map(Vec::len), Some(0));
 
@@ -79,16 +100,37 @@ async fn a_receiver_announces_and_a_sender_drives_it() {
 #[tokio::test]
 async fn a_receiver_leaves_the_roster_when_it_says_so() {
     let t = test_app();
-    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
+    send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", None)),
+    )
+    .await;
 
-    let (status, _) = send(&t.app, "DELETE", "/api/cast/receivers/tv-salon-01", Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        "/api/cast/receivers/tv-salon-01",
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, list) = get(&t.app, "/api/cast/receivers", Some(&t.token)).await;
     assert_eq!(list.as_array().map(Vec::len), Some(0));
 
     // Unregistering what is already gone is a no-op, not an error - it must not
     // become a way to probe which receiver ids exist.
-    let (status, _) = send(&t.app, "DELETE", "/api/cast/receivers/tv-salon-01", Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        "/api/cast/receivers/tv-salon-01",
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
 
@@ -96,15 +138,36 @@ async fn a_receiver_leaves_the_roster_when_it_says_so() {
 async fn another_account_cannot_see_take_over_or_drive_a_receiver() {
     let t = test_app();
     let (_, bob) = seed_session(&t.state, "bob@test.dev", "bob", &[Permission::Playback]);
-    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
+    send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", None)),
+    )
+    .await;
 
     // Bob claiming the owner's receiver id is refused: otherwise he'd collect the
     // commands meant for that TV.
-    let (status, _) = send(&t.app, "POST", "/api/cast/announce", Some(&bob), Some(beat("tv-salon-01", None))).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&bob),
+        Some(beat("tv-salon-01", None)),
+    )
+    .await;
     assert_eq!(status, StatusCode::CONFLICT);
 
     // Nor can he evict it.
-    let (status, _) = send(&t.app, "DELETE", "/api/cast/receivers/tv-salon-01", Some(&bob), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        "/api/cast/receivers/tv-salon-01",
+        Some(&bob),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, list) = get(&t.app, "/api/cast/receivers", Some(&t.token)).await;
     assert_eq!(list.as_array().map(Vec::len), Some(1));
@@ -145,13 +208,25 @@ async fn casting_needs_the_playback_capability() {
     let (_, nobody) = seed_session(&t.state, "nobody@test.dev", "nobody", &[]);
 
     for (method, uri, body) in [
-        ("POST", "/api/cast/announce", Some(beat("tv-salon-01", None))),
+        (
+            "POST",
+            "/api/cast/announce",
+            Some(beat("tv-salon-01", None)),
+        ),
         ("GET", "/api/cast/receivers", None),
-        ("POST", "/api/cast/receivers/tv-salon-01/command", Some(json!({ "type": "pause" }))),
+        (
+            "POST",
+            "/api/cast/receivers/tv-salon-01/command",
+            Some(json!({ "type": "pause" })),
+        ),
         ("DELETE", "/api/cast/receivers/tv-salon-01", None),
     ] {
         let (status, _) = send(&t.app, method, uri, Some(&nobody), body).await;
-        assert_eq!(status, StatusCode::FORBIDDEN, "{method} {uri} must require playback");
+        assert_eq!(
+            status,
+            StatusCode::FORBIDDEN,
+            "{method} {uri} must require playback"
+        );
     }
 }
 
@@ -164,7 +239,11 @@ async fn the_cast_surface_is_closed_to_strangers() {
         ("POST", "/api/cast/receivers/tv-salon-01/command"),
     ] {
         let (status, _) = send(&t.app, method, uri, None, Some(json!({}))).await;
-        assert_eq!(status, StatusCode::UNAUTHORIZED, "{method} {uri} must require a session");
+        assert_eq!(
+            status,
+            StatusCode::UNAUTHORIZED,
+            "{method} {uri} must require a session"
+        );
     }
 }
 
@@ -183,7 +262,14 @@ async fn commands_are_refused_for_a_missing_receiver_or_title() {
 
     // A live receiver, but a title that isn't in the catalog: the TV is never
     // handed an id the server didn't recognize.
-    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
+    send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", None)),
+    )
+    .await;
     let (status, _) = send(
         &t.app,
         "POST",
@@ -200,12 +286,30 @@ async fn malformed_receiver_ids_and_bodies_are_rejected() {
     let t = test_app();
     // Too short, and shapes that have no business being a map key.
     for id in ["short", "tv salon 01", "../../etc/passwd"] {
-        let (status, _) = send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat(id, None))).await;
-        assert_eq!(status, StatusCode::BAD_REQUEST, "receiver id {id:?} must be refused");
+        let (status, _) = send(
+            &t.app,
+            "POST",
+            "/api/cast/announce",
+            Some(&t.token),
+            Some(beat(id, None)),
+        )
+        .await;
+        assert_eq!(
+            status,
+            StatusCode::BAD_REQUEST,
+            "receiver id {id:?} must be refused"
+        );
     }
     // An unknown command type is a 422 from the deserializer, never a queued
     // order the TV would have to interpret.
-    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
+    send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", None)),
+    )
+    .await;
     let (status, _) = send(
         &t.app,
         "POST",
@@ -214,7 +318,10 @@ async fn malformed_receiver_ids_and_bodies_are_rejected() {
         Some(json!({ "type": "selfDestruct" })),
     )
     .await;
-    assert!(status.is_client_error(), "unknown command types are refused, got {status}");
+    assert!(
+        status.is_client_error(),
+        "unknown command types are refused, got {status}"
+    );
 }
 
 fn frames_for(
@@ -234,9 +341,7 @@ fn frames_for(
 async fn a_beat_that_only_moved_the_playhead_announces_a_position_not_a_whole_receiver() {
     let t = test_app();
     let item = demo_item_id("The Matrix");
-    let playing = |ms: i64| {
-        json!({ "itemId": item, "positionMs": ms, "durationMs": 8_160_000, "state": "playing" })
-    };
+    let playing = |ms: i64| json!({ "itemId": item, "positionMs": ms, "durationMs": 8_160_000, "state": "playing" });
     let mut rx = t.state.events.subscribe();
 
     send(
@@ -274,10 +379,22 @@ async fn a_paused_beat_still_reports_where_the_playhead_stopped() {
     let paused = |ms: i64| json!({ "itemId": item, "positionMs": ms, "state": "paused" });
     let mut rx = t.state.events.subscribe();
 
-    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", Some(paused(10)))))
-        .await;
-    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", Some(paused(20)))))
-        .await;
+    send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", Some(paused(10)))),
+    )
+    .await;
+    send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", Some(paused(20)))),
+    )
+    .await;
 
     let frames = frames_for(&mut rx, &t.user_id);
     assert_eq!(frames[1]["type"], json!("cast.position"));
@@ -317,7 +434,14 @@ async fn a_full_roster_refuses_the_next_television_instead_of_evicting_one() {
 #[tokio::test]
 async fn a_command_addressed_to_a_malformed_receiver_id_never_reaches_the_roster() {
     let t = test_app();
-    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
+    send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", None)),
+    )
+    .await;
 
     let (status, _) = send(
         &t.app,
@@ -333,12 +457,29 @@ async fn a_command_addressed_to_a_malformed_receiver_id_never_reaches_the_roster
 #[tokio::test]
 async fn a_remote_the_television_kicked_is_refused_rather_than_obeyed() {
     let t = test_app();
-    send(&t.app, "POST", "/api/cast/announce", Some(&t.token), Some(beat("tv-salon-01", None))).await;
+    send(
+        &t.app,
+        "POST",
+        "/api/cast/announce",
+        Some(&t.token),
+        Some(beat("tv-salon-01", None)),
+    )
+    .await;
     t.state
         .cast
-        .attach_controller("tv-salon-01", "sock-a", "Téléphone", &t.user_id, "owner", None)
+        .attach_controller(
+            "tv-salon-01",
+            "sock-a",
+            "Téléphone",
+            &t.user_id,
+            "owner",
+            None,
+        )
         .expect("attach the remote");
-    t.state.cast.kick_controller("tv-salon-01", "sock-a").expect("kick it off");
+    t.state
+        .cast
+        .kick_controller("tv-salon-01", "sock-a")
+        .expect("kick it off");
 
     let (status, _) = send(
         &t.app,

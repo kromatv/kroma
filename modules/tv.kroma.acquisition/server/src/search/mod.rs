@@ -8,9 +8,13 @@ pub mod manual;
 pub mod sweep;
 pub mod targets;
 
-pub use interactive::{cached_release, grab_cached, interactive_search, score_release, CachedRelease};
+pub use interactive::{
+    cached_release, grab_cached, interactive_search, score_release, CachedRelease,
+};
 pub use manual::manual_search;
-pub use targets::{targets_for_scope, targets_for_wanted, wanted_ids_by, SearchScope, SearchTarget};
+pub use targets::{
+    targets_for_scope, targets_for_wanted, wanted_ids_by, SearchScope, SearchTarget,
+};
 
 use kroma_module_sdk::db::WantedRow;
 
@@ -74,7 +78,11 @@ mod tests {
             season,
             episodes,
             score: Some(42),
-            breakdown: vec![ScoreLineView { rule: "res".into(), delta: 10, note: "1080p".into() }],
+            breakdown: vec![ScoreLineView {
+                rule: "res".into(),
+                delta: 10,
+                note: "1080p".into(),
+            }],
             rejected: None,
             grabbable: true,
             upgrade: false,
@@ -113,25 +121,41 @@ mod tests {
             true,
         );
         assert_eq!(spec.magnet_or_url, "magnet:?xt=1");
-        assert_eq!(spec.kind, "episode", "the target the row was scored against");
+        assert_eq!(
+            spec.kind, "episode",
+            "the target the row was scored against"
+        );
         assert_eq!(spec.season, Some(1));
         assert_eq!(spec.episodes, Some(vec![1]));
         assert_eq!(spec.request_id.as_deref(), Some("r1"));
         assert_eq!(spec.wanted_ids, vec!["w1".to_string()]);
-        assert!(spec.upgrade, "so the import replaces rather than sits beside");
+        assert!(
+            spec.upgrade,
+            "so the import replaces rather than sits beside"
+        );
         assert_eq!(spec.indexer_id.as_deref(), Some("i1"));
-        assert!(spec.score_breakdown.is_some(), "the why travels with the grab");
+        assert!(
+            spec.score_breakdown.is_some(),
+            "the why travels with the grab"
+        );
     }
 
     #[test]
     fn an_episode_grab_covers_only_that_episode() {
         let wanted = vec![row("w1", 1, 1, "wanted"), row("w2", 1, 2, "wanted")];
-        assert_eq!(wanted_ids_for(&wanted, &view("episode", Some(1), Some(vec![1]))), vec!["w1"]);
+        assert_eq!(
+            wanted_ids_for(&wanted, &view("episode", Some(1), Some(vec![1]))),
+            vec!["w1"]
+        );
     }
 
     #[test]
     fn a_season_pack_covers_every_row_of_that_season() {
-        let wanted = vec![row("w1", 1, 1, "wanted"), row("w2", 1, 2, "wanted"), row("w3", 2, 1, "wanted")];
+        let wanted = vec![
+            row("w1", 1, 1, "wanted"),
+            row("w2", 1, 2, "wanted"),
+            row("w3", 2, 1, "wanted"),
+        ];
         let ids = wanted_ids_for(&wanted, &view("season", Some(1), Some(vec![1, 2])));
         assert_eq!(ids, vec!["w1", "w2"], "the season it is, and no other");
     }

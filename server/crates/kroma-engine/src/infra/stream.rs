@@ -103,10 +103,7 @@ fn full_response(file: File, total_size: u64, content_type: &str, sink: ByteSink
     let mut resp = Response::new(body);
     let headers = resp.headers_mut();
     set_common_headers(headers, content_type);
-    headers.insert(
-        header::CONTENT_LENGTH,
-        HeaderValue::from(total_size),
-    );
+    headers.insert(header::CONTENT_LENGTH, HeaderValue::from(total_size));
     resp
 }
 
@@ -121,7 +118,10 @@ fn partial_response(
 ) -> Response {
     let length = end - start + 1;
     let limited = file.take(length);
-    let stream = ReaderStream::new(CountingReader { inner: limited, sink });
+    let stream = ReaderStream::new(CountingReader {
+        inner: limited,
+        sink,
+    });
     let body = Body::from_stream(stream);
 
     let mut resp = Response::new(body);
@@ -140,9 +140,8 @@ fn partial_response(
 fn set_common_headers(headers: &mut HeaderMap, content_type: &str) {
     headers.insert(
         header::CONTENT_TYPE,
-        HeaderValue::from_str(content_type).unwrap_or(HeaderValue::from_static(
-            "application/octet-stream",
-        )),
+        HeaderValue::from_str(content_type)
+            .unwrap_or(HeaderValue::from_static("application/octet-stream")),
     );
     headers.insert(header::ACCEPT_RANGES, HeaderValue::from_static("bytes"));
 }

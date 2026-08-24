@@ -34,7 +34,6 @@ impl Casing {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

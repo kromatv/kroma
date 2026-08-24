@@ -90,7 +90,10 @@ mod tests {
     fn coverage_refuses_a_denied_request() {
         let host = host_with_tmdb(Some("k"));
         insert_req(&host, "r1", RequestKind::Show, 42, RequestStatus::Denied);
-        assert!(set_coverage(&host, "r1", Some(vec![1]), None).unwrap_err().to_string().contains("denied"));
+        assert!(set_coverage(&host, "r1", Some(vec![1]), None)
+            .unwrap_err()
+            .to_string()
+            .contains("denied"));
     }
 
     #[test]
@@ -101,7 +104,11 @@ mod tests {
         insert_req(&host, "r1", RequestKind::Show, 42, RequestStatus::Pending);
         let req = set_coverage(&host, "r1", Some(vec![3, 1, 1]), None).unwrap();
         assert_eq!(req.seasons, Some(vec![1, 3]), "sorted and deduped");
-        assert_eq!(req.status, RequestStatus::Pending, "recording a target approves nothing");
+        assert_eq!(
+            req.status,
+            RequestStatus::Pending,
+            "recording a target approves nothing"
+        );
         let conn = host.db().get().unwrap();
         assert!(db::wanted_for_request(&conn, "r1").unwrap().is_empty());
     }
@@ -153,6 +160,9 @@ mod tests {
         let conn = host.db().get().unwrap();
         let after = db::wanted_for_request(&conn, "r1").unwrap();
         assert_eq!(after.len(), 1);
-        assert_eq!(after[0].status, "available", "the survivor did not forget its file");
+        assert_eq!(
+            after[0].status, "available",
+            "the survivor did not forget its file"
+        );
     }
 }

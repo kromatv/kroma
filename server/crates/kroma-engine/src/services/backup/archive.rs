@@ -53,7 +53,10 @@ fn read_zip_within(bytes: &[u8], mut budget: u64) -> Result<(BackupDoc, Assets)>
     for i in 0..za.len() {
         let mut entry = za.by_index(i)?;
         let name = entry.name().to_string();
-        let asset = name.strip_prefix(ASSET_DIR).filter(|a| !a.is_empty()).map(str::to_string);
+        let asset = name
+            .strip_prefix(ASSET_DIR)
+            .filter(|a| !a.is_empty())
+            .map(str::to_string);
         if name != MANIFEST && asset.is_none() {
             continue;
         }
@@ -74,7 +77,11 @@ fn read_zip_within(bytes: &[u8], mut budget: u64) -> Result<(BackupDoc, Assets)>
 /// Read a legacy v1 backup (raw JSON with avatars hex-embedded in `doc.assets`).
 pub fn read_legacy_json(bytes: &[u8]) -> Result<(BackupDoc, Assets)> {
     let doc: BackupDoc = serde_json::from_slice(bytes).context("parse legacy backup json")?;
-    let assets = doc.assets.iter().filter_map(|(n, h)| Some((n.clone(), hex::decode(h).ok()?))).collect();
+    let assets = doc
+        .assets
+        .iter()
+        .filter_map(|(n, h)| Some((n.clone(), hex::decode(h).ok()?)))
+        .collect();
     Ok((doc, assets))
 }
 
@@ -121,9 +128,11 @@ mod tests {
     #[test]
     fn an_entry_that_is_neither_the_manifest_nor_an_asset_is_never_inflated() {
         let mut zw = ZipWriter::new(Cursor::new(Vec::new()));
-        zw.start_file("padding.bin", SimpleFileOptions::default()).unwrap();
+        zw.start_file("padding.bin", SimpleFileOptions::default())
+            .unwrap();
         zw.write_all(&vec![0u8; 64 * 1024]).unwrap();
-        zw.start_file(MANIFEST, SimpleFileOptions::default()).unwrap();
+        zw.start_file(MANIFEST, SimpleFileOptions::default())
+            .unwrap();
         zw.write_all(&serde_json::to_vec(&doc()).unwrap()).unwrap();
         let bytes = zw.finish().unwrap().into_inner();
 

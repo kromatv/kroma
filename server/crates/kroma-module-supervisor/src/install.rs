@@ -8,9 +8,7 @@ use kroma_module_manifest::ModuleManifest;
 
 use super::registry::MAX_BUNDLE_BYTES;
 
-use super::{
-    check_manifest_schema, Supervisor, MODULE_BIN, MODULE_STORE, STAGING_PREFIX,
-};
+use super::{check_manifest_schema, Supervisor, MODULE_BIN, MODULE_STORE, STAGING_PREFIX};
 
 impl Supervisor {
     fn staged_manifest(
@@ -59,7 +57,10 @@ impl Supervisor {
                     module = %id, file = %name, %error,
                     "could not carry this module's database across the upgrade",
                 );
-                self.say(id, "ERROR this module's database could not be kept across the upgrade");
+                self.say(
+                    id,
+                    "ERROR this module's database could not be kept across the upgrade",
+                );
             }
         }
     }
@@ -82,8 +83,10 @@ impl Supervisor {
     ) -> anyhow::Result<ModuleManifest> {
         let tar_bytes = decompressed_tar(bytes)?;
 
-        let staging =
-            self.cfg.modules_dir.join(format!("{STAGING_PREFIX}{}", rand::random::<u32>()));
+        let staging = self
+            .cfg
+            .modules_dir
+            .join(format!("{STAGING_PREFIX}{}", rand::random::<u32>()));
         std::fs::create_dir_all(&staging)?;
         let result = (|| {
             unpack_validated(&tar_bytes, &staging)?;
@@ -135,7 +138,9 @@ fn validate_id(id: &str) -> anyhow::Result<()> {
         && id.len() <= 128
         && id != "."
         && id != ".."
-        && id.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'));
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'));
     anyhow::ensure!(ok, "invalid module id {id:?}");
     Ok(())
 }
@@ -155,8 +160,10 @@ fn sanitized_entry(raw: &std::path::Path) -> Option<PathBuf> {
         return None;
     }
     let rel = safe.to_string_lossy().replace('\\', "/");
-    let allowed = matches!(rel.as_ref(), "module.json" | "module" | "icon.svg" | "icon.png")
-        || rel.starts_with("fe/");
+    let allowed = matches!(
+        rel.as_ref(),
+        "module.json" | "module" | "icon.svg" | "icon.png"
+    ) || rel.starts_with("fe/");
     allowed.then_some(safe)
 }
 
@@ -183,7 +190,10 @@ fn read_bounded(reader: impl std::io::Read, max_bytes: u64) -> anyhow::Result<Ve
     use std::io::Read as _;
     let mut out = Vec::new();
     let read = reader.take(max_bytes + 1).read_to_end(&mut out)? as u64;
-    anyhow::ensure!(read <= max_bytes, "bundle expands past {max_bytes} bytes; refusing to install");
+    anyhow::ensure!(
+        read <= max_bytes,
+        "bundle expands past {max_bytes} bytes; refusing to install"
+    );
     Ok(out)
 }
 
@@ -198,7 +208,9 @@ fn unpack_validated(tar_bytes: &[u8], dest: &std::path::Path) -> anyhow::Result<
             continue;
         }
         let raw = entry.path()?.into_owned();
-        let Some(safe) = sanitized_entry(&raw) else { continue };
+        let Some(safe) = sanitized_entry(&raw) else {
+            continue;
+        };
         let out = dest.join(&safe);
         if let Some(parent) = out.parent() {
             std::fs::create_dir_all(parent)?;
@@ -214,7 +226,9 @@ mod tests {
 
     #[test]
     fn a_stream_that_expands_past_the_ceiling_is_refused_rather_than_read() {
-        let err = read_bounded(std::io::repeat(0u8), 1024).unwrap_err().to_string();
+        let err = read_bounded(std::io::repeat(0u8), 1024)
+            .unwrap_err()
+            .to_string();
 
         assert!(err.contains("expands past 1024 bytes"), "{err}");
     }

@@ -9,8 +9,8 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::api::error::lerr;
-use crate::api::util::query;
 use crate::api::extract::AuthUser;
+use crate::api::util::query;
 use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::model::Permission;
@@ -29,7 +29,10 @@ pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/libraries", get(list_libraries).post(create_library))
         .route("/libraries/browse", get(browse::browse_libraries))
-        .route("/libraries/{id}", patch(update_library).delete(delete_library))
+        .route(
+            "/libraries/{id}",
+            patch(update_library).delete(delete_library),
+        )
         .route("/libraries/{id}/scan", post(scan_library))
 }
 
@@ -89,10 +92,17 @@ pub async fn create_library(
     super::require(&user, Permission::LibraryManage)?;
     let name = body.name.trim().to_string();
     if name.is_empty() {
-        return Err(lerr(super::user_locale(&user), StatusCode::BAD_REQUEST, "admin.nameRequired"));
+        return Err(lerr(
+            super::user_locale(&user),
+            StatusCode::BAD_REQUEST,
+            "admin.nameRequired",
+        ));
     }
     let mut defs = settings::library_defs(&state.settings, &state.config);
-    let id = crate::services::scan::short_hash(&format!("lib|{name}|{}", crate::services::auth::random_token()));
+    let id = crate::services::scan::short_hash(&format!(
+        "lib|{name}|{}",
+        crate::services::auth::random_token()
+    ));
     defs.push(LibraryDef {
         id: id.clone(),
         name,
@@ -126,7 +136,11 @@ pub async fn update_library(
     super::require(&user, Permission::LibraryManage)?;
     let mut defs = settings::library_defs(&state.settings, &state.config);
     let Some(def) = defs.iter_mut().find(|d| d.id == id) else {
-        return Err(lerr(super::user_locale(&user), StatusCode::NOT_FOUND, "error.libraryNotFound"));
+        return Err(lerr(
+            super::user_locale(&user),
+            StatusCode::NOT_FOUND,
+            "error.libraryNotFound",
+        ));
     };
     let mut needs_scan = false;
     if let Some(name) = body.name.filter(|n| !n.trim().is_empty()) {
@@ -161,7 +175,11 @@ pub async fn delete_library(
     let before = defs.len();
     defs.retain(|d| d.id != id);
     if defs.len() == before {
-        return Err(lerr(super::user_locale(&user), StatusCode::NOT_FOUND, "error.libraryNotFound"));
+        return Err(lerr(
+            super::user_locale(&user),
+            StatusCode::NOT_FOUND,
+            "error.libraryNotFound",
+        ));
     }
     settings::set_library_defs(&state.settings, &state.db, &defs);
     spawn_rescan(state.clone());
@@ -191,5 +209,9 @@ fn clean_folders(folders: Vec<String>) -> Vec<String> {
 // Goes through the job manager so it shares the `library.scan` single-flight
 // guard and its follow-up pipeline; a no-op when a scan is already running.
 fn spawn_rescan(state: SharedState) {
-    let _ = state.jobs.trigger(state.clone(), crate::services::jobs::JobKey("library.scan"), "library-edit");
+    let _ = state.jobs.trigger(
+        state.clone(),
+        crate::services::jobs::JobKey("library.scan"),
+        "library-edit",
+    );
 }

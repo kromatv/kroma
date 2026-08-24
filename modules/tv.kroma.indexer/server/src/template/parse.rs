@@ -1,5 +1,5 @@
-use super::lex::{lex, Chunk};
 use super::expr::parse_pipeline;
+use super::lex::{lex, Chunk};
 use super::Node;
 
 pub(super) fn parse(input: &str) -> Result<Vec<Node>, String> {
@@ -101,7 +101,6 @@ mod tests {
         assert_eq!(render("a {{ b", &ctx()), "a {{ b");
     }
 
-
     #[test]
     fn an_if_without_an_end_is_left_as_written() {
         unchanged("{{ if .Config.freeleech }}&free=1");
@@ -123,10 +122,8 @@ mod tests {
         unchanged("{{ if (eq .Config.sort \"seeders\" }}&s=1{{ end }}");
     }
 
-
     #[test]
     fn an_else_branch_without_an_end_is_left_as_written() {
         unchanged("{{ if .Config.freeleech }}&free=1{{ else }}&free=0");
     }
-
 }

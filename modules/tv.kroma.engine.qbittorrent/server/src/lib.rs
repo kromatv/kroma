@@ -34,7 +34,9 @@ impl QBittorrent {
     }
 
     fn fetch(&self) -> kroma_module_sdk::http::Fetch {
-        kroma_module_sdk::http::Fetch::new().max_time(60).cookie_jar(&self.jar)
+        kroma_module_sdk::http::Fetch::new()
+            .max_time(60)
+            .cookie_jar(&self.jar)
     }
 
     fn login(&self) -> Result<()> {
@@ -66,7 +68,11 @@ impl QBittorrent {
         resp.ensure_ok()
     }
 
-    fn post(&self, path: &str, fields: &[(&str, &str)]) -> Result<kroma_module_sdk::http::Response> {
+    fn post(
+        &self,
+        path: &str,
+        fields: &[(&str, &str)],
+    ) -> Result<kroma_module_sdk::http::Response> {
         let url = format!("{}{path}", self.base);
         let resp = self.fetch().post_form(&url, fields)?;
         if resp.status == 403 {
@@ -88,9 +94,8 @@ fn state_of(qbit_state: &str, progress: f64) -> TorrentState {
         "pausedDL" | "stoppedDL" => TorrentState::Paused,
         "pausedUP" | "stoppedUP" => TorrentState::Completed,
         "uploading" | "stalledUP" | "queuedUP" | "forcedUP" => TorrentState::Seeding,
-        "checkingDL" | "checkingUP" | "checkingResumeData" | "metaDL" | "queuedDL" | "allocating" => {
-            TorrentState::Queued
-        }
+        "checkingDL" | "checkingUP" | "checkingResumeData" | "metaDL" | "queuedDL"
+        | "allocating" => TorrentState::Queued,
         _ if progress >= 1.0 => TorrentState::Seeding,
         _ => TorrentState::Downloading,
     }
@@ -142,7 +147,9 @@ impl QBittorrent {
                 return Ok(hash.to_string());
             }
         }
-        Err(anyhow!("added, but could not identify the new torrent's hash"))
+        Err(anyhow!(
+            "added, but could not identify the new torrent's hash"
+        ))
     }
 
     pub fn status(&self, client_ref: &str) -> Result<Option<TorrentStatus>> {
@@ -164,7 +171,11 @@ impl QBittorrent {
             .unwrap_or_default();
         Ok(Some(TorrentStatus {
             client_ref: client_ref.to_string(),
-            name: t.get("name").and_then(Value::as_str).unwrap_or_default().to_string(),
+            name: t
+                .get("name")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_string(),
             info_hash: Some(client_ref.to_string()),
             progress,
             state: state_of(qstate, progress),
@@ -172,33 +183,44 @@ impl QBittorrent {
             up_bps: t.get("upspeed").and_then(Value::as_u64).unwrap_or(0),
             // Connected leechers + seeds currently in swarm.
             peers: (t.get("num_leechs").and_then(Value::as_u64).unwrap_or(0)
-                + t.get("num_seeds").and_then(Value::as_u64).unwrap_or(0)) as u32,
+                + t.get("num_seeds").and_then(Value::as_u64).unwrap_or(0))
+                as u32,
             // Total swarm size the tracker reported (incl. not-connected).
             peers_seen: (t.get("num_incomplete").and_then(Value::as_u64).unwrap_or(0)
-                + t.get("num_complete").and_then(Value::as_u64).unwrap_or(0)) as u32,
+                + t.get("num_complete").and_then(Value::as_u64).unwrap_or(0))
+                as u32,
             size_bytes: t.get("size").and_then(Value::as_u64).unwrap_or(0),
-            save_path: t.get("save_path").and_then(Value::as_str).map(str::to_string),
+            save_path: t
+                .get("save_path")
+                .and_then(Value::as_str)
+                .map(str::to_string),
             files,
             error: matches!(qstate, "error" | "missingFiles").then(|| format!("state: {qstate}")),
         }))
     }
 
     pub fn pause(&self, client_ref: &str) -> Result<()> {
-        self.post("/api/v2/torrents/pause", &[("hashes", client_ref)]).map(|_| ())
+        self.post("/api/v2/torrents/pause", &[("hashes", client_ref)])
+            .map(|_| ())
     }
 
     pub fn resume(&self, client_ref: &str) -> Result<()> {
-        self.post("/api/v2/torrents/resume", &[("hashes", client_ref)]).map(|_| ())
+        self.post("/api/v2/torrents/resume", &[("hashes", client_ref)])
+            .map(|_| ())
     }
 
     pub fn reannounce(&self, client_ref: &str) -> Result<()> {
-        self.post("/api/v2/torrents/reannounce", &[("hashes", client_ref)]).map(|_| ())
+        self.post("/api/v2/torrents/reannounce", &[("hashes", client_ref)])
+            .map(|_| ())
     }
 
     pub fn remove(&self, client_ref: &str, delete_data: bool) -> Result<()> {
         self.post(
             "/api/v2/torrents/delete",
-            &[("hashes", client_ref), ("deleteFiles", if delete_data { "true" } else { "false" })],
+            &[
+                ("hashes", client_ref),
+                ("deleteFiles", if delete_data { "true" } else { "false" }),
+            ],
         )
         .map(|_| ())
     }
@@ -263,7 +285,13 @@ mod tests {
         // "GET /path?query HTTP/1.1" -> "GET /path"
         let mut parts = first.split_whitespace();
         let method = parts.next().unwrap_or("").to_string();
-        let path = parts.next().unwrap_or("").split('?').next().unwrap_or("").to_string();
+        let path = parts
+            .next()
+            .unwrap_or("")
+            .split('?')
+            .next()
+            .unwrap_or("")
+            .to_string();
 
         let mut len = 0usize;
         loop {
@@ -302,7 +330,9 @@ mod tests {
                 for stream in listener.incoming() {
                     let Ok(mut stream) = stream else { break };
                     let mut reader = BufReader::new(stream.try_clone().unwrap());
-                    let Some((key, len)) = read_request(&mut reader) else { continue };
+                    let Some((key, len)) = read_request(&mut reader) else {
+                        continue;
+                    };
 
                     // Drain the body so curl sees a clean close.
                     if len > 0 {
@@ -361,7 +391,9 @@ mod tests {
         let s = FakeQbit::start(healthy);
         // Exercises login + GET over a real socket, cookie jar included.
         assert_eq!(s.client().test().unwrap(), "qBittorrent v4.6.0");
-        assert!(s.requests().contains(&"POST /api/v2/auth/login".to_string()));
+        assert!(s
+            .requests()
+            .contains(&"POST /api/v2/auth/login".to_string()));
     }
 
     #[test]
@@ -383,7 +415,9 @@ mod tests {
         let s = FakeQbit::start(|key, n| match (key, n) {
             ("POST /api/v2/auth/login", _) => (200, "Ok.".into()),
             ("GET /api/v2/torrents/info", 1) => (403, "Forbidden".into()),
-            ("GET /api/v2/torrents/info", _) => (200, r#"[{"hash":"abc","state":"downloading"}]"#.into()),
+            ("GET /api/v2/torrents/info", _) => {
+                (200, r#"[{"hash":"abc","state":"downloading"}]"#.into())
+            }
             _ => (200, String::new()),
         });
         let status = s.client().status("abc").unwrap();
@@ -428,9 +462,10 @@ mod tests {
     #[test]
     fn an_errored_torrent_carries_its_state_as_the_error() {
         let s = FakeQbit::start(|key, _| match key {
-            "GET /api/v2/torrents/info" => {
-                (200, r#"[{"hash":"abc","state":"missingFiles","progress":0.9}]"#.into())
-            }
+            "GET /api/v2/torrents/info" => (
+                200,
+                r#"[{"hash":"abc","state":"missingFiles","progress":0.9}]"#.into(),
+            ),
             _ => (200, "Ok.".into()),
         });
         let st = s.client().status("abc").unwrap().unwrap();
@@ -453,7 +488,10 @@ mod tests {
         assert_eq!(hash, "0123456789abcdef0123456789abcdef01234567");
         // A known hash means NO before/after category diff - that polling loop
         // sleeps for seconds and is only for .torrent URLs.
-        assert!(!s.requests().iter().any(|r| r == "GET /api/v2/torrents/info"));
+        assert!(!s
+            .requests()
+            .iter()
+            .any(|r| r == "GET /api/v2/torrents/info"));
     }
 
     #[test]
@@ -491,7 +529,10 @@ mod tests {
             "POST /api/v2/torrents/reannounce",
             "POST /api/v2/torrents/delete",
         ] {
-            assert!(reqs.contains(&path.to_string()), "{path} not called: {reqs:?}");
+            assert!(
+                reqs.contains(&path.to_string()),
+                "{path} not called: {reqs:?}"
+            );
         }
     }
 
@@ -503,15 +544,25 @@ mod tests {
             username: "u".into(),
             password: String::new(),
         };
-        let b = ClientDef { url: "http://b:8080".into(), ..a.clone() };
+        let b = ClientDef {
+            url: "http://b:8080".into(),
+            ..a.clone()
+        };
         let dir = std::path::Path::new("/tmp");
         assert_eq!(cookie_jar_path(dir, &a), cookie_jar_path(dir, &a));
         assert_ne!(cookie_jar_path(dir, &a), cookie_jar_path(dir, &b));
         // Same URL, different user -> a distinct jar.
-        let c = ClientDef { username: "other".into(), ..a.clone() };
+        let c = ClientDef {
+            username: "other".into(),
+            ..a.clone()
+        };
         assert_ne!(cookie_jar_path(dir, &a), cookie_jar_path(dir, &c));
         // The tag is a 16-hex suffix on the `qbit-` prefix.
-        let name = cookie_jar_path(dir, &a).file_name().unwrap().to_string_lossy().into_owned();
+        let name = cookie_jar_path(dir, &a)
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned();
         assert!(name.starts_with("qbit-") && name.ends_with(".cookies"));
     }
 
@@ -526,7 +577,14 @@ mod tests {
         for s in ["uploading", "stalledUP", "queuedUP", "forcedUP"] {
             assert_eq!(state_of(s, 1.0), TorrentState::Seeding, "{s}");
         }
-        for s in ["checkingDL", "checkingUP", "checkingResumeData", "metaDL", "queuedDL", "allocating"] {
+        for s in [
+            "checkingDL",
+            "checkingUP",
+            "checkingResumeData",
+            "metaDL",
+            "queuedDL",
+            "allocating",
+        ] {
             assert_eq!(state_of(s, 0.0), TorrentState::Queued, "{s}");
         }
         // Unknown state falls back on progress: complete -> seeding, else downloading.
@@ -552,8 +610,12 @@ mod tests {
     #[test]
     fn magnet_hash_extraction() {
         // 40-char hex info-hash, returned lowercased.
-        let h = magnet_info_hash("magnet:?xt=urn:btih:ABCDEF0123456789ABCDEF0123456789ABCDEF01&dn=x");
-        assert_eq!(h.as_deref(), Some("abcdef0123456789abcdef0123456789abcdef01"));
+        let h =
+            magnet_info_hash("magnet:?xt=urn:btih:ABCDEF0123456789ABCDEF0123456789ABCDEF01&dn=x");
+        assert_eq!(
+            h.as_deref(),
+            Some("abcdef0123456789abcdef0123456789abcdef01")
+        );
         // 32-char base32 info-hash is also accepted.
         assert_eq!(
             magnet_info_hash("magnet:?xt=urn:btih:ABCDEFGHIJKLMNOPQRSTUVWXYZ234567").as_deref(),

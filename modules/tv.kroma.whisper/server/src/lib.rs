@@ -63,7 +63,12 @@ fn extract_pcm(input: &Path, track: u32) -> Option<Vec<f32>> {
     if !out.status.success() || out.stdout.is_empty() {
         return None;
     }
-    Some(out.stdout.chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect())
+    Some(
+        out.stdout
+            .chunks_exact(4)
+            .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+            .collect(),
+    )
 }
 
 #[cfg(feature = "local")]
@@ -81,7 +86,11 @@ fn resolve_model(data_dir: &Path, spec: &str) -> Option<std::path::PathBuf> {
     std::fs::create_dir_all(&dir).ok()?;
     for file in ["config.json", "tokenizer.json", "model.safetensors"] {
         let dest = dir.join(file);
-        if dest.exists() && std::fs::metadata(&dest).map(|m| m.len() > 0).unwrap_or(false) {
+        if dest.exists()
+            && std::fs::metadata(&dest)
+                .map(|m| m.len() > 0)
+                .unwrap_or(false)
+        {
             continue;
         }
         let url = format!("https://huggingface.co/{spec}/resolve/main/{file}?download=true");

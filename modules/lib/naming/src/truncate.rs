@@ -49,8 +49,14 @@ mod tests {
 
     #[test]
     fn truncation_keeps_boundaries() {
-        assert_eq!(truncate("A Very Long Movie Title Here", 13), "A Very Lon...");
-        assert_eq!(truncate("A Very Long Movie Title Here", -13), "...Title Here");
+        assert_eq!(
+            truncate("A Very Long Movie Title Here", 13),
+            "A Very Lon..."
+        );
+        assert_eq!(
+            truncate("A Very Long Movie Title Here", -13),
+            "...Title Here"
+        );
         assert_eq!(truncate("Short", 30), "Short");
         // Accented chars must not be split mid-byte.
         let out = truncate("Amélie Poulain Deluxe", 8);

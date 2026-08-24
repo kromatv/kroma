@@ -27,7 +27,11 @@ fn set_read_at(
 ) -> Result<usize> {
     let mut conn = pool.get()?;
     // Only rows on the far side of the transition, so the count is what moved.
-    let side = if read_at.is_some() { "read_at IS NULL" } else { "read_at IS NOT NULL" };
+    let side = if read_at.is_some() {
+        "read_at IS NULL"
+    } else {
+        "read_at IS NOT NULL"
+    };
     let Some(ids) = ids else {
         return Ok(conn.execute(
             &format!("UPDATE notifications SET read_at = ?2 WHERE user_id = ?1 AND {side}"),
@@ -108,7 +112,9 @@ mod tests {
         const SQLITE_BIND_LIMIT: usize = 32_766;
         let (p, u1, _) = pool();
         insert(&p, "n1", &u1, 1_000);
-        let mut ids: Vec<String> = (0..=SQLITE_BIND_LIMIT).map(|n| format!("absent{n}")).collect();
+        let mut ids: Vec<String> = (0..=SQLITE_BIND_LIMIT)
+            .map(|n| format!("absent{n}"))
+            .collect();
         ids.push("n1".to_string());
 
         assert_eq!(mark_read(&p, &u1, Some(&ids), 9_000).unwrap(), 1);
@@ -154,6 +160,8 @@ mod tests {
         assert!(!delete_notification(&p, &u2, "n1").unwrap());
         assert!(delete_notification(&p, &u1, "n1").unwrap());
         let conn = p.get().unwrap();
-        assert!(list_notifications(&conn, &u1, 50, false).unwrap().is_empty());
+        assert!(list_notifications(&conn, &u1, 50, false)
+            .unwrap()
+            .is_empty());
     }
 }

@@ -41,7 +41,9 @@ async fn create(state: &SharedState, name: &str, folders: Vec<&str>) -> Result<S
     };
     let res = create_library(State(state.clone()), AuthUser(admin()), Json(body)).await?;
     assert_eq!(res.status(), StatusCode::OK);
-    let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+    let bytes = axum::body::to_bytes(res.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let v: Value = serde_json::from_slice(&bytes).unwrap();
     Ok(v["id"].as_str().unwrap().to_string())
 }
@@ -62,7 +64,10 @@ fn folder_lists_are_trimmed_deduped_and_stripped_of_blanks() {
 
 #[test]
 fn the_first_spelling_of_a_folder_is_the_one_kept() {
-    assert_eq!(clean_folders(vec![" /a ".into(), "/a".into(), "/b".into()]), ["/a", "/b"]);
+    assert_eq!(
+        clean_folders(vec![" /a ".into(), "/a".into(), "/b".into()]),
+        ["/a", "/b"]
+    );
 }
 
 #[test]
@@ -75,9 +80,13 @@ fn a_list_of_nothing_stays_a_list_of_nothing() {
 async fn a_created_library_persists_with_its_folders_cleaned() {
     let harness = app();
     let state = harness.state.clone();
-    let id = create(&state, "  Films  ", vec![" /media/films ", "", "/media/films"])
-        .await
-        .unwrap();
+    let id = create(
+        &state,
+        "  Films  ",
+        vec![" /media/films ", "", "/media/films"],
+    )
+    .await
+    .unwrap();
 
     let saved = defs(&state);
     assert_eq!(saved.len(), 1);
@@ -103,23 +112,37 @@ async fn a_library_needs_a_name() {
     let harness = app();
     let state = harness.state.clone();
     for blank in ["", "   "] {
-        let body = CreateLibraryBody { name: blank.into(), kind: None, folders: Vec::new() };
+        let body = CreateLibraryBody {
+            name: blank.into(),
+            kind: None,
+            folders: Vec::new(),
+        };
         let err = create_library(State(state.clone()), AuthUser(admin()), Json(body))
             .await
             .unwrap_err();
         assert_eq!(err.status(), StatusCode::BAD_REQUEST);
     }
-    assert!(defs(&state).is_empty(), "a rejected create must not persist anything");
+    assert!(
+        defs(&state).is_empty(),
+        "a rejected create must not persist anything"
+    );
 }
 
 #[tokio::test]
 async fn creating_a_library_needs_the_permission() {
     let harness = app();
     let state = harness.state.clone();
-    let body = CreateLibraryBody { name: "Films".into(), kind: None, folders: Vec::new() };
+    let body = CreateLibraryBody {
+        name: "Films".into(),
+        kind: None,
+        folders: Vec::new(),
+    };
     let err = create_library(
         State(state.clone()),
-        AuthUser(user_with(vec![Permission::Playback, Permission::UsersManage])),
+        AuthUser(user_with(vec![
+            Permission::Playback,
+            Permission::UsersManage,
+        ])),
         Json(body),
     )
     .await
@@ -140,10 +163,14 @@ async fn an_update_touches_only_the_fields_it_names() {
         folders: None,
         auto_scan: None,
     };
-    let res =
-        update_library(State(state.clone()), AuthUser(admin()), AxPath(id), Json(body))
-            .await
-            .unwrap();
+    let res = update_library(
+        State(state.clone()),
+        AuthUser(admin()),
+        AxPath(id),
+        Json(body),
+    )
+    .await
+    .unwrap();
     assert_eq!(res.status(), StatusCode::NO_CONTENT);
 
     let saved = &defs(&state)[0];
@@ -165,9 +192,14 @@ async fn an_update_can_turn_auto_scan_off_without_touching_anything_else() {
         folders: None,
         auto_scan: Some(false),
     };
-    update_library(State(state.clone()), AuthUser(admin()), AxPath(id), Json(body))
-        .await
-        .unwrap();
+    update_library(
+        State(state.clone()),
+        AuthUser(admin()),
+        AxPath(id),
+        Json(body),
+    )
+    .await
+    .unwrap();
 
     let saved = &defs(&state)[0];
     assert!(!saved.auto_scan);
@@ -186,9 +218,14 @@ async fn a_blank_new_name_is_ignored_rather_than_applied() {
         folders: None,
         auto_scan: None,
     };
-    update_library(State(state.clone()), AuthUser(admin()), AxPath(id), Json(body))
-        .await
-        .unwrap();
+    update_library(
+        State(state.clone()),
+        AuthUser(admin()),
+        AxPath(id),
+        Json(body),
+    )
+    .await
+    .unwrap();
 
     assert_eq!(defs(&state)[0].name, "Films");
 }
@@ -202,12 +239,21 @@ async fn replacing_the_folders_cleans_them_too() {
     let body = UpdateLibraryBody {
         name: None,
         kind: Some("shows".into()),
-        folders: Some(vec![" /media/shows ".into(), "".into(), "/media/shows".into()]),
+        folders: Some(vec![
+            " /media/shows ".into(),
+            "".into(),
+            "/media/shows".into(),
+        ]),
         auto_scan: None,
     };
-    update_library(State(state.clone()), AuthUser(admin()), AxPath(id), Json(body))
-        .await
-        .unwrap();
+    update_library(
+        State(state.clone()),
+        AuthUser(admin()),
+        AxPath(id),
+        Json(body),
+    )
+    .await
+    .unwrap();
 
     let saved = &defs(&state)[0];
     assert_eq!(saved.folders, ["/media/shows"]);
@@ -246,7 +292,9 @@ async fn deleting_removes_that_library_and_leaves_the_others() {
     let harness = app();
     let state = harness.state.clone();
     let films = create(&state, "Films", vec!["/media/films"]).await.unwrap();
-    let shows = create(&state, "Séries", vec!["/media/shows"]).await.unwrap();
+    let shows = create(&state, "Séries", vec!["/media/shows"])
+        .await
+        .unwrap();
 
     let res = delete_library(State(state.clone()), AuthUser(admin()), AxPath(films))
         .await
@@ -263,10 +311,13 @@ async fn deleting_a_library_that_is_not_there_is_a_404() {
     let harness = app();
     let state = harness.state.clone();
     create(&state, "Films", vec!["/media/films"]).await.unwrap();
-    let err =
-        delete_library(State(state.clone()), AuthUser(admin()), AxPath("ghost".into()))
-            .await
-            .unwrap_err();
+    let err = delete_library(
+        State(state.clone()),
+        AuthUser(admin()),
+        AxPath("ghost".into()),
+    )
+    .await
+    .unwrap_err();
     assert_eq!(err.status(), StatusCode::NOT_FOUND);
     assert_eq!(defs(&state).len(), 1);
 }
@@ -284,16 +335,24 @@ async fn deleting_needs_the_permission() {
     .await
     .unwrap_err();
     assert_eq!(err.status(), StatusCode::FORBIDDEN);
-    assert_eq!(defs(&state).len(), 1, "a refused delete must not remove anything");
+    assert_eq!(
+        defs(&state).len(),
+        1,
+        "a refused delete must not remove anything"
+    );
 }
 
 #[tokio::test]
 async fn a_scan_can_be_kicked_by_hand_and_is_gated() {
     let harness = app();
     let state = harness.state.clone();
-    let res = scan_library(State(state.clone()), AuthUser(admin()), AxPath("any".into()))
-        .await
-        .unwrap();
+    let res = scan_library(
+        State(state.clone()),
+        AuthUser(admin()),
+        AxPath("any".into()),
+    )
+    .await
+    .unwrap();
     assert_eq!(res.status(), StatusCode::OK);
 
     let err = scan_library(
@@ -312,9 +371,13 @@ async fn the_list_reports_every_library_with_a_zeroed_card() {
     let state = harness.state.clone();
     create(&state, "Films", vec!["/media/films"]).await.unwrap();
 
-    let res = list_libraries(State(state.clone()), AuthUser(admin())).await.unwrap();
+    let res = list_libraries(State(state.clone()), AuthUser(admin()))
+        .await
+        .unwrap();
     assert_eq!(res.status(), StatusCode::OK);
-    let bytes = axum::body::to_bytes(res.into_body(), usize::MAX).await.unwrap();
+    let bytes = axum::body::to_bytes(res.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let v: Value = serde_json::from_slice(&bytes).unwrap();
 
     let libs = v["libraries"].as_array().unwrap();
@@ -330,16 +393,20 @@ async fn the_list_reports_every_library_with_a_zeroed_card() {
 async fn the_list_is_open_to_any_admin_not_just_a_library_manager() {
     let harness = app();
     let state = harness.state.clone();
-    let res =
-        list_libraries(State(state.clone()), AuthUser(user_with(vec![Permission::UsersManage])))
-            .await
-            .unwrap();
+    let res = list_libraries(
+        State(state.clone()),
+        AuthUser(user_with(vec![Permission::UsersManage])),
+    )
+    .await
+    .unwrap();
     assert_eq!(res.status(), StatusCode::OK);
 
-    let err =
-        list_libraries(State(state.clone()), AuthUser(user_with(vec![Permission::Playback])))
-            .await
-            .unwrap_err();
+    let err = list_libraries(
+        State(state.clone()),
+        AuthUser(user_with(vec![Permission::Playback])),
+    )
+    .await
+    .unwrap_err();
     assert_eq!(err.status(), StatusCode::FORBIDDEN);
 }
 

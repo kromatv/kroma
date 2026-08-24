@@ -15,7 +15,9 @@ use axum::routing::get;
 use axum::Router;
 
 pub fn routes() -> Router<SharedState> {
-    Router::new().route("/home", get(home)).route("/home/featured", get(featured))
+    Router::new()
+        .route("/home", get(home))
+        .route("/home/featured", get(featured))
 }
 
 /// `GET /api/home` (Bearer) → `Section[]`. Personalized to the caller; titles are
@@ -48,7 +50,9 @@ pub async fn featured(
     let gen_state = state.clone();
     let user_id = user.id.clone();
     match query(&state.db, move |pool| {
-        Ok(sections::featured::pick(&gen_state, &pool, &locale, &user_id))
+        Ok(sections::featured::pick(
+            &gen_state, &pool, &locale, &user_id,
+        ))
     })
     .await
     {

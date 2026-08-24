@@ -8,7 +8,12 @@ const HIDE_PASSWORD_HASH: &str =
     "ALTER TABLE users RENAME COLUMN password_hash TO password_hash_gone";
 
 fn sql(t: &TestApp, script: &str) {
-    t.state.db.get().expect("a connection").execute_batch(script).expect("reshape the schema");
+    t.state
+        .db
+        .get()
+        .expect("a connection")
+        .execute_batch(script)
+        .expect("reshape the schema");
 }
 
 fn steal_the_new_email_then_fail(thief: &str) -> String {
@@ -51,7 +56,10 @@ async fn an_email_taken_between_the_check_and_the_write_is_a_conflict_not_a_cras
     )
     .await;
     assert_eq!(status, StatusCode::CONFLICT);
-    assert!(body["error"].as_str().is_some_and(|m| !m.is_empty()), "{body}");
+    assert!(
+        body["error"].as_str().is_some_and(|m| !m.is_empty()),
+        "{body}"
+    );
 }
 
 #[tokio::test]
@@ -95,15 +103,24 @@ async fn the_device_list_and_its_revoke_refuse_when_the_credentials_are_gone() {
     let (status, _) = get(&t.app, "/api/auth/me/sessions", Some(&t.token)).await;
     assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
 
-    let (status, _) =
-        send(&t.app, "DELETE", "/api/auth/me/sessions/whatever", Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        "/api/auth/me/sessions/whatever",
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
 }
 
 #[tokio::test]
 async fn the_device_list_refuses_when_a_session_cannot_name_its_own_device() {
     let t = test_app();
-    sql(&t, "ALTER TABLE sessions RENAME COLUMN access_token TO access_token_gone");
+    sql(
+        &t,
+        "ALTER TABLE sessions RENAME COLUMN access_token TO access_token_gone",
+    );
 
     let (status, _) = get(&t.app, "/api/auth/me/sessions", Some(&t.token)).await;
     assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
@@ -112,9 +129,12 @@ async fn the_device_list_refuses_when_a_session_cannot_name_its_own_device() {
 #[tokio::test]
 async fn the_public_roster_refuses_when_the_accounts_are_gone() {
     let t = test_app();
-    t.state
-        .settings
-        .set_patch(&t.state.db, [("publicUserList".to_string(), json!(true))].into_iter().collect());
+    t.state.settings.set_patch(
+        &t.state.db,
+        [("publicUserList".to_string(), json!(true))]
+            .into_iter()
+            .collect(),
+    );
     sql(&t, "DROP TABLE users");
 
     let (status, _) = get(&t.app, "/api/users", None).await;
@@ -133,7 +153,10 @@ async fn an_avatar_the_store_already_holds_is_adopted_without_an_encoder() {
     assert_eq!(body["avatarUrl"], json!(format!("/api/images/{name}")));
 
     let (_, me) = get(&t.app, "/api/auth/me", Some(&token)).await;
-    assert_eq!(me["user"]["avatarUrl"], json!(format!("/api/images/{name}")));
+    assert_eq!(
+        me["user"]["avatarUrl"],
+        json!(format!("/api/images/{name}"))
+    );
 }
 
 #[tokio::test]
@@ -178,6 +201,11 @@ async fn upload(
         .expect("build request");
     let resp = app.clone().oneshot(req).await.expect("response");
     let status = resp.status();
-    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.expect("read body");
-    (status, serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null))
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .expect("read body");
+    (
+        status,
+        serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null),
+    )
 }

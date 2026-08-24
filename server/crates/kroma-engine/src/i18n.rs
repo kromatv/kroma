@@ -60,7 +60,10 @@ pub fn is_message_key(key: &str) -> bool {
 /// A user's account locale for server-rendered strings, falling back to
 /// [`DEFAULT_LOCALE`] for an unset or unknown value.
 pub fn user_locale(user: &kroma_domain::User) -> &'static str {
-    user.language.as_deref().and_then(normalize).unwrap_or(DEFAULT_LOCALE)
+    user.language
+        .as_deref()
+        .and_then(normalize)
+        .unwrap_or(DEFAULT_LOCALE)
 }
 
 /// Best locale from an explicit preference and/or an `Accept-Language` header.
@@ -94,10 +97,22 @@ mod tests {
     fn config_matches_built_engine() {
         let e = i18n();
         assert_eq!(e.default_locale(), DEFAULT_LOCALE);
-        assert_eq!(e.supported().collect::<Vec<_>>(), SUPPORTED_LOCALES.to_vec());
-        assert_eq!(t("fr", "content.seasonCount", &[("count", "1")]), "1 saison");
-        assert_eq!(t("fr", "content.seasonCount", &[("count", "2")]), "2 saisons");
-        assert_eq!(t("en", "content.seasonCount", &[("count", "1")]), "1 season");
+        assert_eq!(
+            e.supported().collect::<Vec<_>>(),
+            SUPPORTED_LOCALES.to_vec()
+        );
+        assert_eq!(
+            t("fr", "content.seasonCount", &[("count", "1")]),
+            "1 saison"
+        );
+        assert_eq!(
+            t("fr", "content.seasonCount", &[("count", "2")]),
+            "2 saisons"
+        );
+        assert_eq!(
+            t("en", "content.seasonCount", &[("count", "1")]),
+            "1 season"
+        );
         assert_eq!(normalize("en-US"), Some("en"));
     }
 }

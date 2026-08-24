@@ -31,7 +31,10 @@ fn parse_cues(vtt: &str) -> Vec<Cue> {
     let mut text: Vec<String> = Vec::new();
     let flush = |timing: &mut Option<String>, text: &mut Vec<String>, cues: &mut Vec<Cue>| {
         if let Some(t) = timing.take() {
-            cues.push(Cue { timing: t, text: text.join("\n") });
+            cues.push(Cue {
+                timing: t,
+                text: text.join("\n"),
+            });
         }
         text.clear();
     };
@@ -74,7 +77,11 @@ pub fn translate_vtt(
     let total = cues.len();
     let chunks: Vec<&[Cue]> = cues.chunks(BATCH).collect();
     let batches = chunks.len();
-    let chain = backends.iter().map(|b| b.label.as_str()).collect::<Vec<_>>().join(" -> ");
+    let chain = backends
+        .iter()
+        .map(|b| b.label.as_str())
+        .collect::<Vec<_>>()
+        .join(" -> ");
     let workers = PARALLEL.min(batches).max(1);
     info!(target = %target_lang, cues = total, batches, workers, %chain, "subtitle translate: starting");
     handle.progress(0, total);
@@ -83,15 +90,26 @@ pub fn translate_vtt(
     let active = AtomicUsize::new(0);
     let done = AtomicUsize::new(0);
     let translated = AtomicUsize::new(0);
-    let results: Vec<Mutex<Option<Vec<Option<String>>>>> = (0..batches).map(|_| Mutex::new(None)).collect();
+    let results: Vec<Mutex<Option<Vec<Option<String>>>>> =
+        (0..batches).map(|_| Mutex::new(None)).collect();
     let first_error: Mutex<Option<String>> = Mutex::new(None);
 
     std::thread::scope(|s| {
         for _ in 0..workers {
             s.spawn(|| {
                 translate_worker(
-                    &next, &active, &done, &translated, &chunks, &backends, &results,
-                    &first_error, handle, target_lang, batches, total,
+                    &next,
+                    &active,
+                    &done,
+                    &translated,
+                    &chunks,
+                    &backends,
+                    &results,
+                    &first_error,
+                    handle,
+                    target_lang,
+                    batches,
+                    total,
                 )
             });
         }
@@ -103,10 +121,17 @@ pub fn translate_vtt(
     let ok_batches = translated.load(Ordering::Relaxed);
     if ok_batches == 0 {
         // first_error carries the LLM's actual complaint (auth, credits, parse, ...).
-        return Err(first_error.into_inner().unwrap().unwrap_or_else(|| "translation failed for every batch".to_string()));
+        return Err(first_error
+            .into_inner()
+            .unwrap()
+            .unwrap_or_else(|| "translation failed for every batch".to_string()));
     }
     if ok_batches < batches {
-        warn!(ok = ok_batches, total = batches, "subtitle translate: finished with some batches left untranslated");
+        warn!(
+            ok = ok_batches,
+            total = batches,
+            "subtitle translate: finished with some batches left untranslated"
+        );
     } else {
         info!(batches, "subtitle translate: done");
     }
@@ -144,7 +169,11 @@ fn translate_worker(
                 translated.fetch_add(1, Ordering::Relaxed);
             }
             Err(e) => {
-                warn!(batch = bi + 1, total = batches, "subtitle translate: batch failed on every provider: {e}");
+                warn!(
+                    batch = bi + 1,
+                    total = batches,
+                    "subtitle translate: batch failed on every provider: {e}"
+                );
                 let mut fe = first_error.lock().unwrap();
                 if fe.is_none() {
                     *fe = Some(e);

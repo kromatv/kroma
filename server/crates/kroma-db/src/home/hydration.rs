@@ -30,8 +30,9 @@ pub fn show_ids_for(pool: &Pool, ids: &[&str]) -> Result<Vec<String>> {
         let mut stmt = conn.prepare(&format!(
             "SELECT DISTINCT show_id FROM items WHERE show_id IS NOT NULL AND id IN ({ph})"
         ))?;
-        let rows =
-            stmt.query_map(rusqlite::params_from_iter(chunk.iter()), |r| r.get::<_, String>(0))?;
+        let rows = stmt.query_map(rusqlite::params_from_iter(chunk.iter()), |r| {
+            r.get::<_, String>(0)
+        })?;
         for row in rows {
             out.push(row?);
         }
@@ -47,18 +48,26 @@ pub fn entities_by_ids(pool: &Pool, ids: &[&str]) -> Result<Vec<kroma_domain::Se
     use kroma_domain::{SectionItem, Show};
     use std::collections::HashMap;
 
-    let mut item_map: HashMap<String, MediaItem> =
-        items_by_ids(pool, ids)?.into_iter().map(|i| (i.id.clone(), i)).collect();
+    let mut item_map: HashMap<String, MediaItem> = items_by_ids(pool, ids)?
+        .into_iter()
+        .map(|i| (i.id.clone(), i))
+        .collect();
     let owned: Vec<String> = ids.iter().map(ToString::to_string).collect();
-    let mut show_map: HashMap<String, Show> =
-        get_shows_by_ids(pool, &owned)?.into_iter().map(|s| (s.id.clone(), s)).collect();
+    let mut show_map: HashMap<String, Show> = get_shows_by_ids(pool, &owned)?
+        .into_iter()
+        .map(|s| (s.id.clone(), s))
+        .collect();
 
     let mut out = Vec::with_capacity(ids.len());
     for id in ids {
         if let Some(item) = item_map.remove(*id) {
-            out.push(SectionItem::Movie { item: Box::new(item) });
+            out.push(SectionItem::Movie {
+                item: Box::new(item),
+            });
         } else if let Some(show) = show_map.remove(*id) {
-            out.push(SectionItem::Show { show: Box::new(show) });
+            out.push(SectionItem::Show {
+                show: Box::new(show),
+            });
         }
     }
     Ok(out)
@@ -84,11 +93,17 @@ mod tests {
         let p = seeded();
         // items_by_ids drops unknown ids (and show ids, which have no items row).
         let items = items_by_ids(&p, &["c1", "ghost", "sh1"]).unwrap();
-        assert_eq!(items.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(), ["c1"]);
+        assert_eq!(
+            items.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(),
+            ["c1"]
+        );
 
         // show_ids_for projects episodes to their parent show; movies and unknown
         // ids contribute nothing, and an empty input never hits the DB.
-        assert_eq!(show_ids_for(&p, &["e1", "c1", "ghost"]).unwrap(), vec!["sh1".to_string()]);
+        assert_eq!(
+            show_ids_for(&p, &["e1", "c1", "ghost"]).unwrap(),
+            vec!["sh1".to_string()]
+        );
         assert!(show_ids_for(&p, &[]).unwrap().is_empty());
 
         // entities_by_ids mixes movies + shows, order preserved, unknowns dropped.
@@ -103,6 +118,9 @@ mod tests {
             .unwrap()
             .execute("INSERT INTO item_vectors (id,dim,vec,updated_at) VALUES ('c1',2,x'0000','2026-01-01')", [])
             .unwrap();
-        assert_eq!(vectors_max_updated_at(&p).unwrap().as_deref(), Some("2026-01-01"));
+        assert_eq!(
+            vectors_max_updated_at(&p).unwrap().as_deref(),
+            Some("2026-01-01")
+        );
     }
 }

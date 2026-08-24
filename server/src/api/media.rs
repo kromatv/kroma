@@ -154,7 +154,9 @@ pub async fn get_show(
 ) -> Result<Response, Response> {
     let uid = user.id;
     let detail = query(&state.db, move |pool| {
-        let Some(mut detail) = db::get_show(&pool, &id)? else { return Ok(None) };
+        let Some(mut detail) = db::get_show(&pool, &id)? else {
+            return Ok(None);
+        };
         detail.show.progress = db::show_progress_one(&pool, &uid, &detail.show.id).unwrap_or(None);
         db::localize::overlay_show_detail(&pool, &mut detail, locale)?;
         Ok(Some(detail))
@@ -171,7 +173,9 @@ pub async fn get_item(
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
     let item = query(&state.db, move |pool| {
-        let Some(mut item) = db::get_item(&pool, &id)? else { return Ok(None) };
+        let Some(mut item) = db::get_item(&pool, &id)? else {
+            return Ok(None);
+        };
         db::localize::overlay_items(&pool, std::slice::from_mut(&mut item), locale)?;
         Ok(Some(item))
     })
@@ -185,14 +189,19 @@ pub async fn get_item(
 /// concurrent walk can race a watch-triggered run on the same DB.
 pub async fn rescan(State(state): State<SharedState>) -> Result<Response, Response> {
     use crate::services::jobs::{JobKey, TriggerError};
-    match state.jobs.trigger(state.clone(), JobKey("library.scan"), "manual") {
+    match state
+        .jobs
+        .trigger(state.clone(), JobKey("library.scan"), "manual")
+    {
         Ok(run_id) => Ok(Json(serde_json::json!({ "runId": run_id })).into_response()),
-        Err(TriggerError::AlreadyRunning) => {
-            Err(json_error(StatusCode::CONFLICT, "a scan is already running"))
-        }
-        Err(TriggerError::Unknown) => {
-            Err(json_error(StatusCode::INTERNAL_SERVER_ERROR, "scan job not registered"))
-        }
+        Err(TriggerError::AlreadyRunning) => Err(json_error(
+            StatusCode::CONFLICT,
+            "a scan is already running",
+        )),
+        Err(TriggerError::Unknown) => Err(json_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "scan job not registered",
+        )),
     }
 }
 

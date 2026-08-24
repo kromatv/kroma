@@ -62,7 +62,10 @@ impl Session {
                 if val.is_empty() {
                     continue;
                 }
-                return Some(classify_target(&engine::join_url(&self.rendered_base(), &val)));
+                return Some(classify_target(&engine::join_url(
+                    &self.rendered_base(),
+                    &val,
+                )));
             }
         }
         None
@@ -75,8 +78,11 @@ impl Session {
         release: &Release,
     ) -> Option<DownloadTarget> {
         let ih = download.infohash.as_ref()?;
-        let hash_sel =
-            ih.hash.as_ref().and_then(|h| h.selector.clone()).or_else(|| ih.selector.clone())?;
+        let hash_sel = ih
+            .hash
+            .as_ref()
+            .and_then(|h| h.selector.clone())
+            .or_else(|| ih.selector.clone())?;
         let el = selector::select_first(root, &hash_sel)?;
         let hash = match &ih.attribute {
             Some(a) => selector::element_attr(el, a).unwrap_or_default(),
@@ -106,7 +112,10 @@ mod tests {
 
     #[test]
     fn classify_download_target() {
-        assert_eq!(classify_target("magnet:?xt=1"), DownloadTarget::Magnet("magnet:?xt=1".into()));
+        assert_eq!(
+            classify_target("magnet:?xt=1"),
+            DownloadTarget::Magnet("magnet:?xt=1".into())
+        );
         assert_eq!(
             classify_target("https://x/t.torrent"),
             DownloadTarget::TorrentUrl("https://x/t.torrent".into())

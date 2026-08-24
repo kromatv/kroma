@@ -10,7 +10,8 @@ use kroma_db::notifications::AddedTitle;
 use kroma_module_host::HostStorage;
 
 use kroma_domain::{
-    ActionKind, ActionSpec, ActionStyle, Audience, NotificationEvent, NotificationSpec, PushCategory,
+    ActionKind, ActionSpec, ActionStyle, Audience, NotificationEvent, NotificationSpec,
+    PushCategory,
 };
 
 use crate::db;
@@ -41,7 +42,10 @@ pub fn run<S: HostStorage>(state: &S) -> anyhow::Result<DigestSummary> {
         let head = db::notifications::newest_added_at(&conn)?.unwrap_or_default();
         drop(conn);
         set_watermark(state, &head);
-        return Ok(DigestSummary { seeded: true, ..Default::default() });
+        return Ok(DigestSummary {
+            seeded: true,
+            ..Default::default()
+        });
     }
 
     let added = db::notifications::items_added_since(&conn, &since, MAX_SCAN)?;
@@ -136,15 +140,22 @@ fn announce_episodes<S: HostStorage>(state: &S, show_id: &str, eps: &[AddedTitle
     let Some(newest) = eps.first() else {
         return 0;
     };
-    let show_title = newest.show_title.clone().unwrap_or_else(|| newest.title.clone());
+    let show_title = newest
+        .show_title
+        .clone()
+        .unwrap_or_else(|| newest.title.clone());
     // "S01E04" for a single episode, "4 new episodes" for a batch a season drop
     // should read as one arrival, not four. Only the body key and its one var
     // differ; title key, link, push category and audience are the same either way.
     let (body_key, (var, value)) = match (eps.len(), newest.season, newest.episode) {
-        (1, Some(s), Some(e)) => {
-            ("notifications.media.episode.body", ("episode", format!("S{s:02}E{e:02}")))
-        }
-        (n, ..) => ("notifications.media.episodeMany.body", ("count", n.to_string())),
+        (1, Some(s), Some(e)) => (
+            "notifications.media.episode.body",
+            ("episode", format!("S{s:02}E{e:02}")),
+        ),
+        (n, ..) => (
+            "notifications.media.episodeMany.body",
+            ("count", n.to_string()),
+        ),
     };
     let spec = NotificationSpec::new(
         NotificationEvent::MediaEpisode,
@@ -171,7 +182,9 @@ mod tests {
     // read from and someone to tell.
     fn seeded() -> (crate::state::SharedState, String) {
         let state = test_support::test_state();
-        let user = kroma_db::create_user(&state.db, "ana@test.dev", "Ana", "h", &[]).unwrap().id;
+        let user = kroma_db::create_user(&state.db, "ana@test.dev", "Ana", "h", &[])
+            .unwrap()
+            .id;
         let conn = state.db.get().unwrap();
         conn.execute(
             "INSERT INTO libraries (id,name,kind,path,added_at) \
@@ -255,7 +268,10 @@ mod tests {
         let rows = db::notifications::list_notifications(&conn, &user, 10, false).unwrap();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].link.as_deref(), Some("/movie/m2"));
-        assert_eq!(rows[0].params.get("title"), Some(&ParamValue::Text("Arrival".into())));
+        assert_eq!(
+            rows[0].params.get("title"),
+            Some(&ParamValue::Text("Arrival".into()))
+        );
         // A lone arrival is worth a Watch button.
         assert_eq!(rows[0].actions.len(), 1);
     }
@@ -271,7 +287,10 @@ mod tests {
 
         let conn = state.db.get().unwrap();
         let rows = db::notifications::list_notifications(&conn, &user, 10, false).unwrap();
-        assert_eq!(rows[0].image_url.as_deref(), Some("/api/images/arrival.webp"));
+        assert_eq!(
+            rows[0].image_url.as_deref(),
+            Some("/api/images/arrival.webp")
+        );
     }
 
     #[test]
@@ -280,7 +299,12 @@ mod tests {
         add_movie(&state, "m0", "Seed", "2026-01-01T00:00:00Z");
         run(&state).unwrap();
         for (i, title) in ["A", "B", "C"].iter().enumerate() {
-            add_movie(&state, &format!("m{i}x"), title, &format!("2026-01-0{}T00:00:00Z", i + 3));
+            add_movie(
+                &state,
+                &format!("m{i}x"),
+                title,
+                &format!("2026-01-0{}T00:00:00Z", i + 3),
+            );
         }
 
         let summary = run(&state).unwrap();
@@ -291,7 +315,10 @@ mod tests {
 
         let conn = state.db.get().unwrap();
         let rows = db::notifications::list_notifications(&conn, &user, 10, false).unwrap();
-        assert_eq!(rows[0].params.get("count"), Some(&ParamValue::Text("3".into())));
+        assert_eq!(
+            rows[0].params.get("count"),
+            Some(&ParamValue::Text("3".into()))
+        );
         assert_eq!(rows[0].link.as_deref(), Some("/films"));
     }
 
@@ -473,7 +500,10 @@ mod tests {
 
         let conn = state.db.get().unwrap();
         let rows = db::notifications::list_notifications(&conn, &user, 10, false).unwrap();
-        assert_eq!(rows[0].image_url.as_deref(), Some("/api/images/severance.webp"));
+        assert_eq!(
+            rows[0].image_url.as_deref(),
+            Some("/api/images/severance.webp")
+        );
     }
 
     #[test]
@@ -486,13 +516,23 @@ mod tests {
         adopt(&state);
 
         for ep in 1..=4 {
-            add_episode(&state, &format!("e{ep}"), "shw", 1, ep, "2026-02-01T00:00:00Z");
+            add_episode(
+                &state,
+                &format!("e{ep}"),
+                "shw",
+                1,
+                ep,
+                "2026-02-01T00:00:00Z",
+            );
         }
         let summary = run(&state).unwrap();
         assert_eq!(summary.sent, 1, "one notification, not four");
         assert_eq!(unread(&state, &user), 1);
         // ...and it uses the plural body, which carries the count.
-        assert_eq!(bodies(&state, &user), ["notifications.media.episodeMany.body"]);
+        assert_eq!(
+            bodies(&state, &user),
+            ["notifications.media.episodeMany.body"]
+        );
     }
 
     #[test]
@@ -500,7 +540,9 @@ mod tests {
         // Two shows updating on the same night are two arrivals, addressed to
         // each show's own followers.
         let (state, ana) = seeded();
-        let bo = kroma_db::create_user(&state.db, "bo@test.dev", "Bo", "h", &[]).unwrap().id;
+        let bo = kroma_db::create_user(&state.db, "bo@test.dev", "Bo", "h", &[])
+            .unwrap()
+            .id;
         add_show(&state, "shw-a", "Severance", &ana);
         {
             let conn = state.db.get().unwrap();

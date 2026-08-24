@@ -22,7 +22,9 @@ fn tar_with_manifest(manifest: &str) -> Vec<u8> {
     header.set_size(bytes.len() as u64);
     header.set_mode(0o644);
     header.set_cksum();
-    builder.append_data(&mut header, "module.json", bytes).unwrap();
+    builder
+        .append_data(&mut header, "module.json", bytes)
+        .unwrap();
     builder.into_inner().unwrap()
 }
 
@@ -52,8 +54,14 @@ fn install_rejects_a_module_needing_a_newer_server() {
         r#""id": "com.example.demo", "name": "Demo", "version": "1.0.0",
              "engines": { "server": ">=999.0.0" }, "library": true"#,
     ));
-    let err = sup.install(&bundle, None, ("upload", None)).unwrap_err().to_string();
-    assert!(err.contains("requires server >=999.0.0"), "unexpected error: {err}");
+    let err = sup
+        .install(&bundle, None, ("upload", None))
+        .unwrap_err()
+        .to_string();
+    assert!(
+        err.contains("requires server >=999.0.0"),
+        "unexpected error: {err}"
+    );
     assert!(sup.installed_ids().is_empty());
 }
 
@@ -80,8 +88,14 @@ fn install_still_rejects_reserved_ids() {
         r#""id": "tv.kroma.reserved", "name": "Shadow", "version": "1.0.0",
              "library": true"#,
     ));
-    let err = sup.install(&bundle, None, ("upload", None)).unwrap_err().to_string();
-    assert!(err.contains("built into this server"), "unexpected error: {err}");
+    let err = sup
+        .install(&bundle, None, ("upload", None))
+        .unwrap_err()
+        .to_string();
+    assert!(
+        err.contains("built into this server"),
+        "unexpected error: {err}"
+    );
 }
 
 #[test]
@@ -94,7 +108,10 @@ fn install_refuses_an_engine_this_server_cannot_check() {
         r#""id": "com.example.demo", "name": "Demo", "version": "1.0.0",
              "engines": { "ffmpeg": ">=6" }, "library": true"#,
     ));
-    let err = sup.install(&bundle, None, ("upload", None)).unwrap_err().to_string();
+    let err = sup
+        .install(&bundle, None, ("upload", None))
+        .unwrap_err()
+        .to_string();
     assert!(err.contains("cannot check"), "unexpected error: {err}");
     assert!(err.contains("ffmpeg"), "unexpected error: {err}");
 }
@@ -109,9 +126,18 @@ fn install_refuses_a_bundle_built_for_another_manifest_contract() {
     let bundle = tar_with_manifest(
         r#"{ "id": "com.example.demo", "name": "Demo", "version": "1.0.0", "library": true }"#,
     );
-    let err = sup.install(&bundle, None, ("upload", None)).unwrap_err().to_string();
-    assert!(err.contains("manifest schema v0"), "unexpected error: {err}");
-    assert!(err.contains("rebuild"), "the error must say what to do: {err}");
+    let err = sup
+        .install(&bundle, None, ("upload", None))
+        .unwrap_err()
+        .to_string();
+    assert!(
+        err.contains("manifest schema v0"),
+        "unexpected error: {err}"
+    );
+    assert!(
+        err.contains("rebuild"),
+        "the error must say what to do: {err}"
+    );
     assert!(sup.installed_ids().is_empty(), "nothing is unpacked");
 }
 
@@ -125,8 +151,10 @@ fn install_reports_an_id_mismatch_before_the_contract_it_was_built_against() {
     let bundle = tar_with_manifest(
         r#"{ "id": "com.example.other", "name": "Other", "version": "1.0.0", "library": true }"#,
     );
-    let err =
-        sup.install(&bundle, Some("com.example.demo"), ("registry", None)).unwrap_err().to_string();
+    let err = sup
+        .install(&bundle, Some("com.example.demo"), ("registry", None))
+        .unwrap_err()
+        .to_string();
     assert!(err.contains("offered as"), "unexpected error: {err}");
 }
 
@@ -153,10 +181,12 @@ fn upgrading_a_module_keeps_the_database_it_owns() {
         )))
     };
 
-    sup.install(&bundle("1.0.0"), None, ("upload", None)).unwrap();
+    sup.install(&bundle("1.0.0"), None, ("upload", None))
+        .unwrap();
     let store = dir.join("com.example.demo").join("module.sqlite");
     std::fs::write(&store, b"the module's own rows").unwrap();
-    sup.install(&bundle("2.0.0"), None, ("upload", None)).unwrap();
+    sup.install(&bundle("2.0.0"), None, ("upload", None))
+        .unwrap();
 
     assert_eq!(std::fs::read(&store).unwrap(), b"the module's own rows");
     assert_eq!(sup.installed_manifests()[0].version, "2.0.0");

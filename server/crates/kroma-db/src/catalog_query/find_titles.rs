@@ -127,7 +127,10 @@ fn normalize_kind(k: &str) -> String {
 
 // Trim a filter string and treat blank as absent.
 fn clean(s: &Option<String>) -> Option<String> {
-    s.as_deref().map(str::trim).filter(|t| !t.is_empty()).map(str::to_string)
+    s.as_deref()
+        .map(str::trim)
+        .filter(|t| !t.is_empty())
+        .map(str::to_string)
 }
 
 #[cfg(test)]
@@ -138,42 +141,110 @@ mod tests {
     #[test]
     fn genre_filter_and_kind() {
         let pool = seeded_pool();
-        let horror = find_titles(&pool, &TitleFilter { genre: Some("Horror".into()), ..Default::default() }).unwrap();
+        let horror = find_titles(
+            &pool,
+            &TitleFilter {
+                genre: Some("Horror".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         let ids: Vec<&str> = horror.iter().map(|t| t.id.as_str()).collect();
         assert_eq!(ids, ["m3", "m4"]); // rating DESC: Shining 8.4 then Hereditary 7.3
 
         // Sci-fi spans a movie + a show; kind filter narrows to the show.
-        let scifi = find_titles(&pool, &TitleFilter { genre: Some("science fiction".into()), ..Default::default() }).unwrap();
+        let scifi = find_titles(
+            &pool,
+            &TitleFilter {
+                genre: Some("science fiction".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         assert_eq!(scifi.len(), 2);
-        let show_only =
-            find_titles(&pool, &TitleFilter { genre: Some("Science Fiction".into()), kind: Some("series".into()), ..Default::default() })
-                .unwrap();
-        assert_eq!(show_only.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(), ["s1"]);
+        let show_only = find_titles(
+            &pool,
+            &TitleFilter {
+                genre: Some("Science Fiction".into()),
+                kind: Some("series".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            show_only.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(),
+            ["s1"]
+        );
         assert_eq!(show_only[0].kind, "show");
     }
 
     #[test]
     fn director_and_actor_filters() {
         let pool = seeded_pool();
-        let dv = find_titles(&pool, &TitleFilter { director: Some("Denis Villeneuve".into()), ..Default::default() }).unwrap();
-        assert_eq!(dv.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(), ["m1", "m2"]);
-        let blunt = find_titles(&pool, &TitleFilter { actor: Some("Emily Blunt".into()), ..Default::default() }).unwrap();
-        assert_eq!(blunt.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(), ["m2"]);
+        let dv = find_titles(
+            &pool,
+            &TitleFilter {
+                director: Some("Denis Villeneuve".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            dv.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(),
+            ["m1", "m2"]
+        );
+        let blunt = find_titles(
+            &pool,
+            &TitleFilter {
+                actor: Some("Emily Blunt".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            blunt.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(),
+            ["m2"]
+        );
     }
 
     #[test]
     fn rating_year_sort_and_limit() {
         let pool = seeded_pool();
-        let top = find_titles(&pool, &TitleFilter { min_rating: Some(8.0), ..Default::default() }).unwrap();
+        let top = find_titles(
+            &pool,
+            &TitleFilter {
+                min_rating: Some(8.0),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         // ≥8.0: Severance 8.7, Shining 8.4, Dune 8.0 newest sort would differ.
-        assert_eq!(top.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(), ["s1", "m3", "m1"]);
+        assert_eq!(
+            top.iter().map(|t| t.id.as_str()).collect::<Vec<_>>(),
+            ["s1", "m3", "m1"]
+        );
 
-        let newest = find_titles(&pool, &TitleFilter { sort: Some("year".into()), limit: Some(2), ..Default::default() }).unwrap();
+        let newest = find_titles(
+            &pool,
+            &TitleFilter {
+                sort: Some("year".into()),
+                limit: Some(2),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         assert_eq!(newest.len(), 2);
         assert_eq!(newest[0].id, "s1"); // 2022 newest
 
         // Episodes never appear in the catalog.
-        let all = find_titles(&pool, &TitleFilter { limit: Some(50), ..Default::default() }).unwrap();
+        let all = find_titles(
+            &pool,
+            &TitleFilter {
+                limit: Some(50),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         assert!(all.iter().all(|t| t.id != "e1"));
         assert_eq!(all.len(), 6); // 5 movies + 1 show
     }
@@ -182,14 +253,35 @@ mod tests {
     fn the_keyword_filter_matches_the_title_or_the_overview() {
         let pool = seeded_pool();
         let ids = |filter: TitleFilter| {
-            find_titles(&pool, &filter).unwrap().into_iter().map(|t| t.id).collect::<Vec<_>>()
+            find_titles(&pool, &filter)
+                .unwrap()
+                .into_iter()
+                .map(|t| t.id)
+                .collect::<Vec<_>>()
         };
 
-        assert_eq!(ids(TitleFilter { keyword: Some("shin".into()), ..Default::default() }), ["m3"]);
-        let by_overview = ids(TitleFilter { keyword: Some("A FILM ABOUT".into()), limit: Some(50), ..Default::default() });
+        assert_eq!(
+            ids(TitleFilter {
+                keyword: Some("shin".into()),
+                ..Default::default()
+            }),
+            ["m3"]
+        );
+        let by_overview = ids(TitleFilter {
+            keyword: Some("A FILM ABOUT".into()),
+            limit: Some(50),
+            ..Default::default()
+        });
         assert!(by_overview.contains(&"m1".to_string()), "{by_overview:?}");
-        assert!(!by_overview.contains(&"m5".to_string()), "m5 has no overview: {by_overview:?}");
-        assert!(ids(TitleFilter { keyword: Some("nothing matches".into()), ..Default::default() }).is_empty());
+        assert!(
+            !by_overview.contains(&"m5".to_string()),
+            "m5 has no overview: {by_overview:?}"
+        );
+        assert!(ids(TitleFilter {
+            keyword: Some("nothing matches".into()),
+            ..Default::default()
+        })
+        .is_empty());
     }
 
     #[test]
@@ -198,7 +290,13 @@ mod tests {
         let ids = |min, max| {
             find_titles(
                 &pool,
-                &TitleFilter { year_min: min, year_max: max, sort: Some("year".into()), limit: Some(50), ..Default::default() },
+                &TitleFilter {
+                    year_min: min,
+                    year_max: max,
+                    sort: Some("year".into()),
+                    limit: Some(50),
+                    ..Default::default()
+                },
             )
             .unwrap()
             .into_iter()
@@ -208,7 +306,11 @@ mod tests {
 
         assert_eq!(ids(Some(2018), None), ["s1", "m1", "m4"]);
         assert_eq!(ids(None, Some(1990)), ["m5", "m3"]);
-        assert_eq!(ids(Some(1980), Some(1980)), ["m3"], "both bounds include their year");
+        assert_eq!(
+            ids(Some(1980), Some(1980)),
+            ["m3"],
+            "both bounds include their year"
+        );
         assert!(ids(Some(2030), None).is_empty());
     }
 }

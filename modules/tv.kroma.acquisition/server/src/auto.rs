@@ -69,8 +69,14 @@ pub fn auto_search_pass<S: kroma_module_sdk::host::HostStorage>(
 
     let due_ids: HashSet<String> = due.iter().map(|w| w.id.clone()).collect();
     let mut searched: HashSet<String> = HashSet::new();
-    let pass =
-        SearchPass { state, indexers: &indexers, profile: &profile, due_ids: &due_ids, log, cancelled };
+    let pass = SearchPass {
+        state,
+        indexers: &indexers,
+        profile: &profile,
+        due_ids: &due_ids,
+        log,
+        cancelled,
+    };
     for request_id in &request_ids {
         if cancelled() || summary.targets >= MAX_TARGETS {
             break;
@@ -78,7 +84,9 @@ pub fn auto_search_pass<S: kroma_module_sdk::host::HostStorage>(
         // One request failing is not the pass failing: the rows already searched
         // still have to be charged below, or the next pass repeats this one.
         if let Err(e) = search_request(&pass, request_id, &mut summary, &mut searched) {
-            summary.errors.push(format!("search failed for request {request_id}: {e:#}"));
+            summary
+                .errors
+                .push(format!("search failed for request {request_id}: {e:#}"));
         }
     }
 
@@ -106,7 +114,10 @@ fn schedule_retries<S: kroma_module_sdk::host::HostStorage>(
 ) -> Result<()> {
     let mut buckets: HashMap<i64, Vec<String>> = HashMap::new();
     for w in due {
-        buckets.entry(base_delay_ms(w.air_date.as_deref(), today)).or_default().push(w.id.clone());
+        buckets
+            .entry(base_delay_ms(w.air_date.as_deref(), today))
+            .or_default()
+            .push(w.id.clone());
     }
     for (delay, ids) in buckets {
         db::schedule_next_search(state.db(), &ids, now, delay)?;
@@ -127,7 +138,11 @@ fn wanted_row_ids(wanted: &[db::WantedRow], st: &crate::search::SearchTarget) ->
 // The request's whole open list becomes targets, so without the second rule an
 // old unfindable season spends every slot ahead of the episode that just aired,
 // is charged no backoff for it (only due rows are), and does it again forever.
-fn worth_a_slot(target_rows: &[String], covered: &HashSet<String>, due_ids: &HashSet<String>) -> bool {
+fn worth_a_slot(
+    target_rows: &[String],
+    covered: &HashSet<String>,
+    due_ids: &HashSet<String>,
+) -> bool {
     !target_rows.is_empty()
         && !target_rows.iter().all(|id| covered.contains(id))
         && target_rows.iter().any(|id| due_ids.contains(id))
@@ -156,9 +171,18 @@ fn search_request<S: kroma_module_sdk::host::HostStorage>(
     summary: &mut AutoSummary,
     searched: &mut HashSet<String>,
 ) -> Result<()> {
-    let SearchPass { state, indexers, profile, due_ids, log, cancelled } = *pass;
+    let SearchPass {
+        state,
+        indexers,
+        profile,
+        due_ids,
+        log,
+        cancelled,
+    } = *pass;
     let conn = state.db().get()?;
-    let Some(req) = db::get_request(&conn, request_id)? else { return Ok(()) };
+    let Some(req) = db::get_request(&conn, request_id)? else {
+        return Ok(());
+    };
     let wanted = db::wanted_for_request(&conn, request_id)?;
     drop(conn);
 
@@ -177,7 +201,14 @@ fn search_request<S: kroma_module_sdk::host::HostStorage>(
         summary.targets += 1;
         searched.extend(target_rows.iter().cloned());
 
-        let outcome = best_candidate(state, indexers, st, profile, req.tmdb_id, &mut summary.errors);
+        let outcome = best_candidate(
+            state,
+            indexers,
+            st,
+            profile,
+            req.tmdb_id,
+            &mut summary.errors,
+        );
         let Some((candidate, score)) = outcome.best else {
             // A silent empty pass reads the same as a broken indexer; say which
             // it was, since this is the only trace the admin ever gets.
@@ -186,7 +217,10 @@ fn search_request<S: kroma_module_sdk::host::HostStorage>(
                 req.title,
                 target_label(st),
                 outcome.seen,
-                outcome.top_reject.map(|r| format!(", best rejected: {r}")).unwrap_or_default()
+                outcome
+                    .top_reject
+                    .map(|r| format!(", best rejected: {r}"))
+                    .unwrap_or_default()
             ));
             continue;
         };
@@ -265,13 +299,23 @@ fn take_best(
             }
             continue;
         };
-        let magnet_or_url =
-            release.magnet.clone().or_else(|| release.link.clone()).unwrap_or_default();
+        let magnet_or_url = release
+            .magnet
+            .clone()
+            .or_else(|| release.link.clone())
+            .unwrap_or_default();
         if magnet_or_url.is_empty() {
             continue;
         }
         if out.best.as_ref().is_none_or(|(_, s)| score > *s) {
-            out.best = Some((crate::search::CachedRelease { view, magnet_or_url, tmdb_id }, score));
+            out.best = Some((
+                crate::search::CachedRelease {
+                    view,
+                    magnet_or_url,
+                    tmdb_id,
+                },
+                score,
+            ));
         }
     }
 }
@@ -282,9 +326,18 @@ mod tests {
     use crate::peers::indexers::Query;
     use kroma_scene::Target;
 
-    fn target(kind: &'static str, season: Option<u32>, episodes: Option<Vec<u32>>) -> crate::search::SearchTarget {
+    fn target(
+        kind: &'static str,
+        season: Option<u32>,
+        episodes: Option<Vec<u32>>,
+    ) -> crate::search::SearchTarget {
         crate::search::SearchTarget {
-            query: Query::Movie { tmdb_id: None, imdb_id: None, title: "T".into(), year: None },
+            query: Query::Movie {
+                tmdb_id: None,
+                imdb_id: None,
+                title: "T".into(),
+                year: None,
+            },
             target: Target::Movie { year: None },
             kind,
             season,
@@ -312,13 +365,19 @@ mod tests {
         let due = ids(&["s01e01"]);
         let rows = vec!["s01e01".to_string()];
         assert!(!worth_a_slot(&rows, &ids(&["s01e01"]), &due));
-        assert!(!worth_a_slot(&[], &HashSet::new(), &due), "nothing open is nothing to search");
+        assert!(
+            !worth_a_slot(&[], &HashSet::new(), &due),
+            "nothing open is nothing to search"
+        );
     }
 
     #[test]
     fn target_labels_name_what_was_searched() {
         assert_eq!(target_label(&target("movie", None, None)), "the movie");
         assert_eq!(target_label(&target("season", Some(3), None)), "S03 pack");
-        assert_eq!(target_label(&target("episode", Some(3), Some(vec![7]))), "S03E07");
+        assert_eq!(
+            target_label(&target("episode", Some(3), Some(vec![7]))),
+            "S03E07"
+        );
     }
 }

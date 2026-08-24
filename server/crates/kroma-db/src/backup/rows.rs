@@ -24,16 +24,28 @@ pub(super) fn dump_query(conn: &Connection, sql: &str) -> Result<Vec<Map<String,
 
 // `INSERT OR REPLACE` each row into `table` (replace-by-primary-key). Column
 // names are validated as plain identifiers before interpolation.
-pub(super) fn restore_rows(conn: &Connection, table: &str, rows: &[Map<String, Value>]) -> Result<usize> {
+pub(super) fn restore_rows(
+    conn: &Connection,
+    table: &str,
+    rows: &[Map<String, Value>],
+) -> Result<usize> {
     let mut written = 0;
     for row in rows {
         let cols: Vec<&String> = row.keys().filter(|c| is_ident(c)).collect();
         if cols.is_empty() {
             continue;
         }
-        let col_list = cols.iter().map(|c| format!("\"{c}\"")).collect::<Vec<_>>().join(",");
-        let placeholders = (1..=cols.len()).map(|i| format!("?{i}")).collect::<Vec<_>>().join(",");
-        let sql = format!("INSERT OR REPLACE INTO \"{table}\" ({col_list}) VALUES ({placeholders})");
+        let col_list = cols
+            .iter()
+            .map(|c| format!("\"{c}\""))
+            .collect::<Vec<_>>()
+            .join(",");
+        let placeholders = (1..=cols.len())
+            .map(|i| format!("?{i}"))
+            .collect::<Vec<_>>()
+            .join(",");
+        let sql =
+            format!("INSERT OR REPLACE INTO \"{table}\" ({col_list}) VALUES ({placeholders})");
         let values: Vec<SqlValue> = cols.iter().map(|c| json_to_sql(&row[*c])).collect();
         conn.execute(&sql, rusqlite::params_from_iter(values.iter()))?;
         written += 1;
@@ -64,7 +76,11 @@ pub(super) fn json_to_sql(v: &Value) -> SqlValue {
             .map(SqlValue::Integer)
             .unwrap_or_else(|| SqlValue::Real(n.as_f64().unwrap_or(0.0))),
         Value::String(s) => SqlValue::Text(s.clone()),
-        Value::Array(a) => SqlValue::Blob(a.iter().filter_map(|x| x.as_u64().map(|n| n as u8)).collect()),
+        Value::Array(a) => SqlValue::Blob(
+            a.iter()
+                .filter_map(|x| x.as_u64().map(|n| n as u8))
+                .collect(),
+        ),
         Value::Object(_) => SqlValue::Text(v.to_string()),
     }
 }
@@ -86,9 +102,15 @@ mod tests {
         let mut doc = empty_doc();
         doc.tables.insert(
             "users".into(),
-            vec![Map::from_iter([("id); DROP TABLE users --".to_string(), Value::from("u1"))])],
+            vec![Map::from_iter([(
+                "id); DROP TABLE users --".to_string(),
+                Value::from("u1"),
+            )])],
         );
-        assert_eq!(import_portable(&dst, &data_dir(&dst), &doc, false).unwrap(), vec![("users".to_string(), 0)]);
+        assert_eq!(
+            import_portable(&dst, &data_dir(&dst), &doc, false).unwrap(),
+            vec![("users".to_string(), 0)]
+        );
         assert_eq!(count(&dst, "users"), 0);
     }
 
@@ -99,8 +121,14 @@ mod tests {
         assert_eq!(json_to_sql(&Value::Bool(false)), SqlValue::Integer(0));
         assert_eq!(json_to_sql(&serde_json::json!(42)), SqlValue::Integer(42));
         assert_eq!(json_to_sql(&serde_json::json!(1.5)), SqlValue::Real(1.5));
-        assert_eq!(json_to_sql(&serde_json::json!("hi")), SqlValue::Text("hi".into()));
-        assert_eq!(json_to_sql(&serde_json::json!([1, 2, 255])), SqlValue::Blob(vec![1, 2, 255]));
+        assert_eq!(
+            json_to_sql(&serde_json::json!("hi")),
+            SqlValue::Text("hi".into())
+        );
+        assert_eq!(
+            json_to_sql(&serde_json::json!([1, 2, 255])),
+            SqlValue::Blob(vec![1, 2, 255])
+        );
         assert_eq!(
             json_to_sql(&serde_json::json!({ "a": 1 })),
             SqlValue::Text(r#"{"a":1}"#.into())

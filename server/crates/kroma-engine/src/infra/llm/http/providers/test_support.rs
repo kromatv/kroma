@@ -21,4 +21,3 @@ impl ToolBox for EchoBox {
         Ok(json!({ "echo": name, "args": args }).to_string())
     }
 }
-

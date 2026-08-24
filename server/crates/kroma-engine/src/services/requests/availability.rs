@@ -60,12 +60,21 @@ fn match_movie<S: HostStorage>(
     let Some(_item) = db::movie_item_by_tmdb(&conn, req.tmdb_id)? else {
         return Ok(None);
     };
-    let wanted_ids: Vec<String> =
-        db::wanted_for_request(&conn, &req.id)?.into_iter().map(|w| w.id).collect();
+    let wanted_ids: Vec<String> = db::wanted_for_request(&conn, &req.id)?
+        .into_iter()
+        .map(|w| w.id)
+        .collect();
     drop(conn);
     db::set_wanted_status(state.db(), &wanted_ids, "available", now_ms())?;
     if req.status != RequestStatus::Available {
-        db::set_request_status(state.db(), &req.id, RequestStatus::Available, None, None, now_ms())?;
+        db::set_request_status(
+            state.db(),
+            &req.id,
+            RequestStatus::Available,
+            None,
+            None,
+            now_ms(),
+        )?;
         let link = request_link(state, req);
         notify_requester(state, req, RequestStatus::Available, &link);
     }
@@ -117,7 +126,9 @@ fn tally_wanted(
     let mut newly_available: Vec<String> = Vec::new();
     let (mut aired, mut have) = (0usize, 0usize);
     for w in wanted {
-        let (Some(s), Some(e)) = (w.season, w.episode) else { continue };
+        let (Some(s), Some(e)) = (w.season, w.episode) else {
+            continue;
+        };
         let is_aired = w.air_date.as_deref().is_none_or(|d| d <= today);
         if !is_aired {
             continue;

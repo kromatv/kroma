@@ -26,7 +26,10 @@ pub(super) fn download_audio_args(
     if tracks.is_empty() {
         // Unprobed item: the map stays optional so a video-only file still downloads.
         let mut args: Vec<String> = vec!["-map".into(), "0:a:0?".into()];
-        args.extend(audio_codec_args(":a", download_copies_audio(fallback_codec, client_set)));
+        args.extend(audio_codec_args(
+            ":a",
+            download_copies_audio(fallback_codec, client_set),
+        ));
         return args;
     }
     let mut sorted: Vec<&crate::model::AudioStream> = tracks.iter().collect();
@@ -37,7 +40,10 @@ pub(super) fn download_audio_args(
         // position, so a map matching nothing shifts every later stream and lands
         // `copy` on a track meant to be transcoded. Fail loudly instead.
         args.extend(["-map".into(), format!("0:a:{}", t.index)]);
-        args.extend(audio_codec_args(&format!(":a:{out}"), download_copies_audio(Some(t.codec.as_str()), client_set)));
+        args.extend(audio_codec_args(
+            &format!(":a:{out}"),
+            download_copies_audio(Some(t.codec.as_str()), client_set),
+        ));
     }
     args
 }
@@ -102,9 +108,8 @@ mod tests {
         assert_eq!(
             download_audio_args(&tracks, Some("eac3"), None),
             [
-                "-map", "0:a:0", "-c:a:0", "copy",
-                "-map", "0:a:1", "-c:a:1", "aac", "-ac:a:1", "2", "-b:a:1", "192k",
-                "-map", "0:a:2", "-c:a:2", "copy",
+                "-map", "0:a:0", "-c:a:0", "copy", "-map", "0:a:1", "-c:a:1", "aac", "-ac:a:1",
+                "2", "-b:a:1", "192k", "-map", "0:a:2", "-c:a:2", "copy",
             ]
         );
     }
@@ -115,8 +120,8 @@ mod tests {
         assert_eq!(
             download_audio_args(&tracks, None, Some("aac")),
             [
-                "-map", "0:a:0", "-c:a:0", "aac", "-ac:a:0", "2", "-b:a:0", "192k",
-                "-map", "0:a:1", "-c:a:1", "copy",
+                "-map", "0:a:0", "-c:a:0", "aac", "-ac:a:0", "2", "-b:a:0", "192k", "-map",
+                "0:a:1", "-c:a:1", "copy",
             ]
         );
     }

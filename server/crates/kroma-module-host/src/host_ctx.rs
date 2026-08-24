@@ -164,7 +164,10 @@ mod tests {
         let host = Arc::new(testing::StubHost::new());
         let via_arc: &dyn HostCtx = &host;
 
-        via_arc.publish_to("ana", Event::new("notification.created", serde_json::json!({})));
+        via_arc.publish_to(
+            "ana",
+            Event::new("notification.created", serde_json::json!({})),
+        );
         let spec = NotificationSpec::new(
             NotificationEvent::RequestApproved,
             "notifications.request.approved.title",
@@ -172,9 +175,15 @@ mod tests {
         );
         assert_eq!(via_arc.notify(&Audience::user("ana"), &spec), 1);
 
-        assert_eq!(host.published(), [(Some("ana".to_string()), "notification.created".to_string())]);
         assert_eq!(
-            host.notifications().iter().map(|(_, s)| s.event.as_str()).collect::<Vec<_>>(),
+            host.published(),
+            [(Some("ana".to_string()), "notification.created".to_string())]
+        );
+        assert_eq!(
+            host.notifications()
+                .iter()
+                .map(|(_, s)| s.event.as_str())
+                .collect::<Vec<_>>(),
             ["request.approved"]
         );
     }

@@ -38,11 +38,17 @@ async fn post(host: StubHost, token: Option<&str>, body: &str) -> (StatusCode, S
         req = req.header("authorization", format!("Bearer {t}"));
     }
     let res = app(host)
-        .oneshot(req.header("content-type", "application/json").body(Body::from(body.to_string())).unwrap())
+        .oneshot(
+            req.header("content-type", "application/json")
+                .body(Body::from(body.to_string()))
+                .unwrap(),
+        )
         .await
         .unwrap();
     let status = res.status();
-    let bytes = axum::body::to_bytes(res.into_body(), 64 * 1024).await.unwrap();
+    let bytes = axum::body::to_bytes(res.into_body(), 64 * 1024)
+        .await
+        .unwrap();
     (status, String::from_utf8(bytes.to_vec()).unwrap())
 }
 

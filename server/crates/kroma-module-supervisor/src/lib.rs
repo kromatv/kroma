@@ -22,9 +22,7 @@ mod watch;
 pub use host_api::host_router;
 pub use origin::{BinStamp, Origin};
 pub use proxy::proxy_to;
-pub use registry::{
-    sibling_url, verify_sha256, DESCRIPTOR_PATH, FetchProgress, MAX_BUNDLE_BYTES,
-};
+pub use registry::{sibling_url, verify_sha256, FetchProgress, DESCRIPTOR_PATH, MAX_BUNDLE_BYTES};
 
 use manifests::{check_manifest_schema, grant_json};
 use process::Proc;
@@ -86,7 +84,10 @@ impl Supervisor {
     /// a failure leaves the rows in the core database and is logged, because a
     /// module that starts without its old rows is worse than one that starts late.
     fn adopt_declared_tables(&self, id: &str, storage: Option<&kroma_module_manifest::Storage>) {
-        let Some(tables) = storage.map(|s| s.adopt.as_slice()).filter(|t| !t.is_empty()) else {
+        let Some(tables) = storage
+            .map(|s| s.adopt.as_slice())
+            .filter(|t| !t.is_empty())
+        else {
             return;
         };
         let store = self.dir(id).join(MODULE_STORE);
@@ -95,10 +96,16 @@ impl Supervisor {
             .and_then(|conn| adopt::adopt_tables(&conn, &store, tables));
         match moved {
             Ok(0) => {}
-            Ok(n) => self.say(id, &format!("INFO moved {n} table(s) into this module's own database")),
+            Ok(n) => self.say(
+                id,
+                &format!("INFO moved {n} table(s) into this module's own database"),
+            ),
             Err(error) => {
                 tracing::error!(module = %id, error = %format!("{error:#}"), "table adoption failed");
-                self.say(id, "ERROR could not move this module's tables out of the core database");
+                self.say(
+                    id,
+                    "ERROR could not move this module's tables out of the core database",
+                );
             }
         }
     }
@@ -141,7 +148,9 @@ impl Supervisor {
             if answers.is_empty() {
                 continue;
             }
-            let Some(live) = self.port_of(&m.id) else { continue };
+            let Some(live) = self.port_of(&m.id) else {
+                continue;
+            };
             let base = format!("http://127.0.0.1:{live}");
             for answer in answers {
                 if defined_at.is_some_and(|major| answer.version != major) {

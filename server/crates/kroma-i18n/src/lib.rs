@@ -58,7 +58,10 @@ impl I18n {
 
     /// Every locale's code + native-label key, default first.
     pub fn locales(&self) -> impl Iterator<Item = LocaleInfo<'_>> {
-        self.locales.iter().map(|l| LocaleInfo { code: &l.code, label_key: &l.label_key })
+        self.locales.iter().map(|l| LocaleInfo {
+            code: &l.code,
+            label_key: &l.label_key,
+        })
     }
 
     /// Whether `code` is a supported locale.
@@ -72,7 +75,12 @@ impl I18n {
     }
 
     fn lookup(&self, code: &str, key: &str) -> Option<&str> {
-        self.locales.iter().find(|l| l.code == code)?.entries.get(key).map(String::as_str)
+        self.locales
+            .iter()
+            .find(|l| l.code == code)?
+            .entries
+            .get(key)
+            .map(String::as_str)
     }
 
     fn has_key(&self, code: &str, key: &str) -> bool {
@@ -99,7 +107,10 @@ impl I18n {
     /// interpolated into `{count}`.
     pub fn translate(&self, locale: &str, key: &str, vars: &[(&str, &str)]) -> String {
         let code = self.resolve_code(locale).unwrap_or(&self.default);
-        let count = vars.iter().find(|(k, _)| *k == "count").and_then(|(_, v)| v.parse::<i64>().ok());
+        let count = vars
+            .iter()
+            .find(|(k, _)| *k == "count")
+            .and_then(|(_, v)| v.parse::<i64>().ok());
         let lookup_key = match count {
             Some(c) => self.resolve_plural_key(locale, code, key, c),
             None => key.to_string(),
@@ -120,7 +131,10 @@ impl I18n {
     /// default, so this never fails).
     pub fn translator<'a>(&'a self, locale: &str) -> Translator<'a> {
         let code = self.resolve_code(locale).unwrap_or(&self.default);
-        Translator { i18n: self, locale: code }
+        Translator {
+            i18n: self,
+            locale: code,
+        }
     }
 }
 
@@ -192,7 +206,10 @@ mod tests {
         let i = I18n::builder()
             .default_locale("fr")
             .plural_rule(fr_zero_is_one)
-            .catalog_json("fr", r#"{ "seasons": "{count} saisons", "seasons_one": "{count} saison" }"#)
+            .catalog_json(
+                "fr",
+                r#"{ "seasons": "{count} saisons", "seasons_one": "{count} saison" }"#,
+            )
             .build()
             .unwrap();
         assert_eq!(i.t("fr", "seasons", &[("count", "0")]), "0 saison");

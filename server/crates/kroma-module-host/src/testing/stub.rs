@@ -74,8 +74,13 @@ impl StubHost {
         let db = kroma_db::init(&data_dir.path().join("kroma.db")).expect("init test db");
         // `open`, like the real runtime: a module's own file carries no core
         // schema, only what its own migrations put there.
-        let store = kroma_db::open(&data_dir.path().join("module.sqlite")).expect("open test store");
-        Self { db: Some(db), store: Some(store), ..Self::in_dir(data_dir) }
+        let store =
+            kroma_db::open(&data_dir.path().join("module.sqlite")).expect("open test store");
+        Self {
+            db: Some(db),
+            store: Some(store),
+            ..Self::in_dir(data_dir)
+        }
     }
 
     fn in_dir(data_dir: TempDir) -> Self {
@@ -100,9 +105,17 @@ impl StubHost {
     /// need their OWN migrations applied on top of the core schema, which
     /// [`with_db`](Self::with_db) does not know about.
     pub fn with_pool(pool: Pool) -> Self {
-        let store = kroma_db::open(&kroma_testing::temp_dir("stub-store").path().join("module.sqlite"))
-            .expect("open test store");
-        Self { db: Some(pool), store: Some(store), ..Self::new() }
+        let store = kroma_db::open(
+            &kroma_testing::temp_dir("stub-store")
+                .path()
+                .join("module.sqlite"),
+        )
+        .expect("open test store");
+        Self {
+            db: Some(pool),
+            store: Some(store),
+            ..Self::new()
+        }
     }
 
     /// A host whose MODULE store is `pool`, with a fresh core database beside it.
@@ -111,14 +124,21 @@ impl StubHost {
     pub fn with_store(pool: Pool) -> Self {
         let data_dir = kroma_testing::temp_dir("stub-core");
         let db = kroma_db::init(&data_dir.path().join("kroma.db")).expect("init test db");
-        Self { db: Some(db), store: Some(pool), ..Self::in_dir(data_dir) }
+        Self {
+            db: Some(db),
+            store: Some(pool),
+            ..Self::in_dir(data_dir)
+        }
     }
 
     /// Answer `session_user(token)` with `user`. Without a seeded token the host
     /// falls back to a real lookup against its core pool, so a test that created
     /// a genuine session still authenticates through the seam.
     pub fn with_session(self, token: &str, user: User) -> Self {
-        self.sessions.lock().unwrap().insert(token.to_string(), user);
+        self.sessions
+            .lock()
+            .unwrap()
+            .insert(token.to_string(), user);
         self
     }
 
@@ -169,7 +189,10 @@ impl StubHost {
 
     /// Register a service for `service::<T>()` to resolve.
     pub fn with_service<T: Any + Send + Sync>(self, value: Arc<T>) -> Self {
-        self.services.lock().unwrap().push((TypeId::of::<T>(), value));
+        self.services
+            .lock()
+            .unwrap()
+            .push((TypeId::of::<T>(), value));
         self
     }
 
@@ -225,10 +248,14 @@ impl StubHost {
 
 impl HostStorage for StubHost {
     fn db(&self) -> &Pool {
-        self.db.as_ref().expect("this StubHost has no database - build it with StubHost::with_db")
+        self.db
+            .as_ref()
+            .expect("this StubHost has no database - build it with StubHost::with_db")
     }
     fn store(&self) -> &Pool {
-        self.store.as_ref().expect("this StubHost has no store - build it with StubHost::with_db")
+        self.store
+            .as_ref()
+            .expect("this StubHost has no store - build it with StubHost::with_db")
     }
 }
 
@@ -240,7 +267,9 @@ impl HostCtx for StubHost {
         if let Some(u) = self.sessions.lock().unwrap().get(token) {
             return Some(u.clone());
         }
-        kroma_db::session_user(self.db.as_ref()?, token).ok().flatten()
+        kroma_db::session_user(self.db.as_ref()?, token)
+            .ok()
+            .flatten()
     }
     fn require(&self, _user: &User, _perm: Permission) -> Result<(), Response> {
         Ok(())
@@ -262,10 +291,20 @@ impl HostCtx for StubHost {
         }
     }
     fn setting_bool(&self, key: &str, default: bool) -> bool {
-        self.settings.lock().unwrap().get(key).and_then(|v| v.as_bool()).unwrap_or(default)
+        self.settings
+            .lock()
+            .unwrap()
+            .get(key)
+            .and_then(|v| v.as_bool())
+            .unwrap_or(default)
     }
     fn setting_i64(&self, key: &str, default: i64) -> i64 {
-        self.settings.lock().unwrap().get(key).and_then(|v| v.as_i64()).unwrap_or(default)
+        self.settings
+            .lock()
+            .unwrap()
+            .get(key)
+            .and_then(|v| v.as_i64())
+            .unwrap_or(default)
     }
     fn set_settings(&self, patch: BTreeMap<String, serde_json::Value>) {
         self.settings.lock().unwrap().extend(patch.clone());
@@ -291,7 +330,13 @@ impl HostCtx for StubHost {
     }
     fn contributions(&self, point: &str) -> Vec<crate::Contribution> {
         let prefix = format!("test.{point}");
-        self.points.lock().unwrap().iter().filter(|c| c.module_id == prefix).cloned().collect()
+        self.points
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|c| c.module_id == prefix)
+            .cloned()
+            .collect()
     }
 
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
@@ -308,8 +353,8 @@ impl HostCtx for StubHost {
 mod tests {
     use serde_json::json;
 
-    use super::*;
     use super::super::fixtures::user;
+    use super::*;
 
     // Every crate that tests against the seam now leans on these answers, so a
     // change to any of them shifts behaviour in tests that never mention this
@@ -390,7 +435,6 @@ mod tests {
         assert_eq!(host.setting_str("num", "fallback"), "42");
     }
 
-
     #[test]
     fn services_resolve_by_the_type_they_were_registered_under() {
         struct Manager(u32);
@@ -410,14 +454,19 @@ mod tests {
             let _ = host.db();
         }))
         .unwrap_err();
-        let msg = err.downcast_ref::<String>().expect("expect() panics with a String");
+        let msg = err
+            .downcast_ref::<String>()
+            .expect("expect() panics with a String");
         assert!(msg.contains("StubHost::with_db"), "{msg}");
     }
 
     #[test]
     fn a_seeded_session_resolves_and_an_unknown_token_does_not() {
         let host = StubHost::new().with_session("tok", user());
-        assert_eq!(host.session_user("tok").map(|u| u.id), Some("u1".to_string()));
+        assert_eq!(
+            host.session_user("tok").map(|u| u.id),
+            Some("u1".to_string())
+        );
         assert!(host.session_user("other").is_none());
     }
 
@@ -426,19 +475,28 @@ mod tests {
         let a = StubHost::with_db("selftest");
         let b = StubHost::with_db("selftest");
         // Migrated: a core table is queryable.
-        a.db().get().unwrap().execute("SELECT 1 FROM users LIMIT 0", []).unwrap();
+        a.db()
+            .get()
+            .unwrap()
+            .execute("SELECT 1 FROM users LIMIT 0", [])
+            .unwrap();
         // Separate: a row in one is not in the other. Two tests running in
         // parallel threads of one process must not share a database.
         a.db()
             .get()
             .unwrap()
-            .execute("INSERT INTO settings (key, value, updated_at) VALUES ('k', 'v', 'now')", [])
+            .execute(
+                "INSERT INTO settings (key, value, updated_at) VALUES ('k', 'v', 'now')",
+                [],
+            )
             .unwrap();
         let n: i64 = b
             .db()
             .get()
             .unwrap()
-            .query_row("SELECT count(*) FROM settings WHERE key = 'k'", [], |r| r.get(0))
+            .query_row("SELECT count(*) FROM settings WHERE key = 'k'", [], |r| {
+                r.get(0)
+            })
             .unwrap();
         assert_eq!(n, 0);
     }
@@ -446,9 +504,11 @@ mod tests {
     #[test]
     fn lerr_carries_the_status_it_was_given() {
         let host = StubHost::new();
-        assert_eq!(host.lerr(&user(), StatusCode::NOT_FOUND, "k").status(), StatusCode::NOT_FOUND);
+        assert_eq!(
+            host.lerr(&user(), StatusCode::NOT_FOUND, "k").status(),
+            StatusCode::NOT_FOUND
+        );
     }
-
 
     #[test]
     fn the_stub_answers_every_required_method_neutrally() {
@@ -463,7 +523,10 @@ mod tests {
         assert_eq!(host.setting_i64("k", 9), 9);
         assert!(host.require(&user(), Permission::LibraryManage).is_ok());
         assert!(host.require_any_admin(&user()).is_ok());
-        assert_eq!(host.lerr(&user(), StatusCode::NOT_FOUND, "k").status(), StatusCode::NOT_FOUND);
+        assert_eq!(
+            host.lerr(&user(), StatusCode::NOT_FOUND, "k").status(),
+            StatusCode::NOT_FOUND
+        );
         assert!(host.module_enabled("x"));
         assert!(host.library_folders().is_empty());
         assert!(host.secret("tmdb").is_none());
@@ -476,13 +539,14 @@ mod tests {
         assert_eq!(host.jobs(), [("library.scan", "test")]);
     }
 
-
-
     #[test]
     fn the_stub_defaults_to_something_usable() {
         // `Default` exists so a double can be dropped into a `#[derive(Default)]`
         // harness; it must not differ from `new()`.
-        assert_eq!(StubHost::default().metadata_language(), StubHost::new().metadata_language());
+        assert_eq!(
+            StubHost::default().metadata_language(),
+            StubHost::new().metadata_language()
+        );
         assert!(StubHost::default().published().is_empty());
     }
 }

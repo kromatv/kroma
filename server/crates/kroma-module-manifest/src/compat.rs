@@ -66,7 +66,10 @@ pub fn range_matches(range: &str, version: &str) -> bool {
     if range.is_empty() || range == "*" {
         return true;
     }
-    match (semver::VersionReq::parse(range), semver::Version::parse(version)) {
+    match (
+        semver::VersionReq::parse(range),
+        semver::Version::parse(version),
+    ) {
         (Ok(req), Ok(v)) => req.matches(&v),
         _ => true,
     }
@@ -76,7 +79,10 @@ pub fn range_matches(range: &str, version: &str) -> bool {
 /// "update available" test). Falls back to plain inequality when either side
 /// is not semver, so a registry with odd versions still surfaces changes.
 pub fn is_newer(candidate: &str, current: &str) -> bool {
-    match (semver::Version::parse(candidate.trim()), semver::Version::parse(current.trim())) {
+    match (
+        semver::Version::parse(candidate.trim()),
+        semver::Version::parse(current.trim()),
+    ) {
         (Ok(c), Ok(i)) => c > i,
         _ => candidate.trim() != current.trim(),
     }
@@ -87,7 +93,10 @@ mod tests {
     use super::*;
 
     fn engines(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
-        pairs.iter().map(|(k, v)| ((*k).to_string(), (*v).to_string())).collect()
+        pairs
+            .iter()
+            .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
+            .collect()
     }
 
     #[test]

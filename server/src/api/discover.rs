@@ -33,25 +33,34 @@ pub fn routes() -> Router<SharedState> {
 }
 
 fn locale(user: &User) -> &'static str {
-    user.language.as_deref().and_then(i18n::normalize).unwrap_or(i18n::DEFAULT_LOCALE)
+    user.language
+        .as_deref()
+        .and_then(i18n::normalize)
+        .unwrap_or(i18n::DEFAULT_LOCALE)
 }
 
 fn require(user: &User, perm: Permission) -> Result<(), Response> {
     if user.can(perm) {
         Ok(())
     } else {
-        Err(lerr(locale(user), StatusCode::FORBIDDEN, "error.permissionDenied"))
+        Err(lerr(
+            locale(user),
+            StatusCode::FORBIDDEN,
+            "error.permissionDenied",
+        ))
     }
 }
 
 // TMDB works zero-config via the built-in key, so absence means the operator
 // explicitly blanked it: surface that rather than a silent empty page.
 fn require_tmdb(state: &SharedState, user: &User) -> Result<String, Response> {
-    state
-        .config
-        .tmdb_api_key
-        .clone()
-        .ok_or_else(|| lerr(locale(user), StatusCode::SERVICE_UNAVAILABLE, "error.tmdbUnavailable"))
+    state.config.tmdb_api_key.clone().ok_or_else(|| {
+        lerr(
+            locale(user),
+            StatusCode::SERVICE_UNAVAILABLE,
+            "error.tmdbUnavailable",
+        )
+    })
 }
 
 fn scope_from_type(kind: Option<&str>) -> discover::DiscoverScope {
@@ -82,7 +91,12 @@ pub async fn search(
     let lang = settings::metadata_language(&state.settings, &state.config);
     let query = params.q.trim().to_string();
     if query.is_empty() {
-        return Ok(Json(DiscoverResponse { results: Vec::new(), page: 1, total_pages: 1 }).into_response());
+        return Ok(Json(DiscoverResponse {
+            results: Vec::new(),
+            page: 1,
+            total_pages: 1,
+        })
+        .into_response());
     }
     let scope = scope_from_type(params.kind.as_deref());
     let page = params.page.unwrap_or(1);
@@ -163,14 +177,21 @@ pub async fn detail(
     }
 }
 
-fn local_id_for(conn: &Connection, kind: RequestKind, tmdb_id: u64) -> anyhow::Result<Option<String>> {
+fn local_id_for(
+    conn: &Connection,
+    kind: RequestKind,
+    tmdb_id: u64,
+) -> anyhow::Result<Option<String>> {
     Ok(match kind {
         RequestKind::Movie => db::movie_item_by_tmdb(conn, tmdb_id)?,
         RequestKind::Show => db::show_by_tmdb(conn, tmdb_id)?,
     })
 }
 
-fn flag_hits(conn: &Connection, hits: Vec<discover::DiscoverHit>) -> anyhow::Result<Vec<DiscoverEntry>> {
+fn flag_hits(
+    conn: &Connection,
+    hits: Vec<discover::DiscoverHit>,
+) -> anyhow::Result<Vec<DiscoverEntry>> {
     // One pass over the download ledger (not per-hit), so cards can show the
     // live downloading/importing phase + progress.
     let active = super::downloads_overlay::active_downloads(conn);
@@ -216,7 +237,10 @@ fn overlay_active(
     let mut progress = None;
     if let Some((rid, _)) = request {
         if let Some(a) = active.get(rid) {
-            if matches!(status, Some(RequestStatus::Approved | RequestStatus::PartiallyAvailable)) {
+            if matches!(
+                status,
+                Some(RequestStatus::Approved | RequestStatus::PartiallyAvailable)
+            ) {
                 status = Some(if a.importing {
                     RequestStatus::Importing
                 } else {
@@ -229,7 +253,10 @@ fn overlay_active(
     (status, progress)
 }
 
-fn flag_detail(conn: &Connection, d: discover::DiscoverRawDetail) -> anyhow::Result<DiscoverDetail> {
+fn flag_detail(
+    conn: &Connection,
+    d: discover::DiscoverRawDetail,
+) -> anyhow::Result<DiscoverDetail> {
     let local_id = local_id_for(conn, d.kind, d.tmdb_id)?;
     let request = db::latest_request_for(conn, d.kind, d.tmdb_id)?;
 
@@ -252,7 +279,9 @@ fn flag_detail(conn: &Connection, d: discover::DiscoverRawDetail) -> anyhow::Res
         }
         let open_request = db::find_open_request(conn, RequestKind::Show, d.tmdb_id)?;
         let requested_seasons: Option<Vec<u32>> = open_request.as_ref().map(|r| {
-            r.seasons.clone().unwrap_or_else(|| d.seasons.iter().map(|s| s.season).collect())
+            r.seasons
+                .clone()
+                .unwrap_or_else(|| d.seasons.iter().map(|s| s.season).collect())
         });
         for s in &d.seasons {
             let have = per_season.get(&s.season).copied().unwrap_or(0);

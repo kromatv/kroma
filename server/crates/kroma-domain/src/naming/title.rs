@@ -5,10 +5,52 @@
 // Nobody titles a film `BluRay` or `x265`, so the first one reliably ends the
 // real title.
 const HARD_TOKENS: &[&str] = &[
-    "4k", "uhd", "bluray", "blu", "brrip", "bdrip", "bdremux", "webrip", "webdl", "hdtv", "sdtv",
-    "pdtv", "dvdrip", "dvdscr", "dvd", "remux", "hdrip", "x264", "x265", "h264", "h265", "hevc",
-    "avc", "xvid", "divx", "av1", "mpeg2", "vc1", "aac", "ac3", "eac3", "dts", "truehd", "atmos",
-    "ddp", "dd5", "flac", "opus", "hdr", "hdr10", "hdr10plus", "dv", "dovi", "sdr", "10bit", "8bit",
+    "4k",
+    "uhd",
+    "bluray",
+    "blu",
+    "brrip",
+    "bdrip",
+    "bdremux",
+    "webrip",
+    "webdl",
+    "hdtv",
+    "sdtv",
+    "pdtv",
+    "dvdrip",
+    "dvdscr",
+    "dvd",
+    "remux",
+    "hdrip",
+    "x264",
+    "x265",
+    "h264",
+    "h265",
+    "hevc",
+    "avc",
+    "xvid",
+    "divx",
+    "av1",
+    "mpeg2",
+    "vc1",
+    "aac",
+    "ac3",
+    "eac3",
+    "dts",
+    "truehd",
+    "atmos",
+    "ddp",
+    "dd5",
+    "flac",
+    "opus",
+    "hdr",
+    "hdr10",
+    "hdr10plus",
+    "dv",
+    "dovi",
+    "sdr",
+    "10bit",
+    "8bit",
     "vostfr",
 ];
 
@@ -18,8 +60,23 @@ const HARD_TOKENS: &[&str] = &[
 // marker), so legitimate titles like "The French Dispatch" and "Uncut Gems"
 // survive intact.
 const SOFT_TOKENS: &[&str] = &[
-    "french", "truefrench", "subfrench", "vff", "vof", "vfq", "multi", "extended", "unrated",
-    "uncut", "imax", "proper", "repack", "remastered", "remaster", "theatrical", "integrale",
+    "french",
+    "truefrench",
+    "subfrench",
+    "vff",
+    "vof",
+    "vfq",
+    "multi",
+    "extended",
+    "unrated",
+    "uncut",
+    "imax",
+    "proper",
+    "repack",
+    "remastered",
+    "remaster",
+    "theatrical",
+    "integrale",
 ];
 
 /// Clean a movie/show title: drop a trailing `(year)` and any release metadata,
@@ -200,20 +257,29 @@ mod tests {
 
     #[test]
     fn clean_title_strips_release_run() {
-        assert_eq!(clean_title("The.Matrix.1999.1080p.BluRay.x264-GRP"), "The Matrix");
+        assert_eq!(
+            clean_title("The.Matrix.1999.1080p.BluRay.x264-GRP"),
+            "The Matrix"
+        );
         assert_eq!(clean_title("Movie FRENCH 1080p x264"), "Movie");
         assert_eq!(clean_title("Just A Clean Title"), "Just A Clean Title");
     }
 
     #[test]
     fn a_leading_year_hands_the_title_back_to_the_text_behind_it() {
-        assert_eq!(clean_title("2018 - LaserGame - Indian Forest"), "LaserGame - Indian Forest");
+        assert_eq!(
+            clean_title("2018 - LaserGame - Indian Forest"),
+            "LaserGame - Indian Forest"
+        );
         assert_eq!(clean_title("2018"), "");
     }
 
     #[test]
     fn clean_title_paren_year_is_authoritative() {
-        assert_eq!(clean_title("Blade Runner 2049 (2017) 2160p"), "Blade Runner 2049");
+        assert_eq!(
+            clean_title("Blade Runner 2049 (2017) 2160p"),
+            "Blade Runner 2049"
+        );
         assert_eq!(clean_title("Uncut Gems (2019) WEBDL-1080p"), "Uncut Gems");
     }
 
@@ -275,6 +341,9 @@ mod tests {
 
     #[test]
     fn leading_year_recovers_the_title() {
-        assert_eq!(clean_title("2018 - LaserGame - Indian Forest"), "LaserGame - Indian Forest");
+        assert_eq!(
+            clean_title("2018 - LaserGame - Indian Forest"),
+            "LaserGame - Indian Forest"
+        );
     }
 }

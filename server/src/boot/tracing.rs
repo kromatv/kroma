@@ -4,7 +4,9 @@
 use kroma_engine::infra;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-pub fn init_tracing(log_dir: &std::path::Path) -> Option<tracing_appender::non_blocking::WorkerGuard> {
+pub fn init_tracing(
+    log_dir: &std::path::Path,
+) -> Option<tracing_appender::non_blocking::WorkerGuard> {
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         EnvFilter::new(
             // The supervisor is included: module spawn/stop/hot-reload is
@@ -65,7 +67,10 @@ impl<S: tracing::Subscriber> tracing_subscriber::Layer<S> for LogBufferLayer {
                 }
             }
         }
-        let mut fields = Fields { message: String::new(), extra: String::new() };
+        let mut fields = Fields {
+            message: String::new(),
+            extra: String::new(),
+        };
         event.record(&mut fields);
         if !fields.extra.is_empty() {
             if !fields.message.is_empty() {
@@ -92,14 +97,19 @@ mod tests {
     }
 
     fn latest(q: &str) -> Option<infra::logbuf::LogEntry> {
-        infra::logbuf::LOG_BUFFER.snapshot(200, None, Some("core"), Some(q)).pop()
+        infra::logbuf::LOG_BUFFER
+            .snapshot(200, None, Some("core"), Some(q))
+            .pop()
     }
 
     #[test]
     fn a_message_reaches_the_console_ring_with_its_level_and_target() {
         with_layer(|| tracing::warn!("boot-tracing-plain-marker"));
         let entry = latest("boot-tracing-plain-marker").expect("the line was buffered");
-        assert_eq!(entry.level, "warn", "lowercased, the vocabulary the console filters on");
+        assert_eq!(
+            entry.level, "warn",
+            "lowercased, the vocabulary the console filters on"
+        );
         assert_eq!(entry.target, module_path!());
         assert_eq!(entry.source, "core");
         assert_eq!(entry.message, "boot-tracing-plain-marker");
@@ -109,10 +119,24 @@ mod tests {
     fn structured_fields_are_appended_to_the_message_the_console_shows() {
         // The ring holds one string per line, so a field that only existed as
         // structured data would vanish from the admin console entirely.
-        with_layer(|| tracing::info!(module = "tv.kroma.acq", port = 42, "boot-tracing-fields-marker"));
+        with_layer(|| {
+            tracing::info!(
+                module = "tv.kroma.acq",
+                port = 42,
+                "boot-tracing-fields-marker"
+            )
+        });
         let entry = latest("boot-tracing-fields-marker").expect("buffered");
-        assert!(entry.message.starts_with("boot-tracing-fields-marker "), "{}", entry.message);
-        assert!(entry.message.contains("module=\"tv.kroma.acq\""), "{}", entry.message);
+        assert!(
+            entry.message.starts_with("boot-tracing-fields-marker "),
+            "{}",
+            entry.message
+        );
+        assert!(
+            entry.message.contains("module=\"tv.kroma.acq\""),
+            "{}",
+            entry.message
+        );
         assert!(entry.message.contains("port=42"), "{}", entry.message);
     }
 

@@ -54,7 +54,11 @@ pub(crate) fn run(mut config: String) -> Result<Response> {
         );
     }
     let (status, headers) = parse_last_block(&raw_headers)?;
-    Ok(Response { status, headers, body: out.stdout })
+    Ok(Response {
+        status,
+        headers,
+        body: out.stdout,
+    })
 }
 
 // With `-L`, curl appends one header block per hop to the dump; only the
@@ -66,13 +70,17 @@ fn parse_last_block(raw: &str) -> Result<(u16, Vec<(String, String)>)> {
         let line = line.trim_end_matches('\r');
         if let Some(rest) = line.strip_prefix("HTTP/") {
             // New block: "HTTP/1.1 200 OK" or "HTTP/2 302". Reset accumulation.
-            status = rest.split_whitespace().nth(1).and_then(|c| c.parse::<u16>().ok());
+            status = rest
+                .split_whitespace()
+                .nth(1)
+                .and_then(|c| c.parse::<u16>().ok());
             headers.clear();
         } else if let Some((k, v)) = line.split_once(':') {
             headers.push((k.trim().to_string(), v.trim().to_string()));
         }
     }
-    let status = status.ok_or_else(|| anyhow::anyhow!("no HTTP status line in curl header dump"))?;
+    let status =
+        status.ok_or_else(|| anyhow::anyhow!("no HTTP status line in curl header dump"))?;
     Ok((status, headers))
 }
 
@@ -86,7 +94,10 @@ mod tests {
         let (status, headers) = parse_last_block(raw).unwrap();
         assert_eq!(status, 200);
         assert_eq!(headers.len(), 2);
-        assert_eq!(headers[0], ("Content-Type".to_string(), "application/json".to_string()));
+        assert_eq!(
+            headers[0],
+            ("Content-Type".to_string(), "application/json".to_string())
+        );
     }
 
     #[test]
@@ -97,7 +108,10 @@ mod tests {
         );
         let (status, headers) = parse_last_block(raw).unwrap();
         assert_eq!(status, 200);
-        assert_eq!(headers, vec![("content-type".to_string(), "text/xml".to_string())]);
+        assert_eq!(
+            headers,
+            vec![("content-type".to_string(), "text/xml".to_string())]
+        );
     }
 
     #[test]
@@ -108,8 +122,10 @@ mod tests {
 
     #[test]
     fn the_argv_carries_nothing_but_the_config_pipe() {
-        let args: Vec<String> =
-            curl_command().get_args().map(|a| a.to_string_lossy().into_owned()).collect();
+        let args: Vec<String> = curl_command()
+            .get_args()
+            .map(|a| a.to_string_lossy().into_owned())
+            .collect();
         assert_eq!(args, vec!["--config".to_string(), "-".to_string()]);
     }
 }

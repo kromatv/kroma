@@ -39,7 +39,9 @@ fn trusted(ip: IpAddr, list: &[String]) -> bool {
     ip.is_loopback()
         || list.iter().any(|entry| {
             let entry = entry.trim();
-            entry.parse::<IpAddr>().is_ok_and(|named| named.to_canonical() == ip)
+            entry
+                .parse::<IpAddr>()
+                .is_ok_and(|named| named.to_canonical() == ip)
                 || crate::services::playback::cidr_contains(entry, &ip)
         })
 }
@@ -52,7 +54,11 @@ fn trusted(ip: IpAddr, list: &[String]) -> bool {
 // front of nginx, both named) report the client rather than the outermost proxy,
 // which is identical on every request. Nothing but proxies leaves the leftmost.
 fn forwarded_client<'a>(xff: &'a str, list: &[String]) -> Option<&'a str> {
-    let hops: Vec<&str> = xff.split(',').map(str::trim).filter(|hop| !hop.is_empty()).collect();
+    let hops: Vec<&str> = xff
+        .split(',')
+        .map(str::trim)
+        .filter(|hop| !hop.is_empty())
+        .collect();
     let leftmost = *hops.first()?;
     Some(
         hops.iter()
@@ -77,7 +83,10 @@ fn forwarded_client<'a>(xff: &'a str, list: &[String]) -> Option<&'a str> {
 /// address, and the server can no longer tell two clients apart at all.
 pub(crate) fn client_ip(headers: &HeaderMap, addr: &SocketAddr, list: &[String]) -> String {
     if trusted(addr.ip(), list) {
-        if let Some(cf) = headers.get("cf-connecting-ip").and_then(|v| v.to_str().ok()) {
+        if let Some(cf) = headers
+            .get("cf-connecting-ip")
+            .and_then(|v| v.to_str().ok())
+        {
             let cf = cf.trim();
             if !cf.is_empty() {
                 return cf.to_string();
@@ -102,7 +111,10 @@ pub(crate) async fn drop_orphans(state: &SharedState, orphans: impl IntoIterator
         let token = orphan.token;
         let access = orphan.access_token;
         let _ = query(&state.db, move |pool| db::delete_session(&pool, &token)).await;
-        let _ = query(&state.db, move |pool| db::delete_access_token(&pool, &access)).await;
+        let _ = query(&state.db, move |pool| {
+            db::delete_access_token(&pool, &access)
+        })
+        .await;
     }
 }
 
@@ -135,8 +147,14 @@ mod tests {
 
     #[test]
     fn a_forwarded_header_is_read_only_from_a_loopback_peer() {
-        assert_eq!(ip_for(DIRECT, &[("x-forwarded-for", "203.0.113.7")]), "192.168.1.9");
-        assert_eq!(ip_for(DIRECT, &[("cf-connecting-ip", "203.0.113.7")]), "192.168.1.9");
+        assert_eq!(
+            ip_for(DIRECT, &[("x-forwarded-for", "203.0.113.7")]),
+            "192.168.1.9"
+        );
+        assert_eq!(
+            ip_for(DIRECT, &[("cf-connecting-ip", "203.0.113.7")]),
+            "192.168.1.9"
+        );
     }
 
     #[test]
@@ -145,13 +163,22 @@ mod tests {
         // Believing the caller's half is how a stranger claims to be on your
         // subnet, so the rightmost entry is the only one worth anything.
         assert_eq!(
-            ip_for(LOOPBACK, &[("x-forwarded-for", "192.168.1.20, 203.0.113.7")]),
+            ip_for(
+                LOOPBACK,
+                &[("x-forwarded-for", "192.168.1.20, 203.0.113.7")]
+            ),
             "203.0.113.7"
         );
-        assert_eq!(ip_for(LOOPBACK, &[("x-forwarded-for", "203.0.113.7")]), "203.0.113.7");
+        assert_eq!(
+            ip_for(LOOPBACK, &[("x-forwarded-for", "203.0.113.7")]),
+            "203.0.113.7"
+        );
         // Several proxies deep, it is still the nearest one that saw a peer.
         assert_eq!(
-            ip_for(LOOPBACK, &[("x-forwarded-for", "10.0.0.1, 172.16.0.1, 203.0.113.7")]),
+            ip_for(
+                LOOPBACK,
+                &[("x-forwarded-for", "10.0.0.1, 172.16.0.1, 203.0.113.7")]
+            ),
             "203.0.113.7"
         );
     }
@@ -161,7 +188,10 @@ mod tests {
         assert_eq!(
             ip_for(
                 LOOPBACK,
-                &[("cf-connecting-ip", "198.51.100.4"), ("x-forwarded-for", "1.2.3.4, 5.6.7.8")]
+                &[
+                    ("cf-connecting-ip", "198.51.100.4"),
+                    ("x-forwarded-for", "1.2.3.4, 5.6.7.8")
+                ]
             ),
             "198.51.100.4"
         );
@@ -176,7 +206,11 @@ mod tests {
         const PROXY: [u8; 4] = [172, 18, 0, 2];
         let forwarded = [("x-forwarded-for", "192.168.1.20, 172.18.0.2")];
 
-        assert_eq!(ip_for(PROXY, &forwarded), "172.18.0.2", "unnamed proxies are not believed");
+        assert_eq!(
+            ip_for(PROXY, &forwarded),
+            "172.18.0.2",
+            "unnamed proxies are not believed"
+        );
         assert_eq!(
             ip_for_trusting(PROXY, &forwarded, &["172.18.0.0/16".to_string()]),
             "192.168.1.20",
@@ -193,8 +227,14 @@ mod tests {
         let mapped: IpAddr = "::ffff:172.18.0.2".parse().unwrap();
         let forwarded = [("x-forwarded-for", "192.168.1.20, 172.18.0.2")];
 
-        assert_eq!(seen_from(mapped, &forwarded, &["172.18.0.2".to_string()]), "192.168.1.20");
-        assert_eq!(seen_from(mapped, &forwarded, &["172.18.0.0/16".to_string()]), "192.168.1.20");
+        assert_eq!(
+            seen_from(mapped, &forwarded, &["172.18.0.2".to_string()]),
+            "192.168.1.20"
+        );
+        assert_eq!(
+            seen_from(mapped, &forwarded, &["172.18.0.0/16".to_string()]),
+            "192.168.1.20"
+        );
         // Loopback likewise: it is trusted for being loopback, not for parsing.
         let mapped_loopback: IpAddr = "::ffff:127.0.0.1".parse().unwrap();
         assert_eq!(
@@ -212,13 +252,21 @@ mod tests {
         let named = ["10.8.0.4".to_string(), "10.9.0.1/32".to_string()];
 
         assert_eq!(
-            ip_for_trusting(OUTER, &[("x-forwarded-for", "203.0.113.7, 10.9.0.1, 10.8.0.4")], &named),
+            ip_for_trusting(
+                OUTER,
+                &[("x-forwarded-for", "203.0.113.7, 10.9.0.1, 10.8.0.4")],
+                &named
+            ),
             "203.0.113.7"
         );
         // A hop the operator never named ends the walk, because from there on
         // the entries are whatever the caller wrote.
         assert_eq!(
-            ip_for_trusting(OUTER, &[("x-forwarded-for", "203.0.113.7, 198.51.100.9, 10.8.0.4")], &named),
+            ip_for_trusting(
+                OUTER,
+                &[("x-forwarded-for", "203.0.113.7, 198.51.100.9, 10.8.0.4")],
+                &named
+            ),
             "198.51.100.9"
         );
         // Nothing but proxies: the leftmost is the closest to a client anyone
@@ -234,19 +282,37 @@ mod tests {
         const PROXY: [u8; 4] = [10, 8, 0, 4];
         let forwarded = [("x-forwarded-for", "203.0.113.7")];
 
-        assert_eq!(ip_for_trusting(PROXY, &forwarded, &["10.8.0.4".to_string()]), "203.0.113.7");
-        assert_eq!(ip_for_trusting(PROXY, &forwarded, &["10.8.0.0/16".to_string()]), "203.0.113.7");
-        assert_eq!(ip_for_trusting(PROXY, &forwarded, &["10.8.".to_string()]), "203.0.113.7");
+        assert_eq!(
+            ip_for_trusting(PROXY, &forwarded, &["10.8.0.4".to_string()]),
+            "203.0.113.7"
+        );
+        assert_eq!(
+            ip_for_trusting(PROXY, &forwarded, &["10.8.0.0/16".to_string()]),
+            "203.0.113.7"
+        );
+        assert_eq!(
+            ip_for_trusting(PROXY, &forwarded, &["10.8.".to_string()]),
+            "203.0.113.7"
+        );
         // Some other proxy's address buys nothing.
-        assert_eq!(ip_for_trusting(PROXY, &forwarded, &["10.9.0.4".to_string()]), "10.8.0.4");
-        assert_eq!(ip_for_trusting(PROXY, &forwarded, &["not-an-address".to_string()]), "10.8.0.4");
+        assert_eq!(
+            ip_for_trusting(PROXY, &forwarded, &["10.9.0.4".to_string()]),
+            "10.8.0.4"
+        );
+        assert_eq!(
+            ip_for_trusting(PROXY, &forwarded, &["not-an-address".to_string()]),
+            "10.8.0.4"
+        );
     }
 
     #[test]
     fn loopback_is_believed_without_being_named() {
         // A proxy on the same host is the ordinary case, and naming it would be
         // a step every single-box install had to take for nothing.
-        assert_eq!(ip_for(LOOPBACK, &[("x-forwarded-for", "203.0.113.7")]), "203.0.113.7");
+        assert_eq!(
+            ip_for(LOOPBACK, &[("x-forwarded-for", "203.0.113.7")]),
+            "203.0.113.7"
+        );
     }
 
     #[test]

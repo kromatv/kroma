@@ -42,14 +42,20 @@ where
         .route("/indexers/definitions", get(list_definitions::<S>))
         .route("/indexers/definitions/sync", post(sync_definitions::<S>))
         .route("/indexers/definitions/{defId}", get(definition_detail::<S>))
-        .route("/indexers/{id}", axum::routing::put(update::<S>).delete(remove::<S>))
+        .route(
+            "/indexers/{id}",
+            axum::routing::put(update::<S>).delete(remove::<S>),
+        )
         .route("/indexers/{id}/test", post(test::<S>))
 }
 
 fn configured_settings(row: &IndexerRow) -> Vec<String> {
     let map: HashMap<String, String> = serde_json::from_str(&row.settings).unwrap_or_default();
-    let mut names: Vec<String> =
-        map.into_iter().filter(|(_, v)| !v.is_empty()).map(|(k, _)| k).collect();
+    let mut names: Vec<String> = map
+        .into_iter()
+        .filter(|(_, v)| !v.is_empty())
+        .map(|(k, _)| k)
+        .collect();
     names.sort();
     names
 }
@@ -101,10 +107,23 @@ pub async fn create<S: HostStorage + Clone>(
     let row = if kind == KIND_BUILTIN {
         build_builtin_row(&state, &body).await?
     } else {
-        let name = body.name.as_deref().map(str::trim).unwrap_or_default().to_string();
-        let url = body.url.as_deref().map(str::trim).unwrap_or_default().to_string();
+        let name = body
+            .name
+            .as_deref()
+            .map(str::trim)
+            .unwrap_or_default()
+            .to_string();
+        let url = body
+            .url
+            .as_deref()
+            .map(str::trim)
+            .unwrap_or_default()
+            .to_string();
         if name.is_empty() || url.is_empty() {
-            return Err(json_error(StatusCode::BAD_REQUEST, "name and url are required"));
+            return Err(json_error(
+                StatusCode::BAD_REQUEST,
+                "name and url are required",
+            ));
         }
         IndexerRow {
             id: new_indexer_id(&url),
@@ -137,7 +156,10 @@ async fn build_builtin_row<S: HostStorage + Clone>(
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .ok_or_else(|| {
-            json_error(StatusCode::BAD_REQUEST, "definitionId is required for a built-in indexer")
+            json_error(
+                StatusCode::BAD_REQUEST,
+                "definitionId is required for a built-in indexer",
+            )
         })?
         .to_string();
 
@@ -146,7 +168,10 @@ async fn build_builtin_row<S: HostStorage + Clone>(
     let def = blocking(move || definition_store(&state2).load(&def_id2))
         .await
         .map_err(|_| {
-            json_error(StatusCode::BAD_REQUEST, "unknown definition (sync the catalog first)")
+            json_error(
+                StatusCode::BAD_REQUEST,
+                "unknown definition (sync the catalog first)",
+            )
         })?;
 
     // Base link: admin override, else the definition's first candidate.
@@ -158,7 +183,10 @@ async fn build_builtin_row<S: HostStorage + Clone>(
         .map(str::to_string)
         .or_else(|| def.links.first().cloned())
         .ok_or_else(|| {
-            json_error(StatusCode::BAD_REQUEST, "definition has no site link; provide url")
+            json_error(
+                StatusCode::BAD_REQUEST,
+                "definition has no site link; provide url",
+            )
         })?;
 
     let name = body
@@ -221,9 +249,15 @@ pub async fn update<S: HostStorage + Clone>(
         db::update_indexer(
             &pool,
             &id2,
-            body.name.as_deref().map(str::trim).filter(|s| !s.is_empty()),
+            body.name
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty()),
             body.url.as_deref().map(str::trim).filter(|s| !s.is_empty()),
-            body.api_key.as_deref().map(str::trim).filter(|s| !s.is_empty()),
+            body.api_key
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty()),
             body.categories.as_deref(),
             body.enabled,
             body.priority,
@@ -266,7 +300,11 @@ fn merge_settings<S: HostStorage>(
         .as_deref()
         .and_then(|d| definition_store(state).load(d).ok())
         .map(|def| {
-            def.settings.iter().filter(|s| s.kind == "password").map(|s| s.name.clone()).collect()
+            def.settings
+                .iter()
+                .filter(|s| s.kind == "password")
+                .map(|s| s.name.clone())
+                .collect()
         })
         .unwrap_or_default();
 
@@ -315,9 +353,13 @@ pub async fn test<S: HostStorage + Clone>(
         let caps = any_indexer_caps(&host, host.store(), &row);
         let reachable = if row.kind == KIND_BUILTIN {
             // Verify the session (drives a login for private trackers).
-            builtin_session(&host, &row).and_then(|s| s.test()).map(|_| ())
+            builtin_session(&host, &row)
+                .and_then(|s| s.test())
+                .map(|_| ())
         } else {
-            caps.as_ref().map(|_| ()).map_err(|e| anyhow::anyhow!("{e:#}"))
+            caps.as_ref()
+                .map(|_| ())
+                .map_err(|e| anyhow::anyhow!("{e:#}"))
         };
         let latency_ms = started.elapsed().as_millis() as u64;
         Ok(Some(match (reachable, caps) {
@@ -366,7 +408,10 @@ pub async fn list_definitions<S: HostStorage + Clone>(
                 links: m.links,
             })
             .collect();
-        anyhow::Ok(IndexerDefinitionsView { definitions, synced })
+        anyhow::Ok(IndexerDefinitionsView {
+            definitions,
+            synced,
+        })
     })
     .await?;
     Ok(Json(view).into_response())
@@ -381,8 +426,9 @@ pub async fn definition_detail<S: HostStorage + Clone>(
     state.require(&user, Permission::SettingsManage)?;
     let host = state.clone();
     let detail = blocking(move || {
-        definition_store(&host).load(&def_id).map(|def| {
-            IndexerDefinitionDetailView {
+        definition_store(&host)
+            .load(&def_id)
+            .map(|def| IndexerDefinitionDetailView {
                 id: def.id.clone(),
                 name: def.name.clone(),
                 kind: def.kind.clone(),
@@ -396,11 +442,14 @@ pub async fn definition_detail<S: HostStorage + Clone>(
                         kind: s.kind.clone(),
                         label: s.label.clone().unwrap_or_else(|| s.name.clone()),
                         default: s.default.clone(),
-                        options: s.options.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
+                        options: s
+                            .options
+                            .iter()
+                            .map(|(k, v)| (k.clone(), v.clone()))
+                            .collect(),
                     })
                     .collect(),
-            }
-        })
+            })
     })
     .await;
     match detail {
@@ -422,5 +471,9 @@ pub async fn sync_definitions<S: HostStorage + Clone>(
         .await
         .map_err(|_| json_error(StatusCode::INTERNAL_SERVER_ERROR, "sync task failed"))?
         .map_err(|e| json_error(StatusCode::BAD_GATEWAY, &format!("sync failed: {e:#}")))?;
-    Ok(Json(SyncDefinitionsResult { count: report.count, version: report.version }).into_response())
+    Ok(Json(SyncDefinitionsResult {
+        count: report.count,
+        version: report.version,
+    })
+    .into_response())
 }

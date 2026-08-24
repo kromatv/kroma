@@ -46,7 +46,9 @@ pub fn announce(config: &Config) -> bool {
 /// must land before anything reads their tables.
 pub fn open_db(config: &Config) -> anyhow::Result<db::Pool> {
     let pool = db::init(&config.db_path()).context("failed to initialise database")?;
-    let conn = pool.get().context("failed to get a db connection for module schema")?;
+    let conn = pool
+        .get()
+        .context("failed to get a db connection for module schema")?;
     for migration in kroma_module_kernel::module_migrations() {
         db::apply_migrations(&conn, migration).context("failed to apply module schema")?;
     }

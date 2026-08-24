@@ -32,7 +32,10 @@ async fn transcribe_h<S: HostStorage + Clone + Send + Sync + 'static>(
     Json(req): Json<TranscribeReq>,
 ) -> Json<Option<String>> {
     let pool = host.db().clone();
-    let text = tokio::task::spawn_blocking(move || run(pool, req)).await.ok().flatten();
+    let text = tokio::task::spawn_blocking(move || run(pool, req))
+        .await
+        .ok()
+        .flatten();
     Json(text)
 }
 
@@ -41,13 +44,21 @@ fn run(pool: Pool, req: TranscribeReq) -> Option<String> {
     let finished = Arc::new(AtomicBool::new(false));
 
     {
-        let (pool, cancel, finished, id) =
-            (pool.clone(), cancel.clone(), finished.clone(), req.job_id.clone());
+        let (pool, cancel, finished, id) = (
+            pool.clone(),
+            cancel.clone(),
+            finished.clone(),
+            req.job_id.clone(),
+        );
         std::thread::spawn(move || {
             while !finished.load(Ordering::Relaxed) {
                 if let Ok(conn) = pool.get() {
                     let c: i64 = conn
-                        .query_row("SELECT cancel FROM whisper_jobs WHERE id = ?1", [&id], |r| r.get(0))
+                        .query_row(
+                            "SELECT cancel FROM whisper_jobs WHERE id = ?1",
+                            [&id],
+                            |r| r.get(0),
+                        )
                         .unwrap_or(0);
                     if c != 0 {
                         cancel.store(true, Ordering::Relaxed);

@@ -46,13 +46,20 @@ pub async fn hls_master(
     // Redirected rather than served here: the effective mode owns the session and
     // its segment URLs, so master and segments never disagree. Both axes are
     // resolved before the comparison, so one redirect settles them together.
-    let selected_codec =
-        item.audio_tracks.iter().find(|t| t.index == audio).map(|t| t.codec.as_str());
+    let selected_codec = item
+        .audio_tracks
+        .iter()
+        .find(|t| t.index == audio)
+        .map(|t| t.codec.as_str());
     let effective = mode
         .for_client_audio(selected_codec, q.copy.as_deref())
-        .for_client_video(item.video.as_ref().map(|v| v.codec.as_str()), q.video.as_deref());
+        .for_client_video(
+            item.video.as_ref().map(|v| v.codec.as_str()),
+            q.video.as_deref(),
+        );
     if effective != mode {
-        return Redirect::temporary(&hls_master_path(&item.id, effective, anchor, audio)).into_response();
+        return Redirect::temporary(&hls_master_path(&item.id, effective, anchor, audio))
+            .into_response();
     }
     let Some(abs) = item.abs_path.clone() else {
         return json_error(StatusCode::NOT_FOUND, "no media file for item");
@@ -64,7 +71,10 @@ pub async fn hls_master(
         .await
         .unwrap_or(false);
     if !exists {
-        return json_error(StatusCode::NOT_FOUND, "media file unavailable (mount offline?)");
+        return json_error(
+            StatusCode::NOT_FOUND,
+            "media file unavailable (mount offline?)",
+        );
     }
     match state.hls.master(&item.id, &abs, audio, mode, anchor).await {
         // `X-Hls-Start` is the real start (the keyframe at-or-before the anchor, where
@@ -88,7 +98,10 @@ pub async fn hls_master(
             }
             resp
         }
-        None => json_error(StatusCode::INTERNAL_SERVER_ERROR, "HLS remux unavailable (is ffmpeg installed?)"),
+        None => json_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "HLS remux unavailable (is ffmpeg installed?)",
+        ),
     }
 }
 
@@ -109,21 +122,31 @@ pub async fn hls_file(
         Some((bytes, ct)) => {
             byte_sink(&state, &headers, &addr).add(bytes.len() as u64);
             Response::builder()
-            .header(header::CONTENT_TYPE, ct)
-            // Each anchor's URLs are unique, so segment bytes never change; event
-            // playlists grow.
-            .header(
-                header::CACHE_CONTROL,
-                if immutable { "public, max-age=31536000, immutable" } else { "no-store" },
-            )
-            .body(Body::from(bytes))
-            .unwrap()
+                .header(header::CONTENT_TYPE, ct)
+                // Each anchor's URLs are unique, so segment bytes never change; event
+                // playlists grow.
+                .header(
+                    header::CACHE_CONTROL,
+                    if immutable {
+                        "public, max-age=31536000, immutable"
+                    } else {
+                        "no-store"
+                    },
+                )
+                .body(Body::from(bytes))
+                .unwrap()
         }
         // A segment that has not been produced yet 404s the same way one that was
         // pruned does, so the miss must never be cached: the URL becomes valid.
         None => {
-            let mut resp = json_error(StatusCode::NOT_FOUND, "segment not found (session expired?)");
-            resp.headers_mut().insert(header::CACHE_CONTROL, header::HeaderValue::from_static("no-store"));
+            let mut resp = json_error(
+                StatusCode::NOT_FOUND,
+                "segment not found (session expired?)",
+            );
+            resp.headers_mut().insert(
+                header::CACHE_CONTROL,
+                header::HeaderValue::from_static("no-store"),
+            );
             resp
         }
     }
@@ -132,7 +155,10 @@ pub async fn hls_file(
 // Item ids are hex `short_hash`es (optionally joined by a colon), so they need no
 // escaping to sit in a path segment.
 fn hls_master_path(id: &str, mode: StreamMode, anchor: u64, audio: u32) -> String {
-    format!("/api/items/{id}/hls/{}/{anchor}/{audio}/index.m3u8", mode.token())
+    format!(
+        "/api/items/{id}/hls/{}/{anchor}/{audio}/index.m3u8",
+        mode.token()
+    )
 }
 
 fn playlist_response(body: String) -> Response {
@@ -170,14 +196,26 @@ mod tests {
 
     #[test]
     fn parse_mode_variants() {
-        assert_eq!(StreamMode::parse("copy"), Some(mode(VideoMode::Copy, AudioMode::Copy)));
-        assert_eq!(StreamMode::parse("aac"), Some(mode(VideoMode::Copy, AudioMode::Aac)));
+        assert_eq!(
+            StreamMode::parse("copy"),
+            Some(mode(VideoMode::Copy, AudioMode::Copy))
+        );
+        assert_eq!(
+            StreamMode::parse("aac"),
+            Some(mode(VideoMode::Copy, AudioMode::Aac))
+        );
         assert_eq!(
             StreamMode::parse("aac-standard"),
             Some(mode(VideoMode::Copy, AudioMode::AacStandard))
         );
-        assert_eq!(StreamMode::parse("aac-night"), Some(mode(VideoMode::Copy, AudioMode::AacNight)));
-        assert_eq!(StreamMode::parse("h264-copy"), Some(mode(VideoMode::H264, AudioMode::Copy)));
+        assert_eq!(
+            StreamMode::parse("aac-night"),
+            Some(mode(VideoMode::Copy, AudioMode::AacNight))
+        );
+        assert_eq!(
+            StreamMode::parse("h264-copy"),
+            Some(mode(VideoMode::H264, AudioMode::Copy))
+        );
         assert_eq!(
             StreamMode::parse("h264-aac-standard"),
             Some(mode(VideoMode::H264, AudioMode::AacStandard))
@@ -190,12 +228,19 @@ mod tests {
     #[test]
     fn the_redirect_target_resolves_to_itself() {
         let asked = mode(VideoMode::Copy, AudioMode::Copy);
-        let effective = asked.for_client_audio(Some("dts"), Some("aac")).for_client_video(Some("hevc"), Some("h264"));
+        let effective = asked
+            .for_client_audio(Some("dts"), Some("aac"))
+            .for_client_video(Some("hevc"), Some("h264"));
         assert_eq!(effective, mode(VideoMode::H264, AudioMode::Aac));
         assert_eq!(
             hls_master_path("abc123", effective, 30, 1),
             "/api/items/abc123/hls/h264-aac/30/1/index.m3u8"
         );
-        assert_eq!(effective.for_client_audio(Some("dts"), None).for_client_video(Some("hevc"), None), effective);
+        assert_eq!(
+            effective
+                .for_client_audio(Some("dts"), None)
+                .for_client_video(Some("hevc"), None),
+            effective
+        );
     }
 }

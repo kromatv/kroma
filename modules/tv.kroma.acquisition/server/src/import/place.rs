@@ -7,7 +7,9 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 
 pub(super) fn ext_of(path: &Path) -> &str {
-    path.extension().and_then(std::ffi::OsStr::to_str).unwrap_or("mkv")
+    path.extension()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or("mkv")
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -45,7 +47,10 @@ pub(super) fn place(src: &Path, dest: &Path, mode: Placement) -> Result<PathBuf>
 
 fn free_path(dest: &Path) -> PathBuf {
     let parent = dest.parent().unwrap_or_else(|| Path::new("."));
-    let stem = dest.file_stem().and_then(std::ffi::OsStr::to_str).unwrap_or("release");
+    let stem = dest
+        .file_stem()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or("release");
     let ext = ext_of(dest);
     for n in 2..1000u32 {
         let candidate = parent.join(format!("{stem} ({n}).{ext}"));
@@ -91,7 +96,11 @@ fn try_reflink(src: &Path, dest: &Path) -> std::io::Result<()> {
 
 pub(super) fn video_files(root: &Path) -> Result<Vec<PathBuf>> {
     let mut out = Vec::new();
-    for entry in walkdir::WalkDir::new(root).max_depth(6).into_iter().flatten() {
+    for entry in walkdir::WalkDir::new(root)
+        .max_depth(6)
+        .into_iter()
+        .flatten()
+    {
         if !entry.file_type().is_file() {
             continue;
         }
@@ -99,9 +108,16 @@ pub(super) fn video_files(root: &Path) -> Result<Vec<PathBuf>> {
         let ext_ok = path
             .extension()
             .and_then(std::ffi::OsStr::to_str)
-            .map(|e| kroma_module_sdk::engine::services::scan::walk::VIDEO_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
+            .map(|e| {
+                kroma_module_sdk::engine::services::scan::walk::VIDEO_EXTENSIONS
+                    .contains(&e.to_ascii_lowercase().as_str())
+            })
             .unwrap_or(false);
-        let name = path.file_name().and_then(std::ffi::OsStr::to_str).unwrap_or_default().to_ascii_lowercase();
+        let name = path
+            .file_name()
+            .and_then(std::ffi::OsStr::to_str)
+            .unwrap_or_default()
+            .to_ascii_lowercase();
         if ext_ok && !name.contains("sample") {
             out.push(path);
         }
@@ -134,7 +150,10 @@ mod tests {
     #[test]
     fn a_plain_import_leaves_an_existing_destination_alone() {
         let scratch = tmp("plain");
-        let (src, dest) = (scratch.path().join("new.mkv"), scratch.path().join("out/old.mkv"));
+        let (src, dest) = (
+            scratch.path().join("new.mkv"),
+            scratch.path().join("out/old.mkv"),
+        );
         write(&src, "new");
         write(&dest, "old");
 
@@ -148,33 +167,53 @@ mod tests {
         // A PROPER of the same quality renders to the same filename, so without
         // the overwrite the better release would silently never land.
         let scratch = tmp("upgrade");
-        let (src, dest) = (scratch.path().join("new.mkv"), scratch.path().join("out/same.mkv"));
+        let (src, dest) = (
+            scratch.path().join("new.mkv"),
+            scratch.path().join("out/same.mkv"),
+        );
         write(&src, "new");
         write(&dest, "old");
 
         let at = place(&src, &dest, Placement::Replace).unwrap();
         assert_eq!(std::fs::read_to_string(&dest).unwrap(), "new");
         assert_eq!(at, dest);
-        assert!(!dest.with_extension("kroma-upgrade").exists(), "the staging file is renamed away");
+        assert!(
+            !dest.with_extension("kroma-upgrade").exists(),
+            "the staging file is renamed away"
+        );
     }
 
     #[test]
     fn an_upgrade_that_must_not_replace_keeps_both_files() {
         let scratch = tmp("beside");
-        let (src, dest) = (scratch.path().join("new.mkv"), scratch.path().join("out/same.mkv"));
+        let (src, dest) = (
+            scratch.path().join("new.mkv"),
+            scratch.path().join("out/same.mkv"),
+        );
         write(&src, "new");
         write(&dest, "old");
 
         let at = place(&src, &dest, Placement::Beside).unwrap();
-        assert_eq!(std::fs::read_to_string(&dest).unwrap(), "old", "the original survives");
+        assert_eq!(
+            std::fs::read_to_string(&dest).unwrap(),
+            "old",
+            "the original survives"
+        );
         assert_ne!(at, dest);
-        assert_eq!(std::fs::read_to_string(&at).unwrap(), "new", "and the upgrade lands");
+        assert_eq!(
+            std::fs::read_to_string(&at).unwrap(),
+            "new",
+            "and the upgrade lands"
+        );
     }
 
     #[test]
     fn keeping_both_twice_does_not_collide() {
         let scratch = tmp("beside-twice");
-        let (src, dest) = (scratch.path().join("new.mkv"), scratch.path().join("out/same.mkv"));
+        let (src, dest) = (
+            scratch.path().join("new.mkv"),
+            scratch.path().join("out/same.mkv"),
+        );
         write(&src, "new");
         write(&dest, "old");
 
@@ -187,7 +226,10 @@ mod tests {
     #[test]
     fn placing_into_a_missing_folder_creates_it() {
         let scratch = tmp("mkdir");
-        let (src, dest) = (scratch.path().join("new.mkv"), scratch.path().join("a/b/c.mkv"));
+        let (src, dest) = (
+            scratch.path().join("new.mkv"),
+            scratch.path().join("a/b/c.mkv"),
+        );
         write(&src, "new");
 
         let at = place(&src, &dest, Placement::Skip).unwrap();
@@ -203,7 +245,10 @@ mod tests {
     #[test]
     fn the_largest_video_is_the_one_with_the_most_bytes() {
         let scratch = tmp("largest");
-        let (sample, feature) = (scratch.path().join("sample.mkv"), scratch.path().join("feature.mkv"));
+        let (sample, feature) = (
+            scratch.path().join("sample.mkv"),
+            scratch.path().join("feature.mkv"),
+        );
         write(&sample, "x");
         write(&feature, "xxxxxxxx");
         let files = vec![sample, feature.clone()];

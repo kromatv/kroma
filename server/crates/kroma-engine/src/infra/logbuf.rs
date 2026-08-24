@@ -31,7 +31,10 @@ pub struct LogBuffer {
 
 impl LogBuffer {
     fn new() -> Self {
-        Self { inner: Mutex::new(VecDeque::with_capacity(CAPACITY)), next: AtomicU64::new(1) }
+        Self {
+            inner: Mutex::new(VecDeque::with_capacity(CAPACITY)),
+            next: AtomicU64::new(1),
+        }
     }
 
     pub fn push(&self, mut entry: LogEntry) {
@@ -177,7 +180,10 @@ mod tests {
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].level, "warn");
         assert_eq!(got[0].source, "tv.kroma.vpn");
-        assert_eq!(got[0].message, "kroma_vpn: wireguard bridge exited; restarting in 5s");
+        assert_eq!(
+            got[0].message,
+            "kroma_vpn: wireguard bridge exited; restarting in 5s"
+        );
     }
 
     #[test]

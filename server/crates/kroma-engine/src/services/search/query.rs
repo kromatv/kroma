@@ -57,7 +57,10 @@ pub(super) fn build(fields: &Fields, tokens: &[String]) -> Option<Box<dyn Query>
             variants.push((Occur::Should, Box::new(BoostQuery::new(fuzzy, boost))));
             // Prefix match for partial words ("brea" → "Breaking"), at half weight.
             let prefix: Box<dyn Query> = Box::new(FuzzyTermQuery::new_prefix(term, 0, true));
-            variants.push((Occur::Should, Box::new(BoostQuery::new(prefix, boost * 0.5))));
+            variants.push((
+                Occur::Should,
+                Box::new(BoostQuery::new(prefix, boost * 0.5)),
+            ));
         }
         per_token.push((Occur::Must, Box::new(BooleanQuery::new(variants))));
     }

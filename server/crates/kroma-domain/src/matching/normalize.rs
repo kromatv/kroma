@@ -92,14 +92,17 @@ fn fold(ch: char) -> Option<&'static str> {
 /// precomposed `é`. Use it for a provider query where [`normalize`]'s fuller
 /// folding (lowercasing, article stripping) would be too lossy.
 pub fn strip_combining(s: &str) -> String {
-    s.chars().filter(|c| !matches!(c, '\u{0300}'..='\u{036F}')).collect()
+    s.chars()
+        .filter(|c| !matches!(c, '\u{0300}'..='\u{036F}'))
+        .collect()
 }
 
 // Articles a catalog title may or may not carry ("The Matrix" vs "Matrix", "Le
 // Fabuleux destin..." vs "Fabuleux destin..."). Both sides are normalized first,
 // so `l'` is already `l `.
-const ARTICLES: [&str; 12] =
-    ["the ", "a ", "an ", "le ", "la ", "les ", "l ", "un ", "une ", "der ", "die ", "das "];
+const ARTICLES: [&str; 12] = [
+    "the ", "a ", "an ", "le ", "la ", "les ", "l ", "un ", "une ", "der ", "die ", "das ",
+];
 
 pub(super) fn strip_article(s: &str) -> String {
     ARTICLES
@@ -120,7 +123,10 @@ mod tests {
 
     #[test]
     fn every_latin_accent_and_ligature_folds_to_ascii() {
-        assert_eq!(normalize("Ångström Ça Ñandú Øst Ünter Ýes"), "angstrom ca nandu ost unter yes");
+        assert_eq!(
+            normalize("Ångström Ça Ñandú Øst Ünter Ýes"),
+            "angstrom ca nandu ost unter yes"
+        );
         assert_eq!(normalize("Àáâãä Òóôõöø Ùúûü ÿÝ"), "aaaaa oooooo uuuu yy");
         assert_eq!(normalize("Æon Flux"), "aeon flux");
         assert_eq!(normalize("Œuvre"), "oeuvre");
@@ -130,7 +136,10 @@ mod tests {
     #[test]
     fn normalize_folds_case_accents_and_punctuation() {
         assert_eq!(normalize("Amélie"), "amelie");
-        assert_eq!(normalize("Spider-Man: No Way Home"), "spider man no way home");
+        assert_eq!(
+            normalize("Spider-Man: No Way Home"),
+            "spider man no way home"
+        );
         assert_eq!(normalize("  WALL·E  "), "wall e");
         assert_eq!(normalize("Fast & Furious"), "fast furious");
     }

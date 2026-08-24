@@ -96,7 +96,12 @@ fn parse_peers(body: &[u8]) -> Vec<SocketAddr> {
                     let mut ip = [0u8; 16];
                     ip.copy_from_slice(&c[..16]);
                     let port = u16::from_be_bytes([c[16], c[17]]);
-                    out.push(SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::from(ip), port, 0, 0)));
+                    out.push(SocketAddr::V6(SocketAddrV6::new(
+                        Ipv6Addr::from(ip),
+                        port,
+                        0,
+                        0,
+                    )));
                 }
             }
             _ => {}
@@ -173,7 +178,9 @@ fn parse_announce_list(b: &[u8], s: usize, e: usize, urls: &mut Vec<String>) {
     while i < e && b.get(i) == Some(&b'l') {
         let mut j = i + 1; // into an inner list
         while j < e && b.get(j) != Some(&b'e') {
-            let Some((bytes, nj)) = read_bstr(b, j) else { break };
+            let Some((bytes, nj)) = read_bstr(b, j) else {
+                break;
+            };
             urls.push(String::from_utf8_lossy(bytes).into_owned());
             j = nj;
         }
@@ -209,11 +216,13 @@ fn top_dict_strings(b: &[u8]) -> Vec<(&[u8], &[u8])> {
         if c == b'e' {
             break;
         }
-        let Some((k, after_key)) = read_bstr(b, i) else { break };
-        let Some(vend) = bskip(b, after_key) else { break };
-        if b.get(after_key) == Some(&b'0')
-            || matches!(b.get(after_key), Some(b'1'..=b'9'))
-        {
+        let Some((k, after_key)) = read_bstr(b, i) else {
+            break;
+        };
+        let Some(vend) = bskip(b, after_key) else {
+            break;
+        };
+        if b.get(after_key) == Some(&b'0') || matches!(b.get(after_key), Some(b'1'..=b'9')) {
             if let Some((val, _)) = read_bstr(b, after_key) {
                 out.push((k, val));
             }

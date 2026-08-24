@@ -52,24 +52,34 @@ impl NotificationSpec {
     /// Text a module supplies itself, rather than a key the core can translate.
     /// The server-side renderer does not load module catalogs, so the module's
     /// wording rides in as params through a passthrough key.
-    pub fn custom(category: NotificationCategory, title: impl Into<String>, body: impl Into<String>) -> Self {
-        Self::new(NotificationEvent::Custom, "notifications.custom.title", "notifications.custom.body")
-            .param("title", title)
-            .param("body", body)
-            .in_category(category)
+    pub fn custom(
+        category: NotificationCategory,
+        title: impl Into<String>,
+        body: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            NotificationEvent::Custom,
+            "notifications.custom.title",
+            "notifications.custom.body",
+        )
+        .param("title", title)
+        .param("body", body)
+        .in_category(category)
     }
 
     /// A literal interpolation var. Never translated, however much it may look
     /// like a catalog key.
     pub fn param(mut self, key: &str, value: impl Into<String>) -> Self {
-        self.params.insert(key.to_string(), ParamValue::Text(value.into()));
+        self.params
+            .insert(key.to_string(), ParamValue::Text(value.into()));
         self
     }
 
     /// An interpolation var that is itself an i18n key, resolved in the reader's
     /// locale (a job's `jobs.{key}.name`).
     pub fn param_key(mut self, key: &str, message_key: impl Into<String>) -> Self {
-        self.params.insert(key.to_string(), ParamValue::Key(message_key.into()));
+        self.params
+            .insert(key.to_string(), ParamValue::Key(message_key.into()));
         self
     }
 
@@ -123,8 +133,14 @@ mod tests {
         .param("who", "library.scan")
         .param_key("job", "jobs.library.scan.name");
 
-        assert_eq!(spec.params.get("who"), Some(&ParamValue::Text("library.scan".into())));
-        assert_eq!(spec.params.get("job"), Some(&ParamValue::Key("jobs.library.scan.name".into())));
+        assert_eq!(
+            spec.params.get("who"),
+            Some(&ParamValue::Text("library.scan".into()))
+        );
+        assert_eq!(
+            spec.params.get("job"),
+            Some(&ParamValue::Key("jobs.library.scan.name".into()))
+        );
     }
     #[test]
     fn spec_builders_accumulate_without_clobbering() {
@@ -147,8 +163,14 @@ mod tests {
             style: ActionStyle::Primary,
         });
 
-        assert_eq!(spec.params.get("title"), Some(&ParamValue::Text("Dune".into())));
-        assert_eq!(spec.params.get("year"), Some(&ParamValue::Text("2021".into())));
+        assert_eq!(
+            spec.params.get("title"),
+            Some(&ParamValue::Text("Dune".into()))
+        );
+        assert_eq!(
+            spec.params.get("year"),
+            Some(&ParamValue::Text("2021".into()))
+        );
         assert_eq!(spec.category(), NotificationCategory::Requests);
         assert_eq!(spec.actions.len(), 1);
         assert_eq!(spec.push_category, Some(PushCategory::MediaAvailable));

@@ -149,8 +149,14 @@ impl Session {
             return self.flaresolverr_fetch("request.post", url, Some(form_encode(fields)));
         }
         self.throttle();
-        let refs: Vec<(&str, &str)> = fields.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
-        let resp = self.base_fetch().post_form(url, &refs).with_context(|| format!("POST {url}"))?;
+        let refs: Vec<(&str, &str)> = fields
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+        let resp = self
+            .base_fetch()
+            .post_form(url, &refs)
+            .with_context(|| format!("POST {url}"))?;
         Ok(resp.text())
     }
 
@@ -166,7 +172,12 @@ impl Session {
         Ok(body)
     }
 
-    fn flaresolverr_fetch(&self, cmd: &str, url: &str, post_data: Option<String>) -> Result<String> {
+    fn flaresolverr_fetch(
+        &self,
+        cmd: &str,
+        url: &str,
+        post_data: Option<String>,
+    ) -> Result<String> {
         let base = self.flaresolverr.as_ref().unwrap().trim_end_matches('/');
         self.throttle();
         let body = flaresolverr_body(cmd, url, post_data);
@@ -204,7 +215,10 @@ impl Session {
 
 // One jar per indexer id so two configs never share a session.
 fn cookie_jar_path(data_dir: &Path, indexer_id: &str) -> PathBuf {
-    let safe: String = indexer_id.chars().map(|c| if c.is_alphanumeric() { c } else { '_' }).collect();
+    let safe: String = indexer_id
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '_' })
+        .collect();
     data_dir.join("indexers").join(format!("{safe}.cookies"))
 }
 
@@ -228,7 +242,13 @@ fn append_query(url: &str, query: &[(String, String)]) -> String {
 fn form_encode(fields: &[(String, String)]) -> String {
     fields
         .iter()
-        .map(|(k, v)| format!("{}={}", crate::filters::url_encode(k), crate::filters::url_encode(v)))
+        .map(|(k, v)| {
+            format!(
+                "{}={}",
+                crate::filters::url_encode(k),
+                crate::filters::url_encode(v)
+            )
+        })
         .collect::<Vec<_>>()
         .join("&")
 }
@@ -258,9 +278,18 @@ mod tests {
 
     #[test]
     fn append_query_and_form_encode() {
-        let q = vec![("q".to_string(), "the matrix".to_string()), ("cat".to_string(), "1,2".to_string())];
-        assert_eq!(append_query("https://x/a", &q), "https://x/a?q=the%20matrix&cat=1%2C2");
-        assert_eq!(append_query("https://x/a?p=1", &q), "https://x/a?p=1&q=the%20matrix&cat=1%2C2");
+        let q = vec![
+            ("q".to_string(), "the matrix".to_string()),
+            ("cat".to_string(), "1,2".to_string()),
+        ];
+        assert_eq!(
+            append_query("https://x/a", &q),
+            "https://x/a?q=the%20matrix&cat=1%2C2"
+        );
+        assert_eq!(
+            append_query("https://x/a?p=1", &q),
+            "https://x/a?p=1&q=the%20matrix&cat=1%2C2"
+        );
         assert_eq!(append_query("https://x/a", &[]), "https://x/a");
     }
 }

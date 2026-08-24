@@ -26,7 +26,10 @@ use crate::state::SharedState;
 pub fn routes(host_token: String) -> Router<SharedState> {
     Router::new()
         .route("/_host/register-job", post(register_job))
-        .route_layer(from_fn_with_state(HostToken(host_token), require_host_token))
+        .route_layer(from_fn_with_state(
+            HostToken(host_token),
+            require_host_token,
+        ))
 }
 
 #[derive(serde::Deserialize)]
@@ -186,9 +189,14 @@ mod tests {
             "category": "maintenance",
         });
 
-        let (status, _) =
-            send(&t.app, "POST", "/api/_host/register-job", Some("test-host-token"), Some(body))
-                .await;
+        let (status, _) = send(
+            &t.app,
+            "POST",
+            "/api/_host/register-job",
+            Some("test-host-token"),
+            Some(body),
+        )
+        .await;
 
         assert_eq!(status, StatusCode::BAD_REQUEST);
         assert_eq!(t.state.jobs.resolve("not a job key"), None);
@@ -204,13 +212,21 @@ mod tests {
             "schedule": "whenever you like",
         });
 
-        let (status, _) =
-            send(&t.app, "POST", "/api/_host/register-job", Some("test-host-token"), Some(body))
-                .await;
+        let (status, _) = send(
+            &t.app,
+            "POST",
+            "/api/_host/register-job",
+            Some("test-host-token"),
+            Some(body),
+        )
+        .await;
 
         assert_eq!(status, StatusCode::NO_CONTENT);
         let listed = t.state.jobs.list(&t.state);
-        let job = listed.iter().find(|j| j.key == "flood.hourly").expect("job registered");
+        let job = listed
+            .iter()
+            .find(|j| j.key == "flood.hourly")
+            .expect("job registered");
         assert_eq!(job.schedule, None);
     }
 }

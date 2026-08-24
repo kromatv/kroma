@@ -65,14 +65,26 @@ mod tests {
             error: None,
         };
         assert!(mk(Some("1.2.3.4"), Some("5.6.7.8")).sealed());
-        assert!(mk(Some("1.2.3.4"), None).sealed(), "no direct egress still counts");
-        assert!(!mk(None, Some("5.6.7.8")).sealed(), "dead proxy is not sealed");
-        assert!(!mk(Some("5.6.7.8"), Some("5.6.7.8")).sealed(), "same exit = not diverting");
+        assert!(
+            mk(Some("1.2.3.4"), None).sealed(),
+            "no direct egress still counts"
+        );
+        assert!(
+            !mk(None, Some("5.6.7.8")).sealed(),
+            "dead proxy is not sealed"
+        );
+        assert!(
+            !mk(Some("5.6.7.8"), Some("5.6.7.8")).sealed(),
+            "same exit = not diverting"
+        );
     }
 
     #[test]
     fn ip_echo_bodies_are_size_capped() {
-        assert_eq!(short_ip("  203.0.113.7\n".into()).as_deref(), Some("203.0.113.7"));
+        assert_eq!(
+            short_ip("  203.0.113.7\n".into()).as_deref(),
+            Some("203.0.113.7")
+        );
         assert_eq!(short_ip("<html>captive portal</html>".repeat(10)), None);
         assert_eq!(short_ip("   ".into()), None);
     }
@@ -128,7 +140,9 @@ mod tests {
         };
         let mut rest = vec![0u8; addr_len + 2];
         stream.read_exact(&mut rest).ok()?;
-        stream.write_all(&[0x05, 0, 0, 0x01, 0, 0, 0, 0, 0, 0]).ok()?;
+        stream
+            .write_all(&[0x05, 0, 0, 0x01, 0, 0, 0, 0, 0, 0])
+            .ok()?;
         Some(())
     }
 

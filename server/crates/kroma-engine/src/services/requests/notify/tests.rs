@@ -13,9 +13,17 @@ fn only_the_four_outcomes_worth_interrupting_someone_for_notify() {
         RequestStatus::Failed,
     ];
     for status in silent {
-        notify_requester(&host, &req_by(RequestKind::Movie, status, "u1"), status, "/requests");
+        notify_requester(
+            &host,
+            &req_by(RequestKind::Movie, status, "u1"),
+            status,
+            "/requests",
+        );
     }
-    assert!(host.notifications().is_empty(), "{silent:?} must stay quiet");
+    assert!(
+        host.notifications().is_empty(),
+        "{silent:?} must stay quiet"
+    );
 
     for status in [
         RequestStatus::Approved,
@@ -23,7 +31,12 @@ fn only_the_four_outcomes_worth_interrupting_someone_for_notify() {
         RequestStatus::Available,
         RequestStatus::PartiallyAvailable,
     ] {
-        notify_requester(&host, &req_by(RequestKind::Movie, status, "u1"), status, "/requests");
+        notify_requester(
+            &host,
+            &req_by(RequestKind::Movie, status, "u1"),
+            status,
+            "/requests",
+        );
     }
     let sent = host.notifications();
     assert_eq!(sent.len(), 4);
@@ -67,7 +80,10 @@ fn a_denial_carries_the_moderators_note_and_only_a_denial_does() {
     notify_requester(&host, &approved, RequestStatus::Approved, "/requests");
 
     let sent = host.notifications();
-    assert_eq!(param(&sent[0].1.params, "note").as_deref(), Some("we already have this in 4K"));
+    assert_eq!(
+        param(&sent[0].1.params, "note").as_deref(),
+        Some("we already have this in 4K")
+    );
     assert_eq!(param(&sent[1].1.params, "note"), None);
     assert_eq!(param(&sent[0].1.params, "title").as_deref(), Some("Title"));
     assert_eq!(param(&sent[1].1.params, "title").as_deref(), Some("Title"));
@@ -96,7 +112,10 @@ fn only_a_ready_to_watch_notification_gets_a_button() {
     assert_eq!(watch.href, "/movie/abc");
     assert_eq!(watch.method, None);
     assert_eq!(available.link.as_deref(), Some("/movie/abc"));
-    assert_eq!(available.image_url.as_deref(), Some("https://img.example/p.jpg"));
+    assert_eq!(
+        available.image_url.as_deref(),
+        Some("https://img.example/p.jpg")
+    );
 
     assert!(sent[1].1.actions.is_empty());
     assert_eq!(sent[1].1.push_category, None);
@@ -139,7 +158,11 @@ fn a_notification_links_to_the_title_once_it_is_in_the_library() {
     assert_eq!(request_link(&host, &away), "/movie/item-9");
 
     let show = req(RequestKind::Show, RequestStatus::Pending);
-    assert_eq!(request_link(&host, &show), "/requests", "no show with that tmdb id yet");
+    assert_eq!(
+        request_link(&host, &show),
+        "/requests",
+        "no show with that tmdb id yet"
+    );
     seed_show(&host, "show-9", 42, &[]);
     assert_eq!(request_link(&host, &show), "/show/show-9");
 }

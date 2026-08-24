@@ -78,8 +78,9 @@ fn row_to_indexer(r: &Row) -> rusqlite::Result<IndexerRow> {
 }
 
 pub fn list_indexers(conn: &Connection) -> rusqlite::Result<Vec<IndexerRow>> {
-    let mut stmt =
-        conn.prepare(&format!("SELECT {INDEXER_COLS} FROM indexers ORDER BY created_at"))?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {INDEXER_COLS} FROM indexers ORDER BY created_at"
+    ))?;
     let rows = stmt.query_map([], row_to_indexer)?;
     rows.collect()
 }
@@ -93,14 +94,21 @@ pub fn enabled_indexers(conn: &Connection) -> rusqlite::Result<Vec<IndexerRow>> 
 }
 
 pub fn get_indexer(conn: &Connection, id: &str) -> rusqlite::Result<Option<IndexerRow>> {
-    let mut stmt = conn.prepare(&format!("SELECT {INDEXER_COLS} FROM indexers WHERE id = ?1"))?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {INDEXER_COLS} FROM indexers WHERE id = ?1"
+    ))?;
     let mut rows = stmt.query_map(params![id], row_to_indexer)?;
     rows.next().transpose()
 }
 
 pub fn insert_indexer(pool: &Pool, row: &IndexerRow) -> Result<()> {
     let conn = pool.get()?;
-    let cats = row.categories.iter().map(u32::to_string).collect::<Vec<_>>().join(",");
+    let cats = row
+        .categories
+        .iter()
+        .map(u32::to_string)
+        .collect::<Vec<_>>()
+        .join(",");
     conn.execute(
         "INSERT INTO indexers \
             (id, name, url, api_key, categories, enabled, priority, kind, definition_id, settings, created_at) \
@@ -138,7 +146,16 @@ pub fn update_indexer(
             priority = COALESCE(?7, priority), \
             settings = COALESCE(?8, settings) \
          WHERE id = ?1",
-        params![id, name, url, api_key, cats, enabled.map(|e| e as i64), priority, settings],
+        params![
+            id,
+            name,
+            url,
+            api_key,
+            cats,
+            enabled.map(|e| e as i64),
+            priority,
+            settings
+        ],
     )?;
     Ok(n > 0)
 }
@@ -148,7 +165,13 @@ pub fn delete_indexer(pool: &Pool, id: &str) -> Result<bool> {
     Ok(conn.execute("DELETE FROM indexers WHERE id = ?1", params![id])? > 0)
 }
 
-pub fn note_indexer_result(pool: &Pool, id: &str, ok: bool, error: Option<&str>, now_ms: i64) -> Result<()> {
+pub fn note_indexer_result(
+    pool: &Pool,
+    id: &str,
+    ok: bool,
+    error: Option<&str>,
+    now_ms: i64,
+) -> Result<()> {
     let conn = pool.get()?;
     if ok {
         conn.execute(
@@ -156,7 +179,10 @@ pub fn note_indexer_result(pool: &Pool, id: &str, ok: bool, error: Option<&str>,
             params![id, now_ms],
         )?;
     } else {
-        conn.execute("UPDATE indexers SET last_error = ?2 WHERE id = ?1", params![id, error])?;
+        conn.execute(
+            "UPDATE indexers SET last_error = ?2 WHERE id = ?1",
+            params![id, error],
+        )?;
     }
     Ok(())
 }
@@ -231,7 +257,11 @@ mod tests {
         insert_indexer(&pool, &row("early", 100)).unwrap();
         insert_indexer(&pool, &row("mid", 200)).unwrap();
         let conn = pool.get().unwrap();
-        let ids: Vec<String> = list_indexers(&conn).unwrap().into_iter().map(|r| r.id).collect();
+        let ids: Vec<String> = list_indexers(&conn)
+            .unwrap()
+            .into_iter()
+            .map(|r| r.id)
+            .collect();
         assert_eq!(ids, vec!["early", "mid", "late"]);
     }
 
@@ -250,8 +280,11 @@ mod tests {
         insert_indexer(&pool, &off).unwrap();
 
         let conn = pool.get().unwrap();
-        let ids: Vec<String> =
-            enabled_indexers(&conn).unwrap().into_iter().map(|r| r.id).collect();
+        let ids: Vec<String> = enabled_indexers(&conn)
+            .unwrap()
+            .into_iter()
+            .map(|r| r.id)
+            .collect();
         assert_eq!(ids, vec!["hi", "lo"]);
     }
 
@@ -306,8 +339,18 @@ mod tests {
     #[test]
     fn update_missing_row_returns_false() {
         let pool = test_pool();
-        let changed =
-            update_indexer(&pool, "ghost", Some("x"), None, None, None, None, None, None).unwrap();
+        let changed = update_indexer(
+            &pool,
+            "ghost",
+            Some("x"),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
         assert!(!changed);
     }
 

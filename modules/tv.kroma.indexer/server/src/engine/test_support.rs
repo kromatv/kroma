@@ -6,7 +6,10 @@ pub(super) fn build_def(yaml: &str) -> Definition {
 }
 
 pub(super) fn cfg(base: &str) -> IndexerConfig {
-    IndexerConfig { base_url: base.to_string(), settings: std::collections::HashMap::new() }
+    IndexerConfig {
+        base_url: base.to_string(),
+        settings: std::collections::HashMap::new(),
+    }
 }
 
 pub(super) fn cat_def() -> Definition {
@@ -24,4 +27,3 @@ search:
 "#,
     )
 }
-

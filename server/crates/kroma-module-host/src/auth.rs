@@ -21,7 +21,10 @@ pub struct AuthUser(pub User);
 async fn resolve_session<S: HostCtx + Clone>(parts: &Parts, state: &S) -> Option<User> {
     let token = bearer_from_headers(&parts.headers)?;
     let state = state.clone();
-    tokio::task::spawn_blocking(move || state.session_user(&token)).await.ok().flatten()
+    tokio::task::spawn_blocking(move || state.session_user(&token))
+        .await
+        .ok()
+        .flatten()
 }
 
 impl<S: HostCtx + Clone> FromRequestParts<S> for AuthUser {
@@ -90,11 +93,18 @@ mod tests {
 
     #[tokio::test]
     async fn optional_auth_is_none_when_the_request_carries_no_bearer() {
-        let (mut parts, ()) = axum::http::Request::builder().body(()).unwrap().into_parts();
+        let (mut parts, ()) = axum::http::Request::builder()
+            .body(())
+            .unwrap()
+            .into_parts();
         let host = testing::StubHost::new();
-        let OptionalAuthUser(user) =
-            OptionalAuthUser::from_request_parts(&mut parts, &host).await.unwrap();
-        assert!(user.is_none(), "a public endpoint must not reject an anonymous caller");
+        let OptionalAuthUser(user) = OptionalAuthUser::from_request_parts(&mut parts, &host)
+            .await
+            .unwrap();
+        assert!(
+            user.is_none(),
+            "a public endpoint must not reject an anonymous caller"
+        );
     }
 
     fn bearer(token: &str) -> Parts {
@@ -125,11 +135,15 @@ mod tests {
     async fn both_extractors_resolve_through_the_host_rather_than_a_database() {
         let host = testing::StubHost::new().with_session("live", someone());
 
-        let AuthUser(user) = AuthUser::from_request_parts(&mut bearer("live"), &host).await.unwrap();
+        let AuthUser(user) = AuthUser::from_request_parts(&mut bearer("live"), &host)
+            .await
+            .unwrap();
         assert_eq!(user.id, "u1");
 
         let OptionalAuthUser(user) =
-            OptionalAuthUser::from_request_parts(&mut bearer("live"), &host).await.unwrap();
+            OptionalAuthUser::from_request_parts(&mut bearer("live"), &host)
+                .await
+                .unwrap();
         assert_eq!(user.map(|u| u.id).as_deref(), Some("u1"));
     }
 
@@ -146,7 +160,11 @@ mod tests {
         assert_eq!(
             status(
                 AuthUser::from_request_parts(
-                    &mut axum::http::Request::builder().body(()).unwrap().into_parts().0,
+                    &mut axum::http::Request::builder()
+                        .body(())
+                        .unwrap()
+                        .into_parts()
+                        .0,
                     &host,
                 )
                 .await
@@ -155,7 +173,9 @@ mod tests {
         );
 
         let OptionalAuthUser(user) =
-            OptionalAuthUser::from_request_parts(&mut bearer("stale"), &host).await.unwrap();
+            OptionalAuthUser::from_request_parts(&mut bearer("stale"), &host)
+                .await
+                .unwrap();
         assert!(user.is_none());
     }
 
@@ -166,9 +186,18 @@ mod tests {
             h.insert(axum::http::header::AUTHORIZATION, v.parse().unwrap());
             h
         };
-        assert_eq!(bearer_from_headers(&header("Bearer abc123")).as_deref(), Some("abc123"));
-        assert_eq!(bearer_from_headers(&header("bearer abc123")).as_deref(), Some("abc123"));
-        assert_eq!(bearer_from_headers(&header("Bearer   abc123  ")).as_deref(), Some("abc123"));
+        assert_eq!(
+            bearer_from_headers(&header("Bearer abc123")).as_deref(),
+            Some("abc123")
+        );
+        assert_eq!(
+            bearer_from_headers(&header("bearer abc123")).as_deref(),
+            Some("abc123")
+        );
+        assert_eq!(
+            bearer_from_headers(&header("Bearer   abc123  ")).as_deref(),
+            Some("abc123")
+        );
     }
 
     #[test]
@@ -183,7 +212,10 @@ mod tests {
         assert!(bearer_from_headers(&header("Bearer ")).is_none());
         assert!(bearer_from_headers(&header("Bearer    ")).is_none());
         assert!(bearer_from_headers(&header("Basic dXNlcjpwYXNz")).is_none());
-        assert!(bearer_from_headers(&header("abc123")).is_none(), "a bare token is not a bearer");
+        assert!(
+            bearer_from_headers(&header("abc123")).is_none(),
+            "a bare token is not a bearer"
+        );
         assert!(bearer_from_headers(&axum::http::HeaderMap::new()).is_none());
     }
 }

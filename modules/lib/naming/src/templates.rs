@@ -119,7 +119,10 @@ mod tests {
             case: Casing::Default,
         };
         let p = tpl.movie_rel_path(&movie_ctx(), "mkv");
-        assert_eq!(p.to_str().unwrap(), "The Matrix (1999)/The Matrix (1999) Bluray-1080p.mkv");
+        assert_eq!(
+            p.to_str().unwrap(),
+            "The Matrix (1999)/The Matrix (1999) Bluray-1080p.mkv"
+        );
     }
 
     #[test]
@@ -149,7 +152,11 @@ mod tests {
             episode_file: String::new(),
             case: Casing::Default,
         };
-        let ctx = NameContext { title: "Mission: Impossible".into(), year: Some(1996), ..Default::default() };
+        let ctx = NameContext {
+            title: "Mission: Impossible".into(),
+            year: Some(1996),
+            ..Default::default()
+        };
         let p = tpl.movie_rel_path(&ctx, "mkv");
         assert_eq!(p.to_str().unwrap(), "Mission Impossible (1996).mkv");
         assert!(!p.to_str().unwrap().contains(':'));
@@ -165,10 +172,32 @@ mod tests {
             episode_file: String::new(),
             case,
         };
-        let ctx = NameContext { title: "The Matrix".into(), year: Some(1999), ..Default::default() };
-        assert_eq!(mk(Casing::Upper).movie_rel_path(&ctx, "mkv").to_str().unwrap(), "THE MATRIX (1999).mkv");
-        assert_eq!(mk(Casing::Lower).movie_rel_path(&ctx, "mkv").to_str().unwrap(), "the matrix (1999).mkv");
-        assert_eq!(mk(Casing::Default).movie_rel_path(&ctx, "mkv").to_str().unwrap(), "The Matrix (1999).mkv");
+        let ctx = NameContext {
+            title: "The Matrix".into(),
+            year: Some(1999),
+            ..Default::default()
+        };
+        assert_eq!(
+            mk(Casing::Upper)
+                .movie_rel_path(&ctx, "mkv")
+                .to_str()
+                .unwrap(),
+            "THE MATRIX (1999).mkv"
+        );
+        assert_eq!(
+            mk(Casing::Lower)
+                .movie_rel_path(&ctx, "mkv")
+                .to_str()
+                .unwrap(),
+            "the matrix (1999).mkv"
+        );
+        assert_eq!(
+            mk(Casing::Default)
+                .movie_rel_path(&ctx, "mkv")
+                .to_str()
+                .unwrap(),
+            "The Matrix (1999).mkv"
+        );
     }
     #[test]
     fn file_component_falls_back_when_name_empty() {
@@ -209,10 +238,22 @@ mod tests {
     // file the same way either default would, and the test below pins that.
     fn registered() -> HashMap<String, String> {
         HashMap::from([
-            ("namingMovieFolder".to_string(), "{Title} ({Year})".to_string()),
-            ("namingMovieFile".to_string(), "{Title} ({Year}) {Quality Full}".to_string()),
-            ("namingSeriesFolder".to_string(), "{Title} ({Year})".to_string()),
-            ("namingSeasonFolder".to_string(), "Season {season:00}".to_string()),
+            (
+                "namingMovieFolder".to_string(),
+                "{Title} ({Year})".to_string(),
+            ),
+            (
+                "namingMovieFile".to_string(),
+                "{Title} ({Year}) {Quality Full}".to_string(),
+            ),
+            (
+                "namingSeriesFolder".to_string(),
+                "{Title} ({Year})".to_string(),
+            ),
+            (
+                "namingSeasonFolder".to_string(),
+                "Season {season:00}".to_string(),
+            ),
             (
                 "namingEpisodeFile".to_string(),
                 "{Title} - S{season:00}E{episode:00} - {Episode Title} {Quality Full}".to_string(),
@@ -224,7 +265,10 @@ mod tests {
     // there is one, the caller's default otherwise.
     fn reader(stored: HashMap<String, String>) -> impl Fn(&str, &str) -> String {
         move |key: &str, default: &str| {
-            stored.get(key).cloned().unwrap_or_else(|| default.to_string())
+            stored
+                .get(key)
+                .cloned()
+                .unwrap_or_else(|| default.to_string())
         }
     }
 
@@ -240,7 +284,10 @@ mod tests {
             case: Casing::default(),
         };
 
-        assert_ne!(from_store.movie_folder, from_constants.movie_folder, "two spellings");
+        assert_ne!(
+            from_store.movie_folder, from_constants.movie_folder,
+            "two spellings"
+        );
         assert_eq!(
             from_store.movie_rel_path(&movie_ctx(), "mkv"),
             from_constants.movie_rel_path(&movie_ctx(), "mkv"),

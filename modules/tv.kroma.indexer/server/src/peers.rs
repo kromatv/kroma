@@ -28,7 +28,13 @@ pub const VPN_PROXY: &str = "tv.kroma.vpn/proxy";
 /// directly rather than through a dead proxy.
 pub fn proxy_url(host: &dyn HostCtx) -> Option<String> {
     let resolve = pinned_resolver(host, VPN_PROXY, None)?;
-    call_raw(&resolve, &format!("{VPN_PROXY}/url"), &serde_json::json!({})).ok().flatten()
+    call_raw(
+        &resolve,
+        &format!("{VPN_PROXY}/url"),
+        &serde_json::json!({}),
+    )
+    .ok()
+    .flatten()
 }
 
 /// One configured endpoint, as the point wants it.
@@ -62,7 +68,11 @@ pub fn search(
     query: &Query,
     caps: &Caps,
 ) -> anyhow::Result<Vec<Release>> {
-    let body = SearchReq { endpoint, query: wire_query(query), caps };
+    let body = SearchReq {
+        endpoint,
+        query: wire_query(query),
+        caps,
+    };
     call(&resolve(host, kind)?, &format!("{ENGINE}/search"), &body)
 }
 
@@ -83,28 +93,64 @@ struct SearchReq<'a> {
 // query and the provider's own fallback takes it from there.
 #[derive(Serialize)]
 enum WireQuery<'a> {
-    Movie { tmdb_id: Option<u64>, imdb_id: Option<&'a str>, title: &'a str, year: Option<u32> },
-    Episode { tmdb_id: Option<u64>, title: &'a str, season: u32, episode: u32 },
-    Season { tmdb_id: Option<u64>, title: &'a str, season: u32 },
+    Movie {
+        tmdb_id: Option<u64>,
+        imdb_id: Option<&'a str>,
+        title: &'a str,
+        year: Option<u32>,
+    },
+    Episode {
+        tmdb_id: Option<u64>,
+        title: &'a str,
+        season: u32,
+        episode: u32,
+    },
+    Season {
+        tmdb_id: Option<u64>,
+        title: &'a str,
+        season: u32,
+    },
 }
 
 fn wire_query(query: &Query) -> WireQuery<'_> {
     match query {
-        Query::Movie { tmdb_id, imdb_id, title, year } => WireQuery::Movie {
+        Query::Movie {
+            tmdb_id,
+            imdb_id,
+            title,
+            year,
+        } => WireQuery::Movie {
             tmdb_id: *tmdb_id,
             imdb_id: imdb_id.as_deref(),
             title,
             year: *year,
         },
-        Query::Episode { tmdb_id, title, season, episode } => {
-            WireQuery::Episode { tmdb_id: *tmdb_id, title, season: *season, episode: *episode }
-        }
-        Query::Season { tmdb_id, title, season } => {
-            WireQuery::Season { tmdb_id: *tmdb_id, title, season: *season }
-        }
-        Query::Text { query } => {
-            WireQuery::Movie { tmdb_id: None, imdb_id: None, title: query, year: None }
-        }
+        Query::Episode {
+            tmdb_id,
+            title,
+            season,
+            episode,
+        } => WireQuery::Episode {
+            tmdb_id: *tmdb_id,
+            title,
+            season: *season,
+            episode: *episode,
+        },
+        Query::Season {
+            tmdb_id,
+            title,
+            season,
+        } => WireQuery::Season {
+            tmdb_id: *tmdb_id,
+            title,
+            season: *season,
+        },
+        Query::Text { query } => WireQuery::Movie {
+            tmdb_id: None,
+            imdb_id: None,
+            title: query,
+            year: None,
+        },
     }
 }
 
@@ -113,11 +159,18 @@ mod tests {
     use super::*;
 
     fn endpoint() -> Endpoint {
-        Endpoint { url: "http://jackett".into(), api_key: "k".into(), categories: vec![2000] }
+        Endpoint {
+            url: "http://jackett".into(),
+            api_key: "k".into(),
+            categories: vec![2000],
+        }
     }
 
     fn body(query: &Query) -> serde_json::Value {
-        let caps = Caps { search_tmdb: true, ..Default::default() };
+        let caps = Caps {
+            search_tmdb: true,
+            ..Default::default()
+        };
         let endpoint = endpoint();
         serde_json::to_value(SearchReq {
             endpoint: &endpoint,
@@ -160,7 +213,9 @@ mod tests {
 
     #[test]
     fn a_free_text_query_crosses_as_a_titled_movie() {
-        let json = body(&Query::Text { query: "some.release.name".into() });
+        let json = body(&Query::Text {
+            query: "some.release.name".into(),
+        });
 
         assert_eq!(json["query"]["Movie"]["title"], "some.release.name");
         assert!(json["query"]["Movie"]["tmdb_id"].is_null());

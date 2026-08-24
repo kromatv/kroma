@@ -62,7 +62,10 @@ impl Env {
     /// The module's own database, beside the files the core unpacked it into.
     #[cfg(feature = "storage")]
     fn store_path(&self) -> PathBuf {
-        self.data_dir.join("modules").join(&self.module_id).join("module.sqlite")
+        self.data_dir
+            .join("modules")
+            .join(&self.module_id)
+            .join("module.sqlite")
     }
 }
 
@@ -110,7 +113,6 @@ impl RemoteHost {
         })
     }
 
-
     pub fn module_id(&self) -> &str {
         &self.inner.module_id
     }
@@ -127,11 +129,15 @@ impl RemoteHost {
     }
 
     fn callback(&self) -> kroma_http::Fetch {
-        kroma_http::Fetch::new().header("authorization", format!("Bearer {}", self.inner.host_token))
+        kroma_http::Fetch::new()
+            .header("authorization", format!("Bearer {}", self.inner.host_token))
     }
 
     fn host_url(&self, path: &str) -> String {
-        format!("{}/api/_host/{path}", self.inner.core_url.trim_end_matches('/'))
+        format!(
+            "{}/api/_host/{path}",
+            self.inner.core_url.trim_end_matches('/')
+        )
     }
 }
 
@@ -155,7 +161,10 @@ impl HostCtx for RemoteHost {
     fn session_user(&self, token: &str) -> Option<User> {
         // POSTed, not queried: the token is the caller's live session.
         self.callback()
-            .post_json(&self.host_url("session"), &serde_json::json!({ "token": token }))
+            .post_json(
+                &self.host_url("session"),
+                &serde_json::json!({ "token": token }),
+            )
             .ok()?
             .json::<Option<User>>()
             .ok()
@@ -217,9 +226,10 @@ impl HostCtx for RemoteHost {
     }
 
     fn set_settings(&self, patch: std::collections::BTreeMap<String, serde_json::Value>) {
-        let _ = self
-            .callback()
-            .post_json(&self.host_url("settings"), &serde_json::json!({ "patch": patch }));
+        let _ = self.callback().post_json(
+            &self.host_url("settings"),
+            &serde_json::json!({ "patch": patch }),
+        );
     }
 
     fn publish(&self, event: Event) {
@@ -252,9 +262,10 @@ impl HostCtx for RemoteHost {
     }
 
     fn trigger_job(&self, key: &'static str, reason: &'static str) {
-        let _ = self
-            .callback()
-            .post_json(&self.host_url("job"), &serde_json::json!({ "key": key, "reason": reason }));
+        let _ = self.callback().post_json(
+            &self.host_url("job"),
+            &serde_json::json!({ "key": key, "reason": reason }),
+        );
     }
 
     fn module_enabled(&self, id: &str) -> bool {
@@ -269,7 +280,9 @@ impl HostCtx for RemoteHost {
 
     fn library_folders(&self) -> Vec<kroma_module_host::LibraryFolders> {
         // The core owns Settings + Config; this process never links the engine.
-        self.callback().get_json(&self.host_url("libraries")).unwrap_or_default()
+        self.callback()
+            .get_json(&self.host_url("libraries"))
+            .unwrap_or_default()
     }
 
     fn secret(&self, name: &str) -> Option<String> {
@@ -556,7 +569,10 @@ struct JobSpec {
 fn job_router(job_fns: HashMap<&'static str, JobFn>, token: String) -> axum::Router<RemoteHost> {
     axum::Router::new()
         .route("/_job/run/{key}", axum::routing::post(run_job))
-        .route_layer(axum::middleware::from_fn_with_state(HostToken(token), require_host_token))
+        .route_layer(axum::middleware::from_fn_with_state(
+            HostToken(token),
+            require_host_token,
+        ))
         .layer(axum::Extension(Arc::new(job_fns)))
 }
 
@@ -584,7 +600,11 @@ async fn run_job(
         }
         Err(e) => {
             tracing::error!(job = %key, elapsed_ms, error = %e, "job panicked");
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("job panicked: {e}")).into_response()
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("job panicked: {e}"),
+            )
+                .into_response()
         }
     }
 }
@@ -612,13 +632,13 @@ impl Subscribers {
     }
 }
 
-fn event_router(
-    subscribers: Arc<Subscribers>,
-    token: String,
-) -> axum::Router<RemoteHost> {
+fn event_router(subscribers: Arc<Subscribers>, token: String) -> axum::Router<RemoteHost> {
     axum::Router::new()
         .route("/_event/{topic}", axum::routing::post(deliver_event))
-        .route_layer(axum::middleware::from_fn_with_state(HostToken(token), require_host_token))
+        .route_layer(axum::middleware::from_fn_with_state(
+            HostToken(token),
+            require_host_token,
+        ))
         .layer(axum::Extension(subscribers))
 }
 
@@ -639,7 +659,9 @@ async fn deliver_event(
     let modules = subscribers.modules.clone();
     tokio::spawn(async move {
         for index in want {
-            modules[index].on_event(host.clone(), topic.clone(), payload.clone()).await;
+            modules[index]
+                .on_event(host.clone(), topic.clone(), payload.clone())
+                .await;
         }
     });
     StatusCode::ACCEPTED

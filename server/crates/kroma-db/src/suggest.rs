@@ -30,7 +30,9 @@ pub fn get_suggestion(pool: &Pool, item_id: &str) -> Result<Option<SuggestionRow
             |r| r.get::<_, String>(0),
         )
         .optional()?;
-    let Some(ids_json) = base else { return Ok(None) };
+    let Some(ids_json) = base else {
+        return Ok(None);
+    };
     let mut row = SuggestionRow {
         item_ids: serde_json::from_str(&ids_json).unwrap_or_default(),
         reasons: HashMap::new(),
@@ -48,7 +50,12 @@ pub fn get_suggestion(pool: &Pool, item_id: &str) -> Result<Option<SuggestionRow
 /// Upsert the cached suggestion for one seed item: the base row (ids) plus one
 /// localized reason per language in the `translations` cache. `reasons` is
 /// `locale -> reason` (empty for the terminal "nothing found" marker).
-pub fn set_suggestion(pool: &Pool, item_id: &str, ids: &[String], reasons: &HashMap<String, String>) -> Result<()> {
+pub fn set_suggestion(
+    pool: &Pool,
+    item_id: &str,
+    ids: &[String],
+    reasons: &HashMap<String, String>,
+) -> Result<()> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
     let ids_json = serde_json::to_string(ids).unwrap_or_else(|_| "[]".into());
@@ -66,7 +73,10 @@ pub fn set_suggestion(pool: &Pool, item_id: &str, ids: &[String], reasons: &Hash
         if reason.trim().is_empty() {
             continue;
         }
-        let data = TransData { reason: Some(reason.clone()), ..Default::default() };
+        let data = TransData {
+            reason: Some(reason.clone()),
+            ..Default::default()
+        };
         translations::write(&tx, "suggestion", item_id, lang, translations::LLM, &data)?;
     }
     tx.commit()?;
@@ -105,7 +115,10 @@ mod tests {
         let row = get_suggestion(&p, "m1").unwrap().unwrap();
         assert_eq!(row.item_ids, vec!["c".to_string()]);
         assert!(!row.reasons.contains_key("fr"), "old fr reason superseded");
-        assert_eq!(row.reasons.get("en").map(String::as_str), Some("now english"));
+        assert_eq!(
+            row.reasons.get("en").map(String::as_str),
+            Some("now english")
+        );
 
         // Empty item_ids is a valid terminal "nothing found" marker (Some, not None).
         set_suggestion(&p, "m1", &[], &HashMap::new()).unwrap();

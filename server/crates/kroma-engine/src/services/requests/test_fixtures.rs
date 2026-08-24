@@ -54,15 +54,29 @@ pub(super) fn wr(season: u32, episode: u32, air: Option<&str>, status: &str) -> 
     }
 }
 
-pub(super) fn param(params: &std::collections::BTreeMap<String, ParamValue>, key: &str) -> Option<String> {
+pub(super) fn param(
+    params: &std::collections::BTreeMap<String, ParamValue>,
+    key: &str,
+) -> Option<String> {
     params.get(key).map(|v| v.resolve(|k| Some(k.to_string())))
 }
 
-pub(super) fn wanted(id: &str, req_id: &str, season: Option<u32>, episode: Option<u32>, air: Option<&str>, status: &str) -> db::WantedRow {
+pub(super) fn wanted(
+    id: &str,
+    req_id: &str,
+    season: Option<u32>,
+    episode: Option<u32>,
+    air: Option<&str>,
+    status: &str,
+) -> db::WantedRow {
     db::WantedRow {
         id: id.into(),
         request_id: req_id.into(),
-        kind: if season.is_some() { "episode".into() } else { "movie".into() },
+        kind: if season.is_some() {
+            "episode".into()
+        } else {
+            "movie".into()
+        },
         tmdb_id: 100,
         imdb_id: None,
         title: "T".into(),
@@ -109,7 +123,11 @@ pub(super) fn req_by(kind: RequestKind, status: RequestStatus, requester: &str) 
     r
 }
 
-pub(super) fn detail(kind: RequestKind, tmdb_id: u64, available: Option<&str>) -> discover::DiscoverRawDetail {
+pub(super) fn detail(
+    kind: RequestKind,
+    tmdb_id: u64,
+    available: Option<&str>,
+) -> discover::DiscoverRawDetail {
     discover::DiscoverRawDetail {
         kind,
         tmdb_id,
@@ -168,7 +186,12 @@ pub(super) fn episodes(nums: &[u32], air: &str) -> serde_json::Value {
 
 pub(super) fn body(user: &str) -> CreateRequestBody {
     let _ = user;
-    CreateRequestBody { kind: RequestKind::Movie, tmdb_id: 603, seasons: None, episodes: None }
+    CreateRequestBody {
+        kind: RequestKind::Movie,
+        tmdb_id: 603,
+        seasons: None,
+        episodes: None,
+    }
 }
 
 pub(super) fn breaking_bad() -> FakeTmdb {
@@ -180,6 +203,14 @@ pub(super) fn breaking_bad() -> FakeTmdb {
     })
 }
 
-pub(super) fn show_body(seasons: Option<Vec<u32>>, eps: Option<Vec<EpisodeRef>>) -> CreateRequestBody {
-    CreateRequestBody { kind: RequestKind::Show, tmdb_id: 1396, seasons, episodes: eps }
+pub(super) fn show_body(
+    seasons: Option<Vec<u32>>,
+    eps: Option<Vec<EpisodeRef>>,
+) -> CreateRequestBody {
+    CreateRequestBody {
+        kind: RequestKind::Show,
+        tmdb_id: 1396,
+        seasons,
+        episodes: eps,
+    }
 }

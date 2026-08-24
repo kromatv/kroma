@@ -70,8 +70,12 @@ fn the_grant_covers_the_ledger_this_module_owns_in_the_core_database() {
 
     let conn = scoped.get().unwrap();
     assert_eq!(kroma_torrent::db::active_downloads(&conn).unwrap().len(), 1);
-    assert!(kroma_torrent::db::get_download(&conn, "d1").unwrap().is_some());
-    assert!(kroma_torrent::db::get_request(&conn, "rq1").unwrap().is_some());
+    assert!(kroma_torrent::db::get_download(&conn, "d1")
+        .unwrap()
+        .is_some());
+    assert!(kroma_torrent::db::get_request(&conn, "rq1")
+        .unwrap()
+        .is_some());
     drop(conn);
 
     kroma_torrent::db::update_download_progress(&scoped, "d1", "downloading", 0.5, None, None)
@@ -91,12 +95,17 @@ fn the_grant_reaches_neither_accounts_nor_the_client_credentials_that_moved_out(
         "SELECT value FROM settings",
         "SELECT api_key FROM indexers",
     ] {
-        assert!(conn.prepare(sql).is_err(), "the grant must not reach: {sql}");
+        assert!(
+            conn.prepare(sql).is_err(),
+            "the grant must not reach: {sql}"
+        );
     }
 
     // `download_clients` is this module's own table now, in its own file: it is
     // not in the core database at all, so there is nothing here to reach.
-    assert!(conn.prepare("SELECT password FROM download_clients").is_err());
+    assert!(conn
+        .prepare("SELECT password FROM download_clients")
+        .is_err());
 }
 
 #[test]
@@ -117,8 +126,16 @@ fn this_modules_migrations_build_its_own_table_and_leave_the_shared_one_alone() 
         )
         .unwrap()
     };
-    assert_eq!(table("download_clients"), 1, "the credentials table is this module's own");
-    assert_eq!(table("downloads"), 0, "the shared ledger belongs to the core schema");
+    assert_eq!(
+        table("download_clients"),
+        1,
+        "the credentials table is this module's own"
+    );
+    assert_eq!(
+        table("downloads"),
+        0,
+        "the shared ledger belongs to the core schema"
+    );
 }
 
 #[test]
@@ -139,12 +156,8 @@ fn the_client_configs_are_read_from_this_modules_own_database() {
     // server with no download-engine module installed.
     let host: std::sync::Arc<dyn kroma_module_sdk::host::HostCtx> =
         std::sync::Arc::new(kroma_module_sdk::host::testing::StubHost::new());
-    let manager = kroma_torrent::DownloadManager::new(
-        host,
-        dir.path(),
-        (*core).clone(),
-        store.clone(),
-    );
+    let manager =
+        kroma_torrent::DownloadManager::new(host, dir.path(), (*core).clone(), store.clone());
 
     // Seeding the embedded engine writes the module's own file. Without the
     // `rqbit` feature there is no embedded engine to seed, so the seed is a
@@ -160,7 +173,11 @@ fn the_client_configs_are_read_from_this_modules_own_database() {
         .unwrap();
     }
     let seeded = kroma_torrent::db::list_download_clients(&store.get().unwrap()).unwrap();
-    assert_eq!(seeded.len(), 1, "the client config is in this module's database");
+    assert_eq!(
+        seeded.len(),
+        1,
+        "the client config is in this module's database"
+    );
 
     // ...and the shared database has no such table to have written it into.
     let absent: i64 = core
@@ -172,5 +189,8 @@ fn the_client_configs_are_read_from_this_modules_own_database() {
             |r| r.get(0),
         )
         .unwrap();
-    assert_eq!(absent, 0, "the credentials table is not in the shared database");
+    assert_eq!(
+        absent, 0,
+        "the credentials table is not in the shared database"
+    );
 }

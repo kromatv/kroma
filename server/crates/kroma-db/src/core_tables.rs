@@ -28,19 +28,26 @@ pub fn is_core_table(name: &str) -> bool {
 // Runs before the split on `;`: a comment holding one would otherwise cut a
 // statement away from its own `CREATE`.
 fn without_comments(sql: &str) -> String {
-    sql.lines().map(|line| line.split("--").next().unwrap_or_default()).collect::<Vec<_>>().join(" ")
+    sql.lines()
+        .map(|line| line.split("--").next().unwrap_or_default())
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn created_table(statement: &str) -> Option<String> {
     let rest = strip_prefix_ci(statement.trim(), "CREATE TABLE ")?;
     let rest = strip_prefix_ci(rest.trim_start(), "IF NOT EXISTS ").unwrap_or(rest);
-    let name = rest.trim_start().split(['(', ' ', '\t']).find(|word| !word.is_empty())?;
+    let name = rest
+        .trim_start()
+        .split(['(', ' ', '\t'])
+        .find(|word| !word.is_empty())?;
     Some(name.trim_matches('"').to_ascii_lowercase())
 }
 
 fn strip_prefix_ci<'a>(sql: &'a str, prefix: &str) -> Option<&'a str> {
     let head = sql.get(..prefix.len())?;
-    head.eq_ignore_ascii_case(prefix).then(|| &sql[prefix.len()..])
+    head.eq_ignore_ascii_case(prefix)
+        .then(|| &sql[prefix.len()..])
 }
 
 #[cfg(test)]
@@ -53,7 +60,9 @@ mod tests {
         let conn = pool.get().unwrap();
 
         let held: Vec<String> = conn
-            .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+            .prepare(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+            )
             .unwrap()
             .query_map([], |r| r.get(0))
             .unwrap()
@@ -62,7 +71,10 @@ mod tests {
 
         assert!(held.len() > 20, "{held:?}");
         for name in &held {
-            assert!(is_core_table(name), "'{name}' is in the schema but not derived from it");
+            assert!(
+                is_core_table(name),
+                "'{name}' is in the schema but not derived from it"
+            );
         }
     }
 
@@ -85,4 +97,3 @@ mod tests {
         assert!(!is_core_table(""));
     }
 }
-

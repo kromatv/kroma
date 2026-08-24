@@ -34,7 +34,9 @@ async fn embed_h(
     Json(req): Json<EmbedReq>,
 ) -> Json<Vec<f32>> {
     // Embedding is CPU work; run it off the async runtime.
-    let v = tokio::task::spawn_blocking(move || emb.embed(&req.text)).await.unwrap_or_default();
+    let v = tokio::task::spawn_blocking(move || emb.embed(&req.text))
+        .await
+        .unwrap_or_default();
     Json(v)
 }
 
@@ -76,7 +78,11 @@ mod tests {
             3
         }
         fn embed(&self, text: &str) -> Vec<f32> {
-            vec![text.len() as f32, text.chars().next().map_or(0.0, |c| c as u32 as f32), 1.0]
+            vec![
+                text.len() as f32,
+                text.chars().next().map_or(0.0, |c| c as u32 as f32),
+                1.0,
+            ]
         }
         fn relevance_floor(&self) -> f32 {
             0.25
@@ -97,8 +103,13 @@ mod tests {
             .unwrap();
         let resp = app().oneshot(req).await.unwrap();
         let status = resp.status();
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
-        (status, serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null))
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        (
+            status,
+            serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null),
+        )
     }
 
     #[tokio::test]
@@ -151,7 +162,11 @@ mod tests {
     async fn the_routes_are_mounted_where_the_client_looks_for_them() {
         // The consumer-side proxy builds `/_port/embedder/<method>` by hand, so
         // a path renamed on one side only fails at runtime in another process.
-        for path in ["/_port/embedder/embed", "/_port/embedder/embed_batch", "/_port/embedder/meta"] {
+        for path in [
+            "/_port/embedder/embed",
+            "/_port/embedder/embed_batch",
+            "/_port/embedder/meta",
+        ] {
             let (status, _) = post(path, json!({ "text": "x", "texts": [] })).await;
             assert_eq!(status, StatusCode::OK, "{path}");
         }

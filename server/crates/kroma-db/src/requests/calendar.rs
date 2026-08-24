@@ -5,7 +5,8 @@ use rusqlite::{params, Connection, Row};
 use kroma_domain::{CalendarEntry, RequestKind};
 
 // Callers append their own `WHERE`/`ORDER BY`/`LIMIT` and map rows with `row_to_calendar_entry`.
-const CALENDAR_SELECT: &str = "SELECT w.request_id, w.tmdb_id, r.kind, w.title, w.year, r.poster_url, \
+const CALENDAR_SELECT: &str =
+    "SELECT w.request_id, w.tmdb_id, r.kind, w.title, w.year, r.poster_url, \
                 w.season, w.episode, w.air_date, w.status \
          FROM wanted w JOIN requests r ON r.id = w.request_id";
 
@@ -41,7 +42,10 @@ pub fn upcoming_calendar(
            AND (?2 IS NULL OR r.requested_by = ?2) \
          ORDER BY w.air_date ASC, r.title ASC LIMIT ?3"
     ))?;
-    let rows = stmt.query_map(params![today, requester, limit as i64], row_to_calendar_entry)?;
+    let rows = stmt.query_map(
+        params![today, requester, limit as i64],
+        row_to_calendar_entry,
+    )?;
     rows.collect()
 }
 
@@ -60,7 +64,10 @@ pub fn missing_items(
            AND (?2 IS NULL OR r.requested_by = ?2) \
          ORDER BY r.title ASC, w.season ASC, w.episode ASC LIMIT ?3"
     ))?;
-    let rows = stmt.query_map(params![today, requester, limit as i64], row_to_calendar_entry)?;
+    let rows = stmt.query_map(
+        params![today, requester, limit as i64],
+        row_to_calendar_entry,
+    )?;
     rows.collect()
 }
 
@@ -108,7 +115,9 @@ mod tests {
         let mut eps: Vec<u32> = missing.iter().filter_map(|e| e.episode).collect();
         eps.sort_unstable();
         assert_eq!(eps, vec![1, 5]);
-        assert!(missing_items(&conn, "2026-07-05", Some("someone-else"), 50).unwrap().is_empty());
+        assert!(missing_items(&conn, "2026-07-05", Some("someone-else"), 50)
+            .unwrap()
+            .is_empty());
     }
 
     #[test]
@@ -131,8 +140,7 @@ mod tests {
 
         let conn = pool.get().unwrap();
         let out = upcoming_calendar(&conn, "2026-01-01", None, 50).unwrap();
-        let dates: Vec<&str> =
-            out.iter().filter_map(|e| e.air_date.as_deref()).collect();
+        let dates: Vec<&str> = out.iter().filter_map(|e| e.air_date.as_deref()).collect();
         assert_eq!(dates, ["2030-01-01", "2030-03-01"], "{out:?}");
         assert!(dates.windows(2).all(|w| w[0] <= w[1]));
     }
@@ -174,8 +182,18 @@ mod tests {
         .unwrap();
 
         let conn = pool.get().unwrap();
-        assert_eq!(upcoming_calendar(&conn, "2026-01-01", Some("ana"), 50).unwrap().len(), 1);
-        assert_eq!(upcoming_calendar(&conn, "2026-01-01", None, 50).unwrap().len(), 2);
+        assert_eq!(
+            upcoming_calendar(&conn, "2026-01-01", Some("ana"), 50)
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(
+            upcoming_calendar(&conn, "2026-01-01", None, 50)
+                .unwrap()
+                .len(),
+            2
+        );
     }
 
     #[test]
@@ -183,7 +201,14 @@ mod tests {
         let pool = pool();
         req_by(&pool, "r-1", 1, RequestStatus::Approved, Some("ana"));
         let rows: Vec<WantedRow> = (1..=5)
-            .map(|n| wanted_row(&format!("w-{n}"), "r-1", Some(&format!("2030-01-0{n}")), "wanted"))
+            .map(|n| {
+                wanted_row(
+                    &format!("w-{n}"),
+                    "r-1",
+                    Some(&format!("2030-01-0{n}")),
+                    "wanted",
+                )
+            })
             .collect();
         insert_wanted(&pool, &rows, 1_000).unwrap();
 

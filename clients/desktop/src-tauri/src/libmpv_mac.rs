@@ -48,10 +48,14 @@ pub unsafe extern "C" fn kroma_media_key_pressed(action: *const c_char) {
     }
     // SAFETY: null is rejected above; the Obj-C caller passes a NUL-terminated
     // string that outlives this call.
-    let s = unsafe { CStr::from_ptr(action) }.to_string_lossy().into_owned();
+    let s = unsafe { CStr::from_ptr(action) }
+        .to_string_lossy()
+        .into_owned();
     // Recover from a poisoned lock instead of panicking: an unwind across the FFI
     // boundary here would abort the whole process.
-    let guard = MEDIA_APP.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let guard = MEDIA_APP
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     if let Some(app) = guard.as_ref() {
         let _ = app.emit("media-key", s);
     }
@@ -61,7 +65,9 @@ pub unsafe extern "C" fn kroma_media_key_pressed(action: *const c_char) {
 /// position to the UI as a `media-seek` event.
 #[no_mangle]
 pub extern "C" fn kroma_media_seek(position: f64) {
-    let guard = MEDIA_APP.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let guard = MEDIA_APP
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     if let Some(app) = guard.as_ref() {
         let _ = app.emit("media-seek", position);
     }

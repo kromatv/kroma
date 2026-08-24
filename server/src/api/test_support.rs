@@ -137,7 +137,13 @@ fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)]) -> TestApp {
     let app = crate::api::router(state.clone(), supervisor, subscriptions);
 
     let (user_id, token) = seed_session(&state, "owner@test.dev", "owner", &Permission::all());
-    TestApp { app, state, token, user_id, _data_dir: tmp }
+    TestApp {
+        app,
+        state,
+        token,
+        user_id,
+        _data_dir: tmp,
+    }
 }
 
 /// Create a user with `perms`, an access token, and a live session bound to it
@@ -149,10 +155,18 @@ pub fn seed_session(
     perms: &[Permission],
 ) -> (String, String) {
     let n = SEQ.fetch_add(1, Ordering::Relaxed);
-    let user = db::create_user(&state.db, email, username, "test-hash", perms).expect("create user");
+    let user =
+        db::create_user(&state.db, email, username, "test-hash", perms).expect("create user");
     let access = format!("access-{}-{n}", std::process::id());
-    db::create_access_token(&state.db, &access, &user.id, FUTURE, true, Some("integration-test"))
-        .expect("create access token");
+    db::create_access_token(
+        &state.db,
+        &access,
+        &user.id,
+        FUTURE,
+        true,
+        Some("integration-test"),
+    )
+    .expect("create access token");
     let token = format!("session-{}-{n}", std::process::id());
     db::create_session(&state.db, &token, &user.id, FUTURE, Some(&access)).expect("create session");
     (user.id, token)
@@ -172,8 +186,15 @@ pub fn seed_session_pw(
     let hash = crate::services::auth::hash_password(password);
     let user = db::create_user(&state.db, email, username, &hash, perms).expect("create user");
     let access = format!("access-{}-{n}", std::process::id());
-    db::create_access_token(&state.db, &access, &user.id, FUTURE, true, Some("integration-test"))
-        .expect("create access token");
+    db::create_access_token(
+        &state.db,
+        &access,
+        &user.id,
+        FUTURE,
+        true,
+        Some("integration-test"),
+    )
+    .expect("create access token");
     let token = format!("session-{}-{n}", std::process::id());
     db::create_session(&state.db, &token, &user.id, FUTURE, Some(&access)).expect("create session");
     (user.id, token)
@@ -184,8 +205,15 @@ pub fn seed_session_pw(
 pub fn seed_access_token(state: &SharedState, user_id: &str, pin_verified: bool) -> String {
     let n = SEQ.fetch_add(1, Ordering::Relaxed);
     let access = format!("raw-access-{}-{n}", std::process::id());
-    db::create_access_token(&state.db, &access, user_id, FUTURE, pin_verified, Some("integration-test"))
-        .expect("create access token");
+    db::create_access_token(
+        &state.db,
+        &access,
+        user_id,
+        FUTURE,
+        pin_verified,
+        Some("integration-test"),
+    )
+    .expect("create access token");
     access
 }
 
@@ -241,7 +269,12 @@ pub fn demo_show_id(title: &str) -> String {
         .unwrap_or_else(|| panic!("demo show not found: {title}"))
 }
 
-fn build_request(method: &str, uri: &str, token: Option<&str>, body: Option<String>) -> Request<Body> {
+fn build_request(
+    method: &str,
+    uri: &str,
+    token: Option<&str>,
+    body: Option<String>,
+) -> Request<Body> {
     let mut builder = Request::builder().method(method).uri(uri);
     if let Some(t) = token {
         builder = builder.header("authorization", format!("Bearer {t}"));
@@ -255,7 +288,10 @@ fn build_request(method: &str, uri: &str, token: Option<&str>, body: Option<Stri
     };
     let mut req = builder.body(body).expect("build request");
     req.extensions_mut()
-        .insert(ConnectInfo(std::net::SocketAddr::from(([127, 0, 0, 1], 40000))));
+        .insert(ConnectInfo(std::net::SocketAddr::from((
+            [127, 0, 0, 1],
+            40000,
+        ))));
     req
 }
 
@@ -281,7 +317,9 @@ pub async fn raw(
     let resp = app.clone().oneshot(req).await.expect("router response");
     let status = resp.status();
     let out_headers = resp.headers().clone();
-    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.expect("read body");
+    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .expect("read body");
     let value = if bytes.is_empty() {
         Value::Null
     } else {
@@ -320,6 +358,8 @@ pub async fn text(
     let req = build_request(method, uri, token, json.map(|v| v.to_string()));
     let resp = app.clone().oneshot(req).await.expect("router response");
     let status = resp.status();
-    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.expect("read body");
+    let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .expect("read body");
     (status, String::from_utf8_lossy(&bytes).into_owned())
 }

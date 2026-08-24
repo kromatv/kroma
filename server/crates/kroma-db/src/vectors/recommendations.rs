@@ -32,7 +32,8 @@ pub fn similar_items(pool: &Pool, id: &str, n: usize) -> Result<Vec<MediaItem>> 
         guarded
     } else {
         let mut out = guarded;
-        let have: std::collections::HashSet<String> = out.iter().map(|(id, _)| id.clone()).collect();
+        let have: std::collections::HashSet<String> =
+            out.iter().map(|(id, _)| id.clone()).collect();
         for cand in raw {
             if out.len() >= n {
                 break;
@@ -55,8 +56,11 @@ pub fn similar_items(pool: &Pool, id: &str, n: usize) -> Result<Vec<MediaItem>> 
             items.iter().map(|i| i.id.clone()).collect();
         have.insert(id.to_string());
         let recent = super::recently_added_ids(pool, n * 3)?;
-        let mut extra_ids: Vec<&str> =
-            recent.iter().filter(|r| !have.contains(r.as_str())).map(String::as_str).collect();
+        let mut extra_ids: Vec<&str> = recent
+            .iter()
+            .filter(|r| !have.contains(r.as_str()))
+            .map(String::as_str)
+            .collect();
         // Only hydrate what actually fills the rail (each item is a full MediaItem).
         extra_ids.truncate(n - items.len());
         items.extend(super::items_by_ids(pool, &extra_ids)?);
@@ -69,8 +73,10 @@ pub fn similar_items(pool: &Pool, id: &str, n: usize) -> Result<Vec<MediaItem>> 
 /// noise (so an off-library query like "christmas" returns few/none rather than
 /// random classics).
 pub fn themed_items(pool: &Pool, query: &[f32], n: usize, floor: f32) -> Result<Vec<MediaItem>> {
-    let ranked: Vec<(String, f32)> =
-        themed(pool, query, n + 8)?.into_iter().filter(|(_, s)| *s >= floor).collect();
+    let ranked: Vec<(String, f32)> = themed(pool, query, n + 8)?
+        .into_iter()
+        .filter(|(_, s)| *s >= floor)
+        .collect();
     let mut items = hydrate(pool, &ranked)?;
     items.truncate(n);
     Ok(items)
@@ -104,7 +110,11 @@ mod tests {
             .unwrap();
         set_item_vector(&p, "d", &[0.1, 0.99]).unwrap();
 
-        let ids: Vec<String> = similar_items(&p, "a", 2).unwrap().into_iter().map(|i| i.id).collect();
+        let ids: Vec<String> = similar_items(&p, "a", 2)
+            .unwrap()
+            .into_iter()
+            .map(|i| i.id)
+            .collect();
         assert_eq!(ids, ["b", "d"]);
     }
 

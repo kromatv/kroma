@@ -29,17 +29,26 @@ fn parses_html_definition() {
     assert_eq!(login.method.as_deref(), Some("form"));
     assert_eq!(login.form.as_deref(), Some("form#login"));
     assert_eq!(&*login.inputs["username"], "{{ .Config.username }}");
-    assert_eq!(login.test.as_ref().unwrap().selector.as_deref(), Some("a[href=\"/logout.php\"]"));
+    assert_eq!(
+        login.test.as_ref().unwrap().selector.as_deref(),
+        Some("a[href=\"/logout.php\"]")
+    );
 
     // Search rows + fields (order preserved; a field references filters).
-    assert_eq!(def.search.rows.selector.as_deref(), Some("table.results tr.torrent"));
+    assert_eq!(
+        def.search.rows.selector.as_deref(),
+        Some("table.results tr.torrent")
+    );
     let cat = &def.search.fields["category"];
     assert_eq!(cat.attribute.as_deref(), Some("href"));
     assert_eq!(cat.filters[0].name, "regexp");
     assert_eq!(cat.filters[0].args, vec!["cat=(\\d+)"]);
     // A `case` switch field.
     let dvf = &def.search.fields["downloadvolumefactor"];
-    assert_eq!(dvf.case.get("span.freeleech").map(String::as_str), Some("0"));
+    assert_eq!(
+        dvf.case.get("span.freeleech").map(String::as_str),
+        Some("0")
+    );
     assert_eq!(dvf.case.get("*").map(String::as_str), Some("1"));
 
     // Caps derived from modes.
@@ -61,7 +70,10 @@ fn parses_json_definition() {
     let path = &def.search.paths[0];
     assert_eq!(path.response.as_ref().unwrap().kind, "json");
     assert_eq!(def.search.rows.selector.as_deref(), Some("results"));
-    assert_eq!(def.search.rows.count.as_ref().unwrap().selector.as_deref(), Some("total"));
+    assert_eq!(
+        def.search.rows.count.as_ref().unwrap().selector.as_deref(),
+        Some("total")
+    );
 
     // A `text` template field that references an earlier `_id` field.
     let details = &def.search.fields["details"];

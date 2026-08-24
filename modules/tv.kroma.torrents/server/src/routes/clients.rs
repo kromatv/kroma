@@ -29,7 +29,10 @@ fn dm<S: HostStorage>(state: &S) -> Arc<DownloadManager> {
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/download-clients", get(list::<S>).post(create::<S>))
-        .route("/download-clients/{id}", axum::routing::put(update::<S>).delete(remove::<S>))
+        .route(
+            "/download-clients/{id}",
+            axum::routing::put(update::<S>).delete(remove::<S>),
+        )
         .route("/download-clients/{id}/test", post(test::<S>))
 }
 
@@ -56,8 +59,14 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
     state.require(&user, Permission::SettingsManage)?;
     let view = query(state.store(), |pool| {
         let conn = pool.get()?;
-        let clients = db::list_download_clients(&conn)?.iter().map(view_of).collect();
-        Ok(DownloadClientsView { clients, rqbit_compiled: crate::RQBIT_COMPILED })
+        let clients = db::list_download_clients(&conn)?
+            .iter()
+            .map(view_of)
+            .collect();
+        Ok(DownloadClientsView {
+            clients,
+            rqbit_compiled: crate::RQBIT_COMPILED,
+        })
     })
     .await?;
     Ok(Json(view).into_response())
@@ -72,9 +81,17 @@ pub async fn create<S: HostStorage + Clone + Send + Sync + 'static>(
     state.require(&user, Permission::SettingsManage)?;
     let kind = body.kind.as_deref().unwrap_or_default().trim().to_string();
     if !matches!(kind.as_str(), "transmission" | "qbittorrent") {
-        return Err(json_error(StatusCode::BAD_REQUEST, "kind must be transmission or qbittorrent"));
+        return Err(json_error(
+            StatusCode::BAD_REQUEST,
+            "kind must be transmission or qbittorrent",
+        ));
     }
-    let url = body.url.as_deref().map(str::trim).unwrap_or_default().to_string();
+    let url = body
+        .url
+        .as_deref()
+        .map(str::trim)
+        .unwrap_or_default()
+        .to_string();
     if url.is_empty() {
         return Err(json_error(StatusCode::BAD_REQUEST, "url is required"));
     }
@@ -96,7 +113,10 @@ pub async fn create<S: HostStorage + Clone + Send + Sync + 'static>(
         created_at: now_ms(),
     };
     let view = view_of(&row);
-    query(state.store(), move |pool| db::insert_download_client(&pool, &row)).await?;
+    query(state.store(), move |pool| {
+        db::insert_download_client(&pool, &row)
+    })
+    .await?;
     Ok(Json(view).into_response())
 }
 
@@ -114,7 +134,10 @@ pub async fn update<S: HostStorage + Clone + Send + Sync + 'static>(
         db::update_download_client(
             &pool,
             &id2,
-            body.name.as_deref().map(str::trim).filter(|s| !s.is_empty()),
+            body.name
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty()),
             body.url.as_deref().map(str::trim).filter(|s| !s.is_empty()),
             body.username.as_deref().map(str::trim),
             body.password.as_deref().filter(|s| !s.is_empty()),
@@ -169,9 +192,15 @@ pub async fn remove<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
     if id == EMBEDDED_CLIENT_ID {
-        return Err(json_error(StatusCode::BAD_REQUEST, "the embedded engine cannot be deleted"));
+        return Err(json_error(
+            StatusCode::BAD_REQUEST,
+            "the embedded engine cannot be deleted",
+        ));
     }
-    let deleted = query(state.store(), move |pool| db::delete_download_client(&pool, &id)).await?;
+    let deleted = query(state.store(), move |pool| {
+        db::delete_download_client(&pool, &id)
+    })
+    .await?;
     if !deleted {
         return Err(state.lerr(&user, StatusCode::NOT_FOUND, "error.clientNotFound"));
     }
@@ -196,8 +225,16 @@ pub async fn test<S: HostStorage + Clone + Send + Sync + 'static>(
         drop(conn);
         let outcome = dm(&st).engine_for(&row).and_then(|engine| engine.test());
         Ok(Some(match outcome {
-            Ok(version) => ClientTestResult { ok: true, version: Some(version), error: None },
-            Err(e) => ClientTestResult { ok: false, version: None, error: Some(format!("{e:#}")) },
+            Ok(version) => ClientTestResult {
+                ok: true,
+                version: Some(version),
+                error: None,
+            },
+            Err(e) => ClientTestResult {
+                ok: false,
+                version: None,
+                error: Some(format!("{e:#}")),
+            },
         }))
     })
     .await?;

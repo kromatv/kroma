@@ -39,8 +39,15 @@ const EDITION_TABLE: &[(&str, &str)] = &[
 /// Two files sharing a cut are the same content: one can replace the other.
 /// Two files differing in cut are different content and never replace one
 /// another, however their quality compares.
-pub const EDITION_CUTS: &[&str] =
-    &["Director's Cut", "Extended", "Uncut", "Unrated", "Theatrical", "Remastered", "IMAX"];
+pub const EDITION_CUTS: &[&str] = &[
+    "Director's Cut",
+    "Extended",
+    "Uncut",
+    "Unrated",
+    "Theatrical",
+    "Remastered",
+    "IMAX",
+];
 
 /// The edition label a file name carries, e.g. `Extended` or `4K`.
 pub fn detect_edition(file_name: &str) -> Option<String> {
@@ -55,7 +62,10 @@ pub fn detect_edition(file_name: &str) -> Option<String> {
 /// (`4K`, `1080p`, `Remux`, ...) or nothing at all.
 pub fn edition_cut(edition: Option<&str>) -> Option<&'static str> {
     let edition = edition?;
-    EDITION_CUTS.iter().copied().find(|cut| cut.eq_ignore_ascii_case(edition))
+    EDITION_CUTS
+        .iter()
+        .copied()
+        .find(|cut| cut.eq_ignore_ascii_case(edition))
 }
 
 /// Video stream description (best-effort; fields may be null when unknown).
@@ -113,7 +123,11 @@ pub struct AudioAnalysis {
     #[serde(rename = "truePeak")]
     pub true_peak: f64,
     // Centre-channel loudness (LUFS), measured for 5.1+ tracks only.
-    #[serde(rename = "dialogLufs", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "dialogLufs",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub dialog_lufs: Option<f64>,
     pub verdict: AudioVerdict,
 }
@@ -192,14 +206,22 @@ pub struct MediaItem {
     pub files: Vec<MediaFile>,
     // Id of the representative file `/stream` serves and whose stream info
     // populates the top-level fields above. `None` until a file exists.
-    #[serde(rename = "defaultFileId", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "defaultFileId",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub default_file_id: Option<String>,
     // Episodes only. Empty until resolved from chapters or the
     // audio-fingerprint job.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub markers: Vec<Marker>,
     // `None` until the `pipeline.loudness` stage has measured it.
-    #[serde(rename = "audioAnalysis", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "audioAnalysis",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub audio_analysis: Option<AudioAnalysis>,
 }
 

@@ -45,7 +45,9 @@ impl Registry {
         command: CastCommand,
     ) -> Option<CastCommandEnvelope> {
         let mut map = self.inner.write().unwrap();
-        let entry = map.get_mut(receiver_id).filter(|r| r.live() && r.user_id == user_id)?;
+        let entry = map
+            .get_mut(receiver_id)
+            .filter(|r| r.live() && r.user_id == user_id)?;
         let seq = entry.next_seq;
         entry.next_seq += 1;
         while entry.inbox.len() >= MAX_INBOX {
@@ -64,7 +66,10 @@ impl Registry {
 // that overflows its clock arithmetic.
 fn clamp(command: CastCommand) -> CastCommand {
     match command {
-        CastCommand::Play { item_id, position_ms } => CastCommand::Play {
+        CastCommand::Play {
+            item_id,
+            position_ms,
+        } => CastCommand::Play {
             item_id,
             position_ms: position_ms.clamp(0, MAX_SKIP_MS),
         },

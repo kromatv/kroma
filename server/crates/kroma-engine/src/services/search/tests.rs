@@ -18,7 +18,11 @@ fn meta(title: &str, overview: &str, genres: &[&str], cast: &[&str]) -> Metadata
         theme_url: None,
         cast: cast
             .iter()
-            .map(|n| CastMember { name: n.to_string(), character: None, profile_url: None })
+            .map(|n| CastMember {
+                name: n.to_string(),
+                character: None,
+                profile_url: None,
+            })
             .collect(),
         crew: Vec::new(),
         keywords: Vec::new(),
@@ -85,13 +89,36 @@ fn show(id: &str, title: &str, m: Option<Metadata>) -> Show {
 fn engine() -> SearchEngine {
     let e = SearchEngine::new().unwrap();
     let movies = vec![
-        movie("1", "The Avengers", Some(meta("The Avengers", "Earth's mightiest heroes", &["Action"], &["Robert Downey Jr"]))),
-        movie("2", "Amélie", Some(meta("Amélie", "A shy waitress in Paris", &["Romance"], &["Audrey Tautou"]))),
+        movie(
+            "1",
+            "The Avengers",
+            Some(meta(
+                "The Avengers",
+                "Earth's mightiest heroes",
+                &["Action"],
+                &["Robert Downey Jr"],
+            )),
+        ),
+        movie(
+            "2",
+            "Amélie",
+            Some(meta(
+                "Amélie",
+                "A shy waitress in Paris",
+                &["Romance"],
+                &["Audrey Tautou"],
+            )),
+        ),
     ];
     let shows = vec![show(
         "s1",
         "Breaking Bad",
-        Some(meta("Breaking Bad", "A chemistry teacher turns to crime", &["Crime", "Drama"], &["Bryan Cranston"])),
+        Some(meta(
+            "Breaking Bad",
+            "A chemistry teacher turns to crime",
+            &["Crime", "Drama"],
+            &["Bryan Cranston"],
+        )),
     )];
     e.rebuild(&movies, &shows, &[]).unwrap();
     e
@@ -125,10 +152,23 @@ fn cast_and_genre_and_prefix() {
 fn series_engine() -> SearchEngine {
     let e = SearchEngine::new().unwrap();
     let episodes: Vec<MediaItem> = (1..=12)
-        .map(|n| episode(&format!("e{n}"), "s1", "House of the Dragon", &format!("Episode {n}")))
-        .chain(std::iter::once(episode("e-dance", "s1", "House of the Dragon", "A Dance of Dragons")))
+        .map(|n| {
+            episode(
+                &format!("e{n}"),
+                "s1",
+                "House of the Dragon",
+                &format!("Episode {n}"),
+            )
+        })
+        .chain(std::iter::once(episode(
+            "e-dance",
+            "s1",
+            "House of the Dragon",
+            "A Dance of Dragons",
+        )))
         .collect();
-    e.rebuild(&[], &[show("s1", "House of the Dragon", None)], &episodes).unwrap();
+    e.rebuild(&[], &[show("s1", "House of the Dragon", None)], &episodes)
+        .unwrap();
     e
 }
 
@@ -145,15 +185,20 @@ fn a_show_title_returns_the_show_and_not_its_season_list() {
 fn an_episode_still_wins_when_the_query_names_it() {
     // `show_title` is indexed so the show's name can narrow an episode search;
     // the episode must still be the answer when its own title carries the query.
-    let got = ids(&series_engine(), "house of the dragon a dance of dragons", 24);
+    let got = ids(
+        &series_engine(),
+        "house of the dragon a dance of dragons",
+        24,
+    );
     assert_eq!(got, ["e-dance"]);
 }
 
 #[test]
 fn episodes_of_a_show_that_did_not_match_are_capped() {
     let e = SearchEngine::new().unwrap();
-    let episodes: Vec<MediaItem> =
-        (1..=10).map(|n| episode(&format!("e{n}"), "s1", "Breaking Bad", "Ozymandias")).collect();
+    let episodes: Vec<MediaItem> = (1..=10)
+        .map(|n| episode(&format!("e{n}"), "s1", "Breaking Bad", "Ozymandias"))
+        .collect();
     // No show document at all: the episodes are the only thing that can match.
     e.rebuild(&[], &[], &episodes).unwrap();
 
@@ -169,7 +214,13 @@ fn blank_query_is_empty() {
 use crate::test_support::{seed_movie, test_state};
 
 // Store a localized row for `subject_id`, as the enrichment pass would.
-fn put_translation(state: &crate::state::SharedState, kind: &str, id: &str, lang: &str, data: serde_json::Value) {
+fn put_translation(
+    state: &crate::state::SharedState,
+    kind: &str,
+    id: &str,
+    lang: &str,
+    data: serde_json::Value,
+) {
     state
         .db
         .get()
@@ -234,13 +285,23 @@ fn a_title_is_findable_in_a_language_the_household_did_not_enrich_in() {
 
     state.search.reindex_from_db(&state.db).unwrap();
     assert_eq!(
-        state.search.search("Amelie", 5).first().map(|h| h.id.clone()).as_deref(),
+        state
+            .search
+            .search("Amelie", 5)
+            .first()
+            .map(|h| h.id.clone())
+            .as_deref(),
         Some("itm-1"),
         "the English title was not indexed",
     );
     // ...and the filename title still matches.
     assert_eq!(
-        state.search.search("Fabuleux", 5).first().map(|h| h.id.clone()).as_deref(),
+        state
+            .search
+            .search("Fabuleux", 5)
+            .first()
+            .map(|h| h.id.clone())
+            .as_deref(),
         Some("itm-1"),
     );
 }
@@ -264,8 +325,14 @@ fn a_localized_overview_and_genre_are_searchable_too() {
     );
 
     state.search.reindex_from_db(&state.db).unwrap();
-    assert!(!state.search.search("Kellnerin", 5).is_empty(), "the German overview was not indexed");
-    assert!(!state.search.search("Liebesfilm", 5).is_empty(), "the German genre was not indexed");
+    assert!(
+        !state.search.search("Kellnerin", 5).is_empty(),
+        "the German overview was not indexed"
+    );
+    assert!(
+        !state.search.search("Liebesfilm", 5).is_empty(),
+        "the German genre was not indexed"
+    );
 }
 
 #[test]
@@ -274,12 +341,23 @@ fn a_translation_that_matches_the_filename_does_not_become_an_alt_title() {
     // outrank a better match purely for having been enriched.
     let state = test_state();
     seed_titled_movie(&state, "itm-1", "Amelie");
-    put_translation(&state, "item", "itm-1", "en", serde_json::json!({ "title": "amelie" }));
+    put_translation(
+        &state,
+        "item",
+        "itm-1",
+        "en",
+        serde_json::json!({ "title": "amelie" }),
+    );
 
     state.search.reindex_from_db(&state.db).unwrap();
     // Still findable - the point is only that it was not indexed twice.
     assert_eq!(
-        state.search.search("Amelie", 5).first().map(|h| h.id.clone()).as_deref(),
+        state
+            .search
+            .search("Amelie", 5)
+            .first()
+            .map(|h| h.id.clone())
+            .as_deref(),
         Some("itm-1"),
     );
 }
@@ -291,7 +369,12 @@ fn a_catalogue_with_no_translations_still_indexes() {
     seed_titled_movie(&state, "itm-1", "Amelie");
     state.search.reindex_from_db(&state.db).unwrap();
     assert_eq!(
-        state.search.search("Amelie", 5).first().map(|h| h.id.clone()).as_deref(),
+        state
+            .search
+            .search("Amelie", 5)
+            .first()
+            .map(|h| h.id.clone())
+            .as_deref(),
         Some("itm-1"),
     );
 }
@@ -302,18 +385,30 @@ fn the_title_tmdb_knows_finds_a_file_named_nothing_like_it() {
     let movies = vec![movie(
         "1",
         "LFDAP.2001.1080p.BluRay",
-        Some(meta("Le Fabuleux Destin", "Une serveuse timide", &["Romance"], &["Audrey Tautou"])),
+        Some(meta(
+            "Le Fabuleux Destin",
+            "Une serveuse timide",
+            &["Romance"],
+            &["Audrey Tautou"],
+        )),
     )];
     e.rebuild(&movies, &[], &[]).unwrap();
 
     assert_eq!(top_id(&e, "fabuleux").as_deref(), Some("1"));
-    assert_eq!(top_id(&e, "LFDAP").as_deref(), Some("1"), "the filename still matches");
+    assert_eq!(
+        top_id(&e, "LFDAP").as_deref(),
+        Some("1"),
+        "the filename still matches"
+    );
 }
 
 #[test]
 fn without_the_analyzer_a_query_is_still_split_and_lowercased() {
     let bare = tantivy::Index::create_in_ram(tantivy::schema::Schema::builder().build());
-    assert_eq!(normalize(&bare, "  Amélie  In   Paris "), ["amélie", "in", "paris"]);
+    assert_eq!(
+        normalize(&bare, "  Amélie  In   Paris "),
+        ["amélie", "in", "paris"]
+    );
     assert!(normalize(&bare, "   ").is_empty());
 }
 
@@ -322,14 +417,24 @@ fn a_rebuild_that_fails_keeps_the_index_that_was_working() {
     let state = test_state();
     seed_titled_movie(&state, "itm-1", "Amelie");
     state.search.reindex_from_db(&state.db).unwrap();
-    state.db.get().unwrap().execute("DROP TABLE items", []).unwrap();
+    state
+        .db
+        .get()
+        .unwrap()
+        .execute("DROP TABLE items", [])
+        .unwrap();
 
     assert!(state.search.reindex_from_db(&state.db).is_err());
     super::spawn_reindex(state.clone());
     std::thread::sleep(std::time::Duration::from_millis(50));
 
     assert_eq!(
-        state.search.search("Amelie", 5).first().map(|h| h.id.clone()).as_deref(),
+        state
+            .search
+            .search("Amelie", 5)
+            .first()
+            .map(|h| h.id.clone())
+            .as_deref(),
         Some("itm-1"),
         "a failed rebuild must not empty the index",
     );
@@ -354,9 +459,15 @@ fn a_translation_carrying_only_an_overview_still_reaches_the_index() {
 #[test]
 fn metadata_with_no_title_of_its_own_still_contributes_its_other_fields() {
     let e = SearchEngine::new().unwrap();
-    let mut untitled = meta("ignored", "Une serveuse timide", &["Romance"], &["Audrey Tautou"]);
+    let mut untitled = meta(
+        "ignored",
+        "Une serveuse timide",
+        &["Romance"],
+        &["Audrey Tautou"],
+    );
     untitled.title = None;
-    e.rebuild(&[movie("1", "Amelie", Some(untitled))], &[], &[]).unwrap();
+    e.rebuild(&[movie("1", "Amelie", Some(untitled))], &[], &[])
+        .unwrap();
 
     assert_eq!(top_id(&e, "serveuse").as_deref(), Some("1"));
     assert_eq!(top_id(&e, "Amelie").as_deref(), Some("1"));
@@ -365,7 +476,12 @@ fn metadata_with_no_title_of_its_own_still_contributes_its_other_fields() {
 #[test]
 fn a_row_with_no_id_is_skipped_rather_than_returned_as_a_blank_hit() {
     let e = SearchEngine::new().unwrap();
-    e.rebuild(&[movie("", "Amelie", None), movie("2", "Amelie Two", None)], &[], &[]).unwrap();
+    e.rebuild(
+        &[movie("", "Amelie", None), movie("2", "Amelie Two", None)],
+        &[],
+        &[],
+    )
+    .unwrap();
 
     let ids: Vec<String> = e.search("Amelie", 5).into_iter().map(|h| h.id).collect();
     assert_eq!(ids, ["2"]);

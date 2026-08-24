@@ -150,11 +150,24 @@ mod tests {
     }
 
     fn vid(codec: &str, width: u32, hdr: bool) -> VideoStream {
-        VideoStream { codec: codec.into(), width: Some(width), height: Some(width * 9 / 16), hdr, bit_depth: Some(10) }
+        VideoStream {
+            codec: codec.into(),
+            width: Some(width),
+            height: Some(width * 9 / 16),
+            hdr,
+            bit_depth: Some(10),
+        }
     }
 
     fn aud(codec: &str, ch: u32) -> AudioStream {
-        AudioStream { index: 0, codec: codec.into(), channels: Some(ch), language: Some("eng".into()), title: None, default: true }
+        AudioStream {
+            index: 0,
+            codec: codec.into(),
+            channels: Some(ch),
+            language: Some("eng".into()),
+            title: None,
+            default: true,
+        }
     }
 
     #[test]
@@ -173,9 +186,11 @@ mod tests {
     #[test]
     fn every_catalog_kind_reaches_the_wire_under_its_own_name() {
         let mut it = base_item();
-        for (kind, name) in
-            [(Kind::Movie, "movie"), (Kind::Episode, "episode"), (Kind::Video, "video")]
-        {
+        for (kind, name) in [
+            (Kind::Movie, "movie"),
+            (Kind::Episode, "episode"),
+            (Kind::Video, "video"),
+        ] {
             it.kind = kind;
             assert_eq!(snapshot(&it).kind, name);
         }

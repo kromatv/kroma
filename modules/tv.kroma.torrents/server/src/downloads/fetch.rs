@@ -48,17 +48,27 @@ fn is_transient_fetch(err: &anyhow::Error) -> bool {
 }
 
 pub(super) fn fetch_torrent_file(url: &str) -> Result<Vec<u8>> {
-    let resp = kroma_module_sdk::http::Fetch::new().max_time(30).get(url)?.ensure_ok()?;
+    let resp = kroma_module_sdk::http::Fetch::new()
+        .max_time(30)
+        .get(url)?
+        .ensure_ok()?;
     if resp.body.is_empty() {
         bail!("indexer returned an empty response");
     }
     // A tracker error page is HTML/JSON, not a bencoded torrent (starts with 'd').
     if resp.body.first() != Some(&b'd') {
-        bail!("indexer did not return a .torrent file (got: {})", snippet(&resp.body));
+        bail!(
+            "indexer did not return a .torrent file (got: {})",
+            snippet(&resp.body)
+        );
     }
     Ok(resp.body)
 }
 
 fn snippet(body: &[u8]) -> String {
-    String::from_utf8_lossy(body).chars().take(120).collect::<String>().replace('\n', " ")
+    String::from_utf8_lossy(body)
+        .chars()
+        .take(120)
+        .collect::<String>()
+        .replace('\n', " ")
 }

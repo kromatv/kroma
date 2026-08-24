@@ -29,17 +29,25 @@ pub fn build_requests(
 ) -> Vec<SearchRequest> {
     let mut ctx = Context::with_config(def, cfg);
     ctx.query = query_attributes(query);
-    let base_keywords = if sends_episode_inputs(def) { query.title() } else { query.keywords() };
+    let base_keywords = if sends_episode_inputs(def) {
+        query.title()
+    } else {
+        query.keywords()
+    };
     ctx.keywords = base_keywords.clone();
     ctx.keywords = filters::apply(&base_keywords, &def.search.keywordsfilters, &ctx);
-    ctx.query.insert("Keywords".to_string(), ctx.keywords.clone());
+    ctx.query
+        .insert("Keywords".to_string(), ctx.keywords.clone());
     ctx.categories = category::tracker_ids_for(def, wanted_cats);
 
     // The base link can itself be a template (`{{ .Config.apiurl }}` on
     // API/private trackers whose site URL is a user setting); render it and
     // expose the resolved value as `.Config.sitelink`.
     let base = template::render(&cfg.base_url, &ctx);
-    ctx.config.insert("sitelink".to_string(), crate::context::Value::Str(base.clone()));
+    ctx.config.insert(
+        "sitelink".to_string(),
+        crate::context::Value::Str(base.clone()),
+    );
 
     let mut requests = Vec::new();
     for path in &def.search.paths {
@@ -57,7 +65,11 @@ pub fn build_requests(
             .unwrap_or_else(|| "html".to_string());
         requests.push(SearchRequest {
             url,
-            method: path.method.clone().unwrap_or_else(|| "get".to_string()).to_lowercase(),
+            method: path
+                .method
+                .clone()
+                .unwrap_or_else(|| "get".to_string())
+                .to_lowercase(),
             inputs,
             response_kind,
         });
@@ -78,17 +90,19 @@ pub fn join_url(base: &str, path: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::test_support::{build_def, cfg};
+    use super::*;
 
     #[test]
     fn url_joining() {
-        assert_eq!(join_url("https://x.to/", "/browse?q=a"), "https://x.to/browse?q=a");
+        assert_eq!(
+            join_url("https://x.to/", "/browse?q=a"),
+            "https://x.to/browse?q=a"
+        );
         assert_eq!(join_url("https://x.to", "dl/1"), "https://x.to/dl/1");
         assert_eq!(join_url("https://x.to/", "https://cdn/z"), "https://cdn/z");
         assert_eq!(join_url("https://x.to/", "magnet:?xt=1"), "magnet:?xt=1");
     }
-
 
     #[test]
     fn build_requests_get_movie_with_imdb_and_categories() {
@@ -126,8 +140,12 @@ search:
         assert_eq!(reqs[0].method, "get");
         assert_eq!(reqs[0].response_kind, "html");
         // query_attributes rendered `.Query.IMDBID`; categories mapped to id 42.
-        assert!(reqs[0].inputs.contains(&("imdb".to_string(), "tt0133093".to_string())));
-        assert!(reqs[0].inputs.contains(&("cat".to_string(), "42".to_string())));
+        assert!(reqs[0]
+            .inputs
+            .contains(&("imdb".to_string(), "tt0133093".to_string())));
+        assert!(reqs[0]
+            .inputs
+            .contains(&("cat".to_string(), "42".to_string())));
     }
 
     // A definition that echoes the whole `.Query.*` namespace back as inputs, so
@@ -149,11 +167,15 @@ search:
     selector: "$.rows"
 "#,
         );
-        let reqs = build_requests(&def, &cfg("https://api.x/"), &Query::Text { query: "hi".into() }, &[]);
+        let reqs = build_requests(
+            &def,
+            &cfg("https://api.x/"),
+            &Query::Text { query: "hi".into() },
+            &[],
+        );
         assert_eq!(reqs.len(), 1);
         assert_eq!(reqs[0].url, "https://api.x/api");
         assert_eq!(reqs[0].method, "post");
         assert_eq!(reqs[0].response_kind, "json");
     }
-
 }

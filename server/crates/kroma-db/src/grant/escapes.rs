@@ -18,7 +18,6 @@ use crate::Pool;
 mod schema;
 mod statements;
 
-
 const MODULE: &str = "tv.kroma.hostile";
 
 // What the acquisition module actually holds: the request ledger, and nothing
@@ -54,7 +53,11 @@ fn fixture() -> Fixture {
         )
         .unwrap();
     let scoped = init_scoped(&path, MODULE, &granted()).expect("scope");
-    Fixture { _dir: dir, core, scoped }
+    Fixture {
+        _dir: dir,
+        core,
+        scoped,
+    }
 }
 
 // Every route below must fail, it must fail HERE rather than by returning
@@ -80,7 +83,10 @@ fn refused(pool: &Pool, sql: &str) {
 #[track_caller]
 fn allowed(pool: &Pool, sql: &str) {
     let conn = pool.get().unwrap();
-    assert!(conn.prepare(sql).is_ok(), "the grant should cover this: {sql}");
+    assert!(
+        conn.prepare(sql).is_ok(),
+        "the grant should cover this: {sql}"
+    );
 }
 
 #[test]
@@ -123,7 +129,13 @@ fn a_denial_names_what_it_refused() {
     // to act on. The message has to say which table.
     let f = fixture();
     let conn = f.scoped.get().unwrap();
-    let err = conn.prepare("SELECT token FROM sessions").unwrap_err().to_string();
-    assert!(err.contains("sessions"), "the refusal must name the table: {err}");
+    let err = conn
+        .prepare("SELECT token FROM sessions")
+        .unwrap_err()
+        .to_string();
+    assert!(
+        err.contains("sessions"),
+        "the refusal must name the table: {err}"
+    );
     assert!(err.contains("token"), "and the column: {err}");
 }

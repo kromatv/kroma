@@ -19,10 +19,14 @@ async fn trigger_runs_a_job_to_success_and_records_the_run() {
         ctx.info("did the work");
         Ok(())
     });
-    state.jobs.register_remote("test.remote.ok", Category::Maintenance, None, run);
+    state
+        .jobs
+        .register_remote("test.remote.ok", Category::Maintenance, None, run);
 
-    let run_id =
-        state.jobs.trigger(state.clone(), JobKey("test.remote.ok"), "manual").expect("triggered");
+    let run_id = state
+        .jobs
+        .trigger(state.clone(), JobKey("test.remote.ok"), "manual")
+        .expect("triggered");
     wait_idle(&state.jobs).await;
 
     let runs = db::list_job_runs(&state.db, "test.remote.ok", 10).unwrap();
@@ -37,9 +41,14 @@ async fn trigger_runs_a_job_to_success_and_records_the_run() {
 async fn trigger_records_a_failed_run_with_its_message() {
     let state = test_support::test_state();
     let run: RemoteRun = Arc::new(|_ctx: &JobContext| Err(anyhow::anyhow!("kaput")));
-    state.jobs.register_remote("test.remote.err", Category::Maintenance, None, run);
+    state
+        .jobs
+        .register_remote("test.remote.err", Category::Maintenance, None, run);
 
-    state.jobs.trigger(state.clone(), JobKey("test.remote.err"), "manual").expect("triggered");
+    state
+        .jobs
+        .trigger(state.clone(), JobKey("test.remote.err"), "manual")
+        .expect("triggered");
     wait_idle(&state.jobs).await;
 
     let runs = db::list_job_runs(&state.db, "test.remote.err", 10).unwrap();
@@ -61,10 +70,17 @@ async fn trigger_rejects_a_second_run_while_one_is_in_flight() {
         }
         Ok(())
     });
-    state.jobs.register_remote("test.remote.slow", Category::Maintenance, None, run);
+    state
+        .jobs
+        .register_remote("test.remote.slow", Category::Maintenance, None, run);
 
-    state.jobs.trigger(state.clone(), JobKey("test.remote.slow"), "manual").expect("first run");
-    let second = state.jobs.trigger(state.clone(), JobKey("test.remote.slow"), "manual");
+    state
+        .jobs
+        .trigger(state.clone(), JobKey("test.remote.slow"), "manual")
+        .expect("first run");
+    let second = state
+        .jobs
+        .trigger(state.clone(), JobKey("test.remote.slow"), "manual");
     assert_eq!(second, Err(TriggerError::AlreadyRunning));
     gate.store(true, std::sync::atomic::Ordering::Relaxed);
     wait_idle(&state.jobs).await;
@@ -88,11 +104,20 @@ async fn cancelling_by_key_answers_whether_there_was_a_run_to_cancel() {
         None,
         until_cancelled(),
     );
-    state.jobs.trigger(state.clone(), JobKey("test.remote.cancel"), "manual").expect("triggered");
+    state
+        .jobs
+        .trigger(state.clone(), JobKey("test.remote.cancel"), "manual")
+        .expect("triggered");
 
-    assert!(state.jobs.cancel(JobKey("test.remote.cancel")), "the run was in flight");
+    assert!(
+        state.jobs.cancel(JobKey("test.remote.cancel")),
+        "the run was in flight"
+    );
     wait_idle(&state.jobs).await;
-    assert!(!state.jobs.cancel(JobKey("test.remote.cancel")), "and is not, once it is over");
+    assert!(
+        !state.jobs.cancel(JobKey("test.remote.cancel")),
+        "and is not, once it is over"
+    );
 
     let runs = db::list_job_runs(&state.db, "test.remote.cancel", 10).unwrap();
     assert_eq!(runs[0].status, "cancelled");
@@ -102,15 +127,23 @@ async fn cancelling_by_key_answers_whether_there_was_a_run_to_cancel() {
 async fn cancel_all_reaches_every_run_at_once() {
     let state = test_support::test_state();
     for key in ["test.remote.all.a", "test.remote.all.b"] {
-        state.jobs.register_remote(key, Category::Maintenance, None, until_cancelled());
-        state.jobs.trigger(state.clone(), JobKey(key), "manual").expect("triggered");
+        state
+            .jobs
+            .register_remote(key, Category::Maintenance, None, until_cancelled());
+        state
+            .jobs
+            .trigger(state.clone(), JobKey(key), "manual")
+            .expect("triggered");
     }
     assert_eq!(state.jobs.running_count(), 2);
 
     state.jobs.cancel_all();
     wait_idle(&state.jobs).await;
     for key in ["test.remote.all.a", "test.remote.all.b"] {
-        assert_eq!(db::list_job_runs(&state.db, key, 10).unwrap()[0].status, "cancelled");
+        assert_eq!(
+            db::list_job_runs(&state.db, key, 10).unwrap()[0].status,
+            "cancelled"
+        );
     }
 }
 
@@ -123,7 +156,9 @@ async fn a_builtin_runs_through_the_same_path_as_a_module_job() {
         m
     });
 
-    let run_id = manager.trigger(state.clone(), JobKey("test.job"), "manual").expect("triggered");
+    let run_id = manager
+        .trigger(state.clone(), JobKey("test.job"), "manual")
+        .expect("triggered");
     wait_idle(&manager).await;
 
     let runs = db::list_job_runs(&state.db, "test.job", 10).unwrap();
@@ -135,9 +170,16 @@ async fn a_builtin_runs_through_the_same_path_as_a_module_job() {
 #[tokio::test]
 async fn a_run_whose_ledger_refuses_every_write_still_releases_its_slot() {
     let state = test_support::test_state();
-    state.db.get().unwrap().execute("DROP TABLE job_runs", []).unwrap();
+    state
+        .db
+        .get()
+        .unwrap()
+        .execute("DROP TABLE job_runs", [])
+        .unwrap();
     let run: RemoteRun = Arc::new(|_ctx: &JobContext| Ok(()));
-    state.jobs.register_remote("test.remote.noledger", Category::Maintenance, None, run);
+    state
+        .jobs
+        .register_remote("test.remote.noledger", Category::Maintenance, None, run);
 
     state
         .jobs
@@ -151,7 +193,9 @@ async fn a_run_whose_ledger_refuses_every_write_still_releases_its_slot() {
 fn trigger_unknown_job_is_rejected() {
     let state = test_support::test_state();
     assert_eq!(
-        state.jobs.trigger(state.clone(), JobKey("does.not.exist"), "manual"),
+        state
+            .jobs
+            .trigger(state.clone(), JobKey("does.not.exist"), "manual"),
         Err(TriggerError::Unknown)
     );
 }

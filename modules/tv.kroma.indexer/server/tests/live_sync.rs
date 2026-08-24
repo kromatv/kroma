@@ -22,13 +22,25 @@ fn real_sync_downloads_and_loads() {
     let store = DefinitionStore::new(dir.path());
 
     let report = store.sync().expect("sync");
-    assert!(report.count > 100, "expected many definitions, got {}", report.count);
+    assert!(
+        report.count > 100,
+        "expected many definitions, got {}",
+        report.count
+    );
 
     let metas = store.list().unwrap();
     // A stray non-definition yaml or two is fine.
-    assert!(metas.len() >= report.count - 5, "listed {} of {}", metas.len(), report.count);
+    assert!(
+        metas.len() >= report.count - 5,
+        "listed {} of {}",
+        metas.len(),
+        report.count
+    );
 
-    let tpb = metas.iter().find(|m| m.id == "thepiratebay").expect("thepiratebay present");
+    let tpb = metas
+        .iter()
+        .find(|m| m.id == "thepiratebay")
+        .expect("thepiratebay present");
     let def = store.load(&tpb.id).expect("load+parse thepiratebay");
     assert_eq!(def.id, "thepiratebay");
     assert!(!def.search.fields.is_empty());
@@ -47,6 +59,13 @@ fn real_sync_downloads_and_loads() {
             }
         }
     }
-    eprintln!("[schema-coverage] {ok} parsed OK, {fail} failed of {}", metas.len());
-    assert!(ok * 100 / metas.len() as u32 >= 90, "only {ok}/{} parsed", metas.len());
+    eprintln!(
+        "[schema-coverage] {ok} parsed OK, {fail} failed of {}",
+        metas.len()
+    );
+    assert!(
+        ok * 100 / metas.len() as u32 >= 90,
+        "only {ok}/{} parsed",
+        metas.len()
+    );
 }

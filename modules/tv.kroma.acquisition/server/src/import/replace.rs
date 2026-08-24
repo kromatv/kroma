@@ -6,10 +6,10 @@
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
+use crate::peers::downloads::DownloadRow;
 use kroma_module_sdk::db;
 use kroma_module_sdk::domain::media::{detect_edition, edition_cut};
 use kroma_module_sdk::host::HostStorage;
-use crate::peers::downloads::DownloadRow;
 
 use super::Replaced;
 
@@ -22,8 +22,7 @@ pub(super) fn drop_replaced<S: HostStorage>(
     if row.tmdb_id == 0 {
         return;
     }
-    let kept: HashSet<String> =
-        placed.iter().map(|(_, at)| canonical(at)).collect();
+    let kept: HashSet<String> = placed.iter().map(|(_, at)| canonical(at)).collect();
     for path in superseded(state, row, placed, library) {
         if kept.contains(&canonical(&path)) {
             continue;
@@ -42,7 +41,9 @@ pub(super) fn drop_replaced<S: HostStorage>(
 }
 
 fn canonical(path: &str) -> String {
-    std::fs::canonicalize(path).map(|p| p.to_string_lossy().into_owned()).unwrap_or_else(|_| path.to_string())
+    std::fs::canonicalize(path)
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| path.to_string())
 }
 
 fn superseded<S: HostStorage>(
@@ -51,7 +52,9 @@ fn superseded<S: HostStorage>(
     placed: &[(Replaced, String)],
     library: &str,
 ) -> Vec<String> {
-    let Ok(conn) = state.db().get() else { return Vec::new() };
+    let Ok(conn) = state.db().get() else {
+        return Vec::new();
+    };
     let mut out: Vec<String> = Vec::new();
     let show_id = db::show_by_tmdb(&conn, row.tmdb_id).ok().flatten();
     for (what, at) in placed {
@@ -64,7 +67,9 @@ fn superseded<S: HostStorage>(
         };
         match found {
             Ok(candidates) => out.extend(same_cut_singletons(&candidates, Path::new(at))),
-            Err(e) => tracing::warn!(target: "acquisition", "upgrade: could not resolve the replaced file: {e}"),
+            Err(e) => {
+                tracing::warn!(target: "acquisition", "upgrade: could not resolve the replaced file: {e}")
+            }
         }
     }
     out
@@ -80,14 +85,20 @@ fn superseded<S: HostStorage>(
 // upgrade covers the one episode it was grabbed for, and the rest of the run
 // has nowhere else to live.
 fn same_cut_singletons(candidates: &[db::LibraryFile], at: &Path) -> Vec<String> {
-    let name = at.file_name().and_then(std::ffi::OsStr::to_str).unwrap_or_default();
+    let name = at
+        .file_name()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or_default();
     let cut = edition_cut(detect_edition(name).as_deref());
     let mut per_item: HashMap<&str, Vec<&str>> = HashMap::new();
     for file in candidates {
         if file.spans_episodes || edition_cut(file.edition.as_deref()) != cut {
             continue;
         }
-        per_item.entry(file.item_id.as_str()).or_default().push(file.path.as_str());
+        per_item
+            .entry(file.item_id.as_str())
+            .or_default()
+            .push(file.path.as_str());
     }
     per_item
         .into_values()
@@ -129,16 +140,24 @@ mod tests {
 
     #[test]
     fn an_upgrade_of_one_episode_never_deletes_the_file_holding_the_others() {
-        let multi = db::LibraryFile { spans_episodes: true, ..file("/lib/Show S01E01-E02.mkv", "i1", None) };
+        let multi = db::LibraryFile {
+            spans_episodes: true,
+            ..file("/lib/Show S01E01-E02.mkv", "i1", None)
+        };
         let out = same_cut_singletons(&[multi], Path::new("/lib/Show S01E01 2160p.mkv"));
         assert!(out.is_empty(), "E02 has nowhere else to live");
     }
 
     #[test]
     fn an_upgrade_never_deletes_half_a_multi_part_rip() {
-        let candidates =
-            vec![file("/lib/Film CD1.mkv", "i1", None), file("/lib/Film CD2.mkv", "i1", None)];
+        let candidates = vec![
+            file("/lib/Film CD1.mkv", "i1", None),
+            file("/lib/Film CD2.mkv", "i1", None),
+        ];
         let out = same_cut_singletons(&candidates, Path::new("/lib/Film 2160p.mkv"));
-        assert!(out.is_empty(), "a part-pair is left whole, duplicates beat a hole");
+        assert!(
+            out.is_empty(),
+            "a part-pair is left whole, duplicates beat a hole"
+        );
     }
 }

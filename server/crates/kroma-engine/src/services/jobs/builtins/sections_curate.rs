@@ -26,8 +26,15 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     let items = crate::db::list_items(&state.db, None)?;
     let shows = crate::db::list_shows(&state.db, None)?;
     let catalog = curate::build_catalog(&items, &shows);
-    let movies = items.iter().filter(|i| !matches!(i.kind, crate::model::Kind::Episode)).count();
-    ctx.info(format!("catalog: {} entries ({movies} movies/videos + {} shows)", catalog.len(), shows.len()));
+    let movies = items
+        .iter()
+        .filter(|i| !matches!(i.kind, crate::model::Kind::Episode))
+        .count();
+    ctx.info(format!(
+        "catalog: {} entries ({movies} movies/videos + {} shows)",
+        catalog.len(),
+        shows.len()
+    ));
 
     let director_rows = curate::director_collections(&catalog);
     ctx.debug(format!("director collections: {}", director_rows.len()));
@@ -53,7 +60,9 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
                     llm_rows = curate_with_prompt(ctx, &*llm, &catalog, max_tokens);
                 }
                 Err(e) => {
-                    ctx.error(format!("tool-driven curate failed: {e:#} falling back to catalog-in-prompt"));
+                    ctx.error(format!(
+                        "tool-driven curate failed: {e:#} falling back to catalog-in-prompt"
+                    ));
                     llm_rows = curate_with_prompt(ctx, &*llm, &catalog, max_tokens);
                 }
             }
@@ -139,7 +148,10 @@ fn curate_with_prompt(
                 rows
             }
             Err(e) => {
-                ctx.error(format!("could not parse model reply: {e} reply: {}", snippet(&reply)));
+                ctx.error(format!(
+                    "could not parse model reply: {e} reply: {}",
+                    snippet(&reply)
+                ));
                 Vec::new()
             }
         },
@@ -173,7 +185,6 @@ mod tests {
     use super::{curate_with_prompt, curate_with_tools, interleave, run};
     use crate::services::jobs::JobContext;
     use crate::test_support::{seed_movie, seed_show_episode, test_state};
-
 
     fn stale_row() -> crate::db::CuratedRow {
         crate::db::CuratedRow {
@@ -219,17 +230,36 @@ mod tests {
         seed_movie(&state, "itm-1");
         run(&JobContext::for_test(state.clone())).unwrap();
 
-        let ranks: Vec<i64> = crate::db::get_curated(&state.db).unwrap().iter().map(|r| r.rank).collect();
+        let ranks: Vec<i64> = crate::db::get_curated(&state.db)
+            .unwrap()
+            .iter()
+            .map(|r| r.rank)
+            .collect();
         assert_eq!(ranks, (0..ranks.len() as i64).collect::<Vec<_>>());
     }
 
     #[test]
     fn interleave_alternates_and_drains_the_longer_side() {
-        assert_eq!(interleave([1, 2].into_iter(), [3, 4].into_iter()), vec![1, 3, 2, 4]);
-        assert_eq!(interleave([1, 2, 3].into_iter(), [9].into_iter()), vec![1, 9, 2, 3]);
-        assert_eq!(interleave([1].into_iter(), [7, 8, 9].into_iter()), vec![1, 7, 8, 9]);
-        assert_eq!(interleave(std::iter::empty(), [1, 2].into_iter()), vec![1, 2]);
-        assert_eq!(interleave([1, 2].into_iter(), std::iter::empty()), vec![1, 2]);
+        assert_eq!(
+            interleave([1, 2].into_iter(), [3, 4].into_iter()),
+            vec![1, 3, 2, 4]
+        );
+        assert_eq!(
+            interleave([1, 2, 3].into_iter(), [9].into_iter()),
+            vec![1, 9, 2, 3]
+        );
+        assert_eq!(
+            interleave([1].into_iter(), [7, 8, 9].into_iter()),
+            vec![1, 7, 8, 9]
+        );
+        assert_eq!(
+            interleave(std::iter::empty(), [1, 2].into_iter()),
+            vec![1, 2]
+        );
+        assert_eq!(
+            interleave([1, 2].into_iter(), std::iter::empty()),
+            vec![1, 2]
+        );
         assert!(interleave(std::iter::empty::<i32>(), std::iter::empty()).is_empty());
     }
 
@@ -246,7 +276,11 @@ mod tests {
 
     impl ScriptedLlm {
         fn saying(reply: &str) -> Self {
-            Self { reply: Ok(reply.to_string()), tools: false, seen: Mutex::new(Vec::new()) }
+            Self {
+                reply: Ok(reply.to_string()),
+                tools: false,
+                seen: Mutex::new(Vec::new()),
+            }
         }
         fn failing(message: &str) -> Self {
             Self {
@@ -307,11 +341,17 @@ mod tests {
 
     // Big enough that a collection can clear MIN_ITEMS.
     fn catalog() -> Vec<curate::CatalogEntry> {
-        (1..=8).map(|n| entry(&format!("itm-{n}"), &format!("Title {n}"))).collect()
+        (1..=8)
+            .map(|n| entry(&format!("itm-{n}"), &format!("Title {n}")))
+            .collect()
     }
 
     fn reply_with(members: &[&str]) -> String {
-        let list = members.iter().map(|m| format!("\"{m}\"")).collect::<Vec<_>>().join(",");
+        let list = members
+            .iter()
+            .map(|m| format!("\"{m}\""))
+            .collect::<Vec<_>>()
+            .join(",");
         format!(
             r#"[{{"title":{{"en":"Slow Burn Thrillers"}},"reason":{{"en":"Because"}},"members":[{list}]}}]"#
         )
@@ -322,15 +362,26 @@ mod tests {
         let state = test_state();
         let ctx = JobContext::for_test(state);
         let llm = ScriptedLlm::saying(&reply_with(&[
-            "itm-1", "itm-2", "itm-3", "itm-4", "itm-5", "not-a-real-id",
+            "itm-1",
+            "itm-2",
+            "itm-3",
+            "itm-4",
+            "itm-5",
+            "not-a-real-id",
         ]))
         .with_tools();
 
         let rows = curate_with_tools(&ctx, &llm, &catalog(), 4096).unwrap();
         assert_eq!(rows.len(), 1);
-        assert_eq!(rows[0].item_ids, ["itm-1", "itm-2", "itm-3", "itm-4", "itm-5"]);
+        assert_eq!(
+            rows[0].item_ids,
+            ["itm-1", "itm-2", "itm-3", "itm-4", "itm-5"]
+        );
         assert_eq!(rows[0].source, "llm");
-        assert_eq!(rows[0].titles.get("en").map(String::as_str), Some("Slow Burn Thrillers"));
+        assert_eq!(
+            rows[0].titles.get("en").map(String::as_str),
+            Some("Slow Burn Thrillers")
+        );
     }
 
     #[test]
@@ -339,7 +390,9 @@ mod tests {
         let ctx = JobContext::for_test(state);
         let llm =
             ScriptedLlm::saying(&reply_with(&["itm-1", "itm-2", "itm-3", "itm-4"])).with_tools();
-        assert!(curate_with_tools(&ctx, &llm, &catalog(), 4096).unwrap().is_empty());
+        assert!(curate_with_tools(&ctx, &llm, &catalog(), 4096)
+            .unwrap()
+            .is_empty());
         const { assert!(curate::MIN_ITEMS > 4) };
     }
 
@@ -355,7 +408,11 @@ mod tests {
         let rows = curate_with_prompt(&ctx, &llm, &catalog(), 4096);
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].item_ids.len(), 5);
-        assert!(rows[0].item_ids.contains(&"itm-2".to_string()), "{:?}", rows[0].item_ids);
+        assert!(
+            rows[0].item_ids.contains(&"itm-2".to_string()),
+            "{:?}",
+            rows[0].item_ids
+        );
     }
 
     #[test]
@@ -363,7 +420,11 @@ mod tests {
         let state = test_state();
         let ctx = JobContext::for_test(state);
         let llm = ScriptedLlm::saying(&reply_with(&[
-            "Title 1", "Title 2", "Title 3", "Title 4", "A Film We Do Not Have",
+            "Title 1",
+            "Title 2",
+            "Title 3",
+            "Title 4",
+            "A Film We Do Not Have",
         ]));
         // Only four matched, so the whole collection goes.
         assert!(curate_with_prompt(&ctx, &llm, &catalog(), 4096).is_empty());
@@ -434,7 +495,11 @@ mod tests {
         run(&JobContext::for_test(state.clone())).unwrap();
 
         assert!(crate::db::get_curated(&state.db).unwrap().is_empty());
-        assert_eq!(llm.requests().len(), 2, "the tool pass and then the prompt pass");
+        assert_eq!(
+            llm.requests().len(),
+            2,
+            "the tool pass and then the prompt pass"
+        );
     }
 
     #[test]
@@ -459,6 +524,11 @@ mod tests {
             "Sure! Here are the collections:\n```json\n{inner}\n```\nHope that helps."
         ))
         .with_tools();
-        assert_eq!(curate_with_tools(&ctx, &llm, &catalog(), 4096).unwrap().len(), 1);
+        assert_eq!(
+            curate_with_tools(&ctx, &llm, &catalog(), 4096)
+                .unwrap()
+                .len(),
+            1
+        );
     }
 }

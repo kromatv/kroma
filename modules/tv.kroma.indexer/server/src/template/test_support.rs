@@ -17,5 +17,9 @@ pub(super) fn ctx() -> Context {
 }
 
 pub(super) fn unchanged(template: &str) {
-    assert_eq!(super::render(template, &ctx()), template, "should have come back verbatim");
+    assert_eq!(
+        super::render(template, &ctx()),
+        template,
+        "should have come back verbatim"
+    );
 }

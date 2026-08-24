@@ -97,9 +97,8 @@ impl FcmKey {
                 "exp": now_secs + 3600,
             }),
         )?;
-        let form = format!(
-            "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion={assertion}"
-        );
+        let form =
+            format!("grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion={assertion}");
         Ok(PushRequest {
             url: self.token_uri.clone(),
             headers: vec![(
@@ -122,7 +121,11 @@ impl FcmKey {
             serde_json::from_str(response_body).context("FCM token reply is not JSON")?;
         // Treat a missing/odd expiry as one minute so a broken reply refreshes
         // promptly rather than pinning a stale token.
-        let ttl = if reply.expires_in > 0 { reply.expires_in } else { 60 };
+        let ttl = if reply.expires_in > 0 {
+            reply.expires_in
+        } else {
+            60
+        };
         *self.cached.lock().unwrap_or_else(PoisonError::into_inner) =
             Some((reply.access_token.clone(), now_secs + ttl));
         Ok(reply.access_token)
@@ -307,10 +310,13 @@ mod tests {
         let key = key();
         assert!(key.cached_token(1_000).is_none(), "nothing cached yet");
 
-        key.store_token(r#"{"access_token":"ya29.abc","expires_in":3600}"#, 1_000).unwrap();
+        key.store_token(r#"{"access_token":"ya29.abc","expires_in":3600}"#, 1_000)
+            .unwrap();
         assert_eq!(key.cached_token(1_000).as_deref(), Some("ya29.abc"));
         assert_eq!(key.cached_token(3_000).as_deref(), Some("ya29.abc"));
-        assert!(key.cached_token(1_000 + 3600 - REFRESH_MARGIN_SECS).is_none());
+        assert!(key
+            .cached_token(1_000 + 3600 - REFRESH_MARGIN_SECS)
+            .is_none());
     }
 
     #[test]
@@ -324,19 +330,32 @@ mod tests {
     fn the_message_targets_the_project_and_the_device() {
         let key = key();
         let req = build_request(&key, "ya29.tok", "DEV1", &alert(), Urgency::High).unwrap();
-        assert_eq!(req.url, "https://fcm.googleapis.com/v1/projects/kroma-test/messages:send");
-        let auth =
-            req.headers.iter().find(|(k, _)| k == "authorization").map(|(_, v)| v.clone()).unwrap();
+        assert_eq!(
+            req.url,
+            "https://fcm.googleapis.com/v1/projects/kroma-test/messages:send"
+        );
+        let auth = req
+            .headers
+            .iter()
+            .find(|(k, _)| k == "authorization")
+            .map(|(_, v)| v.clone())
+            .unwrap();
         assert_eq!(auth, "Bearer ya29.tok");
 
         let body: serde_json::Value = serde_json::from_slice(&req.body).unwrap();
         assert_eq!(body["message"]["token"], "DEV1");
         assert_eq!(body["message"]["notification"]["title"], "Ready to watch");
-        assert_eq!(body["message"]["notification"]["image"], "https://img/p.jpg");
+        assert_eq!(
+            body["message"]["notification"]["image"],
+            "https://img/p.jpg"
+        );
         assert_eq!(body["message"]["data"]["link"], "/movie/ab12");
         assert_eq!(body["message"]["data"]["id"], "n1");
         assert_eq!(body["message"]["data"]["category"], "media_available");
-        assert_eq!(body["message"]["android"]["notification"]["channel_id"], "media_available");
+        assert_eq!(
+            body["message"]["android"]["notification"]["channel_id"],
+            "media_available"
+        );
     }
 
     #[test]
@@ -345,7 +364,10 @@ mod tests {
         let priority = |u| {
             let req = build_request(&key, "t", "D", &alert(), u).unwrap();
             let body: serde_json::Value = serde_json::from_slice(&req.body).unwrap();
-            body["message"]["android"]["priority"].as_str().unwrap().to_string()
+            body["message"]["android"]["priority"]
+                .as_str()
+                .unwrap()
+                .to_string()
         };
         assert_eq!(priority(Urgency::High), "high");
         assert_eq!(priority(Urgency::Low), "normal");
@@ -354,12 +376,20 @@ mod tests {
     #[test]
     fn a_bare_alert_omits_the_optional_fields_and_uses_the_default_channel() {
         let key = key();
-        let bare = Alert { id: "n1", title: "T", body: "B", ..Default::default() };
+        let bare = Alert {
+            id: "n1",
+            title: "T",
+            body: "B",
+            ..Default::default()
+        };
         let req = build_request(&key, "t", "D", &bare, Urgency::Normal).unwrap();
         let body: serde_json::Value = serde_json::from_slice(&req.body).unwrap();
         assert!(body["message"]["notification"].get("image").is_none());
         assert!(body["message"]["data"].get("link").is_none());
-        assert_eq!(body["message"]["android"]["notification"]["channel_id"], "default");
+        assert_eq!(
+            body["message"]["android"]["notification"]["channel_id"],
+            "default"
+        );
     }
 
     #[test]
@@ -391,14 +421,20 @@ mod tests {
         let key = key();
         assert_eq!(key.project_id(), "kroma-test");
         let req = build_request(&key, "AT", "DEV", &alert(), Urgency::High).unwrap();
-        assert_eq!(req.url, "https://fcm.googleapis.com/v1/projects/kroma-test/messages:send");
+        assert_eq!(
+            req.url,
+            "https://fcm.googleapis.com/v1/projects/kroma-test/messages:send"
+        );
     }
 
     #[test]
     fn debugging_a_key_never_prints_the_private_key() {
         let rendered = format!("{:?}", key());
         assert!(rendered.contains("kroma-test"), "{rendered}");
-        assert!(rendered.contains("push@kroma-test.iam.gserviceaccount.com"), "{rendered}");
+        assert!(
+            rendered.contains("push@kroma-test.iam.gserviceaccount.com"),
+            "{rendered}"
+        );
         assert!(!rendered.contains("PRIVATE KEY"), "{rendered}");
         assert!(!rendered.contains("private_key"), "{rendered}");
     }
@@ -406,14 +442,30 @@ mod tests {
     #[test]
     fn actions_travel_as_a_json_string_because_fcm_data_is_string_only() {
         let actions = [
-            ("approve".to_string(), "POST".to_string(), "/api/requests/r1/approve".to_string()),
-            ("open".to_string(), "GET".to_string(), "/movie/ab12".to_string()),
+            (
+                "approve".to_string(),
+                "POST".to_string(),
+                "/api/requests/r1/approve".to_string(),
+            ),
+            (
+                "open".to_string(),
+                "GET".to_string(),
+                "/movie/ab12".to_string(),
+            ),
         ];
-        let alert = Alert { id: "n1", title: "T", body: "B", actions: &actions, ..Default::default() };
+        let alert = Alert {
+            id: "n1",
+            title: "T",
+            body: "B",
+            actions: &actions,
+            ..Default::default()
+        };
         let req = build_request(&key(), "AT", "DEV", &alert, Urgency::High).unwrap();
 
         let body: serde_json::Value = serde_json::from_slice(&req.body).unwrap();
-        let encoded = body["message"]["data"]["actions"].as_str().expect("a string, not an array");
+        let encoded = body["message"]["data"]["actions"]
+            .as_str()
+            .expect("a string, not an array");
         let decoded: serde_json::Value = serde_json::from_str(encoded).unwrap();
         assert_eq!(decoded.as_array().unwrap().len(), 2);
         assert_eq!(decoded[0]["id"], "approve");

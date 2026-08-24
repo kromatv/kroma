@@ -9,12 +9,20 @@ pub(super) static SEQ: AtomicU32 = AtomicU32::new(0);
 pub(super) fn seeded() -> TempPool {
     let pool = crate::testing::temp_pool("home");
     let conn = pool.get().unwrap();
-    conn.execute("INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t')", []).unwrap();
+    conn.execute(
+        "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t')",
+        [],
+    )
+    .unwrap();
     let movie = |id: &str, added: &str, genres: &str| {
         conn.execute(
             "INSERT INTO items (id,kind,title,container,library,added_at,metadata) \
              VALUES (?1,'movie','T','mkv','lib',?2,?3)",
-            params![id, added, format!("{{\"tmdbId\":1,\"tmdbUrl\":\"x\",\"genres\":[{genres}]}}")],
+            params![
+                id,
+                added,
+                format!("{{\"tmdbId\":1,\"tmdbUrl\":\"x\",\"genres\":[{genres}]}}")
+            ],
         )
         .unwrap();
     };

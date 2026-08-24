@@ -23,7 +23,11 @@ impl DownloadManager {
         }
         let conn = self.core().get()?;
         if let Some(existing) = db::active_download_by_url(&conn, spec.magnet_or_url.trim())? {
-            bail!("this release is already in the queue (\"{}\", status: {})", existing.title.as_deref().unwrap_or(&existing.release_title), existing.status);
+            bail!(
+                "this release is already in the queue (\"{}\", status: {})",
+                existing.title.as_deref().unwrap_or(&existing.release_title),
+                existing.status
+            );
         }
         drop(conn);
         let clients = self.store().get()?;
@@ -87,17 +91,31 @@ impl DownloadManager {
     /// Background phase of a grab: slow (up to a couple of minutes), and safe
     /// to run detached from the request that queued it.
     pub fn activate(&self, host: &dyn HostCtx, row: &DownloadRow) {
-        let client = match self.store().get().and_then(|c| Ok(db::get_download_client(&c, &row.client_id)?)) {
+        let client = match self
+            .store()
+            .get()
+            .and_then(|c| Ok(db::get_download_client(&c, &row.client_id)?))
+        {
             Ok(Some(c)) => c,
             _ => {
-                let _ = db::set_download_status(self.core(), &row.id, "failed", Some("download client unavailable"));
+                let _ = db::set_download_status(
+                    self.core(),
+                    &row.id,
+                    "failed",
+                    Some("download client unavailable"),
+                );
                 return;
             }
         };
         let engine = match self.engine_for(&client) {
             Ok(e) => e,
             Err(e) => {
-                let _ = db::set_download_status(self.core(), &row.id, "failed", Some(&format!("engine unavailable: {e:#}")));
+                let _ = db::set_download_status(
+                    self.core(),
+                    &row.id,
+                    "failed",
+                    Some(&format!("engine unavailable: {e:#}")),
+                );
                 return;
             }
         };
@@ -148,12 +166,7 @@ impl DownloadManager {
         }
     }
 
-    fn reconcile_added(
-        &self,
-        row: &DownloadRow,
-        engine: &dyn DownloadClient,
-        client_ref: &str,
-    ) {
+    fn reconcile_added(&self, row: &DownloadRow, engine: &dyn DownloadClient, client_ref: &str) {
         let current = self
             .core()
             .get()
@@ -176,14 +189,21 @@ impl DownloadManager {
 
     // The engine returns the same ref for identical content from another URL.
     fn reconcile_dedup(&self, row: &DownloadRow, client_ref: &str) {
-        let dup = self
-            .core()
-            .get()
-            .ok()
-            .and_then(|c| db::other_active_download_with_ref(&c, &row.id, client_ref).ok().flatten());
+        let dup = self.core().get().ok().and_then(|c| {
+            db::other_active_download_with_ref(&c, &row.id, client_ref)
+                .ok()
+                .flatten()
+        });
         if let Some(other) = dup {
             let name = other.title.as_deref().unwrap_or(&other.release_title);
-            let _ = db::set_download_status(self.core(), &row.id, "failed", Some(&format!("duplicate of \"{name}\" (same torrent already downloading)")));
+            let _ = db::set_download_status(
+                self.core(),
+                &row.id,
+                "failed",
+                Some(&format!(
+                    "duplicate of \"{name}\" (same torrent already downloading)"
+                )),
+            );
             tracing::info!(id = %row.id, "grab duplicates a live download; marked failed");
             return;
         }

@@ -16,11 +16,11 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::api::error::lerr;
-use crate::api::util::query;
 use crate::api::extract::AuthUser;
-use crate::services::auth;
+use crate::api::util::query;
 use crate::db;
 use crate::i18n::{self, ReqLocale};
+use crate::services::auth;
 use crate::state::SharedState;
 use axum::routing::{patch, post};
 use axum::Router;
@@ -68,7 +68,10 @@ fn pin_record_fail(uid: &str) -> i64 {
     let Ok(mut map) = PIN_ATTEMPTS.lock() else {
         return 0;
     };
-    let a = map.entry(uid.to_string()).or_insert(PinAttempt { fails: 0, locked_until: 0 });
+    let a = map.entry(uid.to_string()).or_insert(PinAttempt {
+        fails: 0,
+        locked_until: 0,
+    });
     a.fails += 1;
     if a.fails >= PIN_MAX_FAILS {
         // Fixed cooldown after N consecutive wrong PINs (no escalating backoff).
@@ -100,7 +103,11 @@ async fn fetch_pin_hash(state: &SharedState, uid: &str) -> Result<Option<String>
     }
 }
 
-fn check_current_pin(existing: &Option<String>, current: Option<&str>, loc: &str) -> Result<(), Response> {
+fn check_current_pin(
+    existing: &Option<String>,
+    current: Option<&str>,
+    loc: &str,
+) -> Result<(), Response> {
     if let Some(hash) = existing {
         if !current.is_some_and(|c| auth::verify_password(c, hash)) {
             return Err(lerr(loc, StatusCode::UNAUTHORIZED, "auth.pinCurrentWrong"));
@@ -194,13 +201,20 @@ pub async fn set_pin(
     }
     let hash = auth::hash_password(&body.pin);
     let uid = user.id.clone();
-    if let Err(resp) = query(&state.db, move |pool| db::set_user_pin(&pool, &uid, Some(&hash))).await {
+    if let Err(resp) = query(&state.db, move |pool| {
+        db::set_user_pin(&pool, &uid, Some(&hash))
+    })
+    .await
+    {
         return resp;
     }
     // Re-lock every remembered device: the new PIN must be re-confirmed on the
     // next switch-in (their access tokens lose their pin-verified flag).
     let uid = user.id.clone();
-    let _ = query(&state.db, move |pool| db::reset_access_pin_verified(&pool, &uid)).await;
+    let _ = query(&state.db, move |pool| {
+        db::reset_access_pin_verified(&pool, &uid)
+    })
+    .await;
     pin_reset(&user.id);
     user.has_pin = true;
     Json(json!({ "user": user })).into_response()

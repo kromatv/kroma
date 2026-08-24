@@ -48,7 +48,10 @@ pub(super) fn build_result(raw: FfprobeOutput) -> ProbeResult {
 }
 
 fn build_chapter(c: &FfChapter) -> Option<Chapter> {
-    let start = c.start_time.as_deref().and_then(|s| s.parse::<f64>().ok())?;
+    let start = c
+        .start_time
+        .as_deref()
+        .and_then(|s| s.parse::<f64>().ok())?;
     let end = c.end_time.as_deref().and_then(|s| s.parse::<f64>().ok())?;
     if end <= start {
         return None;
@@ -56,7 +59,11 @@ fn build_chapter(c: &FfChapter) -> Option<Chapter> {
     Some(Chapter {
         start_ms: (start * 1000.0) as u64,
         end_ms: (end * 1000.0) as u64,
-        title: c.tags.as_ref().and_then(|t| t.title.clone()).filter(|t| !t.trim().is_empty()),
+        title: c
+            .tags
+            .as_ref()
+            .and_then(|t| t.title.clone())
+            .filter(|t| !t.trim().is_empty()),
     })
 }
 
@@ -91,7 +98,10 @@ fn build_audio(stream: &FfStream, index: u32) -> AudioStream {
         channels: stream.channels,
         language: stream.language(),
         title: stream.title(),
-        default: stream.disposition.as_ref().is_some_and(|d| d.default == Some(1)),
+        default: stream
+            .disposition
+            .as_ref()
+            .is_some_and(|d| d.default == Some(1)),
     }
 }
 
@@ -101,10 +111,7 @@ fn is_hdr(stream: &FfStream, bit_depth: Option<u32>) -> bool {
     if matches!(transfer, "smpte2084" | "arib-std-b67") {
         return true;
     }
-    let wide_gamut = matches!(
-        stream.color_primaries.as_deref().unwrap_or(""),
-        "bt2020"
-    );
+    let wide_gamut = matches!(stream.color_primaries.as_deref().unwrap_or(""), "bt2020");
     bit_depth.map(|b| b >= 10).unwrap_or(false) && wide_gamut
 }
 

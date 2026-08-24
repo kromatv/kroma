@@ -155,12 +155,18 @@ pub fn build_request(
     }
 
     let headers = vec![
-        ("authorization".into(), format!("bearer {}", key.token(now_secs))),
+        (
+            "authorization".into(),
+            format!("bearer {}", key.token(now_secs)),
+        ),
         ("apns-topic".into(), key.topic.clone()),
         ("apns-push-type".into(), "alert".into()),
         ("apns-priority".into(), urgency.apns_priority().to_string()),
         // Collapse a repeat of the same notification instead of stacking it.
-        ("apns-collapse-id".into(), alert.id.chars().take(64).collect()),
+        (
+            "apns-collapse-id".into(),
+            alert.id.chars().take(64).collect(),
+        ),
         ("content-type".into(), "application/json".into()),
     ];
 
@@ -188,7 +194,10 @@ pub fn is_gone(status: u16, body: &str) -> bool {
         .ok()
         .and_then(|v| v.get("reason").and_then(|r| r.as_str()).map(str::to_string))
         .unwrap_or_default();
-    matches!(reason.as_str(), "BadDeviceToken" | "DeviceTokenNotForTopic" | "Unregistered")
+    matches!(
+        reason.as_str(),
+        "BadDeviceToken" | "DeviceTokenNotForTopic" | "Unregistered"
+    )
 }
 
 /// Whether a `BadDeviceToken` rejection is really a wrong-environment token,
@@ -231,7 +240,14 @@ mod tests {
             .to_pkcs8_pem(Default::default())
             .unwrap()
             .to_string();
-        ApnsKey::new(&pem, "ABC1234567", "TEAM123456", "tv.kroma.mobile", environment).unwrap()
+        ApnsKey::new(
+            &pem,
+            "ABC1234567",
+            "TEAM123456",
+            "tv.kroma.mobile",
+            environment,
+        )
+        .unwrap()
     }
 
     fn alert<'a>() -> Alert<'a> {
@@ -257,13 +273,28 @@ mod tests {
 
     #[test]
     fn the_url_names_the_device_and_the_right_host() {
-        let req = build_request(&test_key(Environment::Production), "DEV1", &alert(), Urgency::High, 0)
-            .unwrap();
+        let req = build_request(
+            &test_key(Environment::Production),
+            "DEV1",
+            &alert(),
+            Urgency::High,
+            0,
+        )
+        .unwrap();
         assert_eq!(req.url, "https://api.push.apple.com/3/device/DEV1");
 
-        let sandbox =
-            build_request(&test_key(Environment::Sandbox), "DEV1", &alert(), Urgency::High, 0).unwrap();
-        assert_eq!(sandbox.url, "https://api.sandbox.push.apple.com/3/device/DEV1");
+        let sandbox = build_request(
+            &test_key(Environment::Sandbox),
+            "DEV1",
+            &alert(),
+            Urgency::High,
+            0,
+        )
+        .unwrap();
+        assert_eq!(
+            sandbox.url,
+            "https://api.sandbox.push.apple.com/3/device/DEV1"
+        );
     }
 
     #[test]
@@ -272,7 +303,11 @@ mod tests {
         let req = build_request(&key, "DEV1", &alert(), Urgency::High, 1_700_000_000).unwrap();
         assert!(req.http2, "APNs refuses HTTP/1.1");
         let h = |n: &str| {
-            req.headers.iter().find(|(k, _)| k == n).map(|(_, v)| v.clone()).unwrap()
+            req.headers
+                .iter()
+                .find(|(k, _)| k == n)
+                .map(|(_, v)| v.clone())
+                .unwrap()
         };
         assert_eq!(h("apns-topic"), "tv.kroma.mobile");
         assert_eq!(h("apns-push-type"), "alert");
@@ -292,8 +327,14 @@ mod tests {
 
     #[test]
     fn the_payload_carries_the_alert_category_and_deep_link() {
-        let req = build_request(&test_key(Environment::Production), "D", &alert(), Urgency::High, 0)
-            .unwrap();
+        let req = build_request(
+            &test_key(Environment::Production),
+            "D",
+            &alert(),
+            Urgency::High,
+            0,
+        )
+        .unwrap();
         let body: serde_json::Value = serde_json::from_slice(&req.body).unwrap();
         assert_eq!(body["aps"]["alert"]["title"], "Ready to watch");
         assert_eq!(body["aps"]["alert"]["body"], "Dune is now in your library.");
@@ -308,9 +349,20 @@ mod tests {
 
     #[test]
     fn optional_fields_are_omitted_rather_than_sent_null() {
-        let bare = Alert { id: "n1", title: "T", body: "B", ..Default::default() };
-        let req =
-            build_request(&test_key(Environment::Production), "D", &bare, Urgency::Normal, 0).unwrap();
+        let bare = Alert {
+            id: "n1",
+            title: "T",
+            body: "B",
+            ..Default::default()
+        };
+        let req = build_request(
+            &test_key(Environment::Production),
+            "D",
+            &bare,
+            Urgency::Normal,
+            0,
+        )
+        .unwrap();
         let body: serde_json::Value = serde_json::from_slice(&req.body).unwrap();
         assert!(body["aps"].get("category").is_none());
         assert!(body["aps"].get("thread-id").is_none());
@@ -323,7 +375,11 @@ mod tests {
         let key = test_key(Environment::Production);
         let priority = |u| {
             let req = build_request(&key, "D", &alert(), u, 0).unwrap();
-            req.headers.iter().find(|(k, _)| k == "apns-priority").map(|(_, v)| v.clone()).unwrap()
+            req.headers
+                .iter()
+                .find(|(k, _)| k == "apns-priority")
+                .map(|(_, v)| v.clone())
+                .unwrap()
         };
         assert_eq!(priority(Urgency::High), "10");
         assert_eq!(priority(Urgency::Normal), "10");
@@ -336,7 +392,11 @@ mod tests {
         let key = test_key(Environment::Production);
         let token_at = |t| {
             let req = build_request(&key, "D", &alert(), Urgency::High, t).unwrap();
-            req.headers.iter().find(|(k, _)| k == "authorization").map(|(_, v)| v.clone()).unwrap()
+            req.headers
+                .iter()
+                .find(|(k, _)| k == "authorization")
+                .map(|(_, v)| v.clone())
+                .unwrap()
         };
         let first = token_at(1_000);
         assert_eq!(token_at(1_500), first);
@@ -346,8 +406,14 @@ mod tests {
 
     #[test]
     fn an_empty_device_token_is_refused_before_a_request_is_built() {
-        let err = build_request(&test_key(Environment::Production), "  ", &alert(), Urgency::High, 0)
-            .unwrap_err();
+        let err = build_request(
+            &test_key(Environment::Production),
+            "  ",
+            &alert(),
+            Urgency::High,
+            0,
+        )
+        .unwrap_err();
         assert!(err.to_string().contains("empty"), "{err}");
     }
 
@@ -382,7 +448,10 @@ mod tests {
         let bad_token = r#"{"reason":"BadDeviceToken"}"#;
         assert!(is_wrong_environment(400, bad_token));
         // `DeviceTokenNotForTopic` is a genuinely wrong app, not a wrong host.
-        assert!(!is_wrong_environment(400, r#"{"reason":"DeviceTokenNotForTopic"}"#));
+        assert!(!is_wrong_environment(
+            400,
+            r#"{"reason":"DeviceTokenNotForTopic"}"#
+        ));
         assert!(!is_wrong_environment(400, r#"{"reason":"BadCollapseId"}"#));
         // A 410 is Apple's unambiguous "gone"; there is nothing to retry.
         assert!(!is_wrong_environment(410, bad_token));
@@ -399,12 +468,21 @@ mod tests {
         let body = request.body.clone();
 
         assert!(flip_environment(&mut request));
-        assert_eq!(request.url, "https://api.sandbox.push.apple.com/3/device/DEVICE-TOKEN");
-        assert_eq!(request.headers, headers, "a flip must not re-sign or re-header");
+        assert_eq!(
+            request.url,
+            "https://api.sandbox.push.apple.com/3/device/DEVICE-TOKEN"
+        );
+        assert_eq!(
+            request.headers, headers,
+            "a flip must not re-sign or re-header"
+        );
         assert_eq!(request.body, body);
 
         assert!(flip_environment(&mut request));
-        assert_eq!(request.url, "https://api.push.apple.com/3/device/DEVICE-TOKEN");
+        assert_eq!(
+            request.url,
+            "https://api.push.apple.com/3/device/DEVICE-TOKEN"
+        );
 
         // A request that is not ours is left alone rather than mangled.
         let mut foreign = build_request(&key, "T", &alert(), Urgency::High, 0).unwrap();
@@ -417,12 +495,21 @@ mod tests {
     fn the_stored_environment_string_parses_back_to_the_same_environment() {
         assert_eq!(Environment::Production.as_str(), "production");
         assert_eq!(Environment::Sandbox.as_str(), "sandbox");
-        assert_eq!(Environment::parse(Environment::Sandbox.as_str()), Environment::Sandbox);
-        assert_eq!(Environment::parse(Environment::Production.as_str()), Environment::Production);
+        assert_eq!(
+            Environment::parse(Environment::Sandbox.as_str()),
+            Environment::Sandbox
+        );
+        assert_eq!(
+            Environment::parse(Environment::Production.as_str()),
+            Environment::Production
+        );
 
         let key = test_key(Environment::Sandbox);
         assert_eq!(key.environment(), Environment::Sandbox);
-        assert_eq!(test_key(Environment::Production).environment(), Environment::Production);
+        assert_eq!(
+            test_key(Environment::Production).environment(),
+            Environment::Production
+        );
     }
 
     #[test]
@@ -439,12 +526,32 @@ mod tests {
     #[test]
     fn actions_reach_the_device_as_an_id_method_and_href_each() {
         let actions = [
-            ("approve".to_string(), "POST".to_string(), "/api/requests/r1/approve".to_string()),
-            ("open".to_string(), "GET".to_string(), "/movie/ab12".to_string()),
+            (
+                "approve".to_string(),
+                "POST".to_string(),
+                "/api/requests/r1/approve".to_string(),
+            ),
+            (
+                "open".to_string(),
+                "GET".to_string(),
+                "/movie/ab12".to_string(),
+            ),
         ];
-        let alert = Alert { id: "n1", title: "T", body: "B", actions: &actions, ..Default::default() };
-        let req =
-            build_request(&test_key(Environment::Production), "D", &alert, Urgency::High, 0).unwrap();
+        let alert = Alert {
+            id: "n1",
+            title: "T",
+            body: "B",
+            actions: &actions,
+            ..Default::default()
+        };
+        let req = build_request(
+            &test_key(Environment::Production),
+            "D",
+            &alert,
+            Urgency::High,
+            0,
+        )
+        .unwrap();
 
         let body: serde_json::Value = serde_json::from_slice(&req.body).unwrap();
         assert_eq!(body["actions"].as_array().unwrap().len(), 2);

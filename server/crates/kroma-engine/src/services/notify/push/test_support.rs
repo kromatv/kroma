@@ -1,6 +1,4 @@
-use kroma_domain::{
-    Notification, NotificationAction, NotificationCategory, NotificationEvent,
-};
+use kroma_domain::{Notification, NotificationAction, NotificationCategory, NotificationEvent};
 
 pub(super) fn notification(category: NotificationCategory) -> Notification {
     Notification {

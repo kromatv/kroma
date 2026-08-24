@@ -92,7 +92,11 @@ pub(super) fn is_upgrade(wanted: &[WantedRow], covered: &[String]) -> bool {
     // `grabbed` is a download queued with nothing imported yet, so there is no
     // file to improve: only `available` means the episode is on disk.
     !covered.is_empty()
-        && covered.iter().all(|id| wanted.iter().any(|w| &w.id == id && w.status == "available"))
+        && covered.iter().all(|id| {
+            wanted
+                .iter()
+                .any(|w| &w.id == id && w.status == "available")
+        })
 }
 
 #[cfg(test)]

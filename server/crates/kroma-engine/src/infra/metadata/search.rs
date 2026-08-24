@@ -68,8 +68,11 @@ fn search_page(
     if let Some(y) = year {
         params.push((target.year_param(), y.to_string()));
     }
-    let resp: SearchResp =
-        curl_json(&format!("{}/{}", api(), target.search_path()), api_key, &params)?;
+    let resp: SearchResp = curl_json(
+        &format!("{}/{}", api(), target.search_path()),
+        api_key,
+        &params,
+    )?;
     Ok(resp.results.into_iter().map(Into::into).collect())
 }
 
@@ -122,7 +125,9 @@ mod tests {
     use super::*;
 
     fn hit(json: &str) -> Candidate {
-        serde_json::from_str::<SearchHit>(json).expect("valid hit").into()
+        serde_json::from_str::<SearchHit>(json)
+            .expect("valid hit")
+            .into()
     }
 
     #[test]

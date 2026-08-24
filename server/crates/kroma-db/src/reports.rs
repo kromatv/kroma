@@ -65,8 +65,9 @@ pub fn list_reports(conn: &Connection, only_user: Option<&str>) -> rusqlite::Res
         format!("SELECT {REPORT_COLS} FROM reports r LEFT JOIN users u ON u.id = r.reported_by");
     match only_user {
         Some(uid) => {
-            let mut stmt =
-                conn.prepare(&format!("{base} WHERE r.reported_by = ?1 ORDER BY r.created_at DESC"))?;
+            let mut stmt = conn.prepare(&format!(
+                "{base} WHERE r.reported_by = ?1 ORDER BY r.created_at DESC"
+            ))?;
             let rows = stmt.query_map(params![uid], row_to_report)?;
             rows.collect()
         }
@@ -137,10 +138,18 @@ mod tests {
     #[test]
     fn insert_list_and_get_roundtrip() {
         let p = pool();
-        insert_report(&p, &new_report("r1", ReportSubjectKind::Movie, ReportCategory::Audio), 1000)
-            .unwrap();
-        insert_report(&p, &new_report("r2", ReportSubjectKind::Show, ReportCategory::Metadata), 2000)
-            .unwrap();
+        insert_report(
+            &p,
+            &new_report("r1", ReportSubjectKind::Movie, ReportCategory::Audio),
+            1000,
+        )
+        .unwrap();
+        insert_report(
+            &p,
+            &new_report("r2", ReportSubjectKind::Show, ReportCategory::Metadata),
+            2000,
+        )
+        .unwrap();
 
         let conn = p.get().unwrap();
         let all = list_reports(&conn, None).unwrap();
@@ -159,9 +168,15 @@ mod tests {
     fn status_transitions_set_and_clear_resolver_fields() {
         let p = pool();
         // resolved_by FKs users, so the acting admin must be a real account.
-        let admin = crate::create_user(&p, "admin@test.dev", "admin", "h", &[]).unwrap().id;
-        insert_report(&p, &new_report("r1", ReportSubjectKind::Movie, ReportCategory::Video), 1000)
-            .unwrap();
+        let admin = crate::create_user(&p, "admin@test.dev", "admin", "h", &[])
+            .unwrap()
+            .id;
+        insert_report(
+            &p,
+            &new_report("r1", ReportSubjectKind::Movie, ReportCategory::Video),
+            1000,
+        )
+        .unwrap();
 
         assert!(set_report_status(&p, "r1", ReportStatus::Resolved, Some(&admin), 5000).unwrap());
         let conn = p.get().unwrap();
@@ -179,19 +194,27 @@ mod tests {
         assert_eq!(r.resolved_at, None);
         drop(conn);
 
-        assert!(!set_report_status(&p, "ghost", ReportStatus::Dismissed, Some(&admin), 7000).unwrap());
+        assert!(
+            !set_report_status(&p, "ghost", ReportStatus::Dismissed, Some(&admin), 7000).unwrap()
+        );
     }
 
     #[test]
     fn list_scopes_to_one_reporter_and_delete_removes() {
         let p = pool();
         // reported_by FKs users, so the reporter must be a real account.
-        let alice = crate::create_user(&p, "a@test.dev", "alice", "h", &[]).unwrap().id;
+        let alice = crate::create_user(&p, "a@test.dev", "alice", "h", &[])
+            .unwrap()
+            .id;
         let mut ra = new_report("ra", ReportSubjectKind::Movie, ReportCategory::Other);
         ra.reported_by = Some(alice.clone());
         insert_report(&p, &ra, 1000).unwrap();
-        insert_report(&p, &new_report("rb", ReportSubjectKind::Movie, ReportCategory::Other), 2000)
-            .unwrap();
+        insert_report(
+            &p,
+            &new_report("rb", ReportSubjectKind::Movie, ReportCategory::Other),
+            2000,
+        )
+        .unwrap();
 
         let conn = p.get().unwrap();
         let mine = list_reports(&conn, Some(&alice)).unwrap();

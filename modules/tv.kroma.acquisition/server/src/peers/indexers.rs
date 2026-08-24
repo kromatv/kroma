@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 
 use kroma_module_sdk::host::{call, pinned_resolver, HostCtx, Resolver};
 
-
 /// A release as an indexer reports it. Tolerant: the provider is separately
 /// released, so a field it adds is ignored here and one it stops sending
 /// defaults rather than dropping the whole sweep.
@@ -56,9 +55,23 @@ pub struct IndexerRef {
 /// One search request. Externally tagged, so the variant name is part of the wire.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum Query {
-    Movie { tmdb_id: Option<u64>, imdb_id: Option<String>, title: String, year: Option<u32> },
-    Episode { tmdb_id: Option<u64>, title: String, season: u32, episode: u32 },
-    Season { tmdb_id: Option<u64>, title: String, season: u32 },
+    Movie {
+        tmdb_id: Option<u64>,
+        imdb_id: Option<String>,
+        title: String,
+        year: Option<u32>,
+    },
+    Episode {
+        tmdb_id: Option<u64>,
+        title: String,
+        season: u32,
+        episode: u32,
+    },
+    Season {
+        tmdb_id: Option<u64>,
+        title: String,
+        season: u32,
+    },
 }
 
 /// One indexer's answer. A per-indexer error alongside real results is not fatal:
@@ -89,18 +102,30 @@ impl DownloadTarget {
 
 /// Every configured indexer, enabled or not.
 pub fn list(host: &dyn HostCtx) -> anyhow::Result<Vec<IndexerRef>> {
-    call(&db(host)?, &format!("{INDEXER_DB}/list"), &serde_json::json!({}))
+    call(
+        &db(host)?,
+        &format!("{INDEXER_DB}/list"),
+        &serde_json::json!({}),
+    )
 }
 
 /// The indexers a sweep should ask.
 pub fn enabled(host: &dyn HostCtx) -> anyhow::Result<Vec<IndexerRef>> {
-    call(&db(host)?, &format!("{INDEXER_DB}/enabled"), &serde_json::json!({}))
+    call(
+        &db(host)?,
+        &format!("{INDEXER_DB}/enabled"),
+        &serde_json::json!({}),
+    )
 }
 
 /// One indexer, or `None` when nothing has that id (a row can outlive a release
 /// that names it).
 pub fn get(host: &dyn HostCtx, id: &str) -> anyhow::Result<Option<IndexerRef>> {
-    call(&db(host)?, &format!("{INDEXER_DB}/get"), &serde_json::json!({ "id": id }))
+    call(
+        &db(host)?,
+        &format!("{INDEXER_DB}/get"),
+        &serde_json::json!({ "id": id }),
+    )
 }
 
 /// Record how an indexer answered, so the admin sees which one stopped working.
@@ -120,7 +145,11 @@ pub fn note_result(
 
 /// Search one indexer. Its own configured categories are used, which is what the
 /// caller wants in every case here.
-pub fn search(host: &dyn HostCtx, indexer_id: &str, query: &Query) -> anyhow::Result<SearchOutcome> {
+pub fn search(
+    host: &dyn HostCtx,
+    indexer_id: &str,
+    query: &Query,
+) -> anyhow::Result<SearchOutcome> {
     call(
         &search_at(host)?,
         &format!("{INDEXER_SEARCH}/search"),
@@ -263,7 +292,9 @@ mod tests {
         }
 
         async fn resolve(Json(req): Json<Value>) -> Json<Result<Value, String>> {
-            Json(Ok(serde_json::json!({ "TorrentUrl": req["magnet_or_url"] })))
+            Json(Ok(
+                serde_json::json!({ "TorrentUrl": req["magnet_or_url"] }),
+            ))
         }
 
         axum::Router::new()
@@ -272,7 +303,10 @@ mod tests {
             .route("/_port/tv.kroma.indexer/db/get", post(get))
             .route("/_port/tv.kroma.indexer/db/note-result", post(note))
             .route("/_port/tv.kroma.indexer/search/search", post(search))
-            .route("/_port/tv.kroma.indexer/search/resolve-download", post(resolve))
+            .route(
+                "/_port/tv.kroma.indexer/search/resolve-download",
+                post(resolve),
+            )
     }
 
     async fn indexer_host() -> StubHost {
@@ -341,7 +375,9 @@ mod tests {
 
         let link = kroma_module_host::test_serve::blocking(move || {
             note_result(&host, "a", false, Some("timeout"), 42).unwrap();
-            resolve_download(&host, "a", "R", None, "http://t/f.torrent").unwrap().link()
+            resolve_download(&host, "a", "R", None, "http://t/f.torrent")
+                .unwrap()
+                .link()
         })
         .await;
 

@@ -78,7 +78,9 @@ fn row_to_download(r: &Row) -> rusqlite::Result<DownloadRow> {
         completed_at: r.get(23)?,
         imported_at: r.get(24)?,
         details_url: r.get(25)?,
-        only_files: r.get::<_, Option<String>>(26)?.and_then(|j| serde_json::from_str(&j).ok()),
+        only_files: r
+            .get::<_, Option<String>>(26)?
+            .and_then(|j| serde_json::from_str(&j).ok()),
         upgrade: r.get::<_, i64>(27)? != 0,
     })
 }

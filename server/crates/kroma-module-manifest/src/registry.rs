@@ -34,9 +34,21 @@ struct Entry {
 /// Why a module graph could not be brought up.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ResolveError {
-    MissingDependency { module: String, needs: String },
-    VersionMismatch { module: String, needs: String, req: String, found: String },
-    UnmetPoint { module: String, point: String, id: Option<String> },
+    MissingDependency {
+        module: String,
+        needs: String,
+    },
+    VersionMismatch {
+        module: String,
+        needs: String,
+        req: String,
+        found: String,
+    },
+    UnmetPoint {
+        module: String,
+        point: String,
+        id: Option<String>,
+    },
     DuplicateId(String),
     Cycle(Vec<String>),
 }
@@ -45,14 +57,25 @@ impl fmt::Display for ResolveError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ResolveError::MissingDependency { module, needs } => {
-                write!(f, "module {module:?} depends on {needs:?}, which is not registered")
+                write!(
+                    f,
+                    "module {module:?} depends on {needs:?}, which is not registered"
+                )
             }
-            ResolveError::VersionMismatch { module, needs, req, found } => write!(
+            ResolveError::VersionMismatch {
+                module,
+                needs,
+                req,
+                found,
+            } => write!(
                 f,
                 "module {module:?} needs {needs:?} {req} but {found} is registered",
             ),
             ResolveError::UnmetPoint { module, point, id } => match id {
-                Some(id) => write!(f, "{module} needs {point} answered under {id}, and nothing does"),
+                Some(id) => write!(
+                    f,
+                    "{module} needs {point} answered under {id}, and nothing does"
+                ),
                 None => write!(f, "{module} needs {point} answered, and nothing does"),
             },
             ResolveError::DuplicateId(id) => write!(f, "two modules registered the id {id:?}"),
@@ -97,12 +120,17 @@ impl Registry {
     /// The module answering `point` under `id`.
     pub fn contributor_of(&self, point: &str, id: &str) -> Option<&ModuleManifest> {
         self.entries.iter().map(|e| &e.manifest).find(|m| {
-            m.contributes.iter().any(|c| c.point == point && c.id.as_deref() == Some(id))
+            m.contributes
+                .iter()
+                .any(|c| c.point == point && c.id.as_deref() == Some(id))
         })
     }
 
     pub fn icon_of(&self, id: &str) -> Option<crate::ModuleIcon> {
-        self.entries.iter().find(|e| e.manifest.id == id).and_then(|e| e.module.icon())
+        self.entries
+            .iter()
+            .find(|e| e.manifest.id == id)
+            .and_then(|e| e.module.icon())
     }
 
     /// Validate the graph and return module ids in initialization order
@@ -119,8 +147,11 @@ impl Registry {
     }
 
     fn dependency_edges(&self) -> Result<HashMap<String, Vec<String>>, ResolveError> {
-        let index: HashMap<&str, &ModuleManifest> =
-            self.entries.iter().map(|e| (e.manifest.id.as_str(), &e.manifest)).collect();
+        let index: HashMap<&str, &ModuleManifest> = self
+            .entries
+            .iter()
+            .map(|e| (e.manifest.id.as_str(), &e.manifest))
+            .collect();
         let mut edges: HashMap<String, Vec<String>> = HashMap::new();
         for e in &self.entries {
             let m = &e.manifest;
@@ -183,7 +214,10 @@ impl Registry {
             .find(|e| {
                 e.manifest.contributes.iter().any(|c| {
                     c.point == req.point
-                        && req.id.as_deref().is_none_or(|id| c.id.as_deref() == Some(id))
+                        && req
+                            .id
+                            .as_deref()
+                            .is_none_or(|id| c.id.as_deref() == Some(id))
                 })
             })
             .map(|e| e.manifest.id.clone())
@@ -191,7 +225,11 @@ impl Registry {
 
     // Ready nodes are drained in registration order, so the output is deterministic.
     fn topo_sort(&self, edges: &HashMap<String, Vec<String>>) -> Result<Vec<String>, ResolveError> {
-        let ids: Vec<&str> = self.entries.iter().map(|e| e.manifest.id.as_str()).collect();
+        let ids: Vec<&str> = self
+            .entries
+            .iter()
+            .map(|e| e.manifest.id.as_str())
+            .collect();
         let mut indegree: HashMap<&str, usize> = ids.iter().map(|&id| (id, 0usize)).collect();
         let mut dependents: HashMap<&str, Vec<&str>> = HashMap::new();
         for e in &self.entries {
@@ -243,9 +281,10 @@ fn check_version(
     let Some(range) = &dep.version else {
         return Ok(());
     };
-    if let (Ok(req), Ok(found)) =
-        (semver::VersionReq::parse(range), semver::Version::parse(&target.version))
-    {
+    if let (Ok(req), Ok(found)) = (
+        semver::VersionReq::parse(range),
+        semver::Version::parse(&target.version),
+    ) {
         if !req.matches(&found) {
             return Err(ResolveError::VersionMismatch {
                 module: module.id.clone(),
@@ -278,7 +317,10 @@ mod tests {
             for d in deps {
                 manifest = manifest.needs(*d);
             }
-            Box::new(Fake { manifest, contributes: contributes.to_vec() })
+            Box::new(Fake {
+                manifest,
+                contributes: contributes.to_vec(),
+            })
         }
     }
 
@@ -294,11 +336,19 @@ mod tests {
     }
 
     fn req(point: &str) -> PointReq {
-        PointReq { point: point.into(), version: None, id: None, optional: false }
+        PointReq {
+            point: point.into(),
+            version: None,
+            id: None,
+            optional: false,
+        }
     }
 
     fn index_of(order: &[String], id: &str) -> usize {
-        order.iter().position(|o| o == id).expect("id present in order")
+        order
+            .iter()
+            .position(|o| o == id)
+            .expect("id present in order")
     }
 
     #[test]
@@ -362,14 +412,21 @@ mod tests {
         let manifests = reg.manifests();
         assert_eq!(manifests[0].contributes.len(), 2);
         assert_eq!(
-            reg.contributor_of("tv.kroma.torrents/download-client", "rqbit").unwrap().id,
+            reg.contributor_of("tv.kroma.torrents/download-client", "rqbit")
+                .unwrap()
+                .id,
             "torrents"
         );
-        assert!(reg.contributor_of("tv.kroma.torrents/download-client", "nope").is_none());
+        assert!(reg
+            .contributor_of("tv.kroma.torrents/download-client", "nope")
+            .is_none());
     }
 
     fn boxed_manifest(manifest: ModuleManifest) -> Box<dyn Module> {
-        Box::new(Fake { manifest, contributes: Vec::new() })
+        Box::new(Fake {
+            manifest,
+            contributes: Vec::new(),
+        })
     }
 
     #[test]
@@ -377,16 +434,25 @@ mod tests {
         let mut ok = Registry::new();
         ok.register(Fake::boxed("lib", &[], &[])); // version 0.1.0
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.dependencies.push(Dependency { id: "lib".into(), version: Some(">=0.1".into()) });
+        app.dependencies.push(Dependency {
+            id: "lib".into(),
+            version: Some(">=0.1".into()),
+        });
         ok.register(boxed_manifest(app));
         assert!(ok.resolve().is_ok());
 
         let mut bad = Registry::new();
         bad.register(Fake::boxed("lib", &[], &[])); // version 0.1.0
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.dependencies.push(Dependency { id: "lib".into(), version: Some("^2".into()) });
+        app.dependencies.push(Dependency {
+            id: "lib".into(),
+            version: Some("^2".into()),
+        });
         bad.register(boxed_manifest(app));
-        assert!(matches!(bad.resolve(), Err(ResolveError::VersionMismatch { .. })));
+        assert!(matches!(
+            bad.resolve(),
+            Err(ResolveError::VersionMismatch { .. })
+        ));
     }
 
     #[test]
@@ -424,7 +490,10 @@ mod tests {
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
         app.consumes.push(req("tv.kroma.torrents/download-client"));
         reg.register(boxed_manifest(app));
-        assert!(matches!(reg.resolve(), Err(ResolveError::UnmetPoint { .. })));
+        assert!(matches!(
+            reg.resolve(),
+            Err(ResolveError::UnmetPoint { .. })
+        ));
     }
 
     #[test]
@@ -439,7 +508,11 @@ mod tests {
             manifest,
             contributes: vec![("tv.kroma.indexer/search", "torznab")],
         }));
-        assert_eq!(solo.resolve().expect("a self-provided capability adds no edge"), vec!["indexers"]);
+        assert_eq!(
+            solo.resolve()
+                .expect("a self-provided capability adds no edge"),
+            vec!["indexers"]
+        );
     }
 
     #[test]
@@ -447,14 +520,20 @@ mod tests {
         let mut unreadable_range = Registry::new();
         unreadable_range.register(Fake::boxed("lib", &[], &[]));
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.dependencies.push(Dependency { id: "lib".into(), version: Some("latest".into()) });
+        app.dependencies.push(Dependency {
+            id: "lib".into(),
+            version: Some("latest".into()),
+        });
         unreadable_range.register(boxed_manifest(app));
         assert!(unreadable_range.resolve().is_ok());
 
         let mut unreadable_target = Registry::new();
         unreadable_target.register(boxed_manifest(ModuleManifest::new("lib", "lib", "nightly")));
         let mut app = ModuleManifest::new("app", "app", "1.0.0");
-        app.dependencies.push(Dependency { id: "lib".into(), version: Some("^1".into()) });
+        app.dependencies.push(Dependency {
+            id: "lib".into(),
+            version: Some("^1".into()),
+        });
         unreadable_target.register(boxed_manifest(app));
         assert!(unreadable_target.resolve().is_ok());
     }
@@ -473,10 +552,19 @@ mod tests {
         reg.contribute("tv.kroma.torrents/download-client", "rqbit")
             .contribute("tv.kroma.indexer/search", "torznab");
 
-        let points: Vec<&str> =
-            reg.contributions().iter().map(|c| c.point.as_str()).collect();
+        let points: Vec<&str> = reg
+            .contributions()
+            .iter()
+            .map(|c| c.point.as_str())
+            .collect();
 
-        assert_eq!(points, vec!["tv.kroma.torrents/download-client", "tv.kroma.indexer/search"]);
+        assert_eq!(
+            points,
+            vec![
+                "tv.kroma.torrents/download-client",
+                "tv.kroma.indexer/search"
+            ]
+        );
         assert_eq!(reg.contributions()[1].id.as_deref(), Some("torznab"));
         // The local half is what the wire path is built from.
         assert_eq!(reg.contributions()[0].local(), "download-client");

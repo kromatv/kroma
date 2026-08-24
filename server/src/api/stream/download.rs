@@ -17,8 +17,8 @@ use tokio::io::AsyncReadExt;
 
 mod audio_args;
 
-use audio_args::download_audio_args;
 use super::byte_sink;
+use audio_args::download_audio_args;
 
 /// `?copy=` and `?video=` name codecs the client decodes natively. Absent means
 /// the default (`copy` → `aac,ac3,eac3`; `video` → stream-copy the source);
@@ -41,7 +41,10 @@ pub async fn download_item(
     headers: HeaderMap,
 ) -> Result<Response, Response> {
     let permit = state.downloads.clone().try_acquire_owned().map_err(|_| {
-        json_error(StatusCode::SERVICE_UNAVAILABLE, "too many downloads in progress, try again later")
+        json_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "too many downloads in progress, try again later",
+        )
     })?;
     let item = query(&state.db, move |pool| db::get_item(&pool, &id))
         .await?
@@ -51,7 +54,10 @@ pub async fn download_item(
         .clone()
         .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "no file for item"))?;
     if !std::path::Path::new(&abs).exists() {
-        return Err(json_error(StatusCode::NOT_FOUND, "media file unavailable (mount offline?)"));
+        return Err(json_error(
+            StatusCode::NOT_FOUND,
+            "media file unavailable (mount offline?)",
+        ));
     }
 
     let source_video = item.video.as_ref().map(|v| v.codec.as_str());
@@ -61,7 +67,9 @@ pub async fn download_item(
         (Some(_), None) => false,
     };
     let mut cmd = tokio::process::Command::new("ffmpeg");
-    cmd.args(["-v", "error", "-nostdin", "-i"]).arg(&abs).args(["-map", "0:v:0"]);
+    cmd.args(["-v", "error", "-nostdin", "-i"])
+        .arg(&abs)
+        .args(["-map", "0:v:0"]);
     if video_copy {
         cmd.args(["-c:v", "copy"]);
         if source_video == Some("hevc") {
@@ -72,7 +80,9 @@ pub async fn download_item(
     } else {
         // H.264 8-bit because every download target decodes it; offline has no
         // fallback. HDR sources are not tone-mapped (no zimg) and read washed-out.
-        cmd.args(["-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p"]);
+        cmd.args([
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
+        ]);
     }
     cmd.args(download_audio_args(
         &item.audio_tracks,
@@ -96,13 +106,18 @@ pub async fn download_item(
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
 
-    let mut child = cmd
-        .spawn()
-        .map_err(|e| json_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("ffmpeg spawn failed: {e}")))?;
-    let mut stdout = child
-        .stdout
-        .take()
-        .ok_or_else(|| json_error(StatusCode::INTERNAL_SERVER_ERROR, "ffmpeg stdout unavailable"))?;
+    let mut child = cmd.spawn().map_err(|e| {
+        json_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            &format!("ffmpeg spawn failed: {e}"),
+        )
+    })?;
+    let mut stdout = child.stdout.take().ok_or_else(|| {
+        json_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "ffmpeg stdout unavailable",
+        )
+    })?;
     let mut stderr = child.stderr.take();
 
     // Wait for the first bytes before committing to a `200`: every structural
@@ -152,16 +167,22 @@ pub async fn download_item(
     });
 
     let sink = byte_sink(&state, &headers, &addr);
-    let body = crate::infra::stream::CountingReader::new(
-        std::io::Cursor::new(head).chain(stdout),
-        sink,
-    );
+    let body =
+        crate::infra::stream::CountingReader::new(std::io::Cursor::new(head).chain(stdout), sink);
     Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "video/mp4")
-        .header(header::CONTENT_DISPOSITION, content_disposition(&item.title))
+        .header(
+            header::CONTENT_DISPOSITION,
+            content_disposition(&item.title),
+        )
         .body(Body::from_stream(tokio_util::io::ReaderStream::new(body)))
-        .map_err(|e| json_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("response build failed: {e}")))
+        .map_err(|e| {
+            json_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("response build failed: {e}"),
+            )
+        })
 }
 
 // HTTP header values are ISO-8859-1, so `filename` is transliterated to ASCII and
@@ -169,11 +190,21 @@ pub async fn download_item(
 fn content_disposition(title: &str) -> String {
     let ascii: String = title
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == ' ' || c == '-' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == ' ' || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
     let ascii = ascii.trim();
     // A title with nothing transliterable becomes bare underscores; prefer generic.
-    let ascii = if ascii.chars().any(|c| c.is_ascii_alphanumeric()) { ascii } else { "download" };
+    let ascii = if ascii.chars().any(|c| c.is_ascii_alphanumeric()) {
+        ascii
+    } else {
+        "download"
+    };
     let encoded: String = title
         .bytes()
         .map(|b| {

@@ -22,7 +22,10 @@ use super::generate::slug;
 
 // Build a `locale -> value` map over every [`i18n::SUPPORTED_LOCALES`] entry.
 fn per_locale(mut f: impl FnMut(&str) -> String) -> HashMap<String, String> {
-    i18n::SUPPORTED_LOCALES.iter().map(|&l| (l.to_string(), f(l))).collect()
+    i18n::SUPPORTED_LOCALES
+        .iter()
+        .map(|&l| (l.to_string(), f(l)))
+        .collect()
 }
 
 /// Minimum members for a collection to be worth keeping.
@@ -52,11 +55,25 @@ pub fn build_catalog(items: &[MediaItem], shows: &[Show]) -> Vec<CatalogEntry> {
             continue;
         }
         let (rating, genres, directors) = meta_bits(it.metadata.as_ref());
-        out.push(CatalogEntry { id: it.id.clone(), title: it.title.clone(), year: it.year, rating, genres, directors });
+        out.push(CatalogEntry {
+            id: it.id.clone(),
+            title: it.title.clone(),
+            year: it.year,
+            rating,
+            genres,
+            directors,
+        });
     }
     for s in shows {
         let (rating, genres, directors) = meta_bits(s.metadata.as_ref());
-        out.push(CatalogEntry { id: s.id.clone(), title: s.title.clone(), year: s.year, rating, genres, directors });
+        out.push(CatalogEntry {
+            id: s.id.clone(),
+            title: s.title.clone(),
+            year: s.year,
+            rating,
+            genres,
+            directors,
+        });
     }
     out
 }
@@ -86,8 +103,10 @@ pub fn director_collections(catalog: &[CatalogEntry]) -> Vec<CuratedRow> {
             by_director.entry(d.as_str()).or_default().push(e);
         }
     }
-    let mut groups: Vec<(&str, Vec<&CatalogEntry>)> =
-        by_director.into_iter().filter(|(_, v)| v.len() >= MIN_ITEMS).collect();
+    let mut groups: Vec<(&str, Vec<&CatalogEntry>)> = by_director
+        .into_iter()
+        .filter(|(_, v)| v.len() >= MIN_ITEMS)
+        .collect();
     // Biggest filmographies first; name as a stable tiebreak.
     groups.sort_by(|a, b| b.1.len().cmp(&a.1.len()).then_with(|| a.0.cmp(b.0)));
 
@@ -115,7 +134,9 @@ pub fn director_collections(catalog: &[CatalogEntry]) -> Vec<CuratedRow> {
 pub fn prune_for_prompt(catalog: &[CatalogEntry], max: usize) -> Vec<&CatalogEntry> {
     let mut refs: Vec<&CatalogEntry> = catalog.iter().collect();
     refs.sort_by(|a, b| {
-        b.rating.total_cmp(&a.rating).then_with(|| b.year.unwrap_or(0).cmp(&a.year.unwrap_or(0)))
+        b.rating
+            .total_cmp(&a.rating)
+            .then_with(|| b.year.unwrap_or(0).cmp(&a.year.unwrap_or(0)))
     });
     refs.truncate(max);
     refs
@@ -163,7 +184,13 @@ pub fn build_curate_prompt(catalog: &[&CatalogEntry]) -> (String, String) {
     let mut user = String::from("Catalog (title (year) genres):\n");
     for e in catalog {
         let year = e.year.map(|y| y.to_string()).unwrap_or_default();
-        let genres = e.genres.iter().take(2).cloned().collect::<Vec<_>>().join(", ");
+        let genres = e
+            .genres
+            .iter()
+            .take(2)
+            .cloned()
+            .collect::<Vec<_>>()
+            .join(", ");
         user.push_str(&format!("- {} ({}) {}\n", e.title, year, genres));
     }
     user.push_str("\nReturn the JSON array now.");
@@ -221,26 +248,37 @@ pub struct CuratedSpec {
 /// Parse a model reply (tolerant of fences/prose) into curated specs.
 pub fn parse_curate(text: &str) -> anyhow::Result<Vec<CuratedSpec>> {
     let json = extract_json_array(text).ok_or_else(|| anyhow::anyhow!("no JSON array in reply"))?;
-    let specs = serde_json::from_str::<Vec<CuratedSpec>>(json)?.into_iter().take(MAX_LLM).collect();
+    let specs = serde_json::from_str::<Vec<CuratedSpec>>(json)?
+        .into_iter()
+        .take(MAX_LLM)
+        .collect();
     Ok(specs)
 }
 
 /// Resolve each spec's member **titles** to real catalog ids (normalized match)
 /// the catalog-in-prompt path, where the model echoes titles. Keeps collections
 /// with ≥ [`MIN_ITEMS`] matches. Returns `(rows, dropped)`.
-pub fn resolve_members(specs: &[CuratedSpec], catalog: &[CatalogEntry]) -> (Vec<CuratedRow>, usize) {
+pub fn resolve_members(
+    specs: &[CuratedSpec],
+    catalog: &[CatalogEntry],
+) -> (Vec<CuratedRow>, usize) {
     let mut index: HashMap<String, &str> = HashMap::new();
     for e in catalog {
         index.entry(normalize_title(&e.title)).or_insert(&e.id);
     }
-    resolve(specs, |m| index.get(&normalize_title(m)).map(|id| (*id).to_string()))
+    resolve(specs, |m| {
+        index.get(&normalize_title(m)).map(|id| (*id).to_string())
+    })
 }
 
 /// Resolve each spec's member **ids** against the catalog (exact id match) the
 /// tool-driven path, where members are catalog ids the tools returned, so nothing
 /// the model invents resolves. Keeps collections with ≥ [`MIN_ITEMS`] valid ids.
 /// Returns `(rows, dropped)`.
-pub fn resolve_members_by_id(specs: &[CuratedSpec], catalog: &[CatalogEntry]) -> (Vec<CuratedRow>, usize) {
+pub fn resolve_members_by_id(
+    specs: &[CuratedSpec],
+    catalog: &[CatalogEntry],
+) -> (Vec<CuratedRow>, usize) {
     let ids: HashSet<&str> = catalog.iter().map(|e| e.id.as_str()).collect();
     resolve(specs, |m| {
         let id = m.trim();
@@ -252,7 +290,10 @@ pub fn resolve_members_by_id(specs: &[CuratedSpec], catalog: &[CatalogEntry]) ->
 // `resolve_one` (per member → its id or `None`), dedup within a collection, drop
 // collections under [`MIN_ITEMS`], and assemble unique-keyed rows. They differ
 // only in `resolve_one` (title-normalized lookup vs exact id membership).
-fn resolve(specs: &[CuratedSpec], mut resolve_one: impl FnMut(&str) -> Option<String>) -> (Vec<CuratedRow>, usize) {
+fn resolve(
+    specs: &[CuratedSpec],
+    mut resolve_one: impl FnMut(&str) -> Option<String>,
+) -> (Vec<CuratedRow>, usize) {
     let mut rows = Vec::new();
     let mut dropped = 0usize;
     let mut seen_keys = HashSet::new();
@@ -281,7 +322,11 @@ fn resolve(specs: &[CuratedSpec], mut resolve_one: impl FnMut(&str) -> Option<St
 // ids: slug the key from the English (else any) title, reject empty/duplicate
 // keys, and keep the non-empty localized title/reason maps. Shared by both
 // resolvers.
-fn build_row(spec: &CuratedSpec, member_ids: Vec<String>, seen_keys: &mut HashSet<String>) -> Option<CuratedRow> {
+fn build_row(
+    spec: &CuratedSpec,
+    member_ids: Vec<String>,
+    seen_keys: &mut HashSet<String>,
+) -> Option<CuratedRow> {
     let title_for_slug = spec
         .title
         .get("en")
@@ -319,7 +364,11 @@ fn clean_map(m: &HashMap<String, String>) -> HashMap<String, String> {
 // Extra-Terrestrial"` → `"etheextraterrestrial"`. (Bare-number titles like
 // `"1917"` keep their digits only a *parenthesized* 4-digit year is dropped.)
 fn normalize_title(s: &str) -> String {
-    strip_year(s).chars().filter(|c| c.is_alphanumeric()).flat_map(char::to_lowercase).collect()
+    strip_year(s)
+        .chars()
+        .filter(|c| c.is_alphanumeric())
+        .flat_map(char::to_lowercase)
+        .collect()
 }
 
 // Strip a trailing ` (YYYY)` from a title, if present.
@@ -352,20 +401,37 @@ mod tests {
             year: Some(2000),
             rating,
             genres: vec!["Drama".into()],
-            directors: if director.is_empty() { vec![] } else { vec![director.into()] },
+            directors: if director.is_empty() {
+                vec![]
+            } else {
+                vec![director.into()]
+            },
         }
     }
 
     #[test]
     fn director_collection_groups_min_items() {
         let cat: Vec<CatalogEntry> = (0..6)
-            .map(|i| entry(&format!("m{i}"), &format!("Film {i}"), i as f32, "Denis Villeneuve"))
+            .map(|i| {
+                entry(
+                    &format!("m{i}"),
+                    &format!("Film {i}"),
+                    i as f32,
+                    "Denis Villeneuve",
+                )
+            })
             .chain(std::iter::once(entry("x", "Solo", 9.0, "Someone Else")))
             .collect();
         let rows = director_collections(&cat);
         assert_eq!(rows.len(), 1); // only Villeneuve clears MIN_ITEMS
-        assert_eq!(rows[0].titles.get("en").map(String::as_str), Some("Denis Villeneuve"));
-        assert_eq!(rows[0].titles.get("fr").map(String::as_str), Some("Denis Villeneuve"));
+        assert_eq!(
+            rows[0].titles.get("en").map(String::as_str),
+            Some("Denis Villeneuve")
+        );
+        assert_eq!(
+            rows[0].titles.get("fr").map(String::as_str),
+            Some("Denis Villeneuve")
+        );
         assert_eq!(rows[0].item_ids.len(), 6);
         assert_eq!(rows[0].item_ids[0], "m5"); // highest-rated first
     }
@@ -377,7 +443,10 @@ mod tests {
           "members":["The Shining","Hereditary","Made Up Film","The Mask","It","Alien"]}]```"#;
         let specs = parse_curate(reply).unwrap();
         assert_eq!(specs.len(), 1);
-        assert_eq!(specs[0].title.get("en").map(String::as_str), Some("Best Horror"));
+        assert_eq!(
+            specs[0].title.get("en").map(String::as_str),
+            Some("Best Horror")
+        );
         let cat = vec![
             entry("a", "The Shining", 8.0, ""),
             entry("b", "Hereditary", 7.0, ""),
@@ -404,10 +473,14 @@ mod tests {
     #[test]
     fn resolve_by_id_matches_catalog_ids() {
         // Tool-driven path: members are catalog ids; unknown ids are dropped.
-        let specs =
-            parse_curate(r#"[{"title":{"en":"Nolan","fr":"Nolan"},"members":["a","b","c","zzz","d","e"]}]"#)
-                .unwrap();
-        let cat: Vec<CatalogEntry> = ["a", "b", "c", "d", "e"].iter().map(|id| entry(id, id, 5.0, "")).collect();
+        let specs = parse_curate(
+            r#"[{"title":{"en":"Nolan","fr":"Nolan"},"members":["a","b","c","zzz","d","e"]}]"#,
+        )
+        .unwrap();
+        let cat: Vec<CatalogEntry> = ["a", "b", "c", "d", "e"]
+            .iter()
+            .map(|id| entry(id, id, 5.0, ""))
+            .collect();
         let (rows, dropped) = resolve_members_by_id(&specs, &cat);
         assert_eq!(dropped, 0);
         assert_eq!(rows.len(), 1);
@@ -422,21 +495,28 @@ mod tests {
                 {"title":{"en":"slow  burn!"},"members":["a","b","c","d","e"]}]"#,
         )
         .unwrap();
-        let cat: Vec<CatalogEntry> =
-            ["a", "b", "c", "d", "e"].iter().map(|id| entry(id, id, 5.0, "")).collect();
+        let cat: Vec<CatalogEntry> = ["a", "b", "c", "d", "e"]
+            .iter()
+            .map(|id| entry(id, id, 5.0, ""))
+            .collect();
 
         let (rows, dropped) = resolve_members_by_id(&specs, &cat);
-        assert_eq!(dropped, 0, "the duplicate resolved fine; it is the key that collides");
+        assert_eq!(
+            dropped, 0,
+            "the duplicate resolved fine; it is the key that collides"
+        );
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].key, "slow-burn");
     }
 
     #[test]
     fn a_title_that_slugs_to_nothing_is_not_a_collection() {
-        let specs =
-            parse_curate(r#"[{"title":{"en":"!!! ???"},"members":["a","b","c","d","e"]}]"#).unwrap();
-        let cat: Vec<CatalogEntry> =
-            ["a", "b", "c", "d", "e"].iter().map(|id| entry(id, id, 5.0, "")).collect();
+        let specs = parse_curate(r#"[{"title":{"en":"!!! ???"},"members":["a","b","c","d","e"]}]"#)
+            .unwrap();
+        let cat: Vec<CatalogEntry> = ["a", "b", "c", "d", "e"]
+            .iter()
+            .map(|id| entry(id, id, 5.0, ""))
+            .collect();
 
         assert!(resolve_members_by_id(&specs, &cat).0.is_empty());
     }
@@ -459,7 +539,11 @@ mod tests {
             cast: Vec::new(),
             crew: directors
                 .iter()
-                .map(|d| crate::model::CrewMember { name: d.to_string(), job: "Director".to_string(), profile_url: None })
+                .map(|d| crate::model::CrewMember {
+                    name: d.to_string(),
+                    job: "Director".to_string(),
+                    profile_url: None,
+                })
                 .collect(),
             keywords: Vec::new(),
             tvdb_id: None,
@@ -500,9 +584,14 @@ mod tests {
     #[test]
     fn build_catalog_skips_episodes_and_flattens_shows() {
         let items = vec![
-            item("m1", "Movie One", Kind::Movie, Some(meta(8.0, &["Drama"], &["Kubrick"]))),
+            item(
+                "m1",
+                "Movie One",
+                Kind::Movie,
+                Some(meta(8.0, &["Drama"], &["Kubrick"])),
+            ),
             item("e1", "Episode", Kind::Episode, None), // skipped
-            item("v1", "Clip", Kind::Video, None), // kept (not an episode)
+            item("v1", "Clip", Kind::Video, None),      // kept (not an episode)
         ];
         let shows = vec![Show {
             id: "s1".into(),
@@ -549,7 +638,10 @@ mod tests {
         assert_eq!(normalize_title("Le Parrain (1972)"), "leparrain");
         assert_eq!(normalize_title("Le Parrain"), "leparrain");
         // Punctuation and separators are stripped; letters lowercased.
-        assert_eq!(normalize_title("The Godfather: Part II"), "thegodfatherpartii");
+        assert_eq!(
+            normalize_title("The Godfather: Part II"),
+            "thegodfatherpartii"
+        );
         // A bare-number title keeps its digits (only a parenthesized year is dropped).
         assert_eq!(normalize_title("1917"), "1917");
         assert_eq!(strip_year("Alien (1979)"), "Alien");
@@ -574,11 +666,12 @@ mod tests {
     #[test]
     fn resolve_members_dedups_within_a_collection() {
         // Same id twice in members -> counted once.
-        let specs = parse_curate(
-            r#"[{"title":{"en":"Dup"},"members":["a","a","b","c","d","e"]}]"#,
-        )
-        .unwrap();
-        let cat: Vec<CatalogEntry> = ["a", "b", "c", "d", "e"].iter().map(|id| entry(id, id, 1.0, "")).collect();
+        let specs = parse_curate(r#"[{"title":{"en":"Dup"},"members":["a","a","b","c","d","e"]}]"#)
+            .unwrap();
+        let cat: Vec<CatalogEntry> = ["a", "b", "c", "d", "e"]
+            .iter()
+            .map(|id| entry(id, id, 1.0, ""))
+            .collect();
         let (rows, _) = resolve_members_by_id(&specs, &cat);
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].item_ids.len(), 5); // "a" deduped

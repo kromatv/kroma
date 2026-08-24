@@ -29,12 +29,18 @@ pub fn run<S: HostStorage>(
     if row.kind == admin::KIND_BUILTIN {
         let session = admin::builtin_session(host, row)?;
         let outcome = session.search(query, categories);
-        return Ok(SearchOutcome { releases: outcome.releases, errors: outcome.errors });
+        return Ok(SearchOutcome {
+            releases: outcome.releases,
+            errors: outcome.errors,
+        });
     }
     let caps = admin::indexer_caps(host, host.store(), row)?;
     let releases = peers::search(host, &row.kind, &admin::endpoint_of(row), query, &caps)?;
     tracing::info!(indexer = %row.name, releases = releases.len(), "engine answered");
-    Ok(SearchOutcome { releases, errors: Vec::new() })
+    Ok(SearchOutcome {
+        releases,
+        errors: Vec::new(),
+    })
 }
 
 /// The link to hand a download engine for one release. A magnet needs no
@@ -53,7 +59,9 @@ pub fn resolve_download<S: HostStorage>(
     let session = admin::builtin_session(host, row)?;
     let release = Release {
         title: title.to_string(),
-        link: magnet_or_url.starts_with("http").then(|| magnet_or_url.to_string()),
+        link: magnet_or_url
+            .starts_with("http")
+            .then(|| magnet_or_url.to_string()),
         details_url: details_url.map(str::to_string),
         ..Default::default()
     };

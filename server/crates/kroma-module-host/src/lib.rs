@@ -58,11 +58,17 @@ where
         Ok(Ok(v)) => Ok(v),
         Ok(Err(e)) => {
             tracing::error!(error = %e, "database error");
-            Err(json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal error"))
+            Err(json_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal error",
+            ))
         }
         Err(e) => {
             tracing::error!(error = %e, "task join error");
-            Err(json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal error"))
+            Err(json_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal error",
+            ))
         }
     }
 }
@@ -79,7 +85,10 @@ pub struct Event {
 
 impl Event {
     pub fn new(topic: impl Into<String>, payload: serde_json::Value) -> Self {
-        Self { topic: topic.into(), payload }
+        Self {
+            topic: topic.into(),
+            payload,
+        }
     }
 }
 
@@ -124,6 +133,9 @@ mod tests {
     #[tokio::test]
     async fn a_panicking_blocking_task_becomes_a_500_rather_than_taking_the_server_down() {
         let panicked = blocking::<i32, _>(|| panic!("a module's closure panicked")).await;
-        assert_eq!(panicked.unwrap_err().status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(
+            panicked.unwrap_err().status(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
     }
 }

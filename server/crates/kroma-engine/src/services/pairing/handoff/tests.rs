@@ -84,7 +84,11 @@ fn a_tv_that_names_itself_with_a_newline_cannot_forge_a_row() {
     let h = new();
     h.announce(Announce {
         platform: "  \u{7}tvOS  ".into(),
-        ..request("tv-salon-01", &format!("Salon\nAdministrateur{}", "x".repeat(80)), TV)
+        ..request(
+            "tv-salon-01",
+            &format!("Salon\nAdministrateur{}", "x".repeat(80)),
+            TV,
+        )
     });
     let row = &h.nearby(PHONE)[0];
     assert!(!row.name.contains('\n'));
@@ -97,7 +101,10 @@ fn the_check_string_is_short_and_free_of_look_alike_characters() {
     for _ in 0..64 {
         let check = check_string();
         assert_eq!(check.len(), CHECK_LEN);
-        assert!(check.bytes().all(|b| CHECK_ALPHABET.contains(&b)), "{check}");
+        assert!(
+            check.bytes().all(|b| CHECK_ALPHABET.contains(&b)),
+            "{check}"
+        );
     }
 }
 
@@ -109,7 +116,11 @@ fn every_letter_of_the_check_alphabet_is_as_likely_as_every_other() {
     let mut sorted = CHECK_ALPHABET.to_vec();
     sorted.sort_unstable();
     sorted.dedup();
-    assert_eq!(sorted.len(), CHECK_ALPHABET.len(), "a repeated letter is a heavier one");
+    assert_eq!(
+        sorted.len(),
+        CHECK_ALPHABET.len(),
+        "a repeated letter is a heavier one"
+    );
 }
 
 #[test]
@@ -123,7 +134,10 @@ fn a_beacon_nobody_could_place_says_so_to_the_television_and_to_the_phone() {
 
     let rows = h.nearby(PHONE);
     let row_of = |handle: &str| {
-        rows.iter().find(|r| r.handle == handle).expect("a row").confirm_required
+        rows.iter()
+            .find(|r| r.handle == handle)
+            .expect("a row")
+            .confirm_required
     };
     assert!(row_of(&shell.handle));
     assert!(!row_of(&placed.handle));
@@ -157,7 +171,12 @@ fn handles_do_not_repeat() {
     let mut seen = std::collections::HashSet::new();
     // One per network: the share is eight, and this is about the handles.
     for i in 0..16 {
-        let tv = announce(&h, &format!("tv-{i:04}-xxxx"), "Salon", &format!("192.168.{i}.20"));
+        let tv = announce(
+            &h,
+            &format!("tv-{i:04}-xxxx"),
+            "Salon",
+            &format!("192.168.{i}.20"),
+        );
         assert!(seen.insert(tv.handle), "handle repeated");
     }
 }
@@ -167,8 +186,17 @@ fn every_beacon_gets_its_own_proof() {
     let h = new();
     let mut seen = std::collections::HashSet::new();
     for i in 0..16 {
-        let tv = announce(&h, &format!("tv-{i:04}-xxxx"), "Salon", &format!("192.168.{i}.20"));
-        assert_eq!(tv.proof.len(), PROOF_BYTES * 2, "hex of {PROOF_BYTES} bytes");
+        let tv = announce(
+            &h,
+            &format!("tv-{i:04}-xxxx"),
+            "Salon",
+            &format!("192.168.{i}.20"),
+        );
+        assert_eq!(
+            tv.proof.len(),
+            PROOF_BYTES * 2,
+            "hex of {PROOF_BYTES} bytes"
+        );
         assert!(seen.insert(tv.proof), "proof repeated");
     }
 }
@@ -225,7 +253,12 @@ fn a_flood_spread_over_many_networks_pays_for_the_next_honest_television() {
     for network in 0..(MAX_BEACONS / MAX_PER_NETWORK) {
         for tv in 0..MAX_PER_NETWORK {
             let ip = format!("203.0.113.{}", network + 1);
-            flood.push(announce(&h, &format!("tv-{network:02}{tv:02}-xxxx"), "Flood", &ip));
+            flood.push(announce(
+                &h,
+                &format!("tv-{network:02}{tv:02}-xxxx"),
+                "Flood",
+                &ip,
+            ));
         }
     }
 
@@ -234,7 +267,10 @@ fn a_flood_spread_over_many_networks_pays_for_the_next_honest_television() {
     assert!(matches!(h.poll(&mine.secret), PollState::Pending));
     // And what it cost is the flood's oldest beacon, never a bystander's.
     assert!(matches!(h.poll(&flood[0].secret), PollState::Unknown));
-    assert!(matches!(h.poll(&flood[MAX_PER_NETWORK].secret), PollState::Pending));
+    assert!(matches!(
+        h.poll(&flood[MAX_PER_NETWORK].secret),
+        PollState::Pending
+    ));
 }
 
 #[test]

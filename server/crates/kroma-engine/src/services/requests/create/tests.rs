@@ -39,7 +39,10 @@ fn merge_show_request_widens_pending_seasons_without_materializing() {
     let conn = host.db().get().unwrap();
     let updated = db::get_request(&conn, "r1").unwrap().unwrap();
     assert_eq!(updated.seasons, Some(vec![1, 2]));
-    assert!(host.published().len() >= 1, "a widened request publishes an update");
+    assert!(
+        host.published().len() >= 1,
+        "a widened request publishes an update"
+    );
 }
 
 #[test]
@@ -128,8 +131,10 @@ fn asking_twice_folds_into_the_open_request_rather_than_duplicating() {
     seed_user(&host, "u1");
     seed_user(&host, "u2");
 
-    let first = create_request(&host, &user("u1", vec![Permission::Playback]), &body("u1")).unwrap();
-    let second = create_request(&host, &user("u2", vec![Permission::Playback]), &body("u2")).unwrap();
+    let first =
+        create_request(&host, &user("u1", vec![Permission::Playback]), &body("u1")).unwrap();
+    let second =
+        create_request(&host, &user("u2", vec![Permission::Playback]), &body("u2")).unwrap();
     assert_eq!(first.id, second.id);
     assert_eq!(second.requested_by.as_deref(), Some("u1"));
 }
@@ -142,7 +147,10 @@ fn a_requester_who_may_self_approve_skips_the_queue() {
 
     let req = create_request(
         &host,
-        &user("owner", vec![Permission::Playback, Permission::RequestsAuto]),
+        &user(
+            "owner",
+            vec![Permission::Playback, Permission::RequestsAuto],
+        ),
         &body("owner"),
     )
     .unwrap();
@@ -156,7 +164,9 @@ fn a_requester_who_may_self_approve_skips_the_queue() {
     drop(conn);
 
     assert!(
-        host.notifications().iter().all(|(a, _)| a != &Audience::permission(Permission::RequestsManage)),
+        host.notifications()
+            .iter()
+            .all(|(a, _)| a != &Audience::permission(Permission::RequestsManage)),
         "a self-approved request should not page the moderators"
     );
 }
@@ -185,7 +195,10 @@ fn asking_for_another_season_widens_the_request_already_open_and_its_ledger() {
 
     let first = create_request(
         &host,
-        &user("owner", vec![Permission::Playback, Permission::RequestsAuto]),
+        &user(
+            "owner",
+            vec![Permission::Playback, Permission::RequestsAuto],
+        ),
         &show_body(Some(vec![1]), None),
     )
     .unwrap();
@@ -217,12 +230,18 @@ fn a_request_for_single_episodes_materialises_only_those() {
 
     let req = create_request(
         &host,
-        &user("owner", vec![Permission::Playback, Permission::RequestsAuto]),
+        &user(
+            "owner",
+            vec![Permission::Playback, Permission::RequestsAuto],
+        ),
         &show_body(None, Some(vec![ep(1, 2)])),
     )
     .unwrap();
 
-    assert!(req.seasons.is_none(), "no season was asked for, and none is implied");
+    assert!(
+        req.seasons.is_none(),
+        "no season was asked for, and none is implied"
+    );
     assert_eq!(wanted_pairs(&host, &req.id), [(1, 2)]);
 }
 

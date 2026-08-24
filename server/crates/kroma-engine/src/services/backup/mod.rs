@@ -49,7 +49,10 @@ pub fn import(
     db::import_portable(pool, data_dir, &doc, reset).map_err(ImportError::Db)
 }
 
-fn decode(bytes: &[u8], password: Option<&str>) -> std::result::Result<(BackupDoc, Assets), ImportError> {
+fn decode(
+    bytes: &[u8],
+    password: Option<&str>,
+) -> std::result::Result<(BackupDoc, Assets), ImportError> {
     if crypto::is_encrypted(bytes) {
         let Some(pw) = password.filter(|p| !p.is_empty()) else {
             return Err(ImportError::PasswordRequired);
@@ -67,7 +70,9 @@ fn decode(bytes: &[u8], password: Option<&str>) -> std::result::Result<(BackupDo
     if bytes.iter().copied().find(|b| !b.is_ascii_whitespace()) == Some(b'{') {
         return archive::read_legacy_json(bytes).map_err(ImportError::Invalid);
     }
-    Err(ImportError::Invalid(anyhow::anyhow!("unrecognized backup format")))
+    Err(ImportError::Invalid(anyhow::anyhow!(
+        "unrecognized backup format"
+    )))
 }
 
 fn gather_assets(doc: &BackupDoc, data_dir: &Path) -> Assets {
@@ -75,7 +80,10 @@ fn gather_assets(doc: &BackupDoc, data_dir: &Path) -> Assets {
     let mut out = Assets::new();
     let mut seen = std::collections::HashSet::new();
     for user in doc.tables.get("users").into_iter().flatten() {
-        let Some(name) = user.get("avatar_url").and_then(Value::as_str).and_then(local_image_name)
+        let Some(name) = user
+            .get("avatar_url")
+            .and_then(Value::as_str)
+            .and_then(local_image_name)
         else {
             continue;
         };
@@ -135,7 +143,10 @@ mod tests {
     }
 
     fn user_count(pool: &Pool) -> i64 {
-        pool.get().unwrap().query_row("SELECT COUNT(*) FROM users", [], |r| r.get(0)).unwrap()
+        pool.get()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM users", [], |r| r.get(0))
+            .unwrap()
     }
 
     #[test]
@@ -143,12 +154,18 @@ mod tests {
         let (src, src_dir) = fresh("src");
         seed_user_with_avatar(&src, src_dir.path());
         let bytes = export(&src, src_dir.path(), None).unwrap();
-        assert!(bytes.starts_with(b"PK\x03\x04"), "unencrypted .kroma is a zip");
+        assert!(
+            bytes.starts_with(b"PK\x03\x04"),
+            "unencrypted .kroma is a zip"
+        );
 
         let (dst, dst_dir) = fresh("dst");
         import(&dst, dst_dir.path(), &bytes, None, false).unwrap();
         assert_eq!(user_count(&dst), 1);
-        assert_eq!(std::fs::read(images_dir(dst_dir.path()).join("av99.webp")).unwrap(), b"AVATAR");
+        assert_eq!(
+            std::fs::read(images_dir(dst_dir.path()).join("av99.webp")).unwrap(),
+            b"AVATAR"
+        );
     }
 
     #[test]
@@ -159,8 +176,14 @@ mod tests {
         assert!(crypto::is_encrypted(&sealed));
 
         let (dst, dst_dir) = fresh("edst");
-        assert!(matches!(import(&dst, dst_dir.path(), &sealed, None, false), Err(ImportError::PasswordRequired)));
-        assert!(matches!(import(&dst, dst_dir.path(), &sealed, Some("nope"), false), Err(ImportError::WrongPassword)));
+        assert!(matches!(
+            import(&dst, dst_dir.path(), &sealed, None, false),
+            Err(ImportError::PasswordRequired)
+        ));
+        assert!(matches!(
+            import(&dst, dst_dir.path(), &sealed, Some("nope"), false),
+            Err(ImportError::WrongPassword)
+        ));
         import(&dst, dst_dir.path(), &sealed, Some("hunter2"), false).unwrap();
         assert_eq!(user_count(&dst), 1);
     }
@@ -175,7 +198,10 @@ mod tests {
 
         import(&dst, dst_dir.path(), legacy, None, false).unwrap();
         assert_eq!(user_count(&dst), 1);
-        assert_eq!(std::fs::read(images_dir(dst_dir.path()).join("av99.webp")).unwrap(), b"AV");
+        assert_eq!(
+            std::fs::read(images_dir(dst_dir.path()).join("av99.webp")).unwrap(),
+            b"AV"
+        );
     }
 
     #[test]
@@ -212,8 +238,15 @@ mod tests {
         ];
         write_assets(dir.path(), &assets);
 
-        assert_eq!(std::fs::read(images_dir(dir.path()).join("ok.webp")).unwrap(), b"YES");
-        assert!(!images_dir(dir.path()).parent().unwrap().join("escape.webp").exists());
+        assert_eq!(
+            std::fs::read(images_dir(dir.path()).join("ok.webp")).unwrap(),
+            b"YES"
+        );
+        assert!(!images_dir(dir.path())
+            .parent()
+            .unwrap()
+            .join("escape.webp")
+            .exists());
     }
 
     #[test]

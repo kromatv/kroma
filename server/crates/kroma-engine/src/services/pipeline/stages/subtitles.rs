@@ -28,7 +28,11 @@ fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
         .into_iter()
         .filter_map(|i| {
             let abs = i.abs_path.as_deref()?;
-            if !i.subtitles.iter().any(|s| subtitles::is_text_codec(&s.codec)) {
+            if !i
+                .subtitles
+                .iter()
+                .any(|s| subtitles::is_text_codec(&s.codec))
+            {
                 return None;
             }
             Some((i.id, super::sig_for_path(abs)))
@@ -70,7 +74,11 @@ mod tests {
     }
 
     fn subjects(state: &SharedState) -> Vec<String> {
-        enumerate(state).unwrap().into_iter().map(|(id, _)| id).collect()
+        enumerate(state)
+            .unwrap()
+            .into_iter()
+            .map(|(id, _)| id)
+            .collect()
     }
 
     #[test]
@@ -94,7 +102,11 @@ mod tests {
     fn an_item_with_only_image_subtitles_is_not_a_subject() {
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m3");
-        set_subs(&state, "m3", r#"[{"codec":"hdmv_pgs_subtitle"},{"codec":"dvd_subtitle"}]"#);
+        set_subs(
+            &state,
+            "m3",
+            r#"[{"codec":"hdmv_pgs_subtitle"},{"codec":"dvd_subtitle"}]"#,
+        );
 
         assert!(!subjects(&state).contains(&"m3".to_string()));
     }
@@ -104,7 +116,11 @@ mod tests {
         // A disc rip usually carries PGS plus an SRT.
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m4");
-        set_subs(&state, "m4", r#"[{"codec":"hdmv_pgs_subtitle"},{"codec":"ass"}]"#);
+        set_subs(
+            &state,
+            "m4",
+            r#"[{"codec":"hdmv_pgs_subtitle"},{"codec":"ass"}]"#,
+        );
 
         assert!(subjects(&state).contains(&"m4".to_string()));
     }
@@ -120,7 +136,12 @@ mod tests {
             .unwrap()
             .execute("UPDATE items SET abs_path = NULL WHERE id = 'm7'", [])
             .unwrap();
-        state.db.get().unwrap().execute("DELETE FROM files WHERE item_id = 'm7'", []).unwrap();
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute("DELETE FROM files WHERE item_id = 'm7'", [])
+            .unwrap();
 
         assert!(!subjects(&state).contains(&"m7".to_string()));
     }
@@ -160,7 +181,12 @@ mod tests {
             .unwrap()
             .execute("UPDATE items SET abs_path = NULL WHERE id = 'm6'", [])
             .unwrap();
-        state.db.get().unwrap().execute("DELETE FROM files WHERE item_id = 'm6'", []).unwrap();
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute("DELETE FROM files WHERE item_id = 'm6'", [])
+            .unwrap();
 
         let ctx = JobContext::for_test(state);
         assert!(process(&ctx, "m6").is_ok());

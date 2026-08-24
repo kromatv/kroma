@@ -80,8 +80,12 @@ fn lex_field(chars: &[char], start: usize) -> (Vec<String>, usize) {
         i += 1;
     }
     let raw: String = chars[start..i].iter().collect();
-    let segs: Vec<String> =
-        raw.trim_start_matches('.').split('.').filter(|s| !s.is_empty()).map(String::from).collect();
+    let segs: Vec<String> = raw
+        .trim_start_matches('.')
+        .split('.')
+        .filter(|s| !s.is_empty())
+        .map(String::from)
+        .collect();
     (segs, i)
 }
 
@@ -179,9 +183,6 @@ mod tests {
         );
     }
 
-
-
-
     #[test]
     fn escape_sequences_inside_a_double_quoted_literal_are_decoded() {
         let d = Context::default();
@@ -191,5 +192,4 @@ mod tests {
         assert_eq!(render(r#"{{ replace "a b" " " "\q" }}"#, &d), "aqb");
         assert_eq!(render("{{ `raw\\nliteral` }}", &d), "raw\\nliteral");
     }
-
 }

@@ -20,10 +20,15 @@ use super::ProbeResult;
 // Half the cores, clamped to 2..4: each ffprobe is a real process, and more at
 // once starves interactive work on a small NAS. `KROMA_PROBE_WORKERS` overrides.
 fn probe_workers() -> usize {
-    if let Some(n) = std::env::var("KROMA_PROBE_WORKERS").ok().and_then(|s| s.parse().ok()) {
+    if let Some(n) = std::env::var("KROMA_PROBE_WORKERS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+    {
         return n;
     }
-    let cores = std::thread::available_parallelism().map(std::num::NonZeroUsize::get).unwrap_or(4);
+    let cores = std::thread::available_parallelism()
+        .map(std::num::NonZeroUsize::get)
+        .unwrap_or(4);
     (cores / 2).clamp(2, 4)
 }
 
@@ -40,7 +45,14 @@ pub fn ffprobe_available() -> bool {
 /// file has no readable duration.
 pub fn probe_duration_ms(path: &Path) -> Option<u64> {
     let out = Command::new("ffprobe")
-        .args(["-v", "error", "-show_entries", "format=duration", "-of", "default=nw=1:nk=1"])
+        .args([
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=nw=1:nk=1",
+        ])
         .arg(path)
         .output()
         .ok()?;
@@ -90,7 +102,11 @@ pub fn spawn_probe_pass(pool: Pool, ffprobe_present: bool, bus: Bus, activity: A
 
     let jobs: Vec<ProbeJob> = unprobed
         .into_iter()
-        .map(|(file_id, abs_path, item_id)| ProbeJob { file_id, abs_path, item_id })
+        .map(|(file_id, abs_path, item_id)| ProbeJob {
+            file_id,
+            abs_path,
+            item_id,
+        })
         .collect();
     let queue = Arc::new(Mutex::new(jobs));
     let done = Arc::new(AtomicUsize::new(0));
@@ -117,7 +133,15 @@ fn run_probe_pass(
         let bus = bus.clone();
         let activity = activity.clone();
         handles.push(thread::spawn(move || {
-            probe_worker_loop(&pool, ffprobe_present, &queue, &done, &bus, &activity, total)
+            probe_worker_loop(
+                &pool,
+                ffprobe_present,
+                &queue,
+                &done,
+                &bus,
+                &activity,
+                total,
+            )
         }));
     }
     for h in handles {
@@ -146,9 +170,14 @@ fn probe_worker_loop(
             Some(j) => j,
             None => break,
         };
-        if let Err(e) =
-            probe_one(pool, ffprobe_present, bus, &job.file_id, &job.abs_path, &job.item_id)
-        {
+        if let Err(e) = probe_one(
+            pool,
+            ffprobe_present,
+            bus,
+            &job.file_id,
+            &job.abs_path,
+            &job.item_id,
+        ) {
             warn!(file = %job.file_id, error = %e, "failed to store probe result");
         }
         let n = done.fetch_add(1, Ordering::Relaxed) + 1;
@@ -170,7 +199,9 @@ pub fn probe_one(
     abs_path: &str,
     item_id: &str,
 ) -> anyhow::Result<()> {
-    let first_for_item = db::item_has_probed_file(pool, item_id).map(|has| !has).unwrap_or(true);
+    let first_for_item = db::item_has_probed_file(pool, item_id)
+        .map(|has| !has)
+        .unwrap_or(true);
     let result = probe_file(Path::new(abs_path), ffprobe);
     db::set_file_probe(
         pool,
@@ -185,7 +216,9 @@ pub fn probe_one(
         let _ = db::set_marker(pool, item_id, kind, start, end, "chapters");
     }
     if first_for_item {
-        bus.publish(ServerEvent::ItemUpdated { id: item_id.to_string() });
+        bus.publish(ServerEvent::ItemUpdated {
+            id: item_id.to_string(),
+        });
     }
     Ok(())
 }
@@ -196,7 +229,13 @@ pub fn probe_one(
 fn run_ffprobe(path: &Path) -> Option<ProbeResult> {
     let output = match Command::new("ffprobe")
         .args([
-            "-v", "error", "-show_format", "-show_streams", "-show_chapters", "-of", "json",
+            "-v",
+            "error",
+            "-show_format",
+            "-show_streams",
+            "-show_chapters",
+            "-of",
+            "json",
         ])
         .arg(path)
         .output()

@@ -81,7 +81,7 @@ pub async fn season_ledger(
     Path((id, season)): Path<(String, u32)>,
 ) -> Result<Response, Response> {
     require(&user, Permission::RequestsManage)?;
-    let view =
-        service(move || crate::services::request_ledger::season_ledger(&state, &id, season)).await?;
+    let view = service(move || crate::services::request_ledger::season_ledger(&state, &id, season))
+        .await?;
     Ok(Json(view).into_response())
 }

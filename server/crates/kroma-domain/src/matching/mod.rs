@@ -127,7 +127,10 @@ mod tests {
 
     #[test]
     fn exact_title_and_year_scores_near_one() {
-        let q = Query { title: "The Matrix", year: Some(1999) };
+        let q = Query {
+            title: "The Matrix",
+            year: Some(1999),
+        };
         assert!(score(&q, &cand(603, "The Matrix", Some(1999))) > 0.99);
     }
 
@@ -135,7 +138,10 @@ mod tests {
     fn a_matching_year_lifts_a_partial_title_over_the_bar() {
         // Filenames drop or mangle subtitles constantly; the year is what makes
         // the remainder trustworthy enough to accept.
-        let q = Query { title: "Blade Runner", year: Some(2017) };
+        let q = Query {
+            title: "Blade Runner",
+            year: Some(2017),
+        };
         let s = score(&q, &cand(335984, "Blade Runner 2049", Some(2017)));
         assert!(s > 0.8, "expected a confident match, got {s}");
     }
@@ -146,20 +152,29 @@ mod tests {
         // neither `title` nor `original_title` resembles the query. We choose to
         // record a miss: a wrong poster is invisible and nothing downstream
         // re-questions it, whereas a miss is visible and manually fixable.
-        let q = Query { title: "Les Evades", year: Some(1994) };
+        let q = Query {
+            title: "Les Evades",
+            year: Some(1994),
+        };
         assert!(score(&q, &cand(278, "The Shawshank Redemption", Some(1994))) < MIN_SCORE);
     }
 
     #[test]
     fn a_wrong_year_sinks_an_otherwise_plausible_title() {
-        let q = Query { title: "It", year: Some(2017) };
+        let q = Query {
+            title: "It",
+            year: Some(2017),
+        };
         assert!(score(&q, &cand(1, "It Follows", Some(2014))) < MIN_SCORE);
     }
 
     #[test]
     fn pick_best_prefers_the_right_year_over_tmdb_ordering() {
         // What TMDB returns first for "It" is not what the file is.
-        let q = Query { title: "It", year: Some(1990) };
+        let q = Query {
+            title: "It",
+            year: Some(1990),
+        };
         let candidates = vec![cand(474350, "It", Some(2017)), cand(437, "It", Some(1990))];
         let (best, _) = pick_best(&q, &candidates).expect("a match");
         assert_eq!(best.tmdb_id, 437);
@@ -167,13 +182,19 @@ mod tests {
 
     #[test]
     fn pick_best_rejects_everything_when_nothing_is_close() {
-        let q = Query { title: "Some Obscure Documentary", year: None };
+        let q = Query {
+            title: "Some Obscure Documentary",
+            year: None,
+        };
         assert!(pick_best(&q, &[cand(1, "Frozen", Some(2013))]).is_none());
     }
 
     #[test]
     fn pick_best_matches_on_the_original_title() {
-        let q = Query { title: "La Haine", year: None };
+        let q = Query {
+            title: "La Haine",
+            year: None,
+        };
         let c = Candidate {
             tmdb_id: 406,
             title: "Hate".to_string(),
@@ -186,17 +207,29 @@ mod tests {
 
     #[test]
     fn an_article_variant_scores_below_a_literal_title() {
-        let q = Query { title: "Scary Movie", year: Some(2026) };
+        let q = Query {
+            title: "Scary Movie",
+            year: Some(2026),
+        };
         let exact = score(&q, &cand(1, "Scary Movie", Some(2026)));
         let variant = score(&q, &cand(2, "A Scary Movie", Some(2026)));
         assert_eq!(exact, 1.0);
-        assert!(variant < exact, "variant {variant} should sit below exact {exact}");
-        assert!(variant > 0.9, "variant {variant} should stay a strong match");
+        assert!(
+            variant < exact,
+            "variant {variant} should sit below exact {exact}"
+        );
+        assert!(
+            variant > 0.9,
+            "variant {variant} should stay a strong match"
+        );
     }
 
     #[test]
     fn pick_best_prefers_an_exact_title_over_an_article_variant() {
-        let q = Query { title: "Scary Movie", year: Some(2026) };
+        let q = Query {
+            title: "Scary Movie",
+            year: Some(2026),
+        };
         let exact = Candidate {
             tmdb_id: 1273221,
             title: "Scary Movie".to_string(),
@@ -212,16 +245,31 @@ mod tests {
             votes: 3,
         };
         let exact_first = [exact.clone(), variant.clone()];
-        assert_eq!(pick_best(&q, &exact_first).expect("a match").0.tmdb_id, 1273221);
+        assert_eq!(
+            pick_best(&q, &exact_first).expect("a match").0.tmdb_id,
+            1273221
+        );
         let variant_first = [variant, exact];
-        assert_eq!(pick_best(&q, &variant_first).expect("a match").0.tmdb_id, 1273221);
+        assert_eq!(
+            pick_best(&q, &variant_first).expect("a match").0.tmdb_id,
+            1273221
+        );
     }
 
     #[test]
     fn votes_break_a_tie_between_identical_titles() {
-        let q = Query { title: "Titan", year: None };
-        let obscure = Candidate { votes: 3, ..cand(1, "Titan", None) };
-        let famous = Candidate { votes: 5000, ..cand(2, "Titan", None) };
+        let q = Query {
+            title: "Titan",
+            year: None,
+        };
+        let obscure = Candidate {
+            votes: 3,
+            ..cand(1, "Titan", None)
+        };
+        let famous = Candidate {
+            votes: 5000,
+            ..cand(2, "Titan", None)
+        };
         let candidates = [obscure, famous];
         let (best, _) = pick_best(&q, &candidates).expect("a match");
         assert_eq!(best.tmdb_id, 2);
@@ -229,8 +277,17 @@ mod tests {
 
     #[test]
     fn score_stays_within_bounds() {
-        let q = Query { title: "X", year: Some(2022) };
-        let s = score(&q, &Candidate { votes: u32::MAX, ..cand(1, "Y", Some(1900)) });
+        let q = Query {
+            title: "X",
+            year: Some(2022),
+        };
+        let s = score(
+            &q,
+            &Candidate {
+                votes: u32::MAX,
+                ..cand(1, "Y", Some(1900))
+            },
+        );
         assert!((0.0..=1.0).contains(&s), "score {s} out of range");
     }
 }

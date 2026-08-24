@@ -14,9 +14,9 @@ use serde_json::json;
 
 use kroma_module_sdk::host::{call, call_raw, pinned_resolver, HostCtx, Resolver};
 
-use super::{AddTorrentReq, ClientDef, DownloadClient, TorrentFileEntry, TorrentStatus};
 #[cfg(test)]
 use super::TorrentState;
+use super::{AddTorrentReq, ClientDef, DownloadClient, TorrentFileEntry, TorrentStatus};
 
 /// The point an engine answers, under an instance name that is its client `kind`.
 pub const DOWNLOAD_CLIENT: &str = "tv.kroma.torrents/client";
@@ -116,7 +116,10 @@ impl DownloadClient for RemoteEngine {
     }
 
     fn remove(&self, client_ref: &str, delete_data: bool) -> anyhow::Result<()> {
-        self.ask("remove", json!({ "client_ref": client_ref, "delete_data": delete_data }))
+        self.ask(
+            "remove",
+            json!({ "client_ref": client_ref, "delete_data": delete_data }),
+        )
     }
 }
 
@@ -140,11 +143,23 @@ pub fn routes<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'static
     axum::Router::new()
         .route("/_port/tv.kroma.torrents/client/test", post(test_h::<S>))
         .route("/_port/tv.kroma.torrents/client/add", post(add_h::<S>))
-        .route("/_port/tv.kroma.torrents/client/status", post(status_h::<S>))
+        .route(
+            "/_port/tv.kroma.torrents/client/status",
+            post(status_h::<S>),
+        )
         .route("/_port/tv.kroma.torrents/client/pause", post(pause_h::<S>))
-        .route("/_port/tv.kroma.torrents/client/resume", post(resume_h::<S>))
-        .route("/_port/tv.kroma.torrents/client/reannounce", post(reannounce_h::<S>))
-        .route("/_port/tv.kroma.torrents/client/remove", post(remove_h::<S>))
+        .route(
+            "/_port/tv.kroma.torrents/client/resume",
+            post(resume_h::<S>),
+        )
+        .route(
+            "/_port/tv.kroma.torrents/client/reannounce",
+            post(reannounce_h::<S>),
+        )
+        .route(
+            "/_port/tv.kroma.torrents/client/remove",
+            post(remove_h::<S>),
+        )
 }
 
 #[derive(Deserialize, Default)]
@@ -202,7 +217,11 @@ async fn status_h<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'st
     axum::Json(call): axum::Json<Call>,
 ) -> axum::Json<Option<TorrentStatus>> {
     let found = tokio::task::spawn_blocking(move || {
-        embedded(&host).ok()?.status(&call.args.client_ref).ok().flatten()
+        embedded(&host)
+            .ok()?
+            .status(&call.args.client_ref)
+            .ok()
+            .flatten()
     })
     .await
     .ok()
@@ -228,10 +247,8 @@ async fn reannounce_h<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync +
     axum::extract::State(host): axum::extract::State<S>,
     axum::Json(call): axum::Json<Call>,
 ) -> axum::Json<Result<(), String>> {
-    kroma_module_sdk::host::port_reply(move || {
-        embedded(&host)?.reannounce(&call.args.client_ref)
-    })
-    .await
+    kroma_module_sdk::host::port_reply(move || embedded(&host)?.reannounce(&call.args.client_ref))
+        .await
 }
 
 async fn remove_h<S: kroma_module_sdk::host::HostCtx + Clone + Send + Sync + 'static>(
@@ -271,12 +288,25 @@ mod tests {
     #[test]
     fn each_kind_resolves_to_its_own_engine() {
         let host = StubHost::new()
-            .with_point(DOWNLOAD_CLIENT, Some("qbittorrent"), "http://127.0.0.1:1", "t")
-            .with_point(DOWNLOAD_CLIENT, Some("transmission"), "http://127.0.0.1:2", "t");
+            .with_point(
+                DOWNLOAD_CLIENT,
+                Some("qbittorrent"),
+                "http://127.0.0.1:1",
+                "t",
+            )
+            .with_point(
+                DOWNLOAD_CLIENT,
+                Some("transmission"),
+                "http://127.0.0.1:2",
+                "t",
+            );
 
         assert!(RemoteEngine::new(&host, def("qbittorrent")).is_some());
         assert!(RemoteEngine::new(&host, def("transmission")).is_some());
-        assert!(RemoteEngine::new(&host, def("deluge")).is_none(), "nothing answers for deluge");
+        assert!(
+            RemoteEngine::new(&host, def("deluge")).is_none(),
+            "nothing answers for deluge"
+        );
     }
 
     // The engine needs the client row's credentials with every call: it is
@@ -336,7 +366,10 @@ mod tests {
         async fn add(Json(call): Json<Value>) -> Json<Result<String, String>> {
             let args = &call["args"];
             assert!(args["only_files"].is_null(), "only_files must not cross");
-            assert!(args["torrent_bytes"].is_null(), "torrent_bytes must not cross");
+            assert!(
+                args["torrent_bytes"].is_null(),
+                "torrent_bytes must not cross"
+            );
             Json(Ok(format!(
                 "{}|{}|{}",
                 args["magnet_or_url"].as_str().unwrap_or("?"),
@@ -396,7 +429,9 @@ mod tests {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
 
-        let reported = kroma_module_host::test_serve::blocking(move || engine.test()).await.unwrap();
+        let reported = kroma_module_host::test_serve::blocking(move || engine.test())
+            .await
+            .unwrap();
 
         // The engine is stateless about which client it serves, so an operator with
         // two qBittorrents gets the right one only if this crosses per call.
@@ -462,8 +497,7 @@ mod tests {
     }
 
     #[tokio::test(flavor = "multi_thread")]
-    async fn the_lifecycle_calls_reach_the_engine_and_a_refusal_comes_back()
-    {
+    async fn the_lifecycle_calls_reach_the_engine_and_a_refusal_comes_back() {
         let (host, _) = engine_on("qbittorrent").await;
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
 
@@ -537,7 +571,10 @@ mod tests {
         let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
 
         // Port 0 is not listening, so a round trip would fail differently.
-        let err = engine.list_files("magnet:?xt=1", None).unwrap_err().to_string();
+        let err = engine
+            .list_files("magnet:?xt=1", None)
+            .unwrap_err()
+            .to_string();
 
         assert!(err.contains("cannot list a torrent's files"), "{err}");
     }

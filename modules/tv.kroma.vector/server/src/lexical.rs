@@ -169,7 +169,11 @@ mod tests {
         let e = LexicalEmbedder::new(256);
         let christmas = e.embed("christmas movie");
         let unrelated = e.embed("submarine movie");
-        assert_eq!(cosine(&christmas, &unrelated), 0.0, "only 'movie' is shared");
+        assert_eq!(
+            cosine(&christmas, &unrelated),
+            0.0,
+            "only 'movie' is shared"
+        );
         // Both English and French filler is dropped.
         assert!(e.embed("the and for with that").iter().all(|x| *x == 0.0));
         assert!(e.embed("les des une dans pour").iter().all(|x| *x == 0.0));
@@ -180,7 +184,10 @@ mod tests {
         let e = LexicalEmbedder::new(64);
         let bare = e.embed("samurai");
         let padded = e.embed("a samurai s x 7");
-        assert!((cosine(&bare, &padded) - 1.0).abs() < 1e-5, "1-char tokens leaked in");
+        assert!(
+            (cosine(&bare, &padded) - 1.0).abs() < 1e-5,
+            "1-char tokens leaked in"
+        );
         // A two-character token is real (e.g. "9/11", "ET").
         assert!(e.embed("et").iter().any(|x| *x != 0.0));
     }
@@ -194,7 +201,10 @@ mod tests {
         let a = e.embed("desert survival expedition dunes caravan water heat compass");
         let b = e.embed("courtroom perjury verdict caravan lawyer jury bench gavel");
         let noise = cosine(&a, &b);
-        assert!(noise < e.relevance_floor(), "one shared word in eight scored {noise}");
+        assert!(
+            noise < e.relevance_floor(),
+            "one shared word in eight scored {noise}"
+        );
         // Real overlap clears it comfortably.
         let c = e.embed("desert survival expedition dunes caravan thirst");
         assert!(cosine(&a, &c) > e.relevance_floor());

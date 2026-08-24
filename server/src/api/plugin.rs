@@ -17,7 +17,10 @@ pub fn asset_routes() -> Router<SharedState> {
     Router::new().route("/modules/{id}/{*path}", get(serve_fe))
 }
 
-async fn serve_fe(State(state): State<SharedState>, Path((id, path)): Path<(String, String)>) -> Response {
+async fn serve_fe(
+    State(state): State<SharedState>,
+    Path((id, path)): Path<(String, String)>,
+) -> Response {
     // Rebuild both id and path from Normal components so neither can escape the
     // module's fe dir.
     let Some(id) = safe_segment(&id) else {
@@ -33,7 +36,13 @@ async fn serve_fe(State(state): State<SharedState>, Path((id, path)): Path<(Stri
     if rel.as_os_str().is_empty() {
         return StatusCode::NOT_FOUND.into_response();
     }
-    let file = state.config.data_dir.join("modules").join(id).join("fe").join(&rel);
+    let file = state
+        .config
+        .data_dir
+        .join("modules")
+        .join(id)
+        .join("fe")
+        .join(&rel);
     match tokio::fs::read(&file).await {
         Ok(bytes) => (
             [

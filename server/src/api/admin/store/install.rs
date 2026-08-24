@@ -71,9 +71,9 @@ async fn run_plan(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Resul
             tokio::task::spawn_blocking(move || {
                 sup.install(&bytes, Some(&expected), ("registry", Some(&url)))
             })
-                .await
-                .map_err(|_| anyhow!("install task panicked"))?
-                .map_err(|e| anyhow!("installing '{}' failed: {e:#}", entry.id))?
+            .await
+            .map_err(|_| anyhow!("install task panicked"))?
+            .map_err(|e| anyhow!("installing '{}' failed: {e:#}", entry.id))?
         };
         op.done(&entry.id, &entry.version);
         installed.push(installed_row(&manifest));
@@ -97,7 +97,11 @@ async fn verified_artifact(
     let artifact = catalog::pick_artifact(entry)
         .ok_or_else(|| anyhow!("'{}' has no build for this server's platform", entry.id))?;
     if !artifact.url.starts_with("https://") {
-        bail!("'{}' artifact URL must be https (got '{}')", entry.id, artifact.url);
+        bail!(
+            "'{}' artifact URL must be https (got '{}')",
+            entry.id,
+            artifact.url
+        );
     }
     let sha = artifact
         .sha256
@@ -105,7 +109,10 @@ async fn verified_artifact(
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .ok_or_else(|| {
-            anyhow!("'{}' has no published checksum; refusing to install", entry.id)
+            anyhow!(
+                "'{}' has no published checksum; refusing to install",
+                entry.id
+            )
         })?;
     let bytes = sup
         .download_artifact(&artifact.url, Some(sha), on_progress)
@@ -121,10 +128,9 @@ async fn verified_artifact(
 /// carries any more is refused rather than fetched unchecked.
 pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> Result<Value> {
     let modules = registries::fetch_merged(state, sup).await?;
-    let entry = modules
-        .iter()
-        .find(|m| m.id == id)
-        .ok_or_else(|| anyhow!("'{id}' is not in any configured registry, so it cannot be verified"))?;
+    let entry = modules.iter().find(|m| m.id == id).ok_or_else(|| {
+        anyhow!("'{id}' is not in any configured registry, so it cannot be verified")
+    })?;
     let (url, bytes) = verified_artifact(sup, entry, &|_, _| {}).await?;
     let manifest = {
         let sup = sup.clone();
@@ -175,7 +181,10 @@ pub async fn update_all(
     let modules = registries::fetch_merged(state, sup).await?;
     let by_id: std::collections::HashMap<&str, &CatalogModule> =
         modules.iter().map(|m| (m.id.as_str(), m)).collect();
-    let mut outcome = UpdateOutcome { updated: Vec::new(), failed: Vec::new() };
+    let mut outcome = UpdateOutcome {
+        updated: Vec::new(),
+        failed: Vec::new(),
+    };
     let mut targets: Vec<(&CatalogModule, String)> = Vec::new();
     for manifest in sup.installed_manifests() {
         let (id, cur) = (manifest.id.as_str(), manifest.version.as_str());
@@ -189,7 +198,10 @@ pub async fn update_all(
         if let Err(reason) =
             kroma_module_manifest::engines_satisfied(&entry.engines, SERVER_VERSION)
         {
-            outcome.failed.push(FailedUpdate { id: id.to_string(), error: reason });
+            outcome.failed.push(FailedUpdate {
+                id: id.to_string(),
+                error: reason,
+            });
             continue;
         }
         targets.push((entry, cur.to_string()));
@@ -197,7 +209,12 @@ pub async fn update_all(
     if targets.is_empty() {
         return Ok(outcome);
     }
-    let brief = Value::Array(targets.iter().map(|(e, _)| super::plan::entry_brief(e)).collect());
+    let brief = Value::Array(
+        targets
+            .iter()
+            .map(|(e, _)| super::plan::entry_brief(e))
+            .collect(),
+    );
     let op = Op::begin(state, "update", "", brief);
     for (entry, from) in targets {
         // Re-plan per module: an earlier update may have pulled a dependency
@@ -213,9 +230,10 @@ pub async fn update_all(
                 from,
                 to: entry.version.clone(),
             }),
-            Err(e) => {
-                outcome.failed.push(FailedUpdate { id: entry.id.clone(), error: format!("{e:#}") })
-            }
+            Err(e) => outcome.failed.push(FailedUpdate {
+                id: entry.id.clone(),
+                error: format!("{e:#}"),
+            }),
         }
     }
     let error =

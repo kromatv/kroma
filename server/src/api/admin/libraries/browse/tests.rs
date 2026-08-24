@@ -96,7 +96,10 @@ fn an_entry_carries_the_full_path_the_scanner_will_use() {
     let body = browse(&t.path());
     let entry = &body["entries"][0];
     assert_eq!(entry["name"], "Films");
-    assert_eq!(entry["path"].as_str().unwrap(), films.canonicalize().unwrap().to_string_lossy());
+    assert_eq!(
+        entry["path"].as_str().unwrap(),
+        films.canonicalize().unwrap().to_string_lossy()
+    );
 }
 
 #[test]
@@ -108,7 +111,10 @@ fn the_path_returned_is_the_resolved_one_not_the_one_asked_for() {
     let asked = format!("{}/./Films/..", t.path());
 
     let body = browse(&asked);
-    assert_eq!(body["path"].as_str().unwrap(), t.0.canonicalize().unwrap().to_string_lossy());
+    assert_eq!(
+        body["path"].as_str().unwrap(),
+        t.0.canonicalize().unwrap().to_string_lossy()
+    );
 }
 
 #[test]
@@ -119,7 +125,10 @@ fn a_child_points_back_at_its_parent_so_the_picker_can_go_up() {
 
     let body = browse(&films.to_string_lossy());
     assert_eq!(names(&body), ["2024"]);
-    assert_eq!(body["parent"].as_str().unwrap(), t.0.canonicalize().unwrap().to_string_lossy());
+    assert_eq!(
+        body["parent"].as_str().unwrap(),
+        t.0.canonicalize().unwrap().to_string_lossy()
+    );
 }
 
 #[test]
@@ -144,7 +153,10 @@ fn a_directory_that_is_not_there_is_a_miss_not_an_empty_folder() {
 fn a_file_is_a_miss_too() {
     let t = Tree::new("file");
     let f = t.file("movie.mkv");
-    assert!(matches!(browse_dirs(f.to_string_lossy().to_string()), Err(BrowseErr::NotFound)));
+    assert!(matches!(
+        browse_dirs(f.to_string_lossy().to_string()),
+        Err(BrowseErr::NotFound)
+    ));
 }
 
 #[test]
@@ -196,7 +208,9 @@ async fn a_traversal_segment_is_refused_before_the_filesystem_is_touched() {
     let user = user_with(vec![Permission::LibraryManage]);
     let err = browse_libraries(
         AuthUser(user),
-        Query(BrowseQuery { path: Some("/volume1/video/../../etc".into()) }),
+        Query(BrowseQuery {
+            path: Some("/volume1/video/../../etc".into()),
+        }),
     )
     .await
     .unwrap_err();
@@ -209,9 +223,14 @@ async fn a_real_folder_comes_back_as_a_listing() {
     t.dir("Films");
     let user = user_with(vec![Permission::LibraryManage]);
 
-    let res = browse_libraries(AuthUser(user), Query(BrowseQuery { path: Some(t.path()) }))
-        .await
-        .unwrap();
+    let res = browse_libraries(
+        AuthUser(user),
+        Query(BrowseQuery {
+            path: Some(t.path()),
+        }),
+    )
+    .await
+    .unwrap();
     assert_eq!(res.status(), StatusCode::OK);
 }
 
@@ -222,7 +241,9 @@ async fn a_folder_that_is_not_there_answers_404() {
 
     let err = browse_libraries(
         AuthUser(user),
-        Query(BrowseQuery { path: Some(format!("{}/nope", t.path())) }),
+        Query(BrowseQuery {
+            path: Some(format!("{}/nope", t.path())),
+        }),
     )
     .await
     .unwrap_err();

@@ -61,15 +61,20 @@ pub fn list_access_tokens(pool: &Pool, user_id: &str) -> Result<Vec<AccessTokenR
 pub fn delete_access_token_by_id(pool: &Pool, user_id: &str, id: &str) -> Result<bool> {
     let conn = pool.get()?;
     // Tokens are only reversible by hashing, hence the scan for a matching hash.
-    let mut stmt =
-        conn.prepare("SELECT token FROM access_tokens WHERE user_id = ?1")?;
+    let mut stmt = conn.prepare("SELECT token FROM access_tokens WHERE user_id = ?1")?;
     let tokens = stmt
         .query_map(params![user_id], |r| r.get::<_, String>(0))?
         .collect::<rusqlite::Result<Vec<_>>>()?;
-    let Some(token) = tokens.into_iter().find(|t| kroma_primitives::short_hash(t) == id) else {
+    let Some(token) = tokens
+        .into_iter()
+        .find(|t| kroma_primitives::short_hash(t) == id)
+    else {
         return Ok(false);
     };
-    conn.execute("DELETE FROM sessions WHERE access_token = ?1", params![token])?;
+    conn.execute(
+        "DELETE FROM sessions WHERE access_token = ?1",
+        params![token],
+    )?;
     conn.execute("DELETE FROM access_tokens WHERE token = ?1", params![token])?;
     Ok(true)
 }
@@ -160,7 +165,10 @@ mod tests {
         touch_access_token(&p, "at1", Some("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)")).unwrap();
         touch_access_token(&p, "at1", None).unwrap();
         let rows = list_access_tokens(&p, &u.id).unwrap();
-        assert_eq!(rows[0].user_agent.as_deref(), Some("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)"));
+        assert_eq!(
+            rows[0].user_agent.as_deref(),
+            Some("Kroma/1.0 (iPhone 17 Pro; iOS 26.0)")
+        );
         assert!(rows[0].last_seen.is_some());
 
         create_access_token(&p, "old-at", &u.id, 1, false, None).unwrap();

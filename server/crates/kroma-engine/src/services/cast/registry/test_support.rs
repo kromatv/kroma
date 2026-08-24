@@ -38,7 +38,10 @@ pub(super) fn playing(item_id: &str, position_ms: i64) -> CastPlayback {
         position_ms,
         duration_ms: Some(7_200_000),
         state: CastState::Playing,
-        audio_tracks: vec![CastTrack { index: 0, label: "English 5.1".into() }],
+        audio_tracks: vec![CastTrack {
+            index: 0,
+            label: "English 5.1".into(),
+        }],
         audio_index: Some(0),
         subtitles: Vec::new(),
         subtitle_index: None,
@@ -55,7 +58,12 @@ pub(super) fn beat(id: &str, seq: u64, playback: Option<CastPlayback>) -> Announ
     }
 }
 
-pub(super) fn announce_ok(reg: &Registry, ann: Announce, user: &str, item: Option<MediaItem>) -> Vec<CastCommandEnvelope> {
+pub(super) fn announce_ok(
+    reg: &Registry,
+    ann: Announce,
+    user: &str,
+    item: Option<MediaItem>,
+) -> Vec<CastCommandEnvelope> {
     match reg.announce(ann, user, "Alice", "LAN".into(), item) {
         Announced::Ok { commands, .. } => commands,
         _ => panic!("expected the announce to be accepted"),

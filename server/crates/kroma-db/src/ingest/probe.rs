@@ -8,10 +8,13 @@ use crate::Pool;
 /// (file_id, abs_path, owning item_id) for every file awaiting an ffprobe pass.
 pub fn unprobed_files(pool: &Pool) -> Result<Vec<(String, String, String)>> {
     let conn = pool.get()?;
-    let mut stmt =
-        conn.prepare("SELECT id, abs_path, item_id FROM files WHERE probed = 0")?;
+    let mut stmt = conn.prepare("SELECT id, abs_path, item_id FROM files WHERE probed = 0")?;
     let rows = stmt.query_map([], |r| {
-        Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?))
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get::<_, String>(1)?,
+            r.get::<_, String>(2)?,
+        ))
     })?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
@@ -47,7 +50,10 @@ pub fn file_ids_for_item(pool: &Pool, item_id: &str) -> Result<Vec<String>> {
 
 pub fn unprobe_item_files(pool: &Pool, item_id: &str) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute("UPDATE files SET probed=0 WHERE item_id=?1", params![item_id])?;
+    conn.execute(
+        "UPDATE files SET probed=0 WHERE item_id=?1",
+        params![item_id],
+    )?;
     Ok(())
 }
 
@@ -66,7 +72,11 @@ pub fn probe_target(pool: &Pool, file_id: &str) -> Result<Option<(String, String
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT abs_path, item_id, probed FROM files WHERE id=?1")?;
     let mut rows = stmt.query_map(params![file_id], |r| {
-        Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, i64>(2)? != 0))
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get::<_, String>(1)?,
+            r.get::<_, i64>(2)? != 0,
+        ))
     })?;
     match rows.next() {
         Some(r) => Ok(Some(r?)),
@@ -137,7 +147,10 @@ mod tests {
         ids.sort();
         assert_eq!(ids, vec!["f1".to_string(), "f2".to_string()]);
 
-        assert_eq!(probe_target(&p, "f1").unwrap(), Some(("/a".to_string(), "m1".to_string(), true)));
+        assert_eq!(
+            probe_target(&p, "f1").unwrap(),
+            Some(("/a".to_string(), "m1".to_string(), true))
+        );
         assert!(probe_target(&p, "gone").unwrap().is_none());
         let sigs: HashMap<String, String> = all_file_sigs(&p).unwrap().into_iter().collect();
         assert_eq!(sigs.get("f1").map(String::as_str), Some("100:2000"));

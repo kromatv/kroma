@@ -167,7 +167,10 @@ fn defaults() -> BTreeMap<String, Value> {
     m.insert("httpsRedirect".into(), json!(false));
     m.insert("ipv6".into(), json!(false));
     m.insert("localDiscovery".into(), json!(true));
-    m.insert("localNetworks".into(), json!("192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12"));
+    m.insert(
+        "localNetworks".into(),
+        json!("192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12"),
+    );
     m.insert("hwAccel".into(), json!(false));
     m.insert("hwDevice".into(), json!("Auto"));
     m.insert("hevcEncode".into(), json!(false));
@@ -212,7 +215,10 @@ fn defaults() -> BTreeMap<String, Value> {
     m.insert("acqSeriesLibrary".into(), json!("Auto"));
     // Sonarr/Radarr-style tokens; see kroma_torrent::organize::naming.
     m.insert("namingMovieFolder".into(), json!("{Title} ({Year})"));
-    m.insert("namingMovieFile".into(), json!("{Title} ({Year}) {Quality Full}"));
+    m.insert(
+        "namingMovieFile".into(),
+        json!("{Title} ({Year}) {Quality Full}"),
+    );
     m.insert("namingSeriesFolder".into(), json!("{Title} ({Year})"));
     m.insert("namingSeasonFolder".into(), json!("Season {season:00}"));
     m.insert(
@@ -318,7 +324,9 @@ mod tests {
     fn update_json_read_modify_writes_known_key_only() {
         let pool = test_pool();
         let s = Settings::load(&pool);
-        s.update_json(&pool, "watchIntervalSecs", |v| json!(v.as_i64().unwrap_or(0) + 5));
+        s.update_json(&pool, "watchIntervalSecs", |v| {
+            json!(v.as_i64().unwrap_or(0) + 5)
+        });
         assert_eq!(s.get_i64("watchIntervalSecs", 0), 4);
         assert_eq!(Settings::load(&pool).get_i64("watchIntervalSecs", 0), 4);
         s.update_json(&pool, "notAKey", |_| json!("x"));
@@ -339,7 +347,10 @@ mod tests {
     fn a_store_that_cannot_be_read_falls_back_to_the_built_in_defaults() {
         let pool = test_pool();
         crate::db::settings_set(&pool, "serverName", &json!("Stored")).unwrap();
-        pool.get().unwrap().execute_batch("DROP TABLE settings").unwrap();
+        pool.get()
+            .unwrap()
+            .execute_batch("DROP TABLE settings")
+            .unwrap();
 
         let s = Settings::load(&pool);
         assert_eq!(s.get("serverName"), json!("KROMA"));
@@ -353,7 +364,10 @@ mod tests {
         let pool = test_pool();
         let s = Settings::load(&pool);
         let clone = s.clone();
-        s.set_patch(&pool, BTreeMap::from([("serverName".to_string(), json!("Shared"))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("serverName".to_string(), json!("Shared"))]),
+        );
         assert_eq!(clone.get("serverName"), json!("Shared"));
     }
 }

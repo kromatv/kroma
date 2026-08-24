@@ -52,7 +52,10 @@ impl Grant {
     /// action. Unparseable entries are dropped rather than failing the module:
     /// a typo in a manifest costs that one grant, loudly, not the whole boot.
     fn compile(&self) -> Compiled {
-        Compiled { read: columns_by_table(&self.read), write: columns_by_table(&self.write) }
+        Compiled {
+            read: columns_by_table(&self.read),
+            write: columns_by_table(&self.write),
+        }
     }
 }
 
@@ -76,9 +79,9 @@ fn columns_by_table(entries: &[String]) -> Tables {
                 out.insert(entry.to_ascii_lowercase(), None);
             }
             Some((table, column)) => {
-                let slot = out.entry(table.trim().to_ascii_lowercase()).or_insert_with(|| {
-                    Some(BTreeSet::new())
-                });
+                let slot = out
+                    .entry(table.trim().to_ascii_lowercase())
+                    .or_insert_with(|| Some(BTreeSet::new()));
                 // A whole-table entry beside a column entry keeps the wider one.
                 if let Some(cols) = slot {
                     cols.insert(column.trim().to_ascii_lowercase());
@@ -108,9 +111,15 @@ fn allows_whole_table(tables: &Tables, table: &str) -> bool {
 /// "not authorized", which is unhelpful three layers down a module's data access.
 fn describe(action: &AuthAction<'_>) -> String {
     match action {
-        AuthAction::Read { table_name, column_name } => format!("read {table_name}.{column_name}"),
+        AuthAction::Read {
+            table_name,
+            column_name,
+        } => format!("read {table_name}.{column_name}"),
         AuthAction::Insert { table_name } => format!("insert into {table_name}"),
-        AuthAction::Update { table_name, column_name } => {
+        AuthAction::Update {
+            table_name,
+            column_name,
+        } => {
             format!("update {table_name}.{column_name}")
         }
         AuthAction::Delete { table_name } => format!("delete from {table_name}"),
@@ -129,14 +138,16 @@ fn decide(module_id: &str, grant: &Compiled, ctx: &AuthContext<'_>) -> Authoriza
         | AuthAction::Transaction { .. }
         | AuthAction::Savepoint { .. } => true,
 
-        AuthAction::Read { table_name, column_name } => {
-            SCHEMA_TABLES.contains(table_name) || allows(&grant.read, table_name, column_name)
-        }
+        AuthAction::Read {
+            table_name,
+            column_name,
+        } => SCHEMA_TABLES.contains(table_name) || allows(&grant.read, table_name, column_name),
         AuthAction::Insert { table_name } => allows_whole_table(&grant.write, table_name),
         AuthAction::Delete { table_name } => allows_whole_table(&grant.write, table_name),
-        AuthAction::Update { table_name, column_name } => {
-            allows(&grant.write, table_name, column_name)
-        }
+        AuthAction::Update {
+            table_name,
+            column_name,
+        } => allows(&grant.write, table_name, column_name),
 
         // Everything else -- DDL, ATTACH, PRAGMA, extension loading, REINDEX --
         // is denied outright. A module's own schema belongs in its own file, and
@@ -162,7 +173,10 @@ fn decide(module_id: &str, grant: &Compiled, ctx: &AuthContext<'_>) -> Authoriza
 /// The database is NOT created or migrated here: the core owns the file and has
 /// already done both by the time a module is spawned.
 pub fn init_scoped(path: &Path, module_id: &str, grant: &Grant) -> Result<Pool> {
-    let scope = Scope { module_id: module_id.to_string(), grant: Arc::new(grant.compile()) };
+    let scope = Scope {
+        module_id: module_id.to_string(),
+        grant: Arc::new(grant.compile()),
+    };
     crate::schema::pool_at(path, 4, Some(scope))
 }
 
@@ -175,7 +189,9 @@ pub(crate) struct Scope {
 impl Scope {
     pub(crate) fn install(&self, conn: &Connection) -> Result<()> {
         let (module_id, grant) = (self.module_id.clone(), Arc::clone(&self.grant));
-        conn.authorizer(Some(move |ctx: AuthContext<'_>| decide(&module_id, &grant, &ctx)))?;
+        conn.authorizer(Some(move |ctx: AuthContext<'_>| {
+            decide(&module_id, &grant, &ctx)
+        }))?;
         Ok(())
     }
 }

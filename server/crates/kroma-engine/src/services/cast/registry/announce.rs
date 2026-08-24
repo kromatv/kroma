@@ -36,21 +36,23 @@ impl Registry {
             None => true,
         };
 
-        let entry = map.entry(ann.receiver_id.clone()).or_insert_with(|| Receiver {
-            id: ann.receiver_id.clone(),
-            name: name.clone(),
-            platform: platform.clone(),
-            user_id: user_id.to_string(),
-            username: username.to_string(),
-            network: network.clone(),
-            playback: None,
-            item: None,
-            last_seen: Instant::now(),
-            inbox: VecDeque::new(),
-            next_seq: 1,
-            controllers: HashMap::new(),
-            kicked: HashSet::new(),
-        });
+        let entry = map
+            .entry(ann.receiver_id.clone())
+            .or_insert_with(|| Receiver {
+                id: ann.receiver_id.clone(),
+                name: name.clone(),
+                platform: platform.clone(),
+                user_id: user_id.to_string(),
+                username: username.to_string(),
+                network: network.clone(),
+                playback: None,
+                item: None,
+                last_seen: Instant::now(),
+                inbox: VecDeque::new(),
+                next_seq: 1,
+                controllers: HashMap::new(),
+                kicked: HashSet::new(),
+            });
         entry.name = name;
         entry.platform = platform;
         entry.username = username.to_string();
@@ -72,7 +74,13 @@ impl Registry {
 
     /// Register a receiver whose presence is its socket, not a heartbeat: a set
     /// switched off leaves every picker at once instead of aging out of the TTL.
-    pub fn attach(&self, hello: Hello, user_id: &str, username: &str, network: String) -> Announced {
+    pub fn attach(
+        &self,
+        hello: Hello,
+        user_id: &str,
+        username: &str,
+        network: String,
+    ) -> Announced {
         self.announce(
             Announce {
                 receiver_id: hello.receiver_id,

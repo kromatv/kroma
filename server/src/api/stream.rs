@@ -27,7 +27,11 @@ mod hls;
 use download::download_item;
 use hls::{hls_file, hls_master};
 
-fn byte_sink(state: &SharedState, headers: &HeaderMap, addr: &SocketAddr) -> crate::infra::metrics::ByteSink {
+fn byte_sink(
+    state: &SharedState,
+    headers: &HeaderMap,
+    addr: &SocketAddr,
+) -> crate::infra::metrics::ByteSink {
     let ip = client_ip(headers, addr, &state.config.trusted_proxies);
     let is_lan = playback::is_lan(&ip, &settings::local_networks(&state.settings));
     state.metrics.sink(is_lan)
@@ -39,8 +43,14 @@ fn byte_sink(state: &SharedState, headers: &HeaderMap, addr: &SocketAddr) -> cra
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/items/{id}/stream", get(stream_item))
-        .route("/items/{id}/hls/{mode}/{anchor}/{audio}/index.m3u8", get(hls_master))
-        .route("/items/{id}/hls/{mode}/{anchor}/{audio}/{file}", get(hls_file))
+        .route(
+            "/items/{id}/hls/{mode}/{anchor}/{audio}/index.m3u8",
+            get(hls_master),
+        )
+        .route(
+            "/items/{id}/hls/{mode}/{anchor}/{audio}/{file}",
+            get(hls_file),
+        )
         .route("/items/{id}/storyboard", get(storyboard))
         .route("/items/{id}/storyboard.img", get(storyboard_image))
         .route("/items/{id}/subtitles/{track}", get(subtitles))
@@ -84,7 +94,10 @@ fn pick_file_path(item: &MediaItem, file_id: Option<&str>) -> Option<String> {
 }
 
 async fn load_item(state: &SharedState, id: String) -> Option<MediaItem> {
-    query(&state.db, move |pool| db::get_item(&pool, &id)).await.ok().flatten()
+    query(&state.db, move |pool| db::get_item(&pool, &id))
+        .await
+        .ok()
+        .flatten()
 }
 
 /// `GET /api/items/:id/storyboard` → the sprite-sheet manifest mapping a cursor
@@ -95,7 +108,9 @@ pub async fn storyboard(State(state): State<SharedState>, Path(id): Path<String>
     };
     use crate::infra::storyboard::Status;
     match state.storyboard.get(&item).await {
-        Status::Ready(m) => json_no_store(StatusCode::OK, serde_json::to_vec(&m).unwrap_or_default()),
+        Status::Ready(m) => {
+            json_no_store(StatusCode::OK, serde_json::to_vec(&m).unwrap_or_default())
+        }
         Status::Pending => json_no_store(StatusCode::ACCEPTED, br#"{"status":"pending"}"#.to_vec()),
         Status::Unavailable => json_error(StatusCode::NOT_FOUND, "storyboard unavailable"),
     }
@@ -103,7 +118,10 @@ pub async fn storyboard(State(state): State<SharedState>, Path(id): Path<String>
 
 /// `GET /api/items/:id/storyboard.img` → the cached sprite sheet, 404 until it is
 /// generated. Cached immutably; the manifest's `?v=<key>` busts it.
-pub async fn storyboard_image(State(state): State<SharedState>, Path(id): Path<String>) -> Response {
+pub async fn storyboard_image(
+    State(state): State<SharedState>,
+    Path(id): Path<String>,
+) -> Response {
     let Some(item) = load_item(&state, id).await else {
         return json_error(StatusCode::NOT_FOUND, "item not found");
     };
@@ -153,7 +171,9 @@ pub async fn subtitles(
     let data_dir = state.config.data_dir.clone();
     let cache = {
         let (abs, data_dir) = (abs.clone(), data_dir.clone());
-        match tokio::task::spawn_blocking(move || subtitles::cache_path(&data_dir, &abs, index)).await {
+        match tokio::task::spawn_blocking(move || subtitles::cache_path(&data_dir, &abs, index))
+            .await
+        {
             Ok(p) => p,
             Err(_) => return json_error(StatusCode::INTERNAL_SERVER_ERROR, "subtitle cache error"),
         }
@@ -181,7 +201,10 @@ pub async fn subtitles(
         let _ = tokio::fs::write(&cache, &bytes).await;
         return vtt_response(bytes);
     }
-    json_error(StatusCode::NOT_FOUND, "subtitle unavailable (image-based or missing)")
+    json_error(
+        StatusCode::NOT_FOUND,
+        "subtitle unavailable (image-based or missing)",
+    )
 }
 
 fn vtt_response(bytes: Vec<u8>) -> Response {

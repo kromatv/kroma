@@ -27,7 +27,10 @@ pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
         .route("/_port/tv.kroma.torrents/client/status", post(status::<S>))
         .route("/_port/tv.kroma.torrents/client/pause", post(pause::<S>))
         .route("/_port/tv.kroma.torrents/client/resume", post(resume::<S>))
-        .route("/_port/tv.kroma.torrents/client/reannounce", post(reannounce::<S>))
+        .route(
+            "/_port/tv.kroma.torrents/client/reannounce",
+            post(reannounce::<S>),
+        )
         .route("/_port/tv.kroma.torrents/client/remove", post(remove::<S>))
 }
 
@@ -120,7 +123,11 @@ async fn status<S: HostCtx + Clone + Send + Sync + 'static>(
     Json(call): Json<Call>,
 ) -> Json<Option<Status>> {
     let found = tokio::task::spawn_blocking(move || {
-        engine(&host, &call.client).status(&call.args.client_ref).ok().flatten().map(wire)
+        engine(&host, &call.client)
+            .status(&call.args.client_ref)
+            .ok()
+            .flatten()
+            .map(wire)
     })
     .await
     .ok()
@@ -184,8 +191,8 @@ async fn remove<S: HostCtx + Clone + Send + Sync + 'static>(
 mod tests {
     use super::*;
 
-    use serde_json::json;
     use axum::http::StatusCode;
+    use serde_json::json;
 
     // The routes as the core's reverse proxy drives them, against a daemon that is
     // not there. What that pins is the ENVELOPE: a failure has to arrive inside
@@ -202,8 +209,13 @@ mod tests {
             .unwrap();
         let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
         let status = resp.status();
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
-        (status, serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null))
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        (
+            status,
+            serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null),
+        )
     }
 
     fn unreachable_client() -> serde_json::Value {
@@ -223,7 +235,10 @@ mod tests {
             .await;
 
             assert_eq!(status, StatusCode::OK, "{method}");
-            assert!(answer["Err"].is_string(), "{method} lost its reason: {answer}");
+            assert!(
+                answer["Err"].is_string(),
+                "{method} lost its reason: {answer}"
+            );
         }
     }
 

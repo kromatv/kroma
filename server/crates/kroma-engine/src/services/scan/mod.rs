@@ -137,7 +137,13 @@ pub fn rescan_sync(state: &crate::state::SharedState) -> anyhow::Result<Scanned>
         info!("no libraries configured and scan is empty; seeding demo content");
         data = crate::services::demo::demo_data();
     }
-    crate::db::sync_all(&state.db, &data.libraries, &data.shows, &data.items, &data.mtimes)?;
+    crate::db::sync_all(
+        &state.db,
+        &data.libraries,
+        &data.shows,
+        &data.items,
+        &data.mtimes,
+    )?;
     Ok(Scanned::Applied(data))
 }
 
@@ -161,8 +167,18 @@ pub fn scan_and_publish(state: &crate::state::SharedState) -> anyhow::Result<Sca
             (libraries, shows, items)
         }
     };
-    crate::services::activity::scan_completed(&state.activity, libraries, shows, items, now_iso8601());
-    state.events.publish(ServerEvent::ScanCompleted { items, shows, libraries });
+    crate::services::activity::scan_completed(
+        &state.activity,
+        libraries,
+        shows,
+        items,
+        now_iso8601(),
+    );
+    state.events.publish(ServerEvent::ScanCompleted {
+        items,
+        shows,
+        libraries,
+    });
     if matches!(scanned, Scanned::Applied(_)) {
         state.events.publish(ServerEvent::LibraryUpdated);
     }
@@ -195,7 +211,13 @@ mod tests {
     }
 
     fn def(id: &str, name: &str, kind: &str, folders: Vec<String>) -> LibraryDef {
-        LibraryDef { id: id.into(), name: name.into(), kind: kind.into(), folders, auto_scan: true }
+        LibraryDef {
+            id: id.into(),
+            name: name.into(),
+            kind: kind.into(),
+            folders,
+            auto_scan: true,
+        }
     }
 
     #[test]
@@ -226,7 +248,10 @@ mod tests {
         assert_eq!(data.items.len(), 2);
         assert!(data.shows.is_empty());
         assert_eq!(data.mtimes.len(), 2, "one mtime recorded per scanned file");
-        assert!(data.items.iter().all(|i| i.kind == Kind::Movie && i.library == "lib1"));
+        assert!(data
+            .items
+            .iter()
+            .all(|i| i.kind == Kind::Movie && i.library == "lib1"));
     }
 
     #[test]
@@ -238,7 +263,12 @@ mod tests {
         std::fs::write(show.join("Breaking Bad S01E01.mkv"), b"x").unwrap();
         std::fs::write(show.join("Breaking Bad S01E02.mkv"), b"x").unwrap();
 
-        let data = scan_all(&[def("lib2", "Series", "", vec![root.to_string_lossy().into_owned()])]);
+        let data = scan_all(&[def(
+            "lib2",
+            "Series",
+            "",
+            vec![root.to_string_lossy().into_owned()],
+        )]);
         assert_eq!(data.libraries[0].kind, LibraryKind::Shows);
         assert_eq!(data.shows.len(), 1);
         assert_eq!(data.items.len(), 2);
@@ -254,7 +284,12 @@ mod tests {
         std::fs::create_dir_all(&show).unwrap();
         std::fs::write(show.join("The Office S01E01.mkv"), b"x").unwrap();
 
-        let data = scan_all(&[def("lib3", "Mixed", "", vec![root.to_string_lossy().into_owned()])]);
+        let data = scan_all(&[def(
+            "lib3",
+            "Mixed",
+            "",
+            vec![root.to_string_lossy().into_owned()],
+        )]);
         assert_eq!(data.libraries[0].kind, LibraryKind::Mixed);
     }
 
@@ -265,8 +300,12 @@ mod tests {
         // Contents look like a movie, but the def pins the library to "shows".
         std::fs::write(root.join("Heat (1995).mkv"), b"x").unwrap();
 
-        let data =
-            scan_all(&[def("lib4", "Pinned", "shows", vec![root.to_string_lossy().into_owned()])]);
+        let data = scan_all(&[def(
+            "lib4",
+            "Pinned",
+            "shows",
+            vec![root.to_string_lossy().into_owned()],
+        )]);
         assert_eq!(data.libraries[0].kind, LibraryKind::Shows);
     }
 
@@ -275,8 +314,12 @@ mod tests {
         let base_dir = tmp_root("missing");
         let base = base_dir.path();
         let absent = base.join("does-not-exist");
-        let data =
-            scan_all(&[def("lib5", "Ghost", "", vec![absent.to_string_lossy().into_owned()])]);
+        let data = scan_all(&[def(
+            "lib5",
+            "Ghost",
+            "",
+            vec![absent.to_string_lossy().into_owned()],
+        )]);
         // The (empty) library row is still produced; no items and no crash.
         assert_eq!(data.libraries.len(), 1);
         assert_eq!(data.libraries[0].item_count, 0);
@@ -298,12 +341,18 @@ mod tests {
             "lib6",
             "Split",
             "movies",
-            vec![a.to_string_lossy().into_owned(), b.to_string_lossy().into_owned()],
+            vec![
+                a.to_string_lossy().into_owned(),
+                b.to_string_lossy().into_owned(),
+            ],
         )]);
         assert_eq!(data.libraries.len(), 1);
         // Both folders' items count toward the one library.
         assert_eq!(data.libraries[0].item_count, 2);
-        assert!(data.libraries[0].path.contains(", "), "path lists both folders");
+        assert!(
+            data.libraries[0].path.contains(", "),
+            "path lists both folders"
+        );
         assert_eq!(data.items.len(), 2);
         assert!(data.items.iter().all(|i| i.library == "lib6"));
     }
@@ -343,7 +392,10 @@ mod tests {
         // makes it look broken, so the demo content stands in.
         let state = test_state();
         let data = applied(rescan_sync(&state).unwrap());
-        assert!(!data.items.is_empty(), "demo content should have been seeded");
+        assert!(
+            !data.items.is_empty(),
+            "demo content should have been seeded"
+        );
         assert!(item_count(&state) > 0);
     }
 
@@ -356,10 +408,21 @@ mod tests {
         // to restore it from.
         let state = test_state();
         let empty = tmp_root("unmounted");
-        set_library_defs(&state.settings, &state.db, &[configured_library(empty.path())]);
+        set_library_defs(
+            &state.settings,
+            &state.db,
+            &[configured_library(empty.path())],
+        );
 
-        assert!(matches!(rescan_sync(&state).unwrap(), Scanned::MountOffline));
-        assert_eq!(item_count(&state), 0, "demo content was seeded over a real library");
+        assert!(matches!(
+            rescan_sync(&state).unwrap(),
+            Scanned::MountOffline
+        ));
+        assert_eq!(
+            item_count(&state),
+            0,
+            "demo content was seeded over a real library"
+        );
     }
 
     // The one that matters: the guard above only proved demo content was not
@@ -371,7 +434,11 @@ mod tests {
         let root = tmp_root("mount-goes-away");
         let movie = root.path().join("Blade Runner (1982).mkv");
         std::fs::write(&movie, b"x").unwrap();
-        set_library_defs(&state.settings, &state.db, &[configured_library(root.path())]);
+        set_library_defs(
+            &state.settings,
+            &state.db,
+            &[configured_library(root.path())],
+        );
 
         let scanned = applied(rescan_sync(&state).unwrap());
         assert_eq!(scanned.items.len(), 1);
@@ -380,8 +447,15 @@ mod tests {
         // The share drops: the folder is still configured, and reads as empty.
         std::fs::remove_file(&movie).unwrap();
 
-        assert!(matches!(rescan_sync(&state).unwrap(), Scanned::MountOffline));
-        assert_eq!(item_count(&state), 1, "the stored index survived the outage");
+        assert!(matches!(
+            rescan_sync(&state).unwrap(),
+            Scanned::MountOffline
+        ));
+        assert_eq!(
+            item_count(&state),
+            1,
+            "the stored index survived the outage"
+        );
     }
 
     #[test]
@@ -392,7 +466,10 @@ mod tests {
         let missing = gone.path().join("no-such-mount-point-ever");
         set_library_defs(&state.settings, &state.db, &[configured_library(&missing)]);
 
-        assert!(matches!(rescan_sync(&state).unwrap(), Scanned::MountOffline));
+        assert!(matches!(
+            rescan_sync(&state).unwrap(),
+            Scanned::MountOffline
+        ));
         assert_eq!(item_count(&state), 0);
     }
 
@@ -402,10 +479,16 @@ mod tests {
         // announces completion leaves a spinner running forever.
         let state = test_state();
         let data = applied(scan_and_publish(&state).unwrap());
-        assert!(!data.items.is_empty(), "demo mode, so there is something to report");
+        assert!(
+            !data.items.is_empty(),
+            "demo mode, so there is something to report"
+        );
 
         let activity = crate::services::activity::snapshot(&state.activity);
         let rendered = serde_json::to_string(&activity).unwrap_or_default();
-        assert!(rendered.contains("scan"), "the activity feed says nothing about the scan");
+        assert!(
+            rendered.contains("scan"),
+            "the activity feed says nothing about the scan"
+        );
     }
 }

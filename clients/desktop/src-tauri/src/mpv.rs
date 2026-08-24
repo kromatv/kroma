@@ -36,7 +36,9 @@ fn emit_error(app: &AppHandle, reason: &str) {
 /// Call once at setup; failures are logged, not fatal (the UI still runs).
 pub fn spawn(app: AppHandle) {
     std::thread::spawn(move || {
-        let Some(read_half) = connect(&app) else { return };
+        let Some(read_half) = connect(&app) else {
+            return;
+        };
         pump_events(&app, read_half);
         finish(&app);
     });

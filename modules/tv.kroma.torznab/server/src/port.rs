@@ -63,7 +63,13 @@ mod tests {
         assert_eq!(req.endpoint.url, "http://jackett");
         assert_eq!(req.endpoint.categories, vec![2000]);
         assert!(req.caps.search_tmdb);
-        assert!(matches!(req.query, Query::Movie { tmdb_id: Some(603), .. }));
+        assert!(matches!(
+            req.query,
+            Query::Movie {
+                tmdb_id: Some(603),
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -74,14 +80,22 @@ mod tests {
 
         let req: SearchReq = serde_json::from_value(body).unwrap();
 
-        assert!(matches!(req.query, Query::Episode { season: 2, episode: 7, .. }));
+        assert!(matches!(
+            req.query,
+            Query::Episode {
+                season: 2,
+                episode: 7,
+                ..
+            }
+        ));
     }
 
     // The endpoint and caps default so a consumer that has not probed caps yet
     // still gets a free-text search rather than a 422.
     #[test]
     fn a_request_with_only_a_query_is_enough() {
-        let body = json!({ "query": { "Season": { "tmdb_id": null, "title": "Andor", "season": 1 } } });
+        let body =
+            json!({ "query": { "Season": { "tmdb_id": null, "title": "Andor", "season": 1 } } });
 
         let req: SearchReq = serde_json::from_value(body).unwrap();
 

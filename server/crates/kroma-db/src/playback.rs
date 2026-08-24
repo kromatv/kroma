@@ -76,7 +76,6 @@ pub fn delete_progress(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> 
     Ok(())
 }
 
-
 // Map a row of `item_id,position_ms,duration_ms,updated_at` to a [`ProgressEntry`].
 fn row_to_progress(r: &Row) -> rusqlite::Result<ProgressEntry> {
     Ok(ProgressEntry {
@@ -134,14 +133,23 @@ mod tests {
                 .unwrap();
             }
         }
-        let ids: Vec<String> =
-            list_progress(&pool, &uid).unwrap().into_iter().map(|p| p.item_id).collect();
-        assert_eq!(ids, vec!["m2".to_string(), "m3".to_string(), "m1".to_string()]);
+        let ids: Vec<String> = list_progress(&pool, &uid)
+            .unwrap()
+            .into_iter()
+            .map(|p| p.item_id)
+            .collect();
+        assert_eq!(
+            ids,
+            vec!["m2".to_string(), "m3".to_string(), "m1".to_string()]
+        );
 
         // Delete one; deleting a missing id is a harmless no-op.
         delete_progress(&pool, &uid, "m2").unwrap();
-        let ids: Vec<String> =
-            list_progress(&pool, &uid).unwrap().into_iter().map(|p| p.item_id).collect();
+        let ids: Vec<String> = list_progress(&pool, &uid)
+            .unwrap()
+            .into_iter()
+            .map(|p| p.item_id)
+            .collect();
         assert_eq!(ids, vec!["m3".to_string(), "m1".to_string()]);
         delete_progress(&pool, &uid, "does-not-exist").unwrap();
         assert_eq!(list_progress(&pool, &uid).unwrap().len(), 2);

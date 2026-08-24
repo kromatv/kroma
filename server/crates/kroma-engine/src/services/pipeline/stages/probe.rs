@@ -55,7 +55,9 @@ mod tests {
             .db
             .get()
             .unwrap()
-            .query_row("SELECT probed FROM files WHERE id=?1", [file_id], |r| r.get(0))
+            .query_row("SELECT probed FROM files WHERE id=?1", [file_id], |r| {
+                r.get(0)
+            })
             .unwrap()
     }
 
@@ -96,7 +98,10 @@ mod tests {
             .unwrap();
         let mut rx = state.events.subscribe();
         process(&JobContext::for_test(state.clone()), "m1-f").unwrap();
-        assert!(rx.try_recv().is_err(), "nothing was re-probed, so nothing changed");
+        assert!(
+            rx.try_recv().is_err(),
+            "nothing was re-probed, so nothing changed"
+        );
     }
 
     #[test]

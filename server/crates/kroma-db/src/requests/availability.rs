@@ -135,7 +135,10 @@ pub fn episodes_on_disk(conn: &Connection, show_id: &str) -> rusqlite::Result<Ve
     let mut out: Vec<EpisodeOnDisk> = Vec::new();
     for row in rows {
         let row = row?;
-        if out.last().is_some_and(|p| p.season == row.season && p.episode == row.episode) {
+        if out
+            .last()
+            .is_some_and(|p| p.season == row.season && p.episode == row.episode)
+        {
             continue;
         }
         out.push(row);
@@ -154,7 +157,10 @@ mod tests {
         let conn = p.get().unwrap();
         seed_library(&conn);
         insert_movie_item(&conn, "m1", 603);
-        assert_eq!(movie_item_by_tmdb(&conn, 603).unwrap().as_deref(), Some("m1"));
+        assert_eq!(
+            movie_item_by_tmdb(&conn, 603).unwrap().as_deref(),
+            Some("m1")
+        );
         assert_eq!(movie_item_by_tmdb(&conn, 604).unwrap(), None);
         // An item with no metadata_core row has no tmdb_id to seek.
         conn.execute(
@@ -197,6 +203,9 @@ mod tests {
         assert_eq!(e1.codec.as_deref(), Some("hevc"));
         assert!(e1.hdr);
         assert_eq!(e1.duration_ms, Some(600_000));
-        assert_eq!(rows.iter().find(|r| r.episode == 2).unwrap().width, Some(1280));
+        assert_eq!(
+            rows.iter().find(|r| r.episode == 2).unwrap().width,
+            Some(1280)
+        );
     }
 }

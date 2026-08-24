@@ -37,8 +37,14 @@ pub(super) fn run_capturing_cancellable(
 /// ffmpeg/cwebp still infer the format) and can't collide with a concurrent writer.
 pub(super) fn unique_tmp(out: &Path) -> PathBuf {
     let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
-    let base = out.file_name().and_then(std::ffi::OsStr::to_str).unwrap_or("sheet");
-    let ext = out.extension().and_then(std::ffi::OsStr::to_str).unwrap_or("tmp");
+    let base = out
+        .file_name()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or("sheet");
+    let ext = out
+        .extension()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or("tmp");
     out.with_file_name(format!("{base}.{}.{seq}.tmp.{ext}", std::process::id()))
 }
 

@@ -87,18 +87,22 @@ mod tests {
     #[test]
     fn if_else_with_bool_config() {
         // freeleech is false -> else branch.
-        assert_eq!(render("{{ if .Config.freeleech }}fl{{ else }}no{{ end }}", &ctx()), "no");
+        assert_eq!(
+            render("{{ if .Config.freeleech }}fl{{ else }}no{{ end }}", &ctx()),
+            "no"
+        );
         // eq against the .False constant.
         let t = "{{ if eq .Config.disablesort .False }}sort{{ else }}x{{ end }}";
         assert_eq!(render(t, &ctx()), "sort");
     }
 
-
     #[test]
     fn range_categories() {
-        assert_eq!(render("{{ range .Categories }}[{{ . }}]{{ end }}", &ctx()), "[1][3]");
+        assert_eq!(
+            render("{{ range .Categories }}[{{ . }}]{{ end }}", &ctx()),
+            "[1][3]"
+        );
     }
-
 
     #[test]
     fn result_reference() {
@@ -107,17 +111,24 @@ mod tests {
         assert_eq!(render("/torrent/{{ .Result._id }}", &c), "/torrent/42");
     }
 
-
     #[test]
     fn renders_templated_base_url() {
         let mut config = HashMap::new();
         config.insert("apiurl".to_string(), Value::Str("api.example.org".into()));
-        let ctx = Context { config, ..Default::default() };
-        assert_eq!(render("https://{{ .Config.apiurl }}", &ctx), "https://api.example.org");
+        let ctx = Context {
+            config,
+            ..Default::default()
+        };
+        assert_eq!(
+            render("https://{{ .Config.apiurl }}", &ctx),
+            "https://api.example.org"
+        );
         // Undefined config key renders empty, never the literal braces.
-        assert_eq!(render("https://{{ .Config.missing }}", &Context::default()), "https://");
+        assert_eq!(
+            render("https://{{ .Config.missing }}", &Context::default()),
+            "https://"
+        );
     }
-
 
     #[test]
     fn range_over_non_list_and_bare_ident() {
@@ -129,12 +140,17 @@ mod tests {
         assert_eq!(render("{{ 42 }}", &Context::default()), "42");
     }
 
-
     #[test]
     fn with_keyword_behaves_like_if() {
-        assert_eq!(render("{{ with .Keywords }}Y{{ else }}N{{ end }}", &ctx()), "Y");
         assert_eq!(
-            render("{{ with .Config.missing }}Y{{ else }}N{{ end }}", &Context::default()),
+            render("{{ with .Keywords }}Y{{ else }}N{{ end }}", &ctx()),
+            "Y"
+        );
+        assert_eq!(
+            render(
+                "{{ with .Config.missing }}Y{{ else }}N{{ end }}",
+                &Context::default()
+            ),
             "N"
         );
     }
@@ -144,9 +160,15 @@ mod tests {
         // A list interpolates space-joined.
         assert_eq!(render("{{ .Categories }}", &ctx()), "1 3");
         // join on a scalar just renders the scalar.
-        assert_eq!(render(r#"{{ join .Keywords "," }}"#, &ctx()), "the matrix 1999");
+        assert_eq!(
+            render(r#"{{ join .Keywords "," }}"#, &ctx()),
+            "the matrix 1999"
+        );
         // An invalid regex in re_replace leaves the input untouched.
-        assert_eq!(render(r#"{{ re_replace .Keywords "[" "x" }}"#, &ctx()), "the matrix 1999");
+        assert_eq!(
+            render(r#"{{ re_replace .Keywords "[" "x" }}"#, &ctx()),
+            "the matrix 1999"
+        );
     }
     // A definition is community-maintained YAML and will contain typos; each of
     // these would otherwise be a hard error hiding every release from that
@@ -157,13 +179,22 @@ mod tests {
     fn a_pipeline_feeds_its_value_in_as_the_last_argument() {
         let d = Context::default();
         assert_eq!(render(r#"{{ "x" | printf "%s!" }}"#, &d), "x!");
-        assert_eq!(render(r#"{{ .Keywords | printf "q=%s" }}"#, &ctx()), "q=the matrix 1999");
+        assert_eq!(
+            render(r#"{{ .Keywords | printf "q=%s" }}"#, &ctx()),
+            "q=the matrix 1999"
+        );
     }
 
     #[test]
     fn a_command_whose_head_is_not_a_function_evaluates_only_its_head() {
-        assert_eq!(render(r#"{{ .Keywords "ignored" }}"#, &ctx()), "the matrix 1999");
-        assert_eq!(render(r#"{{ "just-this" "ignored" }}"#, &Context::default()), "just-this");
+        assert_eq!(
+            render(r#"{{ .Keywords "ignored" }}"#, &ctx()),
+            "the matrix 1999"
+        );
+        assert_eq!(
+            render(r#"{{ "just-this" "ignored" }}"#, &Context::default()),
+            "just-this"
+        );
     }
 
     #[test]
@@ -172,7 +203,6 @@ mod tests {
         assert_eq!(render("{{ or }}", &Context::default()), "false");
         assert_eq!(render("{{ and }}", &Context::default()), "true");
     }
-
 
     #[test]
     fn an_unknown_field_renders_empty_rather_than_the_expression() {

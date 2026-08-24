@@ -49,7 +49,11 @@ mod tests {
         let ctx = JobContext::for_test(state.clone());
 
         run(&ctx).unwrap();
-        assert_eq!(state.setting_str(WATERMARK_KEY, ""), "t", "the head became the baseline");
+        assert_eq!(
+            state.setting_str(WATERMARK_KEY, ""),
+            "t",
+            "the head became the baseline"
+        );
 
         let inbox: i64 = state
             .db

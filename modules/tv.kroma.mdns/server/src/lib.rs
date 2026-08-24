@@ -27,12 +27,21 @@ fn service_info(ip: Option<IpAddr>, port: u16, instance: &str) -> Result<Service
         Some(ip) => {
             let ip = ip.to_string();
             info!("mDNS: advertising {HOSTNAME} → {ip}:{port} ({SERVICE_TYPE})");
-            Ok(ServiceInfo::new(SERVICE_TYPE, instance, HOSTNAME, ip.as_str(), port, &props[..])?)
+            Ok(ServiceInfo::new(
+                SERVICE_TYPE,
+                instance,
+                HOSTNAME,
+                ip.as_str(),
+                port,
+                &props[..],
+            )?)
         }
         None => {
             info!("mDNS: advertising {SERVICE_TYPE} on :{port} (auto addresses)");
-            Ok(ServiceInfo::new(SERVICE_TYPE, instance, HOSTNAME, "", port, &props[..])?
-                .enable_addr_auto())
+            Ok(
+                ServiceInfo::new(SERVICE_TYPE, instance, HOSTNAME, "", port, &props[..])?
+                    .enable_addr_auto(),
+            )
         }
     }
 }
@@ -69,7 +78,13 @@ pub struct MdnsModule {
 // The core's port, not this helper process's: the advertised `.local` address
 // has to point at the server.
 fn core_port() -> Option<u16> {
-    std::env::var("KROMA_CORE_URL").ok()?.rsplit(':').next()?.trim_end_matches('/').parse().ok()
+    std::env::var("KROMA_CORE_URL")
+        .ok()?
+        .rsplit(':')
+        .next()?
+        .trim_end_matches('/')
+        .parse()
+        .ok()
 }
 
 #[async_trait]
@@ -114,12 +129,17 @@ mod tests {
     static CORE_URL: Mutex<()> = Mutex::new(());
 
     fn with_core_url<T>(f: impl FnOnce() -> T) -> T {
-        let _held = CORE_URL.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let _held = CORE_URL
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         f()
     }
 
     fn block_on<F: std::future::Future>(f: F) -> F::Output {
-        tokio::runtime::Builder::new_current_thread().build().unwrap().block_on(f)
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(f)
     }
 
     #[test]
@@ -131,13 +151,19 @@ mod tests {
         assert!(SERVICE_TYPE.ends_with('.'), "{SERVICE_TYPE}");
         // The client that looks us up hardcodes the same string.
         assert_eq!(SERVICE_TYPE, "_kroma._tcp.local.");
-        assert!(HOSTNAME.ends_with(".local."), "a .local name is what clients try");
+        assert!(
+            HOSTNAME.ends_with(".local."),
+            "a .local name is what clients try"
+        );
     }
 
     #[test]
     fn the_primary_lan_ip_is_never_one_a_client_could_not_reach() {
         let ip = primary_lan_ip();
-        assert!(ip.is_none_or(|a| !a.is_loopback() && !a.is_unspecified()), "{ip:?}");
+        assert!(
+            ip.is_none_or(|a| !a.is_loopback() && !a.is_unspecified()),
+            "{ip:?}"
+        );
     }
 
     #[test]
@@ -153,7 +179,10 @@ mod tests {
             [&std::net::Ipv4Addr::new(192, 168, 1, 42)]
         );
         assert_eq!(info.get_property_val_str("path"), Some("/api"));
-        assert_eq!(info.get_property_val_str("version"), Some(env!("CARGO_PKG_VERSION")));
+        assert_eq!(
+            info.get_property_val_str("version"),
+            Some(env!("CARGO_PKG_VERSION"))
+        );
     }
 
     #[test]
@@ -191,7 +220,11 @@ mod tests {
             std::env::set_var("KROMA_CORE_URL", "http://127.0.0.1:4040/");
             assert_eq!(core_port(), Some(4040));
             std::env::set_var("KROMA_CORE_URL", "http://kroma.local");
-            assert_eq!(core_port(), None, "a URL with no port must not advertise a guess");
+            assert_eq!(
+                core_port(),
+                None,
+                "a URL with no port must not advertise a guess"
+            );
             std::env::remove_var("KROMA_CORE_URL");
             assert_eq!(core_port(), None);
         });
@@ -202,7 +235,10 @@ mod tests {
         let module = server_module::<StubHost>();
         assert_eq!(module.id(), MODULE_ID);
         assert_eq!(MODULE.manifest().id, MODULE_ID);
-        assert!(module.migrations().is_empty(), "a lifecycle-only module owns no tables");
+        assert!(
+            module.migrations().is_empty(),
+            "a lifecycle-only module owns no tables"
+        );
         assert!(module.admin_routes(&StubHost::new()).is_none());
         assert!(module.jobs().is_empty());
     }

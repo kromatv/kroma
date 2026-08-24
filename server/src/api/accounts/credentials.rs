@@ -10,13 +10,13 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::api::error::lerr;
-use crate::api::util::{client_ip, query};
 use crate::api::extract::{AuthToken, AuthUser};
-use crate::services::auth;
-use crate::services::loginguard;
+use crate::api::util::{client_ip, query};
 use crate::db;
 use crate::i18n::{self, ReqLocale};
 use crate::model::Permission;
+use crate::services::auth;
+use crate::services::loginguard;
 use crate::state::SharedState;
 
 use super::{issue_tokens, user_agent};
@@ -58,7 +58,11 @@ pub async fn register(
     // Reject a duplicate email before consuming any invite, or a retry spends the
     // single-use invite. `create_user`'s UNIQUE constraint is the atomic backstop.
     let email_check = email.clone();
-    match query(&state.db, move |pool| db::find_user_by_email(&pool, &email_check)).await {
+    match query(&state.db, move |pool| {
+        db::find_user_by_email(&pool, &email_check)
+    })
+    .await
+    {
         Ok(Some(_)) => return lerr(loc, StatusCode::CONFLICT, "auth.emailTaken"),
         Ok(None) => {}
         Err(resp) => return resp,
@@ -67,7 +71,11 @@ pub async fn register(
     // Same for the username, and before the invite too: a duplicate would make
     // username login ambiguous.
     let username_check = username.clone();
-    match query(&state.db, move |pool| db::username_taken(&pool, &username_check, None)).await {
+    match query(&state.db, move |pool| {
+        db::username_taken(&pool, &username_check, None)
+    })
+    .await
+    {
         Ok(true) => return lerr(loc, StatusCode::CONFLICT, "auth.usernameTaken"),
         Ok(false) => {}
         Err(resp) => return resp,
@@ -79,7 +87,11 @@ pub async fn register(
         let Some(token) = body.invite_token.clone().filter(|t| !t.trim().is_empty()) else {
             return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteOnly");
         };
-        match query(&state.db, move |pool| db::consume_invite(&pool, token.trim())).await {
+        match query(&state.db, move |pool| {
+            db::consume_invite(&pool, token.trim())
+        })
+        .await
+        {
             Ok(Some(perms)) => perms,
             Ok(None) => return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteInvalid"),
             Err(resp) => return resp,
@@ -87,12 +99,14 @@ pub async fn register(
     };
 
     let hash = auth::hash_password(&body.password);
-    let user =
-        match query(&state.db, move |pool| db::create_user(&pool, &email, &username, &hash, &permissions)).await
-        {
-            Ok(u) => u,
-            Err(resp) => return resp,
-        };
+    let user = match query(&state.db, move |pool| {
+        db::create_user(&pool, &email, &username, &hash, &permissions)
+    })
+    .await
+    {
+        Ok(u) => u,
+        Err(resp) => return resp,
+    };
     issue_tokens(state, user, user_agent(&headers)).await
 }
 
@@ -119,7 +133,11 @@ pub async fn login(
     }
 
     let identifier = body.email.trim().to_string();
-    let found = match query(&state.db, move |pool| db::find_user_by_login(&pool, &identifier)).await {
+    let found = match query(&state.db, move |pool| {
+        db::find_user_by_login(&pool, &identifier)
+    })
+    .await
+    {
         Ok(v) => v,
         Err(resp) => return resp,
     };
@@ -181,11 +199,18 @@ pub async fn change_password(
     }
     let hash = auth::hash_password(&body.next);
     let uid = user.id.clone();
-    if let Err(resp) = query(&state.db, move |pool| db::set_user_password(&pool, &uid, &hash)).await {
+    if let Err(resp) = query(&state.db, move |pool| {
+        db::set_user_password(&pool, &uid, &hash)
+    })
+    .await
+    {
         return resp;
     }
     // Best-effort: failing to evict the other credentials must not fail the change.
     let uid = user.id.clone();
-    let _ = query(&state.db, move |pool| db::revoke_other_sessions(&pool, &uid, &keep)).await;
+    let _ = query(&state.db, move |pool| {
+        db::revoke_other_sessions(&pool, &uid, &keep)
+    })
+    .await;
     StatusCode::NO_CONTENT.into_response()
 }

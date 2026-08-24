@@ -52,16 +52,20 @@ pub fn record_fail(ip: &str) -> i64 {
     if map.len() >= MAX_ENTRIES {
         map.retain(|_, a| a.locked_until > now || now - a.seen < IDLE_TTL_SECS);
     }
-    let a = map
-        .entry(ip.to_string())
-        .or_insert(Attempt { fails: 0, locked_until: 0, seen: now });
+    let a = map.entry(ip.to_string()).or_insert(Attempt {
+        fails: 0,
+        locked_until: 0,
+        seen: now,
+    });
     a.fails += 1;
     a.seen = now;
     if a.fails >= MAX_FAILS {
         // Doubling backoff: 60s, 120s, 240s, … capped at MAX_COOLDOWN_SECS. The
         // shift exponent is clamped so it can never overflow the `i64` shift.
         let over = (a.fails - MAX_FAILS).min(16);
-        let secs = BASE_COOLDOWN_SECS.saturating_mul(1_i64 << over).min(MAX_COOLDOWN_SECS);
+        let secs = BASE_COOLDOWN_SECS
+            .saturating_mul(1_i64 << over)
+            .min(MAX_COOLDOWN_SECS);
         a.locked_until = now + secs;
         return secs;
     }

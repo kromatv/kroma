@@ -101,7 +101,10 @@ fn spawn_module_auto_update(
     tokio::spawn(async move {
         let updated = api::admin::store::install::auto_update(&state, &supervisor).await;
         if !updated.is_empty() {
-            info!(count = updated.len(), "module auto-update: modules brought current");
+            info!(
+                count = updated.len(),
+                "module auto-update: modules brought current"
+            );
         }
     });
 }

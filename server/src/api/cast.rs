@@ -32,19 +32,30 @@ pub fn routes() -> Router<SharedState> {
 }
 
 fn locale(user: &User) -> &'static str {
-    user.language.as_deref().and_then(i18n::normalize).unwrap_or(i18n::DEFAULT_LOCALE)
+    user.language
+        .as_deref()
+        .and_then(i18n::normalize)
+        .unwrap_or(i18n::DEFAULT_LOCALE)
 }
 
 fn require_playback(user: &User) -> Result<(), Response> {
     if user.can(Permission::Playback) {
         Ok(())
     } else {
-        Err(lerr(locale(user), StatusCode::FORBIDDEN, "error.permissionDenied"))
+        Err(lerr(
+            locale(user),
+            StatusCode::FORBIDDEN,
+            "error.permissionDenied",
+        ))
     }
 }
 
 fn bad_id(user: &User) -> Response {
-    lerr(locale(user), StatusCode::BAD_REQUEST, "error.castBadReceiver")
+    lerr(
+        locale(user),
+        StatusCode::BAD_REQUEST,
+        "error.castBadReceiver",
+    )
 }
 
 #[derive(Debug, Deserialize)]
@@ -91,12 +102,17 @@ pub async fn announce(
     let item = match body.playback.as_ref() {
         Some(pb) if state.cast.wants_item(&body.receiver_id, &pb.item_id) => {
             let id = pb.item_id.clone();
-            query(&state.db, move |pool| db::get_item(&pool, &id)).await.unwrap_or_default()
+            query(&state.db, move |pool| db::get_item(&pool, &id))
+                .await
+                .unwrap_or_default()
         }
         _ => None,
     };
 
-    let position = body.playback.as_ref().map(|p| (p.position_ms.max(0), p.duration_ms, p.state));
+    let position = body
+        .playback
+        .as_ref()
+        .map(|p| (p.position_ms.max(0), p.duration_ms, p.state));
     let outcome = state.cast.announce(
         Announce {
             receiver_id: body.receiver_id.clone(),
@@ -117,7 +133,9 @@ pub async fn announce(
                 if let Some(row) = state.cast.row(&body.receiver_id) {
                     state.events.publish_to(
                         &user.id,
-                        ServerEvent::CastReceiverChanged { receiver: Box::new(row) },
+                        ServerEvent::CastReceiverChanged {
+                            receiver: Box::new(row),
+                        },
                     );
                 }
             }
@@ -139,7 +157,11 @@ pub async fn announce(
         // Refusing a taken id, rather than seizing it, is what stops an account
         // impersonating another's TV to collect the commands meant for it.
         Announced::Taken => {
-            return Err(lerr(locale(&user), StatusCode::CONFLICT, "error.castReceiverTaken"))
+            return Err(lerr(
+                locale(&user),
+                StatusCode::CONFLICT,
+                "error.castReceiverTaken",
+            ))
         }
         Announced::Full => {
             return Err(lerr(
@@ -160,7 +182,10 @@ pub async fn announce(
 /// `GET /api/cast/receivers` (Bearer) → `CastReceiver[]`. Only the receivers
 /// signed into the caller's own account: casting is scoped to where you are
 /// connected, so nobody browses — let alone drives — another household's TVs.
-pub async fn list(State(state): State<SharedState>, AuthUser(user): AuthUser) -> Result<Response, Response> {
+pub async fn list(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
     require_playback(&user)?;
     Ok(Json(state.cast.list(&user.id)).into_response())
 }
@@ -175,7 +200,9 @@ pub async fn unregister(
 ) -> Result<Response, Response> {
     require_playback(&user)?;
     if state.cast.remove_owned(&id, &user.id) {
-        state.events.publish_to(&user.id, ServerEvent::CastReceiverGone { receiver_id: id });
+        state
+            .events
+            .publish_to(&user.id, ServerEvent::CastReceiverGone { receiver_id: id });
     }
     Ok(StatusCode::NO_CONTENT.into_response())
 }
@@ -211,8 +238,20 @@ pub async fn command(
     // the set is the caller's own — is a refusal.
     match state.cast.may_command(&id, &user.id) {
         Some(true) => {}
-        Some(false) => return Err(lerr(locale(&user), StatusCode::FORBIDDEN, "error.forbidden")),
-        None => return Err(lerr(locale(&user), StatusCode::NOT_FOUND, "error.castReceiverGone")),
+        Some(false) => {
+            return Err(lerr(
+                locale(&user),
+                StatusCode::FORBIDDEN,
+                "error.forbidden",
+            ))
+        }
+        None => {
+            return Err(lerr(
+                locale(&user),
+                StatusCode::NOT_FOUND,
+                "error.castReceiverGone",
+            ))
+        }
     }
     if let CastCommand::Play { item_id, .. } = &body.command {
         let wanted = item_id.clone();
@@ -221,12 +260,20 @@ pub async fn command(
             .unwrap_or_default()
             .is_some();
         if !known {
-            return Err(lerr(locale(&user), StatusCode::NOT_FOUND, "error.itemNotFound"));
+            return Err(lerr(
+                locale(&user),
+                StatusCode::NOT_FOUND,
+                "error.itemNotFound",
+            ));
         }
     }
 
     let Some(envelope) = state.cast.enqueue(&id, &user.id, body.command) else {
-        return Err(lerr(locale(&user), StatusCode::NOT_FOUND, "error.castReceiverGone"));
+        return Err(lerr(
+            locale(&user),
+            StatusCode::NOT_FOUND,
+            "error.castReceiverGone",
+        ));
     };
 
     // Addressed to the caller's own account — the only one the receiver can

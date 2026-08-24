@@ -39,8 +39,12 @@ pub fn create_user(
 ) -> Result<User> {
     let conn = pool.get()?;
     let permissions = permissions.to_vec();
-    let perms_json = serde_json::to_string(&permissions).unwrap_or_else(|_| "[\"playback\"]".into());
-    let id = kroma_primitives::short_hash(&format!("user|{email}|{}", kroma_primitives::random_token()));
+    let perms_json =
+        serde_json::to_string(&permissions).unwrap_or_else(|_| "[\"playback\"]".into());
+    let id = kroma_primitives::short_hash(&format!(
+        "user|{email}|{}",
+        kroma_primitives::random_token()
+    ));
     let created_at = now_or_blank();
     conn.execute(
         "INSERT INTO users (id,email,username,password_hash,avatar_url,permissions,created_at) \
@@ -171,19 +175,37 @@ mod tests {
     fn create_user_count_and_lookups() {
         let p = pool();
         assert_eq!(user_count(&p).unwrap(), 0);
-        let u = create_user(&p, "Alice@Example.com", "alice", "pw-hash", &[Permission::Playback, Permission::UsersManage])
-            .unwrap();
+        let u = create_user(
+            &p,
+            "Alice@Example.com",
+            "alice",
+            "pw-hash",
+            &[Permission::Playback, Permission::UsersManage],
+        )
+        .unwrap();
         assert_eq!(user_count(&p).unwrap(), 1);
         assert!(!u.id.is_empty());
-        assert_eq!(u.permissions, vec![Permission::Playback, Permission::UsersManage]);
+        assert_eq!(
+            u.permissions,
+            vec![Permission::Playback, Permission::UsersManage]
+        );
         assert!(!u.has_pin);
 
-        let (found, hash) = find_user_by_email(&p, "alice@example.com").unwrap().unwrap();
+        let (found, hash) = find_user_by_email(&p, "alice@example.com")
+            .unwrap()
+            .unwrap();
         assert_eq!(found.id, u.id);
         assert_eq!(hash, "pw-hash");
         assert!(find_user_by_email(&p, "nobody@x.com").unwrap().is_none());
 
-        assert_eq!(find_user_by_login(&p, "ALICE@example.com").unwrap().unwrap().0.id, u.id);
+        assert_eq!(
+            find_user_by_login(&p, "ALICE@example.com")
+                .unwrap()
+                .unwrap()
+                .0
+                .id,
+            u.id
+        );
         assert_eq!(find_user_by_login(&p, "alice").unwrap().unwrap().0.id, u.id);
         assert!(find_user_by_login(&p, "ghost").unwrap().is_none());
 

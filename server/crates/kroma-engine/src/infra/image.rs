@@ -81,7 +81,11 @@ fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Option<String
 /// `<name>.logo.png` / `<name>.logo2x.png`.
 pub fn card_logo_png(data_dir: &Path, name: &str, scale: u32) -> Option<PathBuf> {
     let dir = images_dir(data_dir);
-    let (w, h, sfx) = if scale >= 2 { (600, 240, "2x") } else { (300, 120, "") };
+    let (w, h, sfx) = if scale >= 2 {
+        (600, 240, "2x")
+    } else {
+        (300, 120, "")
+    };
     ffmpeg_rendition(
         &dir.join(name),
         &dir.join(format!("{name}.logo{sfx}.png")),
@@ -95,7 +99,11 @@ pub fn card_logo_png(data_dir: &Path, name: &str, scale: u32) -> Option<PathBuf>
 /// Shelf). Cached as `<hash>.webp.card.png` / `<hash>.webp.card2x.png`.
 pub fn card_base_png(data_dir: &Path, webp_name: &str, scale: u32) -> Option<PathBuf> {
     let dir = images_dir(data_dir);
-    let (w, h, sfx) = if scale >= 2 { (1280, 720, "2x") } else { (640, 360, "") };
+    let (w, h, sfx) = if scale >= 2 {
+        (1280, 720, "2x")
+    } else {
+        (640, 360, "")
+    };
     ffmpeg_rendition(
         &dir.join(webp_name),
         &dir.join(format!("{webp_name}.card{sfx}.png")),
@@ -193,8 +201,14 @@ fn ffmpeg_rendition(src: &Path, out: &Path, vf: &str, extra: &[&str]) -> Option<
 // Keeps `out`'s extension so ffmpeg/cwebp still detect the output format.
 fn unique_tmp(out: &Path) -> PathBuf {
     let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
-    let base = out.file_name().and_then(std::ffi::OsStr::to_str).unwrap_or("rendition");
-    let ext = out.extension().and_then(std::ffi::OsStr::to_str).unwrap_or("tmp");
+    let base = out
+        .file_name()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or("rendition");
+    let ext = out
+        .extension()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or("tmp");
     out.with_file_name(format!("{base}.{}.{seq}.tmp.{ext}", std::process::id()))
 }
 
@@ -333,7 +347,12 @@ fn probe_width(src: &Path) -> Option<u32> {
         .arg(src)
         .output()
         .ok()?;
-    String::from_utf8_lossy(&out.stdout).trim().split(',').next()?.parse().ok()
+    String::from_utf8_lossy(&out.stdout)
+        .trim()
+        .split(',')
+        .next()?
+        .parse()
+        .ok()
 }
 
 fn content_hash(bytes: &[u8]) -> String {

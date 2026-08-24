@@ -9,11 +9,23 @@ pub(super) fn pool() -> TempPool {
 }
 
 pub(super) fn video() -> VideoStream {
-    VideoStream { codec: "hevc".into(), width: Some(3840), height: Some(2160), hdr: false, bit_depth: Some(10) }
+    VideoStream {
+        codec: "hevc".into(),
+        width: Some(3840),
+        height: Some(2160),
+        hdr: false,
+        bit_depth: Some(10),
+    }
 }
 
 pub(super) fn lib(id: &str) -> Library {
-    Library { id: id.into(), name: "L".into(), kind: LibraryKind::Movies, path: "/x".into(), item_count: 0 }
+    Library {
+        id: id.into(),
+        name: "L".into(),
+        kind: LibraryKind::Movies,
+        path: "/x".into(),
+        item_count: 0,
+    }
 }
 
 pub(super) fn file(id: &str, abs: &str, probed: bool) -> MediaFile {
@@ -86,7 +98,11 @@ pub(super) fn meta(tmdb: u64, title: &str) -> Metadata {
         backdrop_url: None,
         logo_url: None,
         theme_url: None,
-        cast: vec![CastMember { name: "Timothee".into(), character: Some("Paul".into()), profile_url: None }],
+        cast: vec![CastMember {
+            name: "Timothee".into(),
+            character: Some("Paul".into()),
+            profile_url: None,
+        }],
         crew: vec![],
         keywords: vec![],
         tvdb_id: None,

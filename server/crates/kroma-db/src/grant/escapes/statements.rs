@@ -17,8 +17,14 @@ fn a_plain_read_of_an_ungranted_table_is_refused() {
 fn a_subquery_is_a_read_like_any_other() {
     let f = fixture();
     refused(&f.scoped, "SELECT (SELECT token FROM sessions LIMIT 1)");
-    refused(&f.scoped, "SELECT title FROM requests WHERE id IN (SELECT user_id FROM sessions)");
-    refused(&f.scoped, "SELECT title FROM requests WHERE EXISTS (SELECT 1 FROM sessions)");
+    refused(
+        &f.scoped,
+        "SELECT title FROM requests WHERE id IN (SELECT user_id FROM sessions)",
+    );
+    refused(
+        &f.scoped,
+        "SELECT title FROM requests WHERE EXISTS (SELECT 1 FROM sessions)",
+    );
     refused(
         &f.scoped,
         "SELECT (SELECT token FROM sessions LIMIT 1) AS leak FROM requests",
@@ -42,15 +48,27 @@ fn a_join_does_not_launder_the_other_table() {
 #[test]
 fn a_union_cannot_smuggle_a_second_table_in() {
     let f = fixture();
-    refused(&f.scoped, "SELECT title FROM requests UNION SELECT token FROM sessions");
-    refused(&f.scoped, "SELECT title FROM requests UNION ALL SELECT token FROM sessions");
-    refused(&f.scoped, "SELECT title FROM requests EXCEPT SELECT token FROM sessions");
+    refused(
+        &f.scoped,
+        "SELECT title FROM requests UNION SELECT token FROM sessions",
+    );
+    refused(
+        &f.scoped,
+        "SELECT title FROM requests UNION ALL SELECT token FROM sessions",
+    );
+    refused(
+        &f.scoped,
+        "SELECT title FROM requests EXCEPT SELECT token FROM sessions",
+    );
 }
 
 #[test]
 fn a_cte_is_not_a_way_round_it() {
     let f = fixture();
-    refused(&f.scoped, "WITH s AS (SELECT token FROM sessions) SELECT * FROM s");
+    refused(
+        &f.scoped,
+        "WITH s AS (SELECT token FROM sessions) SELECT * FROM s",
+    );
     refused(
         &f.scoped,
         "WITH s AS (SELECT token FROM sessions) SELECT r.title FROM requests r, s",
@@ -70,7 +88,10 @@ fn a_write_cannot_carry_an_ungranted_read_with_it() {
         "INSERT INTO wanted (id,request_id,kind,tmdb_id,title,status,updated_at) \
          SELECT 'wt2','rq1','movie',603,token,'wanted',1 FROM sessions",
     );
-    refused(&f.scoped, "DELETE FROM wanted WHERE title IN (SELECT token FROM sessions)");
+    refused(
+        &f.scoped,
+        "DELETE FROM wanted WHERE title IN (SELECT token FROM sessions)",
+    );
 }
 
 #[test]
@@ -87,7 +108,10 @@ fn the_returning_clause_returns_nothing_it_was_not_granted() {
 fn a_write_grant_is_not_a_read_grant_and_the_reverse() {
     let f = fixture();
     // `requests` is readable, not writable.
-    refused(&f.scoped, "UPDATE requests SET title = 'x' WHERE id = 'rq1'");
+    refused(
+        &f.scoped,
+        "UPDATE requests SET title = 'x' WHERE id = 'rq1'",
+    );
     refused(&f.scoped, "DELETE FROM requests WHERE id = 'rq1'");
     refused(
         &f.scoped,
@@ -95,7 +119,10 @@ fn a_write_grant_is_not_a_read_grant_and_the_reverse() {
          VALUES ('rq2','movie',1,'x','approved',1,1)",
     );
     // `wanted` is both, which is what the module declared.
-    allowed(&f.scoped, "UPDATE wanted SET status = 'grabbed' WHERE id = 'wt1'");
+    allowed(
+        &f.scoped,
+        "UPDATE wanted SET status = 'grabbed' WHERE id = 'wt1'",
+    );
 }
 
 #[test]
@@ -105,14 +132,20 @@ fn a_column_grant_holds_across_every_place_a_column_is_reached() {
     let narrow = init_scoped(
         &path,
         MODULE,
-        &Grant { read: vec!["users.username".into()], write: Vec::new() },
+        &Grant {
+            read: vec!["users.username".into()],
+            write: Vec::new(),
+        },
     )
     .unwrap();
 
     allowed(&narrow, "SELECT username FROM users");
     // Projected, filtered, ordered, grouped, aggregated: all reads.
     refused(&narrow, "SELECT password_hash FROM users");
-    refused(&narrow, "SELECT username FROM users WHERE password_hash = 'x'");
+    refused(
+        &narrow,
+        "SELECT username FROM users WHERE password_hash = 'x'",
+    );
     refused(&narrow, "SELECT username FROM users ORDER BY password_hash");
     refused(&narrow, "SELECT username FROM users GROUP BY password_hash");
     refused(&narrow, "SELECT max(password_hash) FROM users");

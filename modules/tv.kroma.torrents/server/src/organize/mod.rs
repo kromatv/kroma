@@ -35,9 +35,11 @@ fn show_info(shows: &[Show]) -> HashMap<String, (String, Option<u32>)> {
                 .and_then(|m| m.title.clone())
                 .filter(|t| !t.trim().is_empty())
                 .unwrap_or_else(|| s.title.clone());
-            let year = s
-                .year
-                .or_else(|| s.metadata.as_ref().and_then(|m| year_of(m.release_date.as_deref())));
+            let year = s.year.or_else(|| {
+                s.metadata
+                    .as_ref()
+                    .and_then(|m| year_of(m.release_date.as_deref()))
+            });
             (s.id.clone(), (title, year))
         })
         .collect()
@@ -83,8 +85,14 @@ pub fn sample(tpl: &NamingTemplates) -> SampleNames {
         ..Default::default()
     };
     SampleNames {
-        movie: tpl.movie_rel_path(&movie, "mkv").to_string_lossy().into_owned(),
-        episode: tpl.episode_rel_path(&episode, "mkv").to_string_lossy().into_owned(),
+        movie: tpl
+            .movie_rel_path(&movie, "mkv")
+            .to_string_lossy()
+            .into_owned(),
+        episode: tpl
+            .episode_rel_path(&episode, "mkv")
+            .to_string_lossy()
+            .into_owned(),
     }
 }
 
@@ -114,13 +122,22 @@ fn inputs<S: HostStorage>(state: &S) -> Result<OrganizeInputs> {
 /// Compute the rename plan: every library file whose current path doesn't match
 /// the configured templates. Non-destructive.
 pub fn plan<S: HostStorage>(state: &S) -> Result<OrganizePlan> {
-    let OrganizeInputs { tpl, folders, shows_by_id, items } = inputs(state)?;
+    let OrganizeInputs {
+        tpl,
+        folders,
+        shows_by_id,
+        items,
+    } = inputs(state)?;
     let mut moves = Vec::new();
     let (mut total, mut matching) = (0u32, 0u32);
     for item in &items {
         for file in &item.files {
-            let Some(abs) = current_abs(file) else { continue };
-            let Some(root) = library_root(&folders, &item.library, &abs) else { continue };
+            let Some(abs) = current_abs(file) else {
+                continue;
+            };
+            let Some(root) = library_root(&folders, &item.library, &abs) else {
+                continue;
+            };
             let Some((expected_rel, title)) = expected_rel(&tpl, item, file, &shows_by_id) else {
                 continue;
             };
@@ -132,7 +149,12 @@ pub fn plan<S: HostStorage>(state: &S) -> Result<OrganizePlan> {
             } else {
                 moves.push(OrganizeMove {
                     title,
-                    kind: if item.kind == Kind::Episode { "episode" } else { "movie" }.into(),
+                    kind: if item.kind == Kind::Episode {
+                        "episode"
+                    } else {
+                        "movie"
+                    }
+                    .into(),
                     from: current_rel.to_string_lossy().into_owned(),
                     to: expected_rel.to_string_lossy().into_owned(),
                 });
@@ -141,19 +163,36 @@ pub fn plan<S: HostStorage>(state: &S) -> Result<OrganizePlan> {
     }
     // Stable, readable order.
     moves.sort_by(|a, b| a.to.cmp(&b.to));
-    Ok(OrganizePlan { moves, total_files: total, matching })
+    Ok(OrganizePlan {
+        moves,
+        total_files: total,
+        matching,
+    })
 }
 
 /// Apply the rename plan: recompute + move every mismatched file (same-filesystem
 /// rename preserves the inode; item ids are title/year-based so watched/progress
 /// survive). Emptied source folders are pruned; a scan is chained afterward.
 pub fn apply<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<OrganizeResult> {
-    let OrganizeInputs { tpl, folders, shows_by_id, items } = inputs(state)?;
-    let mut result = OrganizeResult { moved: 0, failed: 0, errors: Vec::new() };
+    let OrganizeInputs {
+        tpl,
+        folders,
+        shows_by_id,
+        items,
+    } = inputs(state)?;
+    let mut result = OrganizeResult {
+        moved: 0,
+        failed: 0,
+        errors: Vec::new(),
+    };
     for item in &items {
         for file in &item.files {
-            let Some(abs) = current_abs(file) else { continue };
-            let Some(root) = library_root(&folders, &item.library, &abs) else { continue };
+            let Some(abs) = current_abs(file) else {
+                continue;
+            };
+            let Some(root) = library_root(&folders, &item.library, &abs) else {
+                continue;
+            };
             let Some((expected_rel, title)) = expected_rel(&tpl, item, file, &shows_by_id) else {
                 continue;
             };
@@ -199,7 +238,13 @@ fn expected_rel(
     match item.kind {
         Kind::Movie | Kind::Video => {
             let title = movie_title(item);
-            let ctx = NameContext { title: title.clone(), year: item.year, imdb_id, tmdb_id, ..base };
+            let ctx = NameContext {
+                title: title.clone(),
+                year: item.year,
+                imdb_id,
+                tmdb_id,
+                ..base
+            };
             Some((tpl.movie_rel_path(&ctx, &ext), title))
         }
         Kind::Episode => {
@@ -222,7 +267,10 @@ fn expected_rel(
                 tmdb_id,
                 ..base
             };
-            Some((tpl.episode_rel_path(&ctx, &ext), format!("{show_title} S{season:02}E{episode:02}")))
+            Some((
+                tpl.episode_rel_path(&ctx, &ext),
+                format!("{show_title} S{season:02}E{episode:02}"),
+            ))
         }
     }
 }
@@ -246,8 +294,14 @@ fn quality_ctx(file: &MediaFile, parsed: &kroma_scene::ParsedRelease) -> NameCon
         video_bit_depth: file.video.as_ref().and_then(|v| v.bit_depth),
         audio_codec: naming::audio_codec_label(rep_audio.map(|a| a.codec.as_str())),
         audio_channels: naming::audio_channels_label(rep_audio.and_then(|a| a.channels)),
-        audio_languages: naming::lang_list(file.audio_tracks.iter().filter_map(|a| a.language.as_deref())),
-        subtitle_languages: naming::lang_list(file.subtitles.iter().filter_map(|s| s.language.as_deref())),
+        audio_languages: naming::lang_list(
+            file.audio_tracks
+                .iter()
+                .filter_map(|a| a.language.as_deref()),
+        ),
+        subtitle_languages: naming::lang_list(
+            file.subtitles.iter().filter_map(|s| s.language.as_deref()),
+        ),
         ..Default::default()
     }
 }
@@ -270,14 +324,25 @@ fn movie_title(item: &MediaItem) -> String {
 }
 
 fn current_abs(file: &MediaFile) -> Option<PathBuf> {
-    file.abs_path.as_deref().filter(|p| !p.starts_with("demo://")).map(PathBuf::from)
+    file.abs_path
+        .as_deref()
+        .filter(|p| !p.starts_with("demo://"))
+        .map(PathBuf::from)
 }
 
 // The library folder that contains `abs` (so a rename stays within the same
 // root / filesystem).
-fn library_root(folders: &HashMap<String, Vec<PathBuf>>, lib_id: &str, abs: &Path) -> Option<PathBuf> {
+fn library_root(
+    folders: &HashMap<String, Vec<PathBuf>>,
+    lib_id: &str,
+    abs: &Path,
+) -> Option<PathBuf> {
     let roots = folders.get(lib_id)?;
-    roots.iter().find(|root| abs.starts_with(root)).cloned().or_else(|| roots.first().cloned())
+    roots
+        .iter()
+        .find(|root| abs.starts_with(root))
+        .cloned()
+        .or_else(|| roots.first().cloned())
 }
 
 // Rename in place, refusing to overwrite an existing different file.
@@ -311,7 +376,9 @@ fn prune_empty_dirs(dir: Option<&Path>, root: &Path) {
         if d == root || !d.starts_with(root) {
             break;
         }
-        let empty = std::fs::read_dir(&d).map(|mut e| e.next().is_none()).unwrap_or(false);
+        let empty = std::fs::read_dir(&d)
+            .map(|mut e| e.next().is_none())
+            .unwrap_or(false);
         if !empty || std::fs::remove_dir(&d).is_err() {
             break;
         }

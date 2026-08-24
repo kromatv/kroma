@@ -80,7 +80,11 @@ const WIDEST_IMAGE: u32 = IMAGE_WIDTHS[IMAGE_WIDTHS.len() - 1];
 // Past the widest bucket there is nothing sharper to serve, so the ask is
 // capped instead of falling through to the master: one rendition, one URL.
 fn bucket_for(width: u32) -> u32 {
-    IMAGE_WIDTHS.iter().copied().find(|b| *b >= width).unwrap_or(WIDEST_IMAGE)
+    IMAGE_WIDTHS
+        .iter()
+        .copied()
+        .find(|b| *b >= width)
+        .unwrap_or(WIDEST_IMAGE)
 }
 
 #[derive(Debug, Deserialize)]
@@ -126,13 +130,23 @@ pub async fn image(
     }
 }
 
-async fn sized_rendition_response(state: &SharedState, name: &str, q: &ImageQuery) -> Option<Response> {
+async fn sized_rendition_response(
+    state: &SharedState,
+    name: &str,
+    q: &ImageQuery,
+) -> Option<Response> {
     let w = q.w.filter(|_| name.ends_with(".webp"))?;
     let width = bucket_for(w);
     let data_dir = state.config.data_dir.clone();
     let sized_name = name.to_string();
-    let made =
-        blocking(move || Ok(crate::infra::image::sized_rendition(&data_dir, &sized_name, width))).await;
+    let made = blocking(move || {
+        Ok(crate::infra::image::sized_rendition(
+            &data_dir,
+            &sized_name,
+            width,
+        ))
+    })
+    .await;
     let Ok(Some((path, content_type))) = made else {
         return None;
     };
@@ -210,9 +224,19 @@ pub async fn item_card(
     let webp = show_meta
         .and_then(|m| m.backdrop_url.as_deref())
         .and_then(cache_name)
-        .or_else(|| meta.and_then(|m| m.backdrop_url.as_deref()).and_then(cache_name))
-        .or_else(|| meta.and_then(|m| m.poster_url.as_deref()).and_then(cache_name))
-        .or_else(|| show_meta.and_then(|m| m.poster_url.as_deref()).and_then(cache_name))
+        .or_else(|| {
+            meta.and_then(|m| m.backdrop_url.as_deref())
+                .and_then(cache_name)
+        })
+        .or_else(|| {
+            meta.and_then(|m| m.poster_url.as_deref())
+                .and_then(cache_name)
+        })
+        .or_else(|| {
+            show_meta
+                .and_then(|m| m.poster_url.as_deref())
+                .and_then(cache_name)
+        })
         .map(str::to_string);
     let Some(webp) = webp else {
         return Err(json_error(StatusCode::NOT_FOUND, "no artwork for card"));

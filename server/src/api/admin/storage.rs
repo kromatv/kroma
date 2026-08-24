@@ -8,8 +8,8 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde_json::json;
 
-use crate::api::util::{blocking, query};
 use crate::api::extract::AuthUser;
+use crate::api::util::{blocking, query};
 use crate::db;
 use crate::model::Permission;
 use crate::state::SharedState;
@@ -53,7 +53,12 @@ pub async fn storage(
         available_bytes: total.saturating_sub(used),
         media_bytes,
         cache: crate::api::dto::CacheInfo {
-            dir: state.config.data_dir.join("hls").to_string_lossy().into_owned(),
+            dir: state
+                .config
+                .data_dir
+                .join("hls")
+                .to_string_lossy()
+                .into_owned(),
             bytes: transcode_bytes + images_bytes,
             limit: state.settings.get_str("cacheLimit", "80 Go"),
             transcode_limit: state.settings.get_str("transcodeCacheLimit", "20 Go"),
@@ -96,7 +101,11 @@ pub async fn clear_cache(
         Ok(())
     })
     .await;
-    let _ = state.jobs.trigger(state.clone(), crate::services::jobs::JobKey("pipeline.storyboard"), "clear-cache");
+    let _ = state.jobs.trigger(
+        state.clone(),
+        crate::services::jobs::JobKey("pipeline.storyboard"),
+        "clear-cache",
+    );
     Ok(Json(json!({ "freedBytes": freed })).into_response())
 }
 
@@ -120,7 +129,11 @@ pub async fn reset_metadata(
     .await?;
     state.metadata_cache.clear();
     // `embed` chains after `metadata` via its `AfterJob` trigger.
-    let _ = state.jobs.trigger(state.clone(), crate::services::jobs::JobKey("pipeline.metadata"), "reset-metadata");
+    let _ = state.jobs.trigger(
+        state.clone(),
+        crate::services::jobs::JobKey("pipeline.metadata"),
+        "reset-metadata",
+    );
     Ok(Json(json!({ "items": items, "shows": shows })).into_response())
 }
 
@@ -130,7 +143,9 @@ fn dir_stats(path: &Path) -> (u64, u64) {
         .filter_map(Result::ok)
         .filter(|e| e.file_type().is_file())
         .filter_map(|e| e.metadata().ok())
-        .fold((0u64, 0u64), |(bytes, count), m| (bytes + m.len(), count + 1))
+        .fold((0u64, 0u64), |(bytes, count), m| {
+            (bytes + m.len(), count + 1)
+        })
 }
 
 fn clear_dir(path: &Path) {

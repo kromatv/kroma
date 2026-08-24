@@ -48,8 +48,15 @@ pub fn render(input: &str, ctx: &Context) -> String {
 enum Node {
     Text(String),
     Action(Pipeline),
-    If { cond: Pipeline, then: Vec<Node>, els: Vec<Node> },
-    Range { expr: Pipeline, body: Vec<Node> },
+    If {
+        cond: Pipeline,
+        then: Vec<Node>,
+        els: Vec<Node>,
+    },
+    Range {
+        expr: Pipeline,
+        body: Vec<Node>,
+    },
 }
 
 type Pipeline = Vec<Command>;

@@ -8,7 +8,11 @@ use crate::db::Pool;
 use crate::services::settings::Settings;
 
 fn states(settings: &Settings) -> Map<String, Value> {
-    settings.get("moduleStates").as_object().cloned().unwrap_or_default()
+    settings
+        .get("moduleStates")
+        .as_object()
+        .cloned()
+        .unwrap_or_default()
 }
 
 // One settings write-lock, so a concurrent enable + config-save cannot clobber
@@ -21,7 +25,11 @@ fn update_entry(
 ) {
     settings.update_json(pool, "moduleStates", |current| {
         let mut all = current.as_object().cloned().unwrap_or_default();
-        let mut entry = all.get(id).and_then(Value::as_object).cloned().unwrap_or_default();
+        let mut entry = all
+            .get(id)
+            .and_then(Value::as_object)
+            .cloned()
+            .unwrap_or_default();
         f(&mut entry);
         all.insert(id.to_string(), Value::Object(entry));
         Value::Object(all)
@@ -55,7 +63,11 @@ pub fn set_module_enabled(settings: &Settings, pool: &Pool, id: &str, enabled: b
 /// Merges into the stored config rather than replacing it.
 pub fn set_module_config(settings: &Settings, pool: &Pool, id: &str, values: Map<String, Value>) {
     update_entry(settings, pool, id, |entry| {
-        let mut cfg = entry.get("config").and_then(Value::as_object).cloned().unwrap_or_default();
+        let mut cfg = entry
+            .get("config")
+            .and_then(Value::as_object)
+            .cloned()
+            .unwrap_or_default();
         for (k, v) in values {
             cfg.insert(k, v);
         }
@@ -100,9 +112,12 @@ mod tests {
             &settings,
             &pool,
             "tv.kroma.indexer",
-            [("host".to_string(), json!("nas.local")), ("port".to_string(), json!(9117))]
-                .into_iter()
-                .collect(),
+            [
+                ("host".to_string(), json!("nas.local")),
+                ("port".to_string(), json!(9117)),
+            ]
+            .into_iter()
+            .collect(),
         );
         set_module_config(
             &settings,
@@ -112,8 +127,16 @@ mod tests {
         );
 
         let cfg = module_config(&settings, "tv.kroma.indexer");
-        assert_eq!(cfg.get("host"), Some(&json!("nas.local")), "an untouched key survives");
-        assert_eq!(cfg.get("port"), Some(&json!(9200)), "a named key is overwritten");
+        assert_eq!(
+            cfg.get("host"),
+            Some(&json!("nas.local")),
+            "an untouched key survives"
+        );
+        assert_eq!(
+            cfg.get("port"),
+            Some(&json!(9200)),
+            "a named key is overwritten"
+        );
     }
 
     #[test]
@@ -123,12 +146,17 @@ mod tests {
             &settings,
             &pool,
             "tv.kroma.whisper",
-            [("model".to_string(), json!("small"))].into_iter().collect(),
+            [("model".to_string(), json!("small"))]
+                .into_iter()
+                .collect(),
         );
         set_module_enabled(&settings, &pool, "tv.kroma.whisper", false);
 
         assert!(!module_enabled(&settings, "tv.kroma.whisper"));
-        assert_eq!(module_config(&settings, "tv.kroma.whisper").get("model"), Some(&json!("small")));
+        assert_eq!(
+            module_config(&settings, "tv.kroma.whisper").get("model"),
+            Some(&json!("small"))
+        );
 
         // The other order, on a second module.
         set_module_enabled(&settings, &pool, "tv.kroma.scene", false);
@@ -136,10 +164,15 @@ mod tests {
             &settings,
             &pool,
             "tv.kroma.scene",
-            [("threshold".to_string(), json!(0.4))].into_iter().collect(),
+            [("threshold".to_string(), json!(0.4))]
+                .into_iter()
+                .collect(),
         );
         assert!(!module_enabled(&settings, "tv.kroma.scene"));
-        assert_eq!(module_config(&settings, "tv.kroma.scene").get("threshold"), Some(&json!(0.4)));
+        assert_eq!(
+            module_config(&settings, "tv.kroma.scene").get("threshold"),
+            Some(&json!(0.4))
+        );
         assert!(!module_enabled(&settings, "tv.kroma.whisper"));
     }
 
@@ -150,9 +183,11 @@ mod tests {
         assert!(module_enabled(&settings, "tv.kroma.indexer"));
         assert!(module_config(&settings, "tv.kroma.indexer").is_empty());
 
-        settings.update_json(&pool, "moduleStates", |_| {
-            json!({ "tv.kroma.indexer": { "enabled": "yes", "config": [1, 2] } })
-        });
+        settings.update_json(
+            &pool,
+            "moduleStates",
+            |_| json!({ "tv.kroma.indexer": { "enabled": "yes", "config": [1, 2] } }),
+        );
         assert!(module_enabled(&settings, "tv.kroma.indexer"));
         assert!(module_config(&settings, "tv.kroma.indexer").is_empty());
 
@@ -173,6 +208,9 @@ mod tests {
 
         let reloaded = Settings::load(&pool);
         assert!(!module_enabled(&reloaded, "tv.kroma.vector"));
-        assert_eq!(module_config(&reloaded, "tv.kroma.vector").get("dim"), Some(&json!(512)));
+        assert_eq!(
+            module_config(&reloaded, "tv.kroma.vector").get("dim"),
+            Some(&json!(512))
+        );
     }
 }

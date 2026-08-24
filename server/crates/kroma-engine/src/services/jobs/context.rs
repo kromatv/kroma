@@ -46,7 +46,10 @@ impl RunHandle {
 
     /// `total == 0` means "indeterminate".
     pub fn progress(&self) -> (i64, i64) {
-        (self.done.load(Ordering::Relaxed), self.total.load(Ordering::Relaxed))
+        (
+            self.done.load(Ordering::Relaxed),
+            self.total.load(Ordering::Relaxed),
+        )
     }
 }
 
@@ -68,7 +71,10 @@ impl JobContext {
 
     #[cfg(test)]
     pub(crate) fn for_test(state: SharedState) -> Self {
-        Self::from_handle(state, Arc::new(RunHandle::new("test-run".into(), "test.job".into())))
+        Self::from_handle(
+            state,
+            Arc::new(RunHandle::new("test-run".into(), "test.job".into())),
+        )
     }
 
     /// Long jobs should poll this between units of work and return early;
@@ -109,9 +115,15 @@ impl JobContext {
         let pool = self.state.db.clone();
         let _ = db::insert_job_log(&pool, &self.handle.run_id, ts, level, &message);
         match level {
-            "error" => tracing::error!(job = %self.handle.key, run = %self.handle.run_id, "{message}"),
-            "warn" => tracing::warn!(job = %self.handle.key, run = %self.handle.run_id, "{message}"),
-            "debug" => tracing::debug!(job = %self.handle.key, run = %self.handle.run_id, "{message}"),
+            "error" => {
+                tracing::error!(job = %self.handle.key, run = %self.handle.run_id, "{message}")
+            }
+            "warn" => {
+                tracing::warn!(job = %self.handle.key, run = %self.handle.run_id, "{message}")
+            }
+            "debug" => {
+                tracing::debug!(job = %self.handle.key, run = %self.handle.run_id, "{message}")
+            }
             _ => tracing::info!(job = %self.handle.key, run = %self.handle.run_id, "{message}"),
         }
         self.state.events.publish(ServerEvent::JobLog {
@@ -135,7 +147,11 @@ impl JobContext {
             let ts = now_ms();
             let _ = db::insert_job_log(&pool, &run_id, ts, "debug", &message);
             tracing::debug!(run = %run_id, "{message}");
-            events.publish(ServerEvent::JobLog { run_id: run_id.clone(), level: "debug", message });
+            events.publish(ServerEvent::JobLog {
+                run_id: run_id.clone(),
+                level: "debug",
+                message,
+            });
         })
     }
 
@@ -236,7 +252,12 @@ mod tests {
 
         let seen: Vec<(String, String)> = drain(&mut rx)
             .iter()
-            .map(|v| (v["level"].as_str().unwrap().into(), v["message"].as_str().unwrap().into()))
+            .map(|v| {
+                (
+                    v["level"].as_str().unwrap().into(),
+                    v["message"].as_str().unwrap().into(),
+                )
+            })
             .collect();
         assert_eq!(
             seen,

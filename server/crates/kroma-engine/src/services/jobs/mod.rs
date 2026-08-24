@@ -76,8 +76,8 @@ pub use kroma_primitives::now_ms;
 // 4am local.
 fn now_local(state: &SharedState) -> OffsetDateTime {
     let mins = state.settings.get_i64("jobsUtcOffset", 0);
-    let offset = time::UtcOffset::from_whole_seconds((mins * 60) as i32)
-        .unwrap_or(time::UtcOffset::UTC);
+    let offset =
+        time::UtcOffset::from_whole_seconds((mins * 60) as i32).unwrap_or(time::UtcOffset::UTC);
     OffsetDateTime::now_utc().to_offset(offset)
 }
 

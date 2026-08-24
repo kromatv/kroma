@@ -28,7 +28,6 @@ const CAT_CTE: &str = "WITH cat(id,title,year,kind,metadata) AS (\
 
 const DIRECTING_JOBS_SQL: &str = "('Director','Creator')";
 
-
 /// A title in full form (`get_title`) adds people, synopsis, tagline.
 pub struct TitleFull {
     pub id: String,
@@ -75,7 +74,9 @@ pub fn genre_counts(pool: &Pool) -> Result<Vec<(String, usize)>> {
     );
     let mut stmt = conn.prepare(&sql)?;
     let rows = stmt
-        .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)? as usize)))?
+        .query_map([], |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)? as usize))
+        })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }
@@ -101,18 +102,32 @@ pub fn people_counts(pool: &Pool, role: &str, limit: usize) -> Result<Vec<(Strin
     let conn = pool.get()?;
     let mut stmt = conn.prepare(&sql)?;
     let rows = stmt
-        .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)? as usize)))?
+        .query_map([], |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)? as usize))
+        })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }
 
-
-fn full_from(id: String, title: String, year: Option<u32>, kind: String, meta: Option<Metadata>) -> TitleFull {
+fn full_from(
+    id: String,
+    title: String,
+    year: Option<u32>,
+    kind: String,
+    meta: Option<Metadata>,
+) -> TitleFull {
     let Some(m) = meta else {
         return TitleFull {
-            id, title, year, kind,
-            rating: None, genres: Vec::new(), directors: Vec::new(),
-            cast: Vec::new(), overview: None, tagline: None,
+            id,
+            title,
+            year,
+            kind,
+            rating: None,
+            genres: Vec::new(),
+            directors: Vec::new(),
+            cast: Vec::new(),
+            overview: None,
+            tagline: None,
         };
     };
     let directors = m
@@ -123,7 +138,10 @@ fn full_from(id: String, title: String, year: Option<u32>, kind: String, meta: O
         .collect();
     let cast = m.cast.iter().take(10).map(|c| c.name.clone()).collect();
     TitleFull {
-        id, title, year, kind,
+        id,
+        title,
+        year,
+        kind,
         rating: m.rating,
         genres: m.genres,
         directors,
@@ -145,7 +163,10 @@ mod tests {
         assert_eq!(dune.id, "m1");
         assert_eq!(dune.directors, ["Denis Villeneuve"]);
         assert_eq!(dune.cast, ["Timothée Chalamet"]);
-        assert_eq!(get_title(&pool, "m3").unwrap().unwrap().title, "The Shining");
+        assert_eq!(
+            get_title(&pool, "m3").unwrap().unwrap().title,
+            "The Shining"
+        );
         assert!(get_title(&pool, "Nonexistent").unwrap().is_none());
 
         let genres = genre_counts(&pool).unwrap();
@@ -164,7 +185,11 @@ mod tests {
 
         let unknown_kind = find_titles(
             &pool,
-            &TitleFilter { kind: Some("documentary".into()), limit: Some(50), ..Default::default() },
+            &TitleFilter {
+                kind: Some("documentary".into()),
+                limit: Some(50),
+                ..Default::default()
+            },
         )
         .unwrap();
         assert!(unknown_kind.iter().all(|t| t.kind == "movie"));
@@ -191,7 +216,13 @@ mod tests {
         assert_eq!(movies, ["m1"]);
 
         // Unknown person / blank name → nothing.
-        assert_eq!(crate::titles_by_person(&pool, "Nobody").unwrap(), (vec![], vec![]));
-        assert_eq!(crate::titles_by_person(&pool, "  ").unwrap(), (vec![], vec![]));
+        assert_eq!(
+            crate::titles_by_person(&pool, "Nobody").unwrap(),
+            (vec![], vec![])
+        );
+        assert_eq!(
+            crate::titles_by_person(&pool, "  ").unwrap(),
+            (vec![], vec![])
+        );
     }
 }

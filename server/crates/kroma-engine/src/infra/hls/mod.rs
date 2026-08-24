@@ -80,9 +80,10 @@ impl StreamMode {
     /// ever overridden, and only the audio axis moves.
     pub fn for_client_audio(self, codec: Option<&str>, client_decodes: Option<&str>) -> Self {
         match (self.audio, client_decodes) {
-            (AudioMode::Copy, Some(set)) if !client_can_play(codec, set) => {
-                Self { audio: AudioMode::Aac, ..self }
-            }
+            (AudioMode::Copy, Some(set)) if !client_can_play(codec, set) => Self {
+                audio: AudioMode::Aac,
+                ..self
+            },
             _ => self,
         }
     }
@@ -94,9 +95,10 @@ impl StreamMode {
     /// speculatively - a client that declares nothing keeps its stream copy.
     pub fn for_client_video(self, codec: Option<&str>, client_decodes: Option<&str>) -> Self {
         match (self.video, client_decodes) {
-            (VideoMode::Copy, Some(set)) if !client_can_play(codec, set) => {
-                Self { video: VideoMode::H264, ..self }
-            }
+            (VideoMode::Copy, Some(set)) if !client_can_play(codec, set) => Self {
+                video: VideoMode::H264,
+                ..self
+            },
             _ => self,
         }
     }
@@ -140,7 +142,9 @@ impl AudioMode {
 // to override, and forcing a transcode would punish the common case.
 fn client_can_play(codec: Option<&str>, client_set: &str) -> bool {
     let Some(codec) = codec else { return true };
-    client_set.split(',').any(|c| c.trim().eq_ignore_ascii_case(codec))
+    client_set
+        .split(',')
+        .any(|c| c.trim().eq_ignore_ascii_case(codec))
 }
 
 // `{item_id}:{mode}:{anchor_secs}:a{audio}`. The mode is part of the key
@@ -199,7 +203,10 @@ impl HlsEngine {
         .await
         .ok()
         .flatten();
-        self.durations.lock().unwrap().insert(input.to_string(), dur);
+        self.durations
+            .lock()
+            .unwrap()
+            .insert(input.to_string(), dur);
         dur
     }
 
@@ -220,14 +227,31 @@ impl HlsEngine {
     /// (input `-ss`, 0 = start), muxing the `audio`-th audio track. Returns the
     /// playlist text + the REAL stream start (s) - the keyframe at-or-before
     /// `anchor` - for the client's `baseSec`.
-    pub async fn master(&self, item_id: &str, input: &str, audio: u32, mode: StreamMode, anchor: u64) -> Option<(String, f64)> {
+    pub async fn master(
+        &self,
+        item_id: &str,
+        input: &str,
+        audio: u32,
+        mode: StreamMode,
+        anchor: u64,
+    ) -> Option<(String, f64)> {
         let key = session_key(item_id, mode, anchor, audio);
-        let (bytes, start) = self.sessions.master(&key, Path::new(input), audio, mode, anchor as f64).await?;
+        let (bytes, start) = self
+            .sessions
+            .master(&key, Path::new(input), audio, mode, anchor as f64)
+            .await?;
         Some((String::from_utf8(bytes).ok()?, start))
     }
 
     /// A child file (init or segment) of the `(mode, anchor, audio)` session.
-    pub async fn file(&self, item_id: &str, mode: StreamMode, anchor: u64, audio: u32, name: &str) -> Option<(Vec<u8>, &'static str)> {
+    pub async fn file(
+        &self,
+        item_id: &str,
+        mode: StreamMode,
+        anchor: u64,
+        audio: u32,
+        name: &str,
+    ) -> Option<(Vec<u8>, &'static str)> {
         let key = session_key(item_id, mode, anchor, audio);
         self.sessions.file(&key, name).await
     }
@@ -238,8 +262,12 @@ mod tests {
     use super::*;
 
     const VIDEO_MODES: [VideoMode; 2] = [VideoMode::Copy, VideoMode::H264];
-    const AUDIO_MODES: [AudioMode; 4] =
-        [AudioMode::Copy, AudioMode::Aac, AudioMode::AacStandard, AudioMode::AacNight];
+    const AUDIO_MODES: [AudioMode; 4] = [
+        AudioMode::Copy,
+        AudioMode::Aac,
+        AudioMode::AacStandard,
+        AudioMode::AacNight,
+    ];
 
     const fn copy() -> StreamMode {
         StreamMode::new(VideoMode::Copy, AudioMode::Copy)
@@ -270,14 +298,23 @@ mod tests {
             ("aac-standard", AudioMode::AacStandard),
             ("aac-night", AudioMode::AacNight),
         ] {
-            assert_eq!(StreamMode::parse(token), Some(StreamMode::new(VideoMode::Copy, audio)));
+            assert_eq!(
+                StreamMode::parse(token),
+                Some(StreamMode::new(VideoMode::Copy, audio))
+            );
         }
     }
 
     #[test]
     fn the_video_axis_is_a_prefix_on_the_audio_token() {
-        assert_eq!(StreamMode::new(VideoMode::H264, AudioMode::Copy).token(), "h264-copy");
-        assert_eq!(StreamMode::new(VideoMode::H264, AudioMode::AacNight).token(), "h264-aac-night");
+        assert_eq!(
+            StreamMode::new(VideoMode::H264, AudioMode::Copy).token(),
+            "h264-copy"
+        );
+        assert_eq!(
+            StreamMode::new(VideoMode::H264, AudioMode::AacNight).token(),
+            "h264-aac-night"
+        );
     }
 
     #[test]
@@ -286,20 +323,35 @@ mod tests {
         assert!(AudioMode::Aac.transcode());
         assert!(AudioMode::Aac.filter_chain().is_none());
         assert!(AudioMode::AacStandard.transcode());
-        assert!(AudioMode::AacStandard.filter_chain().unwrap().contains("ratio=4"));
-        assert!(AudioMode::AacNight.filter_chain().unwrap().contains("ratio=8"));
+        assert!(AudioMode::AacStandard
+            .filter_chain()
+            .unwrap()
+            .contains("ratio=4"));
+        assert!(AudioMode::AacNight
+            .filter_chain()
+            .unwrap()
+            .contains("ratio=8"));
     }
 
     #[test]
     fn copy_becomes_aac_when_the_client_cannot_decode_the_codec() {
         // The AC-3-only Android TV case: a copy request the device can't play.
-        assert_eq!(copy().for_client_audio(Some("ac3"), Some("aac")), audio(AudioMode::Aac));
+        assert_eq!(
+            copy().for_client_audio(Some("ac3"), Some("aac")),
+            audio(AudioMode::Aac)
+        );
     }
 
     #[test]
     fn copy_stays_copy_when_the_client_can_decode_or_passthrough() {
-        assert_eq!(copy().for_client_audio(Some("ac3"), Some("aac,ac3,eac3")), copy());
-        assert_eq!(copy().for_client_audio(Some("AC3"), Some("aac, ac3")), copy());
+        assert_eq!(
+            copy().for_client_audio(Some("ac3"), Some("aac,ac3,eac3")),
+            copy()
+        );
+        assert_eq!(
+            copy().for_client_audio(Some("AC3"), Some("aac, ac3")),
+            copy()
+        );
     }
 
     #[test]
@@ -309,7 +361,10 @@ mod tests {
 
     #[test]
     fn an_empty_capability_set_transcodes_every_known_codec() {
-        assert_eq!(copy().for_client_audio(Some("aac"), Some("")), audio(AudioMode::Aac));
+        assert_eq!(
+            copy().for_client_audio(Some("aac"), Some("")),
+            audio(AudioMode::Aac)
+        );
     }
 
     #[test]
@@ -321,7 +376,10 @@ mod tests {
     #[test]
     fn a_transcode_or_filter_request_is_never_second_guessed() {
         for mode in [AudioMode::Aac, AudioMode::AacStandard, AudioMode::AacNight] {
-            assert_eq!(audio(mode).for_client_audio(Some("ac3"), Some("")), audio(mode));
+            assert_eq!(
+                audio(mode).for_client_audio(Some("ac3"), Some("")),
+                audio(mode)
+            );
         }
     }
 
@@ -336,8 +394,14 @@ mod tests {
 
     #[test]
     fn video_stays_a_copy_when_the_declared_set_holds_the_codec() {
-        assert_eq!(copy().for_client_video(Some("hevc"), Some("h264,hevc,av1")), copy());
-        assert_eq!(copy().for_client_video(Some("HEVC"), Some("h264, hevc")), copy());
+        assert_eq!(
+            copy().for_client_video(Some("hevc"), Some("h264,hevc,av1")),
+            copy()
+        );
+        assert_eq!(
+            copy().for_client_video(Some("HEVC"), Some("h264, hevc")),
+            copy()
+        );
     }
 
     #[test]
@@ -369,7 +433,9 @@ mod tests {
 
     #[test]
     fn the_two_axes_move_independently() {
-        let both = copy().for_client_audio(Some("dts"), Some("aac")).for_client_video(Some("hevc"), Some("h264"));
+        let both = copy()
+            .for_client_audio(Some("dts"), Some("aac"))
+            .for_client_video(Some("hevc"), Some("h264"));
         assert_eq!(both, StreamMode::new(VideoMode::H264, AudioMode::Aac));
         assert_eq!(both.token(), "h264-aac");
         assert_eq!(
@@ -377,15 +443,22 @@ mod tests {
             StreamMode::new(VideoMode::H264, AudioMode::AacNight)
         );
         assert_eq!(
-            StreamMode::new(VideoMode::H264, AudioMode::Copy).for_client_audio(Some("dts"), Some("aac")),
+            StreamMode::new(VideoMode::H264, AudioMode::Copy)
+                .for_client_audio(Some("dts"), Some("aac")),
             StreamMode::new(VideoMode::H264, AudioMode::Aac)
         );
     }
 
     #[test]
     fn a_video_declaration_alone_never_moves_the_audio_axis() {
-        assert_eq!(copy().for_client_video(Some("hevc"), Some("h264")).audio, AudioMode::Copy);
-        assert_eq!(copy().for_client_audio(Some("dts"), Some("aac")).video, VideoMode::Copy);
+        assert_eq!(
+            copy().for_client_video(Some("hevc"), Some("h264")).audio,
+            AudioMode::Copy
+        );
+        assert_eq!(
+            copy().for_client_audio(Some("dts"), Some("aac")).video,
+            VideoMode::Copy
+        );
     }
 
     #[test]
@@ -400,7 +473,12 @@ mod tests {
     #[test]
     fn session_keys_keep_a_transcoded_picture_apart_from_a_copied_one() {
         let copied = session_key("it1", audio(AudioMode::Aac), 30, 1);
-        let recoded = session_key("it1", StreamMode::new(VideoMode::H264, AudioMode::Aac), 30, 1);
+        let recoded = session_key(
+            "it1",
+            StreamMode::new(VideoMode::H264, AudioMode::Aac),
+            30,
+            1,
+        );
         assert_eq!(recoded, "it1:h264-aac:30:a1");
         assert_ne!(copied, recoded);
     }
@@ -408,21 +486,41 @@ mod tests {
     #[test]
     fn same_program_spans_anchors_and_modes_only() {
         let key = session_key("it1", audio(AudioMode::Aac), 30, 1);
-        assert!(same_program(&key, &session_key("it1", audio(AudioMode::Aac), 900, 1)));
-        assert!(same_program(&key, &session_key("it1", audio(AudioMode::AacNight), 30, 1)));
         assert!(same_program(
             &key,
-            &session_key("it1", StreamMode::new(VideoMode::H264, AudioMode::Aac), 30, 1)
+            &session_key("it1", audio(AudioMode::Aac), 900, 1)
         ));
-        assert!(!same_program(&key, &session_key("it1", audio(AudioMode::Aac), 30, 2)));
-        assert!(!same_program(&key, &session_key("it2", audio(AudioMode::Aac), 30, 1)));
+        assert!(same_program(
+            &key,
+            &session_key("it1", audio(AudioMode::AacNight), 30, 1)
+        ));
+        assert!(same_program(
+            &key,
+            &session_key(
+                "it1",
+                StreamMode::new(VideoMode::H264, AudioMode::Aac),
+                30,
+                1
+            )
+        ));
+        assert!(!same_program(
+            &key,
+            &session_key("it1", audio(AudioMode::Aac), 30, 2)
+        ));
+        assert!(!same_program(
+            &key,
+            &session_key("it2", audio(AudioMode::Aac), 30, 1)
+        ));
         assert!(!same_program(&key, "nonsense"));
         assert!(!same_program("nonsense", "nonsense"));
     }
 
     #[test]
     fn program_of_tolerates_a_colon_in_the_item_id() {
-        assert_eq!(program_of("tv:s1e2:aac-night:30:a1"), Some(("tv:s1e2", "a1")));
+        assert_eq!(
+            program_of("tv:s1e2:aac-night:30:a1"),
+            Some(("tv:s1e2", "a1"))
+        );
         assert_eq!(program_of("it1:copy:0:a0"), Some(("it1", "a0")));
         assert_eq!(program_of("bogus"), None);
     }

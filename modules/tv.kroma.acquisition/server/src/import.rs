@@ -7,12 +7,12 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Result};
 
+use crate::peers::downloads::DownloadRow;
+use kroma_module_sdk::db;
 use kroma_module_sdk::engine::model::RequestKind;
 use kroma_module_sdk::engine::services::jobs::now_ms;
 use kroma_module_sdk::host::{HostStorage, LibraryFolders};
-use kroma_module_sdk::db as db;
 use kroma_naming as naming;
-use crate::peers::downloads::DownloadRow;
 
 mod place;
 mod replace;
@@ -36,7 +36,9 @@ pub struct ImportSummary {
 
 fn finalize_import<S: HostStorage>(state: &S, row: &DownloadRow, written: &[String]) {
     if let Some(req_id) = row.request_id.as_deref() {
-        if let Err(e) = kroma_module_sdk::engine::services::requests::on_download_imported(state, req_id) {
+        if let Err(e) =
+            kroma_module_sdk::engine::services::requests::on_download_imported(state, req_id)
+        {
             tracing::warn!(request = %req_id, error = %format!("{e:#}"), "post-import request update failed");
         }
     }
@@ -69,14 +71,21 @@ pub fn import_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<Im
     for row in ready {
         match import_one(state, &row) {
             Ok(paths) => {
-                log(format!("imported \"{}\" ({} files)", row.release_title, paths.len()));
+                log(format!(
+                    "imported \"{}\" ({} files)",
+                    row.release_title,
+                    paths.len()
+                ));
                 summary.imported += 1;
                 summary.files += paths.len();
                 crate::peers::downloads::mark_imported(state, &row.id, &paths, now_ms())?;
                 finalize_import(state, &row, &paths);
             }
             Err(e) => {
-                log(format!("import failed for \"{}\": {e:#}", row.release_title));
+                log(format!(
+                    "import failed for \"{}\": {e:#}",
+                    row.release_title
+                ));
                 summary.failed += 1;
                 crate::peers::downloads::set_status(
                     state,
@@ -106,8 +115,11 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
     };
 
     let lib = target_library_def(state, meta.kind)?;
-    let lib_root =
-        PathBuf::from(lib.folders.first().ok_or_else(|| anyhow!("library {} has no folder", lib.name))?);
+    let lib_root = PathBuf::from(
+        lib.folders
+            .first()
+            .ok_or_else(|| anyhow!("library {} has no folder", lib.name))?,
+    );
     let tpl = naming::NamingTemplates::read(|k, d| state.setting_str(k, d));
     let replacing = row.upgrade && state.setting_bool("acqReplaceOnUpgrade", true);
     let mode = match (row.upgrade, replacing) {
@@ -137,7 +149,10 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
             let ctx = episode_ctx(&meta, season, episode, &parsed);
             let dest = lib_root.join(tpl.episode_rel_path(&ctx, ext_of(largest_video)));
             let at = place(largest_video, &dest, mode)?;
-            placed.push((Replaced::Episode(season, episode), at.to_string_lossy().into_owned()));
+            placed.push((
+                Replaced::Episode(season, episode),
+                at.to_string_lossy().into_owned(),
+            ));
         }
         "season" => {
             let mut skipped_other_season = 0usize;
@@ -162,7 +177,10 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
                 let ctx = episode_ctx(&meta, season, episode, &parsed);
                 let dest = lib_root.join(tpl.episode_rel_path(&ctx, ext_of(src)));
                 let at = place(src, &dest, mode)?;
-                placed.push((Replaced::Episode(season, episode), at.to_string_lossy().into_owned()));
+                placed.push((
+                    Replaced::Episode(season, episode),
+                    at.to_string_lossy().into_owned(),
+                ));
             }
             if placed.is_empty() {
                 if skipped_other_season > 0 {
@@ -188,7 +206,11 @@ enum Replaced {
 fn movie_ctx(meta: &ImportMeta, src: &Path) -> naming::NameContext {
     let parsed = kroma_scene::parse_release_name(stem_of(src));
     let ctx = base_ctx(meta, &parsed);
-    naming::NameContext { title: meta.title.clone(), year: meta.year, ..ctx }
+    naming::NameContext {
+        title: meta.title.clone(),
+        year: meta.year,
+        ..ctx
+    }
 }
 
 fn episode_ctx(
@@ -223,28 +245,49 @@ fn base_ctx(meta: &ImportMeta, parsed: &kroma_scene::ParsedRelease) -> naming::N
 }
 
 fn resolve_meta<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<ImportMeta> {
-    let kind = if row.kind == "movie" { RequestKind::Movie } else { RequestKind::Show };
+    let kind = if row.kind == "movie" {
+        RequestKind::Movie
+    } else {
+        RequestKind::Show
+    };
     let tmdb_id = (row.tmdb_id != 0).then_some(row.tmdb_id);
 
     if let Some(rid) = row.request_id.as_deref() {
         let conn = state.db().get()?;
         if let Some(req) = db::get_request(&conn, rid)? {
-            return Ok(ImportMeta { kind: req.kind, title: req.title, year: req.year, tmdb_id });
+            return Ok(ImportMeta {
+                kind: req.kind,
+                title: req.title,
+                year: req.year,
+                tmdb_id,
+            });
         }
     }
     if let Some(title) = row.title.as_deref().filter(|t| !t.trim().is_empty()) {
-        return Ok(ImportMeta { kind, title: title.to_string(), year: row.year, tmdb_id });
+        return Ok(ImportMeta {
+            kind,
+            title: title.to_string(),
+            year: row.year,
+            tmdb_id,
+        });
     }
     // Last resort: derive from the release name (bare magnet with no metadata).
     let parsed = kroma_scene::parse_release_name(&row.release_title);
     if parsed.title.trim().is_empty() {
         bail!("could not determine a title to import under (no request, no metadata, unparseable name)");
     }
-    Ok(ImportMeta { kind, title: parsed.title, year: parsed.year, tmdb_id })
+    Ok(ImportMeta {
+        kind,
+        title: parsed.title,
+        year: parsed.year,
+        tmdb_id,
+    })
 }
 
 fn stem_of(path: &Path) -> &str {
-    path.file_stem().and_then(std::ffi::OsStr::to_str).unwrap_or_default()
+    path.file_stem()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or_default()
 }
 
 fn target_library_def<S: HostStorage>(state: &S, kind: RequestKind) -> Result<LibraryFolders> {

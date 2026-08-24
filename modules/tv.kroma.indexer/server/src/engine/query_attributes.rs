@@ -27,7 +27,12 @@ pub(super) fn query_attributes(query: &Query) -> HashMap<String, String> {
         }
     };
     match query {
-        Query::Movie { tmdb_id, imdb_id, title: _, year } => {
+        Query::Movie {
+            tmdb_id,
+            imdb_id,
+            title: _,
+            year,
+        } => {
             set("Type", "movie".into());
             if let Some(id) = tmdb_id {
                 set("TMDBID", id.to_string());
@@ -41,7 +46,12 @@ pub(super) fn query_attributes(query: &Query) -> HashMap<String, String> {
                 set("Year", y.to_string());
             }
         }
-        Query::Episode { tmdb_id, season, episode, .. } => {
+        Query::Episode {
+            tmdb_id,
+            season,
+            episode,
+            ..
+        } => {
             set("Type", "tvsearch".into());
             if let Some(id) = tmdb_id {
                 set("TMDBID", id.to_string());
@@ -50,7 +60,9 @@ pub(super) fn query_attributes(query: &Query) -> HashMap<String, String> {
             set("Ep", episode.to_string());
             set("Episode", episode.to_string());
         }
-        Query::Season { tmdb_id, season, .. } => {
+        Query::Season {
+            tmdb_id, season, ..
+        } => {
             set("Type", "tvsearch".into());
             if let Some(id) = tmdb_id {
                 set("TMDBID", id.to_string());
@@ -66,9 +78,9 @@ pub(super) fn query_attributes(query: &Query) -> HashMap<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::build_requests;
     use super::super::test_support::{build_def, cfg};
+    use super::*;
 
     fn echoing_def() -> Definition {
         build_def(
@@ -147,8 +159,16 @@ search:
             year: Some(1999),
         });
         assert_eq!(vars.get("type").map(String::as_str), Some("movie"));
-        assert_eq!(vars.get("imdb").map(String::as_str), Some("tt0133093"), "prefixed");
-        assert_eq!(vars.get("imdbshort").map(String::as_str), Some("0133093"), "bare");
+        assert_eq!(
+            vars.get("imdb").map(String::as_str),
+            Some("tt0133093"),
+            "prefixed"
+        );
+        assert_eq!(
+            vars.get("imdbshort").map(String::as_str),
+            Some("0133093"),
+            "bare"
+        );
         assert_eq!(vars.get("year").map(String::as_str), Some("1999"));
         // A tv-only variable is not invented for a movie.
         assert_eq!(vars.get("season").map(String::as_str), Some(""));
@@ -171,7 +191,9 @@ search:
     fn a_free_text_query_is_typed_as_a_plain_search() {
         // `Type` picks the tracker's search MODE, so a text query must not
         // present itself as a movie or tv lookup with no ids attached.
-        let vars = echoed(&Query::Text { query: "some release".into() });
+        let vars = echoed(&Query::Text {
+            query: "some release".into(),
+        });
         assert_eq!(vars.get("type").map(String::as_str), Some("search"));
         assert_eq!(vars.get("tmdb").map(String::as_str), Some(""));
     }
@@ -185,21 +207,38 @@ search:
         const TORZNAB_FUNCTIONS: [&str; 5] = ["search", "tvsearch", "movie", "music", "book"];
         let queries = [
             Query::Text { query: "q".into() },
-            Query::Movie { tmdb_id: None, imdb_id: None, title: "M".into(), year: None },
-            Query::Season { tmdb_id: None, title: "S".into(), season: 1 },
-            Query::Episode { tmdb_id: None, title: "E".into(), season: 1, episode: 2 },
+            Query::Movie {
+                tmdb_id: None,
+                imdb_id: None,
+                title: "M".into(),
+                year: None,
+            },
+            Query::Season {
+                tmdb_id: None,
+                title: "S".into(),
+                season: 1,
+            },
+            Query::Episode {
+                tmdb_id: None,
+                title: "E".into(),
+                season: 1,
+                episode: 2,
+            },
         ];
         for query in &queries {
             let t = echoed(query).get("type").cloned().unwrap_or_default();
-            assert!(TORZNAB_FUNCTIONS.contains(&t.as_str()), "t={t:?} is not a torznab function");
+            assert!(
+                TORZNAB_FUNCTIONS.contains(&t.as_str()),
+                "t={t:?} is not a torznab function"
+            );
         }
     }
 }
 
 #[cfg(test)]
 mod keyword_tests {
-    use super::*;
     use super::super::build_requests;
+    use super::*;
     use crate::IndexerConfig;
 
     fn def_with_inputs(inputs: &str) -> Definition {
@@ -231,7 +270,12 @@ search:
     }
 
     fn episode() -> Query {
-        Query::Episode { tmdb_id: None, title: "Black Mirror".into(), season: 2, episode: 1 }
+        Query::Episode {
+            tmdb_id: None,
+            title: "Black Mirror".into(),
+            season: 2,
+            episode: 1,
+        }
     }
 
     #[test]

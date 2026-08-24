@@ -240,8 +240,12 @@ pub async fn devices(
     headers: HeaderMap,
 ) -> Response {
     let ip = client_ip(&headers, &addr, &state.config.trusted_proxies);
-    let rows: Vec<NearbyDevice> =
-        state.handoff.nearby(&ip).into_iter().map(NearbyDevice::from).collect();
+    let rows: Vec<NearbyDevice> = state
+        .handoff
+        .nearby(&ip)
+        .into_iter()
+        .map(NearbyDevice::from)
+        .collect();
     sweep(&state, []).await;
     Json(rows).into_response()
 }
@@ -268,16 +272,29 @@ pub async fn grant(
         Err(resp) => return resp,
     };
 
-    let claim =
-        Claim { viewer_ip: &ip, proof: body.proof.as_deref(), check: body.check.as_deref() };
-    match state.handoff.grant(&body.handle, claim, user, token.clone(), access.clone()) {
+    let claim = Claim {
+        viewer_ip: &ip,
+        proof: body.proof.as_deref(),
+        check: body.check.as_deref(),
+    };
+    match state
+        .handoff
+        .grant(&body.handle, claim, user, token.clone(), access.clone())
+    {
         Ok(()) => {
             sweep(&state, []).await;
             StatusCode::NO_CONTENT.into_response()
         }
         // Don't leave the just-minted tokens dangling.
         Err(refusal) => {
-            sweep(&state, [Orphaned { token, access_token: access }]).await;
+            sweep(
+                &state,
+                [Orphaned {
+                    token,
+                    access_token: access,
+                }],
+            )
+            .await;
             refused(loc, refusal)
         }
     }

@@ -25,8 +25,10 @@ where
     let mut reports: Vec<IndexerReport> = Vec::new();
     for chunk in indexers.chunks(MAX_PARALLEL) {
         let answers = std::thread::scope(|scope| {
-            let handles: Vec<_> =
-                chunk.iter().map(|indexer| scope.spawn(|| ask_one(indexer, &ask))).collect();
+            let handles: Vec<_> = chunk
+                .iter()
+                .map(|indexer| scope.spawn(|| ask_one(indexer, &ask)))
+                .collect();
             handles
                 .into_iter()
                 .zip(chunk)
@@ -68,7 +70,9 @@ where
     };
     let elapsed_ms = started.elapsed().as_millis();
     match &error {
-        Some(e) => tracing::warn!(indexer = %indexer.name, elapsed_ms, error = %e, "indexer failed"),
+        Some(e) => {
+            tracing::warn!(indexer = %indexer.name, elapsed_ms, error = %e, "indexer failed")
+        }
         None => tracing::info!(
             indexer = %indexer.name,
             elapsed_ms,
@@ -126,7 +130,10 @@ mod tests {
         let indexers: Vec<IndexerRef> = ["a", "b", "c"].iter().map(|id| row(id)).collect();
         let (rows, reports) = sweep(&indexers, |i| Ok(vec![i.id.clone()]));
         assert_eq!(rows, vec!["a", "b", "c"]);
-        assert_eq!(reports.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(), ["a", "b", "c"]);
+        assert_eq!(
+            reports.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(),
+            ["a", "b", "c"]
+        );
     }
 
     #[test]
@@ -147,8 +154,9 @@ mod tests {
 
     #[test]
     fn more_indexers_than_the_cap_all_get_asked() {
-        let indexers: Vec<IndexerRef> =
-            (0..MAX_PARALLEL * 2 + 1).map(|n| row(&format!("i{n}"))).collect();
+        let indexers: Vec<IndexerRef> = (0..MAX_PARALLEL * 2 + 1)
+            .map(|n| row(&format!("i{n}")))
+            .collect();
         let (rows, reports) = sweep(&indexers, |i| Ok(vec![i.id.clone()]));
         assert_eq!(rows.len(), indexers.len());
         assert_eq!(reports.len(), indexers.len());

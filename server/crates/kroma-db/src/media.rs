@@ -68,8 +68,9 @@ pub fn get_item(pool: &Pool, id: &str) -> Result<Option<MediaItem>> {
 pub fn index_snapshot(pool: &Pool) -> Result<(Vec<MediaItem>, Vec<Show>)> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(&format!("SELECT {ITEM_COLS} FROM items"))?;
-    let items: Vec<MediaItem> =
-        stmt.query_map([], row_to_item)?.collect::<rusqlite::Result<Vec<_>>>()?;
+    let items: Vec<MediaItem> = stmt
+        .query_map([], row_to_item)?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
     let mut stmt = conn.prepare("SELECT id,title,year,library,added_at,metadata FROM shows")?;
     let shows: Vec<Show> = stmt
         .query_map([], row_to_show_bare)?
@@ -95,9 +96,16 @@ pub fn titles_by_person(pool: &Pool, name: &str) -> Result<(Vec<String>, Vec<Str
         return Ok((Vec::new(), Vec::new()));
     }
     let conn = pool.get()?;
-    let movie_ids =
-        person_ids(&conn, "SELECT id FROM items WHERE kind != 'episode' AND metadata IS NOT NULL AND (", name)?;
-    let show_ids = person_ids(&conn, "SELECT id FROM shows WHERE metadata IS NOT NULL AND (", name)?;
+    let movie_ids = person_ids(
+        &conn,
+        "SELECT id FROM items WHERE kind != 'episode' AND metadata IS NOT NULL AND (",
+        name,
+    )?;
+    let show_ids = person_ids(
+        &conn,
+        "SELECT id FROM shows WHERE metadata IS NOT NULL AND (",
+        name,
+    )?;
     Ok((movie_ids, show_ids))
 }
 
@@ -114,11 +122,23 @@ fn person_ids(conn: &rusqlite::Connection, prefix: &str, name: &str) -> Result<V
     Ok(ids)
 }
 
-fn query_items(pool: &Pool, base: &str, library: Option<&str>, tail: &str) -> Result<Vec<MediaItem>> {
+fn query_items(
+    pool: &Pool,
+    base: &str,
+    library: Option<&str>,
+    tail: &str,
+) -> Result<Vec<MediaItem>> {
     let conn = pool.get()?;
     let mut items: Vec<MediaItem> = match library {
         Some(lib) => {
-            let sql = format!("{base} {} {tail}", if base.contains("WHERE") { "AND library = ?1" } else { "WHERE library = ?1" });
+            let sql = format!(
+                "{base} {} {tail}",
+                if base.contains("WHERE") {
+                    "AND library = ?1"
+                } else {
+                    "WHERE library = ?1"
+                }
+            );
             let mut stmt = conn.prepare(&sql)?;
             let rows = stmt.query_map(params![lib], row_to_item)?;
             rows.collect::<rusqlite::Result<Vec<_>>>()?
@@ -191,11 +211,17 @@ mod tests {
             .unwrap();
         }
         let movies = list_movies(&p, None).unwrap();
-        assert_eq!(movies.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(), ["m2", "m1", "mo"]);
+        assert_eq!(
+            movies.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(),
+            ["m2", "m1", "mo"]
+        );
         assert!(movies.iter().all(|i| i.kind != Kind::Episode));
 
         let lib_movies = list_movies(&p, Some("lib")).unwrap();
-        assert_eq!(lib_movies.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(), ["m2", "m1"]);
+        assert_eq!(
+            lib_movies.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(),
+            ["m2", "m1"]
+        );
 
         let items = list_items(&p, None).unwrap();
         assert!(items.iter().any(|i| i.id == "e1"));
@@ -266,7 +292,9 @@ mod tests {
     const SQLITE_BIND_LIMIT: usize = 32_766;
 
     fn padded_past_the_bind_limit(real: &str) -> Vec<String> {
-        let mut ids: Vec<String> = (0..=SQLITE_BIND_LIMIT).map(|n| format!("absent{n}")).collect();
+        let mut ids: Vec<String> = (0..=SQLITE_BIND_LIMIT)
+            .map(|n| format!("absent{n}"))
+            .collect();
         ids.push(real.to_string());
         ids
     }

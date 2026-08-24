@@ -41,7 +41,14 @@ pub async fn keyframe_before(input: &Path, anchor: f64) -> f64 {
     }
     let from = (anchor - 30.0).max(0.0);
     let out = Command::new("ffprobe")
-        .args(["-v", "error", "-select_streams", "v:0", "-skip_frame", "nokey"])
+        .args([
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-skip_frame",
+            "nokey",
+        ])
         .arg("-read_intervals")
         .arg(format!("{from:.3}%{anchor:.3}"))
         .args(["-show_entries", "frame=pts_time", "-of", "csv=p=0"])
@@ -55,7 +62,9 @@ pub async fn keyframe_before(input: &Path, anchor: f64) -> f64 {
         .lines()
         .filter_map(|l| l.trim().trim_end_matches(',').parse::<f64>().ok())
         .filter(|t| *t <= anchor + 0.01)
-        .fold(None, |best: Option<f64>, t| Some(best.map_or(t, |b| b.max(t))))
+        .fold(None, |best: Option<f64>, t| {
+            Some(best.map_or(t, |b| b.max(t)))
+        })
         .unwrap_or(anchor)
 }
 
@@ -83,7 +92,9 @@ pub fn spawn_stream(
     if seeking {
         // Required for A/V sync: an accurate seek backs the video to a keyframe but
         // decodes-and-discards audio to the exact `-ss`, starting it a GOP late.
-        cmd.arg("-noaccurate_seek").arg("-ss").arg(format!("{start_secs:.3}"));
+        cmd.arg("-noaccurate_seek")
+            .arg("-ss")
+            .arg(format!("{start_secs:.3}"));
     }
     // Input option: must come before `-i`.
     cmd.args(["-readrate", READRATE]);
@@ -94,14 +105,18 @@ pub fn spawn_stream(
     if seeking {
         cmd.arg("-copyts"); // keep source timestamps so video + audio stay on one timeline
     }
-    cmd.args(["-map", "0:v:0"]).arg("-map").arg(format!("0:a:{audio}"));
+    cmd.args(["-map", "0:v:0"])
+        .arg("-map")
+        .arg(format!("0:a:{audio}"));
     if copying_video {
         cmd.args(["-c:v", "copy"]);
     } else {
         // 8-bit H.264 because the fallback exists for decoders the source defeats,
         // so it must land on the one profile every target reads. HDR sources are
         // not tone-mapped (no zimg) and come out washed-out.
-        cmd.args(["-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p"]);
+        cmd.args([
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
+        ]);
     }
     if mode.audio.transcode() {
         if let Some(af) = mode.audio.filter_chain() {

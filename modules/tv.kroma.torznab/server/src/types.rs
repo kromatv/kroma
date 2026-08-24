@@ -27,9 +27,23 @@ pub struct IndexerEndpoint {
 /// wire: `{"Movie":{"tmdb_id":603,...}}`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Query {
-    Movie { tmdb_id: Option<u64>, imdb_id: Option<String>, title: String, year: Option<u32> },
-    Episode { tmdb_id: Option<u64>, title: String, season: u32, episode: u32 },
-    Season { tmdb_id: Option<u64>, title: String, season: u32 },
+    Movie {
+        tmdb_id: Option<u64>,
+        imdb_id: Option<String>,
+        title: String,
+        year: Option<u32>,
+    },
+    Episode {
+        tmdb_id: Option<u64>,
+        title: String,
+        season: u32,
+        episode: u32,
+    },
+    Season {
+        tmdb_id: Option<u64>,
+        title: String,
+        season: u32,
+    },
 }
 
 /// A normalized Torznab result item.

@@ -4,8 +4,8 @@ use serde_json::json;
 
 use super::*;
 use crate::services::notify::push::credentials::{credentials, keys_for};
-use crate::services::notify::push::{is_subscribed, public_key, VAPID_PRIVATE_KEY};
 use crate::services::notify::push::test_support::notification;
+use crate::services::notify::push::{is_subscribed, public_key, VAPID_PRIVATE_KEY};
 
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::TcpListener;
@@ -20,7 +20,9 @@ struct FakeService {
 }
 
 fn drain_request(stream: &std::net::TcpStream) -> bool {
-    let Ok(clone) = stream.try_clone() else { return false };
+    let Ok(clone) = stream.try_clone() else {
+        return false;
+    };
     let mut reader = BufReader::new(clone);
     let mut line = String::new();
     if reader.read_line(&mut line).unwrap_or(0) == 0 {
@@ -65,7 +67,10 @@ impl FakeService {
             }
         });
 
-        Self { endpoint: format!("http://127.0.0.1:{port}/push/abc"), hits }
+        Self {
+            endpoint: format!("http://127.0.0.1:{port}/push/abc"),
+            hits,
+        }
     }
 
     fn hits(&self) -> usize {
@@ -81,11 +86,16 @@ fn state_with_endpoint(
     let state = crate::test_support::test_state();
     // Mint a real key: `deliver` refuses to send without one.
     public_key(&state).unwrap();
-    let user = kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[]).unwrap().id;
+    let user = kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[])
+        .unwrap()
+        .id;
     // A subscriber's p256dh is a P-256 public point, the same shape as a
     // VAPID public key, so one can stand in for the other.
     let (p256dh, auth) = if keys {
-        (Some(VapidKey::generate().public_base64url()), Some("MDEyMzQ1Njc4OWFiY2RlZg".to_string()))
+        (
+            Some(VapidKey::generate().public_base64url()),
+            Some("MDEyMzQ1Njc4OWFiY2RlZg".to_string()),
+        )
     } else {
         (None, None)
     };
@@ -108,17 +118,28 @@ fn state_with_endpoint(
 
 fn subscription_count(state: &crate::state::SharedState, user: &str) -> usize {
     let conn = state.db.get().unwrap();
-    push_subs::subscriptions_for_user(&conn, user).unwrap().len()
+    push_subs::subscriptions_for_user(&conn, user)
+        .unwrap()
+        .len()
 }
 
 #[test]
 fn a_push_the_service_accepts_is_counted() {
     let service = FakeService::answering(201);
     let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
-    let sent = deliver(&state, &sender(&state), &user, &notification(NotificationCategory::Requests));
+    let sent = deliver(
+        &state,
+        &sender(&state),
+        &user,
+        &notification(NotificationCategory::Requests),
+    );
     assert_eq!(sent, 1);
     assert_eq!(service.hits(), 1);
-    assert_eq!(subscription_count(&state, &user), 1, "a working endpoint is kept");
+    assert_eq!(
+        subscription_count(&state, &user),
+        1,
+        "a working endpoint is kept"
+    );
 }
 
 #[test]
@@ -126,8 +147,20 @@ fn an_endpoint_the_browser_retired_is_dropped_on_the_spot() {
     for gone in [404u16, 410] {
         let service = FakeService::answering(gone);
         let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
-        assert_eq!(deliver(&state, &sender(&state), &user, &notification(NotificationCategory::Requests)), 0);
-        assert_eq!(subscription_count(&state, &user), 0, "{gone} should retire the endpoint");
+        assert_eq!(
+            deliver(
+                &state,
+                &sender(&state),
+                &user,
+                &notification(NotificationCategory::Requests)
+            ),
+            0
+        );
+        assert_eq!(
+            subscription_count(&state, &user),
+            0,
+            "{gone} should retire the endpoint"
+        );
     }
 }
 
@@ -139,7 +172,11 @@ fn a_service_having_a_bad_night_never_costs_the_reader_their_registration() {
 
     for attempt in 1..=push_subs::MAX_FAILURES + 2 {
         assert_eq!(deliver(&state, &sender(&state), &user, &note), 0);
-        assert_eq!(subscription_count(&state, &user), 1, "dropped after {attempt}");
+        assert_eq!(
+            subscription_count(&state, &user),
+            1,
+            "dropped after {attempt}"
+        );
     }
 }
 
@@ -167,7 +204,11 @@ fn an_endpoint_that_keeps_being_refused_is_still_retired() {
 
     for attempt in 1..push_subs::MAX_FAILURES {
         assert_eq!(deliver(&state, &sender(&state), &user, &note), 0);
-        assert_eq!(subscription_count(&state, &user), 1, "dropped after only {attempt}");
+        assert_eq!(
+            subscription_count(&state, &user),
+            1,
+            "dropped after only {attempt}"
+        );
     }
     assert_eq!(deliver(&state, &sender(&state), &user, &note), 0);
     assert_eq!(subscription_count(&state, &user), 0);
@@ -197,7 +238,11 @@ fn a_success_forgives_the_failures_before_it() {
         .db
         .get()
         .unwrap()
-        .query_row("SELECT failures FROM push_subscriptions WHERE id = 'sub-1'", [], |r| r.get(0))
+        .query_row(
+            "SELECT failures FROM push_subscriptions WHERE id = 'sub-1'",
+            [],
+            |r| r.get(0),
+        )
         .unwrap();
     assert_eq!(failures, 0, "a delivery must reset the streak");
 }
@@ -207,9 +252,21 @@ fn a_transport_we_cannot_speak_yet_is_left_alone() {
     // APNs/FCM rows are stored but not deliverable without credentials.
     let service = FakeService::answering(201);
     let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::Apns, true);
-    assert_eq!(deliver(&state, &sender(&state), &user, &notification(NotificationCategory::Requests)), 0);
+    assert_eq!(
+        deliver(
+            &state,
+            &sender(&state),
+            &user,
+            &notification(NotificationCategory::Requests)
+        ),
+        0
+    );
     assert_eq!(service.hits(), 0, "nothing should have been sent");
-    assert_eq!(subscription_count(&state, &user), 1, "the device stays registered");
+    assert_eq!(
+        subscription_count(&state, &user),
+        1,
+        "the device stays registered"
+    );
 }
 
 #[test]
@@ -217,7 +274,15 @@ fn a_web_push_row_without_its_keys_fails_that_endpoint_only() {
     // Without p256dh/auth there is nothing to encrypt to.
     let service = FakeService::answering(201);
     let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, false);
-    assert_eq!(deliver(&state, &sender(&state), &user, &notification(NotificationCategory::Requests)), 0);
+    assert_eq!(
+        deliver(
+            &state,
+            &sender(&state),
+            &user,
+            &notification(NotificationCategory::Requests)
+        ),
+        0
+    );
     assert_eq!(service.hits(), 0);
 }
 
@@ -239,8 +304,18 @@ fn a_database_the_server_cannot_reach_costs_a_push_and_nothing_more() {
 #[test]
 fn no_endpoints_means_no_work_at_all() {
     let state = crate::test_support::test_state();
-    let user = kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[]).unwrap().id;
-    assert_eq!(deliver(&state, &sender(&state), &user, &notification(NotificationCategory::Media)), 0);
+    let user = kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[])
+        .unwrap()
+        .id;
+    assert_eq!(
+        deliver(
+            &state,
+            &sender(&state),
+            &user,
+            &notification(NotificationCategory::Media)
+        ),
+        0
+    );
     assert!(!is_subscribed(&state, &user));
 }
 
@@ -256,10 +331,25 @@ fn endpoints_without_a_usable_key_are_skipped_rather_than_re_keyed() {
             VAPID_PRIVATE_KEY.to_string(),
             json!(broken),
         )]));
-        assert!(keys_for(&credentials(&state)).web.is_none(), "{broken:?} must not be usable");
-        assert_eq!(deliver(&state, &sender(&state), &user, &notification(NotificationCategory::Requests)), 0);
+        assert!(
+            keys_for(&credentials(&state)).web.is_none(),
+            "{broken:?} must not be usable"
+        );
+        assert_eq!(
+            deliver(
+                &state,
+                &sender(&state),
+                &user,
+                &notification(NotificationCategory::Requests)
+            ),
+            0
+        );
         assert_eq!(service.hits(), 0);
-        assert_eq!(subscription_count(&state, &user), 1, "the endpoint is not the problem");
+        assert_eq!(
+            subscription_count(&state, &user),
+            1,
+            "the endpoint is not the problem"
+        );
     }
 }
 
@@ -272,7 +362,12 @@ fn a_caller_that_says_nothing_is_not_counted_as_a_push() {
 
     let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
     assert_eq!(
-        deliver(&state, &sender(&state), &user, &notification(NotificationCategory::Requests)),
+        deliver(
+            &state,
+            &sender(&state),
+            &user,
+            &notification(NotificationCategory::Requests)
+        ),
         1,
         "the silent caller must not have consumed the listener"
     );

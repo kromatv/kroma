@@ -7,7 +7,11 @@ pub(super) fn user() -> User {
 }
 
 pub(super) fn granted() -> Granted {
-    Granted { token: "tok".into(), access_token: "acc".into(), user: user() }
+    Granted {
+        token: "tok".into(),
+        access_token: "acc".into(),
+        user: user(),
+    }
 }
 
 pub(super) fn grants() -> Grants<&'static str> {
@@ -38,5 +42,7 @@ pub(super) fn scope(meta: &Scoped) -> &'static str {
 }
 
 pub(super) fn place(g: &Grants<Scoped>, meta: Scoped, mint: impl FnMut() -> String) -> Filed {
-    g.replace_scoped(|_| false, scope, 8, meta, mint).filed.expect("room in the store")
+    g.replace_scoped(|_| false, scope, 8, meta, mint)
+        .filed
+        .expect("room in the store")
 }

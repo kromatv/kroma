@@ -39,7 +39,10 @@ enum Answer {
 
 impl Point {
     pub fn new(name: &'static str, resolve: Contributions) -> Self {
-        Self { name, answer: Answer::Live(resolve) }
+        Self {
+            name,
+            answer: Answer::Live(resolve),
+        }
     }
 
     /// A point answered by `f` in this process. For a test that needs the core's
@@ -48,12 +51,18 @@ impl Point {
         name: &'static str,
         f: impl Fn(&str, &Value) -> Option<Value> + Send + Sync + 'static,
     ) -> Self {
-        Self { name, answer: Answer::Stub(Arc::new(f)) }
+        Self {
+            name,
+            answer: Answer::Stub(Arc::new(f)),
+        }
     }
 
     /// A point nothing answers.
     pub fn absent(name: &'static str) -> Self {
-        Self { name, answer: Answer::Absent }
+        Self {
+            name,
+            answer: Answer::Absent,
+        }
     }
 
     /// Whether anything answers it right now.
@@ -80,12 +89,8 @@ impl Point {
                 let endpoint = (found.base_url, found.token);
                 let resolver: kroma_module_host::Resolver =
                     Arc::new(move || Some(endpoint.clone()));
-                kroma_module_host::call_raw(
-                    &resolver,
-                    &format!("{}/{method}", self.name),
-                    body,
-                )
-                .ok()
+                kroma_module_host::call_raw(&resolver, &format!("{}/{method}", self.name), body)
+                    .ok()
             }
             Answer::Stub(f) => {
                 let sent = serde_json::to_value(body).ok()?;
@@ -107,7 +112,10 @@ mod tests {
         let p = Point::absent("embedder");
 
         assert!(!p.live());
-        assert_eq!(p.call::<_, Vec<f32>>("embed", &json!({ "text": "x" })), None);
+        assert_eq!(
+            p.call::<_, Vec<f32>>("embed", &json!({ "text": "x" })),
+            None
+        );
     }
 
     #[test]
@@ -147,7 +155,10 @@ mod tests {
         });
 
         assert!(p.live());
-        assert_eq!(p.call::<_, Vec<f32>>("embed", &json!({ "text": "hello" })), Some(vec![0.5, 0.5]));
+        assert_eq!(
+            p.call::<_, Vec<f32>>("embed", &json!({ "text": "hello" })),
+            Some(vec![0.5, 0.5])
+        );
     }
 
     #[test]

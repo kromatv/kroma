@@ -50,14 +50,23 @@ mod tests {
             panic!("{}", path.display());
         })
         .unwrap_err();
-        let path = leaked.downcast_ref::<String>().expect("panicked with a String");
-        assert!(!std::path::Path::new(path).exists(), "unwinding left {path} behind");
+        let path = leaked
+            .downcast_ref::<String>()
+            .expect("panicked with a String");
+        assert!(
+            !std::path::Path::new(path).exists(),
+            "unwinding left {path} behind"
+        );
     }
 
     #[test]
     fn the_name_says_which_harness_made_it() {
         let dir = temp_dir("scanroot");
-        let name = dir.path().file_name().and_then(|n| n.to_str()).expect("a utf-8 name");
+        let name = dir
+            .path()
+            .file_name()
+            .and_then(|n| n.to_str())
+            .expect("a utf-8 name");
         assert!(name.starts_with("kroma-scanroot-"), "{name}");
     }
 }

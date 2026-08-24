@@ -6,5 +6,9 @@ use kroma_module_runtime::RemoteHost;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    kroma_module_runtime::serve(|_host| kroma_whisper::whisper_routes::<RemoteHost>(), vec![]).await
+    kroma_module_runtime::serve(
+        |_host| kroma_whisper::whisper_routes::<RemoteHost>(),
+        vec![],
+    )
+    .await
 }

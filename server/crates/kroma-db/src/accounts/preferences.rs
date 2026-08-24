@@ -42,7 +42,11 @@ pub fn set_user_audio_language(pool: &Pool, user_id: &str, language: Option<&str
 }
 
 /// The sentinel `"off"` is a stored value meaning "force subtitles off".
-pub fn set_user_subtitle_language(pool: &Pool, user_id: &str, language: Option<&str>) -> Result<()> {
+pub fn set_user_subtitle_language(
+    pool: &Pool,
+    user_id: &str,
+    language: Option<&str>,
+) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
         "UPDATE users SET subtitle_language = ?2 WHERE id = ?1",
@@ -63,8 +67,18 @@ mod tests {
         let u = mk_user(&p, "a@b.c", "alice");
         assert!(avatar_urls(&p).unwrap().is_empty());
         set_user_avatar(&p, &u.id, Some("/api/images/av.webp")).unwrap();
-        assert_eq!(avatar_urls(&p).unwrap(), vec!["/api/images/av.webp".to_string()]);
-        assert_eq!(user_by_id(&p, &u.id).unwrap().unwrap().avatar_url.as_deref(), Some("/api/images/av.webp"));
+        assert_eq!(
+            avatar_urls(&p).unwrap(),
+            vec!["/api/images/av.webp".to_string()]
+        );
+        assert_eq!(
+            user_by_id(&p, &u.id)
+                .unwrap()
+                .unwrap()
+                .avatar_url
+                .as_deref(),
+            Some("/api/images/av.webp")
+        );
         set_user_avatar(&p, &u.id, None).unwrap();
         assert!(avatar_urls(&p).unwrap().is_empty());
     }

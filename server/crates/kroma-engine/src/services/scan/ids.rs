@@ -62,8 +62,14 @@ mod tests {
 
     #[test]
     fn show_key_normalizes_title_and_scopes_by_library() {
-        assert_eq!(show_key("lib1", "Breaking Bad"), show_key("lib1", "breaking   bad"));
-        assert_ne!(show_key("lib1", "Breaking Bad"), show_key("lib2", "Breaking Bad"));
+        assert_eq!(
+            show_key("lib1", "Breaking Bad"),
+            show_key("lib1", "breaking   bad")
+        );
+        assert_ne!(
+            show_key("lib1", "Breaking Bad"),
+            show_key("lib2", "Breaking Bad")
+        );
     }
 
     #[test]
@@ -86,13 +92,19 @@ mod tests {
             Some("Director's Cut")
         );
         // Quality tokens map to their canonical labels.
-        assert_eq!(detect_edition("Film 2160p BluRay.mkv").as_deref(), Some("4K"));
+        assert_eq!(
+            detect_edition("Film 2160p BluRay.mkv").as_deref(),
+            Some("4K")
+        );
         assert_eq!(detect_edition("Film UHD.mkv").as_deref(), Some("4K"));
         assert_eq!(detect_edition("Film 1080p.mkv").as_deref(), Some("1080p"));
         assert_eq!(detect_edition("Show 720p WEB.mkv").as_deref(), Some("720p"));
         assert_eq!(detect_edition("Movie IMAX.mkv").as_deref(), Some("IMAX"));
         assert_eq!(detect_edition("Movie REMUX.mkv").as_deref(), Some("Remux"));
-        assert_eq!(detect_edition("Movie Unrated.mkv").as_deref(), Some("Unrated"));
+        assert_eq!(
+            detect_edition("Movie Unrated.mkv").as_deref(),
+            Some("Unrated")
+        );
         // Nothing notable -> None.
         assert_eq!(detect_edition("Plain Movie.mkv"), None);
     }

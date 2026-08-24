@@ -66,7 +66,11 @@ pub struct GenerationView {
 // Map a (stage, done, total) to a single overall 0..1 bar. Extraction occupies a
 // small head (it has no sub-progress); transcription fills the rest.
 fn overall(stage: &str, done: usize, total: usize) -> f32 {
-    let frac = if total > 0 { (done as f32 / total as f32).clamp(0.0, 1.0) } else { 0.0 };
+    let frac = if total > 0 {
+        (done as f32 / total as f32).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
     match stage {
         "model" => 0.04,
         "extract" => 0.10,
@@ -140,7 +144,11 @@ impl GenRegistry {
             cancel: cancel.clone(),
         };
         self.inner.lock().unwrap().insert(id.clone(), entry);
-        Handle { reg: self.clone(), id, cancel }
+        Handle {
+            reg: self.clone(),
+            id,
+            cancel,
+        }
     }
 
     /// Live + recently-finished generations for an item, pruning stale ones.
@@ -364,7 +372,10 @@ mod tests {
     fn find_running_matches_and_ignores_finished() {
         let r = reg();
         let h = r.start("item1", "translate", Some("French".into()));
-        assert_eq!(r.find_running("item1", "translate", "French").as_deref(), Some("gen0"));
+        assert_eq!(
+            r.find_running("item1", "translate", "French").as_deref(),
+            Some("gen0")
+        );
         assert!(r.find_running("item1", "translate", "English").is_none());
         assert!(r.find_running("other", "translate", "French").is_none());
         // Once finished it is no longer "running".

@@ -7,7 +7,7 @@ const BASE_ARGS: &[&str] = &[
     "--idle=yes",
     "--force-window=yes",
     "--fullscreen",
-    "--ontop=no",         // stay BELOW the always-on-top Tauri window
+    "--ontop=no", // stay BELOW the always-on-top Tauri window
     "--title=KROMA Player",
     "--no-osc",
     "--no-input-default-bindings",
@@ -20,7 +20,7 @@ const BASE_ARGS: &[&str] = &[
     "--force-seekable=yes",
     "--sub-auto=no",
     "--sid=no",
-    "--ytdl=no",            // never invoke yt-dlp: KROMA only opens its own HTTP file URLs
+    "--ytdl=no", // never invoke yt-dlp: KROMA only opens its own HTTP file URLs
 ];
 
 // The bundled kroma-mpv AppImage's `get-yt-dlp.hook` pops a modal kdialog before
@@ -65,8 +65,8 @@ fn vo_ladder() -> Vec<Vec<String>> {
     vec![
         vec!["--vo=gpu-next".into()],
         vec!["--vo=gpu-next".into(), "--gpu-api=vulkan".into()], // Vulkan: no EGL
-        vec!["--vo=gpu".into(), "--gpu-context=x11".into()], // GLX via X11/XWayland: no EGL
-        vec!["--vo=x11".into()],                             // software: always works
+        vec!["--vo=gpu".into(), "--gpu-context=x11".into()],     // GLX via X11/XWayland: no EGL
+        vec!["--vo=x11".into()],                                 // software: always works
     ]
 }
 
@@ -97,7 +97,6 @@ pub(super) fn mpv_binary() -> String {
     }
     "mpv".to_string()
 }
-
 
 pub(super) fn start_mpv(binary: &str, sock: &Path) -> Result<(Child, UnixStream), &'static str> {
     let ladder = vo_ladder();
@@ -195,7 +194,6 @@ fn await_socket(child: &mut Child, sock: &Path) -> Option<UnixStream> {
     }
     None
 }
-
 
 fn signal_group(pgid: libc::pid_t, signal: libc::c_int) {
     // SAFETY: `kill` is a syscall with no memory preconditions, and the negative

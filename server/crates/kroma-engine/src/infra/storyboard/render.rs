@@ -10,7 +10,7 @@ use crate::model::MediaItem;
 
 use super::extract::{extract_tiles, use_hwaccel};
 use super::proc::{finalize, run_capturing, unique_tmp, Cancel, TMP_SEQ};
-use super::{Manifest, Plan, Storyboard, TILE_H, TILE_W, playable};
+use super::{playable, Manifest, Plan, Storyboard, TILE_H, TILE_W};
 
 // Low on purpose: the tiles are tiny and only previewed on hover.
 const WEBP_QUALITY: &str = "58";
@@ -18,7 +18,14 @@ const TIMEOUT: Duration = Duration::from_secs(600);
 
 /// Publishes the sheet before the manifest, so a reader that sees the manifest
 /// always finds the sheet.
-pub(super) fn generate(abs: &str, dir: &Path, key: &str, item_id: &str, dur_s: f64, cancel: Cancel) -> std::result::Result<(), String> {
+pub(super) fn generate(
+    abs: &str,
+    dir: &Path,
+    key: &str,
+    item_id: &str,
+    dur_s: f64,
+    cancel: Cancel,
+) -> std::result::Result<(), String> {
     std::fs::create_dir_all(dir)
         .map_err(|e| format!("could not create the cache dir {}: {e}", dir.display()))?;
     let plan = Plan::for_duration(dur_s);
@@ -45,7 +52,14 @@ pub(super) fn generate(abs: &str, dir: &Path, key: &str, item_id: &str, dur_s: f
     }
 }
 
-fn render(abs: &str, dir: &Path, key: &str, plan: &Plan, hwaccel: bool, cancel: Cancel) -> std::result::Result<&'static str, String> {
+fn render(
+    abs: &str,
+    dir: &Path,
+    key: &str,
+    plan: &Plan,
+    hwaccel: bool,
+    cancel: Cancel,
+) -> std::result::Result<&'static str, String> {
     // Per-run scratch dir, so a crash mid-generation leaves no stray PNGs.
     let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
     let scratch = dir.join(format!(".sb-{key}-{}-{seq}", std::process::id()));
@@ -94,10 +108,25 @@ fn montage(scratch: &Path, plan: &Plan, out: &Path) -> std::result::Result<(), S
     let mut cmd = Command::new("ffmpeg");
     // `-threads 1`: one mosaic frame from local PNGs is cheap; bound each run's
     // footprint rather than let the decoder pool grab every core.
-    cmd.args(["-v", "error", "-nostdin", "-threads", "1", "-y", "-start_number", "0", "-i"])
-        .arg(scratch.join("px_%04d.png"))
-        .args(["-frames:v", "1", "-vf", &format!("tile={}x{}", plan.cols, plan.rows)])
-        .arg(out);
+    cmd.args([
+        "-v",
+        "error",
+        "-nostdin",
+        "-threads",
+        "1",
+        "-y",
+        "-start_number",
+        "0",
+        "-i",
+    ])
+    .arg(scratch.join("px_%04d.png"))
+    .args([
+        "-frames:v",
+        "1",
+        "-vf",
+        &format!("tile={}x{}", plan.cols, plan.rows),
+    ])
+    .arg(out);
     run_capturing(cmd, TIMEOUT).map_err(|e| format!("mosaic assembly failed: {e}"))?;
     if out.exists() {
         Ok(())
@@ -150,7 +179,15 @@ mod tests {
         let tmp = scratch.path();
         let clip = tmp.join("clip.mp4");
         let ok = Command::new("ffmpeg")
-            .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=size=640x360:rate=24:duration=30"])
+            .args([
+                "-y",
+                "-loglevel",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "testsrc=size=640x360:rate=24:duration=30",
+            ])
             .args(["-c:v", "libx264", "-g", "48", "-pix_fmt", "yuv420p"])
             .arg(&clip)
             .status()
@@ -159,7 +196,8 @@ mod tests {
         assert!(ok, "could not create the test clip (is ffmpeg installed?)");
 
         let key = "testkey";
-        generate(clip.to_str().unwrap(), tmp, key, "x", 30.0, &|| false).expect("generation failed");
+        generate(clip.to_str().unwrap(), tmp, key, "x", 30.0, &|| false)
+            .expect("generation failed");
 
         // A sheet (WebP or JPEG) + a parseable manifest landed.
         let plan = Plan::for_duration(30.0);
@@ -169,19 +207,33 @@ mod tests {
             .find(|p| p.exists())
             .expect("no sheet produced");
         let parsed: Manifest =
-            serde_json::from_slice(&std::fs::read(tmp.join(format!("{key}.json"))).unwrap()).unwrap();
+            serde_json::from_slice(&std::fs::read(tmp.join(format!("{key}.json"))).unwrap())
+                .unwrap();
         assert_eq!(parsed.cols, plan.cols);
         assert_eq!(parsed.tile_w, TILE_W);
 
         // The real sheet pixels match the declared geometry exactly (so the
         // client's background-position math never drifts).
         let dims = Command::new("ffprobe")
-            .args(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0"])
+            .args([
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=width,height",
+                "-of",
+                "csv=p=0",
+            ])
             .arg(&sheet)
             .output()
             .unwrap();
         let dims = String::from_utf8_lossy(&dims.stdout);
         let expected = format!("{},{}", plan.cols * TILE_W, plan.rows * TILE_H);
-        assert_eq!(dims.trim(), expected, "sheet dimensions != cols*tileW x rows*tileH");
+        assert_eq!(
+            dims.trim(),
+            expected,
+            "sheet dimensions != cols*tileW x rows*tileH"
+        );
     }
 }

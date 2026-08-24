@@ -43,12 +43,21 @@ pub async fn search(
     ReqLocale(locale): ReqLocale,
     Query(p): Query<SearchParams>,
 ) -> Result<Response, Response> {
-    let q: String = p.q.unwrap_or_default().trim().chars().take(MAX_QUERY_CHARS).collect();
+    let q: String =
+        p.q.unwrap_or_default()
+            .trim()
+            .chars()
+            .take(MAX_QUERY_CHARS)
+            .collect();
     let limit = p.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
     let library = p.library;
 
     if q.is_empty() {
-        return Ok(Json(SearchResponse { query: q, results: Vec::new() }).into_response());
+        return Ok(Json(SearchResponse {
+            query: q,
+            results: Vec::new(),
+        })
+        .into_response());
     }
 
     let engine = state.search.clone();
@@ -61,20 +70,29 @@ pub async fn search(
     Ok(Json(resp).into_response())
 }
 
-fn hydrate(pool: &db::Pool, hits: Vec<Hit>, library: Option<&str>, locale: &str) -> anyhow::Result<Vec<SearchHit>> {
-    let item_ids: Vec<String> =
-        hits.iter().filter(|h| h.kind != HitKind::Show).map(|h| h.id.clone()).collect();
-    let show_ids: Vec<String> =
-        hits.iter().filter(|h| h.kind == HitKind::Show).map(|h| h.id.clone()).collect();
+fn hydrate(
+    pool: &db::Pool,
+    hits: Vec<Hit>,
+    library: Option<&str>,
+    locale: &str,
+) -> anyhow::Result<Vec<SearchHit>> {
+    let item_ids: Vec<String> = hits
+        .iter()
+        .filter(|h| h.kind != HitKind::Show)
+        .map(|h| h.id.clone())
+        .collect();
+    let show_ids: Vec<String> = hits
+        .iter()
+        .filter(|h| h.kind == HitKind::Show)
+        .map(|h| h.id.clone())
+        .collect();
 
     let mut item_vec = db::get_items_by_ids(pool, &item_ids)?;
     db::localize::overlay_items(pool, &mut item_vec, locale)?;
-    let mut items: HashMap<String, _> =
-        item_vec.into_iter().map(|i| (i.id.clone(), i)).collect();
+    let mut items: HashMap<String, _> = item_vec.into_iter().map(|i| (i.id.clone(), i)).collect();
     let mut show_vec = db::get_shows_by_ids(pool, &show_ids)?;
     db::localize::overlay_shows(pool, &mut show_vec, locale)?;
-    let mut shows: HashMap<String, _> =
-        show_vec.into_iter().map(|s| (s.id.clone(), s)).collect();
+    let mut shows: HashMap<String, _> = show_vec.into_iter().map(|s| (s.id.clone(), s)).collect();
 
     let in_library = |lib: &str| library.is_none_or(|want| lib == want);
 

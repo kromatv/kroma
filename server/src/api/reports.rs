@@ -31,14 +31,21 @@ pub fn routes() -> Router<SharedState> {
 }
 
 fn locale(user: &User) -> &'static str {
-    user.language.as_deref().and_then(i18n::normalize).unwrap_or(i18n::DEFAULT_LOCALE)
+    user.language
+        .as_deref()
+        .and_then(i18n::normalize)
+        .unwrap_or(i18n::DEFAULT_LOCALE)
 }
 
 fn require(user: &User, perm: Permission) -> Result<(), Response> {
     if user.can(perm) {
         Ok(())
     } else {
-        Err(lerr(locale(user), StatusCode::FORBIDDEN, "error.permissionDenied"))
+        Err(lerr(
+            locale(user),
+            StatusCode::FORBIDDEN,
+            "error.permissionDenied",
+        ))
     }
 }
 

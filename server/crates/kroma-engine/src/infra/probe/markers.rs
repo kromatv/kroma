@@ -83,7 +83,11 @@ mod tests {
     use super::*;
 
     fn chap(start_s: u64, end_s: u64, title: &str) -> Chapter {
-        Chapter { start_ms: start_s * 1000, end_ms: end_s * 1000, title: Some(title.into()) }
+        Chapter {
+            start_ms: start_s * 1000,
+            end_ms: end_s * 1000,
+            title: Some(title.into()),
+        }
     }
 
     #[test]
@@ -122,7 +126,11 @@ mod tests {
     #[test]
     fn untitled_or_unknown_chapters_skipped() {
         let chapters = vec![
-            Chapter { start_ms: 0, end_ms: 1000, title: None },
+            Chapter {
+                start_ms: 0,
+                end_ms: 1000,
+                title: None,
+            },
             chap(0, 60, "Chapter 1"),
         ];
         assert!(markers_from_chapters(&chapters, Some(600_000)).is_empty());

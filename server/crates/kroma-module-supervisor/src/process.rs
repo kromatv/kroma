@@ -53,7 +53,13 @@ impl Supervisor {
         let storage = self.storage_of(id);
         self.adopt_declared_tables(id, storage.as_ref());
         let piped = self.cfg.log_line.is_some();
-        let stdio = || if piped { Stdio::piped() } else { Stdio::inherit() };
+        let stdio = || {
+            if piped {
+                Stdio::piped()
+            } else {
+                Stdio::inherit()
+            }
+        };
         let mut child = Command::new(&bin)
             .env("KROMA_MODULE_ID", id)
             .env("KROMA_MODULE_PORT", port.to_string())
@@ -94,8 +100,14 @@ impl Supervisor {
 
     fn drain_logs(child: &mut Child, id: &str, log_line: &LogSink) {
         for pipe in [
-            child.stdout.take().map(|p| Box::new(p) as Box<dyn std::io::Read + Send>),
-            child.stderr.take().map(|p| Box::new(p) as Box<dyn std::io::Read + Send>),
+            child
+                .stdout
+                .take()
+                .map(|p| Box::new(p) as Box<dyn std::io::Read + Send>),
+            child
+                .stderr
+                .take()
+                .map(|p| Box::new(p) as Box<dyn std::io::Read + Send>),
         ]
         .into_iter()
         .flatten()
@@ -117,7 +129,9 @@ impl Supervisor {
     /// Stop a module process, giving it the grace period to shut down cleanly.
     /// A no-op if not running. Blocking: call it off the async runtime.
     pub fn stop(&self, id: &str) {
-        let Some(mut p) = self.procs.write().unwrap().remove(id) else { return };
+        let Some(mut p) = self.procs.write().unwrap().remove(id) else {
+            return;
+        };
         self.say(id, "INFO stopping module process");
         ask_to_stop(id, &mut p.child);
         reap(id, &mut p.child, Instant::now() + STOP_GRACE);

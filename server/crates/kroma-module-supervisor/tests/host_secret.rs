@@ -25,7 +25,9 @@ async fn get(host: StubHost, uri: &str, token: Option<&str>) -> (StatusCode, Str
         .await
         .unwrap();
     let status = res.status();
-    let bytes = axum::body::to_bytes(res.into_body(), 64 * 1024).await.unwrap();
+    let bytes = axum::body::to_bytes(res.into_body(), 64 * 1024)
+        .await
+        .unwrap();
     (status, String::from_utf8(bytes.to_vec()).unwrap())
 }
 
@@ -66,7 +68,10 @@ async fn a_caller_with_no_host_token_gets_nothing() {
     let (status, body) = get(host, "/_host/secret?name=tmdb", None).await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
-    assert!(!body.contains("abc123"), "the secret leaked to an unauthenticated caller");
+    assert!(
+        !body.contains("abc123"),
+        "the secret leaked to an unauthenticated caller"
+    );
 }
 
 #[tokio::test]

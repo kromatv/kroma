@@ -65,18 +65,44 @@ impl SearchEngine {
     pub fn new() -> Result<Self> {
         let (schema, fields) = schema::build();
         let empty = HashMap::new();
-        let active =
-            build_active(schema.clone(), &fields, &[], &[], &[], &empty, &empty, &empty)?;
-        Ok(Self { schema, fields, active: RwLock::new(Arc::new(active)), rebuilding: Mutex::new(()) })
+        let active = build_active(
+            schema.clone(),
+            &fields,
+            &[],
+            &[],
+            &[],
+            &empty,
+            &empty,
+            &empty,
+        )?;
+        Ok(Self {
+            schema,
+            fields,
+            active: RwLock::new(Arc::new(active)),
+            rebuilding: Mutex::new(()),
+        })
     }
 
     /// Rebuild from explicit catalog slices (no translations); production
     /// reindexing goes through [`Self::reindex_from_db`].
     #[cfg_attr(not(test), allow(dead_code))]
-    pub fn rebuild(&self, movies: &[MediaItem], shows: &[Show], episodes: &[MediaItem]) -> Result<()> {
+    pub fn rebuild(
+        &self,
+        movies: &[MediaItem],
+        shows: &[Show],
+        episodes: &[MediaItem],
+    ) -> Result<()> {
         let empty = HashMap::new();
-        let active =
-            build_active(self.schema.clone(), &self.fields, movies, shows, episodes, &empty, &empty, &empty)?;
+        let active = build_active(
+            self.schema.clone(),
+            &self.fields,
+            movies,
+            shows,
+            episodes,
+            &empty,
+            &empty,
+            &empty,
+        )?;
         *self.active.write().unwrap() = Arc::new(active);
         Ok(())
     }
@@ -85,16 +111,28 @@ impl SearchEngine {
         // One rebuild at a time, snapshot taken under the lock: two overlapping
         // callers would otherwise race to publish, and the one that read the
         // older catalog could land last.
-        let _rebuilding = self.rebuilding.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let _rebuilding = self
+            .rebuilding
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let (items, shows) = db::index_snapshot(pool)?;
-        let (episodes, movies): (Vec<MediaItem>, Vec<MediaItem>) =
-            items.into_iter().partition(|i| matches!(i.kind, Kind::Episode));
+        let (episodes, movies): (Vec<MediaItem>, Vec<MediaItem>) = items
+            .into_iter()
+            .partition(|i| matches!(i.kind, Kind::Episode));
         // Every stored language, so a query matches in any of them.
-        let tr_movies = db::translations::all_for_kind(pool, db::metadata_core::ITEM).unwrap_or_default();
+        let tr_movies =
+            db::translations::all_for_kind(pool, db::metadata_core::ITEM).unwrap_or_default();
         let tr_eps = db::translations::all_for_kind(pool, "episode").unwrap_or_default();
-        let tr_shows = db::translations::all_for_kind(pool, db::metadata_core::SHOW).unwrap_or_default();
+        let tr_shows =
+            db::translations::all_for_kind(pool, db::metadata_core::SHOW).unwrap_or_default();
         let active = build_active(
-            self.schema.clone(), &self.fields, &movies, &shows, &episodes, &tr_movies, &tr_eps,
+            self.schema.clone(),
+            &self.fields,
+            &movies,
+            &shows,
+            &episodes,
+            &tr_movies,
+            &tr_eps,
             &tr_shows,
         )?;
         *self.active.write().unwrap() = Arc::new(active);
@@ -110,7 +148,10 @@ impl SearchEngine {
         };
         let searcher = active.reader.searcher();
         let limit = limit.max(1);
-        let candidates = limit.saturating_mul(CANDIDATE_FACTOR).min(MAX_CANDIDATES).max(limit);
+        let candidates = limit
+            .saturating_mul(CANDIDATE_FACTOR)
+            .min(MAX_CANDIDATES)
+            .max(limit);
         // tantivy 0.26 removed TopDocs' blanket Collector impl; `.order_by_score()`
         // yields the score-ordered collector.
         let Ok(top) = searcher.search(&query, &TopDocs::with_limit(candidates).order_by_score())
@@ -119,7 +160,9 @@ impl SearchEngine {
         };
         let mut hits = Vec::with_capacity(top.len());
         for (_score, addr) in top {
-            let Ok(doc) = searcher.doc::<TantivyDocument>(addr) else { continue };
+            let Ok(doc) = searcher.doc::<TantivyDocument>(addr) else {
+                continue;
+            };
             let id = field_str(&doc, self.fields.id);
             if id.is_empty() {
                 continue;
@@ -142,8 +185,11 @@ impl SearchEngine {
 /// [`MAX_EPISODES_PER_SHOW`] per show, and truncates to `limit`. Relevance order
 /// is preserved, so a show keeps the rank its own document earned.
 fn collapse_episodes(hits: Vec<Hit>, limit: usize) -> Vec<Hit> {
-    let shows: HashSet<String> =
-        hits.iter().filter(|h| h.kind == HitKind::Show).map(|h| h.id.clone()).collect();
+    let shows: HashSet<String> = hits
+        .iter()
+        .filter(|h| h.kind == HitKind::Show)
+        .map(|h| h.id.clone())
+        .collect();
     let mut kept_per_show: HashMap<String, usize> = HashMap::new();
     let mut out = Vec::with_capacity(limit);
     for hit in hits {
@@ -193,10 +239,19 @@ fn build_active(
         .reload_policy(ReloadPolicy::OnCommitWithDelay)
         .try_into()?;
     reader.reload()?;
-    Ok(Active { reader, _index: index })
+    Ok(Active {
+        reader,
+        _index: index,
+    })
 }
 
-fn add_item(writer: &mut IndexWriter, f: &Fields, item: &MediaItem, kind: &str, tr: Option<&Vec<TransData>>) {
+fn add_item(
+    writer: &mut IndexWriter,
+    f: &Fields,
+    item: &MediaItem,
+    kind: &str,
+    tr: Option<&Vec<TransData>>,
+) {
     let mut doc = TantivyDocument::new();
     doc.add_text(f.id, &item.id);
     doc.add_text(f.kind, kind);
@@ -225,7 +280,12 @@ fn add_show(writer: &mut IndexWriter, f: &Fields, show: &Show, tr: Option<&Vec<T
     let _ = writer.add_document(doc);
 }
 
-fn add_translations(doc: &mut TantivyDocument, f: &Fields, file_title: &str, tr: Option<&Vec<TransData>>) {
+fn add_translations(
+    doc: &mut TantivyDocument,
+    f: &Fields,
+    file_title: &str,
+    tr: Option<&Vec<TransData>>,
+) {
     let Some(list) = tr else { return };
     for t in list {
         if let Some(title) = &t.title {

@@ -7,8 +7,8 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::api::util::query;
 use crate::api::extract::AuthUser;
+use crate::api::util::query;
 use crate::db;
 use crate::state::SharedState;
 use axum::routing::get;

@@ -39,8 +39,10 @@ pub async fn retry_element_stage(
 ) -> Result<Response, Response> {
     require(&user, Permission::SettingsManage)?;
     let st = state.clone();
-    blocking(move || crate::services::pipeline::reprocess::stage_for(&st, &body.kind, &body.id, &body.stage))
-        .await?;
+    blocking(move || {
+        crate::services::pipeline::reprocess::stage_for(&st, &body.kind, &body.id, &body.stage)
+    })
+    .await?;
     Ok(Json(json!({ "ok": true })).into_response())
 }
 
@@ -70,7 +72,10 @@ pub async fn cancel_stage(
 ) -> Result<Response, Response> {
     require(&user, Permission::SettingsManage)?;
     let (_, key, _) = resolve(&stage).ok_or_else(unknown_stage)?;
-    let cancelled = state.jobs.resolve(key).is_some_and(|job| state.jobs.cancel(job));
+    let cancelled = state
+        .jobs
+        .resolve(key)
+        .is_some_and(|job| state.jobs.cancel(job));
     Ok(Json(json!({ "cancelled": cancelled })).into_response())
 }
 
@@ -148,8 +153,8 @@ pub async fn retry_task(
     require(&user, Permission::SettingsManage)?;
     let (short, key, _) = resolve(&stage).ok_or_else(unknown_stage)?;
     let st = state.clone();
-    let n = blocking(move || crate::db::pipeline::retry(&st.db, short, Some(&body.subject_id)))
-        .await?;
+    let n =
+        blocking(move || crate::db::pipeline::retry(&st.db, short, Some(&body.subject_id))).await?;
     kick(&state, key);
     Ok(Json(json!({ "requeued": n })).into_response())
 }
@@ -172,8 +177,9 @@ pub async fn reprocess_subject(
 ) -> Result<Response, Response> {
     require(&user, Permission::SettingsManage)?;
     let st = state.clone();
-    let outcome =
-        blocking(move || crate::services::pipeline::reprocess::reprocess(&st, &body.kind, &body.id))
-            .await?;
+    let outcome = blocking(move || {
+        crate::services::pipeline::reprocess::reprocess(&st, &body.kind, &body.id)
+    })
+    .await?;
     Ok(Json(json!({ "subjects": outcome.subjects, "stages": outcome.stages })).into_response())
 }

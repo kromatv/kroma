@@ -54,7 +54,10 @@ pub async fn job_detail(
     super::require_any_admin(&user)?;
     let st = state.clone();
     let detail = blocking(move || {
-        Ok(st.jobs.resolve(&key).and_then(|job| st.jobs.detail(&st, job)))
+        Ok(st
+            .jobs
+            .resolve(&key)
+            .and_then(|job| st.jobs.detail(&st, job)))
     })
     .await?;
     match detail {
@@ -71,7 +74,10 @@ pub async fn run_job(
     AxPath(key): AxPath<String>,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
-    let job = state.jobs.resolve(&key).ok_or_else(|| json_error(StatusCode::NOT_FOUND, "job not found"))?;
+    let job = state
+        .jobs
+        .resolve(&key)
+        .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "job not found"))?;
     match state.jobs.trigger(state.clone(), job, "manual") {
         Ok(run_id) => Ok(Json(json!({ "runId": run_id })).into_response()),
         Err(TriggerError::Unknown) => Err(json_error(StatusCode::NOT_FOUND, "job not found")),
@@ -88,7 +94,10 @@ pub async fn cancel_job(
     AxPath(key): AxPath<String>,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
-    let cancelled = state.jobs.resolve(&key).is_some_and(|job| state.jobs.cancel(job));
+    let cancelled = state
+        .jobs
+        .resolve(&key)
+        .is_some_and(|job| state.jobs.cancel(job));
     Ok(Json(json!({ "cancelled": cancelled })).into_response())
 }
 
@@ -113,10 +122,16 @@ pub async fn update_job(
     // Reject a bad cron before touching the DB, with a precise 400.
     if let Some(Some(expr)) = &body.schedule {
         if !Cron::is_valid(expr) {
-            return Err(json_error(StatusCode::BAD_REQUEST, "invalid cron expression"));
+            return Err(json_error(
+                StatusCode::BAD_REQUEST,
+                "invalid cron expression",
+            ));
         }
     }
-    let job = state.jobs.resolve(&key).ok_or_else(|| json_error(StatusCode::NOT_FOUND, "job not found"))?;
+    let job = state
+        .jobs
+        .resolve(&key)
+        .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "job not found"))?;
     let st = state.clone();
     let (schedule, enabled) = (body.schedule, body.enabled);
     blocking(move || st.jobs.update_schedule(&st.db, job, schedule, enabled)).await?;

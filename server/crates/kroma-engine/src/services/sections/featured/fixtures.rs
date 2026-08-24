@@ -35,7 +35,8 @@ pub(super) fn meta(rating: Option<f32>, backdrop: bool, overview: bool) -> Metad
 /// An RFC3339 stamp `ms_ago` before [`NOW_MS`] (negative = a future stamp).
 pub(super) fn iso(ms_ago: i64) -> String {
     let ts = time::OffsetDateTime::from_unix_timestamp((NOW_MS - ms_ago) / 1000).unwrap();
-    ts.format(&time::format_description::well_known::Rfc3339).unwrap()
+    ts.format(&time::format_description::well_known::Rfc3339)
+        .unwrap()
 }
 
 /// A movie [`SectionItem`] with everything the hero ignores left empty.
@@ -78,7 +79,13 @@ pub(super) fn movie(
 
 /// A video stream carrying only what [`super::score`]'s cinematic bonus reads.
 pub(super) fn stream(width: u32, hdr: bool) -> VideoStream {
-    VideoStream { codec: "hevc".into(), width: Some(width), height: None, hdr, bit_depth: None }
+    VideoStream {
+        codec: "hevc".into(),
+        width: Some(width),
+        height: None,
+        hdr,
+        bit_depth: None,
+    }
 }
 
 /// Insert a user row: `watched` and `progress` both have an FK on `users`, so a

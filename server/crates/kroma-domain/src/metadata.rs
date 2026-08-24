@@ -54,7 +54,11 @@ pub struct CastMember {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub character: Option<String>,
     // A TMDB URL until `crate::image::localize` rewrites it to a local path.
-    #[serde(rename = "profileUrl", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "profileUrl",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub profile_url: Option<String>,
 }
 
@@ -63,7 +67,11 @@ pub struct CastMember {
 pub struct CrewMember {
     pub name: String,
     pub job: String,
-    #[serde(rename = "profileUrl", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "profileUrl",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub profile_url: Option<String>,
 }
 
@@ -161,7 +169,11 @@ mod tests {
     use super::*;
 
     fn cast(name: &str) -> CastMember {
-        CastMember { name: name.into(), character: None, profile_url: None }
+        CastMember {
+            name: name.into(),
+            character: None,
+            profile_url: None,
+        }
     }
 
     fn metadata() -> Metadata {

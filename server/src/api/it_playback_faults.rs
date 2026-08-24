@@ -4,7 +4,12 @@ use serde_json::json;
 use crate::api::test_support::{demo_item_id, demo_show_id, get, send, test_app, TestApp};
 
 fn sql(t: &TestApp, script: &str) {
-    t.state.db.get().expect("a connection").execute_batch(script).expect("reshape the schema");
+    t.state
+        .db
+        .get()
+        .expect("a connection")
+        .execute_batch(script)
+        .expect("reshape the schema");
 }
 
 async fn refuses(t: &TestApp, method: &str, uri: &str, body: Option<serde_json::Value>) {
@@ -48,7 +53,13 @@ async fn every_resume_position_refuses_when_the_progress_table_is_gone() {
     let show = demo_show_id("Planet Earth II");
     sql(&t, "DROP TABLE progress");
 
-    refuses(&t, "PUT", &format!("/api/progress/{item}"), Some(json!({ "positionMs": 1000 }))).await;
+    refuses(
+        &t,
+        "PUT",
+        &format!("/api/progress/{item}"),
+        Some(json!({ "positionMs": 1000 })),
+    )
+    .await;
     refuses(&t, "DELETE", &format!("/api/progress/{item}"), None).await;
     refuses(&t, "GET", &format!("/api/progress/{item}"), None).await;
     refuses(&t, "GET", "/api/progress", None).await;

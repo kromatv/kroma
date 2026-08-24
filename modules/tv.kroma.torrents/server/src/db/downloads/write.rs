@@ -107,11 +107,19 @@ pub fn activate_download(pool: &Pool, id: &str, client_ref: &str) -> Result<()> 
 /// the row is already `paused`).
 pub fn set_download_ref(pool: &Pool, id: &str, client_ref: &str) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute("UPDATE downloads SET client_ref = ?2 WHERE id = ?1", params![id, client_ref])?;
+    conn.execute(
+        "UPDATE downloads SET client_ref = ?2 WHERE id = ?1",
+        params![id, client_ref],
+    )?;
     Ok(())
 }
 
-pub fn set_download_status(pool: &Pool, id: &str, status: &str, error: Option<&str>) -> Result<bool> {
+pub fn set_download_status(
+    pool: &Pool,
+    id: &str,
+    status: &str,
+    error: Option<&str>,
+) -> Result<bool> {
     let conn = pool.get()?;
     let n = conn.execute(
         "UPDATE downloads SET status = ?2, error = COALESCE(?3, error) WHERE id = ?1",
@@ -127,8 +135,8 @@ pub fn delete_download_row(pool: &Pool, id: &str) -> Result<bool> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::read::*;
+    use super::*;
     use crate::db::test_support::{download, test_db};
 
     #[test]
@@ -168,12 +176,21 @@ mod tests {
         assert!(get_download(&conn, "missing").unwrap().is_none());
 
         // Newest-first (grabbed_at DESC), honouring the limit.
-        let ids: Vec<String> =
-            list_downloads(&conn, 2).unwrap().into_iter().map(|d| d.id).collect();
+        let ids: Vec<String> = list_downloads(&conn, 2)
+            .unwrap()
+            .into_iter()
+            .map(|d| d.id)
+            .collect();
         assert_eq!(ids, vec!["d3".to_string(), "d2".to_string()]);
-        let ids: Vec<String> =
-            list_downloads(&conn, 10).unwrap().into_iter().map(|d| d.id).collect();
-        assert_eq!(ids, vec!["d3".to_string(), "d2".to_string(), "d1".to_string()]);
+        let ids: Vec<String> = list_downloads(&conn, 10)
+            .unwrap()
+            .into_iter()
+            .map(|d| d.id)
+            .collect();
+        assert_eq!(
+            ids,
+            vec!["d3".to_string(), "d2".to_string(), "d1".to_string()]
+        );
     }
 
     #[test]
@@ -272,7 +289,9 @@ mod tests {
             )
             .unwrap();
 
-        let err = insert_download(&pool, &download("a", "downloading", 10)).unwrap_err().to_string();
+        let err = insert_download(&pool, &download("a", "downloading", 10))
+            .unwrap_err()
+            .to_string();
 
         assert!(err.contains("read only"), "{err}");
     }

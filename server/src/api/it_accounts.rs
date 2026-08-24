@@ -14,7 +14,12 @@ use crate::model::Permission;
 
 // Gives each call its own source IP so the process-wide brute-force guard
 // can't leak lockouts between parallel tests.
-async fn login(t: &crate::api::test_support::TestApp, ip: &str, id: &str, pw: &str) -> (StatusCode, serde_json::Value) {
+async fn login(
+    t: &crate::api::test_support::TestApp,
+    ip: &str,
+    id: &str,
+    pw: &str,
+) -> (StatusCode, serde_json::Value) {
     let (status, _h, body) = raw(
         &t.app,
         "POST",
@@ -30,7 +35,13 @@ async fn login(t: &crate::api::test_support::TestApp, ip: &str, id: &str, pw: &s
 #[tokio::test]
 async fn login_succeeds_by_email_or_username() {
     let t = test_app();
-    seed_session_pw(&t.state, "gwen@test.dev", "gwen", "hunter2", &[Permission::Playback]);
+    seed_session_pw(
+        &t.state,
+        "gwen@test.dev",
+        "gwen",
+        "hunter2",
+        &[Permission::Playback],
+    );
 
     // By email: a fresh device token pair + the account back.
     let (status, body) = login(&t, "10.0.0.1", "gwen@test.dev", "hunter2").await;
@@ -47,7 +58,13 @@ async fn login_succeeds_by_email_or_username() {
 #[tokio::test]
 async fn login_rejects_a_wrong_password_and_an_unknown_account() {
     let t = test_app();
-    seed_session_pw(&t.state, "peter@test.dev", "peter", "correct", &[Permission::Playback]);
+    seed_session_pw(
+        &t.state,
+        "peter@test.dev",
+        "peter",
+        "correct",
+        &[Permission::Playback],
+    );
 
     // Wrong password -> 401 (same shape as an unknown account).
     let (status, _) = login(&t, "10.0.1.1", "peter@test.dev", "nope").await;
@@ -61,7 +78,13 @@ async fn login_rejects_a_wrong_password_and_an_unknown_account() {
 #[tokio::test]
 async fn login_locks_out_a_source_after_five_failures() {
     let t = test_app();
-    seed_session_pw(&t.state, "miles@test.dev", "miles", "correct", &[Permission::Playback]);
+    seed_session_pw(
+        &t.state,
+        "miles@test.dev",
+        "miles",
+        "correct",
+        &[Permission::Playback],
+    );
     let ip = "10.0.2.99";
 
     // Four wrong tries are plain 401s.
@@ -84,14 +107,26 @@ async fn exchange_token_rejects_blank_and_unknown_tokens() {
     let t = test_app();
 
     // An empty access token is invalid before any lookup.
-    let (status, body) =
-        send(&t.app, "POST", "/api/auth/token", None, Some(json!({ "accessToken": "  " }))).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": "  " })),
+    )
+    .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert_eq!(body["tokenInvalid"], json!(true));
 
     // An unknown token reads the same (tokenInvalid -> re-login with a password).
-    let (status, body) =
-        send(&t.app, "POST", "/api/auth/token", None, Some(json!({ "accessToken": "nope" }))).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": "nope" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert_eq!(body["tokenInvalid"], json!(true));
 }
@@ -102,8 +137,14 @@ async fn exchange_token_mints_a_session_for_a_pinless_account() {
     let (uid, _) = seed_session(&t.state, "swap@test.dev", "swap", &[Permission::Playback]);
     // No PIN on the account -> the gate is skipped and a fresh session is minted.
     let access = seed_access_token(&t.state, &uid, false);
-    let (status, body) =
-        send(&t.app, "POST", "/api/auth/token", None, Some(json!({ "accessToken": access }))).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": access })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert!(body["token"].is_string());
     assert_eq!(body["user"]["id"], json!(uid));
@@ -112,15 +153,33 @@ async fn exchange_token_mints_a_session_for_a_pinless_account() {
 #[tokio::test]
 async fn exchange_token_enforces_the_pin_gate() {
     let t = test_app();
-    let (uid, token) = seed_session_pw(&t.state, "locked@test.dev", "locked", "pw", &[Permission::Playback]);
-    let (status, _) =
-        send(&t.app, "PATCH", "/api/auth/me/pin", Some(&token), Some(json!({ "pin": "1234" }))).await;
+    let (uid, token) = seed_session_pw(
+        &t.state,
+        "locked@test.dev",
+        "locked",
+        "pw",
+        &[Permission::Playback],
+    );
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me/pin",
+        Some(&token),
+        Some(json!({ "pin": "1234" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     let access = seed_access_token(&t.state, &uid, false);
 
     // No PIN supplied -> asks for it WITHOUT counting a brute-force failure.
-    let (status, body) =
-        send(&t.app, "POST", "/api/auth/token", None, Some(json!({ "accessToken": access }))).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": access })),
+    )
+    .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert_eq!(body["pinRequired"], json!(true));
 
@@ -148,40 +207,82 @@ async fn exchange_token_enforces_the_pin_gate() {
     assert_eq!(body["user"]["id"], json!(uid));
 
     // Now the token is marked verified: a silent refresh (no PIN) succeeds.
-    let (status, _) =
-        send(&t.app, "POST", "/api/auth/token", None, Some(json!({ "accessToken": access }))).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": access })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
 }
 
 #[tokio::test]
 async fn relock_clears_the_pin_verified_flag() {
     let t = test_app();
-    let (uid, token) = seed_session_pw(&t.state, "relock@test.dev", "relock", "pw", &[Permission::Playback]);
-    send(&t.app, "PATCH", "/api/auth/me/pin", Some(&token), Some(json!({ "pin": "1234" }))).await;
+    let (uid, token) = seed_session_pw(
+        &t.state,
+        "relock@test.dev",
+        "relock",
+        "pw",
+        &[Permission::Playback],
+    );
+    send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me/pin",
+        Some(&token),
+        Some(json!({ "pin": "1234" })),
+    )
+    .await;
     // A pre-verified device token would normally silent-refresh without a PIN.
     let access = seed_access_token(&t.state, &uid, true);
 
     // Relocking flips the token back to needing the PIN (unauthenticated by design).
-    let (status, _) =
-        send(&t.app, "POST", "/api/auth/relock", None, Some(json!({ "accessToken": access }))).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/auth/relock",
+        None,
+        Some(json!({ "accessToken": access })),
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
-    let (status, body) =
-        send(&t.app, "POST", "/api/auth/token", None, Some(json!({ "accessToken": access }))).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": access })),
+    )
+    .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert_eq!(body["pinRequired"], json!(true));
 
     // An empty access token is a no-op 204.
-    let (status, _) =
-        send(&t.app, "POST", "/api/auth/relock", None, Some(json!({ "accessToken": "" }))).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/auth/relock",
+        None,
+        Some(json!({ "accessToken": "" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
 
 #[tokio::test]
 async fn change_password_succeeds_with_the_correct_current() {
     let t = test_app();
-    let (_uid, token) =
-        seed_session_pw(&t.state, "pw-ok@test.dev", "pwok", "hunter2", &[Permission::Playback]);
+    let (_uid, token) = seed_session_pw(
+        &t.state,
+        "pw-ok@test.dev",
+        "pwok",
+        "hunter2",
+        &[Permission::Playback],
+    );
     let (status, _) = send(
         &t.app,
         "PATCH",
@@ -201,14 +302,23 @@ async fn change_password_succeeds_with_the_correct_current() {
         Some(json!({ "current": "hunter2", "next": "again123" })),
     )
     .await;
-    assert_eq!(status, StatusCode::UNAUTHORIZED, "old password should be dead");
+    assert_eq!(
+        status,
+        StatusCode::UNAUTHORIZED,
+        "old password should be dead"
+    );
 }
 
 #[tokio::test]
 async fn change_password_rejects_a_wrong_current() {
     let t = test_app();
-    let (_uid, token) =
-        seed_session_pw(&t.state, "pw-bad@test.dev", "pwbad", "correct", &[Permission::Playback]);
+    let (_uid, token) = seed_session_pw(
+        &t.state,
+        "pw-bad@test.dev",
+        "pwbad",
+        "correct",
+        &[Permission::Playback],
+    );
     let (status, _) = send(
         &t.app,
         "PATCH",
@@ -223,8 +333,13 @@ async fn change_password_rejects_a_wrong_current() {
 #[tokio::test]
 async fn change_password_rejects_a_too_short_new_password() {
     let t = test_app();
-    let (_uid, token) =
-        seed_session_pw(&t.state, "pw-short@test.dev", "pwshort", "correct", &[Permission::Playback]);
+    let (_uid, token) = seed_session_pw(
+        &t.state,
+        "pw-short@test.dev",
+        "pwshort",
+        "correct",
+        &[Permission::Playback],
+    );
     let (status, _) = send(
         &t.app,
         "PATCH",
@@ -239,7 +354,12 @@ async fn change_password_rejects_a_too_short_new_password() {
 #[tokio::test]
 async fn logout_also_revokes_the_supplied_access_token() {
     let t = test_app();
-    let (uid, token) = seed_session(&t.state, "signout@test.dev", "signout", &[Permission::Playback]);
+    let (uid, token) = seed_session(
+        &t.state,
+        "signout@test.dev",
+        "signout",
+        &[Permission::Playback],
+    );
     let access = seed_access_token(&t.state, &uid, true);
 
     // A full sign-out passes the device access token so it can't be re-exchanged.
@@ -253,8 +373,14 @@ async fn logout_also_revokes_the_supplied_access_token() {
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
-    let (status, _) =
-        send(&t.app, "POST", "/api/auth/token", None, Some(json!({ "accessToken": access }))).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/auth/token",
+        None,
+        Some(json!({ "accessToken": access })),
+    )
+    .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
@@ -278,15 +404,27 @@ async fn revoke_session_by_id_then_404_on_unknown() {
     let t = test_app();
 
     // A bogus device id is not one of the caller's devices -> 404 (session live).
-    let (status, _) =
-        send(&t.app, "DELETE", "/api/auth/me/sessions/ghost-device", Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        "/api/auth/me/sessions/ghost-device",
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 
     // The real device id from the session list revokes cleanly.
     let (_, sessions) = get(&t.app, "/api/auth/me/sessions", Some(&t.token)).await;
     let id = sessions[0]["id"].as_str().expect("device id").to_string();
-    let (status, _) =
-        send(&t.app, "DELETE", &format!("/api/auth/me/sessions/{id}"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/auth/me/sessions/{id}"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
 
@@ -295,30 +433,65 @@ async fn ui_language_sets_then_clears() {
     let t = test_app();
     let (_uid, token) = seed_session(&t.state, "lang@test.dev", "lang", &[Permission::Playback]);
 
-    let (status, body) =
-        send(&t.app, "PATCH", "/api/auth/me", Some(&token), Some(json!({ "language": "fr" }))).await;
+    let (status, body) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me",
+        Some(&token),
+        Some(json!({ "language": "fr" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["user"]["language"], json!("fr"));
 
     // An explicit null clears it (the field is omitted, not null, once unset).
-    let (status, body) =
-        send(&t.app, "PATCH", "/api/auth/me", Some(&token), Some(json!({ "language": null }))).await;
+    let (status, body) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me",
+        Some(&token),
+        Some(json!({ "language": null })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
-    assert!(body["user"].get("language").is_none(), "cleared language should be absent");
+    assert!(
+        body["user"].get("language").is_none(),
+        "cleared language should be absent"
+    );
 
     // An unknown/garbage tag is treated as a clear (normalize returns None).
-    let (_, _) =
-        send(&t.app, "PATCH", "/api/auth/me", Some(&token), Some(json!({ "language": "fr" }))).await;
-    let (status, body) =
-        send(&t.app, "PATCH", "/api/auth/me", Some(&token), Some(json!({ "language": "zz-XX" }))).await;
+    let (_, _) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me",
+        Some(&token),
+        Some(json!({ "language": "fr" })),
+    )
+    .await;
+    let (status, body) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me",
+        Some(&token),
+        Some(json!({ "language": "zz-XX" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
-    assert!(body["user"].get("language").is_none(), "unknown tag falls back to none");
+    assert!(
+        body["user"].get("language").is_none(),
+        "unknown tag falls back to none"
+    );
 }
 
 #[tokio::test]
 async fn audio_and_subtitle_languages_round_trip() {
     let t = test_app();
-    let (_uid, token) = seed_session(&t.state, "media-lang@test.dev", "medialang", &[Permission::Playback]);
+    let (_uid, token) = seed_session(
+        &t.state,
+        "media-lang@test.dev",
+        "medialang",
+        &[Permission::Playback],
+    );
 
     let (status, body) = send(
         &t.app,
@@ -343,7 +516,10 @@ async fn audio_and_subtitle_languages_round_trip() {
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert!(body["user"].get("audioLanguage").is_none(), "empty audio lang clears it");
+    assert!(
+        body["user"].get("audioLanguage").is_none(),
+        "empty audio lang clears it"
+    );
     // The untouched subtitle preference persists.
     assert_eq!(body["user"]["subtitleLanguage"], json!("off"));
 }
@@ -351,27 +527,56 @@ async fn audio_and_subtitle_languages_round_trip() {
 #[tokio::test]
 async fn patch_me_rejects_a_taken_username_and_email() {
     let t = test_app();
-    seed_session(&t.state, "occupied@test.dev", "occupied", &[Permission::Playback]);
+    seed_session(
+        &t.state,
+        "occupied@test.dev",
+        "occupied",
+        &[Permission::Playback],
+    );
     let (_uid, token) = seed_session(&t.state, "mover@test.dev", "mover", &[Permission::Playback]);
 
     // Colliding with another account's username -> 409.
-    let (status, _) =
-        send(&t.app, "PATCH", "/api/auth/me", Some(&token), Some(json!({ "username": "occupied" }))).await;
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me",
+        Some(&token),
+        Some(json!({ "username": "occupied" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::CONFLICT);
 
     // Colliding with another account's email -> 409.
-    let (status, _) =
-        send(&t.app, "PATCH", "/api/auth/me", Some(&token), Some(json!({ "email": "occupied@test.dev" }))).await;
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me",
+        Some(&token),
+        Some(json!({ "email": "occupied@test.dev" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::CONFLICT);
 
     // A malformed email is a 400 before any uniqueness lookup.
-    let (status, _) =
-        send(&t.app, "PATCH", "/api/auth/me", Some(&token), Some(json!({ "email": "not-an-email" }))).await;
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me",
+        Some(&token),
+        Some(json!({ "email": "not-an-email" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 
     // Keeping one's own email is a no-op success (not a self-collision).
-    let (status, _) =
-        send(&t.app, "PATCH", "/api/auth/me", Some(&token), Some(json!({ "email": "mover@test.dev" }))).await;
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me",
+        Some(&token),
+        Some(json!({ "email": "mover@test.dev" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
 }
 
@@ -402,7 +607,14 @@ async fn patch_me_changes_username_and_email_to_fresh_values() {
 async fn quick_connect_initiate_then_poll_states() {
     let t = test_app();
 
-    let (status, init) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
+    let (status, init) = send(
+        &t.app,
+        "POST",
+        "/api/auth/quickconnect/initiate",
+        None,
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     let secret = init["secret"].as_str().expect("secret").to_string();
     assert!(!init["code"].as_str().unwrap_or_default().is_empty());
@@ -410,14 +622,17 @@ async fn quick_connect_initiate_then_poll_states() {
     assert!(init["authorizeUrl"].is_null());
 
     // The freshly-issued code has not been approved yet.
-    let (status, poll) =
-        get(&t.app, &format!("/api/auth/quickconnect/poll?secret={secret}"), None).await;
+    let (status, poll) = get(
+        &t.app,
+        &format!("/api/auth/quickconnect/poll?secret={secret}"),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(poll["status"], json!("pending"));
 
     // An unknown secret reads as expired (the device should restart the flow).
-    let (status, poll) =
-        get(&t.app, "/api/auth/quickconnect/poll?secret=nope", None).await;
+    let (status, poll) = get(&t.app, "/api/auth/quickconnect/poll?secret=nope", None).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(poll["status"], json!("expired"));
 }
@@ -428,7 +643,14 @@ async fn the_poll_secret_can_travel_in_a_header_instead_of_the_url() {
     // newer devices send the secret as a header and no query at all. A required
     // query field would reject them before the handler ever looked.
     let t = test_app();
-    let (_, init) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
+    let (_, init) = send(
+        &t.app,
+        "POST",
+        "/api/auth/quickconnect/initiate",
+        None,
+        None,
+    )
+    .await;
     let secret = init["secret"].as_str().expect("a poll secret");
 
     let (status, _headers, body) = raw(
@@ -462,8 +684,14 @@ async fn quick_connect_refuses_a_new_code_rather_than_evicting_a_waiting_one() {
 
     let mut issued = 0;
     let refused = loop {
-        let (status, body) =
-            send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
+        let (status, body) = send(
+            &t.app,
+            "POST",
+            "/api/auth/quickconnect/initiate",
+            None,
+            None,
+        )
+        .await;
         if status != StatusCode::OK {
             break (status, body);
         }
@@ -477,8 +705,19 @@ async fn quick_connect_refuses_a_new_code_rather_than_evicting_a_waiting_one() {
     assert_eq!(refused.0, StatusCode::TOO_MANY_REQUESTS);
 
     // The first code issued is still pending: it was not the one given up.
-    let (status, _) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
-    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS, "asking again does not free a slot");
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/auth/quickconnect/initiate",
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(
+        status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "asking again does not free a slot"
+    );
 }
 
 #[tokio::test]
@@ -488,10 +727,19 @@ async fn quick_connect_initiate_falls_back_to_the_public_url_setting() {
     // (trailing slash trimmed) so a tunnel install still gets a scannable link.
     t.state.settings.set_patch(
         &t.state.db,
-        [("remoteUrl".to_string(), json!("https://kroma.example.com/"))].into_iter().collect(),
+        [("remoteUrl".to_string(), json!("https://kroma.example.com/"))]
+            .into_iter()
+            .collect(),
     );
 
-    let (status, init) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
+    let (status, init) = send(
+        &t.app,
+        "POST",
+        "/api/auth/quickconnect/initiate",
+        None,
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     let code = init["code"].as_str().expect("code");
     assert_eq!(
@@ -504,7 +752,14 @@ async fn quick_connect_initiate_falls_back_to_the_public_url_setting() {
 async fn quick_connect_authorize_then_poll_hands_the_device_a_session() {
     let t = test_app();
 
-    let (_, init) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
+    let (_, init) = send(
+        &t.app,
+        "POST",
+        "/api/auth/quickconnect/initiate",
+        None,
+        None,
+    )
+    .await;
     let code = init["code"].as_str().expect("code").to_string();
     let secret = init["secret"].as_str().expect("secret").to_string();
 
@@ -520,8 +775,12 @@ async fn quick_connect_authorize_then_poll_hands_the_device_a_session() {
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     // The device's next poll now returns the minted session + account.
-    let (status, poll) =
-        get(&t.app, &format!("/api/auth/quickconnect/poll?secret={secret}"), None).await;
+    let (status, poll) = get(
+        &t.app,
+        &format!("/api/auth/quickconnect/poll?secret={secret}"),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(poll["status"], json!("authorized"));
     assert!(poll["token"].is_string() && poll["accessToken"].is_string());
@@ -532,12 +791,23 @@ async fn quick_connect_authorize_then_poll_hands_the_device_a_session() {
 async fn quick_connect_rotating_revokes_the_previous_code() {
     let t = test_app();
 
-    let (_, first) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
+    let (_, first) = send(
+        &t.app,
+        "POST",
+        "/api/auth/quickconnect/initiate",
+        None,
+        None,
+    )
+    .await;
     let old_secret = first["secret"].as_str().expect("secret").to_string();
 
     // Before rotating, the old secret still polls as pending.
-    let (_, poll) =
-        get(&t.app, &format!("/api/auth/quickconnect/poll?secret={old_secret}"), None).await;
+    let (_, poll) = get(
+        &t.app,
+        &format!("/api/auth/quickconnect/poll?secret={old_secret}"),
+        None,
+    )
+    .await;
     assert_eq!(poll["status"], json!("pending"));
 
     let (status, _) = send(
@@ -551,8 +821,12 @@ async fn quick_connect_rotating_revokes_the_previous_code() {
     assert_eq!(status, StatusCode::OK);
 
     // The old code is revoked up front: its secret now reads as expired.
-    let (_, poll) =
-        get(&t.app, &format!("/api/auth/quickconnect/poll?secret={old_secret}"), None).await;
+    let (_, poll) = get(
+        &t.app,
+        &format!("/api/auth/quickconnect/poll?secret={old_secret}"),
+        None,
+    )
+    .await;
     assert_eq!(poll["status"], json!("expired"));
 }
 
@@ -562,7 +836,14 @@ async fn quick_connect_rotating_cleans_up_an_approved_but_uncollected_code() {
 
     // Device initiates and the owner approves the code, but the device rotates
     // before it polls -> the minted session is orphaned unless rotation cleans up.
-    let (_, first) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
+    let (_, first) = send(
+        &t.app,
+        "POST",
+        "/api/auth/quickconnect/initiate",
+        None,
+        None,
+    )
+    .await;
     let old_code = first["code"].as_str().expect("code").to_string();
     let old_secret = first["secret"].as_str().expect("secret").to_string();
 
@@ -589,8 +870,12 @@ async fn quick_connect_rotating_cleans_up_an_approved_but_uncollected_code() {
     assert_eq!(status, StatusCode::OK);
 
     // The old secret no longer hands out the session it was approved for.
-    let (_, poll) =
-        get(&t.app, &format!("/api/auth/quickconnect/poll?secret={old_secret}"), None).await;
+    let (_, poll) = get(
+        &t.app,
+        &format!("/api/auth/quickconnect/poll?secret={old_secret}"),
+        None,
+    )
+    .await;
     assert_eq!(poll["status"], json!("expired"));
 }
 
@@ -633,7 +918,10 @@ async fn an_empty_avatar_upload_is_refused_before_any_decoding() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
     // The message is rendered in the caller's locale (the harness defaults to
     // French), so this pins that a reason was returned, not its wording.
-    assert!(body["error"].as_str().is_some_and(|m| !m.is_empty()), "{body}");
+    assert!(
+        body["error"].as_str().is_some_and(|m| !m.is_empty()),
+        "{body}"
+    );
 }
 
 #[tokio::test]
@@ -665,8 +953,13 @@ async fn an_avatar_the_encoder_cannot_read_is_refused_as_unsupported_media() {
     let t = test_app();
     let (_uid, token) = seed_session(&t.state, "ana@test.dev", "ana", &[Permission::Playback]);
 
-    let (status, _h, _b) = raw_bytes(&t.app, "/api/users/avatar", &token, b"not-an-image".to_vec())
-        .await;
+    let (status, _h, _b) = raw_bytes(
+        &t.app,
+        "/api/users/avatar",
+        &token,
+        b"not-an-image".to_vec(),
+    )
+    .await;
     assert_eq!(status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
 
     let dir = crate::infra::image::images_dir(&t.state.config.data_dir);
@@ -694,7 +987,9 @@ async fn raw_bytes(
     let resp = app.clone().oneshot(req).await.expect("response");
     let status = resp.status();
     let headers = resp.headers().clone();
-    let body = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap_or_default();
+    let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+        .await
+        .unwrap_or_default();
     (status, headers, body.to_vec())
 }
 
@@ -720,7 +1015,9 @@ async fn patch_me(
     token: &str,
     body: serde_json::Value,
 ) -> StatusCode {
-    send(&t.app, "PATCH", "/api/auth/me", Some(token), Some(body)).await.0
+    send(&t.app, "PATCH", "/api/auth/me", Some(token), Some(body))
+        .await
+        .0
 }
 
 #[tokio::test]

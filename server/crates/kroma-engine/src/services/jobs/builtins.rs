@@ -68,7 +68,10 @@ const NO_DUPLICATE_KEYS: () = {
     while i < JOBS.len() {
         let mut j = i + 1;
         while j < JOBS.len() {
-            assert!(!str_eq(JOBS[i].key.0, JOBS[j].key.0), "duplicate job key in the JOBS roster");
+            assert!(
+                !str_eq(JOBS[i].key.0, JOBS[j].key.0),
+                "duplicate job key in the JOBS roster"
+            );
             j += 1;
         }
         i += 1;
@@ -131,8 +134,14 @@ mod tests {
     fn the_rosters_duplicate_guard_compares_keys_exactly() {
         assert!(str_eq("pipeline.probe", "pipeline.probe"));
         assert!(str_eq("", ""));
-        assert!(!str_eq("pipeline.probe", "pipeline.embed"), "same length, different bytes");
-        assert!(!str_eq("library.scan", "library.scan2"), "a prefix is not a match");
+        assert!(
+            !str_eq("pipeline.probe", "pipeline.embed"),
+            "same length, different bytes"
+        );
+        assert!(
+            !str_eq("library.scan", "library.scan2"),
+            "a prefix is not a match"
+        );
         for b in JOBS {
             assert!(str_eq(b.key.0, b.key.0));
         }
@@ -164,7 +173,8 @@ mod tests {
             let key = b.key.0;
             assert!(seen.insert(key), "duplicate job key {key:?}");
             assert!(
-                key.split('.').count() == 2 && key.chars().all(|c| c.is_ascii_lowercase() || c == '.'),
+                key.split('.').count() == 2
+                    && key.chars().all(|c| c.is_ascii_lowercase() || c == '.'),
                 "job key {key:?} must be lowercase `group.action`",
             );
         }

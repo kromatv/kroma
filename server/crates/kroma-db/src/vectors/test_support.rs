@@ -13,7 +13,10 @@ pub(super) fn seeded() -> TempPool {
             conn.execute(
                 "INSERT INTO items (id,kind,title,container,library,added_at,metadata) \
                  VALUES (?1,'movie','T','mkv','lib','t',?2)",
-                params![id, format!("{{\"tmdbId\":1,\"tmdbUrl\":\"x\",\"genres\":[\"{genre}\"]}}")],
+                params![
+                    id,
+                    format!("{{\"tmdbId\":1,\"tmdbUrl\":\"x\",\"genres\":[\"{genre}\"]}}")
+                ],
             )
             .unwrap();
         };

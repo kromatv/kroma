@@ -102,7 +102,14 @@ impl TranscriberClient {
             }
             // One pooled connection per tick: push the cancel flag (if latched)
             // then read progress off the same row.
-            pump_progress(&self.pool, &job_id, cancel, on_stage, on_progress, &mut last_stage);
+            pump_progress(
+                &self.pool,
+                &job_id,
+                cancel,
+                on_stage,
+                on_progress,
+                &mut last_stage,
+            );
             std::thread::sleep(Duration::from_millis(250));
         };
 
@@ -130,7 +137,13 @@ fn pump_progress(
     if let Ok((stage, done, total)) = conn.query_row(
         "SELECT stage, done, total FROM whisper_jobs WHERE id = ?1",
         [job_id],
-        |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?, r.get::<_, i64>(2)?)),
+        |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, i64>(1)?,
+                r.get::<_, i64>(2)?,
+            ))
+        },
     ) {
         if !stage.is_empty() && stage != *last_stage {
             on_stage(&stage);

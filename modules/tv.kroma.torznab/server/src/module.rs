@@ -4,5 +4,4 @@
 use kroma_module_sdk::EmbeddedModule;
 
 /// Registered into the server's module registry (see `build_registry`).
-pub const MODULE: EmbeddedModule =
-    kroma_module_sdk::embedded_module!();
+pub const MODULE: EmbeddedModule = kroma_module_sdk::embedded_module!();

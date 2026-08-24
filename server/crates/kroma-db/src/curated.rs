@@ -67,7 +67,10 @@ pub fn set_curated(pool: &Pool, rows: &[CuratedRow]) -> Result<()> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
     tx.execute("DELETE FROM curated_sections", [])?;
-    tx.execute("DELETE FROM translations WHERE subject_kind = 'curated'", [])?;
+    tx.execute(
+        "DELETE FROM translations WHERE subject_kind = 'curated'",
+        [],
+    )?;
     let now = kroma_primitives::now_ms();
     // Skip duplicate keys: the director + LLM producers can independently emit the
     // same slug (e.g. two spellings of a director's name normalize alike). `key`
@@ -84,8 +87,12 @@ pub fn set_curated(pool: &Pool, rows: &[CuratedRow]) -> Result<()> {
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![row.key, row.rank, row.source, ids, now],
         )?;
-        let langs: HashSet<&str> =
-            row.titles.keys().chain(row.reasons.keys()).map(String::as_str).collect();
+        let langs: HashSet<&str> = row
+            .titles
+            .keys()
+            .chain(row.reasons.keys())
+            .map(String::as_str)
+            .collect();
         for lang in langs {
             let data = TransData {
                 title: row.titles.get(lang).cloned(),
@@ -110,7 +117,10 @@ mod tests {
     }
 
     fn map(pairs: &[(&str, &str)]) -> HashMap<String, String> {
-        pairs.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect()
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect()
     }
 
     #[test]
@@ -134,7 +144,12 @@ mod tests {
                 reasons: HashMap::new(),
             },
             // Duplicate key: skipped (kept the first).
-            CuratedRow { key: "spielberg".into(), rank: 2, source: "llm".into(), ..Default::default() },
+            CuratedRow {
+                key: "spielberg".into(),
+                rank: 2,
+                source: "llm".into(),
+                ..Default::default()
+            },
         ];
         set_curated(&p, &rows).unwrap();
 
@@ -144,15 +159,32 @@ mod tests {
         assert_eq!(got[0].key, "spielberg");
         assert_eq!(got[0].source, "director");
         assert_eq!(got[0].item_ids, vec!["m1".to_string(), "m2".to_string()]);
-        assert_eq!(got[0].titles.get("fr").map(String::as_str), Some("Spielberg"));
-        assert_eq!(got[0].titles.get("en").map(String::as_str), Some("Spielberg"));
-        assert_eq!(got[0].reasons.get("fr").map(String::as_str), Some("le maitre"));
+        assert_eq!(
+            got[0].titles.get("fr").map(String::as_str),
+            Some("Spielberg")
+        );
+        assert_eq!(
+            got[0].titles.get("en").map(String::as_str),
+            Some("Spielberg")
+        );
+        assert_eq!(
+            got[0].reasons.get("fr").map(String::as_str),
+            Some("le maitre")
+        );
         assert!(!got[0].reasons.contains_key("en"));
         assert_eq!(got[1].key, "horror");
 
         // Replace-all: a fresh set supersedes the previous one entirely.
-        set_curated(&p, &[CuratedRow { key: "solo".into(), rank: 0, source: "llm".into(), ..Default::default() }])
-            .unwrap();
+        set_curated(
+            &p,
+            &[CuratedRow {
+                key: "solo".into(),
+                rank: 0,
+                source: "llm".into(),
+                ..Default::default()
+            }],
+        )
+        .unwrap();
         let got = get_curated(&p).unwrap();
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].key, "solo");

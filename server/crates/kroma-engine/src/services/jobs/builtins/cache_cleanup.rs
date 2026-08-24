@@ -19,8 +19,15 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     let data_dir = &ctx.state.config.data_dir;
 
     let budget = crate::services::settings::transcode_cache_limit_bytes(&ctx.state.settings);
-    let limit = if budget == 0 { "unlimited".to_string() } else { human_bytes(budget) };
-    ctx.info(format!("HLS segment cache: {} / {limit} budget", human_bytes(ctx.state.hls.cache_bytes())));
+    let limit = if budget == 0 {
+        "unlimited".to_string()
+    } else {
+        human_bytes(budget)
+    };
+    ctx.info(format!(
+        "HLS segment cache: {} / {limit} budget",
+        human_bytes(ctx.state.hls.cache_bytes())
+    ));
 
     enforce_image_limit(ctx, &data_dir.join("images"));
     Ok(())
@@ -39,7 +46,11 @@ fn enforce_image_limit(ctx: &JobContext, images: &Path) {
     };
     let used = dir_size(images);
     if used <= limit {
-        ctx.info(format!("image cache {} within limit {}", human_bytes(used), human_bytes(limit)));
+        ctx.info(format!(
+            "image cache {} within limit {}",
+            human_bytes(used),
+            human_bytes(limit)
+        ));
         return;
     }
 
@@ -54,11 +65,16 @@ fn enforce_image_limit(ctx: &JobContext, images: &Path) {
         crate::db::avatar_urls(&ctx.state.db),
         crate::db::notifications::referenced_images(&conn),
     ) else {
-        ctx.info("image cache: could not read the referenced images, skipping the trim".to_string());
+        ctx.info(
+            "image cache: could not read the referenced images, skipping the trim".to_string(),
+        );
         return;
     };
-    let protected: HashSet<String> =
-        avatars.iter().chain(attached.iter()).filter_map(|u| basename(u)).collect();
+    let protected: HashSet<String> = avatars
+        .iter()
+        .chain(attached.iter())
+        .filter_map(|u| basename(u))
+        .collect();
 
     let mut files: Vec<(std::path::PathBuf, u64, std::time::SystemTime)> =
         walkdir::WalkDir::new(images)
@@ -99,7 +115,11 @@ fn enforce_image_limit(ctx: &JobContext, images: &Path) {
 }
 
 fn parse_limit_bytes(label: &str) -> Option<u64> {
-    let digits: String = label.chars().take_while(|c| !c.is_alphabetic()).filter(char::is_ascii_digit).collect();
+    let digits: String = label
+        .chars()
+        .take_while(|c| !c.is_alphabetic())
+        .filter(char::is_ascii_digit)
+        .collect();
     match digits.parse::<u64>() {
         // Decimal Go (1 Go = 1e9 B), not binary.
         Ok(n) if n > 0 => Some(n * 1_000_000_000),
@@ -191,7 +211,8 @@ mod tests {
         // the filesystem recorded.
         let when = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(mtime_rank);
         let f = std::fs::File::options().write(true).open(path).unwrap();
-        f.set_times(std::fs::FileTimes::new().set_modified(when)).unwrap();
+        f.set_times(std::fs::FileTimes::new().set_modified(when))
+            .unwrap();
     }
 
     fn images_dir(state: &crate::state::SharedState) -> std::path::PathBuf {
@@ -251,7 +272,11 @@ mod tests {
 
         enforce_image_limit(&ctx, &images);
 
-        assert_eq!(names(&images), vec!["old.jpg"], "an avatar could have been among them");
+        assert_eq!(
+            names(&images),
+            vec!["old.jpg"],
+            "an avatar could have been among them"
+        );
         drop(held);
     }
 
@@ -294,7 +319,12 @@ mod tests {
         let images = images_dir(&state);
         sparse(&images.join("avatar.png"), 1500 * 1_000_000, 1);
         sparse(&images.join("poster.jpg"), 1500 * 1_000_000, 9);
-        state.db.get().unwrap().execute("DROP TABLE users", []).unwrap();
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute("DROP TABLE users", [])
+            .unwrap();
 
         enforce_image_limit(&JobContext::for_test(state.clone()), &images);
         assert_eq!(names(&images), vec!["avatar.png", "poster.jpg"]);

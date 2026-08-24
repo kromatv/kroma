@@ -184,16 +184,42 @@ mod tests {
 
     #[test]
     fn every_event_round_trips_and_has_a_category() {
-        for e in NotificationEvent::ALL.into_iter().chain([NotificationEvent::Custom]) {
-            assert_eq!(NotificationEvent::parse(e.as_str()), Some(e), "{}", e.as_str());
+        for e in NotificationEvent::ALL
+            .into_iter()
+            .chain([NotificationEvent::Custom])
+        {
+            assert_eq!(
+                NotificationEvent::parse(e.as_str()),
+                Some(e),
+                "{}",
+                e.as_str()
+            );
             let json = serde_json::to_string(&e).unwrap();
             assert_eq!(json, format!("\"{}\"", e.as_str()));
         }
-        assert_eq!(NotificationEvent::RequestDenied.category(), NotificationCategory::Requests);
-        assert_eq!(NotificationEvent::MediaEpisode.category(), NotificationCategory::Media);
-        assert_eq!(NotificationEvent::SystemDiskLow.category(), NotificationCategory::System);
-        assert_eq!(NotificationEvent::ReportResolved.category(), NotificationCategory::Reports);
-        assert_eq!(NotificationEvent::DownloadImported.category(), NotificationCategory::Downloads);
-        assert_eq!(NotificationEvent::DownloadFailed.category(), NotificationCategory::Downloads);
+        assert_eq!(
+            NotificationEvent::RequestDenied.category(),
+            NotificationCategory::Requests
+        );
+        assert_eq!(
+            NotificationEvent::MediaEpisode.category(),
+            NotificationCategory::Media
+        );
+        assert_eq!(
+            NotificationEvent::SystemDiskLow.category(),
+            NotificationCategory::System
+        );
+        assert_eq!(
+            NotificationEvent::ReportResolved.category(),
+            NotificationCategory::Reports
+        );
+        assert_eq!(
+            NotificationEvent::DownloadImported.category(),
+            NotificationCategory::Downloads
+        );
+        assert_eq!(
+            NotificationEvent::DownloadFailed.category(),
+            NotificationCategory::Downloads
+        );
     }
 }

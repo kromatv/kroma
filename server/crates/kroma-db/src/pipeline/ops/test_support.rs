@@ -1,8 +1,8 @@
 use rusqlite::params;
 
+use super::TaskResult;
 use crate::pool::Pool;
 use crate::testing::TempPool;
-use super::TaskResult;
 
 pub(super) fn pool() -> TempPool {
     crate::testing::temp_pool("ops")
@@ -32,9 +32,17 @@ pub(super) fn next_retry_at(p: &Pool, stage: &str, id: &str) -> Option<i64> {
 }
 
 pub(super) fn ok(id: &str) -> TaskResult {
-    TaskResult { id: id.into(), error: None, duration_ms: 5 }
+    TaskResult {
+        id: id.into(),
+        error: None,
+        duration_ms: 5,
+    }
 }
 
 pub(super) fn failed(id: &str, msg: &str) -> TaskResult {
-    TaskResult { id: id.into(), error: Some(msg.into()), duration_ms: 5 }
+    TaskResult {
+        id: id.into(),
+        error: Some(msg.into()),
+        duration_ms: 5,
+    }
 }

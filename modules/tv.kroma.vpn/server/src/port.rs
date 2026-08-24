@@ -29,7 +29,12 @@ pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
 async fn url<S: HostCtx + Clone + Send + Sync + 'static>(
     State(host): State<S>,
 ) -> Json<Option<String>> {
-    Json(tokio::task::spawn_blocking(move || crate::proxy_url(&host)).await.ok().flatten())
+    Json(
+        tokio::task::spawn_blocking(move || crate::proxy_url(&host))
+            .await
+            .ok()
+            .flatten(),
+    )
 }
 
 /// What the download engine reports about the tunnel, as this module's admin card
@@ -71,7 +76,9 @@ pub fn restart_engine(host: &dyn HostCtx) {
 
 fn ask<T: serde::de::DeserializeOwned>(host: &dyn HostCtx, method: &str) -> Option<T> {
     let resolve = pinned_resolver(host, DOWNLOAD_VPN, None)?;
-    call_raw(&resolve, &format!("{DOWNLOAD_VPN}/{method}"), &json!({})).ok().flatten()
+    call_raw(&resolve, &format!("{DOWNLOAD_VPN}/{method}"), &json!({}))
+        .ok()
+        .flatten()
 }
 
 #[cfg(test)]

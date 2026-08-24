@@ -71,7 +71,9 @@ fn probe_hwaccel(abs: &str, dur_s: f64) -> bool {
     // any residual warming don't systematically favour one path.
     let timed = |hw: bool| -> Option<Duration> {
         let s = Instant::now();
-        extract_one(abs, t, &probe, hw, &|| false).ok().map(|()| s.elapsed())
+        extract_one(abs, t, &probe, hw, &|| false)
+            .ok()
+            .map(|()| s.elapsed())
     };
     let (sw1, hw1, sw2, hw2) = (timed(false), timed(true), timed(false), timed(true));
     let sw = [sw1, sw2].into_iter().flatten().min();
@@ -91,7 +93,13 @@ fn probe_hwaccel(abs: &str, dur_s: f64) -> bool {
 /// `px_<NNNN>.png` into `scratch`. A single failed seek is tolerated (it becomes
 /// black padding via [`fill_gaps`]); an all-empty result (ffmpeg missing, file
 /// unreadable) is a hard error carrying the first captured cause.
-pub(super) fn extract_tiles(abs: &str, scratch: &Path, plan: &Plan, hwaccel: bool, cancel: Cancel) -> std::result::Result<(), String> {
+pub(super) fn extract_tiles(
+    abs: &str,
+    scratch: &Path,
+    plan: &Plan,
+    hwaccel: bool,
+    cancel: Cancel,
+) -> std::result::Result<(), String> {
     let next = AtomicU32::new(0);
     let first_err: Mutex<Option<String>> = Mutex::new(None);
     let count = plan.count;
@@ -102,7 +110,9 @@ pub(super) fn extract_tiles(abs: &str, scratch: &Path, plan: &Plan, hwaccel: boo
     std::thread::scope(|s| {
         for _ in 0..tile_workers() {
             s.spawn(|| {
-                extract_tile_worker(&next, count, interval, abs, scratch, hwaccel, cancel, &first_err)
+                extract_tile_worker(
+                    &next, count, interval, abs, scratch, hwaccel, cancel, &first_err,
+                )
             });
         }
     });
@@ -147,7 +157,13 @@ fn extract_tile_worker(
 // Fast input seek (`-ss` before `-i` jumps to the GOP at `t_secs` without
 // decoding up to it), grabbing a single keyframe scaled+cropped to an exact,
 // letterbox-free 160x90. `Err` carries ffmpeg's captured cause.
-fn extract_one(abs: &str, t_secs: u32, out: &Path, hwaccel: bool, cancel: Cancel) -> std::result::Result<(), String> {
+fn extract_one(
+    abs: &str,
+    t_secs: u32,
+    out: &Path,
+    hwaccel: bool,
+    cancel: Cancel,
+) -> std::result::Result<(), String> {
     // `increase,crop` (the proven pattern in infra::image) fills the tile with no
     // letterbox and an exact, even output size.
     let vf = format!(
@@ -191,8 +207,16 @@ fn fill_gaps(scratch: &Path, count: u32) -> u32 {
     let black = scratch.join("black.png");
     let mut cmd = Command::new("ffmpeg");
     cmd.args([
-        "-v", "error", "-nostdin", "-y", "-f", "lavfi", "-i",
-        &format!("color=c=black:s={TILE_W}x{TILE_H}"), "-frames:v", "1",
+        "-v",
+        "error",
+        "-nostdin",
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        &format!("color=c=black:s={TILE_W}x{TILE_H}"),
+        "-frames:v",
+        "1",
     ])
     .arg(&black);
     if run_capturing(cmd, TILE_TIMEOUT).is_ok() && black.exists() {

@@ -52,7 +52,11 @@ pub async fn ensure(data_dir: &Path) -> Result<PathBuf, String> {
 
 async fn download(data_dir: &Path) -> Result<PathBuf, String> {
     let asset = asset().ok_or_else(|| {
-        format!("no wireproxy build for {}/{}", std::env::consts::OS, std::env::consts::ARCH)
+        format!(
+            "no wireproxy build for {}/{}",
+            std::env::consts::OS,
+            std::env::consts::ARCH
+        )
     })?;
     let bindir = data_dir.join("bin");
     std::fs::create_dir_all(&bindir).map_err(|e| format!("create bin dir: {e}"))?;

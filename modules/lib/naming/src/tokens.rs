@@ -16,8 +16,14 @@ const DECO: &[char] = &['[', ']', '(', ')', '-', '_', '.', ' '];
 /// a value.
 pub fn resolve_token(inner: &str, ctx: &NameContext) -> String {
     let prefix: String = inner.chars().take_while(|c| DECO.contains(c)).collect();
-    let suffix: String =
-        inner.chars().rev().take_while(|c| DECO.contains(c)).collect::<Vec<_>>().into_iter().rev().collect();
+    let suffix: String = inner
+        .chars()
+        .rev()
+        .take_while(|c| DECO.contains(c))
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect();
     // Decoration alone leaves the two halves overlapping, and there is no token
     // between them to resolve.
     let Some(core) = inner.get(prefix.len()..inner.len().saturating_sub(suffix.len())) else {
@@ -38,11 +44,24 @@ fn resolve_core(inner: &str, ctx: &NameContext) -> String {
     };
     // Normalize the token name: drop spaces/punctuation, lowercase, so
     // `{Movie Title}`, `{Movie.Title}` and `{movietitle}` are the same token.
-    let key: String = name.chars().filter(|c| c.is_alphanumeric()).collect::<String>().to_lowercase();
+    let key: String = name
+        .chars()
+        .filter(|c| c.is_alphanumeric())
+        .collect::<String>()
+        .to_lowercase();
 
     // Number tokens: an all-zeros spec is a zero-pad width (`00` => 2).
-    let pad_width = spec.filter(|s| !s.is_empty() && s.chars().all(|c| c == '0')).map(str::len).unwrap_or(1);
-    let pad = |n: u32| if pad_width > 1 { format!("{n:0pad_width$}") } else { n.to_string() };
+    let pad_width = spec
+        .filter(|s| !s.is_empty() && s.chars().all(|c| c == '0'))
+        .map(str::len)
+        .unwrap_or(1);
+    let pad = |n: u32| {
+        if pad_width > 1 {
+            format!("{n:0pad_width$}")
+        } else {
+            n.to_string()
+        }
+    };
     match key.as_str() {
         "season" | "seasonnumber" => return ctx.season.map(pad).unwrap_or_default(),
         "episode" | "episodenumber" => return ctx.episode.map(pad).unwrap_or_default(),
@@ -64,7 +83,9 @@ fn resolve_core(inner: &str, ctx: &NameContext) -> String {
         "title" | "movietitle" | "seriestitle" | "titleyear" => ctx.title.clone(),
         "cleantitle" | "moviecleantitle" | "seriescleantitle" => clean_title(&ctx.title),
         "titlethe" | "movietitlethe" | "seriestitlethe" => title_the(&ctx.title),
-        "cleantitlethe" | "moviecleantitlethe" | "seriescleantitlethe" => clean_title(&title_the(&ctx.title)),
+        "cleantitlethe" | "moviecleantitlethe" | "seriescleantitlethe" => {
+            clean_title(&title_the(&ctx.title))
+        }
         "titlefirstcharacter" | "movietitlefirstcharacter" | "seriestitlefirstcharacter" => {
             first_character(&ctx.title)
         }
@@ -79,7 +100,10 @@ fn resolve_core(inner: &str, ctx: &NameContext) -> String {
         "imdbid" => ctx.imdb_id.clone().unwrap_or_default(),
         "mediainfoaudiocodec" => ctx.audio_codec.clone().unwrap_or_default(),
         "mediainfoaudiochannels" => ctx.audio_channels.clone().unwrap_or_default(),
-        "mediainfovideobitdepth" => ctx.video_bit_depth.map(|d| d.to_string()).unwrap_or_default(),
+        "mediainfovideobitdepth" => ctx
+            .video_bit_depth
+            .map(|d| d.to_string())
+            .unwrap_or_default(),
         "mediainfovideodynamicrange" | "mediainfovideodynamicrangetype" => {
             ctx.dynamic_range.clone().unwrap_or_default()
         }
@@ -158,17 +182,32 @@ mod tests {
         assert_eq!(render("{ImdbId}", &c), "tt0133093");
         assert_eq!(render("{TmdbId}", &c), "603");
         assert_eq!(render("[{MediaInfo VideoCodec}]", &c), "[x265]");
-        assert_eq!(render("{MediaInfo AudioCodec} {MediaInfo AudioChannels}", &c), "EAC3 5.1");
+        assert_eq!(
+            render("{MediaInfo AudioCodec} {MediaInfo AudioChannels}", &c),
+            "EAC3 5.1"
+        );
         assert_eq!(render("{MediaInfo VideoDynamicRange}", &c), "DV");
         assert_eq!(render("{MediaInfo VideoBitDepth}bit", &c), "10bit");
         assert_eq!(render("{MediaInfo AudioLanguages}", &c), "[EN+FR]");
         assert_eq!(render("{MediaInfo SubtitleLanguages}", &c), "[FR]");
         assert_eq!(render("[{Edition Tags}]", &c), "[IMAX]");
         // In-brace decoration is emitted only when the token has a value.
-        assert_eq!(render("{Movie Title}{-Release Group}", &c), "The Matrix-EVOLVE");
-        assert_eq!(render("{Movie Title}{[Quality Full]}", &c), "The Matrix[Bluray-2160p]");
-        let no_group = NameContext { release_group: None, ..c };
-        assert_eq!(render("{Movie Title}{-Release Group}", &no_group), "The Matrix");
+        assert_eq!(
+            render("{Movie Title}{-Release Group}", &c),
+            "The Matrix-EVOLVE"
+        );
+        assert_eq!(
+            render("{Movie Title}{[Quality Full]}", &c),
+            "The Matrix[Bluray-2160p]"
+        );
+        let no_group = NameContext {
+            release_group: None,
+            ..c
+        };
+        assert_eq!(
+            render("{Movie Title}{-Release Group}", &no_group),
+            "The Matrix"
+        );
     }
 
     #[test]
@@ -197,7 +236,16 @@ mod tests {
     fn number_token_without_pad_and_unknown_token() {
         let c = ctx();
         // No pad spec => plain number.
-        assert_eq!(render("S{season}", &NameContext { season: Some(4), ..Default::default() }), "S4");
+        assert_eq!(
+            render(
+                "S{season}",
+                &NameContext {
+                    season: Some(4),
+                    ..Default::default()
+                }
+            ),
+            "S4"
+        );
         // Unknown token resolves to empty (and its decoration is dropped).
         assert_eq!(render("{Totally Unknown}", &c), "");
         assert_eq!(render("[{Totally Unknown}]", &c), "");
@@ -208,7 +256,10 @@ mod tests {
     #[test]
     fn language_tokens_all_and_subtitle_spec() {
         // AudioLanguagesAll keeps a sole-English track (unlike AudioLanguages).
-        let sole_en = NameContext { audio_languages: vec!["EN".into()], ..Default::default() };
+        let sole_en = NameContext {
+            audio_languages: vec!["EN".into()],
+            ..Default::default()
+        };
         assert_eq!(render("{MediaInfo AudioLanguages}", &sole_en), "");
         assert_eq!(render("{MediaInfo AudioLanguagesAll}", &sole_en), "[EN]");
         // Subtitle languages honor an include+exclude spec.
@@ -216,8 +267,14 @@ mod tests {
             subtitle_languages: vec!["EN".into(), "FR".into(), "DE".into()],
             ..Default::default()
         };
-        assert_eq!(render("{MediaInfo SubtitleLanguages:EN+FR}", &subs), "[EN+FR]");
-        assert_eq!(render("{MediaInfo SubtitleLanguages:-EN}", &subs), "[FR+DE]");
+        assert_eq!(
+            render("{MediaInfo SubtitleLanguages:EN+FR}", &subs),
+            "[EN+FR]"
+        );
+        assert_eq!(
+            render("{MediaInfo SubtitleLanguages:-EN}", &subs),
+            "[FR+DE]"
+        );
     }
 
     #[test]
@@ -233,16 +290,31 @@ mod tests {
 
     #[test]
     fn the_first_character_token_buckets_on_the_sort_title() {
-        let c = NameContext { title: "The Matrix".into(), ..Default::default() };
-        assert_eq!(render("{Movie Title First Character}/{Movie Title}", &c), "M/The Matrix");
+        let c = NameContext {
+            title: "The Matrix".into(),
+            ..Default::default()
+        };
+        assert_eq!(
+            render("{Movie Title First Character}/{Movie Title}", &c),
+            "M/The Matrix"
+        );
 
-        let digits = NameContext { title: "2001: A Space Odyssey".into(), ..Default::default() };
+        let digits = NameContext {
+            title: "2001: A Space Odyssey".into(),
+            ..Default::default()
+        };
         assert_eq!(render("{Title First Character}", &digits), "2");
 
-        let punctuation = NameContext { title: "...And Justice for All".into(), ..Default::default() };
+        let punctuation = NameContext {
+            title: "...And Justice for All".into(),
+            ..Default::default()
+        };
         assert_eq!(render("{Title First Character}", &punctuation), "A");
 
-        let empty = NameContext { title: "!!!".into(), ..Default::default() };
+        let empty = NameContext {
+            title: "!!!".into(),
+            ..Default::default()
+        };
         assert_eq!(render("{Title First Character}", &empty), "");
     }
 
@@ -257,7 +329,10 @@ mod tests {
     fn a_token_that_is_only_decoration_renders_empty_rather_than_panicking() {
         let c = ctx();
 
-        assert_eq!(render("{Movie Title} { } {Release Year}", &c), "The Matrix 1999");
+        assert_eq!(
+            render("{Movie Title} { } {Release Year}", &c),
+            "The Matrix 1999"
+        );
         assert_eq!(render("{-}", &c), "");
         assert_eq!(render("{[]}", &c), "");
         assert_eq!(render("{...}", &c), "");
@@ -266,9 +341,15 @@ mod tests {
 
     #[test]
     fn string_token_truncation_spec() {
-        let c = NameContext { title: "A Very Long Movie Title Here".into(), ..Default::default() };
+        let c = NameContext {
+            title: "A Very Long Movie Title Here".into(),
+            ..Default::default()
+        };
         assert_eq!(render("{Movie Title:13}", &c), "A Very Lon...");
         // A zero spec is not a truncation (and not a pad): value unchanged.
-        assert_eq!(render("{Movie Title:0}", &c), "A Very Long Movie Title Here");
+        assert_eq!(
+            render("{Movie Title:0}", &c),
+            "A Very Long Movie Title Here"
+        );
     }
 }

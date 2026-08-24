@@ -32,13 +32,16 @@ impl DefinitionStore {
             .output()
             .context("spawn tar")?;
         if !out.status.success() {
-            bail!("tar failed: {}", String::from_utf8_lossy(&out.stderr).trim());
+            bail!(
+                "tar failed: {}",
+                String::from_utf8_lossy(&out.stderr).trim()
+            );
         }
 
         let defs_root = find_definitions_root(&tmp)
             .context("no definitions/ directory in the downloaded archive")?;
-        let version = pick_version_dir(&defs_root)
-            .context("no version directory under definitions/")?;
+        let version =
+            pick_version_dir(&defs_root).context("no version directory under definitions/")?;
         let src = defs_root.join(&version);
 
         let mut count = 0;
@@ -93,8 +96,8 @@ fn pick_version_dir(defs_root: &Path) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::test_support::{serve, store_for, tarball, tmpdir, DEMO_YML};
+    use super::*;
 
     // The live end-to-end sync against the real upstream repo lives in
     // `tests/live_sync.rs`: it is `#[ignore]`d, so nothing here can run it.
@@ -114,12 +117,18 @@ mod tests {
         let nested = tmpdir("root-nested");
         let want = nested.path().join("Indexers-master").join("definitions");
         std::fs::create_dir_all(&want).unwrap();
-        assert_eq!(find_definitions_root(nested.path()).as_deref(), Some(want.as_path()));
+        assert_eq!(
+            find_definitions_root(nested.path()).as_deref(),
+            Some(want.as_path())
+        );
 
         let direct = tmpdir("root-direct");
         let want = direct.path().join("definitions");
         std::fs::create_dir_all(&want).unwrap();
-        assert_eq!(find_definitions_root(direct.path()).as_deref(), Some(want.as_path()));
+        assert_eq!(
+            find_definitions_root(direct.path()).as_deref(),
+            Some(want.as_path())
+        );
 
         let empty = tmpdir("root-none");
         assert!(find_definitions_root(empty.path()).is_none());
@@ -133,7 +142,6 @@ mod tests {
         assert!(pick_version_dir(dir.path()).is_none());
     }
 
-
     #[test]
     fn a_sync_extracts_the_highest_schema_version_and_nothing_else() {
         let bytes = tarball(&[
@@ -141,11 +149,17 @@ mod tests {
             ("Indexers-master/definitions/v9/demo.yml", DEMO_YML),
             ("Indexers-master/definitions/v11/demo.yml", DEMO_YML),
             ("Indexers-master/definitions/v11/other.yaml", DEMO_YML),
-            ("Indexers-master/definitions/v11/README.md", "not a definition"),
+            (
+                "Indexers-master/definitions/v11/README.md",
+                "not a definition",
+            ),
             ("Indexers-master/README.md", "ignored"),
         ]);
         let store = store_for(serve(200, bytes));
-        assert!(!store.is_populated(), "nothing cached before the first sync");
+        assert!(
+            !store.is_populated(),
+            "nothing cached before the first sync"
+        );
 
         let report = store.sync().unwrap();
         assert_eq!(report.version, "v11");
@@ -155,8 +169,14 @@ mod tests {
         // The files landed flat in the cache, and the scratch dir is gone.
         assert!(store.dir().join("demo.yml").is_file());
         assert!(store.dir().join("other.yaml").is_file());
-        assert!(!store.dir().join(".sync-tmp").exists(), "the temp dir was left behind");
-        assert!(!store.dir().join("ancient.yml").exists(), "an older version leaked in");
+        assert!(
+            !store.dir().join(".sync-tmp").exists(),
+            "the temp dir was left behind"
+        );
+        assert!(
+            !store.dir().join("ancient.yml").exists(),
+            "an older version leaked in"
+        );
     }
 
     #[test]
@@ -182,15 +202,17 @@ mod tests {
     fn a_definition_whose_filename_differs_from_its_internal_id_is_keyed_by_the_file() {
         // Real definitions do this (`darkpeers-api.yml` carries `id: darkpeers`).
         // Keying on the internal id would make the row unloadable.
-        let bytes =
-            tarball(&[("Indexers-master/definitions/v9/demo-api.yml", DEMO_YML)]);
+        let bytes = tarball(&[("Indexers-master/definitions/v9/demo-api.yml", DEMO_YML)]);
         let store = store_for(serve(200, bytes));
         store.sync().unwrap();
 
         let listed = store.list().unwrap();
         assert_eq!(listed[0].id, "demo-api", "the internal id was 'demo'");
         assert!(store.load("demo-api").is_ok());
-        assert!(store.load("demo").is_err(), "the internal id must not resolve");
+        assert!(
+            store.load("demo").is_err(),
+            "the internal id must not resolve"
+        );
     }
 
     #[test]
@@ -212,7 +234,10 @@ mod tests {
 
         let updated = DEMO_YML.replace("Demo Tracker", "Demo Tracker (renamed)");
         let second = tarball(&[("Indexers-master/definitions/v9/demo.yml", &updated)]);
-        let store = DefinitionStore { dir: store.dir().to_path_buf(), source: serve(200, second) };
+        let store = DefinitionStore {
+            dir: store.dir().to_path_buf(),
+            source: serve(200, second),
+        };
         store.sync().unwrap();
 
         let after = std::fs::read_to_string(store.dir().join("demo.yml")).unwrap();
@@ -238,15 +263,18 @@ mod tests {
         let err = wrong_shape.sync().unwrap_err().to_string();
         assert!(err.contains("no definitions/"), "{err}");
 
-        let no_versions =
-            store_for(serve(200, tarball(&[("Indexers-master/definitions/readme.txt", "x")])));
+        let no_versions = store_for(serve(
+            200,
+            tarball(&[("Indexers-master/definitions/readme.txt", "x")]),
+        ));
         let err = no_versions.sync().unwrap_err().to_string();
         assert!(err.contains("no version directory"), "{err}");
 
-        let empty_version =
-            store_for(serve(200, tarball(&[("Indexers-master/definitions/v9/notes.txt", "x")])));
+        let empty_version = store_for(serve(
+            200,
+            tarball(&[("Indexers-master/definitions/v9/notes.txt", "x")]),
+        ));
         let err = empty_version.sync().unwrap_err().to_string();
         assert!(err.contains("no definitions"), "{err}");
     }
-
 }

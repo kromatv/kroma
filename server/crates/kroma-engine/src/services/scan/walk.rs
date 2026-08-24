@@ -85,7 +85,10 @@ pub(super) fn scan_root(
             .unwrap_or("")
             .to_ascii_lowercase();
 
-        let file_name = path.file_name().and_then(std::ffi::OsStr::to_str).unwrap_or("");
+        let file_name = path
+            .file_name()
+            .and_then(std::ffi::OsStr::to_str)
+            .unwrap_or("");
         let edition = detect_edition(file_name);
 
         let file = MediaFile {
@@ -134,7 +137,10 @@ fn prepare_children(
     for e in children.iter_mut().flatten() {
         if e.file_type().is_file() {
             e.client_state = file_meta(&e.path());
-        } else if e.file_type().is_dir() && e.path_is_symlink() && !first_descent(descended, &e.path()) {
+        } else if e.file_type().is_dir()
+            && e.path_is_symlink()
+            && !first_descent(descended, &e.path())
+        {
             e.read_children_path = None;
         }
     }
@@ -174,7 +180,11 @@ fn index_parsed(
     match parsed {
         Parsed::Movie { title, year } => {
             *movie_seen = true;
-            let title = if title.is_empty() { "Untitled".into() } else { title };
+            let title = if title.is_empty() {
+                "Untitled".into()
+            } else {
+                title
+            };
             let logical = movie_logical_id(lib_id, &title, year);
             lib_item_ids.insert(logical.clone());
             let item = items.entry(logical.clone()).or_insert_with(|| MediaItem {
@@ -284,10 +294,15 @@ type FileMeta = Option<(u64, i64)>;
 // still cost stacks + scheduler churn on a 2-4 core box. `KROMA_WALK_THREADS`
 // overrides for genuinely remote mounts.
 fn walk_threads() -> usize {
-    if let Some(n) = std::env::var("KROMA_WALK_THREADS").ok().and_then(|s| s.parse().ok()) {
+    if let Some(n) = std::env::var("KROMA_WALK_THREADS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+    {
         return n;
     }
-    let cores = std::thread::available_parallelism().map(std::num::NonZeroUsize::get).unwrap_or(4);
+    let cores = std::thread::available_parallelism()
+        .map(std::num::NonZeroUsize::get)
+        .unwrap_or(4);
     (cores * 4).clamp(8, 32)
 }
 
@@ -420,7 +435,9 @@ mod tests {
         let episodes: Vec<&MediaItem> =
             items.values().filter(|i| i.kind == Kind::Episode).collect();
         assert_eq!(episodes.len(), 2);
-        assert!(episodes.iter().all(|e| e.show_id.as_deref() == Some(show.id.as_str())));
+        assert!(episodes
+            .iter()
+            .all(|e| e.show_id.as_deref() == Some(show.id.as_str())));
     }
 
     #[test]
@@ -448,7 +465,11 @@ mod tests {
         );
 
         assert_eq!(items.len(), 1);
-        assert_eq!(items.values().next().unwrap().files.len(), 1, "the loop yielded the file again");
+        assert_eq!(
+            items.values().next().unwrap().files.len(),
+            1,
+            "the loop yielded the file again"
+        );
     }
 
     #[test]

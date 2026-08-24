@@ -45,7 +45,14 @@ impl TransData {
 }
 
 /// Upsert one `(subject, lang)` translation.
-pub fn put(pool: &Pool, kind: &str, id: &str, lang: &str, source: &str, data: &TransData) -> Result<()> {
+pub fn put(
+    pool: &Pool,
+    kind: &str,
+    id: &str,
+    lang: &str,
+    source: &str,
+    data: &TransData,
+) -> Result<()> {
     let conn = pool.get()?;
     write(&conn, kind, id, lang, source, data)
 }
@@ -119,7 +126,11 @@ pub fn languages_for(pool: &Pool, kind: &str, id: &str) -> Result<Vec<String>> {
 }
 
 /// `id -> (lang -> data)` with no fallback applied; the caller picks per locale.
-pub fn load_all(pool: &Pool, kind: &str, ids: &[&str]) -> Result<HashMap<String, HashMap<String, TransData>>> {
+pub fn load_all(
+    pool: &Pool,
+    kind: &str,
+    ids: &[&str],
+) -> Result<HashMap<String, HashMap<String, TransData>>> {
     let conn = pool.get()?;
     load(&conn, kind, ids)
 }
@@ -156,7 +167,13 @@ fn load(
                  WHERE subject_kind=? AND subject_id IN ({ph})"
             )
         },
-        |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?)),
+        |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+            ))
+        },
     )?;
     for (id, lang, json) in rows {
         let data = serde_json::from_str::<TransData>(&json).unwrap_or_default();
@@ -175,33 +192,72 @@ mod tests {
     }
 
     fn td(title: &str) -> TransData {
-        TransData { title: Some(title.into()), ..Default::default() }
+        TransData {
+            title: Some(title.into()),
+            ..Default::default()
+        }
     }
 
     #[test]
     fn is_empty_reports_payload_presence() {
         assert!(TransData::default().is_empty());
         assert!(!td("x").is_empty());
-        assert!(!TransData { genres: vec!["Drama".into()], ..Default::default() }.is_empty());
-        assert!(!TransData { reason: Some("because".into()), ..Default::default() }.is_empty());
+        assert!(!TransData {
+            genres: vec!["Drama".into()],
+            ..Default::default()
+        }
+        .is_empty());
+        assert!(!TransData {
+            reason: Some("because".into()),
+            ..Default::default()
+        }
+        .is_empty());
     }
 
     #[test]
     fn resolve_one_fallback_chain() {
         let p = pool();
-        put(&p, "show", "s1", "en", TMDB, &TransData {
-            title: Some("Severance".into()),
-            overview: Some("work you".into()),
-            ..Default::default()
-        })
+        put(
+            &p,
+            "show",
+            "s1",
+            "en",
+            TMDB,
+            &TransData {
+                title: Some("Severance".into()),
+                overview: Some("work you".into()),
+                ..Default::default()
+            },
+        )
         .unwrap();
         put(&p, "show", "s1", "fr", TMDB, &td("Severance VF")).unwrap();
 
-        assert_eq!(resolve_one(&p, "show", "s1", "fr").unwrap().unwrap().title.as_deref(), Some("Severance VF"));
-        assert_eq!(resolve_one(&p, "show", "s1", "de").unwrap().unwrap().title.as_deref(), Some("Severance"));
+        assert_eq!(
+            resolve_one(&p, "show", "s1", "fr")
+                .unwrap()
+                .unwrap()
+                .title
+                .as_deref(),
+            Some("Severance VF")
+        );
+        assert_eq!(
+            resolve_one(&p, "show", "s1", "de")
+                .unwrap()
+                .unwrap()
+                .title
+                .as_deref(),
+            Some("Severance")
+        );
 
         put(&p, "show", "s2", "ja", TMDB, &td("only ja")).unwrap();
-        assert_eq!(resolve_one(&p, "show", "s2", "de").unwrap().unwrap().title.as_deref(), Some("only ja"));
+        assert_eq!(
+            resolve_one(&p, "show", "s2", "de")
+                .unwrap()
+                .unwrap()
+                .title
+                .as_deref(),
+            Some("only ja")
+        );
 
         assert!(resolve_one(&p, "show", "missing", "fr").unwrap().is_none());
     }
@@ -211,7 +267,14 @@ mod tests {
         let p = pool();
         put(&p, "item", "m1", "fr", TMDB, &td("old")).unwrap();
         put(&p, "item", "m1", "fr", MANUAL, &td("new")).unwrap();
-        assert_eq!(resolve_one(&p, "item", "m1", "fr").unwrap().unwrap().title.as_deref(), Some("new"));
+        assert_eq!(
+            resolve_one(&p, "item", "m1", "fr")
+                .unwrap()
+                .unwrap()
+                .title
+                .as_deref(),
+            Some("new")
+        );
 
         put(&p, "item", "m1", "en", TMDB, &td("en title")).unwrap();
         let mut langs = languages_for(&p, "item", "m1").unwrap();
@@ -250,7 +313,10 @@ mod tests {
     #[test]
     fn a_table_that_is_no_longer_there_surfaces_as_an_error_rather_than_silence() {
         let p = pool();
-        p.get().unwrap().execute_batch("DROP TABLE translations").unwrap();
+        p.get()
+            .unwrap()
+            .execute_batch("DROP TABLE translations")
+            .unwrap();
 
         assert!(put(&p, "show", "s1", "en", TMDB, &td("A")).is_err());
         let conn = p.get().unwrap();

@@ -23,7 +23,9 @@ use axum::routing::get;
 use axum::Router;
 
 pub fn routes() -> Router<SharedState> {
-    Router::new().route("/people", get(person)).route("/people/details", get(details))
+    Router::new()
+        .route("/people", get(person))
+        .route("/people/details", get(details))
 }
 
 #[derive(Debug, Deserialize)]
@@ -42,7 +44,11 @@ pub async fn person(
     let library = p.library;
 
     if name.is_empty() {
-        return Ok(Json(PersonResponse { name, results: Vec::new() }).into_response());
+        return Ok(Json(PersonResponse {
+            name,
+            results: Vec::new(),
+        })
+        .into_response());
     }
 
     let resp = query(&state.db, move |pool| {
@@ -72,7 +78,12 @@ pub async fn details(
     Query(p): Query<NameParams>,
 ) -> Result<Response, Response> {
     let name = p.name.unwrap_or_default().trim().to_string();
-    let Some(api_key) = state.config.tmdb_api_key.clone().filter(|_| !name.is_empty()) else {
+    let Some(api_key) = state
+        .config
+        .tmdb_api_key
+        .clone()
+        .filter(|_| !name.is_empty())
+    else {
         return Ok(Json(PersonDetailResponse { name, person: None }).into_response());
     };
     let language = settings::metadata_language(&state.settings, &state.config);
@@ -80,12 +91,18 @@ pub async fn details(
     let lookup = name.clone();
     // curl (twice, on a cache miss) plus an image download: blocking work.
     let person = blocking(move || {
-        Ok(metadata::person::detail(&api_key, &language, &lookup).map(|mut p| {
-            if let Some(local) = p.profile_url.as_deref().and_then(|u| image::cache_remote(&data_dir, u)) {
-                p.profile_url = Some(local);
-            }
-            p
-        }))
+        Ok(
+            metadata::person::detail(&api_key, &language, &lookup).map(|mut p| {
+                if let Some(local) = p
+                    .profile_url
+                    .as_deref()
+                    .and_then(|u| image::cache_remote(&data_dir, u))
+                {
+                    p.profile_url = Some(local);
+                }
+                p
+            }),
+        )
     })
     .await?;
     Ok(Json(PersonDetailResponse { name, person }).into_response())

@@ -5,9 +5,7 @@
 use std::collections::BTreeMap;
 
 use super::*;
-use kroma_domain::{
-    ActionSpec, NotificationCategory, NotificationEvent, ParamValue, PushCategory,
-};
+use kroma_domain::{ActionSpec, NotificationCategory, NotificationEvent, ParamValue, PushCategory};
 
 mod digest;
 mod preferences;
@@ -71,7 +69,8 @@ fn row_to_notification(r: &Row) -> rusqlite::Result<StoredNotification> {
 /// Every image a stored notification still points at, so the size-based cache
 /// trimmer knows an uploaded image is spoken for and must not evict it.
 pub fn referenced_images(conn: &Connection) -> Result<Vec<String>> {
-    let mut stmt = conn.prepare("SELECT DISTINCT image_url FROM notifications WHERE image_url IS NOT NULL")?;
+    let mut stmt =
+        conn.prepare("SELECT DISTINCT image_url FROM notifications WHERE image_url IS NOT NULL")?;
     let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
@@ -128,7 +127,11 @@ pub fn list_notifications(
     limit: usize,
     only_unread: bool,
 ) -> rusqlite::Result<Vec<StoredNotification>> {
-    let unread = if only_unread { " AND read_at IS NULL" } else { "" };
+    let unread = if only_unread {
+        " AND read_at IS NULL"
+    } else {
+        ""
+    };
     let sql = format!(
         "SELECT {NOTIFICATION_COLS} FROM notifications WHERE user_id = ?1{unread} \
          ORDER BY created_at DESC LIMIT ?2"
@@ -163,7 +166,10 @@ mod tests {
         let n = &list[0];
         assert_eq!(n.link.as_deref(), Some("/movie/ab12"));
         assert_eq!(n.image_url.as_deref(), Some("https://img/p.jpg"));
-        assert_eq!(n.params.get("title"), Some(&ParamValue::Text("Dune".into())));
+        assert_eq!(
+            n.params.get("title"),
+            Some(&ParamValue::Text("Dune".into()))
+        );
         assert_eq!(n.actions.len(), 1);
         assert_eq!(n.actions[0].id, "view");
         assert_eq!(n.actions[0].kind, ActionKind::Link);
@@ -202,7 +208,8 @@ mod tests {
         let (p, u1, _) = pool();
         insert(&p, "n1", &u1, 1_000);
         let conn = p.get().unwrap();
-        conn.execute("DELETE FROM users WHERE id = ?1", params![u1]).unwrap();
+        conn.execute("DELETE FROM users WHERE id = ?1", params![u1])
+            .unwrap();
         // ON DELETE CASCADE, so no orphan inbox survives the account.
         assert_eq!(unread_count(&conn, &u1).unwrap(), 0);
     }

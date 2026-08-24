@@ -30,12 +30,19 @@ impl ToolBox for CatalogTools {
     fn defs(&self) -> Vec<ToolDef> {
         SPECS
             .iter()
-            .map(|s| ToolDef { name: s.name.to_string(), description: s.description.to_string(), schema: (s.schema)() })
+            .map(|s| ToolDef {
+                name: s.name.to_string(),
+                description: s.description.to_string(),
+                schema: (s.schema)(),
+            })
             .collect()
     }
 
     fn call(&self, name: &str, args: &Value) -> Result<String> {
-        let spec = SPECS.iter().find(|s| s.name == name).ok_or_else(|| anyhow!("unknown tool '{name}'"))?;
+        let spec = SPECS
+            .iter()
+            .find(|s| s.name == name)
+            .ok_or_else(|| anyhow!("unknown tool '{name}'"))?;
         let out = (spec.handler)(self, args)?;
         if let Some(log) = &self.log {
             log(format!("tool {name} {args} → {} bytes", out.len()));
@@ -107,7 +114,9 @@ fn handle_find_titles(t: &CatalogTools, args: &Value) -> Result<String> {
 }
 
 fn handle_get_title(t: &CatalogTools, args: &Value) -> Result<String> {
-    let q = arg_str(args, "id").or_else(|| arg_str(args, "title")).unwrap_or_default();
+    let q = arg_str(args, "id")
+        .or_else(|| arg_str(args, "title"))
+        .unwrap_or_default();
     match db::get_title(&t.pool, &q)? {
         Some(x) => Ok(json!({
             "id": x.id, "title": x.title, "year": x.year, "kind": x.kind, "rating": x.rating,
@@ -121,7 +130,10 @@ fn handle_get_title(t: &CatalogTools, args: &Value) -> Result<String> {
 
 fn handle_list_genres(t: &CatalogTools, _args: &Value) -> Result<String> {
     let counts = db::genre_counts(&t.pool)?;
-    let rows: Vec<Value> = counts.iter().map(|(g, n)| json!({ "genre": g, "count": n })).collect();
+    let rows: Vec<Value> = counts
+        .iter()
+        .map(|(g, n)| json!({ "genre": g, "count": n }))
+        .collect();
     Ok(json!({ "genres": rows }).to_string())
 }
 
@@ -129,7 +141,10 @@ fn handle_list_people(t: &CatalogTools, args: &Value) -> Result<String> {
     let role = arg_str(args, "role").unwrap_or_else(|| "director".into());
     let limit = arg_usize(args, "limit").unwrap_or(20);
     let counts = db::people_counts(&t.pool, &role, limit)?;
-    let rows: Vec<Value> = counts.iter().map(|(name, n)| json!({ "name": name, "count": n })).collect();
+    let rows: Vec<Value> = counts
+        .iter()
+        .map(|(name, n)| json!({ "name": name, "count": n }))
+        .collect();
     Ok(json!({ "role": role, "people": rows }).to_string())
 }
 
@@ -176,7 +191,11 @@ fn schema_list_people() -> Value {
 }
 
 fn arg_str(v: &Value, k: &str) -> Option<String> {
-    v.get(k).and_then(Value::as_str).map(str::trim).filter(|s| !s.is_empty()).map(str::to_string)
+    v.get(k)
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
 }
 fn arg_u32(v: &Value, k: &str) -> Option<u32> {
     num_of(v.get(k)?).map(|n| n.max(0.0) as u32)
@@ -189,5 +208,6 @@ fn arg_usize(v: &Value, k: &str) -> Option<usize> {
 }
 // A JSON number, tolerating a numeric string (models sometimes send `"2015"`).
 fn num_of(v: &Value) -> Option<f64> {
-    v.as_f64().or_else(|| v.as_str().and_then(|s| s.trim().parse().ok()))
+    v.as_f64()
+        .or_else(|| v.as_str().and_then(|s| s.trim().parse().ok()))
 }

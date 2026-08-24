@@ -96,8 +96,7 @@ impl Config {
                 (!builtin.is_empty()).then(|| builtin.to_string())
             });
 
-        let tmdb_language =
-            env::var("KROMA_TMDB_LANGUAGE").unwrap_or_else(|_| "en-US".to_string());
+        let tmdb_language = env::var("KROMA_TMDB_LANGUAGE").unwrap_or_else(|_| "en-US".to_string());
 
         let tmdb_enrich = env::var("KROMA_TMDB_ENRICH")
             .map(|v| !matches!(v.trim(), "0" | "false" | "no" | "off"))
@@ -208,7 +207,11 @@ fn parse_csv_list(raw: &str) -> Vec<String> {
 // Also accepts `;`/`,` on top of the native `:` on Unix, since NAS install
 // wizards commonly show semicolon-separated examples.
 fn parse_dir_list(raw: &str) -> Vec<PathBuf> {
-    let seps: &[char] = if cfg!(windows) { &[';', ','] } else { &[':', ';', ','] };
+    let seps: &[char] = if cfg!(windows) {
+        &[';', ',']
+    } else {
+        &[':', ';', ',']
+    };
     raw.split(seps)
         .map(str::trim)
         .filter(|s| !s.is_empty())
@@ -225,11 +228,19 @@ mod tests {
     fn parse_dir_list_splits_and_trims() {
         assert_eq!(
             parse_dir_list("/a:/b:/c"),
-            vec![PathBuf::from("/a"), PathBuf::from("/b"), PathBuf::from("/c")]
+            vec![
+                PathBuf::from("/a"),
+                PathBuf::from("/b"),
+                PathBuf::from("/c")
+            ]
         );
         assert_eq!(
             parse_dir_list("/a ; /b , /c"),
-            vec![PathBuf::from("/a"), PathBuf::from("/b"), PathBuf::from("/c")]
+            vec![
+                PathBuf::from("/a"),
+                PathBuf::from("/b"),
+                PathBuf::from("/c")
+            ]
         );
     }
 
@@ -266,7 +277,10 @@ mod tests {
             cfg_with("127.0.0.1", 8080, "./data").socket_addr(),
             "127.0.0.1:8080".parse().unwrap()
         );
-        assert_eq!(cfg_with("::1", 4040, "./data").socket_addr(), "[::1]:4040".parse().unwrap());
+        assert_eq!(
+            cfg_with("::1", 4040, "./data").socket_addr(),
+            "[::1]:4040".parse().unwrap()
+        );
         assert_eq!(
             cfg_with("not-an-ip", 1234, "./data").socket_addr(),
             "0.0.0.0:1234".parse().unwrap()
@@ -360,7 +374,11 @@ mod tests {
 
         for off in ["0", "false", "no", "off", ""] {
             env::set_var("KROMA_HTTPS", off);
-            assert_eq!(Config::from_env().https_override, Some(false), "{off} should pin HTTPS off");
+            assert_eq!(
+                Config::from_env().https_override,
+                Some(false),
+                "{off} should pin HTTPS off"
+            );
         }
         env::set_var("KROMA_HTTPS_PORT", "not-a-port");
         assert!(Config::from_env().https_port_override.is_none());
@@ -373,7 +391,10 @@ mod tests {
         let _g = env_guard();
         clear_env();
 
-        env::set_var("KROMA_ALLOWED_ORIGINS", "https://tv.example/, tauri://localhost ;null");
+        env::set_var(
+            "KROMA_ALLOWED_ORIGINS",
+            "https://tv.example/, tauri://localhost ;null",
+        );
         assert_eq!(
             Config::from_env().allowed_origins,
             vec!["https://tv.example", "tauri://localhost", "null"]
@@ -408,7 +429,10 @@ mod tests {
         assert_eq!(c.port, 9999);
         assert_eq!(c.media_dirs, vec![PathBuf::from("/a"), PathBuf::from("/b")]);
         assert_eq!(c.movies_dirs, vec![PathBuf::from("/movies")]);
-        assert_eq!(c.series_dirs, vec![PathBuf::from("/tv"), PathBuf::from("/tv2")]);
+        assert_eq!(
+            c.series_dirs,
+            vec![PathBuf::from("/tv"), PathBuf::from("/tv2")]
+        );
         assert_eq!(c.data_dir, PathBuf::from("/data/root"));
         assert_eq!(c.tmdb_api_key.as_deref(), Some("mykey"));
         assert_eq!(c.tmdb_language, "fr-FR");
@@ -442,7 +466,10 @@ mod tests {
 
         for off in ["0", "false", "no", "off"] {
             env::set_var("KROMA_TMDB_ENRICH", off);
-            assert!(!Config::from_env().tmdb_enrich, "{off} should disable enrich");
+            assert!(
+                !Config::from_env().tmdb_enrich,
+                "{off} should disable enrich"
+            );
         }
         env::set_var("KROMA_WEB_URL", "");
         assert!(Config::from_env().web_url.is_none());

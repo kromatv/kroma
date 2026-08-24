@@ -119,9 +119,13 @@ pub enum CastCommand {
     },
     SkipNext,
     Stop,
-    SetAudio { index: usize },
+    SetAudio {
+        index: usize,
+    },
     // `null` turns subtitles off.
-    SetSubtitle { index: Option<usize> },
+    SetSubtitle {
+        index: Option<usize>,
+    },
 }
 
 /// Sequenced so a receiver that gets a command twice (WS push *and* the
@@ -146,10 +150,16 @@ mod tests {
         assert_eq!(json, r#"{"type":"play","itemId":"it1","positionMs":42}"#);
         assert_eq!(serde_json::from_str::<CastCommand>(&json).unwrap(), play);
 
-        assert_eq!(serde_json::to_string(&CastCommand::SkipNext).unwrap(), r#"{"type":"skipNext"}"#);
+        assert_eq!(
+            serde_json::to_string(&CastCommand::SkipNext).unwrap(),
+            r#"{"type":"skipNext"}"#
+        );
         assert_eq!(
             serde_json::from_str::<CastCommand>(r#"{"type":"play","itemId":"x"}"#).unwrap(),
-            CastCommand::Play { item_id: "x".into(), position_ms: 0 }
+            CastCommand::Play {
+                item_id: "x".into(),
+                position_ms: 0
+            }
         );
         // Subtitles off is an explicit null, not an omission.
         assert_eq!(

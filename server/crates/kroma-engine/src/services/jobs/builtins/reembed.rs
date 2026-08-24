@@ -14,9 +14,9 @@ pub(super) const SPEC: Builtin = Builtin {
 };
 
 pub(super) fn run(ctx: &JobContext) -> Result<()> {
-    use kroma_domain::build_doc;
     use crate::infra::events::ServerEvent;
     use crate::model::Kind;
+    use kroma_domain::build_doc;
 
     let state = &ctx.state;
     let embedder = state.embedder.clone();
@@ -24,23 +24,28 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     let current = crate::db::vector_dims(&state.db)?;
     let (items, shows) = crate::db::index_snapshot(&state.db)?;
     // Movies/loose videos + shows carry metadata; episodes inherit (no vector).
-    let movies: Vec<&crate::model::MediaItem> =
-        items.iter().filter(|i| !matches!(i.kind, Kind::Episode)).collect();
+    let movies: Vec<&crate::model::MediaItem> = items
+        .iter()
+        .filter(|i| !matches!(i.kind, Kind::Episode))
+        .collect();
     let total = movies.len() + shows.len();
-    ctx.info(format!("re-embedding to dim {target} ({total} titles; skipping any already at {target})"));
+    ctx.info(format!(
+        "re-embedding to dim {target} ({total} titles; skipping any already at {target})"
+    ));
 
     let mut embedded = 0usize;
     let mut skipped = 0usize;
     // Chunked because the embedder is out-of-process: one `embed_batch` per chunk
     // is a single round-trip, versus one IPC per title for `embed`.
     let mut pending: Vec<(String, String)> = Vec::new();
-    let mut consider = |id: &str, title: &str, year: Option<u32>, meta: Option<&crate::model::Metadata>| {
-        if current.get(id).copied() == Some(target) {
-            skipped += 1;
-        } else if let Some(meta) = meta {
-            pending.push((id.to_string(), build_doc(title, year, meta)));
-        }
-    };
+    let mut consider =
+        |id: &str, title: &str, year: Option<u32>, meta: Option<&crate::model::Metadata>| {
+            if current.get(id).copied() == Some(target) {
+                skipped += 1;
+            } else if let Some(meta) = meta {
+                pending.push((id.to_string(), build_doc(title, year, meta)));
+            }
+        };
     for m in movies {
         consider(&m.id, &m.title, m.year, m.metadata.as_ref());
     }
@@ -68,7 +73,9 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
         ctx.progress(done, total);
     }
 
-    ctx.info(format!("re-embedded {embedded} titles, skipped {skipped} already at dim {target}"));
+    ctx.info(format!(
+        "re-embedded {embedded} titles, skipped {skipped} already at dim {target}"
+    ));
     state.vectors.refresh_if_stale(&state.db)?;
     state.events.publish(ServerEvent::LibraryUpdated);
     Ok(())
@@ -107,13 +114,18 @@ mod tests {
             .db
             .get()
             .unwrap()
-            .execute(&format!("UPDATE items SET metadata = json('{meta}') WHERE id = '{id}'"), [])
+            .execute(
+                &format!("UPDATE items SET metadata = json('{meta}') WHERE id = '{id}'"),
+                [],
+            )
             .unwrap();
     }
 
     fn stored_dims(state: &SharedState) -> Vec<usize> {
-        let mut dims: Vec<usize> =
-            crate::db::vector_dims(&state.db).unwrap().into_values().collect();
+        let mut dims: Vec<usize> = crate::db::vector_dims(&state.db)
+            .unwrap()
+            .into_values()
+            .collect();
         dims.sort_unstable();
         dims
     }
@@ -160,13 +172,19 @@ mod tests {
             .db
             .get()
             .unwrap()
-            .execute(&format!("UPDATE shows SET metadata = json('{meta}') WHERE id = '{show}'"), [])
+            .execute(
+                &format!("UPDATE shows SET metadata = json('{meta}') WHERE id = '{show}'"),
+                [],
+            )
             .unwrap();
 
         run(&JobContext::for_test(state.clone())).unwrap();
 
         assert!(vector_of(&state, &show).is_some());
-        assert!(vector_of(&state, "ep-1").is_none(), "the episode inherits, it is not embedded");
+        assert!(
+            vector_of(&state, "ep-1").is_none(),
+            "the episode inherits, it is not embedded"
+        );
     }
 
     #[test]
@@ -195,10 +213,20 @@ mod tests {
         let mut stmt = conn
             .prepare("SELECT message FROM job_logs WHERE run_id = 'run-ro' AND level = 'error'")
             .unwrap();
-        let errors: Vec<String> =
-            stmt.query_map([], |r| r.get::<_, String>(0)).unwrap().map(|r| r.unwrap()).collect();
-        assert_eq!(errors.len(), 2, "one line per title, not one for the pass: {errors:?}");
-        assert!(errors.iter().all(|e| e.contains("failed to store vector")), "{errors:?}");
+        let errors: Vec<String> = stmt
+            .query_map([], |r| r.get::<_, String>(0))
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect();
+        assert_eq!(
+            errors.len(),
+            2,
+            "one line per title, not one for the pass: {errors:?}"
+        );
+        assert!(
+            errors.iter().all(|e| e.contains("failed to store vector")),
+            "{errors:?}"
+        );
     }
 
     #[test]
@@ -238,20 +266,26 @@ mod tests {
         crate::db::set_item_vector(&bigger.db, "itm-1", &[0.5f32; 4]).unwrap();
         assert_eq!(stored_dims(&bigger), vec![4]);
         run(&JobContext::for_test(bigger.clone())).unwrap();
-        assert_eq!(stored_dims(&bigger), vec![16], "the 4-dim vector was left behind");
+        assert_eq!(
+            stored_dims(&bigger),
+            vec![16],
+            "the 4-dim vector was left behind"
+        );
     }
 
     #[test]
     fn a_module_that_answers_no_vectors_stores_nothing_instead_of_failing() {
         // It reports a width but hands back an empty batch, which is what a
         // sidecar mid-restart does. A hard error here would be a red job.
-        let state = test_state_with_embedder(crate::point::Point::stub("embedder", |method, _| {
-            match method {
-                "meta" => Some(serde_json::json!({ "dim": 384, "relevance_floor": 1.0 })),
-                "embed_batch" => Some(serde_json::json!(Vec::<Vec<f32>>::new())),
-                _ => None,
-            }
-        }));
+        let state =
+            test_state_with_embedder(crate::point::Point::stub(
+                "embedder",
+                |method, _| match method {
+                    "meta" => Some(serde_json::json!({ "dim": 384, "relevance_floor": 1.0 })),
+                    "embed_batch" => Some(serde_json::json!(Vec::<Vec<f32>>::new())),
+                    _ => None,
+                },
+            ));
         seed_enriched_movie(&state, "itm-1");
         run(&JobContext::for_test(state.clone())).unwrap();
         assert!(stored_dims(&state).is_empty());

@@ -20,9 +20,15 @@ pub(super) fn pump_events(app: &AppHandle, read_half: UnixStream) {
     // Focus-stealing prevention for a SYSTEM mpv, which doesn't get the
     // sidecar-only `--focus-on=never` (see start_mpv): over IPC a pre-0.39 build
     // returns an error reply instead of aborting on the unknown option.
-    let _ = write_ipc(app, &json!({ "command": ["set_property", "focus-on", "never"] }));
+    let _ = write_ipc(
+        app,
+        &json!({ "command": ["set_property", "focus-on", "never"] }),
+    );
     for (i, prop) in OBSERVED.iter().enumerate() {
-        let _ = write_ipc(app, &json!({ "command": ["observe_property", i + 1, prop] }));
+        let _ = write_ipc(
+            app,
+            &json!({ "command": ["observe_property", i + 1, prop] }),
+        );
     }
     let reader = BufReader::new(read_half);
     for line in reader.lines() {
@@ -47,7 +53,9 @@ fn write_ipc(app: &AppHandle, msg: &Value) -> Result<(), String> {
     };
     let mut line = msg.to_string();
     line.push('\n');
-    let res = stream.write_all(line.as_bytes()).and_then(|()| stream.flush());
+    let res = stream
+        .write_all(line.as_bytes())
+        .and_then(|()| stream.flush());
     res.map_err(|e| {
         *guard = None;
         format!("mpv IPC write failed: {e}")
@@ -65,7 +73,10 @@ fn forward(app: &AppHandle, msg: &Value) {
             let _ = app.emit("mpv://file-loaded", ());
         }
         "end-file" => {
-            let reason = msg.get("reason").and_then(Value::as_str).unwrap_or_default();
+            let reason = msg
+                .get("reason")
+                .and_then(Value::as_str)
+                .unwrap_or_default();
             let _ = app.emit("mpv://end-file", json!({ "reason": reason }));
         }
         _ => {}

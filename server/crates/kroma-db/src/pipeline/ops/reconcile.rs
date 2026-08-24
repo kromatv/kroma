@@ -5,8 +5,8 @@ use std::collections::{HashMap, HashSet};
 use anyhow::Result;
 use rusqlite::{params, TransactionBehavior};
 
-use crate::pool::Pool;
 use super::{Subject, MAX_ATTEMPTS, UNREADABLE_SIG};
+use crate::pool::Pool;
 
 /// Reconcile a stage's ledger against the freshly-enumerated `subjects` (one
 /// transaction). Insert missing subjects as `pending`; re-`pending` any whose
@@ -226,7 +226,10 @@ mod tests {
         finish_batch(&p, "probe", &[ok("a")], 3).unwrap();
         p.get()
             .unwrap()
-            .execute("UPDATE pipeline_tasks SET input_sig='sig' WHERE subject_id='a'", [])
+            .execute(
+                "UPDATE pipeline_tasks SET input_sig='sig' WHERE subject_id='a'",
+                [],
+            )
             .unwrap();
 
         assert_eq!(requeue_stage(&p, "probe", 10).unwrap(), 1);
@@ -234,7 +237,11 @@ mod tests {
         let sig: Option<String> = p
             .get()
             .unwrap()
-            .query_row("SELECT input_sig FROM pipeline_tasks WHERE subject_id='a'", [], |r| r.get(0))
+            .query_row(
+                "SELECT input_sig FROM pipeline_tasks WHERE subject_id='a'",
+                [],
+                |r| r.get(0),
+            )
             .unwrap();
         assert!(sig.is_none());
     }

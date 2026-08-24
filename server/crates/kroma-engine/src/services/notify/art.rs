@@ -80,10 +80,18 @@ mod tests {
         // A TMDB poster is already sized by whoever serves it; our query string
         // would only break their cache key.
         let external = "https://image.tmdb.org/t/p/w500/x.jpg";
-        assert_eq!(sized_for_push(with_image(Some(external))).image_url.as_deref(), Some(external));
+        assert_eq!(
+            sized_for_push(with_image(Some(external)))
+                .image_url
+                .as_deref(),
+            Some(external)
+        );
 
         let sized = "/api/images/abc.webp?w=320";
-        assert_eq!(sized_for_push(with_image(Some(sized))).image_url.as_deref(), Some(sized));
+        assert_eq!(
+            sized_for_push(with_image(Some(sized))).image_url.as_deref(),
+            Some(sized)
+        );
 
         assert!(sized_for_push(with_image(None)).image_url.is_none());
     }
@@ -117,6 +125,9 @@ mod tests {
                 Some("https://image.tmdb.org/t/p/w500/x.jpg"),
             );
         }
-        assert_eq!(native_image_url(&with_image(None), Some("https://k.example")), None);
+        assert_eq!(
+            native_image_url(&with_image(None), Some("https://k.example")),
+            None
+        );
     }
 }

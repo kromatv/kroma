@@ -2,9 +2,9 @@
 //! indexer for, and the coverage rule that says which wanted rows a grab of it
 //! would satisfy.
 
+use crate::peers::indexers::Query;
 use kroma_module_sdk::db::WantedRow;
 use kroma_module_sdk::engine::model::RequestKind;
-use crate::peers::indexers::Query;
 use kroma_scene::Target;
 
 /// One thing worth searching for: the Torznab query + the decision target +
@@ -63,7 +63,10 @@ pub(super) fn season_target(sample: &WantedRow, season: u32, rows: &[&WantedRow]
             title: sample.title.clone(),
             season,
         },
-        target: Target::Season { season, episodes: rows.len() as u32 },
+        target: Target::Season {
+            season,
+            episodes: rows.len() as u32,
+        },
         kind: "season",
         season: Some(season),
         episodes: Some(covered),
@@ -111,14 +114,23 @@ fn push_season_targets(
     season: u32,
     today: &str,
 ) {
-    let open_rows: Vec<&WantedRow> =
-        open.iter().copied().filter(|w| w.season == Some(season)).collect();
-    let aired_eps: Vec<u32> =
-        open_rows.iter().copied().filter(|w| aired(w, today)).filter_map(|w| w.episode).collect();
+    let open_rows: Vec<&WantedRow> = open
+        .iter()
+        .copied()
+        .filter(|w| w.season == Some(season))
+        .collect();
+    let aired_eps: Vec<u32> = open_rows
+        .iter()
+        .copied()
+        .filter(|w| aired(w, today))
+        .filter_map(|w| w.episode)
+        .collect();
     if aired_eps.is_empty() {
         return;
     }
-    let has_future = open_rows.iter().any(|w| w.air_date.as_deref().is_some_and(|d| d > today));
+    let has_future = open_rows
+        .iter()
+        .any(|w| w.air_date.as_deref().is_some_and(|d| d > today));
     let all_rows = season_rows(wanted, season);
     let sample = open_rows[0];
     if !has_future {
@@ -139,13 +151,22 @@ pub fn wanted_ids_by(
     episodes: Option<&[u32]>,
 ) -> Vec<String> {
     match target {
-        "movie" => wanted.iter().filter(|w| w.kind == "movie").map(|w| w.id.clone()).collect(),
-        "season" => wanted.iter().filter(|w| w.season == season).map(|w| w.id.clone()).collect(),
+        "movie" => wanted
+            .iter()
+            .filter(|w| w.kind == "movie")
+            .map(|w| w.id.clone())
+            .collect(),
+        "season" => wanted
+            .iter()
+            .filter(|w| w.season == season)
+            .map(|w| w.id.clone())
+            .collect(),
         _ => wanted
             .iter()
             .filter(|w| {
                 w.season == season
-                    && w.episode.is_some_and(|e| episodes.is_some_and(|list| list.contains(&e)))
+                    && w.episode
+                        .is_some_and(|e| episodes.is_some_and(|list| list.contains(&e)))
             })
             .map(|w| w.id.clone())
             .collect(),
@@ -195,7 +216,12 @@ mod tests {
     }
 
     fn episode_numbers(targets: &[SearchTarget]) -> Vec<u32> {
-        targets.iter().filter(|t| t.kind == "episode").filter_map(|t| t.episodes.as_ref()?.first()).copied().collect()
+        targets
+            .iter()
+            .filter(|t| t.kind == "episode")
+            .filter_map(|t| t.episodes.as_ref()?.first())
+            .copied()
+            .collect()
     }
 
     #[test]
@@ -232,14 +258,24 @@ mod tests {
     fn pack_budget_counts_the_whole_season_not_the_open_rows() {
         // Eight already on disk, two still wanted: a real ten-episode pack must
         // be budgeted for ten, or the scorer rejects every one as too-big.
-        let mut rows: Vec<WantedRow> =
-            (1..=8).map(|e| row(3, e, Some("2025-01-01"), "available")).collect();
+        let mut rows: Vec<WantedRow> = (1..=8)
+            .map(|e| row(3, e, Some("2025-01-01"), "available"))
+            .collect();
         rows.push(ep(3, 9, Some("2025-01-01")));
         rows.push(ep(3, 10, Some("2025-01-08")));
 
         let t = targets_for_wanted(RequestKind::Show, &rows, "2026-07-16");
-        let pack = t.iter().find(|x| x.kind == "season").expect("a pack target");
-        assert!(matches!(pack.target, Target::Season { season: 3, episodes: 10 }));
+        let pack = t
+            .iter()
+            .find(|x| x.kind == "season")
+            .expect("a pack target");
+        assert!(matches!(
+            pack.target,
+            Target::Season {
+                season: 3,
+                episodes: 10
+            }
+        ));
     }
 
     #[test]
@@ -261,12 +297,18 @@ mod tests {
     #[test]
     fn wanted_ids_by_movie_season_episode() {
         let rows = vec![movie_row(None, None), ep(1, 1, None), ep(1, 2, None)];
-        assert_eq!(wanted_ids_by(&rows, "movie", None, None), vec!["m1".to_string()]);
+        assert_eq!(
+            wanted_ids_by(&rows, "movie", None, None),
+            vec!["m1".to_string()]
+        );
         assert_eq!(
             wanted_ids_by(&rows, "season", Some(1), None),
             vec!["s1e1".to_string(), "s1e2".to_string()]
         );
-        assert_eq!(wanted_ids_by(&rows, "episode", Some(1), Some(&[2])), vec!["s1e2".to_string()]);
+        assert_eq!(
+            wanted_ids_by(&rows, "episode", Some(1), Some(&[2])),
+            vec!["s1e2".to_string()]
+        );
         assert!(wanted_ids_by(&rows, "episode", Some(1), Some(&[9])).is_empty());
     }
 }

@@ -37,7 +37,12 @@ pub async fn get_settings(
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
     let view = q.view.unwrap_or_else(|| "general".into());
-    let groups = settings::groups(&view, &state.settings, &state.config, super::user_locale(&user));
+    let groups = settings::groups(
+        &view,
+        &state.settings,
+        &state.config,
+        super::user_locale(&user),
+    );
     Ok(Json(crate::api::dto::SettingsView { view, groups }).into_response())
 }
 
@@ -52,7 +57,9 @@ pub async fn put_settings(
     // The HLS engine caches its disk budget; refresh it so a new
     // `transcodeCacheLimit` takes effect live (next reaper sweep) without a restart.
     if written.iter().any(|k| k == "transcodeCacheLimit") {
-        state.hls.set_cache_budget(settings::transcode_cache_limit_bytes(&state.settings));
+        state
+            .hls
+            .set_cache_budget(settings::transcode_cache_limit_bytes(&state.settings));
     }
     // The ffmpeg concurrency gate caches its budget; refresh it so a new
     // `mediaConcurrency` throttles (or opens up) background media work live.

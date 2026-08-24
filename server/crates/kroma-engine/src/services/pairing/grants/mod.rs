@@ -30,7 +30,11 @@ pub struct Granted {
 /// "lapsed": a device that cannot tell them apart simply starts over.
 pub enum PollState {
     Pending,
-    Authorized { token: String, access_token: String, user: Box<User> },
+    Authorized {
+        token: String,
+        access_token: String,
+        user: Box<User>,
+    },
     Unknown,
 }
 
@@ -87,7 +91,10 @@ struct Entry<M> {
 impl<M> Entry<M> {
     fn orphaned(self) -> Option<Orphaned> {
         let g = self.granted?;
-        Some(Orphaned { token: g.token, access_token: g.access_token })
+        Some(Orphaned {
+            token: g.token,
+            access_token: g.access_token,
+        })
     }
 }
 
@@ -120,7 +127,10 @@ impl<M> Grants<M> {
     /// full store outright, and [`Self::replace_scoped`] only ever gets in by
     /// taking a slot off whichever scope holds the most.
     pub fn new(ttl_secs: i64, capacity: usize) -> Self {
-        debug_assert!(capacity > 0, "a grant store with no capacity can hold nothing");
+        debug_assert!(
+            capacity > 0,
+            "a grant store with no capacity can hold nothing"
+        );
         Self {
             map: Mutex::new(HashMap::new()),
             orphanage: Mutex::new(Vec::new()),
@@ -131,8 +141,11 @@ impl<M> Grants<M> {
 
     fn reap(&self, map: &mut HashMap<String, Entry<M>>) {
         let cutoff = now() - self.ttl_secs;
-        let lapsed: Vec<String> =
-            map.iter().filter(|(_, e)| e.fresh_at <= cutoff).map(|(h, _)| h.clone()).collect();
+        let lapsed: Vec<String> = map
+            .iter()
+            .filter(|(_, e)| e.fresh_at <= cutoff)
+            .map(|(h, _)| h.clone())
+            .collect();
         for handle in lapsed {
             self.abandon(map.remove(&handle));
         }
@@ -175,8 +188,8 @@ impl<M> Grants<M> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::test_support::{file, granted, grants, seq_mint};
+    use super::*;
 
     #[test]
     fn a_lapsed_request_is_swept_on_the_next_touch_of_the_store() {
@@ -197,10 +210,17 @@ mod tests {
         assert!(g.take_orphans().is_empty(), "nothing has lapsed yet");
 
         g.age(400);
-        assert!(matches!(g.poll("anything"), PollState::Unknown), "the sweep ran");
+        assert!(
+            matches!(g.poll("anything"), PollState::Unknown),
+            "the sweep ran"
+        );
 
         let orphans = g.take_orphans();
-        assert_eq!(orphans.len(), 1, "the swept approval surrendered its tokens");
+        assert_eq!(
+            orphans.len(),
+            1,
+            "the swept approval surrendered its tokens"
+        );
         assert_eq!(orphans[0].token, "tok");
         assert!(g.take_orphans().is_empty(), "draining twice yields nothing");
     }

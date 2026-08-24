@@ -54,7 +54,13 @@ mod tests {
     use super::*;
 
     fn ctx(weekday: Weekday, part: PartOfDay) -> Context {
-        Context { month: 1, weekday, part_of_day: part, last_played: None, watched: Vec::new() }
+        Context {
+            month: 1,
+            weekday,
+            part_of_day: part,
+            last_played: None,
+            watched: Vec::new(),
+        }
     }
 
     #[test]

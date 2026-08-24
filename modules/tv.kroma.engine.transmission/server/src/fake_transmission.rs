@@ -38,16 +38,28 @@ impl Reply {
 
     // 200 with a non-"success" result: how Transmission reports most errors.
     pub(crate) fn refuses(result: &str) -> Self {
-        Self { status: 200, session: None, body: json!({ "result": result }).to_string() }
+        Self {
+            status: 200,
+            session: None,
+            body: json!({ "result": result }).to_string(),
+        }
     }
 
     // The CSRF challenge: 409 carrying the session id to replay with.
     pub(crate) fn challenge(sid: &str) -> Self {
-        Self { status: 409, session: Some(sid.to_string()), body: "Conflict".into() }
+        Self {
+            status: 409,
+            session: Some(sid.to_string()),
+            body: "Conflict".into(),
+        }
     }
 
     pub(crate) fn raw(status: u16, body: &str) -> Self {
-        Self { status, session: None, body: body.into() }
+        Self {
+            status,
+            session: None,
+            body: body.into(),
+        }
     }
 }
 
@@ -87,8 +99,10 @@ pub(crate) fn read_headers(reader: &mut impl BufRead) -> Option<Headers> {
 }
 
 pub(crate) fn write_reply(stream: &mut impl Write, reply: Reply) {
-    let handshake =
-        reply.session.map(|s| format!("{SESSION_HEADER}: {s}\r\n")).unwrap_or_default();
+    let handshake = reply
+        .session
+        .map(|s| format!("{SESSION_HEADER}: {s}\r\n"))
+        .unwrap_or_default();
     let reason = if reply.status == 200 { "OK" } else { "ERR" };
     let resp = format!(
         "HTTP/1.1 {} {reason}\r\nContent-Length: {}\r\nContent-Type: application/json\r\n{handshake}Connection: close\r\n\r\n{}",
@@ -115,7 +129,9 @@ impl FakeTransmission {
             for stream in listener.incoming() {
                 let Ok(mut stream) = stream else { break };
                 let mut reader = BufReader::new(stream.try_clone().unwrap());
-                let Some(headers) = read_headers(&mut reader) else { continue };
+                let Some(headers) = read_headers(&mut reader) else {
+                    continue;
+                };
 
                 let mut body = vec![0u8; headers.len];
                 if headers.len > 0 {
@@ -123,8 +139,11 @@ impl FakeTransmission {
                 }
 
                 let sent: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
-                let method =
-                    sent.get("method").and_then(Value::as_str).unwrap_or_default().to_string();
+                let method = sent
+                    .get("method")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string();
                 let args = sent.get("arguments").cloned().unwrap_or(Value::Null);
 
                 let n = counts.entry(method.clone()).or_insert(0);
@@ -140,7 +159,10 @@ impl FakeTransmission {
             }
         });
 
-        Self { base: format!("http://127.0.0.1:{port}"), calls }
+        Self {
+            base: format!("http://127.0.0.1:{port}"),
+            calls,
+        }
     }
 
     pub(crate) fn client(&self) -> Transmission {

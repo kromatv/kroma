@@ -19,9 +19,14 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     }
     let items = crate::db::list_items(&state.db, None)?;
     let shows = crate::db::list_shows(&state.db, None)?;
-    let titles =
-        items.iter().filter(|i| !matches!(i.kind, crate::model::Kind::Episode)).count();
-    ctx.info(format!("re-enriching {titles} movies/videos and {} shows from TMDB…", shows.len()));
+    let titles = items
+        .iter()
+        .filter(|i| !matches!(i.kind, crate::model::Kind::Episode))
+        .count();
+    ctx.info(format!(
+        "re-enriching {titles} movies/videos and {} shows from TMDB…",
+        shows.len()
+    ));
 
     let summary = crate::services::enrich::run_tracked(
         state,
@@ -104,7 +109,10 @@ mod tests {
         let lines = run_with(&state, false);
         let joined = lines.join("\n");
         assert!(joined.contains("re-enriching"), "{joined}");
-        assert!(joined.contains("without a TMDB match"), "the counts were not reported: {joined}");
+        assert!(
+            joined.contains("without a TMDB match"),
+            "the counts were not reported: {joined}"
+        );
         assert!(joined.contains("search index rebuilt"), "{joined}");
     }
 
@@ -117,7 +125,10 @@ mod tests {
         let lines = run_with(&state, true);
         let joined = lines.join("\n");
         assert!(joined.contains("cancelled after"), "{joined}");
-        assert!(!joined.contains("rebuilding search index"), "reindexed anyway: {joined}");
+        assert!(
+            !joined.contains("rebuilding search index"),
+            "reindexed anyway: {joined}"
+        );
     }
 
     #[test]
@@ -125,7 +136,10 @@ mod tests {
         let state = test_state_with_tmdb("test-key");
         let _tmdb = FakeTmdb::start(|_| (200, empty_page()));
         let joined = run_with(&state, false).join("\n");
-        assert!(joined.contains("0 shows") || joined.contains("re-enriching 0"), "{joined}");
+        assert!(
+            joined.contains("0 shows") || joined.contains("re-enriching 0"),
+            "{joined}"
+        );
         assert!(joined.contains("search index rebuilt"), "{joined}");
     }
 }

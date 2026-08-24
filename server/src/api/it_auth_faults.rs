@@ -13,12 +13,23 @@ const SEAL_SESSIONS: &str =
     "CREATE TRIGGER no_new_sessions BEFORE INSERT ON sessions BEGIN SELECT RAISE(ABORT,'sealed'); END";
 
 fn sql(t: &TestApp, script: &str) {
-    t.state.db.get().expect("a connection").execute_batch(script).expect("reshape the schema");
+    t.state
+        .db
+        .get()
+        .expect("a connection")
+        .execute_batch(script)
+        .expect("reshape the schema");
 }
 
 fn invite(t: &TestApp, token: &str) {
-    crate::db::create_invite(&t.state.db, token, &[Permission::Playback], &t.user_id, FUTURE)
-        .expect("mint an invite");
+    crate::db::create_invite(
+        &t.state.db,
+        token,
+        &[Permission::Playback],
+        &t.user_id,
+        FUTURE,
+    )
+    .expect("mint an invite");
 }
 
 async fn register(t: &TestApp, email: &str, token: Option<&str>) -> StatusCode {
@@ -26,7 +37,9 @@ async fn register(t: &TestApp, email: &str, token: Option<&str>) -> StatusCode {
     if let Some(token) = token {
         body["inviteToken"] = json!(token);
     }
-    send(&t.app, "POST", "/api/auth/register", None, Some(body)).await.0
+    send(&t.app, "POST", "/api/auth/register", None, Some(body))
+        .await
+        .0
 }
 
 #[tokio::test]
@@ -34,7 +47,10 @@ async fn registration_refuses_when_the_accounts_are_uncountable() {
     let t = test_app();
     sql(&t, "DROP TABLE users");
 
-    assert_eq!(register(&t, "new@test.dev", None).await, StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(
+        register(&t, "new@test.dev", None).await,
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
 }
 
 #[tokio::test]
@@ -42,7 +58,10 @@ async fn registration_refuses_when_the_duplicate_check_cannot_read_the_account()
     let t = test_app();
     sql(&t, HIDE_PASSWORD_HASH);
 
-    assert_eq!(register(&t, "new@test.dev", None).await, StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(
+        register(&t, "new@test.dev", None).await,
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
 }
 
 #[tokio::test]
@@ -141,7 +160,14 @@ async fn exchanging_a_credential_refuses_when_no_session_can_be_minted() {
 #[tokio::test]
 async fn approving_a_quick_connect_code_refuses_when_the_credentials_cannot_be_minted() {
     let t = test_app();
-    let (_, init) = send(&t.app, "POST", "/api/auth/quickconnect/initiate", None, None).await;
+    let (_, init) = send(
+        &t.app,
+        "POST",
+        "/api/auth/quickconnect/initiate",
+        None,
+        None,
+    )
+    .await;
     let code = init["code"].as_str().expect("a code").to_string();
     sql(&t, "DROP TABLE access_tokens");
 

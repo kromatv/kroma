@@ -26,8 +26,7 @@ pub(super) fn process_panic(_ctx: &JobContext, _id: &str) -> Result<()> {
     panic!("kaboom")
 }
 
-pub(super) // A stage with a caller-chosen `process`; everything else is inert.
-fn test_stage(process: fn(&JobContext, &str) -> Result<()>) -> Stage {
+pub(super) fn test_stage(process: fn(&JobContext, &str) -> Result<()>) -> Stage {
     Stage {
         short: "teststage",
         key: "pipeline.teststage",
@@ -39,7 +38,9 @@ fn test_stage(process: fn(&JobContext, &str) -> Result<()>) -> Stage {
     }
 }
 
-pub(super) fn log_lines(rx: &mut tokio::sync::broadcast::Receiver<crate::infra::events::Envelope>) -> Vec<String> {
+pub(super) fn log_lines(
+    rx: &mut tokio::sync::broadcast::Receiver<crate::infra::events::Envelope>,
+) -> Vec<String> {
     let mut out = Vec::new();
     while let Ok(env) = rx.try_recv() {
         let v: serde_json::Value = serde_json::from_str(env.payload_unrouted()).unwrap();

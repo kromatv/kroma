@@ -92,8 +92,9 @@ pub fn lookup_all_by_id(
     target: Target,
     id: u64,
 ) -> Option<Resolved> {
-    let by_lang =
-        details_by_lang(cache, api_key, langs, target, id, |lang| detail_key_id(target, lang, id));
+    let by_lang = details_by_lang(cache, api_key, langs, target, id, |lang| {
+        detail_key_id(target, lang, id)
+    });
     (!by_lang.is_empty()).then_some(Resolved { by_lang })
 }
 

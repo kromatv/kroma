@@ -18,7 +18,9 @@ pub(in crate::infra::hls) fn fake_session(dir: PathBuf, age: Duration) -> Arc<Se
         .kill_on_drop(true)
         .spawn()
         .expect("spawn the stand-in child");
-    let last = Instant::now().checked_sub(age).expect("monotonic clock older than the test window");
+    let last = Instant::now()
+        .checked_sub(age)
+        .expect("monotonic clock older than the test window");
     Arc::new(Session {
         dir,
         child: Mutex::new(child),

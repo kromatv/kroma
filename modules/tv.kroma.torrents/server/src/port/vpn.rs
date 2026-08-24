@@ -29,14 +29,19 @@ pub const VPN_PROXY: &str = "tv.kroma.vpn/proxy";
 /// SOCKS5). `None` means no bridge, and torrent traffic goes out directly.
 pub fn proxy_url(host: &dyn HostCtx) -> Option<String> {
     let resolve = pinned_resolver(host, VPN_PROXY, None)?;
-    call_raw(&resolve, &format!("{VPN_PROXY}/url"), &json!({})).ok().flatten()
+    call_raw(&resolve, &format!("{VPN_PROXY}/url"), &json!({}))
+        .ok()
+        .flatten()
 }
 
 /// The routes this module mounts for [`DOWNLOAD_VPN`].
 pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/_port/tv.kroma.torrents/vpn/status", post(status::<S>))
-        .route("/_port/tv.kroma.torrents/vpn/seal-check", post(seal_check::<S>))
+        .route(
+            "/_port/tv.kroma.torrents/vpn/seal-check",
+            post(seal_check::<S>),
+        )
         .route("/_port/tv.kroma.torrents/vpn/restart", post(restart::<S>))
 }
 
@@ -82,7 +87,9 @@ async fn seal_check<S: HostCtx + Clone + Send + Sync + 'static>(
 async fn restart<S: HostCtx + Clone + Send + Sync + 'static>(
     State(host): State<S>,
 ) -> Json<Option<bool>> {
-    let Some(manager) = manager(&host) else { return Json(None) };
+    let Some(manager) = manager(&host) else {
+        return Json(None);
+    };
     manager.start_rqbit(&host).await;
     Json(Some(true))
 }
@@ -104,8 +111,13 @@ mod tests {
             .unwrap();
         let resp = tower::ServiceExt::oneshot(app, req).await.unwrap();
         let status = resp.status();
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
-        (status, serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null))
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        (
+            status,
+            serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null),
+        )
     }
 
     // With no manager registered — this process between spawn and wiring — every

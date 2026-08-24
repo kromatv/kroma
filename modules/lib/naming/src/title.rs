@@ -52,7 +52,10 @@ mod tests {
 
     #[test]
     fn title_the_handles_all_articles() {
-        assert_eq!(title_the("An Officer and a Gentleman"), "Officer and a Gentleman, An");
+        assert_eq!(
+            title_the("An Officer and a Gentleman"),
+            "Officer and a Gentleman, An"
+        );
         // No leading article: unchanged.
         assert_eq!(title_the("Blade Runner"), "Blade Runner");
         // First-character bucket uses the sort title (article moved to the end).

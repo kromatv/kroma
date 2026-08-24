@@ -186,7 +186,11 @@ impl Registry {
         let owned = sessions
             .get(session_id)
             .is_some_and(|s| s.user_id.as_deref() == Some(user_id));
-        if owned { sessions.remove(session_id) } else { None }
+        if owned {
+            sessions.remove(session_id)
+        } else {
+            None
+        }
     }
 
     /// Live (non-stale) sessions only, newest first.
@@ -297,8 +301,22 @@ mod tests {
     #[test]
     fn upsert_creates_then_refreshes() {
         let reg = Registry::default();
-        assert!(reg.upsert(ping("s1", 1000, "playing"), Some("u1".into()), "Alice".into(), "1.2.3.4".into(), "WAN".into(), None));
-        assert!(!reg.upsert(ping("s1", 5000, "paused"), Some("u1".into()), "Alice".into(), "1.2.3.4".into(), "LAN".into(), None));
+        assert!(reg.upsert(
+            ping("s1", 1000, "playing"),
+            Some("u1".into()),
+            "Alice".into(),
+            "1.2.3.4".into(),
+            "WAN".into(),
+            None
+        ));
+        assert!(!reg.upsert(
+            ping("s1", 5000, "paused"),
+            Some("u1".into()),
+            "Alice".into(),
+            "1.2.3.4".into(),
+            "LAN".into(),
+            None
+        ));
         let list = reg.list();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].position_ms, 5000);
@@ -311,7 +329,14 @@ mod tests {
     #[test]
     fn upsert_updates_audio_and_subtitle_labels() {
         let reg = Registry::new();
-        reg.upsert(ping("s1", 0, "playing"), None, "Anon".into(), "ip".into(), "LAN".into(), None);
+        reg.upsert(
+            ping("s1", 0, "playing"),
+            None,
+            "Anon".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
         let mut p = ping("s1", 10, "playing");
         p.audio = Some("English 5.1".into());
         p.subtitle = Some("French".into());
@@ -324,7 +349,14 @@ mod tests {
     #[test]
     fn remove_returns_session() {
         let reg = Registry::new();
-        reg.upsert(ping("s1", 0, "playing"), None, "u".into(), "ip".into(), "LAN".into(), None);
+        reg.upsert(
+            ping("s1", 0, "playing"),
+            None,
+            "u".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
         let removed = reg.remove("s1");
         assert!(removed.is_some());
         assert_eq!(removed.unwrap().id, "s1");
@@ -335,7 +367,14 @@ mod tests {
     #[test]
     fn terminate_removes_and_blocks_regrace() {
         let reg = Registry::new();
-        reg.upsert(ping("s1", 0, "playing"), None, "u".into(), "ip".into(), "LAN".into(), None);
+        reg.upsert(
+            ping("s1", 0, "playing"),
+            None,
+            "u".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
         let ended = reg.terminate("s1");
         assert!(ended.is_some());
         assert!(reg.is_recently_terminated("s1"));
@@ -348,7 +387,14 @@ mod tests {
     fn user_online_reflects_live_sessions() {
         let reg = Registry::new();
         assert!(!reg.user_online("u1"));
-        reg.upsert(ping("s1", 0, "playing"), Some("u1".into()), "u".into(), "ip".into(), "LAN".into(), None);
+        reg.upsert(
+            ping("s1", 0, "playing"),
+            Some("u1".into()),
+            "u".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
         assert!(reg.user_online("u1"));
         assert!(!reg.user_online("u2"));
     }
@@ -356,8 +402,22 @@ mod tests {
     #[test]
     fn list_sorts_newest_started_first() {
         let reg = Registry::new();
-        reg.upsert(ping("old", 0, "playing"), None, "u".into(), "ip".into(), "LAN".into(), None);
-        reg.upsert(ping("new", 0, "playing"), None, "u".into(), "ip".into(), "LAN".into(), None);
+        reg.upsert(
+            ping("old", 0, "playing"),
+            None,
+            "u".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
+        reg.upsert(
+            ping("new", 0, "playing"),
+            None,
+            "u".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
         // Same-second inserts would tie.
         {
             let mut map = reg.inner.write().unwrap();
@@ -372,8 +432,22 @@ mod tests {
     #[test]
     fn stale_sessions_are_filtered_and_drained() {
         let reg = Registry::new();
-        reg.upsert(ping("live", 0, "playing"), None, "u".into(), "ip".into(), "LAN".into(), None);
-        reg.upsert(ping("dead", 0, "playing"), Some("u9".into()), "u".into(), "ip".into(), "LAN".into(), None);
+        reg.upsert(
+            ping("live", 0, "playing"),
+            None,
+            "u".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
+        reg.upsert(
+            ping("dead", 0, "playing"),
+            Some("u9".into()),
+            "u".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
         // Age out "dead" past the TTL.
         {
             let mut map = reg.inner.write().unwrap();
@@ -392,7 +466,14 @@ mod tests {
     fn record_appends_to_play_history() {
         let pool = test_pool();
         let reg = Registry::new();
-        reg.upsert(ping("s1", 0, "playing"), Some("u1".into()), "Alice".into(), "ip".into(), "LAN".into(), None);
+        reg.upsert(
+            ping("s1", 0, "playing"),
+            Some("u1".into()),
+            "Alice".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
         let session = reg.remove("s1").unwrap();
         record(&pool, &session);
         let count: i64 = pool
@@ -411,13 +492,39 @@ mod tests {
     #[test]
     fn only_the_viewer_of_a_session_can_end_it() {
         let reg = Registry::new();
-        reg.upsert(ping("s1", 0, "playing"), Some("u1".into()), "Alice".into(), "ip".into(), "LAN".into(), None);
-        reg.upsert(ping("anon", 0, "playing"), None, "Anon".into(), "ip".into(), "LAN".into(), None);
+        reg.upsert(
+            ping("s1", 0, "playing"),
+            Some("u1".into()),
+            "Alice".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
+        reg.upsert(
+            ping("anon", 0, "playing"),
+            None,
+            "Anon".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
 
-        assert!(reg.remove_owned("s1", "u2").is_none(), "another account cannot end it");
-        assert!(reg.remove_owned("ghost", "u1").is_none(), "and an unknown id is indistinguishable");
-        assert!(reg.remove_owned("anon", "u1").is_none(), "nor can anyone claim a signed-out session");
-        assert_eq!(reg.remove_owned("s1", "u1").map(|s| s.id), Some("s1".to_string()));
+        assert!(
+            reg.remove_owned("s1", "u2").is_none(),
+            "another account cannot end it"
+        );
+        assert!(
+            reg.remove_owned("ghost", "u1").is_none(),
+            "and an unknown id is indistinguishable"
+        );
+        assert!(
+            reg.remove_owned("anon", "u1").is_none(),
+            "nor can anyone claim a signed-out session"
+        );
+        assert_eq!(
+            reg.remove_owned("s1", "u1").map(|s| s.id),
+            Some("s1".to_string())
+        );
         assert!(reg.remove_owned("s1", "u1").is_none());
         assert!(reg.contains("anon"));
     }
@@ -434,8 +541,22 @@ mod tests {
         let events = Bus::new();
         let mut seen = events.subscribe();
         let reg = Registry::new();
-        reg.upsert(ping("live", 0, "playing"), Some("u1".into()), "Alice".into(), "ip".into(), "LAN".into(), None);
-        reg.upsert(ping("dead", 0, "playing"), Some("u1".into()), "Alice".into(), "ip".into(), "LAN".into(), None);
+        reg.upsert(
+            ping("live", 0, "playing"),
+            Some("u1".into()),
+            "Alice".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
+        reg.upsert(
+            ping("dead", 0, "playing"),
+            Some("u1".into()),
+            "Alice".into(),
+            "ip".into(),
+            "LAN".into(),
+            None,
+        );
         {
             let mut map = reg.inner.write().unwrap();
             map.get_mut("dead").unwrap().last_seen = Instant::now() - Duration::from_secs(120);
@@ -457,6 +578,9 @@ mod tests {
         assert_eq!(logged, 1);
 
         let_the_reaper_sweep().await;
-        assert!(seen.try_recv().is_err(), "a sweep that finds nothing says nothing");
+        assert!(
+            seen.try_recv().is_err(),
+            "a sweep that finds nothing says nothing"
+        );
     }
 }

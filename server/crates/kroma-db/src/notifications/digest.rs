@@ -115,7 +115,14 @@ mod tests {
         .unwrap();
 
         let added = items_added_since(&conn, "2026-01-01", 10).unwrap();
-        let poster = |id: &str| added.iter().find(|a| a.id == id).unwrap().poster_url.clone();
+        let poster = |id: &str| {
+            added
+                .iter()
+                .find(|a| a.id == id)
+                .unwrap()
+                .poster_url
+                .clone()
+        };
         assert_eq!(poster("m1").as_deref(), Some("/core/m1.webp"));
         // Not yet re-enriched into `metadata_core`: the stored blob still answers.
         assert_eq!(poster("m2").as_deref(), Some("/blob/m2.webp"));
@@ -127,7 +134,8 @@ mod tests {
     fn the_digest_queries_report_a_missing_table_rather_than_an_empty_library() {
         let (p, _, _) = pool();
         let conn = p.get().unwrap();
-        conn.execute_batch("DROP TABLE my_list; DROP TABLE items").unwrap();
+        conn.execute_batch("DROP TABLE my_list; DROP TABLE items")
+            .unwrap();
 
         assert!(followers_of_show(&conn, "s1").is_err());
         assert!(items_added_since(&conn, "2020-01-01", 10).is_err());

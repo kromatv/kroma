@@ -28,7 +28,9 @@ impl Registry {
         avatar_url: Option<&str>,
     ) -> Option<CastReceiver> {
         let mut map = self.inner.write().unwrap();
-        let entry = map.get_mut(receiver_id).filter(|r| r.live() && r.user_id == user_id)?;
+        let entry = map
+            .get_mut(receiver_id)
+            .filter(|r| r.live() && r.user_id == user_id)?;
         // Picking a set up again is deliberate, so it clears an earlier kick.
         entry.kicked.remove(user_id);
         let view = CastController {
@@ -61,9 +63,13 @@ impl Registry {
         if !replaced && entry.controllers.get(controller_id).map(|c| &c.view) == Some(&view) {
             return None;
         }
-        entry
-            .controllers
-            .insert(controller_id.to_string(), ControllerEntry { view, user_id: user_id.to_string() });
+        entry.controllers.insert(
+            controller_id.to_string(),
+            ControllerEntry {
+                view,
+                user_id: user_id.to_string(),
+            },
+        );
         Some(entry.view())
     }
 
@@ -101,7 +107,9 @@ impl Registry {
     /// TV is indistinguishable from no TV at all.
     pub fn may_command(&self, receiver_id: &str, user_id: &str) -> Option<bool> {
         let map = self.inner.read().unwrap();
-        let entry = map.get(receiver_id).filter(|r| r.live() && r.user_id == user_id)?;
+        let entry = map
+            .get(receiver_id)
+            .filter(|r| r.live() && r.user_id == user_id)?;
         Some(!entry.kicked.contains(user_id))
     }
 }

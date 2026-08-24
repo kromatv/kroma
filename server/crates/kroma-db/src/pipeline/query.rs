@@ -65,7 +65,10 @@ pub fn stage_statuses(
     let mut stmt =
         conn.prepare("SELECT subject_id, status, error FROM pipeline_tasks WHERE stage=?1")?;
     let rows = stmt.query_map(params![stage], |r| {
-        Ok((r.get::<_, String>(0)?, (r.get::<_, String>(1)?, r.get::<_, Option<String>>(2)?)))
+        Ok((
+            r.get::<_, String>(0)?,
+            (r.get::<_, String>(1)?, r.get::<_, Option<String>>(2)?),
+        ))
     })?;
     Ok(rows.collect::<rusqlite::Result<HashMap<_, _>>>()?)
 }
@@ -160,19 +163,39 @@ mod tests {
             task(&conn, "st", "f4", "running", None, None);
         }
         let stat = stage_stat(&p, "st", "the-key", "file").unwrap();
-        assert_eq!((stat.pending, stat.running, stat.done, stat.failed, stat.blocked), (1, 1, 1, 1, 0));
+        assert_eq!(
+            (
+                stat.pending,
+                stat.running,
+                stat.done,
+                stat.failed,
+                stat.blocked
+            ),
+            (1, 1, 1, 1, 0)
+        );
         assert_eq!(stat.key, "the-key");
 
         let map = stage_statuses(&p, "st").unwrap();
         assert_eq!(map["f3"], ("failed".to_string(), Some("boom".to_string())));
         assert_eq!(map["f1"].0, "done");
 
-        assert_eq!(task_status(&p, "st", "f3").unwrap().as_deref(), Some("failed"));
+        assert_eq!(
+            task_status(&p, "st", "f3").unwrap().as_deref(),
+            Some("failed")
+        );
         assert!(task_status(&p, "st", "ghost").unwrap().is_none());
 
         // worst_status ranks failed > running > pending > done.
-        assert_eq!(worst_status(&p, "st", &["f1".into(), "f2".into(), "f3".into()]).unwrap().as_deref(), Some("failed"));
-        assert_eq!(worst_status(&p, "st", &["f1".into()]).unwrap().as_deref(), Some("done"));
+        assert_eq!(
+            worst_status(&p, "st", &["f1".into(), "f2".into(), "f3".into()])
+                .unwrap()
+                .as_deref(),
+            Some("failed")
+        );
+        assert_eq!(
+            worst_status(&p, "st", &["f1".into()]).unwrap().as_deref(),
+            Some("done")
+        );
         assert!(worst_status(&p, "st", &[]).unwrap().is_none());
         assert!(worst_status(&p, "st", &["ghost".into()]).unwrap().is_none());
     }
@@ -188,10 +211,21 @@ mod tests {
             task(&conn, "st", "f4", "quarantined", None, None);
         }
         let stat = stage_stat(&p, "st", "k", "file").unwrap();
-        assert_eq!((stat.pending, stat.running, stat.done, stat.failed, stat.blocked), (0, 0, 1, 0, 2));
+        assert_eq!(
+            (
+                stat.pending,
+                stat.running,
+                stat.done,
+                stat.failed,
+                stat.blocked
+            ),
+            (0, 0, 1, 0, 2)
+        );
 
         assert_eq!(
-            worst_status(&p, "st", &["f1".into(), "f3".into()]).unwrap().as_deref(),
+            worst_status(&p, "st", &["f1".into(), "f3".into()])
+                .unwrap()
+                .as_deref(),
             Some("done")
         );
         assert_eq!(

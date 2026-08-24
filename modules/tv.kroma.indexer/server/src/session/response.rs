@@ -16,7 +16,9 @@ pub(super) fn snippet(body: &str) -> String {
 /// Whether a torznab/newznab feed states in its own response header that it has
 /// no results, which separates an honest empty answer from a broken selector.
 pub(super) fn declared_empty(body: &str) -> bool {
-    let Some(start) = body.find(":response") else { return false };
+    let Some(start) = body.find(":response") else {
+        return false;
+    };
     let rest = &body[start..];
     let end = rest.find('>').unwrap_or(rest.len());
     attr(&rest[..end], "total").is_some_and(|t| t.trim() == "0")
@@ -27,14 +29,20 @@ pub(super) fn declared_empty(body: &str) -> bool {
 /// path that declared `xml`/`json` - a body of the wrong shape entirely (some
 /// trackers answer an unknown `t=` with a bare line of text).
 pub(super) fn refusal(kind: &str, body: &str) -> Option<String> {
-    let head = body.trim_start().trim_start_matches('\u{feff}').trim_start();
+    let head = body
+        .trim_start()
+        .trim_start_matches('\u{feff}')
+        .trim_start();
     let opener = match kind {
         "xml" => '<',
         "json" => {
             if head.starts_with('{') || head.starts_with('[') {
                 return api_error(body);
             }
-            return Some(format!("the indexer did not answer json: {}", snippet(body)));
+            return Some(format!(
+                "the indexer did not answer json: {}",
+                snippet(body)
+            ));
         }
         // `html` is the default kind and covers whatever a scraped page returns,
         // so its shape says nothing; only a real `<error>` document counts.
@@ -81,7 +89,8 @@ mod response_tests {
 
     #[test]
     fn a_torznab_error_document_is_an_error_not_an_empty_result() {
-        let body = r#"<?xml version="1.0"?><error code="100" description="Incorrect user credentials"/>"#;
+        let body =
+            r#"<?xml version="1.0"?><error code="100" description="Incorrect user credentials"/>"#;
         assert_eq!(
             api_error(body).as_deref(),
             Some("tracker error 100: Incorrect user credentials"),
@@ -90,7 +99,9 @@ mod response_tests {
 
     #[test]
     fn a_real_result_set_is_not_an_error() {
-        assert!(api_error(r#"<rss><channel><item><title>x</title></item></channel></rss>"#).is_none());
+        assert!(
+            api_error(r#"<rss><channel><item><title>x</title></item></channel></rss>"#).is_none()
+        );
     }
 
     #[test]
@@ -126,7 +137,10 @@ mod response_tests {
 
     #[test]
     fn a_byte_order_mark_does_not_make_valid_markup_a_refusal() {
-        let msg = refusal("xml", "\u{feff}<?xml version=\"1.0\"?><rss><channel/></rss>");
+        let msg = refusal(
+            "xml",
+            "\u{feff}<?xml version=\"1.0\"?><rss><channel/></rss>",
+        );
         assert!(msg.is_none(), "{msg:?}");
     }
 
@@ -149,7 +163,9 @@ mod response_tests {
             </channel>
           </rss>"#;
         assert!(declared_empty(empty));
-        assert!(!declared_empty(r#"<newznab:response offset="0" total="14"/>"#));
+        assert!(!declared_empty(
+            r#"<newznab:response offset="0" total="14"/>"#
+        ));
         // No header at all: the two cases stay indistinguishable, so it warns.
         assert!(!declared_empty(r#"<rss><channel></channel></rss>"#));
     }

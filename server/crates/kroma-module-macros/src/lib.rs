@@ -42,7 +42,10 @@ fn expansion(manifest_dir: Option<String>) -> String {
                 "EmbeddedModule::with_icon(include_str!({json:?}), include_bytes!({icon:?}), {mime:?})"
             , json = json_path, icon = icon_path, mime = mime)
         }
-        None => format!("EmbeddedModule::iconless(include_str!({json:?}))", json = json_path),
+        None => format!(
+            "EmbeddedModule::iconless(include_str!({json:?}))",
+            json = json_path
+        ),
     }
 }
 
@@ -88,7 +91,9 @@ mod tests {
         }
 
         fn expand(&self) -> String {
-            expansion(Some(self.0.path().join("server").to_string_lossy().to_string()))
+            expansion(Some(
+                self.0.path().join("server").to_string_lossy().to_string(),
+            ))
         }
     }
 

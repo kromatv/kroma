@@ -80,7 +80,11 @@ pub fn transcode_cache_limit_bytes(settings: &Settings) -> u64 {
     // Take the leading numeric run INCLUDING a decimal point (e.g. "1.5 Go" -> 1.5,
     // "20 Go" -> 20). Filtering the '.' out would concatenate "1.5" into "15" (a 10x
     // error); a non-numeric label ("Illimité") parses to nothing => unlimited (0).
-    let num: String = label.trim().chars().take_while(|c| c.is_ascii_digit() || *c == '.').collect();
+    let num: String = label
+        .trim()
+        .chars()
+        .take_while(|c| c.is_ascii_digit() || *c == '.')
+        .collect();
     match num.parse::<f64>() {
         Ok(gb) if gb > 0.0 => (gb * 1_000_000_000.0) as u64,
         _ => 0,
@@ -117,7 +121,11 @@ pub fn remote_access_enabled(settings: &Settings) -> bool {
 /// The public base URL clients reach the server at (e.g. `https://kroma.example.com`),
 /// used for share / Quick Connect links. Trailing slash trimmed; empty if unset.
 pub fn public_url(settings: &Settings) -> String {
-    settings.get_str("remoteUrl", "").trim().trim_end_matches('/').to_string()
+    settings
+        .get_str("remoteUrl", "")
+        .trim()
+        .trim_end_matches('/')
+        .to_string()
 }
 
 /// The stored Cloudflare Tunnel token for the managed connector. Secret never
@@ -187,7 +195,11 @@ pub fn library_defs(settings: &Settings, config: &crate::config::Config) -> Vec<
             id: crate::services::scan::short_hash("lib|movies"),
             name: "Films".to_string(),
             kind: "movies".to_string(),
-            folders: config.movies_dirs.iter().map(|d| d.to_string_lossy().to_string()).collect(),
+            folders: config
+                .movies_dirs
+                .iter()
+                .map(|d| d.to_string_lossy().to_string())
+                .collect(),
             auto_scan: true,
         });
     }
@@ -196,7 +208,11 @@ pub fn library_defs(settings: &Settings, config: &crate::config::Config) -> Vec<
             id: crate::services::scan::short_hash("lib|shows"),
             name: "Séries".to_string(),
             kind: "shows".to_string(),
-            folders: config.series_dirs.iter().map(|d| d.to_string_lossy().to_string()).collect(),
+            folders: config
+                .series_dirs
+                .iter()
+                .map(|d| d.to_string_lossy().to_string())
+                .collect(),
             auto_scan: true,
         });
     }
@@ -300,9 +316,18 @@ mod tests {
         assert!(nets.contains(&"192.168.0.0/16".to_string()));
         assert_eq!(nets.len(), 3);
         // custom: comma AND space separated, empties dropped
-        s.set_patch(&pool, BTreeMap::from([("localNetworks".to_string(), json!("10.0.0.0/8,  172.16.0.0/12 ,"))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([(
+                "localNetworks".to_string(),
+                json!("10.0.0.0/8,  172.16.0.0/12 ,"),
+            )]),
+        );
         let nets = local_networks(&s);
-        assert_eq!(nets, vec!["10.0.0.0/8".to_string(), "172.16.0.0/12".to_string()]);
+        assert_eq!(
+            nets,
+            vec!["10.0.0.0/8".to_string(), "172.16.0.0/12".to_string()]
+        );
     }
 
     #[test]
@@ -310,9 +335,15 @@ mod tests {
         let pool = test_pool();
         let s = settings(&pool);
         assert_eq!(server_name(&s), "KROMA");
-        s.set_patch(&pool, BTreeMap::from([("serverName".to_string(), json!("Home"))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("serverName".to_string(), json!("Home"))]),
+        );
         assert_eq!(server_name(&s), "Home");
-        s.set_patch(&pool, BTreeMap::from([("serverName".to_string(), json!("   "))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("serverName".to_string(), json!("   "))]),
+        );
         assert_eq!(server_name(&s), "KROMA"); // blank -> fallback
     }
 
@@ -321,11 +352,20 @@ mod tests {
         let pool = test_pool();
         let s = settings(&pool);
         assert_eq!(max_transcodes(&s), 8); // default "8"
-        s.set_patch(&pool, BTreeMap::from([("maxConcurrent".to_string(), json!("12"))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("maxConcurrent".to_string(), json!("12"))]),
+        );
         assert_eq!(max_transcodes(&s), 12);
-        s.set_patch(&pool, BTreeMap::from([("maxConcurrent".to_string(), json!(0))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("maxConcurrent".to_string(), json!(0))]),
+        );
         assert_eq!(max_transcodes(&s), 1); // clamped up
-        s.set_patch(&pool, BTreeMap::from([("maxConcurrent".to_string(), json!(999))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("maxConcurrent".to_string(), json!(999))]),
+        );
         assert_eq!(max_transcodes(&s), 32); // clamped down
     }
 
@@ -335,9 +375,15 @@ mod tests {
         let s = settings(&pool);
         // default 0 -> auto capacity (cores-1, floored at 1)
         assert!(media_workers(&s) >= 1);
-        s.set_patch(&pool, BTreeMap::from([("mediaConcurrency".to_string(), json!("4"))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("mediaConcurrency".to_string(), json!("4"))]),
+        );
         assert_eq!(media_workers(&s), 4);
-        s.set_patch(&pool, BTreeMap::from([("mediaConcurrency".to_string(), json!(99))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("mediaConcurrency".to_string(), json!(99))]),
+        );
         assert_eq!(media_workers(&s), 32); // clamped
     }
 
@@ -346,11 +392,20 @@ mod tests {
         let pool = test_pool();
         let s = settings(&pool);
         assert_eq!(transcode_cache_limit_bytes(&s), 20_000_000_000); // default "20 Go"
-        s.set_patch(&pool, BTreeMap::from([("transcodeCacheLimit".to_string(), json!("1.5 Go"))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("transcodeCacheLimit".to_string(), json!("1.5 Go"))]),
+        );
         assert_eq!(transcode_cache_limit_bytes(&s), 1_500_000_000);
-        s.set_patch(&pool, BTreeMap::from([("transcodeCacheLimit".to_string(), json!("Illimité"))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("transcodeCacheLimit".to_string(), json!("Illimité"))]),
+        );
         assert_eq!(transcode_cache_limit_bytes(&s), 0); // non-numeric -> unlimited
-        s.set_patch(&pool, BTreeMap::from([("transcodeCacheLimit".to_string(), json!("0 Go"))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("transcodeCacheLimit".to_string(), json!("0 Go"))]),
+        );
         assert_eq!(transcode_cache_limit_bytes(&s), 0);
     }
 
@@ -362,12 +417,15 @@ mod tests {
         assert!(!remote_access_enabled(&s));
         assert_eq!(public_url(&s), "");
         assert_eq!(remote_access_token(&s), "");
-        s.set_patch(&pool, BTreeMap::from([
-            ("themeSongs".to_string(), json!(true)),
-            ("remoteAccess".to_string(), json!(true)),
-            ("remoteUrl".to_string(), json!("https://kroma.example.com/")),
-            ("remoteAccessToken".to_string(), json!("secret")),
-        ]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([
+                ("themeSongs".to_string(), json!(true)),
+                ("remoteAccess".to_string(), json!(true)),
+                ("remoteUrl".to_string(), json!("https://kroma.example.com/")),
+                ("remoteAccessToken".to_string(), json!("secret")),
+            ]),
+        );
         assert!(theme_songs_enabled(&s));
         assert!(remote_access_enabled(&s));
         assert_eq!(public_url(&s), "https://kroma.example.com"); // trailing slash trimmed
@@ -380,7 +438,10 @@ mod tests {
         let s = settings(&pool);
         let cfg = test_config();
         assert_eq!(metadata_language(&s, &cfg), "en-US"); // unset -> config
-        s.set_patch(&pool, BTreeMap::from([("tmdbLanguage".to_string(), json!("fr-FR"))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("tmdbLanguage".to_string(), json!("fr-FR"))]),
+        );
         assert_eq!(metadata_language(&s, &cfg), "fr-FR");
     }
 
@@ -421,7 +482,10 @@ mod tests {
     fn a_libraries_array_that_is_not_definitions_seeds_from_the_config_instead() {
         let pool = test_pool();
         let s = settings(&pool);
-        s.set_patch(&pool, BTreeMap::from([("libraries".to_string(), json!([1, 2, 3]))]));
+        s.set_patch(
+            &pool,
+            BTreeMap::from([("libraries".to_string(), json!([1, 2, 3]))]),
+        );
         let mut cfg = test_config();
         cfg.movies_dirs = vec![PathBuf::from("/media/films")];
 
@@ -464,10 +528,15 @@ mod tests {
         let s = settings(&pool);
         let minted = ensure_instance_id(&s, &pool);
 
-        let written =
-            s.set_patch(&pool, BTreeMap::from([("instanceId".to_string(), json!("chosen"))]));
+        let written = s.set_patch(
+            &pool,
+            BTreeMap::from([("instanceId".to_string(), json!("chosen"))]),
+        );
 
-        assert!(written.is_empty(), "the patch allow-list let it through: {written:?}");
+        assert!(
+            written.is_empty(),
+            "the patch allow-list let it through: {written:?}"
+        );
         assert_eq!(ensure_instance_id(&s, &pool), minted);
     }
 

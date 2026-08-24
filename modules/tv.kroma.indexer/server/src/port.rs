@@ -78,10 +78,19 @@ pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
         .route("/_port/tv.kroma.indexer/db/list", post(list::<S>))
         .route("/_port/tv.kroma.indexer/db/enabled", post(enabled::<S>))
         .route("/_port/tv.kroma.indexer/db/get", post(get::<S>))
-        .route("/_port/tv.kroma.indexer/db/note-result", post(note_result::<S>))
+        .route(
+            "/_port/tv.kroma.indexer/db/note-result",
+            post(note_result::<S>),
+        )
         .route("/_port/tv.kroma.indexer/search/search", post(search::<S>))
-        .route("/_port/tv.kroma.indexer/search/resolve-download", post(resolve_download::<S>))
-        .route("/_port/tv.kroma.indexer/torrent-fetch/fetch", post(fetch::<S>))
+        .route(
+            "/_port/tv.kroma.indexer/search/resolve-download",
+            post(resolve_download::<S>),
+        )
+        .route(
+            "/_port/tv.kroma.indexer/torrent-fetch/fetch",
+            post(fetch::<S>),
+        )
 }
 
 async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
@@ -89,7 +98,10 @@ async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Json<Result<Vec<IndexerRef>, String>> {
     port_reply(move || {
         let conn = host.store().get()?;
-        Ok(crate::db::list_indexers(&conn)?.iter().map(IndexerRef::from).collect())
+        Ok(crate::db::list_indexers(&conn)?
+            .iter()
+            .map(IndexerRef::from)
+            .collect())
     })
     .await
 }
@@ -99,7 +111,10 @@ async fn enabled<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Json<Result<Vec<IndexerRef>, String>> {
     port_reply(move || {
         let conn = host.store().get()?;
-        Ok(crate::db::enabled_indexers(&conn)?.iter().map(IndexerRef::from).collect())
+        Ok(crate::db::enabled_indexers(&conn)?
+            .iter()
+            .map(IndexerRef::from)
+            .collect())
     })
     .await
 }
@@ -115,7 +130,9 @@ async fn get<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Json<Result<Option<IndexerRef>, String>> {
     port_reply(move || {
         let conn = host.store().get()?;
-        Ok(crate::db::get_indexer(&conn, &req.id)?.as_ref().map(IndexerRef::from))
+        Ok(crate::db::get_indexer(&conn, &req.id)?
+            .as_ref()
+            .map(IndexerRef::from))
     })
     .await
 }
@@ -159,23 +176,59 @@ struct SearchReq {
 // the native engine uses internally, which no consumer builds.
 #[derive(Deserialize)]
 enum WireQuery {
-    Movie { tmdb_id: Option<u64>, imdb_id: Option<String>, title: String, year: Option<u32> },
-    Episode { tmdb_id: Option<u64>, title: String, season: u32, episode: u32 },
-    Season { tmdb_id: Option<u64>, title: String, season: u32 },
+    Movie {
+        tmdb_id: Option<u64>,
+        imdb_id: Option<String>,
+        title: String,
+        year: Option<u32>,
+    },
+    Episode {
+        tmdb_id: Option<u64>,
+        title: String,
+        season: u32,
+        episode: u32,
+    },
+    Season {
+        tmdb_id: Option<u64>,
+        title: String,
+        season: u32,
+    },
 }
 
 impl From<WireQuery> for Query {
     fn from(q: WireQuery) -> Self {
         match q {
-            WireQuery::Movie { tmdb_id, imdb_id, title, year } => {
-                Query::Movie { tmdb_id, imdb_id, title, year }
-            }
-            WireQuery::Episode { tmdb_id, title, season, episode } => {
-                Query::Episode { tmdb_id, title, season, episode }
-            }
-            WireQuery::Season { tmdb_id, title, season } => {
-                Query::Season { tmdb_id, title, season }
-            }
+            WireQuery::Movie {
+                tmdb_id,
+                imdb_id,
+                title,
+                year,
+            } => Query::Movie {
+                tmdb_id,
+                imdb_id,
+                title,
+                year,
+            },
+            WireQuery::Episode {
+                tmdb_id,
+                title,
+                season,
+                episode,
+            } => Query::Episode {
+                tmdb_id,
+                title,
+                season,
+                episode,
+            },
+            WireQuery::Season {
+                tmdb_id,
+                title,
+                season,
+            } => Query::Season {
+                tmdb_id,
+                title,
+                season,
+            },
         }
     }
 }
@@ -186,8 +239,11 @@ async fn search<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Json<Result<SearchOutcome, String>> {
     port_reply(move || {
         let row = row_of(&host, &req.indexer_id)?;
-        let categories =
-            if req.categories.is_empty() { row.categories.clone() } else { req.categories };
+        let categories = if req.categories.is_empty() {
+            row.categories.clone()
+        } else {
+            req.categories
+        };
         crate::search::run(&host, &row, &req.query.into(), &categories)
     })
     .await
@@ -237,8 +293,7 @@ async fn fetch<S: HostStorage + Clone + Send + Sync + 'static>(
 
 fn row_of<S: HostStorage>(host: &S, id: &str) -> anyhow::Result<IndexerRow> {
     let conn = host.store().get()?;
-    crate::db::get_indexer(&conn, id)?
-        .ok_or_else(|| anyhow::anyhow!("no indexer with id {id}"))
+    crate::db::get_indexer(&conn, id)?.ok_or_else(|| anyhow::anyhow!("no indexer with id {id}"))
 }
 
 #[cfg(test)]
@@ -285,7 +340,11 @@ mod tests {
         DbHost::with_store((*pool).clone())
     }
 
-    async fn call(host: DbHost, path: &str, body: serde_json::Value) -> (StatusCode, serde_json::Value) {
+    async fn call(
+        host: DbHost,
+        path: &str,
+        body: serde_json::Value,
+    ) -> (StatusCode, serde_json::Value) {
         let app = routes::<DbHost>().with_state(host);
         let req = Request::builder()
             .method("POST")
@@ -295,8 +354,13 @@ mod tests {
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
         let status = resp.status();
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
-        (status, serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null))
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        (
+            status,
+            serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null),
+        )
     }
 
     #[tokio::test]
@@ -335,7 +399,12 @@ mod tests {
     async fn getting_an_indexer_that_is_gone_is_null_rather_than_an_error() {
         let host = host_with(&[("a", "torznab", true, 30)]);
 
-        let (status, answer) = call(host, "/_port/tv.kroma.indexer/db/get", json!({ "id": "ghost" })).await;
+        let (status, answer) = call(
+            host,
+            "/_port/tv.kroma.indexer/db/get",
+            json!({ "id": "ghost" }),
+        )
+        .await;
 
         assert_eq!(status, StatusCode::OK);
         assert!(answer["Ok"].is_null(), "{answer}");
@@ -422,8 +491,12 @@ mod tests {
         let (status, _) = call(host.clone(), "/_port/tv.kroma.indexer/db/get", json!({})).await;
         assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 
-        let (status, _) =
-            call(host, "/_port/tv.kroma.indexer/search/search", json!({ "indexer_id": "a" })).await;
+        let (status, _) = call(
+            host,
+            "/_port/tv.kroma.indexer/search/search",
+            json!({ "indexer_id": "a" }),
+        )
+        .await;
         assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
     }
 
@@ -439,8 +512,17 @@ mod tests {
         let req: SearchReq = serde_json::from_value(body).unwrap();
 
         assert_eq!(req.indexer_id, "idx-1");
-        assert!(req.categories.is_empty(), "an empty set means the indexer's own");
-        assert!(matches!(Query::from(req.query), Query::Movie { tmdb_id: Some(603), .. }));
+        assert!(
+            req.categories.is_empty(),
+            "an empty set means the indexer's own"
+        );
+        assert!(matches!(
+            Query::from(req.query),
+            Query::Movie {
+                tmdb_id: Some(603),
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -454,7 +536,14 @@ mod tests {
         let req: SearchReq = serde_json::from_value(body).unwrap();
 
         assert_eq!(req.categories, vec![5000]);
-        assert!(matches!(Query::from(req.query), Query::Episode { season: 2, episode: 7, .. }));
+        assert!(matches!(
+            Query::from(req.query),
+            Query::Episode {
+                season: 2,
+                episode: 7,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -490,7 +579,10 @@ mod tests {
         let keys = json.as_object().unwrap();
         assert_eq!(keys.len(), 5, "{keys:?}");
         for secret in ["url", "api_key", "settings", "definition_id"] {
-            assert!(!keys.contains_key(secret), "a consumer must not receive {secret}");
+            assert!(
+                !keys.contains_key(secret),
+                "a consumer must not receive {secret}"
+            );
         }
     }
 

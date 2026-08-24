@@ -3,5 +3,4 @@
 
 use kroma_module_manifest::EmbeddedModule;
 
-pub const MODULE: EmbeddedModule =
-    kroma_module_manifest::embedded_module!();
+pub const MODULE: EmbeddedModule = kroma_module_manifest::embedded_module!();

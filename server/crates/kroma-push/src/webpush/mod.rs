@@ -87,13 +87,23 @@ mod tests {
     #[test]
     fn builds_a_complete_request_for_a_real_subscription() {
         let key = VapidKey::generate();
-        let req =
-            build_request(&key, &subscription(), b"hello", "mailto:a@b.c", Urgency::Normal, 1_700_000_000)
-                .unwrap();
+        let req = build_request(
+            &key,
+            &subscription(),
+            b"hello",
+            "mailto:a@b.c",
+            Urgency::Normal,
+            1_700_000_000,
+        )
+        .unwrap();
 
         assert_eq!(req.url, "https://push.example/wpush/v2/abc123");
         let header = |name: &str| {
-            req.headers.iter().find(|(k, _)| k == name).map(|(_, v)| v.as_str()).unwrap()
+            req.headers
+                .iter()
+                .find(|(k, _)| k == name)
+                .map(|(_, v)| v.as_str())
+                .unwrap()
         };
         assert_eq!(header("Content-Encoding"), "aes128gcm");
         assert_eq!(header("Content-Type"), "application/octet-stream");
@@ -107,13 +117,19 @@ mod tests {
     #[test]
     fn urgency_reaches_the_header() {
         let key = VapidKey::generate();
-        for (urgency, expected) in
-            [(Urgency::Low, "low"), (Urgency::Normal, "normal"), (Urgency::High, "high")]
-        {
+        for (urgency, expected) in [
+            (Urgency::Low, "low"),
+            (Urgency::Normal, "normal"),
+            (Urgency::High, "high"),
+        ] {
             let req =
                 build_request(&key, &subscription(), b"x", "mailto:a@b.c", urgency, 0).unwrap();
-            let value =
-                req.headers.iter().find(|(k, _)| k == "Urgency").map(|(_, v)| v.clone()).unwrap();
+            let value = req
+                .headers
+                .iter()
+                .find(|(k, _)| k == "Urgency")
+                .map(|(_, v)| v.clone())
+                .unwrap();
             assert_eq!(value, expected);
         }
     }

@@ -49,7 +49,13 @@ pub(super) fn seed_show(host: &TestHost, show_id: &str, tmdb: u64, present: &[(u
     }
 }
 
-pub(super) fn insert_req(host: &TestHost, id: &str, kind: RequestKind, tmdb: u64, status: RequestStatus) {
+pub(super) fn insert_req(
+    host: &TestHost,
+    id: &str,
+    kind: RequestKind,
+    tmdb: u64,
+    status: RequestStatus,
+) {
     insert_req_by(host, id, kind, tmdb, status, None);
 }
 

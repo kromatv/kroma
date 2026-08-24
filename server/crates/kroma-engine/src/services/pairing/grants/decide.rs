@@ -57,7 +57,10 @@ impl<M> Grants<M> {
         };
         match map.get(&handle).and_then(|e| e.granted.as_ref()) {
             Some(_) => {
-                let granted = map.remove(&handle).and_then(|e| e.granted).expect("just matched");
+                let granted = map
+                    .remove(&handle)
+                    .and_then(|e| e.granted)
+                    .expect("just matched");
                 PollState::Authorized {
                     token: granted.token,
                     access_token: granted.access_token,
@@ -120,8 +123,7 @@ mod tests {
         let (handle, secret) = file(&g, "tv", seq_mint());
         assert!(matches!(g.poll(&secret), PollState::Pending));
         assert!(g.authorize(&handle, |_| true, granted()));
-        let (token, access_token, user) =
-            approved(g.poll(&secret)).expect("an approved request");
+        let (token, access_token, user) = approved(g.poll(&secret)).expect("an approved request");
         assert_eq!((token.as_str(), access_token.as_str()), ("tok", "acc"));
         assert_eq!(user.id, "u1");
         // Collected exactly once: the entry is gone on the next poll.
@@ -150,8 +152,11 @@ mod tests {
         let (handle, secret) = file(&g, "tv", seq_mint());
         assert!(g.authorize(&handle, |_| true, granted()));
 
-        let second =
-            Granted { token: "tok2".into(), access_token: "acc2".into(), user: user() };
+        let second = Granted {
+            token: "tok2".into(),
+            access_token: "acc2".into(),
+            user: user(),
+        };
         assert!(!g.authorize(&handle, |_| true, second));
 
         let (token, ..) = approved(g.poll(&secret)).expect("the FIRST approval");
@@ -164,7 +169,10 @@ mod tests {
         let (handle, secret) = file(&g, "tv", seq_mint());
         let refused = g.decide(&handle, |_| Verdict::Refuse("wrong"), granted());
         assert!(matches!(refused, Decided::Refused("wrong")));
-        assert!(matches!(g.poll(&secret), PollState::Pending), "the entry is still there");
+        assert!(
+            matches!(g.poll(&secret), PollState::Pending),
+            "the entry is still there"
+        );
 
         let approved = g.decide(&handle, |_| Verdict::<&str>::Approve, granted());
         assert!(matches!(approved, Decided::Approved));
@@ -217,7 +225,10 @@ mod tests {
         let (handle, approved) = file(&g, "tv", seq_mint());
         assert!(g.authorize(&handle, |_| true, granted()));
         let orphan = g.forget(&approved).expect("approved but never collected");
-        assert_eq!((orphan.token.as_str(), orphan.access_token.as_str()), ("tok", "acc"));
+        assert_eq!(
+            (orphan.token.as_str(), orphan.access_token.as_str()),
+            ("tok", "acc")
+        );
         assert!(matches!(g.poll(&approved), PollState::Unknown));
     }
 

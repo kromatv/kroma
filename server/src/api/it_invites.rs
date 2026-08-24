@@ -9,13 +9,24 @@ use crate::api::test_support::{get, seed_session, send, test_app};
 use crate::model::Permission;
 
 fn member(t: &crate::api::test_support::TestApp, tag: &str) -> String {
-    let (_id, token) = seed_session(&t.state, &format!("{tag}@test.dev"), tag, &[Permission::Playback]);
+    let (_id, token) = seed_session(
+        &t.state,
+        &format!("{tag}@test.dev"),
+        tag,
+        &[Permission::Playback],
+    );
     token
 }
 
 async fn mint_invite(t: &crate::api::test_support::TestApp, perms: serde_json::Value) -> String {
-    let (status, body) =
-        send(&t.app, "POST", "/api/invites", Some(&t.token), Some(json!({ "permissions": perms }))).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/invites",
+        Some(&t.token),
+        Some(json!({ "permissions": perms })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     body["token"].as_str().expect("invite token").to_string()
 }
@@ -28,14 +39,25 @@ async fn invite_create_list_check_and_delete() {
 
     let (status, list) = get(&t.app, "/api/invites", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
-    assert!(list.as_array().unwrap().iter().any(|i| i["token"] == json!(token)));
+    assert!(list
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|i| i["token"] == json!(token)));
 
     // The public check validates it without a session (the invitee isn't a user).
     let (status, chk) = get(&t.app, &format!("/api/invites/{token}"), None).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(chk["valid"], json!(true));
 
-    let (status, _) = send(&t.app, "DELETE", &format!("/api/invites/{token}"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/invites/{token}"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     let (_, chk) = get(&t.app, &format!("/api/invites/{token}"), None).await;
@@ -63,7 +85,10 @@ async fn register_consumes_an_invite_and_inherits_its_permissions() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["user"]["username"], json!("joiner"));
     let perms = body["user"]["permissions"].as_array().expect("permissions");
-    assert!(perms.iter().any(|p| p == "requests.create"), "inherits the invite's perms");
+    assert!(
+        perms.iter().any(|p| p == "requests.create"),
+        "inherits the invite's perms"
+    );
     assert!(body["token"].is_string() && body["accessToken"].is_string());
 
     // The invite is single-use: a second attempt with the same token is refused.
@@ -93,7 +118,9 @@ async fn register_requires_a_valid_invite_after_the_owner_exists() {
         "POST",
         "/api/auth/register",
         None,
-        Some(json!({ "email": "noinvite@test.dev", "username": "noinvite", "password": "s3cret12" })),
+        Some(
+            json!({ "email": "noinvite@test.dev", "username": "noinvite", "password": "s3cret12" }),
+        ),
     )
     .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
@@ -178,8 +205,14 @@ async fn register_rejects_a_taken_username_before_burning_the_invite() {
 async fn invite_management_requires_users_manage() {
     let t = test_app();
     let m = member(&t, "invite-member");
-    let (status, _) =
-        send(&t.app, "POST", "/api/invites", Some(&m), Some(json!({ "permissions": ["playback"] }))).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/invites",
+        Some(&m),
+        Some(json!({ "permissions": ["playback"] })),
+    )
+    .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
     let (status, _) = get(&t.app, "/api/invites", Some(&m)).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
@@ -188,7 +221,12 @@ async fn invite_management_requires_users_manage() {
 // A fresh server: no accounts at all. `test_app` seeds an owner, so the very
 // first-registration path is otherwise unreachable.
 fn empty_of_accounts(t: &crate::api::test_support::TestApp) {
-    t.state.db.get().unwrap().execute("DELETE FROM users", []).unwrap();
+    t.state
+        .db
+        .get()
+        .unwrap()
+        .execute("DELETE FROM users", [])
+        .unwrap();
 }
 
 #[tokio::test]
@@ -245,7 +283,10 @@ async fn only_the_very_first_account_skips_the_invite() {
 
     let (second, body) = register("second@test.dev", "second").await;
     assert_eq!(second, StatusCode::FORBIDDEN);
-    assert!(body["error"].as_str().is_some_and(|m| !m.is_empty()), "{body}");
+    assert!(
+        body["error"].as_str().is_some_and(|m| !m.is_empty()),
+        "{body}"
+    );
 }
 
 #[tokio::test]

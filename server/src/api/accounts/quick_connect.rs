@@ -8,8 +8,8 @@ use axum::Json;
 use serde::Deserialize;
 
 use crate::api::error::lerr;
-use crate::api::util::{drop_orphans, SecretQuery};
 use crate::api::extract::AuthUser;
+use crate::api::util::{drop_orphans, SecretQuery};
 use crate::i18n::ReqLocale;
 use crate::services::pairing::Orphaned;
 use crate::state::SharedState;
@@ -32,7 +32,10 @@ pub async fn quick_initiate(
 ) -> Response {
     // Drop the rotated-away code so it stops being approvable, along with any
     // tokens it accrued in the gap (approved but never polled for).
-    if let Some(Json(QuickInitiateBody { prev_secret: Some(secret) })) = body {
+    if let Some(Json(QuickInitiateBody {
+        prev_secret: Some(secret),
+    })) = body
+    {
         drop_orphans(&state, state.quickconnect.revoke(&secret)).await;
     }
     let initiated = state.quickconnect.initiate();
@@ -76,13 +79,22 @@ pub async fn quick_authorize(
         Err(resp) => return resp,
     };
 
-    let approved = state.quickconnect.authorize(&code, user, token.clone(), access.clone());
+    let approved = state
+        .quickconnect
+        .authorize(&code, user, token.clone(), access.clone());
     drop_orphans(&state, state.quickconnect.take_orphans()).await;
     if approved {
         StatusCode::NO_CONTENT.into_response()
     } else {
         // Unknown/expired code → don't leave the just-created tokens dangling.
-        drop_orphans(&state, Some(Orphaned { token, access_token: access })).await;
+        drop_orphans(
+            &state,
+            Some(Orphaned {
+                token,
+                access_token: access,
+            }),
+        )
+        .await;
         lerr(loc, StatusCode::NOT_FOUND, "connect.invalidCode")
     }
 }

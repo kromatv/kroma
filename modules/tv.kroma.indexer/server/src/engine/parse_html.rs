@@ -12,7 +12,11 @@ use super::base_context;
 use super::release::to_release;
 
 /// Parse an HTML search response into releases (CSS path).
-pub fn parse_html(def: &Definition, cfg: &IndexerConfig, body: &str) -> anyhow::Result<Vec<Release>> {
+pub fn parse_html(
+    def: &Definition,
+    cfg: &IndexerConfig,
+    body: &str,
+) -> anyhow::Result<Vec<Release>> {
     let doc = selector::parse_document(body);
     let root = doc.root_element();
     let base_ctx = base_context(def, cfg);
@@ -37,7 +41,11 @@ pub fn parse_html(def: &Definition, cfg: &IndexerConfig, body: &str) -> anyhow::
 
 // Returns `None` when a required (non-optional, no-default) field is missing -
 // that release is skipped.
-fn extract_row_html(def: &Definition, base_ctx: &Context, row: ElementRef) -> Option<HashMap<String, String>> {
+fn extract_row_html(
+    def: &Definition,
+    base_ctx: &Context,
+    row: ElementRef,
+) -> Option<HashMap<String, String>> {
     let mut result: HashMap<String, String> = HashMap::new();
     for (name, field) in &def.search.fields {
         let mut ctx = base_ctx.clone();
@@ -101,8 +109,8 @@ fn eval_case_html(field: &Field, row: ElementRef, ctx: &Context) -> Option<Strin
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::test_support::{build_def, cfg};
+    use super::*;
 
     #[test]
     fn parse_html_extracts_rows() {
@@ -249,7 +257,6 @@ search:
         assert!(err.to_string().contains("no rows selector"), "{err}");
     }
 
-
     #[test]
     fn a_field_with_no_selector_reads_the_row_and_remove_strips_descendants() {
         let def = build_def(
@@ -266,12 +273,10 @@ search:
     guid: {}
 "#,
         );
-        let body =
-            r#"<table><tr><td class="name">Cool Movie <span class="tag">FREELEECH</span></td></tr></table>"#;
+        let body = r#"<table><tr><td class="name">Cool Movie <span class="tag">FREELEECH</span></td></tr></table>"#;
         let rels = parse_html(&def, &cfg("https://x/"), body).unwrap();
         assert_eq!(rels.len(), 1);
         assert_eq!(rels[0].title, "Cool Movie");
         assert_eq!(rels[0].guid, "Cool Movie FREELEECH");
     }
-
 }

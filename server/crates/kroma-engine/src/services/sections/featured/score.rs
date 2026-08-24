@@ -42,13 +42,21 @@ pub(super) fn rank<'a>(
     }
     // Min-max normalize the taste cosine across the pool: raw lexical cosines
     // barely separate titles, so spread them to a usable 0..1.
-    let vals: Vec<f32> = candidates.iter().filter_map(|e| taste.get(e.id())).copied().collect();
-    let (lo, hi) = vals.iter().fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(*v), h.max(*v)));
+    let vals: Vec<f32> = candidates
+        .iter()
+        .filter_map(|e| taste.get(e.id()))
+        .copied()
+        .collect();
+    let (lo, hi) = vals
+        .iter()
+        .fold((f32::MAX, f32::MIN), |(l, h), v| (l.min(*v), h.max(*v)));
     let spread = hi - lo;
     let norm = (vals.len() > 1 && spread > f32::EPSILON).then_some((lo, spread));
 
-    let mut scored: Vec<(&SectionItem, f32)> =
-        candidates.iter().map(|e| (*e, blend(e, taste, trend, now_ms, norm))).collect();
+    let mut scored: Vec<(&SectionItem, f32)> = candidates
+        .iter()
+        .map(|e| (*e, blend(e, taste, trend, now_ms, norm)))
+        .collect();
     let by_rank = |a: &(&SectionItem, f32), b: &(&SectionItem, f32)| {
         b.1.total_cmp(&a.1).then_with(|| a.0.id().cmp(b.0.id()))
     };
@@ -93,7 +101,9 @@ pub(super) fn presentable(e: &SectionItem) -> bool {
 
 // TMDB rating scaled to 0..1; unrated titles sit at a neutral 0.5.
 fn quality(e: &SectionItem) -> f32 {
-    meta(e).and_then(|m| m.rating).map_or(0.5, |r| (r / 10.0).clamp(0.0, 1.0))
+    meta(e)
+        .and_then(|m| m.rating)
+        .map_or(0.5, |r| (r / 10.0).clamp(0.0, 1.0))
 }
 
 // `0.5 ^ (age / half-life)`: 1.0 when just added, 0.5 after two weeks, ~0 for
@@ -176,7 +186,12 @@ mod tests {
 
     // Two interchangeable titles: same rating, same age, no video, no trend.
     fn twin(id: &str) -> SectionItem {
-        movie(id, Some(meta(Some(7.0), true, true)), &iso(30 * DAY_MS), None)
+        movie(
+            id,
+            Some(meta(Some(7.0), true, true)),
+            &iso(30 * DAY_MS),
+            None,
+        )
     }
 
     #[test]
@@ -210,9 +225,24 @@ mod tests {
 
     #[test]
     fn presentable_requires_backdrop_and_overview() {
-        assert!(presentable(&movie("a", Some(meta(None, true, true)), "t", None)));
-        assert!(!presentable(&movie("b", Some(meta(None, false, true)), "t", None)));
-        assert!(!presentable(&movie("c", Some(meta(None, true, false)), "t", None)));
+        assert!(presentable(&movie(
+            "a",
+            Some(meta(None, true, true)),
+            "t",
+            None
+        )));
+        assert!(!presentable(&movie(
+            "b",
+            Some(meta(None, false, true)),
+            "t",
+            None
+        )));
+        assert!(!presentable(&movie(
+            "c",
+            Some(meta(None, true, false)),
+            "t",
+            None
+        )));
         assert!(!presentable(&movie("d", None, "t", None)));
     }
 
@@ -230,11 +260,23 @@ mod tests {
 
     #[test]
     fn rank_prefers_fresh_high_quality_cinematic() {
-        let winner =
-            movie("new", Some(meta(Some(8.5), true, true)), &iso(DAY_MS), Some(stream(3840, true)));
-        let loser = movie("old", Some(meta(Some(5.0), true, true)), &iso(400 * DAY_MS), None);
+        let winner = movie(
+            "new",
+            Some(meta(Some(8.5), true, true)),
+            &iso(DAY_MS),
+            Some(stream(3840, true)),
+        );
+        let loser = movie(
+            "old",
+            Some(meta(Some(5.0), true, true)),
+            &iso(400 * DAY_MS),
+            None,
+        );
         let refs: Vec<&SectionItem> = vec![&loser, &winner];
-        assert_eq!(ranked_ids(&refs, &HashMap::new(), &HashMap::new())[0], "new");
+        assert_eq!(
+            ranked_ids(&refs, &HashMap::new(), &HashMap::new())[0],
+            "new"
+        );
     }
 
     #[test]
@@ -275,7 +317,10 @@ mod tests {
         let head = rank(&refs, &HashMap::new(), &HashMap::new(), NOW_MS, 2);
         assert_eq!(head.iter().map(|e| e.id()).collect::<Vec<_>>(), ["a", "b"]);
         // Asking for more than the pool holds is capped, asking for none is empty.
-        assert_eq!(rank(&refs, &HashMap::new(), &HashMap::new(), NOW_MS, 99).len(), 3);
+        assert_eq!(
+            rank(&refs, &HashMap::new(), &HashMap::new(), NOW_MS, 99).len(),
+            3
+        );
         assert!(rank(&refs, &HashMap::new(), &HashMap::new(), NOW_MS, 0).is_empty());
     }
 }

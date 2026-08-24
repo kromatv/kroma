@@ -63,10 +63,16 @@ fn resolve(api_key: &str, language: &str, name: &str) -> Option<PersonDetail> {
 // famous person merely *contains* the query, so an exact (case-insensitive)
 // name match always wins first.
 fn best_id(api_key: &str, language: &str, name: &str) -> Option<u64> {
-    let params =
-        [("language", language.to_string()), ("query", name.to_string()), ("include_adult", "false".to_string())];
+    let params = [
+        ("language", language.to_string()),
+        ("query", name.to_string()),
+        ("include_adult", "false".to_string()),
+    ];
     let page: SearchResp = curl_json(&format!("{}/search/person", api()), api_key, &params).ok()?;
-    let exact = page.results.iter().find(|r| r.name.eq_ignore_ascii_case(name));
+    let exact = page
+        .results
+        .iter()
+        .find(|r| r.name.eq_ignore_ascii_case(name));
     exact.or_else(|| page.results.first()).map(|r| r.id)
 }
 
@@ -89,7 +95,9 @@ fn profile(api_key: &str, language: &str, id: u64) -> Option<PersonDetail> {
 }
 
 fn text(value: Option<String>) -> Option<String> {
-    value.map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
+    value
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
 }
 
 #[derive(Debug, Deserialize)]
@@ -131,7 +139,10 @@ mod tests {
     #[test]
     fn blank_provider_fields_become_none() {
         assert_eq!(text(Some("  ".into())), None);
-        assert_eq!(text(Some(" Paris, France ".into())), Some("Paris, France".into()));
+        assert_eq!(
+            text(Some(" Paris, France ".into())),
+            Some("Paris, France".into())
+        );
         assert_eq!(text(None), None);
     }
 
@@ -139,12 +150,21 @@ mod tests {
     fn an_exact_name_beats_a_more_popular_partial_match() {
         let page = SearchResp {
             results: vec![
-                SearchHit { id: 1, name: "Ana de Armas Caso".into() },
-                SearchHit { id: 2, name: "ana de armas".into() },
+                SearchHit {
+                    id: 1,
+                    name: "Ana de Armas Caso".into(),
+                },
+                SearchHit {
+                    id: 2,
+                    name: "ana de armas".into(),
+                },
             ],
         };
         let name = "Ana de Armas";
-        let exact = page.results.iter().find(|r| r.name.eq_ignore_ascii_case(name));
+        let exact = page
+            .results
+            .iter()
+            .find(|r| r.name.eq_ignore_ascii_case(name));
         assert_eq!(exact.map(|r| r.id), Some(2));
     }
 
@@ -159,6 +179,9 @@ mod tests {
         assert_eq!(raw.id, 224513);
         assert_eq!(text(raw.biography), None); // empty string, not a biography
         assert_eq!(text(raw.place_of_birth), Some("Havana, Cuba".into()));
-        assert_eq!(text(raw.profile_path).map(|p| format!("{IMG}/w342{p}")), Some(format!("{IMG}/w342/ap.jpg")));
+        assert_eq!(
+            text(raw.profile_path).map(|p| format!("{IMG}/w342{p}")),
+            Some(format!("{IMG}/w342/ap.jpg"))
+        );
     }
 }

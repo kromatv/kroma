@@ -56,16 +56,32 @@ async fn announce_unplaceable(t: &TestApp, device_id: &str, ip: &str) -> Value {
         &[("x-forwarded-for", ip), ("origin", "null")],
     )
     .await;
-    assert_eq!(status, StatusCode::OK, "a packaged shell was refused: {reply}");
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "a packaged shell was refused: {reply}"
+    );
     reply
 }
 
 async fn grant(t: &TestApp, body: Value, ip: &str) -> StatusCode {
-    from(t, "POST", "/api/handoff/grant", Some(&t.token), Some(body), ip).await.0
+    from(
+        t,
+        "POST",
+        "/api/handoff/grant",
+        Some(&t.token),
+        Some(body),
+        ip,
+    )
+    .await
+    .0
 }
 
 fn secret(beacon: &Value) -> String {
-    beacon["secret"].as_str().expect("a poll secret").to_string()
+    beacon["secret"]
+        .as_str()
+        .expect("a poll secret")
+        .to_string()
 }
 
 async fn poll(t: &TestApp, beacon: &Value) -> Value {
@@ -84,7 +100,10 @@ async fn poll(t: &TestApp, beacon: &Value) -> Value {
 }
 
 async fn poll_status(t: &TestApp, beacon: &Value) -> String {
-    poll(t, beacon).await["status"].as_str().unwrap_or_default().to_string()
+    poll(t, beacon).await["status"]
+        .as_str()
+        .unwrap_or_default()
+        .to_string()
 }
 
 async fn session_count(t: &TestApp) -> usize {
@@ -97,12 +116,22 @@ async fn a_phone_signs_a_waiting_tv_in_by_picking_it_from_the_list() {
     let t = test_app();
     let beacon = announce(&t, "tv-salon-01", "Salon", TV_IP).await;
     assert_eq!(beacon["check"].as_str().map(str::len), Some(5));
-    assert_eq!(beacon["confirmRequired"], false, "a television sends no origin at all");
+    assert_eq!(
+        beacon["confirmRequired"], false,
+        "a television sends no origin at all"
+    );
     assert!(beacon["pollSecs"].as_i64().unwrap_or(0) < beacon["ttlSecs"].as_i64().unwrap_or(0));
     assert_eq!(poll_status(&t, &beacon).await, "pending");
 
-    let (status, list) =
-        from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (status, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(list.as_array().map(Vec::len), Some(1));
     assert_eq!(list[0]["name"], "Salon");
@@ -130,7 +159,15 @@ async fn a_phone_signs_a_waiting_tv_in_by_picking_it_from_the_list() {
 
     // Collected exactly once: the beacon is gone from both the poll and the list.
     assert_eq!(poll_status(&t, &beacon).await, "expired");
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(list.as_array().map(Vec::len), Some(0));
 }
 
@@ -142,8 +179,15 @@ async fn a_server_on_another_network_still_pairs_a_tv_and_a_phone_in_one_room() 
     let t = test_app();
     let beacon = announce(&t, "tv-salon-01", "Salon", HOUSEHOLD).await;
 
-    let (status, list) =
-        from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, HOUSEHOLD).await;
+    let (status, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        HOUSEHOLD,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(list.as_array().map(Vec::len), Some(1));
 
@@ -172,13 +216,27 @@ async fn a_phone_that_heard_the_tv_grants_where_the_addresses_alone_would_not() 
     assert_eq!(proof.len(), 32, "hex of 16 bytes");
 
     let refused = json!({ "handle": beacon["handle"] });
-    let (status, _) =
-        from(&t, "POST", "/api/handoff/grant", Some(&t.token), Some(refused), OTHER_SUBNET).await;
+    let (status, _) = from(
+        &t,
+        "POST",
+        "/api/handoff/grant",
+        Some(&t.token),
+        Some(refused),
+        OTHER_SUBNET,
+    )
+    .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 
     let heard = json!({ "handle": beacon["handle"], "proof": proof });
-    let (status, _) =
-        from(&t, "POST", "/api/handoff/grant", Some(&t.token), Some(heard), OTHER_SUBNET).await;
+    let (status, _) = from(
+        &t,
+        "POST",
+        "/api/handoff/grant",
+        Some(&t.token),
+        Some(heard),
+        OTHER_SUBNET,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     assert_eq!(poll_status(&t, &beacon).await, "authorized");
 }
@@ -190,8 +248,15 @@ async fn a_proof_nobody_published_is_refused() {
     let before = session_count(&t).await;
 
     let invented = json!({ "handle": beacon["handle"], "proof": "0".repeat(32) });
-    let (status, _) =
-        from(&t, "POST", "/api/handoff/grant", Some(&t.token), Some(invented), OTHER_SUBNET).await;
+    let (status, _) = from(
+        &t,
+        "POST",
+        "/api/handoff/grant",
+        Some(&t.token),
+        Some(invented),
+        OTHER_SUBNET,
+    )
+    .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(poll_status(&t, &beacon).await, "pending");
     assert_eq!(session_count(&t).await, before);
@@ -206,8 +271,15 @@ async fn a_phone_leaving_through_another_router_is_shown_no_tvs_and_may_not_gran
     let handle = beacon["handle"].clone();
 
     // Not an error a scanner could read: the same empty list as "nothing waiting".
-    let (status, list) =
-        from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, OTHER_HOUSEHOLD).await;
+    let (status, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        OTHER_HOUSEHOLD,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(list.as_array().map(Vec::len), Some(0));
 
@@ -223,7 +295,11 @@ async fn a_phone_leaving_through_another_router_is_shown_no_tvs_and_may_not_gran
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(poll_status(&t, &beacon).await, "pending");
-    assert_eq!(session_count(&t).await, before, "a refused grant minted a session");
+    assert_eq!(
+        session_count(&t).await,
+        before,
+        "a refused grant minted a session"
+    );
 }
 
 #[tokio::test]
@@ -232,8 +308,15 @@ async fn a_handle_learned_elsewhere_is_useless_from_another_subnet() {
     let beacon = announce(&t, "tv-salon-01", "Salon", TV_IP).await;
 
     // Local enough to use the feature, but not on the TV's own link.
-    let (status, list) =
-        from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, OTHER_SUBNET).await;
+    let (status, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        OTHER_SUBNET,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(list.as_array().map(Vec::len), Some(0));
 
@@ -271,7 +354,11 @@ async fn a_caller_cannot_claim_a_subnet_by_writing_it_into_the_forwarded_header(
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(list.as_array().map(Vec::len), Some(0), "the claim was believed");
+    assert_eq!(
+        list.as_array().map(Vec::len),
+        Some(0),
+        "the claim was believed"
+    );
 }
 
 #[tokio::test]
@@ -280,20 +367,46 @@ async fn a_beacon_already_granted_is_neither_listed_nor_grantable_again() {
     let beacon = announce(&t, "tv-salon-01", "Salon", TV_IP).await;
     let grant = json!({ "handle": beacon["handle"] });
 
-    let (status, _) =
-        from(&t, "POST", "/api/handoff/grant", Some(&t.token), Some(grant.clone()), PHONE_IP).await;
+    let (status, _) = from(
+        &t,
+        "POST",
+        "/api/handoff/grant",
+        Some(&t.token),
+        Some(grant.clone()),
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     // Gone from the list before the television has even collected it.
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(list.as_array().map(Vec::len), Some(0));
 
     // And a second grant mints nothing: the first approver's session stands.
     let before = session_count(&t).await;
-    let (status, _) =
-        from(&t, "POST", "/api/handoff/grant", Some(&t.token), Some(grant), PHONE_IP).await;
+    let (status, _) = from(
+        &t,
+        "POST",
+        "/api/handoff/grant",
+        Some(&t.token),
+        Some(grant),
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(session_count(&t).await, before, "a refused second grant minted a session");
+    assert_eq!(
+        session_count(&t).await,
+        before,
+        "a refused second grant minted a session"
+    );
 
     assert_eq!(poll_status(&t, &beacon).await, "authorized");
 }
@@ -312,7 +425,15 @@ async fn a_network_already_holding_its_share_is_refused_rather_than_thinned() {
 
     // Nobody was pushed out to make room.
     assert_eq!(poll_status(&t, &first).await, "pending");
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(list.as_array().map(Vec::len), Some(8));
 }
 
@@ -329,14 +450,20 @@ fn crowd_the_store_out(t: &TestApp) {
             ip,
             confirm_required: false,
         });
-        assert!(matches!(announcement, Announcement::Ok(_)), "the store had room");
+        assert!(
+            matches!(announcement, Announcement::Ok(_)),
+            "the store had room"
+        );
     };
     for tv in 1..8 {
         fill(format!("tv-000{tv}-xxxx"), format!("192.168.1.{}", 20 + tv));
     }
     for network in 1..32 {
         for tv in 0..8 {
-            fill(format!("tv-{network:02}{tv:02}-xxxx"), format!("203.0.113.{network}"));
+            fill(
+                format!("tv-{network:02}{tv:02}-xxxx"),
+                format!("203.0.113.{network}"),
+            );
         }
     }
     fill("tv-last-xxxx".into(), "198.51.100.1".into());
@@ -363,11 +490,27 @@ async fn the_rows_of_a_beacon_that_left_uncollected_go_with_the_next_listing() {
     let granted = session_count(&t).await;
 
     crowd_the_store_out(&t);
-    assert_eq!(session_count(&t).await, granted, "nothing has touched the store yet");
+    assert_eq!(
+        session_count(&t).await,
+        granted,
+        "nothing has touched the store yet"
+    );
 
-    let (status, _) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (status, _) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(session_count(&t).await, granted - 1, "the tokens outlived their beacon");
+    assert_eq!(
+        session_count(&t).await,
+        granted - 1,
+        "the tokens outlived their beacon"
+    );
 }
 
 #[tokio::test]
@@ -404,7 +547,15 @@ async fn a_beacon_lives_while_the_tv_polls_and_ends_when_it_leaves() {
 
     // Polling is the liveness signal: still pending, still listed.
     assert_eq!(poll_status(&t, &beacon).await, "pending");
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(list.as_array().map(Vec::len), Some(1));
 
     let body = json!({ "secret": secret(&beacon) });
@@ -412,7 +563,15 @@ async fn a_beacon_lives_while_the_tv_polls_and_ends_when_it_leaves() {
     assert_eq!(status, StatusCode::NO_CONTENT);
     assert_eq!(poll_status(&t, &beacon).await, "expired");
 
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(list.as_array().map(Vec::len), Some(0));
 }
 
@@ -430,7 +589,15 @@ async fn a_tv_re_announcing_replaces_its_own_row_rather_than_adding_one() {
     assert_eq!(status, StatusCode::OK);
     assert_ne!(second["handle"], first["handle"]);
 
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(list.as_array().map(Vec::len), Some(1));
     assert_eq!(poll_status(&t, &first).await, "expired");
 }
@@ -438,13 +605,25 @@ async fn a_tv_re_announcing_replaces_its_own_row_rather_than_adding_one() {
 #[tokio::test]
 async fn an_unknown_secret_polls_expired() {
     let t = test_app();
-    let (status, body) =
-        send(&t.app, "POST", "/api/handoff/poll", None, Some(json!({ "secret": "nope" }))).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/handoff/poll",
+        None,
+        Some(json!({ "secret": "nope" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["status"], "expired");
     // Leaving with a secret nobody holds is a no-op, not an error.
-    let (status, _) =
-        send(&t.app, "POST", "/api/handoff/leave", None, Some(json!({ "secret": "nope" }))).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/handoff/leave",
+        None,
+        Some(json!({ "secret": "nope" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 }
 
@@ -474,8 +653,12 @@ async fn listing_and_granting_need_a_session() {
 const A_PAGE: &[&str] = &["https://evil.example", "http://evil.example:8080"];
 // What a client presents: a shell loaded off the device it runs on, or a dev
 // server on this machine or this network.
-const A_CLIENT: &[&str] =
-    &["file://", "tauri://localhost", "http://localhost:5174", "http://192.168.1.20:5174"];
+const A_CLIENT: &[&str] = &[
+    "file://",
+    "tauri://localhost",
+    "http://localhost:5174",
+    "http://192.168.1.20:5174",
+];
 
 async fn announce_from_a_browser_at(t: &TestApp, device_id: &str, origin: &str) -> StatusCode {
     let body = json!({ "deviceId": device_id, "name": "Salon", "platform": "tvOS" });
@@ -492,8 +675,15 @@ async fn announce_from_a_browser_at(t: &TestApp, device_id: &str, origin: &str) 
 }
 
 async fn allowed_to_read(t: &TestApp, origin: &str) -> Option<String> {
-    let (_status, headers, _body) =
-        raw(&t.app, "GET", "/api/auth/config", None, None, &[("origin", origin)]).await;
+    let (_status, headers, _body) = raw(
+        &t.app,
+        "GET",
+        "/api/auth/config",
+        None,
+        None,
+        &[("origin", origin)],
+    )
+    .await;
     allow_origin(&headers)
 }
 
@@ -534,7 +724,15 @@ async fn a_page_on_the_web_cannot_raise_a_beacon_of_its_own() {
         );
     }
 
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(list.as_array().map(Vec::len), Some(0));
 }
 
@@ -550,7 +748,15 @@ async fn a_shell_on_the_device_or_on_this_network_raises_one() {
         );
     }
 
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(list.as_array().map(Vec::len), Some(A_CLIENT.len()));
 }
 
@@ -592,9 +798,14 @@ async fn the_preflight_a_browser_sends_first_already_refuses_a_page() {
     // A JSON body is not a simple request, so this is the round trip that
     // decides whether the announce is ever sent.
     let t = test_app();
-    assert_eq!(allowed_to_preflight_an_announce(&t, "https://evil.example").await, None);
     assert_eq!(
-        allowed_to_preflight_an_announce(&t, "file://").await.as_deref(),
+        allowed_to_preflight_an_announce(&t, "https://evil.example").await,
+        None
+    );
+    assert_eq!(
+        allowed_to_preflight_an_announce(&t, "file://")
+            .await
+            .as_deref(),
         Some("file://")
     );
 }
@@ -605,7 +816,11 @@ async fn a_page_on_the_web_may_ask_but_may_not_read() {
     // A packaged television shell reports `null` and has nothing else to report,
     // so it reads its own answers even though it may not raise a beacon.
     for origin in ["null", "file://", "http://localhost:5174"] {
-        assert_eq!(allowed_to_read(&t, origin).await.as_deref(), Some(origin), "refused {origin}");
+        assert_eq!(
+            allowed_to_read(&t, origin).await.as_deref(),
+            Some(origin),
+            "refused {origin}"
+        );
     }
     assert_eq!(allowed_to_read(&t, "https://evil.example").await, None);
 }
@@ -617,7 +832,15 @@ async fn a_shell_nobody_can_place_announces_and_the_row_asks_for_its_check() {
     assert_eq!(beacon["confirmRequired"], true);
     assert_eq!(beacon["check"].as_str().map(str::len), Some(5));
 
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(list[0]["confirmRequired"], true);
     assert_eq!(list[0]["check"], beacon["check"]);
 }
@@ -627,7 +850,10 @@ async fn granting_a_beacon_nobody_can_place_takes_the_check_off_the_television()
     let t = test_app();
     let beacon = announce_unplaceable(&t, "tv-tizen-01", TV_IP).await;
     let handle = beacon["handle"].clone();
-    let check = beacon["check"].as_str().expect("a check string").to_string();
+    let check = beacon["check"]
+        .as_str()
+        .expect("a check string")
+        .to_string();
     let before = session_count(&t).await;
 
     // A tap on its own is what a page raising this beacon would be counting on.
@@ -639,7 +865,11 @@ async fn granting_a_beacon_nobody_can_place_takes_the_check_off_the_television()
     let status = grant(&t, json!({ "handle": handle, "check": "WRONG" }), PHONE_IP).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
     assert_eq!(poll_status(&t, &beacon).await, "pending");
-    assert_eq!(session_count(&t).await, before, "a refused grant left a session behind");
+    assert_eq!(
+        session_count(&t).await,
+        before,
+        "a refused grant left a session behind"
+    );
 
     // As a person types it off a screen across the room.
     let typed = format!("  {}  ", check.to_lowercase());
@@ -653,13 +883,25 @@ async fn three_wrong_checks_burn_the_beacon_and_leave_nothing_behind() {
     let t = test_app();
     let beacon = announce_unplaceable(&t, "tv-tizen-01", TV_IP).await;
     let handle = beacon["handle"].clone();
-    let check = beacon["check"].as_str().expect("a check string").to_string();
+    let check = beacon["check"]
+        .as_str()
+        .expect("a check string")
+        .to_string();
     let before = session_count(&t).await;
 
     let wrong = json!({ "handle": handle, "check": "WRONG" });
-    assert_eq!(grant(&t, wrong.clone(), PHONE_IP).await, StatusCode::FORBIDDEN);
-    assert_eq!(grant(&t, wrong.clone(), PHONE_IP).await, StatusCode::FORBIDDEN);
-    assert_eq!(grant(&t, wrong.clone(), PHONE_IP).await, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(
+        grant(&t, wrong.clone(), PHONE_IP).await,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        grant(&t, wrong.clone(), PHONE_IP).await,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        grant(&t, wrong.clone(), PHONE_IP).await,
+        StatusCode::TOO_MANY_REQUESTS
+    );
 
     // Gone: the right answer is worth no more than the wrong ones now.
     assert_eq!(grant(&t, wrong, PHONE_IP).await, StatusCode::NOT_FOUND);
@@ -667,9 +909,21 @@ async fn three_wrong_checks_burn_the_beacon_and_leave_nothing_behind() {
     assert_eq!(grant(&t, right, PHONE_IP).await, StatusCode::NOT_FOUND);
 
     assert_eq!(poll_status(&t, &beacon).await, "expired");
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(list.as_array().map(Vec::len), Some(0));
-    assert_eq!(session_count(&t).await, before, "the refused grants leaked a session");
+    assert_eq!(
+        session_count(&t).await,
+        before,
+        "the refused grants leaked a session"
+    );
 }
 
 #[tokio::test]
@@ -679,8 +933,15 @@ async fn an_address_announcing_far_past_any_television_cadence_is_refused() {
     let t = test_app();
     let body = json!({ "deviceId": "tv-salon-01", "name": "Salon", "platform": "tvOS" });
     for attempt in 1..=MAX_ANNOUNCES_PER_MINUTE {
-        let (status, _) =
-            from(&t, "POST", "/api/handoff/announce", None, Some(body.clone()), TV_IP).await;
+        let (status, _) = from(
+            &t,
+            "POST",
+            "/api/handoff/announce",
+            None,
+            Some(body.clone()),
+            TV_IP,
+        )
+        .await;
         assert_eq!(status, StatusCode::OK, "refused announce {attempt}");
     }
 
@@ -689,7 +950,15 @@ async fn an_address_announcing_far_past_any_television_cadence_is_refused() {
 
     // And the ceiling is one address's own: the phone next to it still lists the
     // beacon that is up, and another household is untouched.
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
     assert_eq!(list.as_array().map(Vec::len), Some(1));
     announce(&t, "tv-chambre-01", "Chambre", HOUSEHOLD).await;
 }
@@ -700,9 +969,21 @@ async fn two_waiting_tvs_are_listed_by_name() {
     announce(&t, "tv-salon-01", "Salon", TV_IP).await;
     announce(&t, "tv-chambre-01", "Chambre", TV_IP).await;
 
-    let (_, list) = from(&t, "GET", "/api/handoff/devices", Some(&t.token), None, PHONE_IP).await;
-    let names: Vec<&str> =
-        list.as_array().expect("a list").iter().filter_map(|r| r["name"].as_str()).collect();
+    let (_, list) = from(
+        &t,
+        "GET",
+        "/api/handoff/devices",
+        Some(&t.token),
+        None,
+        PHONE_IP,
+    )
+    .await;
+    let names: Vec<&str> = list
+        .as_array()
+        .expect("a list")
+        .iter()
+        .filter_map(|r| r["name"].as_str())
+        .collect();
     assert_eq!(names, vec!["Chambre", "Salon"]);
 }
 

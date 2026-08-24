@@ -57,7 +57,11 @@ impl MiniLmEmbedder {
         };
         let model = BertModel::load(vb, &config).context("build BERT")?;
 
-        Ok(Self { model, tokenizer, device })
+        Ok(Self {
+            model,
+            tokenizer,
+            device,
+        })
     }
 
     fn embed_inner(&self, text: &str) -> Result<Vec<f32>> {
@@ -129,13 +133,19 @@ mod tests {
         // L2-normalized (so cosine == dot downstream).
         let norm = christmas.iter().map(|x| x * x).sum::<f32>().sqrt();
         assert_eq!(christmas.len(), 384);
-        assert!((norm - 1.0).abs() < 1e-3, "expected unit length, got {norm}");
+        assert!(
+            (norm - 1.0).abs() < 1e-3,
+            "expected unit length, got {norm}"
+        );
 
         let dot = |a: &[f32], b: &[f32]| a.iter().zip(b).map(|(x, y)| x * y).sum::<f32>();
         let near = dot(&christmas, &holiday); // same vibe, different words
         let far = dot(&christmas, &war); // different vibe
-        // Semantics, not keywords: christmas≈holiday must clearly beat christmas≈war.
-        assert!(near > far + 0.1, "christmas~holiday {near:.3} should ≫ christmas~war {far:.3}");
+                                         // Semantics, not keywords: christmas≈holiday must clearly beat christmas≈war.
+        assert!(
+            near > far + 0.1,
+            "christmas~holiday {near:.3} should ≫ christmas~war {far:.3}"
+        );
     }
 
     /// Non-destructive A/B on the LIVE library: embeds every enriched title with
@@ -166,11 +176,18 @@ mod tests {
         for row in rows {
             let (title, year, meta_json) = row.unwrap();
             let Some(mj) = meta_json else { continue };
-            let Ok(meta) = serde_json::from_str::<kroma_module_sdk::domain::metadata::Metadata>(&mj) else { continue };
+            let Ok(meta) =
+                serde_json::from_str::<kroma_module_sdk::domain::metadata::Metadata>(&mj)
+            else {
+                continue;
+            };
             let doc = kroma_module_sdk::domain::build_doc(&title, year.map(|y| y as u32), &meta);
             lib.push((title, e.embed(&doc)));
         }
-        eprintln!("\nMiniLM-embedded {} titles from the live library\n", lib.len());
+        eprintln!(
+            "\nMiniLM-embedded {} titles from the live library\n",
+            lib.len()
+        );
 
         let dot = |a: &[f32], b: &[f32]| a.iter().zip(b).map(|(x, y)| x * y).sum::<f32>();
 
@@ -201,7 +218,12 @@ mod tests {
 
         let top = |scored: &mut Vec<(&str, f32)>| -> String {
             scored.sort_by(|a, b| b.1.total_cmp(&a.1));
-            scored.iter().take(8).map(|(t, s)| format!("{t} ({s:.2})")).collect::<Vec<_>>().join("  ·  ")
+            scored
+                .iter()
+                .take(8)
+                .map(|(t, s)| format!("{t} ({s:.2})"))
+                .collect::<Vec<_>>()
+                .join("  ·  ")
         };
 
         // EN/FR pairs so we can see whether a multilingual model bridges the
@@ -217,9 +239,14 @@ mod tests {
         for q in probes {
             let qv = e.embed(q);
             let qc = center(&qv);
-            let mut raw: Vec<(&str, f32)> = lib.iter().map(|(t, v)| (t.as_str(), dot(v, &qv))).collect();
+            let mut raw: Vec<(&str, f32)> =
+                lib.iter().map(|(t, v)| (t.as_str(), dot(v, &qv))).collect();
             let mut cen: Vec<(&str, f32)> = lib_c.iter().map(|(t, v)| (*t, dot(v, &qc))).collect();
-            eprintln!("── \"{q}\"\n   RAW      {}\n   CENTERED {}\n", top(&mut raw), top(&mut cen));
+            eprintln!(
+                "── \"{q}\"\n   RAW      {}\n   CENTERED {}\n",
+                top(&mut raw),
+                top(&mut cen)
+            );
         }
     }
 }

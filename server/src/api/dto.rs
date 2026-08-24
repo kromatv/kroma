@@ -121,9 +121,15 @@ pub enum PairingPoll {
 impl From<PollState> for PairingPoll {
     fn from(state: PollState) -> Self {
         match state {
-            PollState::Authorized { token, access_token, user } => {
-                Self::Authorized { token, access_token, user }
-            }
+            PollState::Authorized {
+                token,
+                access_token,
+                user,
+            } => Self::Authorized {
+                token,
+                access_token,
+                user,
+            },
             PollState::Pending => Self::Pending,
             PollState::Unknown => Self::Expired,
         }

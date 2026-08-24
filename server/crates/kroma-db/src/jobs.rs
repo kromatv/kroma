@@ -30,12 +30,21 @@ pub fn list_job_schedules(pool: &Pool) -> Result<Vec<(String, Option<String>, bo
     let conn = pool.get()?;
     let mut stmt = conn.prepare("SELECT key, schedule, enabled FROM job_schedules")?;
     let rows = stmt.query_map([], |r| {
-        Ok((r.get::<_, String>(0)?, r.get::<_, Option<String>>(1)?, r.get::<_, i64>(2)? != 0))
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get::<_, Option<String>>(1)?,
+            r.get::<_, i64>(2)? != 0,
+        ))
     })?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-pub fn upsert_job_schedule(pool: &Pool, key: &str, schedule: Option<&str>, enabled: bool) -> Result<()> {
+pub fn upsert_job_schedule(
+    pool: &Pool,
+    key: &str,
+    schedule: Option<&str>,
+    enabled: bool,
+) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
         "INSERT INTO job_schedules (key, schedule, enabled, updated_at) \
@@ -47,7 +56,13 @@ pub fn upsert_job_schedule(pool: &Pool, key: &str, schedule: Option<&str>, enabl
     Ok(())
 }
 
-pub fn insert_job_run(pool: &Pool, id: &str, key: &str, trigger: &str, started_ms: i64) -> Result<()> {
+pub fn insert_job_run(
+    pool: &Pool,
+    id: &str,
+    key: &str,
+    trigger: &str,
+    started_ms: i64,
+) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
         "INSERT INTO job_runs (id, job_key, trigger_kind, status, started_at) \
@@ -66,7 +81,13 @@ pub fn update_job_run_progress(pool: &Pool, id: &str, done: i64, total: i64) -> 
     Ok(())
 }
 
-pub fn finish_job_run(pool: &Pool, id: &str, status: &str, finished_ms: i64, error: Option<&str>) -> Result<()> {
+pub fn finish_job_run(
+    pool: &Pool,
+    id: &str,
+    status: &str,
+    finished_ms: i64,
+    error: Option<&str>,
+) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
         "UPDATE job_runs SET status=?2, finished_at=?3, error=?4 WHERE id=?1",
@@ -143,7 +164,13 @@ pub fn prune_job_runs(pool: &Pool, key: &str, keep: usize) -> Result<()> {
     Ok(())
 }
 
-pub fn insert_job_log(pool: &Pool, run_id: &str, ts: i64, level: &str, message: &str) -> Result<()> {
+pub fn insert_job_log(
+    pool: &Pool,
+    run_id: &str,
+    ts: i64,
+    level: &str,
+    message: &str,
+) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
         "INSERT INTO job_logs (run_id, ts, level, message) VALUES (?1, ?2, ?3, ?4)",
@@ -159,7 +186,11 @@ pub fn list_job_logs(pool: &Pool, run_id: &str, limit: usize) -> Result<Vec<JobL
         "SELECT ts, level, message FROM job_logs WHERE run_id=?1 ORDER BY rowid DESC LIMIT ?2",
     )?;
     let rows = stmt.query_map(params![run_id, limit as i64], |r| {
-        Ok(JobLog { ts: r.get(0)?, level: r.get(1)?, message: r.get(2)? })
+        Ok(JobLog {
+            ts: r.get(0)?,
+            level: r.get(1)?,
+            message: r.get(2)?,
+        })
     })?;
     let mut logs = rows.collect::<rusqlite::Result<Vec<_>>>()?;
     logs.reverse(); // DESC fetch → chronological
@@ -217,13 +248,22 @@ mod tests {
                 .collect::<Vec<_>>()
         };
         assert_eq!(messages(10), ["started", "halfway", "done"]);
-        assert_eq!(messages(2), ["halfway", "done"], "a limit drops the OLDEST lines");
+        assert_eq!(
+            messages(2),
+            ["halfway", "done"],
+            "a limit drops the OLDEST lines"
+        );
         assert_eq!(list_job_logs(&p, "r1", 1).unwrap()[0].level, "info");
         assert!(list_job_logs(&p, "another-run", 10).unwrap().is_empty());
     }
 
     fn last_one(p: &Pool, id: &str) -> JobRun {
         let conn = p.get().unwrap();
-        conn.query_row(&format!("SELECT {RUN_COLS} FROM job_runs WHERE id=?1"), params![id], row_to_run).unwrap()
+        conn.query_row(
+            &format!("SELECT {RUN_COLS} FROM job_runs WHERE id=?1"),
+            params![id],
+            row_to_run,
+        )
+        .unwrap()
     }
 }

@@ -40,8 +40,11 @@ pub fn metadata_counts(pool: &Pool) -> Result<(i64, i64, i64)> {
         [],
         |r| r.get(0),
     )?;
-    let shows: i64 =
-        conn.query_row("SELECT COUNT(*) FROM shows WHERE metadata IS NOT NULL", [], |r| r.get(0))?;
+    let shows: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM shows WHERE metadata IS NOT NULL",
+        [],
+        |r| r.get(0),
+    )?;
     let vectors: i64 = conn.query_row("SELECT COUNT(*) FROM item_vectors", [], |r| r.get(0))?;
     Ok((items, shows, vectors))
 }
@@ -68,10 +71,22 @@ mod tests {
                 [],
             )
             .unwrap();
-            conn.execute("INSERT INTO files (id,item_id,abs_path,size) VALUES ('f1','m1','/a',1500)", []).unwrap();
-            conn.execute("INSERT INTO files (id,item_id,abs_path,size) VALUES ('f2','m1','/b',500)", []).unwrap();
+            conn.execute(
+                "INSERT INTO files (id,item_id,abs_path,size) VALUES ('f1','m1','/a',1500)",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO files (id,item_id,abs_path,size) VALUES ('f2','m1','/b',500)",
+                [],
+            )
+            .unwrap();
             conn.execute("INSERT INTO shows (id,library,title,added_at,metadata) VALUES ('s1','lib','S','t','{\"tmdbId\":2}')", []).unwrap();
-            conn.execute("INSERT INTO item_vectors (id,dim,vec,updated_at) VALUES ('m1',2,x'0000','t')", []).unwrap();
+            conn.execute(
+                "INSERT INTO item_vectors (id,dim,vec,updated_at) VALUES ('m1',2,x'0000','t')",
+                [],
+            )
+            .unwrap();
         }
         let stats = library_stats(&p).unwrap();
         assert_eq!(stats.len(), 1);

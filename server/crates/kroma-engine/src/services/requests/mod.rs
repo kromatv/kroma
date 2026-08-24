@@ -29,7 +29,9 @@ use anyhow::{anyhow, Result};
 use kroma_module_host::HostStorage;
 
 fn tmdb_key<S: HostStorage>(state: &S) -> Result<String> {
-    state.secret("tmdb").ok_or_else(|| anyhow!("TMDB is not configured"))
+    state
+        .secret("tmdb")
+        .ok_or_else(|| anyhow!("TMDB is not configured"))
 }
 
 fn language<S: HostStorage>(state: &S) -> String {
@@ -39,7 +41,12 @@ fn language<S: HostStorage>(state: &S) -> String {
 /// Today as `YYYY-MM-DD` in UTC, the wanted ledger's air-date vocabulary.
 pub fn today_ymd() -> String {
     let now = time::OffsetDateTime::now_utc();
-    format!("{:04}-{:02}-{:02}", now.year(), u8::from(now.month()), now.day())
+    format!(
+        "{:04}-{:02}-{:02}",
+        now.year(),
+        u8::from(now.month()),
+        now.day()
+    )
 }
 
 #[cfg(test)]
@@ -55,8 +62,11 @@ mod tests {
         assert_eq!(bytes[7], b'-');
         let parts: Vec<&str> = today.split('-').collect();
         assert_eq!(parts.len(), 3);
-        let (y, m, d): (i32, u8, u8) =
-            (parts[0].parse().unwrap(), parts[1].parse().unwrap(), parts[2].parse().unwrap());
+        let (y, m, d): (i32, u8, u8) = (
+            parts[0].parse().unwrap(),
+            parts[1].parse().unwrap(),
+            parts[2].parse().unwrap(),
+        );
         assert!(y >= 2020);
         assert!((1..=12).contains(&m));
         assert!((1..=31).contains(&d));

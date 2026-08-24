@@ -28,7 +28,15 @@ impl Provider for Anthropic {
             ("anthropic-version", ANTHROPIC_VERSION.to_string()),
         ]
     }
-    fn chat_body(&self, model: &str, system: &str, user: &str, max_tokens: u32, _temperature: f32, reasoning: bool) -> Value {
+    fn chat_body(
+        &self,
+        model: &str,
+        system: &str,
+        user: &str,
+        max_tokens: u32,
+        _temperature: f32,
+        reasoning: bool,
+    ) -> Value {
         // `system` is top-level; temperature is omitted (modern Claude rejects it).
         let mut body = json!({
             "model": model,
@@ -91,24 +99,43 @@ impl Provider for Anthropic {
         }
         // Echo the assistant content array back verbatim (preserves thinking
         // blocks + their signatures, which the API requires on the next turn).
-        let content = v.get("content").and_then(Value::as_array).cloned().unwrap_or_default();
+        let content = v
+            .get("content")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
         let mut text = None;
         let mut calls = Vec::new();
         for block in &content {
             match block.get("type").and_then(Value::as_str) {
                 Some("text") if text.is_none() => {
-                    text = block.get("text").and_then(Value::as_str).map(str::to_string);
+                    text = block
+                        .get("text")
+                        .and_then(Value::as_str)
+                        .map(str::to_string);
                 }
                 Some("tool_use") => {
-                    let id = block.get("id").and_then(Value::as_str).unwrap_or_default().to_string();
-                    let name = block.get("name").and_then(Value::as_str).unwrap_or_default().to_string();
+                    let id = block
+                        .get("id")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_string();
+                    let name = block
+                        .get("name")
+                        .and_then(Value::as_str)
+                        .unwrap_or_default()
+                        .to_string();
                     let args = block.get("input").cloned().unwrap_or_else(|| json!({}));
                     calls.push(ToolCall { id, name, args });
                 }
                 _ => {}
             }
         }
-        Ok(Turn { text, tool_calls: calls, assistant_msg: json!({ "role": "assistant", "content": content }) })
+        Ok(Turn {
+            text,
+            tool_calls: calls,
+            assistant_msg: json!({ "role": "assistant", "content": content }),
+        })
     }
     fn tool_result_messages(&self, results: &[(ToolCall, String)]) -> Vec<Value> {
         let blocks: Vec<Value> = results
@@ -126,7 +153,15 @@ mod tests {
 
     #[test]
     fn anthropic_tool_use_round_trip() {
-        let body = Anthropic.tools_request("m", "SYS", &[json!({ "role": "user", "content": "hi" })], &defs(), 100, 0.0, false);
+        let body = Anthropic.tools_request(
+            "m",
+            "SYS",
+            &[json!({ "role": "user", "content": "hi" })],
+            &defs(),
+            100,
+            0.0,
+            false,
+        );
         assert_eq!(body["system"], "SYS");
         assert_eq!(body["tools"][0]["name"], "find_titles");
         assert!(body["tools"][0]["input_schema"]["properties"]["genre"].is_object());
@@ -155,7 +190,9 @@ mod tests {
 
     #[test]
     fn anthropic_refusal_errors_and_reasoning_adds_thinking() {
-        assert!(Anthropic.parse_turn(&json!({ "stop_reason": "refusal", "content": [] })).is_err());
+        assert!(Anthropic
+            .parse_turn(&json!({ "stop_reason": "refusal", "content": [] }))
+            .is_err());
         let body = Anthropic.tools_request("m", "s", &[], &defs(), 10, 0.0, true);
         assert_eq!(body["thinking"]["type"], "adaptive");
     }

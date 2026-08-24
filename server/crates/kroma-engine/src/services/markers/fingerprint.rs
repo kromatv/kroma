@@ -59,7 +59,8 @@ pub fn fingerprint_window(
     }
 
     let mut fp = Fingerprinter::new(&cfg);
-    fp.start(sr, 1).map_err(|e| anyhow::anyhow!("fingerprinter start: {e:?}"))?;
+    fp.start(sr, 1)
+        .map_err(|e| anyhow::anyhow!("fingerprinter start: {e:?}"))?;
     fp.consume(&samples);
     fp.finish();
     Ok(WindowFp {
@@ -98,7 +99,10 @@ fn decode_args(path: &Path, secs: u32, from_end: bool, sample_rate: u32) -> Vec<
 // A trailing odd byte is a truncated sample and is dropped rather than read
 // past the end of the buffer.
 fn samples_from_pcm(bytes: &[u8]) -> Vec<i16> {
-    bytes.chunks_exact(2).map(|b| i16::from_le_bytes([b[0], b[1]])).collect()
+    bytes
+        .chunks_exact(2)
+        .map(|b| i16::from_le_bytes([b[0], b[1]]))
+        .collect()
 }
 
 // Clamped at zero: an episode shorter than the credits window would otherwise
@@ -137,7 +141,11 @@ pub fn pick_range(ranges: &[(f32, f32)], region: (f32, f32), min_len_s: f32) -> 
         .iter()
         .copied()
         .filter(|(s, e)| *s >= region.0 && *s <= region.1 && (e - s) >= min_len_s)
-        .max_by(|x, y| (x.1 - x.0).partial_cmp(&(y.1 - y.0)).unwrap_or(std::cmp::Ordering::Equal))
+        .max_by(|x, y| {
+            (x.1 - x.0)
+                .partial_cmp(&(y.1 - y.0))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
 }
 
 /// Pure: consensus of per-pair ranges: the median range, accepted only if at
@@ -174,7 +182,10 @@ mod tests {
     #[test]
     fn the_intro_window_reads_the_first_seconds() {
         let a = args(30, false);
-        assert!(at(&a, "-sseof").is_none(), "the start window must not seek: {a:?}");
+        assert!(
+            at(&a, "-sseof").is_none(),
+            "the start window must not seek: {a:?}"
+        );
         let t = at(&a, "-t").expect("bounded by -t");
         assert_eq!(a[t + 1], "30");
     }
@@ -186,7 +197,10 @@ mod tests {
         let a = args(30, true);
         let s = at(&a, "-sseof").expect("seeks from the end");
         assert_eq!(a[s + 1], "-30");
-        assert!(at(&a, "-t").is_none(), "the end window is bounded by the seek: {a:?}");
+        assert!(
+            at(&a, "-t").is_none(),
+            "the end window is bounded by the seek: {a:?}"
+        );
     }
 
     #[test]
@@ -228,7 +242,10 @@ mod tests {
         // Paths with spaces or non-UTF-8 bytes reach ffmpeg as-is; building the
         // argv as strings would mangle them.
         let a = decode_args(Path::new("/media/Le Fabuleux Destin.mkv"), 30, false, 11025);
-        assert!(a.iter().any(|x| x == "/media/Le Fabuleux Destin.mkv"), "{a:?}");
+        assert!(
+            a.iter().any(|x| x == "/media/Le Fabuleux Destin.mkv"),
+            "{a:?}"
+        );
     }
 
     #[test]
@@ -302,16 +319,19 @@ mod tests {
     #[test]
     fn pick_range_filters_region_and_length_then_longest() {
         let ranges = [
-            (0.5, 5.0),   // too short (4.5 s)
-            (2.0, 20.0),  // 18 s, in region → candidate
-            (2.5, 30.0),  // 27.5 s, in region → longest
+            (0.5, 5.0),     // too short (4.5 s)
+            (2.0, 20.0),    // 18 s, in region → candidate
+            (2.5, 30.0),    // 27.5 s, in region → longest
             (400.0, 460.0), // outside region
         ];
         assert_eq!(pick_range(&ranges, (0.0, 60.0), 10.0), Some((2.5, 30.0)));
         // Tighter min length drops everything.
         assert_eq!(pick_range(&ranges, (0.0, 60.0), 40.0), None);
         // Region excludes the early starts.
-        assert_eq!(pick_range(&ranges, (300.0, 500.0), 10.0), Some((400.0, 460.0)));
+        assert_eq!(
+            pick_range(&ranges, (300.0, 500.0), 10.0),
+            Some((400.0, 460.0))
+        );
     }
 
     #[test]
@@ -352,7 +372,10 @@ mod tests {
         // SAME configuration; changing this silently invalidates every marker
         // already computed.
         let cfg = config();
-        assert_eq!(cfg.sample_rate(), Configuration::preset_test1().sample_rate());
+        assert_eq!(
+            cfg.sample_rate(),
+            Configuration::preset_test1().sample_rate()
+        );
     }
 
     #[test]
@@ -361,8 +384,14 @@ mod tests {
         // perfectly, so the match should span essentially the whole window.
         let fp = synthetic_fp(600, 1);
         let got = matched_range(&fp, &fp, (0.0, 600.0), 1.0).expect("identical input must match");
-        assert!(got.0 < 1.0, "the match should start at the beginning, got {got:?}");
-        assert!(got.1 - got.0 > 30.0, "the match should be long, got {got:?}");
+        assert!(
+            got.0 < 1.0,
+            "the match should start at the beginning, got {got:?}"
+        );
+        assert!(
+            got.1 - got.0 > 30.0,
+            "the match should be long, got {got:?}"
+        );
     }
 
     #[test]

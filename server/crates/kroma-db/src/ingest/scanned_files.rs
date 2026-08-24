@@ -128,7 +128,9 @@ fn upsert_scanned_file<'a>(
     i: &MediaItem,
     f: &MediaFile,
 ) -> Result<()> {
-    let Some(abs) = f.abs_path.as_deref() else { return Ok(()) };
+    let Some(abs) = f.abs_path.as_deref() else {
+        return Ok(());
+    };
     let size = f.size.map(|s| s as i64);
     let mtime = mtimes.get(&f.id).copied().flatten();
 
@@ -138,7 +140,14 @@ fn upsert_scanned_file<'a>(
         let subs = serde_json::to_string(&f.subtitles).unwrap_or_else(|_| "[]".into());
         let a_tracks = serde_json::to_string(&f.audio_tracks).unwrap_or_else(|_| "[]".into());
         preprobed_stmt.execute(params![
-            f.id, i.id, abs, f.rel_path, f.container, size, mtime, f.edition,
+            f.id,
+            i.id,
+            abs,
+            f.rel_path,
+            f.container,
+            size,
+            mtime,
+            f.edition,
             f.duration_ms.map(|d| d as i64),
             v.map(|v| v.codec.clone()),
             v.and_then(|v| v.width),
@@ -154,11 +163,23 @@ fn upsert_scanned_file<'a>(
         return Ok(());
     }
 
-    let unchanged_probed =
-        prev.get(abs).is_some_and(|p| p.probed && p.size == size && p.mtime == mtime);
-    let stmt = if unchanged_probed { keep_stmt } else { reset_stmt };
+    let unchanged_probed = prev
+        .get(abs)
+        .is_some_and(|p| p.probed && p.size == size && p.mtime == mtime);
+    let stmt = if unchanged_probed {
+        keep_stmt
+    } else {
+        reset_stmt
+    };
     stmt.execute(params![
-        f.id, i.id, abs, f.rel_path, f.container, size, mtime, f.edition,
+        f.id,
+        i.id,
+        abs,
+        f.rel_path,
+        f.container,
+        size,
+        mtime,
+        f.edition,
     ])?;
     Ok(())
 }
@@ -172,7 +193,12 @@ mod tests {
     #[test]
     fn sync_preprobed_file_stores_streams_directly() {
         let p = pool();
-        let items = vec![movie("m1", "Demo", "lib", vec![file("f1", "demo://m1", true)])];
+        let items = vec![movie(
+            "m1",
+            "Demo",
+            "lib",
+            vec![file("f1", "demo://m1", true)],
+        )];
         sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 100)).unwrap();
         assert!(item_has_probed_file(&p, "m1").unwrap());
         assert!(unprobed_files(&p).unwrap().is_empty());
@@ -194,8 +220,12 @@ mod tests {
             .unwrap();
 
         for probed in [false, true] {
-            let items =
-                vec![movie("m1", "Dune", "lib", vec![file("f1", "/media/m1.mkv", probed)])];
+            let items = vec![movie(
+                "m1",
+                "Dune",
+                "lib",
+                vec![file("f1", "/media/m1.mkv", probed)],
+            )];
             assert!(
                 sync_all(&p, &[lib("lib")], &[], &items, &HashMap::new()).is_err(),
                 "probed = {probed}"

@@ -65,7 +65,11 @@ impl RqbitEngine {
             // `listen_port` 0/None = OS-assigned.
             listen: Some(ListenerOptions {
                 mode: ListenerMode::TcpOnly,
-                listen_addr: (std::net::Ipv6Addr::UNSPECIFIED, cfg.listen_port.unwrap_or(0)).into(),
+                listen_addr: (
+                    std::net::Ipv6Addr::UNSPECIFIED,
+                    cfg.listen_port.unwrap_or(0),
+                )
+                    .into(),
                 // A NAS behind the user's control: no surprise router reconfig.
                 enable_upnp_port_forwarding: false,
                 ..Default::default()
@@ -79,7 +83,11 @@ impl RqbitEngine {
             // session still shutting down ("address already in use"). An
             // ephemeral port re-bootstraps in a few seconds. (Private torrents
             // disable DHT per-torrent regardless, so this only helps public ones.)
-            dht: Some(DhtSessionConfig { bootstrap_addrs: None, port: None, persistence: None }),
+            dht: Some(DhtSessionConfig {
+                bootstrap_addrs: None,
+                port: None,
+                persistence: None,
+            }),
             ..Default::default()
         };
         let session = Session::new_with_opts(cfg.download_dir.clone(), opts)
@@ -101,13 +109,17 @@ impl RqbitEngine {
     }
 
     pub fn client(self: &Arc<Self>) -> Box<dyn DownloadClient> {
-        Box::new(RqbitClient { engine: self.clone() })
+        Box::new(RqbitClient {
+            engine: self.clone(),
+        })
     }
 
     fn find(&self, client_ref: &str) -> Result<ManagedTorrentHandle> {
         let id = TorrentIdOrHash::parse(client_ref)
             .map_err(|e| anyhow!("bad torrent ref {client_ref:?}: {e:#}"))?;
-        self.session.get(id).ok_or_else(|| anyhow!("torrent {client_ref} not in session"))
+        self.session
+            .get(id)
+            .ok_or_else(|| anyhow!("torrent {client_ref} not in session"))
     }
 
     /// Re-seed a stalled torrent with a fresh peer set (from our own proxied
@@ -177,7 +189,12 @@ fn status_of(handle: &ManagedTorrentHandle) -> TorrentStatus {
     let (down_bps, up_bps) = stats
         .live
         .as_ref()
-        .map(|l| (mib_to_bytes(l.download_speed.mbps), mib_to_bytes(l.upload_speed.mbps)))
+        .map(|l| {
+            (
+                mib_to_bytes(l.download_speed.mbps),
+                mib_to_bytes(l.upload_speed.mbps),
+            )
+        })
         .unwrap_or((0, 0));
     let (peers, peers_seen) = stats
         .live
@@ -234,7 +251,11 @@ impl DownloadClient for RqbitClient {
             let peers = crate::announce::tracker_peers(bytes, engine.socks_proxy.as_deref());
             if !peers.is_empty() {
                 let v6 = peers.iter().filter(|p| p.is_ipv6()).count();
-                tracing::info!(total = peers.len(), ipv6 = v6, "seeded torrent with peers from our proxied tracker announce");
+                tracing::info!(
+                    total = peers.len(),
+                    ipv6 = v6,
+                    "seeded torrent with peers from our proxied tracker announce"
+                );
             }
             peers
         });
@@ -261,9 +282,8 @@ impl DownloadClient for RqbitClient {
             .map_err(|_| anyhow!("timed out adding torrent (magnet resolve slow?)"))?
         })?;
         match response {
-            AddTorrentResponse::Added(_, handle) | AddTorrentResponse::AlreadyManaged(_, handle) => {
-                Ok(handle.info_hash().as_string())
-            }
+            AddTorrentResponse::Added(_, handle)
+            | AddTorrentResponse::AlreadyManaged(_, handle) => Ok(handle.info_hash().as_string()),
             AddTorrentResponse::ListOnly(_) => bail!("unexpected list-only add response"),
         }
     }
@@ -275,7 +295,10 @@ impl DownloadClient for RqbitClient {
     ) -> Result<Vec<crate::TorrentFileEntry>> {
         let engine = &self.engine;
         // list_only fetches the metadata + file list but downloads nothing.
-        let opts = AddTorrentOptions { list_only: true, ..Default::default() };
+        let opts = AddTorrentOptions {
+            list_only: true,
+            ..Default::default()
+        };
         let url = magnet_or_url.to_string();
         let add = match torrent_bytes {
             Some(bytes) => AddTorrent::from_bytes(bytes.to_vec()),
@@ -292,11 +315,14 @@ impl DownloadClient for RqbitClient {
         let info = match response {
             AddTorrentResponse::ListOnly(resp) => resp.info,
             // Already in the session: read its metadata instead.
-            AddTorrentResponse::Added(_, h) | AddTorrentResponse::AlreadyManaged(_, h) => {
-                h.metadata.load().as_ref().map(|m| m.info.clone()).ok_or_else(|| {
+            AddTorrentResponse::Added(_, h) | AddTorrentResponse::AlreadyManaged(_, h) => h
+                .metadata
+                .load()
+                .as_ref()
+                .map(|m| m.info.clone())
+                .ok_or_else(|| {
                     anyhow!("torrent already added but its metadata is not resolved yet")
-                })?
-            }
+                })?,
         };
         let mut out = Vec::new();
         // 9.x: iter_file_details() and to_pathbuf() return plain values (no Result).
@@ -311,7 +337,10 @@ impl DownloadClient for RqbitClient {
     }
 
     fn status(&self, client_ref: &str) -> Result<Option<TorrentStatus>> {
-        match TorrentIdOrHash::parse(client_ref).ok().and_then(|id| self.engine.session.get(id)) {
+        match TorrentIdOrHash::parse(client_ref)
+            .ok()
+            .and_then(|id| self.engine.session.get(id))
+        {
             Some(handle) => Ok(Some(status_of(&handle))),
             None => Ok(None),
         }
@@ -319,12 +348,16 @@ impl DownloadClient for RqbitClient {
 
     fn pause(&self, client_ref: &str) -> Result<()> {
         let handle = self.engine.find(client_ref)?;
-        self.engine.handle.block_on(self.engine.session.pause(&handle))
+        self.engine
+            .handle
+            .block_on(self.engine.session.pause(&handle))
     }
 
     fn resume(&self, client_ref: &str) -> Result<()> {
         let handle = self.engine.find(client_ref)?;
-        self.engine.handle.block_on(self.engine.session.unpause(&handle))
+        self.engine
+            .handle
+            .block_on(self.engine.session.unpause(&handle))
     }
 
     fn reannounce(&self, client_ref: &str) -> Result<()> {
@@ -344,6 +377,8 @@ impl DownloadClient for RqbitClient {
     fn remove(&self, client_ref: &str, delete_data: bool) -> Result<()> {
         let id = TorrentIdOrHash::parse(client_ref)
             .map_err(|e| anyhow!("bad torrent ref {client_ref:?}: {e:#}"))?;
-        self.engine.handle.block_on(self.engine.session.delete(id, delete_data))
+        self.engine
+            .handle
+            .block_on(self.engine.session.delete(id, delete_data))
     }
 }

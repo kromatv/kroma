@@ -9,7 +9,12 @@ use crate::api::test_support::{demo_item_id, demo_show_id, get, seed_session, se
 use crate::model::Permission;
 
 fn member(t: &crate::api::test_support::TestApp, tag: &str) -> String {
-    let (_id, token) = seed_session(&t.state, &format!("{tag}@test.dev"), tag, &[Permission::Playback]);
+    let (_id, token) = seed_session(
+        &t.state,
+        &format!("{tag}@test.dev"),
+        tag,
+        &[Permission::Playback],
+    );
     token
 }
 
@@ -81,7 +86,14 @@ async fn triage_queue_requires_reports_manage() {
     // A plain member can't reach the admin queue or its actions.
     let (status, _) = get(&t.app, "/api/admin/reports", Some(&m)).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
-    let (status, _) = send(&t.app, "POST", "/api/admin/reports/x/resolve", Some(&m), None).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/reports/x/resolve",
+        Some(&m),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 
     let (status, body) = get(&t.app, "/api/admin/reports", Some(&t.token)).await;
@@ -105,28 +117,58 @@ async fn resolve_dismiss_reopen_and_delete_transitions() {
     .await;
     let id = created["id"].as_str().unwrap().to_string();
 
-    let (status, body) =
-        send(&t.app, "POST", &format!("/api/admin/reports/{id}/resolve"), Some(&t.token), None).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/reports/{id}/resolve"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["status"], json!("resolved"));
     assert_eq!(body["resolvedBy"], json!(t.user_id));
 
-    let (status, body) =
-        send(&t.app, "POST", &format!("/api/admin/reports/{id}/reopen"), Some(&t.token), None).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/reports/{id}/reopen"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["status"], json!("open"));
     assert_eq!(body["resolvedBy"], json!(null));
 
-    let (status, body) =
-        send(&t.app, "POST", &format!("/api/admin/reports/{id}/dismiss"), Some(&t.token), None).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/reports/{id}/dismiss"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["status"], json!("dismissed"));
 
-    let (status, _) =
-        send(&t.app, "DELETE", &format!("/api/admin/reports/{id}"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/admin/reports/{id}"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
-    let (status, _) =
-        send(&t.app, "DELETE", &format!("/api/admin/reports/{id}"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/admin/reports/{id}"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
@@ -175,7 +217,10 @@ async fn an_episode_report_names_the_show_the_season_and_the_episode() {
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["subjectTitle"], json!("Planet Earth II S01E01 - Islands"));
+    assert_eq!(
+        body["subjectTitle"],
+        json!("Planet Earth II S01E01 - Islands")
+    );
 }
 
 #[tokio::test]
@@ -203,9 +248,11 @@ async fn the_queue_tallies_every_outcome_and_searches_title_and_reporter() {
     let show = demo_show_id("The Office");
 
     let mut ids = Vec::new();
-    for (kind, subject) in
-        [("movie", movie.as_str()), ("movie", movie.as_str()), ("show", show.as_str())]
-    {
+    for (kind, subject) in [
+        ("movie", movie.as_str()),
+        ("movie", movie.as_str()),
+        ("show", show.as_str()),
+    ] {
         let (_, created) = send(
             &t.app,
             "POST",
@@ -216,10 +263,22 @@ async fn the_queue_tallies_every_outcome_and_searches_title_and_reporter() {
         .await;
         ids.push(created["id"].as_str().unwrap().to_string());
     }
-    send(&t.app, "POST", &format!("/api/admin/reports/{}/resolve", ids[0]), Some(&t.token), None)
-        .await;
-    send(&t.app, "POST", &format!("/api/admin/reports/{}/dismiss", ids[1]), Some(&t.token), None)
-        .await;
+    send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/reports/{}/resolve", ids[0]),
+        Some(&t.token),
+        None,
+    )
+    .await;
+    send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/reports/{}/dismiss", ids[1]),
+        Some(&t.token),
+        None,
+    )
+    .await;
 
     let (status, body) = get(&t.app, "/api/admin/reports", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
@@ -232,11 +291,21 @@ async fn the_queue_tallies_every_outcome_and_searches_title_and_reporter() {
     let list = body["reports"].as_array().unwrap();
     assert_eq!(list.len(), 1);
     assert_eq!(list[0]["subjectTitle"], json!("The Office"));
-    let (_, body) = get(&t.app, &format!("/api/admin/reports?q={movie}"), Some(&t.token)).await;
+    let (_, body) = get(
+        &t.app,
+        &format!("/api/admin/reports?q={movie}"),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(body["reports"].as_array().unwrap().len(), 2);
     let (_, body) = get(&t.app, "/api/admin/reports?q=SEEKER", Some(&t.token)).await;
     assert_eq!(body["reports"].as_array().unwrap().len(), 3);
-    let (_, body) = get(&t.app, "/api/admin/reports?q=nobody-filed-this", Some(&t.token)).await;
+    let (_, body) = get(
+        &t.app,
+        "/api/admin/reports?q=nobody-filed-this",
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(body["reports"].as_array().unwrap().len(), 0);
     assert_eq!(body["counts"]["total"], json!(3));
 }
@@ -272,8 +341,14 @@ async fn resolving_a_show_report_deep_links_the_reporter_to_the_show() {
     .await;
     let id = created["id"].as_str().unwrap().to_string();
 
-    let (status, _) =
-        send(&t.app, "POST", &format!("/api/admin/reports/{id}/resolve"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/reports/{id}/resolve"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
 
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&m)).await;
@@ -354,8 +429,14 @@ async fn resolving_a_report_filed_by_nobody_notifies_nobody() {
     )
     .expect("seed an anonymous report");
 
-    let (status, body) =
-        send(&t.app, "POST", "/api/admin/reports/anon-report/resolve", Some(&t.token), None).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/reports/anon-report/resolve",
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["status"], json!("resolved"));
     assert_eq!(body["reportedBy"], json!(null));

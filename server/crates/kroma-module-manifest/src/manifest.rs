@@ -37,7 +37,11 @@ fn one() -> u32 {
 
 impl PointDef {
     pub fn new(name: impl Into<String>) -> Self {
-        Self { name: name.into(), version: 1, methods: Vec::new() }
+        Self {
+            name: name.into(),
+            version: 1,
+            methods: Vec::new(),
+        }
     }
 }
 
@@ -83,13 +87,18 @@ impl Contribution {
 
     /// The same, under an instance name.
     pub fn instance(point: impl Into<String>, id: impl Into<String>) -> Self {
-        Self { id: Some(id.into()), ..Self::new(point) }
+        Self {
+            id: Some(id.into()),
+            ..Self::new(point)
+        }
     }
 
     /// The point's local name, i.e. without the defining module's id. What the
     /// wire path is built from.
     pub fn local(&self) -> &str {
-        self.point.rsplit_once('/').map_or(self.point.as_str(), |(_, name)| name)
+        self.point
+            .rsplit_once('/')
+            .map_or(self.point.as_str(), |(_, name)| name)
     }
 }
 
@@ -140,7 +149,10 @@ pub struct Dependency {
 
 impl Dependency {
     pub fn new(id: impl Into<String>) -> Self {
-        Self { id: id.into(), version: None }
+        Self {
+            id: id.into(),
+            version: None,
+        }
     }
 }
 
@@ -158,12 +170,19 @@ impl<'de> Deserialize<'de> for Dependency {
         }
         Ok(match Repr::deserialize(deserializer)? {
             Repr::Str(s) => match s.split_once('@') {
-                Some((id, range)) => Dependency { id: id.into(), version: normalize_range(range) },
-                None => Dependency { id: s, version: None },
+                Some((id, range)) => Dependency {
+                    id: id.into(),
+                    version: normalize_range(range),
+                },
+                None => Dependency {
+                    id: s,
+                    version: None,
+                },
             },
-            Repr::Obj { id, version } => {
-                Dependency { id, version: version.as_deref().and_then(normalize_range) }
-            }
+            Repr::Obj { id, version } => Dependency {
+                id,
+                version: version.as_deref().and_then(normalize_range),
+            },
         })
     }
 }
@@ -217,7 +236,10 @@ mod dep_map {
             fn visit_map<M: MapAccess<'de>>(self, mut access: M) -> Result<Self::Value, M::Error> {
                 let mut out = Vec::new();
                 while let Some((id, range)) = access.next_entry::<String, String>()? {
-                    out.push(Dependency { id, version: super::normalize_range(&range) });
+                    out.push(Dependency {
+                        id,
+                        version: super::normalize_range(&range),
+                    });
                 }
                 Ok(out)
             }
@@ -357,7 +379,11 @@ pub struct ModuleManifest {
 impl ModuleManifest {
     /// Start a manifest with the required fields; chain the builder methods for
     /// the rest.
-    pub fn new(id: impl Into<String>, name: impl Into<String>, version: impl Into<Version>) -> Self {
+    pub fn new(
+        id: impl Into<String>,
+        name: impl Into<String>,
+        version: impl Into<Version>,
+    ) -> Self {
         Self {
             schema_version: MODULE_SCHEMA_VERSION,
             id: id.into(),
@@ -396,8 +422,14 @@ mod tests {
     fn storage_is_absent_unless_declared_and_round_trips_when_it_is() {
         let plain: ModuleManifest =
             serde_json::from_str(r#"{ "id": "a", "name": "A", "version": "1.0.0" }"#).unwrap();
-        assert!(plain.storage.is_none(), "no storage object means no database");
-        assert!(serde_json::to_value(&plain).unwrap().get("storage").is_none());
+        assert!(
+            plain.storage.is_none(),
+            "no storage object means no database"
+        );
+        assert!(serde_json::to_value(&plain)
+            .unwrap()
+            .get("storage")
+            .is_none());
 
         // An empty object is NOT the same as an absent one: it is the module's
         // own file, with no reach into the core database.
@@ -431,7 +463,13 @@ mod tests {
         )
         .unwrap();
         assert_eq!(m.dependencies.len(), 2);
-        assert_eq!(m.dependencies[0], Dependency { id: "tv.kroma.torrents".into(), version: Some("^0.1.0".into()) });
+        assert_eq!(
+            m.dependencies[0],
+            Dependency {
+                id: "tv.kroma.torrents".into(),
+                version: Some("^0.1.0".into())
+            }
+        );
         assert_eq!(m.dependencies[1], Dependency::new("tv.kroma.lib"));
     }
 
@@ -449,7 +487,10 @@ mod tests {
     #[test]
     fn serializes_as_a_map_and_omits_empty_collections() {
         let mut m = ModuleManifest::new("a", "A", "1.0.0");
-        m.dependencies.push(Dependency { id: "lib".into(), version: Some("^1".into()) });
+        m.dependencies.push(Dependency {
+            id: "lib".into(),
+            version: Some("^1".into()),
+        });
         m.dependencies.push(Dependency::new("plain"));
         let json = serde_json::to_value(&m).unwrap();
         assert_eq!(json["dependencies"]["lib"], "^1");
@@ -485,7 +526,10 @@ mod tests {
     fn a_manifest_declares_which_contract_it_was_built_against() {
         let fresh = ModuleManifest::new("a", "A", "1.0.0");
         assert_eq!(fresh.schema_version, MODULE_SCHEMA_VERSION);
-        assert_eq!(serde_json::to_value(&fresh).unwrap()["schemaVersion"], MODULE_SCHEMA_VERSION);
+        assert_eq!(
+            serde_json::to_value(&fresh).unwrap()["schemaVersion"],
+            MODULE_SCHEMA_VERSION
+        );
 
         let old: ModuleManifest =
             serde_json::from_str(r#"{ "id": "a", "name": "A", "version": "1.0.0" }"#).unwrap();
@@ -496,6 +540,9 @@ mod tests {
     fn describe_sets_the_description_the_admin_lists() {
         let m = ModuleManifest::new("a", "A", "1.0.0").describe("Grabs torrents");
         assert_eq!(m.description, "Grabs torrents");
-        assert_eq!(serde_json::to_value(&m).unwrap()["description"], "Grabs torrents");
+        assert_eq!(
+            serde_json::to_value(&m).unwrap()["description"],
+            "Grabs torrents"
+        );
     }
 }

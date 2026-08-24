@@ -29,7 +29,9 @@ pub(super) fn module_stores(data_dir: &std::path::Path) -> Vec<(String, std::pat
 
 // Every user table in one module's database, whatever they are: the core does
 // not know a module's schema and has no business learning it.
-pub(super) fn dump_store(path: &std::path::Path) -> Result<BTreeMap<String, Vec<Map<String, Value>>>> {
+pub(super) fn dump_store(
+    path: &std::path::Path,
+) -> Result<BTreeMap<String, Vec<Map<String, Value>>>> {
     let conn = Connection::open(path)?;
     let names: Vec<String> = conn
         .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")?
@@ -37,7 +39,10 @@ pub(super) fn dump_store(path: &std::path::Path) -> Result<BTreeMap<String, Vec<
         .collect::<std::result::Result<_, _>>()?;
     let mut out = BTreeMap::new();
     for name in names {
-        out.insert(name.clone(), dump_query(&conn, &format!("SELECT * FROM \"{name}\""))?);
+        out.insert(
+            name.clone(),
+            dump_query(&conn, &format!("SELECT * FROM \"{name}\""))?,
+        );
     }
     Ok(out)
 }
@@ -105,15 +110,17 @@ fn is_module_id(s: &str) -> bool {
         && !s.starts_with('.')
         && s.split('.').all(|label| {
             !label.is_empty()
-                && label.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+                && label
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
         })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::backup::{export_portable, import_portable};
     use crate::backup::test_support::*;
+    use crate::backup::{export_portable, import_portable};
 
     #[test]
     fn a_modules_own_database_travels_with_the_backup() {
@@ -138,11 +145,16 @@ mod tests {
         let dst_store = seed_indexer_store(&dst_dir, "");
 
         let summary = import_portable(&dst, &dst_dir, &doc, false).unwrap();
-        assert!(summary.contains(&("tv.kroma.indexer/indexers".to_string(), 1)), "{summary:?}");
+        assert!(
+            summary.contains(&("tv.kroma.indexer/indexers".to_string(), 1)),
+            "{summary:?}"
+        );
         assert_eq!(store_count(&dst_store, "indexers"), 1);
         let key: String = Connection::open(&dst_store)
             .unwrap()
-            .query_row("SELECT api_key FROM indexers WHERE id='ix1'", [], |r| r.get(0))
+            .query_row("SELECT api_key FROM indexers WHERE id='ix1'", [], |r| {
+                r.get(0)
+            })
             .unwrap();
         assert_eq!(key, "secret");
     }

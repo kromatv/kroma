@@ -32,7 +32,9 @@ pub fn show_progress(pool: &Pool, user_id: &str) -> Result<std::collections::Has
             "SELECT i.show_id, COUNT(*) FROM watched w JOIN items i ON i.id = w.item_id \
              WHERE w.user_id = ?1 AND i.kind = 'episode' AND i.show_id IS NOT NULL GROUP BY i.show_id",
         )?;
-        for row in s.query_map(params![user_id], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?)))? {
+        for row in s.query_map(params![user_id], |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
+        })? {
             let (show, n) = row?;
             watched.insert(show, n);
         }
@@ -49,7 +51,11 @@ pub fn show_progress(pool: &Pool, user_id: &str) -> Result<std::collections::Has
              ORDER BY p.updated_at DESC",
         )?;
         for row in s.query_map(params![user_id], |r| {
-            Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?, r.get::<_, Option<i64>>(2)?))
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, i64>(1)?,
+                r.get::<_, Option<i64>>(2)?,
+            ))
         })? {
             let (show, pos, dur) = row?;
             // ORDER BY updated_at DESC → keep the first (most recent) per show.
@@ -111,7 +117,9 @@ pub fn show_progress_one(pool: &Pool, user_id: &str, show_id: &str) -> Result<Op
             _ => 0.0,
         }
     };
-    let pct = ((watched as f64 + frac) / total as f64 * 100.0).round().clamp(0.0, 100.0) as u8;
+    let pct = ((watched as f64 + frac) / total as f64 * 100.0)
+        .round()
+        .clamp(0.0, 100.0) as u8;
     Ok(if pct > 0 { Some(pct) } else { None })
 }
 
@@ -149,7 +157,10 @@ mod tests {
         assert_eq!(show_progress_one(&pool, &uid, "s1").unwrap(), Some(60));
         assert_eq!(show_progress_one(&pool, &uid, "s3").unwrap(), Some(100));
         assert_eq!(show_progress_one(&pool, &uid, "s2").unwrap(), None);
-        assert_eq!(show_progress_one(&pool, &uid, "no-such-show").unwrap(), None);
+        assert_eq!(
+            show_progress_one(&pool, &uid, "no-such-show").unwrap(),
+            None
+        );
     }
 
     #[test]
@@ -177,9 +188,16 @@ mod tests {
         }
 
         let cw = continue_watching(&pool, &uid).unwrap();
-        let meta = cw[0].item.metadata.as_ref().expect("the episode's own metadata is kept");
+        let meta = cw[0]
+            .item
+            .metadata
+            .as_ref()
+            .expect("the episode's own metadata is kept");
         assert_eq!(meta.backdrop_url.as_deref(), Some("episode-still.jpg"));
-        assert!(meta.poster_url.is_none(), "there is no show artwork to borrow");
+        assert!(
+            meta.poster_url.is_none(),
+            "there is no show artwork to borrow"
+        );
     }
 
     #[test]
@@ -197,10 +215,16 @@ mod tests {
     fn a_single_shows_progress_errors_rather_than_reading_as_untouched() {
         let (pool, uid) = pool_with_user();
         seed_show(&pool, "s1", "e", 3);
-        pool.get().unwrap().execute_batch("DROP TABLE watched").unwrap();
+        pool.get()
+            .unwrap()
+            .execute_batch("DROP TABLE watched")
+            .unwrap();
         assert!(show_progress_one(&pool, &uid, "s1").is_err());
 
-        pool.get().unwrap().execute_batch("DROP TABLE items").unwrap();
+        pool.get()
+            .unwrap()
+            .execute_batch("DROP TABLE items")
+            .unwrap();
         assert!(show_progress_one(&pool, &uid, "s1").is_err());
     }
 }

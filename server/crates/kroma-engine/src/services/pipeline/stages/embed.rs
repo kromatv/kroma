@@ -4,10 +4,10 @@
 
 use anyhow::{anyhow, Result};
 
-use kroma_domain::build_doc;
 use crate::model::{Kind, Metadata};
 use crate::services::jobs::{JobContext, JobKey, Trigger};
 use crate::state::SharedState;
+use kroma_domain::build_doc;
 
 use super::common::stage;
 use crate::services::embeddings;
@@ -81,7 +81,8 @@ mod tests {
         test_state_with_embedder(fixed_dim_embedder(dim))
     }
 
-    const META: &str = r#"{"tmdbId":1,"title":"T","overview":"o","genres":["Drama"],"tmdbUrl":"https://x/1"}"#;
+    const META: &str =
+        r#"{"tmdbId":1,"title":"T","overview":"o","genres":["Drama"],"tmdbUrl":"https://x/1"}"#;
 
     fn give_metadata(state: &SharedState, table: &str, id: &str) {
         state
@@ -115,7 +116,11 @@ mod tests {
         give_metadata(&st, "shows", &show);
         give_metadata(&st, "items", &ep);
 
-        let ids: Vec<String> = enumerate(&st).unwrap().into_iter().map(|(id, _)| id).collect();
+        let ids: Vec<String> = enumerate(&st)
+            .unwrap()
+            .into_iter()
+            .map(|(id, _)| id)
+            .collect();
         assert!(ids.contains(&show), "the show itself should be queued");
         assert!(!ids.contains(&ep), "an episode must not be");
     }

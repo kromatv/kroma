@@ -8,8 +8,8 @@ use axum::Json;
 use serde::Deserialize;
 
 use crate::api::error::lerr;
-use crate::api::util::query;
 use crate::api::extract::AuthUser;
+use crate::api::util::query;
 use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::model::Permission;
@@ -30,12 +30,18 @@ pub async fn list_users(
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::UsersManage)?;
-    let (mut users, library_count) =
-        query(&state.db, move |pool| Ok((db::admin_users(&pool)?, db::counts(&pool)?.0))).await?;
+    let (mut users, library_count) = query(&state.db, move |pool| {
+        Ok((db::admin_users(&pool)?, db::counts(&pool)?.0))
+    })
+    .await?;
     for u in &mut users {
         u.online = state.playback.user_online(&u.id);
     }
-    Ok(Json(crate::api::dto::AdminUsers { users, library_count }).into_response())
+    Ok(Json(crate::api::dto::AdminUsers {
+        users,
+        library_count,
+    })
+    .into_response())
 }
 
 #[derive(Debug, Deserialize)]
@@ -57,7 +63,11 @@ pub async fn update_user(
     let id2 = id.clone();
     let all = query(&state.db, move |pool| db::admin_users(&pool)).await?;
     let Some(target) = all.iter().find(|u| u.id == id2) else {
-        return Err(lerr(super::user_locale(&user), StatusCode::NOT_FOUND, "error.userNotFound"));
+        return Err(lerr(
+            super::user_locale(&user),
+            StatusCode::NOT_FOUND,
+            "error.userNotFound",
+        ));
     };
 
     if let Some(perms) = body.permissions.clone() {
@@ -76,7 +86,10 @@ pub async fn update_user(
             ));
         }
         let id3 = id.clone();
-        query(&state.db, move |pool| db::update_user_permissions(&pool, &id3, &perms)).await?;
+        query(&state.db, move |pool| {
+            db::update_user_permissions(&pool, &id3, &perms)
+        })
+        .await?;
     }
     if let Some(name) = body.username.clone().filter(|n| !n.trim().is_empty()) {
         let name = name.trim().to_string();
@@ -86,11 +99,22 @@ pub async fn update_user(
         // prevent (email and username share one login namespace).
         let check_name = name.clone();
         let exclude = id.clone();
-        if query(&state.db, move |pool| db::username_taken(&pool, &check_name, Some(&exclude))).await? {
-            return Err(lerr(super::user_locale(&user), StatusCode::CONFLICT, "auth.usernameTaken"));
+        if query(&state.db, move |pool| {
+            db::username_taken(&pool, &check_name, Some(&exclude))
+        })
+        .await?
+        {
+            return Err(lerr(
+                super::user_locale(&user),
+                StatusCode::CONFLICT,
+                "auth.usernameTaken",
+            ));
         }
         let id3 = id.clone();
-        query(&state.db, move |pool| db::set_user_username(&pool, &id3, &name)).await?;
+        query(&state.db, move |pool| {
+            db::set_user_username(&pool, &id3, &name)
+        })
+        .await?;
     }
     state.events.publish(ServerEvent::LibraryUpdated);
     Ok(StatusCode::NO_CONTENT.into_response())
@@ -104,11 +128,22 @@ pub async fn delete_user(
 ) -> Result<Response, Response> {
     super::require(&user, Permission::UsersManage)?;
     if id == user.id {
-        return Err(lerr(super::user_locale(&user), StatusCode::BAD_REQUEST, "admin.cantDeleteSelf"));
+        return Err(lerr(
+            super::user_locale(&user),
+            StatusCode::BAD_REQUEST,
+            "admin.cantDeleteSelf",
+        ));
     }
     let id2 = id.clone();
-    if query(&state.db, move |pool| db::user_by_id(&pool, &id2)).await?.is_none() {
-        return Err(lerr(super::user_locale(&user), StatusCode::NOT_FOUND, "error.userNotFound"));
+    if query(&state.db, move |pool| db::user_by_id(&pool, &id2))
+        .await?
+        .is_none()
+    {
+        return Err(lerr(
+            super::user_locale(&user),
+            StatusCode::NOT_FOUND,
+            "error.userNotFound",
+        ));
     }
     query(&state.db, move |pool| db::delete_user(&pool, &id)).await?;
     state.events.publish(ServerEvent::LibraryUpdated);

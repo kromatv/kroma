@@ -70,12 +70,20 @@ mod tests {
         );
         let legacy: BTreeMap<String, ParamValue> =
             serde_json::from_str(r#"{"title":"Dune","job":"jobs.library.scan.name"}"#).unwrap();
-        assert_eq!(legacy.get("title"), Some(&ParamValue::Legacy("Dune".into())));
-        assert_eq!(legacy.get("job"), Some(&ParamValue::Legacy("jobs.library.scan.name".into())));
+        assert_eq!(
+            legacy.get("title"),
+            Some(&ParamValue::Legacy("Dune".into()))
+        );
+        assert_eq!(
+            legacy.get("job"),
+            Some(&ParamValue::Legacy("jobs.library.scan.name".into()))
+        );
 
         assert_eq!(
-            serde_json::from_str::<ParamValue>(r#"{"kind":"text","value":"jobs.library.scan.name"}"#)
-                .unwrap(),
+            serde_json::from_str::<ParamValue>(
+                r#"{"kind":"text","value":"jobs.library.scan.name"}"#
+            )
+            .unwrap(),
             ParamValue::Text("jobs.library.scan.name".into())
         );
     }

@@ -37,7 +37,9 @@ pub fn scan<S: HostStorage>(
     progress: &dyn Fn(usize, usize),
     cancelled: &dyn Fn() -> bool,
 ) -> Result<MissingScanSummary> {
-    let key = state.secret("tmdb").ok_or_else(|| anyhow!("TMDB is not configured"))?;
+    let key = state
+        .secret("tmdb")
+        .ok_or_else(|| anyhow!("TMDB is not configured"))?;
     let lang = state.metadata_language();
     let today = today_ymd();
     let shows = db::list_shows(state.db(), None)?;
@@ -94,8 +96,7 @@ fn scan_one<S: HostStorage>(
         .ok_or_else(|| anyhow!("show not found on TMDB"))?;
 
     let conn = state.db().get()?;
-    let present: HashSet<(u32, u32)> =
-        db::episodes_present(&conn, show_id)?.into_iter().collect();
+    let present: HashSet<(u32, u32)> = db::episodes_present(&conn, show_id)?.into_iter().collect();
     drop(conn);
 
     let mut gaps: Vec<Gap> = Vec::new();
@@ -155,7 +156,10 @@ mod tests {
         let progress = Progress::default();
         let err = scan(&state, &progress.record(), &never_cancelled()).unwrap_err();
         assert!(err.to_string().contains("TMDB is not configured"), "{err}");
-        assert!(progress.seen().is_empty(), "nothing was scanned, so nothing to report");
+        assert!(
+            progress.seen().is_empty(),
+            "nothing was scanned, so nothing to report"
+        );
     }
 
     #[test]
@@ -181,7 +185,10 @@ mod tests {
         let progress = Progress::default();
 
         let summary = scan(&state, &progress.record(), &never_cancelled()).unwrap();
-        assert_eq!(summary.shows, 0, "an un-enriched show is not a scanned show");
+        assert_eq!(
+            summary.shows, 0,
+            "an un-enriched show is not a scanned show"
+        );
         assert_eq!(summary.episodes, 0);
         assert_eq!(gap_rows(&state), 0, "and it records no gaps for it");
     }
@@ -315,7 +322,10 @@ mod tests {
         {
             let _tmdb = FakeTmdb::start(|path| match path {
                 "/tv/1396" => (200, tmdb_show(&[1])),
-                _ => (200, tmdb_episodes(&[(1, Some("2020-01-01")), (2, Some("2020-01-08"))])),
+                _ => (
+                    200,
+                    tmdb_episodes(&[(1, Some("2020-01-01")), (2, Some("2020-01-08"))]),
+                ),
             });
             scan(&state, &Progress::default().record(), &never_cancelled()).unwrap();
             assert_eq!(gaps(&state), [(1, 2)]);
@@ -328,7 +338,10 @@ mod tests {
         });
         let summary = scan(&state, &Progress::default().record(), &never_cancelled()).unwrap();
         assert_eq!(summary.with_gaps, 0);
-        assert!(gaps(&state).is_empty(), "a completed show is still reported as missing");
+        assert!(
+            gaps(&state).is_empty(),
+            "a completed show is still reported as missing"
+        );
     }
 
     #[test]
@@ -343,9 +356,10 @@ mod tests {
 
         let _tmdb = FakeTmdb::start(|path| match path {
             "/tv/1396" => (200, tmdb_show(&[1])),
-            "/tv/1396/season/1" => {
-                (200, tmdb_episodes(&[(1, Some("2020-01-01")), (2, Some("2020-01-08"))]))
-            }
+            "/tv/1396/season/1" => (
+                200,
+                tmdb_episodes(&[(1, Some("2020-01-01")), (2, Some("2020-01-08"))]),
+            ),
             _ => (404, serde_json::json!({})),
         });
 
@@ -363,7 +377,10 @@ mod tests {
         link_to_tmdb(&state, &show, 1396);
         let _tmdb = FakeTmdb::start(|path| match path {
             "/tv/1396" => (200, tmdb_show(&[1])),
-            _ => (200, tmdb_episodes(&[(1, Some("2020-01-01")), (2, Some("2020-01-08"))])),
+            _ => (
+                200,
+                tmdb_episodes(&[(1, Some("2020-01-01")), (2, Some("2020-01-08"))]),
+            ),
         });
         state
             .db
@@ -386,6 +403,9 @@ mod tests {
         let _tmdb = FakeTmdb::start(|_| (200, tmdb_show(&[1])));
 
         let summary = scan(&state, &Progress::default().record(), &|| true).unwrap();
-        assert_eq!(summary.shows, 0, "cancellation is checked before the TMDB call");
+        assert_eq!(
+            summary.shows, 0,
+            "cancellation is checked before the TMDB call"
+        );
     }
 }

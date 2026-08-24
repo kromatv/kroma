@@ -54,7 +54,11 @@ pub struct CatalogModule {
 /// The `moduleRegistryUrl` setting, or the built-in default when unset/blank.
 pub fn registry_url(state: &SharedState) -> String {
     let u = state.setting_str("moduleRegistryUrl", super::DEFAULT_REGISTRY);
-    if u.trim().is_empty() { super::DEFAULT_REGISTRY.to_string() } else { u }
+    if u.trim().is_empty() {
+        super::DEFAULT_REGISTRY.to_string()
+    } else {
+        u
+    }
 }
 
 /// The registry contract this server speaks. A document declaring a higher one
@@ -82,7 +86,10 @@ fn index_url(descriptor: &Value, fetched_from: &str) -> anyhow::Result<Option<St
         schema_version <= REGISTRY_API_VERSION,
         "registry speaks apiVersion {schema_version}; this server speaks {REGISTRY_API_VERSION}",
     );
-    Ok(Some(kroma_module_supervisor::sibling_url(fetched_from, "index.json")?))
+    Ok(Some(kroma_module_supervisor::sibling_url(
+        fetched_from,
+        "index.json",
+    )?))
 }
 
 pub async fn fetch(sup: &Supervisor, url: &str) -> anyhow::Result<Vec<CatalogModule>> {
@@ -96,10 +103,14 @@ pub async fn fetch(sup: &Supervisor, url: &str) -> anyhow::Result<Vec<CatalogMod
     Ok(entries.iter().filter_map(parse_module).collect())
 }
 
-
 fn parse_module(m: &Value) -> Option<CatalogModule> {
     let id = m.get("id")?.as_str()?.to_string();
-    let str_of = |k: &str| m.get(k).and_then(Value::as_str).unwrap_or_default().to_string();
+    let str_of = |k: &str| {
+        m.get(k)
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_string()
+    };
     let artifacts: Vec<Artifact> = m
         .get("artifacts")
         .and_then(Value::as_array)
@@ -183,12 +194,17 @@ fn parse_deps(m: &Value, key: &str) -> Vec<(String, Option<String>)> {
 pub fn sha256_from_sri(integrity: &str) -> Option<String> {
     use base64::Engine as _;
     let encoded = integrity.trim().strip_prefix("sha256-")?;
-    let raw = base64::engine::general_purpose::STANDARD.decode(encoded).ok()?;
+    let raw = base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .ok()?;
     (raw.len() == 32).then(|| hex::encode(raw))
 }
 
 fn parse_artifact(a: &Value) -> Option<Artifact> {
-    let integrity = a.get("integrity").and_then(Value::as_str).and_then(sha256_from_sri);
+    let integrity = a
+        .get("integrity")
+        .and_then(Value::as_str)
+        .and_then(sha256_from_sri);
     Some(Artifact {
         target: a.get("target").and_then(Value::as_str).map(str::to_string),
         url: a.get("url")?.as_str()?.to_string(),
@@ -212,11 +228,12 @@ fn pick_for<'a>(artifacts: &'a [Artifact], host: &str) -> Option<&'a Artifact> {
     }
     let musl = host.replace("-gnu", "-musl");
     if musl != host {
-        return artifacts.iter().find(|a| a.target.as_deref() == Some(musl.as_str()));
+        return artifacts
+            .iter()
+            .find(|a| a.target.as_deref() == Some(musl.as_str()));
     }
     None
 }
-
 
 // The `{ id: range }` map a manifest and a registry record both use; a declared
 // "no constraint" serializes back as the wildcard it came from.
@@ -229,7 +246,10 @@ fn dep_map(deps: &[(String, Option<String>)]) -> Value {
 }
 
 fn point_rows(points: &[(String, Option<String>)]) -> Vec<Value> {
-    points.iter().map(|(point, id)| json!({ "point": point, "id": id })).collect()
+    points
+        .iter()
+        .map(|(point, id)| json!({ "point": point, "id": id }))
+        .collect()
 }
 pub fn compat_verdict(m: &CatalogModule) -> (bool, Option<String>) {
     // Refused at unpack anyway (see the supervisor's install gate); said here so
@@ -248,7 +268,12 @@ pub fn compat_verdict(m: &CatalogModule) -> (bool, Option<String>) {
         return (false, Some(reason));
     }
     if pick_artifact(m).is_none() {
-        return (false, Some(format!("no build for this server's platform ({BUILD_TARGET})")));
+        return (
+            false,
+            Some(format!(
+                "no build for this server's platform ({BUILD_TARGET})"
+            )),
+        );
     }
     (true, None)
 }
@@ -258,7 +283,10 @@ pub fn compat_verdict(m: &CatalogModule) -> (bool, Option<String>) {
 /// registry, which is the only one an older client knew about.
 pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> Value {
     let installed: std::collections::HashMap<String, String> =
-        kroma_module_kernel::manifests(state).into_iter().map(|m| (m.id, m.version)).collect();
+        kroma_module_kernel::manifests(state)
+            .into_iter()
+            .map(|m| (m.id, m.version))
+            .collect();
     let entries: Vec<Value> = fetched
         .iter()
         .flat_map(|f| f.modules.iter().map(move |m| (m, f.registry.name.as_str())))
@@ -365,7 +393,10 @@ mod tests {
         let hex = "ab".repeat(32);
         let sri = format!("sha256-{}", base64_of(&hex));
         assert_eq!(sha256_from_sri(&sri).as_deref(), Some(hex.as_str()));
-        assert_eq!(sha256_from_sri(&format!("  {sri}  ")).as_deref(), Some(hex.as_str()));
+        assert_eq!(
+            sha256_from_sri(&format!("  {sri}  ")).as_deref(),
+            Some(hex.as_str())
+        );
     }
 
     #[test]
@@ -390,9 +421,18 @@ mod tests {
         ))
         .unwrap();
         let m = parse_module(&rfc).unwrap();
-        assert_eq!(m.dependencies, vec![("c.d".to_string(), Some("^0.1.0".to_string()))]);
-        assert_eq!(m.optional_dependencies, vec![("g.h".to_string(), Some("^0.2.0".to_string()))]);
-        assert_eq!(m.artifacts[0].sha256.as_deref(), Some("cd".repeat(32).as_str()));
+        assert_eq!(
+            m.dependencies,
+            vec![("c.d".to_string(), Some("^0.1.0".to_string()))]
+        );
+        assert_eq!(
+            m.optional_dependencies,
+            vec![("g.h".to_string(), Some("^0.2.0".to_string()))]
+        );
+        assert_eq!(
+            m.artifacts[0].sha256.as_deref(),
+            Some("cd".repeat(32).as_str())
+        );
     }
 
     #[test]
@@ -403,14 +443,18 @@ mod tests {
         )
         .unwrap();
         assert_eq!(
-            index_url(&descriptor, "https://r.example/registry.json").unwrap().as_deref(),
+            index_url(&descriptor, "https://r.example/registry.json")
+                .unwrap()
+                .as_deref(),
             // Resolved against where it was fetched, NOT the `url` it declares.
             Some("https://r.example/index.json"),
         );
 
         let catalog: Value =
             serde_json::from_str(r#"{ "schema": 2, "modules": [{ "id": "a.b" }] }"#).unwrap();
-        assert!(index_url(&catalog, "https://r.example/modules.json").unwrap().is_none());
+        assert!(index_url(&catalog, "https://r.example/modules.json")
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -442,9 +486,15 @@ mod tests {
         // A "*" range normalizes away, so the planner sees "no constraint".
         assert_eq!(
             m.dependencies,
-            vec![("c.d".to_string(), Some("^0.1.0".to_string())), ("e.f".to_string(), None)]
+            vec![
+                ("c.d".to_string(), Some("^0.1.0".to_string())),
+                ("e.f".to_string(), None)
+            ]
         );
-        assert_eq!(m.optional_dependencies, vec![("g.h".to_string(), Some("^0.2.0".to_string()))]);
+        assert_eq!(
+            m.optional_dependencies,
+            vec![("g.h".to_string(), Some("^0.2.0".to_string()))]
+        );
         assert_eq!(
             m.contributes,
             vec![(
@@ -463,7 +513,10 @@ mod tests {
             ]
         );
         assert_eq!(m.artifacts.len(), 1);
-        assert_eq!(m.artifacts[0].target.as_deref(), Some("x86_64-unknown-linux-musl"));
+        assert_eq!(
+            m.artifacts[0].target.as_deref(),
+            Some("x86_64-unknown-linux-musl")
+        );
     }
 
     #[test]

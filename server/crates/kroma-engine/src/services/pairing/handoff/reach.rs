@@ -92,8 +92,14 @@ mod tests {
     #[test]
     fn same_network_is_the_prefix_delegation_over_ipv6() {
         // One /64 is one LAN, unique-local or global alike.
-        assert!(same_network("fd00:1234:5678:9abc::1", "fd00:1234:5678:9abc::2"));
-        assert!(!same_network("fd00:1234:5678:9abc::1", "fd00:1234:5678:9abd::1"));
+        assert!(same_network(
+            "fd00:1234:5678:9abc::1",
+            "fd00:1234:5678:9abc::2"
+        ));
+        assert!(!same_network(
+            "fd00:1234:5678:9abc::1",
+            "fd00:1234:5678:9abd::1"
+        ));
         assert!(same_network("2001:db8:1:2::1", "2001:db8:1:2::99"));
         assert!(!same_network("2001:db8:1:2::1", "2001:db8:1:3::1"));
     }

@@ -29,17 +29,17 @@ use std::sync::Arc;
 use axum::extract::{OriginalUri, Path as AxPath, Request, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::Extension;
-use kroma_module_supervisor::Supervisor;
 use axum::routing::{get, post};
+use axum::Extension;
 use axum::Json;
 use axum::Router;
+use kroma_module_supervisor::Supervisor;
 use serde::Deserialize;
 use serde_json::json;
 
 use crate::api::error::lerr;
-use crate::api::util::query;
 use crate::api::extract::AuthUser;
+use crate::api::util::query;
 use crate::i18n;
 use crate::infra::events::ServerEvent;
 use crate::model::{Permission, User};
@@ -120,7 +120,11 @@ fn require(user: &User, perm: Permission) -> Result<(), Response> {
     if user.can(perm) {
         Ok(())
     } else {
-        Err(lerr(user_locale(user), StatusCode::FORBIDDEN, "error.permissionDenied"))
+        Err(lerr(
+            user_locale(user),
+            StatusCode::FORBIDDEN,
+            "error.permissionDenied",
+        ))
     }
 }
 
@@ -129,7 +133,11 @@ fn require_any_admin(user: &User) -> Result<(), Response> {
     if user.is_any_admin() {
         Ok(())
     } else {
-        Err(lerr(user_locale(user), StatusCode::FORBIDDEN, "error.permissionDenied"))
+        Err(lerr(
+            user_locale(user),
+            StatusCode::FORBIDDEN,
+            "error.permissionDenied",
+        ))
     }
 }
 
@@ -188,12 +196,13 @@ pub async fn terminate_session(
         .message
         .map(|m| m.trim().chars().take(200).collect::<String>())
         .unwrap_or_default();
-    state
-        .events
-        .publish(ServerEvent::PlaybackTerminate { session_id: id, message });
-    state
-        .events
-        .publish(ServerEvent::PlaybackStopped { count: state.playback.list().len() });
+    state.events.publish(ServerEvent::PlaybackTerminate {
+        session_id: id,
+        message,
+    });
+    state.events.publish(ServerEvent::PlaybackStopped {
+        count: state.playback.list().len(),
+    });
     Ok(Json(json!({ "ok": true })).into_response())
 }
 
@@ -205,4 +214,3 @@ pub async fn metrics(
     require_any_admin(&user)?;
     Ok(Json(state.metrics.snapshot()).into_response())
 }
-

@@ -21,7 +21,11 @@ pub enum XmlNode {
 
 impl XmlEl {
     fn empty_root() -> Self {
-        XmlEl { name: String::new(), attrs: Vec::new(), children: Vec::new() }
+        XmlEl {
+            name: String::new(),
+            attrs: Vec::new(),
+            children: Vec::new(),
+        }
     }
 
     /// All descendant text, concatenated + whitespace-normalized.
@@ -41,7 +45,10 @@ impl XmlEl {
     }
 
     pub fn attr(&self, name: &str) -> Option<&str> {
-        self.attrs.iter().find(|(k, _)| k == name).map(|(_, v)| v.as_str())
+        self.attrs
+            .iter()
+            .find(|(k, _)| k == name)
+            .map(|(_, v)| v.as_str())
     }
 
     fn child_elements(&self) -> impl Iterator<Item = &XmlEl> {
@@ -137,7 +144,9 @@ fn resolve_entity(r: &quick_xml::events::BytesRef) -> String {
     r.decode()
         .ok()
         .and_then(|name| {
-            quick_xml::escape::unescape(&format!("&{name};")).ok().map(|c| c.into_owned())
+            quick_xml::escape::unescape(&format!("&{name};"))
+                .ok()
+                .map(|c| c.into_owned())
         })
         .unwrap_or_default()
 }
@@ -245,7 +254,10 @@ fn parse_selector(sel: &str) -> Vec<(Comb, Compound)> {
             comb = Comb::Child;
             continue;
         }
-        out.push((std::mem::replace(&mut comb, Comb::Descendant), parse_compound(tok)));
+        out.push((
+            std::mem::replace(&mut comb, Comb::Descendant),
+            parse_compound(tok),
+        ));
     }
     out
 }
@@ -266,10 +278,16 @@ fn parse_compound(tok: &str) -> Compound {
     while i < chars.len() {
         match chars[i] {
             '[' => {
-                let Some(next) = parse_attr(&chars, i, &mut c) else { break };
+                let Some(next) = parse_attr(&chars, i, &mut c) else {
+                    break;
+                };
                 i = next;
             }
-            ':' if chars[i..].iter().collect::<String>().starts_with(":contains(") => {
+            ':' if chars[i..]
+                .iter()
+                .collect::<String>()
+                .starts_with(":contains(") =>
+            {
                 parse_contains(&chars, i, &mut c);
                 break;
             }
@@ -294,7 +312,9 @@ fn parse_attr(chars: &[char], i: usize, c: &mut Compound) -> Option<usize> {
 fn parse_contains(chars: &[char], i: usize, c: &mut Compound) {
     let rest: String = chars[i..].iter().collect();
     if let (Some(open), Some(close)) = (rest.find('('), rest.rfind(')')) {
-        let term = rest[open + 1..close].trim().trim_matches(|x| x == '"' || x == '\'');
+        let term = rest[open + 1..close]
+            .trim()
+            .trim_matches(|x| x == '"' || x == '\'');
         if !term.is_empty() {
             c.contains.push(term.to_string());
         }
@@ -329,9 +349,15 @@ mod tests {
         let doc = parse(RSS);
         let rows = select_all(&doc, "rss > channel > item");
         assert_eq!(rows.len(), 2);
-        assert_eq!(select_first(rows[0], "title").unwrap().text(), "Obsession 2026 1080p");
+        assert_eq!(
+            select_first(rows[0], "title").unwrap().text(),
+            "Obsession 2026 1080p"
+        );
         assert_eq!(select_first(rows[0], "guid").unwrap().text(), "abc123");
-        assert_eq!(select_first(rows[0], "link").unwrap().text(), "https://x/dl?a=1&b=2");
+        assert_eq!(
+            select_first(rows[0], "link").unwrap().text(),
+            "https://x/dl?a=1&b=2"
+        );
     }
 
     #[test]
@@ -340,8 +366,14 @@ mod tests {
         let row = select_all(&doc, "item")[0];
         let seeders = select_first(row, "[name=seeders]").unwrap();
         assert_eq!(seeders.attr("value"), Some("305"));
-        assert_eq!(select_first(row, "torznab\\:attr[name=size]").map(|e| e.attr("value").unwrap()), None);
-        assert_eq!(select_first(row, "[name=size]").unwrap().attr("value"), Some("2314321864"));
+        assert_eq!(
+            select_first(row, "torznab\\:attr[name=size]").map(|e| e.attr("value").unwrap()),
+            None
+        );
+        assert_eq!(
+            select_first(row, "[name=size]").unwrap().attr("value"),
+            Some("2314321864")
+        );
     }
 
     #[test]
@@ -391,8 +423,15 @@ mod tests {
           <item><title>Never Read</title></item></channel></rss>"#;
         let doc = parse(xml);
         let items = select_all(&doc, "item");
-        assert_eq!(items.len(), 1, "the parser must stop at the fault, not restart after it");
-        assert_eq!(select_first(items[0], "title").unwrap().text(), "Good 1080p");
+        assert_eq!(
+            items.len(),
+            1,
+            "the parser must stop at the fault, not restart after it"
+        );
+        assert_eq!(
+            select_first(items[0], "title").unwrap().text(),
+            "Good 1080p"
+        );
     }
 
     #[test]

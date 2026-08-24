@@ -2,10 +2,15 @@
 //! against a target + quality profile. Hard rejects first (each with the rule
 //! that fired), then additive score lines the caller persists with the grab.
 
-use crate::{Candidate, Codec, ParsedRelease, Profile, Reject, Res, ScoreLine, Scored, Source, Target};
+use crate::{
+    Candidate, Codec, ParsedRelease, Profile, Reject, Res, ScoreLine, Scored, Source, Target,
+};
 
 fn reject(rule: &str, note: impl Into<String>) -> Reject {
-    Reject { rule: rule.into(), note: note.into() }
+    Reject {
+        rule: rule.into(),
+        note: note.into(),
+    }
 }
 
 // Case-insensitive token match of `needle` against the release title.
@@ -33,7 +38,10 @@ pub fn score(
     }
     let seeders = candidate.seeders.unwrap_or(0);
     if seeders < profile.min_seeders {
-        return Err(reject("seeders", format!("{seeders} < {}", profile.min_seeders)));
+        return Err(reject(
+            "seeders",
+            format!("{seeders} < {}", profile.min_seeders),
+        ));
     }
     let Some(resolution) = parsed.resolution else {
         return Err(reject("resolution", "no recognizable resolution"));
@@ -44,13 +52,22 @@ pub fn score(
     if max_size > 0 {
         if let Some(size) = candidate.size_bytes {
             if size > max_size {
-                return Err(reject("too-big", format!("{} > {}", gb(size), gb(max_size))));
+                return Err(reject(
+                    "too-big",
+                    format!("{} > {}", gb(size), gb(max_size)),
+                ));
             }
         }
     }
 
-    let lines = score_lines(parsed, candidate, target, profile, resolution, max_size, seeders);
-    Ok(Scored { parsed: parsed.clone(), score: lines.iter().map(|l| l.delta).sum(), breakdown: lines })
+    let lines = score_lines(
+        parsed, candidate, target, profile, resolution, max_size, seeders,
+    );
+    Ok(Scored {
+        parsed: parsed.clone(),
+        score: lines.iter().map(|l| l.delta).sum(),
+        breakdown: lines,
+    })
 }
 
 fn reject_keywords(profile: &Profile, release_title: &str) -> Result<(), Reject> {
@@ -67,7 +84,11 @@ fn reject_keywords(profile: &Profile, release_title: &str) -> Result<(), Reject>
     Ok(())
 }
 
-fn target_budget(parsed: &ParsedRelease, target: &Target, profile: &Profile) -> Result<u64, Reject> {
+fn target_budget(
+    parsed: &ParsedRelease,
+    target: &Target,
+    profile: &Profile,
+) -> Result<u64, Reject> {
     match *target {
         Target::Movie { year } => movie_budget(parsed, year, profile),
         Target::Episode { season, episode } => episode_budget(parsed, season, episode, profile),
@@ -75,7 +96,11 @@ fn target_budget(parsed: &ParsedRelease, target: &Target, profile: &Profile) -> 
     }
 }
 
-fn movie_budget(parsed: &ParsedRelease, year: Option<u32>, profile: &Profile) -> Result<u64, Reject> {
+fn movie_budget(
+    parsed: &ParsedRelease,
+    year: Option<u32>,
+    profile: &Profile,
+) -> Result<u64, Reject> {
     if parsed.season.is_some() || parsed.episode.is_some() || parsed.full_season {
         return Err(reject("wrong-shape", "TV markers in a movie search"));
     }
@@ -94,15 +119,23 @@ fn episode_budget(
     profile: &Profile,
 ) -> Result<u64, Reject> {
     if parsed.full_season {
-        return Err(reject("wrong-shape", "season pack for a single-episode search"));
+        return Err(reject(
+            "wrong-shape",
+            "season pack for a single-episode search",
+        ));
     }
     let (Some(s), Some(e)) = (parsed.season, parsed.episode) else {
         return Err(reject("wrong-shape", "no SxxEyy marker"));
     };
-    let span_ok =
-        e == episode || parsed.episode_end.is_some_and(|end| (e..=end).contains(&episode));
+    let span_ok = e == episode
+        || parsed
+            .episode_end
+            .is_some_and(|end| (e..=end).contains(&episode));
     if s != season || !span_ok {
-        return Err(reject("wrong-episode", format!("S{s:02}E{e:02} vs S{season:02}E{episode:02}")));
+        return Err(reject(
+            "wrong-episode",
+            format!("S{s:02}E{e:02} vs S{season:02}E{episode:02}"),
+        ));
     }
     Ok(profile.max_size_bytes_episode)
 }
@@ -117,14 +150,23 @@ fn season_budget(
         return Err(reject("wrong-shape", "not a season pack"));
     }
     if parsed.season != Some(season) {
-        return Err(reject("wrong-season", format!("{:?} vs {season}", parsed.season)));
+        return Err(reject(
+            "wrong-season",
+            format!("{:?} vs {season}", parsed.season),
+        ));
     }
-    Ok(profile.max_size_bytes_episode.saturating_mul(u64::from(episodes.max(1))))
+    Ok(profile
+        .max_size_bytes_episode
+        .saturating_mul(u64::from(episodes.max(1))))
 }
 
 fn push_line(lines: &mut Vec<ScoreLine>, rule: &str, delta: i32, note: String) {
     if delta != 0 {
-        lines.push(ScoreLine { rule: rule.into(), delta, note });
+        lines.push(ScoreLine {
+            rule: rule.into(),
+            delta,
+            note,
+        });
     }
 }
 
@@ -155,21 +197,46 @@ fn score_lines(
         push_line(&mut lines, "source", delta, label.into());
     }
 
-    push_line(&mut lines, "seeders", (seeders.min(50) * 10) as i32, format!("{seeders} seeders"));
+    push_line(
+        &mut lines,
+        "seeders",
+        (seeders.min(50) * 10) as i32,
+        format!("{seeders} seeders"),
+    );
 
     if let Some(size) = candidate.size_bytes {
         if max_size > 0 && size >= max_size / 4 && size <= max_size * 3 / 4 {
-            push_line(&mut lines, "size", 100, format!("{} in the sweet spot", gb(size)));
+            push_line(
+                &mut lines,
+                "size",
+                100,
+                format!("{} in the sweet spot", gb(size)),
+            );
         }
     }
     if matches!(*target, Target::Season { .. }) {
-        push_line(&mut lines, "season-pack", 300, "one grab covers the season".into());
+        push_line(
+            &mut lines,
+            "season-pack",
+            300,
+            "one grab covers the season".into(),
+        );
     }
     if parsed.proper || parsed.repack {
-        push_line(&mut lines, "proper", 50, if parsed.proper { "PROPER" } else { "REPACK" }.into());
+        push_line(
+            &mut lines,
+            "proper",
+            50,
+            if parsed.proper { "PROPER" } else { "REPACK" }.into(),
+        );
     }
     if candidate.indexer_priority != 0 {
-        push_line(&mut lines, "indexer-priority", candidate.indexer_priority, "indexer priority".into());
+        push_line(
+            &mut lines,
+            "indexer-priority",
+            candidate.indexer_priority,
+            "indexer priority".into(),
+        );
     }
 
     lines

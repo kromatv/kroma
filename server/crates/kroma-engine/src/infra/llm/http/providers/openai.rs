@@ -18,12 +18,20 @@ pub(super) struct OpenAi {
 #[allow(clippy::self_named_constructors)]
 impl OpenAi {
     pub(super) const fn openai() -> Self {
-        Self { id: "openai", default_base: None, extra_header: None }
+        Self {
+            id: "openai",
+            default_base: None,
+            extra_header: None,
+        }
     }
     // OpenRouter (<https://openrouter.ai>): identifies KROMA on its usage
     // dashboard via `X-Title`.
     pub(super) const fn openrouter() -> Self {
-        Self { id: "openrouter", default_base: Some("https://openrouter.ai/api/v1"), extra_header: Some(("x-title", "KROMA")) }
+        Self {
+            id: "openrouter",
+            default_base: Some("https://openrouter.ai/api/v1"),
+            extra_header: Some(("x-title", "KROMA")),
+        }
     }
 }
 
@@ -50,7 +58,15 @@ impl Provider for OpenAi {
         }
         h
     }
-    fn chat_body(&self, model: &str, system: &str, user: &str, max_tokens: u32, temperature: f32, _reasoning: bool) -> Value {
+    fn chat_body(
+        &self,
+        model: &str,
+        system: &str,
+        user: &str,
+        max_tokens: u32,
+        temperature: f32,
+        _reasoning: bool,
+    ) -> Value {
         json!({
             "model": model,
             "max_tokens": max_tokens,
@@ -106,21 +122,37 @@ impl Provider for OpenAi {
         let mut calls = Vec::new();
         if let Some(tcs) = msg.get("tool_calls").and_then(Value::as_array) {
             for tc in tcs {
-                let id = tc.get("id").and_then(Value::as_str).unwrap_or_default().to_string();
-                let f = tc.get("function").ok_or_else(|| anyhow!("OpenAI tool_call missing function"))?;
-                let name = f.get("name").and_then(Value::as_str).unwrap_or_default().to_string();
+                let id = tc
+                    .get("id")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string();
+                let f = tc
+                    .get("function")
+                    .ok_or_else(|| anyhow!("OpenAI tool_call missing function"))?;
+                let name = f
+                    .get("name")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string();
                 // Spec says `arguments` is a JSON-encoded string, but several
                 // OpenAI-compatible servers (Ollama, llama.cpp, LM Studio) hand
                 // back an object instead accept both; empty/garbage → `{}`.
                 let args = match f.get("arguments") {
-                    Some(Value::String(s)) if !s.trim().is_empty() => serde_json::from_str(s).unwrap_or_else(|_| json!({})),
+                    Some(Value::String(s)) if !s.trim().is_empty() => {
+                        serde_json::from_str(s).unwrap_or_else(|_| json!({}))
+                    }
                     Some(obj @ Value::Object(_)) => obj.clone(),
                     _ => json!({}),
                 };
                 calls.push(ToolCall { id, name, args });
             }
         }
-        Ok(Turn { text, tool_calls: calls, assistant_msg: msg.clone() })
+        Ok(Turn {
+            text,
+            tool_calls: calls,
+            assistant_msg: msg.clone(),
+        })
     }
     fn tool_result_messages(&self, results: &[(ToolCall, String)]) -> Vec<Value> {
         results
@@ -188,7 +220,8 @@ mod tests {
 
     #[test]
     fn openai_parse_turn_final_text_stops_loop() {
-        let resp = json!({ "choices": [{ "message": { "role": "assistant", "content": "done" } }] });
+        let resp =
+            json!({ "choices": [{ "message": { "role": "assistant", "content": "done" } }] });
         let turn = OpenAi::openai().parse_turn(&resp).unwrap();
         assert!(turn.tool_calls.is_empty());
         assert_eq!(turn.text.as_deref(), Some("done"));

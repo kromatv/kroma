@@ -42,7 +42,11 @@ pub async fn events(
     let Some(offered) = headers
         .get(axum::http::header::SEC_WEBSOCKET_PROTOCOL)
         .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.split(',').map(str::trim).find(|p| p.starts_with(SESSION_PROTO_PREFIX)))
+        .and_then(|v| {
+            v.split(',')
+                .map(str::trim)
+                .find(|p| p.starts_with(SESSION_PROTO_PREFIX))
+        })
         .map(str::to_string)
     else {
         return (StatusCode::UNAUTHORIZED, "authentication required").into_response();
@@ -67,7 +71,8 @@ pub async fn events(
         username: user.username,
         avatar_url: user.avatar_url,
     };
-    ws.protocols([offered]).on_upgrade(move |socket| pump(socket, state, who))
+    ws.protocols([offered])
+        .on_upgrade(move |socket| pump(socket, state, who))
 }
 
 struct Viewer {
@@ -192,7 +197,9 @@ async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer) {
     // immediately, rather than leaving a dead set offerable until its TTL expires.
     if let Some(id) = receiver {
         if state.cast.remove_owned(&id, &who.id) {
-            state.events.publish_to(&who.id, ServerEvent::CastReceiverGone { receiver_id: id });
+            state
+                .events
+                .publish_to(&who.id, ServerEvent::CastReceiverGone { receiver_id: id });
         }
     }
     if controlling {
@@ -212,7 +219,11 @@ fn cast_hello(
         return;
     }
     let outcome = state.cast.attach(
-        Hello { receiver_id: receiver_id.clone(), name, platform },
+        Hello {
+            receiver_id: receiver_id.clone(),
+            name,
+            platform,
+        },
         &who.id,
         &who.username,
         who.network.clone(),
@@ -224,9 +235,12 @@ fn cast_hello(
     }
     *receiver = Some(receiver_id.clone());
     if let Some(row) = state.cast.row(&receiver_id) {
-        state
-            .events
-            .publish_to(&who.id, ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
+        state.events.publish_to(
+            &who.id,
+            ServerEvent::CastReceiverChanged {
+                receiver: Box::new(row),
+            },
+        );
     }
 }
 
@@ -245,11 +259,18 @@ async fn cast_state(state: &SharedState, owner: &str, id: String, playback: Opti
     };
     match state.cast.set_state(&id, playback, item) {
         Some(StateChange::Row(row)) => {
-            state
-                .events
-                .publish_to(owner, ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
+            state.events.publish_to(
+                owner,
+                ServerEvent::CastReceiverChanged {
+                    receiver: Box::new(row),
+                },
+            );
         }
-        Some(StateChange::Position { position_ms, duration_ms, state: transport }) => {
+        Some(StateChange::Position {
+            position_ms,
+            duration_ms,
+            state: transport,
+        }) => {
             state.events.publish_to(
                 owner,
                 ServerEvent::CastPosition {
@@ -266,9 +287,12 @@ async fn cast_state(state: &SharedState, owner: &str, id: String, playback: Opti
 
 fn release_controller(state: &SharedState, controller_id: &str) {
     for (owner, row) in state.cast.detach_controller(controller_id) {
-        state
-            .events
-            .publish_to(&owner, ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
+        state.events.publish_to(
+            &owner,
+            ServerEvent::CastReceiverChanged {
+                receiver: Box::new(row),
+            },
+        );
     }
 }
 
@@ -281,7 +305,11 @@ async fn handle_client(
     message: ClientMessage,
 ) {
     match message {
-        ClientMessage::Hello { receiver_id, name, platform } => {
+        ClientMessage::Hello {
+            receiver_id,
+            name,
+            platform,
+        } => {
             cast_hello(state, who, receiver, receiver_id, name, platform);
         }
         ClientMessage::State { playback } => {
@@ -302,19 +330,20 @@ async fn handle_client(
             *controlling = true;
             // Refused silently for another account's set: only the account a
             // receiver is signed into may pick it up.
-            if let Some(row) =
-                state.cast.attach_controller(
-                    &receiver_id,
-                    controller_id,
-                    &name,
+            if let Some(row) = state.cast.attach_controller(
+                &receiver_id,
+                controller_id,
+                &name,
+                &who.id,
+                &who.username,
+                who.avatar_url.as_deref(),
+            ) {
+                state.events.publish_to(
                     &who.id,
-                    &who.username,
-                    who.avatar_url.as_deref(),
-                )
-            {
-                state
-                    .events
-                    .publish_to(&who.id, ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
+                    ServerEvent::CastReceiverChanged {
+                        receiver: Box::new(row),
+                    },
+                );
             }
         }
         ClientMessage::Release => {
@@ -327,9 +356,12 @@ async fn handle_client(
             let Some((row, user_id)) = state.cast.kick_controller(&id, &controller_id) else {
                 return;
             };
-            state
-                .events
-                .publish_to(&who.id, ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
+            state.events.publish_to(
+                &who.id,
+                ServerEvent::CastReceiverChanged {
+                    receiver: Box::new(row),
+                },
+            );
             state
                 .events
                 .publish_to(&user_id, ServerEvent::CastKicked { receiver_id: id });

@@ -86,7 +86,10 @@ pub fn revoke_other_sessions(pool: &Pool, user_id: &str, keep_token: &str) -> Re
             "DELETE FROM access_tokens WHERE user_id = ?1 AND token <> ?2",
             params![user_id, dev],
         )?,
-        None => conn.execute("DELETE FROM access_tokens WHERE user_id = ?1", params![user_id])?,
+        None => conn.execute(
+            "DELETE FROM access_tokens WHERE user_id = ?1",
+            params![user_id],
+        )?,
     };
     Ok(())
 }

@@ -42,17 +42,28 @@ pub struct BinStamp {
 
 impl Origin {
     fn unknown() -> Self {
-        Self { kind: "unknown".into(), url: None, installed_at: 0, bin: None, local_build: false }
+        Self {
+            kind: "unknown".into(),
+            url: None,
+            installed_at: 0,
+            bin: None,
+            local_build: false,
+        }
     }
 }
 
 fn unix_secs(t: std::time::SystemTime) -> u64 {
-    t.duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
+    t.duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0)
 }
 
 fn stamp_of(path: &Path) -> Option<BinStamp> {
     let meta = std::fs::metadata(path).ok()?;
-    Some(BinStamp { size: meta.len(), mtime: meta.modified().map(unix_secs).unwrap_or(0) })
+    Some(BinStamp {
+        size: meta.len(),
+        mtime: meta.modified().map(unix_secs).unwrap_or(0),
+    })
 }
 
 impl Supervisor {

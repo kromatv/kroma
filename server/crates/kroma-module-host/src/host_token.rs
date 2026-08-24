@@ -62,7 +62,10 @@ mod tests {
     fn guarded() -> Router {
         Router::new()
             .route("/_host/ping", get(|| async { "pong" }))
-            .layer(from_fn_with_state(HostToken(TOKEN.to_string()), require_host_token))
+            .layer(from_fn_with_state(
+                HostToken(TOKEN.to_string()),
+                require_host_token,
+            ))
     }
 
     async fn call(auth: Option<&str>) -> StatusCode {
@@ -70,7 +73,11 @@ mod tests {
         if let Some(v) = auth {
             builder = builder.header(axum::http::header::AUTHORIZATION, v);
         }
-        guarded().oneshot(builder.body(Body::empty()).unwrap()).await.unwrap().status()
+        guarded()
+            .oneshot(builder.body(Body::empty()).unwrap())
+            .await
+            .unwrap()
+            .status()
     }
 
     #[tokio::test]
@@ -80,9 +87,21 @@ mod tests {
 
     #[tokio::test]
     async fn everything_else_is_rejected() {
-        assert_eq!(call(None).await, StatusCode::UNAUTHORIZED, "no header at all");
-        assert_eq!(call(Some("")).await, StatusCode::UNAUTHORIZED, "empty header");
-        assert_eq!(call(Some(TOKEN)).await, StatusCode::UNAUTHORIZED, "no Bearer scheme");
+        assert_eq!(
+            call(None).await,
+            StatusCode::UNAUTHORIZED,
+            "no header at all"
+        );
+        assert_eq!(
+            call(Some("")).await,
+            StatusCode::UNAUTHORIZED,
+            "empty header"
+        );
+        assert_eq!(
+            call(Some(TOKEN)).await,
+            StatusCode::UNAUTHORIZED,
+            "no Bearer scheme"
+        );
         assert_eq!(
             call(Some(&format!("bearer {TOKEN}"))).await,
             StatusCode::UNAUTHORIZED,
@@ -93,7 +112,11 @@ mod tests {
             StatusCode::UNAUTHORIZED,
             "a different scheme",
         );
-        assert_eq!(call(Some("Bearer ")).await, StatusCode::UNAUTHORIZED, "empty token");
+        assert_eq!(
+            call(Some("Bearer ")).await,
+            StatusCode::UNAUTHORIZED,
+            "empty token"
+        );
     }
 
     #[tokio::test]

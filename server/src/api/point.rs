@@ -59,7 +59,9 @@ mod tests {
 
         let refused = require(&app.state, &someone(), "invented-by-nobody");
 
-        let Err(response) = refused else { panic!("a point nothing answers must not resolve") };
+        let Err(response) = refused else {
+            panic!("a point nothing answers must not resolve")
+        };
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 }

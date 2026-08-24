@@ -180,6 +180,10 @@ The same instinct applies to the code:
   untrusted input with zod rather than by hand.
 - **No dead code, no unused exports.** `bun run deadcode` catches them.
 - Follow `biome.json` for formatting and lint; run `bun run check` before a PR.
+- For Rust, rustfmt is canonical: run `cargo fmt` before a PR. The root
+  `rustfmt.toml` is the law, applied across every cargo workspace, and CI
+  enforces `cargo fmt --check`. Do not hand-format or keep a custom import
+  grouping; take rustfmt's output as-is.
 
 ## For agents
 

@@ -54,8 +54,11 @@ pub fn detect_season(ctx: &JobContext, season: &Season) -> Result<usize> {
     let ffprobe = ctx.state.ffprobe_available;
     // Few workers, and never more than a quarter of the cores fingerprinting
     // must stay out of live playback's way.
-    let workers = (thread::available_parallelism().map(std::num::NonZeroUsize::get).unwrap_or(4) / 4)
-        .clamp(1, MAX_WORKERS);
+    let workers = (thread::available_parallelism()
+        .map(std::num::NonZeroUsize::get)
+        .unwrap_or(4)
+        / 4)
+    .clamp(1, MAX_WORKERS);
     process_season(ctx, &ctx.state.db, season, fingerprinting, ffprobe, workers)
 }
 
@@ -77,7 +80,11 @@ fn process_season(
     }
     let do_fp = fingerprinting && eps.len() >= 2;
     if do_fp {
-        ctx.info(format!("S{}: fingerprinting {} episode(s)", season.number, eps.len()));
+        ctx.info(format!(
+            "S{}: fingerprinting {} episode(s)",
+            season.number,
+            eps.len()
+        ));
     }
 
     // Parallel decode: chapters (always) + audio fingerprints (when fingerprinting).
@@ -90,8 +97,16 @@ fn process_season(
     let mut written = 0usize;
     for (i, e) in eps.iter().enumerate() {
         for kind in [MarkerKind::Intro, MarkerKind::Credits] {
-            let chap = data[i].chapters.iter().find(|(k, _, _)| *k == kind).map(|(_, s, en)| (*s, *en));
-            let fp = if do_fp { align(&data, i, kind, support, e) } else { None };
+            let chap = data[i]
+                .chapters
+                .iter()
+                .find(|(k, _, _)| *k == kind)
+                .map(|(_, s, en)| (*s, *en));
+            let fp = if do_fp {
+                align(&data, i, kind, support, e)
+            } else {
+                None
+            };
             if let Some((start, end, source)) = reconcile(kind, chap, fp, ctx, e) {
                 db::set_marker(pool, &e.id, kind, start, end, source)?;
                 written += 1;
@@ -120,7 +135,13 @@ fn parallel_decode(
     });
     slots
         .into_iter()
-        .map(|m| m.into_inner().unwrap().unwrap_or(EpData { chapters: Vec::new(), start_fp: None, end_fp: None }))
+        .map(|m| {
+            m.into_inner().unwrap().unwrap_or(EpData {
+                chapters: Vec::new(),
+                start_fp: None,
+                end_fp: None,
+            })
+        })
         .collect()
 }
 
@@ -192,7 +213,11 @@ fn decode_one(
     } else {
         (None, None)
     };
-    EpData { chapters, start_fp, end_fp }
+    EpData {
+        chapters,
+        start_fp,
+        end_fp,
+    }
 }
 
 // How to pick a window fingerprint for a marker kind, plus its search region and
@@ -201,12 +226,20 @@ type MarkerPick = (fn(&EpData) -> &Option<WindowFp>, (f32, f32), f32);
 
 // The fingerprint-derived range for `kind` on episode `i`, via pairwise alignment
 // + season consensus. Returns absolute ms; credits run to the episode end.
-fn align(data: &[EpData], i: usize, kind: MarkerKind, support: usize, e: &MediaItem) -> Option<(u64, u64)> {
+fn align(
+    data: &[EpData],
+    i: usize,
+    kind: MarkerKind,
+    support: usize,
+    e: &MediaItem,
+) -> Option<(u64, u64)> {
     let (pick, region, min_len): MarkerPick = match kind {
         MarkerKind::Intro => (|d| &d.start_fp, (0.0, INTRO_REGION_END_S), MIN_INTRO_S),
-        MarkerKind::Credits => {
-            (|d| &d.end_fp, (0.0, CREDITS_WINDOW_S as f32 - MIN_CREDITS_S), MIN_CREDITS_S)
-        }
+        MarkerKind::Credits => (
+            |d| &d.end_fp,
+            (0.0, CREDITS_WINDOW_S as f32 - MIN_CREDITS_S),
+            MIN_CREDITS_S,
+        ),
     };
     let fp = pick(&data[i]).as_ref()?;
     let mut ranges = Vec::new();
@@ -224,7 +257,11 @@ fn align(data: &[EpData], i: usize, kind: MarkerKind, support: usize, e: &MediaI
     let start = abs_ms(fp.window_start_s, s);
     // Credits extend to the end of the file; intro keeps its matched range.
     match kind {
-        MarkerKind::Credits => Some((start, e.duration_ms.unwrap_or_else(|| abs_ms(fp.window_start_s, en)))),
+        MarkerKind::Credits => Some((
+            start,
+            e.duration_ms
+                .unwrap_or_else(|| abs_ms(fp.window_start_s, en)),
+        )),
         MarkerKind::Intro => Some((start, abs_ms(fp.window_start_s, en))),
     }
 }

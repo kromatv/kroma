@@ -11,13 +11,17 @@ use crate::point::Point;
 
 /// One document's vector, or empty when nothing answers.
 pub fn embed(point: &Point, text: &str) -> Vec<f32> {
-    point.call("embed", &json!({ "text": text })).unwrap_or_default()
+    point
+        .call("embed", &json!({ "text": text }))
+        .unwrap_or_default()
 }
 
 /// A whole batch in ONE call, which is what makes a catalog-wide pass possible
 /// over IPC: per-item calls would be thousands of round trips.
 pub fn embed_batch(point: &Point, texts: &[String]) -> Vec<Vec<f32>> {
-    point.call("embed_batch", &json!({ "texts": texts })).unwrap_or_default()
+    point
+        .call("embed_batch", &json!({ "texts": texts }))
+        .unwrap_or_default()
 }
 
 /// The width of the vectors this module produces, `0` when nothing answers. A
@@ -46,7 +50,10 @@ struct Meta {
 
 impl Default for Meta {
     fn default() -> Self {
-        Self { dim: 0, relevance_floor: 1.0 }
+        Self {
+            dim: 0,
+            relevance_floor: 1.0,
+        }
     }
 }
 

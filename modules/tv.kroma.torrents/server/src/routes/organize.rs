@@ -24,7 +24,10 @@ use crate::organize::{
 
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
-        .route("/organize/naming", get(get_naming::<S>).put(save_naming::<S>))
+        .route(
+            "/organize/naming",
+            get(get_naming::<S>).put(save_naming::<S>),
+        )
         .route("/organize/sample", post(sample::<S>))
         .route("/organize/preview", get(preview::<S>))
         .route("/organize/apply", post(apply::<S>))
@@ -67,7 +70,11 @@ pub async fn get_naming<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Result<Response, Response> {
     require(&state, &user)?;
     let tpl = NamingTemplates::read(|k, d| state.setting_str(k, d));
-    Ok(Json(NamingView { templates: view_of(&tpl), sample: organize::sample(&tpl) }).into_response())
+    Ok(Json(NamingView {
+        templates: view_of(&tpl),
+        sample: organize::sample(&tpl),
+    })
+    .into_response())
 }
 
 /// `POST /organize/sample` render the sample for the given (unsaved)
@@ -91,10 +98,19 @@ pub async fn save_naming<S: HostStorage + Clone + Send + Sync + 'static>(
     let mut patch: BTreeMap<String, Value> = BTreeMap::new();
     patch.insert("namingMovieFolder".into(), json!(body.movie_folder.trim()));
     patch.insert("namingMovieFile".into(), json!(body.movie_file.trim()));
-    patch.insert("namingSeriesFolder".into(), json!(body.series_folder.trim()));
-    patch.insert("namingSeasonFolder".into(), json!(body.season_folder.trim()));
+    patch.insert(
+        "namingSeriesFolder".into(),
+        json!(body.series_folder.trim()),
+    );
+    patch.insert(
+        "namingSeasonFolder".into(),
+        json!(body.season_folder.trim()),
+    );
     patch.insert("namingEpisodeFile".into(), json!(body.episode_file.trim()));
-    patch.insert("namingCase".into(), json!(Casing::from_key(&body.case).as_key()));
+    patch.insert(
+        "namingCase".into(),
+        json!(Casing::from_key(&body.case).as_key()),
+    );
     state.set_settings(patch);
     Ok(Json(json!({ "ok": true })).into_response())
 }
@@ -123,7 +139,10 @@ pub async fn apply<S: HostStorage + Clone + Send + Sync + 'static>(
         Ok(Ok(r)) => r,
         Ok(Err(e)) => return Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
         Err(_) => {
-            return Err(json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal error"))
+            return Err(json_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal error",
+            ))
         }
     };
     Ok(Json(result).into_response())

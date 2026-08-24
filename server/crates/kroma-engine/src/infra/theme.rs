@@ -55,13 +55,23 @@ fn download(tvdb_id: u64, out: &Path) -> bool {
     // `-f` fails on HTTP >= 400 (the archive 404s for unknown shows); the time
     // and size bounds stop a bad URL stalling or ballooning the pass.
     let dl = Command::new("curl")
-        .args(["-sf", "-L", "--max-time", "25", "--max-filesize", "30M", "-o"])
+        .args([
+            "-sf",
+            "-L",
+            "--max-time",
+            "25",
+            "--max-filesize",
+            "30M",
+            "-o",
+        ])
         .arg(&tmp)
         .arg("--")
         .arg(&url)
         .status();
     let ok = matches!(dl, Ok(s) if s.success())
-        && std::fs::metadata(&tmp).map(|m| m.len() >= MIN_BYTES).unwrap_or(false);
+        && std::fs::metadata(&tmp)
+            .map(|m| m.len() >= MIN_BYTES)
+            .unwrap_or(false);
     if !ok {
         let _ = std::fs::remove_file(&tmp);
         return false;
@@ -77,6 +87,9 @@ fn download(tvdb_id: u64, out: &Path) -> bool {
 
 fn unique_tmp(out: &Path) -> PathBuf {
     let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
-    let base = out.file_name().and_then(std::ffi::OsStr::to_str).unwrap_or("theme.mp3");
+    let base = out
+        .file_name()
+        .and_then(std::ffi::OsStr::to_str)
+        .unwrap_or("theme.mp3");
     out.with_file_name(format!("{base}.{}.{seq}.tmp.mp3", std::process::id()))
 }

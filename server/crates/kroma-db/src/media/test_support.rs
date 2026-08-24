@@ -15,7 +15,13 @@ pub(super) fn seed_movie(conn: &Connection, id: &str, title: &str, library: &str
     .unwrap();
 }
 
-pub(super) fn seed_probed_file(conn: &Connection, id: &str, item_id: &str, abs: &str, v_width: i64) {
+pub(super) fn seed_probed_file(
+    conn: &Connection,
+    id: &str,
+    item_id: &str,
+    abs: &str,
+    v_width: i64,
+) {
     conn.execute(
         "INSERT INTO files (id,item_id,abs_path,rel_path,container,probed,duration_ms,v_codec,v_width,v_height) \
          VALUES (?1,?2,?3,?4,'mkv',1,7200000,'hevc',?5,2160)",

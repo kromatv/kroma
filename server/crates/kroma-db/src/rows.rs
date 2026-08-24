@@ -62,14 +62,17 @@ pub(crate) fn row_to_file(r: &Row) -> rusqlite::Result<MediaFile> {
     // a_codec/a_channels/a_language columns for rows probed before audio_tracks
     // existed (their JSON is still `[]`).
     let audio = audio_tracks.first().cloned().or_else(|| {
-        r.get::<_, Option<String>>(12).ok().flatten().map(|codec| AudioStream {
-            index: 0,
-            codec,
-            channels: r.get(13).ok().flatten(),
-            language: r.get(14).ok().flatten(),
-            title: None,
-            default: true,
-        })
+        r.get::<_, Option<String>>(12)
+            .ok()
+            .flatten()
+            .map(|codec| AudioStream {
+                index: 0,
+                codec,
+                channels: r.get(13).ok().flatten(),
+                language: r.get(14).ok().flatten(),
+                title: None,
+                default: true,
+            })
     });
 
     Ok(MediaFile {
@@ -142,11 +145,14 @@ mod row_tests {
 
     #[test]
     fn permissions_that_are_not_a_json_array_fall_back_to_playback_alone() {
-        assert_eq!(parse_permissions(r#"["playback","users.manage"]"#), vec![
-            Permission::Playback,
-            Permission::UsersManage
-        ]);
-        assert_eq!(parse_permissions(r#"["playback","modules.manage"]"#), vec![Permission::Playback]);
+        assert_eq!(
+            parse_permissions(r#"["playback","users.manage"]"#),
+            vec![Permission::Playback, Permission::UsersManage]
+        );
+        assert_eq!(
+            parse_permissions(r#"["playback","modules.manage"]"#),
+            vec![Permission::Playback]
+        );
         assert_eq!(parse_permissions("not json"), vec![Permission::Playback]);
         assert_eq!(parse_permissions(""), vec![Permission::Playback]);
     }
@@ -164,9 +170,15 @@ mod row_tests {
         .unwrap();
 
         let file = conn
-            .query_row(&format!("SELECT {FILE_COLS} FROM files WHERE id='f1'"), [], row_to_file)
+            .query_row(
+                &format!("SELECT {FILE_COLS} FROM files WHERE id='f1'"),
+                [],
+                row_to_file,
+            )
             .unwrap();
-        let audio = file.audio.expect("the legacy columns stand in for an empty audio_tracks");
+        let audio = file
+            .audio
+            .expect("the legacy columns stand in for an empty audio_tracks");
         assert_eq!(audio.codec, "eac3");
         assert_eq!(audio.channels, Some(6));
         assert_eq!(audio.language.as_deref(), Some("fr"));

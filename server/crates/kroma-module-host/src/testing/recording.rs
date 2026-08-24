@@ -28,7 +28,10 @@ pub struct Recording<H: HostCtx> {
 
 impl<H: HostCtx> Recording<H> {
     pub fn new(inner: H) -> Self {
-        Self { inner, log: Arc::new(Log::default()) }
+        Self {
+            inner,
+            log: Arc::new(Log::default()),
+        }
     }
 
     /// The host underneath, for a test that also needs to drive it directly.
@@ -118,13 +121,15 @@ impl<H: HostCtx> HostCtx for Recording<H> {
 mod tests {
     use serde_json::json;
 
-    use super::*;
     use super::super::fixtures::{spec, user};
     use super::super::StubHost;
+    use super::*;
 
     #[test]
     fn recording_forwards_everything_but_the_bus() {
-        let inner = StubHost::new().with_tmdb_key("k").with_metadata_language("fr-FR");
+        let inner = StubHost::new()
+            .with_tmdb_key("k")
+            .with_metadata_language("fr-FR");
         let host = Recording::new(inner);
 
         // Forwarded, so the test still sees the real host's answers.
@@ -133,7 +138,10 @@ mod tests {
         assert_eq!(host.setting_str("k", "fallback"), "fallback");
         assert!(host.require(&user(), Permission::LibraryManage).is_ok());
         assert!(host.require_any_admin(&user()).is_ok());
-        assert_eq!(host.lerr(&user(), StatusCode::FORBIDDEN, "k").status(), StatusCode::FORBIDDEN);
+        assert_eq!(
+            host.lerr(&user(), StatusCode::FORBIDDEN, "k").status(),
+            StatusCode::FORBIDDEN
+        );
         assert!(host.module_enabled("x"));
         assert!(host.library_folders().is_empty());
         assert!(host.get_service(TypeId::of::<u32>()).is_none());
@@ -168,7 +176,10 @@ mod tests {
     #[test]
     fn recording_hands_its_inner_hosts_database_through() {
         let host = Recording::new(StubHost::with_db("recording"));
-        host.db().get().unwrap().execute("SELECT 1 FROM users LIMIT 0", []).unwrap();
+        host.db()
+            .get()
+            .unwrap()
+            .execute("SELECT 1 FROM users LIMIT 0", [])
+            .unwrap();
     }
-
 }

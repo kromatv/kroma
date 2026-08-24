@@ -43,7 +43,10 @@ impl DownloadManager {
         };
         match RqbitEngine::start(&cfg).await {
             Ok(engine) => {
-                tracing::info!(proxy = cfg.socks_proxy_url.is_some(), "embedded torrent engine started");
+                tracing::info!(
+                    proxy = cfg.socks_proxy_url.is_some(),
+                    "embedded torrent engine started"
+                );
                 let old = self.rqbit.write().unwrap().replace(engine);
                 if let Some(old) = old {
                     old.stop();
@@ -62,14 +65,22 @@ impl DownloadManager {
     /// Per download id: down/up bps, peers, peers seen. Blocking.
     pub fn live_stats(&self) -> std::collections::HashMap<String, (u64, u64, u32, u32)> {
         let mut out = std::collections::HashMap::new();
-        let Ok(rows) = self.core().get().and_then(|c| Ok(db::active_downloads(&c)?)) else {
+        let Ok(rows) = self
+            .core()
+            .get()
+            .and_then(|c| Ok(db::active_downloads(&c)?))
+        else {
             return out;
         };
         for row in rows {
             if row.client_ref.is_empty() {
                 continue;
             }
-            let client = match self.store().get().and_then(|c| Ok(db::get_download_client(&c, &row.client_id)?)) {
+            let client = match self
+                .store()
+                .get()
+                .and_then(|c| Ok(db::get_download_client(&c, &row.client_id)?))
+            {
                 Ok(Some(c)) => c,
                 _ => continue,
             };
@@ -88,11 +99,17 @@ impl DownloadManager {
     #[cfg(feature = "rqbit")]
     pub fn reseed_stalled(&self, host: &dyn HostCtx) {
         // No proxy => librqbit's own (direct) announce works; nothing to do.
-        let Some(proxy) = active_proxy_url(host) else { return };
+        let Some(proxy) = active_proxy_url(host) else {
+            return;
+        };
         let Some(engine) = self.rqbit() else { return };
         let client = engine.client();
         let session_dir = self.state_dir.join("session");
-        let rows = match self.core().get().and_then(|c| Ok(db::active_downloads(&c)?)) {
+        let rows = match self
+            .core()
+            .get()
+            .and_then(|c| Ok(db::active_downloads(&c)?))
+        {
             Ok(rows) => rows,
             Err(_) => return,
         };
@@ -100,7 +117,9 @@ impl DownloadManager {
             if row.client_id != db::EMBEDDED_CLIENT_ID || row.client_ref.is_empty() {
                 continue;
             }
-            let Ok(Some(status)) = client.status(&row.client_ref) else { continue };
+            let Ok(Some(status)) = client.status(&row.client_ref) else {
+                continue;
+            };
             // A reseed is a remove/re-add, which RESETS the torrent to 0%, so
             // only touch a grab with no progress, no peer and none ever seen.
             if status.progress > 0.0 || status.peers > 0 || status.peers_seen > 0 {
@@ -108,7 +127,9 @@ impl DownloadManager {
             }
             // librqbit persists `<info_hash>.torrent`; client_ref is that hex.
             let path = session_dir.join(format!("{}.torrent", row.client_ref));
-            let Ok(bytes) = std::fs::read(&path) else { continue };
+            let Ok(bytes) = std::fs::read(&path) else {
+                continue;
+            };
             let peers = crate::announce::tracker_peers(&bytes, Some(&proxy));
             if peers.is_empty() {
                 continue;

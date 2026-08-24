@@ -49,14 +49,20 @@ impl PushCategory {
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Audience {
     // One account, by id (the requester whose film arrived).
-    User { id: String },
+    User {
+        id: String,
+    },
     // Everyone holding a capability (the moderators who must review a request).
-    Permission { permission: crate::accounts::Permission },
+    Permission {
+        permission: crate::accounts::Permission,
+    },
     // Everyone with an account (a new film in the library).
     Everyone,
     // Everyone who follows a show — it is in their list, they marked it
     // watched, or they have progress on an episode (a new episode aired).
-    Followers { show_id: String },
+    Followers {
+        show_id: String,
+    },
 }
 
 impl Audience {
@@ -70,7 +76,9 @@ impl Audience {
     }
 
     pub fn followers(show_id: impl Into<String>) -> Self {
-        Audience::Followers { show_id: show_id.into() }
+        Audience::Followers {
+            show_id: show_id.into(),
+        }
     }
 }
 
@@ -138,7 +146,12 @@ mod tests {
 
     #[test]
     fn transports_and_push_categories_round_trip() {
-        for t in [PushTransport::WebPush, PushTransport::Apns, PushTransport::Fcm, PushTransport::Relay] {
+        for t in [
+            PushTransport::WebPush,
+            PushTransport::Apns,
+            PushTransport::Fcm,
+            PushTransport::Relay,
+        ] {
             assert_eq!(PushTransport::parse(t.as_str()), Some(t));
         }
         for c in [PushCategory::RequestReview, PushCategory::MediaAvailable] {

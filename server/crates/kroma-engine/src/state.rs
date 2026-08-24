@@ -3,35 +3,36 @@
 
 use std::sync::Arc;
 
-use crate::services::activity;
 use crate::config::Config;
 use crate::db::Pool;
 use crate::infra::events::Bus;
+use crate::infra::hls;
 use crate::infra::metadata;
 use crate::infra::metrics::Metrics;
 use crate::infra::storyboard::Storyboard;
+use crate::services::activity;
 use crate::services::jobs::JobManager;
-use crate::services::playback::Registry;
 use crate::services::pairing::{handoff, quickconnect, Handoff, QuickConnect};
+use crate::services::playback::Registry;
 use crate::services::search::SearchEngine;
 use crate::services::sections::VectorCache;
 use crate::services::settings::Settings;
 use crate::services::subtitles::GenRegistry;
-use crate::infra::hls;
 
 /// Resolves a point name to every module currently contributing it. The core
 /// holds only this: it never learns which module answers, or what the point is
 /// for.
-pub type Contributions = std::sync::Arc<
-    dyn Fn(&str) -> Vec<kroma_module_host::Contribution> + Send + Sync,
->;
+pub type Contributions =
+    std::sync::Arc<dyn Fn(&str) -> Vec<kroma_module_host::Contribution> + Send + Sync>;
 
 /// Everything the composition root (the binary) contributes from module crates,
 /// bundled so the core roster keeps naming no module type. See [`AppState::new`].
 pub struct ModuleWiring {
     // Module services + peer ports, resolved by type through the `HostCtx` seam.
-    pub services:
-        std::collections::HashMap<std::any::TypeId, std::sync::Arc<dyn std::any::Any + Send + Sync>>,
+    pub services: std::collections::HashMap<
+        std::any::TypeId,
+        std::sync::Arc<dyn std::any::Any + Send + Sync>,
+    >,
     // Background jobs contributed by module crates, run alongside the built-ins.
     pub jobs: &'static [crate::services::jobs::Builtin],
     // Resolves a port contract name to the running provider's `(base_url, token)`.
@@ -69,8 +70,10 @@ pub struct AppState {
     // the supervisor itself: the engine must not name it, and this is the whole
     // of what the core knows about reaching a module.
     pub(crate) contributions: Contributions,
-    pub(crate) services:
-        std::collections::HashMap<std::any::TypeId, std::sync::Arc<dyn std::any::Any + Send + Sync>>,
+    pub(crate) services: std::collections::HashMap<
+        std::any::TypeId,
+        std::sync::Arc<dyn std::any::Any + Send + Sync>,
+    >,
     // The harness's scratch `data_dir`, held here rather than by the test body:
     // a test hands clones of this state to background jobs, so the last handle
     // to go is the only one that outlives everything writing into the dir.
@@ -102,7 +105,11 @@ impl AppState {
         // by the binary so the core roster names no module.
         wiring: ModuleWiring,
     ) -> SharedState {
-        let ModuleWiring { services: module_services, jobs: module_jobs, contributions } = wiring;
+        let ModuleWiring {
+            services: module_services,
+            jobs: module_jobs,
+            contributions,
+        } = wiring;
         let hls = hls::HlsEngine::new(
             &config.data_dir,
             crate::services::settings::max_transcodes(&settings),
@@ -125,7 +132,9 @@ impl AppState {
         let services = module_services;
         // Seed the process-wide ffmpeg concurrency budget from the setting so the
         // very first background pass already honors it (updated live on write).
-        crate::infra::ffmpeg_gate::set_capacity(crate::services::settings::media_workers(&settings));
+        crate::infra::ffmpeg_gate::set_capacity(crate::services::settings::media_workers(
+            &settings,
+        ));
         // Build the job registry: register the built-ins, then overlay any
         // persisted schedule overrides. The cron loop is spawned in `main`.
         let mut jobs = JobManager::new();
@@ -182,7 +191,10 @@ impl AppState {
 #[cfg(test)]
 impl AppState {
     pub(crate) fn own_scratch_dir(&self, dir: kroma_testing::TempDir) {
-        assert!(self.scratch_dir.set(dir).is_ok(), "the scratch dir is handed over once");
+        assert!(
+            self.scratch_dir.set(dir).is_ok(),
+            "the scratch dir is handed over once"
+        );
     }
 }
 
@@ -192,7 +204,8 @@ mod tests {
     use crate::model::Category;
     use crate::services::jobs::{Builtin, JobContext, JobKey};
 
-    static CONTRIBUTED_RUNS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    static CONTRIBUTED_RUNS: std::sync::atomic::AtomicUsize =
+        std::sync::atomic::AtomicUsize::new(0);
 
     fn count_a_run(_ctx: &JobContext) -> anyhow::Result<()> {
         CONTRIBUTED_RUNS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -240,8 +253,14 @@ mod tests {
         );
         assert!(keys.len() > 1, "the built-ins are still there");
 
-        assert!(state.jobs.resolve("test.module.contributed").is_some(), "and it is triggerable");
+        assert!(
+            state.jobs.resolve("test.module.contributed").is_some(),
+            "and it is triggerable"
+        );
         (MODULE_JOB[0].run)(&JobContext::for_test(state.clone())).unwrap();
-        assert_eq!(CONTRIBUTED_RUNS.load(std::sync::atomic::Ordering::Relaxed), 1);
+        assert_eq!(
+            CONTRIBUTED_RUNS.load(std::sync::atomic::Ordering::Relaxed),
+            1
+        );
     }
 }

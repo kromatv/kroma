@@ -73,7 +73,10 @@ pub async fn export_backup(
     let ts = crate::services::scan::now_iso8601().replace(':', "-");
     Ok(Response::builder()
         .header(header::CONTENT_TYPE, "application/octet-stream")
-        .header(header::CONTENT_DISPOSITION, format!("attachment; filename=\"kroma-backup-{ts}.kroma\""))
+        .header(
+            header::CONTENT_DISPOSITION,
+            format!("attachment; filename=\"kroma-backup-{ts}.kroma\""),
+        )
         .header(header::CACHE_CONTROL, "no-store")
         .body(Body::from(bytes))
         .unwrap())
@@ -105,10 +108,18 @@ pub async fn import_backup(
     let summary = match outcome {
         Ok(Ok(summary)) => summary,
         Ok(Err(ImportError::PasswordRequired)) => {
-            return Err(lerr(locale, StatusCode::BAD_REQUEST, "admin.backupPasswordRequired"))
+            return Err(lerr(
+                locale,
+                StatusCode::BAD_REQUEST,
+                "admin.backupPasswordRequired",
+            ))
         }
         Ok(Err(ImportError::WrongPassword)) => {
-            return Err(lerr(locale, StatusCode::BAD_REQUEST, "admin.backupWrongPassword"))
+            return Err(lerr(
+                locale,
+                StatusCode::BAD_REQUEST,
+                "admin.backupWrongPassword",
+            ))
         }
         Ok(Err(ImportError::Invalid(e))) => {
             tracing::warn!(error = %e, "rejected backup import");
@@ -116,11 +127,17 @@ pub async fn import_backup(
         }
         Ok(Err(ImportError::Db(e))) => {
             tracing::error!(error = %e, "backup import database error");
-            return Err(json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal error"));
+            return Err(json_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal error",
+            ));
         }
         Err(e) => {
             tracing::error!(error = %e, "backup import task join error");
-            return Err(json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal error"));
+            return Err(json_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal error",
+            ));
         }
     };
 
@@ -131,7 +148,11 @@ pub async fn import_backup(
     state.settings.reload(&state.db);
     state.events.publish(ServerEvent::SettingsUpdated);
     let rescan_started = !matches!(
-        state.jobs.trigger(state.clone(), crate::services::jobs::JobKey("library.scan"), "backup-import"),
+        state.jobs.trigger(
+            state.clone(),
+            crate::services::jobs::JobKey("library.scan"),
+            "backup-import"
+        ),
         Err(crate::services::jobs::TriggerError::Unknown)
     );
 

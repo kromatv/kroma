@@ -12,7 +12,10 @@ fn config() -> IndexerConfig {
     settings.insert("username".to_string(), "alice".to_string());
     settings.insert("password".to_string(), "secret".to_string());
     settings.insert("sort".to_string(), "seeders".to_string());
-    IndexerConfig { base_url: "https://tracker.example/".to_string(), settings }
+    IndexerConfig {
+        base_url: "https://tracker.example/".to_string(),
+        settings,
+    }
 }
 
 #[test]
@@ -29,7 +32,10 @@ fn builds_search_request_from_query() {
     assert_eq!(reqs.len(), 1);
     let r = &reqs[0];
     // Keywords templated in, sort from config, freeleech off -> no &fl=1.
-    assert_eq!(r.url, "https://tracker.example/browse.php?q=The Matrix 1999&sort=seeders");
+    assert_eq!(
+        r.url,
+        "https://tracker.example/browse.php?q=The Matrix 1999&sort=seeders"
+    );
     assert_eq!(r.method, "get");
     assert_eq!(r.response_kind, "html");
 }
@@ -38,10 +44,17 @@ fn builds_search_request_from_query() {
 fn freeleech_toggle_changes_path() {
     let def = definition::parse(HTML_DEF.as_bytes()).unwrap();
     let mut cfg = config();
-    cfg.settings.insert("freeleech".to_string(), "true".to_string());
-    let query = Query::Text { query: "dune".into() };
+    cfg.settings
+        .insert("freeleech".to_string(), "true".to_string());
+    let query = Query::Text {
+        query: "dune".into(),
+    };
     let reqs = engine::build_requests(&def, &cfg, &query, &[2000]);
-    assert!(reqs[0].url.ends_with("&sort=seeders&fl=1"), "got {}", reqs[0].url);
+    assert!(
+        reqs[0].url.ends_with("&sort=seeders&fl=1"),
+        "got {}",
+        reqs[0].url
+    );
 }
 
 #[test]
@@ -80,9 +93,18 @@ fn parses_rows_into_releases() {
 
     let first = &releases[0];
     assert_eq!(first.title, "The Matrix 1999 1080p");
-    assert_eq!(first.details_url.as_deref(), Some("https://tracker.example/details.php?id=10"));
-    assert_eq!(first.link.as_deref(), Some("https://tracker.example/download.php?id=10"));
-    assert_eq!(first.size_bytes, Some((8.4 * 1024.0 * 1024.0 * 1024.0) as u64));
+    assert_eq!(
+        first.details_url.as_deref(),
+        Some("https://tracker.example/details.php?id=10")
+    );
+    assert_eq!(
+        first.link.as_deref(),
+        Some("https://tracker.example/download.php?id=10")
+    );
+    assert_eq!(
+        first.size_bytes,
+        Some((8.4 * 1024.0 * 1024.0 * 1024.0) as u64)
+    );
     assert_eq!(first.seeders, Some(120));
     assert_eq!(first.leechers, Some(4));
     // Category cell href -> regexp cat=(\d+) -> tracker id "1" -> Movies/HD 2040.

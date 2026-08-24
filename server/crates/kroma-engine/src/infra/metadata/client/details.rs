@@ -15,11 +15,17 @@ pub(super) fn fetch_details(
     let lang2 = language.split('-').next().unwrap_or("en");
     let detail_params = vec![
         ("language", language.to_string()),
-        ("append_to_response", "external_ids,credits,images,keywords".to_string()),
+        (
+            "append_to_response",
+            "external_ids,credits,images,keywords".to_string(),
+        ),
         ("include_image_language", format!("{lang2},en,null")),
     ];
-    let d: Details =
-        curl_json(&format!("{}/{}/{id}", api(), target.detail_path()), api_key, &detail_params)?;
+    let d: Details = curl_json(
+        &format!("{}/{}/{id}", api(), target.detail_path()),
+        api_key,
+        &detail_params,
+    )?;
 
     let ext = d.external_ids;
     let imdb_id = d
@@ -42,7 +48,10 @@ pub(super) fn fetch_details(
         title: d.title.or(d.name),
         tagline: d.tagline.filter(|s| !s.is_empty()),
         overview: d.overview.filter(|s| !s.is_empty()),
-        release_date: d.release_date.or(d.first_air_date).filter(|s| !s.is_empty()),
+        release_date: d
+            .release_date
+            .or(d.first_air_date)
+            .filter(|s| !s.is_empty()),
         genres: d.genres.into_iter().map(|g| g.name).collect(),
         keywords: d.keywords.map(collect_keywords).unwrap_or_default(),
         rating: d.vote_average.filter(|v| *v > 0.0),
@@ -253,9 +262,10 @@ mod tests {
     #[test]
     fn collects_movie_and_tv_keywords() {
         // Movies nest under `keywords`.
-        let movie: Keywords =
-            serde_json::from_str(r#"{"keywords":[{"id":1,"name":"road movie"},{"id":2,"name":"summer"}]}"#)
-                .unwrap();
+        let movie: Keywords = serde_json::from_str(
+            r#"{"keywords":[{"id":1,"name":"road movie"},{"id":2,"name":"summer"}]}"#,
+        )
+        .unwrap();
         assert_eq!(collect_keywords(movie), vec!["road movie", "summer"]);
         // Shows nest under `results`.
         let tv: Keywords =

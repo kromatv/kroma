@@ -60,7 +60,10 @@ fn a_trigger_cannot_be_used_to_reach_further_than_the_grant() {
              INSERT INTO sessions (token,user_id,created_at,expires_at) VALUES ('X','u1','n',1); END",
         )
         .unwrap();
-    refused(&f.scoped, "UPDATE wanted SET status = 'grabbed' WHERE id = 'wt1'");
+    refused(
+        &f.scoped,
+        "UPDATE wanted SET status = 'grabbed' WHERE id = 'wt1'",
+    );
 }
 
 #[test]
@@ -82,7 +85,11 @@ fn the_schema_is_readable_and_the_rows_behind_it_are_not() {
     let f = fixture();
     let conn = f.scoped.get().unwrap();
     let n: i64 = conn
-        .query_row("SELECT count(*) FROM sqlite_master WHERE type='table'", [], |r| r.get(0))
+        .query_row(
+            "SELECT count(*) FROM sqlite_master WHERE type='table'",
+            [],
+            |r| r.get(0),
+        )
         .unwrap();
     assert!(n > 0, "the schema is readable");
 

@@ -26,7 +26,11 @@ pub fn quality_from_parsed(
         Source::Hdtv => "HDTV",
         Source::Cam => "Cam",
     });
-    (res.map(str::to_string), codec.map(str::to_string), source.map(str::to_string))
+    (
+        res.map(str::to_string),
+        codec.map(str::to_string),
+        source.map(str::to_string),
+    )
 }
 
 pub fn resolution_from_width(width: Option<i64>) -> Option<String> {
@@ -231,7 +235,10 @@ mod tests {
     #[test]
     fn lang_list_dedupes_in_order() {
         let out = lang_list(["eng", "en", "fre", "und", "xx", "fre"]);
-        assert_eq!(out, vec!["EN".to_string(), "FR".to_string(), "XX".to_string()]);
+        assert_eq!(
+            out,
+            vec!["EN".to_string(), "FR".to_string(), "XX".to_string()]
+        );
         assert!(lang_list(std::iter::empty::<&str>()).is_empty());
         assert!(lang_list(["und", "zxx"]).is_empty());
     }
@@ -247,24 +254,49 @@ mod tests {
         };
         assert_eq!(
             quality_from_parsed(&mk(Res::R720, Codec::H264, Source::BluRay)),
-            (Some("720p".into()), Some("x264".into()), Some("Bluray".into()))
+            (
+                Some("720p".into()),
+                Some("x264".into()),
+                Some("Bluray".into())
+            )
         );
         assert_eq!(
             quality_from_parsed(&mk(Res::R1080, Codec::Av1, Source::WebDl)),
-            (Some("1080p".into()), Some("AV1".into()), Some("WEBDL".into()))
+            (
+                Some("1080p".into()),
+                Some("AV1".into()),
+                Some("WEBDL".into())
+            )
         );
         assert_eq!(
             quality_from_parsed(&mk(Res::R2160, Codec::Xvid, Source::WebRip)),
-            (Some("2160p".into()), Some("Xvid".into()), Some("WEBRip".into()))
+            (
+                Some("2160p".into()),
+                Some("Xvid".into()),
+                Some("WEBRip".into())
+            )
         );
         assert_eq!(
             quality_from_parsed(&mk(Res::R2160, Codec::Hevc, Source::Remux)),
-            (Some("2160p".into()), Some("x265".into()), Some("Remux".into()))
+            (
+                Some("2160p".into()),
+                Some("x265".into()),
+                Some("Remux".into())
+            )
         );
-        let hdtv = ParsedRelease { source: Some(Source::Hdtv), ..Default::default() };
+        let hdtv = ParsedRelease {
+            source: Some(Source::Hdtv),
+            ..Default::default()
+        };
         assert_eq!(quality_from_parsed(&hdtv).2.as_deref(), Some("HDTV"));
-        let cam = ParsedRelease { source: Some(Source::Cam), ..Default::default() };
+        let cam = ParsedRelease {
+            source: Some(Source::Cam),
+            ..Default::default()
+        };
         assert_eq!(quality_from_parsed(&cam).2.as_deref(), Some("Cam"));
-        assert_eq!(quality_from_parsed(&ParsedRelease::default()), (None, None, None));
+        assert_eq!(
+            quality_from_parsed(&ParsedRelease::default()),
+            (None, None, None)
+        );
     }
 }

@@ -9,13 +9,13 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::api::error::lerr;
+use crate::api::extract::{bearer_from_headers, AuthToken, AuthUser};
 use crate::api::pin;
 use crate::api::util::query;
-use crate::api::extract::{bearer_from_headers, AuthToken, AuthUser};
-use crate::services::auth;
 use crate::db;
 use crate::i18n::{self, ReqLocale};
 use crate::model::User;
+use crate::services::auth;
 use crate::state::SharedState;
 
 use super::user_agent;
@@ -46,8 +46,14 @@ pub async fn logout(
     if let Some(token) = bearer_from_headers(&headers) {
         let _ = query(&state.db, move |pool| db::delete_session(&pool, &token)).await;
     }
-    if let Some(access) = body.and_then(|b| b.0.access_token).filter(|t| !t.is_empty()) {
-        let _ = query(&state.db, move |pool| db::delete_access_token(&pool, &access)).await;
+    if let Some(access) = body
+        .and_then(|b| b.0.access_token)
+        .filter(|t| !t.is_empty())
+    {
+        let _ = query(&state.db, move |pool| {
+            db::delete_access_token(&pool, &access)
+        })
+        .await;
     }
     StatusCode::NO_CONTENT.into_response()
 }
@@ -64,7 +70,10 @@ pub struct RelockBody {
 pub async fn relock(State(state): State<SharedState>, Json(body): Json<RelockBody>) -> Response {
     let token = body.access_token.trim().to_string();
     if !token.is_empty() {
-        let _ = query(&state.db, move |pool| db::set_access_pin_verified(&pool, &token, false)).await;
+        let _ = query(&state.db, move |pool| {
+            db::set_access_pin_verified(&pool, &token, false)
+        })
+        .await;
     }
     StatusCode::NO_CONTENT.into_response()
 }
@@ -91,14 +100,16 @@ pub async fn exchange_token(
         return token_invalid(loc);
     }
     let lookup = access.clone();
-    let (user, pin_verified) = match query(&state.db, move |pool| db::access_token_user(&pool, &lookup)).await {
-        Ok(Some(v)) => v,
-        Ok(None) => return token_invalid(loc),
-        Err(resp) => return resp,
-    };
+    let (user, pin_verified) =
+        match query(&state.db, move |pool| db::access_token_user(&pool, &lookup)).await {
+            Ok(Some(v)) => v,
+            Ok(None) => return token_invalid(loc),
+            Err(resp) => return resp,
+        };
 
     if user.has_pin && !pin_verified {
-        if let Err(resp) = enforce_pin_gate(&state, loc, &user, &access, body.pin.as_deref()).await {
+        if let Err(resp) = enforce_pin_gate(&state, loc, &user, &access, body.pin.as_deref()).await
+        {
             return resp;
         }
     }
@@ -148,7 +159,9 @@ async fn enforce_pin_gate(
         (None, Some(_)) => {
             return Err((
                 StatusCode::UNAUTHORIZED,
-                Json(json!({ "error": i18n::t(loc, "auth.pinRequired", &[]), "pinRequired": true })),
+                Json(
+                    json!({ "error": i18n::t(loc, "auth.pinRequired", &[]), "pinRequired": true }),
+                ),
             )
                 .into_response());
         }
@@ -164,7 +177,10 @@ async fn enforce_pin_gate(
     }
     pin::reset(&user.id);
     let tok = access.to_string();
-    let _ = query(&state.db, move |pool| db::set_access_pin_verified(&pool, &tok, true)).await;
+    let _ = query(&state.db, move |pool| {
+        db::set_access_pin_verified(&pool, &tok, true)
+    })
+    .await;
     Ok(())
 }
 
@@ -207,7 +223,11 @@ pub async fn revoke_session(
     Path(id): Path<String>,
 ) -> Response {
     let uid = user.id.clone();
-    match query(&state.db, move |pool| db::delete_access_token_by_id(&pool, &uid, &id)).await {
+    match query(&state.db, move |pool| {
+        db::delete_access_token_by_id(&pool, &uid, &id)
+    })
+    .await
+    {
         Ok(true) => StatusCode::NO_CONTENT.into_response(),
         Ok(false) => lerr(loc, StatusCode::NOT_FOUND, "auth.sessionNotFound"),
         Err(resp) => resp,
@@ -253,7 +273,11 @@ pub(in crate::api) async fn mint_device_tokens(
 /// Mints the token pair for a freshly authenticated `user`. The access token is
 /// PIN-verified at birth: password auth already proved identity, so silent
 /// refreshes work until the profile is switched away and re-locked.
-pub(crate) async fn issue_tokens(state: SharedState, user: User, user_agent: Option<String>) -> Response {
+pub(crate) async fn issue_tokens(
+    state: SharedState,
+    user: User,
+    user_agent: Option<String>,
+) -> Response {
     let (token, access) = match mint_device_tokens(&state, &user.id, user_agent).await {
         Ok(pair) => pair,
         Err(resp) => return resp,
@@ -265,5 +289,10 @@ pub(crate) async fn issue_tokens(state: SharedState, user: User, user_agent: Opt
         Ok(())
     })
     .await;
-    Json(crate::api::dto::AuthResult { token, access_token: access, user }).into_response()
+    Json(crate::api::dto::AuthResult {
+        token,
+        access_token: access,
+        user,
+    })
+    .into_response()
 }

@@ -2,8 +2,8 @@
 //! what a named send is rendered from.
 
 use crate::model::{
-    ActionKind, ActionSpec, ActionStyle, NotificationCategory,
-    NotificationEvent, NotificationSpec, PushCategory,
+    ActionKind, ActionSpec, ActionStyle, NotificationCategory, NotificationEvent, NotificationSpec,
+    PushCategory,
 };
 
 // Uses the same message keys a real producer would, so what lands in the bell
@@ -22,7 +22,11 @@ pub(super) fn sample(event: NotificationEvent, admin: &str) -> NotificationSpec 
         .param("user", admin)
         .link("/admin/requests")
         .push_category(PushCategory::RequestReview)
-        .action(link_action("review", "notifications.action.review", "/admin/requests")),
+        .action(link_action(
+            "review",
+            "notifications.action.review",
+            "/admin/requests",
+        )),
         NotificationEvent::RequestApproved => NotificationSpec::new(
             event,
             "notifications.request.approved.title",
@@ -47,11 +51,13 @@ pub(super) fn sample(event: NotificationEvent, admin: &str) -> NotificationSpec 
         .link("/")
         .push_category(PushCategory::MediaAvailable)
         .action(link_action("watch", "notifications.action.watch", "/")),
-        NotificationEvent::MediaAdded => {
-            NotificationSpec::new(event, "notifications.media.added.title", "notifications.media.added.body")
-                .param("count", "3")
-                .link("/")
-        }
+        NotificationEvent::MediaAdded => NotificationSpec::new(
+            event,
+            "notifications.media.added.title",
+            "notifications.media.added.body",
+        )
+        .param("count", "3")
+        .link("/"),
         NotificationEvent::MediaEpisode => NotificationSpec::new(
             event,
             "notifications.media.episode.title",
@@ -68,7 +74,11 @@ pub(super) fn sample(event: NotificationEvent, admin: &str) -> NotificationSpec 
         .param("title", film)
         .param("user", admin)
         .link("/admin/reports")
-        .action(link_action("review", "notifications.action.review", "/admin/reports")),
+        .action(link_action(
+            "review",
+            "notifications.action.review",
+            "/admin/reports",
+        )),
         NotificationEvent::ReportResolved => NotificationSpec::new(
             event,
             "notifications.report.resolved.title",

@@ -35,7 +35,11 @@ pub fn timeout_for(abs: &str) -> Duration {
 fn file_lock(abs: &str) -> Arc<Mutex<()>> {
     static LOCKS: OnceLock<Mutex<HashMap<String, Arc<Mutex<()>>>>> = OnceLock::new();
     let map = LOCKS.get_or_init(|| Mutex::new(HashMap::new()));
-    map.lock().unwrap().entry(abs.to_string()).or_default().clone()
+    map.lock()
+        .unwrap()
+        .entry(abs.to_string())
+        .or_default()
+        .clone()
 }
 
 /// Extract every still-missing text track of `abs`, serialized per file: the
@@ -54,7 +58,9 @@ pub fn extract_pending_locked(
         return Err("media file unavailable (mount offline?)".to_string());
     }
     let lock = file_lock(abs);
-    let _guard = lock.lock().map_err(|_| "subtitle extraction lock poisoned".to_string())?;
+    let _guard = lock
+        .lock()
+        .map_err(|_| "subtitle extraction lock poisoned".to_string())?;
     let pending = pending_text_tracks(data_dir, abs, subs);
     extract_batch_blocking_cancellable(abs, &pending, cancel)
 }
@@ -130,7 +136,8 @@ fn extract_batch_blocking_cancellable(
         return Ok(());
     }
     if let Some(dir) = tracks[0].1.parent() {
-        std::fs::create_dir_all(dir).map_err(|e| format!("could not create the subtitle cache dir: {e}"))?;
+        std::fs::create_dir_all(dir)
+            .map_err(|e| format!("could not create the subtitle cache dir: {e}"))?;
     }
     let pid = std::process::id();
     let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
@@ -142,12 +149,17 @@ fn extract_batch_blocking_cancellable(
     let mut cmd = Command::new("ffmpeg");
     // Text-subtitle decode is trivial; the cost is the demux read. One thread
     // keeps this from competing with a live remux for cores.
-    cmd.args(["-v", "error", "-nostdin", "-threads", "1", "-y", "-i"]).arg(abs);
+    cmd.args(["-v", "error", "-nostdin", "-threads", "1", "-y", "-i"])
+        .arg(abs);
     for ((sidx, _), tmp) in tracks.iter().zip(&tmps) {
-        cmd.arg("-map").arg(format!("0:s:{sidx}")).args(["-f", "webvtt"]).arg(tmp);
+        cmd.arg("-map")
+            .arg(format!("0:s:{sidx}"))
+            .args(["-f", "webvtt"])
+            .arg(tmp);
     }
 
-    let outcome = crate::infra::ffmpeg_run::run_capturing_cancellable(cmd, timeout_for(abs), cancel);
+    let outcome =
+        crate::infra::ffmpeg_run::run_capturing_cancellable(cmd, timeout_for(abs), cancel);
 
     // Move each non-empty output into place; clean up the rest either way so a
     // failed/partial pass never leaves temp files behind.

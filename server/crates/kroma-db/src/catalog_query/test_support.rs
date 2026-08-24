@@ -30,11 +30,46 @@ pub(super) fn seeded_pool() -> TempPool {
         )
         .unwrap();
     };
-    movie("m1", "Dune", 2021, meta(&["Science Fiction"], 8.0, "Denis Villeneuve", "Timothée Chalamet"));
-    movie("m2", "Sicario", 2015, meta(&["Thriller", "Crime"], 7.6, "Denis Villeneuve", "Emily Blunt"));
-    movie("m3", "The Shining", 1980, meta(&["Horror"], 8.4, "Stanley Kubrick", "Jack Nicholson"));
-    movie("m4", "Hereditary", 2018, meta(&["Horror"], 7.3, "Ari Aster", "Toni Collette"));
-    movie("m5", "Old Unrated", 1990, "{\"tmdbId\":2,\"tmdbUrl\":\"x\",\"genres\":[\"Drama\"]}".to_string());
+    movie(
+        "m1",
+        "Dune",
+        2021,
+        meta(
+            &["Science Fiction"],
+            8.0,
+            "Denis Villeneuve",
+            "Timothée Chalamet",
+        ),
+    );
+    movie(
+        "m2",
+        "Sicario",
+        2015,
+        meta(
+            &["Thriller", "Crime"],
+            7.6,
+            "Denis Villeneuve",
+            "Emily Blunt",
+        ),
+    );
+    movie(
+        "m3",
+        "The Shining",
+        1980,
+        meta(&["Horror"], 8.4, "Stanley Kubrick", "Jack Nicholson"),
+    );
+    movie(
+        "m4",
+        "Hereditary",
+        2018,
+        meta(&["Horror"], 7.3, "Ari Aster", "Toni Collette"),
+    );
+    movie(
+        "m5",
+        "Old Unrated",
+        1990,
+        "{\"tmdbId\":2,\"tmdbUrl\":\"x\",\"genres\":[\"Drama\"]}".to_string(),
+    );
 
     // A show + an episode (the episode must be excluded from the catalog).
     conn.execute(

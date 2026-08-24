@@ -101,7 +101,10 @@ mod tests {
     fn a_base32_hash_is_taken_too() {
         let uri = "magnet:?xt=urn:btih:abcdefghijklmnopqrstuvwxyz234567";
 
-        assert_eq!(magnet_info_hash(uri).as_deref(), Some("abcdefghijklmnopqrstuvwxyz234567"));
+        assert_eq!(
+            magnet_info_hash(uri).as_deref(),
+            Some("abcdefghijklmnopqrstuvwxyz234567")
+        );
     }
 
     #[test]
@@ -116,9 +119,19 @@ mod tests {
     #[test]
     fn the_jar_follows_the_url_and_the_account() {
         let dir = Path::new("/state");
-        let a = ClientDef { url: "http://nas:8080".into(), username: "ana".into(), ..Default::default() };
-        let b = ClientDef { username: "bo".into(), ..a.clone() };
-        let c = ClientDef { url: "http://other:8080".into(), ..a.clone() };
+        let a = ClientDef {
+            url: "http://nas:8080".into(),
+            username: "ana".into(),
+            ..Default::default()
+        };
+        let b = ClientDef {
+            username: "bo".into(),
+            ..a.clone()
+        };
+        let c = ClientDef {
+            url: "http://other:8080".into(),
+            ..a.clone()
+        };
 
         assert_eq!(cookie_jar_path(dir, &a), cookie_jar_path(dir, &a.clone()));
         assert_ne!(cookie_jar_path(dir, &a), cookie_jar_path(dir, &b));

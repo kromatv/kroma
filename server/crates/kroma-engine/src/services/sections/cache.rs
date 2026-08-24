@@ -23,7 +23,10 @@ pub struct VectorCache {
 
 impl VectorCache {
     pub fn new() -> Self {
-        Self { snap: RwLock::new(Arc::new(Vec::new())), stamp: RwLock::new(None) }
+        Self {
+            snap: RwLock::new(Arc::new(Vec::new())),
+            stamp: RwLock::new(None),
+        }
     }
 
     /// Reload the full snapshot from SQLite if the vectors changed since last load
@@ -190,7 +193,7 @@ mod tests {
         let ids: Vec<&str> = out.iter().map(|(id, _)| id.as_str()).collect();
         assert!(!ids.contains(&"a")); // watched excluded
         assert_eq!(ids.first(), Some(&"c")); // nearest to [1,0]
-        // No embeddable watched ids -> empty (count 0).
+                                             // No embeddable watched ids -> empty (count 0).
         assert!(c.for_you(&["zzz".into()], 5).is_empty());
 
         let mixed = c.for_you(&["a".into(), "bad".into()], 5);

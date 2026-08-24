@@ -63,7 +63,10 @@ mod tests {
         run(&JobContext::from_handle(state.clone(), handle)).unwrap();
 
         let lines = log_lines(&state, "run-1");
-        assert!(lines.iter().any(|l| l.starts_with("scan complete")), "{lines:?}");
+        assert!(
+            lines.iter().any(|l| l.starts_with("scan complete")),
+            "{lines:?}"
+        );
         assert!(!lines.iter().any(|l| l.contains("dispatched")), "{lines:?}");
     }
 }

@@ -46,7 +46,15 @@ impl HandoffInner {
             }
             confirmed(b, claim.check)
         };
-        match self.grants.decide(handle, rule, Granted { token, access_token, user }) {
+        match self.grants.decide(
+            handle,
+            rule,
+            Granted {
+                token,
+                access_token,
+                user,
+            },
+        ) {
             Decided::Approved => Ok(()),
             Decided::Refused(refusal) => Err(refusal),
             Decided::Gone => Err(Refusal::Gone),

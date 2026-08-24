@@ -76,8 +76,7 @@ impl Supervisor {
         seen: &mut HashMap<String, std::time::SystemTime>,
         down: &mut std::collections::HashSet<String>,
     ) {
-        let Ok(stamp) =
-            std::fs::metadata(self.dir(id).join(MODULE_BIN)).and_then(|m| m.modified())
+        let Ok(stamp) = std::fs::metadata(self.dir(id).join(MODULE_BIN)).and_then(|m| m.modified())
         else {
             return;
         };
@@ -130,9 +129,9 @@ impl Supervisor {
                             this.say(&id, "INFO module process restarted after an exit");
                         }
                         Err(e) => {
-                            let next = backoff
-                                .get(&id)
-                                .map_or(WATCHDOG_BACKOFF_MIN, |d| (*d * 2).min(WATCHDOG_BACKOFF_MAX));
+                            let next = backoff.get(&id).map_or(WATCHDOG_BACKOFF_MIN, |d| {
+                                (*d * 2).min(WATCHDOG_BACKOFF_MAX)
+                            });
                             backoff.insert(id.clone(), next);
                             due.insert(id.clone(), Instant::now() + next);
                             tracing::error!(

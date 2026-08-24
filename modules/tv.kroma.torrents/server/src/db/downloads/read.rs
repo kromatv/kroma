@@ -30,7 +30,10 @@ pub fn active_downloads(conn: &Connection) -> rusqlite::Result<Vec<DownloadRow>>
 /// An existing non-terminal download of the same torrent (same magnet/URL), so
 /// a re-grab doesn't create a duplicate. `failed`/`removed` rows don't count -
 /// those are retryable.
-pub fn active_download_by_url(conn: &Connection, url: &str) -> rusqlite::Result<Option<DownloadRow>> {
+pub fn active_download_by_url(
+    conn: &Connection,
+    url: &str,
+) -> rusqlite::Result<Option<DownloadRow>> {
     let mut stmt = conn.prepare(&format!(
         "SELECT {DL_COLS} FROM downloads \
          WHERE magnet_or_url = ?1 AND status NOT IN ('failed', 'removed') LIMIT 1"
@@ -60,8 +63,9 @@ pub fn other_active_download_with_ref(
 
 /// Completed rows awaiting import.
 pub fn completed_downloads(conn: &Connection) -> rusqlite::Result<Vec<DownloadRow>> {
-    let mut stmt =
-        conn.prepare(&format!("SELECT {DL_COLS} FROM downloads WHERE status = 'completed'"))?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {DL_COLS} FROM downloads WHERE status = 'completed'"
+    ))?;
     let rows = stmt.query_map([], row_to_download)?;
     rows.collect()
 }
@@ -94,8 +98,8 @@ pub fn requests_with_active_downloads(conn: &Connection) -> rusqlite::Result<Vec
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::write::*;
+    use super::*;
     use crate::db::test_support::{download, seed_request, test_db};
 
     #[test]
@@ -116,21 +120,36 @@ mod tests {
         let conn = pool.get().unwrap();
 
         // Non-terminal set, ordered by grabbed_at ASC.
-        let active: Vec<String> =
-            active_downloads(&conn).unwrap().into_iter().map(|d| d.id).collect();
-        assert_eq!(active, vec!["d_q".to_string(), "d_d".into(), "d_s".into(), "d_p".into()]);
+        let active: Vec<String> = active_downloads(&conn)
+            .unwrap()
+            .into_iter()
+            .map(|d| d.id)
+            .collect();
+        assert_eq!(
+            active,
+            vec!["d_q".to_string(), "d_d".into(), "d_s".into(), "d_p".into()]
+        );
 
-        let completed: Vec<String> =
-            completed_downloads(&conn).unwrap().into_iter().map(|d| d.id).collect();
+        let completed: Vec<String> = completed_downloads(&conn)
+            .unwrap()
+            .into_iter()
+            .map(|d| d.id)
+            .collect();
         assert_eq!(completed, vec!["d_c".to_string()]);
 
         // by_url: a live download matches; a failed one and an unknown url do not.
         assert_eq!(
-            active_download_by_url(&conn, "magnet:?xt=urn:btih:d_d").unwrap().map(|d| d.id),
+            active_download_by_url(&conn, "magnet:?xt=urn:btih:d_d")
+                .unwrap()
+                .map(|d| d.id),
             Some("d_d".to_string())
         );
-        assert!(active_download_by_url(&conn, "magnet:?xt=urn:btih:d_f").unwrap().is_none());
-        assert!(active_download_by_url(&conn, "magnet:?xt=urn:btih:none").unwrap().is_none());
+        assert!(active_download_by_url(&conn, "magnet:?xt=urn:btih:d_f")
+            .unwrap()
+            .is_none());
+        assert!(active_download_by_url(&conn, "magnet:?xt=urn:btih:none")
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -149,13 +168,19 @@ mod tests {
         let conn = pool.get().unwrap();
         // Another live row shares ref-a; the excluded id is itself.
         assert_eq!(
-            other_active_download_with_ref(&conn, "a", "ref-a").unwrap().map(|d| d.id),
+            other_active_download_with_ref(&conn, "a", "ref-a")
+                .unwrap()
+                .map(|d| d.id),
             Some("b".to_string())
         );
         // An empty ref never matches.
-        assert!(other_active_download_with_ref(&conn, "a", "").unwrap().is_none());
+        assert!(other_active_download_with_ref(&conn, "a", "")
+            .unwrap()
+            .is_none());
         // A terminal (failed) row is not a live duplicate.
-        assert!(other_active_download_with_ref(&conn, "x", "ref-b").unwrap().is_none());
+        assert!(other_active_download_with_ref(&conn, "x", "ref-b")
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -195,7 +220,7 @@ mod tests {
 
         let r1 = &by_req["req1"];
         assert!(r1.importing); // MAX(status='completed') = 1
-        // AVG over live+completed only (the failed row is excluded): (0.5 + 1.0)/2.
+                               // AVG over live+completed only (the failed row is excluded): (0.5 + 1.0)/2.
         assert!((r1.progress - 0.75).abs() < 1e-9);
 
         let r2 = &by_req["req2"];

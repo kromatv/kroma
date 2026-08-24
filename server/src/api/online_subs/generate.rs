@@ -14,8 +14,8 @@ use crate::services::settings;
 use crate::services::subtitles::{self, GenMode, GenSpec, Quality};
 use crate::state::SharedState;
 
-use crate::boot::transcriber::TranscriberClient;
 use super::transcriber_available;
+use crate::boot::transcriber::TranscriberClient;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -43,7 +43,11 @@ struct GenStarted {
 
 /// `POST /api/items/:id/subtitles/generate` → register + start a generation, return
 /// its `genId`. The work runs on a blocking thread; poll `generations` for progress.
-pub async fn generate(State(state): State<SharedState>, Path(id): Path<String>, Json(req): Json<GenerateReq>) -> Response {
+pub async fn generate(
+    State(state): State<SharedState>,
+    Path(id): Path<String>,
+    Json(req): Json<GenerateReq>,
+) -> Response {
     let item = match query(&state.db, {
         let id = id.clone();
         move |pool| db::get_item(&pool, &id)
@@ -63,22 +67,37 @@ pub async fn generate(State(state): State<SharedState>, Path(id): Path<String>, 
     // Cheap, synchronous config gates (no I/O) so the client gets a real error
     // instead of a genId that fails the instant it starts.
     if mode == GenMode::Transcribe && !transcriber_available(&state) {
-        return json_error(StatusCode::BAD_REQUEST, "the Whisper module is not installed or not running");
+        return json_error(
+            StatusCode::BAD_REQUEST,
+            "the Whisper module is not installed or not running",
+        );
     }
     if mode == GenMode::Translate && settings::default_provider(&state.settings).is_none() {
-        return json_error(StatusCode::BAD_REQUEST, "no LLM provider configured for translation (admin IA page)");
+        return json_error(
+            StatusCode::BAD_REQUEST,
+            "no LLM provider configured for translation (admin IA page)",
+        );
     }
 
-    let mode_label = if mode == GenMode::Translate { "translate" } else { "transcribe" };
+    let mode_label = if mode == GenMode::Translate {
+        "translate"
+    } else {
+        "transcribe"
+    };
     let target_lang = req.lang.trim().to_string();
 
     // Dedup: if an identical generation is already in flight (e.g. a double-click),
     // return its id instead of racing a second worker on the same output file/DB row.
-    if let Some(existing) = state.subtitle_gen.find_running(&id, mode_label, &target_lang) {
+    if let Some(existing) = state
+        .subtitle_gen
+        .find_running(&id, mode_label, &target_lang)
+    {
         return (StatusCode::ACCEPTED, Json(GenStarted { gen_id: existing })).into_response();
     }
 
-    let handle = state.subtitle_gen.start(&id, mode_label, Some(target_lang.clone()));
+    let handle = state
+        .subtitle_gen
+        .start(&id, mode_label, Some(target_lang.clone()));
     let gen_id = handle.id().to_string();
 
     // Everything below runs OFF the request path: resolving Translate's source
@@ -147,7 +166,14 @@ async fn run_generation(t: GenTask) {
     } else {
         None
     };
-    let spec = GenSpec { mode, target_lang, spoken_lang, quality, audio_track, source_vtt };
+    let spec = GenSpec {
+        mode,
+        target_lang,
+        spoken_lang,
+        quality,
+        audio_track,
+        source_vtt,
+    };
     let settings = state.settings.clone();
     let data_dir = state.config.data_dir.clone();
     let pool = state.db.clone();
@@ -188,8 +214,17 @@ async fn run_generation(t: GenTask) {
 
 // Runs in the background task, so the `Err` becomes a human message recorded
 // via `handle.fail`, not an HTTP response.
-async fn resolve_source(state: &SharedState, item_id: &str, abs: &str, req: &GenerateReq) -> Result<String, String> {
-    if let Some(sub_id) = req.source_sub_id.as_deref().filter(|s| !s.trim().is_empty()) {
+async fn resolve_source(
+    state: &SharedState,
+    item_id: &str,
+    abs: &str,
+    req: &GenerateReq,
+) -> Result<String, String> {
+    if let Some(sub_id) = req
+        .source_sub_id
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+    {
         let sub_id = sub_id.to_string();
         let sub = query(&state.db, move |pool| {
             let conn = pool.get()?;
@@ -221,7 +256,10 @@ pub async fn generations(State(state): State<SharedState>, Path(id): Path<String
 }
 
 /// `DELETE /api/items/:id/subtitles/generations/:gen` → request cancellation.
-pub async fn cancel_generation(State(state): State<SharedState>, Path((_id, gen)): Path<(String, String)>) -> Response {
+pub async fn cancel_generation(
+    State(state): State<SharedState>,
+    Path((_id, gen)): Path<(String, String)>,
+) -> Response {
     if state.subtitle_gen.cancel(&gen) {
         StatusCode::NO_CONTENT.into_response()
     } else {

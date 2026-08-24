@@ -26,7 +26,11 @@ pub fn prefs(conn: &Connection, user_id: &str) -> rusqlite::Result<Vec<CategoryP
         .into_iter()
         .map(|category| {
             let (in_app, push) = set.get(category.as_str()).copied().unwrap_or((true, true));
-            CategoryPref { category, in_app, push }
+            CategoryPref {
+                category,
+                in_app,
+                push,
+            }
         })
         .collect())
 }
@@ -72,7 +76,10 @@ mod tests {
         let prefs = prefs(&conn, &u1).unwrap();
         assert_eq!(prefs.len(), NotificationCategory::ALL.len());
         assert!(prefs.iter().all(|p| p.in_app && p.push));
-        assert_eq!(allows(&conn, &u1, NotificationCategory::Media).unwrap(), (true, true));
+        assert_eq!(
+            allows(&conn, &u1, NotificationCategory::Media).unwrap(),
+            (true, true)
+        );
     }
 
     #[test]
@@ -89,9 +96,18 @@ mod tests {
         )
         .unwrap();
         let conn = p.get().unwrap();
-        assert_eq!(allows(&conn, &u1, NotificationCategory::Media).unwrap(), (true, false));
-        assert_eq!(allows(&conn, &u1, NotificationCategory::Requests).unwrap(), (true, true));
-        assert_eq!(allows(&conn, &u2, NotificationCategory::Media).unwrap(), (true, true));
+        assert_eq!(
+            allows(&conn, &u1, NotificationCategory::Media).unwrap(),
+            (true, false)
+        );
+        assert_eq!(
+            allows(&conn, &u1, NotificationCategory::Requests).unwrap(),
+            (true, true)
+        );
+        assert_eq!(
+            allows(&conn, &u2, NotificationCategory::Media).unwrap(),
+            (true, true)
+        );
     }
 
     #[test]
@@ -114,6 +130,9 @@ mod tests {
         )
         .unwrap();
         let conn = p.get().unwrap();
-        assert_eq!(allows(&conn, &u1, NotificationCategory::System).unwrap(), (true, false));
+        assert_eq!(
+            allows(&conn, &u1, NotificationCategory::System).unwrap(),
+            (true, false)
+        );
     }
 }

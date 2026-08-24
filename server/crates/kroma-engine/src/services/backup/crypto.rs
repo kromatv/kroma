@@ -48,7 +48,13 @@ pub fn seal(plaintext: &[u8], password: &str) -> anyhow::Result<Vec<u8>> {
         .map_err(|_| anyhow::anyhow!("backup key init failed"))?;
     let nonce_ga = Nonce::try_from(&nonce[..]).expect("NONCE_LEN-byte nonce");
     let ct = cipher
-        .encrypt(&nonce_ga, Payload { msg: plaintext, aad: &header })
+        .encrypt(
+            &nonce_ga,
+            Payload {
+                msg: plaintext,
+                aad: &header,
+            },
+        )
         .map_err(|_| anyhow::anyhow!("backup encryption failed"))?;
 
     let mut out = header;
@@ -82,7 +88,13 @@ pub fn open(bytes: &[u8], password: &str) -> anyhow::Result<Option<Vec<u8>>> {
         .map_err(|_| anyhow::anyhow!("backup key init failed"))?;
     let nonce_ga = Nonce::try_from(nonce).expect("NONCE_LEN-byte nonce");
     Ok(cipher
-        .decrypt(&nonce_ga, Payload { msg: &bytes[HEADER_LEN..], aad: header })
+        .decrypt(
+            &nonce_ga,
+            Payload {
+                msg: &bytes[HEADER_LEN..],
+                aad: header,
+            },
+        )
         .ok())
 }
 
@@ -95,9 +107,16 @@ mod tests {
         let data = b"PK\x03\x04 fake zip bytes ...".to_vec();
         let sealed = seal(&data, "correct horse").unwrap();
         assert!(is_encrypted(&sealed));
-        assert_ne!(&sealed[HEADER_LEN..], &data[..], "ciphertext differs from plaintext");
+        assert_ne!(
+            &sealed[HEADER_LEN..],
+            &data[..],
+            "ciphertext differs from plaintext"
+        );
 
-        assert_eq!(open(&sealed, "correct horse").unwrap().as_deref(), Some(&data[..]));
+        assert_eq!(
+            open(&sealed, "correct horse").unwrap().as_deref(),
+            Some(&data[..])
+        );
         // Wrong password → tag fails → None (not an Err, not garbage).
         assert_eq!(open(&sealed, "wrong").unwrap(), None);
         // A flipped ciphertext byte → tamper detected.

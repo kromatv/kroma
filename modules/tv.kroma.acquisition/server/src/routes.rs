@@ -15,7 +15,8 @@ use kroma_module_sdk::domain::{Permission, User};
 use kroma_module_sdk::host::{blocking, json_error, AuthUser, HostStorage};
 
 use crate::dtos::{
-    AnalyzeBody, ManualAddBody, ManualSearchBody, ManualSearchView, TorrentAnalysis, TorrentFileView,
+    AnalyzeBody, ManualAddBody, ManualSearchBody, ManualSearchView, TorrentAnalysis,
+    TorrentFileView,
 };
 
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
@@ -41,13 +42,20 @@ pub async fn manual_search<S: HostStorage + Clone + Send + Sync + 'static>(
     Json(body): Json<ManualSearchBody>,
 ) -> Result<Response, Response> {
     require_acquisition(&state, &user)?;
-    let view: ManualSearchView =
-        match tokio::task::spawn_blocking(move || crate::search::manual_search(&state, &body)).await
-        {
-            Ok(Ok(v)) => v,
-            Ok(Err(e)) => return Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
-            Err(_) => return Err(json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal error")),
-        };
+    let view: ManualSearchView = match tokio::task::spawn_blocking(move || {
+        crate::search::manual_search(&state, &body)
+    })
+    .await
+    {
+        Ok(Ok(v)) => v,
+        Ok(Err(e)) => return Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
+        Err(_) => {
+            return Err(json_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal error",
+            ))
+        }
+    };
     Ok(Json(view).into_response())
 }
 
@@ -62,12 +70,17 @@ pub async fn analyze<S: HostStorage + Clone + Send + Sync + 'static>(
     require_acquisition(&state, &user)?;
     let magnet = body.magnet_or_url.trim().to_string();
     if magnet.is_empty() {
-        return Err(json_error(StatusCode::BAD_REQUEST, "a magnet or .torrent URL is required"));
+        return Err(json_error(
+            StatusCode::BAD_REQUEST,
+            "a magnet or .torrent URL is required",
+        ));
     }
     let analysis = match tokio::task::spawn_blocking(move || {
         let entries = crate::peers::downloads::list_files(&state, &magnet)?;
-        let files: Vec<(String, u64)> =
-            entries.iter().map(|e| (e.path.clone(), e.size_bytes)).collect();
+        let files: Vec<(String, u64)> = entries
+            .iter()
+            .map(|e| (e.path.clone(), e.size_bytes))
+            .collect();
         let content = kroma_scene::classify(&files);
         anyhow::Ok((entries, content))
     })
@@ -75,7 +88,12 @@ pub async fn analyze<S: HostStorage + Clone + Send + Sync + 'static>(
     {
         Ok(Ok(v)) => v,
         Ok(Err(e)) => return Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
-        Err(_) => return Err(json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal error")),
+        Err(_) => {
+            return Err(json_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal error",
+            ))
+        }
     };
     let (entries, content) = analysis;
     let files = entries
@@ -90,8 +108,12 @@ pub async fn analyze<S: HostStorage + Clone + Send + Sync + 'static>(
             episode: c.episode,
         })
         .collect();
-    Ok(Json(TorrentAnalysis { kind: content.kind.as_str().to_string(), seasons: content.seasons, files })
-        .into_response())
+    Ok(Json(TorrentAnalysis {
+        kind: content.kind.as_str().to_string(),
+        seasons: content.seasons,
+        files,
+    })
+    .into_response())
 }
 
 /// `POST /acquisition/add` grab a pasted magnet / `.torrent` URL (or a
@@ -104,12 +126,23 @@ pub async fn manual_add<S: HostStorage + Clone + Send + Sync + 'static>(
     require_acquisition(&state, &user)?;
     let magnet = body.magnet_or_url.trim().to_string();
     if magnet.is_empty() {
-        return Err(json_error(StatusCode::BAD_REQUEST, "a magnet or .torrent URL is required"));
+        return Err(json_error(
+            StatusCode::BAD_REQUEST,
+            "a magnet or .torrent URL is required",
+        ));
     }
     if !matches!(body.kind.as_str(), "movie" | "episode" | "season") {
-        return Err(json_error(StatusCode::BAD_REQUEST, "kind must be movie, episode or season"));
+        return Err(json_error(
+            StatusCode::BAD_REQUEST,
+            "kind must be movie, episode or season",
+        ));
     }
-    let title = body.title.as_deref().map(str::trim).filter(|s| !s.is_empty()).map(str::to_string);
+    let title = body
+        .title
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string);
     let release_title = magnet_display_name(&magnet)
         .or_else(|| title.clone())
         .unwrap_or_else(|| "manual".to_string());
@@ -125,19 +158,19 @@ pub async fn manual_add<S: HostStorage + Clone + Send + Sync + 'static>(
         episodes,
         release_title,
         only_files,
-        details_url: body.details_url.map(|u| u.trim().to_string()).filter(|u| !u.is_empty()),
+        details_url: body
+            .details_url
+            .map(|u| u.trim().to_string())
+            .filter(|u| !u.is_empty()),
         ..Default::default()
     };
     let grab_state = state.clone();
-    let result =
-        blocking(move || Ok(crate::peers::downloads::grab(&grab_state, &spec))).await?;
+    let result = blocking(move || Ok(crate::peers::downloads::grab(&grab_state, &spec))).await?;
     match result {
         Ok(row) => {
             let id = row.id.clone();
             // Slow engine add runs in the background so the request returns now.
-            tokio::task::spawn_blocking(move || {
-                crate::peers::downloads::activate(&state, &row.id)
-            });
+            tokio::task::spawn_blocking(move || crate::peers::downloads::activate(&state, &row.id));
             Ok(Json(json!({ "id": id })).into_response())
         }
         Err(e) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
@@ -146,7 +179,10 @@ pub async fn manual_add<S: HostStorage + Clone + Send + Sync + 'static>(
 
 fn magnet_display_name(magnet: &str) -> Option<String> {
     let idx = magnet.find("dn=")?;
-    let raw: String = magnet[idx + 3..].chars().take_while(|&c| c != '&').collect();
+    let raw: String = magnet[idx + 3..]
+        .chars()
+        .take_while(|&c| c != '&')
+        .collect();
     let decoded = raw.replace('+', " ").replace("%20", " ");
     let trimmed = decoded.trim();
     (!trimmed.is_empty()).then(|| trimmed.to_string())

@@ -9,8 +9,8 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::api::error::lerr;
-use crate::api::util::{blocking, query};
 use crate::api::extract::AuthUser;
+use crate::api::util::{blocking, query};
 use crate::db;
 use crate::i18n::{self, ReqLocale};
 use crate::model::User;
@@ -38,7 +38,11 @@ pub struct UpdateMeBody {
     pub email: Option<Option<String>>,
     #[serde(rename = "audioLanguage", default, deserialize_with = "double_option")]
     pub audio_language: Option<Option<String>>,
-    #[serde(rename = "subtitleLanguage", default, deserialize_with = "double_option")]
+    #[serde(
+        rename = "subtitleLanguage",
+        default,
+        deserialize_with = "double_option"
+    )]
     pub subtitle_language: Option<Option<String>>,
 }
 
@@ -87,14 +91,22 @@ async fn apply_username(
     }
     let check = name.clone();
     let self_id = user.id.clone();
-    match query(&state.db, move |pool| db::username_taken(&pool, &check, Some(&self_id))).await {
+    match query(&state.db, move |pool| {
+        db::username_taken(&pool, &check, Some(&self_id))
+    })
+    .await
+    {
         Ok(true) => return Err(lerr(loc, StatusCode::CONFLICT, "auth.usernameTaken")),
         Ok(false) => {}
         Err(resp) => return Err(resp),
     }
     let uid = user.id.clone();
     let n = name.clone();
-    if let Err(resp) = query(&state.db, move |pool| db::set_user_username(&pool, &uid, &n)).await {
+    if let Err(resp) = query(&state.db, move |pool| {
+        db::set_user_username(&pool, &uid, &n)
+    })
+    .await
+    {
         return Err(resp);
     }
     user.username = name;
@@ -161,7 +173,9 @@ async fn apply_language(
     field: Option<Option<String>>,
 ) -> Result<(), Response> {
     let Some(lang) = field else { return Ok(()) };
-    let language = lang.and_then(|tag| i18n::normalize(&tag)).map(|c| c.to_string());
+    let language = lang
+        .and_then(|tag| i18n::normalize(&tag))
+        .map(|c| c.to_string());
     user.language = store_user_lang(state, &user.id, language, db::set_user_language).await?;
     Ok(())
 }
@@ -173,7 +187,8 @@ async fn apply_audio_language(
 ) -> Result<(), Response> {
     let Some(audio) = field else { return Ok(()) };
     let audio = norm_media_lang(audio);
-    user.audio_language = store_user_lang(state, &user.id, audio, db::set_user_audio_language).await?;
+    user.audio_language =
+        store_user_lang(state, &user.id, audio, db::set_user_audio_language).await?;
     Ok(())
 }
 
@@ -184,7 +199,8 @@ async fn apply_subtitle_language(
 ) -> Result<(), Response> {
     let Some(sub) = field else { return Ok(()) };
     let sub = norm_media_lang(sub);
-    user.subtitle_language = store_user_lang(state, &user.id, sub, db::set_user_subtitle_language).await?;
+    user.subtitle_language =
+        store_user_lang(state, &user.id, sub, db::set_user_subtitle_language).await?;
     Ok(())
 }
 
@@ -201,15 +217,34 @@ pub async fn upload_avatar(
 
     let data_dir = state.config.data_dir.clone();
     let bytes = body.to_vec();
-    let url = match blocking(move || Ok(crate::infra::image::store_upload(&data_dir, &bytes, Some(AVATAR_MAX_WIDTH), ""))).await {
+    let url = match blocking(move || {
+        Ok(crate::infra::image::store_upload(
+            &data_dir,
+            &bytes,
+            Some(AVATAR_MAX_WIDTH),
+            "",
+        ))
+    })
+    .await
+    {
         Ok(Some(u)) => u,
-        Ok(None) => return lerr(loc, StatusCode::UNSUPPORTED_MEDIA_TYPE, "error.imageUnreadable"),
+        Ok(None) => {
+            return lerr(
+                loc,
+                StatusCode::UNSUPPORTED_MEDIA_TYPE,
+                "error.imageUnreadable",
+            )
+        }
         Err(resp) => return resp,
     };
 
     let uid = user.id.clone();
     let url_db = url.clone();
-    if let Err(resp) = query(&state.db, move |pool| db::set_user_avatar(&pool, &uid, Some(&url_db))).await {
+    if let Err(resp) = query(&state.db, move |pool| {
+        db::set_user_avatar(&pool, &uid, Some(&url_db))
+    })
+    .await
+    {
         return resp;
     }
     Json(json!({ "avatarUrl": url })).into_response()

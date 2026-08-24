@@ -88,7 +88,12 @@ impl Plan {
         let count = ((dur_s as u32 / interval) + 1).clamp(1, MAX_TILES);
         let cols = (f64::from(count).sqrt().ceil() as u32).max(1);
         let rows = count.div_ceil(cols).max(1);
-        Self { interval, cols, rows, count }
+        Self {
+            interval,
+            cols,
+            rows,
+            count,
+        }
     }
 }
 
@@ -129,7 +134,9 @@ impl Storyboard {
         let abs = item.abs_path.clone()?;
         // `key` derivation does a blocking `fs::metadata`; run it off the async
         // worker so a stalled mount can't wedge the runtime.
-        let key = tokio::task::spawn_blocking(move || Self::key(&abs)).await.ok()?;
+        let key = tokio::task::spawn_blocking(move || Self::key(&abs))
+            .await
+            .ok()?;
         for (ext, ct) in [("webp", "image/webp"), ("jpg", "image/jpeg")] {
             if let Ok(bytes) = tokio::fs::read(self.dir.join(format!("{key}.{ext}"))).await {
                 return Some((bytes, ct));
@@ -171,8 +178,10 @@ impl Storyboard {
         // answers "does the source even exist" an offline mount must not spawn
         // a doomed ffmpeg (let alone one per poll).
         let abs_key = abs.clone();
-        let Ok((key, exists)) =
-            tokio::task::spawn_blocking(move || (Self::key(&abs_key), Path::new(&abs_key).exists())).await
+        let Ok((key, exists)) = tokio::task::spawn_blocking(move || {
+            (Self::key(&abs_key), Path::new(&abs_key).exists())
+        })
+        .await
         else {
             return Status::Unavailable;
         };
@@ -205,9 +214,11 @@ impl Storyboard {
         tokio::spawn(async move {
             let _permit = sem.acquire_owned().await; // bound concurrent ffmpeg
             let key2 = key.clone();
-            let res = tokio::task::spawn_blocking(move || render::generate(&abs, &dir, &key2, &item_id, dur_s, &|| false))
-                .await
-                .unwrap_or_else(|e| Err(format!("generation task crashed: {e}")));
+            let res = tokio::task::spawn_blocking(move || {
+                render::generate(&abs, &dir, &key2, &item_id, dur_s, &|| false)
+            })
+            .await
+            .unwrap_or_else(|e| Err(format!("generation task crashed: {e}")));
             match res {
                 Err(reason) => {
                     warn!(item = %log_id, "storyboard generation failed: {reason}");

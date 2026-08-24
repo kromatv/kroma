@@ -110,5 +110,11 @@ impl std::ops::Deref for TempStore {
 
 pub(super) fn store_for(source: String) -> TempStore {
     let dir = scratch("cache");
-    TempStore { store: DefinitionStore { dir: dir.path().to_path_buf(), source }, _dir: dir }
+    TempStore {
+        store: DefinitionStore {
+            dir: dir.path().to_path_buf(),
+            source,
+        },
+        _dir: dir,
+    }
 }

@@ -10,12 +10,12 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::api::error::lerr;
-use crate::api::util::query;
 use crate::api::extract::AuthUser;
-use crate::services::auth;
+use crate::api::util::query;
 use crate::db;
 use crate::i18n;
 use crate::model::{Permission, User};
+use crate::services::auth;
 use crate::state::SharedState;
 use axum::routing::{get, post};
 use axum::Router;
@@ -32,7 +32,11 @@ fn require(user: &User, perm: Permission) -> Result<(), Response> {
     if user.can(perm) {
         Ok(())
     } else {
-        let loc = user.language.as_deref().and_then(i18n::normalize).unwrap_or(i18n::DEFAULT_LOCALE);
+        let loc = user
+            .language
+            .as_deref()
+            .and_then(i18n::normalize)
+            .unwrap_or(i18n::DEFAULT_LOCALE);
         Err(lerr(loc, StatusCode::FORBIDDEN, "error.permissionDenied"))
     }
 }
@@ -53,20 +57,34 @@ pub async fn create_invite(
 ) -> Result<Response, Response> {
     require(&user, Permission::UsersManage)?;
     let token = auth::random_token();
-    let permissions = body.permissions.unwrap_or_else(|| vec![Permission::Playback]);
-    let days = body.expires_in_days.unwrap_or(INVITE_TTL_DAYS_DEFAULT).clamp(1, 365);
+    let permissions = body
+        .permissions
+        .unwrap_or_else(|| vec![Permission::Playback]);
+    let days = body
+        .expires_in_days
+        .unwrap_or(INVITE_TTL_DAYS_DEFAULT)
+        .clamp(1, 365);
     let expires_at = time::OffsetDateTime::now_utc().unix_timestamp() + days * 24 * 3600;
 
     let token_db = token.clone();
     let perms = permissions.clone();
     let uid = user.id.clone();
-    query(&state.db, move |pool| db::create_invite(&pool, &token_db, &perms, &uid, expires_at)).await?;
+    query(&state.db, move |pool| {
+        db::create_invite(&pool, &token_db, &perms, &uid, expires_at)
+    })
+    .await?;
     let url = state
         .config
         .web_url
         .as_ref()
         .map(|w| format!("{w}/join?invite={token}"));
-    Ok(Json(super::dto::InviteCreated { token, url, permissions, expires_at }).into_response())
+    Ok(Json(super::dto::InviteCreated {
+        token,
+        url,
+        permissions,
+        expires_at,
+    })
+    .into_response())
 }
 
 /// `GET /api/invites` (Bearer + `users.manage`) → pending invites.

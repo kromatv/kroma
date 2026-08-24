@@ -87,7 +87,10 @@ pub fn upsert_subscription(pool: &Pool, sub: &NewSubscription, now_ms: i64) -> R
 }
 
 /// Every endpoint a user has opted in on.
-pub fn subscriptions_for_user(conn: &Connection, user_id: &str) -> rusqlite::Result<Vec<PushSubscription>> {
+pub fn subscriptions_for_user(
+    conn: &Connection,
+    user_id: &str,
+) -> rusqlite::Result<Vec<PushSubscription>> {
     let sql = format!("SELECT {SUB_COLS} FROM push_subscriptions WHERE user_id = ?1");
     let mut stmt = conn.prepare(&sql)?;
     let rows = stmt.query_map(params![user_id], row_to_sub)?;
@@ -105,9 +108,13 @@ pub fn has_subscription(conn: &Connection, user_id: &str) -> rusqlite::Result<bo
 }
 
 /// Look one up by its endpoint (the browser knows only that).
-pub fn find_by_endpoint(conn: &Connection, endpoint: &str) -> rusqlite::Result<Option<PushSubscription>> {
+pub fn find_by_endpoint(
+    conn: &Connection,
+    endpoint: &str,
+) -> rusqlite::Result<Option<PushSubscription>> {
     let sql = format!("SELECT {SUB_COLS} FROM push_subscriptions WHERE endpoint = ?1");
-    conn.query_row(&sql, params![endpoint], row_to_sub).optional()
+    conn.query_row(&sql, params![endpoint], row_to_sub)
+        .optional()
 }
 
 /// Unsubscribe one endpoint, scoped to its owner so a known endpoint string
@@ -142,9 +149,16 @@ pub fn record_success(pool: &Pool, id: &str, now_ms: i64) -> Result<()> {
 /// [`MAX_FAILURES`] times in a row and should be dropped.
 pub fn record_failure(pool: &Pool, id: &str) -> Result<bool> {
     let conn = pool.get()?;
-    conn.execute("UPDATE push_subscriptions SET failures = failures + 1 WHERE id = ?1", params![id])?;
+    conn.execute(
+        "UPDATE push_subscriptions SET failures = failures + 1 WHERE id = ?1",
+        params![id],
+    )?;
     let failures: i64 = conn
-        .query_row("SELECT failures FROM push_subscriptions WHERE id = ?1", params![id], |r| r.get(0))
+        .query_row(
+            "SELECT failures FROM push_subscriptions WHERE id = ?1",
+            params![id],
+            |r| r.get(0),
+        )
         .optional()?
         .unwrap_or(0);
     Ok(failures >= MAX_FAILURES)
@@ -158,8 +172,12 @@ mod tests {
 
     fn pool() -> (TempPool, String, String) {
         let p = crate::testing::temp_pool("push");
-        let a = crate::create_user(&p, "a@test.dev", "A", "h", &[]).unwrap().id;
-        let b = crate::create_user(&p, "b@test.dev", "B", "h", &[]).unwrap().id;
+        let a = crate::create_user(&p, "a@test.dev", "A", "h", &[])
+            .unwrap()
+            .id;
+        let b = crate::create_user(&p, "b@test.dev", "B", "h", &[])
+            .unwrap()
+            .id;
         (p, a, b)
     }
 
@@ -230,9 +248,15 @@ mod tests {
         let (p, a, _) = pool();
         upsert_subscription(&p, &sub("s1", &a, "https://push.example/1"), 1_000).unwrap();
         for i in 1..MAX_FAILURES {
-            assert!(!record_failure(&p, "s1").unwrap(), "still alive after {i} failures");
+            assert!(
+                !record_failure(&p, "s1").unwrap(),
+                "still alive after {i} failures"
+            );
         }
-        assert!(record_failure(&p, "s1").unwrap(), "dead on the {MAX_FAILURES}th");
+        assert!(
+            record_failure(&p, "s1").unwrap(),
+            "dead on the {MAX_FAILURES}th"
+        );
     }
 
     #[test]
@@ -264,12 +288,18 @@ mod tests {
         let (p, a, _) = pool();
         upsert_subscription(&p, &sub("s1", &a, "https://push.example/1"), 1_000).unwrap();
         let conn = p.get().unwrap();
-        assert!(find_by_endpoint(&conn, "https://push.example/1").unwrap().is_some());
-        assert!(find_by_endpoint(&conn, "https://push.example/nope").unwrap().is_none());
+        assert!(find_by_endpoint(&conn, "https://push.example/1")
+            .unwrap()
+            .is_some());
+        assert!(find_by_endpoint(&conn, "https://push.example/nope")
+            .unwrap()
+            .is_none());
         drop(conn);
         drop_subscription(&p, "s1").unwrap();
         let conn = p.get().unwrap();
-        assert!(find_by_endpoint(&conn, "https://push.example/1").unwrap().is_none());
+        assert!(find_by_endpoint(&conn, "https://push.example/1")
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -277,7 +307,8 @@ mod tests {
         let (p, a, _) = pool();
         upsert_subscription(&p, &sub("s1", &a, "https://push.example/1"), 1_000).unwrap();
         let conn = p.get().unwrap();
-        conn.execute("DELETE FROM users WHERE id = ?1", params![a]).unwrap();
+        conn.execute("DELETE FROM users WHERE id = ?1", params![a])
+            .unwrap();
         assert!(!has_subscription(&conn, &a).unwrap());
     }
 

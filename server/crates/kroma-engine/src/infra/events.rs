@@ -205,7 +205,10 @@ impl Bus {
             return;
         }
         if let Ok(json) = serde_json::to_string(payload) {
-            let _ = self.tx.send(Envelope { audience, json: json.into() });
+            let _ = self.tx.send(Envelope {
+                audience,
+                json: json.into(),
+            });
         }
     }
 
@@ -260,7 +263,11 @@ mod tests {
         let mut rx = bus.subscribe();
         bus.publish(item("abc"));
         let env = rx.try_recv().expect("published");
-        assert!(env.payload_unrouted().contains("item.updated"), "{}", env.payload_unrouted());
+        assert!(
+            env.payload_unrouted().contains("item.updated"),
+            "{}",
+            env.payload_unrouted()
+        );
         assert!(env.payload_unrouted().contains("abc"));
     }
 

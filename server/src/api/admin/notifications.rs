@@ -26,8 +26,7 @@ use crate::api::util::blocking;
 use kroma_db::notifications::StoredNotification;
 
 use crate::model::{
-    Audience, Notification, NotificationCategory,
-    NotificationEvent, NotificationSpec, Permission,
+    Audience, Notification, NotificationCategory, NotificationEvent, NotificationSpec, Permission,
 };
 use crate::state::SharedState;
 
@@ -169,23 +168,35 @@ pub async fn send(
 }
 
 fn compose(body: &SendBody, admin: &str) -> Result<NotificationSpec, &'static str> {
-    if let Some(title) = body.title.as_deref().map(str::trim).filter(|t| !t.is_empty()) {
+    if let Some(title) = body
+        .title
+        .as_deref()
+        .map(str::trim)
+        .filter(|t| !t.is_empty())
+    {
         let category = match body.category.as_deref() {
             None => NotificationCategory::System,
-            Some(raw) => {
-                NotificationCategory::parse(raw).ok_or("unknown notification category")?
-            }
+            Some(raw) => NotificationCategory::parse(raw).ok_or("unknown notification category")?,
         };
         let text = body.body.clone().unwrap_or_default();
         within(title, MAX_TITLE, "title is too long")?;
         within(&text, MAX_BODY, "body is too long")?;
 
         let mut spec = NotificationSpec::custom(category, title, text);
-        if let Some(link) = body.link.as_deref().map(str::trim).filter(|l| !l.is_empty()) {
+        if let Some(link) = body
+            .link
+            .as_deref()
+            .map(str::trim)
+            .filter(|l| !l.is_empty())
+        {
             within(link, MAX_LINK, "link is too long")?;
             spec = spec.link(link);
         }
-        let image = body.image_url.as_deref().map(str::trim).filter(|u| !u.is_empty());
+        let image = body
+            .image_url
+            .as_deref()
+            .map(str::trim)
+            .filter(|u| !u.is_empty());
         if let Some(image) = image {
             within(image, MAX_IMAGE_URL, "image URL is too long")?;
         }
@@ -230,7 +241,10 @@ mod tests {
 
         let one_too_many = "\u{1f4fa}".repeat(MAX_TITLE / 2 + 1);
         assert!(one_too_many.chars().count() < MAX_TITLE);
-        assert_eq!(compose(&body(Some(&one_too_many), None), "owner").err(), Some("title is too long"));
+        assert_eq!(
+            compose(&body(Some(&one_too_many), None), "owner").err(),
+            Some("title is too long")
+        );
     }
 
     #[test]
@@ -272,5 +286,4 @@ mod tests {
         assert_eq!(spec.link, None);
         assert!(spec.actions.is_empty());
     }
-
 }

@@ -81,9 +81,9 @@ pub(crate) fn fixed_dim_embedder(dim: usize) -> Point {
         "embed" => Some(serde_json::json!(stamped(dim, &calls))),
         "embed_batch" => {
             let n = body["texts"].as_array().map_or(0, Vec::len);
-            Some(serde_json::json!(
-                (0..n).map(|_| stamped(dim, &calls)).collect::<Vec<_>>()
-            ))
+            Some(serde_json::json!((0..n)
+                .map(|_| stamped(dim, &calls))
+                .collect::<Vec<_>>()))
         }
         _ => None,
     })
@@ -136,7 +136,9 @@ pub(crate) fn seed_movie(state: &SharedState, id: &str) {
     )
     .unwrap();
     conn.execute(
-        &format!("INSERT INTO files (id,item_id,abs_path) VALUES ('{id}-f','{id}','/media/{id}.mkv')"),
+        &format!(
+            "INSERT INTO files (id,item_id,abs_path) VALUES ('{id}-f','{id}','/media/{id}.mkv')"
+        ),
         [],
     )
     .unwrap();
@@ -144,7 +146,11 @@ pub(crate) fn seed_movie(state: &SharedState, id: &str) {
 
 /// Insert a show plus one episode under season 1 (creating a `shows` library if
 /// needed). Returns `(show_id, episode_id)` for convenience.
-pub(crate) fn seed_show_episode(state: &SharedState, show_id: &str, ep_id: &str) -> (String, String) {
+pub(crate) fn seed_show_episode(
+    state: &SharedState,
+    show_id: &str,
+    ep_id: &str,
+) -> (String, String) {
     seed_library(state, "lib-shows", "shows");
     let conn = state.db.get().unwrap();
     conn.execute(
@@ -222,7 +228,10 @@ pub(crate) fn seed_play(state: &SharedState, user_id: &str, item_id: &str, ended
 
 /// A `User` value with no DB row behind it, for services that only read the
 /// struct. Use [`test_state`] + `kroma_db::create_user` when the row must exist.
-pub(crate) fn test_user(id: &str, permissions: Vec<crate::model::Permission>) -> crate::model::User {
+pub(crate) fn test_user(
+    id: &str,
+    permissions: Vec<crate::model::Permission>,
+) -> crate::model::User {
     crate::model::User {
         id: id.into(),
         email: format!("{id}@example.test"),
@@ -260,9 +269,14 @@ impl FakeLlm {
     /// Answer every completion with `content`.
     pub(crate) fn always(content: &str) -> Self {
         let content = content.to_string();
-        Self::routed(move |_| (200, serde_json::json!({
-            "choices": [{ "message": { "content": content } }]
-        })))
+        Self::routed(move |_| {
+            (
+                200,
+                serde_json::json!({
+                    "choices": [{ "message": { "content": content } }]
+                }),
+            )
+        })
     }
 
     /// Answer with `status` and a body that is not a completion at all.
@@ -282,14 +296,19 @@ impl FakeLlm {
         std::thread::spawn(move || {
             for stream in listener.incoming() {
                 let Ok(mut stream) = stream else { break };
-                let Some(request) = read_json_request(&stream) else { continue };
+                let Some(request) = read_json_request(&stream) else {
+                    continue;
+                };
                 let (status, reply) = route(&request);
                 log.lock().unwrap().push(request);
                 write_json_reply(&mut stream, status, &reply);
             }
         });
 
-        Self { base: format!("http://127.0.0.1:{port}"), seen }
+        Self {
+            base: format!("http://127.0.0.1:{port}"),
+            seen,
+        }
     }
 
     /// The endpoint's base URL, for `llmBaseUrl`.
@@ -383,9 +402,7 @@ pub(crate) struct FakeTmdb {
 
 impl FakeTmdb {
     /// `route` maps a request path (e.g. `/movie/603`) to `(status, body)`.
-    pub(crate) fn start(
-        route: impl Fn(&str) -> (u16, serde_json::Value) + Send + 'static,
-    ) -> Self {
+    pub(crate) fn start(route: impl Fn(&str) -> (u16, serde_json::Value) + Send + 'static) -> Self {
         use std::io::Write;
 
         let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
@@ -396,7 +413,9 @@ impl FakeTmdb {
         std::thread::spawn(move || {
             for stream in listener.incoming() {
                 let Ok(mut stream) = stream else { break };
-                let Some(full) = read_request_target(&stream) else { continue };
+                let Some(full) = read_request_target(&stream) else {
+                    continue;
+                };
                 // "/movie/603?api_key=x" -> "/movie/603"
                 let path = full.split('?').next().unwrap_or("").to_string();
                 log.lock().unwrap().push(full);
@@ -528,8 +547,7 @@ fn der(tag: u8, body: &[u8]) -> Vec<u8> {
 }
 
 fn base64_standard(bytes: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
     for chunk in bytes.chunks(3) {
         let n = (u32::from(chunk[0]) << 16)

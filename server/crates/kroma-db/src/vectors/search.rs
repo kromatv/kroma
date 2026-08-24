@@ -11,7 +11,11 @@ use rusqlite::params;
 /// the seed has no stored vector yet.
 pub fn similar(pool: &Pool, id: &str, n: usize) -> Result<Vec<(String, f32)>> {
     let vectors = load_vectors(pool)?;
-    let Some(query) = vectors.iter().find(|(vid, _)| vid == id).map(|(_, v)| v.clone()) else {
+    let Some(query) = vectors
+        .iter()
+        .find(|(vid, _)| vid == id)
+        .map(|(_, v)| v.clone())
+    else {
         return Ok(Vec::new());
     };
     let exclude: HashSet<&str> = std::iter::once(id).collect();
@@ -117,7 +121,10 @@ mod tests {
         let p = seeded();
         let near = similar(&p, "a", 10).unwrap();
         // a's nearest is b (dot 0.8), then c (dot 0.0); a itself excluded.
-        assert_eq!(near.iter().map(|(id, _)| id.as_str()).collect::<Vec<_>>(), ["b", "c"]);
+        assert_eq!(
+            near.iter().map(|(id, _)| id.as_str()).collect::<Vec<_>>(),
+            ["b", "c"]
+        );
         assert!(near[0].1 > near[1].1);
         // A seed without a stored vector yields nothing.
         assert!(similar(&p, "ghost", 10).unwrap().is_empty());
@@ -168,15 +175,20 @@ mod tests {
             .unwrap();
         }
         assert_eq!(recent_watched_ids(&p, "u1").unwrap(), vec!["z".to_string()]);
-        assert!(for_you(&p, "u1", 10).unwrap().is_empty(), "no vector, so no centroid to rank from");
+        assert!(
+            for_you(&p, "u1", 10).unwrap().is_empty(),
+            "no vector, so no centroid to rank from"
+        );
     }
 
     #[test]
     fn a_centroid_averages_only_the_vectors_of_its_own_width() {
         assert!(centroid_of(&[], &["a".to_string()]).is_none());
 
-        let vectors =
-            vec![("a".to_string(), vec![1.0, 0.0]), ("b".to_string(), vec![0.0, 1.0, 0.0])];
+        let vectors = vec![
+            ("a".to_string(), vec![1.0, 0.0]),
+            ("b".to_string(), vec![0.0, 1.0, 0.0]),
+        ];
         assert!(centroid_of(&vectors, &["ghost".to_string()]).is_none());
         assert_eq!(
             centroid_of(&vectors, &["a".to_string(), "b".to_string()]),
@@ -188,7 +200,11 @@ mod tests {
     fn normalizing_a_zero_vector_leaves_it_alone() {
         let mut zero = vec![0.0f32, 0.0];
         l2_normalize(&mut zero);
-        assert_eq!(zero, vec![0.0, 0.0], "dividing by a zero norm would yield NaN");
+        assert_eq!(
+            zero,
+            vec![0.0, 0.0],
+            "dividing by a zero norm would yield NaN"
+        );
 
         let mut v = vec![3.0f32, 4.0];
         l2_normalize(&mut v);

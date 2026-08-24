@@ -14,7 +14,10 @@ fn free_port() -> u16 {
 fn get(port: u16, path: &str) -> Option<String> {
     let mut stream = TcpStream::connect(("127.0.0.1", port)).ok()?;
     stream
-        .write_all(format!("GET {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n").as_bytes())
+        .write_all(
+            format!("GET {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+                .as_bytes(),
+        )
         .ok()?;
     let mut out = String::new();
     stream.read_to_string(&mut out).ok()?;
@@ -53,5 +56,8 @@ fn boots_with_no_modules_and_no_port_routes() {
     assert!(health.contains("200"), "healthz said: {health}");
 
     let guarded = get(port, "/_port/_ready").expect("guarded route answers");
-    assert!(guarded.contains("401"), "the anchor route must stay behind the host token: {guarded}");
+    assert!(
+        guarded.contains("401"),
+        "the anchor route must stay behind the host token: {guarded}"
+    );
 }

@@ -45,9 +45,10 @@ pub fn run(stage: &Stage, ctx: &JobContext) -> Result<()> {
             "{}: re-queued {n} task(s) left running by an interrupted earlier drain",
             stage.short
         )),
-        Err(e) => {
-            ctx.warn(format!("{}: failed to reclaim stranded tasks: {e:#}", stage.short))
-        }
+        Err(e) => ctx.warn(format!(
+            "{}: failed to reclaim stranded tasks: {e:#}",
+            stage.short
+        )),
     }
 
     let subjects = (stage.enumerate)(&ctx.state)?;
@@ -63,17 +64,26 @@ pub fn run(stage: &Stage, ctx: &JobContext) -> Result<()> {
     // arriving mid-run just extend it (progress is clamped to 100%).
     let total = pending_count(pool, stage.short)?;
     if total == 0 {
-        ctx.info(format!("{}: nothing to do (already up to date)", stage.short));
+        ctx.info(format!(
+            "{}: nothing to do (already up to date)",
+            stage.short
+        ));
         return Ok(());
     }
-    ctx.info(format!("{}: draining {total} pending task(s)…", stage.short));
+    ctx.info(format!(
+        "{}: draining {total} pending task(s)…",
+        stage.short
+    ));
 
     let drained = drain_loop(stage, ctx, total);
 
     // A mid-batch cancel or an aborted loop can leave tasks claimed but
     // unprocessed; reset them to `pending` here regardless of how the loop exited.
     if let Err(e) = db::pipeline::reset_running(pool, Some(stage.short)) {
-        ctx.warn(format!("{}: failed to reset leftover running tasks: {e:#}", stage.short));
+        ctx.warn(format!(
+            "{}: failed to reset leftover running tasks: {e:#}",
+            stage.short
+        ));
     }
     emit_stats(stage, ctx); // final authoritative push
     drained?;
@@ -132,7 +142,15 @@ fn drain_loop(stage: &Stage, ctx: &JobContext, total: usize) -> Result<()> {
         failed_seen += results.iter().filter(|r| r.error.is_some()).count();
         ctx.progress(processed.min(total), total);
         maybe_emit_stats(stage, ctx, &mut stats_flush_ms);
-        maybe_log_progress(ctx, stage.short, processed, total, failed_seen, drain_started, &mut log_flush_ms);
+        maybe_log_progress(
+            ctx,
+            stage.short,
+            processed,
+            total,
+            failed_seen,
+            drain_started,
+            &mut log_flush_ms,
+        );
     }
     Ok(())
 }

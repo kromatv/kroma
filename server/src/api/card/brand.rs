@@ -12,7 +12,9 @@ use super::{draw_text, text_width, TextStyle, MARGIN, WHITE};
 fn font() -> &'static Font {
     static FONT: OnceLock<Font> = OnceLock::new();
     FONT.get_or_init(|| {
-        let bytes = include_bytes!("../../../../packages/ui/src/assets/fonts/BricolageGrotesque-ExtraBold.ttf") as &[u8];
+        let bytes = include_bytes!(
+            "../../../../packages/ui/src/assets/fonts/BricolageGrotesque-ExtraBold.ttf"
+        ) as &[u8];
         Font::from_bytes(bytes, fontdue::FontSettings::default()).expect("bundled font parses")
     })
 }
@@ -43,7 +45,11 @@ pub(super) fn paint(pm: &mut Pixmap, cy: f32, s: f32) {
     let x0 = pm.width() as f32 - MARGIN * s - total;
     let baseline = cy + size * 0.32;
 
-    let style = TextStyle { size, color: WHITE, tracking };
+    let style = TextStyle {
+        size,
+        color: WHITE,
+        tracking,
+    };
     draw_text(pm, f, "KR", x0, baseline, &style);
     let wx = x0 + w_kr + gap_l;
     let wy = baseline + size * 0.095 - wheel;
@@ -99,7 +105,13 @@ fn paint_wheel(pm: &mut Pixmap, x: f32, y: f32, size: f32) {
             let mut paint = Paint::default();
             paint.set_color_rgba8(cr, cg, cb, 255);
             paint.anti_alias = true;
-            pm.fill_path(&path, &paint, FillRule::Winding, Transform::identity(), None);
+            pm.fill_path(
+                &path,
+                &paint,
+                FillRule::Winding,
+                Transform::identity(),
+                None,
+            );
         }
     }
 }
@@ -116,8 +128,17 @@ mod tests {
         let mut pm = Pixmap::new(W, H).expect("pixmap");
         paint(&mut pm, MARGIN + 21.0, 1.0);
         let lit = |x: u32, y: u32| pm.pixel(x, y).is_some_and(|p| p.alpha() > 0);
-        assert!((W / 2..W).any(|x| (0..80).any(|y| lit(x, y))), "the lockup drew nothing");
-        assert!(!(0..H).any(|y| lit(W - 1, y)), "the lockup spilled past the margin");
-        assert!(!(0..W).any(|x| (H / 2..H).any(|y| lit(x, y))), "the lockup leaked downward");
+        assert!(
+            (W / 2..W).any(|x| (0..80).any(|y| lit(x, y))),
+            "the lockup drew nothing"
+        );
+        assert!(
+            !(0..H).any(|y| lit(W - 1, y)),
+            "the lockup spilled past the margin"
+        );
+        assert!(
+            !(0..W).any(|x| (H / 2..H).any(|y| lit(x, y))),
+            "the lockup leaked downward"
+        );
     }
 }

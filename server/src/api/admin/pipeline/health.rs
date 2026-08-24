@@ -61,7 +61,9 @@ pub async fn list_pipeline(
     let stages = blocking(move || {
         let mut out = Vec::with_capacity(STAGE_KEYS.len());
         for (short, key, kind) in STAGE_KEYS.iter().copied() {
-            out.push(crate::db::pipeline::stage_stat(&state.db, short, key, kind)?);
+            out.push(crate::db::pipeline::stage_stat(
+                &state.db, short, key, kind,
+            )?);
         }
         Ok(out)
     })

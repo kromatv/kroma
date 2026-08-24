@@ -47,8 +47,13 @@ impl DownloadManager {
             self.open_gate();
         }
         let paused = !self.gate_open.load(Ordering::Relaxed);
-        let status = VpnStatusView { connected: sealed, exit_ip: check.proxied_ip.clone(), paused };
-        let changed = self.vpn_status.lock().unwrap().replace(status.clone()) != Some(status.clone());
+        let status = VpnStatusView {
+            connected: sealed,
+            exit_ip: check.proxied_ip.clone(),
+            paused,
+        };
+        let changed =
+            self.vpn_status.lock().unwrap().replace(status.clone()) != Some(status.clone());
         if changed {
             host.publish(Event::new(
                 "vpn.status",

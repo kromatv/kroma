@@ -9,14 +9,14 @@ use std::thread;
 
 use tracing::{info, warn};
 
-use crate::services::activity::{self, Shared as Activity};
 use crate::db::{self, Pool};
-use crate::point::Point;
 use crate::infra::events::{Bus, ServerEvent};
 use crate::infra::image;
 use crate::infra::metadata::{self, Cache, Target};
 use crate::infra::theme;
 use crate::model::{Kind, MediaItem, Metadata, Show};
+use crate::point::Point;
+use crate::services::activity::{self, Shared as Activity};
 use crate::services::search::SearchEngine;
 use crate::state::SharedState;
 
@@ -171,7 +171,12 @@ pub fn maybe_spawn(state: &SharedState, items: &[MediaItem], shows: &[Show]) {
     let total = jobs.len();
     info!(titles = total, "starting background TMDB enrichment");
     activity::enrich_started(&state.activity, total);
-    spawn(engine_for(state, api_key), state.activity.clone(), state.search.clone(), jobs);
+    spawn(
+        engine_for(state, api_key),
+        state.activity.clone(),
+        state.search.clone(),
+        jobs,
+    );
 }
 
 fn blank_metadata() -> Metadata {
@@ -220,13 +225,20 @@ fn enrich_episodes(
     show_id: &str,
     tv_id: u64,
 ) {
-    let Ok(Some(detail)) = db::get_show(pool, show_id) else { return };
+    let Ok(Some(detail)) = db::get_show(pool, show_id) else {
+        return;
+    };
     let have_cast = db::seasons_with_cast(pool, show_id).unwrap_or_default();
     for season in &detail.seasons {
         let missing: Vec<&MediaItem> = season
             .episodes
             .iter()
-            .filter(|e| e.metadata.as_ref().and_then(|m| m.backdrop_url.as_ref()).is_none())
+            .filter(|e| {
+                e.metadata
+                    .as_ref()
+                    .and_then(|m| m.backdrop_url.as_ref())
+                    .is_none()
+            })
             .collect();
         let needs_cast = !have_cast.contains(&season.number);
         if missing.is_empty() && !needs_cast {
@@ -241,7 +253,15 @@ fn enrich_episodes(
 
         store_episode_stills(pool, data_dir, bus, &missing, data);
         store_episode_translations(pool, &per_lang, &season.episodes);
-        store_season_cast(pool, data_dir, show_id, season.number, needs_cast, &per_lang, data);
+        store_season_cast(
+            pool,
+            data_dir,
+            show_id,
+            season.number,
+            needs_cast,
+            &per_lang,
+            data,
+        );
     }
 }
 
@@ -259,7 +279,9 @@ fn store_episode_stills(
         data.episodes.iter().map(|a| (a.episode, a)).collect();
     for ep in missing {
         let Some(num) = ep.episode else { continue };
-        let Some(art) = by_num.get(&num) else { continue };
+        let Some(art) = by_num.get(&num) else {
+            continue;
+        };
         if art.still_url.is_none() && art.overview.is_none() {
             continue;
         }
@@ -282,8 +304,14 @@ fn store_episode_translations(
             sdata.episodes.iter().map(|a| (a.episode, a)).collect();
         for ep in episodes {
             let Some(num) = ep.episode else { continue };
-            let Some(art) = by_num.get(&num) else { continue };
-            let td = TransData { title: art.name.clone(), overview: art.overview.clone(), ..Default::default() };
+            let Some(art) = by_num.get(&num) else {
+                continue;
+            };
+            let td = TransData {
+                title: art.name.clone(),
+                overview: art.overview.clone(),
+                ..Default::default()
+            };
             if !td.is_empty() {
                 let _ = translations::put(pool, "episode", &ep.id, lang, translations::TMDB, &td);
             }
@@ -307,8 +335,13 @@ fn store_season_cast(
     if !needs_cast || data.cast.is_empty() {
         return;
     }
-    let carrier =
-        image::localize(data_dir, Metadata { cast: data.cast.clone(), ..blank_metadata() });
+    let carrier = image::localize(
+        data_dir,
+        Metadata {
+            cast: data.cast.clone(),
+            ..blank_metadata()
+        },
+    );
     if let Err(e) = db::set_season_cast(pool, show_id, season_number, &carrier.cast) {
         warn!(show = %show_id, season = season_number, error = %e, "failed to store season cast");
     }
@@ -319,17 +352,32 @@ fn store_season_cast(
         }
         let characters: Vec<Option<String>> =
             sdata.cast.iter().map(|c| c.character.clone()).collect();
-        let td = TransData { characters, ..Default::default() };
+        let td = TransData {
+            characters,
+            ..Default::default()
+        };
         let _ = translations::put(pool, "season_cast", &sc_id, lang, translations::TMDB, &td);
     }
 }
 
-fn process_job(eng: &Engine, counters: &Counters, total: usize, activity: Option<&Activity>, job: Job) {
+fn process_job(
+    eng: &Engine,
+    counters: &Counters,
+    total: usize,
+    activity: Option<&Activity>,
+    job: Job,
+) {
     let langs: Vec<&str> = crate::i18n::SUPPORTED_LOCALES.to_vec();
     if let Some(tmdb_id) = job.resolved_tmdb {
         if job.is_show {
             enrich_episodes(
-                &eng.pool, &eng.api_key, &eng.language, &langs, &eng.data_dir, &eng.bus, &job.id,
+                &eng.pool,
+                &eng.api_key,
+                &eng.language,
+                &langs,
+                &eng.data_dir,
+                &eng.bus,
+                &job.id,
                 tmdb_id,
             );
         }
@@ -342,7 +390,13 @@ fn process_job(eng: &Engine, counters: &Counters, total: usize, activity: Option
             metadata::lookup_all_by_id(&eng.cache, &eng.api_key, &langs, job.target, tmdb_id)
         }
         None => metadata::lookup_all(
-            &eng.cache, &eng.api_key, &eng.language, &langs, job.target, &job.title, job.year,
+            &eng.cache,
+            &eng.api_key,
+            &eng.language,
+            &langs,
+            job.target,
+            &job.title,
+            job.year,
         ),
     };
     let Some(resolved) = resolved else {
@@ -361,7 +415,11 @@ fn process_job(eng: &Engine, counters: &Counters, total: usize, activity: Option
     let meta = image::localize(&eng.data_dir, meta);
     // Disabled leaves `theme_url` None, so a re-scan also clears any theme
     // cached while the feature was on.
-    let meta = if eng.theme_songs { theme::localize(&eng.data_dir, meta) } else { meta };
+    let meta = if eng.theme_songs {
+        theme::localize(&eng.data_dir, meta)
+    } else {
+        meta
+    };
     let doc = kroma_domain::build_doc(&job.title, job.year, &meta);
     let vector = crate::services::embeddings::embed(&eng.embedder, &doc);
     let write = if job.is_show {
@@ -370,7 +428,15 @@ fn process_job(eng: &Engine, counters: &Counters, total: usize, activity: Option
         db::set_item_metadata(&eng.pool, &job.id, &meta)
     };
     match write {
-        Ok(()) => on_write_ok(eng, counters, &job, &meta, &vector, &resolved.by_lang, &langs),
+        Ok(()) => on_write_ok(
+            eng,
+            counters,
+            &job,
+            &meta,
+            &vector,
+            &resolved.by_lang,
+            &langs,
+        ),
         Err(e) => {
             counters.failed.fetch_add(1, Ordering::Relaxed);
             warn!(id = %job.id, error = %e, "failed to store metadata");
@@ -392,7 +458,11 @@ fn on_write_ok(
     langs: &[&str],
 ) {
     rename_if_pinned(eng, job, meta);
-    let kind = if job.is_show { db::metadata_core::SHOW } else { db::metadata_core::ITEM };
+    let kind = if job.is_show {
+        db::metadata_core::SHOW
+    } else {
+        db::metadata_core::ITEM
+    };
     if let Err(e) = db::store_localized(&eng.pool, kind, &job.id, meta, by_lang) {
         warn!(id = %job.id, error = %e, "failed to store localized metadata cache");
     }
@@ -401,8 +471,14 @@ fn on_write_ok(
     }
     if job.is_show && meta.tmdb_id != 0 {
         enrich_episodes(
-            &eng.pool, &eng.api_key, &eng.language, langs, &eng.data_dir, &eng.bus,
-            &job.id, meta.tmdb_id,
+            &eng.pool,
+            &eng.api_key,
+            &eng.language,
+            langs,
+            &eng.data_dir,
+            &eng.bus,
+            &job.id,
+            meta.tmdb_id,
         );
     }
     counters.resolved.fetch_add(1, Ordering::Relaxed);
@@ -419,8 +495,11 @@ fn rename_if_pinned(eng: &Engine, job: &Job, meta: &Metadata) {
     if job.pin.is_none() {
         return;
     }
-    let Some(title) =
-        meta.title.as_deref().map(str::trim).filter(|t| !t.is_empty() && *t != job.title)
+    let Some(title) = meta
+        .title
+        .as_deref()
+        .map(str::trim)
+        .filter(|t| !t.is_empty() && *t != job.title)
     else {
         return;
     };
@@ -463,8 +542,12 @@ fn spawn(eng: Engine, activity: Activity, search: Arc<SearchEngine>, jobs: Vec<J
         let worker_count = WORKERS.min(total.max(1));
         let mut handles = Vec::with_capacity(worker_count);
         for _ in 0..worker_count {
-            let (eng, queue, counters, activity) =
-                (eng.clone(), queue.clone(), counters.clone(), activity.clone());
+            let (eng, queue, counters, activity) = (
+                eng.clone(),
+                queue.clone(),
+                counters.clone(),
+                activity.clone(),
+            );
             handles.push(thread::spawn(move || loop {
                 let job = match queue.lock().unwrap().pop() {
                     Some(j) => j,
@@ -479,7 +562,8 @@ fn spawn(eng: Engine, activity: Activity, search: Arc<SearchEngine>, jobs: Vec<J
         let resolved = counters.resolved.load(Ordering::Relaxed);
         activity::enrich_completed(&activity);
         info!(resolved, total, "TMDB enrichment complete");
-        eng.bus.publish(ServerEvent::EnrichCompleted { resolved, total });
+        eng.bus
+            .publish(ServerEvent::EnrichCompleted { resolved, total });
         match search.reindex_from_db(&eng.pool) {
             Ok(()) => info!("search index rebuilt after enrichment"),
             Err(e) => warn!(error = %e, "search reindex after enrichment failed"),
@@ -497,7 +581,11 @@ pub fn enrich_one(state: &SharedState, id: &str, is_show: bool) -> anyhow::Resul
         let Some(show) = db::get_show(&state.db, id)?.map(|d| d.show) else {
             return Ok(());
         };
-        let on_file = show.metadata.as_ref().map(|m| m.tmdb_id).filter(|&i| i != 0);
+        let on_file = show
+            .metadata
+            .as_ref()
+            .map(|m| m.tmdb_id)
+            .filter(|&i| i != 0);
         let pin = pin_for(state, db::metadata_core::SHOW, id).filter(|&p| Some(p) != on_file);
         Job {
             id: show.id.clone(),
@@ -512,7 +600,11 @@ pub fn enrich_one(state: &SharedState, id: &str, is_show: bool) -> anyhow::Resul
         let Some(item) = db::get_item(&state.db, id)? else {
             return Ok(());
         };
-        let on_file = item.metadata.as_ref().map(|m| m.tmdb_id).filter(|&i| i != 0);
+        let on_file = item
+            .metadata
+            .as_ref()
+            .map(|m| m.tmdb_id)
+            .filter(|&i| i != 0);
         let pin = pin_for(state, db::metadata_core::ITEM, id).filter(|&p| Some(p) != on_file);
         Job {
             id: item.id.clone(),
@@ -566,10 +658,22 @@ pub fn run_tracked(
     let jobs = build_jobs(items, shows, &load_pins(&state.db));
     let total = jobs.len();
     let Some(api_key) = state.config.tmdb_api_key.clone() else {
-        return EnrichSummary { total, resolved: 0, missed: 0, failed: 0, cancelled: false };
+        return EnrichSummary {
+            total,
+            resolved: 0,
+            missed: 0,
+            failed: 0,
+            cancelled: false,
+        };
     };
     if total == 0 {
-        return EnrichSummary { total, resolved: 0, missed: 0, failed: 0, cancelled: false };
+        return EnrichSummary {
+            total,
+            resolved: 0,
+            missed: 0,
+            failed: 0,
+            cancelled: false,
+        };
     }
     let eng = engine_for(state, api_key);
     let queue = Arc::new(Mutex::new(jobs));

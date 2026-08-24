@@ -14,7 +14,10 @@ impl I18n {
             return Some(&l.code);
         }
         let base = base_language(trimmed);
-        self.locales.iter().find(|l| base_language(&l.code) == base).map(|l| l.code.as_str())
+        self.locales
+            .iter()
+            .find(|l| base_language(&l.code) == base)
+            .map(|l| l.code.as_str())
     }
 
     /// Map a BCP-47 tag (`"en-US"`, `"FR"`, `"fr_CH"`) or a native display name
@@ -52,7 +55,10 @@ impl I18n {
 // The base language subtag, region stripped and lowercased: `"fr_CH"` → `"fr"`,
 // `"en-US"` → `"en"`, `"FR"` → `"fr"`.
 fn base_language(tag: &str) -> String {
-    tag.split(['-', '_']).next().unwrap_or("").to_ascii_lowercase()
+    tag.split(['-', '_'])
+        .next()
+        .unwrap_or("")
+        .to_ascii_lowercase()
 }
 
 #[cfg(test)]
@@ -77,7 +83,11 @@ mod tests {
         let i = fixture();
         for tag in ["fr", "fr_FR", "fr-CH", "FR", "fr_CA"] {
             assert_eq!(i.normalize_locale(tag), Some("fr"), "tag {tag}");
-            assert_eq!(i.t(tag, "seasons", &[("count", "2")]), "2 saisons", "tag {tag}");
+            assert_eq!(
+                i.t(tag, "seasons", &[("count", "2")]),
+                "2 saisons",
+                "tag {tag}"
+            );
         }
         assert_eq!(i.t("en-GB", "hi", &[("name", "Jo")]), "Hi Jo");
         let r = I18n::builder()
@@ -97,7 +107,10 @@ mod tests {
         // SUPPORTED one would drop everyone whose top choice we lack to the
         // default.
         let i18n = fixture();
-        assert_eq!(i18n.detect_locale(None, Some("de-DE,de;q=0.9,en;q=0.8")), "en");
+        assert_eq!(
+            i18n.detect_locale(None, Some("de-DE,de;q=0.9,en;q=0.8")),
+            "en"
+        );
         // Quality values are stripped before matching.
         assert_eq!(i18n.detect_locale(None, Some("en;q=0.8")), "en");
         // Region and case are normalized away.

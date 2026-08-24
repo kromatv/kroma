@@ -10,8 +10,14 @@ const XPATH_DEF: &str = include_str!("fixtures/synthetic-xpath.yml");
 #[test]
 fn parses_xpath_rows() {
     let def = definition::parse(XPATH_DEF.as_bytes()).unwrap();
-    assert!(engine::uses_xpath(&def), "definition should be detected as XPath");
-    let cfg = IndexerConfig { base_url: "https://xp.example/".into(), settings: HashMap::new() };
+    assert!(
+        engine::uses_xpath(&def),
+        "definition should be detected as XPath"
+    );
+    let cfg = IndexerConfig {
+        base_url: "https://xp.example/".into(),
+        settings: HashMap::new(),
+    };
     let body = r#"
       <html><body>
       <table class="results">
@@ -29,7 +35,10 @@ fn parses_xpath_rows() {
     assert_eq!(releases.len(), 1);
     let r = &releases[0];
     assert_eq!(r.title, "Cool Movie 2020 1080p");
-    assert_eq!(r.details_url.as_deref(), Some("https://xp.example/details/1"));
+    assert_eq!(
+        r.details_url.as_deref(),
+        Some("https://xp.example/details/1")
+    );
     assert_eq!(r.link.as_deref(), Some("https://xp.example/dl/1.torrent"));
     assert_eq!(r.size_bytes, Some((4.2 * 1024.0 * 1024.0 * 1024.0) as u64));
     assert_eq!(r.seeders, Some(88));

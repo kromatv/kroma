@@ -42,10 +42,16 @@ pub fn encrypt_with(
     salt: &[u8; 16],
 ) -> Result<Vec<u8>> {
     if payload.len() > MAX_PAYLOAD {
-        bail!("push payload is {} bytes; the cap is {MAX_PAYLOAD}", payload.len());
+        bail!(
+            "push payload is {} bytes; the cap is {MAX_PAYLOAD}",
+            payload.len()
+        );
     }
     if ua_public.len() != P256_POINT_LEN {
-        bail!("p256dh must be {P256_POINT_LEN} bytes, got {}", ua_public.len());
+        bail!(
+            "p256dh must be {P256_POINT_LEN} bytes, got {}",
+            ua_public.len()
+        );
     }
 
     let ua_key = PublicKey::from_sec1_bytes(ua_public).context("p256dh is not a P-256 point")?;
@@ -156,9 +162,17 @@ WyouBWLVWGNWQexSgSxsj_Qulcy4a-fN";
         )
         .unwrap();
         assert_eq!(&body[..16], &vector_salt()[..], "salt comes first");
-        assert_eq!(&body[16..20], &RECORD_SIZE.to_be_bytes(), "then rs, big-endian");
+        assert_eq!(
+            &body[16..20],
+            &RECORD_SIZE.to_be_bytes(),
+            "then rs, big-endian"
+        );
         assert_eq!(body[20], 65, "then the key id length");
-        assert_eq!(&body[21..86], b64::decode(AS_PUBLIC).unwrap(), "then our public key");
+        assert_eq!(
+            &body[21..86],
+            b64::decode(AS_PUBLIC).unwrap(),
+            "then our public key"
+        );
     }
 
     #[test]

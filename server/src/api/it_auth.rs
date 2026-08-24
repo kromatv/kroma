@@ -36,8 +36,14 @@ async fn me_requires_a_valid_bearer() {
 #[tokio::test]
 async fn patch_me_updates_the_display_name() {
     let t = test_app();
-    let (status, body) =
-        send(&t.app, "PATCH", "/api/auth/me", Some(&t.token), Some(json!({ "username": "Renamed" }))).await;
+    let (status, body) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me",
+        Some(&t.token),
+        Some(json!({ "username": "Renamed" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["user"]["username"], json!("Renamed"));
 
@@ -48,8 +54,14 @@ async fn patch_me_updates_the_display_name() {
 #[tokio::test]
 async fn patch_me_rejects_an_empty_username() {
     let t = test_app();
-    let (status, _) =
-        send(&t.app, "PATCH", "/api/auth/me", Some(&t.token), Some(json!({ "username": "   " }))).await;
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me",
+        Some(&t.token),
+        Some(json!({ "username": "   " })),
+    )
+    .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
 
@@ -89,8 +101,14 @@ async fn exchanging_a_token_relabels_the_device() {
     // Two devices now (the seeded session's, and the one just exchanged); only
     // the exchanged one was re-labelled.
     let labels: Vec<_> = rows.iter().map(|s| s["userAgent"].clone()).collect();
-    assert!(labels.contains(&json!(ua)), "device re-labelled, got {labels:?}");
-    assert!(labels.contains(&json!("integration-test")), "other devices untouched");
+    assert!(
+        labels.contains(&json!(ua)),
+        "device re-labelled, got {labels:?}"
+    );
+    assert!(
+        labels.contains(&json!("integration-test")),
+        "other devices untouched"
+    );
     assert!(body["token"].as_str().is_some_and(|s| !s.is_empty()));
 }
 
@@ -110,9 +128,12 @@ async fn user_roster_is_private_by_default_and_opens_with_the_setting() {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body.as_array().map(Vec::len), Some(0));
 
-    t.state
-        .settings
-        .set_patch(&t.state.db, [("publicUserList".to_string(), json!(true))].into_iter().collect());
+    t.state.settings.set_patch(
+        &t.state.db,
+        [("publicUserList".to_string(), json!(true))]
+            .into_iter()
+            .collect(),
+    );
     let (status, body) = get(&t.app, "/api/users", None).await;
     assert_eq!(status, StatusCode::OK);
     let users = body.as_array().expect("users array");
@@ -132,7 +153,12 @@ async fn logout_is_a_no_content_noop_without_a_token() {
 #[tokio::test]
 async fn a_second_account_can_get_its_own_session() {
     let t = test_app();
-    let (uid, token) = seed_session(&t.state, "member@test.dev", "member", &[Permission::Playback]);
+    let (uid, token) = seed_session(
+        &t.state,
+        "member@test.dev",
+        "member",
+        &[Permission::Playback],
+    );
     let (status, body) = get(&t.app, "/api/auth/me", Some(&token)).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["user"]["id"], json!(uid));

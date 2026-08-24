@@ -42,8 +42,13 @@ pub fn list_download_clients(conn: &Connection) -> rusqlite::Result<Vec<Download
     rows.collect()
 }
 
-pub fn get_download_client(conn: &Connection, id: &str) -> rusqlite::Result<Option<DownloadClientRow>> {
-    let mut stmt = conn.prepare(&format!("SELECT {CLIENT_COLS} FROM download_clients WHERE id = ?1"))?;
+pub fn get_download_client(
+    conn: &Connection,
+    id: &str,
+) -> rusqlite::Result<Option<DownloadClientRow>> {
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {CLIENT_COLS} FROM download_clients WHERE id = ?1"
+    ))?;
     let mut rows = stmt.query_map(params![id], row_to_client)?;
     rows.next().transpose()
 }
@@ -90,7 +95,15 @@ pub fn update_download_client(
             enabled = COALESCE(?6, enabled), \
             priority = COALESCE(?7, priority) \
          WHERE id = ?1",
-        params![id, name, url, username, password, enabled.map(|e| e as i64), priority],
+        params![
+            id,
+            name,
+            url,
+            username,
+            password,
+            enabled.map(|e| e as i64),
+            priority
+        ],
     )?;
     Ok(n > 0)
 }
@@ -102,8 +115,8 @@ pub fn delete_download_client(pool: &Pool, id: &str) -> Result<bool> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::test_support::{client, test_db};
+    use super::*;
 
     #[test]
     fn download_clients_crud_and_ordering() {
@@ -123,9 +136,15 @@ mod tests {
         {
             let conn = pool.get().unwrap();
             // ORDER BY priority DESC, created_at ASC: c3 (20,150), c2 (20,200), c1 (10).
-            let ids: Vec<String> =
-                list_download_clients(&conn).unwrap().into_iter().map(|c| c.id).collect();
-            assert_eq!(ids, vec!["c3".to_string(), "c2".to_string(), "c1".to_string()]);
+            let ids: Vec<String> = list_download_clients(&conn)
+                .unwrap()
+                .into_iter()
+                .map(|c| c.id)
+                .collect();
+            assert_eq!(
+                ids,
+                vec!["c3".to_string(), "c2".to_string(), "c1".to_string()]
+            );
 
             let c2 = get_download_client(&conn, "c2").unwrap().unwrap();
             assert_eq!(c2.name, "Client c2");
@@ -167,15 +186,22 @@ mod tests {
             assert_eq!(c1.url, "http://host"); // unchanged
         }
         // Password can be updated when Some is passed.
-        assert!(update_download_client(&pool, "c1", None, None, None, Some("newpass"), None, None)
-            .unwrap());
+        assert!(
+            update_download_client(&pool, "c1", None, None, None, Some("newpass"), None, None)
+                .unwrap()
+        );
         {
             let conn = pool.get().unwrap();
-            assert_eq!(get_download_client(&conn, "c1").unwrap().unwrap().password, "newpass");
+            assert_eq!(
+                get_download_client(&conn, "c1").unwrap().unwrap().password,
+                "newpass"
+            );
         }
         // Updating an unknown id affects no rows.
-        assert!(!update_download_client(&pool, "missing", Some("x"), None, None, None, None, None)
-            .unwrap());
+        assert!(
+            !update_download_client(&pool, "missing", Some("x"), None, None, None, None, None)
+                .unwrap()
+        );
 
         assert!(delete_download_client(&pool, "c1").unwrap());
         assert!(!delete_download_client(&pool, "c1").unwrap()); // already gone

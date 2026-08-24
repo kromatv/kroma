@@ -57,7 +57,9 @@ pub fn build_request(grant: &str, alert: &Alert<'_>, urgency: Urgency) -> Result
     Ok(PushRequest {
         url: format!("{RELAY_URL}/v1/push"),
         headers: vec![("content-type".into(), "application/json".into())],
-        body: json!({ "grant": grant, "notification": notification }).to_string().into_bytes(),
+        body: json!({ "grant": grant, "notification": notification })
+            .to_string()
+            .into_bytes(),
         http2: false,
     })
 }
@@ -122,7 +124,10 @@ mod tests {
         assert!(!wire.contains("apns-topic"));
         assert!(!wire.contains("BEGIN PRIVATE KEY"));
         // …and no bearer token is attached, because there is nothing to prove.
-        assert!(!request.headers.iter().any(|(name, _)| name.eq_ignore_ascii_case("authorization")));
+        assert!(!request
+            .headers
+            .iter()
+            .any(|(name, _)| name.eq_ignore_ascii_case("authorization")));
     }
 
     #[test]
@@ -140,19 +145,32 @@ mod tests {
         let body = body_of(&build_request("v1.SEALED", &bare, Urgency::Low).unwrap());
         let notification = &body["notification"];
         for absent in ["link", "imageUrl", "category", "threadId", "actions"] {
-            assert!(notification.get(absent).is_none(), "{absent} should be omitted");
+            assert!(
+                notification.get(absent).is_none(),
+                "{absent} should be omitted"
+            );
         }
         assert_eq!(notification["urgency"], "low");
     }
 
     #[test]
     fn actions_travel_as_objects() {
-        let actions = [("approve".to_string(), "POST".to_string(), "/api/r1/approve".to_string())];
-        let with = Alert { actions: &actions, ..alert() };
+        let actions = [(
+            "approve".to_string(),
+            "POST".to_string(),
+            "/api/r1/approve".to_string(),
+        )];
+        let with = Alert {
+            actions: &actions,
+            ..alert()
+        };
         let body = body_of(&build_request("v1.SEALED", &with, Urgency::High).unwrap());
         assert_eq!(body["notification"]["actions"][0]["id"], "approve");
         assert_eq!(body["notification"]["actions"][0]["method"], "POST");
-        assert_eq!(body["notification"]["actions"][0]["href"], "/api/r1/approve");
+        assert_eq!(
+            body["notification"]["actions"][0]["href"],
+            "/api/r1/approve"
+        );
     }
 
     #[test]

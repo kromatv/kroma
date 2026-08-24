@@ -88,7 +88,6 @@ mod tests {
         assert_eq!(render("{{ \"a\" -}} b", &ctx()), "ab");
     }
 
-
     #[test]
     fn a_multibyte_template_is_not_split_mid_character() {
         // Definitions carry accented and CJK literals. The lexer advances by
@@ -111,12 +110,10 @@ mod tests {
         assert_eq!(render("a{b}c", &c), "a{b}c");
     }
 
-
     #[test]
     fn a_four_byte_character_is_not_split_mid_character() {
         let c = ctx();
         assert_eq!(render("&q=𠜎", &c), "&q=𠜎");
         assert_eq!(render("𠜎{{ .Keywords }}𠜎", &c), "𠜎the matrix 1999𠜎");
     }
-
 }

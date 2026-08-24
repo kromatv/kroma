@@ -35,17 +35,29 @@ pub async fn browse_libraries(
     let raw = q.path.unwrap_or_default();
     // Never resolve a traversal segment, even before touching the filesystem.
     if raw.contains("..") {
-        return Err(lerr(user_locale(&user), StatusCode::FORBIDDEN, "error.forbidden"));
+        return Err(lerr(
+            user_locale(&user),
+            StatusCode::FORBIDDEN,
+            "error.forbidden",
+        ));
     }
     match tokio::task::spawn_blocking(move || browse_dirs(raw)).await {
         Ok(Ok(body)) => Ok(Json(body).into_response()),
-        Ok(Err(BrowseErr::Forbidden)) => {
-            Err(lerr(user_locale(&user), StatusCode::FORBIDDEN, "error.forbidden"))
-        }
-        Ok(Err(BrowseErr::NotFound)) => {
-            Err(lerr(user_locale(&user), StatusCode::NOT_FOUND, "error.itemNotFound"))
-        }
-        Err(_) => Err(lerr(user_locale(&user), StatusCode::INTERNAL_SERVER_ERROR, "error.internal")),
+        Ok(Err(BrowseErr::Forbidden)) => Err(lerr(
+            user_locale(&user),
+            StatusCode::FORBIDDEN,
+            "error.forbidden",
+        )),
+        Ok(Err(BrowseErr::NotFound)) => Err(lerr(
+            user_locale(&user),
+            StatusCode::NOT_FOUND,
+            "error.itemNotFound",
+        )),
+        Err(_) => Err(lerr(
+            user_locale(&user),
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "error.internal",
+        )),
     }
 }
 
@@ -118,7 +130,8 @@ fn read_subdirs(dir: &Path) -> Result<Vec<Value>, BrowseErr> {
         if name.to_string_lossy().starts_with(['.', '@', '#']) {
             continue;
         }
-        let is_dir = entry.file_type().map(|t| t.is_dir()).unwrap_or(false) || entry.path().is_dir();
+        let is_dir =
+            entry.file_type().map(|t| t.is_dir()).unwrap_or(false) || entry.path().is_dir();
         if is_dir {
             dirs.push(entry.path());
         }
@@ -127,7 +140,12 @@ fn read_subdirs(dir: &Path) -> Result<Vec<Value>, BrowseErr> {
 }
 
 fn to_entries(mut paths: Vec<PathBuf>) -> Vec<Value> {
-    paths.sort_by_key(|p| p.file_name().unwrap_or_default().to_string_lossy().to_lowercase());
+    paths.sort_by_key(|p| {
+        p.file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_lowercase()
+    });
     paths
         .iter()
         .map(|p| {

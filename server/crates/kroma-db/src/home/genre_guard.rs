@@ -11,7 +11,11 @@ use crate::Pool;
 /// so a Van Gogh drama's nearest neighbour can be a horror film); requiring a
 /// shared genre keeps the row honest. `None` when `seed` has no genres nothing
 /// to guard on, so the caller keeps the unfiltered list.
-pub fn genre_coherent_ids(pool: &Pool, seed: &str, candidates: &[String]) -> Result<Option<std::collections::HashSet<String>>> {
+pub fn genre_coherent_ids(
+    pool: &Pool,
+    seed: &str,
+    candidates: &[String],
+) -> Result<Option<std::collections::HashSet<String>>> {
     if candidates.is_empty() {
         return Ok(None);
     }
@@ -23,8 +27,9 @@ pub fn genre_coherent_ids(pool: &Pool, seed: &str, candidates: &[String]) -> Res
         "SELECT g.value FROM items i, json_each(i.metadata,'$.genres') g WHERE i.id = ?1 \
          UNION SELECT g.value FROM shows s, json_each(s.metadata,'$.genres') g WHERE s.id = ?1",
     )?;
-    let seed_genres: Vec<String> =
-        gstmt.query_map(params![seed], |r| r.get::<_, String>(0))?.collect::<rusqlite::Result<Vec<_>>>()?;
+    let seed_genres: Vec<String> = gstmt
+        .query_map(params![seed], |r| r.get::<_, String>(0))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
     if seed_genres.is_empty() {
         return Ok(None);
     }
@@ -56,7 +61,10 @@ pub fn genre_coherent_ids(pool: &Pool, seed: &str, candidates: &[String]) -> Res
 pub fn genre_guard(pool: &Pool, seed: &str, ranked: Vec<(String, f32)>) -> Vec<(String, f32)> {
     let ids: Vec<String> = ranked.iter().map(|(id, _)| id.clone()).collect();
     match genre_coherent_ids(pool, seed, &ids) {
-        Ok(Some(keep)) => ranked.into_iter().filter(|(id, _)| keep.contains(id)).collect(),
+        Ok(Some(keep)) => ranked
+            .into_iter()
+            .filter(|(id, _)| keep.contains(id))
+            .collect(),
         _ => ranked,
     }
 }
@@ -80,7 +88,10 @@ mod tests {
 
         // genre_guard drops the incoherent neighbour, preserving order.
         let ranked = vec![("c1".to_string(), 0.9f32), ("c2".to_string(), 0.5f32)];
-        assert_eq!(genre_guard(&p, "seed", ranked), vec![("c1".to_string(), 0.9f32)]);
+        assert_eq!(
+            genre_guard(&p, "seed", ranked),
+            vec![("c1".to_string(), 0.9f32)]
+        );
         // A genreless seed is a no-op (keeps everything).
         let ranked = vec![("c1".to_string(), 0.9f32), ("c2".to_string(), 0.5f32)];
         assert_eq!(genre_guard(&p, "nogen", ranked).len(), 2);

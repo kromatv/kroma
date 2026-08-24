@@ -1,5 +1,8 @@
 // Resolves a dotted JSON path (`$.a.b`, `a`, `a[0].b`) against a value.
-pub(super) fn json_get<'a>(value: &'a serde_json::Value, path: &str) -> Option<&'a serde_json::Value> {
+pub(super) fn json_get<'a>(
+    value: &'a serde_json::Value,
+    path: &str,
+) -> Option<&'a serde_json::Value> {
     let path = path.trim().trim_start_matches('$').trim_start_matches('.');
     if path.is_empty() {
         return Some(value);
@@ -84,10 +87,10 @@ mod tests {
         assert!(json_truthy(&json!({"a":1})) && !json_truthy(&json!({})));
     }
 
-
     #[test]
     fn json_get_resolves_a_bare_index_segment() {
-        let v: serde_json::Value = serde_json::from_str(r#"{"a":{"b":[10,20,{"c":"deep"}]}}"#).unwrap();
+        let v: serde_json::Value =
+            serde_json::from_str(r#"{"a":{"b":[10,20,{"c":"deep"}]}}"#).unwrap();
         assert_eq!(json_get(&v, "a.b.[1]").unwrap().as_i64(), Some(20));
         assert_eq!(json_get(&v, "a.b.[2].c").unwrap().as_str(), Some("deep"));
         assert!(json_get(&v, "a.b.[9]").is_none());
@@ -101,5 +104,4 @@ mod tests {
         assert!(json_get(&v, "a.b[0").is_none());
         assert!(json_get(&v, "a.b]").is_none());
     }
-
 }

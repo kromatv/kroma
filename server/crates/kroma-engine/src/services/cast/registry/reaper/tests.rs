@@ -24,15 +24,23 @@ async fn the_reaper_drops_a_receiver_that_stopped_beating_and_tells_its_owner() 
     reg.spawn_reaper(events);
     let_the_reaper_sweep().await;
 
-    let gone = seen.try_recv().expect("the owner is told its receiver is gone");
+    let gone = seen
+        .try_recv()
+        .expect("the owner is told its receiver is gone");
     let payload = gone.payload_unrouted();
     assert!(payload.contains("cast.receiver.gone"), "{payload}");
     assert!(payload.contains("tv-salon-01"), "{payload}");
     assert!(gone.visible_to("u1"));
-    assert!(!gone.visible_to("u2"), "another account is not told about this set");
+    assert!(
+        !gone.visible_to("u2"),
+        "another account is not told about this set"
+    );
     assert!(reg.row("tv-salon-01").is_none());
     assert!(reg.row("tv-chambre-02").is_some());
 
     let_the_reaper_sweep().await;
-    assert!(seen.try_recv().is_err(), "a sweep that finds nothing says nothing");
+    assert!(
+        seen.try_recv().is_err(),
+        "a sweep that finds nothing says nothing"
+    );
 }

@@ -126,10 +126,12 @@ impl RemoteAccess {
         if binary_version(&bin).await.is_some() {
             return Ok(bin);
         }
-        self.push_log("cloudflared not found, downloading…".to_string()).await;
+        self.push_log("cloudflared not found, downloading…".to_string())
+            .await;
         info!("remote access: downloading cloudflared");
         let path = provision::download(&self.data_dir).await?;
-        self.push_log(format!("cloudflared installed at {}", path.display())).await;
+        self.push_log(format!("cloudflared installed at {}", path.display()))
+            .await;
         info!("remote access: cloudflared installed at {}", path.display());
         Ok(path.to_string_lossy().into_owned())
     }
@@ -189,12 +191,16 @@ impl RemoteAccess {
     #[cfg(unix)]
     fn kill_all_cloudflared(&self) {
         let needle = tunnel_needle(&self.resolve_binary());
-        let Ok(out) = std::process::Command::new("ps").arg("aux").output() else { return };
+        let Ok(out) = std::process::Command::new("ps").arg("aux").output() else {
+            return;
+        };
         for line in String::from_utf8_lossy(&out.stdout).lines() {
             if line.contains(&needle) {
                 // `ps aux`: USER PID ... - the pid is the second whitespace field.
                 if let Some(pid) = line.split_whitespace().nth(1) {
-                    let _ = std::process::Command::new("kill").args(["-9", pid]).status();
+                    let _ = std::process::Command::new("kill")
+                        .args(["-9", pid])
+                        .status();
                 }
             }
         }
@@ -300,8 +306,7 @@ impl RemoteAccess {
     pub async fn reconcile(self: &Arc<Self>, host: &dyn HostCtx) {
         let enabled = host.setting_bool("remoteAccess", false);
         let token = host.setting_str("remoteAccessToken", "");
-        let desired =
-            enabled && !token.trim().is_empty() && !self.stopping.load(Ordering::SeqCst);
+        let desired = enabled && !token.trim().is_empty() && !self.stopping.load(Ordering::SeqCst);
         let alive = self.alive().await;
         let starting = self.inner.lock().await.starting;
         if desired {
@@ -400,7 +405,11 @@ async fn save_remote<S: HostCtx>(
     state.require(&user, Permission::SettingsManage)?;
     // Blank/omitted keeps the stored token: only overwrite it when a non-blank
     // value was actually typed.
-    let token = body.token.as_deref().map(str::trim).filter(|t| !t.is_empty());
+    let token = body
+        .token
+        .as_deref()
+        .map(str::trim)
+        .filter(|t| !t.is_empty());
     let mut patch = std::collections::BTreeMap::new();
     patch.insert("remoteAccess".to_string(), json!(body.enabled));
     patch.insert("remoteUrl".to_string(), json!(body.url.trim()));
@@ -444,7 +453,10 @@ async fn binary_version(bin: &str) -> Option<String> {
         return None;
     }
     let text = String::from_utf8_lossy(&out.stdout);
-    text.lines().next().map(|l| l.trim().to_string()).filter(|l| !l.is_empty())
+    text.lines()
+        .next()
+        .map(|l| l.trim().to_string())
+        .filter(|l| !l.is_empty())
 }
 
 pub const MODULE_ID: &str = "tv.kroma.remote";
@@ -496,8 +508,14 @@ mod tests {
     const TOKEN: &str = "eyJhIjoiZmFrZS10dW5uZWwtdG9rZW4ifQ";
 
     fn command_line(bin: &str, cmd: &tokio::process::Command) -> String {
-        let args = cmd.as_std().get_args().map(|a| a.to_string_lossy().into_owned());
-        std::iter::once(bin.to_string()).chain(args).collect::<Vec<_>>().join(" ")
+        let args = cmd
+            .as_std()
+            .get_args()
+            .map(|a| a.to_string_lossy().into_owned());
+        std::iter::once(bin.to_string())
+            .chain(args)
+            .collect::<Vec<_>>()
+            .join(" ")
     }
 
     #[test]
@@ -518,11 +536,17 @@ mod tests {
             .as_std()
             .get_envs()
             .map(|(k, v)| {
-                (k.to_string_lossy().into_owned(), v.map(|v| v.to_string_lossy().into_owned()))
+                (
+                    k.to_string_lossy().into_owned(),
+                    v.map(|v| v.to_string_lossy().into_owned()),
+                )
             })
             .collect();
 
-        assert_eq!(env, vec![("TUNNEL_TOKEN".to_string(), Some(TOKEN.to_string()))]);
+        assert_eq!(
+            env,
+            vec![("TUNNEL_TOKEN".to_string(), Some(TOKEN.to_string()))]
+        );
     }
 
     #[test]
@@ -531,6 +555,9 @@ mod tests {
 
         let line = command_line(BIN, &cmd);
 
-        assert!(line.contains(&tunnel_needle(BIN)), "sweep needle no longer matches: {line}");
+        assert!(
+            line.contains(&tunnel_needle(BIN)),
+            "sweep needle no longer matches: {line}"
+        );
     }
 }

@@ -23,7 +23,9 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let mut args = std::env::args().skip(1);
-    let torrent = args.next().expect("usage: engine_probe <file.torrent> <work_dir> [socks_url]");
+    let torrent = args
+        .next()
+        .expect("usage: engine_probe <file.torrent> <work_dir> [socks_url]");
     let work_dir = std::path::PathBuf::from(args.next().expect("work_dir required"));
     let socks = args.next();
 
@@ -33,17 +35,29 @@ async fn main() -> anyhow::Result<()> {
     std::fs::create_dir_all(&download_dir)?;
 
     let opts = SessionOptions {
-        persistence: Some(SessionPersistenceConfig::Json { folder: Some(session_dir) }),
+        persistence: Some(SessionPersistenceConfig::Json {
+            folder: Some(session_dir),
+        }),
         fastresume: true,
-        connect: Some(ConnectionOptions { proxy_url: socks.clone(), ..Default::default() }),
+        connect: Some(ConnectionOptions {
+            proxy_url: socks.clone(),
+            ..Default::default()
+        }),
         listen: Some(ListenerOptions {
             mode: ListenerMode::TcpOnly,
             listen_addr: (std::net::Ipv6Addr::UNSPECIFIED, 0).into(),
             enable_upnp_port_forwarding: false,
             ..Default::default()
         }),
-        ratelimits: LimitsConfig { download_bps: None, upload_bps: None },
-        dht: Some(DhtSessionConfig { bootstrap_addrs: None, port: None, persistence: None }),
+        ratelimits: LimitsConfig {
+            download_bps: None,
+            upload_bps: None,
+        },
+        dht: Some(DhtSessionConfig {
+            bootstrap_addrs: None,
+            port: None,
+            persistence: None,
+        }),
         ..Default::default()
     };
     println!("starting session (socks={socks:?})");
@@ -52,9 +66,15 @@ async fn main() -> anyhow::Result<()> {
     let bytes = std::fs::read(&torrent)?;
     // Mirror the real engine's add-time seed: announce over the bridge (curl)
     // and hand librqbit the peers as initial_peers.
-    let seed = socks.as_deref().map(|s| kroma_torrent::announce_peers(&bytes, Some(s)));
+    let seed = socks
+        .as_deref()
+        .map(|s| kroma_torrent::announce_peers(&bytes, Some(s)));
     if let Some(p) = &seed {
-        println!("add-time seed: {} peers ({} v6)", p.len(), p.iter().filter(|a| a.is_ipv6()).count());
+        println!(
+            "add-time seed: {} peers ({} v6)",
+            p.len(),
+            p.iter().filter(|a| a.is_ipv6()).count()
+        );
     }
     let added = session
         .add_torrent(
@@ -67,7 +87,11 @@ async fn main() -> anyhow::Result<()> {
         )
         .await?;
     let handle = added.into_handle().expect("torrent handle");
-    println!("added: {} ({})", handle.name().unwrap_or_default(), handle.info_hash().as_string());
+    println!(
+        "added: {} ({})",
+        handle.name().unwrap_or_default(),
+        handle.info_hash().as_string()
+    );
 
     for tick in 1..=30 {
         tokio::time::sleep(Duration::from_secs(5)).await;

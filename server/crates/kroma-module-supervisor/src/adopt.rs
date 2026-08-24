@@ -23,16 +23,25 @@ use rusqlite::Connection;
 ///
 /// A name the core schema owns, or one that is not a plain identifier, fails the
 /// whole call before anything is touched.
-pub fn adopt_tables(core: &Connection, store_path: &std::path::Path, tables: &[String]) -> Result<usize> {
+pub fn adopt_tables(
+    core: &Connection,
+    store_path: &std::path::Path,
+    tables: &[String],
+) -> Result<usize> {
     let names = adoptable(tables)?;
-    let pending: Vec<&str> =
-        names.into_iter().filter(|t| table_exists(core, "main", t).unwrap_or(false)).collect();
+    let pending: Vec<&str> = names
+        .into_iter()
+        .filter(|t| table_exists(core, "main", t).unwrap_or(false))
+        .collect();
     if pending.is_empty() {
         return Ok(0);
     }
 
-    core.execute("ATTACH DATABASE ?1 AS store", [store_path.to_string_lossy().as_ref()])
-        .context("attach the module's own database")?;
+    core.execute(
+        "ATTACH DATABASE ?1 AS store",
+        [store_path.to_string_lossy().as_ref()],
+    )
+    .context("attach the module's own database")?;
     let outcome = move_each(core, &pending);
     // Detach whatever happened: a connection that keeps the module's file
     // attached would block the sidecar's own writes.
@@ -110,7 +119,10 @@ fn move_one(core: &Connection, table: &str) -> Result<i64> {
             // to be named or it would recreate the table it is being moved from.
             core.execute_batch(&qualify(sql, table))?;
         }
-        core.execute(&format!("INSERT INTO store.\"{table}\" SELECT * FROM main.\"{table}\""), [])?;
+        core.execute(
+            &format!("INSERT INTO store.\"{table}\" SELECT * FROM main.\"{table}\""),
+            [],
+        )?;
         let copied: i64 = count(core, "store", table)?;
         let original: i64 = count(core, "main", table)?;
         anyhow::ensure!(copied == original, "copied {copied} of {original} rows");
@@ -138,7 +150,9 @@ fn schema_of(core: &Connection, table: &str) -> Result<Vec<String>> {
          WHERE sql IS NOT NULL AND (name = ?1 OR (type = 'index' AND tbl_name = ?1)) \
          ORDER BY type = 'index'",
     )?;
-    let out: Vec<String> = stmt.query_map([table], |r| r.get(0))?.collect::<Result<_, _>>()?;
+    let out: Vec<String> = stmt
+        .query_map([table], |r| r.get(0))?
+        .collect::<Result<_, _>>()?;
     anyhow::ensure!(!out.is_empty(), "'{table}' has no schema to copy");
     Ok(out)
 }
@@ -147,7 +161,14 @@ fn schema_of(core: &Connection, table: &str) -> Result<Vec<String>> {
 // Only the created object is qualified; `ON <table>` inside a CREATE INDEX
 // resolves within the same schema.
 fn qualify(sql: &str, table: &str) -> String {
-    for prefix in ["CREATE TABLE IF NOT EXISTS ", "CREATE TABLE ", "CREATE UNIQUE INDEX IF NOT EXISTS ", "CREATE UNIQUE INDEX ", "CREATE INDEX IF NOT EXISTS ", "CREATE INDEX "] {
+    for prefix in [
+        "CREATE TABLE IF NOT EXISTS ",
+        "CREATE TABLE ",
+        "CREATE UNIQUE INDEX IF NOT EXISTS ",
+        "CREATE UNIQUE INDEX ",
+        "CREATE INDEX IF NOT EXISTS ",
+        "CREATE INDEX ",
+    ] {
         if let Some(rest) = strip_prefix_ci(sql, prefix) {
             return format!("{prefix}store.{rest}");
         }
@@ -159,7 +180,8 @@ fn qualify(sql: &str, table: &str) -> String {
 
 fn strip_prefix_ci<'a>(sql: &'a str, prefix: &str) -> Option<&'a str> {
     let head = sql.get(..prefix.len())?;
-    head.eq_ignore_ascii_case(prefix).then(|| &sql[prefix.len()..])
+    head.eq_ignore_ascii_case(prefix)
+        .then(|| &sql[prefix.len()..])
 }
 
 fn table_exists(conn: &Connection, schema: &str, name: &str) -> Result<bool> {
@@ -172,7 +194,11 @@ fn table_exists(conn: &Connection, schema: &str, name: &str) -> Result<bool> {
 }
 
 fn count(conn: &Connection, schema: &str, table: &str) -> Result<i64> {
-    Ok(conn.query_row(&format!("SELECT count(*) FROM {schema}.\"{table}\""), [], |r| r.get(0))?)
+    Ok(conn.query_row(
+        &format!("SELECT count(*) FROM {schema}.\"{table}\""),
+        [],
+        |r| r.get(0),
+    )?)
 }
 
 #[cfg(test)]
@@ -201,12 +227,21 @@ mod tests {
         let core = core_with_indexers(dir.path());
         let store = store_path(dir.path());
 
-        assert_eq!(adopt_tables(&core, &store, &["indexers".to_string()]).unwrap(), 1);
-        assert!(!table_exists(&core, "main", "indexers").unwrap(), "the core copy is gone");
+        assert_eq!(
+            adopt_tables(&core, &store, &["indexers".to_string()]).unwrap(),
+            1
+        );
+        assert!(
+            !table_exists(&core, "main", "indexers").unwrap(),
+            "the core copy is gone"
+        );
 
         let moved = Connection::open(&store).unwrap();
-        let key: String =
-            moved.query_row("SELECT api_key FROM indexers WHERE id='ix1'", [], |r| r.get(0)).unwrap();
+        let key: String = moved
+            .query_row("SELECT api_key FROM indexers WHERE id='ix1'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
         assert_eq!(key, "secret", "the rows travelled, credentials included");
         assert_eq!(count(&moved, "main", "indexers").unwrap(), 2);
         // The index came too, so the module's queries keep their plan.
@@ -234,7 +269,11 @@ mod tests {
         assert_eq!(adopt_tables(&core, &store, &tables).unwrap(), 0);
 
         let moved = Connection::open(&store).unwrap();
-        assert_eq!(count(&moved, "main", "indexers").unwrap(), 2, "rows were not duplicated");
+        assert_eq!(
+            count(&moved, "main", "indexers").unwrap(),
+            2,
+            "rows were not duplicated"
+        );
     }
 
     #[test]
@@ -266,7 +305,11 @@ mod tests {
             adopt_tables(&core, &store_path(dir.path()), &["grabs".to_string()]).unwrap(),
             0
         );
-        assert_eq!(count(&core, "main", "grabs").unwrap(), 1, "the rows are still there");
+        assert_eq!(
+            count(&core, "main", "grabs").unwrap(),
+            1,
+            "the rows are still there"
+        );
     }
 
     #[test]
@@ -280,12 +323,22 @@ mod tests {
         .unwrap();
         let store = store_path(dir.path());
 
-        for declared in ["users", "USERS", "  Users  ", "\"users\"", "users; DROP TABLE users"] {
+        for declared in [
+            "users",
+            "USERS",
+            "  Users  ",
+            "\"users\"",
+            "users; DROP TABLE users",
+        ] {
             let error = adopt_tables(&core, &store, &[declared.to_string()]).unwrap_err();
             assert!(format!("{error:#}").contains(declared), "{error:#}");
         }
 
-        assert_eq!(count(&core, "main", "users").unwrap(), 1, "the accounts stayed in the core");
+        assert_eq!(
+            count(&core, "main", "users").unwrap(),
+            1,
+            "the accounts stayed in the core"
+        );
         assert!(!store.exists(), "no module database was opened");
     }
 
@@ -293,12 +346,16 @@ mod tests {
     fn one_refused_name_stops_the_whole_adoption() {
         let dir = kroma_testing::temp_dir("adopt-mixed");
         let core = core_with_indexers(dir.path());
-        core.execute_batch("CREATE TABLE sessions (token TEXT PRIMARY KEY)").unwrap();
+        core.execute_batch("CREATE TABLE sessions (token TEXT PRIMARY KEY)")
+            .unwrap();
         let store = store_path(dir.path());
 
         assert!(adopt_tables(&core, &store, &["indexers".into(), "sessions".into()]).is_err());
 
-        assert!(table_exists(&core, "main", "indexers").unwrap(), "nothing moved");
+        assert!(
+            table_exists(&core, "main", "indexers").unwrap(),
+            "nothing moved"
+        );
         assert!(table_exists(&core, "main", "sessions").unwrap());
     }
 
@@ -314,7 +371,14 @@ mod tests {
             .execute_batch("CREATE TABLE indexers (id TEXT PRIMARY KEY, name TEXT, api_key TEXT)")
             .unwrap();
 
-        assert_eq!(adopt_tables(&core, &store, &["indexers".to_string()]).unwrap(), 0);
-        assert_eq!(count(&core, "main", "indexers").unwrap(), 2, "nothing was dropped");
+        assert_eq!(
+            adopt_tables(&core, &store, &["indexers".to_string()]).unwrap(),
+            0
+        );
+        assert_eq!(
+            count(&core, "main", "indexers").unwrap(),
+            2,
+            "nothing was dropped"
+        );
     }
 }

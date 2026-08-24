@@ -17,7 +17,12 @@ pub fn get_user_taste(pool: &Pool, user_id: &str) -> Result<Option<(Option<Strin
 }
 
 /// `sections` is a JSON array.
-pub fn set_user_taste(pool: &Pool, user_id: &str, profile: Option<&str>, sections: &str) -> Result<()> {
+pub fn set_user_taste(
+    pool: &Pool,
+    user_id: &str,
+    profile: Option<&str>,
+    sections: &str,
+) -> Result<()> {
     let conn = pool.get()?;
     conn.execute(
         "INSERT INTO user_taste (user_id, profile, sections, updated_at) \

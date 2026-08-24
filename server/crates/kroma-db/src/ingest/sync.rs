@@ -47,7 +47,13 @@ fn sync_libraries(tx: &rusqlite::Transaction, libraries: &[Library]) -> Result<(
          ON CONFLICT(id) DO UPDATE SET name=excluded.name, kind=excluded.kind, path=excluded.path",
     )?;
     for l in libraries {
-        lib_stmt.execute(params![l.id, l.name, library_kind_str(&l.kind), l.path, now_or_blank()])?;
+        lib_stmt.execute(params![
+            l.id,
+            l.name,
+            library_kind_str(&l.kind),
+            l.path,
+            now_or_blank()
+        ])?;
     }
     let keep: Vec<String> = libraries.iter().map(|l| l.id.clone()).collect();
     let mut existing: Vec<String> = Vec::new();
@@ -122,7 +128,10 @@ fn sync_items(tx: &rusqlite::Transaction, items: &[MediaItem]) -> Result<()> {
 // Prunes items/shows with no backing files, then the language-cache rows for
 // vanished titles (no FK on those tables, so the item/show cascade misses them).
 fn prune_orphans(tx: &rusqlite::Transaction) -> Result<()> {
-    tx.execute("DELETE FROM items WHERE id NOT IN (SELECT DISTINCT item_id FROM files)", [])?;
+    tx.execute(
+        "DELETE FROM items WHERE id NOT IN (SELECT DISTINCT item_id FROM files)",
+        [],
+    )?;
     tx.execute("DELETE FROM shows WHERE id NOT IN (SELECT DISTINCT show_id FROM items WHERE show_id IS NOT NULL)", [])?;
 
     tx.execute(
@@ -177,8 +186,18 @@ mod tests {
     fn sync_all_creates_updates_and_prunes() {
         let p = pool();
         let items = vec![
-            movie("m1", "Dune", "lib", vec![file("f1", "/media/m1.mkv", false)]),
-            movie("m2", "Arrival", "lib", vec![file("f2", "/media/m2.mkv", false)]),
+            movie(
+                "m1",
+                "Dune",
+                "lib",
+                vec![file("f1", "/media/m1.mkv", false)],
+            ),
+            movie(
+                "m2",
+                "Arrival",
+                "lib",
+                vec![file("f2", "/media/m2.mkv", false)],
+            ),
         ];
         sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 100)).unwrap();
         assert_eq!(crate::counts(&p).unwrap(), (1, 2, 0));
@@ -189,9 +208,16 @@ mod tests {
         let mut unprobed = unprobed_files(&p).unwrap();
         unprobed.sort();
         assert_eq!(unprobed.len(), 2);
-        assert!(unprobed.iter().any(|(id, abs, item)| id == "f1" && abs == "/media/m1.mkv" && item == "m1"));
+        assert!(unprobed
+            .iter()
+            .any(|(id, abs, item)| id == "f1" && abs == "/media/m1.mkv" && item == "m1"));
 
-        let items = vec![movie("m1", "Dune", "lib", vec![file("f1", "/media/m1.mkv", false)])];
+        let items = vec![movie(
+            "m1",
+            "Dune",
+            "lib",
+            vec![file("f1", "/media/m1.mkv", false)],
+        )];
         sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 100)).unwrap();
         assert_eq!(crate::counts(&p).unwrap(), (1, 1, 0));
         assert!(crate::get_item(&p, "m2").unwrap().is_none());
@@ -200,7 +226,12 @@ mod tests {
     #[test]
     fn sync_preserves_metadata_and_probe_across_rescans() {
         let p = pool();
-        let items = vec![movie("m1", "Dune", "lib", vec![file("f1", "/media/m1.mkv", false)])];
+        let items = vec![movie(
+            "m1",
+            "Dune",
+            "lib",
+            vec![file("f1", "/media/m1.mkv", false)],
+        )];
         sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 100)).unwrap();
 
         set_file_probe(&p, "f1", Some(7_200_000), Some(&video()), None, &[], &[]).unwrap();
@@ -208,13 +239,23 @@ mod tests {
         assert!(item_has_probed_file(&p, "m1").unwrap());
 
         sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 100)).unwrap();
-        assert!(item_probed(&p, "m1").unwrap(), "unchanged file keeps probed=1");
+        assert!(
+            item_probed(&p, "m1").unwrap(),
+            "unchanged file keeps probed=1"
+        );
         let got = crate::get_item(&p, "m1").unwrap().unwrap();
         assert_eq!(got.metadata.as_ref().map(|m| m.tmdb_id), Some(603));
 
         sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 999)).unwrap();
-        assert!(!item_probed(&p, "m1").unwrap(), "changed file resets probed=0");
-        assert!(crate::get_item(&p, "m1").unwrap().unwrap().metadata.is_some());
+        assert!(
+            !item_probed(&p, "m1").unwrap(),
+            "changed file resets probed=0"
+        );
+        assert!(crate::get_item(&p, "m1")
+            .unwrap()
+            .unwrap()
+            .metadata
+            .is_some());
     }
 
     #[test]
@@ -228,7 +269,12 @@ mod tests {
             )
             .unwrap();
 
-        let items = vec![movie("m1", "Dune", "lib", vec![file("f1", "/media/m1.mkv", false)])];
+        let items = vec![movie(
+            "m1",
+            "Dune",
+            "lib",
+            vec![file("f1", "/media/m1.mkv", false)],
+        )];
         assert!(sync_all(&p, &[lib("lib")], &[], &items, &HashMap::new()).is_err());
     }
 

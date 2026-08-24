@@ -29,13 +29,34 @@ pub const DOWNLOAD_DB: &str = "tv.kroma.torrents/db";
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/_port/tv.kroma.torrents/grab/grab", post(grab::<S>))
-        .route("/_port/tv.kroma.torrents/grab/list-files", post(list_files::<S>))
-        .route("/_port/tv.kroma.torrents/grab/gate-open", post(gate_open::<S>))
-        .route("/_port/tv.kroma.torrents/grab/activate", post(activate::<S>))
-        .route("/_port/tv.kroma.torrents/grab/drop-data", post(drop_data::<S>))
-        .route("/_port/tv.kroma.torrents/db/completed", post(completed::<S>))
-        .route("/_port/tv.kroma.torrents/db/mark-imported", post(mark_imported::<S>))
-        .route("/_port/tv.kroma.torrents/db/set-status", post(set_status::<S>))
+        .route(
+            "/_port/tv.kroma.torrents/grab/list-files",
+            post(list_files::<S>),
+        )
+        .route(
+            "/_port/tv.kroma.torrents/grab/gate-open",
+            post(gate_open::<S>),
+        )
+        .route(
+            "/_port/tv.kroma.torrents/grab/activate",
+            post(activate::<S>),
+        )
+        .route(
+            "/_port/tv.kroma.torrents/grab/drop-data",
+            post(drop_data::<S>),
+        )
+        .route(
+            "/_port/tv.kroma.torrents/db/completed",
+            post(completed::<S>),
+        )
+        .route(
+            "/_port/tv.kroma.torrents/db/mark-imported",
+            post(mark_imported::<S>),
+        )
+        .route(
+            "/_port/tv.kroma.torrents/db/set-status",
+            post(set_status::<S>),
+        )
 }
 
 // The manager holds the engine and the pools, so a request arriving before it is
@@ -89,7 +110,9 @@ async fn activate<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Json<Result<bool, String>> {
     port_reply(move || {
         let manager = manager(&host)?;
-        let Some(row) = ledger(&host).get(&req.id)? else { return Ok(false) };
+        let Some(row) = ledger(&host).get(&req.id)? else {
+            return Ok(false);
+        };
         manager.activate(&host, &row);
         Ok(true)
     })
@@ -102,7 +125,9 @@ async fn drop_data<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Json<Result<bool, String>> {
     port_reply(move || {
         let manager = manager(&host)?;
-        let Some(row) = ledger(&host).get(&req.id)? else { return Ok(false) };
+        let Some(row) = ledger(&host).get(&req.id)? else {
+            return Ok(false);
+        };
         manager.drop_data(&host, &row);
         Ok(true)
     })
@@ -173,8 +198,13 @@ mod tests {
             .unwrap();
         let resp = app.oneshot(req).await.unwrap();
         let status = resp.status();
-        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX).await.unwrap();
-        (status, serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null))
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        (
+            status,
+            serde_json::from_slice(&bytes).unwrap_or(serde_json::Value::Null),
+        )
     }
 
     #[tokio::test]
@@ -182,14 +212,32 @@ mod tests {
         // A path renamed on one side only fails at runtime, in another process,
         // with no compile error anywhere. This is the guard.
         for (path, body) in [
-            ("/_port/tv.kroma.torrents/grab/grab", json!({ "kind": "movie", "tmdb_id": 1, "release_title": "R", "magnet_or_url": "m" })),
-            ("/_port/tv.kroma.torrents/grab/list-files", json!({ "magnet_or_url": "magnet:?xt=1" })),
+            (
+                "/_port/tv.kroma.torrents/grab/grab",
+                json!({ "kind": "movie", "tmdb_id": 1, "release_title": "R", "magnet_or_url": "m" }),
+            ),
+            (
+                "/_port/tv.kroma.torrents/grab/list-files",
+                json!({ "magnet_or_url": "magnet:?xt=1" }),
+            ),
             ("/_port/tv.kroma.torrents/grab/gate-open", json!({})),
-            ("/_port/tv.kroma.torrents/grab/activate", json!({ "id": "d1" })),
-            ("/_port/tv.kroma.torrents/grab/drop-data", json!({ "id": "d1" })),
+            (
+                "/_port/tv.kroma.torrents/grab/activate",
+                json!({ "id": "d1" }),
+            ),
+            (
+                "/_port/tv.kroma.torrents/grab/drop-data",
+                json!({ "id": "d1" }),
+            ),
             ("/_port/tv.kroma.torrents/db/completed", json!({})),
-            ("/_port/tv.kroma.torrents/db/mark-imported", json!({ "id": "d1", "paths": [], "now_ms": 1 })),
-            ("/_port/tv.kroma.torrents/db/set-status", json!({ "id": "d1", "status": "failed" })),
+            (
+                "/_port/tv.kroma.torrents/db/mark-imported",
+                json!({ "id": "d1", "paths": [], "now_ms": 1 }),
+            ),
+            (
+                "/_port/tv.kroma.torrents/db/set-status",
+                json!({ "id": "d1", "status": "failed" }),
+            ),
         ] {
             let (status, _) = call(path, body).await;
             assert_eq!(status, StatusCode::OK, "{path}");
@@ -237,16 +285,27 @@ mod tests {
 
     #[tokio::test]
     async fn a_lifecycle_call_for_a_row_that_is_gone_is_false_rather_than_an_error() {
-        let (_, answer) = call("/_port/tv.kroma.torrents/grab/activate", json!({ "id": "ghost" })).await;
+        let (_, answer) = call(
+            "/_port/tv.kroma.torrents/grab/activate",
+            json!({ "id": "ghost" }),
+        )
+        .await;
 
         // The manager is absent here, so this is the manager error; what matters is
         // that a missing row and a missing manager are told apart at all.
-        assert!(answer["Err"].is_string() || answer["Ok"] == json!(false), "{answer}");
+        assert!(
+            answer["Err"].is_string() || answer["Ok"] == json!(false),
+            "{answer}"
+        );
     }
 
     #[tokio::test]
     async fn a_malformed_body_is_rejected_by_the_extractor() {
-        let (status, _) = call("/_port/tv.kroma.torrents/db/mark-imported", json!({ "id": "d1" })).await;
+        let (status, _) = call(
+            "/_port/tv.kroma.torrents/db/mark-imported",
+            json!({ "id": "d1" }),
+        )
+        .await;
         assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 
         let (status, _) = call("/_port/tv.kroma.torrents/grab/list-files", json!({})).await;

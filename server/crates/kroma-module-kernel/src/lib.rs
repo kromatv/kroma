@@ -63,7 +63,11 @@ fn compiled_manifests() -> Vec<ModuleManifest> {
 /// Ids of modules with an in-core backend. These collide with a `.kmod` of the
 /// same id and so cannot be installed; a manifest-only module is not reserved.
 pub fn backend_ids() -> Vec<String> {
-    registry().servers.iter().map(|m| m.id().to_string()).collect()
+    registry()
+        .servers
+        .iter()
+        .map(|m| m.id().to_string())
+        .collect()
 }
 
 fn supervisor(state: &SharedState) -> Option<Arc<kroma_module_supervisor::Supervisor>> {
@@ -72,7 +76,9 @@ fn supervisor(state: &SharedState) -> Option<Arc<kroma_module_supervisor::Superv
 
 /// Ids of runtime-installed `.kmod` modules; only these can be uninstalled.
 pub fn installed_ids(state: &SharedState) -> Vec<String> {
-    supervisor(state).map(|s| s.installed_ids()).unwrap_or_default()
+    supervisor(state)
+        .map(|s| s.installed_ids())
+        .unwrap_or_default()
 }
 
 /// Every module's manifest: the compile-time roster plus installed `.kmod`s,
@@ -105,7 +111,11 @@ pub fn icon(state: &SharedState, id: &str) -> Option<(&'static str, Vec<u8>)> {
 /// The backend behavior for a module id, if it has any (for the enable/disable
 /// lifecycle driven by the admin toggle).
 pub fn find_server(id: &str) -> Option<&'static dyn ServerModule<SharedState>> {
-    registry().servers.iter().find(|m| m.id() == id).map(|m| m.as_ref())
+    registry()
+        .servers
+        .iter()
+        .find(|m| m.id() == id)
+        .map(|m| m.as_ref())
 }
 
 /// Each module's own schema DDL, in dependency order, applied once at DB init
@@ -115,8 +125,17 @@ pub fn module_migrations() -> Vec<&'static str> {
     let order = resolved_order();
     let mut servers: Vec<&dyn ServerModule<SharedState>> =
         registry().servers.iter().map(|m| m.as_ref()).collect();
-    servers.sort_by_key(|m| order.iter().position(|id| id == m.id()).unwrap_or(usize::MAX));
-    servers.iter().map(|m| m.migrations()).filter(|s| !s.is_empty()).collect()
+    servers.sort_by_key(|m| {
+        order
+            .iter()
+            .position(|id| id == m.id())
+            .unwrap_or(usize::MAX)
+    });
+    servers
+        .iter()
+        .map(|m| m.migrations())
+        .filter(|s| !s.is_empty())
+        .collect()
 }
 
 /// At boot, bring every enabled module's services up (disabled ones down) in
@@ -126,7 +145,12 @@ pub async fn apply_enabled_states(state: &SharedState) {
     let order = resolved_order();
     let mut servers: Vec<&dyn ServerModule<SharedState>> =
         registry().servers.iter().map(|m| m.as_ref()).collect();
-    servers.sort_by_key(|m| order.iter().position(|id| id == m.id()).unwrap_or(usize::MAX));
+    servers.sort_by_key(|m| {
+        order
+            .iter()
+            .position(|id| id == m.id())
+            .unwrap_or(usize::MAX)
+    });
     for module in servers {
         if kroma_engine::modules::module_enabled(&state.settings, module.id()) {
             module.on_enable(state.clone()).await;
@@ -156,7 +180,11 @@ pub fn mount_admin(state: SharedState) -> Router<SharedState> {
     router
 }
 
-fn module_scope(state: SharedState, id: &'static str, router: Router<SharedState>) -> Router<SharedState> {
+fn module_scope(
+    state: SharedState,
+    id: &'static str,
+    router: Router<SharedState>,
+) -> Router<SharedState> {
     router.route_layer(from_fn_with_state(
         state,
         move |State(state): State<SharedState>, req: Request, next: Next| async move {
@@ -176,14 +204,23 @@ mod tests {
     #[test]
     fn built_in_modules_resolve() {
         // Also exercises build()'s ServerModule<->manifest consistency assertion.
-        let order = registry().manifests.resolve().expect("built-in module graph resolves");
-        assert!(order.is_empty(), "roster should be empty (zero-module base build): {order:?}");
+        let order = registry()
+            .manifests
+            .resolve()
+            .expect("built-in module graph resolves");
+        assert!(
+            order.is_empty(),
+            "roster should be empty (zero-module base build): {order:?}"
+        );
     }
 
     #[test]
     fn only_in_core_backends_are_reserved() {
         let reserved = backend_ids();
-        assert!(reserved.is_empty(), "no module should be compiled-in: {reserved:?}");
+        assert!(
+            reserved.is_empty(),
+            "no module should be compiled-in: {reserved:?}"
+        );
     }
 
     #[test]
@@ -211,7 +248,10 @@ mod tests {
         let migs = module_migrations();
         assert!(migs.iter().all(|s| !s.is_empty()));
         assert!(migs.len() <= backend_ids().len());
-        assert_eq!(compiled_manifests().len(), registry().manifests.manifests().len());
+        assert_eq!(
+            compiled_manifests().len(),
+            registry().manifests.manifests().len()
+        );
     }
 }
 
@@ -265,13 +305,22 @@ mod gate_tests {
     }
 
     fn gated(state: SharedState, id: &'static str) -> Router {
-        module_scope(state.clone(), id, Router::new().route("/probe", get(|| async { "ok" })))
-            .with_state(state)
+        module_scope(
+            state.clone(),
+            id,
+            Router::new().route("/probe", get(|| async { "ok" })),
+        )
+        .with_state(state)
     }
 
     async fn status(router: Router, path: &str) -> StatusCode {
         router
-            .oneshot(HttpRequest::builder().uri(path).body(Body::empty()).unwrap())
+            .oneshot(
+                HttpRequest::builder()
+                    .uri(path)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap()
             .status()
@@ -281,7 +330,10 @@ mod gate_tests {
     async fn a_modules_admin_routes_answer_while_it_is_enabled() {
         // Default-enabled: a module nobody toggled is on.
         let (state, _dir) = test_state();
-        assert_eq!(status(gated(state, "tv.kroma.indexer"), "/probe").await, StatusCode::OK);
+        assert_eq!(
+            status(gated(state, "tv.kroma.indexer"), "/probe").await,
+            StatusCode::OK
+        );
     }
 
     #[tokio::test]
@@ -293,7 +345,10 @@ mod gate_tests {
             "tv.kroma.indexer",
             false,
         );
-        assert_eq!(status(gated(state, "tv.kroma.indexer"), "/probe").await, StatusCode::NOT_FOUND);
+        assert_eq!(
+            status(gated(state, "tv.kroma.indexer"), "/probe").await,
+            StatusCode::NOT_FOUND
+        );
     }
 
     #[tokio::test]
@@ -302,8 +357,16 @@ mod gate_tests {
         let router = gated(state.clone(), "tv.kroma.vpn");
         assert_eq!(status(router.clone(), "/probe").await, StatusCode::OK);
 
-        kroma_engine::modules::set_module_enabled(&state.settings, &state.db, "tv.kroma.vpn", false);
-        assert_eq!(status(router.clone(), "/probe").await, StatusCode::NOT_FOUND);
+        kroma_engine::modules::set_module_enabled(
+            &state.settings,
+            &state.db,
+            "tv.kroma.vpn",
+            false,
+        );
+        assert_eq!(
+            status(router.clone(), "/probe").await,
+            StatusCode::NOT_FOUND
+        );
 
         kroma_engine::modules::set_module_enabled(&state.settings, &state.db, "tv.kroma.vpn", true);
         assert_eq!(status(router, "/probe").await, StatusCode::OK);
@@ -334,7 +397,12 @@ mod gate_tests {
     #[tokio::test]
     async fn one_modules_gate_does_not_close_anothers_routes() {
         let (state, _dir) = test_state();
-        kroma_engine::modules::set_module_enabled(&state.settings, &state.db, "tv.kroma.vpn", false);
+        kroma_engine::modules::set_module_enabled(
+            &state.settings,
+            &state.db,
+            "tv.kroma.vpn",
+            false,
+        );
 
         let merged = Router::new()
             .merge(module_scope(
@@ -358,7 +426,10 @@ mod gate_tests {
         let (state, _dir) = test_state();
         assert!(module_migrations().is_empty());
         assert!(compiled_manifests().is_empty());
-        assert!(manifests(&state).is_empty(), "no supervisor, so nothing installed either");
+        assert!(
+            manifests(&state).is_empty(),
+            "no supervisor, so nothing installed either"
+        );
         assert!(installed_ids(&state).is_empty());
         assert!(icon(&state, "tv.kroma.indexer").is_none());
         assert!(find_server("tv.kroma.indexer").is_none());
@@ -379,11 +450,19 @@ mod gate_tests {
                 "tv.kroma.notes",
                 r#"{ "id": "tv.kroma.notes", "name": "Notes", "version": "1.2.3" }"#,
             );
-            install_module(&modules_dir, "tv.kroma.broken", r#"{ "name": "no id, no version" }"#);
-            std::fs::write(modules_dir.join("tv.kroma.notes").join("icon.svg"), b"<svg/>").unwrap();
+            install_module(
+                &modules_dir,
+                "tv.kroma.broken",
+                r#"{ "name": "no id, no version" }"#,
+            );
+            std::fs::write(
+                modules_dir.join("tv.kroma.notes").join("icon.svg"),
+                b"<svg/>",
+            )
+            .unwrap();
 
-            let supervisor =
-                kroma_module_supervisor::Supervisor::new(kroma_module_supervisor::SupervisorConfig {
+            let supervisor = kroma_module_supervisor::Supervisor::new(
+                kroma_module_supervisor::SupervisorConfig {
                     modules_dir,
                     core_url: "http://127.0.0.1:0".into(),
                     host_token: "token".into(),
@@ -392,7 +471,8 @@ mod gate_tests {
                     reserved_ids: Vec::new(),
                     server_version: "0.0.0".into(),
                     log_line: None,
-                });
+                },
+            );
             std::collections::HashMap::from([(
                 std::any::TypeId::of::<kroma_module_supervisor::Supervisor>(),
                 supervisor as Arc<dyn std::any::Any + Send + Sync>,
@@ -404,7 +484,11 @@ mod gate_tests {
     fn an_installed_kmod_joins_the_manifest_list() {
         let (state, _dir) = state_with_installed_modules();
         let listed = manifests(&state);
-        assert_eq!(listed.len(), 1, "only the readable manifest is listed: {listed:?}");
+        assert_eq!(
+            listed.len(),
+            1,
+            "only the readable manifest is listed: {listed:?}"
+        );
         assert_eq!(listed[0].id, "tv.kroma.notes");
         assert_eq!(listed[0].version, "1.2.3");
         assert_eq!(installed_ids(&state), vec!["tv.kroma.notes".to_string()]);

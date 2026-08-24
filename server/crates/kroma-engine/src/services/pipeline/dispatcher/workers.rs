@@ -22,7 +22,9 @@ pub(super) fn process_batch(
         (0..batch.len()).map(|_| Mutex::new(None)).collect();
     // Hardware clamp on top of the per-stage setting: a stage tuned on a dev
     // machine (metadata: 8, probe: 4) must not oversubscribe a 2-core NAS.
-    let cores = thread::available_parallelism().map(std::num::NonZeroUsize::get).unwrap_or(4);
+    let cores = thread::available_parallelism()
+        .map(std::num::NonZeroUsize::get)
+        .unwrap_or(4);
     let workers = stage
         .concurrency
         .min(cores * 2)
@@ -33,7 +35,10 @@ pub(super) fn process_batch(
             scope.spawn(|| process_task_worker(&next, batch, ctx, &paused, &slots, stage));
         }
     });
-    slots.into_iter().filter_map(|m| m.into_inner().unwrap()).collect()
+    slots
+        .into_iter()
+        .filter_map(|m| m.into_inner().unwrap())
+        .collect()
 }
 
 // Pulls the next index off the batch until drained or cancelled; a panic in
@@ -71,8 +76,11 @@ fn process_task_worker(
             Ok(Err(e)) => Some(format!("{e:#}")),
             Err(_) => Some("panicked during processing".to_string()),
         };
-        *slots[i].lock().unwrap() =
-            Some(db::pipeline::TaskResult { id: id.clone(), error, duration_ms });
+        *slots[i].lock().unwrap() = Some(db::pipeline::TaskResult {
+            id: id.clone(),
+            error,
+            duration_ms,
+        });
     }
 }
 
@@ -81,24 +89,28 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
+    use crate::services::pipeline::dispatcher::test_support::log_lines;
     use crate::services::pipeline::dispatcher::test_support::{
         process_fail, process_ok, process_panic, test_stage,
     };
-    use crate::services::pipeline::dispatcher::test_support::log_lines;
     use crate::test_support;
 
     #[test]
     fn process_batch_records_one_ok_result_per_task() {
         let state = test_support::test_state();
         let ctx = JobContext::for_test(state);
-        let batch: Vec<(String, String)> =
-            (0..3).map(|i| (format!("f{i}"), "sig".to_string())).collect();
+        let batch: Vec<(String, String)> = (0..3)
+            .map(|i| (format!("f{i}"), "sig".to_string()))
+            .collect();
         let results = process_batch(&test_stage(process_ok), &ctx, &batch);
         // One result per claimed subject, each recorded done (no error).
         assert_eq!(results.len(), 3);
         assert!(results.iter().all(|r| r.error.is_none()));
         let ids: std::collections::HashSet<_> = results.iter().map(|r| r.id.clone()).collect();
-        assert_eq!(ids, ["f0", "f1", "f2"].iter().map(|s| s.to_string()).collect());
+        assert_eq!(
+            ids,
+            ["f0", "f1", "f2"].iter().map(|s| s.to_string()).collect()
+        );
     }
 
     #[test]
@@ -107,7 +119,11 @@ mod tests {
         let ctx = JobContext::for_test(state);
 
         // A returned Err is recorded with its message.
-        let failed = process_batch(&test_stage(process_fail), &ctx, &[("f1".into(), "s".into())]);
+        let failed = process_batch(
+            &test_stage(process_fail),
+            &ctx,
+            &[("f1".into(), "s".into())],
+        );
         assert_eq!(failed.len(), 1);
         assert!(failed[0].error.as_deref().unwrap().contains("boom: f1"));
 
@@ -116,18 +132,26 @@ mod tests {
         // doesn't spam the test output).
         let prev = std::panic::take_hook();
         std::panic::set_hook(Box::new(|_| {}));
-        let panicked = process_batch(&test_stage(process_panic), &ctx, &[("f2".into(), "s".into())]);
+        let panicked = process_batch(
+            &test_stage(process_panic),
+            &ctx,
+            &[("f2".into(), "s".into())],
+        );
         std::panic::set_hook(prev);
         assert_eq!(panicked.len(), 1);
-        assert_eq!(panicked[0].error.as_deref(), Some("panicked during processing"));
+        assert_eq!(
+            panicked[0].error.as_deref(),
+            Some("panicked during processing")
+        );
     }
 
     #[test]
     fn process_task_worker_drains_the_batch_cooperatively() {
         let state = test_support::test_state();
         let ctx = JobContext::for_test(state);
-        let batch: Vec<(String, String)> =
-            (0..4).map(|i| (format!("f{i}"), "sig".to_string())).collect();
+        let batch: Vec<(String, String)> = (0..4)
+            .map(|i| (format!("f{i}"), "sig".to_string()))
+            .collect();
         let next = AtomicUsize::new(0);
         let paused = AtomicBool::new(false);
         let slots: Vec<Mutex<Option<db::pipeline::TaskResult>>> =
@@ -170,9 +194,22 @@ mod tests {
         let next = AtomicUsize::new(0);
         let paused = AtomicBool::new(false);
         let slots: Vec<Mutex<Option<db::pipeline::TaskResult>>> = vec![Mutex::new(None)];
-        process_task_worker(&next, &batch, &ctx, &paused, &slots, &test_stage(process_ok));
+        process_task_worker(
+            &next,
+            &batch,
+            &ctx,
+            &paused,
+            &slots,
+            &test_stage(process_ok),
+        );
 
-        assert!(slots[0].lock().unwrap().is_none(), "the held task was never started");
-        assert_eq!(log_lines(&mut rx), vec!["paused (pipeline held by admin)".to_string()]);
+        assert!(
+            slots[0].lock().unwrap().is_none(),
+            "the held task was never started"
+        );
+        assert_eq!(
+            log_lines(&mut rx),
+            vec!["paused (pipeline held by admin)".to_string()]
+        );
     }
 }

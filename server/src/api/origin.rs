@@ -62,15 +62,19 @@ pub async fn require_beacon_origin(
     next: Next,
 ) -> Response {
     let placement = match req.headers().get(header::ORIGIN) {
-        Some(origin) => origin
-            .to_str()
-            .map_or(Placement::Refused, |o| may_announce(o, &state.config.allowed_origins)),
+        Some(origin) => origin.to_str().map_or(Placement::Refused, |o| {
+            may_announce(o, &state.config.allowed_origins)
+        }),
         None => Placement::Placed,
     };
     if matches!(placement, Placement::Refused) {
-        return json_error(StatusCode::FORBIDDEN, "this origin may not announce a device");
+        return json_error(
+            StatusCode::FORBIDDEN,
+            "this origin may not announce a device",
+        );
     }
-    req.extensions_mut().insert(ConfirmRequired(matches!(placement, Placement::Unplaceable)));
+    req.extensions_mut()
+        .insert(ConfirmRequired(matches!(placement, Placement::Unplaceable)));
     next.run(req).await
 }
 
@@ -86,7 +90,9 @@ fn may_read(origin: &str, named: &[String]) -> bool {
 // other name.
 fn may_announce(origin: &str, named: &[String]) -> Placement {
     let placed = named.iter().any(|entry| entry.eq_ignore_ascii_case(origin))
-        || OFFICIAL_CLIENTS.iter().any(|client| client.eq_ignore_ascii_case(origin))
+        || OFFICIAL_CLIENTS
+            .iter()
+            .any(|client| client.eq_ignore_ascii_case(origin))
         || from_a_device(origin)
         || on_this_network(origin);
     match (placed, origin) {
@@ -133,7 +139,12 @@ fn behind_one_router(ip: IpAddr) -> bool {
 
 fn host_of(origin: &str) -> Option<String> {
     let uri: Uri = origin.parse().ok()?;
-    Some(uri.host()?.trim_start_matches('[').trim_end_matches(']').to_ascii_lowercase())
+    Some(
+        uri.host()?
+            .trim_start_matches('[')
+            .trim_end_matches(']')
+            .to_ascii_lowercase(),
+    )
 }
 
 #[cfg(test)]
@@ -168,10 +179,16 @@ mod tests {
 
     #[test]
     fn a_sandboxed_page_and_a_packaged_shell_share_one_null() {
-        assert!(read("null"), "a Samsung or LG set could not read its own answers");
+        assert!(
+            read("null"),
+            "a Samsung or LG set could not read its own answers"
+        );
         // Admitted, and flagged: nothing in the request separates the two, so
         // the grant asks for what only a real screen can show.
-        assert!(matches!(may_announce("null", NOBODY_NAMED), Placement::Unplaceable));
+        assert!(matches!(
+            may_announce("null", NOBODY_NAMED),
+            Placement::Unplaceable
+        ));
     }
 
     #[test]
@@ -213,9 +230,15 @@ mod tests {
     #[test]
     fn a_named_origin_may_do_both_however_it_is_written() {
         let named = vec!["https://kroma.example".to_string()];
-        assert!(matches!(may_announce("https://KROMA.example", &named), Placement::Placed));
+        assert!(matches!(
+            may_announce("https://KROMA.example", &named),
+            Placement::Placed
+        ));
         assert!(may_read("https://kroma.example", &named));
-        assert!(matches!(may_announce("https://other.example", &named), Placement::Refused));
+        assert!(matches!(
+            may_announce("https://other.example", &named),
+            Placement::Refused
+        ));
     }
 
     #[test]

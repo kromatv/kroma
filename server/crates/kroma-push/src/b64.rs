@@ -24,7 +24,9 @@ pub fn decode(s: &str) -> Result<Vec<u8>> {
             other => other,
         })
         .collect();
-    URL_SAFE_NO_PAD.decode(cleaned.as_bytes()).context("invalid base64url")
+    URL_SAFE_NO_PAD
+        .decode(cleaned.as_bytes())
+        .context("invalid base64url")
 }
 
 #[cfg(test)]

@@ -16,7 +16,6 @@ pub const EMBEDDED_KIND: &str = "rqbit";
 
 use serde::{Deserialize, Serialize};
 
-
 /// A torrent to hand to an engine. Borrowed, because the call is in-process:
 /// [`remote`] sends the subset an external engine reads.
 #[derive(Debug, Clone)]
@@ -203,7 +202,10 @@ mod tests {
             torrent_bytes: None,
         };
         assert_eq!(engine.add(&req).unwrap(), "ref");
-        assert!(engine.status("ref").unwrap().is_none(), "a forgotten torrent is None, not an error");
+        assert!(
+            engine.status("ref").unwrap().is_none(),
+            "a forgotten torrent is None, not an error"
+        );
         engine.pause("ref").unwrap();
         engine.resume("ref").unwrap();
         engine.remove("ref", true).unwrap();
@@ -217,15 +219,25 @@ mod tests {
 
     #[test]
     fn torrent_state_serde_is_lowercase() {
-        assert_eq!(serde_json::to_string(&TorrentState::Downloading).unwrap(), "\"downloading\"");
-        assert_eq!(serde_json::to_string(&TorrentState::Queued).unwrap(), "\"queued\"");
+        assert_eq!(
+            serde_json::to_string(&TorrentState::Downloading).unwrap(),
+            "\"downloading\""
+        );
+        assert_eq!(
+            serde_json::to_string(&TorrentState::Queued).unwrap(),
+            "\"queued\""
+        );
         let s: TorrentState = serde_json::from_str("\"seeding\"").unwrap();
         assert_eq!(s, TorrentState::Seeding);
     }
 
     #[test]
     fn torrent_file_entry_round_trips() {
-        let e = TorrentFileEntry { index: 3, path: "a/b.mkv".into(), size_bytes: 42 };
+        let e = TorrentFileEntry {
+            index: 3,
+            path: "a/b.mkv".into(),
+            size_bytes: 42,
+        };
         let json = serde_json::to_string(&e).unwrap();
         let back: TorrentFileEntry = serde_json::from_str(&json).unwrap();
         assert_eq!(back.index, 3);

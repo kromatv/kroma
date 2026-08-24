@@ -118,11 +118,11 @@ pub fn server_module<S: kroma_module_sdk::host::HostStorage + Clone + Send + Syn
 }
 
 pub mod engine;
+pub use dtos::VpnStatusView;
 pub use engine::{
     magnet_info_hash, AddTorrentReq, ClientDef, DownloadClient, TorrentFileEntry, TorrentState,
     TorrentStatus,
 };
-pub use dtos::VpnStatusView;
 
 #[cfg(test)]
 mod tests {
@@ -172,7 +172,9 @@ mod tests {
         // hooks are AWAITED by the kernel, so a panic here would take the whole
         // enable/disable cycle down.
         let module = server_module::<BareHost>();
-        let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
         rt.block_on(async {
             let host = BareHost::new();
             module.on_enable(host.clone()).await;

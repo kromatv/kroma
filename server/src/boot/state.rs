@@ -23,7 +23,11 @@ pub fn build(
     // Authenticates the callbacks a module makes back into the core.
     let host_token: String = {
         use rand::RngExt;
-        rand::rng().sample_iter(rand::distr::Alphanumeric).take(32).map(char::from).collect()
+        rand::rng()
+            .sample_iter(rand::distr::Alphanumeric)
+            .take(32)
+            .map(char::from)
+            .collect()
     };
     let supervisor = Supervisor::new(SupervisorConfig {
         modules_dir: config.data_dir.join("modules"),
@@ -61,8 +65,10 @@ pub fn build(
     // Transcription is long-running and rides a DB row for progress, so the core
     // holds a client for it. The embedder needs none: the state builds that point
     // from the same resolver.
-    let transcriber =
-        Arc::new(TranscriberClient::new(point(&contributions, "transcriber"), db.clone()));
+    let transcriber = Arc::new(TranscriberClient::new(
+        point(&contributions, "transcriber"),
+        db.clone(),
+    ));
     services.insert(std::any::TypeId::of::<TranscriberClient>(), transcriber);
 
     // Empty job roster: sidecars register their own jobs over `/_host/register-job`.
@@ -72,7 +78,11 @@ pub fn build(
         db,
         settings,
         kroma_engine::point::Point::new("embedder", contributions.clone()),
-        kroma_engine::state::ModuleWiring { services, jobs: &[], contributions },
+        kroma_engine::state::ModuleWiring {
+            services,
+            jobs: &[],
+            contributions,
+        },
     );
     (state, supervisor)
 }

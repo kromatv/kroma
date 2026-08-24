@@ -163,7 +163,9 @@ fn resolve_entity(r: &quick_xml::events::BytesRef) -> String {
     r.decode()
         .ok()
         .and_then(|name| {
-            quick_xml::escape::unescape(&format!("&{name};")).ok().map(|c| c.into_owned())
+            quick_xml::escape::unescape(&format!("&{name};"))
+                .ok()
+                .map(|c| c.into_owned())
         })
         .unwrap_or_default()
 }
@@ -231,7 +233,8 @@ pub fn parse_caps(xml: &[u8]) -> Result<Caps> {
                 let name = e.local_name().as_ref().to_vec();
                 let mut supported = String::new();
                 for attr in e.attributes().flatten() {
-                    let v = quick_xml::escape::unescape(&decoder.decode(&attr.value)?)?.into_owned();
+                    let v =
+                        quick_xml::escape::unescape(&decoder.decode(&attr.value)?)?.into_owned();
                     match attr.key.local_name().as_ref() {
                         b"supportedParams" => supported = v,
                         b"title" if name == b"server" => caps.server_title = Some(v),
@@ -304,17 +307,27 @@ mod tests {
         let r = &items[0];
         assert_eq!(r.title, "The.Matrix.1999.1080p.BluRay.x265-GRP");
         assert_eq!(r.guid, "https://tracker.example/details?id=42&page=1");
-        assert_eq!(r.link.as_deref(), Some("https://jackett.local/dl/abc?path=x&file=The.Matrix.torrent"));
+        assert_eq!(
+            r.link.as_deref(),
+            Some("https://jackett.local/dl/abc?path=x&file=The.Matrix.torrent")
+        );
         assert_eq!(r.size_bytes, Some(8_589_934_592));
         assert_eq!(r.seeders, Some(12));
         assert_eq!(r.leechers, Some(18));
         assert_eq!(r.info_hash.as_deref(), Some("ABCDEF0123456789"));
-        assert!(r.magnet.as_deref().unwrap().starts_with("magnet:?xt=urn:btih:ABCDEF0123456789&dn="));
+        assert!(r
+            .magnet
+            .as_deref()
+            .unwrap()
+            .starts_with("magnet:?xt=urn:btih:ABCDEF0123456789&dn="));
         assert_eq!(r.imdb_id.as_deref(), Some("tt0133093"));
         assert_eq!(r.tmdb_id, Some(603));
         assert!(r.published_at.as_deref().unwrap().contains("2026"));
         // <comments> is the tracker's torrent page and wins over the guid URL.
-        assert_eq!(r.details_url.as_deref(), Some("https://tracker.example/torrent/42"));
+        assert_eq!(
+            r.details_url.as_deref(),
+            Some("https://tracker.example/torrent/42")
+        );
 
         // Magnet-only item: the magnet landed in `magnet`, not `link`.
         let r2 = &items[1];
@@ -326,7 +339,8 @@ mod tests {
 
     #[test]
     fn surfaces_torznab_error_documents() {
-        let xml = r#"<?xml version="1.0"?><error code="100" description="Incorrect user credentials" />"#;
+        let xml =
+            r#"<?xml version="1.0"?><error code="100" description="Incorrect user credentials" />"#;
         let err = parse_items(xml.as_bytes()).unwrap_err().to_string();
         assert!(err.contains("100") && err.contains("credentials"), "{err}");
     }
@@ -405,7 +419,10 @@ mod tests {
           <enclosure url="https://jackett.local/dl/abc.torrent" length="10" />
         </item></channel></rss>"#;
         let items = parse_items(xml.as_bytes()).unwrap();
-        assert_eq!(items[0].link.as_deref(), Some("https://jackett.local/dl/abc.torrent"));
+        assert_eq!(
+            items[0].link.as_deref(),
+            Some("https://jackett.local/dl/abc.torrent")
+        );
     }
 
     #[test]
@@ -434,7 +451,10 @@ mod tests {
 
         let err = r#"<error code="100" description="bad key" xmlns="http://x" other="ignored" />"#;
         let message = parse_items(err.as_bytes()).unwrap_err().to_string();
-        assert!(message.contains("100") && message.contains("bad key"), "{message}");
+        assert!(
+            message.contains("100") && message.contains("bad key"),
+            "{message}"
+        );
     }
 
     #[test]

@@ -12,7 +12,11 @@ use super::release::to_release;
 /// Parse a JSON search response into releases (Cardigann `response: type: json`).
 /// Row/field selectors are dotted JSON paths (`$.data.torrents`, `results`,
 /// `foo[0].bar`); `text` templates and filters work exactly as for HTML.
-pub fn parse_json(def: &Definition, cfg: &IndexerConfig, body: &str) -> anyhow::Result<Vec<Release>> {
+pub fn parse_json(
+    def: &Definition,
+    cfg: &IndexerConfig,
+    body: &str,
+) -> anyhow::Result<Vec<Release>> {
     let root: serde_json::Value = serde_json::from_str(body)?;
     let base_ctx = base_context(def, cfg);
 
@@ -88,8 +92,8 @@ fn resolve_field_json(field: &Field, row: &serde_json::Value, ctx: &Context) -> 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::test_support::{build_def, cfg};
+    use super::*;
 
     #[test]
     fn parse_json_dotted_paths_and_scalars() {
@@ -139,7 +143,12 @@ search:
       selector: "name"
 "#,
         );
-        let rels = parse_json(&obj_def, &cfg("https://x/"), r#"{"result":{"name":"Solo 1080p"}}"#).unwrap();
+        let rels = parse_json(
+            &obj_def,
+            &cfg("https://x/"),
+            r#"{"result":{"name":"Solo 1080p"}}"#,
+        )
+        .unwrap();
         assert_eq!(rels.len(), 1);
         assert_eq!(rels[0].title, "Solo 1080p");
 
@@ -238,6 +247,4 @@ search:
         assert_eq!(rels[0].seeders, None);
         assert_eq!(rels[0].grabs, Some(7));
     }
-
-
 }

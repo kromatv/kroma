@@ -17,7 +17,10 @@ const PROXY_TIMEOUT: Duration = Duration::from_secs(600);
 fn proxy_client() -> &'static reqwest::Client {
     static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
     CLIENT.get_or_init(|| {
-        reqwest::Client::builder().timeout(PROXY_TIMEOUT).build().unwrap_or_default()
+        reqwest::Client::builder()
+            .timeout(PROXY_TIMEOUT)
+            .build()
+            .unwrap_or_default()
     })
 }
 
@@ -50,7 +53,9 @@ pub async fn proxy_to(port: u16, path_and_query: &str, req: Request) -> Response
         Ok(b) => b,
         Err(_) => return (StatusCode::PAYLOAD_TOO_LARGE, "body too large").into_response(),
     };
-    let mut out = proxy_client().request(parts.method, &url).body(bytes.to_vec());
+    let mut out = proxy_client()
+        .request(parts.method, &url)
+        .body(bytes.to_vec());
     for (name, value) in &parts.headers {
         if !is_hop_by_hop(name) {
             out = out.header(name.as_str(), value.as_bytes());

@@ -44,9 +44,15 @@ pub fn splash_entries(pool: &Pool, limit: u32, locale: &str) -> Result<Vec<Splas
         })?
         .collect::<rusqlite::Result<_>>()?;
 
-    for (subject, kind) in [(metadata_core::ITEM, "movie"), (metadata_core::SHOW, "show")] {
-        let ids: Vec<&str> =
-            entries.iter().filter(|(_, e)| e.kind == kind).map(|(id, _)| id.as_str()).collect();
+    for (subject, kind) in [
+        (metadata_core::ITEM, "movie"),
+        (metadata_core::SHOW, "show"),
+    ] {
+        let ids: Vec<&str> = entries
+            .iter()
+            .filter(|(_, e)| e.kind == kind)
+            .map(|(id, _)| id.as_str())
+            .collect();
         let tr = translations::resolve_many(&conn, subject, &ids, locale)?;
         for (id, entry) in entries.iter_mut() {
             if entry.kind == kind {
@@ -122,8 +128,11 @@ mod tests {
         )
         .unwrap();
 
-        let mut titles: Vec<String> =
-            splash_entries(&p, 10, "fr").unwrap().into_iter().map(|e| e.title).collect();
+        let mut titles: Vec<String> = splash_entries(&p, 10, "fr")
+            .unwrap()
+            .into_iter()
+            .map(|e| e.title)
+            .collect();
         titles.sort();
         assert_eq!(titles, ["Dune, première partie", "Séparation"]);
     }

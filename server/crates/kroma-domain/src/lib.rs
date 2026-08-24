@@ -5,22 +5,22 @@
 //! crates can write `kroma_domain::MediaItem` regardless of which noun-module a
 //! type lives in (and the server's `crate::model` barrel re-exports this).
 
+pub mod accounts;
+pub mod admin;
+pub mod cast;
+pub mod crash;
+pub mod jobs;
+pub mod library;
+pub mod matching;
 pub mod media;
 pub mod metadata;
-pub mod accounts;
-pub mod playback;
-pub mod cast;
-pub mod library;
-pub mod admin;
-pub mod jobs;
-pub mod pipeline;
 pub mod naming;
-pub mod matching;
-pub mod requests;
-pub mod reports;
-pub mod crash;
 pub mod notifications;
+pub mod pipeline;
+pub mod playback;
 pub mod push;
+pub mod reports;
+pub mod requests;
 pub mod section;
 
 // Flat re-export (mirrors the server's former `model.rs`). `naming` / `matching`
@@ -28,15 +28,15 @@ pub mod section;
 pub use accounts::*;
 pub use admin::*;
 pub use cast::*;
+pub use crash::*;
 pub use jobs::*;
 pub use library::*;
 pub use media::*;
 pub use metadata::*;
+pub use notifications::*;
 pub use pipeline::*;
 pub use playback::*;
-pub use requests::*;
-pub use reports::*;
-pub use crash::*;
-pub use notifications::*;
 pub use push::*;
+pub use reports::*;
+pub use requests::*;
 pub use section::*;

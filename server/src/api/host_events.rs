@@ -67,7 +67,10 @@ impl Subscriptions {
 pub fn routes(host_token: String, subs: Arc<Subscriptions>) -> Router<SharedState> {
     Router::new()
         .route("/_host/register-events", post(register))
-        .route_layer(from_fn_with_state(HostToken(host_token), require_host_token))
+        .route_layer(from_fn_with_state(
+            HostToken(host_token),
+            require_host_token,
+        ))
         .layer(Extension(subs))
 }
 
@@ -121,8 +124,13 @@ pub fn deliver(state: SharedState, supervisor: Arc<Supervisor>, subs: Arc<Subscr
 /// routing decision is testable without a running module: an event's topic is its
 /// `type`, and an event without one is addressable by nothing.
 fn deliveries(payload: &str, subs: &Subscriptions) -> Vec<(String, String)> {
-    let Some(topic) = topic_of(payload) else { return Vec::new() };
-    subs.wanting(&topic).into_iter().map(|id| (id, topic.clone())).collect()
+    let Some(topic) = topic_of(payload) else {
+        return Vec::new();
+    };
+    subs.wanting(&topic)
+        .into_iter()
+        .map(|id| (id, topic.clone()))
+        .collect()
 }
 
 fn topic_of(payload: &str) -> Option<String> {
@@ -133,7 +141,9 @@ fn topic_of(payload: &str) -> Option<String> {
 fn post_event(supervisor: &Arc<Supervisor>, module_id: &str, topic: &str, payload: &str) {
     // Not running (disabled, or mid-respawn): dropped, not queued. The module
     // reconciles on its next job rather than replaying a backlog it cannot bound.
-    let Some(port) = supervisor.port_of(module_id) else { return };
+    let Some(port) = supervisor.port_of(module_id) else {
+        return;
+    };
     let url = format!("http://127.0.0.1:{port}/_event/{topic}");
     let token = supervisor.host_token().to_string();
     let body = payload.to_string();
@@ -155,10 +165,7 @@ mod tests {
     use super::*;
 
     // The callback a sidecar POSTs at boot, driven the way it drives it.
-    async fn register_via_route(
-        subs: Arc<Subscriptions>,
-        body: serde_json::Value,
-    ) -> StatusCode {
+    async fn register_via_route(subs: Arc<Subscriptions>, body: serde_json::Value) -> StatusCode {
         let app = routes("host-token".into(), subs)
             .with_state(crate::api::test_support::test_app().state);
         let req = axum::http::Request::builder()
@@ -182,7 +189,10 @@ mod tests {
         .await;
 
         assert_eq!(status, StatusCode::NO_CONTENT);
-        assert_eq!(subs.wanting("item.added"), vec!["tv.kroma.notes".to_string()]);
+        assert_eq!(
+            subs.wanting("item.added"),
+            vec!["tv.kroma.notes".to_string()]
+        );
     }
 
     // The token guard is the same one the rest of the callback API uses; without
@@ -215,7 +225,9 @@ mod tests {
         subs.set("tv.kroma.notes", ["item.added".to_string()].into());
         let app = crate::api::test_support::test_app();
 
-        app.state.events.publish_value(serde_json::json!({ "type": "item.added", "id": "x" }));
+        app.state
+            .events
+            .publish_value(serde_json::json!({ "type": "item.added", "id": "x" }));
         let payload = r#"{"type":"item.added","id":"x"}"#;
 
         assert_eq!(
@@ -230,7 +242,10 @@ mod tests {
 
         subs.set("tv.kroma.notes", ["item.added".to_string()].into());
 
-        assert_eq!(subs.wanting("item.added"), vec!["tv.kroma.notes".to_string()]);
+        assert_eq!(
+            subs.wanting("item.added"),
+            vec!["tv.kroma.notes".to_string()]
+        );
         assert!(subs.wanting("playback.progress").is_empty());
     }
 
@@ -277,7 +292,10 @@ mod tests {
 
         let to = deliveries(r#"{"type":"item.added","id":"x"}"#, &subs);
 
-        assert_eq!(to, vec![("tv.kroma.notes".to_string(), "item.added".to_string())]);
+        assert_eq!(
+            to,
+            vec![("tv.kroma.notes".to_string(), "item.added".to_string())]
+        );
     }
 
     #[test]

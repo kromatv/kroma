@@ -33,7 +33,13 @@ static CAPS_CACHE: Mutex<Option<HashMap<String, Caps>>> = Mutex::new(None);
 /// port contract that names only [`HostCtx`].
 pub fn indexer_caps(host: &dyn HostCtx, store: &Pool, row: &IndexerRow) -> anyhow::Result<Caps> {
     let key = format!("{}|{}", row.id, row.url);
-    if let Some(caps) = CAPS_CACHE.lock().unwrap().as_ref().and_then(|m| m.get(&key)).cloned() {
+    if let Some(caps) = CAPS_CACHE
+        .lock()
+        .unwrap()
+        .as_ref()
+        .and_then(|m| m.get(&key))
+        .cloned()
+    {
         return Ok(caps);
     }
     let result = peers::caps(host, &row.kind, &endpoint_of(row));
@@ -52,7 +58,11 @@ pub fn indexer_caps(host: &dyn HostCtx, store: &Pool, row: &IndexerRow) -> anyho
         }
     }
     let caps = result?;
-    CAPS_CACHE.lock().unwrap().get_or_insert_with(HashMap::new).insert(key, caps.clone());
+    CAPS_CACHE
+        .lock()
+        .unwrap()
+        .get_or_insert_with(HashMap::new)
+        .insert(key, caps.clone());
     Ok(caps)
 }
 
@@ -87,11 +97,21 @@ fn session_key(host: &dyn HostCtx, row: &IndexerRow) -> String {
 /// Get (or build + cache) the shared session for a `builtin` indexer row.
 pub fn builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Result<Arc<Session>> {
     let key = session_key(host, row);
-    if let Some(s) = SESSION_CACHE.lock().unwrap().as_ref().and_then(|m| m.get(&key)).cloned() {
+    if let Some(s) = SESSION_CACHE
+        .lock()
+        .unwrap()
+        .as_ref()
+        .and_then(|m| m.get(&key))
+        .cloned()
+    {
         return Ok(s);
     }
     let session = Arc::new(build_builtin_session(host, row)?);
-    SESSION_CACHE.lock().unwrap().get_or_insert_with(HashMap::new).insert(key, session.clone());
+    SESSION_CACHE
+        .lock()
+        .unwrap()
+        .get_or_insert_with(HashMap::new)
+        .insert(key, session.clone());
     Ok(session)
 }
 
@@ -115,7 +135,10 @@ pub fn build_builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Re
         .ok_or_else(|| anyhow::anyhow!("built-in indexer '{}' has no definition", row.name))?;
     let def = definition_store(host).load(def_id)?;
     let settings: HashMap<String, String> = serde_json::from_str(&row.settings).unwrap_or_default();
-    let cfg = IndexerConfig { base_url: row.url.clone(), settings };
+    let cfg = IndexerConfig {
+        base_url: row.url.clone(),
+        settings,
+    };
 
     // Route search traffic through the VPN bridge only when the admin opted in
     // (a downed tunnel must not silently break search otherwise).
@@ -125,15 +148,29 @@ pub fn build_builtin_session(host: &dyn HostCtx, row: &IndexerRow) -> anyhow::Re
         (!url.trim().is_empty()).then(|| url.trim().to_string())
     };
 
-    Ok(Session::new(host.data_dir(), &row.id, def, cfg, socks5, flaresolverr))
+    Ok(Session::new(
+        host.data_dir(),
+        &row.id,
+        def,
+        cfg,
+        socks5,
+        flaresolverr,
+    ))
 }
 
 /// Capabilities for any indexer kind (native ones derive from the definition; no
 /// network round-trip).
-pub fn any_indexer_caps(host: &dyn HostCtx, store: &Pool, row: &IndexerRow) -> anyhow::Result<Caps> {
+pub fn any_indexer_caps(
+    host: &dyn HostCtx,
+    store: &Pool,
+    row: &IndexerRow,
+) -> anyhow::Result<Caps> {
     if row.kind == KIND_BUILTIN {
-        let def = definition_store(host)
-            .load(row.definition_id.as_deref().ok_or_else(|| anyhow::anyhow!("no definition"))?)?;
+        let def = definition_store(host).load(
+            row.definition_id
+                .as_deref()
+                .ok_or_else(|| anyhow::anyhow!("no definition"))?,
+        )?;
         Ok(Caps::from_definition(&def))
     } else {
         indexer_caps(host, store, row)

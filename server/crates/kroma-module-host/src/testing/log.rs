@@ -23,10 +23,18 @@ macro_rules! records_into_log {
             self.log.published.lock().unwrap().push((None, event.topic));
         }
         fn publish_to(&self, user_id: &str, event: Event) {
-            self.log.published.lock().unwrap().push((Some(user_id.to_string()), event.topic));
+            self.log
+                .published
+                .lock()
+                .unwrap()
+                .push((Some(user_id.to_string()), event.topic));
         }
         fn notify(&self, audience: &Audience, spec: &NotificationSpec) -> usize {
-            self.log.notified.lock().unwrap().push((audience.clone(), spec.clone()));
+            self.log
+                .notified
+                .lock()
+                .unwrap()
+                .push((audience.clone(), spec.clone()));
             1
         }
     };
@@ -49,7 +57,12 @@ impl Log {
         self.published.lock().unwrap().clone()
     }
     pub(super) fn topics(&self) -> Vec<String> {
-        self.published.lock().unwrap().iter().map(|(_, t)| t.clone()).collect()
+        self.published
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|(_, t)| t.clone())
+            .collect()
     }
     pub(super) fn notifications(&self) -> Vec<(Audience, NotificationSpec)> {
         self.notified.lock().unwrap().clone()
@@ -66,9 +79,9 @@ impl Log {
 mod tests {
     use serde_json::json;
 
-    use super::*;
     use super::super::fixtures::spec;
     use super::super::StubHost;
+    use super::*;
     use crate::{Event, HostCtx};
 
     #[test]
@@ -120,7 +133,10 @@ mod tests {
         // that an implementation keeps the two buses apart.
         let host = StubHost::new();
         host.publish_to("ana", Event::new("notification.created", json!({})));
-        assert_eq!(host.published(), [(Some("ana".to_string()), "notification.created".to_string())]);
+        assert_eq!(
+            host.published(),
+            [(Some("ana".to_string()), "notification.created".to_string())]
+        );
         assert!(
             host.published().iter().all(|(to, _)| to.is_some()),
             "an addressed event leaked into the broadcast bus"

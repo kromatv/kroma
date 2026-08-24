@@ -75,8 +75,15 @@ fn run(
 ) -> Result<String> {
     let device = best_device();
     let cfg: Config = serde_json::from_reader(std::fs::File::open(model_dir.join("config.json"))?)?;
-    let tokenizer = Tokenizer::from_file(model_dir.join("tokenizer.json")).map_err(|e| anyhow!("{e}"))?;
-    let vb = unsafe { VarBuilder::from_mmaped_safetensors(&[model_dir.join("model.safetensors")], DType::F32, &device)? };
+    let tokenizer =
+        Tokenizer::from_file(model_dir.join("tokenizer.json")).map_err(|e| anyhow!("{e}"))?;
+    let vb = unsafe {
+        VarBuilder::from_mmaped_safetensors(
+            &[model_dir.join("model.safetensors")],
+            DType::F32,
+            &device,
+        )?
+    };
     let mut model = w::model::Whisper::load(&vb, cfg.clone())?;
 
     let filters = mel_filters(cfg.num_mel_bins);
@@ -84,7 +91,11 @@ fn run(
     let n_frames = mel.len() / cfg.num_mel_bins;
     let mel = Tensor::from_vec(mel, (1, cfg.num_mel_bins, n_frames), &device)?;
 
-    let tok = |s: &str| tokenizer.token_to_id(s).ok_or_else(|| anyhow!("missing token {s}"));
+    let tok = |s: &str| {
+        tokenizer
+            .token_to_id(s)
+            .ok_or_else(|| anyhow!("missing token {s}"))
+    };
     let sot = tok("<|startoftranscript|>")?;
     let eot = tok("<|endoftext|>")?;
     let transcribe = tok("<|transcribe|>")?;
@@ -99,7 +110,13 @@ fn run(
     if let Some(l) = lang_tok {
         specials.push(l);
     }
-    let seed = DecodeSeed { sot, transcribe, no_ts, eot, lang_tok };
+    let seed = DecodeSeed {
+        sot,
+        transcribe,
+        no_ts,
+        eot,
+        lang_tok,
+    };
 
     let total_windows = n_frames.div_ceil(N_FRAMES).max(1);
     let mut out = String::from("WEBVTT\n\n");
@@ -175,7 +192,14 @@ fn decode_window(
 
 // Append cues for one window's tokens: text between two timestamp tokens is a
 // cue; a timestamp token maps to `(id - ts0) * 0.02` seconds + window `offset`.
-fn emit_segments(out: &mut String, tokens: &[u32], tokenizer: &Tokenizer, ts0: u32, specials: &[u32], offset: f64) {
+fn emit_segments(
+    out: &mut String,
+    tokens: &[u32],
+    tokenizer: &Tokenizer,
+    ts0: u32,
+    specials: &[u32],
+    offset: f64,
+) {
     let mut start: Option<f64> = None;
     let mut text_ids: Vec<u32> = Vec::new();
     for &t in tokens {
@@ -214,14 +238,28 @@ fn mel_filters(n_mels: usize) -> Vec<f32> {
     let min_log_hz = 1000.0;
     let min_log_mel = min_log_hz / f_sp;
     let logstep = (6.4_f64).ln() / 27.0;
-    let hz_to_mel = |hz: f64| if hz >= min_log_hz { min_log_mel + (hz / min_log_hz).ln() / logstep } else { hz / f_sp };
-    let mel_to_hz = |mel: f64| if mel >= min_log_mel { min_log_hz * (logstep * (mel - min_log_mel)).exp() } else { mel * f_sp };
+    let hz_to_mel = |hz: f64| {
+        if hz >= min_log_hz {
+            min_log_mel + (hz / min_log_hz).ln() / logstep
+        } else {
+            hz / f_sp
+        }
+    };
+    let mel_to_hz = |mel: f64| {
+        if mel >= min_log_mel {
+            min_log_hz * (logstep * (mel - min_log_mel)).exp()
+        } else {
+            mel * f_sp
+        }
+    };
     let mel_min = hz_to_mel(0.0);
     let mel_max = hz_to_mel(SR / 2.0);
     let hz_pts: Vec<f64> = (0..n_mels + 2)
         .map(|i| mel_to_hz(mel_min + (mel_max - mel_min) * i as f64 / (n_mels + 1) as f64))
         .collect();
-    let fft_freqs: Vec<f64> = (0..n_freqs).map(|i| (SR / 2.0) * i as f64 / (n_freqs - 1) as f64).collect();
+    let fft_freqs: Vec<f64> = (0..n_freqs)
+        .map(|i| (SR / 2.0) * i as f64 / (n_freqs - 1) as f64)
+        .collect();
     let mut weights = vec![0f32; n_mels * n_freqs];
     for m in 0..n_mels {
         let (lo, ce, hi) = (hz_pts[m], hz_pts[m + 1], hz_pts[m + 2]);
@@ -249,7 +287,14 @@ mod tests {
         let b = Tensor::randn(0f32, 1f32, (4, 3), &d).unwrap();
         let c = a.matmul(&b).unwrap();
         let _ = c.argmax(1).unwrap().to_vec1::<u32>().unwrap();
-        println!("whisper device ok: is_metal={} is_cuda={}", d.is_metal(), d.is_cuda());
-        assert!(d.is_metal() || d.is_cuda(), "expected a GPU device under whisper-metal/cuda");
+        println!(
+            "whisper device ok: is_metal={} is_cuda={}",
+            d.is_metal(),
+            d.is_cuda()
+        );
+        assert!(
+            d.is_metal() || d.is_cuda(),
+            "expected a GPU device under whisper-metal/cuda"
+        );
     }
 }

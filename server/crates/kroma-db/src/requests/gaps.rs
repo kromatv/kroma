@@ -19,7 +19,10 @@ pub fn replace_show_gaps(
 ) -> Result<()> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
-    tx.execute("DELETE FROM library_gaps WHERE show_id = ?1", params![show_id])?;
+    tx.execute(
+        "DELETE FROM library_gaps WHERE show_id = ?1",
+        params![show_id],
+    )?;
     {
         let mut stmt = tx.prepare(
             "INSERT INTO library_gaps (show_id, tmdb_id, title, poster_url, season, episode, air_date, detected_at) \
@@ -110,8 +113,16 @@ mod tests {
     fn library_gaps_list_reports_gaps_as_unrequested_missing_rows() {
         let p = pool();
         seed_show(&p, "s1");
-        replace_show_gaps(&p, "s1", 42, "Alpha", Some("/p.jpg"), &[gap(1, 3, "2020-01-01")], 1)
-            .unwrap();
+        replace_show_gaps(
+            &p,
+            "s1",
+            42,
+            "Alpha",
+            Some("/p.jpg"),
+            &[gap(1, 3, "2020-01-01")],
+            1,
+        )
+        .unwrap();
 
         let rows = library_gaps_list(&p.get().unwrap(), 50).unwrap();
         assert_eq!(rows.len(), 1);
@@ -174,8 +185,10 @@ mod tests {
 
         let conn = p.get().unwrap();
         let rows = library_gaps_list(&conn, 50).unwrap();
-        let seen: Vec<(String, Option<u32>, Option<u32>)> =
-            rows.iter().map(|r| (r.title.clone(), r.season, r.episode)).collect();
+        let seen: Vec<(String, Option<u32>, Option<u32>)> = rows
+            .iter()
+            .map(|r| (r.title.clone(), r.season, r.episode))
+            .collect();
         assert_eq!(
             seen,
             vec![
@@ -191,7 +204,8 @@ mod tests {
     fn the_calendar_and_episode_readers_error_when_their_tables_are_gone() {
         let pool = pool();
         let conn = pool.get().unwrap();
-        conn.execute_batch("DROP TABLE library_gaps; DROP TABLE items").unwrap();
+        conn.execute_batch("DROP TABLE library_gaps; DROP TABLE items")
+            .unwrap();
 
         assert!(library_gaps_list(&conn, 10).is_err());
         assert!(episodes_present(&conn, "s1").is_err());

@@ -38,7 +38,9 @@ pub(super) fn curl_get(url: &str, headers: &[(&str, String)]) -> Result<Value> {
 }
 
 fn run_curl(mut cmd: Command, what: &str) -> Result<Value> {
-    let out = cmd.output().with_context(|| format!("spawn curl for {what}"))?;
+    let out = cmd
+        .output()
+        .with_context(|| format!("spawn curl for {what}"))?;
     if !out.status.success() {
         bail!(
             "curl exit {}: {}",
@@ -47,7 +49,13 @@ fn run_curl(mut cmd: Command, what: &str) -> Result<Value> {
         );
     }
     serde_json::from_slice(&out.stdout).with_context(|| {
-        format!("parse {what} response: {}", String::from_utf8_lossy(&out.stdout).chars().take(200).collect::<String>())
+        format!(
+            "parse {what} response: {}",
+            String::from_utf8_lossy(&out.stdout)
+                .chars()
+                .take(200)
+                .collect::<String>()
+        )
     })
 }
 
@@ -73,12 +81,21 @@ mod tests {
         let data = kroma_testing::temp_dir("llm-curl-flag");
         let probe = data.path().join("written-by-curl");
         let config = data.path().join("curl.conf");
-        std::fs::write(&config, format!("output = \"{}\"\nurl = \"file:///dev/null\"\n", probe.display()))
-            .expect("curl config");
+        std::fs::write(
+            &config,
+            format!(
+                "output = \"{}\"\nurl = \"file:///dev/null\"\n",
+                probe.display()
+            ),
+        )
+        .expect("curl config");
 
         let out = curl_get(&format!("-K{}", config.display()), &[]);
 
         assert!(out.is_err());
-        assert!(!probe.exists(), "the base URL was read as a curl config-file flag");
+        assert!(
+            !probe.exists(),
+            "the base URL was read as a curl config-file flag"
+        );
     }
 }

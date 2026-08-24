@@ -38,7 +38,9 @@ fn is_private(addr: &IpAddr) -> bool {
 /// prefixes. Public because the trusted-proxy list is matched the same way, and
 /// two parsers for one syntax is one too many.
 pub fn cidr_contains(net: &str, addr: &IpAddr) -> bool {
-    let IpAddr::V4(ip) = addr.to_canonical() else { return false };
+    let IpAddr::V4(ip) = addr.to_canonical() else {
+        return false;
+    };
     let ip = u32::from(ip);
     if let Some((base, bits)) = net.split_once('/') {
         let Ok(base_ip) = base.trim().parse::<std::net::Ipv4Addr>() else {
@@ -57,7 +59,9 @@ pub fn cidr_contains(net: &str, addr: &IpAddr) -> bool {
         (u32::from(base_ip) & mask) == (ip & mask)
     } else {
         // Bare prefix string match on the dotted form.
-        std::net::Ipv4Addr::from(ip).to_string().starts_with(net.trim())
+        std::net::Ipv4Addr::from(ip)
+            .to_string()
+            .starts_with(net.trim())
     }
 }
 

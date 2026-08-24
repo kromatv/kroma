@@ -77,10 +77,17 @@ fn the_grant_stops_at_the_tables_this_module_has_no_business_in() {
         "SELECT position_ms FROM progress",
         "SELECT value FROM settings",
     ] {
-        assert!(conn.prepare(sql).is_err(), "the grant must not reach: {sql}");
+        assert!(
+            conn.prepare(sql).is_err(),
+            "the grant must not reach: {sql}"
+        );
     }
 
     // Reading a request is not editing an account.
-    assert!(conn.execute("UPDATE users SET username = 'x' WHERE id = 'u1'", []).is_err());
-    assert!(conn.execute("DELETE FROM users WHERE id = 'u1'", []).is_err());
+    assert!(conn
+        .execute("UPDATE users SET username = 'x' WHERE id = 'u1'", [])
+        .is_err());
+    assert!(conn
+        .execute("DELETE FROM users WHERE id = 'u1'", [])
+        .is_err());
 }

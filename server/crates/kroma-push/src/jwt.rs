@@ -20,8 +20,16 @@ use crate::b64;
 ///
 /// JOSE wants the fixed-width `r || s` pair, NOT the DER encoding most ECDSA
 /// APIs hand back by default a DER signature is silently rejected by Apple.
-pub fn sign_es256(key: &SecretKey, header: &serde_json::Value, claims: &serde_json::Value) -> String {
-    let signing_input = format!("{}.{}", b64::encode(header.to_string()), b64::encode(claims.to_string()));
+pub fn sign_es256(
+    key: &SecretKey,
+    header: &serde_json::Value,
+    claims: &serde_json::Value,
+) -> String {
+    let signing_input = format!(
+        "{}.{}",
+        b64::encode(header.to_string()),
+        b64::encode(claims.to_string())
+    );
     let signature: Signature = SigningKey::from(key).sign(signing_input.as_bytes());
     format!("{signing_input}.{}", b64::encode(signature.to_bytes()))
 }
@@ -32,10 +40,17 @@ pub fn sign_rs256(
     header: &serde_json::Value,
     claims: &serde_json::Value,
 ) -> Result<String> {
-    let signing_input = format!("{}.{}", b64::encode(header.to_string()), b64::encode(claims.to_string()));
+    let signing_input = format!(
+        "{}.{}",
+        b64::encode(header.to_string()),
+        b64::encode(claims.to_string())
+    );
     let signing_key = RsaSigningKey::<Sha256>::new(key.clone());
     let signature = rsa::signature::Signer::sign(&signing_key, signing_input.as_bytes());
-    Ok(format!("{signing_input}.{}", b64::encode(signature.to_bytes())))
+    Ok(format!(
+        "{signing_input}.{}",
+        b64::encode(signature.to_bytes())
+    ))
 }
 
 #[cfg(test)]
@@ -48,7 +63,11 @@ mod tests {
     #[test]
     fn es256_produces_three_segments_and_a_raw_64_byte_signature() {
         let key = SecretKey::random(&mut rand_core::OsRng);
-        let jwt = sign_es256(&key, &json!({ "alg": "ES256", "kid": "K" }), &json!({ "iss": "T" }));
+        let jwt = sign_es256(
+            &key,
+            &json!({ "alg": "ES256", "kid": "K" }),
+            &json!({ "iss": "T" }),
+        );
         let parts: Vec<&str> = jwt.split('.').collect();
         assert_eq!(parts.len(), 3);
         // JOSE r||s, not DER (which would be ~70 bytes and start 0x30).
@@ -69,7 +88,11 @@ mod tests {
     #[test]
     fn es256_segments_decode_back_to_the_json_they_were_given() {
         let key = SecretKey::random(&mut rand_core::OsRng);
-        let jwt = sign_es256(&key, &json!({ "alg": "ES256", "kid": "ABC123" }), &json!({ "iss": "T", "iat": 5 }));
+        let jwt = sign_es256(
+            &key,
+            &json!({ "alg": "ES256", "kid": "ABC123" }),
+            &json!({ "iss": "T", "iat": 5 }),
+        );
         let parts: Vec<&str> = jwt.split('.').collect();
         let header: serde_json::Value =
             serde_json::from_slice(&b64::decode(parts[0]).unwrap()).unwrap();
@@ -86,14 +109,18 @@ mod tests {
 
         // 2048 is what Google issues; smaller would not exercise the real path.
         let key = RsaPrivateKey::new(&mut rand_core::OsRng, 2048).unwrap();
-        let jwt = sign_rs256(&key, &json!({ "alg": "RS256", "typ": "JWT" }), &json!({ "iss": "sa" }))
-            .unwrap();
+        let jwt = sign_rs256(
+            &key,
+            &json!({ "alg": "RS256", "typ": "JWT" }),
+            &json!({ "iss": "sa" }),
+        )
+        .unwrap();
         let parts: Vec<&str> = jwt.split('.').collect();
         assert_eq!(parts.len(), 3);
 
         let verifying = RsaVerifyingKey::<Sha256>::new(key.to_public_key());
-        let sig = rsa::pkcs1v15::Signature::try_from(b64::decode(parts[2]).unwrap().as_slice())
-            .unwrap();
+        let sig =
+            rsa::pkcs1v15::Signature::try_from(b64::decode(parts[2]).unwrap().as_slice()).unwrap();
         let signed = format!("{}.{}", parts[0], parts[1]);
         assert!(RsaVerifier::verify(&verifying, signed.as_bytes(), &sig).is_ok());
     }

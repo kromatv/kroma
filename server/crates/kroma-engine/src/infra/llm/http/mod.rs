@@ -59,7 +59,14 @@ impl HttpLlm {
     }
 
     fn run(&self, system: &str, user: &str, max_tokens: u32, reasoning: bool) -> Result<String> {
-        let body = self.provider.chat_body(&self.model, system, user, max_tokens, self.temperature, reasoning);
+        let body = self.provider.chat_body(
+            &self.model,
+            system,
+            user,
+            max_tokens,
+            self.temperature,
+            reasoning,
+        );
         let headers = self.provider.headers(&self.api_key);
         let v = curl_post(&self.provider.chat_url(&self.base), &headers, &body)?;
         check_error(&v)?;
@@ -84,8 +91,15 @@ impl HttpLlm {
         let mut messages: Vec<Value> = vec![json!({ "role": "user", "content": user })];
         let mut last_text = String::new();
         for step in 0..max_steps {
-            let body =
-                self.provider.tools_request(&self.model, system, &messages, tools, max_tokens, self.temperature, reasoning);
+            let body = self.provider.tools_request(
+                &self.model,
+                system,
+                &messages,
+                tools,
+                max_tokens,
+                self.temperature,
+                reasoning,
+            );
             let v = curl_post(&url, &headers, &body)?;
             check_error(&v)?;
             let turn = self.provider.parse_turn(&v)?;
@@ -147,7 +161,15 @@ impl LlmClient for HttpLlm {
         max_tokens: u32,
         max_steps: usize,
     ) -> Result<String> {
-        match self.run_tools_loop(system, user, tools, toolbox, max_tokens, max_steps, self.reasoning) {
+        match self.run_tools_loop(
+            system,
+            user,
+            tools,
+            toolbox,
+            max_tokens,
+            max_steps,
+            self.reasoning,
+        ) {
             Ok(s) => Ok(s),
             // Some models 400 on `thinking` (e.g. Claude Haiku) retry the whole
             // loop without it. Catalog tools are read-only, so a replay is safe.
@@ -160,7 +182,12 @@ impl LlmClient for HttpLlm {
     }
 
     fn describe(&self) -> String {
-        format!("{} {} @ {}", self.provider.id(), self.model, self.provider.chat_url(&self.base))
+        format!(
+            "{} {} @ {}",
+            self.provider.id(),
+            self.model,
+            self.provider.chat_url(&self.base)
+        )
     }
 }
 
@@ -170,7 +197,10 @@ pub fn list_models(provider: &str, base_url: &str, api_key: &str) -> Result<Vec<
     let provider = provider_for(provider);
     let base = resolve_base(base_url, provider.default_base())
         .ok_or_else(|| anyhow!("a base URL is required to list models"))?;
-    let v = curl_get(&provider.models_url(&base), &provider.headers(api_key.trim()))?;
+    let v = curl_get(
+        &provider.models_url(&base),
+        &provider.headers(api_key.trim()),
+    )?;
     check_error(&v)?;
     let mut ids: Vec<String> = v
         .get("data")

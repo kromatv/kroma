@@ -8,8 +8,11 @@ pub(super) fn translate_batch(
     target_lang: &str,
     token_cap: u32,
 ) -> std::result::Result<Vec<Option<String>>, String> {
-    let numbered: String =
-        batch.iter().enumerate().map(|(i, c)| format!("{}. {}\n", i + 1, c.text.replace('\n', " "))).collect();
+    let numbered: String = batch
+        .iter()
+        .enumerate()
+        .map(|(i, c)| format!("{}. {}\n", i + 1, c.text.replace('\n', " ")))
+        .collect();
     let system = format!(
         "You are a professional subtitle translator. Translate each numbered subtitle line into {target_lang}. \
          Output EXACTLY the same number of lines, each prefixed with its number and a period, and NOTHING else. \
@@ -24,7 +27,9 @@ pub(super) fn translate_batch(
     let mut filled = 0;
     for line in reply.lines() {
         let line = line.trim();
-        let Some((num, rest)) = line.split_once('.') else { continue };
+        let Some((num, rest)) = line.split_once('.') else {
+            continue;
+        };
         if let Ok(n) = num.trim().parse::<usize>() {
             let rest = rest.trim();
             if n >= 1 && n <= batch.len() && !rest.is_empty() {
@@ -61,15 +66,22 @@ mod tests {
 
     #[test]
     fn translate_batch_parses_numbered_reply() {
-        let llm = FakeLlm { reply: Ok("1. Bonjour\n2. Salut".to_string()) };
+        let llm = FakeLlm {
+            reply: Ok("1. Bonjour\n2. Salut".to_string()),
+        };
         let batch = [cue("t0", "Hello"), cue("t1", "Hi")];
         let out = translate_batch(&llm, &batch, "French", 8192).unwrap();
-        assert_eq!(out, vec![Some("Bonjour".to_string()), Some("Salut".to_string())]);
+        assert_eq!(
+            out,
+            vec![Some("Bonjour".to_string()), Some("Salut".to_string())]
+        );
     }
 
     #[test]
     fn translate_batch_keeps_gap_as_none_when_mostly_parsed() {
-        let llm = FakeLlm { reply: Ok("1. Bonjour".to_string()) };
+        let llm = FakeLlm {
+            reply: Ok("1. Bonjour".to_string()),
+        };
         let batch = [cue("t0", "Hello"), cue("t1", "Hi")];
         let out = translate_batch(&llm, &batch, "French", 8192).unwrap();
         assert_eq!(out, vec![Some("Bonjour".to_string()), None]);
@@ -77,8 +89,15 @@ mod tests {
 
     #[test]
     fn translate_batch_errors_when_reply_unparseable() {
-        let llm = FakeLlm { reply: Ok("1. Bonjour\ngarbage without numbers".to_string()) };
-        let batch = [cue("t0", "a"), cue("t1", "b"), cue("t2", "c"), cue("t3", "d")];
+        let llm = FakeLlm {
+            reply: Ok("1. Bonjour\ngarbage without numbers".to_string()),
+        };
+        let batch = [
+            cue("t0", "a"),
+            cue("t1", "b"),
+            cue("t2", "c"),
+            cue("t3", "d"),
+        ];
         let err = translate_batch(&llm, &batch, "French", 8192).unwrap_err();
         assert!(err.contains("numbered format"), "unexpected error: {err}");
     }
@@ -88,7 +107,10 @@ mod tests {
         let llm = FakeLlm { reply: Err(()) };
         let batch = [cue("t0", "Hello")];
         let err = translate_batch(&llm, &batch, "French", 8192).unwrap_err();
-        assert!(err.contains("LLM request failed"), "unexpected error: {err}");
+        assert!(
+            err.contains("LLM request failed"),
+            "unexpected error: {err}"
+        );
     }
 
     #[test]
@@ -102,7 +124,9 @@ mod tests {
 
     #[test]
     fn translate_batch_ignores_out_of_range_line_numbers() {
-        let llm = FakeLlm { reply: Ok("1. Bonjour\n5. Stray".to_string()) };
+        let llm = FakeLlm {
+            reply: Ok("1. Bonjour\n5. Stray".to_string()),
+        };
         let batch = [cue("t0", "Hello"), cue("t1", "Hi")];
         let out = translate_batch(&llm, &batch, "French", 8192).unwrap();
         assert_eq!(out, vec![Some("Bonjour".to_string()), None]);

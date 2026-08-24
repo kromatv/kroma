@@ -30,11 +30,14 @@ pub fn season_episodes(api_key: &str, language: &str, tv_id: u64, season: u32) -
         ("language", language.to_string()),
         ("append_to_response", "credits".to_string()),
     ];
-    let resp: SeasonResp =
-        match curl_json(&format!("{}/tv/{tv_id}/season/{season}", api()), api_key, &params) {
-            Ok(r) => r,
-            Err(()) => return SeasonData::default(),
-        };
+    let resp: SeasonResp = match curl_json(
+        &format!("{}/tv/{tv_id}/season/{season}", api()),
+        api_key,
+        &params,
+    ) {
+        Ok(r) => r,
+        Err(()) => return SeasonData::default(),
+    };
     let episodes = resp
         .episodes
         .into_iter()
@@ -47,7 +50,11 @@ pub fn season_episodes(api_key: &str, language: &str, tv_id: u64, season: u32) -
             rating: e.vote_average.filter(|v| *v > 0.0),
         })
         .collect();
-    let cast = build_cast(resp.credits.map(|c| c.cast).unwrap_or_default(), MAX_CAST, false);
+    let cast = build_cast(
+        resp.credits.map(|c| c.cast).unwrap_or_default(),
+        MAX_CAST,
+        false,
+    );
     SeasonData { episodes, cast }
 }
 

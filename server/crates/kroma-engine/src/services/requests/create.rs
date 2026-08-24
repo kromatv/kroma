@@ -20,7 +20,11 @@ mod tests;
 
 /// Create (or duplicate-merge) a request. Auto-approves when the requester
 /// holds `requests.auto`.
-pub fn create_request<S: HostStorage>(state: &S, user: &User, body: &CreateRequestBody) -> Result<MediaRequest> {
+pub fn create_request<S: HostStorage>(
+    state: &S,
+    user: &User,
+    body: &CreateRequestBody,
+) -> Result<MediaRequest> {
     let key = tmdb_key(state)?;
     let lang = language(state);
     let detail = discover::detail(&key, &lang, body.kind, body.tmdb_id)
@@ -107,13 +111,26 @@ fn merge_show_request<S: HostStorage>(
     let seasons_changed = merged_seasons != existing.seasons;
     let episodes_changed = merged_episodes != existing.episodes;
     if seasons_changed {
-        db::set_request_seasons(state.db(), &existing.id, merged_seasons.as_deref(), now_ms())?;
+        db::set_request_seasons(
+            state.db(),
+            &existing.id,
+            merged_seasons.as_deref(),
+            now_ms(),
+        )?;
     }
     if episodes_changed {
-        db::set_request_episodes(state.db(), &existing.id, merged_episodes.as_deref(), now_ms())?;
+        db::set_request_episodes(
+            state.db(),
+            &existing.id,
+            merged_episodes.as_deref(),
+            now_ms(),
+        )?;
     }
     if seasons_changed || episodes_changed {
-        if matches!(existing.status, RequestStatus::Approved | RequestStatus::PartiallyAvailable) {
+        if matches!(
+            existing.status,
+            RequestStatus::Approved | RequestStatus::PartiallyAvailable
+        ) {
             materialize_wanted(state, &existing.id)?;
         }
         publish(state, &existing.id, existing.status);

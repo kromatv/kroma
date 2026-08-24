@@ -60,7 +60,9 @@ async fn list_modules(
     super::require(&user, Permission::SettingsManage)?;
     // Runtime-installed `.kmod` modules are removable; compile-time ones are not.
     let removable_ids: std::collections::HashSet<String> =
-        kroma_module_kernel::installed_ids(&state).into_iter().collect();
+        kroma_module_kernel::installed_ids(&state)
+            .into_iter()
+            .collect();
     let all = kroma_module_kernel::manifests(&state);
     let answered = crate::api::modules::answered_by(&all, &state);
     let mods: Vec<AdminModule> = all
@@ -164,8 +166,10 @@ async fn set_config(
         .find(|m| m.id == id)
         .map(|m| m.config.into_iter().map(|f| f.key).collect())
         .unwrap_or_default();
-    let map: serde_json::Map<String, Value> =
-        values.into_iter().filter(|(k, _)| allowed.contains(k)).collect();
+    let map: serde_json::Map<String, Value> = values
+        .into_iter()
+        .filter(|(k, _)| allowed.contains(k))
+        .collect();
     kroma_engine::modules::set_module_config(&state.settings, &state.db, &id, map);
     Ok(Json(json!({ "id": id, "ok": true })).into_response())
 }
@@ -228,5 +232,8 @@ async fn reinstall_module(
         .await
         .map_err(|e| bad(&format!("reinstall failed: {e:#}")))?;
     let running = supervisor.port_of(&id).is_some();
-    Ok(Json(json!({ "reinstalled": true, "running": running, "module": installed })).into_response())
+    Ok(
+        Json(json!({ "reinstalled": true, "running": running, "module": installed }))
+            .into_response(),
+    )
 }

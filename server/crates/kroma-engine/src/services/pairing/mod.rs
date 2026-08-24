@@ -28,7 +28,11 @@ pub use quickconnect::{QuickConnect, QuickConnectInner};
 #[cfg(test)]
 pub(super) fn approved(state: PollState) -> Option<(String, String, Box<kroma_domain::User>)> {
     match state {
-        PollState::Authorized { token, access_token, user } => Some((token, access_token, user)),
+        PollState::Authorized {
+            token,
+            access_token,
+            user,
+        } => Some((token, access_token, user)),
         _ => None,
     }
 }

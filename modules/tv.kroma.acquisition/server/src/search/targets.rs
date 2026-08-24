@@ -75,9 +75,12 @@ pub fn targets_for_scope(
     }
     match scope {
         SearchScope::All => targets_for_wanted(kind, wanted, today),
-        SearchScope::Movie => {
-            wanted.iter().find(|w| w.kind == "movie").map(movie_target).into_iter().collect()
-        }
+        SearchScope::Movie => wanted
+            .iter()
+            .find(|w| w.kind == "movie")
+            .map(movie_target)
+            .into_iter()
+            .collect(),
         SearchScope::Season { season } => {
             let rows = season_rows(wanted, season);
             let Some(sample) = rows.first().copied() else {
@@ -87,7 +90,9 @@ pub fn targets_for_scope(
             // episode is on no indexer, and no pack exists mid-airing. Without
             // this a 24-episode season narrows into 25 serial round trips, more
             // than the whole-request sweep it was meant to be cheaper than.
-            let has_future = rows.iter().any(|w| w.air_date.as_deref().is_some_and(|d| d > today));
+            let has_future = rows
+                .iter()
+                .any(|w| w.air_date.as_deref().is_some_and(|d| d > today));
             let mut out = Vec::new();
             if !has_future {
                 out.push(season_target(sample, season, &rows));
@@ -153,7 +158,12 @@ mod tests {
     }
 
     fn episode_numbers(targets: &[SearchTarget]) -> Vec<u32> {
-        targets.iter().filter(|t| t.kind == "episode").filter_map(|t| t.episodes.as_ref()?.first()).copied().collect()
+        targets
+            .iter()
+            .filter(|t| t.kind == "episode")
+            .filter_map(|t| t.episodes.as_ref()?.first())
+            .copied()
+            .collect()
     }
 
     #[test]
@@ -195,7 +205,13 @@ mod tests {
         );
         assert_eq!(t.len(), 3);
         assert_eq!(t[0].kind, "season");
-        assert!(matches!(t[0].target, Target::Season { season: 1, episodes: 2 }));
+        assert!(matches!(
+            t[0].target,
+            Target::Season {
+                season: 1,
+                episodes: 2
+            }
+        ));
         assert_eq!(episode_numbers(&t), vec![1, 2]);
     }
 
@@ -204,8 +220,10 @@ mod tests {
         // `?scope=movie` on a show used to take an episode row as its sample and
         // file the result into the movie library with an empty ledger.
         let rows = vec![ep(1, 1, None)];
-        assert!(targets_for_scope(RequestKind::Show, &rows, "2026-07-16", SearchScope::Movie)
-            .is_empty());
+        assert!(
+            targets_for_scope(RequestKind::Show, &rows, "2026-07-16", SearchScope::Movie)
+                .is_empty()
+        );
 
         let movie = vec![movie_row(Some(2020), Some("2020-01-01"))];
         assert!(targets_for_scope(
@@ -236,11 +254,20 @@ mod tests {
             RequestKind::Show,
             &rows,
             "2026-07-16",
-            SearchScope::Episode { season: 1, episode: 2 },
+            SearchScope::Episode {
+                season: 1,
+                episode: 2,
+            },
         );
         assert_eq!(t.len(), 1);
         assert_eq!(t[0].kind, "episode");
-        assert!(matches!(t[0].target, Target::Episode { season: 1, episode: 2 }));
+        assert!(matches!(
+            t[0].target,
+            Target::Episode {
+                season: 1,
+                episode: 2
+            }
+        ));
     }
 
     #[test]
@@ -257,7 +284,11 @@ mod tests {
             SearchScope::All.cache_key(),
             SearchScope::Movie.cache_key(),
             SearchScope::Season { season: 1 }.cache_key(),
-            SearchScope::Episode { season: 1, episode: 1 }.cache_key(),
+            SearchScope::Episode {
+                season: 1,
+                episode: 1,
+            }
+            .cache_key(),
         ];
         let unique: std::collections::HashSet<&String> = keys.iter().collect();
         assert_eq!(unique.len(), keys.len());
@@ -269,10 +300,17 @@ mod tests {
             SearchScope::All,
             SearchScope::Movie,
             SearchScope::Season { season: 3 },
-            SearchScope::Episode { season: 3, episode: 7 },
+            SearchScope::Episode {
+                season: 3,
+                episode: 7,
+            },
         ] {
             let raw = serde_json::to_string(&scope).unwrap();
-            assert_eq!(serde_json::from_str::<SearchScope>(&raw).unwrap(), scope, "{raw}");
+            assert_eq!(
+                serde_json::from_str::<SearchScope>(&raw).unwrap(),
+                scope,
+                "{raw}"
+            );
         }
     }
 }

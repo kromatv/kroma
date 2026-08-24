@@ -124,12 +124,19 @@ mod tests {
     }
 
     fn season(episodes: Vec<MediaItem>) -> Season {
-        Season { number: 1, episodes, cast: Vec::new() }
+        Season {
+            number: 1,
+            episodes,
+            cast: Vec::new(),
+        }
     }
 
     #[test]
     fn season_signature_none_without_probed_episodes() {
-        assert_eq!(season_signature("chapters", &season(vec![episode(None, Some(1000))])), None);
+        assert_eq!(
+            season_signature("chapters", &season(vec![episode(None, Some(1000))])),
+            None
+        );
         assert_eq!(
             season_signature("chapters", &season(vec![episode(Some("/x.mkv"), None)])),
             None

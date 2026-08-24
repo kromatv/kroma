@@ -12,7 +12,9 @@ use crate::{attach_files_batch, parse_metadata, row_to_item, season_casts, Pool,
 pub fn show_title(pool: &Pool, id: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     Ok(conn
-        .query_row("SELECT title FROM shows WHERE id = ?1", params![id], |r| r.get(0))
+        .query_row("SELECT title FROM shows WHERE id = ?1", params![id], |r| {
+            r.get(0)
+        })
         .optional()?)
 }
 
@@ -25,7 +27,11 @@ pub fn show_poster_art(pool: &Pool, id: &str) -> Result<Option<String>> {
 pub fn show_metadata(pool: &Pool, id: &str) -> Result<Option<Metadata>> {
     let conn = pool.get()?;
     let raw: Option<Option<String>> = conn
-        .query_row("SELECT metadata FROM shows WHERE id = ?1", params![id], |r| r.get(0))
+        .query_row(
+            "SELECT metadata FROM shows WHERE id = ?1",
+            params![id],
+            |r| r.get(0),
+        )
         .optional()?;
     Ok(parse_metadata(raw.flatten()))
 }
@@ -40,7 +46,9 @@ pub fn get_show(pool: &Pool, id: &str) -> Result<Option<ShowDetail>> {
         )
         .optional()?;
 
-    let Some(mut show) = show else { return Ok(None) };
+    let Some(mut show) = show else {
+        return Ok(None);
+    };
 
     let mut stmt = conn.prepare(&format!(
         "SELECT {ITEM_COLS} FROM items WHERE show_id = ?1 \
@@ -56,7 +64,11 @@ pub fn get_show(pool: &Pool, id: &str) -> Result<Option<ShowDetail>> {
         let n = ep.season.unwrap_or(0);
         match seasons.iter_mut().find(|s| s.number == n) {
             Some(s) => s.episodes.push(ep),
-            None => seasons.push(Season { number: n, episodes: vec![ep], cast: Vec::new() }),
+            None => seasons.push(Season {
+                number: n,
+                episodes: vec![ep],
+                cast: Vec::new(),
+            }),
         }
     }
     seasons.sort_by_key(|s| s.number);
@@ -109,7 +121,11 @@ mod tests {
             &p,
             "s1",
             1,
-            &[CastMember { name: "Adam".into(), character: Some("Mark".into()), profile_url: None }],
+            &[CastMember {
+                name: "Adam".into(),
+                character: Some("Mark".into()),
+                profile_url: None,
+            }],
         )
         .unwrap();
 
@@ -158,7 +174,10 @@ mod tests {
             )
             .unwrap();
         }
-        assert_eq!(show_poster_art(&p, "s1").unwrap().as_deref(), Some("/art/poster.jpg"));
+        assert_eq!(
+            show_poster_art(&p, "s1").unwrap().as_deref(),
+            Some("/art/poster.jpg")
+        );
         assert!(show_poster_art(&p, "s2").unwrap().is_none());
         assert!(show_poster_art(&p, "s3").unwrap().is_none());
         assert!(show_poster_art(&p, "missing").unwrap().is_none());

@@ -74,8 +74,14 @@ pub struct NewRequest {
 
 pub fn insert_request(pool: &Pool, req: &NewRequest, now_ms: i64) -> Result<()> {
     let conn = pool.get()?;
-    let seasons = req.seasons.as_ref().map(|s| serde_json::to_string(s).unwrap_or_default());
-    let episodes = req.episodes.as_ref().map(|e| serde_json::to_string(e).unwrap_or_default());
+    let seasons = req
+        .seasons
+        .as_ref()
+        .map(|s| serde_json::to_string(s).unwrap_or_default());
+    let episodes = req
+        .episodes
+        .as_ref()
+        .map(|e| serde_json::to_string(e).unwrap_or_default());
     conn.execute(
         "INSERT INTO requests (id, kind, tmdb_id, title, year, poster_url, seasons, status, requested_by, episodes, created_at, updated_at) \
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?11)",
@@ -97,14 +103,17 @@ pub fn insert_request(pool: &Pool, req: &NewRequest, now_ms: i64) -> Result<()> 
 }
 
 /// All requests newest-first, optionally scoped to one requester.
-pub fn list_requests(conn: &Connection, only_user: Option<&str>) -> rusqlite::Result<Vec<MediaRequest>> {
-    let base = format!(
-        "SELECT {REQUEST_COLS} FROM requests r LEFT JOIN users u ON u.id = r.requested_by"
-    );
+pub fn list_requests(
+    conn: &Connection,
+    only_user: Option<&str>,
+) -> rusqlite::Result<Vec<MediaRequest>> {
+    let base =
+        format!("SELECT {REQUEST_COLS} FROM requests r LEFT JOIN users u ON u.id = r.requested_by");
     match only_user {
         Some(uid) => {
-            let mut stmt =
-                conn.prepare(&format!("{base} WHERE r.requested_by = ?1 ORDER BY r.created_at DESC"))?;
+            let mut stmt = conn.prepare(&format!(
+                "{base} WHERE r.requested_by = ?1 ORDER BY r.created_at DESC"
+            ))?;
             let rows = stmt.query_map(params![uid], row_to_request)?;
             rows.collect()
         }
@@ -152,7 +161,10 @@ pub fn latest_request_for(
         params![kind.as_str(), tmdb_id as i64],
         |r| {
             let status: String = r.get(1)?;
-            Ok((r.get(0)?, RequestStatus::parse(&status).unwrap_or(RequestStatus::Pending)))
+            Ok((
+                r.get(0)?,
+                RequestStatus::parse(&status).unwrap_or(RequestStatus::Pending),
+            ))
         },
     )
     .optional()
@@ -177,7 +189,12 @@ pub fn set_request_status(
 }
 
 /// `None` = the whole show.
-pub fn set_request_seasons(pool: &Pool, id: &str, seasons: Option<&[u32]>, now_ms: i64) -> Result<()> {
+pub fn set_request_seasons(
+    pool: &Pool,
+    id: &str,
+    seasons: Option<&[u32]>,
+    now_ms: i64,
+) -> Result<()> {
     let conn = pool.get()?;
     let json = seasons.map(|s| serde_json::to_string(s).unwrap_or_default());
     conn.execute(

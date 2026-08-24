@@ -103,7 +103,10 @@ mod tests {
             ("acquisition", Category::Acquisition),
         ] {
             assert_eq!(Category::from_str(stored), Ok(category));
-            assert_eq!(serde_json::to_string(&category).unwrap(), format!("\"{stored}\""));
+            assert_eq!(
+                serde_json::to_string(&category).unwrap(),
+                format!("\"{stored}\"")
+            );
         }
     }
 

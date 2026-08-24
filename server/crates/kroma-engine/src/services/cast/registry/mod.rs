@@ -103,7 +103,9 @@ impl Receiver {
             (Some(item), Some(pb)) if pb.state != CastState::Idle => Some(CastNowPlaying {
                 item: item.clone(),
                 position_ms: pb.position_ms,
-                duration_ms: pb.duration_ms.or_else(|| item.duration_ms.and_then(|d| i64::try_from(d).ok())),
+                duration_ms: pb
+                    .duration_ms
+                    .or_else(|| item.duration_ms.and_then(|d| i64::try_from(d).ok())),
                 state: pb.state,
                 audio_tracks: pb.audio_tracks.clone(),
                 audio_index: pb.audio_index,
@@ -171,7 +173,12 @@ impl Registry {
     }
 
     pub fn row(&self, receiver_id: &str) -> Option<CastReceiver> {
-        self.inner.read().unwrap().get(receiver_id).filter(|r| r.live()).map(Receiver::view)
+        self.inner
+            .read()
+            .unwrap()
+            .get(receiver_id)
+            .filter(|r| r.live())
+            .map(Receiver::view)
     }
 
     /// The account a live receiver is signed into. Commands are addressed to it on

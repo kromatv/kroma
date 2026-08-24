@@ -4,9 +4,7 @@ use tracing::warn;
 use crate::db;
 use crate::model::Category;
 
-use super::{
-    Builtin, Cron, JobKey, JobManager, RemoteJob, RemoteRun, ScheduleState, Trigger,
-};
+use super::{Builtin, Cron, JobKey, JobManager, RemoteJob, RemoteRun, ScheduleState, Trigger};
 
 impl JobManager {
     /// Call during startup only, before wrapping in `Arc`.
@@ -36,18 +34,30 @@ impl JobManager {
         run: RemoteRun,
     ) {
         let job = JobKey(key);
-        self.schedules.write().unwrap().entry(job).or_insert_with(|| ScheduleState {
-            schedule: schedule.clone(),
-            enabled: true,
-            customized: false,
-        });
+        self.schedules
+            .write()
+            .unwrap()
+            .entry(job)
+            .or_insert_with(|| ScheduleState {
+                schedule: schedule.clone(),
+                enabled: true,
+                customized: false,
+            });
         {
             let mut order = self.remote_order.write().unwrap();
             if !order.contains(&job) {
                 order.push(job);
             }
         }
-        self.remote.write().unwrap().insert(key, RemoteJob { key: job, category, schedule, run });
+        self.remote.write().unwrap().insert(
+            key,
+            RemoteJob {
+                key: job,
+                category,
+                schedule,
+                run,
+            },
+        );
     }
 
     /// The registered identity for a request/stored key string, or `None` if no
@@ -131,7 +141,12 @@ mod tests {
     fn register_remote_is_resolvable() {
         let m = JobManager::new();
         let run: RemoteRun = Arc::new(|_ctx: &JobContext| Ok(()));
-        m.register_remote("mod.job", Category::Maintenance, Some("0 4 * * *".into()), run);
+        m.register_remote(
+            "mod.job",
+            Category::Maintenance,
+            Some("0 4 * * *".into()),
+            run,
+        );
         assert_eq!(m.resolve("mod.job"), Some(JobKey("mod.job")));
         assert_eq!(m.resolve("absent.job"), None);
     }
@@ -140,19 +155,33 @@ mod tests {
     fn update_schedule_validates_and_persists() {
         let pool = test_pool();
         let m = JobManager::new();
-        assert!(m.update_schedule(&pool, JobKey("ghost.job"), None, None).is_err());
+        assert!(m
+            .update_schedule(&pool, JobKey("ghost.job"), None, None)
+            .is_err());
 
         let run: RemoteRun = Arc::new(|_ctx: &JobContext| Ok(()));
         m.register_remote("mod.job", Category::Maintenance, None, run);
         assert!(m
-            .update_schedule(&pool, JobKey("mod.job"), Some(Some("not a valid cron".into())), None)
+            .update_schedule(
+                &pool,
+                JobKey("mod.job"),
+                Some(Some("not a valid cron".into())),
+                None
+            )
             .is_err());
 
-        m.update_schedule(&pool, JobKey("mod.job"), Some(Some("0 4 * * *".into())), Some(false))
-            .unwrap();
+        m.update_schedule(
+            &pool,
+            JobKey("mod.job"),
+            Some(Some("0 4 * * *".into())),
+            Some(false),
+        )
+        .unwrap();
         let rows = db::list_job_schedules(&pool).unwrap();
-        let saved =
-            rows.iter().find(|(k, ..)| k.as_str() == "mod.job").expect("schedule row persisted");
+        let saved = rows
+            .iter()
+            .find(|(k, ..)| k.as_str() == "mod.job")
+            .expect("schedule row persisted");
         assert_eq!(saved.1.as_deref(), Some("0 4 * * *"));
         assert!(!saved.2); // disabled
     }
@@ -162,8 +191,13 @@ mod tests {
         let mut m = JobManager::new();
         m.register(&TEST_BUILTIN);
         assert_eq!(m.resolve("test.job"), Some(JobKey("test.job")));
-        assert_eq!(m.jobs_for_trigger(Trigger::LibraryChange), vec![JobKey("test.job")]);
-        assert!(m.jobs_for_trigger(Trigger::AfterJob(JobKey("other.job"))).is_empty());
+        assert_eq!(
+            m.jobs_for_trigger(Trigger::LibraryChange),
+            vec![JobKey("test.job")]
+        );
+        assert!(m
+            .jobs_for_trigger(Trigger::AfterJob(JobKey("other.job")))
+            .is_empty());
     }
 
     #[test]
@@ -182,10 +216,16 @@ mod tests {
         let pool = test_pool();
         let mut m = JobManager::new();
         m.register(&TEST_BUILTIN);
-        pool.get().unwrap().execute("DROP TABLE job_schedules", []).unwrap();
+        pool.get()
+            .unwrap()
+            .execute("DROP TABLE job_schedules", [])
+            .unwrap();
 
         m.load_schedules(&pool);
-        assert_eq!(m.jobs_for_trigger(Trigger::LibraryChange), vec![JobKey("test.job")]);
+        assert_eq!(
+            m.jobs_for_trigger(Trigger::LibraryChange),
+            vec![JobKey("test.job")]
+        );
     }
 
     #[test]
@@ -193,9 +233,13 @@ mod tests {
         let pool = test_pool();
         let mut m = JobManager::new();
         m.register(&TEST_BUILTIN);
-        m.update_schedule(&pool, JobKey("test.job"), Some(None), None).unwrap();
+        m.update_schedule(&pool, JobKey("test.job"), Some(None), None)
+            .unwrap();
         let rows = db::list_job_schedules(&pool).unwrap();
-        let saved = rows.iter().find(|(k, ..)| k.as_str() == "test.job").expect("row persisted");
+        let saved = rows
+            .iter()
+            .find(|(k, ..)| k.as_str() == "test.job")
+            .expect("row persisted");
         assert!(saved.1.is_none(), "schedule cleared");
         assert!(saved.2, "still enabled");
     }
@@ -204,9 +248,19 @@ mod tests {
     fn register_remote_reregistration_stays_resolvable() {
         let m = JobManager::new();
         let run: RemoteRun = Arc::new(|_ctx: &JobContext| Ok(()));
-        m.register_remote("mod.job", Category::Maintenance, Some("0 4 * * *".into()), run);
+        m.register_remote(
+            "mod.job",
+            Category::Maintenance,
+            Some("0 4 * * *".into()),
+            run,
+        );
         let run2: RemoteRun = Arc::new(|_ctx: &JobContext| Ok(()));
-        m.register_remote("mod.job", Category::Recommendations, Some("0 9 * * *".into()), run2);
+        m.register_remote(
+            "mod.job",
+            Category::Recommendations,
+            Some("0 9 * * *".into()),
+            run2,
+        );
         assert_eq!(m.resolve("mod.job"), Some(JobKey("mod.job")));
     }
 }

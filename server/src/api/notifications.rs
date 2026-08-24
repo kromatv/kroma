@@ -21,9 +21,9 @@ use crate::api::util::{blocking, query};
 use crate::db;
 use crate::model::{NotificationPrefs, NotificationsView, SubscribeBody};
 use crate::services::auth::random_token;
-use crate::services::scan::short_hash;
-use crate::services::notify;
 use crate::services::jobs::now_ms;
+use crate::services::notify;
+use crate::services::scan::short_hash;
 use crate::state::SharedState;
 
 // The store keeps 200 rows per user (`db::notifications::RETENTION_PER_USER`);
@@ -55,7 +55,10 @@ pub async fn list(
         let stored = db::notifications::list_notifications(&conn, &uid, PAGE, false)?;
         let unread = db::notifications::unread_count(&conn, &uid)?;
         Ok(NotificationsView {
-            notifications: stored.iter().map(|s| notify::render::render(s, &locale)).collect(),
+            notifications: stored
+                .iter()
+                .map(|s| notify::render::render(s, &locale))
+                .collect(),
             unread,
         })
     })

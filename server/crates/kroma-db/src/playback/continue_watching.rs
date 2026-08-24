@@ -46,8 +46,9 @@ pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>
         std::collections::HashMap::new();
     for chunk in show_ids.chunks(super::IN_CHUNK) {
         let ph = vec!["?"; chunk.len()].join(",");
-        let mut stmt =
-            conn.prepare(&format!("SELECT id, metadata FROM shows WHERE id IN ({ph})"))?;
+        let mut stmt = conn.prepare(&format!(
+            "SELECT id, metadata FROM shows WHERE id IN ({ph})"
+        ))?;
         let metas = stmt.query_map(rusqlite::params_from_iter(chunk.iter()), |r| {
             Ok((r.get::<_, String>(0)?, r.get::<_, Option<String>>(1)?))
         })?;
@@ -59,7 +60,9 @@ pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>
 
     let mut out = Vec::with_capacity(rows.len());
     for (item_id, position_ms, duration_ms, updated_at) in rows {
-        let Some(mut item) = by_id.remove(&item_id) else { continue };
+        let Some(mut item) = by_id.remove(&item_id) else {
+            continue;
+        };
         if item.kind == Kind::Episode {
             let json = item
                 .show_id
@@ -73,7 +76,12 @@ pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>
                 item.metadata = Some(show_meta);
             }
         }
-        out.push(ContinueItem { item, position_ms, duration_ms, updated_at });
+        out.push(ContinueItem {
+            item,
+            position_ms,
+            duration_ms,
+            updated_at,
+        });
     }
     Ok(out)
 }
@@ -149,7 +157,11 @@ mod tests {
 
         let cw = continue_watching(&pool, &uid).unwrap();
         assert_eq!(cw.len(), 1);
-        let meta = cw[0].item.metadata.as_ref().expect("episode inherits show metadata");
+        let meta = cw[0]
+            .item
+            .metadata
+            .as_ref()
+            .expect("episode inherits show metadata");
         // Poster comes from the show; backdrop keeps the episode-specific still.
         assert_eq!(meta.poster_url.as_deref(), Some("show-poster.jpg"));
         assert_eq!(meta.backdrop_url.as_deref(), Some("episode-still.jpg"));

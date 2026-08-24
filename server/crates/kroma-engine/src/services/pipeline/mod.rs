@@ -21,13 +21,21 @@ pub mod stages;
 // dashboard iterates this to show a card per stage even before any task exists.
 pub const STAGE_KEYS: &[(&str, &str, &str)] = &[
     // (short, full job key, subject_kind) in DAG order.
-    (stages::probe::STAGE.short, stages::probe::STAGE.key, stages::probe::STAGE.subject_kind),
+    (
+        stages::probe::STAGE.short,
+        stages::probe::STAGE.key,
+        stages::probe::STAGE.subject_kind,
+    ),
     (
         stages::loudness::STAGE.short,
         stages::loudness::STAGE.key,
         stages::loudness::STAGE.subject_kind,
     ),
-    (stages::metadata::STAGE.short, stages::metadata::STAGE.key, stages::metadata::STAGE.subject_kind),
+    (
+        stages::metadata::STAGE.short,
+        stages::metadata::STAGE.key,
+        stages::metadata::STAGE.subject_kind,
+    ),
     (
         stages::storyboard::STAGE.short,
         stages::storyboard::STAGE.key,
@@ -38,8 +46,16 @@ pub const STAGE_KEYS: &[(&str, &str, &str)] = &[
         stages::subtitles::STAGE.key,
         stages::subtitles::STAGE.subject_kind,
     ),
-    (stages::markers::STAGE.short, stages::markers::STAGE.key, stages::markers::STAGE.subject_kind),
-    (stages::embed::STAGE.short, stages::embed::STAGE.key, stages::embed::STAGE.subject_kind),
+    (
+        stages::markers::STAGE.short,
+        stages::markers::STAGE.key,
+        stages::markers::STAGE.subject_kind,
+    ),
+    (
+        stages::embed::STAGE.short,
+        stages::embed::STAGE.key,
+        stages::embed::STAGE.subject_kind,
+    ),
 ];
 
 /// Startup crash-recovery: any ledger task left `running` by a process that died
@@ -48,7 +64,10 @@ pub const STAGE_KEYS: &[(&str, &str, &str)] = &[
 pub fn recover_on_boot(pool: &crate::db::Pool) {
     match crate::db::pipeline::reset_running(pool, None) {
         Ok(n) if n > 0 => {
-            tracing::info!(reset = n, "pipeline: reset stranded running tasks to pending");
+            tracing::info!(
+                reset = n,
+                "pipeline: reset stranded running tasks to pending"
+            );
         }
         Ok(_) => {}
         Err(e) => tracing::warn!(error = %e, "pipeline: failed to reset stranded running tasks"),
@@ -74,11 +93,17 @@ mod tests {
     #[test]
     fn a_ledger_that_cannot_be_read_at_boot_is_logged_rather_than_fatal() {
         let pool = crate::db::testing::temp_pool("pipeline-recover-broken");
-        pool.get().unwrap().execute_batch("DROP TABLE pipeline_tasks").unwrap();
+        pool.get()
+            .unwrap()
+            .execute_batch("DROP TABLE pipeline_tasks")
+            .unwrap();
         assert!(crate::db::pipeline::reset_running(&pool, None).is_err());
 
         recover_on_boot(&pool);
 
-        assert!(pool.get().is_ok(), "a failed recovery must not cost the pool");
+        assert!(
+            pool.get().is_ok(),
+            "a failed recovery must not cost the pool"
+        );
     }
 }

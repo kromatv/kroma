@@ -83,15 +83,23 @@ fn stop_lets_a_module_shut_down_before_killing_it() {
     await_ready(&ready_flag(dir, "com.example.stub"));
 
     sup.stop("com.example.stub");
-    assert!(marker.exists(), "the module was killed without a chance to shut down");
-    assert!(sup.port_of("com.example.stub").is_none(), "a stopped module must be untracked");
+    assert!(
+        marker.exists(),
+        "the module was killed without a chance to shut down"
+    );
+    assert!(
+        sup.port_of("com.example.stub").is_none(),
+        "a stopped module must be untracked"
+    );
 }
 
 #[test]
 fn stop_all_shuts_every_module_down() {
     let scratch = temp_modules_dir("stopall");
     let dir = scratch.path();
-    let markers: Vec<PathBuf> = (0..3).map(|i| dir.join(format!("stopped-{i}.txt"))).collect();
+    let markers: Vec<PathBuf> = (0..3)
+        .map(|i| dir.join(format!("stopped-{i}.txt")))
+        .collect();
     for (i, marker) in markers.iter().enumerate() {
         install_module(dir, &format!("com.example.stub{i}"), marker);
     }
@@ -110,7 +118,10 @@ fn stop_all_shuts_every_module_down() {
     }
     // Signalled together, waited on once: three modules must not cost three
     // grace periods.
-    assert!(started.elapsed() < Duration::from_secs(5), "stop_all serialised the grace period");
+    assert!(
+        started.elapsed() < Duration::from_secs(5),
+        "stop_all serialised the grace period"
+    );
 }
 
 // The grace period is a deadline, not a promise: a wedged module still dies.
@@ -141,11 +152,19 @@ fn stop_kills_a_module_that_ignores_the_signal() {
     let sup = supervisor(dir);
     sup.spawn("com.example.deaf").expect("spawn");
     await_ready(&pidfile);
-    let pid: i32 = std::fs::read_to_string(&pidfile).expect("pidfile").trim().parse().unwrap();
+    let pid: i32 = std::fs::read_to_string(&pidfile)
+        .expect("pidfile")
+        .trim()
+        .parse()
+        .unwrap();
 
     sup.stop("com.example.deaf");
     // `stop` reaps, so the pid is free; anything still answering signal 0 would
     // mean the process outlived the grace period.
     // SAFETY: `kill(pid, 0)` only probes for existence, it delivers no signal.
-    assert_eq!(unsafe { libc::kill(pid, 0) }, -1, "a module ignoring SIGTERM was left running");
+    assert_eq!(
+        unsafe { libc::kill(pid, 0) },
+        -1,
+        "a module ignoring SIGTERM was left running"
+    );
 }

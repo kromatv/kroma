@@ -6,11 +6,18 @@
 use axum::http::StatusCode;
 use serde_json::json;
 
-use crate::api::test_support::{get, seed_library, seed_library_kind, seed_session, send, test_app};
+use crate::api::test_support::{
+    get, seed_library, seed_library_kind, seed_session, send, test_app,
+};
 use crate::model::Permission;
 
 fn member(t: &crate::api::test_support::TestApp, tag: &str) -> String {
-    let (_id, token) = seed_session(&t.state, &format!("{tag}@test.dev"), tag, &[Permission::Playback]);
+    let (_id, token) = seed_session(
+        &t.state,
+        &format!("{tag}@test.dev"),
+        tag,
+        &[Permission::Playback],
+    );
     token
 }
 
@@ -25,7 +32,12 @@ async fn library_browse_lists_directories_and_blocks_traversal() {
     assert!(body.get("path").is_some());
 
     // A traversal segment is refused before any filesystem access.
-    let (status, _) = get(&t.app, "/api/admin/libraries/browse?path=/etc/..", Some(&t.token)).await;
+    let (status, _) = get(
+        &t.app,
+        "/api/admin/libraries/browse?path=/etc/..",
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 
     // Browsing needs library.manage.
@@ -38,13 +50,25 @@ async fn library_browse_lists_directories_and_blocks_traversal() {
 async fn library_create_rejects_a_blank_name() {
     let t = test_app();
     // Validation fails before the definition is added (so no rescan is spawned).
-    let (status, _) =
-        send(&t.app, "POST", "/api/admin/libraries", Some(&t.token), Some(json!({ "name": "   " }))).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/libraries",
+        Some(&t.token),
+        Some(json!({ "name": "   " })),
+    )
+    .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 
     let m = member(&t, "libcreate-member");
-    let (status, _) =
-        send(&t.app, "POST", "/api/admin/libraries", Some(&m), Some(json!({ "name": "Nope" }))).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/libraries",
+        Some(&m),
+        Some(json!({ "name": "Nope" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
 
@@ -80,16 +104,27 @@ async fn library_browse_reads_a_real_directory_and_404s_a_missing_one() {
 
     // Browsing an existing absolute path returns its sub-dirs + a parent link.
     let dir = t.state.config.data_dir.to_string_lossy().to_string();
-    let (status, body) =
-        get(&t.app, &format!("/api/admin/libraries/browse?path={dir}"), Some(&t.token)).await;
+    let (status, body) = get(
+        &t.app,
+        &format!("/api/admin/libraries/browse?path={dir}"),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert!(body["entries"].is_array());
     assert!(body["path"].is_string());
-    assert!(body["parent"].is_string(), "a non-root dir exposes its parent");
+    assert!(
+        body["parent"].is_string(),
+        "a non-root dir exposes its parent"
+    );
 
     // A non-existent path fails canonicalisation -> a clean 404.
-    let (status, _) =
-        get(&t.app, "/api/admin/libraries/browse?path=/no/such/kroma/dir/xyz", Some(&t.token)).await;
+    let (status, _) = get(
+        &t.app,
+        "/api/admin/libraries/browse?path=/no/such/kroma/dir/xyz",
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 
     let (status, body) = get(&t.app, "/api/admin/libraries/browse?path=/", Some(&t.token)).await;
@@ -125,15 +160,35 @@ async fn library_delete_and_scan_guard_branches() {
     let t = test_app();
 
     // Deleting an unknown library is a 404 (returned before any rescan spawn).
-    let (status, _) =
-        send(&t.app, "DELETE", "/api/admin/libraries/ghost", Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        "/api/admin/libraries/ghost",
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 
     // Both delete + scan are library.manage-gated (guard runs before scan spawn).
     let m = member(&t, "libmanage-member");
-    let (status, _) = send(&t.app, "DELETE", "/api/admin/libraries/whatever", Some(&m), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        "/api/admin/libraries/whatever",
+        Some(&m),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
-    let (status, _) = send(&t.app, "POST", "/api/admin/libraries/whatever/scan", Some(&m), None).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/libraries/whatever/scan",
+        Some(&m),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
 
@@ -153,8 +208,17 @@ async fn admin_user_permission_edit_and_last_owner_guard() {
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, body) = get(&t.app, "/api/admin/users", Some(&t.token)).await;
-    let m = body["users"].as_array().unwrap().iter().find(|u| u["id"] == json!(member_id)).unwrap();
-    assert!(m["permissions"].as_array().unwrap().iter().any(|p| p == "library.manage"));
+    let m = body["users"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|u| u["id"] == json!(member_id))
+        .unwrap();
+    assert!(m["permissions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|p| p == "library.manage"));
 
     // Stripping the sole owner of users.manage is barred (would lock out admin).
     let (status, _) = send(
@@ -183,14 +247,30 @@ async fn admin_user_delete_removes_a_member_but_404s_the_unknown() {
     let t = test_app();
     let (member_id, _) = seed_session(&t.state, "gone@test.dev", "gone", &[Permission::Playback]);
 
-    let (status, _) =
-        send(&t.app, "DELETE", &format!("/api/admin/users/{member_id}"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/admin/users/{member_id}"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, body) = get(&t.app, "/api/admin/users", Some(&t.token)).await;
-    assert!(!body["users"].as_array().unwrap().iter().any(|u| u["id"] == json!(member_id)));
+    assert!(!body["users"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|u| u["id"] == json!(member_id)));
 
-    let (status, _) =
-        send(&t.app, "DELETE", "/api/admin/users/nobody", Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        "/api/admin/users/nobody",
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
@@ -198,7 +278,14 @@ async fn admin_user_delete_removes_a_member_but_404s_the_unknown() {
 async fn member_cannot_reach_user_management() {
     let t = test_app();
     let m = member(&t, "usermgmt-member");
-    let (status, _) = send(&t.app, "PATCH", "/api/admin/users/x", Some(&m), Some(json!({ "username": "y" }))).await;
+    let (status, _) = send(
+        &t.app,
+        "PATCH",
+        "/api/admin/users/x",
+        Some(&m),
+        Some(json!({ "username": "y" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
     let (status, _) = send(&t.app, "DELETE", "/api/admin/users/x", Some(&m), None).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
@@ -207,8 +294,18 @@ async fn member_cannot_reach_user_management() {
 #[tokio::test]
 async fn an_admin_rename_obeys_the_same_uniqueness_as_a_self_service_one() {
     let t = test_app();
-    let (ana_id, _) = seed_session(&t.state, "ana-adm@test.dev", "ana-adm", &[Permission::Playback]);
-    seed_session(&t.state, "bo-adm@test.dev", "bo-adm", &[Permission::Playback]);
+    let (ana_id, _) = seed_session(
+        &t.state,
+        "ana-adm@test.dev",
+        "ana-adm",
+        &[Permission::Playback],
+    );
+    seed_session(
+        &t.state,
+        "bo-adm@test.dev",
+        "bo-adm",
+        &[Permission::Playback],
+    );
 
     let (status, _) = send(
         &t.app,
@@ -241,7 +338,11 @@ async fn an_admin_rename_obeys_the_same_uniqueness_as_a_self_service_one() {
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, body) = get(&t.app, "/api/admin/users", Some(&t.token)).await;
     assert!(
-        body["users"].as_array().unwrap().iter().any(|u| u["username"] == json!("ana-renamed")),
+        body["users"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|u| u["username"] == json!("ana-renamed")),
         "{body}"
     );
 }

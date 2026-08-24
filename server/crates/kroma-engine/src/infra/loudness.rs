@@ -52,7 +52,9 @@ pub fn measure(path: &Path, audio_rel: u32, channels: Option<u32>) -> Result<Lou
         cmd.arg("-filter_complex").arg(format!(
             "[0:a:{audio_rel}]asplit=2[full][c];[full]{LOUDNORM}[fo];[c]pan=mono|c0=FC,{LOUDNORM}[co]",
         ));
-        cmd.args(["-map", "[fo]", "-f", "null", "-", "-map", "[co]", "-f", "null", "-"]);
+        cmd.args([
+            "-map", "[fo]", "-f", "null", "-", "-map", "[co]", "-f", "null", "-",
+        ]);
     } else {
         cmd.arg("-map").arg(format!("0:a:{audio_rel}"));
         cmd.args(["-af", LOUDNORM, "-f", "null", "-"]);
@@ -61,7 +63,8 @@ pub fn measure(path: &Path, audio_rel: u32, channels: Option<u32>) -> Result<Lou
 
     let out = {
         let _permit = crate::infra::ffmpeg_gate::acquire();
-        cmd.output().context("spawn ffmpeg for loudness measurement")?
+        cmd.output()
+            .context("spawn ffmpeg for loudness measurement")?
     };
     if !out.status.success() {
         bail!("ffmpeg loudness pass exited with {}", out.status);
@@ -69,11 +72,18 @@ pub fn measure(path: &Path, audio_rel: u32, channels: Option<u32>) -> Result<Lou
     let stderr = String::from_utf8_lossy(&out.stderr);
     let mut blocks = parse_loudnorm_blocks(&stderr);
     if blocks.is_empty() {
-        bail!("no loudnorm measurement in ffmpeg output for {}", path.display());
+        bail!(
+            "no loudnorm measurement in ffmpeg output for {}",
+            path.display()
+        );
     }
     blocks.sort_by_key(|(idx, _)| *idx);
     let mix = blocks[0].1;
-    let dialog = if with_center { blocks.get(1).map(|(_, s)| *s) } else { None };
+    let dialog = if with_center {
+        blocks.get(1).map(|(_, s)| *s)
+    } else {
+        None
+    };
     Ok(LoudnessResult { mix, dialog })
 }
 
@@ -84,14 +94,20 @@ fn parse_loudnorm_blocks(stderr: &str) -> Vec<(u32, LoudnessStats)> {
     let mut out = Vec::new();
     for (pos, _) in stderr.match_indices("Parsed_loudnorm_") {
         let tail = &stderr[pos + "Parsed_loudnorm_".len()..];
-        let idx: u32 = match tail.chars().take_while(char::is_ascii_digit).collect::<String>().parse()
+        let idx: u32 = match tail
+            .chars()
+            .take_while(char::is_ascii_digit)
+            .collect::<String>()
+            .parse()
         {
             Ok(i) => i,
             Err(_) => continue,
         };
         // The loudnorm JSON is flat: the first `{ … }` after the tag is it.
         let Some(open) = tail.find('{') else { continue };
-        let Some(close) = tail[open..].find('}') else { continue };
+        let Some(close) = tail[open..].find('}') else {
+            continue;
+        };
         let Ok(v) = serde_json::from_str::<serde_json::Value>(&tail[open..open + close + 1]) else {
             continue;
         };
@@ -103,7 +119,11 @@ fn parse_loudnorm_blocks(stderr: &str) -> Vec<(u32, LoudnessStats)> {
                 .unwrap_or(floor);
             // Silence measures as -inf; clamp so the value stays storable and
             // JSON-serializable.
-            if x.is_finite() { x } else { floor }
+            if x.is_finite() {
+                x
+            } else {
+                floor
+            }
         };
         out.push((
             idx,

@@ -170,7 +170,10 @@ mod tests {
             role_label(&[Permission::UsersManage, Permission::SettingsManage]),
             "Propriétaire"
         );
-        assert_eq!(role_label(&[Permission::Playback, Permission::RequestsCreate]), "Membre");
+        assert_eq!(
+            role_label(&[Permission::Playback, Permission::RequestsCreate]),
+            "Membre"
+        );
         assert_eq!(role_label(&[Permission::RequestsCreate]), "Restreint");
         assert_eq!(role_label(&[]), "Restreint");
         assert_eq!(role_label(&[Permission::UsersManage]), "Restreint");

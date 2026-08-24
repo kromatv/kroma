@@ -31,7 +31,8 @@ const BADGE_H: f32 = BADGE_SIZE + BADGE_PAD_Y * 2.0;
 fn font() -> &'static Font {
     static FONT: OnceLock<Font> = OnceLock::new();
     FONT.get_or_init(|| {
-        let bytes = include_bytes!("../../../packages/ui/src/assets/fonts/HankenGrotesk.ttf") as &[u8];
+        let bytes =
+            include_bytes!("../../../packages/ui/src/assets/fonts/HankenGrotesk.ttf") as &[u8];
         Font::from_bytes(bytes, fontdue::FontSettings::default()).expect("bundled font parses")
     })
 }
@@ -87,7 +88,10 @@ fn fill_vgradient(pm: &mut Pixmap, y0: f32, y1: f32, top: Color, bottom: Color) 
         SpreadMode::Pad,
         Transform::identity(),
     ) {
-        let paint = Paint { shader, ..Default::default() };
+        let paint = Paint {
+            shader,
+            ..Default::default()
+        };
         pm.fill_rect(
             Rect::from_xywh(0.0, 0.0, pm.width() as f32, pm.height() as f32).unwrap(),
             &paint,
@@ -139,7 +143,11 @@ fn paint_badge(pm: &mut Pixmap, text: &str, s: f32) {
         text,
         x + pad_x,
         y + pad_y + size * 0.82,
-        &TextStyle { size, color: ACCENT, tracking },
+        &TextStyle {
+            size,
+            color: ACCENT,
+            tracking,
+        },
     );
 }
 
@@ -148,11 +156,21 @@ fn paint_progress(pm: &mut Pixmap, frac: f32, s: f32) {
     let (x0, x1) = (MARGIN * s, w - MARGIN * s);
     let mut tp = Paint::default();
     tp.set_color_rgba8(255, 255, 255, 70);
-    pm.fill_rect(Rect::from_xywh(x0, y, x1 - x0, 4.0 * s).unwrap(), &tp, Transform::identity(), None);
+    pm.fill_rect(
+        Rect::from_xywh(x0, y, x1 - x0, 4.0 * s).unwrap(),
+        &tp,
+        Transform::identity(),
+        None,
+    );
     if frac > 0.0 {
         let mut fp = Paint::default();
         fp.set_color_rgba8(ACCENT.0, ACCENT.1, ACCENT.2, 255);
-        pm.fill_rect(Rect::from_xywh(x0, y, (x1 - x0) * frac, 4.0 * s).unwrap(), &fp, Transform::identity(), None);
+        pm.fill_rect(
+            Rect::from_xywh(x0, y, (x1 - x0) * frac, 4.0 * s).unwrap(),
+            &fp,
+            Transform::identity(),
+            None,
+        );
     }
 }
 
@@ -179,7 +197,11 @@ struct TextStyle {
 }
 
 fn draw_text(pm: &mut Pixmap, font: &Font, text: &str, x: f32, baseline: f32, style: &TextStyle) {
-    let TextStyle { size, color, tracking } = *style;
+    let TextStyle {
+        size,
+        color,
+        tracking,
+    } = *style;
     let mut pen = x;
     for ch in text.chars() {
         let (m, bitmap) = font.rasterize(ch, size);
@@ -213,7 +235,14 @@ fn blit_glyph(
     }
     let gx = (pen + m.xmin as f32).round() as i32;
     let gy = (baseline - m.height as f32 - m.ymin as f32).round() as i32;
-    pm.draw_pixmap(gx, gy, glyph.as_ref(), &PixmapPaint::default(), Transform::identity(), None);
+    pm.draw_pixmap(
+        gx,
+        gy,
+        glyph.as_ref(),
+        &PixmapPaint::default(),
+        Transform::identity(),
+        None,
+    );
 }
 
 fn text_width(font: &Font, text: &str, size: f32, tracking: f32) -> f32 {

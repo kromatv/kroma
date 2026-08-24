@@ -9,7 +9,10 @@ use super::backends::Backend;
 use super::Cue;
 
 pub(super) fn cue(timing: &str, text: &str) -> Cue {
-    Cue { timing: timing.to_string(), text: text.to_string() }
+    Cue {
+        timing: timing.to_string(),
+        text: text.to_string(),
+    }
 }
 
 pub(super) struct FakeLlm {
@@ -32,7 +35,11 @@ impl LlmClient for FakeLlm {
 }
 
 pub(super) fn backend(label: &str, reply: std::result::Result<String, ()>) -> Backend {
-    Backend { label: label.to_string(), client: Arc::new(FakeLlm { reply }), token_cap: 8192 }
+    Backend {
+        label: label.to_string(),
+        client: Arc::new(FakeLlm { reply }),
+        token_cap: 8192,
+    }
 }
 
 pub(super) fn test_pool() -> TempPool {
@@ -88,5 +95,8 @@ pub(super) fn numbered_translation(request: &serde_json::Value) -> (u16, serde_j
             format!("{}. [fr] {}\n", num.trim(), rest.trim())
         })
         .collect();
-    (200, serde_json::json!({ "choices": [{ "message": { "content": body } }] }))
+    (
+        200,
+        serde_json::json!({ "choices": [{ "message": { "content": body } }] }),
+    )
 }

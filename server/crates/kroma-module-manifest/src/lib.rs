@@ -9,19 +9,19 @@ mod event;
 mod manifest;
 mod registry;
 
+pub use compat::{engines_satisfied, is_newer, range_matches, version_satisfies, KNOWN_ENGINES};
 pub use embedded::EmbeddedModule;
+pub use event::ModuleEvent;
 /// `embedded_module!()` builds a module's `MODULE` const from the `module.json`
 /// and `icon.<ext>` beside it. Re-exported here (as well as from
 /// `kroma_module_sdk`) so the modules that sit below the SDK facade (e.g. scene)
 /// can use it without depending on the facade.
 pub use kroma_module_macros::embedded_module;
-pub use event::ModuleEvent;
+pub use manifest::MODULE_SCHEMA_VERSION;
 pub use manifest::{
     ConfigField, Contribution, CoreScope, Dependency, FeRemote, ModuleManifest, PointDef, PointReq,
     Storage, Version,
 };
-pub use compat::{engines_satisfied, is_newer, range_matches, version_satisfies, KNOWN_ENGINES};
-pub use manifest::MODULE_SCHEMA_VERSION;
 pub use registry::{ModuleRegistration, Registry, ResolveError};
 
 /// A module's packaged icon: an `icon.svg` / `icon.png` sitting next to the

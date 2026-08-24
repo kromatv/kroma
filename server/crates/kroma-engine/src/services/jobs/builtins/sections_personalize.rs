@@ -51,16 +51,28 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
             let embedded = state.vectors.vectors_for(&watched).len();
             ctx.debug(format!(
                 "{}: {} watched / {} with embeddings (< {} required) skipping",
-                short_id(uid), watched.len(), embedded, taste::MIN_WATCHED
+                short_id(uid),
+                watched.len(),
+                embedded,
+                taste::MIN_WATCHED
             ));
             continue;
         }
-        let locale = lang.as_deref().and_then(crate::i18n::normalize).unwrap_or(crate::i18n::DEFAULT_LOCALE);
-        let prev = crate::db::get_user_taste(&state.db, uid).ok().flatten().and_then(|(p, _)| p);
+        let locale = lang
+            .as_deref()
+            .and_then(crate::i18n::normalize)
+            .unwrap_or(crate::i18n::DEFAULT_LOCALE);
+        let prev = crate::db::get_user_taste(&state.db, uid)
+            .ok()
+            .flatten()
+            .and_then(|(p, _)| p);
         let (system, user) = generate::build_prompt(locale, prev.as_deref(), &clusters);
         ctx.debug(format!(
             "{}: {} taste clusters → {} ({} prompt chars)",
-            short_id(uid), clusters.len(), llm.describe(), system.len() + user.len()
+            short_id(uid),
+            clusters.len(),
+            llm.describe(),
+            system.len() + user.len()
         ));
 
         match llm.complete(&system, &user, max_tokens) {
@@ -72,10 +84,14 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
                     ctx.info(format!("{}: {} sections", short_id(uid), sections.len()));
                 }
                 Ok(_) => ctx.error(format!(
-                    "{}: model returned no usable sections reply: {}", short_id(uid), snippet(&reply)
+                    "{}: model returned no usable sections reply: {}",
+                    short_id(uid),
+                    snippet(&reply)
                 )),
                 Err(e) => ctx.error(format!(
-                    "{}: could not parse model reply: {e} reply: {}", short_id(uid), snippet(&reply)
+                    "{}: could not parse model reply: {e} reply: {}",
+                    short_id(uid),
+                    snippet(&reply)
                 )),
             },
             Err(e) => ctx.error(format!("{}: LLM request failed: {e:#}", short_id(uid))),
@@ -112,7 +128,9 @@ mod tests {
     }
 
     fn user_of(state: &SharedState) -> String {
-        kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[]).unwrap().id
+        kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[])
+            .unwrap()
+            .id
     }
 
     const GOOD_REPLY: &str = r#"{
@@ -131,7 +149,9 @@ mod tests {
         let user = user_of(&state);
         seed_history(&state, &user);
         run(&JobContext::for_test(state.clone())).unwrap();
-        assert!(crate::db::get_user_taste(&state.db, &user).unwrap().is_none());
+        assert!(crate::db::get_user_taste(&state.db, &user)
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -144,8 +164,13 @@ mod tests {
 
         run(&JobContext::for_test(state.clone())).unwrap();
 
-        let (profile, sections) = crate::db::get_user_taste(&state.db, &user).unwrap().unwrap();
-        assert_eq!(profile.as_deref(), Some("Likes slow thrillers and 90s comedies."));
+        let (profile, sections) = crate::db::get_user_taste(&state.db, &user)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            profile.as_deref(),
+            Some("Likes slow thrillers and 90s comedies.")
+        );
         assert!(sections.contains("Slow Burn Thrillers"), "{sections}");
         assert!(sections.contains("90s Comfort Comedies"), "{sections}");
         // One request per user with enough history - not one per cluster.
@@ -161,8 +186,13 @@ mod tests {
         llm.configure(&state);
 
         run(&JobContext::for_test(state.clone())).unwrap();
-        assert!(crate::db::get_user_taste(&state.db, &user).unwrap().is_none());
-        assert!(llm.requests().is_empty(), "the model was asked about an empty history");
+        assert!(crate::db::get_user_taste(&state.db, &user)
+            .unwrap()
+            .is_none());
+        assert!(
+            llm.requests().is_empty(),
+            "the model was asked about an empty history"
+        );
     }
 
     #[test]
@@ -175,13 +205,15 @@ mod tests {
         crate::db::set_user_taste(&state.db, &user, Some("Previously known"), "[]").unwrap();
 
         for bad in [
-            FakeLlm::always("I'd rather not."),                       // not JSON
-            FakeLlm::always(r#"{"profile":"x","sections":[]}"#),      // no usable sections
-            FakeLlm::failing(500),                                    // provider down
+            FakeLlm::always("I'd rather not."),                  // not JSON
+            FakeLlm::always(r#"{"profile":"x","sections":[]}"#), // no usable sections
+            FakeLlm::failing(500),                               // provider down
         ] {
             bad.configure(&state);
             run(&JobContext::for_test(state.clone())).unwrap();
-            let (profile, _) = crate::db::get_user_taste(&state.db, &user).unwrap().unwrap();
+            let (profile, _) = crate::db::get_user_taste(&state.db, &user)
+                .unwrap()
+                .unwrap();
             assert_eq!(profile.as_deref(), Some("Previously known"));
         }
     }
@@ -199,7 +231,10 @@ mod tests {
 
         run(&JobContext::for_test(state.clone())).unwrap();
         let prompt = llm.requests()[0].to_string();
-        assert!(prompt.contains("Fond of heist films"), "the prior profile was not sent");
+        assert!(
+            prompt.contains("Fond of heist films"),
+            "the prior profile was not sent"
+        );
     }
 
     #[test]
@@ -216,7 +251,9 @@ mod tests {
         ));
         handle.request_cancel();
         run(&JobContext::from_handle(state.clone(), handle)).unwrap();
-        assert!(crate::db::get_user_taste(&state.db, &user).unwrap().is_none());
+        assert!(crate::db::get_user_taste(&state.db, &user)
+            .unwrap()
+            .is_none());
         assert!(llm.requests().is_empty());
     }
 

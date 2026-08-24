@@ -130,9 +130,11 @@ pub(super) fn curl_json<T: for<'de> Deserialize<'de>>(
     // TMDB accepts a v3 key as the `api_key` query param, or a v4 read token
     // (a JWT: header.payload.signature) as a Bearer header. Pick by shape.
     if is_bearer_token(api_key) {
-        cmd.arg("-H").arg(format!("Authorization: Bearer {api_key}"));
+        cmd.arg("-H")
+            .arg(format!("Authorization: Bearer {api_key}"));
     } else {
-        cmd.arg("--data-urlencode").arg(format!("api_key={api_key}"));
+        cmd.arg("--data-urlencode")
+            .arg(format!("api_key={api_key}"));
     }
     for (k, v) in params {
         cmd.arg("--data-urlencode").arg(format!("{k}={v}"));

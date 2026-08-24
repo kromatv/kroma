@@ -47,7 +47,11 @@ impl<'a> Planner<'a> {
         let manifests = kroma_module_kernel::manifests(state);
         let present_answers = manifests
             .iter()
-            .flat_map(|m| m.contributes.iter().map(|c| (c.point.clone(), c.id.clone())))
+            .flat_map(|m| {
+                m.contributes
+                    .iter()
+                    .map(|c| (c.point.clone(), c.id.clone()))
+            })
             .collect();
         let present = manifests.into_iter().map(|m| (m.id, m.version)).collect();
         Self::with_present(modules, present, present_answers)
@@ -90,7 +94,8 @@ impl<'a> Planner<'a> {
             }
         })?;
         // Fail fast with the precise blocker instead of a partial install.
-        if let Err(reason) = kroma_module_manifest::engines_satisfied(&entry.engines, SERVER_VERSION)
+        if let Err(reason) =
+            kroma_module_manifest::engines_satisfied(&entry.engines, SERVER_VERSION)
         {
             bail!("'{id}' {reason}");
         }
@@ -100,14 +105,18 @@ impl<'a> Planner<'a> {
         self.stack.push(id.to_string());
         for (dep_id, range) in &entry.dependencies {
             let satisfied = self.present.get(dep_id).is_some_and(|installed| {
-                range.as_deref().is_none_or(|r| kroma_module_manifest::range_matches(r, installed))
+                range
+                    .as_deref()
+                    .is_none_or(|r| kroma_module_manifest::range_matches(r, installed))
             });
             if satisfied {
                 continue;
             }
             // The catalog's copy must itself satisfy the declared range, or the
             // auto-install would produce a combination the dependent rejects.
-            if let (Some(range), Some(dep_entry)) = (range.as_deref(), self.by_id.get(dep_id.as_str())) {
+            if let (Some(range), Some(dep_entry)) =
+                (range.as_deref(), self.by_id.get(dep_id.as_str()))
+            {
                 if !kroma_module_manifest::range_matches(range, &dep_entry.version) {
                     bail!(
                         "'{id}' needs {dep_id}@{range} but the registry has {}",
@@ -160,7 +169,9 @@ impl<'a> Planner<'a> {
         }
         // HashMap iteration order would otherwise reshuffle the dialog per call.
         rows.sort_by(|a, b| {
-            a.get("name").and_then(Value::as_str).cmp(&b.get("name").and_then(Value::as_str))
+            a.get("name")
+                .and_then(Value::as_str)
+                .cmp(&b.get("name").and_then(Value::as_str))
         });
         (rows, missing)
     }
@@ -186,7 +197,11 @@ impl<'a> Planner<'a> {
         self.present_answers
             .iter()
             .cloned()
-            .chain(self.plan.iter().flat_map(|p| p.entry.contributes.iter().cloned()))
+            .chain(
+                self.plan
+                    .iter()
+                    .flat_map(|p| p.entry.contributes.iter().cloned()),
+            )
             .collect()
     }
 
@@ -201,16 +216,18 @@ impl<'a> Planner<'a> {
     ) -> Option<Value> {
         // A need naming no instance takes any contributor; one that names an
         // instance is answered only by that instance.
-        let matches = |p: &str, id: Option<&str>| {
-            p == point && want.is_none_or(|w| id == Some(w))
-        };
+        let matches = |p: &str, id: Option<&str>| p == point && want.is_none_or(|w| id == Some(w));
         if answered.iter().any(|(p, id)| matches(p, id.as_deref())) {
             return None;
         }
         let candidates: Vec<&CatalogModule> = self
             .by_id
             .values()
-            .filter(|e| e.contributes.iter().any(|(p, id)| matches(p, id.as_deref())))
+            .filter(|e| {
+                e.contributes
+                    .iter()
+                    .any(|(p, id)| matches(p, id.as_deref()))
+            })
             .filter_map(|e| self.offerable(&e.id))
             .collect();
         if candidates.is_empty() {
@@ -293,7 +310,11 @@ pub async fn plan_view(
     let modules = registries::fetch_merged(state, sup).await?;
     let mut planner = Planner::new(state, &modules);
     planner.roots(&root_list(root_id, include))?;
-    let total: u64 = planner.plan.iter().filter_map(|p| entry_size(p.entry)).sum();
+    let total: u64 = planner
+        .plan
+        .iter()
+        .filter_map(|p| entry_size(p.entry))
+        .sum();
     let (optional, missing) = planner.optional();
     Ok(json!({
         "requested": root_id,
@@ -332,8 +353,11 @@ mod tests {
         let modules = vec![root, module("tv.x.lib", "1.0.0")];
         let mut p = planner(&modules);
         p.roots(&["tv.x.app"]).unwrap();
-        let order: Vec<(&str, bool)> =
-            p.plan.iter().map(|x| (x.entry.id.as_str(), x.requested)).collect();
+        let order: Vec<(&str, bool)> = p
+            .plan
+            .iter()
+            .map(|x| (x.entry.id.as_str(), x.requested))
+            .collect();
         assert_eq!(order, vec![("tv.x.lib", false), ("tv.x.app", true)]);
     }
 
@@ -349,13 +373,19 @@ mod tests {
         let (rows, missing) = p.optional();
         assert!(missing.is_empty());
         assert_eq!(rows.len(), 1);
-        assert_eq!(rows[0].get("id").and_then(Value::as_str), Some("tv.x.indexer"));
+        assert_eq!(
+            rows[0].get("id").and_then(Value::as_str),
+            Some("tv.x.indexer")
+        );
         assert_eq!(
             rows[0].get("point").and_then(Value::as_str),
             Some("tv.kroma.indexer/search")
         );
         assert_eq!(rows[0].get("for").and_then(Value::as_str), Some("tv.x.app"));
-        assert_eq!(rows[0].get("suggested").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            rows[0].get("suggested").and_then(Value::as_bool),
+            Some(true)
+        );
     }
 
     #[test]
@@ -372,7 +402,9 @@ mod tests {
         let (rows, missing) = p.optional();
         assert!(missing.is_empty());
         assert_eq!(rows.len(), 2);
-        assert!(rows.iter().all(|r| r.get("suggested").and_then(Value::as_bool) == Some(false)));
+        assert!(rows
+            .iter()
+            .all(|r| r.get("suggested").and_then(Value::as_bool) == Some(false)));
     }
 
     #[test]
@@ -381,7 +413,10 @@ mod tests {
         root.dependencies = vec![("tv.x.engine".into(), None)];
         root.consumes = vec![("tv.kroma.torrents/download-client".into(), None)];
         let mut dep = module("tv.x.engine", "1.0.0");
-        dep.contributes = vec![("tv.kroma.torrents/download-client".into(), Some("builtin".into()))];
+        dep.contributes = vec![(
+            "tv.kroma.torrents/download-client".into(),
+            Some("builtin".into()),
+        )];
         let modules = vec![root, dep];
         let mut p = planner(&modules);
         p.roots(&["tv.x.app"]).unwrap();
@@ -398,7 +433,10 @@ mod tests {
         let mut p = Planner::with_present(
             &modules,
             HashMap::from([("tv.x.other".to_string(), "1.0.0".to_string())]),
-            vec![("tv.kroma.indexer/search".to_string(), Some("builtin".to_string()))],
+            vec![(
+                "tv.kroma.indexer/search".to_string(),
+                Some("builtin".to_string()),
+            )],
         );
         p.roots(&["tv.x.app"]).unwrap();
         let (rows, missing) = p.optional();
@@ -420,7 +458,10 @@ mod tests {
             missing[0].get("point").and_then(Value::as_str),
             Some("tv.kroma.whisper/transcribe")
         );
-        assert_eq!(missing[0].get("id").and_then(Value::as_str), Some("whisper"));
+        assert_eq!(
+            missing[0].get("id").and_then(Value::as_str),
+            Some("whisper")
+        );
     }
 
     #[test]
@@ -451,14 +492,23 @@ mod tests {
     #[test]
     fn a_missing_root_and_a_missing_dependency_say_different_things() {
         let modules = vec![module("tv.x.app", "1.0.0")];
-        let err = planner(&modules).roots(&["tv.x.absent"]).unwrap_err().to_string();
+        let err = planner(&modules)
+            .roots(&["tv.x.absent"])
+            .unwrap_err()
+            .to_string();
         assert_eq!(err, "'tv.x.absent' is not in the registry");
 
         let mut root = module("tv.x.app", "1.0.0");
         root.dependencies = vec![("tv.x.absent".into(), None)];
         let modules = vec![root];
-        let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err().to_string();
-        assert_eq!(err, "dependency 'tv.x.absent' is neither installed nor in the registry");
+        let err = planner(&modules)
+            .roots(&["tv.x.app"])
+            .unwrap_err()
+            .to_string();
+        assert_eq!(
+            err,
+            "dependency 'tv.x.absent' is neither installed nor in the registry"
+        );
     }
 
     #[test]
@@ -466,7 +516,10 @@ mod tests {
         let mut root = module("tv.x.app", "1.0.0");
         root.engines.insert("server".into(), ">=999.0.0".into());
         let modules = vec![root];
-        let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err().to_string();
+        let err = planner(&modules)
+            .roots(&["tv.x.app"])
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("requires server >=999.0.0"), "{err}");
         assert!(err.contains("this server is"), "{err}");
     }
@@ -474,7 +527,10 @@ mod tests {
     #[test]
     fn a_module_with_no_build_for_this_platform_blocks_the_plan_up_front() {
         let modules = vec![catalog::test_module("tv.x.app", "1.0.0")];
-        let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err().to_string();
+        let err = planner(&modules)
+            .roots(&["tv.x.app"])
+            .unwrap_err()
+            .to_string();
         assert_eq!(err, "'tv.x.app' has no build for this server's platform");
     }
 
@@ -498,8 +554,14 @@ mod tests {
         let mut root = module("tv.x.app", "1.0.0");
         root.dependencies = vec![("tv.x.lib".into(), Some("^2.0.0".into()))];
         let modules = vec![root, module("tv.x.lib", "1.0.0")];
-        let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err().to_string();
-        assert_eq!(err, "'tv.x.app' needs tv.x.lib@^2.0.0 but the registry has 1.0.0");
+        let err = planner(&modules)
+            .roots(&["tv.x.app"])
+            .unwrap_err()
+            .to_string();
+        assert_eq!(
+            err,
+            "'tv.x.app' needs tv.x.lib@^2.0.0 but the registry has 1.0.0"
+        );
     }
 
     #[test]
@@ -520,7 +582,10 @@ mod tests {
     fn the_extra_roots_join_the_plan_without_repeating_the_one_asked_for() {
         let requested = "tv.x.app".to_string();
         let include = vec![requested.clone(), "tv.x.extra".to_string()];
-        assert_eq!(root_list(&requested, &include), vec!["tv.x.app", "tv.x.extra"]);
+        assert_eq!(
+            root_list(&requested, &include),
+            vec!["tv.x.app", "tv.x.extra"]
+        );
     }
 
     #[test]
@@ -537,9 +602,18 @@ mod tests {
         let rows: Vec<Value> = p.plan.iter().map(plan_row).collect();
         assert_eq!(rows[0].get("id").and_then(Value::as_str), Some("tv.x.lib"));
         assert!(rows[0].get("installedVersion").unwrap().is_null());
-        assert_eq!(rows[0].get("requested").and_then(Value::as_bool), Some(false));
-        assert_eq!(rows[1].get("installedVersion").and_then(Value::as_str), Some("0.9.0"));
-        assert_eq!(rows[1].get("requested").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            rows[0].get("requested").and_then(Value::as_bool),
+            Some(false)
+        );
+        assert_eq!(
+            rows[1].get("installedVersion").and_then(Value::as_str),
+            Some("0.9.0")
+        );
+        assert_eq!(
+            rows[1].get("requested").and_then(Value::as_bool),
+            Some(true)
+        );
         assert_eq!(rows[1].get("size").and_then(Value::as_u64), Some(10));
 
         let brief = plan_brief(&p.plan);
@@ -559,7 +633,11 @@ mod tests {
     fn optional_deps_are_offered_but_installed_ones_are_not() {
         let mut root = module("tv.x.app", "1.0.0");
         root.optional_dependencies = vec![("tv.x.vpn".into(), None), ("tv.x.already".into(), None)];
-        let modules = vec![root, module("tv.x.vpn", "1.0.0"), module("tv.x.already", "1.0.0")];
+        let modules = vec![
+            root,
+            module("tv.x.vpn", "1.0.0"),
+            module("tv.x.already", "1.0.0"),
+        ];
         let mut p = Planner::with_present(
             &modules,
             HashMap::from([("tv.x.already".to_string(), "1.0.0".to_string())]),

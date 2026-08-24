@@ -107,12 +107,17 @@ pub fn build(
     let alert = alert(out);
     match sub.transport {
         T::WebPush => {
-            let Some(web) = senders.web.as_ref() else { return Ok(None) };
+            let Some(web) = senders.web.as_ref() else {
+                return Ok(None);
+            };
             let (Some(p256dh), Some(auth)) = (sub.p256dh.clone(), sub.auth.clone()) else {
                 anyhow::bail!("web push subscription {} is missing its keys", sub.id);
             };
-            let subscription =
-                webpush::Subscription { endpoint: sub.endpoint.clone(), p256dh, auth };
+            let subscription = webpush::Subscription {
+                endpoint: sub.endpoint.clone(),
+                p256dh,
+                auth,
+            };
             webpush::build_request(
                 &web.key,
                 &subscription,
@@ -124,13 +129,23 @@ pub fn build(
             .map(Some)
         }
         T::Apns => {
-            let Some(apns) = senders.apns.as_ref() else { return Ok(None) };
+            let Some(apns) = senders.apns.as_ref() else {
+                return Ok(None);
+            };
             apns::build_request(&apns.key, &sub.endpoint, &alert, out.urgency, now_secs).map(Some)
         }
         T::Fcm => {
-            let Some(google) = senders.fcm.as_ref() else { return Ok(None) };
-            fcm::build_request(&google.key, &google.access_token, &sub.endpoint, &alert, out.urgency)
-                .map(Some)
+            let Some(google) = senders.fcm.as_ref() else {
+                return Ok(None);
+            };
+            fcm::build_request(
+                &google.key,
+                &google.access_token,
+                &sub.endpoint,
+                &alert,
+                out.urgency,
+            )
+            .map(Some)
         }
         // No `let Some(..) else` here: the relay needs no credentials, so unlike
         // the two above it can never be "not configured on this server".
@@ -240,7 +255,11 @@ mod tests {
             actions: Vec::new(),
             native_image: n.image_url.clone(),
         };
-        for transport in [PushTransport::WebPush, PushTransport::Apns, PushTransport::Fcm] {
+        for transport in [
+            PushTransport::WebPush,
+            PushTransport::Apns,
+            PushTransport::Fcm,
+        ] {
             let built = build(&senders, &subscription(transport), &out, 0).unwrap();
             assert!(built.is_none(), "{transport:?} should be skipped");
         }
@@ -311,13 +330,29 @@ mod tests {
         for transport in [PushTransport::WebPush, PushTransport::Apns] {
             assert!(is_gone(&subscription(transport), 410, ""));
         }
-        assert!(is_gone(&subscription(PushTransport::Apns), 400, r#"{"reason":"BadDeviceToken"}"#));
+        assert!(is_gone(
+            &subscription(PushTransport::Apns),
+            400,
+            r#"{"reason":"BadDeviceToken"}"#
+        ));
         // The same 400 body means nothing to the other two.
-        assert!(!is_gone(&subscription(PushTransport::WebPush), 400, r#"{"reason":"BadDeviceToken"}"#));
-        assert!(!is_gone(&subscription(PushTransport::Fcm), 400, r#"{"reason":"BadDeviceToken"}"#));
+        assert!(!is_gone(
+            &subscription(PushTransport::WebPush),
+            400,
+            r#"{"reason":"BadDeviceToken"}"#
+        ));
+        assert!(!is_gone(
+            &subscription(PushTransport::Fcm),
+            400,
+            r#"{"reason":"BadDeviceToken"}"#
+        ));
         assert!(is_gone(&subscription(PushTransport::Fcm), 404, ""));
         // …and a transient failure never evicts, whichever service it came from.
-        for transport in [PushTransport::WebPush, PushTransport::Apns, PushTransport::Fcm] {
+        for transport in [
+            PushTransport::WebPush,
+            PushTransport::Apns,
+            PushTransport::Fcm,
+        ] {
             assert!(!is_gone(&subscription(transport), 503, ""));
             assert!(!is_gone(&subscription(transport), 429, ""));
         }
@@ -332,7 +367,13 @@ mod tests {
             kroma_push::apns::Environment::Production,
         )
         .expect("the test key parses");
-        Senders { web: None, apns: Some(Apns { key: std::sync::Arc::new(key) }), fcm: None }
+        Senders {
+            web: None,
+            apns: Some(Apns {
+                key: std::sync::Arc::new(key),
+            }),
+            fcm: None,
+        }
     }
 
     #[test]
@@ -346,10 +387,19 @@ mod tests {
             native_image: n.image_url.clone(),
         };
 
-        let built = build(&apple_senders(), &subscription(PushTransport::Apns), &out, 0)
-            .unwrap()
-            .expect("Apple is configured here");
-        assert!(built.url.ends_with("/3/device/DEVICE-TOKEN"), "{}", built.url);
+        let built = build(
+            &apple_senders(),
+            &subscription(PushTransport::Apns),
+            &out,
+            0,
+        )
+        .unwrap()
+        .expect("Apple is configured here");
+        assert!(
+            built.url.ends_with("/3/device/DEVICE-TOKEN"),
+            "{}",
+            built.url
+        );
         assert!(built.http2, "APNs refuses HTTP/1.1");
     }
 
@@ -363,9 +413,14 @@ mod tests {
             actions: Vec::new(),
             native_image: None,
         };
-        let mut request = build(&apple_senders(), &subscription(PushTransport::Apns), &out, 0)
-            .unwrap()
-            .expect("Apple is configured here");
+        let mut request = build(
+            &apple_senders(),
+            &subscription(PushTransport::Apns),
+            &out,
+            0,
+        )
+        .unwrap()
+        .expect("Apple is configured here");
         let first_host = request.url.clone();
 
         assert!(retry(
@@ -374,10 +429,18 @@ mod tests {
             400,
             r#"{"reason":"BadDeviceToken"}"#
         ));
-        assert_ne!(request.url, first_host, "the retry must go to the other host");
+        assert_ne!(
+            request.url, first_host,
+            "the retry must go to the other host"
+        );
 
         let mut again = request.clone();
-        assert!(!retry(&subscription(PushTransport::Apns), &mut again, 410, ""));
+        assert!(!retry(
+            &subscription(PushTransport::Apns),
+            &mut again,
+            410,
+            ""
+        ));
     }
 
     #[test]

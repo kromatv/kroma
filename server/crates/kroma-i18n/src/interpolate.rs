@@ -15,8 +15,8 @@ pub fn interpolate(template: &str, vars: &[(&str, &str)]) -> String {
         match after.find('}') {
             Some(close) => {
                 let name = &after[..close];
-                let is_token =
-                    !name.is_empty() && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_');
+                let is_token = !name.is_empty()
+                    && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_');
                 match vars.iter().find(|(k, _)| *k == name) {
                     Some((_, value)) if is_token => out.push_str(value),
                     _ => {
@@ -45,7 +45,10 @@ mod tests {
     #[test]
     fn interpolation_keeps_unknown_tokens() {
         assert_eq!(interpolate("hi {name}", &[("name", "Max")]), "hi Max");
-        assert_eq!(interpolate("keep {unknown}", &[("name", "x")]), "keep {unknown}");
+        assert_eq!(
+            interpolate("keep {unknown}", &[("name", "x")]),
+            "keep {unknown}"
+        );
         assert_eq!(interpolate("{a}", &[("a", "{b}"), ("b", "!")]), "{b}");
     }
 
@@ -53,7 +56,10 @@ mod tests {
     fn an_unclosed_placeholder_is_left_alone_rather_than_eating_the_rest() {
         // A translator typo must not truncate the sentence: whatever follows the
         // stray `{` is still shown.
-        assert_eq!(interpolate("Salut {name", &[("name", "Ana")]), "Salut {name");
+        assert_eq!(
+            interpolate("Salut {name", &[("name", "Ana")]),
+            "Salut {name"
+        );
         assert_eq!(interpolate("a {b c", &[]), "a {b c");
     }
 

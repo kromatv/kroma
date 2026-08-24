@@ -24,18 +24,32 @@ fn the_grant_covers_both_ends_of_the_progress_channel() {
         ["wj-1", "extract"],
     )
     .unwrap();
-    conn.execute("UPDATE whisper_jobs SET done = 3, total = 9 WHERE id = ?1", ["wj-1"]).unwrap();
+    conn.execute(
+        "UPDATE whisper_jobs SET done = 3, total = 9 WHERE id = ?1",
+        ["wj-1"],
+    )
+    .unwrap();
     let cancel: i64 = conn
-        .query_row("SELECT cancel FROM whisper_jobs WHERE id = ?1", ["wj-1"], |r| r.get(0))
+        .query_row(
+            "SELECT cancel FROM whisper_jobs WHERE id = ?1",
+            ["wj-1"],
+            |r| r.get(0),
+        )
         .unwrap();
     assert_eq!(cancel, 0);
-    conn.execute("DELETE FROM whisper_jobs WHERE id = ?1", ["wj-1"]).unwrap();
+    conn.execute("DELETE FROM whisper_jobs WHERE id = ?1", ["wj-1"])
+        .unwrap();
 
     // ...and nothing else. A transcriber has no business in the catalogue, let
     // alone in the accounts.
-    for sql in
-        ["SELECT token FROM sessions", "SELECT title FROM items", "SELECT value FROM settings"]
-    {
-        assert!(conn.prepare(sql).is_err(), "the grant must not reach: {sql}");
+    for sql in [
+        "SELECT token FROM sessions",
+        "SELECT title FROM items",
+        "SELECT value FROM settings",
+    ] {
+        assert!(
+            conn.prepare(sql).is_err(),
+            "the grant must not reach: {sql}"
+        );
     }
 }

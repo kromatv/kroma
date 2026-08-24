@@ -25,7 +25,11 @@ pub fn set_build_info(
 
 fn version_label() -> String {
     let (version, commit, built) = BUILD_INFO.get().cloned().unwrap_or_else(|| {
-        (env!("CARGO_PKG_VERSION").to_string(), "unknown".to_string(), "unknown".to_string())
+        (
+            env!("CARGO_PKG_VERSION").to_string(),
+            "unknown".to_string(),
+            "unknown".to_string(),
+        )
     });
     format!("{version} ({commit} · {built})")
 }
@@ -81,20 +85,84 @@ pub fn groups(
                 "admin.serverIdentity",
                 Some("admin.serverIdentityDesc"),
                 vec![
-                    row("serverName", t("admin.serverName"), Some(t("admin.serverNameHint")), "text", &[], g("serverName"), true),
-                    row("tmdbLanguage", t("admin.tmdbLanguage"), Some(t("admin.tmdbLanguageHint")), "text", &[], g("tmdbLanguage"), true),
-                    row("version", t("admin.version"), None, "value", &[], json!(version_label()), true),
+                    row(
+                        "serverName",
+                        t("admin.serverName"),
+                        Some(t("admin.serverNameHint")),
+                        "text",
+                        &[],
+                        g("serverName"),
+                        true,
+                    ),
+                    row(
+                        "tmdbLanguage",
+                        t("admin.tmdbLanguage"),
+                        Some(t("admin.tmdbLanguageHint")),
+                        "text",
+                        &[],
+                        g("tmdbLanguage"),
+                        true,
+                    ),
+                    row(
+                        "version",
+                        t("admin.version"),
+                        None,
+                        "value",
+                        &[],
+                        json!(version_label()),
+                        true,
+                    ),
                 ],
             ),
             group(
                 "admin.preferences",
                 None,
                 vec![
-                    row("watchAutoScan", t("admin.watchAutoScan"), Some(t("admin.watchAutoScanHint")), "toggle", &[], g("watchAutoScan"), true),
-                    row("showRecentHome", t("admin.showRecentHome"), None, "toggle", &[], g("showRecentHome"), true),
-                    row("publicUserList", t("admin.publicUserList"), Some(t("admin.publicUserListHint")), "toggle", &[], g("publicUserList"), true),
-                    row("themeSongs", t("admin.themeSongs"), Some(t("admin.themeSongsHint")), "toggle", &[], g("themeSongs"), true),
-                    row("introDetection", t("admin.introDetection"), Some(t("admin.introDetectionHint")), "select", &["off", "chapters", "fingerprint"], g("introDetection"), true),
+                    row(
+                        "watchAutoScan",
+                        t("admin.watchAutoScan"),
+                        Some(t("admin.watchAutoScanHint")),
+                        "toggle",
+                        &[],
+                        g("watchAutoScan"),
+                        true,
+                    ),
+                    row(
+                        "showRecentHome",
+                        t("admin.showRecentHome"),
+                        None,
+                        "toggle",
+                        &[],
+                        g("showRecentHome"),
+                        true,
+                    ),
+                    row(
+                        "publicUserList",
+                        t("admin.publicUserList"),
+                        Some(t("admin.publicUserListHint")),
+                        "toggle",
+                        &[],
+                        g("publicUserList"),
+                        true,
+                    ),
+                    row(
+                        "themeSongs",
+                        t("admin.themeSongs"),
+                        Some(t("admin.themeSongsHint")),
+                        "toggle",
+                        &[],
+                        g("themeSongs"),
+                        true,
+                    ),
+                    row(
+                        "introDetection",
+                        t("admin.introDetection"),
+                        Some(t("admin.introDetectionHint")),
+                        "select",
+                        &["off", "chapters", "fingerprint"],
+                        g("introDetection"),
+                        true,
+                    ),
                 ],
             ),
         ],
@@ -102,22 +170,102 @@ pub fn groups(
             "admin.portsDiscovery",
             None,
             vec![
-                row("publicAddress", t("admin.publicAddress"), None, "value", &[], json!(public_address(config)), true),
-                row("port", t("admin.port"), Some(t("admin.portHint")), "value", &[], json!(config.port.to_string()), true),
-                row("localDiscovery", t("admin.localDiscovery"), Some(t("admin.localDiscoveryHint")), "toggle", &[], g("localDiscovery"), true),
-                row("localNetworks", t("admin.localNetworks"), Some(t("admin.localNetworksHint")), "text", &[], g("localNetworks"), true),
-                row("httpsEnabled", t("admin.httpsEnabled"), Some(t("admin.httpsEnabledHint")), "toggle", &[], g("httpsEnabled"), true),
-                row("httpsPort", t("admin.httpsPort"), Some(t("admin.httpsPortHint")), "text", &[], g("httpsPort"), true),
-                row("httpsRedirect", t("admin.httpsRedirect"), Some(t("admin.httpsRedirectHint")), "toggle", &[], g("httpsRedirect"), true),
+                row(
+                    "publicAddress",
+                    t("admin.publicAddress"),
+                    None,
+                    "value",
+                    &[],
+                    json!(public_address(config)),
+                    true,
+                ),
+                row(
+                    "port",
+                    t("admin.port"),
+                    Some(t("admin.portHint")),
+                    "value",
+                    &[],
+                    json!(config.port.to_string()),
+                    true,
+                ),
+                row(
+                    "localDiscovery",
+                    t("admin.localDiscovery"),
+                    Some(t("admin.localDiscoveryHint")),
+                    "toggle",
+                    &[],
+                    g("localDiscovery"),
+                    true,
+                ),
+                row(
+                    "localNetworks",
+                    t("admin.localNetworks"),
+                    Some(t("admin.localNetworksHint")),
+                    "text",
+                    &[],
+                    g("localNetworks"),
+                    true,
+                ),
+                row(
+                    "httpsEnabled",
+                    t("admin.httpsEnabled"),
+                    Some(t("admin.httpsEnabledHint")),
+                    "toggle",
+                    &[],
+                    g("httpsEnabled"),
+                    true,
+                ),
+                row(
+                    "httpsPort",
+                    t("admin.httpsPort"),
+                    Some(t("admin.httpsPortHint")),
+                    "text",
+                    &[],
+                    g("httpsPort"),
+                    true,
+                ),
+                row(
+                    "httpsRedirect",
+                    t("admin.httpsRedirect"),
+                    Some(t("admin.httpsRedirectHint")),
+                    "toggle",
+                    &[],
+                    g("httpsRedirect"),
+                    true,
+                ),
             ],
         )],
         "transcoder" => vec![group(
             "admin.qualityPerf",
             Some("admin.qualityPerfDesc"),
             vec![
-                row("maxConcurrent", t("admin.maxConcurrent"), Some(t("admin.maxConcurrentHint")), "select", &["2", "4", "8", "12", "16", "24", "32"], g("maxConcurrent"), true),
-                row("mediaConcurrency", t("admin.mediaConcurrency"), Some(t("admin.mediaConcurrencyHint")), "select", &["0", "1", "2", "3", "4", "6", "8", "12", "16"], g("mediaConcurrency"), true),
-                row("transcodeDir", t("admin.transcodeDir"), None, "value", &[], json!(transcode_dir(config)), true),
+                row(
+                    "maxConcurrent",
+                    t("admin.maxConcurrent"),
+                    Some(t("admin.maxConcurrentHint")),
+                    "select",
+                    &["2", "4", "8", "12", "16", "24", "32"],
+                    g("maxConcurrent"),
+                    true,
+                ),
+                row(
+                    "mediaConcurrency",
+                    t("admin.mediaConcurrency"),
+                    Some(t("admin.mediaConcurrencyHint")),
+                    "select",
+                    &["0", "1", "2", "3", "4", "6", "8", "12", "16"],
+                    g("mediaConcurrency"),
+                    true,
+                ),
+                row(
+                    "transcodeDir",
+                    t("admin.transcodeDir"),
+                    None,
+                    "value",
+                    &[],
+                    json!(transcode_dir(config)),
+                    true,
+                ),
             ],
         )],
         "acquisition" => {
@@ -126,61 +274,215 @@ pub fn groups(
             let libs = super::library_defs(settings, config);
             let lib_options = |kind: &str| -> Vec<String> {
                 let mut opts = vec!["Auto".to_string()];
-                opts.extend(libs.iter().filter(|d| d.kind == kind || d.kind.is_empty()).map(|d| d.name.clone()));
+                opts.extend(
+                    libs.iter()
+                        .filter(|d| d.kind == kind || d.kind.is_empty())
+                        .map(|d| d.name.clone()),
+                );
                 opts
             };
             let movie_opts = lib_options("movies");
             let show_opts = lib_options("shows");
             vec![
-            group(
-                "admin.acqGeneral",
-                Some("admin.acqGeneralDesc"),
-                vec![
-                    row("acqEnabled", t("admin.acqEnabled"), Some(t("admin.acqEnabledHint")), "toggle", &[], g("acqEnabled"), true),
-                    row("acqAutoApprove", t("admin.acqAutoApprove"), Some(t("admin.acqAutoApproveHint")), "toggle", &[], g("acqAutoApprove"), true),
-                    row("acqDeleteAfterImport", t("admin.acqDeleteAfterImport"), Some(t("admin.acqDeleteAfterImportHint")), "toggle", &[], g("acqDeleteAfterImport"), true),
-                    row("acqReplaceOnUpgrade", t("admin.acqReplaceOnUpgrade"), Some(t("admin.acqReplaceOnUpgradeHint")), "toggle", &[], g("acqReplaceOnUpgrade"), true),
-                    row("acqMovieLibrary", t("admin.acqMovieLibrary"), None, "select", &movie_opts.iter().map(String::as_str).collect::<Vec<_>>(), g("acqMovieLibrary"), true),
-                    row("acqSeriesLibrary", t("admin.acqSeriesLibrary"), None, "select", &show_opts.iter().map(String::as_str).collect::<Vec<_>>(), g("acqSeriesLibrary"), true),
-                ],
-            ),
-            group(
-                "admin.acqQuality",
-                Some("admin.acqQualityDesc"),
-                vec![
-                    row("acqResolution", t("admin.acqResolution"), None, "select", &["720p", "1080p", "2160p"], g("acqResolution"), true),
-                    row("acqPreferHevc", t("admin.acqPreferHevc"), Some(t("admin.acqPreferHevcHint")), "toggle", &[], g("acqPreferHevc"), true),
-                    row("acqMinSeeders", t("admin.acqMinSeeders"), None, "select", &["0", "1", "2", "5", "10"], g("acqMinSeeders"), true),
-                    row("acqMaxSizeGbMovie", t("admin.acqMaxSizeGbMovie"), None, "select", &["5", "10", "15", "25", "40", "80"], g("acqMaxSizeGbMovie"), true),
-                    row("acqMaxSizeGbEpisode", t("admin.acqMaxSizeGbEpisode"), None, "select", &["1", "2", "3", "5", "8"], g("acqMaxSizeGbEpisode"), true),
-                    row("acqRequiredKeywords", t("admin.acqRequiredKeywords"), Some(t("admin.acqRequiredKeywordsHint")), "text", &[], g("acqRequiredKeywords"), true),
-                    row("acqForbiddenKeywords", t("admin.acqForbiddenKeywords"), Some(t("admin.acqForbiddenKeywordsHint")), "text", &[], g("acqForbiddenKeywords"), true),
-                ],
-            ),
-            group(
-                "admin.acqEngine",
-                Some("admin.acqEngineDesc"),
-                vec![
-                    row("rqbitPort", t("admin.rqbitPort"), Some(t("admin.rqbitPortHint")), "text", &[], g("rqbitPort"), true),
-                    row("rqbitDownKbps", t("admin.rqbitDownKbps"), Some(t("admin.rqbitRateHint")), "text", &[], g("rqbitDownKbps"), true),
-                    row("rqbitUpKbps", t("admin.rqbitUpKbps"), Some(t("admin.rqbitRateHint")), "text", &[], g("rqbitUpKbps"), true),
-                ],
-            ),
-        ]
+                group(
+                    "admin.acqGeneral",
+                    Some("admin.acqGeneralDesc"),
+                    vec![
+                        row(
+                            "acqEnabled",
+                            t("admin.acqEnabled"),
+                            Some(t("admin.acqEnabledHint")),
+                            "toggle",
+                            &[],
+                            g("acqEnabled"),
+                            true,
+                        ),
+                        row(
+                            "acqAutoApprove",
+                            t("admin.acqAutoApprove"),
+                            Some(t("admin.acqAutoApproveHint")),
+                            "toggle",
+                            &[],
+                            g("acqAutoApprove"),
+                            true,
+                        ),
+                        row(
+                            "acqDeleteAfterImport",
+                            t("admin.acqDeleteAfterImport"),
+                            Some(t("admin.acqDeleteAfterImportHint")),
+                            "toggle",
+                            &[],
+                            g("acqDeleteAfterImport"),
+                            true,
+                        ),
+                        row(
+                            "acqReplaceOnUpgrade",
+                            t("admin.acqReplaceOnUpgrade"),
+                            Some(t("admin.acqReplaceOnUpgradeHint")),
+                            "toggle",
+                            &[],
+                            g("acqReplaceOnUpgrade"),
+                            true,
+                        ),
+                        row(
+                            "acqMovieLibrary",
+                            t("admin.acqMovieLibrary"),
+                            None,
+                            "select",
+                            &movie_opts.iter().map(String::as_str).collect::<Vec<_>>(),
+                            g("acqMovieLibrary"),
+                            true,
+                        ),
+                        row(
+                            "acqSeriesLibrary",
+                            t("admin.acqSeriesLibrary"),
+                            None,
+                            "select",
+                            &show_opts.iter().map(String::as_str).collect::<Vec<_>>(),
+                            g("acqSeriesLibrary"),
+                            true,
+                        ),
+                    ],
+                ),
+                group(
+                    "admin.acqQuality",
+                    Some("admin.acqQualityDesc"),
+                    vec![
+                        row(
+                            "acqResolution",
+                            t("admin.acqResolution"),
+                            None,
+                            "select",
+                            &["720p", "1080p", "2160p"],
+                            g("acqResolution"),
+                            true,
+                        ),
+                        row(
+                            "acqPreferHevc",
+                            t("admin.acqPreferHevc"),
+                            Some(t("admin.acqPreferHevcHint")),
+                            "toggle",
+                            &[],
+                            g("acqPreferHevc"),
+                            true,
+                        ),
+                        row(
+                            "acqMinSeeders",
+                            t("admin.acqMinSeeders"),
+                            None,
+                            "select",
+                            &["0", "1", "2", "5", "10"],
+                            g("acqMinSeeders"),
+                            true,
+                        ),
+                        row(
+                            "acqMaxSizeGbMovie",
+                            t("admin.acqMaxSizeGbMovie"),
+                            None,
+                            "select",
+                            &["5", "10", "15", "25", "40", "80"],
+                            g("acqMaxSizeGbMovie"),
+                            true,
+                        ),
+                        row(
+                            "acqMaxSizeGbEpisode",
+                            t("admin.acqMaxSizeGbEpisode"),
+                            None,
+                            "select",
+                            &["1", "2", "3", "5", "8"],
+                            g("acqMaxSizeGbEpisode"),
+                            true,
+                        ),
+                        row(
+                            "acqRequiredKeywords",
+                            t("admin.acqRequiredKeywords"),
+                            Some(t("admin.acqRequiredKeywordsHint")),
+                            "text",
+                            &[],
+                            g("acqRequiredKeywords"),
+                            true,
+                        ),
+                        row(
+                            "acqForbiddenKeywords",
+                            t("admin.acqForbiddenKeywords"),
+                            Some(t("admin.acqForbiddenKeywordsHint")),
+                            "text",
+                            &[],
+                            g("acqForbiddenKeywords"),
+                            true,
+                        ),
+                    ],
+                ),
+                group(
+                    "admin.acqEngine",
+                    Some("admin.acqEngineDesc"),
+                    vec![
+                        row(
+                            "rqbitPort",
+                            t("admin.rqbitPort"),
+                            Some(t("admin.rqbitPortHint")),
+                            "text",
+                            &[],
+                            g("rqbitPort"),
+                            true,
+                        ),
+                        row(
+                            "rqbitDownKbps",
+                            t("admin.rqbitDownKbps"),
+                            Some(t("admin.rqbitRateHint")),
+                            "text",
+                            &[],
+                            g("rqbitDownKbps"),
+                            true,
+                        ),
+                        row(
+                            "rqbitUpKbps",
+                            t("admin.rqbitUpKbps"),
+                            Some(t("admin.rqbitRateHint")),
+                            "text",
+                            &[],
+                            g("rqbitUpKbps"),
+                            true,
+                        ),
+                    ],
+                ),
+            ]
         }
         // There is deliberately no "notifications" view: push has no per-server
         // configuration, so it falls through to `_ => Vec::new()`.
-        "vpn" => vec![
-            group(
-                "admin.acqVpn",
-                Some("admin.acqVpnDesc"),
-                vec![
-                    row("vpnKillSwitch", t("admin.vpnKillSwitch"), Some(t("admin.vpnKillSwitchHint")), "toggle", &[], g("vpnKillSwitch"), true),
-                    row("vpnCheckUrl", t("admin.vpnCheckUrl"), None, "text", &[], g("vpnCheckUrl"), true),
-                    row("acqIndexersUseVpn", t("admin.vpnRouteIndexers"), Some(t("admin.vpnRouteIndexersHint")), "toggle", &[], g("acqIndexersUseVpn"), true),
-                ],
-            ),
-        ],
+        "vpn" => vec![group(
+            "admin.acqVpn",
+            Some("admin.acqVpnDesc"),
+            vec![
+                row(
+                    "vpnKillSwitch",
+                    t("admin.vpnKillSwitch"),
+                    Some(t("admin.vpnKillSwitchHint")),
+                    "toggle",
+                    &[],
+                    g("vpnKillSwitch"),
+                    true,
+                ),
+                row(
+                    "vpnCheckUrl",
+                    t("admin.vpnCheckUrl"),
+                    None,
+                    "text",
+                    &[],
+                    g("vpnCheckUrl"),
+                    true,
+                ),
+                row(
+                    "acqIndexersUseVpn",
+                    t("admin.vpnRouteIndexers"),
+                    Some(t("admin.vpnRouteIndexersHint")),
+                    "toggle",
+                    &[],
+                    g("acqIndexersUseVpn"),
+                    true,
+                ),
+            ],
+        )],
         _ => Vec::new(),
     }
 }
@@ -245,16 +547,28 @@ mod tests {
     fn general_view_overlays_stored_value_and_version() {
         let pool = test_pool();
         let s = Settings::load(&pool);
-        s.set_patch(&pool, std::collections::BTreeMap::from([("serverName".to_string(), json!("MyBox"))]));
+        s.set_patch(
+            &pool,
+            std::collections::BTreeMap::from([("serverName".to_string(), json!("MyBox"))]),
+        );
         let groups = groups("general", &s, &test_config(), "en");
         assert_eq!(groups.len(), 2);
-        assert_eq!(find_row(&groups, "serverName").unwrap().value, json!("MyBox"));
+        assert_eq!(
+            find_row(&groups, "serverName").unwrap().value,
+            json!("MyBox")
+        );
         // Build info is unset in tests, so the row falls back to the crate version.
         let ver = find_row(&groups, "version").unwrap();
         assert_eq!(ver.kind, "value");
         let shown = ver.value.as_str().unwrap();
-        assert!(shown.starts_with(env!("CARGO_PKG_VERSION")), "version row: {shown}");
-        assert!(shown.contains('('), "version row should include a commit: {shown}");
+        assert!(
+            shown.starts_with(env!("CARGO_PKG_VERSION")),
+            "version row: {shown}"
+        );
+        assert!(
+            shown.contains('('),
+            "version row should include a commit: {shown}"
+        );
         let intro = find_row(&groups, "introDetection").unwrap();
         assert_eq!(intro.kind, "select");
         assert_eq!(intro.options, vec!["off", "chapters", "fingerprint"]);
@@ -271,7 +585,10 @@ mod tests {
                 ("notifications.apns.keyP8".to_string(), json!(p8)),
                 ("notifications.apns.keyId".to_string(), json!("CC53HSPJDR")),
                 ("notifications.apns.teamId".to_string(), json!("TEAM123456")),
-                ("notifications.fcm.serviceAccount".to_string(), json!("{\"private_key\":\"x\"}")),
+                (
+                    "notifications.fcm.serviceAccount".to_string(),
+                    json!("{\"private_key\":\"x\"}"),
+                ),
             ]),
         );
 
@@ -279,11 +596,21 @@ mod tests {
 
         // A credential a fork stored via the API must never come back out of any
         // view, not just the one that used to display them.
-        for view in ["notifications", "general", "network", "transcoder", "acquisition", "vpn"] {
-            let wire =
-                serde_json::to_string(&groups(view, &s, &test_config(), "en")).unwrap();
-            for secret in ["BEGIN PRIVATE KEY", "MIGTAgEAMBMGByqGSM49", "CC53HSPJDR", "TEAM123456"]
-            {
+        for view in [
+            "notifications",
+            "general",
+            "network",
+            "transcoder",
+            "acquisition",
+            "vpn",
+        ] {
+            let wire = serde_json::to_string(&groups(view, &s, &test_config(), "en")).unwrap();
+            for secret in [
+                "BEGIN PRIVATE KEY",
+                "MIGTAgEAMBMGByqGSM49",
+                "CC53HSPJDR",
+                "TEAM123456",
+            ] {
                 assert!(!wire.contains(secret), "{view} view leaked {secret}");
             }
         }
@@ -294,12 +621,18 @@ mod tests {
         let pool = test_pool();
         let s = Settings::load(&pool);
         let groups = groups("network", &s, &test_config(), "en");
-        assert_eq!(find_row(&groups, "publicAddress").unwrap().value, json!(":4040"));
+        assert_eq!(
+            find_row(&groups, "publicAddress").unwrap().value,
+            json!(":4040")
+        );
         assert_eq!(find_row(&groups, "port").unwrap().value, json!("4040"));
         let mut cfg = test_config();
         cfg.web_url = Some("https://kroma.example.com".to_string());
         let groups = super::groups("network", &s, &cfg, "en");
-        assert_eq!(find_row(&groups, "publicAddress").unwrap().value, json!("https://kroma.example.com"));
+        assert_eq!(
+            find_row(&groups, "publicAddress").unwrap().value,
+            json!("https://kroma.example.com")
+        );
     }
 
     #[test]
@@ -339,7 +672,15 @@ mod tests {
 
     #[test]
     fn row_builder_shapes_options_and_fields() {
-        let r = row("k", "Label".to_string(), Some("d".to_string()), "select", &["a", "b"], json!(1), true);
+        let r = row(
+            "k",
+            "Label".to_string(),
+            Some("d".to_string()),
+            "select",
+            &["a", "b"],
+            json!(1),
+            true,
+        );
         assert_eq!(r.key, "k");
         assert_eq!(r.label, "Label");
         assert_eq!(r.desc.as_deref(), Some("d"));

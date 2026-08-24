@@ -3,8 +3,19 @@ use crate::context::Value;
 pub(super) fn is_function(name: &str) -> bool {
     matches!(
         name,
-        "join" | "re_replace" | "replace" | "and" | "or" | "not" | "eq" | "ne" | "lt" | "le"
-            | "gt" | "ge" | "printf"
+        "join"
+            | "re_replace"
+            | "replace"
+            | "and"
+            | "or"
+            | "not"
+            | "eq"
+            | "ne"
+            | "lt"
+            | "le"
+            | "gt"
+            | "ge"
+            | "printf"
     )
 }
 
@@ -156,9 +167,11 @@ mod tests {
 
     #[test]
     fn join_categories() {
-        assert_eq!(render("cat={{ join .Categories \",\" }}", &ctx()), "cat=1,3");
+        assert_eq!(
+            render("cat={{ join .Categories \",\" }}", &ctx()),
+            "cat=1,3"
+        );
     }
-
 
     #[test]
     fn re_replace_call() {
@@ -167,26 +180,45 @@ mod tests {
         assert_eq!(render(t, &ctx()), "the matrix ");
     }
 
-
     #[test]
     fn printf_padding_and_empty_args() {
         // Explicit zero-pad flag vs a width that merely contains a 0 digit.
-        assert_eq!(render("{{ printf \"%04d\" 5 }}", &Context::default()), "0005");
-        assert_eq!(render("{{ printf \"%10d\" 5 }}", &Context::default()), "         5");
-        assert_eq!(render("{{ printf \"%s-x\" \"a\" }}", &Context::default()), "a-x");
+        assert_eq!(
+            render("{{ printf \"%04d\" 5 }}", &Context::default()),
+            "0005"
+        );
+        assert_eq!(
+            render("{{ printf \"%10d\" 5 }}", &Context::default()),
+            "         5"
+        );
+        assert_eq!(
+            render("{{ printf \"%s-x\" \"a\" }}", &Context::default()),
+            "a-x"
+        );
         // Must not panic with no args.
         assert_eq!(render("{{ printf }}", &Context::default()), "");
     }
 
-
     #[test]
     fn replace_not_and_or() {
         // Cardigann funcs are input-first: replace <input> <old> <new>.
-        assert_eq!(render(r#"{{ replace "hello" "l" "L" }}"#, &Context::default()), "heLLo");
+        assert_eq!(
+            render(r#"{{ replace "hello" "l" "L" }}"#, &Context::default()),
+            "heLLo"
+        );
         // not inverts truthiness of a bool config.
-        assert_eq!(render("{{ if not .Config.freeleech }}Y{{ else }}N{{ end }}", &ctx()), "Y");
+        assert_eq!(
+            render(
+                "{{ if not .Config.freeleech }}Y{{ else }}N{{ end }}",
+                &ctx()
+            ),
+            "Y"
+        );
         // or returns the first truthy arg (fallback for a missing field).
-        assert_eq!(render(r#"{{ or .Config.missing "fb" }}"#, &Context::default()), "fb");
+        assert_eq!(
+            render(r#"{{ or .Config.missing "fb" }}"#, &Context::default()),
+            "fb"
+        );
         // and returns the first falsy arg.
         assert_eq!(render(r#"{{ and "a" "" }}"#, &Context::default()), "");
     }
@@ -195,25 +227,45 @@ mod tests {
     fn comparisons_numeric_and_lexicographic() {
         let d = Context::default();
         // Both parse as numbers -> numeric comparison.
-        assert_eq!(render(r#"{{ if lt "5" "10" }}Y{{ else }}N{{ end }}"#, &d), "Y");
-        assert_eq!(render(r#"{{ if gt "10" "5" }}Y{{ else }}N{{ end }}"#, &d), "Y");
-        assert_eq!(render(r#"{{ if le "5" "5" }}Y{{ else }}N{{ end }}"#, &d), "Y");
-        assert_eq!(render(r#"{{ if ge "5" "6" }}Y{{ else }}N{{ end }}"#, &d), "N");
+        assert_eq!(
+            render(r#"{{ if lt "5" "10" }}Y{{ else }}N{{ end }}"#, &d),
+            "Y"
+        );
+        assert_eq!(
+            render(r#"{{ if gt "10" "5" }}Y{{ else }}N{{ end }}"#, &d),
+            "Y"
+        );
+        assert_eq!(
+            render(r#"{{ if le "5" "5" }}Y{{ else }}N{{ end }}"#, &d),
+            "Y"
+        );
+        assert_eq!(
+            render(r#"{{ if ge "5" "6" }}Y{{ else }}N{{ end }}"#, &d),
+            "N"
+        );
         // Non-numeric -> lexicographic comparison.
-        assert_eq!(render(r#"{{ if lt "apple" "banana" }}Y{{ else }}N{{ end }}"#, &d), "Y");
-        assert_eq!(render(r#"{{ if ne "a" "b" }}Y{{ else }}N{{ end }}"#, &d), "Y");
+        assert_eq!(
+            render(r#"{{ if lt "apple" "banana" }}Y{{ else }}N{{ end }}"#, &d),
+            "Y"
+        );
+        assert_eq!(
+            render(r#"{{ if ne "a" "b" }}Y{{ else }}N{{ end }}"#, &d),
+            "Y"
+        );
     }
 
     #[test]
     fn printf_conversions_and_unknown_spec() {
         let d = Context::default();
-        assert_eq!(render(r#"{{ printf "%v/%s/%d" "a" "b" "7" }}"#, &d), "a/b/7");
+        assert_eq!(
+            render(r#"{{ printf "%v/%s/%d" "a" "b" "7" }}"#, &d),
+            "a/b/7"
+        );
         // Unknown verb prints its spec verbatim.
         assert_eq!(render(r#"{{ printf "%q" "x" }}"#, &d), "%q");
         // Width without a zero-pad flag pads with spaces.
         assert_eq!(render(r#"{{ printf "%3d" "7" }}"#, &d), "  7");
     }
-
 
     #[test]
     fn or_falls_back_to_its_last_argument_when_nothing_is_truthy() {
@@ -225,9 +277,14 @@ mod tests {
     #[test]
     fn a_comparison_missing_an_operand_is_false_rather_than_a_parse_error() {
         let c = ctx();
-        assert_eq!(render("{{ if eq .Keywords }}Y{{ else }}N{{ end }}", &c), "N");
+        assert_eq!(
+            render("{{ if eq .Keywords }}Y{{ else }}N{{ end }}", &c),
+            "N"
+        );
         assert_eq!(render(r#"{{ if lt "5" }}Y{{ else }}N{{ end }}"#, &c), "N");
-        assert_eq!(render(r#"{{ if lt "NaN" "5" }}Y{{ else }}N{{ end }}"#, &c), "N");
+        assert_eq!(
+            render(r#"{{ if lt "NaN" "5" }}Y{{ else }}N{{ end }}"#, &c),
+            "N"
+        );
     }
-
 }

@@ -13,14 +13,24 @@ pub fn overlay_items(pool: &Pool, items: &mut [MediaItem], locale: &str) -> Resu
         return Ok(());
     }
     let conn = pool.get()?;
-    let movie_ids: Vec<&str> =
-        items.iter().filter(|i| i.kind != Kind::Episode).map(|i| i.id.as_str()).collect();
-    let ep_ids: Vec<&str> =
-        items.iter().filter(|i| i.kind == Kind::Episode).map(|i| i.id.as_str()).collect();
+    let movie_ids: Vec<&str> = items
+        .iter()
+        .filter(|i| i.kind != Kind::Episode)
+        .map(|i| i.id.as_str())
+        .collect();
+    let ep_ids: Vec<&str> = items
+        .iter()
+        .filter(|i| i.kind == Kind::Episode)
+        .map(|i| i.id.as_str())
+        .collect();
     let movie_tr = translations::resolve_many(&conn, metadata_core::ITEM, &movie_ids, locale)?;
     let ep_tr = translations::resolve_many(&conn, "episode", &ep_ids, locale)?;
     for item in items.iter_mut() {
-        let table = if item.kind == Kind::Episode { &ep_tr } else { &movie_tr };
+        let table = if item.kind == Kind::Episode {
+            &ep_tr
+        } else {
+            &movie_tr
+        };
         if let Some(tr) = table.get(&item.id) {
             apply(item.metadata.as_mut(), tr);
         }
@@ -76,8 +86,24 @@ mod tests {
     #[test]
     fn overlay_items_applies_title_and_characters() {
         let p = pool();
-        translations::put(&p, metadata_core::ITEM, "m1", "fr", translations::TMDB, &td("Titre FR", vec![Some("Perso FR".into())])).unwrap();
-        translations::put(&p, "episode", "e1", "fr", translations::TMDB, &td("Episode FR", vec![])).unwrap();
+        translations::put(
+            &p,
+            metadata_core::ITEM,
+            "m1",
+            "fr",
+            translations::TMDB,
+            &td("Titre FR", vec![Some("Perso FR".into())]),
+        )
+        .unwrap();
+        translations::put(
+            &p,
+            "episode",
+            "e1",
+            "fr",
+            translations::TMDB,
+            &td("Episode FR", vec![]),
+        )
+        .unwrap();
 
         let mut items = vec![item("m1", Kind::Movie), item("e1", Kind::Episode)];
         overlay_items(&p, &mut items, "fr").unwrap();
@@ -88,7 +114,10 @@ mod tests {
         // Untranslated fields keep the blob's original text.
         assert_eq!(m.tagline.as_deref(), Some("orig tagline"));
         assert_eq!(m.genres, vec!["Original".to_string()]);
-        assert_eq!(items[1].metadata.as_ref().unwrap().title.as_deref(), Some("Episode FR"));
+        assert_eq!(
+            items[1].metadata.as_ref().unwrap().title.as_deref(),
+            Some("Episode FR")
+        );
 
         // Empty slice is a clean no-op.
         overlay_items(&p, &mut [], "fr").unwrap();

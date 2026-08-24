@@ -107,7 +107,10 @@ pub fn roots(data_dir: &Path) -> (PathBuf, PathBuf) {
 pub fn ensure(data_dir: &Path) -> bool {
     let base = data_dir.join("demo-media");
     let plan = plan();
-    let missing: Vec<&Title> = plan.iter().filter(|t| !base.join(t.rel).is_file()).collect();
+    let missing: Vec<&Title> = plan
+        .iter()
+        .filter(|t| !base.join(t.rel).is_file())
+        .collect();
     if missing.is_empty() {
         return true;
     }
@@ -127,7 +130,9 @@ pub fn ensure(data_dir: &Path) -> bool {
         }
         match write(title, &out) {
             Ok(()) => written += 1,
-            Err(e) => warn!(error = %format!("{e:#}"), title = title.rel, "could not write a demo title"),
+            Err(e) => {
+                warn!(error = %format!("{e:#}"), title = title.rel, "could not write a demo title")
+            }
         }
     }
     let present = plan.iter().filter(|t| base.join(t.rel).is_file()).count();
@@ -159,7 +164,9 @@ fn write(title: &Title, out: &Path) -> anyhow::Result<()> {
     let tmp = partial(out);
     let _ = std::fs::remove_file(&tmp);
     let result = match title.shape {
-        Shape::Hdr => run(&hdr_args(title.size, &tmp)).or_else(|_| run(&plain_args(title.size, &tmp))),
+        Shape::Hdr => {
+            run(&hdr_args(title.size, &tmp)).or_else(|_| run(&plain_args(title.size, &tmp)))
+        }
         Shape::Plain => run(&plain_args(title.size, &tmp)),
         Shape::Tracks => {
             let srt = tmp.with_extension("srt");
@@ -180,7 +187,9 @@ fn write(title: &Title, out: &Path) -> anyhow::Result<()> {
 // A half-written file must not be scanned, and ffmpeg picks its muxer from the
 // EXTENSION: the marker goes in front of the name, never over its suffix.
 fn partial(out: &Path) -> PathBuf {
-    let name = out.file_name().map_or_else(|| ".part".into(), |n| n.to_string_lossy().into_owned());
+    let name = out
+        .file_name()
+        .map_or_else(|| ".part".into(), |n| n.to_string_lossy().into_owned());
     out.with_file_name(format!(".part-{name}"))
 }
 
@@ -217,8 +226,23 @@ fn plain_args(size: &str, out: &Path) -> Vec<String> {
     let mut a = base_args(size);
     a.extend(
         [
-            "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "32",
-            "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "64k", "-metadata:s:a:0",
+            "-map",
+            "0:v",
+            "-map",
+            "1:a",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-crf",
+            "32",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "64k",
+            "-metadata:s:a:0",
             "language=eng",
         ]
         .map(String::from),
@@ -231,10 +255,28 @@ fn hdr_args(size: &str, out: &Path) -> Vec<String> {
     let mut a = base_args(size);
     a.extend(
         [
-            "-map", "0:v", "-map", "1:a", "-c:v", "libx265", "-preset", "ultrafast", "-crf", "34",
-            "-pix_fmt", "yuv420p10le", "-x265-params",
-            "colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc:log-level=none", "-tag:v",
-            "hvc1", "-c:a", "aac", "-b:a", "64k", "-metadata:s:a:0", "language=eng",
+            "-map",
+            "0:v",
+            "-map",
+            "1:a",
+            "-c:v",
+            "libx265",
+            "-preset",
+            "ultrafast",
+            "-crf",
+            "34",
+            "-pix_fmt",
+            "yuv420p10le",
+            "-x265-params",
+            "colorprim=bt2020:transfer=smpte2084:colormatrix=bt2020nc:log-level=none",
+            "-tag:v",
+            "hvc1",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "64k",
+            "-metadata:s:a:0",
+            "language=eng",
         ]
         .map(String::from),
     );
@@ -244,22 +286,44 @@ fn hdr_args(size: &str, out: &Path) -> Vec<String> {
 
 fn tracks_args(size: &str, srt: &Path, out: &Path) -> Vec<String> {
     let mut a = base_args(size);
+    a.extend([
+        "-f".into(),
+        "lavfi".into(),
+        "-i".into(),
+        format!("sine=frequency=220:duration={SECONDS}"),
+        "-i".into(),
+        srt.to_string_lossy().into_owned(),
+    ]);
     a.extend(
         [
-            "-f".into(),
-            "lavfi".into(),
-            "-i".into(),
-            format!("sine=frequency=220:duration={SECONDS}"),
-            "-i".into(),
-            srt.to_string_lossy().into_owned(),
-        ],
-    );
-    a.extend(
-        [
-            "-map", "0:v", "-map", "1:a", "-map", "2:a", "-map", "3:s", "-c:v", "libx264",
-            "-preset", "ultrafast", "-crf", "32", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a",
-            "64k", "-c:s", "srt", "-metadata:s:a:0", "language=eng", "-metadata:s:a:1",
-            "language=fra", "-metadata:s:s:0", "language=fra",
+            "-map",
+            "0:v",
+            "-map",
+            "1:a",
+            "-map",
+            "2:a",
+            "-map",
+            "3:s",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-crf",
+            "32",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "64k",
+            "-c:s",
+            "srt",
+            "-metadata:s:a:0",
+            "language=eng",
+            "-metadata:s:a:1",
+            "language=fra",
+            "-metadata:s:s:0",
+            "language=fra",
         ]
         .map(String::from),
     );
@@ -291,7 +355,10 @@ mod tests {
             );
         }
         // An episode is only parsed as one when its name carries the numbers.
-        let episodes: Vec<&Title> = plan.iter().filter(|t| t.rel.starts_with("shows/")).collect();
+        let episodes: Vec<&Title> = plan
+            .iter()
+            .filter(|t| t.rel.starts_with("shows/"))
+            .collect();
         assert_eq!(episodes.len(), 4);
         for e in episodes {
             assert!(
@@ -299,7 +366,11 @@ mod tests {
                 "{} has no season/episode marker",
                 e.rel
             );
-            assert!(e.rel.contains("/Season "), "{} is not under a season folder", e.rel);
+            assert!(
+                e.rel.contains("/Season "),
+                "{} is not under a season folder",
+                e.rel
+            );
         }
     }
 
@@ -307,7 +378,10 @@ mod tests {
     fn the_shapes_a_player_branches_on_are_all_present() {
         let shapes: Vec<Shape> = plan().iter().map(|t| t.shape).collect();
         for want in [Shape::Plain, Shape::Hdr, Shape::Tracks] {
-            assert!(shapes.contains(&want), "{want:?} is not in the demo library");
+            assert!(
+                shapes.contains(&want),
+                "{want:?} is not in the demo library"
+            );
         }
     }
 
@@ -357,7 +431,11 @@ mod tests {
         for args in [
             plain_args("1280x720", Path::new("/tmp/demo.mkv")),
             hdr_args("1280x720", Path::new("/tmp/demo.mkv")),
-            tracks_args("1280x720", Path::new("/tmp/s.srt"), Path::new("/tmp/demo.mkv")),
+            tracks_args(
+                "1280x720",
+                Path::new("/tmp/s.srt"),
+                Path::new("/tmp/demo.mkv"),
+            ),
         ] {
             assert_eq!(args.last().unwrap(), &out);
         }
@@ -367,10 +445,15 @@ mod tests {
     fn the_partial_name_keeps_the_extension_ffmpeg_reads_the_muxer_from() {
         // `with_extension("part")` would have replaced `.mkv`, and ffmpeg cannot
         // infer a container from `.part`: every write failed that way once.
-        let tmp = partial(Path::new("/data/demo-media/movies/A (2001)/A (2001) 1080p.mkv"));
+        let tmp = partial(Path::new(
+            "/data/demo-media/movies/A (2001)/A (2001) 1080p.mkv",
+        ));
         assert_eq!(tmp.extension().unwrap(), "mkv");
         assert_eq!(tmp.file_name().unwrap(), ".part-A (2001) 1080p.mkv");
-        assert_eq!(tmp.parent().unwrap(), Path::new("/data/demo-media/movies/A (2001)"));
+        assert_eq!(
+            tmp.parent().unwrap(),
+            Path::new("/data/demo-media/movies/A (2001)")
+        );
     }
 
     #[test]

@@ -49,8 +49,11 @@ impl<M> Grants<M> {
         let mut map = self.map.lock().unwrap();
         self.reap(&mut map);
 
-        let previous: Vec<String> =
-            map.iter().filter(|(_, e)| mine(&e.meta)).map(|(h, _)| h.clone()).collect();
+        let previous: Vec<String> = map
+            .iter()
+            .filter(|(_, e)| mine(&e.meta))
+            .map(|(h, _)| h.clone())
+            .collect();
         let orphans: Vec<Orphaned> = previous
             .into_iter()
             .filter_map(|handle| map.remove(&handle))
@@ -59,15 +62,24 @@ impl<M> Grants<M> {
 
         let scope = scope_of(&meta);
         if map.values().filter(|e| scope_of(&e.meta) == scope).count() >= scope_limit {
-            return ScopedInsert { filed: None, orphans };
+            return ScopedInsert {
+                filed: None,
+                orphans,
+            };
         }
         if map.len() >= self.capacity {
             let Some(handle) = crowded_out(&map, &scope_of, &scope) else {
-                return ScopedInsert { filed: None, orphans };
+                return ScopedInsert {
+                    filed: None,
+                    orphans,
+                };
             };
             self.abandon(map.remove(&handle));
         }
-        ScopedInsert { filed: Some(Self::file(&mut map, meta, &mut mint)), orphans }
+        ScopedInsert {
+            filed: Some(Self::file(&mut map, meta, &mut mint)),
+            orphans,
+        }
     }
 
     fn file(
@@ -84,7 +96,13 @@ impl<M> Grants<M> {
         let secret = random_token();
         map.insert(
             handle.clone(),
-            Entry { secret: secret.clone(), fresh_at: now(), seen: tick(), meta, granted: None },
+            Entry {
+                secret: secret.clone(),
+                fresh_at: now(),
+                seen: tick(),
+                meta,
+                granted: None,
+            },
         );
         Filed { handle, secret }
     }
@@ -106,7 +124,10 @@ fn crowded_out<M, K: Eq + Hash>(
     map.iter()
         .filter(|(_, e)| scope_of(&e.meta) != *spared)
         .max_by_key(|(_, e)| {
-            (share.get(&scope_of(&e.meta)).copied().unwrap_or_default(), std::cmp::Reverse(e.seen))
+            (
+                share.get(&scope_of(&e.meta)).copied().unwrap_or_default(),
+                std::cmp::Reverse(e.seen),
+            )
         })
         .map(|(handle, _)| handle.clone())
 }

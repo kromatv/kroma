@@ -17,13 +17,21 @@ pub(super) fn catalog(pool: &Pool) -> Vec<SectionItem> {
     let mut all: Vec<SectionItem> = Vec::new();
     match db::list_movies(pool, None) {
         Ok(movies) => {
-            all.extend(movies.into_iter().map(|m| SectionItem::Movie { item: Box::new(m) }));
+            all.extend(
+                movies
+                    .into_iter()
+                    .map(|m| SectionItem::Movie { item: Box::new(m) }),
+            );
         }
         Err(e) => tracing::error!(target: "sections", "featured: reading movies failed: {e:#}"),
     }
     match db::list_shows(pool, None) {
         Ok(shows) => {
-            all.extend(shows.into_iter().map(|s| SectionItem::Show { show: Box::new(s) }));
+            all.extend(
+                shows
+                    .into_iter()
+                    .map(|s| SectionItem::Show { show: Box::new(s) }),
+            );
         }
         Err(e) => tracing::error!(target: "sections", "featured: reading shows failed: {e:#}"),
     }
@@ -35,9 +43,16 @@ pub(super) fn catalog(pool: &Pool) -> Vec<SectionItem> {
 /// taste centroid, plus the parent show of any episode in those sets (the show
 /// belongs to "Continue watching", not the hero).
 pub(super) fn seen_ids(pool: &Pool, user_id: &str, recent: &[String]) -> HashSet<String> {
-    let mut out: HashSet<String> =
-        db::list_watched(pool, user_id).unwrap_or_default().into_iter().collect();
-    out.extend(db::list_progress(pool, user_id).unwrap_or_default().into_iter().map(|p| p.item_id));
+    let mut out: HashSet<String> = db::list_watched(pool, user_id)
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
+    out.extend(
+        db::list_progress(pool, user_id)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|p| p.item_id),
+    );
     out.extend(recent.iter().cloned());
     // Project the (already deduplicated) ids onto their parent shows with a lean
     // `show_id` query: hydrating a whole watch history to read one column costs
@@ -64,7 +79,10 @@ pub(super) fn trend_scores(pool: &Pool) -> HashMap<String, f32> {
 // `1/len`, so the signal reads the same in a library of any size.
 fn rank_scores(ids: Vec<String>) -> HashMap<String, f32> {
     let len = ids.len() as f32;
-    ids.into_iter().enumerate().map(|(i, id)| (id, (len - i as f32) / len)).collect()
+    ids.into_iter()
+        .enumerate()
+        .map(|(i, id)| (id, (len - i as f32) / len))
+        .collect()
 }
 
 #[cfg(test)]
@@ -78,7 +96,10 @@ mod tests {
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m1");
         test_support::seed_show_episode(&state, "sh1", "e1");
-        let ids: Vec<String> = catalog(&state.db).iter().map(|e| e.id().to_string()).collect();
+        let ids: Vec<String> = catalog(&state.db)
+            .iter()
+            .map(|e| e.id().to_string())
+            .collect();
         assert!(ids.contains(&"m1".to_string()));
         assert!(ids.contains(&"sh1".to_string()));
         assert!(!ids.contains(&"e1".to_string()));
@@ -95,12 +116,25 @@ mod tests {
         let state = test_support::test_state();
         test_support::seed_movie(&state, "m1");
         test_support::seed_show_episode(&state, "sh1", "e1");
-        state.db.get().unwrap().execute("DROP TABLE shows", []).unwrap();
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute("DROP TABLE shows", [])
+            .unwrap();
 
-        let ids: Vec<String> = catalog(&state.db).iter().map(|e| e.id().to_string()).collect();
+        let ids: Vec<String> = catalog(&state.db)
+            .iter()
+            .map(|e| e.id().to_string())
+            .collect();
         assert_eq!(ids, vec!["m1".to_string()]);
 
-        state.db.get().unwrap().execute("DROP TABLE items", []).unwrap();
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute("DROP TABLE items", [])
+            .unwrap();
         assert!(catalog(&state.db).is_empty());
     }
 
@@ -110,7 +144,12 @@ mod tests {
         let (_show, ep) = test_support::seed_show_episode(&state, "sh1", "e1");
         seed_user(&state, "u1");
         db::mark_watched(&state.db, "u1", &ep).unwrap();
-        state.db.get().unwrap().execute("DROP TABLE items", []).unwrap();
+        state
+            .db
+            .get()
+            .unwrap()
+            .execute("DROP TABLE items", [])
+            .unwrap();
 
         let seen = seen_ids(&state.db, "u1", &["m1".to_string()]);
         assert!(seen.contains(&ep) && seen.contains("m1"));

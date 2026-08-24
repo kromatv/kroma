@@ -50,7 +50,12 @@ const WANTED_INSERT_TAIL: &str =
     "wanted (id, request_id, kind, tmdb_id, imdb_id, title, year, season, episode, air_date, status, last_search_at, updated_at) \
      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)";
 
-fn insert_wanted_rows(conn: &Connection, sql: &str, rows: &[WantedRow], now_ms: i64) -> rusqlite::Result<()> {
+fn insert_wanted_rows(
+    conn: &Connection,
+    sql: &str,
+    rows: &[WantedRow],
+    now_ms: i64,
+) -> rusqlite::Result<()> {
     let mut stmt = conn.prepare(sql)?;
     for w in rows {
         stmt.execute(params![
@@ -73,11 +78,24 @@ fn insert_wanted_rows(conn: &Connection, sql: &str, rows: &[WantedRow], now_ms: 
 }
 
 /// Replace a request's wanted rows in one transaction.
-pub fn replace_wanted(pool: &Pool, request_id: &str, rows: &[WantedRow], now_ms: i64) -> Result<()> {
+pub fn replace_wanted(
+    pool: &Pool,
+    request_id: &str,
+    rows: &[WantedRow],
+    now_ms: i64,
+) -> Result<()> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
-    tx.execute("DELETE FROM wanted WHERE request_id = ?1", params![request_id])?;
-    insert_wanted_rows(&tx, &format!("INSERT INTO {WANTED_INSERT_TAIL}"), rows, now_ms)?;
+    tx.execute(
+        "DELETE FROM wanted WHERE request_id = ?1",
+        params![request_id],
+    )?;
+    insert_wanted_rows(
+        &tx,
+        &format!("INSERT INTO {WANTED_INSERT_TAIL}"),
+        rows,
+        now_ms,
+    )?;
     tx.commit()?;
     Ok(())
 }
@@ -90,7 +108,12 @@ pub fn insert_wanted(pool: &Pool, rows: &[WantedRow], now_ms: i64) -> Result<()>
     }
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
-    insert_wanted_rows(&tx, &format!("INSERT OR IGNORE INTO {WANTED_INSERT_TAIL}"), rows, now_ms)?;
+    insert_wanted_rows(
+        &tx,
+        &format!("INSERT OR IGNORE INTO {WANTED_INSERT_TAIL}"),
+        rows,
+        now_ms,
+    )?;
     tx.commit()?;
     Ok(())
 }
@@ -107,10 +130,12 @@ pub fn prune_wanted(pool: &Pool, request_id: &str, keep_ids: &[String]) -> Resul
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
     let removed = if keep_ids.is_empty() {
-        tx.execute("DELETE FROM wanted WHERE request_id = ?1", params![request_id])?
+        tx.execute(
+            "DELETE FROM wanted WHERE request_id = ?1",
+            params![request_id],
+        )?
     } else {
-        let keep: std::collections::HashSet<&str> =
-            keep_ids.iter().map(String::as_str).collect();
+        let keep: std::collections::HashSet<&str> = keep_ids.iter().map(String::as_str).collect();
         let present: Vec<String> = {
             let mut stmt = tx.prepare("SELECT id FROM wanted WHERE request_id = ?1")?;
             let rows = stmt.query_map(params![request_id], |r| r.get::<_, String>(0))?;
@@ -119,11 +144,15 @@ pub fn prune_wanted(pool: &Pool, request_id: &str, keep_ids: &[String]) -> Resul
         // The set difference is taken here rather than as a chunked `NOT IN`:
         // one chunk of the keep list does not know about the next, so it would
         // delete rows a later chunk keeps.
-        let doomed: Vec<&String> =
-            present.iter().filter(|id| !keep.contains(id.as_str())).collect();
+        let doomed: Vec<&String> = present
+            .iter()
+            .filter(|id| !keep.contains(id.as_str()))
+            .collect();
         let mut removed = 0;
         for chunk in doomed.chunks(IN_CHUNK) {
-            let holes = std::iter::repeat_n("?", chunk.len()).collect::<Vec<_>>().join(",");
+            let holes = std::iter::repeat_n("?", chunk.len())
+                .collect::<Vec<_>>()
+                .join(",");
             removed += tx.execute(
                 &format!("DELETE FROM wanted WHERE id IN ({holes})"),
                 rusqlite::params_from_iter(chunk.iter()),
@@ -184,8 +213,14 @@ mod tests {
         let rows = wanted_for_request(&conn, "r1").unwrap();
         assert_eq!(rows.len(), 2);
         // The point of pruning over replacing: what was downloaded stays known.
-        assert_eq!(rows.iter().find(|w| w.id == "w1").unwrap().status, "available");
-        assert_eq!(rows.iter().find(|w| w.id == "w2").unwrap().status, "grabbed");
+        assert_eq!(
+            rows.iter().find(|w| w.id == "w1").unwrap().status,
+            "available"
+        );
+        assert_eq!(
+            rows.iter().find(|w| w.id == "w2").unwrap().status,
+            "grabbed"
+        );
     }
 
     #[test]
@@ -227,7 +262,11 @@ mod tests {
 
         prune_wanted(&p, "r1", &[]).unwrap();
         let conn = p.get().unwrap();
-        assert_eq!(wanted_for_request(&conn, "r2").unwrap().len(), 1, "r2 untouched");
+        assert_eq!(
+            wanted_for_request(&conn, "r2").unwrap().len(),
+            1,
+            "r2 untouched"
+        );
     }
 
     #[test]
@@ -248,10 +287,25 @@ mod tests {
             status: status.into(),
             last_search_at: None,
         };
-        replace_wanted(&p, "r1", &[mk("w-e1", 1, Some("2020-01-01"), "grabbed"), mk("w-e2", 2, None, "wanted")], 1000)
-            .unwrap();
-        insert_wanted(&p, &[mk("w-e3", 3, Some("2020-01-03"), "wanted"), mk("w-e1", 1, Some("2020-01-01"), "wanted")], 2000)
-            .unwrap();
+        replace_wanted(
+            &p,
+            "r1",
+            &[
+                mk("w-e1", 1, Some("2020-01-01"), "grabbed"),
+                mk("w-e2", 2, None, "wanted"),
+            ],
+            1000,
+        )
+        .unwrap();
+        insert_wanted(
+            &p,
+            &[
+                mk("w-e3", 3, Some("2020-01-03"), "wanted"),
+                mk("w-e1", 1, Some("2020-01-01"), "wanted"),
+            ],
+            2000,
+        )
+        .unwrap();
         set_wanted_air_date(&p, "w-e2", "2020-01-02", 2000).unwrap();
         set_wanted_air_date(&p, "w-e1", "2999-01-01", 2000).unwrap();
 

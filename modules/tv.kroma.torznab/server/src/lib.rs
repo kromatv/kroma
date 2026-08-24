@@ -39,7 +39,11 @@ pub fn caps(endpoint: &IndexerEndpoint) -> anyhow::Result<Caps> {
 /// then imdb id, then a structured `tvsearch`, then free text) and falls back on
 /// an empty answer: not every tracker behind Jackett resolves external ids, and
 /// an id miss must not hide releases a text query would find.
-pub fn search(endpoint: &IndexerEndpoint, query: &Query, caps: &Caps) -> anyhow::Result<Vec<Release>> {
+pub fn search(
+    endpoint: &IndexerEndpoint,
+    query: &Query,
+    caps: &Caps,
+) -> anyhow::Result<Vec<Release>> {
     let cats = endpoint
         .categories
         .iter()
@@ -68,13 +72,23 @@ pub fn search(endpoint: &IndexerEndpoint, query: &Query, caps: &Caps) -> anyhow:
 // The ordered parameter sets to try for a query, strongest first.
 fn attempts(query: &Query, caps: &Caps) -> Vec<Vec<(&'static str, String)>> {
     match query {
-        Query::Movie { tmdb_id, imdb_id, title, year } => {
-            movie_attempts(caps, *tmdb_id, imdb_id.as_deref(), title, *year)
-        }
-        Query::Episode { tmdb_id, title, season, episode } => {
-            episode_attempts(caps, *tmdb_id, title, *season, *episode)
-        }
-        Query::Season { tmdb_id, title, season } => season_attempts(caps, *tmdb_id, title, *season),
+        Query::Movie {
+            tmdb_id,
+            imdb_id,
+            title,
+            year,
+        } => movie_attempts(caps, *tmdb_id, imdb_id.as_deref(), title, *year),
+        Query::Episode {
+            tmdb_id,
+            title,
+            season,
+            episode,
+        } => episode_attempts(caps, *tmdb_id, title, *season, *episode),
+        Query::Season {
+            tmdb_id,
+            title,
+            season,
+        } => season_attempts(caps, *tmdb_id, title, *season),
     }
 }
 
@@ -162,7 +176,10 @@ fn season_attempts(
             ("season", season.to_string()),
         ]);
     }
-    out.push(vec![("t", "search".into()), ("q", format!("{title} S{season:02}"))]);
+    out.push(vec![
+        ("t", "search".into()),
+        ("q", format!("{title} S{season:02}")),
+    ]);
     out
 }
 
@@ -172,7 +189,11 @@ mod tests {
 
     #[test]
     fn attempts_order_ids_first_then_text_fallback() {
-        let caps = Caps { search_tmdb: true, search_imdb: true, ..Caps::default() };
+        let caps = Caps {
+            search_tmdb: true,
+            search_imdb: true,
+            ..Caps::default()
+        };
         let q = Query::Movie {
             tmdb_id: Some(603),
             imdb_id: Some("tt0133093".into()),
@@ -182,7 +203,10 @@ mod tests {
         let a = attempts(&q, &caps);
         assert_eq!(a.len(), 3);
         assert!(a[0].contains(&("tmdbid", "603".to_string())));
-        assert!(a[1].contains(&("imdbid", "0133093".to_string())), "tt prefix stripped");
+        assert!(
+            a[1].contains(&("imdbid", "0133093".to_string())),
+            "tt prefix stripped"
+        );
         assert!(a[2].contains(&("q", "The Matrix 1999".to_string())));
 
         // Without id caps only the text attempt remains.
@@ -192,14 +216,26 @@ mod tests {
 
     #[test]
     fn episode_and_season_attempts() {
-        let caps = Caps { tv_search_tmdb: true, ..Caps::default() };
-        let q = Query::Episode { tmdb_id: Some(1396), title: "Breaking Bad".into(), season: 1, episode: 2 };
+        let caps = Caps {
+            tv_search_tmdb: true,
+            ..Caps::default()
+        };
+        let q = Query::Episode {
+            tmdb_id: Some(1396),
+            title: "Breaking Bad".into(),
+            season: 1,
+            episode: 2,
+        };
         let a = attempts(&q, &caps);
         assert_eq!(a.len(), 2);
         assert!(a[0].contains(&("ep", "2".to_string())));
         assert!(a[1].contains(&("q", "Breaking Bad S01E02".to_string())));
 
-        let q = Query::Season { tmdb_id: None, title: "Breaking Bad".into(), season: 3 };
+        let q = Query::Season {
+            tmdb_id: None,
+            title: "Breaking Bad".into(),
+            season: 3,
+        };
         let a = attempts(&q, &caps);
         assert_eq!(a.len(), 1);
         assert!(a[0].contains(&("q", "Breaking Bad S03".to_string())));
@@ -208,8 +244,17 @@ mod tests {
     #[test]
     fn movie_without_ids_only_text_attempt() {
         // Caps advertise id search, but the query carries no ids: text only.
-        let caps = Caps { search_tmdb: true, search_imdb: true, ..Caps::default() };
-        let q = Query::Movie { tmdb_id: None, imdb_id: None, title: "Heat".into(), year: None };
+        let caps = Caps {
+            search_tmdb: true,
+            search_imdb: true,
+            ..Caps::default()
+        };
+        let q = Query::Movie {
+            tmdb_id: None,
+            imdb_id: None,
+            title: "Heat".into(),
+            year: None,
+        };
         let a = attempts(&q, &caps);
         assert_eq!(a.len(), 1);
         assert!(a[0].contains(&("t", "search".to_string())));
@@ -218,7 +263,12 @@ mod tests {
 
     #[test]
     fn movie_text_attempt_includes_year_when_present() {
-        let q = Query::Movie { tmdb_id: None, imdb_id: None, title: "Dune".into(), year: Some(2021) };
+        let q = Query::Movie {
+            tmdb_id: None,
+            imdb_id: None,
+            title: "Dune".into(),
+            year: Some(2021),
+        };
         let a = attempts(&q, &Caps::default());
         assert_eq!(a.len(), 1);
         assert!(a[0].contains(&("q", "Dune 2021".to_string())));
@@ -226,8 +276,15 @@ mod tests {
 
     #[test]
     fn season_with_tmdb_yields_pack_then_text() {
-        let caps = Caps { tv_search_tmdb: true, ..Caps::default() };
-        let q = Query::Season { tmdb_id: Some(1396), title: "Breaking Bad".into(), season: 1 };
+        let caps = Caps {
+            tv_search_tmdb: true,
+            ..Caps::default()
+        };
+        let q = Query::Season {
+            tmdb_id: Some(1396),
+            title: "Breaking Bad".into(),
+            season: 1,
+        };
         let a = attempts(&q, &caps);
         assert_eq!(a.len(), 2);
         assert!(a[0].contains(&("t", "tvsearch".to_string())));
@@ -239,13 +296,21 @@ mod tests {
     fn a_tracker_that_advertises_no_tv_id_search_is_only_ever_asked_in_words() {
         let caps = Caps::default();
 
-        let episode =
-            Query::Episode { tmdb_id: Some(1396), title: "Breaking Bad".into(), season: 1, episode: 2 };
+        let episode = Query::Episode {
+            tmdb_id: Some(1396),
+            title: "Breaking Bad".into(),
+            season: 1,
+            episode: 2,
+        };
         let a = attempts(&episode, &caps);
         assert_eq!(a.len(), 1);
         assert!(a[0].contains(&("q", "Breaking Bad S01E02".to_string())));
 
-        let season = Query::Season { tmdb_id: Some(1396), title: "Breaking Bad".into(), season: 3 };
+        let season = Query::Season {
+            tmdb_id: Some(1396),
+            title: "Breaking Bad".into(),
+            season: 3,
+        };
         let a = attempts(&season, &caps);
         assert_eq!(a.len(), 1);
         assert!(a[0].contains(&("q", "Breaking Bad S03".to_string())));
@@ -257,19 +322,33 @@ mod tests {
         // ids at all. Skipping tvsearch there left free text as the only tv query
         // an indexer was ever asked, and a tracker whose titles do not literally
         // contain "S03E08" answered nothing.
-        let caps = Caps { tv_search_season: true, ..Caps::default() };
+        let caps = Caps {
+            tv_search_season: true,
+            ..Caps::default()
+        };
 
-        let episode =
-            Query::Episode { tmdb_id: None, title: "House of the Dragon".into(), season: 3, episode: 8 };
+        let episode = Query::Episode {
+            tmdb_id: None,
+            title: "House of the Dragon".into(),
+            season: 3,
+            episode: 8,
+        };
         let a = attempts(&episode, &caps);
         assert_eq!(a.len(), 2, "structured tvsearch, then free text");
         assert!(a[0].contains(&("t", "tvsearch".to_string())));
-        assert!(a[0].contains(&("q", "House of the Dragon".to_string())), "the bare title");
+        assert!(
+            a[0].contains(&("q", "House of the Dragon".to_string())),
+            "the bare title"
+        );
         assert!(a[0].contains(&("season", "3".to_string())));
         assert!(a[0].contains(&("ep", "8".to_string())));
         assert!(a[1].contains(&("q", "House of the Dragon S03E08".to_string())));
 
-        let season = Query::Season { tmdb_id: None, title: "House of the Dragon".into(), season: 3 };
+        let season = Query::Season {
+            tmdb_id: None,
+            title: "House of the Dragon".into(),
+            season: 3,
+        };
         let a = attempts(&season, &caps);
         assert_eq!(a.len(), 2);
         assert!(a[0].contains(&("season", "3".to_string())));
@@ -279,8 +358,17 @@ mod tests {
 
     #[test]
     fn an_id_capable_tracker_still_tries_the_id_first() {
-        let caps = Caps { tv_search_tmdb: true, tv_search_season: true, ..Caps::default() };
-        let q = Query::Episode { tmdb_id: Some(1396), title: "Breaking Bad".into(), season: 1, episode: 2 };
+        let caps = Caps {
+            tv_search_tmdb: true,
+            tv_search_season: true,
+            ..Caps::default()
+        };
+        let q = Query::Episode {
+            tmdb_id: Some(1396),
+            title: "Breaking Bad".into(),
+            season: 1,
+            episode: 2,
+        };
         let a = attempts(&q, &caps);
         assert_eq!(a.len(), 3, "tmdbid, then q+season+ep, then free text");
         assert!(a[0].contains(&("tmdbid", "1396".to_string())));
@@ -291,7 +379,11 @@ mod tests {
     #[test]
     fn movie_tmdb_only_when_imdb_cap_absent() {
         // tmdb cap on, imdb cap off: only the tmdb id attempt precedes the text.
-        let caps = Caps { search_tmdb: true, search_imdb: false, ..Caps::default() };
+        let caps = Caps {
+            search_tmdb: true,
+            search_imdb: false,
+            ..Caps::default()
+        };
         let q = Query::Movie {
             tmdb_id: Some(603),
             imdb_id: Some("tt0133093".into()),
@@ -356,7 +448,10 @@ mod tests {
                 }
             });
 
-            Self { url: format!("http://127.0.0.1:{port}/api"), seen }
+            Self {
+                url: format!("http://127.0.0.1:{port}/api"),
+                seen,
+            }
         }
 
         fn always(body: &str) -> Self {
@@ -419,7 +514,11 @@ mod tests {
         // The strongest parameter set the indexer supports comes first; once it
         // answers there is no reason to spend the weaker calls.
         let jackett = FakeJackett::always(ONE_ITEM);
-        let caps = Caps { search_tmdb: true, search_imdb: true, ..Caps::default() };
+        let caps = Caps {
+            search_tmdb: true,
+            search_imdb: true,
+            ..Caps::default()
+        };
 
         let releases = search(&jackett.endpoint(), &movie_query(), &caps).unwrap();
         assert_eq!(releases.len(), 1);
@@ -432,7 +531,11 @@ mod tests {
         // catalogue.
         // curl percent-encodes the comma, in lowercase hex.
         let cats = queries[0].to_ascii_lowercase();
-        assert!(cats.contains("cat=2000%2c2040") || cats.contains("cat=2000,2040"), "{}", queries[0]);
+        assert!(
+            cats.contains("cat=2000%2c2040") || cats.contains("cat=2000,2040"),
+            "{}",
+            queries[0]
+        );
     }
 
     #[test]
@@ -446,7 +549,11 @@ mod tests {
                 (200, NO_ITEMS.to_string())
             }
         });
-        let caps = Caps { search_tmdb: true, search_imdb: true, ..Caps::default() };
+        let caps = Caps {
+            search_tmdb: true,
+            search_imdb: true,
+            ..Caps::default()
+        };
 
         let releases = search(&jackett.endpoint(), &movie_query(), &caps).unwrap();
         assert_eq!(releases.len(), 1, "the text fallback was never reached");
@@ -479,8 +586,13 @@ mod tests {
         // "No releases" is a normal answer; erroring would mark a healthy
         // indexer as broken in the admin list.
         let jackett = FakeJackett::always(NO_ITEMS);
-        let caps = Caps { search_tmdb: true, ..Caps::default() };
-        assert!(search(&jackett.endpoint(), &movie_query(), &caps).unwrap().is_empty());
+        let caps = Caps {
+            search_tmdb: true,
+            ..Caps::default()
+        };
+        assert!(search(&jackett.endpoint(), &movie_query(), &caps)
+            .unwrap()
+            .is_empty());
     }
 
     #[test]
@@ -488,10 +600,19 @@ mod tests {
         // Auth and network problems must NOT read as "no releases found" - that
         // is how a misconfigured tracker sits silently broken for weeks.
         let jackett = FakeJackett::routed(|_| {
-            (200, r#"<error code="100" description="Incorrect user credentials" />"#.to_string())
+            (
+                200,
+                r#"<error code="100" description="Incorrect user credentials" />"#.to_string(),
+            )
         });
-        let caps = Caps { search_tmdb: true, search_imdb: true, ..Caps::default() };
-        let err = search(&jackett.endpoint(), &movie_query(), &caps).unwrap_err().to_string();
+        let caps = Caps {
+            search_tmdb: true,
+            search_imdb: true,
+            ..Caps::default()
+        };
+        let err = search(&jackett.endpoint(), &movie_query(), &caps)
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("credentials"), "{err}");
     }
 
@@ -516,7 +637,11 @@ mod tests {
             categories: Vec::new(),
         };
         caps(&endpoint).unwrap();
-        assert!(!jackett.queries()[0].contains("apikey"), "{}", jackett.queries()[0]);
+        assert!(
+            !jackett.queries()[0].contains("apikey"),
+            "{}",
+            jackett.queries()[0]
+        );
     }
 
     #[test]
@@ -536,7 +661,11 @@ mod tests {
         let releases = search(&jackett.endpoint(), &movie_query(), &caps).unwrap();
         assert_eq!(releases.len(), 1);
         assert_eq!(releases[0].title, "The.Matrix.1999.1080p");
-        assert!(jackett.queries()[1].contains("tmdbid=603"), "{}", jackett.queries()[1]);
+        assert!(
+            jackett.queries()[1].contains("tmdbid=603"),
+            "{}",
+            jackett.queries()[1]
+        );
     }
 }
 

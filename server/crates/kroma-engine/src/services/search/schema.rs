@@ -47,7 +47,17 @@ pub(super) fn build() -> (Schema, Fields) {
     let genres = text(&mut b, "genres");
     let overview = text(&mut b, "overview");
     let schema = b.build();
-    let fields = Fields { id, kind, show_id, title, alt_title, show_title, cast, genres, overview };
+    let fields = Fields {
+        id,
+        kind,
+        show_id,
+        title,
+        alt_title,
+        show_title,
+        cast,
+        genres,
+        overview,
+    };
     (schema, fields)
 }
 

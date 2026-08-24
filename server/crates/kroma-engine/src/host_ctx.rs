@@ -16,7 +16,11 @@ use crate::state::AppState;
 fn forbidden(user: &User) -> Response {
     json_error(
         StatusCode::FORBIDDEN,
-        &crate::i18n::t(crate::i18n::user_locale(user), "error.permissionDenied", &[]),
+        &crate::i18n::t(
+            crate::i18n::user_locale(user),
+            "error.permissionDenied",
+            &[],
+        ),
     )
 }
 
@@ -58,7 +62,10 @@ impl HostCtx for AppState {
     }
 
     fn lerr(&self, user: &User, status: StatusCode, key: &str) -> Response {
-        json_error(status, &crate::i18n::t(crate::i18n::user_locale(user), key, &[]))
+        json_error(
+            status,
+            &crate::i18n::t(crate::i18n::user_locale(user), key, &[]),
+        )
     }
 
     fn setting_str(&self, key: &str, default: &str) -> String {
@@ -93,7 +100,8 @@ impl HostCtx for AppState {
             return;
         };
         obj.insert("type".to_string(), serde_json::Value::String(event.topic));
-        self.events.publish_value_to(user_id, serde_json::Value::Object(obj));
+        self.events
+            .publish_value_to(user_id, serde_json::Value::Object(obj));
     }
 
     fn notify(
@@ -182,7 +190,10 @@ mod tests {
         let far_future = time::OffsetDateTime::now_utc().unix_timestamp() + 3600;
         kroma_db::create_session(&state.db, "sess-tok", &ana.id, far_future, None).unwrap();
 
-        assert_eq!(HostCtx::session_user(&*state, "sess-tok").map(|u| u.id), Some(ana.id.clone()));
+        assert_eq!(
+            HostCtx::session_user(&*state, "sess-tok").map(|u| u.id),
+            Some(ana.id.clone())
+        );
         assert!(HostCtx::session_user(&*state, "not-a-token").is_none());
 
         // An expired session is not a session; the extractors depend on this.
@@ -204,11 +215,17 @@ mod tests {
     fn gates_admin_only_surfaces() {
         let state = test_state();
         let plain = user(&state, &[Permission::Playback]);
-        assert_eq!(state.require_any_admin(&plain).unwrap_err().status(), StatusCode::FORBIDDEN);
+        assert_eq!(
+            state.require_any_admin(&plain).unwrap_err().status(),
+            StatusCode::FORBIDDEN
+        );
 
         let mut admin = plain;
         admin.permissions = vec![Permission::ReportsManage];
-        assert!(state.require_any_admin(&admin).is_ok(), "any admin permission opens the door");
+        assert!(
+            state.require_any_admin(&admin).is_ok(),
+            "any admin permission opens the door"
+        );
     }
 
     #[test]
@@ -234,11 +251,20 @@ mod tests {
     fn merges_the_topic_into_the_payload_as_the_wire_type() {
         let state = test_state();
         let mut rx = state.events.subscribe();
-        state.publish(Event::new("download.progress", json!({ "id": "d1", "pct": 40 })));
+        state.publish(Event::new(
+            "download.progress",
+            json!({ "id": "d1", "pct": 40 }),
+        ));
 
         let env = rx.try_recv().expect("published");
-        assert_eq!(body(&env), json!({ "type": "download.progress", "id": "d1", "pct": 40 }));
-        assert!(env.visible_to("anyone"), "a plain publish reaches every socket");
+        assert_eq!(
+            body(&env),
+            json!({ "type": "download.progress", "id": "d1", "pct": 40 })
+        );
+        assert!(
+            env.visible_to("anyone"),
+            "a plain publish reaches every socket"
+        );
     }
 
     #[test]
@@ -296,14 +322,19 @@ mod tests {
         };
 
         let state = test_state();
-        let ana = kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[]).unwrap().id;
+        let ana = kroma_db::create_user(&state.db, "ana@t.dev", "Ana", "h", &[])
+            .unwrap()
+            .id;
         let spec = NotificationSpec::new(
             NotificationEvent::RequestApproved,
             "notifications.request.approved.title",
             "notifications.request.approved.body",
         );
 
-        assert_eq!(HostCtx::notify(&*state, &Audience::user(ana.clone()), &spec), 1);
+        assert_eq!(
+            HostCtx::notify(&*state, &Audience::user(ana.clone()), &spec),
+            1
+        );
 
         kroma_db::notifications::set_prefs(
             &state.db,
@@ -357,7 +388,10 @@ mod tests {
     #[test]
     fn a_module_reads_the_same_enabled_flag_the_admin_toggles() {
         let state = test_state();
-        assert!(HostCtx::module_enabled(&*state, "tv.kroma.indexer"), "unknown means on");
+        assert!(
+            HostCtx::module_enabled(&*state, "tv.kroma.indexer"),
+            "unknown means on"
+        );
 
         crate::modules::set_module_enabled(&state.settings, &state.db, "tv.kroma.indexer", false);
         assert!(!HostCtx::module_enabled(&*state, "tv.kroma.indexer"));
@@ -367,7 +401,10 @@ mod tests {
     fn the_tmdb_key_and_language_come_from_the_apps_config() {
         let state = test_state();
         assert_eq!(HostCtx::secret(&*state, "tmdb"), None);
-        assert_eq!(HostCtx::metadata_language(&*state), state.config.tmdb_language);
+        assert_eq!(
+            HostCtx::metadata_language(&*state),
+            state.config.tmdb_language
+        );
 
         let keyed = crate::test_support::test_state_with_tmdb("abc123");
         assert_eq!(HostCtx::secret(&*keyed, "tmdb").as_deref(), Some("abc123"));

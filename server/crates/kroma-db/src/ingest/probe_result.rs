@@ -42,7 +42,11 @@ pub fn set_file_probe(
     )?;
 
     let item_id: Option<String> = conn
-        .query_row("SELECT item_id FROM files WHERE id = ?1", params![file_id], |r| r.get(0))
+        .query_row(
+            "SELECT item_id FROM files WHERE id = ?1",
+            params![file_id],
+            |r| r.get(0),
+        )
         .optional()?;
     if let Some(item_id) = item_id {
         recompute_item_representative(&conn, &item_id)?;
@@ -79,9 +83,7 @@ fn recompute_item_representative(conn: &Connection, item_id: &str) -> Result<()>
 
 pub(super) fn recompute_all_representatives(pool: &Pool) -> Result<()> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare(
-        "SELECT DISTINCT item_id FROM files WHERE probed = 1",
-    )?;
+    let mut stmt = conn.prepare("SELECT DISTINCT item_id FROM files WHERE probed = 1")?;
     let ids: Vec<String> = stmt
         .query_map([], |r| r.get::<_, String>(0))?
         .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -105,7 +107,12 @@ mod tests {
             &p,
             &[lib("lib")],
             &[],
-            &[movie("m1", "Dune", "lib", vec![file("f1", "/media/m1.mkv", false)])],
+            &[movie(
+                "m1",
+                "Dune",
+                "lib",
+                vec![file("f1", "/media/m1.mkv", false)],
+            )],
             &HashMap::new(),
         )
         .unwrap();
@@ -148,7 +155,9 @@ mod tests {
         let container: String = p
             .get()
             .unwrap()
-            .query_row("SELECT container FROM items WHERE id='m1'", [], |r| r.get(0))
+            .query_row("SELECT container FROM items WHERE id='m1'", [], |r| {
+                r.get(0)
+            })
             .unwrap();
         assert_eq!(container, "mkv", "no item was recomputed");
     }
@@ -159,8 +168,11 @@ mod tests {
         let conn = p.get().unwrap();
         recompute_item_representative(&conn, "m1").unwrap();
 
-        let container: String =
-            conn.query_row("SELECT container FROM items WHERE id='m1'", [], |r| r.get(0)).unwrap();
+        let container: String = conn
+            .query_row("SELECT container FROM items WHERE id='m1'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
         assert_eq!(container, "mkv");
     }
 }

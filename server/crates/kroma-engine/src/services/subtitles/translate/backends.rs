@@ -21,9 +21,19 @@ pub(super) fn build_backends(settings: &Settings) -> Vec<Backend> {
     settings::ordered_providers(settings)
         .into_iter()
         .filter_map(|p| {
-            let client =
-                build_http(&p.provider, p.base_url.trim(), p.model.trim(), p.api_key.trim(), TRANSLATE_TEMP, p.reasoning)?;
-            let name = if p.name.trim().is_empty() { p.provider.clone() } else { p.name.clone() };
+            let client = build_http(
+                &p.provider,
+                p.base_url.trim(),
+                p.model.trim(),
+                p.api_key.trim(),
+                TRANSLATE_TEMP,
+                p.reasoning,
+            )?;
+            let name = if p.name.trim().is_empty() {
+                p.provider.clone()
+            } else {
+                p.name.clone()
+            };
             Some(Backend {
                 label: format!("{name} ({})", p.model),
                 client,
@@ -39,7 +49,9 @@ pub(super) fn translate_one(
     batch: &[Cue],
     target_lang: &str,
 ) -> std::result::Result<Vec<Option<String>>, String> {
-    let start = active.load(Ordering::Relaxed).min(backends.len().saturating_sub(1));
+    let start = active
+        .load(Ordering::Relaxed)
+        .min(backends.len().saturating_sub(1));
     let mut first_err: Option<String> = None;
     for (i, b) in backends.iter().enumerate().skip(start) {
         match translate_batch(b.client.as_ref(), batch, target_lang, b.token_cap) {
@@ -68,17 +80,26 @@ mod tests {
 
     #[test]
     fn translate_one_uses_first_backend_when_it_works() {
-        let backends = vec![backend("a", Ok("1. Bonjour\n2. Salut".into())), backend("b", Err(()))];
+        let backends = vec![
+            backend("a", Ok("1. Bonjour\n2. Salut".into())),
+            backend("b", Err(())),
+        ];
         let active = AtomicUsize::new(0);
         let batch = [cue("t0", "Hello"), cue("t1", "Hi")];
         let out = translate_one(&backends, &active, &batch, "French").unwrap();
-        assert_eq!(out, vec![Some("Bonjour".to_string()), Some("Salut".to_string())]);
+        assert_eq!(
+            out,
+            vec![Some("Bonjour".to_string()), Some("Salut".to_string())]
+        );
         assert_eq!(active.load(Ordering::Relaxed), 0); // stayed on the primary
     }
 
     #[test]
     fn translate_one_fails_over_and_sticks() {
-        let backends = vec![backend("a", Err(())), backend("b", Ok("1. Bonjour\n2. Salut".into()))];
+        let backends = vec![
+            backend("a", Err(())),
+            backend("b", Ok("1. Bonjour\n2. Salut".into())),
+        ];
         let active = AtomicUsize::new(0);
         let batch = [cue("t0", "Hello"), cue("t1", "Hi")];
         let out = translate_one(&backends, &active, &batch, "French").unwrap();

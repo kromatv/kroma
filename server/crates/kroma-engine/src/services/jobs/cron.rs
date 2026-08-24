@@ -109,7 +109,15 @@ fn bit(mask: u64, v: u8) -> bool {
     mask & (1u64 << v) != 0
 }
 
-fn make(offset: time::UtcOffset, y: i32, mo: u8, d: u8, h: u8, mi: u8, s: u8) -> Option<OffsetDateTime> {
+fn make(
+    offset: time::UtcOffset,
+    y: i32,
+    mo: u8,
+    d: u8,
+    h: u8,
+    mi: u8,
+    s: u8,
+) -> Option<OffsetDateTime> {
     let date = Date::from_calendar_date(y, Month::try_from(mo).ok()?, d).ok()?;
     let time = Time::from_hms(h, mi, s).ok()?;
     Some(date.with_time(time).assume_offset(offset))
@@ -123,31 +131,71 @@ fn first_of_next_month(t: OffsetDateTime, offset: time::UtcOffset) -> Option<Off
 
 fn next_midnight(t: OffsetDateTime, offset: time::UtcOffset) -> Option<OffsetDateTime> {
     let next = t.date().next_day()?;
-    make(offset, next.year(), u8::from(next.month()), next.day(), 0, 0, 0)
+    make(
+        offset,
+        next.year(),
+        u8::from(next.month()),
+        next.day(),
+        0,
+        0,
+        0,
+    )
 }
 
 fn next_hour(t: OffsetDateTime, offset: time::UtcOffset) -> Option<OffsetDateTime> {
     if t.hour() == 23 {
         return next_midnight(t, offset);
     }
-    make(offset, t.year(), u8::from(t.month()), t.day(), t.hour() + 1, 0, 0)
+    make(
+        offset,
+        t.year(),
+        u8::from(t.month()),
+        t.day(),
+        t.hour() + 1,
+        0,
+        0,
+    )
 }
 
 fn next_minute(t: OffsetDateTime, offset: time::UtcOffset) -> Option<OffsetDateTime> {
     if t.minute() == 59 {
         return next_hour(t, offset);
     }
-    make(offset, t.year(), u8::from(t.month()), t.day(), t.hour(), t.minute() + 1, 0)
+    make(
+        offset,
+        t.year(),
+        u8::from(t.month()),
+        t.day(),
+        t.hour(),
+        t.minute() + 1,
+        0,
+    )
 }
 
 type NameMap = &'static [(&'static str, u8)];
 const NO_NAMES: NameMap = &[];
 const MONTH_NAMES: NameMap = &[
-    ("jan", 1), ("feb", 2), ("mar", 3), ("apr", 4), ("may", 5), ("jun", 6),
-    ("jul", 7), ("aug", 8), ("sep", 9), ("oct", 10), ("nov", 11), ("dec", 12),
+    ("jan", 1),
+    ("feb", 2),
+    ("mar", 3),
+    ("apr", 4),
+    ("may", 5),
+    ("jun", 6),
+    ("jul", 7),
+    ("aug", 8),
+    ("sep", 9),
+    ("oct", 10),
+    ("nov", 11),
+    ("dec", 12),
 ];
 const DOW_NAMES: NameMap = &[
-    ("sun", 0), ("mon", 1), ("tue", 2), ("wed", 3), ("thu", 4), ("fri", 5), ("sat", 6),
+    ("sun", 0),
+    ("mon", 1),
+    ("tue", 2),
+    ("wed", 3),
+    ("thu", 4),
+    ("fri", 5),
+    ("sat", 6),
 ];
 
 // The returned flag is whether the field was a bare `*`, which the dom/dow
@@ -168,7 +216,9 @@ fn parse_field(spec: &str, min: u8, max: u8, names: NameMap) -> Result<(u64, boo
 fn parse_part(part: &str, min: u8, max: u8, names: NameMap) -> Result<u64> {
     let (range, step) = match part.split_once('/') {
         Some((r, s)) => {
-            let step: u8 = s.parse().map_err(|_| anyhow::anyhow!("bad step {s:?} in {part:?}"))?;
+            let step: u8 = s
+                .parse()
+                .map_err(|_| anyhow::anyhow!("bad step {s:?} in {part:?}"))?;
             if step == 0 {
                 bail!("step must be > 0 in {part:?}");
             }
@@ -205,10 +255,14 @@ fn parse_part(part: &str, min: u8, max: u8, names: NameMap) -> Result<u64> {
 
 fn resolve(tok: &str, names: NameMap, min: u8, max: u8) -> Result<u8> {
     let tok = tok.trim();
-    let v = if let Some(&(_, n)) = names.iter().find(|(name, _)| name.eq_ignore_ascii_case(tok)) {
+    let v = if let Some(&(_, n)) = names
+        .iter()
+        .find(|(name, _)| name.eq_ignore_ascii_case(tok))
+    {
         n
     } else {
-        tok.parse::<u8>().map_err(|_| anyhow::anyhow!("bad cron value {tok:?}"))?
+        tok.parse::<u8>()
+            .map_err(|_| anyhow::anyhow!("bad cron value {tok:?}"))?
     };
     if v < min || v > max {
         bail!("value {v} out of range {min}-{max}");

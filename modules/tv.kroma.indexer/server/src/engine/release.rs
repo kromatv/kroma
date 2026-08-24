@@ -82,8 +82,8 @@ pub fn parse_size(s: &str) -> Option<u64> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::test_support::{cat_def, cfg};
+    use super::*;
 
     #[test]
     fn size_parsing() {
@@ -92,7 +92,6 @@ mod tests {
         assert_eq!(parse_size("1,024 KB"), Some(1_048_576));
         assert_eq!(parse_size("2048"), Some(2048));
     }
-
 
     #[test]
     fn size_parsing_units_and_edge_cases() {
@@ -113,7 +112,6 @@ mod tests {
         assert_eq!(parse_int("none"), None);
         assert_eq!(parse_int(""), None);
     }
-
 
     #[test]
     fn to_release_maps_every_field() {
@@ -137,7 +135,10 @@ mod tests {
 
         let rel = to_release(&def, &cfg, &r);
         assert_eq!(rel.title, "Cool.Movie.2020.1080p");
-        assert_eq!(rel.details_url.as_deref(), Some("https://site.to/torrent/42"));
+        assert_eq!(
+            rel.details_url.as_deref(),
+            Some("https://site.to/torrent/42")
+        );
         assert_eq!(rel.link.as_deref(), Some("https://site.to/dl/42.torrent"));
         assert_eq!(rel.magnet, None);
         assert_eq!(rel.size_bytes, Some(1_610_612_736));
@@ -196,5 +197,4 @@ mod tests {
         let rel = to_release(&def, &cfg, &r);
         assert_eq!(rel.link.as_deref(), Some("https://cdn.example/x.torrent"));
     }
-
 }

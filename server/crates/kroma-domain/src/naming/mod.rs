@@ -133,15 +133,24 @@ mod tests {
     fn a_movie_with_no_year_anywhere_keeps_the_filename_title() {
         assert_eq!(
             p("/m", "/m/Movies/Inception.mkv"),
-            Parsed::Movie { title: "Inception".into(), year: None }
+            Parsed::Movie {
+                title: "Inception".into(),
+                year: None
+            }
         );
     }
 
     #[test]
     fn movie_in_year_folder() {
         assert_eq!(
-            p("/m", "/m/Blade Runner 2049 (2017)/Blade Runner 2049 (2017) 2160p BluRay x265.mkv"),
-            Parsed::Movie { title: "Blade Runner 2049".into(), year: Some(2017) }
+            p(
+                "/m",
+                "/m/Blade Runner 2049 (2017)/Blade Runner 2049 (2017) 2160p BluRay x265.mkv"
+            ),
+            Parsed::Movie {
+                title: "Blade Runner 2049".into(),
+                year: Some(2017)
+            }
         );
     }
 
@@ -149,7 +158,10 @@ mod tests {
     fn movie_flat_dotted() {
         assert_eq!(
             p("/m", "/m/The.Matrix.1999.1080p.BluRay.x264-GROUP.mp4"),
-            Parsed::Movie { title: "The Matrix".into(), year: Some(1999) }
+            Parsed::Movie {
+                title: "The Matrix".into(),
+                year: Some(1999)
+            }
         );
     }
 
@@ -157,14 +169,20 @@ mod tests {
     fn movie_title_from_folder_when_file_is_generic() {
         assert_eq!(
             p("/m", "/m/Inception (2010)/movie.mkv"),
-            Parsed::Movie { title: "Inception".into(), year: Some(2010) }
+            Parsed::Movie {
+                title: "Inception".into(),
+                year: Some(2010)
+            }
         );
     }
 
     #[test]
     fn episode_show_season_layout() {
         assert_eq!(
-            p("/tv", "/tv/The Office (2005)/Season 02/The Office - S02E01 - The Dundies.mkv"),
+            p(
+                "/tv",
+                "/tv/The Office (2005)/Season 02/The Office - S02E01 - The Dundies.mkv"
+            ),
             Parsed::Episode {
                 show_title: "The Office".into(),
                 show_year: Some(2005),
@@ -179,7 +197,12 @@ mod tests {
     #[test]
     fn episode_multi() {
         match p("/tv", "/tv/Show/Season 1/Show.S01E02-E03.mkv") {
-            Parsed::Episode { season, episode, episode_end, .. } => {
+            Parsed::Episode {
+                season,
+                episode,
+                episode_end,
+                ..
+            } => {
                 assert_eq!((season, episode, episode_end), (1, 2, Some(3)));
             }
             other => panic!("expected episode, got {other:?}"),
@@ -189,7 +212,12 @@ mod tests {
     #[test]
     fn episode_nxnn_flat() {
         match p("/tv", "/tv/Firefly - 1x02 - The Train Job.mkv") {
-            Parsed::Episode { show_title, season, episode, .. } => {
+            Parsed::Episode {
+                show_title,
+                season,
+                episode,
+                ..
+            } => {
                 assert_eq!((show_title.as_str(), season, episode), ("Firefly", 1, 2));
             }
             other => panic!("expected episode, got {other:?}"),
@@ -246,7 +274,10 @@ mod tests {
                 "/m",
                 "/m/The French Dispatch (2021)/The French Dispatch (2021) [EN+FR] Bluray-1080p.mkv"
             ),
-            Parsed::Movie { title: "The French Dispatch".into(), year: Some(2021) }
+            Parsed::Movie {
+                title: "The French Dispatch".into(),
+                year: Some(2021)
+            }
         );
     }
 }

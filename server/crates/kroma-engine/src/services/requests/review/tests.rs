@@ -2,9 +2,7 @@ use serde_json::json;
 
 use super::*;
 use crate::model::{Audience, NotificationEvent, RequestKind};
-use crate::services::requests::test_fixtures::{
-    episodes, movie_detail, param, show_detail,
-};
+use crate::services::requests::test_fixtures::{episodes, movie_detail, param, show_detail};
 use crate::services::requests::test_support::{
     insert_req, insert_req_by, seed_movie_item, status_of_req, test_host,
 };
@@ -13,7 +11,13 @@ use crate::test_support::FakeTmdb;
 #[test]
 fn deny_request_marks_denied_and_publishes() {
     let host = test_host();
-    insert_req(&host, "r1", RequestKind::Movie, 603, RequestStatus::Approved);
+    insert_req(
+        &host,
+        "r1",
+        RequestKind::Movie,
+        603,
+        RequestStatus::Approved,
+    );
     let denied = deny_request(&host, "r1", "mod", Some("nope")).unwrap();
     assert_eq!(denied.status, RequestStatus::Denied);
     assert_eq!(status_of_req(&host, "r1"), RequestStatus::Denied);
@@ -31,7 +35,10 @@ fn approve_request_on_denied_bails_without_network() {
     let host = test_host();
     insert_req(&host, "r1", RequestKind::Movie, 603, RequestStatus::Denied);
     let err = approve_request(&host, "r1", Some("mod")).unwrap_err();
-    assert!(err.to_string().contains("denied"), "unexpected error: {err}");
+    assert!(
+        err.to_string().contains("denied"),
+        "unexpected error: {err}"
+    );
     assert_eq!(status_of_req(&host, "r1"), RequestStatus::Denied);
 }
 
@@ -44,7 +51,14 @@ fn approve_request_unknown_request_errors() {
 #[test]
 fn denying_a_request_tells_its_author_where_to_look() {
     let host = test_host();
-    insert_req_by(&host, "r-deny", RequestKind::Movie, 42, RequestStatus::Pending, Some("u1"));
+    insert_req_by(
+        &host,
+        "r-deny",
+        RequestKind::Movie,
+        42,
+        RequestStatus::Pending,
+        Some("u1"),
+    );
     seed_movie_item(&host, "item-42", 42);
 
     let before = host.published().len();
@@ -57,14 +71,19 @@ fn denying_a_request_tells_its_author_where_to_look() {
     assert_eq!(sent.len(), 1);
     assert_eq!(sent[0].0, Audience::user("u1"));
     assert_eq!(sent[0].1.event, NotificationEvent::RequestDenied);
-    assert_eq!(param(&sent[0].1.params, "note").as_deref(), Some("duplicate"));
+    assert_eq!(
+        param(&sent[0].1.params, "note").as_deref(),
+        Some("duplicate")
+    );
     assert_eq!(sent[0].1.link.as_deref(), Some("/movie/item-42"));
 }
 
 #[test]
 fn denying_a_request_that_is_not_there_fails_instead_of_inventing_one() {
     let host = test_host();
-    let err = deny_request(&host, "nope", "mod-1", None).unwrap_err().to_string();
+    let err = deny_request(&host, "nope", "mod-1", None)
+        .unwrap_err()
+        .to_string();
     assert!(err.contains("not found"), "{err}");
     assert!(host.notifications().is_empty());
 }
@@ -73,10 +92,14 @@ fn denying_a_request_that_is_not_there_fails_instead_of_inventing_one() {
 fn approving_a_denied_request_is_refused_rather_than_silently_reopened() {
     let host = test_host();
     insert_req(&host, "r-x", RequestKind::Movie, 42, RequestStatus::Denied);
-    let err = approve_request(&host, "r-x", Some("mod-1")).unwrap_err().to_string();
+    let err = approve_request(&host, "r-x", Some("mod-1"))
+        .unwrap_err()
+        .to_string();
     assert!(err.contains("denied"), "{err}");
 
-    let err = approve_request(&host, "ghost", Some("mod-1")).unwrap_err().to_string();
+    let err = approve_request(&host, "ghost", Some("mod-1"))
+        .unwrap_err()
+        .to_string();
     assert!(err.contains("not found"), "{err}");
 }
 
@@ -89,7 +112,13 @@ fn approving_a_show_builds_one_wanted_row_per_episode_of_every_season() {
         "/tv/1396/season/2" => (200, episodes(&[1, 2], "2009-03-08")),
         _ => (404, json!({})),
     });
-    insert_req(&host, "r-show", RequestKind::Show, 1396, RequestStatus::Pending);
+    insert_req(
+        &host,
+        "r-show",
+        RequestKind::Show,
+        1396,
+        RequestStatus::Pending,
+    );
 
     approve_request(&host, "r-show", Some("mod-1")).unwrap();
 
@@ -97,9 +126,14 @@ fn approving_a_show_builds_one_wanted_row_per_episode_of_every_season() {
     let wanted = db::wanted_for_request(&conn, "r-show").unwrap();
     assert_eq!(wanted.len(), 5, "3 + 2 episodes");
     assert!(wanted.iter().all(|w| w.kind == "episode"));
-    let pairs: Vec<(u32, u32)> =
-        wanted.iter().filter_map(|w| Some((w.season?, w.episode?))).collect();
-    assert!(pairs.contains(&(1, 3)) && pairs.contains(&(2, 2)), "{pairs:?}");
+    let pairs: Vec<(u32, u32)> = wanted
+        .iter()
+        .filter_map(|w| Some((w.season?, w.episode?)))
+        .collect();
+    assert!(
+        pairs.contains(&(1, 3)) && pairs.contains(&(2, 2)),
+        "{pairs:?}"
+    );
 }
 
 #[test]
@@ -150,9 +184,17 @@ fn a_show_tmdb_lists_no_episodes_for_is_refused_rather_than_approved_empty() {
         "/tv/1396" => (200, show_detail("Breaking Bad", &[1])),
         _ => (200, json!({ "episodes": [] })),
     });
-    insert_req(&host, "r-empty", RequestKind::Show, 1396, RequestStatus::Pending);
+    insert_req(
+        &host,
+        "r-empty",
+        RequestKind::Show,
+        1396,
+        RequestStatus::Pending,
+    );
 
-    let err = approve_request(&host, "r-empty", Some("mod-1")).unwrap_err().to_string();
+    let err = approve_request(&host, "r-empty", Some("mod-1"))
+        .unwrap_err()
+        .to_string();
     assert!(err.contains("no episodes"), "{err}");
 }
 
@@ -160,7 +202,14 @@ fn a_show_tmdb_lists_no_episodes_for_is_refused_rather_than_approved_empty() {
 fn approving_tells_the_requester_and_kicks_the_search() {
     let host = test_host();
     let _tmdb = FakeTmdb::start(|_| (200, movie_detail("The Matrix", "1999-03-31")));
-    insert_req_by(&host, "r-1", RequestKind::Movie, 603, RequestStatus::Pending, Some("u1"));
+    insert_req_by(
+        &host,
+        "r-1",
+        RequestKind::Movie,
+        603,
+        RequestStatus::Pending,
+        Some("u1"),
+    );
 
     let approved = approve_request(&host, "r-1", Some("mod-1")).unwrap();
     assert_eq!(approved.status, RequestStatus::Approved);

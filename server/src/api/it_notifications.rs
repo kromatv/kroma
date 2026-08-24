@@ -12,8 +12,12 @@ use crate::api::test_support::{get, seed_session, send, test_app, TestApp};
 use crate::model::{Audience, NotificationEvent, NotificationSpec, Permission};
 
 fn member(t: &TestApp, tag: &str) -> (String, String) {
-    let (id, token) =
-        seed_session(&t.state, &format!("{tag}@test.dev"), tag, &[Permission::Playback]);
+    let (id, token) = seed_session(
+        &t.state,
+        &format!("{tag}@test.dev"),
+        tag,
+        &[Permission::Playback],
+    );
     (id, token)
 }
 
@@ -50,7 +54,11 @@ async fn the_inbox_returns_rendered_rows_with_image_link_and_actions() {
     let row = &body["notifications"][0];
     // Text arrives RENDERED, not as the stored i18n key.
     assert!(!row["title"].as_str().unwrap().starts_with("notifications."));
-    assert!(row["body"].as_str().unwrap().contains("Dune"), "body: {}", row["body"]);
+    assert!(
+        row["body"].as_str().unwrap().contains("Dune"),
+        "body: {}",
+        row["body"]
+    );
     assert_eq!(row["category"], json!("requests"));
     assert_eq!(row["event"], json!("request.available"));
     assert_eq!(row["link"], json!("/movie/ab12"));
@@ -62,7 +70,10 @@ async fn the_inbox_returns_rendered_rows_with_image_link_and_actions() {
     assert_eq!(action["kind"], json!("link"));
     assert_eq!(action["href"], json!("/watch/ab12"));
     assert_eq!(action["style"], json!("primary"));
-    assert!(!action["label"].as_str().unwrap().starts_with("notifications."));
+    assert!(!action["label"]
+        .as_str()
+        .unwrap()
+        .starts_with("notifications."));
 }
 
 #[tokio::test]
@@ -93,8 +104,14 @@ async fn marking_all_read_clears_the_badge() {
     notify_user(&t, &ana_id, "Dune");
     notify_user(&t, &ana_id, "Arrival");
 
-    let (status, body) = send(&t.app, "POST", "/api/notifications/read", Some(&ana), Some(json!({})))
-        .await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/notifications/read",
+        Some(&ana),
+        Some(json!({})),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["unread"], json!(0));
 
@@ -113,7 +130,10 @@ async fn marking_one_read_leaves_the_others_unread() {
     notify_user(&t, &ana_id, "Arrival");
 
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
-    let first = inbox["notifications"][0]["id"].as_str().unwrap().to_string();
+    let first = inbox["notifications"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     let (status, body) = send(
         &t.app,
@@ -135,7 +155,10 @@ async fn marking_read_cannot_reach_another_users_notification() {
     notify_user(&t, &ana_id, "Dune");
 
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
-    let ana_row = inbox["notifications"][0]["id"].as_str().unwrap().to_string();
+    let ana_row = inbox["notifications"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     // Bo names Ana's id explicitly. It must not mark it read.
     let (status, _) = send(
@@ -149,7 +172,11 @@ async fn marking_read_cannot_reach_another_users_notification() {
     assert_eq!(status, StatusCode::OK);
 
     let (_, ana_inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
-    assert_eq!(ana_inbox["unread"], json!(1), "Bo must not be able to read Ana's mail");
+    assert_eq!(
+        ana_inbox["unread"],
+        json!(1),
+        "Bo must not be able to read Ana's mail"
+    );
 }
 
 #[tokio::test]
@@ -158,10 +185,20 @@ async fn marking_one_unread_puts_it_back_in_the_badge() {
     let (ana_id, ana) = member(&t, "ana11");
     notify_user(&t, &ana_id, "Dune");
     notify_user(&t, &ana_id, "Arrival");
-    send(&t.app, "POST", "/api/notifications/read", Some(&ana), Some(json!({}))).await;
+    send(
+        &t.app,
+        "POST",
+        "/api/notifications/read",
+        Some(&ana),
+        Some(json!({})),
+    )
+    .await;
 
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
-    let first = inbox["notifications"][0]["id"].as_str().unwrap().to_string();
+    let first = inbox["notifications"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     let (status, body) = send(
         &t.app,
@@ -176,7 +213,11 @@ async fn marking_one_unread_puts_it_back_in_the_badge() {
 
     let (_, back) = get(&t.app, "/api/notifications", Some(&ana)).await;
     assert_eq!(back["unread"], json!(1));
-    let row = back["notifications"].as_array().unwrap().iter().find(|n| n["id"] == json!(first));
+    let row = back["notifications"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|n| n["id"] == json!(first));
     assert_eq!(row.unwrap()["read"], json!(false));
 }
 
@@ -191,7 +232,10 @@ async fn a_row_survives_being_walked_back_and_forth_across_a_refetch() {
     notify_user(&t, &ana_id, "Dune");
 
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
-    let id = inbox["notifications"][0]["id"].as_str().unwrap().to_string();
+    let id = inbox["notifications"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
     assert_eq!(inbox["notifications"][0]["read"], json!(false));
 
     for (route, read, unread) in [
@@ -199,8 +243,14 @@ async fn a_row_survives_being_walked_back_and_forth_across_a_refetch() {
         ("/api/notifications/unread", false, 1),
         ("/api/notifications/read", true, 0),
     ] {
-        let (status, _) =
-            send(&t.app, "POST", route, Some(&ana), Some(json!({ "ids": [id.clone()] }))).await;
+        let (status, _) = send(
+            &t.app,
+            "POST",
+            route,
+            Some(&ana),
+            Some(json!({ "ids": [id.clone()] })),
+        )
+        .await;
         assert_eq!(status, StatusCode::OK, "{route}");
 
         let (_, after) = get(&t.app, "/api/notifications", Some(&ana)).await;
@@ -215,10 +265,20 @@ async fn marking_unread_cannot_reach_another_users_notification() {
     let (ana_id, ana) = member(&t, "ana12");
     let (_bo_id, bo) = member(&t, "bo12");
     notify_user(&t, &ana_id, "Dune");
-    send(&t.app, "POST", "/api/notifications/read", Some(&ana), Some(json!({}))).await;
+    send(
+        &t.app,
+        "POST",
+        "/api/notifications/read",
+        Some(&ana),
+        Some(json!({})),
+    )
+    .await;
 
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
-    let ana_row = inbox["notifications"][0]["id"].as_str().unwrap().to_string();
+    let ana_row = inbox["notifications"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     let (status, _) = send(
         &t.app,
@@ -231,7 +291,11 @@ async fn marking_unread_cannot_reach_another_users_notification() {
     assert_eq!(status, StatusCode::OK);
 
     let (_, ana_inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
-    assert_eq!(ana_inbox["unread"], json!(0), "Bo must not be able to unread Ana's mail");
+    assert_eq!(
+        ana_inbox["unread"],
+        json!(0),
+        "Bo must not be able to unread Ana's mail"
+    );
 }
 
 #[tokio::test]
@@ -241,7 +305,14 @@ async fn a_list_longer_than_an_inbox_can_be_is_refused() {
     let ids: Vec<String> = (0..1_000).map(|n| format!("n{n}")).collect();
 
     for route in ["/api/notifications/read", "/api/notifications/unread"] {
-        let (status, _) = send(&t.app, "POST", route, Some(&ana), Some(json!({ "ids": ids }))).await;
+        let (status, _) = send(
+            &t.app,
+            "POST",
+            route,
+            Some(&ana),
+            Some(json!({ "ids": ids })),
+        )
+        .await;
         assert_eq!(status, StatusCode::BAD_REQUEST, "{route}");
     }
 }
@@ -254,18 +325,33 @@ async fn deleting_is_scoped_to_the_owner() {
     notify_user(&t, &ana_id, "Dune");
 
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
-    let id = inbox["notifications"][0]["id"].as_str().unwrap().to_string();
+    let id = inbox["notifications"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
 
     // Bo cannot delete it...
-    let (status, _) =
-        send(&t.app, "DELETE", &format!("/api/notifications/{id}"), Some(&bo), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/notifications/{id}"),
+        Some(&bo),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, still) = get(&t.app, "/api/notifications", Some(&ana)).await;
     assert_eq!(still["notifications"].as_array().unwrap().len(), 1);
 
     // ...but Ana can.
-    let (status, _) =
-        send(&t.app, "DELETE", &format!("/api/notifications/{id}"), Some(&ana), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/notifications/{id}"),
+        Some(&ana),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, gone) = get(&t.app, "/api/notifications", Some(&ana)).await;
     assert_eq!(gone["notifications"].as_array().unwrap().len(), 0);
@@ -280,7 +366,9 @@ async fn prefs_start_fully_on_and_round_trip_through_a_put() {
     assert_eq!(status, StatusCode::OK);
     let categories = body["categories"].as_array().unwrap();
     assert_eq!(categories.len(), 5);
-    assert!(categories.iter().all(|c| c["inApp"] == json!(true) && c["push"] == json!(true)));
+    assert!(categories
+        .iter()
+        .all(|c| c["inApp"] == json!(true) && c["push"] == json!(true)));
 
     let (status, body) = send(
         &t.app,
@@ -355,10 +443,20 @@ async fn the_report_lifecycle_notifies_both_sides_but_not_on_reopen() {
 
     let (_, owner_inbox) = get(&t.app, "/api/notifications", Some(&t.token)).await;
     assert_eq!(owner_inbox["unread"], json!(1));
-    assert_eq!(owner_inbox["notifications"][0]["event"], json!("report.submitted"));
-    assert_eq!(owner_inbox["notifications"][0]["link"], json!("/admin/reports"));
+    assert_eq!(
+        owner_inbox["notifications"][0]["event"],
+        json!("report.submitted")
+    );
+    assert_eq!(
+        owner_inbox["notifications"][0]["link"],
+        json!("/admin/reports")
+    );
     let (_, ana_inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
-    assert_eq!(ana_inbox["unread"], json!(0), "the reporter should not notify themselves");
+    assert_eq!(
+        ana_inbox["unread"],
+        json!(0),
+        "the reporter should not notify themselves"
+    );
 
     // Resolving tells the reporter, and deep-links to the title they reported.
     let (status, _) = send(
@@ -372,12 +470,24 @@ async fn the_report_lifecycle_notifies_both_sides_but_not_on_reopen() {
     assert_eq!(status, StatusCode::OK);
     let (_, ana_inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
     assert_eq!(ana_inbox["unread"], json!(1));
-    assert_eq!(ana_inbox["notifications"][0]["event"], json!("report.resolved"));
-    assert_eq!(ana_inbox["notifications"][0]["link"], json!(format!("/movie/{movie}")));
+    assert_eq!(
+        ana_inbox["notifications"][0]["event"],
+        json!("report.resolved")
+    );
+    assert_eq!(
+        ana_inbox["notifications"][0]["link"],
+        json!(format!("/movie/{movie}"))
+    );
 
     // Reopening is moderator churn: the reporter hears nothing new.
-    send(&t.app, "POST", &format!("/api/admin/reports/{report_id}/reopen"), Some(&t.token), None)
-        .await;
+    send(
+        &t.app,
+        "POST",
+        &format!("/api/admin/reports/{report_id}/reopen"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     let (_, ana_inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
     assert_eq!(ana_inbox["unread"], json!(1), "a reopen must not re-notify");
 }
@@ -408,7 +518,11 @@ async fn the_vapid_key_is_minted_on_demand_and_then_stays_put() {
     // An uncompressed P-256 point is 65 bytes; anything else and no browser
     // will accept it as an applicationServerKey.
     let raw = base64_url_decode(&key);
-    assert_eq!(raw.len(), 65, "applicationServerKey must be a 65-byte point");
+    assert_eq!(
+        raw.len(),
+        65,
+        "applicationServerKey must be a 65-byte point"
+    );
     assert_eq!(raw[0], 0x04, "and uncompressed");
 
     // Stable across calls: re-minting would silently break every existing
@@ -423,7 +537,9 @@ fn base64_url_decode(s: &str) -> Vec<u8> {
     let mut acc: u32 = 0;
     let mut bits = 0;
     for c in s.bytes() {
-        let Some(v) = ALPHABET.iter().position(|&a| a == c) else { continue };
+        let Some(v) = ALPHABET.iter().position(|&a| a == c) else {
+            continue;
+        };
         acc = (acc << 6) | v as u32;
         bits += 6;
         if bits >= 8 {
@@ -460,13 +576,26 @@ async fn re_subscribing_the_same_browser_does_not_duplicate_it() {
     let sub = subscription("https://push.example/wpush/v2/same");
 
     for _ in 0..3 {
-        let (status, _) =
-            send(&t.app, "POST", "/api/push/subscribe", Some(&ana), Some(sub.clone())).await;
+        let (status, _) = send(
+            &t.app,
+            "POST",
+            "/api/push/subscribe",
+            Some(&ana),
+            Some(sub.clone()),
+        )
+        .await;
         assert_eq!(status, StatusCode::NO_CONTENT);
     }
 
     // One endpoint, one row so one push, not three.
-    let (_, body) = send(&t.app, "POST", "/api/push/test", Some(&ana), Some(json!({}))).await;
+    let (_, body) = send(
+        &t.app,
+        "POST",
+        "/api/push/test",
+        Some(&ana),
+        Some(json!({})),
+    )
+    .await;
     // Delivery itself fails (push.example does not exist), but the count proves
     // exactly one endpoint was attempted rather than three.
     assert_eq!(body["delivered"], json!(0));
@@ -479,7 +608,14 @@ async fn unsubscribing_removes_only_the_callers_endpoint() {
     let (_id2, bo) = member(&t, "push5");
     let endpoint = "https://push.example/wpush/v2/shared-string";
 
-    send(&t.app, "POST", "/api/push/subscribe", Some(&ana), Some(subscription(endpoint))).await;
+    send(
+        &t.app,
+        "POST",
+        "/api/push/subscribe",
+        Some(&ana),
+        Some(subscription(endpoint)),
+    )
+    .await;
     // Bo naming Ana's endpoint must not silence her device.
     let (status, _) = send(
         &t.app,
@@ -491,7 +627,11 @@ async fn unsubscribing_removes_only_the_callers_endpoint() {
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, key) = get(&t.app, "/api/push/key", Some(&ana)).await;
-    assert_eq!(key["subscribed"], json!(true), "Bo must not be able to unsubscribe Ana");
+    assert_eq!(
+        key["subscribed"],
+        json!(true),
+        "Bo must not be able to unsubscribe Ana"
+    );
 
     // Ana can.
     send(
@@ -509,9 +649,11 @@ async fn unsubscribing_removes_only_the_callers_endpoint() {
 #[tokio::test]
 async fn the_push_endpoints_require_a_session() {
     let t = test_app();
-    for (method, path) in
-        [("GET", "/api/push/key"), ("POST", "/api/push/subscribe"), ("POST", "/api/push/test")]
-    {
+    for (method, path) in [
+        ("GET", "/api/push/key"),
+        ("POST", "/api/push/subscribe"),
+        ("POST", "/api/push/test"),
+    ] {
         let (status, _) = send(&t.app, method, path, None, Some(json!({}))).await;
         assert_eq!(status, StatusCode::UNAUTHORIZED, "{method} {path}");
     }
@@ -521,8 +663,14 @@ async fn the_push_endpoints_require_a_session() {
 async fn a_test_push_with_no_devices_reports_zero_rather_than_failing() {
     let t = test_app();
     let (_id, ana) = member(&t, "push6");
-    let (status, body) =
-        send(&t.app, "POST", "/api/push/test", Some(&ana), Some(json!({}))).await;
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/push/test",
+        Some(&ana),
+        Some(json!({})),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["delivered"], json!(0));
 }
@@ -530,8 +678,12 @@ async fn a_test_push_with_no_devices_reports_zero_rather_than_failing() {
 #[tokio::test]
 async fn a_moderator_audience_reaches_the_capability_holder_only() {
     let t = test_app();
-    let (_mod_id, moderator) =
-        seed_session(&t.state, "mod@test.dev", "mod", &[Permission::RequestsManage]);
+    let (_mod_id, moderator) = seed_session(
+        &t.state,
+        "mod@test.dev",
+        "mod",
+        &[Permission::RequestsManage],
+    );
     let (_plain_id, plain) = member(&t, "plain9");
 
     let spec = NotificationSpec::new(
@@ -609,7 +761,10 @@ async fn the_bench_refuses_a_notification_the_relay_would_reject() {
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert!(body["error"].as_str().unwrap_or_default().contains("title"), "{body}");
+    assert!(
+        body["error"].as_str().unwrap_or_default().contains("title"),
+        "{body}"
+    );
 
     let (status, _) = send(
         &t.app,
@@ -742,7 +897,10 @@ async fn the_sample_catalogue_holds_one_rendered_row_per_event_the_server_can_se
     assert_eq!(status, StatusCode::OK);
     let events = body["events"].as_array().unwrap();
 
-    let ids: Vec<&str> = events.iter().map(|e| e["event"].as_str().unwrap()).collect();
+    let ids: Vec<&str> = events
+        .iter()
+        .map(|e| e["event"].as_str().unwrap())
+        .collect();
     let expected: Vec<&str> = NotificationEvent::ALL.iter().map(|e| e.as_str()).collect();
     assert_eq!(ids, expected);
     assert_eq!(events[0]["id"], json!("request.submitted"));
@@ -750,12 +908,24 @@ async fn the_sample_catalogue_holds_one_rendered_row_per_event_the_server_can_se
     for row in events {
         let title = row["title"].as_str().unwrap();
         let text = row["body"].as_str().unwrap();
-        assert!(!title.is_empty() && !title.starts_with("notifications."), "{row}");
-        assert!(!text.is_empty() && !text.starts_with("notifications."), "{row}");
+        assert!(
+            !title.is_empty() && !title.starts_with("notifications."),
+            "{row}"
+        );
+        assert!(
+            !text.is_empty() && !text.starts_with("notifications."),
+            "{row}"
+        );
         assert_eq!(row["read"], json!(false));
         for action in row["actions"].as_array().unwrap() {
             assert_eq!(action["kind"], json!("link"), "{action}");
-            assert!(!action["label"].as_str().unwrap().starts_with("notifications."), "{action}");
+            assert!(
+                !action["label"]
+                    .as_str()
+                    .unwrap()
+                    .starts_with("notifications."),
+                "{action}"
+            );
         }
     }
 
@@ -782,8 +952,12 @@ async fn the_sample_catalogue_is_closed_to_anyone_who_cannot_manage_the_server()
 async fn the_bench_reaches_the_admins_without_touching_a_plain_account() {
     let t = test_app();
     let (_id, plain) = member(&t, "not-an-admin");
-    let (_mod_id, moderator) =
-        seed_session(&t.state, "settings-mod@test.dev", "settings-mod", &[Permission::SettingsManage]);
+    let (_mod_id, moderator) = seed_session(
+        &t.state,
+        "settings-mod@test.dev",
+        "settings-mod",
+        &[Permission::SettingsManage],
+    );
 
     let (status, body) = send(
         &t.app,
@@ -824,7 +998,10 @@ async fn a_written_notification_carries_the_image_the_admin_attached() {
 
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&t.token)).await;
     let row = &inbox["notifications"][0];
-    assert_eq!(row["imageUrl"], json!("/api/images/notif-aaaaaaaaaaaaaaaa-w1280.webp"));
+    assert_eq!(
+        row["imageUrl"],
+        json!("/api/images/notif-aaaaaaaaaaaaaaaa-w1280.webp")
+    );
     assert_eq!(row["link"], json!("/"));
 }
 
@@ -838,11 +1015,19 @@ async fn the_bench_refuses_a_link_or_an_image_url_the_relay_would_reject() {
             "POST",
             "/api/admin/notifications",
             Some(&t.token),
-            Some(json!({ "title": "Fine", field: format!("/{}", "x".repeat(4096)), "target": "me" })),
+            Some(
+                json!({ "title": "Fine", field: format!("/{}", "x".repeat(4096)), "target": "me" }),
+            ),
         )
         .await;
         assert_eq!(status, StatusCode::BAD_REQUEST, "{field}");
-        assert!(body["error"].as_str().unwrap_or_default().contains("too long"), "{body}");
+        assert!(
+            body["error"]
+                .as_str()
+                .unwrap_or_default()
+                .contains("too long"),
+            "{body}"
+        );
     }
 
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&t.token)).await;

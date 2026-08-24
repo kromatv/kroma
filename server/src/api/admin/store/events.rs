@@ -18,7 +18,10 @@ pub struct Op {
 
 impl Op {
     pub fn begin(state: &SharedState, kind: &str, requested: &str, modules: Value) -> Self {
-        let op = Self { state: state.clone(), id: random_token() };
+        let op = Self {
+            state: state.clone(),
+            id: random_token(),
+        };
         op.publish(json!({
             "type": "module.op.started",
             "op": op.id,
@@ -97,7 +100,12 @@ mod tests {
         let t = test_app();
         let mut rx = t.state.events.subscribe();
 
-        let op = Op::begin(&t.state, "install", "tv.x.app", json!([{ "id": "tv.x.app" }]));
+        let op = Op::begin(
+            &t.state,
+            "install",
+            "tv.x.app",
+            json!([{ "id": "tv.x.app" }]),
+        );
         op.download("tv.x.app", 512, Some(2048));
         op.installing("tv.x.app");
         op.done("tv.x.app", "1.0.0");
@@ -116,7 +124,10 @@ mod tests {
             ]
         );
         assert!(!op.id().is_empty());
-        assert!(frames.iter().all(|f| f["op"] == json!(op.id())), "{frames:?}");
+        assert!(
+            frames.iter().all(|f| f["op"] == json!(op.id())),
+            "{frames:?}"
+        );
 
         assert_eq!(frames[0]["kind"], json!("install"));
         assert_eq!(frames[0]["requested"], json!("tv.x.app"));

@@ -31,7 +31,9 @@ pub fn record_play(
         "INSERT INTO play_history \
          (id,user_id,username,item_id,kind,title,library,started_at,ended_at,watched_ms) \
          VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
-        params![id, user_id, username, item_id, kind, title, library, started_at, ended_at, watched_ms],
+        params![
+            id, user_id, username, item_id, kind, title, library, started_at, ended_at, watched_ms
+        ],
     )?;
     Ok(())
 }
@@ -83,9 +85,45 @@ mod tests {
     #[test]
     fn play_history_aggregates() {
         let p = pool();
-        record_play(&p, Some("u1"), Some("alice"), Some("m1"), "movie", "Dune", Some("lib"), 0, 100, 60_000).unwrap();
-        record_play(&p, Some("u1"), Some("alice"), Some("m2"), "episode", "Ep", Some("lib"), 0, 200, 30_000).unwrap();
-        record_play(&p, Some("u2"), Some("bob"), Some("m1"), "movie", "Dune", Some("lib"), 0, 150, 10_000).unwrap();
+        record_play(
+            &p,
+            Some("u1"),
+            Some("alice"),
+            Some("m1"),
+            "movie",
+            "Dune",
+            Some("lib"),
+            0,
+            100,
+            60_000,
+        )
+        .unwrap();
+        record_play(
+            &p,
+            Some("u1"),
+            Some("alice"),
+            Some("m2"),
+            "episode",
+            "Ep",
+            Some("lib"),
+            0,
+            200,
+            30_000,
+        )
+        .unwrap();
+        record_play(
+            &p,
+            Some("u2"),
+            Some("bob"),
+            Some("m1"),
+            "movie",
+            "Dune",
+            Some("lib"),
+            0,
+            150,
+            10_000,
+        )
+        .unwrap();
 
         let top = top_users(&p, 0, 10).unwrap();
         assert_eq!(top.len(), 2);

@@ -50,7 +50,8 @@ pub fn cluster(pool: &Pool, vectors: &VectorCache, watched: &[String], k: usize)
 
     let all_ids: Vec<&str> = vecs.iter().map(|(id, _)| id.as_str()).collect();
     let items = db::items_by_ids(pool, &all_ids).unwrap_or_default();
-    let meta: HashMap<&str, &crate::model::MediaItem> = items.iter().map(|it| (it.id.as_str(), it)).collect();
+    let meta: HashMap<&str, &crate::model::MediaItem> =
+        items.iter().map(|it| (it.id.as_str(), it)).collect();
 
     let mut clusters = Vec::new();
     for members in groups {
@@ -58,9 +59,16 @@ pub fn cluster(pool: &Pool, vectors: &VectorCache, watched: &[String], k: usize)
             continue;
         }
         // Centroid + order members nearest-first for representative picks.
-        let centroid = mean(&members.iter().map(|&i| vecs[i].1.as_slice()).collect::<Vec<_>>());
-        let mut ranked: Vec<(usize, f32)> =
-            members.iter().map(|&i| (i, dot(&centroid, &vecs[i].1))).collect();
+        let centroid = mean(
+            &members
+                .iter()
+                .map(|&i| vecs[i].1.as_slice())
+                .collect::<Vec<_>>(),
+        );
+        let mut ranked: Vec<(usize, f32)> = members
+            .iter()
+            .map(|&i| (i, dot(&centroid, &vecs[i].1)))
+            .collect();
         ranked.sort_by(|a, b| b.1.total_cmp(&a.1));
 
         let ids: Vec<String> = ranked.iter().map(|&(i, _)| vecs[i].0.clone()).collect();
@@ -70,14 +78,22 @@ pub fn cluster(pool: &Pool, vectors: &VectorCache, watched: &[String], k: usize)
             .take(6)
             .collect();
         let (genres, keywords) = aggregate_tags(&ids, &meta);
-        clusters.push(Cluster { ids, titles, genres, keywords });
+        clusters.push(Cluster {
+            ids,
+            titles,
+            genres,
+            keywords,
+        });
     }
     clusters.sort_by_key(|b| std::cmp::Reverse(b.ids.len()));
     clusters
 }
 
 // Tally genres + keywords across a cluster's members; most-common first.
-fn aggregate_tags(ids: &[String], meta: &HashMap<&str, &crate::model::MediaItem>) -> (Vec<String>, Vec<String>) {
+fn aggregate_tags(
+    ids: &[String],
+    meta: &HashMap<&str, &crate::model::MediaItem>,
+) -> (Vec<String>, Vec<String>) {
     let mut genres: HashMap<String, usize> = HashMap::new();
     let mut keywords: HashMap<String, usize> = HashMap::new();
     for id in ids {
@@ -107,8 +123,7 @@ const KMEANS_ITERS: usize = 12;
 fn kmeans(vecs: &[(String, Vec<f32>)], k: usize) -> Vec<usize> {
     let n = vecs.len();
     let dim = vecs[0].1.len();
-    let mut centroids: Vec<Vec<f32>> =
-        (0..k).map(|c| vecs[(c * n) / k].1.clone()).collect();
+    let mut centroids: Vec<Vec<f32>> = (0..k).map(|c| vecs[(c * n) / k].1.clone()).collect();
 
     let mut assign = vec![0usize; n];
     for _ in 0..KMEANS_ITERS {
@@ -259,7 +274,7 @@ mod tests {
     fn cluster_empty_when_too_little_history() {
         let pool = test_pool();
         let cache = VectorCache::new(); // no embeddings loaded
-        // No watched ids, and even if there were the cache is empty -> below MIN_WATCHED.
+                                        // No watched ids, and even if there were the cache is empty -> below MIN_WATCHED.
         assert!(cluster(&pool, &cache, &[], 3).is_empty());
         let watched: Vec<String> = (0..3).map(|i| format!("id{i}")).collect();
         assert!(cluster(&pool, &cache, &watched, 3).is_empty());
@@ -318,7 +333,10 @@ mod tests {
     }
 
     fn watched() -> Vec<String> {
-        ["a1", "a2", "a3", "b1", "b2", "b3", "b4"].iter().map(|s| s.to_string()).collect()
+        ["a1", "a2", "a3", "b1", "b2", "b3", "b4"]
+            .iter()
+            .map(|s| s.to_string())
+            .collect()
     }
 
     #[test]
@@ -360,12 +378,26 @@ mod tests {
         assert_eq!(clusters[0].ids.len(), 4);
         assert_eq!(clusters[1].ids.len(), 3);
         // Each group is coherent: no comedy landed among the thrillers.
-        assert!(clusters[0].ids.iter().all(|id| id.starts_with('b')), "{:?}", clusters[0].ids);
-        assert!(clusters[1].ids.iter().all(|id| id.starts_with('a')), "{:?}", clusters[1].ids);
+        assert!(
+            clusters[0].ids.iter().all(|id| id.starts_with('b')),
+            "{:?}",
+            clusters[0].ids
+        );
+        assert!(
+            clusters[1].ids.iter().all(|id| id.starts_with('a')),
+            "{:?}",
+            clusters[1].ids
+        );
         // ...and each is summarized by its own dominant genre, which is what the
         // LLM gets to name it from.
-        assert_eq!(clusters[0].genres.first().map(String::as_str), Some("Thriller"));
-        assert_eq!(clusters[1].genres.first().map(String::as_str), Some("Comedy"));
+        assert_eq!(
+            clusters[0].genres.first().map(String::as_str),
+            Some("Thriller")
+        );
+        assert_eq!(
+            clusters[1].genres.first().map(String::as_str),
+            Some("Comedy")
+        );
         assert_eq!(clusters[0].titles.len(), 4);
         assert!(clusters[0].titles.contains(&"Heat".to_string()));
     }
@@ -437,11 +469,17 @@ mod tests {
         let stored = crate::db::items_by_ids(&state.db, &["a1"]).unwrap();
         let round_tripped = stored[0].metadata.as_ref().unwrap();
         assert_eq!(round_tripped.genres, ["Comedy"], "genres do survive");
-        assert!(round_tripped.keywords.is_empty(), "keywords came back from the column");
+        assert!(
+            round_tripped.keywords.is_empty(),
+            "keywords came back from the column"
+        );
 
         let cache = warm_cache(&state);
         let clusters = cluster(&state.db, &cache, &watched(), 2);
-        let a1_group = clusters.iter().find(|c| c.ids.iter().any(|id| id == "a1")).unwrap();
+        let a1_group = clusters
+            .iter()
+            .find(|c| c.ids.iter().any(|id| id == "a1"))
+            .unwrap();
         assert!(!a1_group.genres.is_empty());
         assert!(a1_group.keywords.iter().all(|k| k != "heist"));
     }

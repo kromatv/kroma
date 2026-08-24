@@ -13,14 +13,25 @@ use super::wanted::materialize_wanted;
 #[cfg(test)]
 mod tests;
 
-pub fn approve_request<S: HostStorage>(state: &S, id: &str, reviewer: Option<&str>) -> Result<MediaRequest> {
+pub fn approve_request<S: HostStorage>(
+    state: &S,
+    id: &str,
+    reviewer: Option<&str>,
+) -> Result<MediaRequest> {
     let conn = state.db().get()?;
     let req = db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request not found"))?;
     drop(conn);
     if matches!(req.status, RequestStatus::Denied) {
         bail!("request was denied; delete it and ask again");
     }
-    db::set_request_status(state.db(), id, RequestStatus::Approved, reviewer, None, now_ms())?;
+    db::set_request_status(
+        state.db(),
+        id,
+        RequestStatus::Approved,
+        reviewer,
+        None,
+        now_ms(),
+    )?;
     materialize_wanted(state, id)?;
     let status = match_one(state, id)?.unwrap_or(RequestStatus::Approved);
     publish(state, id, status);
@@ -31,9 +42,20 @@ pub fn approve_request<S: HostStorage>(state: &S, id: &str, reviewer: Option<&st
     db::get_request(&conn, id)?.ok_or_else(|| anyhow!("request vanished after approve"))
 }
 
-pub fn deny_request<S: HostStorage>(state: &S, id: &str, reviewer: &str, note: Option<&str>) -> Result<MediaRequest> {
-    let changed =
-        db::set_request_status(state.db(), id, RequestStatus::Denied, Some(reviewer), note, now_ms())?;
+pub fn deny_request<S: HostStorage>(
+    state: &S,
+    id: &str,
+    reviewer: &str,
+    note: Option<&str>,
+) -> Result<MediaRequest> {
+    let changed = db::set_request_status(
+        state.db(),
+        id,
+        RequestStatus::Denied,
+        Some(reviewer),
+        note,
+        now_ms(),
+    )?;
     if !changed {
         bail!("request not found");
     }

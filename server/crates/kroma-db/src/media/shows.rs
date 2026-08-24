@@ -69,7 +69,8 @@ pub fn list_shows(pool: &Pool, library: Option<&str>) -> Result<Vec<Show>> {
         stmt.query_map(params![library.unwrap()], row_to_show_counted)?
             .collect::<rusqlite::Result<Vec<_>>>()?
     } else {
-        stmt.query_map([], row_to_show_counted)?.collect::<rusqlite::Result<Vec<_>>>()?
+        stmt.query_map([], row_to_show_counted)?
+            .collect::<rusqlite::Result<Vec<_>>>()?
     };
 
     apply_representative_videos(&conn, &mut shows)?;
@@ -87,7 +88,10 @@ pub fn get_shows_by_ids(pool: &Pool, ids: &[String]) -> Result<Vec<Show>> {
         let placeholders = vec!["?"; chunk.len()].join(",");
         let sql = format!("{SHOWS_COUNTED_SELECT} WHERE s.id IN ({placeholders})");
         let mut stmt = conn.prepare(&sql)?;
-        let rows = stmt.query_map(rusqlite::params_from_iter(chunk.iter()), row_to_show_counted)?;
+        let rows = stmt.query_map(
+            rusqlite::params_from_iter(chunk.iter()),
+            row_to_show_counted,
+        )?;
         for show in rows {
             shows.push(show?);
         }
@@ -98,7 +102,10 @@ pub fn get_shows_by_ids(pool: &Pool, ids: &[String]) -> Result<Vec<Show>> {
 
 // Rows arrive widest-first, so the first row seen per show wins exactly the
 // per-show `ORDER BY v_width DESC LIMIT 1` the single-show query does.
-pub(super) fn apply_representative_videos(conn: &rusqlite::Connection, shows: &mut [Show]) -> Result<()> {
+pub(super) fn apply_representative_videos(
+    conn: &rusqlite::Connection,
+    shows: &mut [Show],
+) -> Result<()> {
     if shows.is_empty() {
         return Ok(());
     }
@@ -127,7 +134,10 @@ pub(super) fn apply_representative_videos(conn: &rusqlite::Connection, shows: &m
     Ok(())
 }
 
-pub(super) fn representative_video(conn: &rusqlite::Connection, show_id: &str) -> Result<Option<VideoStream>> {
+pub(super) fn representative_video(
+    conn: &rusqlite::Connection,
+    show_id: &str,
+) -> Result<Option<VideoStream>> {
     let mut stmt = conn.prepare(
         "SELECT f.v_codec,f.v_width,f.v_height,f.v_hdr,f.v_bit_depth \
          FROM files f JOIN items i ON f.item_id = i.id \

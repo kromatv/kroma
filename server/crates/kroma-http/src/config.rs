@@ -24,8 +24,10 @@ pub(crate) fn option_line(name: &str, value: &str) -> String {
 // RFC 9110 §5.5 forbids CR and LF in a field value, and curl forwards whatever
 // it is handed, so a value carrying one would split the request in two.
 pub(crate) fn header_line(name: &str, value: &str) -> String {
-    let field: String =
-        format!("{name}: {value}").chars().filter(|c| !matches!(c, '\r' | '\n')).collect();
+    let field: String = format!("{name}: {value}")
+        .chars()
+        .filter(|c| !matches!(c, '\r' | '\n'))
+        .collect();
     option_line("header", &field)
 }
 
@@ -35,8 +37,14 @@ mod tests {
 
     #[test]
     fn a_config_value_escapes_what_would_end_the_option() {
-        assert_eq!(option_line("header", r#"X: a"b"#), "header = \"X: a\\\"b\"\n");
+        assert_eq!(
+            option_line("header", r#"X: a"b"#),
+            "header = \"X: a\\\"b\"\n"
+        );
         assert_eq!(option_line("header", r"X: a\b"), "header = \"X: a\\\\b\"\n");
-        assert_eq!(option_line("url", "a\nb\r\tc\u{b}d"), "url = \"a\\nb\\r\\tc\\vd\"\n");
+        assert_eq!(
+            option_line("url", "a\nb\r\tc\u{b}d"),
+            "url = \"a\\nb\\r\\tc\\vd\"\n"
+        );
     }
 }

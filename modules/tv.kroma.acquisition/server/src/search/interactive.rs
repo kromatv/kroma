@@ -5,11 +5,11 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 
+use crate::peers::indexers::{IndexerRef, Release};
 use anyhow::{anyhow, Result};
 use kroma_module_sdk::db;
 use kroma_module_sdk::engine::services::requests::today_ymd;
 use kroma_module_sdk::host::HostStorage;
-use crate::peers::indexers::{IndexerRef, Release};
 use kroma_scene::{Candidate, Profile};
 
 use crate::dtos::{InteractiveSearchView, ScoreLineView, ScoredReleaseView};
@@ -17,8 +17,8 @@ use crate::search::targets::{targets_for_scope, SearchScope, SearchTarget};
 
 mod grab;
 
-use grab::is_upgrade;
 pub use grab::grab_cached;
+use grab::is_upgrade;
 
 /// A release remembered from the last interactive search of a request, so a
 /// manual grab can reuse its magnet/.torrent link without a re-sweep.
@@ -49,7 +49,9 @@ pub fn cached_release(
         .as_ref()
         .and_then(|m| m.get(&cache_key(request_id, scope)))
         .and_then(|list| {
-            list.iter().find(|c| c.view.guid == guid && c.view.indexer_id == indexer_id).cloned()
+            list.iter()
+                .find(|c| c.view.guid == guid && c.view.indexer_id == indexer_id)
+                .cloned()
         })
 }
 
@@ -76,13 +78,16 @@ pub fn score_release(
         indexer_priority: indexer.priority,
     };
     let (score, breakdown, rejected) =
-        match kroma_scene::score(&parsed, &candidate, &st.target, profile, &release.title)
-        {
+        match kroma_scene::score(&parsed, &candidate, &st.target, profile, &release.title) {
             Ok(s) => (
                 Some(s.score),
                 s.breakdown
                     .into_iter()
-                    .map(|l| ScoreLineView { rule: l.rule, delta: l.delta, note: l.note })
+                    .map(|l| ScoreLineView {
+                        rule: l.rule,
+                        delta: l.delta,
+                        note: l.note,
+                    })
                     .collect(),
                 None,
             ),
@@ -127,7 +132,9 @@ pub fn interactive_search<S: HostStorage>(
     let indexers = crate::peers::indexers::enabled(state)?;
     drop(conn);
     if indexers.is_empty() {
-        return Err(anyhow!("no enabled indexer; add one under Admin > Indexeurs"));
+        return Err(anyhow!(
+            "no enabled indexer; add one under Admin > Indexeurs"
+        ));
     }
     // A pending request has no ledger yet: search as if it were approved, so a
     // moderator can look before green-lighting.
@@ -182,7 +189,10 @@ pub fn interactive_search<S: HostStorage>(
         "interactive search done",
     );
     cache_results(&req.id, scope, cached);
-    Ok(InteractiveSearchView { releases, indexers: indexer_reports })
+    Ok(InteractiveSearchView {
+        releases,
+        indexers: indexer_reports,
+    })
 }
 
 // A season the request does not cover is still worth searching: from the ledger
@@ -196,7 +206,9 @@ fn rows_outside_request<S: HostStorage>(
     wanted: &[db::WantedRow],
     scope: SearchScope,
 ) -> Result<Vec<db::WantedRow>> {
-    let Some(season) = scope.season() else { return Ok(Vec::new()) };
+    let Some(season) = scope.season() else {
+        return Ok(Vec::new());
+    };
     if wanted.iter().any(|w| w.season == Some(season)) {
         return Ok(Vec::new());
     }
@@ -237,19 +249,28 @@ fn collect_search_hits<S: HostStorage>(
         Ok(found)
     });
 
-    let by_id: HashMap<&str, &IndexerRef> =
-        indexers.iter().map(|i| (i.id.as_str(), i)).collect();
+    let by_id: HashMap<&str, &IndexerRef> = indexers.iter().map(|i| (i.id.as_str(), i)).collect();
     let mut seen: HashSet<(String, String)> = HashSet::new();
     let mut cached: Vec<CachedRelease> = Vec::new();
     for hit in hits {
-        let Some(indexer) = by_id.get(hit.indexer_id.as_str()) else { continue };
+        let Some(indexer) = by_id.get(hit.indexer_id.as_str()) else {
+            continue;
+        };
         if !seen.insert((hit.indexer_id.clone(), hit.release.guid.clone())) {
             continue;
         }
         let view = score_release(&hit.release, indexer, &targets[hit.target], profile);
-        let magnet_or_url =
-            hit.release.magnet.clone().or_else(|| hit.release.link.clone()).unwrap_or_default();
-        cached.push(CachedRelease { view, magnet_or_url, tmdb_id });
+        let magnet_or_url = hit
+            .release
+            .magnet
+            .clone()
+            .or_else(|| hit.release.link.clone())
+            .unwrap_or_default();
+        cached.push(CachedRelease {
+            view,
+            magnet_or_url,
+            tmdb_id,
+        });
     }
     (cached, reports)
 }
@@ -289,7 +310,10 @@ mod tests {
                 season: 1,
                 episode: 1,
             },
-            target: Target::Episode { season: 1, episode: 1 },
+            target: Target::Episode {
+                season: 1,
+                episode: 1,
+            },
             kind: "episode",
             season: Some(1),
             episodes: Some(vec![1]),
@@ -313,7 +337,13 @@ mod tests {
     #[test]
     fn two_scopes_of_one_request_do_not_share_a_cache_slot() {
         let a = cache_key("r1", SearchScope::Season { season: 1 });
-        let b = cache_key("r1", SearchScope::Episode { season: 1, episode: 1 });
+        let b = cache_key(
+            "r1",
+            SearchScope::Episode {
+                season: 1,
+                episode: 1,
+            },
+        );
         assert_ne!(a, b);
         assert_ne!(a, cache_key("r2", SearchScope::Season { season: 1 }));
     }
@@ -328,12 +358,18 @@ mod tests {
         );
         assert_eq!(view.indexer_id, "idx1");
         assert_eq!(view.indexer_name, "Tracker");
-        assert_eq!(view.target, "episode", "what a grab of it would be filed as");
+        assert_eq!(
+            view.target, "episode",
+            "what a grab of it would be filed as"
+        );
         assert_eq!(view.season, Some(1));
         assert_eq!(view.episodes, Some(vec![1]));
         assert!(view.score.is_some(), "accepted, so it has a rank");
         assert!(view.rejected.is_none());
-        assert!(!view.breakdown.is_empty(), "and the reasons behind that rank");
+        assert!(
+            !view.breakdown.is_empty(),
+            "and the reasons behind that rank"
+        );
         assert!(view.grabbable);
         assert!(!view.upgrade, "decided later, against the real ledger");
     }
@@ -342,10 +378,20 @@ mod tests {
     fn a_release_the_profile_refuses_keeps_its_reason_instead_of_a_score() {
         // Under the seeder floor: shown anyway, because "why was this rejected"
         // is the question the table exists to answer.
-        let view = score_release(&release("Show.S01E01.1080p", Some(0)), &indexer(0), &target(), &profile());
+        let view = score_release(
+            &release("Show.S01E01.1080p", Some(0)),
+            &indexer(0),
+            &target(),
+            &profile(),
+        );
         assert!(view.score.is_none());
-        let reason = view.rejected.expect("a rejected release says which rule fired");
-        assert!(reason.contains(':'), "rule and note, not a bare word: {reason}");
+        let reason = view
+            .rejected
+            .expect("a rejected release says which rule fired");
+        assert!(
+            reason.contains(':'),
+            "rule and note, not a bare word: {reason}"
+        );
         assert!(view.breakdown.is_empty());
     }
 
@@ -368,16 +414,31 @@ mod tests {
 
     #[test]
     fn the_cache_hands_a_grab_back_the_release_the_search_showed() {
-        let scope = SearchScope::Episode { season: 4, episode: 2 };
-        let view = score_release(&release("Show.S04E02.1080p", Some(9)), &indexer(0), &target(), &profile());
+        let scope = SearchScope::Episode {
+            season: 4,
+            episode: 2,
+        };
+        let view = score_release(
+            &release("Show.S04E02.1080p", Some(9)),
+            &indexer(0),
+            &target(),
+            &profile(),
+        );
         cache_results(
             "req-cache",
             scope,
-            vec![CachedRelease { view, magnet_or_url: "magnet:?xt=2".into(), tmdb_id: 42 }],
+            vec![CachedRelease {
+                view,
+                magnet_or_url: "magnet:?xt=2".into(),
+                tmdb_id: 42,
+            }],
         );
 
         let found = cached_release("req-cache", scope, "g1", "idx1").expect("cached");
-        assert_eq!(found.magnet_or_url, "magnet:?xt=2", "so a grab needs no re-sweep");
+        assert_eq!(
+            found.magnet_or_url, "magnet:?xt=2",
+            "so a grab needs no re-sweep"
+        );
         // A different scope, indexer or guid is a different question.
         assert!(cached_release("req-cache", SearchScope::All, "g1", "idx1").is_none());
         assert!(cached_release("req-cache", scope, "other", "idx1").is_none());

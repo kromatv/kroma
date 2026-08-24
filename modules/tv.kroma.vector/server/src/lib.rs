@@ -88,7 +88,10 @@ mod tests {
         let v = e.embed("a heist thriller set in Paris");
         assert_eq!(v.len(), e.dim());
         let norm: f32 = v.iter().map(|x| x * x).sum::<f32>().sqrt();
-        assert!((norm - 1.0).abs() < 1e-5, "storage treats cosine as a dot product: {norm}");
+        assert!(
+            (norm - 1.0).abs() < 1e-5,
+            "storage treats cosine as a dot product: {norm}"
+        );
         assert!(e.relevance_floor() > 0.0 && e.relevance_floor() < 1.0);
     }
 
@@ -100,6 +103,9 @@ mod tests {
 
         let mut v = [3.0f32, 4.0];
         l2_normalize(&mut v);
-        assert!((v[0] - 0.6).abs() < 1e-6 && (v[1] - 0.8).abs() < 1e-6, "{v:?}");
+        assert!(
+            (v[0] - 0.6).abs() < 1e-6 && (v[1] - 0.8).abs() < 1e-6,
+            "{v:?}"
+        );
     }
 }

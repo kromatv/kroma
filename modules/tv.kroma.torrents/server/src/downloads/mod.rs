@@ -7,8 +7,8 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
-use anyhow::{anyhow, Result};
 use crate::{ClientDef, DownloadClient, RqbitEngine};
+use anyhow::{anyhow, Result};
 
 use crate::db::{self, DownloadClientRow, DownloadRow};
 
@@ -118,7 +118,11 @@ impl DownloadManager {
     }
 
     /// Metadata only, no download: the admin selects files before grabbing.
-    pub fn list_files(&self, _host: &dyn HostCtx, magnet_or_url: &str) -> Result<Vec<crate::TorrentFileEntry>> {
+    pub fn list_files(
+        &self,
+        _host: &dyn HostCtx,
+        magnet_or_url: &str,
+    ) -> Result<Vec<crate::TorrentFileEntry>> {
         let conn = self.store().get()?;
         let client = db::preferred_download_client(&conn)?
             .ok_or_else(|| anyhow!("no enabled download client"))?;
@@ -128,7 +132,8 @@ impl DownloadManager {
             && magnet_or_url.starts_with("http"))
         .then(|| fetch_torrent_file(magnet_or_url))
         .transpose()?;
-        self.engine_for(&client)?.list_files(magnet_or_url, prefetched.as_deref())
+        self.engine_for(&client)?
+            .list_files(magnet_or_url, prefetched.as_deref())
     }
 
     /// The engine for one configured client. The embedded one is in this process;

@@ -28,7 +28,12 @@ pub(super) fn insert_movie_item(conn: &Connection, id: &str, tmdb: u64) {
     .unwrap();
 }
 
-pub(super) fn new_req(id: &str, kind: RequestKind, tmdb: u64, seasons: Option<Vec<u32>>) -> NewRequest {
+pub(super) fn new_req(
+    id: &str,
+    kind: RequestKind,
+    tmdb: u64,
+    seasons: Option<Vec<u32>>,
+) -> NewRequest {
     NewRequest {
         id: id.into(),
         kind,
@@ -122,10 +127,17 @@ pub(super) fn wanted_row(id: &str, request_id: &str, air: Option<&str>, status: 
 #[test]
 fn request_roundtrip_merge_and_cascade() {
     let p = pool();
-    insert_request(&p, &new_req("r1", RequestKind::Show, 1396, Some(vec![1])), 1000).unwrap();
+    insert_request(
+        &p,
+        &new_req("r1", RequestKind::Show, 1396, Some(vec![1])),
+        1000,
+    )
+    .unwrap();
 
     let conn = p.get().unwrap();
-    let open = find_open_request(&conn, RequestKind::Show, 1396).unwrap().unwrap();
+    let open = find_open_request(&conn, RequestKind::Show, 1396)
+        .unwrap()
+        .unwrap();
     assert_eq!(open.id, "r1");
     assert_eq!(open.seasons.as_deref(), Some(&[1u32][..]));
     assert_eq!(open.status, RequestStatus::Pending);
@@ -134,22 +146,54 @@ fn request_roundtrip_merge_and_cascade() {
     set_request_seasons(&p, "r1", Some(&[1, 2]), 2000).unwrap();
     let conn = p.get().unwrap();
     assert_eq!(
-        get_request(&conn, "r1").unwrap().unwrap().seasons.as_deref(),
+        get_request(&conn, "r1")
+            .unwrap()
+            .unwrap()
+            .seasons
+            .as_deref(),
         Some(&[1u32, 2][..])
     );
     drop(conn);
 
-    set_request_episodes(&p, "r1", Some(&[EpisodeRef { season: 3, episode: 5 }]), 2100).unwrap();
+    set_request_episodes(
+        &p,
+        "r1",
+        Some(&[EpisodeRef {
+            season: 3,
+            episode: 5,
+        }]),
+        2100,
+    )
+    .unwrap();
     let conn = p.get().unwrap();
     assert_eq!(
-        get_request(&conn, "r1").unwrap().unwrap().episodes.as_deref(),
-        Some(&[EpisodeRef { season: 3, episode: 5 }][..])
+        get_request(&conn, "r1")
+            .unwrap()
+            .unwrap()
+            .episodes
+            .as_deref(),
+        Some(
+            &[EpisodeRef {
+                season: 3,
+                episode: 5
+            }][..]
+        )
     );
     drop(conn);
 
-    set_request_status(&p, "r1", RequestStatus::Denied, Some("boss"), Some("non"), 3000).unwrap();
+    set_request_status(
+        &p,
+        "r1",
+        RequestStatus::Denied,
+        Some("boss"),
+        Some("non"),
+        3000,
+    )
+    .unwrap();
     let conn = p.get().unwrap();
-    assert!(find_open_request(&conn, RequestKind::Show, 1396).unwrap().is_none());
+    assert!(find_open_request(&conn, RequestKind::Show, 1396)
+        .unwrap()
+        .is_none());
     let denied = get_request(&conn, "r1").unwrap().unwrap();
     assert_eq!(denied.status, RequestStatus::Denied);
     assert_eq!(denied.note.as_deref(), Some("non"));
@@ -197,7 +241,10 @@ fn set_request_air_roundtrips_and_last_refresh_is_internal() {
     assert_eq!(req.next_air_date, None);
     let json = serde_json::to_value(&req).unwrap();
     assert!(json.get("lastRefreshAt").is_none());
-    assert_eq!(json.get("airStatus").and_then(serde_json::Value::as_str), Some("Ended"));
+    assert_eq!(
+        json.get("airStatus").and_then(serde_json::Value::as_str),
+        Some("Ended")
+    );
 }
 
 #[test]
@@ -227,10 +274,16 @@ fn the_latest_request_for_a_title_is_the_newest_one() {
     insert_request(&pool, &fresh, 2_000).unwrap();
 
     let conn = pool.get().unwrap();
-    let found = latest_request_for(&conn, RequestKind::Movie, 603).unwrap().unwrap();
+    let found = latest_request_for(&conn, RequestKind::Movie, 603)
+        .unwrap()
+        .unwrap();
     assert_eq!(found.0, "r-new");
     assert_eq!(found.1, RequestStatus::Pending);
 
-    assert!(latest_request_for(&conn, RequestKind::Movie, 999).unwrap().is_none());
-    assert!(latest_request_for(&conn, RequestKind::Show, 603).unwrap().is_none());
+    assert!(latest_request_for(&conn, RequestKind::Movie, 999)
+        .unwrap()
+        .is_none());
+    assert!(latest_request_for(&conn, RequestKind::Show, 603)
+        .unwrap()
+        .is_none());
 }

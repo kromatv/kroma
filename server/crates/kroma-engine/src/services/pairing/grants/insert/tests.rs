@@ -42,7 +42,11 @@ fn refiling_drops_the_callers_own_entries_and_leaves_the_rest() {
 
     let again = g.replace_scoped(|m| *m == "old", |_| (), 4, "old", &mut mint);
     assert!(again.filed.is_some());
-    assert_eq!(again.orphans.len(), 1, "the replaced entry surrendered its tokens");
+    assert_eq!(
+        again.orphans.len(),
+        1,
+        "the replaced entry surrendered its tokens"
+    );
     assert_eq!(g.len(), 2);
     assert!(matches!(g.poll(&kept), PollState::Pending));
 }
@@ -60,7 +64,10 @@ fn a_full_scope_is_refused_even_while_the_store_has_room() {
     let refused = g.replace_scoped(|_| false, |m| *m, 2, "mine", &mut mint);
     assert!(refused.filed.is_none());
     assert_eq!(g.len(), 3, "nobody was pushed out to make room");
-    assert!(g.replace_scoped(|_| false, |m| *m, 2, "theirs", &mut mint).filed.is_some());
+    assert!(g
+        .replace_scoped(|_| false, |m| *m, 2, "theirs", &mut mint)
+        .filed
+        .is_some());
 }
 
 #[test]
@@ -77,8 +84,14 @@ fn a_full_store_takes_room_from_the_scope_holding_the_most() {
     let arrival = g.replace_scoped(|_| false, scope, 3, ("new", "1"), &mut mint);
     assert!(arrival.filed.is_some());
     assert_eq!(g.len(), 4);
-    assert!(matches!(g.poll(&flood.secret), PollState::Unknown), "the oldest of the most");
-    assert!(matches!(g.poll(&quiet.secret), PollState::Pending), "one scope, one beacon");
+    assert!(
+        matches!(g.poll(&flood.secret), PollState::Unknown),
+        "the oldest of the most"
+    );
+    assert!(
+        matches!(g.poll(&quiet.secret), PollState::Pending),
+        "one scope, one beacon"
+    );
 }
 
 #[test]
@@ -90,7 +103,10 @@ fn an_entry_crowded_out_surrenders_its_tokens_like_a_lapse_does() {
     assert!(g.authorize(&doomed.handle, |_| true, granted()));
     assert!(g.take_orphans().is_empty(), "nothing has left yet");
 
-    assert!(g.replace_scoped(|_| false, scope, 2, ("new", "1"), &mut mint).filed.is_some());
+    assert!(g
+        .replace_scoped(|_| false, scope, 2, ("new", "1"), &mut mint)
+        .filed
+        .is_some());
     let orphans = g.take_orphans();
     assert_eq!(orphans.len(), 1);
     assert_eq!(orphans[0].token, "tok");

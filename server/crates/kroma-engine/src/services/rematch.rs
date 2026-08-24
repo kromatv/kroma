@@ -92,7 +92,10 @@ fn load(state: &SharedState, subject: Subject, id: &str) -> Result<Local> {
         }
     };
     // A stored 0 means "resolved to nothing", not "TMDB id 0".
-    Ok(Local { current_tmdb_id: local.current_tmdb_id.filter(|&i| i != 0), ..local })
+    Ok(Local {
+        current_tmdb_id: local.current_tmdb_id.filter(|&i| i != 0),
+        ..local
+    })
 }
 
 /// The ranked TMDB candidates for one element. `query` overrides the search text
@@ -153,7 +156,10 @@ pub fn candidates(
 
 // Score every hit against the parsed title/year and sort most-likely first.
 fn rank(local: &Local, hits: Vec<discover::DiscoverHit>) -> Vec<MatchCandidate> {
-    let query = Query { title: &local.title, year: local.year };
+    let query = Query {
+        title: &local.title,
+        year: local.year,
+    };
     let mut out: Vec<MatchCandidate> = hits
         .into_iter()
         .map(|h| {
@@ -191,12 +197,7 @@ fn rank(local: &Local, hits: Vec<discover::DiscoverHit>) -> Vec<MatchCandidate> 
 /// automatic matching), wipe its derived metadata and re-run the metadata stage
 /// now. Returns once the work is *queued*; clients watch for the
 /// `ItemUpdated` / `ShowUpdated` event.
-pub fn apply(
-    state: &SharedState,
-    subject: Subject,
-    id: &str,
-    tmdb_id: Option<u64>,
-) -> Result<()> {
+pub fn apply(state: &SharedState, subject: Subject, id: &str, tmdb_id: Option<u64>) -> Result<()> {
     // Fails for an unknown id before anything is written.
     load(state, subject, id)?;
     let kind = subject.core_kind();
@@ -223,7 +224,11 @@ mod tests {
     use crate::model::RequestKind;
 
     fn local(title: &str, year: Option<u32>, current: Option<u64>) -> Local {
-        Local { title: title.to_string(), year, current_tmdb_id: current }
+        Local {
+            title: title.to_string(),
+            year,
+            current_tmdb_id: current,
+        }
     }
 
     fn hit(id: u64, title: &str, year: Option<u32>) -> discover::DiscoverHit {
@@ -252,7 +257,9 @@ mod tests {
     #[test]
     fn an_unknown_show_is_refused_by_name_like_an_unknown_film() {
         let state = crate::test_support::test_state_with_tmdb("test-key");
-        let err = candidates(&state, Subject::Show, "ghost", None).unwrap_err().to_string();
+        let err = candidates(&state, Subject::Show, "ghost", None)
+            .unwrap_err()
+            .to_string();
         assert_eq!(err, "unknown show ghost");
     }
 
@@ -261,20 +268,29 @@ mod tests {
         let state = crate::test_support::test_state_with_tmdb("test-key");
         crate::test_support::seed_show_episode(&state, "sh1", "e1");
         let tmdb = crate::test_support::FakeTmdb::start(|_| {
-            (200, serde_json::json!({ "page": 1, "total_pages": 1, "results": [] }))
+            (
+                200,
+                serde_json::json!({ "page": 1, "total_pages": 1, "results": [] }),
+            )
         });
 
         let out = candidates(&state, Subject::Show, "sh1", None).unwrap();
         assert!(out.results.is_empty());
         let asked = tmdb.requests();
         assert!(!asked.is_empty());
-        assert!(asked.iter().all(|r| r.starts_with("/search/tv")), "{asked:?}");
+        assert!(
+            asked.iter().all(|r| r.starts_with("/search/tv")),
+            "{asked:?}"
+        );
     }
 
     #[test]
     fn rank_puts_the_best_scoring_candidate_first() {
         let local = local("It", Some(1990), None);
-        let ranked = rank(&local, vec![hit(474350, "It", Some(2017)), hit(437, "It", Some(1990))]);
+        let ranked = rank(
+            &local,
+            vec![hit(474350, "It", Some(2017)), hit(437, "It", Some(1990))],
+        );
         assert_eq!(ranked[0].tmdb_id, 437);
         assert!(ranked[0].score > ranked[1].score);
     }
@@ -282,7 +298,13 @@ mod tests {
     #[test]
     fn rank_flags_the_stored_match_as_current() {
         let local = local("Dune", Some(2021), Some(438631));
-        let ranked = rank(&local, vec![hit(438631, "Dune", Some(2021)), hit(841, "Dune", Some(1984))]);
+        let ranked = rank(
+            &local,
+            vec![
+                hit(438631, "Dune", Some(2021)),
+                hit(841, "Dune", Some(1984)),
+            ],
+        );
         assert!(ranked.iter().find(|c| c.tmdb_id == 438631).unwrap().current);
         assert!(!ranked.iter().find(|c| c.tmdb_id == 841).unwrap().current);
     }
@@ -359,8 +381,15 @@ mod tests {
         });
 
         let out = candidates(&state, Subject::Movie, "itm-1", Some("the matrix")).unwrap();
-        assert_eq!(out.query, "the matrix", "the typed query is what was searched");
-        assert_eq!(out.year, Some(1999), "but the year compared against is the file's");
+        assert_eq!(
+            out.query, "the matrix",
+            "the typed query is what was searched"
+        );
+        assert_eq!(
+            out.year,
+            Some(1999),
+            "but the year compared against is the file's"
+        );
         assert_eq!(out.results.len(), 2);
         // The 1999 title outranks the 2003 sequel because the FILE says 1999.
         assert_eq!(out.results[0].tmdb_id, 603);
@@ -383,9 +412,16 @@ mod tests {
         // BOTH spellings were tried - that is the behaviour under test.
         let asked = tmdb.requests();
         assert_eq!(asked.len(), 2, "expected a retry, got {asked:?}");
-        assert_ne!(asked[0], asked[1], "the retry must not repeat the same query");
+        assert_ne!(
+            asked[0], asked[1],
+            "the retry must not repeat the same query"
+        );
         // The retry drops the apostrophe and the accent.
-        assert!(!asked[1].contains("%27"), "the apostrophe survived: {}", asked[1]);
+        assert!(
+            !asked[1].contains("%27"),
+            "the apostrophe survived: {}",
+            asked[1]
+        );
     }
 
     #[test]
@@ -397,7 +433,10 @@ mod tests {
         seed_titled(&state, "itm-1", "Ame\u{301}lie", Some(2001));
 
         let tmdb = FakeTmdb::start(|_| {
-            (200, page(serde_json::json!([tmdb_hit(194, "Amélie", "2001-04-25")])))
+            (
+                200,
+                page(serde_json::json!([tmdb_hit(194, "Amélie", "2001-04-25")])),
+            )
         });
         candidates(&state, Subject::Movie, "itm-1", None).unwrap();
 
@@ -406,7 +445,11 @@ mod tests {
         // curl percent-encodes in LOWERCASE hex, so compare case-insensitively:
         // U+0301 is %cc%81 on the wire.
         let query = sent[0].to_ascii_lowercase();
-        assert!(!query.contains("%cc%81"), "the combining acute reached TMDB: {}", sent[0]);
+        assert!(
+            !query.contains("%cc%81"),
+            "the combining acute reached TMDB: {}",
+            sent[0]
+        );
         assert!(query.contains("query=amelie"), "{}", sent[0]);
     }
 
@@ -414,14 +457,18 @@ mod tests {
     fn rematching_without_a_tmdb_key_says_which_setting_is_missing() {
         let state = crate::test_support::test_state();
         seed_titled(&state, "itm-1", "Matrix", Some(1999));
-        let err = candidates(&state, Subject::Movie, "itm-1", None).unwrap_err().to_string();
+        let err = candidates(&state, Subject::Movie, "itm-1", None)
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("KROMA_TMDB_API_KEY"), "{err}");
     }
 
     #[test]
     fn rematching_something_the_catalogue_does_not_have_is_an_error() {
         let state = test_state_with_tmdb("test-key");
-        let err = candidates(&state, Subject::Movie, "nope", None).unwrap_err().to_string();
+        let err = candidates(&state, Subject::Movie, "nope", None)
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("nope"), "{err}");
     }
 
@@ -433,7 +480,9 @@ mod tests {
         seed_titled(&state, "itm-1", "Matrix", Some(1999));
         let _tmdb = FakeTmdb::start(|_| (500, serde_json::json!({ "status_message": "boom" })));
 
-        let err = candidates(&state, Subject::Movie, "itm-1", None).unwrap_err().to_string();
+        let err = candidates(&state, Subject::Movie, "itm-1", None)
+            .unwrap_err()
+            .to_string();
         assert!(err.contains("TMDB search failed"), "{err}");
     }
 }

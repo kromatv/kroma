@@ -33,13 +33,21 @@ async fn ping_upserts_then_stop_ends_the_session() {
         "POST",
         "/api/playback/ping",
         Some(&t.token),
-        Some(json!({ "sessionId": "sess-1", "itemId": item, "positionMs": 2000, "state": "paused" })),
+        Some(
+            json!({ "sessionId": "sess-1", "itemId": item, "positionMs": 2000, "state": "paused" }),
+        ),
     )
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
-    let (status, _) =
-        send(&t.app, "POST", "/api/playback/stop", Some(&t.token), Some(json!({ "sessionId": "sess-1" }))).await;
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/playback/stop",
+        Some(&t.token),
+        Some(json!({ "sessionId": "sess-1" })),
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, admin) = get(&t.app, "/api/admin/sessions", Some(&t.token)).await;
     assert_eq!(admin["sessions"].as_array().map(Vec::len), Some(0));
@@ -63,8 +71,12 @@ async fn stop_will_not_end_another_viewers_session() {
     // A different account names that session id. It answers 204 either way - the
     // endpoint must not double as a way to discover which sessions exist - but
     // the session has to survive.
-    let (_id, intruder) =
-        seed_session(&t.state, "intruder@test.dev", "intruder", &[Permission::Playback]);
+    let (_id, intruder) = seed_session(
+        &t.state,
+        "intruder@test.dev",
+        "intruder",
+        &[Permission::Playback],
+    );
     let (status, _) = send(
         &t.app,
         "POST",
@@ -75,7 +87,11 @@ async fn stop_will_not_end_another_viewers_session() {
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, admin) = get(&t.app, "/api/admin/sessions", Some(&t.token)).await;
-    assert_eq!(admin["sessions"].as_array().map(Vec::len), Some(1), "someone else ended it");
+    assert_eq!(
+        admin["sessions"].as_array().map(Vec::len),
+        Some(1),
+        "someone else ended it"
+    );
 
     let (status, _) = send(
         &t.app,
@@ -153,12 +169,26 @@ async fn watched_marker_add_list_and_clear() {
     let t = test_app();
     let item = demo_item_id("The Matrix");
 
-    let (status, _) = send(&t.app, "PUT", &format!("/api/watched/{item}"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "PUT",
+        &format!("/api/watched/{item}"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, list) = get(&t.app, "/api/watched", Some(&t.token)).await;
     assert_eq!(list, json!([item]));
 
-    let (status, _) = send(&t.app, "DELETE", &format!("/api/watched/{item}"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/watched/{item}"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (_, list) = get(&t.app, "/api/watched", Some(&t.token)).await;
     assert_eq!(list.as_array().map(Vec::len), Some(0));
@@ -177,12 +207,22 @@ async fn marking_watched_clears_the_resume_position() {
         Some(json!({ "positionMs": 500_000, "durationMs": 9_960_000 })),
     )
     .await;
-    let (status, _) = send(&t.app, "PUT", &format!("/api/watched/{item}"), Some(&t.token), None).await;
+    let (status, _) = send(
+        &t.app,
+        "PUT",
+        &format!("/api/watched/{item}"),
+        Some(&t.token),
+        None,
+    )
+    .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     // Watched drops it from Continue watching (resume position cleared).
     let (_, entry) = get(&t.app, &format!("/api/progress/{item}"), Some(&t.token)).await;
-    assert!(entry.is_null(), "resume position should be gone after watched");
+    assert!(
+        entry.is_null(),
+        "resume position should be gone after watched"
+    );
 }
 
 #[tokio::test]
@@ -190,7 +230,12 @@ async fn up_next_points_at_the_first_episode_of_a_fresh_show() {
     let t = test_app();
     let show = demo_show_id("Planet Earth II");
 
-    let (status, up) = get(&t.app, &format!("/api/shows/{show}/up-next"), Some(&t.token)).await;
+    let (status, up) = get(
+        &t.app,
+        &format!("/api/shows/{show}/up-next"),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
     // No progress yet -> the very first episode (S1E1 "Islands"), not resuming.
     assert_eq!(up["item"]["episodeTitle"], json!("Islands"));
@@ -227,14 +272,34 @@ async fn following_lists_the_upcoming_episodes() {
     let ep1 = demo_item_id("Islands"); // Planet Earth II S1E1
     let ep2 = demo_item_id("Mountains"); // S1E2 (last)
 
-    let (status, list) = get(&t.app, &format!("/api/items/{ep1}/following"), Some(&t.token)).await;
+    let (status, list) = get(
+        &t.app,
+        &format!("/api/items/{ep1}/following"),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(status, StatusCode::OK);
-    let ids: Vec<&str> = list.as_array().unwrap().iter().map(|i| i["id"].as_str().unwrap()).collect();
+    let ids: Vec<&str> = list
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| i["id"].as_str().unwrap())
+        .collect();
     assert_eq!(ids, vec![ep2.as_str()]);
 
-    let (_, list) = get(&t.app, &format!("/api/items/{ep2}/following"), Some(&t.token)).await;
+    let (_, list) = get(
+        &t.app,
+        &format!("/api/items/{ep2}/following"),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(list.as_array().unwrap().len(), 0);
     let movie = demo_item_id("The Matrix");
-    let (_, list) = get(&t.app, &format!("/api/items/{movie}/following"), Some(&t.token)).await;
+    let (_, list) = get(
+        &t.app,
+        &format!("/api/items/{movie}/following"),
+        Some(&t.token),
+    )
+    .await;
     assert_eq!(list.as_array().unwrap().len(), 0);
 }

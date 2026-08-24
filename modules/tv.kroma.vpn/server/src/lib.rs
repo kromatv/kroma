@@ -18,8 +18,8 @@
 //! holding the SOCKS port, so [`Vpn::apply`] reaps one by pidfile on every pass,
 //! including the pass that finds no config at all.
 
-mod provision;
 pub mod port;
+mod provision;
 pub mod routes;
 
 use std::path::PathBuf;
@@ -129,7 +129,10 @@ impl Vpn {
         let conf_path = dir.join("wireproxy.conf");
         std::fs::write(
             &conf_path,
-            format!("WGConfig = {}\n\n[Socks5]\nBindAddress = 127.0.0.1:{port}\n", wg_path.display()),
+            format!(
+                "WGConfig = {}\n\n[Socks5]\nBindAddress = 127.0.0.1:{port}\n",
+                wg_path.display()
+            ),
         )
         .map_err(|e| format!("write wireproxy.conf: {e}"))?;
 
@@ -181,7 +184,12 @@ impl Vpn {
 
     /// Whether the supervisor should keep watching: false once this generation
     /// is no longer the active config.
-    async fn respawn(&self, generation: u64, bin: &std::path::Path, conf: &std::path::Path) -> bool {
+    async fn respawn(
+        &self,
+        generation: u64,
+        bin: &std::path::Path,
+        conf: &std::path::Path,
+    ) -> bool {
         if !self.is_current(generation) {
             return false;
         }
@@ -226,13 +234,21 @@ impl Vpn {
 fn ipv4_only_wg(config: &str) -> String {
     let is_v4 = |s: &str| !s.contains(':');
     let keep_v4 = |val: &str| -> Option<String> {
-        let v4: Vec<&str> = val.split(',').map(str::trim).filter(|a| !a.is_empty() && is_v4(a)).collect();
+        let v4: Vec<&str> = val
+            .split(',')
+            .map(str::trim)
+            .filter(|a| !a.is_empty() && is_v4(a))
+            .collect();
         (!v4.is_empty()).then(|| v4.join(", "))
     };
     let mut out = Vec::new();
     for line in config.lines() {
         let trimmed = line.trim_start();
-        let rewrite = |key: &str| trimmed.strip_prefix(key).map(|rest| rest.trim_start().strip_prefix('=').unwrap_or(rest).trim());
+        let rewrite = |key: &str| {
+            trimmed
+                .strip_prefix(key)
+                .map(|rest| rest.trim_start().strip_prefix('=').unwrap_or(rest).trim())
+        };
         if let Some(val) = rewrite("Address") {
             match keep_v4(val) {
                 Some(v4) => out.push(format!("Address = {v4}")),
@@ -274,7 +290,9 @@ fn record_pid(dir: &std::path::Path, child: &Child) {
 #[cfg(unix)]
 fn reap_stale(dir: &std::path::Path) {
     let path = pidfile(dir);
-    let Some(pid) = std::fs::read_to_string(&path).ok().and_then(|s| s.trim().parse::<u32>().ok())
+    let Some(pid) = std::fs::read_to_string(&path)
+        .ok()
+        .and_then(|s| s.trim().parse::<u32>().ok())
     else {
         return;
     };
@@ -282,11 +300,12 @@ fn reap_stale(dir: &std::path::Path) {
     let comm = std::process::Command::new("ps")
         .args(["-p", &pid.to_string(), "-o", "comm="])
         .output();
-    let is_wireproxy =
-        comm.is_ok_and(|o| String::from_utf8_lossy(&o.stdout).contains("wireproxy"));
+    let is_wireproxy = comm.is_ok_and(|o| String::from_utf8_lossy(&o.stdout).contains("wireproxy"));
     if is_wireproxy {
         tracing::warn!(pid, "killing a stale wireproxy from a previous run");
-        let _ = std::process::Command::new("kill").args(["-9", &pid.to_string()]).status();
+        let _ = std::process::Command::new("kill")
+            .args(["-9", &pid.to_string()])
+            .status();
     }
 }
 
@@ -408,7 +427,10 @@ mod tests {
                    PersistentKeepalive = 25";
         let out = ipv4_only_wg(cfg);
         assert!(out.contains("Address = 10.2.0.2/32"));
-        assert!(!out.contains("2a07:b944"), "IPv6 address/DNS must be gone:\n{out}");
+        assert!(
+            !out.contains("2a07:b944"),
+            "IPv6 address/DNS must be gone:\n{out}"
+        );
         assert!(out.contains("DNS = 10.2.0.1"));
         assert!(out.contains("AllowedIPs = 0.0.0.0/0"));
         assert!(!out.contains("::/0"));
@@ -420,7 +442,8 @@ mod tests {
 
     #[test]
     fn ipv4_only_config_is_unchanged_semantically() {
-        let cfg = "[Interface]\nAddress = 10.2.0.2/32\nDNS = 10.2.0.1\n[Peer]\nAllowedIPs = 0.0.0.0/0";
+        let cfg =
+            "[Interface]\nAddress = 10.2.0.2/32\nDNS = 10.2.0.1\n[Peer]\nAllowedIPs = 0.0.0.0/0";
         let out = ipv4_only_wg(cfg);
         assert!(out.contains("Address = 10.2.0.2/32"));
         assert!(out.contains("DNS = 10.2.0.1"));

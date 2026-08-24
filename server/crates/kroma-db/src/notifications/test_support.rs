@@ -4,13 +4,19 @@ use super::{insert_notification, StoredNotification};
 use crate::testing::TempPool;
 use crate::Pool;
 
-use kroma_domain::{ActionKind, ActionSpec, ActionStyle, NotificationEvent, ParamValue, PushCategory};
+use kroma_domain::{
+    ActionKind, ActionSpec, ActionStyle, NotificationEvent, ParamValue, PushCategory,
+};
 
 // Real accounts: notifications.user_id FKs users (and cascades).
 pub(super) fn pool() -> (TempPool, String, String) {
     let p = crate::testing::temp_pool("notif");
-    let u1 = crate::create_user(&p, "ana@test.dev", "Ana", "h", &[]).unwrap().id;
-    let u2 = crate::create_user(&p, "bo@test.dev", "Bo", "h", &[]).unwrap().id;
+    let u1 = crate::create_user(&p, "ana@test.dev", "Ana", "h", &[])
+        .unwrap()
+        .id;
+    let u2 = crate::create_user(&p, "bo@test.dev", "Bo", "h", &[])
+        .unwrap()
+        .id;
     (p, u1, u2)
 }
 

@@ -52,7 +52,11 @@ fn asset() -> Option<(&'static str, bool)> {
 /// rejected and removed).
 pub async fn download(data_dir: &Path) -> Result<PathBuf, String> {
     let (asset, is_tgz) = asset().ok_or_else(|| {
-        format!("no cloudflared build for {}/{}", std::env::consts::OS, std::env::consts::ARCH)
+        format!(
+            "no cloudflared build for {}/{}",
+            std::env::consts::OS,
+            std::env::consts::ARCH
+        )
     })?;
     let bindir = data_dir.join("bin");
     std::fs::create_dir_all(&bindir).map_err(|e| format!("create bin dir: {e}"))?;

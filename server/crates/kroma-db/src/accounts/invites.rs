@@ -97,16 +97,29 @@ mod tests {
     fn invites_create_list_consume_and_delete() {
         let p = pool();
         let owner = mk_user(&p, "o@b.c", "owner");
-        create_invite(&p, "inv1", &[Permission::Playback, Permission::RequestsCreate], &owner.id, FUTURE).unwrap();
+        create_invite(
+            &p,
+            "inv1",
+            &[Permission::Playback, Permission::RequestsCreate],
+            &owner.id,
+            FUTURE,
+        )
+        .unwrap();
 
         let got = get_invite(&p, "inv1").unwrap().unwrap();
         assert_eq!(got.token, "inv1");
-        assert_eq!(got.permissions, vec![Permission::Playback, Permission::RequestsCreate]);
+        assert_eq!(
+            got.permissions,
+            vec![Permission::Playback, Permission::RequestsCreate]
+        );
         assert!(!got.used);
         assert_eq!(list_invites(&p).unwrap().len(), 1);
 
         let perms = consume_invite(&p, "inv1").unwrap().unwrap();
-        assert_eq!(perms, vec![Permission::Playback, Permission::RequestsCreate]);
+        assert_eq!(
+            perms,
+            vec![Permission::Playback, Permission::RequestsCreate]
+        );
         assert!(get_invite(&p, "inv1").unwrap().unwrap().used);
         assert!(consume_invite(&p, "inv1").unwrap().is_none());
         assert!(list_invites(&p).unwrap().is_empty());

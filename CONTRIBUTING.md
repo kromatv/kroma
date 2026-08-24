@@ -55,6 +55,7 @@ Everything must build and typecheck cleanly:
 bun run typecheck          # all TS packages
 bun run build              # all frontends
 cd server && cargo build   # server (use `cargo clippy` if you have it)
+cargo fmt                   # rustfmt is canonical; run before every PR
 ```
 
 - Read [`CODE_STYLE.md`](CODE_STYLE.md) for how code is written here, and in

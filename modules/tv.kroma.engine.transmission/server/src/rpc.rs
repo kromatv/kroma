@@ -81,9 +81,20 @@ mod tests {
 
         let calls = fake.calls();
         assert_eq!(calls.len(), 3, "challenge, replay, then one plain call");
-        assert_eq!(calls[0].session, None, "nothing to send before the challenge");
-        assert_eq!(calls[1].session.as_deref(), Some("Zx9-token"), "replayed with the id");
-        assert_eq!(calls[2].session.as_deref(), Some("Zx9-token"), "and it stuck");
+        assert_eq!(
+            calls[0].session, None,
+            "nothing to send before the challenge"
+        );
+        assert_eq!(
+            calls[1].session.as_deref(),
+            Some("Zx9-token"),
+            "replayed with the id"
+        );
+        assert_eq!(
+            calls[2].session.as_deref(),
+            Some("Zx9-token"),
+            "and it stuck"
+        );
     }
 
     #[test]
@@ -101,7 +112,10 @@ mod tests {
         assert!(err.contains("username/password"), "{err}");
         // base64("admin:secret") - the header has to be right for the 401 to mean
         // what the message says it means.
-        assert_eq!(fake.calls()[0].auth.as_deref(), Some("Basic YWRtaW46c2VjcmV0"));
+        assert_eq!(
+            fake.calls()[0].auth.as_deref(),
+            Some("Basic YWRtaW46c2VjcmV0")
+        );
     }
 
     #[test]
@@ -116,7 +130,8 @@ mod tests {
     fn a_refusal_is_surfaced_verbatim_despite_the_200() {
         // Transmission reports most errors as 200 + result != "success", so the
         // status alone never decides.
-        let fake = FakeTransmission::start(|_, _, _| Reply::refuses("torrent-add: invalid or corrupt"));
+        let fake =
+            FakeTransmission::start(|_, _, _| Reply::refuses("torrent-add: invalid or corrupt"));
         let err = fake.client().test().unwrap_err().to_string();
         assert!(err.contains("invalid or corrupt"), "{err}");
     }
@@ -128,5 +143,4 @@ mod tests {
         let err = fake.client().test().unwrap_err().to_string();
         assert!(err.contains("malformed"), "{err}");
     }
-
 }

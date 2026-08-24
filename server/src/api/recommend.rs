@@ -82,7 +82,8 @@ pub async fn themed(
     let embedder = state.embedder.clone();
     match query(&state.db, move |pool| {
         let vec = embeddings::embed(&embedder, &q);
-        let mut items = db::themed_items(&pool, &vec, ROW_LEN, embeddings::relevance_floor(&embedder))?;
+        let mut items =
+            db::themed_items(&pool, &vec, ROW_LEN, embeddings::relevance_floor(&embedder))?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
         Ok(items)
     })

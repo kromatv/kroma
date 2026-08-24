@@ -85,7 +85,10 @@ pub fn grab(host: &dyn HostCtx, spec: &GrabSpec) -> anyhow::Result<DownloadRow> 
 
 /// A torrent's files without downloading it, so the admin can select before
 /// committing.
-pub fn list_files(host: &dyn HostCtx, magnet_or_url: &str) -> anyhow::Result<Vec<TorrentFileEntry>> {
+pub fn list_files(
+    host: &dyn HostCtx,
+    magnet_or_url: &str,
+) -> anyhow::Result<Vec<TorrentFileEntry>> {
     call(
         &grabber(host)?,
         &format!("{DOWNLOAD_GRAB}/list-files"),
@@ -96,8 +99,15 @@ pub fn list_files(host: &dyn HostCtx, magnet_or_url: &str) -> anyhow::Result<Vec
 /// Whether the kill switch currently allows new grabs. A missing engine reads as
 /// closed, because a grab that cannot be handed anywhere is not a grab.
 pub fn gate_open(host: &dyn HostCtx) -> bool {
-    let Ok(resolve) = grabber(host) else { return false };
-    call_raw(&resolve, &format!("{DOWNLOAD_GRAB}/gate-open"), &serde_json::json!({})).unwrap_or(false)
+    let Ok(resolve) = grabber(host) else {
+        return false;
+    };
+    call_raw(
+        &resolve,
+        &format!("{DOWNLOAD_GRAB}/gate-open"),
+        &serde_json::json!({}),
+    )
+    .unwrap_or(false)
 }
 
 /// Kick a freshly recorded row into the engine. Best effort: the row is already in
@@ -125,7 +135,11 @@ fn lifecycle(host: &dyn HostCtx, method: &str, id: &str) -> anyhow::Result<bool>
 
 /// Rows the engine finished and nothing has imported yet.
 pub fn completed(host: &dyn HostCtx) -> anyhow::Result<Vec<DownloadRow>> {
-    call(&ledger(host)?, &format!("{DOWNLOAD_DB}/completed"), &serde_json::json!({}))
+    call(
+        &ledger(host)?,
+        &format!("{DOWNLOAD_DB}/completed"),
+        &serde_json::json!({}),
+    )
 }
 
 /// Record where an import landed a row's files.
@@ -249,7 +263,9 @@ mod tests {
         }
 
         async fn list_files(Json(_): Json<Value>) -> Json<Result<Vec<Value>, String>> {
-            Json(Ok(vec![serde_json::json!({ "index": 0, "path": "a.mkv", "size_bytes": 42 })]))
+            Json(Ok(vec![
+                serde_json::json!({ "index": 0, "path": "a.mkv", "size_bytes": 42 }),
+            ]))
         }
 
         async fn gate_open(Json(_): Json<Value>) -> Json<bool> {
@@ -289,7 +305,10 @@ mod tests {
             .route("/_port/tv.kroma.torrents/grab/activate", post(lifecycle))
             .route("/_port/tv.kroma.torrents/grab/drop-data", post(lifecycle))
             .route("/_port/tv.kroma.torrents/db/completed", post(completed))
-            .route("/_port/tv.kroma.torrents/db/mark-imported", post(mark_imported))
+            .route(
+                "/_port/tv.kroma.torrents/db/mark-imported",
+                post(mark_imported),
+            )
             .route("/_port/tv.kroma.torrents/db/set-status", post(set_status))
     }
 

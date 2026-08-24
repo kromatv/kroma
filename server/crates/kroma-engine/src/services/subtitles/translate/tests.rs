@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use crate::db::testing::TempPool;
 
-use super::*;
 use super::test_support::{
     configure, cue, handle, numbered_translation, settings_pool, test_pool, vtt_with,
 };
+use super::*;
 use crate::services::subtitles::progress::GenRegistry;
 use crate::test_support::FakeLlm as FakeEndpoint;
 
@@ -35,15 +35,23 @@ fn a_batch_the_provider_refuses_leaves_those_cues_in_the_source_language() {
         if request.to_string().contains("line 25") {
             return (500, serde_json::json!({ "error": "out of credits" }));
         }
-        let content =
-            (1..=BATCH).map(|n| format!("{n}. ligne {n}")).collect::<Vec<_>>().join("\n");
-        (200, serde_json::json!({ "choices": [{ "message": { "content": content } }] }))
+        let content = (1..=BATCH)
+            .map(|n| format!("{n}. ligne {n}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        (
+            200,
+            serde_json::json!({ "choices": [{ "message": { "content": content } }] }),
+        )
     });
     llm.configure_settings(&settings, &pool);
 
     let mut vtt = String::from("WEBVTT\n\n");
     for n in 1..=BATCH + 2 {
-        vtt.push_str(&format!("00:00:{n:02}.000 --> 00:00:{:02}.000\nline {n}\n\n", n + 1));
+        vtt.push_str(&format!(
+            "00:00:{n:02}.000 --> 00:00:{:02}.000\nline {n}\n\n",
+            n + 1
+        ));
     }
     let registry =
         std::sync::Arc::new(crate::services::subtitles::progress::GenRegistry::default());
@@ -51,14 +59,23 @@ fn a_batch_the_provider_refuses_leaves_those_cues_in_the_source_language() {
 
     let out = translate_vtt(&settings, &vtt, "French", &handle).unwrap();
 
-    assert!(out.contains("ligne 1\n"), "the first batch was translated: {out}");
-    assert!(out.contains("line 25\n"), "the refused batch kept its source text: {out}");
+    assert!(
+        out.contains("ligne 1\n"),
+        "the first batch was translated: {out}"
+    );
+    assert!(
+        out.contains("line 25\n"),
+        "the refused batch kept its source text: {out}"
+    );
     assert!(out.contains("line 26\n"));
 }
 
 #[test]
 fn reassemble_vtt_falls_back_to_original_on_gap_or_missing_batch() {
-    let cues0 = vec![cue("00:00:01.000 --> 00:00:02.000", "Hello"), cue("00:00:02.000 --> 00:00:03.000", "World")];
+    let cues0 = vec![
+        cue("00:00:01.000 --> 00:00:02.000", "Hello"),
+        cue("00:00:02.000 --> 00:00:03.000", "World"),
+    ];
     let cues1 = vec![cue("00:00:03.000 --> 00:00:04.000", "Original")];
     let chunks: Vec<&[Cue]> = vec![&cues0, &cues1];
     let results = vec![
@@ -78,7 +95,13 @@ fn translate_vtt_errors_when_no_provider_configured() {
     let s = Settings::load(&pool); // no LLM providers
     let reg = std::sync::Arc::new(crate::services::subtitles::progress::GenRegistry::default());
     let handle = reg.start("item1", "translate", Some("French".into()));
-    let err = translate_vtt(&s, "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n", "French", &handle).unwrap_err();
+    let err = translate_vtt(
+        &s,
+        "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi\n",
+        "French",
+        &handle,
+    )
+    .unwrap_err();
     assert!(err.contains("no LLM provider"), "unexpected: {err}");
 }
 
@@ -87,7 +110,10 @@ fn parse_cues_preserves_timing_cue_settings() {
     let vtt = "WEBVTT\n\n00:00:01.000 --> 00:00:02.000 line:80% align:start\nHi\n";
     let cues = parse_cues(vtt);
     assert_eq!(cues.len(), 1);
-    assert_eq!(cues[0].timing, "00:00:01.000 --> 00:00:02.000 line:80% align:start");
+    assert_eq!(
+        cues[0].timing,
+        "00:00:01.000 --> 00:00:02.000 line:80% align:start"
+    );
     assert_eq!(cues[0].text, "Hi");
 }
 
@@ -106,7 +132,10 @@ fn a_subtitle_with_no_cues_is_refused_before_any_request() {
 
     let err = translate_vtt(&settings, "WEBVTT\n\n", "French", &handle()).unwrap_err();
     assert!(err.contains("no cues"), "{err}");
-    assert!(llm.requests().is_empty(), "an empty subtitle should cost nothing");
+    assert!(
+        llm.requests().is_empty(),
+        "an empty subtitle should cost nothing"
+    );
 }
 
 #[test]
@@ -118,7 +147,10 @@ fn every_cue_comes_back_translated_with_its_timing_intact() {
     let out = translate_vtt(&settings, &vtt_with(3), "French", &handle()).unwrap();
     assert!(out.starts_with("WEBVTT"));
     for i in 1..=3 {
-        assert!(out.contains(&format!("[fr] Line {i}")), "cue {i} missing from:\n{out}");
+        assert!(
+            out.contains(&format!("[fr] Line {i}")),
+            "cue {i} missing from:\n{out}"
+        );
     }
     assert!(out.contains("00:00:01.000 --> 00:00:02.000"));
     assert!(out.contains("00:00:03.000 --> 00:00:04.000"));
@@ -133,7 +165,10 @@ fn a_long_subtitle_is_split_into_batches() {
     let cues = BATCH * 2 + 3;
     let out = translate_vtt(&settings, &vtt_with(cues), "French", &handle()).unwrap();
     assert_eq!(llm.requests().len(), 3, "{cues} cues at {BATCH} per batch");
-    assert!(out.contains(&format!("[fr] Line {cues}")), "the last cue was dropped");
+    assert!(
+        out.contains(&format!("[fr] Line {cues}")),
+        "the last cue was dropped"
+    );
 }
 
 #[test]
@@ -145,7 +180,10 @@ fn a_batch_the_model_mangled_keeps_its_original_text() {
     // A single-batch document that fails entirely surfaces as a hard error.
     let err = translate_vtt(&settings, &vtt_with(3), "French", &handle()).unwrap_err();
     assert!(err.contains("numbered format"), "{err}");
-    assert!(err.contains("cannot help"), "the model's actual reply is not in: {err}");
+    assert!(
+        err.contains("cannot help"),
+        "the model's actual reply is not in: {err}"
+    );
 }
 
 #[test]
@@ -165,14 +203,20 @@ fn a_partial_reply_fills_what_it_can_and_keeps_the_rest() {
                 format!("{}. [fr] {}\n", num.trim(), rest.trim())
             })
             .collect();
-        (200, serde_json::json!({ "choices": [{ "message": { "content": body } }] }))
+        (
+            200,
+            serde_json::json!({ "choices": [{ "message": { "content": body } }] }),
+        )
     });
     configure(&settings, &pool, llm.base(), 4096);
 
     let out = translate_vtt(&settings, &vtt_with(3), "French", &handle()).unwrap();
     assert!(out.contains("[fr] Line 1"));
     assert!(out.contains("[fr] Line 3"));
-    assert!(out.contains("\nLine 2\n"), "the gap was blanked instead of kept:\n{out}");
+    assert!(
+        out.contains("\nLine 2\n"),
+        "the gap was blanked instead of kept:\n{out}"
+    );
 }
 
 #[test]

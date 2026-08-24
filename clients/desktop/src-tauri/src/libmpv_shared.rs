@@ -152,7 +152,10 @@ fn emit_track_list(app: &AppHandle, mpv: &Mpv) {
             .unwrap_or_default();
         tracks.push(json!({ "id": id, "type": ty }));
     }
-    let _ = app.emit("mpv://property", json!({ "name": "track-list", "data": tracks }));
+    let _ = app.emit(
+        "mpv://property",
+        json!({ "name": "track-list", "data": tracks }),
+    );
 }
 
 fn value_to_mpv_arg(v: &Value) -> String {

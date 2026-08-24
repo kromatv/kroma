@@ -22,7 +22,15 @@ pub(super) trait Provider: Send + Sync {
     fn chat_url(&self, base: &str) -> String;
     fn models_url(&self, base: &str) -> String;
     fn headers(&self, api_key: &str) -> Vec<(&'static str, String)>;
-    fn chat_body(&self, model: &str, system: &str, user: &str, max_tokens: u32, temperature: f32, reasoning: bool) -> Value;
+    fn chat_body(
+        &self,
+        model: &str,
+        system: &str,
+        user: &str,
+        max_tokens: u32,
+        temperature: f32,
+        reasoning: bool,
+    ) -> Value;
     fn parse_reply(&self, v: &Value) -> Result<String>;
     // Whether a reasoning-off retry is worth attempting when a model rejects the flag.
     fn reasoning_applies(&self) -> bool {
@@ -46,7 +54,15 @@ pub(super) trait Provider: Send + Sync {
         temperature: f32,
         reasoning: bool,
     ) -> Value {
-        let _ = (model, system, messages, tools, max_tokens, temperature, reasoning);
+        let _ = (
+            model,
+            system,
+            messages,
+            tools,
+            max_tokens,
+            temperature,
+            reasoning,
+        );
         Value::Null
     }
     fn parse_turn(&self, v: &Value) -> Result<Turn> {

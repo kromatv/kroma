@@ -53,29 +53,113 @@ pub fn eligible(ctx: &Context) -> Vec<&'static Phrase> {
 }
 
 const BANK: &[Phrase] = &[
-    Phrase { key: "christmas", title_key: "content.themeChristmas", query: "heartwarming christmas holiday movie", months: Some(&[12]), when: When::Always },
-    Phrase { key: "halloween", title_key: "content.themeHalloween", query: "halloween horror scary movie", months: Some(&[10]), when: When::Always },
-    Phrase { key: "cozy-autumn", title_key: "content.themeCozyAutumn", query: "cozy atmospheric autumn drama", months: Some(&[9, 10, 11]), when: When::Always },
-    Phrase { key: "summer", title_key: "content.themeSummer", query: "summer road trip adventure movie", months: Some(&[6, 7, 8]), when: When::Always },
-    Phrase { key: "action", title_key: "content.themeAction", query: "high octane action movie", months: None, when: When::Always },
-    Phrase { key: "feel-good", title_key: "content.themeFeelGood", query: "feel-good uplifting comedy", months: None, when: When::Always },
-    Phrase { key: "heist", title_key: "content.themeHeist", query: "clever heist crew robbery thriller", months: None, when: When::Always },
-    Phrase { key: "true-story", title_key: "content.themeTrueStory", query: "based on a true story biographical drama", months: None, when: When::Always },
-    Phrase { key: "tearjerker", title_key: "content.themeTearjerker", query: "emotional heartbreaking tearjerker drama", months: None, when: When::Always },
-    Phrase { key: "mind-bending", title_key: "content.themeMindBending", query: "mind-bending surreal science fiction", months: None, when: When::Evening },
-    Phrase { key: "neon-night", title_key: "content.themeNeonNight", query: "neon-soaked night drive crime thriller", months: None, when: When::Evening },
-    Phrase { key: "thriller", title_key: "content.themeThriller", query: "edge of your seat suspense thriller", months: None, when: When::Evening },
-    Phrase { key: "adventure", title_key: "content.themeAdventure", query: "epic adventure fantasy quest", months: None, when: When::Weekend },
+    Phrase {
+        key: "christmas",
+        title_key: "content.themeChristmas",
+        query: "heartwarming christmas holiday movie",
+        months: Some(&[12]),
+        when: When::Always,
+    },
+    Phrase {
+        key: "halloween",
+        title_key: "content.themeHalloween",
+        query: "halloween horror scary movie",
+        months: Some(&[10]),
+        when: When::Always,
+    },
+    Phrase {
+        key: "cozy-autumn",
+        title_key: "content.themeCozyAutumn",
+        query: "cozy atmospheric autumn drama",
+        months: Some(&[9, 10, 11]),
+        when: When::Always,
+    },
+    Phrase {
+        key: "summer",
+        title_key: "content.themeSummer",
+        query: "summer road trip adventure movie",
+        months: Some(&[6, 7, 8]),
+        when: When::Always,
+    },
+    Phrase {
+        key: "action",
+        title_key: "content.themeAction",
+        query: "high octane action movie",
+        months: None,
+        when: When::Always,
+    },
+    Phrase {
+        key: "feel-good",
+        title_key: "content.themeFeelGood",
+        query: "feel-good uplifting comedy",
+        months: None,
+        when: When::Always,
+    },
+    Phrase {
+        key: "heist",
+        title_key: "content.themeHeist",
+        query: "clever heist crew robbery thriller",
+        months: None,
+        when: When::Always,
+    },
+    Phrase {
+        key: "true-story",
+        title_key: "content.themeTrueStory",
+        query: "based on a true story biographical drama",
+        months: None,
+        when: When::Always,
+    },
+    Phrase {
+        key: "tearjerker",
+        title_key: "content.themeTearjerker",
+        query: "emotional heartbreaking tearjerker drama",
+        months: None,
+        when: When::Always,
+    },
+    Phrase {
+        key: "mind-bending",
+        title_key: "content.themeMindBending",
+        query: "mind-bending surreal science fiction",
+        months: None,
+        when: When::Evening,
+    },
+    Phrase {
+        key: "neon-night",
+        title_key: "content.themeNeonNight",
+        query: "neon-soaked night drive crime thriller",
+        months: None,
+        when: When::Evening,
+    },
+    Phrase {
+        key: "thriller",
+        title_key: "content.themeThriller",
+        query: "edge of your seat suspense thriller",
+        months: None,
+        when: When::Evening,
+    },
+    Phrase {
+        key: "adventure",
+        title_key: "content.themeAdventure",
+        query: "epic adventure fantasy quest",
+        months: None,
+        when: When::Weekend,
+    },
 ];
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::context::{Context, PartOfDay};
+    use super::*;
     use time::Weekday;
 
     fn ctx(month: u8, weekday: Weekday, part: PartOfDay) -> Context {
-        Context { month, weekday, part_of_day: part, last_played: None, watched: Vec::new() }
+        Context {
+            month,
+            weekday,
+            part_of_day: part,
+            last_played: None,
+            watched: Vec::new(),
+        }
     }
 
     #[test]
@@ -100,8 +184,10 @@ mod tests {
     #[test]
     fn eligible_returns_in_season_and_evergreen_only() {
         // December weekday afternoon.
-        let keys: Vec<&str> =
-            eligible(&ctx(12, Weekday::Wednesday, PartOfDay::Afternoon)).iter().map(|p| p.key).collect();
+        let keys: Vec<&str> = eligible(&ctx(12, Weekday::Wednesday, PartOfDay::Afternoon))
+            .iter()
+            .map(|p| p.key)
+            .collect();
         assert!(keys.contains(&"christmas")); // in season
         assert!(keys.contains(&"action")); // always-on evergreen
         assert!(!keys.contains(&"halloween")); // October only
@@ -109,8 +195,10 @@ mod tests {
         assert!(!keys.contains(&"mind-bending")); // evening only
 
         // Saturday summer evening.
-        let keys: Vec<&str> =
-            eligible(&ctx(7, Weekday::Saturday, PartOfDay::Evening)).iter().map(|p| p.key).collect();
+        let keys: Vec<&str> = eligible(&ctx(7, Weekday::Saturday, PartOfDay::Evening))
+            .iter()
+            .map(|p| p.key)
+            .collect();
         assert!(keys.contains(&"summer")); // months 6-8
         assert!(keys.contains(&"adventure")); // weekend
         assert!(keys.contains(&"thriller")); // evening

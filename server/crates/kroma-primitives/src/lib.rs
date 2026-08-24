@@ -62,7 +62,9 @@ pub fn random_u32() -> u32 {
 /// caller cannot smuggle a path segment or a control character through one.
 pub fn valid_device_id(id: &str) -> bool {
     (8..=64).contains(&id.len())
-        && id.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
 }
 
 /// A device-supplied label, trimmed to `max` characters with control characters

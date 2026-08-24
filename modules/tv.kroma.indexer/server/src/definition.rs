@@ -299,7 +299,9 @@ pub struct ScalarString(pub String);
 
 impl<'de> Deserialize<'de> for ScalarString {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        Ok(ScalarString(scalar_to_string(serde_yaml::Value::deserialize(d)?)))
+        Ok(ScalarString(scalar_to_string(
+            serde_yaml::Value::deserialize(d)?,
+        )))
     }
 }
 
@@ -317,7 +319,10 @@ fn scalar_to_string(v: serde_yaml::Value) -> String {
         serde_yaml::Value::Number(n) => n.to_string(),
         serde_yaml::Value::Null => String::new(),
         // Stringify a sequence/mapping rather than fail the whole definition.
-        other => serde_yaml::to_string(&other).unwrap_or_default().trim().to_string(),
+        other => serde_yaml::to_string(&other)
+            .unwrap_or_default()
+            .trim()
+            .to_string(),
     }
 }
 
@@ -375,9 +380,10 @@ fn de_download_selectors<'de, D: serde::Deserializer<'de>>(
     let seq = Vec::<serde_yaml::Value>::deserialize(d)?;
     seq.into_iter()
         .map(|v| match v {
-            serde_yaml::Value::String(s) => {
-                Ok(Selector { selector: Some(s), ..Selector::default() })
-            }
+            serde_yaml::Value::String(s) => Ok(Selector {
+                selector: Some(s),
+                ..Selector::default()
+            }),
             other => serde_yaml::from_value(other).map_err(D::Error::custom),
         })
         .collect()
@@ -455,11 +461,19 @@ search:
   rows: {}
 ",
         );
-        let ids: Vec<&str> = d.caps.categorymappings.iter().map(|c| c.id.as_str()).collect();
+        let ids: Vec<&str> = d
+            .caps
+            .categorymappings
+            .iter()
+            .map(|c| c.id.as_str())
+            .collect();
         assert_eq!(ids, ["2010", "2010", "tv-hd"]);
         assert_eq!(d.caps.categorymappings[0].desc, None);
         assert!(!d.caps.categorymappings[0].default);
-        assert_eq!(d.caps.categorymappings[1].desc.as_deref(), Some("HD movies"));
+        assert_eq!(
+            d.caps.categorymappings[1].desc.as_deref(),
+            Some("HD movies")
+        );
         assert!(d.caps.categorymappings[1].default);
     }
 
@@ -508,7 +522,11 @@ search:
 ",
         );
         let by_name = |n: &str| d.settings.iter().find(|s| s.name == n).unwrap().clone();
-        assert_eq!(by_name("username").default, None, "an absent default stays absent");
+        assert_eq!(
+            by_name("username").default,
+            None,
+            "an absent default stays absent"
+        );
         assert_eq!(by_name("username").label.as_deref(), Some("Username"));
         assert_eq!(by_name("freeleech").default.as_deref(), Some("false"));
         assert_eq!(by_name("pagesize").default.as_deref(), Some("50"));
@@ -523,7 +541,9 @@ search:
 
     #[test]
     fn cookies_accept_a_single_string_or_a_list() {
-        let one = parse_ok(&format!("{MINIMAL}login:\n  method: cookie\n  cookies: uid=1; pass=2\n"));
+        let one = parse_ok(&format!(
+            "{MINIMAL}login:\n  method: cookie\n  cookies: uid=1; pass=2\n"
+        ));
         assert_eq!(one.login.unwrap().cookies, ["uid=1; pass=2"]);
 
         let many = parse_ok(&format!(
@@ -620,7 +640,10 @@ download:
         assert_eq!(download.selectors.len(), 2);
 
         let shorthand = &download.selectors[0];
-        assert_eq!(shorthand.selector.as_deref(), Some("a[href^=\"/download\"]"));
+        assert_eq!(
+            shorthand.selector.as_deref(),
+            Some("a[href^=\"/download\"]")
+        );
         assert_eq!(shorthand.attribute, None);
         assert!(!shorthand.optional);
 
@@ -669,9 +692,17 @@ search:
         let filters = &d.search.keywordsfilters;
         assert_eq!(filters[0].name, "re_replace");
         assert_eq!(filters[0].args, ["[^a-z]", " "]);
-        assert_eq!(filters[1].args, ["-"], "a scalar arg becomes a one-element list");
+        assert_eq!(
+            filters[1].args,
+            ["-"],
+            "a scalar arg becomes a one-element list"
+        );
         assert!(filters[2].args.is_empty(), "an absent args is not an error");
-        assert_eq!(filters[3].args, ["2020"], "and a numeric arg is stringified");
+        assert_eq!(
+            filters[3].args,
+            ["2020"],
+            "and a numeric arg is stringified"
+        );
     }
 
     #[test]
@@ -711,16 +742,26 @@ search:
             ["title", "details", "download", "seeders", "category"]
         );
         assert_eq!(fields["details"].attribute.as_deref(), Some("href"));
-        assert_eq!(fields["download"].text.as_deref(), Some("{{ .Result.details }}&action=download"));
+        assert_eq!(
+            fields["download"].text.as_deref(),
+            Some("{{ .Result.details }}&action=download")
+        );
 
         let seeders = &fields["seeders"];
         assert_eq!(seeders.remove.as_deref(), Some("span.icon"));
         assert!(seeders.optional);
-        assert_eq!(seeders.default.as_deref(), Some("0"), "a numeric default is a string");
+        assert_eq!(
+            seeders.default.as_deref(),
+            Some("0"),
+            "a numeric default is a string"
+        );
         assert_eq!(seeders.filters[0].name, "replace");
 
         let category = &fields["category"];
-        assert_eq!(category.case.keys().collect::<Vec<_>>(), ["i.movie", "i.tv", "*"]);
+        assert_eq!(
+            category.case.keys().collect::<Vec<_>>(),
+            ["i.movie", "i.tv", "*"]
+        );
         assert_eq!(category.case["*"], "8000");
     }
 
@@ -743,8 +784,14 @@ search:
         );
         assert!(d.caps.allowrawsearch);
         assert_eq!(d.caps.categories["5000"], "TV");
-        assert_eq!(d.caps.modes["tv-search"], ["q", "season", "ep", "imdbid", "tvdbid"]);
-        assert_eq!(d.caps.modes.keys().collect::<Vec<_>>(), ["search", "tv-search", "movie-search"]);
+        assert_eq!(
+            d.caps.modes["tv-search"],
+            ["q", "season", "ep", "imdbid", "tvdbid"]
+        );
+        assert_eq!(
+            d.caps.modes.keys().collect::<Vec<_>>(),
+            ["search", "tv-search", "movie-search"]
+        );
     }
 
     #[test]
@@ -782,12 +829,21 @@ login:
         assert_eq!(login.form.as_deref(), Some("form#loginform"));
         assert_eq!(&*login.inputs["username"], "{{ .Config.username }}");
         assert_eq!(&*login.inputs["keeplogged"], "1");
-        assert_eq!(login.selectorinputs["csrf"].attribute.as_deref(), Some("value"));
+        assert_eq!(
+            login.selectorinputs["csrf"].attribute.as_deref(),
+            Some("value")
+        );
         assert_eq!(login.error.len(), 2);
         assert_eq!(login.error[0].selector.as_deref(), Some("div.error"));
         assert_eq!(login.error[1].selector, None);
-        assert_eq!(login.error[1].message.as_ref().unwrap().text.as_deref(), Some("Login failed"));
-        assert_eq!(login.test.unwrap().selector.as_deref(), Some("a[href*=logout]"));
+        assert_eq!(
+            login.error[1].message.as_ref().unwrap().text.as_deref(),
+            Some("Login failed")
+        );
+        assert_eq!(
+            login.test.unwrap().selector.as_deref(),
+            Some("a[href*=logout]")
+        );
         assert_eq!(login.captcha.unwrap().kind, "image");
     }
 
@@ -812,8 +868,14 @@ search:
         let rows = &d.search.rows;
         assert_eq!(rows.selector.as_deref(), Some("tr.torrent"));
         assert_eq!(rows.after, 1, "each result spans two <tr>s");
-        assert_eq!(rows.count.as_ref().unwrap().selector.as_deref(), Some("span.total"));
-        assert_eq!(rows.dateheaders.as_ref().unwrap().attribute.as_deref(), Some("title"));
+        assert_eq!(
+            rows.count.as_ref().unwrap().selector.as_deref(),
+            Some("span.total")
+        );
+        assert_eq!(
+            rows.dateheaders.as_ref().unwrap().attribute.as_deref(),
+            Some("title")
+        );
         // The YAML key is camelCase while the field is snake_case; a broken
         // rename turns "no results" into a hard error on every empty search.
         assert!(rows.missing_attribute_equals_no_results);
@@ -882,7 +944,10 @@ search:
             ("rows", "id: demo\nname: Demo\ncaps: {}\nsearch: {}\n"),
         ] {
             let err = parse(yaml.as_bytes()).unwrap_err().to_string();
-            assert!(err.contains(missing), "expected {missing} to be required: {err}");
+            assert!(
+                err.contains(missing),
+                "expected {missing} to be required: {err}"
+            );
         }
     }
 

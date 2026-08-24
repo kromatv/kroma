@@ -49,9 +49,8 @@ pub fn trending_ids(pool: &Pool, n: usize) -> Result<Vec<String>> {
 /// Most-recently-added movie ids (episodes excluded rows are movie/show level).
 pub fn recently_added_ids(pool: &Pool, n: usize) -> Result<Vec<String>> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare(
-        "SELECT id FROM items WHERE kind != 'episode' ORDER BY added_at DESC LIMIT ?1",
-    )?;
+    let mut stmt = conn
+        .prepare("SELECT id FROM items WHERE kind != 'episode' ORDER BY added_at DESC LIMIT ?1")?;
     let rows = stmt.query_map(params![n as i64], |r| r.get::<_, String>(0))?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
@@ -92,7 +91,7 @@ mod tests {
         // recently-added excludes episodes; newest added_at first.
         let recent = recently_added_ids(&p, 10).unwrap();
         assert!(!recent.contains(&"e1".to_string())); // episodes excluded
-        // Newest added_at first: nogen (2022) before c2 (2021) before c1 (2020).
+                                                      // Newest added_at first: nogen (2022) before c2 (2021) before c1 (2020).
         let idx = |id: &str| recent.iter().position(|x| x == id).unwrap();
         assert!(idx("nogen") < idx("c2") && idx("c2") < idx("c1"));
 
@@ -136,11 +135,17 @@ mod tests {
 
         let top = trending_ids(&p, 10).unwrap();
         // Recency beats raw count, and among equal counts the fresher wins.
-        assert_eq!(top, vec!["c1".to_string(), "nogen".to_string(), "c2".to_string()]);
+        assert_eq!(
+            top,
+            vec!["c1".to_string(), "nogen".to_string(), "c2".to_string()]
+        );
         // The two-month-old binge is out of the window, so it never shows.
         assert!(!top.contains(&"seed".to_string()));
         // The limit is honoured.
-        assert_eq!(trending_ids(&p, 2).unwrap(), vec!["c1".to_string(), "nogen".to_string()]);
+        assert_eq!(
+            trending_ids(&p, 2).unwrap(),
+            vec!["c1".to_string(), "nogen".to_string()]
+        );
     }
 
     #[test]

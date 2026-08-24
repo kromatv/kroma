@@ -57,17 +57,24 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
     // can't reach the client. Blocking: engine stats run off the runtime.
     let live = {
         let mgr = dm(&state);
-        tokio::task::spawn_blocking(move || mgr.live_stats()).await.unwrap_or_default()
+        tokio::task::spawn_blocking(move || mgr.live_stats())
+            .await
+            .unwrap_or_default()
     };
     // Resolved before the blocking closure, which cannot borrow the host.
-    let indexers: std::collections::HashMap<String, String> =
-        crate::port::indexers::names(&state).into_iter().map(|i| (i.id, i.name)).collect();
+    let indexers: std::collections::HashMap<String, String> = crate::port::indexers::names(&state)
+        .into_iter()
+        .map(|i| (i.id, i.name))
+        .collect();
     // The client names come from this module's OWN database; the ledger below
     // from the shared one. Two files, so two lookups: resolved here because the
     // blocking closure gets only the one pool.
     let clients: std::collections::HashMap<String, String> = query(state.store(), |pool| {
         let conn = pool.get()?;
-        Ok(db::list_download_clients(&conn)?.into_iter().map(|c| (c.id, c.name)).collect())
+        Ok(db::list_download_clients(&conn)?
+            .into_iter()
+            .map(|c| (c.id, c.name))
+            .collect())
     })
     .await
     .unwrap_or_default();
@@ -77,10 +84,19 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
         let downloads = rows
             .into_iter()
             .map(|d| {
-                let req = d.request_id.as_deref().and_then(|rid| db::get_request(&conn, rid).ok().flatten());
-                let title = req.as_ref().map(|r| r.title.clone()).unwrap_or_else(|| d.release_title.clone());
+                let req = d
+                    .request_id
+                    .as_deref()
+                    .and_then(|rid| db::get_request(&conn, rid).ok().flatten());
+                let title = req
+                    .as_ref()
+                    .map(|r| r.title.clone())
+                    .unwrap_or_else(|| d.release_title.clone());
                 let poster_url = req.as_ref().and_then(|r| r.poster_url.clone());
-                let indexer_name = d.indexer_id.as_deref().and_then(|id| indexers.get(id).cloned());
+                let indexer_name = d
+                    .indexer_id
+                    .as_deref()
+                    .and_then(|id| indexers.get(id).cloned());
                 let stats = live.get(&d.id).copied().unwrap_or((0, 0, 0, 0));
                 let local_id = req.as_ref().and_then(|r| {
                     if d.kind == "movie" {
@@ -91,7 +107,10 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
                 });
                 DownloadView {
                     id: d.id,
-                    client_name: clients.get(&d.client_id).cloned().unwrap_or_else(|| d.client_id.clone()),
+                    client_name: clients
+                        .get(&d.client_id)
+                        .cloned()
+                        .unwrap_or_else(|| d.client_id.clone()),
                     client_id: d.client_id,
                     request_id: d.request_id,
                     kind: d.kind,
@@ -168,7 +187,10 @@ pub async fn reannounce<S: HostStorage + Clone + Send + Sync + 'static>(
     AxPath(id): AxPath<String>,
 ) -> Result<Response, Response> {
     let downloads = dm(&state);
-    act(state.clone(), user, id, move |_st, id| downloads.reannounce(id)).await
+    act(state.clone(), user, id, move |_st, id| {
+        downloads.reannounce(id)
+    })
+    .await
 }
 
 fn bulk_response(out: anyhow::Result<usize>) -> Result<Response, Response> {
@@ -262,5 +284,8 @@ pub async fn remove<S: HostStorage + Clone + Send + Sync + 'static>(
     AxQuery(params): AxQuery<RemoveParams>,
 ) -> Result<Response, Response> {
     let downloads = dm(&state);
-    act(state.clone(), user, id, move |_st, id| downloads.remove(id, params.delete_data)).await
+    act(state.clone(), user, id, move |_st, id| {
+        downloads.remove(id, params.delete_data)
+    })
+    .await
 }

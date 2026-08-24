@@ -53,7 +53,11 @@ pub(super) struct RawCreatedBy {
 /// `max_cast`; empty characters dropped and photos absolutized to `w185`. With
 /// `drop_unnamed` set, rows with an empty name are filtered first (the discover
 /// path does this; enrichment keeps TMDB's list as-is).
-pub(super) fn build_cast(mut raw: Vec<RawCast>, max_cast: usize, drop_unnamed: bool) -> Vec<CastMember> {
+pub(super) fn build_cast(
+    mut raw: Vec<RawCast>,
+    max_cast: usize,
+    drop_unnamed: bool,
+) -> Vec<CastMember> {
     raw.sort_by_key(|m| m.order.unwrap_or(u32::MAX));
     raw.into_iter()
         .filter(|m| !drop_unnamed || !m.name.is_empty())
@@ -71,16 +75,41 @@ pub(super) fn build_cast(mut raw: Vec<RawCast>, max_cast: usize, drop_unnamed: b
 /// first, one row per person (most senior role wins), capped at `max_crew`. TV
 /// series carry their creators in `created_by` (no crew "Director"), folded in as
 /// "Creator".
-pub(super) fn build_crew(crew: Vec<RawCrew>, created_by: Vec<RawCreatedBy>, max_crew: usize) -> Vec<CrewMember> {
-    let rank = |job: &str| KEY_CREW_JOBS.iter().position(|j| *j == job).unwrap_or(usize::MAX);
+pub(super) fn build_crew(
+    crew: Vec<RawCrew>,
+    created_by: Vec<RawCreatedBy>,
+    max_crew: usize,
+) -> Vec<CrewMember> {
+    let rank = |job: &str| {
+        KEY_CREW_JOBS
+            .iter()
+            .position(|j| *j == job)
+            .unwrap_or(usize::MAX)
+    };
     let mut candidates: Vec<(usize, CrewMember)> = crew
         .into_iter()
         .filter(|c| !c.name.is_empty() && KEY_CREW_JOBS.contains(&c.job.as_str()))
-        .map(|c| (rank(&c.job), CrewMember { name: c.name, job: c.job, profile_url: None }))
+        .map(|c| {
+            (
+                rank(&c.job),
+                CrewMember {
+                    name: c.name,
+                    job: c.job,
+                    profile_url: None,
+                },
+            )
+        })
         .collect();
     // TV creators (no crew "Director" on series) → treat as "Creator".
     for cb in created_by.into_iter().filter(|c| !c.name.is_empty()) {
-        candidates.push((rank("Creator"), CrewMember { name: cb.name, job: "Creator".into(), profile_url: None }));
+        candidates.push((
+            rank("Creator"),
+            CrewMember {
+                name: cb.name,
+                job: "Creator".into(),
+                profile_url: None,
+            },
+        ));
     }
     // Most senior role first; keep one row per person.
     candidates.sort_by_key(|(r, _)| *r);

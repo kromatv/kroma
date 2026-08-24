@@ -14,8 +14,7 @@ fn granting_hands_the_tv_the_account_it_was_waiting_for() {
     assert!(matches!(h.poll(&tv.secret), PollState::Pending));
     assert!(grant(&h, &tv.handle, PHONE).is_ok());
 
-    let (token, access_token, user) =
-        approved(h.poll(&tv.secret)).expect("the granted session");
+    let (token, access_token, user) = approved(h.poll(&tv.secret)).expect("the granted session");
     assert_eq!((token.as_str(), access_token.as_str()), ("tok", "acc"));
     assert_eq!(user.id, "u1");
 }
@@ -38,9 +37,18 @@ fn an_unknown_handle_is_refused() {
 fn a_beacon_nobody_could_place_is_not_granted_without_its_check() {
     let h = new();
     let tv = announce_unplaceable(&h, "tv-tizen-01", "Tizen", TV);
-    assert!(matches!(grant(&h, &tv.handle, PHONE), Err(Refusal::CheckRequired)));
-    assert!(matches!(grant_checked(&h, &tv.handle, PHONE, "   "), Err(Refusal::CheckRequired)));
-    assert!(matches!(grant_checked(&h, &tv.handle, PHONE, "WRONG"), Err(Refusal::CheckWrong)));
+    assert!(matches!(
+        grant(&h, &tv.handle, PHONE),
+        Err(Refusal::CheckRequired)
+    ));
+    assert!(matches!(
+        grant_checked(&h, &tv.handle, PHONE, "   "),
+        Err(Refusal::CheckRequired)
+    ));
+    assert!(matches!(
+        grant_checked(&h, &tv.handle, PHONE, "WRONG"),
+        Err(Refusal::CheckWrong)
+    ));
     assert!(matches!(h.poll(&tv.secret), PollState::Pending));
 
     assert!(grant_checked(&h, &tv.handle, PHONE, &tv.check).is_ok());
@@ -72,7 +80,10 @@ fn three_wrong_checks_take_the_beacon_down_for_good() {
     assert!(matches!(wrong(), Err(Refusal::CheckTooMany)));
 
     // Gone, so even the right answer buys nothing and the TV starts over.
-    assert!(matches!(grant_checked(&h, &tv.handle, PHONE, &tv.check), Err(Refusal::Gone)));
+    assert!(matches!(
+        grant_checked(&h, &tv.handle, PHONE, &tv.check),
+        Err(Refusal::Gone)
+    ));
     assert!(matches!(h.poll(&tv.secret), PollState::Unknown));
     assert!(h.nearby(PHONE).is_empty());
 }
@@ -143,7 +154,13 @@ fn a_second_phone_cannot_grant_a_beacon_already_taken() {
     let h = new();
     let tv = announce(&h, "tv-salon-01", "Salon", TV);
     assert!(grant(&h, &tv.handle, PHONE).is_ok());
-    let second = h.grant(&tv.handle, claim(PHONE), user(), "tok2".into(), "acc2".into());
+    let second = h.grant(
+        &tv.handle,
+        claim(PHONE),
+        user(),
+        "tok2".into(),
+        "acc2".into(),
+    );
     assert!(second.is_err());
 
     let (token, ..) = approved(h.poll(&tv.secret)).expect("the first grant");

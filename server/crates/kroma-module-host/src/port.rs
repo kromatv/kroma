@@ -36,10 +36,13 @@ pub fn point_resolver(host: Arc<dyn HostCtx>, point: &str, instance: Option<&str
     let point = point.to_string();
     let want = instance.map(str::to_string);
     Arc::new(move || {
-        let found = host.contributions(&point).into_iter().find(|c| match &want {
-            Some(id) => c.instance.as_deref() == Some(id.as_str()),
-            None => true,
-        })?;
+        let found = host
+            .contributions(&point)
+            .into_iter()
+            .find(|c| match &want {
+                Some(id) => c.instance.as_deref() == Some(id.as_str()),
+                None => true,
+            })?;
         Some((found.base_url, found.token))
     })
 }
@@ -52,10 +55,13 @@ pub fn pinned_resolver(
     point: &str,
     instance: Option<&str>,
 ) -> Option<Resolver> {
-    let found = host.contributions(point).into_iter().find(|c| match instance {
-        Some(id) => c.instance.as_deref() == Some(id),
-        None => true,
-    })?;
+    let found = host
+        .contributions(point)
+        .into_iter()
+        .find(|c| match instance {
+            Some(id) => c.instance.as_deref() == Some(id),
+            None => true,
+        })?;
     let endpoint = (found.base_url, found.token);
     Some(Arc::new(move || Some(endpoint.clone())))
 }
@@ -93,7 +99,10 @@ pub fn call_raw<B: serde::Serialize, T: serde::de::DeserializeOwned>(
         resolve().ok_or_else(|| anyhow::anyhow!("no module contributes this point"))?;
     let resp = kroma_http::Fetch::new()
         .header("authorization", format!("Bearer {token}"))
-        .post_json(&format!("{base}/_port/{path}"), &serde_json::to_value(body)?)?
+        .post_json(
+            &format!("{base}/_port/{path}"),
+            &serde_json::to_value(body)?,
+        )?
         .ensure_ok()?;
     resp.json()
 }

@@ -14,7 +14,9 @@ async fn main() -> anyhow::Result<()> {
         |host| {
             // The module owns its connector; register it so the module's own code
             // (on_enable, the admin routes) resolves it via `service::<RemoteAccess>`.
-            host.register_service(kroma_remote::RemoteAccess::new(host.data_dir().to_path_buf()));
+            host.register_service(kroma_remote::RemoteAccess::new(
+                host.data_dir().to_path_buf(),
+            ));
         },
         kroma_remote::server_module::<RemoteHost>(),
     )
