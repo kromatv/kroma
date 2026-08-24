@@ -186,6 +186,10 @@ pub struct ResponseSpec {
 pub struct Rows {
     #[serde(default)]
     pub selector: Option<String>,
+    // For JSON: a sub-key on each row element whose array value is expanded
+    // into individual rows (YTS: `data.movies` → each movie's `torrents`).
+    #[serde(default)]
+    pub attribute: Option<String>,
     // Rows to merge upward into the previous one (multi-line row layouts).
     #[serde(default)]
     pub after: i64,

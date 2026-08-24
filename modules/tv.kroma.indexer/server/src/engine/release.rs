@@ -25,6 +25,21 @@ pub fn to_release(def: &Definition, cfg: &IndexerConfig, r: &HashMap<String, Str
         }
     }
 
+    // Public trackers (e.g. The Pirate Bay) return an infohash but no magnet
+    // link in their search results. Jackett/Prowlarr synthesize one before
+    // returning XML; the built-in indexer must do the same so the release is
+    // grabbable without a details-page round-trip.
+    if magnet.is_none() && link.is_none() {
+        if let Some(hash) = get("infohash") {
+            if def.kind == "public" {
+                magnet = Some(format!(
+                    "magnet:?xt=urn:btih:{hash}&dn={}",
+                    crate::filters::url_encode(&title)
+                ));
+            }
+        }
+    }
+
     let categories = category::newznab_for_tracker_id(def, get("category").unwrap_or_default())
         .into_iter()
         .collect();
@@ -196,5 +211,38 @@ mod tests {
         r.insert("download".into(), "https://cdn.example/x.torrent".into());
         let rel = to_release(&def, &cfg, &r);
         assert_eq!(rel.link.as_deref(), Some("https://cdn.example/x.torrent"));
+    }
+
+    #[test]
+    fn to_release_synthesizes_magnet_from_infohash_for_public() {
+        let mut def = cat_def();
+        def.kind = "public".into();
+        let cfg = cfg("https://tpb.example/");
+        let mut r: HashMap<String, String> = HashMap::new();
+        r.insert("title".into(), "Reacher.S01.COMPLETE.1080p".into());
+        r.insert("infohash".into(), "ABC123DEF456".into());
+        r.insert("details".into(), "/torrent/123".into());
+        let rel = to_release(&def, &cfg, &r);
+        assert!(rel.magnet.is_some());
+        assert!(rel
+            .magnet
+            .as_deref()
+            .unwrap()
+            .starts_with("magnet:?xt=urn:btih:ABC123DEF456"));
+        assert!(rel.magnet.as_deref().unwrap().contains("dn="));
+        assert_eq!(rel.link, None);
+    }
+
+    #[test]
+    fn to_release_does_not_synthesize_magnet_for_private() {
+        let mut def = cat_def();
+        def.kind = "private".into();
+        let cfg = cfg("https://private.example/");
+        let mut r: HashMap<String, String> = HashMap::new();
+        r.insert("title".into(), "Some.Release".into());
+        r.insert("infohash".into(), "ABC123".into());
+        let rel = to_release(&def, &cfg, &r);
+        assert_eq!(rel.magnet, None);
+        assert_eq!(rel.link, None);
     }
 }

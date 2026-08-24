@@ -26,38 +26,73 @@ pub fn parse_json(
         .selector
         .as_deref()
         .ok_or_else(|| anyhow::anyhow!("definition has no rows selector"))?;
-    let rows = match json_get(&root, row_sel) {
+    // The rows selector can itself be templated (Pirate Bay:
+    // `${{ if .Config.uploader }}:has(...){{ end }}`).
+    let row_sel = template::render(row_sel, &base_ctx);
+    let matched = matched_rows(&root, &row_sel);
+    let rows = expand_rows(&matched, def.search.rows.attribute.as_deref());
+
+    let releases = rows
+        .iter()
+        .filter_map(|(row, parent)| extract_row_json(def, &base_ctx, row, *parent))
+        .map(|result| to_release(def, cfg, &result))
+        .collect();
+    Ok(releases)
+}
+
+/// Resolve the rows selector to the matched elements: an array yields its
+/// items, a single object yields one row, anything else yields nothing.
+fn matched_rows(root: &serde_json::Value, row_sel: &str) -> Vec<serde_json::Value> {
+    match json_get(root, row_sel) {
         Some(serde_json::Value::Array(arr)) => arr.clone(),
-        // A single object row, or nothing.
         Some(v @ serde_json::Value::Object(_)) => vec![v.clone()],
         _ => Vec::new(),
-    };
-
-    let mut releases = Vec::new();
-    for row in &rows {
-        if let Some(result) = extract_row_json(def, &base_ctx, row) {
-            releases.push(to_release(def, cfg, &result));
-        }
     }
-    Ok(releases)
+}
+
+/// Apply Cardigann `rows.attribute`: each matched element is expanded by that
+/// sub-key's array into individual rows (YTS: movies → torrents). The parent
+/// element is kept so `..foo` field selectors can traverse up to it. Without
+/// an attribute, each matched element is a row with no parent.
+fn expand_rows<'a>(
+    matched: &'a [serde_json::Value],
+    attr: Option<&str>,
+) -> Vec<(&'a serde_json::Value, Option<&'a serde_json::Value>)> {
+    let Some(attr) = attr else {
+        return matched.iter().map(|r| (r, None)).collect();
+    };
+    matched
+        .iter()
+        .filter_map(|el| json_get(el, attr).map(|sub| (el, sub)))
+        .flat_map(|(el, sub)| match sub.as_array() {
+            Some(arr) => arr.iter().map(|item| (item, Some(el))).collect::<Vec<_>>(),
+            None => vec![(sub, Some(el))],
+        })
+        .collect()
 }
 
 fn extract_row_json(
     def: &Definition,
     base_ctx: &Context,
     row: &serde_json::Value,
+    parent: Option<&serde_json::Value>,
 ) -> Option<HashMap<String, String>> {
     let mut result: HashMap<String, String> = HashMap::new();
     for (name, field) in &def.search.fields {
         let mut ctx = base_ctx.clone();
         ctx.result = result.clone();
-        let value = resolve_field_json(field, row, &ctx)?;
+        let value = resolve_field_json(field, row, parent, &ctx)?;
         result.insert(name.clone(), value);
     }
     Some(result)
 }
 
-fn resolve_field_json(field: &Field, row: &serde_json::Value, ctx: &Context) -> Option<String> {
+fn resolve_field_json(
+    field: &Field,
+    row: &serde_json::Value,
+    parent: Option<&serde_json::Value>,
+    ctx: &Context,
+) -> Option<String> {
     let raw: Option<String> = if let Some(text) = &field.text {
         Some(template::render(text, ctx))
     } else if !field.case.is_empty() {
@@ -67,14 +102,14 @@ fn resolve_field_json(field: &Field, row: &serde_json::Value, ctx: &Context) -> 
         for (path, val) in &field.case {
             if path == "*" {
                 default = Some(val);
-            } else if json_get(row, path).is_some_and(json_truthy) {
+            } else if resolve_selector(row, parent, path).is_some_and(json_truthy) {
                 hit = Some(val);
                 break;
             }
         }
         hit.or(default).map(|v| template::render(v, ctx))
     } else if let Some(sel) = &field.selector {
-        json_get(row, sel).map(json_scalar_string)
+        resolve_selector(row, parent, sel).map(json_scalar_string)
     } else {
         Some(json_scalar_string(row))
     };
@@ -88,6 +123,25 @@ fn resolve_field_json(field: &Field, row: &serde_json::Value, ctx: &Context) -> 
         },
     };
     Some(filters::apply(&value, &field.filters, ctx))
+}
+
+// A `..` prefix traverses to the parent element (Cardigann parent traversal
+// for `rows.attribute`); otherwise the selector resolves against the row.
+fn resolve_selector<'a>(
+    row: &'a serde_json::Value,
+    parent: Option<&'a serde_json::Value>,
+    sel: &str,
+) -> Option<&'a serde_json::Value> {
+    let sel = sel.trim();
+    if let Some(rest) = sel.strip_prefix("..") {
+        let p = parent?;
+        let rest = rest.trim_start_matches('.');
+        if rest.is_empty() {
+            return Some(p);
+        }
+        return json_get(p, rest);
+    }
+    json_get(row, sel)
 }
 
 #[cfg(test)]
@@ -246,5 +300,47 @@ search:
         assert_eq!(rels[0].size_bytes, Some(3 * 1024 * 1024 * 1024));
         assert_eq!(rels[0].seeders, None);
         assert_eq!(rels[0].grabs, Some(7));
+    }
+
+    #[test]
+    fn rows_attribute_expands_sub_arrays_with_parent_traversal() {
+        // Mirrors YTS: `data.movies` → each movie's `torrents` array expanded,
+        // `..year` and `..title` traverse up to the parent movie.
+        let def = build_def(
+            r#"
+id: t
+name: T
+caps: {}
+search:
+  rows:
+    selector: "data.movies"
+    attribute: "torrents"
+  fields:
+    title:
+      selector: "..title"
+    year:
+      selector: "..year"
+    quality:
+      selector: "quality"
+    seeders:
+      selector: "seeds"
+"#,
+        );
+        let body = r#"{"data":{"movies":[
+          {"title":"Film A","year":2024,"torrents":[
+            {"quality":"1080p","seeds":10},
+            {"quality":"2160p","seeds":5}
+          ]},
+          {"title":"Film B","year":2023,"torrents":[
+            {"quality":"720p","seeds":1}
+          ]}
+        ]}}"#;
+        let rels = parse_json(&def, &cfg("https://x/"), body).unwrap();
+        assert_eq!(rels.len(), 3);
+        assert_eq!(rels[0].title, "Film A");
+        assert_eq!(rels[0].seeders, Some(10));
+        assert_eq!(rels[1].seeders, Some(5));
+        assert_eq!(rels[2].title, "Film B");
+        assert_eq!(rels[2].seeders, Some(1));
     }
 }

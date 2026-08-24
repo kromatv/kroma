@@ -5,7 +5,7 @@ import { torrentsModule } from './index';
 describe('torrentsModule', () => {
   it('takes its identity and its dependencies from the shared manifest', () => {
     expect(torrentsModule.id).toBe('tv.kroma.torrents');
-    expect(torrentsModule.dependencies).toEqual({ 'tv.kroma.indexer': '^0.3.0' });
+    expect(torrentsModule.dependencies).toEqual({ 'tv.kroma.indexer': '^0.4.0' });
     expect(torrentsModule.optionalDependencies).toEqual({ 'tv.kroma.vpn': '^0.3.0' });
   });
 

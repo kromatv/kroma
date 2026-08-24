@@ -88,7 +88,9 @@ fn engine<S: HostCtx>(host: &S, client: &Client) -> QBittorrent {
         username: client.username.clone(),
         password: client.password.clone(),
     };
-    let jar = cookie_jar_path(&host.data_dir().join("qbittorrent"), &def);
+    let state_dir = host.data_dir().join("qbittorrent");
+    std::fs::create_dir_all(&state_dir).ok();
+    let jar = cookie_jar_path(&state_dir, &def);
     QBittorrent::new(&def, jar)
 }
 

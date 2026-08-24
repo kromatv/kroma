@@ -45,7 +45,10 @@ impl QBittorrent {
             &[("username", &self.username), ("password", &self.password)],
         )?;
         let resp = resp.ensure_ok()?;
-        if !resp.text().contains("Ok") {
+        // qBittorrent >= 4.6 returns 204 No Content on success; older versions
+        // return 200 with "Ok." in the body. A 2xx status (validated by
+        // ensure_ok) is the reliable signal; the body text is a legacy check.
+        if resp.status != 204 && !resp.text().contains("Ok") {
             bail!("authentication failed (check username/password)");
         }
         Ok(())
@@ -406,6 +409,17 @@ mod tests {
         });
         let err = s.client().test().unwrap_err().to_string();
         assert!(err.contains("authentication failed"), "{err}");
+    }
+
+    #[test]
+    fn a_204_login_response_is_success() {
+        // qBittorrent >= 4.6 returns 204 No Content (empty body) on success.
+        let s = FakeQbit::start(|key, _| match key {
+            "POST /api/v2/auth/login" => (204, String::new()),
+            "GET /api/v2/app/version" => (200, "v5.0.0".into()),
+            _ => (200, String::new()),
+        });
+        assert_eq!(s.client().test().unwrap(), "qBittorrent v5.0.0");
     }
 
     #[test]
