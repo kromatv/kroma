@@ -20,7 +20,7 @@ qBittorrent, no Gluetun. Just KROMA.
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=maxscharwath_kroma&metric=ncloc)](https://sonarcloud.io/component_measures?id=maxscharwath_kroma&metric=ncloc)
 
 [![License: GPL-2.0](https://img.shields.io/badge/License-GPL--2.0-F4B642.svg?style=flat-square)](LICENSE)
-[![Bun ≥ 1.3](https://img.shields.io/badge/Bun-%E2%89%A5%201.3-0A0A0C.svg?style=flat-square&logo=bun&logoColor=F4B642)](https://bun.sh)
+[![Bun ≥ 1.4](https://img.shields.io/badge/Bun-%E2%89%A5%201.4-0A0A0C.svg?style=flat-square&logo=bun&logoColor=F4B642)](https://bun.sh)
 [![Rust ≥ 1.88](https://img.shields.io/badge/Rust-%E2%89%A5%201.88-0A0A0C.svg?style=flat-square&logo=rust&logoColor=F4B642)](https://www.rust-lang.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-0A0A0C.svg?style=flat-square&logo=typescript&logoColor=3178C6)](https://www.typescriptlang.org)
 [![Platforms](https://img.shields.io/badge/platforms-web%20%C2%B7%20TV%20%C2%B7%20mobile%20%C2%B7%20desktop%20%C2%B7%20NAS-0A0A0C.svg?style=flat-square)](#platforms)
@@ -282,7 +282,7 @@ each other, and both reach a library by its `@kroma/*` name.
 
 ## Prerequisites
 
-- **[Bun](https://bun.sh)** ≥ 1.3, the package manager and runner (the repo is a Bun workspace)
+- **[Bun](https://bun.sh)** ≥ 1.4, the package manager and runner (the repo is a Bun workspace)
 - **[Rust](https://www.rust-lang.org)** ≥ 1.88 + **ffmpeg/ffprobe** for the server's
   metadata and HLS path. `rust-toolchain.toml` pins the build to a concrete stable
   and rustup installs it for you.
