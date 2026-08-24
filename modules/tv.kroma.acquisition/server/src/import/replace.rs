@@ -80,7 +80,7 @@ fn superseded<S: HostStorage>(
 // upgrade covers the one episode it was grabbed for, and the rest of the run
 // has nowhere else to live.
 fn same_cut_singletons(candidates: &[db::LibraryFile], at: &Path) -> Vec<String> {
-    let name = at.file_name().and_then(|n| n.to_str()).unwrap_or_default();
+    let name = at.file_name().and_then(std::ffi::OsStr::to_str).unwrap_or_default();
     let cut = edition_cut(detect_edition(name).as_deref());
     let mut per_item: HashMap<&str, Vec<&str>> = HashMap::new();
     for file in candidates {

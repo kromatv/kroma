@@ -244,7 +244,7 @@ fn resolve_meta<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<ImportMe
 }
 
 fn stem_of(path: &Path) -> &str {
-    path.file_stem().and_then(|s| s.to_str()).unwrap_or_default()
+    path.file_stem().and_then(std::ffi::OsStr::to_str).unwrap_or_default()
 }
 
 fn target_library_def<S: HostStorage>(state: &S, kind: RequestKind) -> Result<LibraryFolders> {

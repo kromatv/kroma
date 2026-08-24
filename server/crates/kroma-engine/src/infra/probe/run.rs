@@ -230,7 +230,7 @@ fn run_ffprobe(path: &Path) -> Option<ProbeResult> {
 fn fallback_from_extension(path: &Path) -> ProbeResult {
     let ext = path
         .extension()
-        .and_then(|e| e.to_str())
+        .and_then(std::ffi::OsStr::to_str)
         .unwrap_or("")
         .to_ascii_lowercase();
 

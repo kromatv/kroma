@@ -59,7 +59,7 @@ fn safe_segment(s: &str) -> Option<&str> {
 }
 
 fn content_type_for(path: &std::path::Path) -> &'static str {
-    match path.extension().and_then(|e| e.to_str()) {
+    match path.extension().and_then(std::ffi::OsStr::to_str) {
         Some("js" | "mjs") => "text/javascript; charset=utf-8",
         Some("css") => "text/css; charset=utf-8",
         Some("json") => "application/json",

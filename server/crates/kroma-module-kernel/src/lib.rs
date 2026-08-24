@@ -255,9 +255,11 @@ mod gate_tests {
             db,
             settings,
             kroma_engine::point::Point::absent("embedder"),
-            services(dir.path()),
-            &[],
-            Arc::new(|_| Vec::new()),
+            kroma_engine::state::ModuleWiring {
+                services: services(dir.path()),
+                jobs: &[],
+                contributions: Arc::new(|_| Vec::new()),
+            },
         );
         (state, dir)
     }

@@ -42,8 +42,12 @@ fn build_state(embedder: Point, tmdb_api_key: Option<&str>) -> SharedState {
     let mut config = test_config(scratch.path().to_path_buf());
     config.tmdb_api_key = tmdb_api_key.map(str::to_string);
     let settings = Settings::load(&db);
-    let state =
-        AppState::new(config, false, db, settings, embedder, HashMap::new(), &[], Arc::new(|_| Vec::new()));
+    let wiring = crate::state::ModuleWiring {
+        services: HashMap::new(),
+        jobs: &[],
+        contributions: Arc::new(|_| Vec::new()),
+    };
+    let state = AppState::new(config, false, db, settings, embedder, wiring);
     state.own_scratch_dir(scratch);
     state
 }

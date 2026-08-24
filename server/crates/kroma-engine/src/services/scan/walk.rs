@@ -35,7 +35,7 @@ pub(super) fn scan_root(
 ) {
     let lib_name = root
         .file_name()
-        .and_then(|n| n.to_str())
+        .and_then(std::ffi::OsStr::to_str)
         .unwrap_or("library")
         .to_string();
     let added_at = now_iso8601();
@@ -81,11 +81,11 @@ pub(super) fn scan_root(
 
         let container = path
             .extension()
-            .and_then(|e| e.to_str())
+            .and_then(std::ffi::OsStr::to_str)
             .unwrap_or("")
             .to_ascii_lowercase();
 
-        let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        let file_name = path.file_name().and_then(std::ffi::OsStr::to_str).unwrap_or("");
         let edition = detect_edition(file_name);
 
         let file = MediaFile {
@@ -311,7 +311,7 @@ fn file_meta(path: &Path) -> FileMeta {
 
 fn has_video_extension(path: &Path) -> bool {
     path.extension()
-        .and_then(|e| e.to_str())
+        .and_then(std::ffi::OsStr::to_str)
         .map(|e| VIDEO_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
         .unwrap_or(false)
 }

@@ -26,6 +26,18 @@ pub type Contributions = std::sync::Arc<
     dyn Fn(&str) -> Vec<kroma_module_host::Contribution> + Send + Sync,
 >;
 
+/// Everything the composition root (the binary) contributes from module crates,
+/// bundled so the core roster keeps naming no module type. See [`AppState::new`].
+pub struct ModuleWiring {
+    // Module services + peer ports, resolved by type through the `HostCtx` seam.
+    pub services:
+        std::collections::HashMap<std::any::TypeId, std::sync::Arc<dyn std::any::Any + Send + Sync>>,
+    // Background jobs contributed by module crates, run alongside the built-ins.
+    pub jobs: &'static [crate::services::jobs::Builtin],
+    // Resolves a port contract name to the running provider's `(base_url, token)`.
+    pub contributions: Contributions,
+}
+
 pub struct AppState {
     pub config: Config,
     pub ffprobe_available: bool,
@@ -86,18 +98,11 @@ impl AppState {
         // resolver it passes below. A test hands in a stub; a server with no
         // module answering it finds nothing rather than failing.
         embedder: crate::point::Point,
-        module_services: std::collections::HashMap<
-            std::any::TypeId,
-            std::sync::Arc<dyn std::any::Any + Send + Sync>,
-        >,
-        // Background jobs contributed by module crates (e.g. the acquisition
-        // jobs from the downloads module), registered alongside the built-ins
-        // so the core roster names no module.
-        module_jobs: &'static [crate::services::jobs::Builtin],
-        // Resolves a port contract name to the running provider's
-        // `(base_url, token)`. Supplied by the binary, which owns the supervisor.
-        contributions: Contributions,
+        // Module-contributed wiring (services, jobs, port contributions), built
+        // by the binary so the core roster names no module.
+        wiring: ModuleWiring,
     ) -> SharedState {
+        let ModuleWiring { services: module_services, jobs: module_jobs, contributions } = wiring;
         let hls = hls::HlsEngine::new(
             &config.data_dir,
             crate::services::settings::max_transcodes(&settings),
@@ -220,9 +225,11 @@ mod tests {
             db,
             settings,
             crate::point::Point::absent("embedder"),
-            std::collections::HashMap::new(),
-            MODULE_JOB,
-            Arc::new(|_| Vec::new()),
+            ModuleWiring {
+                services: std::collections::HashMap::new(),
+                jobs: MODULE_JOB,
+                contributions: Arc::new(|_| Vec::new()),
+            },
         );
         state.own_scratch_dir(dir);
 

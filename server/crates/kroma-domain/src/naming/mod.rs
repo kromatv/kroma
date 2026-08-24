@@ -41,7 +41,7 @@ pub enum Parsed {
 pub fn parse(root: &Path, path: &Path) -> Parsed {
     let stem = path
         .file_stem()
-        .and_then(|s| s.to_str())
+        .and_then(std::ffi::OsStr::to_str)
         .unwrap_or("Untitled");
 
     // Directory components between the library root and the file.
@@ -51,7 +51,7 @@ pub fn parse(root: &Path, path: &Path) -> Parsed {
         .map(|rel| {
             rel.components()
                 .filter_map(|c| c.as_os_str().to_str())
-                .map(|s| s.to_string())
+                .map(ToString::to_string)
                 .collect()
         })
         .unwrap_or_default();

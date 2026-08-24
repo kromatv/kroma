@@ -66,7 +66,7 @@ async fn an_upload_the_encoder_cannot_read_is_refused_as_unsupported_media() {
     assert_eq!(status, StatusCode::UNSUPPORTED_MEDIA_TYPE);
 
     let dir = crate::infra::image::images_dir(&t.state.config.data_dir);
-    let stored = std::fs::read_dir(&dir).map(|d| d.count()).unwrap_or(0);
+    let stored = std::fs::read_dir(&dir).map(Iterator::count).unwrap_or(0);
     assert_eq!(stored, 0, "a rejected upload must leave nothing behind");
 }
 

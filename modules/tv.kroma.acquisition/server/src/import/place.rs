@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 
 pub(super) fn ext_of(path: &Path) -> &str {
-    path.extension().and_then(|e| e.to_str()).unwrap_or("mkv")
+    path.extension().and_then(std::ffi::OsStr::to_str).unwrap_or("mkv")
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -45,7 +45,7 @@ pub(super) fn place(src: &Path, dest: &Path, mode: Placement) -> Result<PathBuf>
 
 fn free_path(dest: &Path) -> PathBuf {
     let parent = dest.parent().unwrap_or_else(|| Path::new("."));
-    let stem = dest.file_stem().and_then(|s| s.to_str()).unwrap_or("release");
+    let stem = dest.file_stem().and_then(std::ffi::OsStr::to_str).unwrap_or("release");
     let ext = ext_of(dest);
     for n in 2..1000u32 {
         let candidate = parent.join(format!("{stem} ({n}).{ext}"));
@@ -98,10 +98,10 @@ pub(super) fn video_files(root: &Path) -> Result<Vec<PathBuf>> {
         let path = entry.into_path();
         let ext_ok = path
             .extension()
-            .and_then(|e| e.to_str())
+            .and_then(std::ffi::OsStr::to_str)
             .map(|e| kroma_module_sdk::engine::services::scan::walk::VIDEO_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
             .unwrap_or(false);
-        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or_default().to_ascii_lowercase();
+        let name = path.file_name().and_then(std::ffi::OsStr::to_str).unwrap_or_default().to_ascii_lowercase();
         if ext_ok && !name.contains("sample") {
             out.push(path);
         }

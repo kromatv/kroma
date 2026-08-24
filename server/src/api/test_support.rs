@@ -119,9 +119,11 @@ fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)]) -> TestApp {
         db.clone(),
         settings,
         kroma_engine::point::Point::absent("embedder"),
-        HashMap::new(),
-        &[],
-        std::sync::Arc::new(|_| Vec::new()),
+        kroma_engine::state::ModuleWiring {
+            services: HashMap::new(),
+            jobs: &[],
+            contributions: std::sync::Arc::new(|_| Vec::new()),
+        },
     );
 
     let data = crate::services::demo::demo_data();

@@ -176,6 +176,25 @@ is excluded from the denominator deliberately, file by file, in that same
 properties file: new logic goes where a test can reach it, not into an excluded
 file.
 
+## Write the idiom the analyzer expects
+
+The smells that recur here are all cheaper to avoid at write time than to clear
+later. Prefer the direct form:
+
+- Pass a function by reference, never a closure that only forwards its argument:
+  `.map(str::to_lowercase)`, not `.map(|s| s.to_lowercase())`. (Rust S1612)
+- Past five parameters, take a context or options struct rather than growing the
+  signature. (Rust S107)
+- Match a character class with a range pattern, not a chain of `|` literals.
+  (Rust S9047)
+- Name an enum variant without repeating its type: `ClientMessage::Play`, not
+  `ClientMessage::CastPlay`. Keep the wire spelling with `#[serde(rename)]`.
+  (Rust S9039)
+- No nested template literals: lift the inner one into a binding. (TS S4624)
+- Use `RegExp.exec` for repeated matching, not `String.match`. (TS S6594)
+- Reach a deprecated API through a narrow local type, never by reading it
+  directly. (TS S1874)
+
 ## No em dashes
 
 Not in comments, not in user-facing copy, not in documentation. Use a comma, a

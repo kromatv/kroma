@@ -72,9 +72,7 @@ pub fn build(
         db,
         settings,
         kroma_engine::point::Point::new("embedder", contributions.clone()),
-        services,
-        &[],
-        contributions,
+        kroma_engine::state::ModuleWiring { services, jobs: &[], contributions },
     );
     (state, supervisor)
 }

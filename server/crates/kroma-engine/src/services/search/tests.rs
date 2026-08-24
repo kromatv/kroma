@@ -10,7 +10,7 @@ fn meta(title: &str, overview: &str, genres: &[&str], cast: &[&str]) -> Metadata
         tagline: None,
         overview: Some(overview.into()),
         release_date: None,
-        genres: genres.iter().map(|s| s.to_string()).collect(),
+        genres: genres.iter().map(ToString::to_string).collect(),
         rating: None,
         poster_url: None,
         backdrop_url: None,

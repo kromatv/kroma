@@ -218,7 +218,7 @@ fn parse_range(headers: &HeaderMap, total_size: u64) -> RangeOutcome {
 fn content_type_for(path: &Path) -> &'static str {
     let ext = path
         .extension()
-        .and_then(|e| e.to_str())
+        .and_then(std::ffi::OsStr::to_str)
         .unwrap_or("")
         .to_ascii_lowercase();
 

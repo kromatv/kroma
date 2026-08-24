@@ -38,7 +38,7 @@ function engineRange(engines: unknown, name: string): string | undefined {
 }
 
 function cargoVersion(text: string): string {
-  return text.match(/^version[ \t]*=[ \t]*"([^"]+)"/m)?.[1] ?? '0.0.0';
+  return /^version[ \t]*=[ \t]*"([^"]+)"/m.exec(text)?.[1] ?? '0.0.0';
 }
 
 // The Rust server, when the tree has one.

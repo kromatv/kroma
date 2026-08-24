@@ -69,23 +69,15 @@ pub fn auto_search_pass<S: kroma_module_sdk::host::HostStorage>(
 
     let due_ids: HashSet<String> = due.iter().map(|w| w.id.clone()).collect();
     let mut searched: HashSet<String> = HashSet::new();
+    let pass =
+        SearchPass { state, indexers: &indexers, profile: &profile, due_ids: &due_ids, log, cancelled };
     for request_id in &request_ids {
         if cancelled() || summary.targets >= MAX_TARGETS {
             break;
         }
         // One request failing is not the pass failing: the rows already searched
         // still have to be charged below, or the next pass repeats this one.
-        if let Err(e) = search_request(
-            state,
-            request_id,
-            &indexers,
-            &profile,
-            &due_ids,
-            &mut summary,
-            &mut searched,
-            log,
-            cancelled,
-        ) {
+        if let Err(e) = search_request(&pass, request_id, &mut summary, &mut searched) {
             summary.errors.push(format!("search failed for request {request_id}: {e:#}"));
         }
     }
@@ -149,17 +141,22 @@ fn target_label(st: &crate::search::SearchTarget) -> String {
     }
 }
 
+struct SearchPass<'a, S: kroma_module_sdk::host::HostStorage> {
+    state: &'a S,
+    indexers: &'a [crate::peers::indexers::IndexerRef],
+    profile: &'a kroma_scene::Profile,
+    due_ids: &'a HashSet<String>,
+    log: &'a dyn Fn(String),
+    cancelled: &'a dyn Fn() -> bool,
+}
+
 fn search_request<S: kroma_module_sdk::host::HostStorage>(
-    state: &S,
+    pass: &SearchPass<'_, S>,
     request_id: &str,
-    indexers: &[crate::peers::indexers::IndexerRef],
-    profile: &kroma_scene::Profile,
-    due_ids: &HashSet<String>,
     summary: &mut AutoSummary,
     searched: &mut HashSet<String>,
-    log: &dyn Fn(String),
-    cancelled: &dyn Fn() -> bool,
 ) -> Result<()> {
+    let SearchPass { state, indexers, profile, due_ids, log, cancelled } = *pass;
     let conn = state.db().get()?;
     let Some(req) = db::get_request(&conn, request_id)? else { return Ok(()) };
     let wanted = db::wanted_for_request(&conn, request_id)?;

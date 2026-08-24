@@ -224,7 +224,7 @@ impl Registry {
             let stuck: Vec<String> = ids
                 .iter()
                 .filter(|id| !order.iter().any(|o| o == *id))
-                .map(|s| s.to_string())
+                .map(ToString::to_string)
                 .collect();
             return Err(ResolveError::Cycle(stuck));
         }

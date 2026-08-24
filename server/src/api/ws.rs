@@ -82,7 +82,7 @@ struct Viewer {
 #[serde(tag = "type")]
 enum ClientMessage {
     #[serde(rename = "cast.hello")]
-    CastHello {
+    Hello {
         #[serde(rename = "receiverId")]
         receiver_id: String,
         #[serde(default)]
@@ -91,23 +91,23 @@ enum ClientMessage {
         platform: String,
     },
     #[serde(rename = "cast.state")]
-    CastState {
+    State {
         #[serde(default)]
         playback: Option<CastPlayback>,
     },
     #[serde(rename = "cast.ack")]
-    CastAck { seq: u64 },
+    Ack { seq: u64 },
     #[serde(rename = "cast.control")]
-    CastControl {
+    Control {
         #[serde(rename = "receiverId")]
         receiver_id: String,
         #[serde(default)]
         name: String,
     },
     #[serde(rename = "cast.release")]
-    CastRelease,
+    Release,
     #[serde(rename = "cast.kick")]
-    CastKick {
+    Kick {
         #[serde(rename = "controllerId")]
         controller_id: String,
     },
@@ -281,19 +281,19 @@ async fn handle_client(
     message: ClientMessage,
 ) {
     match message {
-        ClientMessage::CastHello { receiver_id, name, platform } => {
+        ClientMessage::Hello { receiver_id, name, platform } => {
             cast_hello(state, who, receiver, receiver_id, name, platform);
         }
-        ClientMessage::CastState { playback } => {
+        ClientMessage::State { playback } => {
             let Some(id) = receiver.clone() else { return };
             cast_state(state, &who.id, id, playback).await;
         }
-        ClientMessage::CastAck { seq } => {
+        ClientMessage::Ack { seq } => {
             if let Some(id) = receiver.as_deref() {
                 state.cast.ack(id, seq);
             }
         }
-        ClientMessage::CastControl { receiver_id, name } => {
+        ClientMessage::Control { receiver_id, name } => {
             if !who.can_cast {
                 return;
             }
@@ -317,11 +317,11 @@ async fn handle_client(
                     .publish_to(&who.id, ServerEvent::CastReceiverChanged { receiver: Box::new(row) });
             }
         }
-        ClientMessage::CastRelease => {
+        ClientMessage::Release => {
             *controlling = false;
             release_controller(state, controller_id);
         }
-        ClientMessage::CastKick { controller_id } => {
+        ClientMessage::Kick { controller_id } => {
             // Scoped to this receiver: a set may only kick its own remotes.
             let Some(id) = receiver.clone() else { return };
             let Some((row, user_id)) = state.cast.kick_controller(&id, &controller_id) else {

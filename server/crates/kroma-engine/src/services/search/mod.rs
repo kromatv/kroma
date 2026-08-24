@@ -85,7 +85,7 @@ impl SearchEngine {
         // One rebuild at a time, snapshot taken under the lock: two overlapping
         // callers would otherwise race to publish, and the one that read the
         // older catalog could land last.
-        let _rebuilding = self.rebuilding.lock().unwrap_or_else(|e| e.into_inner());
+        let _rebuilding = self.rebuilding.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let (items, shows) = db::index_snapshot(pool)?;
         let (episodes, movies): (Vec<MediaItem>, Vec<MediaItem>) =
             items.into_iter().partition(|i| matches!(i.kind, Kind::Episode));

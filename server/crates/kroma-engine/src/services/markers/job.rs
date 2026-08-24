@@ -54,7 +54,7 @@ pub fn detect_season(ctx: &JobContext, season: &Season) -> Result<usize> {
     let ffprobe = ctx.state.ffprobe_available;
     // Few workers, and never more than a quarter of the cores fingerprinting
     // must stay out of live playback's way.
-    let workers = (thread::available_parallelism().map(|n| n.get()).unwrap_or(4) / 4)
+    let workers = (thread::available_parallelism().map(std::num::NonZeroUsize::get).unwrap_or(4) / 4)
         .clamp(1, MAX_WORKERS);
     process_season(ctx, &ctx.state.db, season, fingerprinting, ffprobe, workers)
 }

@@ -34,7 +34,11 @@ const KEYS: Record<string, Directions> = {
 // Read once, here, because there is no undeprecated way to identify a key on an
 // engine that predates `KeyboardEvent.key`: `code` is Chrome 48 and `which` is
 // deprecated too. The tier this exists for is M47.
-const legacyCode = (event: KeyboardEvent): number => event.keyCode;
+// `KeyboardEvent.keyCode` is deprecated in the DOM lib, but it is the only
+// key identifier this engine tier exposes (see above). Reading it through a
+// local shape keeps the one unavoidable access off the deprecated declaration.
+type LegacyKeyboardEvent = { keyCode: number };
+const legacyCode = (event: KeyboardEvent): number => (event as LegacyKeyboardEvent).keyCode;
 
 const CODES: Record<number, Directions> = {
   37: Directions.LEFT,

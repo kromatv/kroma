@@ -15,7 +15,8 @@ const Issues = z.object({
 type Issue = z.infer<typeof Issues>['issues'][number];
 
 function authorization(token: string): string {
-  return `Basic ${Buffer.from(`${token}:`).toString('base64')}`;
+  const encoded = Buffer.from(`${token}:`).toString('base64');
+  return `Basic ${encoded}`;
 }
 
 async function open(rule: string, branch: string, token: string): Promise<Issue[]> {

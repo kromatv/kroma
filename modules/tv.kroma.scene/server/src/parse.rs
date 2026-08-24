@@ -222,7 +222,7 @@ fn parse_episode_marker(t: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)
 // Matches `sNN` / `sNNeMM` / `sNNeMM-eKK` / `sNNeMMeKK`, given the text after
 // the `s`.
 fn parse_s_marker(rest: &str) -> Option<(u32, Option<u32>, Option<u32>, bool)> {
-    let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+    let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
     if digits.is_empty() || digits.len() > 2 {
         return None;
     }

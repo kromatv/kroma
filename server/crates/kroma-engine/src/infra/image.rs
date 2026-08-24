@@ -193,8 +193,8 @@ fn ffmpeg_rendition(src: &Path, out: &Path, vf: &str, extra: &[&str]) -> Option<
 // Keeps `out`'s extension so ffmpeg/cwebp still detect the output format.
 fn unique_tmp(out: &Path) -> PathBuf {
     let seq = TMP_SEQ.fetch_add(1, Ordering::Relaxed);
-    let base = out.file_name().and_then(|n| n.to_str()).unwrap_or("rendition");
-    let ext = out.extension().and_then(|e| e.to_str()).unwrap_or("tmp");
+    let base = out.file_name().and_then(std::ffi::OsStr::to_str).unwrap_or("rendition");
+    let ext = out.extension().and_then(std::ffi::OsStr::to_str).unwrap_or("tmp");
     out.with_file_name(format!("{base}.{}.{seq}.tmp.{ext}", std::process::id()))
 }
 

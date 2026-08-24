@@ -54,7 +54,7 @@ impl Embedder for LexicalEmbedder {
 fn tokenize(text: &str) -> impl Iterator<Item = String> + '_ {
     text.split(|c: char| !c.is_alphanumeric())
         .filter(|s| s.len() >= 2)
-        .map(|s| s.to_lowercase())
+        .map(str::to_lowercase)
 }
 
 // FNV-1a 64-bit fast, allocation-free, good enough spread for bucketing.

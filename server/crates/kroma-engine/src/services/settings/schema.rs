@@ -199,7 +199,7 @@ fn row(
         label,
         desc,
         kind,
-        options: options.iter().map(|s| s.to_string()).collect(),
+        options: options.iter().map(ToString::to_string).collect(),
         value,
         applied,
         configured: None,
