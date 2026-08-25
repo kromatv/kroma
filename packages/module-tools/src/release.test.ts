@@ -140,17 +140,70 @@ describe('decide', () => {
     expect(out.modules[0]?.artifacts[0]?.url).toBe(live.artifacts[0]?.url);
   });
 
-  it('fails the run, naming the module, when bytes changed without a bump', () => {
-    const { errors, plan } = decide(
+  it('warns (not errors) when bytes changed without a bump, naming the module', () => {
+    const { errors, stale, plan } = decide(
       [bundle('tv.kroma.indexer', '0.1.2', 'musl', 'FIXED')],
       catalog(entry('tv.kroma.indexer', '0.1.2', { musl: 'old' })),
       REPO,
       NOW,
     );
     expect(plan.publish).toEqual([]);
-    expect(errors).toHaveLength(1);
-    expect(errors[0]).toContain('tv.kroma.indexer');
-    expect(errors[0]).toContain('modules/tv.kroma.indexer/module.json');
+    expect(errors).toEqual([]);
+    expect(stale).toHaveLength(1);
+    expect(stale[0]).toContain('tv.kroma.indexer');
+    expect(stale[0]).toContain('modules/tv.kroma.indexer/module.json');
+  });
+
+  it('publishes the ready module and only warns on the stale one', () => {
+    const { errors, stale, plan } = decide(
+      [
+        bundle('tv.kroma.indexer', '0.1.3', 'musl', 'new'),
+        bundle('tv.kroma.whisper', '0.1.1', 'musl', 'FIXED'),
+      ],
+      catalog(
+        entry('tv.kroma.indexer', '0.1.2', { musl: 'old' }),
+        entry('tv.kroma.whisper', '0.1.1', { musl: 'w' }),
+      ),
+      REPO,
+      NOW,
+    );
+    expect(plan.publish.map((r) => r.id)).toEqual(['tv.kroma.indexer']);
+    expect(errors).toEqual([]);
+    expect(stale).toHaveLength(1);
+    expect(stale[0]).toContain('tv.kroma.whisper');
+  });
+
+  it('carries stale modules forward at their live tag while others publish', () => {
+    const live = entry('tv.kroma.whisper', '0.1.1', { musl: 'w' });
+    const { catalog: out } = decide(
+      [
+        bundle('tv.kroma.indexer', '0.1.3', 'musl', 'new'),
+        bundle('tv.kroma.whisper', '0.1.1', 'musl', 'FIXED'),
+      ],
+      catalog(entry('tv.kroma.indexer', '0.1.2', { musl: 'old' }), live),
+      REPO,
+      NOW,
+    );
+    const whisper = out.modules.find((m) => m.id === 'tv.kroma.whisper');
+    expect(whisper?.artifacts[0]?.url).toBe(live.artifacts[0]?.url);
+  });
+
+  it('reports every stale module when all of them are unbumped', () => {
+    const { errors, stale, plan } = decide(
+      [
+        bundle('tv.kroma.indexer', '0.1.2', 'musl', 'FIXED'),
+        bundle('tv.kroma.whisper', '0.1.1', 'musl', 'FIXED'),
+      ],
+      catalog(
+        entry('tv.kroma.indexer', '0.1.2', { musl: 'old' }),
+        entry('tv.kroma.whisper', '0.1.1', { musl: 'w' }),
+      ),
+      REPO,
+      NOW,
+    );
+    expect(plan.publish).toEqual([]);
+    expect(errors).toEqual([]);
+    expect(stale).toHaveLength(2);
   });
 
   it('keeps a module that this run did not build', () => {

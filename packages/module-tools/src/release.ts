@@ -17,11 +17,13 @@
 //
 //   changed + version bumped  -> publish under a new tag
 //   unchanged                 -> skip; carry the live entry forward untouched
-//   changed + version NOT bumped -> FAIL, naming the module and both hashes
+//   changed + version NOT bumped -> WARN, naming the module; the ready modules
+//                                   still ship. `--strict` makes it fatal again.
 //
 //   bun run modules release --repo owner/repo
 //   bun run modules release --repo owner/repo --published ./live.json
 //   bun run modules release --repo owner/repo --dry-run
+//   bun run modules release --repo owner/repo --strict
 //
 // Outputs (dist/registry/):
 //   modules.json  the merged catalog to publish
@@ -120,6 +122,10 @@ export interface Plan {
 export interface Decisions {
   plan: Plan;
   catalog: Catalog;
+  // Changed bytes with no version bump: a ready module still ships, so this is a
+  // warning by default and only fatal under --strict.
+  stale: string[];
+  // Genuinely unreleasable (backwards, unorderable): always fatal.
   errors: string[];
 }
 
@@ -142,6 +148,7 @@ export function decide(
   );
 
   const plan: Plan = { publish: [], unchanged: [], carried: [] };
+  const stale: string[] = [];
   const errors: string[] = [];
   const entries: Entry[] = [];
 
@@ -172,7 +179,7 @@ export function decide(
         entries.push(live.get(entry.id) as Entry);
         break;
       case 'stale':
-        errors.push(
+        stale.push(
           [
             `${entry.id}: the bundle changed but the version did not.`,
             `    module.json says ${entry.version}, which is already published`,
@@ -200,7 +207,7 @@ export function decide(
   }
 
   entries.sort((a, b) => byCodeUnit(a.id, b.id));
-  return { plan, catalog: { schema: 2, generatedAt: now, modules: entries }, errors };
+  return { plan, catalog: { schema: 2, generatedAt: now, modules: entries }, stale, errors };
 }
 
 function flag(name: string): string | undefined {
@@ -208,10 +215,47 @@ function flag(name: string): string | undefined {
   return i >= 0 ? process.argv[i + 1] : undefined;
 }
 
+function reportPlan(plan: Plan): void {
+  for (const r of plan.publish) {
+    const label = r.reason === 'new' ? 'new' : 'update';
+    console.log(`  publish  ${r.tag}  (${label}, ${r.files.length / 2} artifact(s))`);
+  }
+  for (const id of plan.unchanged) console.log(`  unchanged ${id}`);
+  for (const id of plan.carried) console.log(`  carried  ${id} (not built in this run)`);
+}
+
+function reportStale(stale: string[], strict: boolean): void {
+  if (stale.length === 0) return;
+  console.warn(`\n⚠  ${stale.length} module(s) changed without a version bump - NOT published:\n`);
+  for (const s of stale) console.warn(`  ! ${s}\n`);
+  console.warn(
+    strict
+      ? '  --strict: treating unbumped modules as a failure.'
+      : '  The ready modules above still ship. Bump these and re-push to release them.',
+  );
+}
+
+function reportErrors(errors: string[]): void {
+  if (errors.length === 0) return;
+  console.error(`\n${errors.length} module(s) cannot be released:\n`);
+  for (const e of errors) console.error(`  ✗ ${e}\n`);
+  process.exit(1);
+}
+
+function writeArtifacts(outDir: string, catalog: Catalog, plan: Plan): void {
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, 'modules.json'), `${JSON.stringify(catalog, null, 2)}\n`);
+  writeFileSync(join(outDir, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`);
+  console.log(
+    `\n${plan.publish.length} release(s) to cut; catalog describes ${catalog.modules.length} module(s) -> ${outDir}`,
+  );
+}
+
 export async function main(): Promise<void> {
   const repo = flag('repo') ?? process.env.GITHUB_REPOSITORY;
   if (!repo) throw new Error('--repo owner/name is required (or set GITHUB_REPOSITORY)');
   const dryRun = process.argv.includes('--dry-run');
+  const strict = process.argv.includes('--strict');
 
   // Imported here, not at module scope: `root` resolves through `import.meta.dir`,
   // which only Bun defines, and the decision logic above is unit-tested under vitest.
@@ -221,29 +265,22 @@ export async function main(): Promise<void> {
 
   const bundles = readBundles(modulesDir);
   const published = await loadPublished(flag('published') ?? DEFAULT_REGISTRY);
-  const { plan, catalog, errors } = decide(bundles, published, repo, new Date().toISOString());
+  const { plan, catalog, stale, errors } = decide(
+    bundles,
+    published,
+    repo,
+    new Date().toISOString(),
+  );
 
-  for (const r of plan.publish) {
-    const label = r.reason === 'new' ? 'new' : 'update';
-    console.log(`  publish  ${r.tag}  (${label}, ${r.files.length / 2} artifact(s))`);
-  }
-  for (const id of plan.unchanged) console.log(`  unchanged ${id}`);
-  for (const id of plan.carried) console.log(`  carried  ${id} (not built in this run)`);
+  reportPlan(plan);
+  reportStale(stale, strict);
+  reportErrors(errors);
 
-  if (errors.length > 0) {
-    console.error(`\n${errors.length} module(s) cannot be released:\n`);
-    for (const e of errors) console.error(`  ✗ ${e}\n`);
-    process.exit(1);
-  }
+  if (strict && stale.length > 0) process.exit(1);
 
   if (dryRun) {
     console.log('\n--dry-run: wrote nothing');
     return;
   }
-  mkdirSync(outDir, { recursive: true });
-  writeFileSync(join(outDir, 'modules.json'), `${JSON.stringify(catalog, null, 2)}\n`);
-  writeFileSync(join(outDir, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`);
-  console.log(
-    `\n${plan.publish.length} release(s) to cut; catalog describes ${catalog.modules.length} module(s) -> ${outDir}`,
-  );
+  writeArtifacts(outDir, catalog, plan);
 }
