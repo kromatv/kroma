@@ -4,6 +4,8 @@
 button "Poster 1" tab
 button "Poster 2" tab
 button "Poster 3" tab
+img "Watched"
+svg "" [hidden=true]
 button "Poster 4" tab
 button "Poster 5" tab
 progressbar "" [valuenow=60]

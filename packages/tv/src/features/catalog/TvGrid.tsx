@@ -137,9 +137,12 @@ export function TvGrid() {
       ) : null}
 
       {empty ? (
-        <Box flex center px={64}>
+        <Box flex center px={64} gap={12}>
           <Text style={EMPTY} color="textDim">
             {t('content.myListEmpty')}
+          </Text>
+          <Text style={EMPTY} color="textMuted">
+            {t('content.myListEmptyHint')}
           </Text>
         </Box>
       ) : (

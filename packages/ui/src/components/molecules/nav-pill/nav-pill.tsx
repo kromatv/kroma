@@ -17,6 +17,7 @@ import {
 } from 'react';
 import { PanResponder, Platform, type StyleProp, type View, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { Frost } from '#ui/components/atoms/frost';
 import { RING_ROOM } from '#ui/core';
 import { HAND } from '#ui/lib/cursor';
 import {
@@ -43,18 +44,18 @@ const SLIDE_SLOP = 8;
 const PILL_FILL = 'surface1/78';
 const BACKDROP_FILL = 'surface1/55';
 
-/** The blur or wash the capsule floats on: the iPhone's `<BlurView>`, the
- *  television's `<Frost>`. Given one, the capsule thins its own fill so the
- *  backdrop reads through it. */
-function Backdrop({ children }: Readonly<{ children: ReactNode }>) {
+/** The blur or wash the capsule floats on: whatever `registerFrost` gave this
+ *  shell. Present, the capsule thins its own fill so the backdrop reads through
+ *  it; absent, the capsule keeps its solid one. */
+function Backdrop({ amount = 16 }: Readonly<{ amount?: number }>) {
   useNavPill('Backdrop');
   // The clip belongs to the backdrop, which is the only thing that has to stop
   // at the capsule's corner. On the capsule it also cropped the rings of the
   // items inside it.
   return (
-    <Box absolute top={0} right={0} bottom={0} left={0} radius="pill" overflow="hidden">
-      {children}
-    </Box>
+    <Frost amount={amount}>
+      <Box absolute top={0} right={0} bottom={0} left={0} radius="pill" />
+    </Frost>
   );
 }
 

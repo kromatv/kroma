@@ -129,7 +129,7 @@ export const catalogQueries = {
       queryFn: () =>
         kromaClient()
           .personDetails(name)
-          .catch(() => ({ name, person: null })),
+          .catch(() => ({ name, person: null, credits: [] })),
     }),
 
   upNext: (showId: string) =>

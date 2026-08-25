@@ -1,11 +1,10 @@
-import { type RadiusToken, sv } from '#ui/core';
+import { sv } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
 
 type OtpSize = 'md' | 'tv';
 
 // <Frost> clips itself to the corner rather than inheriting it, so the radius
 // each size gives its slot has to be stated where the frost can read it too.
-const SLOT_RADIUS = { md: 'lg', tv: 'xl' } as const satisfies Record<OtpSize, RadiusToken>;
 
 const otpVariants = sv({
   slots: {
@@ -14,8 +13,8 @@ const otpVariants = sv({
   },
   variants: {
     size: {
-      md: { slot: { w: 52, h: 60, radius: SLOT_RADIUS.md }, char: { text: 'subheading' } },
-      tv: { slot: { w: 72, h: 84, radius: SLOT_RADIUS.tv }, char: { text: 'h1' } },
+      md: { slot: { w: 52, h: 60, radius: 'lg' }, char: { text: 'subheading' } },
+      tv: { slot: { w: 72, h: 84, radius: 'xl' }, char: { text: 'h1' } },
     },
     /** `active` is the slot the next character lands in, and the only one with a caret. */
     state: {
@@ -46,4 +45,4 @@ const otpVariants = sv({
 });
 
 export type { OtpSize };
-export { otpVariants, SLOT_RADIUS };
+export { otpVariants };

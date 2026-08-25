@@ -84,28 +84,33 @@ pub async fn details(
         .clone()
         .filter(|_| !name.is_empty())
     else {
-        return Ok(Json(PersonDetailResponse { name, person: None }).into_response());
+        return Ok(Json(PersonDetailResponse {
+            name,
+            person: None,
+            credits: Vec::new(),
+        })
+        .into_response());
     };
     let language = settings::metadata_language(&state.settings, &state.config);
     let data_dir = state.config.data_dir.clone();
     let lookup = name.clone();
     // curl (twice, on a cache miss) plus an image download: blocking work.
-    let person = blocking(move || {
-        Ok(
-            metadata::person::detail(&api_key, &language, &lookup).map(|mut p| {
-                if let Some(local) = p
-                    .profile_url
-                    .as_deref()
-                    .and_then(|u| image::cache_remote(&data_dir, u))
-                {
-                    p.profile_url = Some(local);
-                }
-                p
-            }),
-        )
+    let (person, credits) = blocking(move || {
+        let person = metadata::person::detail(&api_key, &language, &lookup).map(|mut p| {
+            if let Some(local) = p
+                .profile_url
+                .as_deref()
+                .and_then(|u| image::cache_remote(&data_dir, u))
+            {
+                p.profile_url = Some(local);
+            }
+            p
+        });
+        let credits = metadata::person::filmography(&api_key, &language, &lookup);
+        Ok((person, credits))
     })
     .await?;
-    Ok(Json(PersonDetailResponse { name, person }).into_response())
+    Ok(Json(PersonDetailResponse { name, person, credits }).into_response())
 }
 
 fn collect(movies: Vec<MediaItem>, shows: Vec<Show>, library: Option<&str>) -> Vec<SearchHit> {

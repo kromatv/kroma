@@ -11,7 +11,8 @@ import { DetailSkeleton } from '#web/shared/ui';
 export const Route = createFileRoute('/_app/discover/$type/$tmdbId')({
   loader: async ({ params, context: { queryClient } }) => {
     if (!isAuthed()) throw redirect({ to: '/' });
-    if (params.type !== 'tv' && params.type !== 'movie') throw redirect({ to: '/search' });
+    if (params.type !== 'tv' && params.type !== 'movie')
+      throw redirect({ to: '/search', search: { q: '', type: 'all' } });
     const kind = params.type as 'movie' | 'tv';
     const detail = await queryClient.ensureQueryData(
       discoverQueries.detail(kind, Number(params.tmdbId)),

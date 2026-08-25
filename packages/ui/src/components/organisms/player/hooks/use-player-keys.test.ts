@@ -59,6 +59,7 @@ function makeNav(): PlayerNav {
     focusedControl: null,
     handleKey: vi.fn(),
     poke: vi.fn(),
+    rearmHide: vi.fn(),
     openOverlay: vi.fn(),
     closeOverlay: vi.fn(),
     activate: vi.fn(),
@@ -198,6 +199,61 @@ describe('usePlayerKeys locked / intro / credits gates', () => {
     expect(nav.handleKey).not.toHaveBeenCalled();
     press({ key: 'ArrowRight' });
     expect(nav.handleKey).toHaveBeenCalledWith('Right');
+  });
+});
+
+describe('usePlayerKeys immersive seek (fullscreen + chrome hidden)', () => {
+  it('ArrowLeft/Right seek ±10s when fullscreen and chrome is hidden', () => {
+    const nav = makeNav();
+    nav.revealed = false;
+    const controller = makeController();
+    controller.fullscreen = true;
+    const { params, press } = setup({ nav, controller });
+    press({ key: 'ArrowLeft' });
+    expect(params.controller.skip).toHaveBeenCalledWith(-10);
+    expect(params.nav.rearmHide).toHaveBeenCalled();
+    expect(params.nav.poke).not.toHaveBeenCalled();
+    expect(params.nav.handleKey).not.toHaveBeenCalled();
+    press({ key: 'ArrowRight' });
+    expect(params.controller.skip).toHaveBeenCalledWith(10);
+  });
+
+  it('ArrowLeft/Right navigate (not seek) when the chrome is visible in fullscreen', () => {
+    const nav = makeNav();
+    nav.revealed = true;
+    const controller = makeController();
+    controller.fullscreen = true;
+    const { params, press } = setup({ nav, controller });
+    press({ key: 'ArrowRight' });
+    expect(params.controller.skip).not.toHaveBeenCalled();
+    expect(params.nav.handleKey).toHaveBeenCalledWith('Right');
+  });
+
+  it('ArrowLeft/Right navigate when not fullscreen even if chrome is hidden', () => {
+    const nav = makeNav();
+    nav.revealed = false;
+    const controller = makeController();
+    controller.fullscreen = false;
+    const { params, press } = setup({ nav, controller });
+    press({ key: 'ArrowRight' });
+    expect(params.controller.skip).not.toHaveBeenCalled();
+    // Chrome is hidden → first key only pokes (existing behavior).
+    expect(params.nav.poke).toHaveBeenCalled();
+    expect(params.nav.handleKey).not.toHaveBeenCalled();
+  });
+
+  it('ArrowUp/Down still adjust volume in immersive mode (rearmHide, not poke)', () => {
+    const nav = makeNav();
+    nav.revealed = false;
+    const controller = makeController();
+    controller.fullscreen = true;
+    controller.volume = 0.5;
+    const { params, press } = setup({ nav, controller });
+    press({ key: 'ArrowUp' });
+    expect(params.controller.setVolume).toHaveBeenCalled();
+    expect(params.nav.rearmHide).toHaveBeenCalled();
+    expect(params.nav.poke).not.toHaveBeenCalled();
+    expect(params.controller.skip).not.toHaveBeenCalled();
   });
 });
 

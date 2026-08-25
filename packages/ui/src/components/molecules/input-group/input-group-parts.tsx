@@ -145,9 +145,12 @@ function Addon({
     );
   }
   // The addon IS the pressable: a press anywhere on it puts the caret in the
-  // control, and a box inside it would only be the same rectangle again.
+  // control, and a box inside it would only be the same rectangle again. Never a
+  // tab stop, though: it holds decoration, and the entry it defers to is the
+  // next stop anyway. Controls inside it keep their own focus.
   return (
     <Pressable
+      tabIndex={-1}
       onPress={() => {
         onPress?.();
         focusControl();

@@ -1,24 +1,15 @@
-// <Frost>: the backdrop-blur layer of a glass surface. React Native has no
-// backdrop filter, and the kit stays free of platform blur dependencies (see
-// nav-pill), so this layer keeps both true and frosts anyway:
-//
-// - Browser targets get the real CSS `backdrop-filter` (see css.web.ts). The
-//   2019 TV WebKits ignore the property outright, so legacy Tizen and webOS
-//   keep the plain wash at zero cost instead of compositing a blur on the CPU.
-// - Native renders whatever blur view the app registered at startup
-//   (`registerFrost(BlurView)` from expo-blur in the TV shell), the same
-//   inversion as the voice-search and launcher backends. A shell that
-//   registers nothing keeps the wash.
-//
-// The layer is a first child of the surface it frosts, absolutely filled, and
-// clips itself to the surface's corner radius rather than asking the surface
-// for `overflow: hidden`, which would also clip its controls' focus rings.
-
-import type { ComponentType } from 'react';
-import { type StyleProp, View, type ViewStyle } from 'react-native';
+import {
+  Children,
+  type ComponentType,
+  cloneElement,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { type CornerValue, onPaper, radiusValue, styles } from '#ui/core';
 import { backdropBlur } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
+import { mergeSlotProps } from '#ui/lib/slot';
 
 /** What a registered platform blur must accept - expo-blur's <BlurView> as it
  * stands, so a shell registers the component itself, unconfigured. */
@@ -41,34 +32,73 @@ function registerFrost<P extends FrostBackdropProps>(component: ComponentType<P>
   PlatformFrost = component as ComponentType<FrostBackdropProps>;
 }
 
-interface FrostProps {
+interface FrostOptions {
+  /** False renders the surface untouched, so a caller that is only sometimes
+   *  glass states the condition rather than branching around the coat.
+   *  Defaults to true. */
+  on?: boolean;
   /** Blur strength in CSS px; the platform intensity is derived from it. */
   amount?: number;
-  /** Corner of the surface this layer sits in (it clips itself), by token name
-   *  or in px. */
-  radius?: CornerValue;
   /** Defaults to the ground the app is on. Pass it only for a surface that holds
-   *  one ground whatever the app chose, the way the player's chrome stays dark. */
+   *  one ground whatever the app chose, the way the player's chrome stays dark.
+   *  Native only: a browser coat has no tint of its own. */
   tint?: 'light' | 'dark' | 'default';
 }
 
-function Frost({ amount = 12, radius = 0, tint }: Readonly<FrostProps>) {
-  const corner = radiusValue(radius);
-  const shape = corner > 0 ? { borderRadius: corner } : null;
+/** The two halves of a frost. Spread `style` onto the surface's own style list
+ *  and render `layer` as its first child; exactly one of them is ever set. */
+interface FrostCoat {
+  style: ViewStyle | null;
+  layer: ReactNode;
+}
+
+const BARE: FrostCoat = { style: null, layer: null };
+
+let frostOn = true;
+
+/**
+ * Turn every frost in the app off, or back on. Call it once at startup: a panel
+ * that composites blur on the CPU, or a viewer who asked the platform to reduce
+ * transparency, wants the plain fill everywhere rather than per screen.
+ */
+function setFrostEnabled(on: boolean): void {
+  frostOn = on;
+}
+const EMPTY: ViewStyle = {};
+
+// One coat per strength, shared by identity: <Focusable> keys its style memo on
+// the values it is handed, and a fresh object per render would re-run the
+// box/face split on every frame of every frosted control on screen.
+const webCoats = new Map<number, FrostCoat>();
+
+/**
+ * The frost a glass surface wears, for a control that places the layer itself.
+ * `surface` is the surface's own resolved style: the native layer takes its
+ * corner from that rather than being told one twice.
+ */
+function frostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {}): FrostCoat {
+  const { on = true, amount = 12, tint } = options;
+  if (!on || !frostOn) return BARE;
   if (WEB) {
-    // backdrop-filter clips to its own element's rounded border box, so the
-    // radius alone bounds the frost; `overflow` stays untouched.
-    return <View style={[s.fill, shape, backdropBlur(amount)]} />;
+    const cached = webCoats.get(amount);
+    if (cached) return cached;
+    const coat: FrostCoat = { style: backdropBlur(amount) as ViewStyle, layer: null };
+    webCoats.set(amount, coat);
+    return coat;
   }
-  if (!PlatformFrost) return null;
-  return (
-    <PlatformFrost
-      // expo-blur's 0-100 scale: about four steps to the CSS pixel.
-      intensity={Math.min(100, amount * 4)}
-      tint={tint ?? (onPaper() ? 'light' : 'dark')}
-      style={[s.fill, s.clip, shape]}
-    />
-  );
+  if (!PlatformFrost) return BARE;
+  const corner = StyleSheet.flatten(surface)?.borderRadius;
+  return {
+    style: null,
+    layer: (
+      <PlatformFrost
+        // expo-blur's 0-100 scale: about four steps to the CSS pixel.
+        intensity={Math.min(100, amount * 4)}
+        tint={tint ?? (onPaper() ? 'light' : 'dark')}
+        style={[s.fill, s.clip, typeof corner === 'number' ? { borderRadius: corner } : null]}
+      />
+    ),
+  };
 }
 
 const s = styles({
@@ -83,5 +113,45 @@ const s = styles({
   clip: { overflow: 'hidden' },
 });
 
-export type { FrostBackdropProps, FrostProps };
-export { Frost, registerFrost };
+// The child declares its corner as a style or as <Box>'s `radius` shorthand,
+// and the native layer clips itself to whichever it used.
+function cornerOf(props: Record<string, unknown>): ViewStyle {
+  const flat = StyleSheet.flatten(props.style as StyleProp<ViewStyle>);
+  if (typeof flat?.borderRadius === 'number') return flat;
+  if (props.radius == null) return EMPTY;
+  return { borderRadius: radiusValue(props.radius as CornerValue) };
+}
+
+interface FrostProps extends FrostOptions {
+  /** Exactly one element: the surface that wears the frost. */
+  children: ReactElement;
+}
+
+/**
+ * The frost a glass surface wears, as a wrapper that renders NO element of its
+ * own: it puts the coat on its one child, the way `<Slot>` does (see
+ * lib/slot.tsx).
+ *
+ * A control whose child is a render function cannot take a layer this way:
+ * those call `frostCoat` and place `layer` themselves.
+ */
+function Frost({ children, ...options }: Readonly<FrostProps>) {
+  const el = Children.only(children) as ReactElement<Record<string, unknown>>;
+  const coat = frostCoat(cornerOf(el.props), options);
+  if (!coat.style && !coat.layer) return el;
+  const merged = mergeSlotProps(coat.style ? { style: coat.style } : {}, el.props);
+  if (coat.layer) {
+    const inner = el.props.children;
+    if (typeof inner === 'function') {
+      throw new TypeError('<Frost> cannot layer a render-function child; call frostCoat() instead');
+    }
+    merged.children = [
+      cloneElement(coat.layer as ReactElement, { key: 'frost' }),
+      ...Children.toArray(inner as ReactNode),
+    ];
+  }
+  return cloneElement(el, merged);
+}
+
+export type { FrostBackdropProps, FrostCoat, FrostOptions, FrostProps };
+export { Frost, frostCoat, registerFrost, setFrostEnabled };

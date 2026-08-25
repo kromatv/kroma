@@ -54,35 +54,28 @@ function ListGroup({ children, size, divider, style }: Readonly<ListGroupProps>)
   const items = Children.toArray(children);
   const slot = useMemo(() => ({ size: shell }), [shell]);
   return (
-    <Box
-      w="100%"
-      radius={metrics.radius}
-      border="border"
-      // The card carries the shell's well and its blur ONCE, for every row in
-      // it (lib/field-shell). No lift: a group is a run of rows IN a page, and
-      // the hairline is what sets it apart. The shadow belongs to a surface
-      // that floats over the page (a <Dialog>, a <Menu>), and on a group it
-      // read as a halo everywhere the kit puts one - which is inside a panel.
-      bg={metrics.bg}
-      // The members' corners are the card's: clip them rather than asking
-      // each row which end of the list it landed on.
-      overflow="hidden"
-      // And because it clips them, a member's ring is drawn inward: the browser
-      // targets draw the ring in CSS, where the row itself cannot say so (the
-      // rule is in styles/base.css).
-      dataSet={INSET_RING}
-      style={style}
-    >
-      <Frost radius={metrics.radius} />
-      <InGroup.Provider value={slot}>
-        {items.map((child, index) => (
-          <Fragment key={memberKey(child, index)}>
-            {index > 0 ? <Box h={1} mx={divider ?? metrics.px} bg="border" /> : null}
-            {child}
-          </Fragment>
-        ))}
-      </InGroup.Provider>
-    </Box>
+    <Frost>
+      <Box
+        w="100%"
+        radius={metrics.radius}
+        border="border"
+        bg={metrics.bg}
+        overflow="hidden"
+        // A member's ring is drawn inward: the browser targets draw the ring in
+        // CSS, where the row itself cannot say so (the rule is in styles/base.css).
+        dataSet={INSET_RING}
+        style={style}
+      >
+        <InGroup.Provider value={slot}>
+          {items.map((child, index) => (
+            <Fragment key={memberKey(child, index)}>
+              {index > 0 ? <Box h={1} mx={divider ?? metrics.px} bg="border" /> : null}
+              {child}
+            </Fragment>
+          ))}
+        </InGroup.Provider>
+      </Box>
+    </Frost>
   );
 }
 

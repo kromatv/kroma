@@ -55,12 +55,19 @@ export function LocaleProvider({
 
   // Post-hydration: adopt the device override (localStorage) or the browser
   // locale, unless the signed-in account's preference already applies (handled
-  // by the effect below). Runs once on mount, client-side only.
+  // by the effect below). Runs once on mount, client-side only. When the user is
+  // signed in but has no account-level language set, sync the detected locale to
+  // the server so server-rendered content (notifications, push) matches the UI.
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only; account changes are handled separately.
   useEffect(() => {
     if (accountLocale) return;
     const stored = loadLocalePref();
-    setOverride(isLocale(stored) ? stored : detectLocale());
+    const detected = isLocale(stored) ? stored : detectLocale();
+    setOverride(detected);
+    if (onAccountChange) {
+      onAccountChange(detected);
+      client?.updateLanguage(detected).catch(() => {});
+    }
   }, []);
 
   // The signed-in account's preference is authoritative: adopt it whenever it

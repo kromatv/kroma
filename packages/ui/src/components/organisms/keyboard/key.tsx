@@ -3,10 +3,10 @@
 
 import type { TextStyle, ViewStyle } from 'react-native';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { Frost } from '#ui/components/atoms/frost';
+import { frostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type RadiusToken, type StyleDecl, svFor } from '#ui/core';
+import { type StyleDecl, svFor } from '#ui/core';
 import { keyFace } from '#ui/lib/field-shell';
 
 /** A keyboard's scale: `sm` is arm's length, `tv` is across a room. */
@@ -33,7 +33,6 @@ function keyMetrics(size: KeyboardSize) {
 // one, so the whole small grid arrives as circles. Both are radius tokens, and
 // `tv` is deliberately the keypad's own - that is what makes a keyboard key and
 // a keypad key the same object at two scales.
-const keyRadius = { sm: 'lg', tv: '2xl' } as const satisfies Record<KeyboardSize, RadiusToken>;
 
 /** The width of a ten-key row: what a grid measures itself against. */
 function keyRowWidth(size: KeyboardSize): number {
@@ -51,8 +50,8 @@ const face = svFor<{
   slots: keyFace,
   variants: {
     size: {
-      sm: { root: { radius: keyRadius.sm } },
-      tv: { root: { radius: keyRadius.tv } },
+      sm: { root: { radius: 'lg' } },
+      tv: { root: { radius: '2xl' } },
     },
   },
 });
@@ -79,6 +78,7 @@ function Key({
   size,
   autoFocus,
 }: Readonly<KeyProps>) {
+  const frost = frostCoat(face({ size }).root, { on: size !== 'tv' });
   return (
     <Focusable
       onPress={onPress}
@@ -87,16 +87,14 @@ function Key({
       focusScale={1.08}
       sv={face}
       vars={{ size }}
-      style={style}
+      style={[frost.style, style]}
     >
       {({ slots }) => (
         <>
-          {/* The fill is translucent (lib/field-shell), so blur what shows
-              through: a key reads as glass, not as a window on the artwork.
-              Not on a television: there each Frost is its own native expo-blur
+          {/* Not on a television: there each Frost is its own native expo-blur
               surface, and a grid of them re-composited on every focus move
               drops rows and can take the box down. */}
-          {size === 'tv' ? null : <Frost radius={keyRadius[size]} />}
+          {frost.layer}
           {icon ? (
             <Icon name={icon} size={iconSize ?? 24} {...slots.glyph} />
           ) : (

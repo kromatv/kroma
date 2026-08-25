@@ -236,7 +236,7 @@ deliberately small:
 - two handlers for the same event both run, the child's first;
 - two refs both attach.
 
-Anything subtler, meaning state-dependent coats, `sv` slots or focus scales, is not
+Anything subtler, meaning STATE-dependent coats, `sv` slots or focus scales, is not
 a merge and stays on the component that owns it. `<Box asChild>` is the workhorse.
 A wrapper whose only job is layout its child could carry hands that layout to the
 child and renders nothing. It exists to DELETE elements; a component whose wrapper
@@ -246,6 +246,20 @@ paints, animates or carries semantics keeps its element.
 merge can hand over, so composition there stays the ladder above: a named part,
 the `render` function form, or the context hook. Router delegation keeps its typed
 prop (`as={RouterLink}`).
+
+A coat that does NOT depend on state is the one thing that composes through the
+slot rather than staying put, and `<Frost>` is the case: the blur is the same
+whatever the surface is doing, so it merges like any other style. `<Frost>` renders
+no element, takes exactly one child, reads that child's corner off its style or its
+`<Box radius>` shorthand, and coats it. That is why it has no `radius` prop to keep
+in step with the surface's own.
+
+Where the child is a render function there is no element to clone, and the slot has
+nothing to merge into. `frostCoat(surfaceStyle, options)` is the form for that: it
+hands back `{ style, layer }`, exactly one of which is ever set, and the owning
+component spreads the style onto its surface and renders the layer as its first
+child. Prefer the component; reach for the function only when the ladder's step 2
+has already taken the element away.
 
 ---
 

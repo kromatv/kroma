@@ -4,5 +4,5 @@
 button "Title 1" tab
 button "Title 2" tab
 button "Title 3" tab
-button "Scroll left" tab
-button "Scroll right" tab
+button "Scroll left"
+button "Scroll right"

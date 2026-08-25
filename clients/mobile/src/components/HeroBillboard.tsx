@@ -85,7 +85,7 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
           <Button
             variant="outline"
             active={inList}
-            icon={inList ? 'check' : 'plus'}
+            icon={inList ? 'bookmark-filled' : 'bookmark'}
             label={t('nav.myList')}
             style={s.cta}
             onPress={() => toggleList.mutate()}

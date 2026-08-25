@@ -1,8 +1,9 @@
-import { sizedImageUrl } from '@kroma/core';
+import { sizedImageUrl, type Translate } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { ArtScrim, Box, Ground, IconButton, Progress, Text, VirtualRail } from '@kroma/ui/kit';
+import { ArtScrim, Box, Progress, Text, VirtualRail, WatchedBadge } from '@kroma/ui/kit';
 import { type ReactElement, useState } from 'react';
 import { Image } from '#web/shared/ui/image';
+import { type PosterAction, PosterActionBar } from '#web/shared/ui/poster-action-bar';
 
 export interface PosterProps {
   title: string;
@@ -12,10 +13,13 @@ export interface PosterProps {
   progress?: number | null;
   watched?: boolean | null;
   onToggleWatched?: () => void;
+  inList?: boolean | null;
+  onToggleList?: () => void;
   width?: number;
   onClick?: () => void;
 }
 
+/** Read by the `[data-watched-mark]` rule in `styles.css`. */
 const RAIL_TILE = 208;
 const RAIL_GAP = 18;
 const RAIL_PAD = 12;
@@ -51,9 +55,37 @@ export function PosterRail<T>({
   );
 }
 
+type TileToggles = Pick<PosterProps, 'inList' | 'onToggleList' | 'watched' | 'onToggleWatched'>;
+
+function tileActions(
+  t: Translate,
+  { inList, onToggleList, watched, onToggleWatched }: Readonly<TileToggles>,
+): PosterAction[] {
+  const actions: PosterAction[] = [];
+  if (inList != null && onToggleList) {
+    actions.push({
+      key: 'list',
+      icon: inList ? 'bookmark-filled' : 'bookmark',
+      label: t(inList ? 'content.removeFromList' : 'content.addToList'),
+      active: inList,
+      onSelect: onToggleList,
+    });
+  }
+  if (watched != null && onToggleWatched) {
+    actions.push({
+      key: 'watched',
+      icon: 'eye',
+      label: t(watched ? 'content.markUnwatched' : 'content.markWatched'),
+      active: watched,
+      onSelect: onToggleWatched,
+    });
+  }
+  return actions;
+}
+
 /**
- * The tile wrapper is a `<div>`, not a `<button>`, so the watched toggle can be
- * a focusable `<button>` sibling without nesting interactive elements.
+ * The tile wrapper is a `<div>`, not a `<button>`, so the quick actions can be
+ * focusable siblings without nesting interactive elements.
  */
 export function Poster({
   title,
@@ -63,6 +95,8 @@ export function Poster({
   progress = null,
   watched = null,
   onToggleWatched,
+  inList = null,
+  onToggleList,
   width,
   onClick,
 }: Readonly<PosterProps>) {
@@ -70,10 +104,11 @@ export function Poster({
   const [imgOk, setImgOk] = useState(true);
   const showImg = Boolean(poster) && imgOk;
   const gradient = `linear-gradient(158deg, ${colors[0]} 0%, ${colors[1]} 70%)`;
-  const showToggle = watched != null && Boolean(onToggleWatched);
+
+  const actions = tileActions(t, { inList, onToggleList, watched, onToggleWatched });
 
   return (
-    <div style={{ width: width ?? 'var(--card-w)' }} className="poster-tile">
+    <div style={{ width: width ?? 'var(--card-w)' }} className="poster-tile poster-frame">
       <button type="button" onClick={onClick} className="poster-hit">
         <div className="poster-art" style={{ background: gradient }}>
           <Image
@@ -82,7 +117,8 @@ export function Poster({
             fill
             onError={() => setImgOk(false)}
           />
-          <ArtScrim radius="lg" />
+          <ArtScrim variant="deep" radius="lg" />
+          {watched ? <WatchedBadge /> : null}
           <div className="poster-caption" data-reveal={showImg ? '' : undefined}>
             {genre ? (
               <Text variant="overline" color="white/60" mb={4}>
@@ -105,20 +141,7 @@ export function Poster({
           ) : null}
         </div>
       </button>
-      {showToggle ? (
-        <div className="poster-toggle" data-reveal={watched ? undefined : ''}>
-          <Ground tone="dark">
-            <IconButton
-              variant={watched ? 'primary' : 'scrim'}
-              diameter={28}
-              glyph={15}
-              icon="check"
-              label={watched ? t('content.markUnwatched') : t('content.markWatched')}
-              onPress={() => onToggleWatched?.()}
-            />
-          </Ground>
-        </div>
-      ) : null}
+      <PosterActionBar actions={actions} />
     </div>
   );
 }

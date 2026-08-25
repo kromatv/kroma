@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { edgeScrollOffset, fitPitch, horizontalInset } from './edge-scroll';
-import { edgeWidth, railMask } from './rail-edge';
 
 /** A row of 200 tiles, 200px pitch, showing 5 at a time, one tile of margin. */
 const ROW = { itemSize: 200, viewport: 1000, count: 200, margin: 200 };
@@ -168,67 +167,5 @@ describe('horizontalInset', () => {
     const columns = Math.round(strip / pitch);
     expect(strip - columns * pitch).toBeGreaterThanOrEqual(0);
     expect(strip - columns * pitch).toBeLessThan(columns);
-  });
-});
-
-describe('edgeWidth', () => {
-  it('is a fraction of the row, so one number is not wrong at both sizes', () => {
-    expect(edgeWidth(1920)).toBe(288);
-    expect(edgeWidth(560)).toBe(88);
-    // The share, not a constant: a wider row gets a wider fade.
-    expect(edgeWidth(1200)).toBeGreaterThan(edgeWidth(700));
-  });
-
-  it('never gets too thin to read as a fade, nor wide enough to eat the row', () => {
-    expect(edgeWidth(200)).toBe(88);
-    expect(edgeWidth(0)).toBe(88);
-    expect(edgeWidth(4000)).toBe(300);
-    // And never more than a fifth of the row it is fading.
-    for (const row of [560, 700, 1000, 1400, 1920]) {
-      expect(edgeWidth(row) / row).toBeLessThan(0.2);
-    }
-  });
-});
-
-describe('railMask', () => {
-  /** Every stop as `[alpha, position]`, positions read as pixels from the near
-   *  edge - `calc(100% - Npx)` counts as N from the far one. */
-  const stops = (css: string) =>
-    [...css.matchAll(/rgba\(0, 0, 0, ([\d.]+)\) (?:calc\(100% - )?(\d+)(?:px)?/g)].map(
-      ([, alpha, at]) => [Number(alpha), Number(at)] as const,
-    );
-
-  it('empties the ends it fades, so the clipped tile is gone rather than dimmed', () => {
-    const css = railMask(200, true, true);
-    // Both ends: alpha 0 at the clip's own edge, full alpha somewhere inside.
-    expect(css).toContain('rgba(0, 0, 0, 0) 0px');
-    expect(css).toContain('rgba(0, 0, 0, 0) 100%');
-    expect(stops(css).some(([alpha]) => alpha === 1)).toBe(true);
-  });
-
-  it('does not fade an end that cannot scroll - the first tile keeps its ring', () => {
-    // The bleed at a resting end holds the end tile's focus ring, which is what
-    // the bleed is FOR. Fading it there is the artefact, not the fix.
-    const resting = railMask(200, false, true);
-    expect(resting.startsWith('linear-gradient(to right, rgba(0, 0, 0, 1) 0px')).toBe(true);
-    expect(railMask(200, true, false).endsWith('rgba(0, 0, 0, 1) 100%)')).toBe(true);
-    // Neither end scrolling is no mask at all, in effect: opaque throughout.
-    expect(stops(railMask(200, false, false)).every(([alpha]) => alpha === 1)).toBe(true);
-  });
-
-  it('reveals the row monotonically, over the bleed plus the fade', () => {
-    const fade = 200;
-    const near = stops(railMask(fade, true, false));
-    for (let at = 1; at < near.length; at++) {
-      const [alpha, position] = near[at] ?? [0, 0];
-      const [before, previous] = near[at - 1] ?? [0, 0];
-      // A stop that steps backwards, in either alpha or position, is a band.
-      if (position === 100) continue;
-      expect(alpha).toBeGreaterThanOrEqual(before);
-      expect(position).toBeGreaterThanOrEqual(previous);
-    }
-    // Nothing shows until the row's own edge, and all of it does one fade in.
-    expect(near.filter(([, at]) => at <= 32).every(([alpha]) => alpha === 0)).toBe(true);
-    expect(near.some(([alpha, at]) => alpha === 1 && at === 32 + fade)).toBe(true);
   });
 });

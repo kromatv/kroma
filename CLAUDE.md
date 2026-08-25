@@ -24,9 +24,9 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
   three doors out of the kit.
 - [`packages/ui/src/components/DESIGN.md`](packages/ui/src/components/DESIGN.md) for
   **how a component's API is shaped**: the part vocabulary, when a `data` prop
-  beats children, the controlled/uncontrolled signature, prop naming, and why
-  this kit has no `asChild`. Read it before adding a component or changing
-  one's props.
+  beats children, the controlled/uncontrolled signature, prop naming, and what
+  `asChild` means here (`<Slot>`, with a written-down merge). Read it before
+  adding a component or changing one's props.
 - [`modules/README.md`](modules/README.md) for authoring a module.
 - [`docs/tv-pairing.md`](docs/tv-pairing.md) for the three roads a television
   takes to an account, what "the same network" means, and which shells can hear

@@ -154,7 +154,7 @@ export function MissingPage() {
               size="sm"
               icon="search"
               label={t('requests.myEmptyCta')}
-              onPress={() => navigate({ to: '/search' })}
+              onPress={() => navigate({ to: '/search', search: { q: '', type: 'all' } })}
             />
           </EmptyState.Actions>
         </EmptyState.Root>

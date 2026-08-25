@@ -8,10 +8,10 @@ import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { Frost } from '#ui/components/atoms/frost';
+import { frostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { IconWell, type IconWellSize } from '#ui/components/atoms/icon-well';
-import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { CONTROL, type ControlSize, controlRadius, entryDefaultSize } from '#ui/lib/field-shell';
 import { nameOf } from '#ui/lib/name-of';
 import { ListGroup, useListGroup } from './list-group';
 import { ListRowContext } from './list-row-context';
@@ -99,6 +99,7 @@ function Root({
   const standalone = group === null;
   const shell = size ?? group?.size ?? entryDefaultSize();
   const metrics = CONTROL[shell];
+  const frost = frostCoat({ borderRadius: controlRadius(metrics) }, { on: standalone });
   const pressable = onPress !== undefined;
 
   const at = useMemo(() => sort(children), [children]);
@@ -134,14 +135,11 @@ function Root({
         ring={standalone}
         sv={listRowVariants}
         vars={{ size: shell, pressable, standalone, selected: lit }}
-        style={style}
+        style={[frost.style, style]}
       >
         {(state) => (
           <>
-            {/* Blur what shows through the translucent fill: the row reads as
-                one glass surface rather than a window on the artwork. A member
-                of a group is inside the card that already did this. */}
-            {standalone ? <Frost radius={metrics.radius} /> : null}
+            {frost.layer}
             {leading}
             {/* minW 0: without it a long label pushes the trailing slot off the
                 row instead of ellipsing, which is the one thing a row of a

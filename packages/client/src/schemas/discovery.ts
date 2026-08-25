@@ -194,11 +194,27 @@ export const PersonDetail = z.object({
 });
 export type PersonDetail = z.infer<typeof PersonDetail>;
 
+/** A single TMDB credit in a person's combined filmography. */
+export const TmdbCredit = z.object({
+  tmdbId: z.number(),
+  title: z.string(),
+  mediaType: z.enum(['movie', 'tv']),
+  year: z.number().nullish(),
+  posterUrl: z.string().nullish(),
+  backdropUrl: z.string().nullish(),
+  overview: z.string().nullish(),
+  character: z.string().nullish(),
+  job: z.string().nullish(),
+});
+export type TmdbCredit = z.infer<typeof TmdbCredit>;
+
 /** `GET /api/people/details?name=…`; `person` is null whenever the provider has
- * nothing to say (no key, unknown name, provider down). */
+ * nothing to say (no key, unknown name, provider down). `credits` carries the
+ * TMDB combined filmography so the page can show titles not in the local library. */
 export const PersonDetailResponse = z.object({
   name: z.string(),
   person: PersonDetail.nullish(),
+  credits: z.array(TmdbCredit).default([]),
 });
 export type PersonDetailResponse = z.infer<typeof PersonDetailResponse>;
 

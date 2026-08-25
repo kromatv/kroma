@@ -1,11 +1,60 @@
 import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from './watched-badge';
 
 export const story = defineStory({
   group: 'Media',
   component: WatchedBadge,
-  args: { size: 28 },
+  args: { size: 26 },
   controls: { size: { min: 16, max: 64, step: 2 } },
 });
 
-The "watched" pill sitting on the corner of a poster.
+The one mark that says a title has been watched. Every surface that has to say it draws this: the poster and rail tiles, the web browse grids, an episode still, the saved list.
+
+It is deliberately not the accent. Amber belongs to the controls: the toggle that changes the fact, the ring on the tile the remote is on, the bar that says how far in you are. The mark reports a fact nobody has to act on, so it takes the other register, a dark coin with a white check. On a library where four hundred titles are watched, an amber disc on every tile would drown the three amber things that mean something.
+
+Its paint is absolute rather than themed, because it only ever sits on artwork and a poster is the same poster in either theme. The dark fill carries a bright poster, and the light ring and glyph carry a black one.
+
+It positions nothing. The surface pins it, because which corner it belongs in depends on what that surface already puts there: top-left on a poster, top-right on the TV episode still whose top-left is the episode number.
+
+```tsx
+<Box absolute left={12} top={12} z={1}>
+  <WatchedBadge />
+</Box>
+```
+
+<Scene name="The worst grounds in the library">
+  Pure black, pure white, and a poster whose own type is amber. The mark has to survive all three, and the amber one is why it is not amber.
+
+  {story.take(({ size }) => (
+    <Box row gap={20}>
+      {[
+        { label: 'Black', bg: '#000000' },
+        { label: 'White', bg: '#FFFFFF' },
+        { label: 'Amber art', bg: '#C8A02A' },
+        { label: 'Mid grey', bg: '#7A7A7A' },
+      ].map((ground) => (
+        <Box key={ground.label} gap={8}>
+          <Box w={120} h={180} radius="lg" p={12} style={{ backgroundColor: ground.bg }}>
+            <WatchedBadge size={size} />
+          </Box>
+          <Text variant="meta" color="textDim">
+            {ground.label}
+          </Text>
+        </Box>
+      ))}
+    </Box>
+  ))}
+</Scene>
+
+<Do>
+- Show it at rest, and stand it down while a hover-revealed action bar is up. The lit watched toggle is already saying it, in the same corner cluster; the web shells do this with one rule in `styles.css` keyed to `[data-watched-mark]`.
+- Leave part-watched to `<Progress>`. The mark is binary and only ever means finished; the bar is the one that knows how far.
+</Do>
+
+<Dont>
+- Draw it over a page ground. It is built for artwork, and on a surface it reads as a hole.
+- Let it and a lit toggle both say watched at the same moment. One tile, one statement.
+- Hand-roll it. A disc, a check and a corner is a five-line component to copy and four surfaces have already drifted doing it.
+</Dont>

@@ -45,7 +45,9 @@ function webLayers(at: Readonly<WebLayersArgs>): ReactNode {
           // Cached art can already be `complete` before React attaches onLoad,
           // so the event never fires: check the element the moment it mounts.
           ref={(el) => {
-            if (el?.complete && el.naturalWidth > 0) at.markLoaded();
+            if (!(el?.complete && el.naturalWidth > 0)) return;
+            el.style.animation = 'none';
+            at.markLoaded();
           }}
           loading={at.priority ? 'eager' : 'lazy'}
           fetchPriority={at.priority ? 'high' : undefined}

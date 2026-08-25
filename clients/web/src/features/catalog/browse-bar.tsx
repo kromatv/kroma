@@ -1,6 +1,15 @@
 import { type GenreCount, type MessageKey, SORT_MODES, type SortMode } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Chip, color, type IconName, Row, Select, useBreakpoint } from '@kroma/ui/kit';
+import {
+  Box,
+  Chip,
+  color,
+  type IconName,
+  RING_ROOM,
+  Row,
+  Select,
+  useBreakpoint,
+} from '@kroma/ui/kit';
 import {
   type CSSProperties,
   type RefObject,
@@ -9,6 +18,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { genreIcon } from '#web/shared/lib/genre-icon';
 
 const SORT_LABEL_KEY: Record<SortMode, MessageKey> = {
   added: 'browse.sort.added',
@@ -64,8 +74,14 @@ const STRIP: CSSProperties = {
   flex: 1,
   gap: 8,
   overflowX: 'auto',
-  paddingTop: 2,
-  paddingBottom: 2,
+  // A scrolling box cannot let a focus ring out: `overflow-x: auto` forces the
+  // cross axis away from `visible`, and `clip` is coerced to `hidden` there. So
+  // the room the ring needs is reserved INSIDE the box and taken back as margin,
+  // leaving the row where it was.
+  paddingTop: RING_ROOM,
+  paddingBottom: RING_ROOM,
+  marginTop: -RING_ROOM,
+  marginBottom: -RING_ROOM,
   scrollbarWidth: 'none',
 };
 
@@ -208,6 +224,7 @@ export function BrowseBar({
                 key={g.name}
                 active={g.name === genre}
                 variant="subtle"
+                icon={genreIcon(g.name)}
                 label={g.name}
                 style={CHIP_PAD}
                 onPress={() => onGenre(g.name === genre ? undefined : g.name)}
@@ -227,7 +244,13 @@ export function BrowseBar({
             <Select.Trigger size="sm" style={GENRE_TRIGGER} />
             <Select.Item value={ALL_GENRES} label={t('browse.allGenres')} />
             {genres.map((g) => (
-              <Select.Item key={g.name} value={g.name} label={g.name} note={String(g.count)} />
+              <Select.Item
+                key={g.name}
+                value={g.name}
+                label={g.name}
+                icon={genreIcon(g.name)}
+                note={String(g.count)}
+              />
             ))}
           </Select.Root>
         ) : null}

@@ -1,9 +1,15 @@
-import { personDisplayName, personInvolvement, posterColors, roleLabels } from '@kroma/core';
+import {
+  personDisplayName,
+  personInvolvement,
+  posterColors,
+  roleLabels,
+  type TmdbCredit,
+} from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, color, EmptyState, gradient, PageHeader, Row, Text } from '@kroma/ui/kit';
 
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
 import { initials } from '#web/features/catalog/detail';
 import { PersonProfile } from '#web/features/catalog/person-profile';
@@ -30,6 +36,7 @@ function PersonPage() {
   const { data } = useSuspenseQuery(catalogQueries.personCredits(rawName));
   const { data: profile } = useQuery(catalogQueries.personDetails(rawName));
   const detail = profile?.person ?? null;
+  const tmdbCredits = profile?.credits ?? [];
   const c = kromaClient();
   const results = data.results;
   const entries: CatalogEntry[] = results.map((hit) =>
@@ -45,6 +52,8 @@ function PersonPage() {
   const photo = imageUrl(detail?.profileUrl ?? involvement.profileUrl);
   const [g1, g2] = posterColors(name);
   const roles = roleLabels(t, involvement);
+
+  const body = renderPersonBody(t, entries, tmdbCredits);
 
   return (
     <main className={PAGE_MAIN}>
@@ -86,14 +95,88 @@ function PersonPage() {
         </Row>
       </header>
       <PersonProfile detail={detail} />
-      {entries.length ? (
-        <CatalogGrid entries={entries} />
-      ) : (
-        <EmptyState.Root icon="user-x">
-          <EmptyState.Title>{t('person.empty')}</EmptyState.Title>
-        </EmptyState.Root>
-      )}
+      {body}
     </main>
+  );
+}
+
+function renderPersonBody(
+  t: ReturnType<typeof useT>,
+  entries: CatalogEntry[],
+  tmdbCredits: readonly TmdbCredit[],
+) {
+  if (entries.length) return <CatalogGrid entries={entries} />;
+  if (tmdbCredits.length) return <TmdbFilmography credits={tmdbCredits} />;
+  return (
+    <EmptyState.Root icon="user-x">
+      <EmptyState.Title>{t('person.empty')}</EmptyState.Title>
+    </EmptyState.Root>
+  );
+}
+
+function TmdbFilmography({ credits }: Readonly<{ credits: readonly TmdbCredit[] }>) {
+  const t = useT();
+  const navigate = useNavigate();
+  return (
+    <section>
+      <Box mb={20}>
+        <Text variant="h2" mb={4}>
+          {t('person.filmography')}
+        </Text>
+        <Text variant="meta" color="textMuted">
+          {t('person.filmographyHint')}
+        </Text>
+      </Box>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+          gap: 20,
+        }}
+      >
+        {credits.map((credit) => (
+          <button
+            key={`${credit.mediaType}-${credit.tmdbId}`}
+            type="button"
+            onClick={() =>
+              navigate({
+                to: '/discover/$type/$tmdbId',
+                params: {
+                  type: credit.mediaType === 'tv' ? 'tv' : 'movie',
+                  tmdbId: String(credit.tmdbId),
+                },
+              })
+            }
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              textAlign: 'left',
+              cursor: 'pointer',
+            }}
+          >
+            <Box aspect={2 / 3} radius="md" overflow="hidden" shadow="card">
+              <Image src={credit.posterUrl ?? null} alt={credit.title} fit="cover" fill />
+            </Box>
+            <Text variant="label" lines={2}>
+              {credit.title}
+            </Text>
+            <Box row align="center" gap={6}>
+              {credit.year ? (
+                <Text variant="meta" color="textDim">
+                  {credit.year}
+                </Text>
+              ) : null}
+              {credit.character ? (
+                <Text variant="meta" color="textMuted" lines={1}>
+                  · {credit.character}
+                </Text>
+              ) : null}
+            </Box>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 

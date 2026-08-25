@@ -55,6 +55,7 @@ export function WatchedButton({
     <Button
       variant="outline"
       active={watched ?? false}
+      pressed={watched ?? false}
       icon="check"
       label={watched ? t('content.watched') : t('content.markWatched')}
       onPress={onToggle}
@@ -74,7 +75,8 @@ export function ListButton({
       glyph={20}
       radius="md"
       active={inList ?? false}
-      icon={inList ? 'check' : 'plus'}
+      pressed={inList ?? false}
+      icon={inList ? 'bookmark-filled' : 'bookmark'}
       label={inList ? t('content.removeFromList') : t('content.addToList')}
       onPress={onToggle}
     />

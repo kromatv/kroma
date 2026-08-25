@@ -42,20 +42,23 @@ export function TitleHero({
 }>) {
   const t = useT();
   const playable = owned ? view.playable : null;
+  // Both list actions (watched, my-list) work for both owned and discover
+  // titles. Owned titles use their local item id; discover titles use
+  // `tmdb:<id>` so the membership survives a library rescan and still finds the
+  // title via the discover route.
+  const listId = localId ?? (view.tmdbId != null ? `tmdb:${view.tmdbId}` : null);
   const listState: {
     watched?: boolean;
     onToggleWatched?: () => void;
     inList?: boolean;
     onToggleList?: () => void;
-  } =
-    owned && localId
-      ? {
-          watched: isWatched(localId),
-          onToggleWatched: () => toggleWatched(localId),
-          inList: inList(localId),
-          onToggleList: () => toggleList(localId),
-        }
-      : {};
+  } = {};
+  if (listId) {
+    listState.watched = isWatched(listId);
+    listState.onToggleWatched = () => toggleWatched(listId);
+    listState.inList = inList(listId);
+    listState.onToggleList = () => toggleList(listId);
+  }
   const trackInfo: { audio?: string; subtitles?: string } = playable
     ? { audio: audioString(t, playable), subtitles: subString(t, playable) }
     : {};

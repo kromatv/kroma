@@ -11,6 +11,12 @@ const under = (root: HTMLElement) =>
   root.querySelector('img[aria-hidden="true"]') as HTMLImageElement | null;
 
 afterEach(cleanup);
+afterEach(() => vi.restoreAllMocks());
+
+const alreadyDecoded = () => {
+  vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true);
+  vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(640);
+};
 
 // The web reveal waits one frame before it turns opaque, so the browser paints
 // the transparent state the CSS transition starts from. Tests have to let that
@@ -35,6 +41,14 @@ describe('Img', () => {
     expect(img.style.opacity).toBe('');
     expect(img.getAttribute('loading')).toBe('lazy');
     expect(img.getAttribute('decoding')).toBe('async');
+  });
+
+  it('shows art the browser had already decoded without replaying the fade', () => {
+    alreadyDecoded();
+
+    const { container } = render(el({ src: 'a.jpg' }));
+
+    expect(main(container)?.style.animation).toBe('none');
   });
 
   it('loads eagerly at high priority when marked the LCP art', () => {

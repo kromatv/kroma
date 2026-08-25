@@ -70,7 +70,7 @@ export function ListButton({
       size="lg"
       active={inList}
       pressed={inList}
-      icon={inList ? 'check' : 'plus'}
+      icon={inList ? 'bookmark-filled' : 'bookmark'}
       label={inList ? t('content.inList') : t('content.addToList')}
       onPress={onToggle}
     />

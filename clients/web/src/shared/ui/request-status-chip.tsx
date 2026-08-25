@@ -97,7 +97,8 @@ export function RequestStatusChip({
         px={shape.px}
         py={shape.py}
         radius="pill"
-        style={[fill, CARD_FROST]}
+        bg="bg/72"
+        style={CARD_FROST}
       >
         {lead}
         <Text variant="overline" color={m.color}>

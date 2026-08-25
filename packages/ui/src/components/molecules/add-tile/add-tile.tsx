@@ -98,9 +98,6 @@ interface AddTileProps extends Omit<FocusableProps, 'children' | 'style'> {
  * ```
  */
 function AddTile({ label, size = 'tv', icon = 'plus', style, ...focus }: Readonly<AddTileProps>) {
-  // <Frost> clips itself to the corner rather than inheriting it: it is a
-  // sibling layer, not a child of the border.
-  const radius = corner(size);
   return (
     <Focusable
       {...focus}
@@ -116,12 +113,11 @@ function AddTile({ label, size = 'tv', icon = 'plus', style, ...focus }: Readonl
     >
       {({ slots }) => (
         <>
-          <Box style={slots.well}>
-            {/* The fill is translucent, so blur what shows through: the tile
-                reads as glass over the artwork rather than a hole in it. */}
-            <Frost radius={radius} />
-            <Icon name={icon} thickness={1.6} {...slots.glyph} />
-          </Box>
+          <Frost>
+            <Box style={slots.well}>
+              <Icon name={icon} thickness={1.6} {...slots.glyph} />
+            </Box>
+          </Frost>
           <Text style={slots.label}>{label}</Text>
         </>
       )}

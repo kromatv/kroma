@@ -88,12 +88,15 @@ export function TrendingBrowse({
 
 const HEADING = { margin: 0 } as const;
 
+// The focus ring is an outline and takes the corners of what it rings, so a bare
+// inline link states a radius rather than being boxed square.
 const INLINE_LINK = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: 4,
   flexShrink: 0,
   textDecoration: 'none',
+  borderRadius: 'var(--radius-sm)',
 } as const;
 
 const FADE_IN = { animation: 'fade-in .3s var(--ease-out)' } as const;

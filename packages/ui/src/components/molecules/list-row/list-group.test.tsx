@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from '@testing-library/react';
@@ -66,6 +68,17 @@ describe('ListRow.Group', () => {
     const card = container.querySelector('[data-focus-ring-inset]');
     expect(card).toBeTruthy();
     expect(card?.querySelector('[aria-label="Membre"]')).toBeTruthy();
+  });
+
+  it('marks itself with the hook the inward-ring rule is keyed on', () => {
+    // Resolved from the runner's root, the one path a test can be sure of:
+    // `import.meta.url` here is a Vite module id, not a file.
+    const css = readFileSync(resolve(process.cwd(), 'packages/ui/src/styles/base.css'), 'utf8');
+
+    expect(css).toContain('[data-focus-ring-inset] :focus-visible');
+    expect(css).toMatch(
+      /\[data-focus-ring-inset\] :focus-visible \{[^}]*outline-offset:\s*calc\(-1/,
+    );
   });
 
   it('declares its size to the members, which still get the last word', () => {

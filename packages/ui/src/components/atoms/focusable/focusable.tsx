@@ -25,6 +25,7 @@ import { useFocusReport } from '#ui/lib/focus-report';
 import { useRevealOnFocus } from '#ui/lib/focus-scroll';
 import { useFocusScale } from '#ui/lib/focus-transition';
 import { useFocusVisible } from '#ui/lib/focus-visible';
+import { useHoverPassthrough } from '#ui/lib/hover-passthrough';
 import { inputHeld } from '#ui/lib/input-gate';
 import { markFocus } from '#ui/lib/perf';
 import { WEB } from '#ui/lib/platform';
@@ -129,7 +130,16 @@ function Focusable<R extends AnySv = AnySv>({
   const animated = useFocusScale(focused || hovered, focusScale);
 
   const box = useRef<View>(null);
-  const setBox = useCallback((view: View | null) => attach(box, ref, view), [ref]);
+  // A callback ref, so it re-binds when this control swaps its host element (a
+  // disabled <Focusable> renders a different one).
+  const passthrough = useHoverPassthrough<View>();
+  const setBox = useCallback(
+    (view: View | null) => {
+      passthrough(view);
+      attach(box, ref, view);
+    },
+    [passthrough, ref],
+  );
   const reveal = useRevealOnFocus(box);
   const report = useFocusReport();
 

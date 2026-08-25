@@ -9,6 +9,8 @@ button "Title 2" tab
 progressbar "" [valuenow=40]
 button "Title 3" tab
 button "Title 4" tab
+img "Watched"
+svg "" [hidden=true]
 button "Title 5" tab
 button "Title 6" tab
 

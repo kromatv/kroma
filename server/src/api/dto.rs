@@ -290,11 +290,14 @@ pub struct PersonResponse {
 /// `GET /api/people/details?name=…` the person behind a credit, from the
 /// metadata provider. `person` is `null` whenever the provider has nothing (no
 /// key, unknown name, provider down): the page renders the filmography either
-/// way, so this is a soft miss, never an error.
+/// way, so this is a soft miss, never an error. `credits` carries the TMDB
+/// combined filmography so the page can show titles not in the local library.
 #[derive(Serialize)]
 pub struct PersonDetailResponse {
     pub name: String,
     pub person: Option<crate::model::PersonDetail>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub credits: Vec<crate::infra::metadata::person::TmdbCredit>,
 }
 
 /// One image previously uploaded for a notification. `uploadedAt` is epoch

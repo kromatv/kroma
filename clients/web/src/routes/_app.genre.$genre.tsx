@@ -8,6 +8,7 @@ import { useMemo } from 'react';
 import { BrowseBar } from '#web/features/catalog/browse-bar';
 import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
+import { genreIcon } from '#web/shared/lib/genre-icon';
 import { catalogQueries } from '#web/shared/lib/queries';
 import { PAGE_MAIN, SkeletonRow } from '#web/shared/ui';
 
@@ -34,7 +35,7 @@ function GenrePending() {
   return (
     <main className={PAGE_MAIN}>
       <PageHeader.Root>
-        <PageHeader.Title>{genre}</PageHeader.Title>
+        <PageHeader.Title icon={genreIcon(genre)}>{genre}</PageHeader.Title>
       </PageHeader.Root>
       <Box mt={24}>
         <SkeletonRow count={14} />
@@ -68,7 +69,7 @@ function GenrePage() {
   return (
     <main className={PAGE_MAIN}>
       <PageHeader.Root>
-        <PageHeader.Title>{genre}</PageHeader.Title>
+        <PageHeader.Title icon={genreIcon(genre)}>{genre}</PageHeader.Title>
       </PageHeader.Root>
       {entries.length === 0 ? (
         <EmptyState.Root icon="category">

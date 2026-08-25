@@ -38,10 +38,25 @@ body {
 }
 
 /* The ring is an outline standing off the control, so it already takes the
-   control's corners: this must never set border-radius. */
+   control's corners: this must never set border-radius.
+
+   It also paints OUTSIDE the control's box, where a later sibling's own
+   background would cover it: a ring on the middle of three stacked buttons came
+   out clipped top and bottom. `z-index` raises the focused control above its
+   neighbours, and it needs no `position` to do so on a flex or grid child, which
+   is every cluster this happens in. Elsewhere it is inert. */
 :focus-visible {
   outline: var(--ring-outline);
   outline-offset: var(--ring-gap);
+  z-index: 1;
+}
+
+/* A row inside a card that CLIPS it draws its ring inward. Standing off, the
+   card keeps only the two stripes it does not clip, drawn across the rows above
+   and below. <ListRow.Group> marks itself with this, and so may any other
+   surface that puts controls inside an `overflow: hidden` box. */
+[data-focus-ring-inset] :focus-visible {
+  outline-offset: calc(-1 * (var(--ring-gap) + var(--ring-width)));
 }
 
 /* Except inside a field, where <TextField> owns the focus visual. */

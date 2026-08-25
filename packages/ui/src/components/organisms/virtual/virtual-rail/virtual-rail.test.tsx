@@ -46,4 +46,14 @@ describe('an unscoped rail', () => {
     over.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(false);
   });
+
+  it('puts no mask over the row, so a frosted tile still has a backdrop to sample', () => {
+    const container = mount();
+
+    const masked = [...container.querySelectorAll('*')].filter(
+      (el) => (el as HTMLElement).style.maskImage !== '',
+    );
+
+    expect(masked).toHaveLength(0);
+  });
 });

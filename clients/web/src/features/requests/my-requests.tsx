@@ -96,7 +96,7 @@ export function MyRequestsPage() {
             <Button
               size="sm"
               label={t('requests.myEmptyCta')}
-              onPress={() => navigate({ to: '/search' })}
+              onPress={() => navigate({ to: '/search', search: { q: '', type: 'all' } })}
             />
           </EmptyState.Actions>
         </EmptyState.Root>
@@ -112,7 +112,7 @@ export function MyRequestsPage() {
             onCancel={() => cancel(req)}
             onOpen={() => {
               if (req.status === 'available') {
-                navigate({ to: '/search' });
+                navigate({ to: '/search', search: { q: '', type: 'all' } });
               } else {
                 navigate({
                   to: '/discover/$type/$tmdbId',

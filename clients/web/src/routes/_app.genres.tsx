@@ -1,19 +1,19 @@
 import {
   collectGenres,
   type GenreCount,
-  genreAccent,
   genreColors,
   genreShowcases,
   genreTint,
   sizedImageUrl,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, EmptyState, PageHeader, Text } from '@kroma/ui/kit';
+import { Box, EmptyState, Icon, PageHeader, Text } from '@kroma/ui/kit';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { isAuthed } from '#web/shared/lib/api';
+import { genreIcon } from '#web/shared/lib/genre-icon';
 import { catalogQueries } from '#web/shared/lib/queries';
 import { Image, PAGE_MAIN, SkeletonRow } from '#web/shared/ui';
 
@@ -88,6 +88,7 @@ function GenreTile({
   backdrop,
 }: Readonly<{ genre: GenreCount; count: string; backdrop: string | null }>) {
   const [c1, c2] = genreColors(genre.name);
+  const icon = genreIcon(genre.name);
   return (
     <Link
       to="/genre/$genre"
@@ -109,10 +110,12 @@ function GenreTile({
         right={{ base: 16, md: 20 }}
         bottom={{ base: 14, md: 16 }}
       >
-        <Box w={24} h={4} mb={6} radius="pill" bg={genreAccent(genre.name)} />
-        <Text variant="cardTitle" color="white">
-          {genre.name}
-        </Text>
+        <Box row align="center" gap={8}>
+          {icon ? <Icon name={icon} size={18} color="white" /> : null}
+          <Text variant="cardTitle" color="white">
+            {genre.name}
+          </Text>
+        </Box>
         <Text variant="meta" color="white/70" mt={2}>
           {count}
         </Text>

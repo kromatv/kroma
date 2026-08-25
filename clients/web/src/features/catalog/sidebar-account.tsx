@@ -15,11 +15,17 @@ const NO_CAPS = { textTransform: 'none' } as const;
 
 // A `title` tooltip and the UA's own button skin are browser concerns the kit
 // has no name for, so the trigger stays an element around a kit row.
+// The focus ring is an outline, which takes the corners of the element it is
+// on: the button has to carry the surface's own radius, or it rings the row as a
+// square. The gap above is a margin for the same reason, so the box the outline
+// traces is the box the eye sees.
 const CHIP_BUTTON: CSSProperties = {
   display: 'block',
   width: '100%',
-  padding: '8px 0 0',
+  marginTop: 8,
+  padding: 0,
   border: 0,
+  borderRadius: 'var(--radius-md)',
   background: 'none',
   font: 'inherit',
   color: 'inherit',

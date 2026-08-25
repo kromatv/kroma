@@ -13,6 +13,13 @@ without reading the app.
 | 5. Templates | [`templates/`](./templates) | A page skeleton: where things go, with no data. |
 | 6. Pages | not here | A template filled with real data. See below. |
 
+Beside the ladder, and not a rung on it, sits [`common/`](./common): helpers the
+kit exports that draw nothing. `<If>` is the one that exists. The levels above are
+a DESIGN hierarchy, and control flow has no place in one, so a thing that renders
+no pixels goes here rather than being filed as an atom it is not. A component in
+`common/` may be used from any level, which is exactly why it has to earn the name
+by being visual-free: it has no design meaning to invert.
+
 ## Pages are not in the kit
 
 A page knows the server, the router and the session, so it belongs to an app
@@ -44,8 +51,9 @@ for every arrangement anyone might want.
 That is the whole of it here. [`DESIGN.md`](./DESIGN.md) owns the rest: the part
 vocabulary and what each name means, the six tests that decide when a `data` prop
 beats children, the controlled/uncontrolled signature, why a face a part exists
-for is never also a prop, the escape-hatch ladder and why this kit has no
-`asChild`, prop naming, and the checklist a component passes before it is done.
+for is never also a prop, the escape-hatch ladder, what `asChild` means here and
+the merge it is defined as, prop naming, and the checklist a component passes
+before it is done.
 
 Read it before adding a component or changing one's props.
 

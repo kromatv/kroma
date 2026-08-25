@@ -1,7 +1,7 @@
 // The ends of the rail: the fade signalling more content, plus the pointer's
-// paging control. Web uses a CSS mask on the clip box (`railMask`); React
-// Native has no `maskImage`, so native paints a scrim instead (same geometry,
-// same samples), sized to the row's own height so it doesn't wash out the title.
+// paging control. A CSS mask over the row would fade to whatever is behind it,
+// but a masked ancestor forms a BACKDROP ROOT and every <Frost> beneath it goes
+// blind (see lib/css.web.ts); React Native has no `maskImage` at all.
 
 import { useEffect, useState } from 'react';
 import { Animated, Pressable, type ViewStyle } from 'react-native';
@@ -25,8 +25,8 @@ export function edgeWidth(row: number): number {
   return Math.round(Math.min(EDGE_MAX, Math.max(EDGE_MIN, row * EDGE_SHARE)));
 }
 
-// Smootherstep curve, sampled as stops: masks and gradients only interpolate
-// linearly between them, so the curve has to be drawn rather than described.
+// Smootherstep curve, sampled as stops: a gradient only interpolates linearly
+// between them, so the curve has to be drawn rather than described.
 const FADE_CURVE = [
   [0, 0],
   [0.12, 0.01],
@@ -37,31 +37,6 @@ const FADE_CURVE = [
   [0.85, 0.97],
   [1, 1],
 ] as const;
-
-function fadeIn(alpha: number, t: number, fade: number): string {
-  return `rgba(0, 0, 0, ${alpha}) ${Math.round(FOCUS_BLEED + t * fade)}px`;
-}
-
-/** CSS mask-image for the row's clip box (web). An end that cannot scroll is
- *  left unfaded rather than transitioned, since mask images can't interpolate -
- *  the first tile's focus ring lives in the bleed and fading it would shave it. */
-export function railMask(fade: number, start: boolean, end: boolean): string {
-  const stops: string[] = [];
-  if (start) {
-    // Flat from the clip edge to the row edge, then the curve.
-    stops.push('rgba(0, 0, 0, 0) 0px');
-    for (const [t, alpha] of FADE_CURVE) stops.push(fadeIn(alpha, t, fade));
-  } else stops.push('rgba(0, 0, 0, 1) 0px');
-  if (end) {
-    // Mirrored curve from the far edge, in calc() since the row's width isn't known here.
-    for (let at = FADE_CURVE.length - 1; at >= 0; at--) {
-      const [t, alpha] = FADE_CURVE[at] ?? [0, 0];
-      stops.push(`rgba(0, 0, 0, ${alpha}) calc(100% - ${Math.round(FOCUS_BLEED + t * fade)}px)`);
-    }
-    stops.push('rgba(0, 0, 0, 0) 100%');
-  } else stops.push('rgba(0, 0, 0, 1) 100%');
-  return `linear-gradient(to right, ${stops.join(', ')})`;
-}
 
 function scrim(start: boolean, fade: number): string {
   const stops = FADE_CURVE.map(
@@ -84,8 +59,8 @@ function scrimStyle(start: boolean, fade: number): ViewStyle {
   return style;
 }
 
-/** One end of the row: the paging control, plus (native D-pad rows) the fade
- *  behind it. Uses a plain `Pressable`, not `<Focusable>`, so the arrow is
+/** One end of the row: the fade over the row's last tiles, plus the pointer's
+ *  paging control. Uses a plain `Pressable`, not `<Focusable>`, so the arrow is
  *  never a stop in the D-pad's own path through the row. */
 export function RailEdge({
   side,
@@ -120,15 +95,15 @@ export function RailEdge({
         shown && arrow ? s.passThrough : s.inert,
         { width: width + FOCUS_BLEED },
         start ? s.edgeStart : s.edgeEnd,
-        // Web already masked the edge away; painting a scrim here would recreate
-        // the artefact the mask avoids.
-        WEB ? null : scrimStyle(start, width),
+        scrimStyle(start, width),
         WEB ? ({ opacity: shown ? 1 : 0 } as ViewStyle) : { opacity: fade },
         WEB ? (FADE as ViewStyle) : null,
       ]}
     >
       <Pressable
-        focusable={false}
+        // tabIndex, not `focusable`: react-native-web's <Pressable> reads only
+        // the former, so `focusable={false}` leaves it in the browser tab order.
+        tabIndex={-1}
         accessibilityRole="button"
         accessibilityLabel={start ? 'Scroll left' : 'Scroll right'}
         onPress={onPress}
@@ -147,8 +122,8 @@ export function RailEdge({
 }
 
 const s = styles({
-  // Sized to the row's own height, not the clip's, so a native scrim doesn't
-  // bleed into the title above the rail.
+  // Sized to the row's own height, not the clip's, so the scrim doesn't bleed
+  // into the title above the rail.
   edge: { absolute: true, top: 0, bottom: 0, justify: 'center', z: 2 },
   passThrough: { pointerEvents: 'box-none' },
   inert: { pointerEvents: 'none' },

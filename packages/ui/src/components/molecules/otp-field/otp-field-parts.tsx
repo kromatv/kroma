@@ -10,7 +10,7 @@ import {
   useOtpField,
   useOtpSlot,
 } from './otp-field-context';
-import { otpVariants, SLOT_RADIUS } from './otp-field-variants';
+import { otpVariants } from './otp-field-variants';
 
 const SLOT_GAP = 12;
 const CARET_HEIGHT = { md: 30, tv: 44 } as const;
@@ -51,14 +51,12 @@ function Slot() {
   const { size, invalid, disabled, mask } = slot;
   const s = otpVariants({ size, state: slotState(slot), invalid, disabled });
   return (
-    <Box style={s.slot}>
-      {/* The fill is translucent (lib/field-shell), so blur what shows through:
-          a code entry over the sign-in artwork reads as glass like every other
-          control, rather than as an opaque chip punched out of it. */}
-      <Frost radius={SLOT_RADIUS[size]} />
-      {slot.char == null ? null : <Text style={s.char}>{mask ? '•' : slot.char}</Text>}
-      {slot.caret ? <Caret absolute height={CARET_HEIGHT[size]} /> : null}
-    </Box>
+    <Frost>
+      <Box style={s.slot}>
+        {slot.char == null ? null : <Text style={s.char}>{mask ? '•' : slot.char}</Text>}
+        {slot.caret ? <Caret absolute height={CARET_HEIGHT[size]} /> : null}
+      </Box>
+    </Frost>
   );
 }
 

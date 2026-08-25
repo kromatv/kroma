@@ -1,3 +1,4 @@
+import { sizedImageUrl } from '@kroma/core';
 import { Box, gradient } from '@kroma/ui/kit';
 import type { CSSProperties } from 'react';
 import { Image } from '#web/shared/ui';
@@ -46,9 +47,10 @@ export function HeroBackdrop({
   backdrop,
   gradient: art,
 }: Readonly<{ backdrop: string | null; gradient: string }>) {
+  const sized = sizedImageUrl(backdrop, typeof window !== 'undefined' ? window.innerWidth : 960);
   return (
     <>
-      <Image src={backdrop} fit="cover" background={art} fill priority />
+      <Image src={sized} fit="cover" background={art} fill priority />
       <Box fill style={VIGNETTE} />
       <Box fill style={SIDE_FADE} />
       <Box fill style={BOTTOM_FADE} />

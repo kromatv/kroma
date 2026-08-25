@@ -5,7 +5,7 @@
 import { type DiscoverType, hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, EmptyState, Icon, InputGroup, PageHeader, SegmentGroup } from '@kroma/ui/kit';
-import { type ReactNode, useState } from 'react';
+import type { ReactNode } from 'react';
 import { SearchResults } from '#web/features/requests/search-results';
 import { TrendingBrowse } from '#web/features/requests/trending';
 import { useDiscoverSearch, useTrending } from '#web/features/requests/use-discover-search';
@@ -22,12 +22,29 @@ const TYPES: {
 
 const SEARCH_BOX = { width: '100%', maxWidth: 672 } as const;
 
-export function SearchPage() {
+export type DiscoverSearch = { q: string; type: DiscoverType };
+
+export function validateDiscoverSearch(s: Record<string, unknown>): DiscoverSearch {
+  const q = typeof s.q === 'string' ? s.q : '';
+  const rawType = typeof s.type === 'string' ? s.type : 'all';
+  const type: DiscoverType = rawType === 'movie' || rawType === 'tv' ? rawType : 'all';
+  return { q, type };
+}
+
+export function SearchPage({
+  query,
+  type,
+  setQuery,
+  setType,
+}: Readonly<{
+  query: string;
+  type: DiscoverType;
+  setQuery: (q: string) => void;
+  setType: (t: DiscoverType) => void;
+}>) {
   const t = useT();
   const { user } = useAuth();
   const canDiscover = !!user && hasPermission(user, 'requests.create');
-  const [query, setQuery] = useState('');
-  const [type, setType] = useState<DiscoverType>('all');
   const state = useDiscoverSearch(query, type);
   const trending = useTrending(canDiscover);
   const searching = query.trim().length > 0;

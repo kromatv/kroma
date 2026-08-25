@@ -32,14 +32,13 @@ import {
 import { SpatialNavigationView } from 'react-tv-space-navigation';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { styles } from '#ui/core';
-import { maskImage } from '#ui/lib/css';
 import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusReporter } from '#ui/lib/focus-report';
 import { WEB } from '#ui/lib/platform';
 import { edgeScrollOffset, fitPitch, horizontalInset, maxOffset } from './edge-scroll';
 import { MovingRow } from './moving-row';
-import { edgeWidth, RailEdge, railMask } from './rail-edge';
+import { edgeWidth, RailEdge } from './rail-edge';
 import { KEY_GRACE_MS, useKeyGrace } from './use-key-grace';
 
 const TOUCH = !WEB && !Platform.isTV;
@@ -214,12 +213,6 @@ function VirtualRail<T>({
   const fadeOn = scoped || buttonsUp;
   const fadeStart = fadeOn && offset > 1;
   const fadeEnd = fadeOn && offset < furthest - 1;
-  // Memoised because a scroll calls `setOffset` on every tick: unmemoised, the
-  // mask string was rebuilt on every frame.
-  const mask = useMemo(
-    () => (WEB ? maskImage(railMask(edge, fadeStart, fadeEnd)) : null),
-    [edge, fadeStart, fadeEnd],
-  );
 
   const row = scoped ? (
     <SpatialNavigationView direction="horizontal">{tiles}</SpatialNavigationView>
@@ -235,7 +228,7 @@ function VirtualRail<T>({
       onPointerLeave={() => setHovered(false)}
     >
       {translated ? (
-        <View style={[clipStyles.clip, mask]}>
+        <View style={clipStyles.clip}>
           <MovingRow offset={offset} style={contentStyle}>
             {row}
           </MovingRow>
@@ -247,7 +240,6 @@ function VirtualRail<T>({
           showsHorizontalScrollIndicator={false}
           onScroll={onRailScroll}
           scrollEventThrottle={16}
-          style={mask}
           // The full row's width from the first frame: the scroll RANGE must not
           // grow with the mounted window, or a hard fling bounces off its end.
           contentContainerStyle={[s.row, contentStyle, { minWidth: count * pitch }]}
@@ -256,7 +248,7 @@ function VirtualRail<T>({
         </ScrollView>
       )}
       {/* Mounted whether shown or not, so the control fades rather than appears. */}
-      {arrowsOn || (scoped && !WEB && !TOUCH) ? (
+      {arrowsOn || (scoped && !TOUCH) ? (
         <>
           <RailEdge
             side="start"

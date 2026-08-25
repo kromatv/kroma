@@ -6,7 +6,7 @@ import { type ReactNode, type RefObject, useRef, useState } from 'react';
 import { type StyleProp, TextInput, type TextInputProps, type TextStyle } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { Frost } from '#ui/components/atoms/frost';
+import { frostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { color, styles, useTheme } from '#ui/core';
@@ -14,6 +14,7 @@ import { Caret } from '#ui/lib/caret';
 import {
   type ControlSize,
   controlMetrics,
+  controlRadius,
   entryDefaultPhysicalKeyboard,
   fieldShell,
   NO_OUTLINE,
@@ -123,6 +124,7 @@ function TextField({
   const autoCompleteProps = autoComplete ? { autoComplete } : null;
   const masked = type === 'password' && !revealed;
   const shell = fieldShell(metrics, { flat, focused, invalid, lift });
+  const frost = frostCoat({ borderRadius: controlRadius(metrics) }, { on: !flat });
   return (
     <Box
       row
@@ -144,11 +146,9 @@ function TextField({
       // The amber ring every other control wears, rather than a 1px edge
       // recolour: a field is a focus target like any other and must read as one
       // from three metres. `flat` hands all of it to the surrounding shell.
-      style={[shell.edge, group.style, box.style]}
+      style={[shell.edge, frost.style, group.style, box.style]}
     >
-      {/* The fill is translucent (lib/field-shell), so blur what shows
-          through: a field over artwork reads as glass, not as a window. */}
-      {flat ? null : <Frost radius={metrics.radius} />}
+      {frost.layer}
       {/* The well is fixed at the entry's content height so a leading icon can
           never set the row height. */}
       {icon ? (

@@ -1,5 +1,4 @@
 # IconButton  src/components/atoms/icon-button/icon-button.story.mdx
 
 ## preview
-div "" rgb(0, 0, 0)/medium/normal/depends on user agent/normal/normal//none/none << pad=0,0,0,0 op=1.000 bg=[var(--kroma-tint-12)] radius=[999px 999px 999px 999px 999px 999px 999px 999px] border=[1px var(--kroma-tint-20)|1px var(--kroma-tint-20)|1px var(--kroma-tint-20)|1px var(--kroma-tint-20)] tf=[scale(1)] anim=[transform 200ms] size=[width=44px,height=44px] flex=[column:center:center:nowrap:g0/0:n2] abs=1
-svg "" width=18 height=18 stroke=var(--kroma-text) fill=none stroke-width=2 viewBox=0 0 24 24 << pad=0,0,0,0 op=1.000 bg=[var(--kroma-tint-12)] radius=[999px 999px 999px 999px] border=[1px var(--kroma-tint-20)|1px var(--kroma-tint-20)|1px var(--kroma-tint-20)|1px var(--kroma-tint-20)] tf=[scale(1)] anim=[transform 200ms] size=[width=44px,height=44px] flex=[column:center:center:nowrap:g0/0:n2]
+svg "" width=18 height=18 stroke=var(--kroma-text) fill=none stroke-width=2 viewBox=0 0 24 24 << pad=0,0,0,0 op=1.000 bg=[var(--kroma-tint-12)] radius=[999px 999px 999px 999px] border=[1px var(--kroma-tint-20)|1px var(--kroma-tint-20)|1px var(--kroma-tint-20)|1px var(--kroma-tint-20)] tf=[scale(1)] anim=[transform 200ms] size=[width=44px,height=44px] flex=[column:center:center:nowrap:g0/0:n1]

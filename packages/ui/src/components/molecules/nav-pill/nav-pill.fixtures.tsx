@@ -1,7 +1,5 @@
 import { useState } from 'react';
 
-import { Frost } from '#ui/components/atoms/frost';
-
 import { NavPill, type NavPillRootProps } from './nav-pill';
 
 export const SECTIONS = [
@@ -34,9 +32,7 @@ export function Frosted() {
   const [active, setActive] = useState('films');
   return (
     <NavPill.Root size="tv">
-      <NavPill.Backdrop>
-        <Frost amount={16} />
-      </NavPill.Backdrop>
+      <NavPill.Backdrop amount={16} />
       {SECTIONS.map((section) => (
         <NavPill.Item
           key={section.key}

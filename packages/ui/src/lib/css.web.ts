@@ -20,9 +20,31 @@ export function bgSize(value: string): ViewStyle {
   return { backgroundSize: value } as ViewStyle;
 }
 
+// A CSS `backdrop-filter` samples the nearest BACKDROP ROOT rather than the
+// page, so an ancestor that forms one leaves every <Frost> beneath it blind and
+// the surface reads as a flat wash. Measured on Chromium 141 over striped art:
+//
+//   opacity < 1        isolates   blind for the whole transition, then snaps
+//                                 on at exactly 1 (the reveal glitch)
+//   mask-image         isolates   blind permanently, at rest and in motion,
+//                                 and a mask that paints nothing still counts
+//   filter             isolates
+//   mix-blend-mode     isolates
+//   contain: paint     isolates
+//   will-change        SAFE       promote() does not isolate
+//   transform          SAFE       translateZ(0) does not isolate
+//
+// So a frosted surface may be promoted and moved freely, and must not be faded
+// or masked. Reveal one with `visibility` and a transform rather than opacity.
+// React Native has neither a backdrop filter nor a backdrop root.
+
 /** A CSS `mask-image` value, e.g. `linear-gradient(to right, transparent, #000 32px)`.
  *  react-native-web writes it out with the `-webkit-` / `-moz-` / `-ms-` prefixes
- *  as well, which is what makes it land on the 2019 WebKits the TV shells run. */
+ *  as well, which is what makes it land on the 2019 WebKits the TV shells run.
+ *
+ *  A masked element ISOLATES its backdrop: every `backdrop-filter` beneath it
+ *  samples the mask's own layer instead of the page and renders as a flat wash.
+ *  Do not mask an ancestor of a <Frost>; see the table above. */
 export function maskImage(css: string): ViewStyle {
   return { maskImage: css } as ViewStyle;
 }

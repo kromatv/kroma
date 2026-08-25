@@ -14,8 +14,9 @@ import {
   IconButton,
   sv,
   Text,
+  WatchedBadge,
 } from '@kroma/ui/kit';
-import { IconCheck, IconPlayerPlayFilled } from '@tabler/icons-react';
+import { IconPlayerPlayFilled } from '@tabler/icons-react';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
 import { kromaClient } from '#web/shared/lib/api';
 import { Image } from '#web/shared/ui';
@@ -90,11 +91,7 @@ export function EpisodeRow({
           >
             <Image src={still} fit="cover" fill style={watched ? DIMMED : undefined} />
             <Box fill style={STILL_SCRIM} />
-            {watched ? (
-              <Box absolute left={8} top={8} w={24} h={24} center radius="circle" bg="accent">
-                <IconCheck size={14} stroke={3} color={color('black')} />
-              </Box>
-            ) : null}
+            {watched ? <WatchedBadge size={28} /> : null}
             <Box
               w={44}
               h={44}
@@ -144,6 +141,7 @@ export function EpisodeRow({
           <IconButton
             icon="check"
             active={watched}
+            pressed={watched}
             label={watched ? t('content.markUnwatched') : t('content.markWatched')}
             onPress={onToggleWatched}
           />

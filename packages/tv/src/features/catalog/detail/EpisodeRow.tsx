@@ -23,6 +23,7 @@ import {
   styles,
   Text,
   tintGradient,
+  WatchedBadge,
 } from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';
 
@@ -81,11 +82,7 @@ function episodeStill(at: {
           <Text style={s.runtimeChip}>{at.runtime}</Text>
         </Box>
       ) : null}
-      {at.watched ? (
-        <Box absolute top={10} right={10} w={26} h={26} center radius="pill" bg={SEEN_BG}>
-          <Icon name="check" size={14} color="success" thickness={3} />
-        </Box>
-      ) : null}
+      {at.watched ? <WatchedBadge corner="top-right" /> : null}
       {at.inProgress ? (
         <Box absolute left={0} right={0} bottom={0}>
           <Progress value={(at.progress ?? 0) / 100} rounded={false} />
@@ -140,82 +137,82 @@ export function EpisodeRow({
   const lit = action != null;
 
   return (
-    <Box style={[s.row, watched ? s.rowWatched : null, lit ? s.rowLit : null]}>
-      <Frost radius={20} />
-      <Row gap={26}>
-        {episodeStill({ episode, still, watched, action, tag, runtime, progress, inProgress })}
+    <Frost>
+      <Box style={[s.row, watched ? s.rowWatched : null, lit ? s.rowLit : null]}>
+        <Row gap={26}>
+          {episodeStill({ episode, still, watched, action, tag, runtime, progress, inProgress })}
 
-        <Box flex={1} gap={8}>
-          <Row gap={12} wrap>
-            <Text variant="h2" lines={1} style={s.title}>
-              {title}
-            </Text>
-            {watched ? (
-              <Badge tone="success" size="tv">
-                {t('content.watched')}
-              </Badge>
-            ) : null}
-            {inProgress ? (
-              <Badge tone="4K" size="tv">
-                {t('content.inProgress')}
-              </Badge>
-            ) : null}
-          </Row>
-          {endsAt ? (
-            <Row gap={9}>
-              <Icon name="clock" size={14} thickness={1.8} color="accentText" />
-              <Text style={s.endsAt} color="textDim">
-                {t('content.endsAtShort', { time: endsAt })}
+          <Box flex={1} gap={8}>
+            <Row gap={12} wrap>
+              <Text variant="h2" lines={1} style={s.title}>
+                {title}
               </Text>
+              {watched ? (
+                <Badge tone="success" size="tv">
+                  {t('content.watched')}
+                </Badge>
+              ) : null}
+              {inProgress ? (
+                <Badge tone="4K" size="tv">
+                  {t('content.inProgress')}
+                </Badge>
+              ) : null}
             </Row>
-          ) : null}
-          {synopsis ? (
-            <Text lines={3} style={s.synopsis} color={lit ? SYNOPSIS_LIT : SYNOPSIS_DIM}>
-              {synopsis}
-            </Text>
-          ) : null}
-          <Row gap={12} wrap mt={8}>
-            {/* The play action wears the amber tint always (design), which is
-                the outline variant's ACTIVE coat. */}
-            <Button
-              variant="outline"
-              active
-              icon="player-play-filled"
-              label={inProgress ? t('player.resume') : t('player.play')}
-              style={s.actionBtn}
-              onPress={onPlay}
-              onFocus={focusAction('play')}
-              onBlur={blurAction('play')}
-            />
-            <Button
-              variant="outline"
-              active={watched}
-              pressed={watched}
-              icon="check"
-              label={watched ? t('content.watched') : t('content.markWatched')}
-              style={s.actionBtn}
-              onPress={onToggleWatched}
-              onFocus={focusAction('seen')}
-              onBlur={blurAction('seen')}
-            />
-            <Button
-              variant="outline"
-              icon="alert-triangle"
-              label={t('report.actionShort')}
-              style={s.actionBtn}
-              onPress={onReport}
-              onFocus={focusAction('report')}
-              onBlur={blurAction('report')}
-            />
-          </Row>
-        </Box>
-      </Row>
-    </Box>
+            {endsAt ? (
+              <Row gap={9}>
+                <Icon name="clock" size={14} thickness={1.8} color="accentText" />
+                <Text style={s.endsAt} color="textDim">
+                  {t('content.endsAtShort', { time: endsAt })}
+                </Text>
+              </Row>
+            ) : null}
+            {synopsis ? (
+              <Text lines={3} style={s.synopsis} color={lit ? SYNOPSIS_LIT : SYNOPSIS_DIM}>
+                {synopsis}
+              </Text>
+            ) : null}
+            <Row gap={12} wrap mt={8}>
+              {/* The play action wears the amber tint always (design), which is
+                  the outline variant's ACTIVE coat. */}
+              <Button
+                variant="outline"
+                active
+                icon="player-play-filled"
+                label={inProgress ? t('player.resume') : t('player.play')}
+                style={s.actionBtn}
+                onPress={onPlay}
+                onFocus={focusAction('play')}
+                onBlur={blurAction('play')}
+              />
+              <Button
+                variant="outline"
+                active={watched}
+                pressed={watched}
+                icon="check"
+                label={watched ? t('content.watched') : t('content.markWatched')}
+                style={s.actionBtn}
+                onPress={onToggleWatched}
+                onFocus={focusAction('seen')}
+                onBlur={blurAction('seen')}
+              />
+              <Button
+                variant="outline"
+                icon="alert-triangle"
+                label={t('report.actionShort')}
+                style={s.actionBtn}
+                onPress={onReport}
+                onFocus={focusAction('report')}
+                onBlur={blurAction('report')}
+              />
+            </Row>
+          </Box>
+        </Row>
+      </Box>
+    </Frost>
   );
 }
 
 const CHIP_BG = 'bg/68';
-const SEEN_BG = 'bg/72';
 const SYNOPSIS_DIM = 'text/60';
 const SYNOPSIS_LIT = 'text/78';
 

@@ -56,13 +56,13 @@ describe('MediaCard', () => {
     expect(screen.getByText('Dune')).toBeTruthy();
   });
 
-  it('adds the watched check and the resume bar only when asked', () => {
+  it('adds the watched mark and the resume bar only when asked', () => {
     const { container, rerender } = render(<MediaCard title="Dune" art={null} tint={TINT} />);
     expect(container.querySelector('[role="progressbar"]')).toBeNull();
-    expect(container.querySelectorAll('svg')).toHaveLength(0);
+    expect(screen.queryByLabelText('Watched')).toBeNull();
     rerender(onScreen(<MediaCard title="Dune" art={null} tint={TINT} watched progress={0.4} />));
     expect(container.querySelector('[role="progressbar"]')).not.toBeNull();
-    expect(container.querySelectorAll('svg')).toHaveLength(1);
+    expect(screen.getByLabelText('Watched')).toBeTruthy();
   });
 
   it('fires onPress once the mount guard has elapsed', () => {

@@ -22,7 +22,7 @@ export default function DetailActions() {
           variant="outline"
           size="tv"
           active={inList}
-          icon={inList ? 'check' : 'plus'}
+          icon={inList ? 'bookmark-filled' : 'bookmark'}
           label="My list"
           onPress={() => setInList((prev) => !prev)}
         />

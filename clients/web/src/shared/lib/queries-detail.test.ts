@@ -110,6 +110,7 @@ describe('the optional lookups', () => {
     expect(await run(catalogQueries.personDetails('Greta Gerwig'))).toEqual({
       name: 'Greta Gerwig',
       person: null,
+      credits: [],
     });
   });
 });

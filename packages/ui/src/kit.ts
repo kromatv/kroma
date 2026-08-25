@@ -3,6 +3,7 @@
 // @kroma/ui/kit: the universal component library. Services and `Player` ship
 // from `@kroma/ui` instead, so the two entry points share no symbols.
 export * from './components/atoms';
+export * from './components/common';
 export * from './components/molecules';
 export * from './components/organisms';
 export * from './components/templates';

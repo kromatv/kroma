@@ -3,9 +3,10 @@ import { useT } from '@kroma/ui';
 import { Badge, Box, Button, gradient, Row, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { type CSSProperties, memo } from 'react';
-import { TileGrid } from '#web/features/catalog/tile-grid';
+import { VirtualTileGrid } from '#web/features/catalog/virtual-tile-grid';
 import type { MovieView, ShowView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
+import { useMyList } from '#web/shared/lib/mylist';
 import type { HeroEntry } from '#web/shared/lib/queries';
 import { useWatched } from '#web/shared/lib/watched';
 import { Image, Poster, PosterRail } from '#web/shared/ui';
@@ -145,13 +146,14 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
 
 // Cards are memo()d: a home page renders hundreds of them, and without memo any
 // parent state change (hover, a poll refetch, router transitions) re-renders every card.
-const MoviePoster = memo(function MoviePoster({
+export const MoviePoster = memo(function MoviePoster({
   item,
   width,
 }: Readonly<{ item: MovieView; width?: number }>) {
   const t = useT();
   const navigate = useNavigate();
   const { isWatched, toggleWatched } = useWatched();
+  const { inList, toggle: toggleList } = useMyList();
   return (
     <Poster
       title={item.title}
@@ -161,18 +163,21 @@ const MoviePoster = memo(function MoviePoster({
       width={width}
       watched={isWatched(item.id)}
       onToggleWatched={() => toggleWatched(item.id)}
+      inList={inList(item.id)}
+      onToggleList={() => toggleList(item.id)}
       onClick={() => navigate({ to: '/movie/$id', params: { id: item.id } })}
     />
   );
 });
 
-const ShowPoster = memo(function ShowPoster({
+export const ShowPoster = memo(function ShowPoster({
   show,
   width,
 }: Readonly<{ show: ShowView; width?: number }>) {
   const t = useT();
   const navigate = useNavigate();
   const { isWatched, toggleWatched } = useWatched();
+  const { inList, toggle: toggleList } = useMyList();
   return (
     <Poster
       title={show.title}
@@ -183,6 +188,8 @@ const ShowPoster = memo(function ShowPoster({
       progress={show.progress ?? null}
       watched={isWatched(show.id)}
       onToggleWatched={() => toggleWatched(show.id)}
+      inList={inList(show.id)}
+      onToggleList={() => toggleList(show.id)}
       onClick={() => navigate({ to: '/show/$id', params: { id: show.id } })}
     />
   );
@@ -200,6 +207,7 @@ export const SectionPoster = memo(function SectionPoster({
   const navigate = useNavigate();
   const { client } = useAuth();
   const { isWatched, toggleWatched } = useWatched();
+  const { inList, toggle: toggleList } = useMyList();
   if (entry.type === 'show') {
     const { show } = entry;
     return (
@@ -212,13 +220,13 @@ export const SectionPoster = memo(function SectionPoster({
         progress={show.progress ?? null}
         watched={isWatched(show.id)}
         onToggleWatched={() => toggleWatched(show.id)}
+        inList={inList(show.id)}
+        onToggleList={() => toggleList(show.id)}
         onClick={() => navigate({ to: '/show/$id', params: { id: show.id } })}
       />
     );
   }
   const { item } = entry;
-  // The server wraps play-history-seeded rows (e.g. "Tendances") as `type: 'movie'`
-  // even for episodes, so route those to their parent show like the search results do.
   const isEpisode = item.kind === 'episode' && !!item.showId;
   return (
     <Poster
@@ -229,6 +237,8 @@ export const SectionPoster = memo(function SectionPoster({
       width={width}
       watched={isWatched(item.id)}
       onToggleWatched={() => toggleWatched(item.id)}
+      inList={inList(item.id)}
+      onToggleList={() => toggleList(item.id)}
       onClick={() =>
         isEpisode
           ? navigate({ to: '/show/$id', params: { id: item.showId ?? item.id } })
@@ -250,17 +260,21 @@ export function ShowRail({ title, shows }: Readonly<{ title: string; shows: Show
 
 export function MovieGrid({ movies }: Readonly<{ movies: MovieView[] }>) {
   return (
-    <TileGrid>
-      {(width) => movies.map((item) => <MoviePoster key={item.id} item={item} width={width} />)}
-    </TileGrid>
+    <VirtualTileGrid
+      data={movies}
+      keyOf={(item) => item.id}
+      renderItem={(item, width) => <MoviePoster item={item} width={width} />}
+    />
   );
 }
 
 export function ShowGrid({ shows }: Readonly<{ shows: ShowView[] }>) {
   return (
-    <TileGrid>
-      {(width) => shows.map((show) => <ShowPoster key={show.id} show={show} width={width} />)}
-    </TileGrid>
+    <VirtualTileGrid
+      data={shows}
+      keyOf={(show) => show.id}
+      renderItem={(show, width) => <ShowPoster show={show} width={width} />}
+    />
   );
 }
 
@@ -271,16 +285,16 @@ export type CatalogEntry = { kind: 'movie'; movie: MovieView } | { kind: 'show';
 /** A grid mixing movies and shows in the given order (server-ranked). */
 export function CatalogGrid({ entries }: Readonly<{ entries: CatalogEntry[] }>) {
   return (
-    <TileGrid>
-      {(width) =>
-        entries.map((e) =>
-          e.kind === 'movie' ? (
-            <MoviePoster key={e.movie.id} item={e.movie} width={width} />
-          ) : (
-            <ShowPoster key={e.show.id} show={e.show} width={width} />
-          ),
+    <VirtualTileGrid
+      data={entries}
+      keyOf={(e) => (e.kind === 'movie' ? e.movie.id : e.show.id)}
+      renderItem={(e, width) =>
+        e.kind === 'movie' ? (
+          <MoviePoster item={e.movie} width={width} />
+        ) : (
+          <ShowPoster show={e.show} width={width} />
         )
       }
-    </TileGrid>
+    />
   );
 }

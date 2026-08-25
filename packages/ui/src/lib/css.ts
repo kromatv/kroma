@@ -17,7 +17,7 @@ export function bgSize(value: string): ViewStyle {
 
 /** A CSS `mask-image` value, and a NO-OP on native: React Native has no mask at
  * any prefix, so a caller that wants a masked edge needs its own answer there
- * (see `virtual-rail.tsx`, which paints the page colour over the row instead). */
+ * (see `rail-edge.tsx`, which paints the page colour over the row instead). */
 export function maskImage(_css: string): ViewStyle {
   return {};
 }

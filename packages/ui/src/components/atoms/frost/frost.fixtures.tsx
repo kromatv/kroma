@@ -27,14 +27,15 @@ function OverArt({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-export function Panel({ amount, radius }: Readonly<{ amount?: number; radius?: number }>) {
+export function Panel({ amount }: Readonly<{ amount?: number }>) {
   return (
-    <Box px={22} py={16} gap={4} radius={CORNER} bg="surface1/55" border="border">
-      {amount === undefined ? null : <Frost amount={amount} radius={radius ?? CORNER} />}
-      <Text variant="label">Volume levelling</Text>
-      <Text variant="meta" color="textMuted">
-        Evens out the loud scenes.
-      </Text>
-    </Box>
+    <Frost on={amount !== undefined} amount={amount}>
+      <Box px={22} py={16} gap={4} radius={CORNER} bg="surface1/55" border="border">
+        <Text variant="label">Volume levelling</Text>
+        <Text variant="meta" color="textMuted">
+          Evens out the loud scenes.
+        </Text>
+      </Box>
+    </Frost>
   );
 }

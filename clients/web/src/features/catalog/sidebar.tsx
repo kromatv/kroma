@@ -3,13 +3,13 @@ import { useT } from '@kroma/ui';
 import { Box, color, Drawer, Logo, Row, Text, useBreakpoint } from '@kroma/ui/kit';
 import {
   IconAlertTriangle,
+  IconBookmark,
   IconCalendarClock,
   IconCategory,
   IconDeviceDesktop,
   IconDeviceTv,
   IconHome,
   IconInbox,
-  IconListDetails,
   IconMovie,
   IconSearch,
   IconSettings,
@@ -81,7 +81,7 @@ const NAV: { labelKey: MessageKey; to: string; icon: TablerIcon; exact?: boolean
   { labelKey: 'nav.films', to: '/films', icon: IconMovie },
   { labelKey: 'nav.series', to: '/series', icon: IconDeviceTv },
   { labelKey: 'nav.genres', to: '/genres', icon: IconCategory },
-  { labelKey: 'nav.myList', to: '/mylist', icon: IconListDetails },
+  { labelKey: 'nav.myList', to: '/mylist', icon: IconBookmark },
 ];
 
 export function Sidebar() {

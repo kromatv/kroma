@@ -4,7 +4,7 @@ import { TrendingPage } from '#web/features/requests/trending-page';
 export const Route = createFileRoute('/_app/trending/$type')({
   beforeLoad: ({ params }) => {
     if (params.type !== 'movie' && params.type !== 'tv') {
-      throw redirect({ to: '/search' });
+      throw redirect({ to: '/search', search: { q: '', type: 'all' } });
     }
   },
   component: TrendingRoute,

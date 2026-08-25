@@ -1,13 +1,8 @@
-// Floating tab-bar capsule around the kit's <NavPill.Root>: the expo-router glue and
-// the iOS/Android backdrop split. Screens scroll underneath, padding by
-// TAB_BAR_CLEARANCE.
-
-import { Box, NavPill, onPaper, styles } from '@kroma/ui/kit';
-import { BlurView } from 'expo-blur';
+import { Box, NavPill, styles } from '@kroma/ui/kit';
 import * as Haptics from 'expo-haptics';
 // expo-router vendors react-navigation and does not re-export this type from its root.
 import type { BottomTabBarProps } from 'expo-router/build/react-navigation/bottom-tabs';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CastMiniBar } from '#mobile/components/cast/CastMiniBar';
 
@@ -26,15 +21,7 @@ export function PillTabBar({ state, descriptors, navigation }: Readonly<BottomTa
             if (label !== null) void Haptics.selectionAsync();
           }}
         >
-          {Platform.OS === 'ios' ? (
-            <NavPill.Backdrop>
-              <BlurView
-                tint={onPaper() ? 'light' : 'dark'}
-                intensity={60}
-                style={StyleSheet.absoluteFill}
-              />
-            </NavPill.Backdrop>
-          ) : null}
+          {Platform.OS === 'ios' ? <NavPill.Backdrop amount={15} /> : null}
           {state.routes.map((route, index) => {
             const { options } = descriptors[route.key];
             const focused = state.index === index;

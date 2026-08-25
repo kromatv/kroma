@@ -123,9 +123,9 @@ export function DetailActions({
           style={({ pressed }) => [s.secondary, pressed && { opacity: 0.7 }]}
         >
           {inList ? (
-            <Icon name="check" size={24} thickness={2.4} color="accentText" />
+            <Icon name="bookmark-filled" size={24} color="accentText" />
           ) : (
-            <Icon name="plus" size={24} thickness={2.2} />
+            <Icon name="bookmark" size={24} thickness={2.2} />
           )}
           <Text lines={1} style={[s.secondaryLabel, inList && s.secondaryActive]}>
             {t('nav.myList')}

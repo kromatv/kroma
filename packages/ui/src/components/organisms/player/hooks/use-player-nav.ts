@@ -46,6 +46,9 @@ export interface PlayerNav {
   handleKey(key: RemoteKey): void;
   /** Reveal the chrome + (re)arm the auto-hide timer (pointer move / any key). */
   poke(): void;
+  /** Re-arm the auto-hide timer WITHOUT revealing the chrome. Used by immersive
+   *  media shortcuts so repeated arrow presses don't flash the UI. */
+  rearmHide(): void;
   openOverlay(o: Exclude<Overlay, null>): void;
   closeOverlay(): void;
   /** Run a control's action (shared by mouse click and D-pad OK). */
@@ -102,6 +105,14 @@ export function usePlayerNav(
 
   const poke = useCallback(() => {
     setRevealed(true);
+    clearHide();
+    if (!playing || overlay) return;
+    hideTimer.current = setTimeout(() => setRevealed(false), HIDE_MS);
+  }, [clearHide, playing, overlay]);
+
+  /** Re-arm the auto-hide timer WITHOUT revealing the chrome. Used by immersive
+   *  media shortcuts (seek/volume) so repeated arrow presses don't flash the UI. */
+  const rearmHide = useCallback(() => {
     clearHide();
     if (!playing || overlay) return;
     hideTimer.current = setTimeout(() => setRevealed(false), HIDE_MS);
@@ -202,6 +213,7 @@ export function usePlayerNav(
     focusedControl,
     handleKey,
     poke,
+    rearmHide,
     openOverlay,
     closeOverlay,
     activate,

@@ -15,10 +15,10 @@
 import { SpatialNavigationNode } from 'react-tv-space-navigation';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { Frost } from '#ui/components/atoms/frost';
+import { frostCoat } from '#ui/components/atoms/frost';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
-import { type RadiusToken, type StyleDecl, styles, svFor } from '#ui/core';
+import { type StyleDecl, styles, svFor } from '#ui/core';
 import { HAND } from '#ui/lib/cursor';
 import { keyFace } from '#ui/lib/field-shell';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
@@ -49,12 +49,11 @@ type KeyKind = 'digit' | 'delete';
 type KeypadSize = 'tv' | 'compact';
 
 // By name, not in px: the face and the blur behind it must follow one theme.
-const KEY_RADIUS: RadiusToken = '2xl';
 
 const keypadVariants = svFor<{ root: StyleDecl; label: StyleDecl }>()({
   slots: {
     // The shared key face (lib/field-shell); the pad brings only its own box.
-    root: { ...keyFace.root, radius: KEY_RADIUS },
+    root: { ...keyFace.root, radius: '2xl' },
     label: keyFace.label,
   },
   variants: {
@@ -101,6 +100,7 @@ function Keypad({
   const tap = () => {
     void haptics?.selectionAsync();
   };
+  const frost = frostCoat(keypadVariants({ kind: 'digit', size }).root);
   const key = (label: string, onPress: () => void, kind: KeyKind = 'digit') => (
     <Focusable
       key={label}
@@ -114,12 +114,11 @@ function Keypad({
       focusScale={1.08}
       sv={keypadVariants}
       vars={{ kind, size }}
+      style={frost.style}
     >
       {(state) => (
         <>
-          {/* The fill is translucent (lib/field-shell), so blur what shows
-              through: the pad reads as glass over the artwork behind it. */}
-          <Frost radius={KEY_RADIUS} />
+          {frost.layer}
           {kind === 'delete' ? (
             <Icon name="backspace" size={30} thickness={1.8} color="textMuted" />
           ) : (

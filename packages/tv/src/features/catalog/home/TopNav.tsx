@@ -6,7 +6,6 @@ import {
   Focusable,
   FocusRegion,
   FocusSlot,
-  Frost,
   gradient,
   Icon,
   NavPill,
@@ -64,11 +63,7 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
           </Box>
         </FocusSlot>
         <NavPill.Root size="tv" label={t('nav.menu')}>
-          {/* Platforms without a blur (legacy panels, an unregistered shell)
-              keep the pill's solid fill. */}
-          <NavPill.Backdrop>
-            <Frost amount={16} />
-          </NavPill.Backdrop>
+          <NavPill.Backdrop amount={16} />
           <NavPill.Item
             icon="home"
             label={t('nav.home')}

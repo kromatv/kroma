@@ -117,8 +117,16 @@
     box-shadow var(--dur-base) var(--ease-out),
     outline-color var(--dur-base) var(--ease-out);
 }
-.poster-tile:hover .poster-art,
-.poster-tile:focus-within .poster-art {
+/* Keyed to the card's OWN button, and to keyboard focus: `:focus-within` handed
+   the card's ring to every control inside it, so a click on a quick action left
+   the whole tile ringed as though it were the thing focused. */
+.poster-tile:hover .poster-art {
+  box-shadow: var(--shadow-pop);
+  outline-color: var(--kroma-accent);
+}
+/* Its own block, never sharing a selector list with the hover rule above: a
+   selector list is not forgiving, so an engine without :has() would drop both. */
+.poster-tile:has(.poster-hit:focus-visible) .poster-art {
   box-shadow: var(--shadow-pop);
   outline-color: var(--kroma-accent);
 }
@@ -127,24 +135,62 @@
   left: 14px;
   right: 14px;
   bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   transition: opacity var(--dur-base) var(--ease-out);
 }
-.poster-toggle {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  z-index: 2;
-  transition: opacity var(--dur-fast) var(--ease-out);
-}
-.poster-caption[data-reveal],
-.poster-toggle[data-reveal] {
+.poster-caption[data-reveal] {
   opacity: 0;
 }
 .poster-tile:hover .poster-caption[data-reveal],
-.poster-tile:hover .poster-toggle[data-reveal],
-.poster-tile:focus-within .poster-caption[data-reveal],
-.poster-tile:focus-within .poster-toggle[data-reveal] {
+.poster-tile:focus-within .poster-caption[data-reveal] {
   opacity: 1;
+}
+
+/* THE QUICK-ACTION BAR (shared/ui/poster-action-bar.tsx). The row of discs a
+   library poster and a discover/trending card both wear along the TOP edge of
+   the art, where a poster keeps its sky rather than its faces, and clear of the
+   title the library poster paints along the bottom. It stays out of the way
+   until wanted: hidden at rest, it drops into the corner when the frame is
+   hovered or focused. An open overflow menu keeps it there on its own: the
+   kit's anchored panel holds the DOM focus on the trigger, which is inside the
+   frame. Always up where there is no pointer to hover with. */
+.poster-frame {
+  position: relative;
+}
+/* Hidden with opacity rather than visibility, so the buttons stay in the tab
+   order and Tab can reach them. There is deliberately NO transition on it: an
+   ancestor at opacity < 1 is a backdrop root, so a fade would leave the buttons'
+   frost blind for its whole duration and snap it on at 1. Stepping straight
+   between 0 and 1 never sits in between. See @kroma/ui lib/css.web.ts. */
+.poster-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+}
+.poster-frame:hover .poster-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Separate block for the same reason as the ring above: without :has() the
+   pointer must still be able to reach these. */
+.poster-frame:has(:focus-visible) .poster-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (pointer: coarse) {
+  .poster-actions {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
 }
 
 /* THE BROWSE PAGES' DISPLAY TITLE (features/catalog/browse-hero.tsx), also
@@ -156,29 +202,20 @@
   letter-spacing: -0.03em;
 }
 
-/* THE GENRE WALL (routes/_app.genres.tsx). A count of columns per width is a
-   media query, and a router <a> is the one control the kit does not render
-   (components/DESIGN.md §4), so its rest and hover faces are stated here. The
-   focus ring is deliberately absent: the app's own ring already lands on it. */
+/* THE GENRE WALL (routes/_app.genres.tsx). Columns follow the room available,
+   as `.poster-grid` does, and a router <a> is the one control the kit does not
+   render (components/DESIGN.md §4), so its rest and hover faces are stated
+   here. The focus ring is deliberately absent: the app's own ring already
+   lands on it. */
 .genre-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(clamp(11rem, 22vw, 19rem), 100%), 1fr));
   gap: 16px;
-}
-@media (min-width: 600px) {
-  .genre-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1024px) {
-  .genre-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 }
 .genre-tile {
   position: relative;
   display: block;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 2;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--kroma-tint) 6%, transparent);
   border-radius: var(--radius-2xl);
@@ -376,4 +413,18 @@ select:focus-visible,
 [role="menu"]:focus-visible,
 [role="menuitem"]:focus-visible {
   box-shadow: none;
+}
+
+.captioned-grid .poster-caption {
+  display: none;
+}
+
+/* The watched mark stands down while the bar above it is up: the lit watched
+   toggle is already saying it. A coarse pointer keeps the bar up permanently
+   and so has no reveal to yield to. */
+@media (hover: hover) {
+  .poster-frame:hover [data-watched-mark],
+  .poster-frame:has(:focus-visible) [data-watched-mark] {
+    opacity: 0;
+  }
 }

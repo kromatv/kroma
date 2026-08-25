@@ -5,14 +5,13 @@
 // scale already wired. The design itself lives in button-variants.ts.
 
 import { type ReactNode, useMemo } from 'react';
-import { type StyleProp, StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
+import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { Frost } from '#ui/components/atoms/frost';
+import { frostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Spinner } from '#ui/components/atoms/spinner';
 import { Text } from '#ui/components/atoms/text';
-import { useTheme } from '#ui/core';
 import { useGroupMember } from '#ui/lib/group-shape';
 import {
   type ButtonSize,
@@ -72,13 +71,11 @@ function Button({
 }: Readonly<ButtonProps>) {
   const group = useGroupMember(onFocus, onBlur);
   const shell = size ?? group.size ?? 'md';
-  const defaultRadius = useTheme().radius.md;
   const s = buttonVariants({ variant, size: shell, block, active }, { disabled });
-  // The translucent coats frost what sits behind them (see <Frost>); the radius
-  // follows any caller override so the blur clips with the corner.
-  const frostRadius = StyleSheet.flatten([s.root, style])?.borderRadius;
-  const box = useMemo(() => (group.style ? [group.style, style] : style), [group.style, style]);
-  const frosted = FROSTED.has(variant) || (disabled && !UNFILLED.has(variant));
+  const frost = frostCoat([s.root, style], {
+    on: FROSTED.has(variant) || (disabled && !UNFILLED.has(variant)),
+  });
+  const box = useMemo(() => [frost.style, group.style, style], [frost.style, group.style, style]);
   return (
     <Focusable
       {...focusProps}
@@ -96,9 +93,7 @@ function Button({
     >
       {(state) => (
         <>
-          {frosted ? (
-            <Frost radius={typeof frostRadius === 'number' ? frostRadius : defaultRadius} />
-          ) : null}
+          {frost.layer}
           <Dimmable dim={disabled}>
             <ButtonContent
               glyph={state.slots.icon}
@@ -118,10 +113,8 @@ function Button({
 }
 
 // A disabled button fades its ink as ONE group, so an icon's own strokes never
-// double-paint - and the fill's alpha stays above that group, or the <Frost>
-// child would have nothing left to blur. That fade needs an element of its own;
-// nothing else does, and the root already IS the row (`row center gap` in the
-// variant table), so an enabled button hands its content straight to it.
+// double-paint - and the fill's alpha stays above that group, or the frost
+// child would have nothing left to blur.
 function Dimmable({ dim, children }: Readonly<{ dim: boolean; children: ReactNode }>) {
   if (!dim) return children;
   return (

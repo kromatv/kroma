@@ -33,9 +33,7 @@ describe('NavPill parts', () => {
   it('is one focus stop per item, and none for the capsule or its backdrop', () => {
     const { container } = render(
       <NavPill.Root size="tv">
-        <NavPill.Backdrop>
-          <span>blur</span>
-        </NavPill.Backdrop>
+        <NavPill.Backdrop />
         <NavPill.Item icon="home" label="Home" onPress={vi.fn()} />
         <NavPill.Item icon="user" label="Profile" active onPress={vi.fn()} />
       </NavPill.Root>,
@@ -123,14 +121,14 @@ describe('NavPill items', () => {
     const { container } = render(
       <NavPill.Root size="sm">
         <NavPill.Item icon="home" label="Home" active onPress={vi.fn()} />
-        <NavPill.Backdrop>
-          <span>blur</span>
-        </NavPill.Backdrop>
+        <NavPill.Backdrop />
       </NavPill.Root>,
     );
-    expect(screen.getByText('blur')).toBeTruthy();
+    const backdrop = container.firstElementChild?.firstElementChild as HTMLElement;
+
+    expect(backdrop.style.backdropFilter).toMatch(/blur/);
     expect(screen.getByText('Home')).toBeTruthy();
-    expect(container.textContent).toBe('blurHome');
+    expect(container.textContent).toBe('Home');
   });
 
   it('thins the capsule fill only when it wears a backdrop', () => {
@@ -138,9 +136,7 @@ describe('NavPill items', () => {
     const plain = render(bar({ size: 'sm' })).container.firstElementChild as HTMLElement;
     const frosted = render(
       <NavPill.Root size="sm">
-        <NavPill.Backdrop>
-          <span>blur</span>
-        </NavPill.Backdrop>
+        <NavPill.Backdrop />
         <NavPill.Item icon="home" label="Home" active onPress={vi.fn()} />
       </NavPill.Root>,
     ).container.firstElementChild as HTMLElement;

@@ -61,7 +61,7 @@ function PosterCard({
             to a composited descendant like the `<img>` below. */}
         <Img src={art} background={tintGradient(tint)} radius={radius.lg} fill />
         <ArtScrim variant="deep" radius="lg" />
-        {watched ? <WatchedBadge size={26} /> : null}
+        {watched ? <WatchedBadge /> : null}
         <Box absolute left={14} right={14} bottom={12} gap={3}>
           {overline ? (
             <Text style={s.overline} lines={1}>

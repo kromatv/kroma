@@ -1,4 +1,15 @@
 # WatchedBadge  src/components/atoms/watched-badge/watched-badge.story.mdx
 
 ## preview
+img "Watched"
+svg "" [hidden=true]
 
+## scene:The worst grounds in the library
+img "Watched"
+svg "" [hidden=true]
+img "Watched"
+svg "" [hidden=true]
+img "Watched"
+svg "" [hidden=true]
+img "Watched"
+svg "" [hidden=true]

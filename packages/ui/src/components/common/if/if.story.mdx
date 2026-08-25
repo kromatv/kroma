@@ -1,0 +1,56 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { If } from './if';
+import { Card } from './if.fixtures';
+
+export const story = defineStory({
+  group: 'Foundations',
+  width: { min: 280, max: 420 },
+  args: { condition: true, withFallback: true },
+  render: ({ condition, withFallback }) => (
+    <Box gap={12}>
+      <If condition={condition} fallback={withFallback ? <Card label="Nothing saved yet" tone="textMuted" /> : undefined}>
+        <Card label="Continue watching" tone="accent" />
+      </If>
+    </Box>
+  ),
+});
+
+The kit's conditional, so a tree spells "this only when ..." as part of its markup
+instead of a `cond ? ... : null` that the eye has to unpick from the JSX around it.
+It takes the shape of `<Suspense>`: plain JSX on both branches, no thunk and no
+Fragment. It is pure and hook-free, which is why it is one component on the web, on
+Apple TV and on Android TV, and nothing for the React Compiler to trip on.
+
+It lives in `common/` rather than in `atoms/`, because it draws nothing. The levels
+in [`README.md`](../../README.md) are a design hierarchy and this is control flow.
+
+```tsx
+<If condition={titles.length > 0} fallback={<EmptyState … />}>
+  <TileGrid data={titles} />
+</If>
+```
+
+<Scene name="Both branches" args={{ condition: false }}>
+  The same call with `condition` false. `fallback` is what renders; omit it and the
+  answer is nothing at all, which is the common case.
+</Scene>
+
+<Do>
+- Reach for it when a branch is a whole element and the ternary would push the JSX
+  past the width of the file.
+- Leave `fallback` off when the falsy answer is "render nothing". That is the
+  default and stating it adds a word for no reader.
+- Keep both branches cheap. Both are evaluated as JSX before `If` chooses, exactly
+  as they would be inside a ternary, so an expensive subtree still costs its
+  element creation on the branch not taken.
+</Do>
+
+<Dont>
+- Use it for a value rather than an element. `cond ? 'a' : 'b'` inside a prop is
+  clearer than a component wrapping a string.
+- Nest them to express `else if`. Two conditions deep stops reading as markup;
+  pull the choice into a variable or a small component and name it.
+- Expect it to guard a hook or a throw. Both children are built before `If` runs,
+  so it defers rendering, never evaluation.
+</Dont>

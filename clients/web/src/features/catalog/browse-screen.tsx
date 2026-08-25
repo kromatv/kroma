@@ -24,7 +24,8 @@ import {
 import { AlphabetRail, type LetterRange } from '#web/features/catalog/alphabet-rail';
 import { BrowseBar } from '#web/features/catalog/browse-bar';
 import { BrowseHero } from '#web/features/catalog/browse-hero';
-import { tileAt } from '#web/features/catalog/tile-grid';
+import { rowBounds } from '#web/features/catalog/tile-layout';
+import { gridGeometry } from '#web/features/catalog/virtual-tile-grid';
 import { PAGE_MAIN } from '#web/shared/ui';
 
 // Below this the whole grid fits a couple of screens and the rail is noise.
@@ -33,9 +34,6 @@ const RAIL_MIN_ITEMS = 24;
 // The rail's footprint plus breathing room on the right, whatever the fluid
 // gutter currently is. Nothing to reserve where the rail does not render.
 const RAIL_RESERVE = { base: 0, md: 48, lg: 32, tv: 24 } as const;
-
-const tileOf = (gridWrap: RefObject<HTMLDivElement | null>, index: number): HTMLElement | null =>
-  tileAt(gridWrap.current, index);
 
 // Docked bar bottom edge + breathing room = where a jumped-to row should land.
 const jumpOffset = (bar: RefObject<HTMLDivElement | null>): number => {
@@ -47,8 +45,7 @@ const jumpOffset = (bar: RefObject<HTMLDivElement | null>): number => {
 
 /** The stretch of buckets whose grid sections intersect the viewport (a tall
  * screen shows several letters at once), so the rail's capsule can cover
- * exactly what is on screen. A bucket's section runs from its first tile to
- * the next bucket's first tile, or to the grid's end for the last one. */
+ * exactly what is on screen. */
 function useVisibleLetters(
   enabled: boolean,
   marks: readonly LetterMark[],
@@ -64,22 +61,18 @@ function useVisibleLetters(
     let raf = 0;
     const measure = () => {
       raf = 0;
-      const grid = gridWrap.current?.firstElementChild;
-      if (!(grid instanceof HTMLElement)) return;
+      const geometry = gridGeometry(gridWrap.current);
+      if (!geometry) return;
       const line = jumpOffset(bar) + 4;
       const viewBottom = window.innerHeight;
       const visible: string[] = [];
       marks.forEach((mark, i) => {
-        const tile = tileOf(gridWrap, mark.index);
-        if (!tile) return;
         const next = marks[i + 1];
-        // The section ends at the BOTTOM of its last tile's row: a bucket
-        // sharing its final row with the next one still owns that row.
-        const lastTile = next === undefined ? null : tileOf(gridWrap, next.index - 1);
-        const sectionTop = tile.getBoundingClientRect().top;
-        const sectionBottom = lastTile
-          ? lastTile.getBoundingClientRect().bottom
-          : grid.getBoundingClientRect().bottom;
+        // The section ends at the BOTTOM of its last row: a bucket sharing its
+        // final row with the next one still owns that row.
+        const sectionBottom =
+          next === undefined ? geometry.bottom : rowBounds(geometry, next.index - 1).bottom;
+        const sectionTop = rowBounds(geometry, mark.index).top;
         if (sectionTop < viewBottom && sectionBottom > line) visible.push(mark.letter);
       });
       const first = visible[0];
@@ -170,9 +163,9 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
   const scrollToLetter = useCallback(
     (letter: string) => {
       const mark = marks.find((m) => m.letter === letter);
-      const tile = mark === undefined ? null : tileOf(gridWrap, mark.index);
-      if (!tile) return;
-      const top = tile.getBoundingClientRect().top + window.scrollY - jumpOffset(bar);
+      const geometry = gridGeometry(gridWrap.current);
+      if (mark === undefined || !geometry) return;
+      const top = rowBounds(geometry, mark.index).top + window.scrollY - jumpOffset(bar);
       window.scrollTo({ top: Math.max(top, 0) });
     },
     [marks],

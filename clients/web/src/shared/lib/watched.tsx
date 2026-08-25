@@ -15,6 +15,7 @@ import { useAuth } from '#web/shared/lib/auth';
 
 interface WatchedValue {
   ready: boolean;
+  ids: readonly string[];
   isWatched: (id: string) => boolean;
   setWatched: (id: string, watched: boolean) => void;
   toggleWatched: (id: string) => void;
@@ -83,6 +84,7 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
   const value = useMemo<WatchedValue>(
     () => ({
       ready,
+      ids: [...ids],
       isWatched: (id) => ids.has(id),
       setWatched,
       toggleWatched: (id) => setWatched(id, !ids.has(id)),

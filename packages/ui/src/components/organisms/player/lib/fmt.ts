@@ -29,6 +29,9 @@ export function pct(value: number, total: number): number {
 // instead. Gamma 3 is the default: the midpoint sits at ~0.125 amplitude.
 export const VOLUME_GAMMA = 3;
 
+/** The loudest a track can play: audio volume is a [0,1] amplitude. */
+export const VOLUME_MAX = 1;
+
 /** Slider position [0,1] → audio volume [0,1] (perceptual). */
 export function sliderToVolume(position: number): number {
   return clamp01(position) ** VOLUME_GAMMA;

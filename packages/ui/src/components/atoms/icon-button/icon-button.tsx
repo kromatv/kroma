@@ -4,7 +4,7 @@
 import { type ReactNode, useMemo } from 'react';
 import { StyleSheet, type ViewStyle } from 'react-native';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { Frost } from '#ui/components/atoms/frost';
+import { frostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import {
   type CornerValue,
@@ -98,6 +98,18 @@ const iconButtonVariants = svFor<{ root: StyleDecl; icon: Pick<IconProps, 'color
       },
     },
   },
+  compound: [
+    {
+      /** A toggle over artwork fills SOLID rather than taking the soft wash the
+       *  other surfaces use: a 16% tint reads as nothing against a bright
+       *  poster. */
+      when: { variant: 'scrim', active: true },
+      style: {
+        root: { bg: 'accent', borderColor: 'accent', _hover: { bg: 'accentHover' } },
+        icon: { color: 'accentInk' },
+      },
+    },
+  ],
   defaults: { variant: 'glass', active: false, focusFill: false },
 });
 
@@ -157,21 +169,16 @@ function IconButton({
   const corner = asked === undefined ? undefined : radiusValue(asked);
   const glyphSize = glyph ?? Math.round(box$ * 0.4);
   const theme = useTheme();
+  const frost = frostCoat(metrics(box$, corner ?? theme.radius.pill), {
+    on: active || variant === 'glass' || variant === 'scrim' || variant === 'danger',
+  });
   // Memoised, not inlined: <Focusable> keys its own style memo on this value,
   // and a fresh array per render re-runs the box/face split on every frame of
   // every icon button on screen.
   const box = useMemo(
-    () => [metrics(box$, corner), group.style, style],
-    [box$, corner, group.style, style],
+    () => [metrics(box$, corner), frost.style, group.style, style],
+    [box$, corner, frost.style, group.style, style],
   );
-  // The translucent coats frost what sits behind them (see <Frost>). The
-  // content may be a render function, so the layer rides along either way.
-  // `danger` (a red wash) and an `active` toggle (the accent's soft fill) are
-  // translucencies too, whatever variant they dress.
-  const frost =
-    active || variant === 'glass' || variant === 'scrim' || variant === 'danger' ? (
-      <Frost radius={corner ?? theme.radius.pill} />
-    ) : null;
   return (
     <Focusable
       {...focusProps}
@@ -185,7 +192,7 @@ function IconButton({
     >
       {(state) => (
         <>
-          {frost}
+          {frost.layer}
           {children ?? (icon ? <Icon name={icon} size={glyphSize} {...state.slots.icon} /> : null)}
         </>
       )}
