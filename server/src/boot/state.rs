@@ -54,12 +54,26 @@ pub fn build(
         supervisor.clone() as Arc<dyn std::any::Any + Send + Sync>,
     );
 
-    // The ONE thing the core knows about modules: how to reach whoever contributes
-    // a named point. Which module that is, or whether one is installed at all, it
-    // never learns.
+    // The first of the two things the core knows about modules: how to reach
+    // whoever contributes a named point. Which module that is, or whether one is
+    // installed at all, it never learns.
     let contributions: state::Contributions = {
         let supervisor = supervisor.clone();
         Arc::new(move |point: &str| supervisor.contributions(point))
+    };
+
+    // And the second: which installed modules came from the official catalog, so
+    // the opt-in statistics can name them without a third-party id ever leaving
+    // the box. Still a function, still no roster.
+    let official_modules: state::OfficialModules = {
+        let supervisor = supervisor.clone();
+        Arc::new(move || {
+            supervisor
+                .installed_ids()
+                .into_iter()
+                .filter(|id| official_origin(&supervisor.origin(id)))
+                .collect()
+        })
     };
 
     // Transcription is long-running and rides a DB row for progress, so the core
@@ -82,9 +96,28 @@ pub fn build(
             services,
             jobs: &[],
             contributions,
+            official_modules,
         },
     );
     (state, supervisor)
+}
+
+const OFFICIAL_CATALOG_HOST: &str = "modules.kroma.tv";
+
+fn official_origin(origin: &kroma_module_supervisor::Origin) -> bool {
+    origin.kind == "registry"
+        && origin
+            .url
+            .as_deref()
+            .is_some_and(|url| host_of(url) == Some(OFFICIAL_CATALOG_HOST))
+}
+
+fn host_of(url: &str) -> Option<&str> {
+    let rest = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))?;
+    let host = rest.split(['/', ':', '?', '#']).next()?;
+    (!host.is_empty()).then_some(host)
 }
 
 /// A resolver for one point name. It re-asks on every call, so a module installed
@@ -95,4 +128,61 @@ fn point(resolve: &state::Contributions, name: &'static str) -> kroma_module_hos
         let found = resolve(name).into_iter().next()?;
         Some((found.base_url, found.token))
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use kroma_module_supervisor::Origin;
+
+    fn origin(kind: &str, url: Option<&str>) -> Origin {
+        Origin {
+            kind: kind.to_string(),
+            url: url.map(str::to_string),
+            installed_at: 0,
+            bin: None,
+            local_build: false,
+        }
+    }
+
+    #[test]
+    fn only_a_module_the_official_catalog_served_counts_as_official() {
+        assert!(official_origin(&origin(
+            "registry",
+            Some("https://modules.kroma.tv/registry.json")
+        )));
+        assert!(!official_origin(&origin(
+            "registry",
+            Some("https://modules.example.com/registry.json")
+        )));
+        assert!(!official_origin(&origin("upload", None)));
+        assert!(!official_origin(&origin(
+            "url",
+            Some("https://example.com/a.kmod")
+        )));
+        assert!(!official_origin(&origin("registry", None)));
+    }
+
+    #[test]
+    fn a_lookalike_host_is_not_the_official_one() {
+        assert!(!official_origin(&origin(
+            "registry",
+            Some("https://modules.kroma.tv.evil.example/registry.json")
+        )));
+        assert!(!official_origin(&origin(
+            "registry",
+            Some("https://evil.example/?modules.kroma.tv")
+        )));
+    }
+
+    #[test]
+    fn a_host_is_read_out_of_a_url_and_only_out_of_a_url() {
+        assert_eq!(
+            host_of("https://modules.kroma.tv/a/b"),
+            Some("modules.kroma.tv")
+        );
+        assert_eq!(host_of("http://127.0.0.1:8787/v1"), Some("127.0.0.1"));
+        assert_eq!(host_of("modules.kroma.tv/registry.json"), None);
+        assert_eq!(host_of("https://"), None);
+    }
 }

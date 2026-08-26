@@ -258,4 +258,7 @@ pub(crate) const MIGRATIONS: &[&str] = &[
         user_id     TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,\
         created_at  TEXT NOT NULL)",
     "ALTER TABLE metadata_core ADD COLUMN certification TEXT",
+    // The language tag the device asked for, beside the label it goes by. Read
+    // only in aggregate, by the opt-in anonymous statistics.
+    "ALTER TABLE access_tokens ADD COLUMN language TEXT",
 ];

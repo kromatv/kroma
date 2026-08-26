@@ -25,6 +25,11 @@ use crate::services::subtitles::GenRegistry;
 pub type Contributions =
     std::sync::Arc<dyn Fn(&str) -> Vec<kroma_module_host::Contribution> + Send + Sync>;
 
+/// The ids of installed modules that came from the official catalog. A function
+/// for the same reason [`Contributions`] is one: the core is handed opaque
+/// strings on demand and never holds a roster of what exists.
+pub type OfficialModules = std::sync::Arc<dyn Fn() -> Vec<String> + Send + Sync>;
+
 /// Everything the composition root (the binary) contributes from module crates,
 /// bundled so the core roster keeps naming no module type. See [`AppState::new`].
 pub struct ModuleWiring {
@@ -37,6 +42,9 @@ pub struct ModuleWiring {
     pub jobs: &'static [crate::services::jobs::Builtin],
     // Resolves a port contract name to the running provider's `(base_url, token)`.
     pub contributions: Contributions,
+    // Names the installed modules that came from the official catalog, for the
+    // opt-in anonymous statistics. Anything installed from elsewhere is absent.
+    pub official_modules: OfficialModules,
 }
 
 pub struct AppState {
@@ -70,6 +78,7 @@ pub struct AppState {
     // the supervisor itself: the engine must not name it, and this is the whole
     // of what the core knows about reaching a module.
     pub(crate) contributions: Contributions,
+    pub(crate) official_modules: OfficialModules,
     pub(crate) services: std::collections::HashMap<
         std::any::TypeId,
         std::sync::Arc<dyn std::any::Any + Send + Sync>,
@@ -109,6 +118,7 @@ impl AppState {
             services: module_services,
             jobs: module_jobs,
             contributions,
+            official_modules,
         } = wiring;
         let hls = hls::HlsEngine::new(
             &config.data_dir,
@@ -182,6 +192,7 @@ impl AppState {
             downloads,
             me: weak.clone(),
             contributions,
+            official_modules,
             services,
             #[cfg(test)]
             scratch_dir: std::sync::OnceLock::new(),
@@ -243,6 +254,7 @@ mod tests {
                 services: std::collections::HashMap::new(),
                 jobs: MODULE_JOB,
                 contributions: Arc::new(|_| Vec::new()),
+                official_modules: Arc::new(Vec::new),
             },
         );
         state.own_scratch_dir(dir);

@@ -56,6 +56,42 @@ pub struct Config {
     /// Naming an origin lets any page served from it act as a client of this
     /// server, so name only origins you publish yourself.
     pub allowed_origins: Vec<String>,
+    /// How this server was installed. Reported with the opt-in anonymous
+    /// statistics and nowhere else.
+    pub install: Install,
+}
+
+/// How a server got onto the box, as its packaging declares in `KROMA_INSTALL`.
+/// A closed set rather than a string, so a `Config` built any way at all still
+/// names one of these.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Install {
+    #[default]
+    Unknown,
+    Docker,
+    Synology,
+    Binary,
+}
+
+impl Install {
+    /// The spelling that goes on the wire and into the packaging's env var.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Install::Unknown => "unknown",
+            Install::Docker => "docker",
+            Install::Synology => "synology",
+            Install::Binary => "binary",
+        }
+    }
+
+    fn parse(raw: &str) -> Self {
+        match raw.trim().to_ascii_lowercase().as_str() {
+            "docker" => Install::Docker,
+            "synology" => Install::Synology,
+            "binary" => Install::Binary,
+            _ => Install::Unknown,
+        }
+    }
 }
 
 impl Config {
@@ -148,6 +184,11 @@ impl Config {
             .ok()
             .map(|v| !matches!(v.trim(), "0" | "false" | "no" | "off" | ""));
 
+        let install = env::var("KROMA_INSTALL")
+            .as_deref()
+            .map(Install::parse)
+            .unwrap_or_default();
+
         Config {
             host,
             port,
@@ -167,6 +208,7 @@ impl Config {
             https_redirect_override,
             trusted_proxies,
             allowed_origins,
+            install,
         }
     }
 
@@ -313,6 +355,7 @@ mod tests {
         "KROMA_HTTPS_PORT",
         "KROMA_HTTPS_REDIRECT",
         "KROMA_TLS_SANS",
+        "KROMA_INSTALL",
     ];
 
     static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -327,6 +370,22 @@ mod tests {
         for k in KEYS {
             env::remove_var(k);
         }
+    }
+
+    #[test]
+    fn the_install_kind_is_only_ever_one_the_packaging_ships() {
+        let _g = env_guard();
+        clear_env();
+
+        env::set_var("KROMA_INSTALL", " Synology ");
+        assert_eq!(Config::from_env().install, Install::Synology);
+
+        env::set_var("KROMA_INSTALL", "whatever-i-like");
+        assert_eq!(Config::from_env().install, Install::Unknown);
+
+        clear_env();
+        assert_eq!(Config::default().install, Install::Unknown);
+        assert_eq!(Install::default().as_str(), "unknown");
     }
 
     #[test]
@@ -351,6 +410,7 @@ mod tests {
         assert!(c.https_override.is_none());
         assert!(c.https_port_override.is_none());
         assert!(c.https_redirect_override.is_none());
+        assert_eq!(c.install, Install::Unknown);
         assert!(c.tls_extra_sans.is_empty());
 
         clear_env();

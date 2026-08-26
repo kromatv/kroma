@@ -34,6 +34,7 @@ use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::origin::{require_beacon_origin, ConfirmRequired};
 use crate::api::util::{client_ip, drop_orphans};
+use crate::db;
 use crate::i18n::ReqLocale;
 use crate::services::pairing::handoff::{
     valid_device_id, Announce, Announcement, Claim, Nearby, Refusal,
@@ -267,10 +268,11 @@ pub async fn grant(
     // The granting device is signed in and vouches for the TV, exactly as a
     // Quick Connect approval does. The TV is not the caller, so its user agent
     // is unknown here (NULL) until it first uses the token.
-    let (token, access) = match mint_device_tokens(&state, &user.id, None).await {
-        Ok(pair) => pair,
-        Err(resp) => return resp,
-    };
+    let (token, access) =
+        match mint_device_tokens(&state, &user.id, db::DeviceHints::default()).await {
+            Ok(pair) => pair,
+            Err(resp) => return resp,
+        };
 
     let claim = Claim {
         viewer_ip: &ip,

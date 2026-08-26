@@ -1,6 +1,6 @@
 # KROMA Privacy Policy
 
-**Last updated: 29 July 2026**
+**Last updated: 26 August 2026**
 
 KROMA is a client for a media server **you** run. It is not a streaming service:
 we host no catalogue, we hold no account for you, and the films and series you
@@ -10,10 +10,21 @@ and desktop apps, and the web client.
 
 ## The short version
 
-**We do not collect anything.** KROMA contains no analytics, no telemetry, no
-advertising and no tracking of any kind. There is no KROMA account to create, so
-there is nothing for us to hold. The app talks to the server you point it at, and
-(unless you sign in) to nothing else at all.
+**The apps collect nothing.** KROMA contains no analytics, no advertising and no
+tracking of any kind. There is no KROMA account to create, so there is nothing
+for us to hold. The app talks to the server you point it at, and (unless you
+sign in) to nothing else at all.
+
+**Your server can be asked to be counted, and is not by default.** The KROMA
+server software has one optional setting, off until an operator switches it on,
+that sends us a single anonymous payload a day: a random identifier that server
+minted for itself, its version and platform, how many devices used it in the
+last week, which languages those devices asked for, which official modules are
+on, and coarse size bands. It carries no name, no address, no titles and no
+exact counts, and it comes from the server, never from this app. Every field is
+listed in [`docs/anonymous-stats.md`](docs/anonymous-stats.md), the numbers are
+published at [kroma.tv/stats](https://kroma.tv/stats), and the server prints the
+exact payload in its own job log before sending it.
 
 Crash reporting is **off by default**. If you turn it on, a crash sends a stack
 trace and your app build and device model to **your own KROMA server** and to
@@ -40,6 +51,12 @@ request.
 updates when it starts and every six hours after that, by fetching a release file
 from GitHub. GitHub therefore sees the request's IP address and user-agent. The
 TV, mobile and web clients do not do this.
+
+Two things your **server** reaches, which are its connections and not the app's.
+It fetches the official module catalog from `modules.kroma.tv` at every start, so
+an installed module can be kept up to date; an operator can turn that off in
+Admin → Modules. And, only if switched on, it posts the anonymous statistics
+described above to `stats.kroma.tv`.
 
 The typefaces are bundled inside the app rather than fetched from a font CDN, so
 a television with no route to the internet runs KROMA normally against a server

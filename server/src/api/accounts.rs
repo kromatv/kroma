@@ -75,6 +75,44 @@ pub(crate) fn user_agent(headers: &HeaderMap) -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
+// Long enough for a script and a region (`zh-hant-hk`), short enough that a tag
+// cannot carry a payload.
+const MAX_LANGUAGE_TAG: usize = 12;
+
+/// The language the device asked for, as it asked for it: the first
+/// `Accept-Language` entry, lowercased, with nothing but letters, digits and
+/// hyphens kept.
+///
+/// Deliberately NOT run through `detect_locale`, which answers with a locale
+/// KROMA already ships. A reader whose device is set to German is the whole
+/// point of asking.
+pub(crate) fn accept_language(headers: &HeaderMap) -> Option<String> {
+    let raw = headers
+        .get(axum::http::header::ACCEPT_LANGUAGE)
+        .and_then(|v| v.to_str().ok())?;
+    let tag: String = raw
+        .split(',')
+        .next()?
+        .split(';')
+        .next()?
+        .trim()
+        .to_ascii_lowercase()
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == '-')
+        .take(MAX_LANGUAGE_TAG)
+        .collect();
+    let tag = tag.trim_matches('-').to_string();
+    (!tag.is_empty()).then_some(tag)
+}
+
+/// What the calling device says about itself on this request.
+pub(crate) fn device_hints(headers: &HeaderMap) -> db::DeviceHints {
+    db::DeviceHints {
+        user_agent: user_agent(headers),
+        language: accept_language(headers),
+    }
+}
+
 /// `GET /api/auth/config` → `{ publicUserList, hasAccounts }`. Unauthenticated: the
 /// login gate reads it before any credential to choose between register, the
 /// profile picker, and a plain email/password form.
@@ -105,5 +143,75 @@ pub async fn list_users(State(state): State<SharedState>) -> Response {
     match query(&state.db, move |pool| db::list_users(&pool)).await {
         Ok(users) => Json(users).into_response(),
         Err(resp) => resp,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn headers(value: &str) -> HeaderMap {
+        let mut h = HeaderMap::new();
+        h.insert(
+            axum::http::header::ACCEPT_LANGUAGE,
+            value.parse().expect("a header value"),
+        );
+        h
+    }
+
+    #[test]
+    fn the_first_entry_wins_and_its_quality_marker_is_dropped() {
+        assert_eq!(
+            accept_language(&headers("fr-CH,fr;q=0.9,en;q=0.8")).as_deref(),
+            Some("fr-ch")
+        );
+        assert_eq!(accept_language(&headers("de;q=0.7")).as_deref(), Some("de"));
+        assert_eq!(
+            accept_language(&headers("  EN-GB  ")).as_deref(),
+            Some("en-gb")
+        );
+    }
+
+    #[test]
+    fn a_language_kroma_does_not_ship_is_reported_as_it_was_asked_for() {
+        assert_eq!(accept_language(&headers("de-DE")).as_deref(), Some("de-de"));
+        assert_eq!(
+            accept_language(&headers("zh-Hant-HK")).as_deref(),
+            Some("zh-hant-hk")
+        );
+    }
+
+    #[test]
+    fn a_tag_that_says_nothing_is_not_reported_at_all() {
+        assert_eq!(accept_language(&headers("*")), None);
+        assert_eq!(accept_language(&headers("  ")), None);
+        assert_eq!(accept_language(&HeaderMap::new()), None);
+    }
+
+    #[test]
+    fn a_tag_cannot_smuggle_a_payload_through_and_cannot_run_long() {
+        assert_eq!(
+            accept_language(&headers("fr<script>")).as_deref(),
+            Some("frscript")
+        );
+        assert_eq!(
+            accept_language(&headers("aa-bb-cc-dd-ee-ff")).as_deref(),
+            Some("aa-bb-cc-dd")
+        );
+    }
+
+    #[test]
+    fn the_hints_carry_both_labels_or_neither() {
+        let mut h = headers("fr");
+        h.insert(axum::http::header::USER_AGENT, "Kroma/1.0".parse().unwrap());
+
+        assert_eq!(
+            device_hints(&h),
+            db::DeviceHints {
+                user_agent: Some("Kroma/1.0".to_string()),
+                language: Some("fr".to_string()),
+            }
+        );
+        assert_eq!(device_hints(&HeaderMap::new()), db::DeviceHints::default());
     }
 }

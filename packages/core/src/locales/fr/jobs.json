@@ -61,6 +61,8 @@
   "jobs.sections.curate.name": "Collections éditoriales (IA)",
   "jobs.sections.personalize.desc": "Analyse les goûts de chaque utilisateur et fait nommer ses sections d'accueil par le LLM configuré.",
   "jobs.sections.personalize.name": "Sections personnalisées (IA)",
+  "jobs.stats.report.desc": "Envoie le relevé anonyme de ce serveur une fois par jour, uniquement si les statistiques anonymes sont activées. Lancez-la à la main pour lire exactement ce qui serait envoyé.",
+  "jobs.stats.report.name": "Statistiques anonymes",
   "jobs.status.cancelled": "Annulé",
   "jobs.status.failed": "Échec",
   "jobs.status.running": "En cours",

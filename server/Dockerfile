@@ -92,6 +92,7 @@ ENV KROMA_HOST=0.0.0.0 \
     KROMA_PORT=4040 \
     KROMA_DATA_DIR=/data \
     KROMA_WEB_DIR=/app/web \
+    KROMA_INSTALL=docker \
     RUST_LOG=kroma_server=info,tower_http=info
 
 VOLUME ["/data"]

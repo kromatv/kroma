@@ -25,4 +25,5 @@ pub mod scan;
 pub mod search;
 pub mod sections;
 pub mod settings;
+pub mod stats;
 pub mod subtitles;

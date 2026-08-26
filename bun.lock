@@ -836,6 +836,19 @@
         "react-native",
       ],
     },
+    "packages/stats-relay": {
+      "name": "@kromatv/stats-relay",
+      "version": "0.0.0",
+      "dependencies": {
+        "@hono/zod-validator": "^0.9.0",
+        "hono": "^4.13.2",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "typescript": "^7.0.2",
+        "wrangler": "^4.123.0",
+      },
+    },
     "packages/synology-repo": {
       "name": "@kromatv/synology-repo",
       "version": "0.0.0",
@@ -1572,6 +1585,8 @@
     "@kromatv/sonar-tools": ["@kromatv/sonar-tools@workspace:packages/sonar-tools"],
 
     "@kromatv/spatial-nav": ["@kromatv/spatial-nav@workspace:packages/spatial-nav"],
+
+    "@kromatv/stats-relay": ["@kromatv/stats-relay@workspace:packages/stats-relay"],
 
     "@kromatv/synology-repo": ["@kromatv/synology-repo@workspace:packages/synology-repo"],
 

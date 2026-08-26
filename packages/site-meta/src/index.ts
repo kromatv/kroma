@@ -14,6 +14,7 @@ export const site = {
   uiUrl: 'https://ui.kroma.tv',
   modulesUrl: 'https://modules.kroma.tv',
   packagesUrl: 'https://packages.kroma.tv',
+  statsUrl: 'https://stats.kroma.tv',
   license: 'GPL-2.0',
   email: {
     support: 'support@kroma.tv',
@@ -23,6 +24,7 @@ export const site = {
     download: `${url}/download`,
     blog: `${url}/blog`,
     privacy: `${url}/privacy`,
+    stats: `${url}/stats`,
     support: `${url}/support`,
     releases: `${repo}/releases`,
     issues: `${repo}/issues`,

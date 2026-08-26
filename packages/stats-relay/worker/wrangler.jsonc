@@ -1,0 +1,50 @@
+{
+  // KROMA statistics collector. Deploy from this directory:
+  //   bunx wrangler deploy
+  // The database is created once, and its id pasted below:
+  //   bunx wrangler d1 create kroma-stats
+  //   bunx wrangler d1 execute kroma-stats --remote --file schema.sql
+  // There are no secrets here on purpose: a ping carries nothing worth
+  // stealing, and there is nobody to authenticate (see index.ts).
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kroma-stats",
+  "main": "index.ts",
+  "compatibility_date": "2026-08-26",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Keep a <name>.workers.dev URL alongside the custom domain (fallback + while
+  // the stats.kroma.tv cert provisions).
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "STATS_DB",
+      "database_name": "kroma-stats",
+      "database_id": "REPLACE_WITH_THE_ID_FROM_D1_CREATE"
+    }
+  ],
+  // Two different questions, so two different limiters. The binding accepts a
+  // 10- or 60-second window and nothing else, so both are per minute; the rules
+  // that actually bound a fake fleet are the settling window and the burst
+  // sweep, not these.
+  "ratelimits": [
+    {
+      // One install pings once a day, so this is only a flood ceiling. Keyed on
+      // the id's hash, never on the id itself.
+      "name": "PING_LIMIT",
+      "namespace_id": "3001",
+      "simple": { "limit": 5, "period": 60 }
+    },
+    {
+      // The only expensive thing a caller can do is create rows. A household
+      // brings up one server; nobody brings up three a minute.
+      "name": "NEW_ID_LIMIT",
+      "namespace_id": "3002",
+      "simple": { "limit": 2, "period": 60 }
+    }
+  ],
+  // 03:07 UTC: flag the fleets, write the day down, prune what aged out.
+  "triggers": { "crons": ["7 3 * * *"] },
+  // Served at https://stats.kroma.tv/. Requires the kroma.tv zone on this
+  // Cloudflare account.
+  "routes": [{ "pattern": "stats.kroma.tv", "custom_domain": true }]
+}

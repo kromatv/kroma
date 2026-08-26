@@ -22,11 +22,27 @@ short-lived, and serve neither to profile you nor to contact you.
 The KROMA app runs on hardware you own, your NAS, a Docker host, a Raspberry Pi.
 Your library, your files, your accounts and profiles, your playback history and your
 statistics are stored there locally and do not leave it. We have no access to any of
-it, and the app sends us no telemetry: there is no central service for anything to
-report to.
+it, and the app itself sends us nothing: a television, a phone or a browser talks to
+your server and to nothing else.
 
 You run the server, so you control that data. You decide who reaches it, where it
 lives and when to erase it.
+
+## Being counted, if you ask to be
+
+The server software has one optional setting, off until you switch it on, that lets
+your install be counted among the KROMA servers running in the world. While it is
+on, it posts one anonymous payload a day: a random identifier the server minted for
+itself, its version and platform, how many devices used it in the last week, which
+languages those devices asked for, which official modules are enabled, and coarse
+size bands. No name, no address, no titles, no exact counts, and no identifier we
+could tie back to you.
+
+It comes from your server, not from the app, so the apps stay exactly as described
+above. The full field list is published in the repository, the numbers it feeds are
+public at [kroma.tv/stats](/stats), and your server prints the exact payload in its
+own job log before it sends it. Switch it off and it stops at once; the row it wrote
+is deleted after ninety quiet days.
 
 ## Push notifications via the Cloudflare relay
 

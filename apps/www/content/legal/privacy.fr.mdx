@@ -25,12 +25,30 @@ journaux sont éphémères et ne servent ni à vous profiler, ni à vous reconta
 L’application KROMA s’exécute sur du matériel que vous possédez, votre NAS, un hôte
 Docker, un Raspberry Pi. Votre bibliothèque, vos fichiers, vos comptes et profils,
 votre historique de lecture et vos statistiques y sont stockés localement et n’en
-sortent pas. Nous n’y avons aucun accès, et l’application ne nous envoie aucune
-télémétrie : il n’existe pas de service central vers lequel remonter quoi que ce
-soit.
+sortent pas. Nous n’y avons aucun accès, et l’application elle-même ne nous envoie
+rien : un téléviseur, un téléphone ou un navigateur parle à votre serveur et à rien
+d’autre.
 
 Vous opérez le serveur, donc vous maîtrisez ces données. Vous décidez qui y accède,
 où elles résident et quand les effacer.
+
+## Être compté, si vous le demandez
+
+Le logiciel serveur propose un réglage facultatif, désactivé tant que vous ne
+l’activez pas, qui permet à votre installation d’être comptée parmi les serveurs
+KROMA qui tournent dans le monde. Une fois activé, il envoie un relevé anonyme par
+jour : un identifiant aléatoire que le serveur s’est attribué, sa version et sa
+plateforme, le nombre d’appareils qui l’ont utilisé dans la semaine, les langues que
+ces appareils demandent, les modules officiels activés et des tranches
+approximatives. Aucun nom, aucune adresse, aucun titre, aucun compte exact, et aucun
+identifiant que nous puissions relier à vous.
+
+Il part de votre serveur, pas de l’application, qui reste donc exactement telle que
+décrite ci-dessus. La liste complète des champs est publiée dans le dépôt, les
+nombres qu’elle alimente sont publics sur [kroma.tv/stats](/stats), et votre serveur
+affiche le relevé exact dans son propre journal de tâches avant de l’envoyer.
+Désactivez-le et il s’arrête aussitôt ; la ligne écrite est supprimée après
+quatre-vingt-dix jours de silence.
 
 ## Notifications push via le relais Cloudflare
 
