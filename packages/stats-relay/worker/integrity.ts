@@ -38,7 +38,7 @@ export function burstIds(rows: InstanceRow[], limit: number = BURST_LIMIT): stri
   return [...groups.values()]
     .filter((ids) => ids.length >= limit)
     .flat()
-    .sort();
+    .sort((a, b) => a.localeCompare(b));
 }
 
 /** The `YYYY-MM-DD` a unix second falls in, UTC. */
