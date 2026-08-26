@@ -120,9 +120,16 @@ export function createApp(storeFor: (env: Env) => Store) {
     await next();
   });
 
+  // Reachable or not, answered rather than thrown: an unreachable database is
+  // the question this route exists to answer, not an unhandled error to log.
   app.get('/health', async (c) => {
-    await c.get('store').daily();
-    return c.json({ ok: true });
+    try {
+      await c.get('store').daily();
+      return c.json({ ok: true });
+    } catch (err) {
+      console.error(JSON.stringify({ event: 'stats.unhealthy', message: String(err) }));
+      return c.json({ ok: false }, 503);
+    }
   });
 
   app.post(

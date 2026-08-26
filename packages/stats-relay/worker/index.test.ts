@@ -270,3 +270,26 @@ describe('the body ceiling', () => {
     expect(store.rows.size).toBe(0);
   });
 });
+
+describe('GET /health', () => {
+  it('says so when the database answers', async () => {
+    const res = await send(memoryStore(), new Request('https://stats.kroma.tv/health'));
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+  });
+
+  it('reports an unreachable database rather than throwing at the caller', async () => {
+    const broken = {
+      ...memoryStore(),
+      daily: async () => {
+        throw new Error('no such table: daily');
+      },
+    };
+
+    const res = await send(broken, new Request('https://stats.kroma.tv/health'));
+
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ ok: false });
+  });
+});
