@@ -56,6 +56,34 @@ fn version_label() -> String {
     format!("{} ({} · {})", b.version, b.commit, b.built)
 }
 
+// The identifier is shown only once it exists, because until an operator has
+// switched statistics on there is nothing minted and nothing to erase. Seeing it
+// is what lets them ask for that row to be deleted.
+fn privacy_rows(settings: &Settings, t: &impl Fn(&str) -> String) -> Vec<SettingRow> {
+    let mut rows = vec![row(
+        "anonStats",
+        t("admin.anonStats"),
+        Some(t("admin.anonStatsHint")),
+        "toggle",
+        &[],
+        settings.get("anonStats"),
+        true,
+    )];
+    let id = settings.get_str("statsId", "");
+    if !id.trim().is_empty() {
+        rows.push(row(
+            "statsId",
+            t("admin.statsId"),
+            Some(t("admin.statsIdHint")),
+            "value",
+            &[],
+            json!(id),
+            true,
+        ));
+    }
+    rows
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct SettingRow {
     pub key: String,
@@ -194,15 +222,7 @@ pub fn groups(
             group(
                 "admin.privacy",
                 Some("admin.privacyDesc"),
-                vec![row(
-                    "anonStats",
-                    t("admin.anonStats"),
-                    Some(t("admin.anonStatsHint")),
-                    "toggle",
-                    &[],
-                    g("anonStats"),
-                    true,
-                )],
+                privacy_rows(settings, &t),
             ),
         ],
         "network" => vec![
@@ -706,6 +726,21 @@ mod tests {
         assert_eq!(row.kind, "toggle");
         assert_eq!(row.value, json!(false));
         assert!(row.applied);
+    }
+
+    #[test]
+    fn the_identifier_is_shown_once_it_exists_and_not_before() {
+        let pool = test_pool();
+        let s = Settings::load(&pool);
+        assert!(find_row(&groups("general", &s, &test_config(), "en"), "statsId").is_none());
+
+        s.set_internal(&pool, "statsId", json!("a-minted-id"));
+
+        let after = groups("general", &s, &test_config(), "en");
+        let shown = find_row(&after, "statsId")
+            .expect("the privacy group names the identifier once one exists");
+        assert_eq!(shown.kind, "value");
+        assert_eq!(shown.value, json!("a-minted-id"));
     }
 
     #[test]

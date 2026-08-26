@@ -383,5 +383,6 @@
   "stats_method_body": "A server counts once it has reported for seven days, and stops counting thirty days after its last report. A breakdown is published only where at least five servers share it, so a lone install is never singled out. Identical newcomers arriving together are set aside. Nothing here can be proved: the server is free software anyone can change, so treat these as the floor of what is out there, not a census.",
   "stats_updated": "Last updated {when}.",
   "stats_optin_title": "Be counted, or don't",
-  "stats_optin_body": "Admin → General → Privacy, on your own server. It is off until you switch it on, and Admin → Jobs → Anonymous statistics prints the exact payload before it is sent."
+  "stats_optin_body": "Admin → General → Privacy, on your own server. It is off until you switch it on, and Admin → Jobs → Anonymous statistics prints the exact payload before it is sent.",
+  "stats_privacy_link": "What is collected, on what basis, and how to erase it"
 }

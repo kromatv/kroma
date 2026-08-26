@@ -571,6 +571,8 @@
   "admin.statSubtitles": "Sous-titres",
   "admin.statUsers": "Utilisateurs",
   "admin.statVideo": "Vidéo",
+  "admin.statsId": "Votre identifiant de statistiques",
+  "admin.statsIdHint": "Le nom aléatoire sous lequel ce serveur apparaît dans les statistiques anonymes. Rien d'autre n'y est rattaché. Citez-le pour faire supprimer cette ligne, ou supprimez-la vous-même avec la requête indiquée dans la documentation.",
   "admin.stopMessageLabel": "Message (facultatif)",
   "admin.stopMessagePlaceholder": "Ex : Pause requise pour maintenance",
   "admin.stopStream": "Arrêter la lecture",

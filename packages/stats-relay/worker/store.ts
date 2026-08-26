@@ -37,6 +37,8 @@ export interface Store {
   record(day: string, instances: number, clients: number): Promise<void>;
   /** Forget rows nobody has heard from since `before`. */
   prune(before: number): Promise<void>;
+  /** Forget one install on its own request. */
+  forget(id: string): Promise<void>;
 }
 
 interface D1Result<T> {
@@ -190,6 +192,9 @@ export function d1Store(db: D1Database): Store {
     },
     async prune(before) {
       await db.prepare('DELETE FROM instances WHERE last_seen < ?1').bind(before).run();
+    },
+    async forget(id) {
+      await db.prepare('DELETE FROM instances WHERE id = ?1').bind(id).run();
     },
   };
 }

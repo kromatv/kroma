@@ -120,6 +120,55 @@ describe('POST /v1/ping', () => {
   });
 });
 
+describe('POST /v1/forget', () => {
+  function forget(body: unknown) {
+    const json = JSON.stringify(body);
+    return new Request('https://stats.kroma.tv/v1/forget', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'content-length': String(json.length),
+      },
+      body: json,
+    });
+  }
+
+  it('deletes the row the id names and nothing else', async () => {
+    const store = memoryStore([row({ id: ping().id }), row({ id: OTHER_ID })]);
+
+    const res = await send(store, forget({ id: ping().id }));
+
+    expect(res.status).toBe(200);
+    expect(store.rows.has(ping().id)).toBe(false);
+    expect(store.rows.has(OTHER_ID)).toBe(true);
+  });
+
+  it('answers the same for an id it has never seen, so it is no oracle', async () => {
+    const store = memoryStore();
+
+    const known = await send(memoryStore([row({ id: ping().id })]), forget({ id: ping().id }));
+    const unknown = await send(store, forget({ id: ping().id }));
+
+    expect(unknown.status).toBe(known.status);
+    expect(await unknown.json()).toEqual(await known.json());
+  });
+
+  it('refuses anything that is not an install id', async () => {
+    const res = await send(memoryStore(), forget({ id: 'wherever' }));
+
+    expect(res.status).toBe(400);
+  });
+
+  it('is rate limited like a ping', async () => {
+    const store = memoryStore([row({ id: ping().id })]);
+
+    const res = await send(store, forget({ id: ping().id }), { PING_LIMIT: deny() });
+
+    expect(res.status).toBe(429);
+    expect(store.rows.has(ping().id)).toBe(true);
+  });
+});
+
 describe('GET /v1/stats', () => {
   it('answers the aggregate, cacheable and readable from anywhere', async () => {
     // The route reads the wall clock, so the fixtures hang off it too.

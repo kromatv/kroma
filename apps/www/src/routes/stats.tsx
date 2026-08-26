@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { PageShell } from '#site/components/contact/page-shell';
+import { L } from '#site/components/localized-link';
 import { BarList } from '#site/components/stats/bar-list';
 import { StatTile } from '#site/components/stats/stat-tile';
 import { Trend } from '#site/components/stats/trend';
@@ -38,11 +39,16 @@ function useStats(): State {
   return state;
 }
 
-function Note({ title, body }: Readonly<{ title: string; body: string }>) {
+function Note({
+  title,
+  body,
+  children,
+}: Readonly<{ title: string; body: string; children?: ReactNode }>) {
   return (
     <section className="rounded-2xl border border-border bg-surface-1 p-6">
       <h2 className="font-display text-lg font-bold text-text">{title}</h2>
       <p className="mt-3 text-pretty text-sm leading-relaxed text-muted">{body}</p>
+      {children}
     </section>
   );
 }
@@ -143,7 +149,11 @@ function StatsPage() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Note title={m.stats_method_title()} body={m.stats_method_body()} />
-        <Note title={m.stats_optin_title()} body={m.stats_optin_body()} />
+        <Note title={m.stats_optin_title()} body={m.stats_optin_body()}>
+          <L to="/privacy" className="mt-3 inline-block text-sm text-accent-text">
+            {m.stats_privacy_link()}
+          </L>
+        </Note>
       </div>
     </PageShell>
   );

@@ -31,18 +31,57 @@ lives and when to erase it.
 ## Being counted, if you ask to be
 
 The server software has one optional setting, off until you switch it on, that lets
-your install be counted among the KROMA servers running in the world. While it is
-on, it posts one anonymous payload a day: a random identifier the server minted for
-itself, its version and platform, how many devices used it in the last week, which
-languages those devices asked for, which official modules are enabled, and coarse
-size bands. No name, no address, no titles, no exact counts, and no identifier we
-could tie back to you.
+your install be counted among the KROMA servers running in the world. It comes from
+your server, not from the app, so everything above stays true of the apps whatever
+you choose here. The numbers it feeds are public at [kroma.tv/stats](/stats).
 
-It comes from your server, not from the app, so the apps stay exactly as described
-above. The full field list is published in the repository, the numbers it feeds are
-public at [kroma.tv/stats](/stats), and your server prints the exact payload in its
-own job log before it sends it. Switch it off and it stops at once; the row it wrote
-is deleted after ninety quiet days.
+**Legal basis: your consent**, and nothing else. KROMA works identically with this
+off, which is how it ships. The switch does this one thing and nothing is bundled
+with it. You can withdraw at any time with the same switch, as easily as you gave it.
+
+While it is on, your server posts one payload a day. This is all of it:
+
+| What | Why |
+|---|---|
+| A random identifier your server made up for itself | So it is counted once rather than once a day. Not derived from your hardware, and tied to nothing else. |
+| Its version and the commit it was built from | So a release can stop being supported once nobody runs it. |
+| Its operating system and how it was installed | So we know which platforms are still in use. |
+| How many televisions, phones and computers used it in the last week | The other half of the question. Capped at 50 each. |
+| The languages those devices ask for | So we know which language to translate KROMA into next. A set, never counted, never per-device. |
+| Which official modules are switched on | So we know which are worth maintaining. A module installed from anywhere else is never named. |
+| Roughly how many accounts and titles, as bands like "2-5" or "1k-4999" | So a number can never be exact enough to pick you out. |
+| A two-letter country code | Read from your connection at Cloudflare's edge, so the map means something. Your address is not stored. |
+
+**Never any of this:** your IP address, your server's name, its hostname or web
+address, any title, any file path, anything you watched or searched for, any account
+name, email or avatar, any exact count, or the name of a module you installed from
+somewhere other than the official catalogue.
+
+There is no profiling and no automated decision-making. It is counted, and that is
+all that happens to it.
+
+**Where it goes.** To Cloudflare, who run the collector and hold the database for us
+in Western Europe, and to nobody else. It is not sold, not shared and not used for
+advertising.
+
+**How long.** Your row lives while your server keeps reporting and for ninety days
+after its last report, then it is deleted. It stops counting toward anything published
+thirty days after its last report. The published totals carry no identifier at all.
+
+**What you can do about it, without asking us.** Your server prints the exact payload
+in its own job log before sending it, so you can read what leaves rather than take our
+word for it, and Admin → General → Privacy shows the identifier your row goes by.
+Quote that identifier to erase the row yourself:
+
+```
+curl -X POST https://stats.kroma.tv/v1/forget \
+  -H 'content-type: application/json' \
+  -d '{"id":"<the identifier from your admin page>"}'
+```
+
+It is gone immediately. You can also write to privacy@kroma.tv and we will do it, and
+you have the right to complain to a supervisory authority: in Switzerland the FDPIC,
+and in the EU the authority for your country.
 
 ## Push notifications via the Cloudflare relay
 

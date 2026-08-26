@@ -36,19 +36,60 @@ où elles résident et quand les effacer.
 
 Le logiciel serveur propose un réglage facultatif, désactivé tant que vous ne
 l’activez pas, qui permet à votre installation d’être comptée parmi les serveurs
-KROMA qui tournent dans le monde. Une fois activé, il envoie un relevé anonyme par
-jour : un identifiant aléatoire que le serveur s’est attribué, sa version et sa
-plateforme, le nombre d’appareils qui l’ont utilisé dans la semaine, les langues que
-ces appareils demandent, les modules officiels activés et des tranches
-approximatives. Aucun nom, aucune adresse, aucun titre, aucun compte exact, et aucun
-identifiant que nous puissions relier à vous.
+KROMA qui tournent dans le monde. Il part de votre serveur, pas de l’application :
+tout ce qui précède reste donc vrai des applications quel que soit votre choix ici.
+Les nombres qu’il alimente sont publics sur [kroma.tv/stats](/stats).
 
-Il part de votre serveur, pas de l’application, qui reste donc exactement telle que
-décrite ci-dessus. La liste complète des champs est publiée dans le dépôt, les
-nombres qu’elle alimente sont publics sur [kroma.tv/stats](/stats), et votre serveur
-affiche le relevé exact dans son propre journal de tâches avant de l’envoyer.
-Désactivez-le et il s’arrête aussitôt ; la ligne écrite est supprimée après
-quatre-vingt-dix jours de silence.
+**Base légale : votre consentement**, et rien d’autre. KROMA fonctionne à
+l’identique avec ce réglage désactivé, et c’est ainsi qu’il est livré. L’interrupteur
+ne fait que cela, rien n’y est associé, et vous pouvez le retirer à tout moment avec
+le même interrupteur, aussi facilement que vous l’avez donné.
+
+Une fois activé, votre serveur envoie un relevé par jour. Le voici en entier :
+
+| Quoi | Pourquoi |
+|---|---|
+| Un identifiant aléatoire que votre serveur s’est attribué | Pour être compté une fois plutôt qu’une fois par jour. Il ne dérive pas de votre matériel et n’est rattaché à rien d’autre. |
+| Sa version et le commit dont il est issu | Pour qu’une version cesse d’être maintenue quand plus personne ne l’utilise. |
+| Son système d’exploitation et son mode d’installation | Pour savoir quelles plateformes servent encore. |
+| Le nombre de téléviseurs, téléphones et ordinateurs qui l’ont utilisé dans la semaine | L’autre moitié de la question. Plafonné à 50 par catégorie. |
+| Les langues que ces appareils demandent | Pour savoir dans quelle langue traduire KROMA ensuite. Un ensemble, jamais compté, jamais par appareil. |
+| Les modules officiels activés | Pour savoir lesquels valent la peine d’être maintenus. Un module installé ailleurs n’est jamais nommé. |
+| Approximativement combien de comptes et de titres, par tranches comme « 2-5 » ou « 1k-4999 » | Pour qu’aucun nombre ne soit assez précis pour vous désigner. |
+| Un code pays de deux lettres | Lu depuis votre connexion à la bordure Cloudflare, pour que la carte ait un sens. Votre adresse n’est pas conservée. |
+
+**Jamais rien de ceci :** votre adresse IP, le nom de votre serveur, son nom d’hôte
+ou son adresse web, un titre, un chemin de fichier, ce que vous avez regardé ou
+cherché, un nom de compte, une adresse e-mail, un avatar, un compte exact, ni le nom
+d’un module installé ailleurs que depuis le catalogue officiel.
+
+Il n’y a ni profilage ni décision automatisée. C’est compté, et rien d’autre ne lui
+arrive.
+
+**Où cela va.** À Cloudflare, qui exploite le collecteur et héberge la base pour nous
+en Europe de l’Ouest, et à personne d’autre. Ce n’est ni vendu, ni partagé, ni
+utilisé à des fins publicitaires.
+
+**Combien de temps.** Votre ligne vit tant que votre serveur envoie des relevés, puis
+quatre-vingt-dix jours après le dernier, avant d’être supprimée. Elle cesse de
+compter dans les nombres publiés trente jours après le dernier relevé. Les totaux
+publiés ne portent aucun identifiant.
+
+**Ce que vous pouvez faire, sans nous le demander.** Votre serveur affiche le relevé
+exact dans son propre journal de tâches avant de l’envoyer : vous pouvez donc lire ce
+qui part plutôt que nous croire sur parole, et Administration → Général →
+Confidentialité affiche l’identifiant sous lequel votre ligne existe. Citez-le pour
+supprimer la ligne vous-même :
+
+```
+curl -X POST https://stats.kroma.tv/v1/forget \
+  -H 'content-type: application/json' \
+  -d '{"id":"<l’identifiant affiché dans votre page d’administration>"}'
+```
+
+Elle disparaît immédiatement. Vous pouvez aussi écrire à privacy@kroma.tv et nous le
+ferons, et vous avez le droit d’introduire une réclamation auprès d’une autorité de
+contrôle : en Suisse le PFPDT, et dans l’Union européenne l’autorité de votre pays.
 
 ## Notifications push via le relais Cloudflare
 

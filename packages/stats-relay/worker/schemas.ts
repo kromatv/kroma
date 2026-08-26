@@ -4,6 +4,8 @@
 
 import { z } from 'zod';
 
+const InstallId = z.string().regex(/^[0-9a-f]{64}$/, 'must be a 32-byte hex token');
+
 const Tag = z
   .string()
   .trim()
@@ -31,7 +33,7 @@ const Clients = z.object({
  */
 export const Ping = z.object({
   schema: z.literal(1),
-  id: z.string().regex(/^[0-9a-f]{64}$/, 'must be a 32-byte hex token'),
+  id: InstallId,
   version: z.string().trim().min(1).max(32),
   commit: z.string().trim().min(1).max(40),
   target: z.string().trim().max(64),
@@ -43,6 +45,14 @@ export const Ping = z.object({
   titles: z.enum(['0-99', '100-999', '1k-4999', '5k+']),
 });
 export type Ping = z.infer<typeof Ping>;
+
+/**
+ * `POST /v1/forget`: an install asks for its row to be deleted. Holding the id
+ * is the whole authorisation, which is the same rule a ping runs under, and it
+ * is what makes erasure something an operator can exercise rather than request.
+ */
+export const Forget = z.object({ id: InstallId });
+export type Forget = z.infer<typeof Forget>;
 
 /**
  * The first problem zod found, naming the offending field and nothing else.

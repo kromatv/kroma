@@ -1,8 +1,8 @@
 {
   // KROMA statistics collector. Deploy from this directory:
   //   bunx wrangler deploy
-  // The database is created once, and its id pasted below:
-  //   bunx wrangler d1 create kroma-stats
+  // The database was created once, in Western Europe, and its id pasted below:
+  //   bunx wrangler d1 create kroma-stats --location weur
   //   bunx wrangler d1 execute kroma-stats --remote --file schema.sql
   // There are no secrets here on purpose: a ping carries nothing worth
   // stealing, and there is nobody to authenticate (see index.ts).
@@ -19,7 +19,7 @@
     {
       "binding": "STATS_DB",
       "database_name": "kroma-stats",
-      "database_id": "REPLACE_WITH_THE_ID_FROM_D1_CREATE"
+      "database_id": "d84dac7b-bb36-424b-8e25-00141f7aefc5"
     }
   ],
   // Two different questions, so two different limiters. The binding accepts a

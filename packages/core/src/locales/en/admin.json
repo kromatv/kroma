@@ -571,6 +571,8 @@
   "admin.statSubtitles": "Subtitles",
   "admin.statUsers": "Users",
   "admin.statVideo": "Video",
+  "admin.statsId": "Your statistics identifier",
+  "admin.statsIdHint": "The random name this server goes by in the anonymous statistics. Nothing else is tied to it. Quote it to have that row deleted, or delete it yourself with the request in the documentation.",
   "admin.stopMessageLabel": "Message (optional)",
   "admin.stopMessagePlaceholder": "e.g. Paused for maintenance",
   "admin.stopStream": "Stop playback",

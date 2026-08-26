@@ -18,7 +18,7 @@ import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { aggregate } from './aggregate';
 import { burstIds, dayOf } from './integrity';
-import { firstIssue, Ping } from './schemas';
+import { Forget, firstIssue, Ping } from './schemas';
 import { type D1Database, d1Store, type Store } from './store';
 
 export interface RateLimit {
@@ -80,7 +80,7 @@ export function createApp(storeFor: (env: Env) => Store) {
   // Refuse an oversized body before anything reads it: a schema cannot reject
   // bytes it has not parsed, and buffering an unbounded body to discover it was
   // junk is exactly the work an attacker would like the collector to do.
-  app.use('/v1/ping', async (c, next) => {
+  app.use('/v1/*', async (c, next) => {
     const declared = Number(c.req.header('content-length') ?? '0');
     if (declared > MAX_REQUEST_BYTES) return c.json({ error: 'body too large' }, 413);
     await next();
@@ -116,6 +116,24 @@ export function createApp(storeFor: (env: Env) => Store) {
       }
 
       await store.upsert(ping, country(c.req.header('cf-ipcountry')), c.get('now'));
+      return c.json({ ok: true });
+    },
+  );
+
+  // An install erasing itself. Answered the same way whether the row was there
+  // or not, so this cannot be asked twice to learn whether an id exists.
+  app.post(
+    '/v1/forget',
+    zValidator('json', Forget, (result, c) => {
+      if (!result.success) return c.json({ error: firstIssue(result.error) }, 400);
+      return undefined;
+    }),
+    async (c) => {
+      const { id } = c.req.valid('json');
+      const { success } = await c.env.PING_LIMIT.limit({ key: await keyOf(id) });
+      if (!success) return c.json({ error: 'too many requests for this install' }, 429);
+
+      await c.get('store').forget(id);
       return c.json({ ok: true });
     },
   );

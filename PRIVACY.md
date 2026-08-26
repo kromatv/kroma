@@ -97,8 +97,28 @@ see is decided on your server, which supports per-profile PIN locks.
 
 Your data is in two places, both of which you control: this device, and your
 server. Uninstalling the app clears the first. For the second, the operator of
-that server (normally you) decides what is kept and can delete it. We hold
-nothing about you to disclose, correct or erase.
+that server (normally you) decides what is kept and can delete it.
+
+If you switched anonymous statistics on, we hold one row naming your server by a
+random identifier, on the basis of that consent and nothing else. You can
+withdraw it with the same switch, read the exact payload in your server's own job
+log, and erase the row yourself with the identifier shown in Admin → General →
+Privacy:
+
+```
+curl -X POST https://stats.kroma.tv/v1/forget \
+  -H 'content-type: application/json' \
+  -d '{"id":"<the identifier from your admin page>"}'
+```
+
+Or write to privacy@kroma.tv and we will do it. The compliance record, including
+the legal basis, the processors and the retention periods, is
+[`docs/anonymous-stats-gdpr.md`](docs/anonymous-stats-gdpr.md). You have the right
+to complain to a supervisory authority: in Switzerland the FDPIC, in the EU the
+authority for your country.
+
+If you did not switch it on, we hold nothing about you to disclose, correct or
+erase.
 
 ## Changes to this policy
 

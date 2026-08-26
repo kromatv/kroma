@@ -83,6 +83,9 @@ export function memoryStore(seed: InstanceRow[] = []): Store & { rows: Map<strin
     async prune(before) {
       for (const [id, r] of rows) if (r.lastSeen < before) rows.delete(id);
     },
+    async forget(id) {
+      rows.delete(id);
+    },
   };
 }
 

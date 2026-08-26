@@ -64,11 +64,25 @@ bytes that would leave the box, and prints `anonymous statistics are off;
 nothing was sent` when the toggle is off. The code is
 `server/crates/kroma-engine/src/services/stats/`.
 
-## Turning it off
+## Turning it off, and erasing what was sent
 
 The same toggle. The server stops sending immediately. Its row drops out of the
 published numbers 30 days after its last report, and is deleted from the
 collector 90 days after it.
+
+To delete it now rather than wait, quote the identifier from Admin → General →
+Privacy:
+
+```bash
+curl -X POST https://stats.kroma.tv/v1/forget \
+  -H 'content-type: application/json' \
+  -d '{"id":"<the identifier from your admin page>"}'
+```
+
+Holding the identifier is the whole authorisation, on the same rule a ping runs
+under, and it reaches exactly one row. The legal side of all this, the basis, the
+processors, the retention and the rest of the rights, is
+[`anonymous-stats-gdpr.md`](anonymous-stats-gdpr.md).
 
 ## How the published number is counted
 
