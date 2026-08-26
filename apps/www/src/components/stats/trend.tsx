@@ -34,6 +34,8 @@ export function Trend({ title, points, empty, unit }: Readonly<TrendProps>) {
   const { top, lines } = scaleFor(points.reduce((peak, p) => Math.max(peak, p.instances), 0));
   const x = (i: number) => PAD.left + (i / (points.length - 1)) * PLOT.w;
   const y = (v: number) => PAD.top + PLOT.h - (v / top) * PLOT.h;
+  const first = points[0];
+  const last = points.at(-1);
   const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i)},${y(p.instances)}`).join(' ');
   const area = `${line} L${x(points.length - 1)},${PAD.top + PLOT.h} L${PAD.left},${PAD.top + PLOT.h} Z`;
   const active = hovered === null ? null : points[hovered];
@@ -46,7 +48,7 @@ export function Trend({ title, points, empty, unit }: Readonly<TrendProps>) {
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           className="w-full"
           role="img"
-          aria-label={`${title}: ${points[0]?.day} ${points[0]?.instances} ${unit}, ${points[points.length - 1]?.day} ${points[points.length - 1]?.instances} ${unit}`}
+          aria-label={`${title}: ${first?.day} ${first?.instances} ${unit}, ${last?.day} ${last?.instances} ${unit}`}
           onPointerLeave={() => setHovered(null)}
           onPointerMove={(event) => {
             const box = event.currentTarget.getBoundingClientRect();
@@ -116,7 +118,7 @@ export function Trend({ title, points, empty, unit }: Readonly<TrendProps>) {
             </g>
           )}
           <text x={PAD.left} y={HEIGHT - 6} className="fill-dim text-[11px]">
-            {points[0]?.day}
+            {first?.day}
           </text>
           <text
             x={WIDTH - PAD.right}
@@ -124,7 +126,7 @@ export function Trend({ title, points, empty, unit }: Readonly<TrendProps>) {
             textAnchor="end"
             className="fill-dim text-[11px]"
           >
-            {points[points.length - 1]?.day}
+            {last?.day}
           </text>
         </svg>
         {active && (

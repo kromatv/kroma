@@ -101,7 +101,7 @@ async function keysFor(
   now: number,
   fetcher: typeof fetch,
 ): Promise<z.infer<typeof Jwks>['keys'] | null> {
-  if (cache && cache.domain === teamDomain && now - cache.at < JWKS_TTL_MS) return cache.keys;
+  if (cache?.domain === teamDomain && now - cache.at < JWKS_TTL_MS) return cache.keys;
   const res = await fetcher(`https://${teamDomain}/cdn-cgi/access/certs`);
   if (!res.ok) return null;
   // A 200 carrying something that is not JSON is the identity provider being
