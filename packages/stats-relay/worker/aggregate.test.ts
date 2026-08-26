@@ -96,3 +96,16 @@ describe('aggregate', () => {
     expect(result.updatedAt).toBe(NOW);
   });
 });
+
+describe('aggregate with no floor', () => {
+  it('keeps a breakdown a single install has, which the public view suppresses', () => {
+    const rows = [settled({ id: 'lone', country: 'NZ', version: '9.9.9' })];
+
+    const publicView = aggregate(rows, [], NOW);
+    const adminView = aggregate(rows, [], NOW, 0);
+
+    expect(publicView.countries).toEqual({});
+    expect(adminView.countries).toEqual({ NZ: 1 });
+    expect(adminView.versions).toEqual({ '9.9.9': 1 });
+  });
+});

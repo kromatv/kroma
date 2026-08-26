@@ -60,11 +60,16 @@ function tally(values: Iterable<string>): Record<string, number> {
   return out;
 }
 
-/** Drop every entry that fewer than [`FLOOR`] instances share. */
-export function floored(counts: Record<string, number>): Record<string, number> {
+/** Drop every entry that fewer than `floor` instances share, and order what
+ * survives by weight. A floor of 0 keeps everything, which only the
+ * Access-gated view asks for. */
+export function floored(
+  counts: Record<string, number>,
+  floor: number = FLOOR,
+): Record<string, number> {
   return Object.fromEntries(
     Object.entries(counts)
-      .filter(([, n]) => n >= FLOOR)
+      .filter(([, n]) => n >= floor)
       .sort(([a, na], [b, nb]) => nb - na || a.localeCompare(b)),
   );
 }
@@ -76,7 +81,12 @@ function platform(target: string): string {
   return parts.length > 1 ? parts.slice(1).join('-') : target;
 }
 
-export function aggregate(rows: InstanceRow[], history: DailyRow[], now: number): Aggregate {
+export function aggregate(
+  rows: InstanceRow[],
+  history: DailyRow[],
+  now: number,
+  floor: number = FLOOR,
+): Aggregate {
   const live = counted(rows, now);
   const clients = live.reduce(
     (sum, row) => ({
@@ -89,12 +99,12 @@ export function aggregate(rows: InstanceRow[], history: DailyRow[], now: number)
   return {
     instances: live.length,
     clients: { ...clients, total: clients.tv + clients.mobile + clients.desktop },
-    versions: floored(tally(live.map((row) => row.version))),
-    platforms: floored(tally(live.map((row) => platform(row.target)))),
-    installs: floored(tally(live.map((row) => row.install))),
-    countries: floored(tally(live.flatMap((row) => (row.country ? [row.country] : [])))),
-    locales: floored(tally(live.flatMap((row) => unique(row.locales)))),
-    modules: floored(tally(live.flatMap((row) => unique(row.modules)))),
+    versions: floored(tally(live.map((row) => row.version)), floor),
+    platforms: floored(tally(live.map((row) => platform(row.target))), floor),
+    installs: floored(tally(live.map((row) => row.install)), floor),
+    countries: floored(tally(live.flatMap((row) => (row.country ? [row.country] : []))), floor),
+    locales: floored(tally(live.flatMap((row) => unique(row.locales))), floor),
+    modules: floored(tally(live.flatMap((row) => unique(row.modules))), floor),
     history,
     updatedAt: now,
   };

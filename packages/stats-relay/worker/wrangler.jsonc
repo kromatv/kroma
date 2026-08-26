@@ -12,6 +12,19 @@
   "compatibility_date": "2026-08-26",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  // Cloudflare Access guards `/v1/admin/*`. None of these is a credential: the
+  // assertion is signed with a key only Cloudflare holds, so this Worker still
+  // ships no secret and there is nothing here to leak. Empty means the admin
+  // route answers 503, which is the safe way to be unconfigured. Fill them from
+  // Zero Trust → Access → Applications after creating the application:
+  //   ACCESS_TEAM_DOMAIN  <team>.cloudflareaccess.com
+  //   ACCESS_AUD          the application's Application Audience (AUD) tag
+  //   ADMIN_EMAILS        comma separated, and the policy should name the same
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": "",
+    "ADMIN_EMAILS": ""
+  },
   // Keep a <name>.workers.dev URL alongside the custom domain (fallback + while
   // the stats.kroma.tv cert provisions).
   "workers_dev": true,

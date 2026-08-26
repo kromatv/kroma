@@ -199,6 +199,29 @@ describe('GET /v1/stats', () => {
   });
 });
 
+describe('GET /v1/admin/stats', () => {
+  const request = () => new Request('https://stats.kroma.tv/v1/admin/stats');
+
+  it('stays shut when no administrator is configured', async () => {
+    const res = await send(memoryStore(), request());
+
+    expect(res.status).toBe(503);
+    expect(res.headers.get('cache-control')).toBe('no-store, private');
+  });
+
+  it('turns away a caller with no Access assertion', async () => {
+    const res = await send(memoryStore(), request(), {
+      ACCESS_TEAM_DOMAIN: 'kroma.cloudflareaccess.com',
+      ACCESS_AUD: 'a'.repeat(64),
+      ADMIN_EMAILS: 'owner@kroma.tv',
+    });
+
+    expect(res.status).toBe(401);
+    expect(res.headers.get('access-control-allow-origin')).toBeNull();
+    expect(res.headers.get('cache-control')).toBe('no-store, private');
+  });
+});
+
 describe('an unknown route', () => {
   it('answers JSON, like everything else here', async () => {
     const res = await send(memoryStore(), new Request('https://stats.kroma.tv/nope'));

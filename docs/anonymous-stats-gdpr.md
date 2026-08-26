@@ -126,6 +126,12 @@ so it cannot be used to test whether an identifier exists.
   is nobody to authenticate.
 - No route returns a row. Reads answer aggregates, and any breakdown fewer than
   five servers share is suppressed before it is published.
+- The one route that answers unsuppressed aggregates, `/v1/admin/stats`, is
+  behind Cloudflare Access: a short-lived assertion signed by a key only
+  Cloudflare holds, checked by the Worker itself rather than assumed from the
+  edge, and refused outright when no administrator is configured. It still
+  returns no rows. Access to individual rows is through the database, against the
+  Cloudflare account, and is logged there.
 - Data minimisation is the main control here: the strongest protection for a
   field is that it was never collected.
 

@@ -16,7 +16,8 @@
 
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { aggregate } from './aggregate';
+import { configFrom, verify } from './access';
+import { aggregate, counted } from './aggregate';
 import { burstIds, dayOf } from './integrity';
 import { Forget, firstIssue, Ping } from './schemas';
 import { type D1Database, d1Store, type Store } from './store';
@@ -29,6 +30,12 @@ export interface Env {
   STATS_DB: D1Database;
   PING_LIMIT: RateLimit;
   NEW_ID_LIMIT: RateLimit;
+  // Cloudflare Access, for `/v1/admin/*`. Public facts, not credentials: the
+  // assertion is signed with a key only Cloudflare holds, so this Worker still
+  // ships no secret. All three unset means the route stays shut.
+  ACCESS_TEAM_DOMAIN?: string;
+  ACCESS_AUD?: string;
+  ADMIN_EMAILS?: string;
 }
 
 // A ping is a fixed shape with two short lists in it; anything larger is not
@@ -49,6 +56,24 @@ type Vars = { store: Store; now: number };
 async function keyOf(value: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Never cached, never shared across origins, and never served over anything but
+// the HTTPS the custom domain enforces.
+const PRIVATE_HEADERS = {
+  'cache-control': 'no-store, private',
+  'strict-transport-security': 'max-age=31536000; includeSubDomains',
+  'referrer-policy': 'no-referrer',
+  vary: 'Cf-Access-Jwt-Assertion, Cookie',
+} as const;
+
+// Access presents its assertion as a header on a service call and as a cookie in
+// a browser session. Both are the same token.
+function assertion(request: Request): string | undefined {
+  const header = request.headers.get('cf-access-jwt-assertion');
+  if (header) return header;
+  const cookie = request.headers.get('cookie') ?? '';
+  return /(?:^|;\s*)CF_Authorization=([^;]+)/.exec(cookie)?.[1];
 }
 
 function country(header: string | undefined): string | null {
@@ -137,6 +162,41 @@ export function createApp(storeFor: (env: Env) => Store) {
       return c.json({ ok: true });
     },
   );
+
+  // Everything an administrator may see beyond the public page: the same
+  // aggregate with no floor applied, plus what the nightly sweep set aside.
+  // Deliberately still not rows. Per-install data is read from D1 against the
+  // Cloudflare account, which is a different door with a different key.
+  app.get('/v1/admin/stats', async (c) => {
+    const config = configFrom(c.env);
+    if (!config) {
+      return c.json(
+        { error: 'no administrator is configured for this collector' },
+        503,
+        PRIVATE_HEADERS,
+      );
+    }
+    const verdict = await verify(assertion(c.req.raw), config, Date.now());
+    if (!verdict.ok) {
+      console.error(JSON.stringify({ event: 'stats.access_denied', reason: verdict.reason }));
+      return c.json({ error: verdict.reason }, verdict.status, PRIVATE_HEADERS);
+    }
+
+    const store = c.get('store');
+    const now = c.get('now');
+    const [rows, history] = await Promise.all([store.all(), store.daily()]);
+    return c.json(
+      {
+        ...aggregate(rows, history, now, 0),
+        stored: rows.length,
+        flagged: rows.filter((row) => row.flagged).length,
+        settling: rows.filter((row) => !counted([row], now).length && !row.flagged).length,
+        viewer: verdict.email,
+      },
+      200,
+      PRIVATE_HEADERS,
+    );
+  });
 
   app.get('/v1/stats', async (c) => {
     const store = c.get('store');

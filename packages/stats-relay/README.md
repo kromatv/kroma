@@ -13,13 +13,15 @@ That document is the contract; this one is how to run the thing.
 | Route | Answers |
 |---|---|
 | `POST /v1/ping` | One install's daily payload. Unauthenticated on purpose. |
+| `POST /v1/forget` | Deletes the row an identifier names. The identifier is the authorisation. |
 | `GET /v1/stats` | The published aggregate, CORS-open and cached an hour. |
+| `GET /v1/admin/stats` | The same aggregate with no floor, plus the sweep's counts. Behind Cloudflare Access. |
 | `GET /health` | Whether the database is reachable. |
 
 A nightly cron flags fleets, records the day's numbers so they survive pruning,
 and deletes rows nobody has heard from in 90 days.
 
-## Why there is no authentication
+## Why the public routes have no authentication
 
 The sender is public source and self-hosted, so any credential shipped in it
 would be published with it. The id in a payload is the whole authorisation, and
@@ -57,13 +59,46 @@ Admin → Jobs. A release build ignores that variable: the address is a constant
 for the same reason the push relay's is, so no operator can be redirected to a
 collector that is not this one.
 
-## Looking at the data
+## The administrator's view
 
-There is no private dashboard, and deliberately no authenticated route: the
-Worker holds no secret, and `GET /v1/stats` is the only read it offers, floored
-so a breakdown fewer than five servers share never leaves. Anything beyond that
-is read straight from D1, authenticated by the Cloudflare account rather than by
-anything shipped here.
+`GET /v1/admin/stats` answers the same aggregate with **no floor applied**, so a
+version or a country a single install has is visible, plus how many rows are
+stored, how many the nightly sweep flagged, and how many are still settling. It
+deliberately does not return rows: per-install data is read from D1, which is a
+different door with a different key.
+
+It is behind **Cloudflare Access**, chosen over a bearer token for one reason
+worth stating: Access signs a short-lived assertion with a key only Cloudflare
+holds, so what this Worker configures is a team domain, an audience tag and an
+email list. All three are public facts. The collector still ships no secret, and
+there is still nothing here to leak.
+
+The Worker verifies the assertion itself rather than trusting the edge to have
+done it. An Access policy protects a hostname, and this Worker also answers on
+its `workers.dev` address, which no policy covers. Unset configuration means 503,
+never open.
+
+Setting it up, once:
+
+1. Zero Trust → Settings → Custom Pages, note the team domain
+   (`<team>.cloudflareaccess.com`). Create the team first if there is none.
+2. Zero Trust → Access → Applications → Add a self-hosted application on
+   `stats.kroma.tv`, path `/v1/admin`.
+3. Give it a policy allowing the emails that should get in, with whatever second
+   factor the identity provider offers.
+4. Copy the application's AUD tag into `ACCESS_AUD` in `worker/wrangler.jsonc`,
+   the team domain into `ACCESS_TEAM_DOMAIN`, the same emails into
+   `ADMIN_EMAILS`, and deploy.
+
+Then open `https://stats.kroma.tv/v1/admin/stats` in a browser and Access will
+ask who you are. For a script, `cloudflared access token --app
+https://stats.kroma.tv/v1/admin` mints one to send as
+`Cf-Access-Jwt-Assertion`.
+
+## Reading rows
+
+Rows are read straight from D1, authenticated by the Cloudflare account rather
+than by anything shipped here.
 
 ```bash
 # The unfloored picture, which the public endpoint will not give you.
