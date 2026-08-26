@@ -242,12 +242,15 @@ mod tests {
 
     #[test]
     fn a_server_that_reported_today_waits_for_its_own_hour_tomorrow() {
+        // A fixed instant, not the wall clock: hanging the fixtures off `now`
+        // makes whether a day has elapsed depend on the time of day the suite
+        // happens to run at.
         let id = "a".repeat(64);
         let hour = slot_hour(&id);
-        let yesterday = OffsetDateTime::now_utc() - Duration::hours(30);
-        let stamp = yesterday.format(&Rfc3339).unwrap();
+        let sent = OffsetDateTime::from_unix_timestamp(1_800_000_000).unwrap();
+        let stamp = sent.format(&Rfc3339).unwrap();
         let at = |h: u8| {
-            yesterday.replace_time(time::Time::from_hms(h, 30, 0).unwrap()) + Duration::days(1)
+            (sent + Duration::days(1)).replace_time(time::Time::from_hms(h, 30, 0).unwrap())
         };
 
         assert!(due(&id, &stamp, at(hour)), "its own hour");
