@@ -1,6 +1,0 @@
-# Logo  src/components/atoms/logo/logo.story.mdx
-
-## preview
-svg "" width=73.44 height=48 stroke= fill= stroke-width= viewBox=0 0 153 100 << pad=0,0,0,0 op=1.000 flex=[row:center:normal:nowrap:g0/0:n3]
-svg "" width=48 height=48 stroke= fill= stroke-width= viewBox=6 6 88 88 << pad=0,4.8,0,2.88 op=1.000 anim=[@r-animation-11cv4x auto] flex=[row:center:normal:nowrap:g0/0:n3]
-svg "" width=90.432 height=48 stroke= fill= stroke-width= viewBox=269 0 188.4 100 << pad=0,0,0,0 op=1.000 flex=[row:center:normal:nowrap:g0/0:n3]

@@ -11,15 +11,7 @@
 // shrinks: tiles are mounted from the start of the data up to the furthest the
 // selection has reached.
 
-import {
-  type ReactElement,
-  useCallback,
-  useEffect,
-  useEffectEvent,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type LayoutChangeEvent,
   type NativeScrollEvent,
@@ -32,10 +24,11 @@ import {
 import { SpatialNavigationView } from 'react-tv-space-navigation';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
 import { styles } from '#ui/core';
-import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
+import { FocusLiftView } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusReporter } from '#ui/lib/focus-report';
 import { WEB } from '#ui/lib/platform';
+import { useStableCallback } from '#ui/lib/stable-callback';
 import { edgeScrollOffset, fitPitch, horizontalInset, maxOffset } from './edge-scroll';
 import { MovingRow } from './moving-row';
 import { edgeWidth, RailEdge } from './rail-edge';
@@ -100,9 +93,10 @@ function VirtualRail<T>({
     [count],
   );
 
-  // An effect event, so the tiles never rebuild when the row grows: each one
-  // calls a stable function that always sees the current pitch and count.
-  const select = useEffectEvent((index: number) => {
+  // Stable, so the tiles never rebuild when the row grows: one function,
+  // always seeing the current pitch and count. Not `useEffectEvent`, whose new
+  // closure per render moves every tile's `onFocus` and rebuilds the row.
+  const select = useStableCallback((index: number) => {
     grow(index + OVERSCAN);
     if (index >= count - 1 - OVERSCAN) onEndReached?.();
     // A real scroller owns its position: the browser reveals a tab-focused
@@ -192,16 +186,9 @@ function VirtualRail<T>({
       // <FocusReporter> is the only signal that fires in BOTH directions: the
       // navigator's `onActive` is monotone, so a row wired to that scrolls
       // right and freezes going left.
-      // The CELL rises with its tile, not just the tile: a focused tile grows
-      // and wears a ring, both of which reach into the neighbouring cell - and
-      // that cell, drawn after it, was painting over them.
-      <FocusLiftHost key={index}>
-        {(held) => (
-          <View style={held ? [cell, LIFTED] : cell}>
-            <FocusReporter onFocus={() => select(index)}>{renderItem(item, index)}</FocusReporter>
-          </View>
-        )}
-      </FocusLiftHost>,
+      <FocusLiftView key={index} style={cell}>
+        <FocusReporter onFocus={() => select(index)}>{renderItem(item, index)}</FocusReporter>
+      </FocusLiftView>,
     );
   }
 

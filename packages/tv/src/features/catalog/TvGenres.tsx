@@ -13,6 +13,7 @@ import {
   CategoryTile,
   FocusScroll,
   Grid,
+  genreIcon,
   styles,
   Text,
   tintGradient,
@@ -91,6 +92,7 @@ function GenreCard({
   return (
     <CategoryTile
       label={genreLabel(t, genre.name)}
+      icon={genreIcon(genre.slug)}
       meta={count}
       art={backdrop}
       background={tintGradient(genreColors(genre.slug))}

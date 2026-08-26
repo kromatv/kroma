@@ -1,6 +1,7 @@
 package expo.modules.vlcplayer
 
 import android.content.Context
+import android.os.Looper
 import android.view.SurfaceView
 import android.view.ViewGroup
 import expo.modules.kotlin.AppContext
@@ -28,6 +29,28 @@ private val VLC_ARGS =
   )
 
 class VlcPlayerView(context: Context, appContext: AppContext) : ExpoView(context, appContext) {
+  companion object {
+    private val live = java.util.Collections.synchronizedSet(mutableSetOf<VlcPlayerView>())
+
+    // Every libVLC core alive right now, torn down without waiting for React to
+    // unmount the view. Switching engines builds the next player before the old
+    // tree is committed away, and on a 2 GB television both decoders resident at
+    // once is what the low-memory killer takes the app for.
+    fun releaseAll() {
+      val onMain = Looper.myLooper() == Looper.getMainLooper()
+      // Inline when we are already on the main thread. Posting defers the free
+      // past the end of this frame, and the caller switching engines builds the
+      // NEXT player in that gap: two libVLC cores and two decoders resident at
+      // once is what the low-memory killer takes the app for.
+      //
+      // One view's failure must not strand the others: a core that is never
+      // released is a core that is still holding a decoder.
+      for (view in live.toList()) {
+        runCatching { if (onMain) view.release() else view.post { view.release() } }
+      }
+    }
+  }
+
   private val onPlayerTime by EventDispatcher()
   private val onPlayerLoad by EventDispatcher()
   private val onPlayerState by EventDispatcher()
@@ -56,8 +79,10 @@ class VlcPlayerView(context: Context, appContext: AppContext) : ExpoView(context
         ViewGroup.LayoutParams.MATCH_PARENT,
       )
     addView(videoLayout)
+    live.add(this)
   }
 
+  @Synchronized
   private fun ensurePlayer(): MediaPlayer {
     player?.let { return it }
     val vlc = LibVLC(context, VLC_ARGS)
@@ -72,7 +97,9 @@ class VlcPlayerView(context: Context, appContext: AppContext) : ExpoView(context
           val now = android.os.SystemClock.uptimeMillis()
           if (now - lastTimeEmit >= TIME_EMIT_MS) {
             lastTimeEmit = now
-            onPlayerTime(mapOf("timeMs" to event.timeChanged))
+            val payload = mutableMapOf<String, Any>("timeMs" to event.timeChanged)
+            addStats(mp, payload)
+            onPlayerTime(payload)
           }
         }
         MediaPlayer.Event.LengthChanged -> onPlayerLoad(mapOf("lengthMs" to event.lengthChanged))
@@ -106,10 +133,29 @@ class VlcPlayerView(context: Context, appContext: AppContext) : ExpoView(context
     libVlc = vlc
     player = mp
     if (!attached) {
-      mp.attachViews(videoLayout, null, false, false)
+      // A TextureView, not VLC's default SurfaceView. A SurfaceView is composited
+      // from its own window, so no ancestor transform reaches it and the settings
+      // card could only take it by resizing its box - one buffer renegotiation per
+      // frame, which is why that path snapped instead of animating. A TextureView
+      // draws inside the hierarchy and follows a scale for free.
+      mp.attachViews(videoLayout, null, false, true)
       attached = true
     }
     return mp
+  }
+
+  // `getMedia()` retains what it returns, so the release is not optional: called
+  // four times a second, a missed one is a leaked media object per tick.
+  private fun addStats(mp: MediaPlayer, payload: MutableMap<String, Any>) {
+    val media = mp.media ?: return
+    try {
+      val stats = media.stats ?: return
+      payload["lostPictures"] = stats.lostPictures
+      payload["displayedPictures"] = stats.displayedPictures
+      payload["inputBitrate"] = stats.inputBitrate
+    } finally {
+      media.release()
+    }
   }
 
   fun setStartMs(ms: Long) {
@@ -277,21 +323,49 @@ class VlcPlayerView(context: Context, appContext: AppContext) : ExpoView(context
     if (mp.audioTrack != track.id) mp.audioTrack = track.id
   }
 
+  /** Tears the core down. Safe to call twice, from either thread, and at any
+   * point in the view's life: whoever gets here first takes the handles and
+   * everyone after sees nothing to do. */
+  @Synchronized
   fun release() {
-    player?.let {
-      it.stop()
-      if (attached) {
-        it.detachViews()
-        attached = false
-      }
-      it.release()
-    }
+    live.remove(this)
+    // Taken under the lock, so two callers can never both free the same core.
+    val mp = player
+    val vlc = libVlc
     player = null
-    libVlc?.release()
     libVlc = null
     // Cleared with the player: a remounted view is asked for the same URL, and a
     // stale value makes commit() treat it as already open and draw nothing.
     loadedUri = null
+    pendingSeekMs = null
+    if (mp == null && vlc == null) return
+
+    // Every step below can throw from native, and each one is independent. A
+    // failure in one must not strand the rest: the core that is never released
+    // is a core still holding a decoder, and the next engine has to live
+    // alongside it.
+    //
+    // Callbacks off FIRST. libVLC keeps firing while it drains, and an event
+    // delivered into a player halfway through being released reaches native
+    // state that is already gone.
+    runCatching { mp?.setEventListener(null) }
+    runCatching { mp?.stop() }
+    if (attached) {
+      runCatching { mp?.detachViews() }
+      attached = false
+    }
+    // Out of the tree before anything is freed. libVLC's vout writes into this
+    // SurfaceView's buffers from its own thread, and `stop()` returns before that
+    // thread has drained: freeing underneath it leaves the compositor holding a
+    // buffer whose backing is gone, which is a dangling colour buffer and takes
+    // the whole surface stack down with it.
+    runCatching { removeView(videoLayout) }
+    // Synchronous, and deliberately so. release() blocks until the decoder
+    // threads join, which is a visible hitch on a slow box; deferring it is
+    // worse, because the engine being switched TO is built in that gap and the
+    // set cannot hold two decoders at once.
+    runCatching { mp?.release() }
+    runCatching { vlc?.release() }
   }
 
   // React Native lays out ITS OWN views and stops there: a child added natively is

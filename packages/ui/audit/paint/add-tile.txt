@@ -1,5 +1,0 @@
-# AddTile  src/components/molecules/add-tile/add-tile.story.mdx
-
-## preview
-svg "" width=46 height=46 stroke=#BDBCC4 fill=none stroke-width=1.6 viewBox=0 0 24 24 << pad=40,40,40,40 op=1.000 bg=[var(--kroma-surface-2-72)] radius=[16px 16px 16px 16px 23px 23px 23px 23px] border=[2px var(--kroma-tint-35)|2px var(--kroma-tint-35)|2px var(--kroma-tint-35)|2px var(--kroma-tint-35)] shadow=[var(--shadow-card)] tf=[scale(1)] anim=[transform 200ms] size=[width=146px,height=146px] flex=[row:center:center:nowrap:g0/0:n1 column:center:normal:nowrap:g0/0:n2 column:center:center:nowrap:g0/0:n1]
-div "Add a profile" var(--kroma-text-80)/18px/500/"Hanken Grotesk"/normal/28px/start/none/none << pad=40,40,40,40 op=1.000 radius=[16px 16px 16px 16px] tf=[scale(1)] anim=[transform 200ms] flex=[row:center:center:nowrap:g0/0:n1 column:center:normal:nowrap:g0/0:n2]

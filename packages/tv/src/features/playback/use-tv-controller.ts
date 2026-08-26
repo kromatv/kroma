@@ -20,6 +20,12 @@ import { type TvSubtitles, useTvSubtitles } from '#tv/features/playback/use-tv-s
 // ~4 Hz playback tick and the memoized `ControlCluster` exists to skip those.
 const NOOP = (): undefined => undefined;
 
+// What the stats meter reads a healthy forward buffer against, per surface.
+// libVLC keeps a 1.5s cache window BY DESIGN (`--network-caching=1500`, chosen
+// against a TV box's memory), so the shared ten-second default would paint a
+// perfectly good stream critical for its whole length.
+const BUFFER_TARGET_SEC: Partial<Record<Playback['surface'], number>> = { vlc: 1.5 };
+
 export interface TvController {
   controller: PlayerController;
   pb: Playback;
@@ -108,6 +114,7 @@ export function useTvController(client: KromaClient, item: MediaItem): TvControl
       audioIndex: pb.audioIndex,
       video: pb.videoRef.current,
       mode: pb.surface,
+      bufferTarget: BUFFER_TARGET_SEC[pb.surface],
       t,
       // Whatever only the running engine can answer (which plane, what its
       // decoder is doing), so the panel can say why a picture is not moving.

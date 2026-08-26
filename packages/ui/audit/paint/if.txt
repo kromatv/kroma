@@ -1,7 +1,0 @@
-# If  src/components/common/if/if.story.mdx
-
-## preview
-div "Continue watching" var(--kroma-accent)/15px/600/"Hanken Grotesk"/normal/20px/start/none/none << pad=12,16,12,16 op=1.000 bg=[var(--kroma-surface-1)] radius=[13px 13px 13px 13px] border=[1px var(--kroma-border)|1px var(--kroma-border)|1px var(--kroma-border)|1px var(--kroma-border)]
-
-## scene:Both branches
-div "Nothing saved yet" var(--kroma-text-muted)/15px/600/"Hanken Grotesk"/normal/20px/start/none/none << pad=12,16,12,16 op=1.000 bg=[var(--kroma-surface-1)] radius=[13px 13px 13px 13px] border=[1px var(--kroma-border)|1px var(--kroma-border)|1px var(--kroma-border)|1px var(--kroma-border)]

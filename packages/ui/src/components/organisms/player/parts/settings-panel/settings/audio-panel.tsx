@@ -44,12 +44,13 @@ export const AudioPanel = forwardRef<PanelHandle, AudioPanelProps>(function Audi
         return (
           <SelectRow
             key={a.index}
+            index={i}
             label={a.title?.trim() || langName(t, a.language) || t('player.langUnknown')}
             sub={ch ? `${codec} · ${ch}` : codec}
             selected={a.index === current}
             focused={focus.index === i}
-            onActivate={() => pick(i)}
-            onFocus={focus.hover(i)}
+            onActivate={pick}
+            onFocus={focus.setIndex}
           />
         );
       })}

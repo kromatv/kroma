@@ -15,11 +15,12 @@ import {
   ScrollView,
   type StyleProp,
   StyleSheet,
-  View,
+  type View,
   type ViewStyle,
 } from 'react-native';
 import { SpatialNavigationNode } from 'react-tv-space-navigation';
 import { RING_ROOM } from '#ui/core/tokens';
+import { FocusLiftView } from '#ui/lib/focus-lift';
 import { pointerDriving } from '#ui/lib/input-source';
 import { WEB } from '#ui/lib/platform';
 
@@ -223,7 +224,7 @@ function FocusSlot({
     <SpatialNavigationNode onActive={onActive}>
       <RowContext.Provider value={row}>
         {/* Adds no layout of its own: a column that stretches its child. */}
-        <View ref={row}>{children}</View>
+        <FocusLiftView ref={row}>{children}</FocusLiftView>
       </RowContext.Provider>
     </SpatialNavigationNode>
   );
@@ -240,9 +241,9 @@ function FocusLine({
   const row = useRef<View>(null);
   return (
     <RowContext.Provider value={row}>
-      <View ref={row} style={flat(style)}>
+      <FocusLiftView ref={row} style={flat(style)}>
         {children}
-      </View>
+      </FocusLiftView>
     </RowContext.Provider>
   );
 }

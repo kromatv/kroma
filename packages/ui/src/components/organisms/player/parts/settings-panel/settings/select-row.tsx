@@ -23,6 +23,7 @@ function Line({ node, style }: Readonly<{ node?: ReactNode; style: TextStyle }>)
  * exactly as the D-pad would (§15).
  */
 export function SelectRow({
+  index,
   label,
   sub,
   selected,
@@ -32,20 +33,21 @@ export function SelectRow({
   leading,
   trailing,
 }: Readonly<{
+  index: number;
   label: ReactNode;
   sub?: ReactNode;
   selected?: boolean;
   focused: boolean;
-  onActivate: () => void;
-  onFocus: () => void;
+  onActivate: (index: number) => void;
+  onFocus: (index: number) => void;
   leading?: ReactNode;
   trailing?: ReactNode;
 }>) {
   return (
     <Pressable
       {...VIRTUAL_FOCUS}
-      onPress={onActivate}
-      onPointerEnter={onFocus}
+      onPress={() => onActivate(index)}
+      onPointerEnter={() => onFocus(index)}
       accessibilityRole="button"
       // The row's words may arrive as nodes rather than text, and a row named by
       // nothing is one of a list of identical rows.

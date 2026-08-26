@@ -1,4 +1,0 @@
-# Spinner  src/components/atoms/spinner/spinner.story.mdx
-
-## preview
-div "" rgb(0, 0, 0)/medium/normal/depends on user agent/normal/normal//none/none << pad=0,0,0,0 op=1.000 radius=[9999px 9999px 9999px 9999px] border=[3px var(--kroma-accent)|3px var(--kroma-tint-14)|3px var(--kroma-tint-14)|3px var(--kroma-tint-14)] anim=[@r-animation-11cv4x 900ms] size=[width=28px,height=28px]

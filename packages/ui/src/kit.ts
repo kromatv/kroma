@@ -94,6 +94,7 @@ export type {
   ToggleBinding,
 } from './lib/form';
 export { msg, useForm } from './lib/form';
+export { genreIcon } from './lib/genre-icon';
 export {
   DEFAULT_ICON_SIZE,
   DEFAULT_ICON_THICKNESS,
@@ -129,6 +130,7 @@ export { RingScopeProvider } from './lib/ring-scope';
 export { useShake } from './lib/shake';
 export type { SlotProps } from './lib/slot';
 export { Slot } from './lib/slot';
+export { SORT_ICON } from './lib/sort-icon';
 export type { SurfacePresentation } from './lib/surface-presentation';
 export { setSurfacePresentation } from './lib/surface-presentation';
 export type { SurfaceWidth } from './lib/surface-shell';
@@ -138,6 +140,7 @@ export type { CopyState } from './lib/use-copy';
 export { useCopy } from './lib/use-copy';
 export type { GrowingCount } from './lib/use-growing-count';
 export { useGrowingCount } from './lib/use-growing-count';
+export { useSettledValue } from './lib/use-settled-value';
 export type { WheelSpin } from './lib/wheel-paths';
 export {
   KROMA_WHEEL_COLORS,

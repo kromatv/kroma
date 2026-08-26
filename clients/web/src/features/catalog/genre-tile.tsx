@@ -10,6 +10,7 @@ import { useT } from '@kroma/ui';
 import {
   Box,
   Focusable,
+  genreIcon,
   gradient,
   Icon,
   Img,
@@ -20,7 +21,7 @@ import {
 } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { Animated, Easing, type ViewStyle } from 'react-native';
-import { genreIcon } from '#web/shared/lib/genre-icon';
+
 import { RouteLink } from '#web/shared/ui/route-link';
 
 const genreTile = svFor<{ root: StyleDecl; art: StyleDecl }>()({

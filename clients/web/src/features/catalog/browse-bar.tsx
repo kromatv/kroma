@@ -12,11 +12,12 @@ import {
   Box,
   Chip,
   color,
-  type IconName,
+  genreIcon,
   Row,
   ringRoomBlock,
   ringRoomInline,
   Select,
+  SORT_ICON,
   useBreakpoint,
 } from '@kroma/ui/kit';
 import {
@@ -27,7 +28,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { genreIcon } from '#web/shared/lib/genre-icon';
+
 import { PAGE_GUTTER } from '#web/shared/ui/page';
 
 const SORT_LABEL_KEY: Record<SortMode, MessageKey> = {
@@ -35,13 +36,6 @@ const SORT_LABEL_KEY: Record<SortMode, MessageKey> = {
   release: 'browse.sort.release',
   title: 'browse.sort.title',
   rating: 'browse.sort.rating',
-};
-
-const SORT_ICON: Record<SortMode, IconName> = {
-  added: 'history',
-  release: 'calendar',
-  title: 'sort-ascending-letters',
-  rating: 'star',
 };
 
 // Matches the mobile topbar's height, so the pinned bar docks under it below lg

@@ -8,7 +8,7 @@ import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { frostCoat } from '#ui/components/atoms/frost';
+import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { IconWell, type IconWellSize } from '#ui/components/atoms/icon-well';
 import { CONTROL, type ControlSize, controlRadius, entryDefaultSize } from '#ui/lib/field-shell';
@@ -99,7 +99,7 @@ function Root({
   const standalone = group === null;
   const shell = size ?? group?.size ?? entryDefaultSize();
   const metrics = CONTROL[shell];
-  const frost = frostCoat({ borderRadius: controlRadius(metrics) }, { on: standalone });
+  const frost = useFrostCoat({ borderRadius: controlRadius(metrics) }, { on: standalone });
   const pressable = onPress !== undefined;
 
   const at = useMemo(() => sort(children), [children]);

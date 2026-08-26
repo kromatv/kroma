@@ -1,8 +1,0 @@
-# Progress  src/components/atoms/progress/progress.story.mdx
-
-## preview
-div "" rgb(0, 0, 0)/medium/normal/depends on user agent/normal/normal//none/none << pad=0,0,0,0 op=1.000 bg=[var(--kroma-tint-25) var(--kroma-accent)] radius=[999px 999px 999px 999px 999px 999px 999px 999px] anim=[right 200ms] size=[height=4px] self=[stretch] abs=1
-
-## scene:Determinate and indeterminate
-div "" rgb(0, 0, 0)/medium/normal/depends on user agent/normal/normal//none/none << pad=0,0,0,0 op=1.000 bg=[var(--kroma-tint-25) var(--kroma-accent)] radius=[999px 999px 999px 999px 999px 999px 999px 999px] anim=[right 200ms] size=[height=4px] flex=[column:stretch:normal:nowrap:g0/0:n2] self=[stretch stretch] abs=1
-div "" rgb(0, 0, 0)/medium/normal/depends on user agent/normal/normal//none/none << pad=0,0,0,0 op=1.000 bg=[var(--kroma-tint-25) var(--kroma-accent)] radius=[999px 999px 999px 999px 999px 999px 999px 999px] anim=[@r-animation-1m98lkm 1200ms] size=[height=4px width=40%] flex=[column:stretch:normal:nowrap:g0/0:n2] self=[stretch stretch] abs=1

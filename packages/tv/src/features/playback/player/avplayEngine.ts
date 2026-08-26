@@ -211,8 +211,18 @@ export class AvplayEngine extends BaseTvEngine {
       /* ignore */
     }
   }
-  bufferedEnd(): number {
-    return this.baseSec + this.elSec;
+  // AVPlay reports no buffered range, and handing back the position would draw
+  // a zero-length buffer as though it had been measured.
+  bufferedEnd(): null {
+    return null;
+  }
+
+  debugRows(): { label: string; value: string }[] {
+    const { x, y, w, h } = this.displayRect;
+    return [
+      { label: 'Plane', value: 'AVPlay' },
+      { label: 'Display rect', value: `${x},${y} ${w}×${h}` },
+    ];
   }
 
   seekTo(absSec: number): void {

@@ -395,10 +395,13 @@ describe('AvplayEngine no-ops', () => {
     expect(names().filter((n) => n === 'setDisplayRect')).toHaveLength(before);
   });
 
-  it('reports the buffered edge as the absolute position it has reached', () => {
+  it('reports no buffered range, because AVPlay never gives one', () => {
     const { e, a } = make({ direct: false, startSec: 0 });
     a.listener().oncurrentplaytime?.(25000);
-    expect(e.bufferedEnd()).toBe(25);
+    // Handing back the position instead would draw a zero-length buffer on the
+    // seek bar as though it had been measured.
+    expect(e.position()).toBe(25);
+    expect(e.bufferedEnd()).toBeNull();
   });
 
   it('a direct source with nothing to resume prepares without seeking', () => {

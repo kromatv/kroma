@@ -160,13 +160,14 @@ export interface PlayerStats {
   meters?: PlayerMeter[];
 }
 
-/** The video surface kind the controller drives. `video` = an in-page element;
- *  the others render to a native plane BEHIND a transparent page. */
-export type PlayerSurface = 'video' | 'avplay' | 'mpv' | 'exo' | 'vlc';
+/** The video surface kind the controller drives. `video` = an in-page element,
+ *  `vlc` = the libVLC texture the Android shell mounts; `avplay` and `mpv`
+ *  render to a native plane BEHIND a transparent page. */
+export type PlayerSurface = 'video' | 'avplay' | 'mpv' | 'vlc';
 
 /** A video-plane rectangle in viewport FRACTIONS [0,1] (`x,y` = top-left corner,
- *  `w,h` = size). Used to shrink a NATIVE plane (AVPlay / mpv / ExoPlayer) into
- *  the settings card - those can't be CSS-transformed like an in-page <video>. */
+ *  `w,h` = size). Used to shrink a NATIVE plane (AVPlay / mpv) into the settings
+ *  card - those can't be transformed like a surface the chrome lays out. */
 export interface PlaneRect {
   x: number;
   y: number;
@@ -181,7 +182,7 @@ export interface PlaneRect {
 export interface PlayerController {
   cur: number;
   dur: number;
-  bufEnd: number;
+  bufEnd: number | null;
   /** Pending scrub target while dragging / D-pad seeking; null when settled. */
   seekPreview: number | null;
 

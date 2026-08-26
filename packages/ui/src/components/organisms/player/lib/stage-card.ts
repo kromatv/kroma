@@ -30,6 +30,10 @@ export interface StageCard {
    *  makes `scale` land the picture on the card. The vertical origin is always
    *  the middle: the picture is centred there, and the card is too. */
   origin: number;
+  /** The same landing expressed for a scale about the DEFAULT origin: how far
+   *  to move the stage sideways afterwards, as a fraction of its width. What
+   *  Android uses, because a `transformOrigin` blanks a transformed view there. */
+  shift: number;
   /** The same card as viewport fractions, for a native plane that cannot be
    *  transformed and is moved with `setPlaneRect` instead. */
   rect: PlaneRect;
@@ -76,10 +80,14 @@ export function stageCard(width: number, height: number, aspect?: number): Stage
   const middle = { picture: box.x + box.width / 2, card: free / 2 };
   const origin =
     1 - scale > 1e-6 ? (middle.card - scale * middle.picture) / (1 - scale) : middle.picture;
+  // Scaling about the middle leaves the picture's centre at 0.5 + (p - 0.5) * s;
+  // this is the rest of the way to the card's.
+  const shift = middle.card - (0.5 + (middle.picture - 0.5) * scale);
   return {
     picture,
     scale,
     origin,
+    shift,
     rect: {
       x: origin + (box.x - origin) * scale,
       y: (1 - card.height) / 2,

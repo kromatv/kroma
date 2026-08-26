@@ -1,4 +1,0 @@
-# SplashBackdrop  src/components/organisms/splash-backdrop/splash-backdrop.story.mdx
-
-## preview
-div "FilmOpen Water · 2024" [hidden=true]

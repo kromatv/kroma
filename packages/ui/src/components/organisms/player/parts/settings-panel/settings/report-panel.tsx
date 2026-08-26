@@ -58,11 +58,12 @@ export const ReportPanel = forwardRef<PanelHandle, ReportPanelProps>(function Re
       {REPORT_CATEGORIES.map((c, i) => (
         <SelectRow
           key={c.key}
+          index={i}
           label={t(c.labelKey)}
           sub={t(c.hintKey)}
           focused={focus.index === i}
-          onActivate={() => pick(i)}
-          onFocus={focus.hover(i)}
+          onActivate={pick}
+          onFocus={focus.setIndex}
         />
       ))}
       {state === 'failed' ? (

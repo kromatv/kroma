@@ -1,8 +1,11 @@
 // @vitest-environment jsdom
 
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
+import { configureRemote } from '#ui/lib/focus-remote';
+import { FocusScope } from '#ui/lib/focus-scope';
 import { layout } from '#ui/testing';
 import { cellWidth, columnsFor, Grid } from './grid';
 
@@ -74,5 +77,46 @@ describe('a grid that was handed no width', () => {
 
     layout(box, { width: 560 });
     expect(rows()).toHaveLength(4);
+  });
+});
+
+beforeAll(() => configureRemote());
+
+const TILES = ['Un', 'Deux', 'Trois', 'Quatre'];
+
+function twoByTwo(): HTMLElement {
+  const { container } = render(
+    <FocusScope>
+      <Grid columns={2} width={800}>
+        {TILES.map((label) => (
+          <Focusable key={label} label={label} autoFocus={label === 'Un'} />
+        ))}
+      </Grid>
+    </FocusScope>,
+  );
+  return container.firstElementChild as HTMLElement;
+}
+
+function stackFrom(label: string, box: HTMLElement): string[] {
+  const layers: string[] = [];
+  for (let node = screen.getByLabelText(label); node !== box; ) {
+    layers.push(node.style.zIndex);
+    node = node.parentElement as HTMLElement;
+  }
+  return layers;
+}
+
+describe('a focused tile', () => {
+  it('rises at every level between itself and the grid', () => {
+    const box = twoByTwo();
+
+    expect(stackFrom('Un', box)).toEqual(['1', '1', '1', '1', '1']);
+  });
+
+  it('leaves the tiles it paints over on the ground', () => {
+    const box = twoByTwo();
+
+    expect(stackFrom('Deux', box)).toEqual(['0', '0', '1', '1', '1']);
+    expect(stackFrom('Trois', box)).toEqual(['0', '0', '0', '0', '1']);
   });
 });

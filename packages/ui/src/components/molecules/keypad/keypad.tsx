@@ -15,7 +15,7 @@
 import { SpatialNavigationNode } from 'react-tv-space-navigation';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { frostCoat } from '#ui/components/atoms/frost';
+import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, styles, svFor } from '#ui/core';
@@ -23,6 +23,7 @@ import { HAND } from '#ui/lib/cursor';
 import { keyFace } from '#ui/lib/field-shell';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
+import { useStableCallback } from '#ui/lib/stable-callback';
 import { useTDefault } from '#ui/services/i18n';
 
 // A pad we draw has no click of its own, so a phone answers a key with its
@@ -44,6 +45,8 @@ const ROWS = [
   ['4', '5', '6'],
   ['7', '8', '9'],
 ] as const;
+
+const DELETE = 'delete';
 
 type KeyKind = 'digit' | 'delete';
 type KeypadSize = 'tv' | 'compact';
@@ -97,20 +100,81 @@ function Keypad({
   disabled,
 }: Readonly<KeypadProps>) {
   const t = useTDefault();
-  const tap = () => {
+  const gap = GAP[size];
+  const padRow = [s.padRow, { gap }];
+  // One handler for the whole pad, whose identity never moves: a closure per
+  // key carries the caller's own handler, and rebuilds all eleven keys with it
+  // every time the PIN behind them grows a digit.
+  const press = useStableCallback((value: string) => {
     void haptics?.selectionAsync();
-  };
-  const frost = frostCoat(keypadVariants({ kind: 'digit', size }).root);
-  const key = (label: string, onPress: () => void, kind: KeyKind = 'digit') => (
+    if (value === DELETE) onDelete();
+    else onDigit(value);
+  });
+  return (
+    <FocusColumn grid style={[HAND, s.pad, { gap }]}>
+      {ROWS.map((row) => (
+        <FocusRegion key={row.join('')} style={padRow}>
+          {row.map((d) => (
+            <PadKey
+              key={d}
+              value={d}
+              label={d}
+              size={size}
+              disabled={disabled}
+              autoFocus={autoFocus && d === '1'}
+              onPress={press}
+            />
+          ))}
+        </FocusRegion>
+      ))}
+      <FocusRegion style={padRow}>
+        {/* The spacer keeps 0 under the centre column with no OK key - in the
+            LAYOUT through the box, and in the NAVIGATOR through the node, which
+            occupies the row's first index without ever taking focus. */}
+        <PadSpacer size={size} />
+        <PadKey value="0" label="0" size={size} disabled={disabled} onPress={press} />
+        {/* The delete key draws a glyph, so its accessible name is a WORD: the
+            backspace character reaches a screen reader as "erase to the left",
+            or as nothing at all. */}
+        <PadKey
+          value={DELETE}
+          label={t('common.delete')}
+          kind="delete"
+          size={size}
+          disabled={disabled}
+          onPress={press}
+        />
+      </FocusRegion>
+    </FocusColumn>
+  );
+}
+
+interface PadKeyProps {
+  value: string;
+  label: string;
+  kind?: KeyKind;
+  size: KeypadSize;
+  disabled?: boolean;
+  autoFocus?: boolean;
+  onPress: (value: string) => void;
+}
+
+function PadKey({
+  value,
+  label,
+  kind = 'digit',
+  size,
+  disabled,
+  autoFocus,
+  onPress,
+}: Readonly<PadKeyProps>) {
+  const frost = useFrostCoat(keypadVariants({ kind, size }).root);
+  return (
     <Focusable
-      key={label}
-      onPress={onPress}
-      // The delete key draws a glyph, so its accessible name is a WORD: the
-      // backspace character reaches a screen reader as "erase to the left",
-      // or as nothing at all.
-      label={kind === 'delete' ? t('common.delete') : label}
+      onPress={() => onPress(value)}
+      label={label}
       disabled={disabled}
-      autoFocus={autoFocus && label === '1'}
+      autoFocus={autoFocus}
       focusScale={1.08}
       sv={keypadVariants}
       vars={{ kind, size }}
@@ -127,38 +191,6 @@ function Keypad({
         </>
       )}
     </Focusable>
-  );
-  return (
-    <FocusColumn grid style={[HAND, s.pad, { gap: GAP[size] }]}>
-      {ROWS.map((row) => (
-        <FocusRegion key={row.join('')} style={[s.padRow, { gap: GAP[size] }]}>
-          {row.map((d) =>
-            key(d, () => {
-              tap();
-              onDigit(d);
-            }),
-          )}
-        </FocusRegion>
-      ))}
-      <FocusRegion style={[s.padRow, { gap: GAP[size] }]}>
-        {/* The spacer keeps 0 under the centre column with no OK key - in the
-            LAYOUT through the box, and in the NAVIGATOR through the node, which
-            occupies the row's first index without ever taking focus. */}
-        <PadSpacer size={size} />
-        {key('0', () => {
-          tap();
-          onDigit('0');
-        })}
-        {key(
-          'delete',
-          () => {
-            tap();
-            onDelete();
-          },
-          'delete',
-        )}
-      </FocusRegion>
-    </FocusColumn>
   );
 }
 

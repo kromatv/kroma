@@ -13,7 +13,7 @@ import type { RingToken } from '#ui/core/theme';
 import { splitBoxLayers } from '#ui/lib/box-layers';
 import { ARROW, COLOUR_MOTION, HAND } from '#ui/lib/cursor';
 import { NO_OUTLINE } from '#ui/lib/field-shell';
-import { LIFTED } from '#ui/lib/focus-lift';
+import { GROUNDED, LIFTED } from '#ui/lib/focus-lift';
 import { WEB } from '#ui/lib/platform';
 import type { Resolve } from './focusable-types';
 
@@ -149,7 +149,7 @@ function coatStack(at: CoatStack): StyleProp<ViewStyle>[] {
     at.hovered ? at.hoveredStyle : null,
     at.pressed ? at.pressedStyle : null,
     at.focusVisible ? at.focusedStyle : null,
-    at.lifted ? LIFTED : null,
+    at.lifted ? LIFTED : GROUNDED,
     at.showRing && at.focusVisible ? focusRing(at.ringToken) : null,
     at.animated,
   ];

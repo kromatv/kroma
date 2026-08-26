@@ -4,7 +4,7 @@
 // unlike the web half which listens on it.
 
 import type { RemoteKey } from '@kroma/core';
-import { useEffect, useEffectEvent } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 import { BackHandler, type HWEvent, Platform, useTVEventHandler } from 'react-native';
 import {
   type PlayerKeysParams,
@@ -45,6 +45,29 @@ const REMOTE_KEYS: Record<string, RemoteKey> = {
 const useRemoteEvents: (handler: (event: HWEvent) => void) => void =
   typeof useTVEventHandler === 'function' ? useTVEventHandler : () => {};
 
+// A press arrives here from two transports: tvOS reads it off the event stream,
+// Android's new architecture off the focus root's key host. WHICH of them is
+// live is a property of the build, not something this hook can read, so a build
+// where both fire routes every press twice and the d-pad steps two controls for
+// one press of the remote.
+//
+// The first transport to speak owns the player for as long as it is on screen.
+// Same reasoning as the ring's (see lib/focus-remote): a time window would have
+// to guess a remote's auto-repeat interval, and holding the d-pad has to keep
+// seeking.
+type Transport = 'events' | 'host';
+
+function useOnePress(
+  params: Readonly<PlayerKeysParams>,
+): (key: RemoteKey, from: Transport) => void {
+  const owner = useRef<Transport | null>(null);
+  return useEffectEvent((key: RemoteKey, from: Transport) => {
+    owner.current ??= from;
+    if (owner.current !== from) return;
+    routeRemoteKey(params, key);
+  });
+}
+
 /**
  * Route the TV remote into the player; the native mirror of `usePlayerKeys.web.ts`
  * (same routing, different source: Metro picks this file, Vite the `.web` one).
@@ -59,17 +82,19 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
     return releaseMenuKey;
   }, []);
 
+  const route = useOnePress(params);
+
   const onRemote = useEffectEvent((evt: HWEvent) => {
     if (isRemoteKeyUp(evt)) return;
     const key = REMOTE_KEYS[evt.eventType];
     // focus/blur/pan and the long-press variants land here; ignoring them is the
     // whole point of an explicit map.
-    if (key) routeRemoteKey(params, key);
+    if (key) route(key, 'events');
   });
   useRemoteEvents(onRemote);
   // Android's new architecture never fires `useRemoteEvents`; there the focus
   // root's key host feeds the d-pad in through here instead (see focus-remote).
-  useRemoteKeys((key) => routeRemoteKey(params, key));
+  useRemoteKeys((key) => route(key, 'host'));
 
   // Android TV routes Back through BackHandler, not the TV event stream, so the
   // player has to claim it here or Android finishes the activity and quits the
@@ -79,7 +104,7 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
   // implements BackHandler *on top of* the same `menu` event REMOTE_KEYS already
   // maps to Back, so a claim there routes one press twice. NOT `OS` alone
   // either: on a phone the back button belongs to the navigator.
-  const onBack = useEffectEvent(() => routeRemoteKey(params, 'Back'));
+  const onBack = useEffectEvent(() => route('Back', 'host'));
   useEffect(() => {
     if (Platform.OS !== 'android' || !Platform.isTV) return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {

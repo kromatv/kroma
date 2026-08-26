@@ -1,9 +1,0 @@
-# Menu  src/components/organisms/menu/menu.story.mdx
-
-## preview
-div "Interstellar.2014.2160p.mkv" var(--kroma-text-muted)/16px/400/"Hanken Grotesk"/normal/25px/start/none/none << pad=0,0,0,0 op=1.000 flex=[row:center:normal:nowrap:g0/0:n2]
-svg "" width=13 height=13 stroke=var(--kroma-text) fill=none stroke-width=2 viewBox=0 0 24 24 << pad=0,0,0,0 op=1.000 radius=[999px 999px 999px 999px] tf=[scale(1)] anim=[transform 200ms] size=[width=32px,height=32px] flex=[row:center:normal:nowrap:g0/0:n2 column:center:center:nowrap:g0/0:n1]
-
-## scene:Its own trigger
-div "MA" rgba(255, 255, 255, 0.95)/9px/700/"Bricolage Grotesque"/normal/11px/start/none/none << pad=6,8,6,8 op=1.000 bg=[var(--kroma-surface-2) linear-gradient(135deg, rgb(52, 211, 153), rgb(16, 185, 129))] radius=[999px 999px 999px 999px 4px 4px 4px 4px 4px 4px 4px 4px] shadow=[0 16px 40px rgba(0, 0, 0, 0.45)] size=[width=24px,height=24px] flex=[row:center:normal:nowrap:g0/0:n2 column:center:center:nowrap:g0/0:n1 column:center:center:nowrap:g0/0:n1] abs=3
-div "Max" var(--kroma-text)/13px/500/"Hanken Grotesk"/normal/18px/start/none/none << pad=6,8,6,8 op=1.000 bg=[var(--kroma-surface-2)] radius=[999px 999px 999px 999px] flex=[row:center:normal:nowrap:g0/0:n2]

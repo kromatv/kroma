@@ -23,15 +23,31 @@ export interface VlcPlayerViewProps extends ViewProps {
   audioFilter?: string;
   /** Playback speed; 1 is normal. */
   rate?: number;
-  onPlayerTime?: (e: { nativeEvent: { timeMs: number; lengthMs: number } }) => void;
+  onPlayerTime?: (e: {
+    nativeEvent: {
+      timeMs: number;
+      lengthMs: number;
+      /** Pictures libVLC decoded but could not show. */
+      lostPictures?: number;
+      displayedPictures?: number;
+      /** Megabytes per second, straight from libVLC's media statistics. */
+      inputBitrate?: number;
+    };
+  }) => void;
   onPlayerLoad?: (e: { nativeEvent: { lengthMs: number } }) => void;
   onPlayerState?: (e: { nativeEvent: { state: string; percent?: number } }) => void;
   onPlayerError?: (e: { nativeEvent: { message: string } }) => void;
 }
 
+const nativeModule = requireOptionalNativeModule<{ releaseAll: () => Promise<void> }>('VlcPlayer');
+
 /** Null where the module is not built in, which is how a caller tests for it. */
-export const VlcPlayerView: ComponentType<VlcPlayerViewProps> | null = requireOptionalNativeModule(
-  'VlcPlayer',
-)
+export const VlcPlayerView: ComponentType<VlcPlayerViewProps> | null = nativeModule
   ? requireNativeView<VlcPlayerViewProps>('VlcPlayer')
   : null;
+
+/** Tear down every live libVLC core now, rather than when React unmounts the
+ * view. Safe to call when nothing is playing. */
+export function releaseVlcPlayers(): void {
+  void nativeModule?.releaseAll();
+}

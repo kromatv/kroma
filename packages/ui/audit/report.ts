@@ -124,25 +124,14 @@ function digest(measured: readonly Measured[], limit = 15): string {
     .map((kind) => `${kind} ${totals.smells[kind]}`)
     .join(', ');
   const a11y = measured.reduce((sum, entry) => sum + entry.access.findings.length, 0);
-  const restless = measured.filter((entry) => entry.work.commits > 1);
-  const worstMounts = [...restless]
-    .sort((a, b) => b.work.commits - a.work.commits)
-    .slice(0, 8)
-    .map(
-      (entry) =>
-        `  ${entry.work.commits} commits${entry.work.remounts ? ' (full re-render)' : ''}  ${entry.name} / ${entry.view}`,
-    );
   // The three summary lines lead, in this order, because they are what `--quiet`
   // reads and what a person wants first: the size, then whether anything is
   // wrong with it, then what there is to remove.
   return [
     `${totals.views} views  ${totals.nodes} nodes  ${totals.leaves} leaves  ${totals.overhead} structural`,
     a11y === 0 ? 'a11y: clean' : `a11y: ${a11y} findings`,
-    restless.length === 0
-      ? 'mounts: all settle in one commit'
-      : `mounts: ${restless.length} views need more than one commit`,
     smells,
-    ...worstMounts,
+    'interaction cost: bun run kit:perf',
     '',
     ...worst.map(
       (entry) =>

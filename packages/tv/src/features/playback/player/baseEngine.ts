@@ -127,7 +127,7 @@ export abstract class BaseTvEngine implements TvEngine {
 
   abstract play(): void;
   abstract pause(): void;
-  abstract bufferedEnd(): number;
+  abstract bufferedEnd(): number | null;
   abstract seekTo(absSec: number): void;
   abstract setAudioRendition(rendition: number): void;
   abstract destroy(): void;

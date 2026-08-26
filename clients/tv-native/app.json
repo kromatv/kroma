@@ -60,6 +60,7 @@
       "./plugins/with-keep-screen-on",
       "./plugins/with-top-shelf",
       "./plugins/with-tv-blur-link",
+      "./plugins/with-conscrypt",
       "expo-video",
       "@kroma/media3-ffmpeg"
     ],

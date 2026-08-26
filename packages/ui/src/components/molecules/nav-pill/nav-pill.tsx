@@ -114,12 +114,15 @@ function Root({
   };
 
   const targets = useRef(new Map<string, SlideTarget>());
-  const enrol = useEffectEvent((id: string, target: SlideTarget) => {
+  // Plain arrows, not effect events: these go into the context, and
+  // `useEffectEvent` returns a new closure per render, which re-enrolled every
+  // item on every one.
+  const enrol = (id: string, target: SlideTarget) => {
     targets.current.set(id, target);
-  });
-  const withdraw = useEffectEvent((id: string) => {
+  };
+  const withdraw = (id: string) => {
     targets.current.delete(id);
-  });
+  };
   // The rect is read once, as the preview lands: item geometry cannot move
   // under a finger mid-slide.
   const [hover, setHover] = useState<{ id: string; rect: LensRect | null } | null>(null);
@@ -206,10 +209,7 @@ function Root({
   );
 
   // Left to the React Compiler, which memoises this on the inputs it actually
-  // reads. A hand-written `useMemo` here cannot be spelled correctly: its deps
-  // would have to name effect events, which biome requires be left OUT of a
-  // dependency array - and the mismatch is what makes the compiler give up on
-  // the whole component.
+  // reads.
   const context = {
     size,
     labels: labelPolicy,

@@ -1,89 +1,100 @@
-# The DOM audit
+# The kit audit
 
-Every story view in the kit, rendered through react-native-web in jsdom, is
-measured three ways, and each measurement has a committed baseline in this
-directory:
+Every story view in the kit, rendered through react-native-web in jsdom, measured
+three ways. **Nothing measured is committed.** There are no baseline files: each
+check is either a rule that is simply never allowed, or a worklist you read.
 
-| What | Baseline | Catches |
+| What | Where | Catches |
 | --- | --- | --- |
-| Node count + depth (`cost.ts`) | `budget.json` | DOM growing back, or shrinking without the win being committed |
-| Paint signature (`paint.ts`) | `paint/<story>.txt` | The design moving: one line per content leaf, carrying its typography plus the visual context its ancestors accumulate (padding sums, colours, radii, opacity products, transforms, animations, distributing flex containers) |
-| Accessible tree (`a11y.ts`) | `a11y/<story>.txt` | Semantics lost with a wrapper: roles, names, states, tab stops, plus rule findings (nameless controls, stateless roles, dangling references) |
-| Mount commits (`work.ts`) | third number in `budget.json` | CPU cost the compiler cannot remove: a view whose mount takes N commits repeats N-1 re-renders on every screen that shows it. Counted with the React Profiler; deterministic in jsdom |
+| Broken views | `audit.test.tsx` | A story that stopped rendering |
+| Accessible tree (`a11y.ts`) | `audit.test.tsx` | Nameless controls, roles claiming a state they never report, aria references pointing at nothing |
+| List-render allocations (`fanout-scan.ts`) | `audit.test.tsx` | A prop the React Compiler cannot cache, so a whole list re-renders when one item changed |
+| DOM structure (`cost.ts`) | `bun run kit:dom` | Elements that paint nothing, carry no semantics and hold no text |
+| Interaction cost (`sweep.ts`, `perf.ts`) | `bun run kit:perf` | Components destroyed and rebuilt by a single press |
 
-All three read the DOM through `dom.ts`: what a style value means, what counts as a
-child (an `<svg>` is one opaque leaf), and the walk that names where a finding is. A
-quirk absorbed there is absorbed once.
+The first three are gates because they pass today, so a failure means something
+broke rather than something was already broken. The last two are worklists: the
+kit still carries real faults in both, and a gate born red is not a gate.
 
-The a11y rules only assert what the DOM proves, which is why two of them are
-narrower than they look. A range (`role="slider"`, react-native-web's spelling of
-`adjustable`) is never reported for taking no tab stop, because it is dragged and
-nudged by the key map of the surface that owns it, and neither is in the tree. What
-it is held to is a name and an `aria-valuenow`. A text entry is named by its
-placeholder when nothing else names it (HTML-AAM), never by the value it happens to
-hold. `a11y.test.ts` pins every rule.
+## Why it runs the React Compiler
 
-The gate is `dom-budget.test.tsx`, which runs inside `bun run test`, so CI holds all
-three. The point of the trio is that a reduction is only a reduction when the node
-count goes down while the other two files do not change at all.
+The audit is its own vitest project (`--project audit`) and it is the only one
+that runs `babel-plugin-react-compiler`. Without it every interaction would look
+catastrophic and the numbers would blame the code for work the shells already
+remove. Measuring uncompiled React tells you nothing about what ships.
 
-## The loop
+## Interaction cost, and why mount cost was not enough
+
+Mount cost is the easy half: it is the same for everyone and no memoisation
+changes it. What breaks a television is the SECOND render, the one a keypress
+causes.
+
+`kit:perf` presses one control in every story view and reports two numbers.
+**Churn** is the one that matters: components React destroyed and built again
+even though nothing new appeared on screen. A press that opens a menu mounts a
+menu, and that is the button working; a press that rebuilds forty keys that were
+already there is a bug no memoisation can soften, because a remount throws away
+native views, animated values and focus.
 
 ```bash
-bun run kit:dom                 # worklist, worst structural overhead first
-bun run kit:dom --help          # every flag, and what a tree's annotations mean
-bun run kit:dom --smells        # only the components carrying removable structure
-bun run kit:dom --quiet         # the three summary lines, for a script
-bun run kit:dom ListRow         # one component: annotated tree + scoped digest
-# edit the component
-KROMA_DOM_ONLY=ListRow bun x vitest run --project web packages/ui/audit/dom-budget.test.tsx
-#   "down to N nodes ... tighten it"  -> the reduction is real, paint unmoved
-#   "<id> line N / was / now"         -> the design moved: fix or revert
-bun run kit:dom --write         # move all three baselines; commit them with the change
+bun run kit:perf                  # the worklist, worst first
+KROMA_PERF_ONLY=keyboard bun run kit:perf
 ```
 
-In the tree dump, `[paints]` means the element draws or clips something,
-`[padding-… width …]` is the layout it contributes, and an empty `[]` is a
-candidate. The smells (`passthrough`, `wrapper`, `glyph-wrapper`, `void`,
-`hidden-subtree`) in the report name the candidates outright.
+It reads React's own fiber tree through `__REACT_DEVTOOLS_GLOBAL_HOOK__`
+(`hook.ts`), installed as a setup file because the renderer reads that hook once,
+when it initialises. A `<Profiler>` can say a commit took 3 ms; only the fiber
+tree can say which forty components did the work, and whether they re-rendered or
+were thrown away.
 
-## What is allowed to go
+## The DOM worklist
 
-An element earns its place by doing at least one of: painting (background, border,
-shadow, transform, translucency, clipping, positioning), animating, carrying
-semantics (role, aria, tab stop, live region), holding text, or distributing two or
-more children with flex. Everything else is structure, and structure can move:
+```bash
+bun run kit:dom                 # worst structural overhead first
+bun run kit:dom --help          # every flag
+bun run kit:dom --smells        # only the components carrying removable structure
+bun run kit:dom --quiet         # the summary lines, for a script
+bun run kit:dom ListRow         # one component: annotated tree + scoped digest
+```
 
-- a wrapper that only shapes its one child hands that style to the child
-  (`<Box asChild>` / `lib/slot.tsx` is the tool);
-- a box that repeats what its parent declares merges upward;
-- a part that renders `<Box>{children}</Box>` with nothing of its own returns
-  `children`;
-- a ScrollView's `contentContainerStyle` is already an element, so style it instead
-  of nesting a box (a horizontal one lays content out as a row: name
-  `flexDirection` when the content is a column);
-- an element only one state needs renders only in that state.
+An element earns its place by doing at least one of: painting, animating,
+carrying semantics, holding text, or distributing two or more children with flex.
+Everything else is structure, and structure can move. In a tree dump, `[paints]`
+means the element draws or clips something, a layout list is what it contributes,
+and an empty `[]` is a candidate.
 
-## The runtime side
+## What the compiler skipped, and what it could not cache
 
-`bun run kit:compiler [needle]` reports which components the React Compiler SKIPS,
-silently, per file, with its reason. Every shell runs the compiler (web, the TV
-browsers, tv-native and mobile through Expo), so a skip means the component
-re-renders unmemoised everywhere. The dominant cause is a ref written or read during
-render. The sanctioned replacements are worked into `focusable.tsx` and
-`alphabet-rail/` as reference implementations: `useLayoutEffect` for latest-handler
-refs, `useEffectEvent` for gesture and key layers, `useState(() => ...)` lazy init
-for Animated values and PanResponders, render-phase setState for previous-value
-tracking, module-level functions for ref-callback writes and try/catch bodies, and
-hoisting a RefObject OUT of any props bag (an aggregate holding a ref taints every
-member access). When the compiler says "existing memoization could not be
-preserved", the manual `useMemo` usually never hit at all. Delete it and let the
-compiler own it.
+Two different failures, two different tools.
+
+`bun run kit:compiler [needle]` reports components the React Compiler SKIPS,
+silently, with its reason. A skip means the component re-renders unmemoised in
+every shell. The dominant cause is a ref written or read during render.
+
+`bun run kit:fanout [needle]` reports what the compiler compiled but could not
+cache: a function or object literal written into a JSX prop inside a `.map()`.
+There is no cache slot per iteration, so the value is new every render and the
+whole list re-renders. The scan reads the compiler's OUTPUT, not the source,
+because the compiler hoists most of these on its own and a source-level reading
+cries wolf on more than half.
+
+## Two traps worth writing down
+
+**`useEffectEvent` is not referentially stable.** React returns a new closure
+from it on every render (`updateEvent` in react-dom). It is for reading fresh
+values inside an effect. Handing one to a memoised child re-renders that child
+every time, which is why React's own docs say not to pass an effect event to
+another component. When the FUNCTION ITSELF is a prop, use
+`#ui/lib/stable-callback`.
+
+**The compiler cannot memoise a call to an imported function.** `urlRows(letters)`
+was recomputed on every render and the compiler did not even guard the grid that
+read it. A member read off a module constant (`URL_ROWS[letters]`) it can hold
+still. If a helper returns a fresh array or object, make it a table.
 
 ## Trust the guard, not the eye
 
-jsdom quirks the analyzers already absorb: shorthand properties are not expanded
-into longhands (`gap`, `border-radius`, `transition` are read through fallbacks),
-clock-derived text is redacted, `TZ` is pinned. If a new signature line churns
-between two identical runs, the fix belongs in `paint.ts`, not in a looser
-assertion.
+jsdom quirks the analyzers absorb: shorthand properties are not expanded into
+longhands (`gap`, `border-radius`, `transition` are read through fallbacks),
+clock-derived text is redacted, `TZ` is pinned. A quirk absorbed in `dom.ts` is
+absorbed once.

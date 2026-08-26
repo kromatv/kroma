@@ -33,9 +33,8 @@ afterEach(() => {
 });
 
 describe('getEnginePref / setEnginePref', () => {
-  // The pref is a reactive store (settings/store.ts) that reads storage ONCE at
-  // module creation and is the in-process source of truth afterwards, so each
-  // test imports a fresh module instance with its storage stub already up.
+  // The pref reads storage on every get until this session picks an engine, so
+  // each test imports a fresh module instance to reset that choice.
   async function fresh(storage: unknown) {
     vi.resetModules();
     vi.stubGlobal('localStorage', storage);
@@ -77,6 +76,29 @@ describe('getEnginePref / setEnginePref', () => {
     expect(m.getEnginePref()).toBe('auto');
     expect(() => m.setEnginePref('mpv')).not.toThrow();
     expect(m.getEnginePref()).toBe('mpv');
+  });
+
+  it('reads a store installed after this module was evaluated', async () => {
+    const late = new Map<string, string>();
+    const m = await fresh({
+      getItem: (k: string) => late.get(k) ?? null,
+      setItem: (k: string, v: string) => void late.set(k, v),
+    });
+
+    expect(m.getEnginePref()).toBe('auto');
+    late.set('kroma:engine', 'vlc');
+
+    expect(m.getEnginePref()).toBe('vlc');
+  });
+
+  it('keeps the choice made here over a later store change', async () => {
+    const store = fakeStorage();
+    const m = await fresh(store);
+
+    m.setEnginePref('remux');
+    store._map.set('kroma:engine', 'vlc');
+
+    expect(m.getEnginePref()).toBe('remux');
   });
 });
 

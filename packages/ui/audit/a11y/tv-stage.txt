@@ -1,5 +1,0 @@
-# TvStage  src/components/templates/tv-stage/tv-stage.story.mdx
-
-## preview
-button "Play" tab
-button "More" tab

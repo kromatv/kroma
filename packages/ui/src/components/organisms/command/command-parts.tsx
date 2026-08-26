@@ -96,8 +96,8 @@ function List() {
               item={item}
               open={item.id === selected}
               cursor={item.id === cursor}
-              onHover={() => point(item)}
-              onPress={() => choose(item)}
+              onHover={point}
+              onPress={choose}
             />
           ))}
           {index === sections.length - 1 ? null : (

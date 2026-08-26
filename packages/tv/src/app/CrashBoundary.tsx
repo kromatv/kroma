@@ -6,7 +6,9 @@ import { crashReportingPrefStore } from '#tv/app/crashReportingPref';
 interface Props {
   client: KromaClient | null;
   platform: string;
-  fallback: ReactNode;
+  /** Rendered instead of the broken tree. Given the reset, so the screen can
+   *  offer to try again rather than only telling the viewer to. */
+  fallback: (retry: () => void) => ReactNode;
   children: ReactNode;
 }
 
@@ -32,7 +34,11 @@ export class CrashBoundary extends Component<Props, State> {
     client.reportCrash(report).catch(() => {});
   }
 
+  private readonly retry = (): void => {
+    this.setState({ crashed: false });
+  };
+
   render(): ReactNode {
-    return this.state.crashed ? this.props.fallback : this.props.children;
+    return this.state.crashed ? this.props.fallback(this.retry) : this.props.children;
   }
 }

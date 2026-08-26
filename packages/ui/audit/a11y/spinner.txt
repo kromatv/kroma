@@ -1,4 +1,0 @@
-# Spinner  src/components/atoms/spinner/spinner.story.mdx
-
-## preview
-progressbar "" [busy=true]

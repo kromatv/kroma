@@ -4,8 +4,9 @@ import {
   cloneElement,
   type ReactElement,
   type ReactNode,
+  useSyncExternalStore,
 } from 'react';
-import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import { Platform, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { type CornerValue, onPaper, radiusValue, styles } from '#ui/core';
 import { backdropBlur } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
@@ -19,8 +20,18 @@ interface FrostBackdropProps {
   /** Open string union: expo-blur's tint set is wider than the three the kit
    *  asks for, and the registered component must remain assignable. */
   tint?: 'light' | 'dark' | 'default' | (string & {});
+  /** Android only. expo-blur draws NOTHING there unless it is told how: its
+   *  `blurMethod` defaults to `'none'`, so a frost that works on Apple TV is
+   *  invisible on Android until this is passed. Open union for the same reason
+   *  as `tint`. */
+  blurMethod?: 'none' | 'dimezisBlurView' | 'dimezisBlurViewSdk31Plus' | (string & {});
   style?: StyleProp<ViewStyle>;
 }
+
+// `dimezisBlurView` rather than the Sdk31Plus variant: that one needs API 31 and
+// the oldest sets this ships to are Android 9. Undefined off Android, where the
+// platform blurs on the GPU and the prop means nothing.
+const ANDROID_BLUR = Platform.OS === 'android' ? 'dimezisBlurView' : undefined;
 
 let PlatformFrost: ComponentType<FrostBackdropProps> | null = null;
 
@@ -54,15 +65,30 @@ interface FrostCoat {
 
 const BARE: FrostCoat = { style: null, layer: null };
 
+// A rendering mode rather than a per-surface prop, and one every mounted
+// surface has to hear: the coat is computed during render, so a bare module flag
+// would only take effect on whatever happened to render next. The listener set
+// is what makes it a switch instead of a startup constant.
 let frostOn = true;
+const listeners = new Set<() => void>();
+const frostEnabled = (): boolean => frostOn;
+const onFrostChange = (listener: () => void): (() => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
 
 /**
- * Turn every frost in the app off, or back on. Call it once at startup: a panel
- * that composites blur on the CPU, or a viewer who asked the platform to reduce
- * transparency, wants the plain fill everywhere rather than per screen.
+ * Turn every frost in the app off, or back on, wherever it is already on
+ * screen: a television whose GPU composites the blur on the CPU pays for every
+ * frosted control at once, and the plain fill underneath is what the design
+ * falls back to anyway.
  */
 function setFrostEnabled(on: boolean): void {
+  if (on === frostOn) return;
   frostOn = on;
+  for (const listener of listeners) listener();
 }
 const EMPTY: ViewStyle = {};
 
@@ -75,8 +101,16 @@ const webCoats = new Map<number, FrostCoat>();
  * The frost a glass surface wears, for a control that places the layer itself.
  * `surface` is the surface's own resolved style: the native layer takes its
  * corner from that rather than being told one twice.
+ *
+ * A hook, because {@link setFrostEnabled} has to reach a surface that is already
+ * drawn: call it at the top of the control, like any other.
  */
-function frostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {}): FrostCoat {
+function useFrostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {}): FrostCoat {
+  useSyncExternalStore(onFrostChange, frostEnabled, frostEnabled);
+  return coatOf(surface, options);
+}
+
+function coatOf(surface: StyleProp<ViewStyle>, options: FrostOptions): FrostCoat {
   const { on = true, amount = 12, tint } = options;
   if (!on || !frostOn) return BARE;
   if (WEB) {
@@ -94,6 +128,7 @@ function frostCoat(surface: StyleProp<ViewStyle>, options: FrostOptions = {}): F
       <PlatformFrost
         // expo-blur's 0-100 scale: about four steps to the CSS pixel.
         intensity={Math.min(100, amount * 4)}
+        blurMethod={ANDROID_BLUR}
         tint={tint ?? (onPaper() ? 'light' : 'dark')}
         style={[s.fill, s.clip, typeof corner === 'number' ? { borderRadius: corner } : null]}
       />
@@ -133,17 +168,19 @@ interface FrostProps extends FrostOptions {
  * lib/slot.tsx).
  *
  * A control whose child is a render function cannot take a layer this way:
- * those call `frostCoat` and place `layer` themselves.
+ * those call `useFrostCoat` and place `layer` themselves.
  */
 function Frost({ children, ...options }: Readonly<FrostProps>) {
   const el = Children.only(children) as ReactElement<Record<string, unknown>>;
-  const coat = frostCoat(cornerOf(el.props), options);
+  const coat = useFrostCoat(cornerOf(el.props), options);
   if (!coat.style && !coat.layer) return el;
   const merged = mergeSlotProps(coat.style ? { style: coat.style } : {}, el.props);
   if (coat.layer) {
     const inner = el.props.children;
     if (typeof inner === 'function') {
-      throw new TypeError('<Frost> cannot layer a render-function child; call frostCoat() instead');
+      throw new TypeError(
+        '<Frost> cannot layer a render-function child; call useFrostCoat() instead',
+      );
     }
     merged.children = [
       cloneElement(coat.layer as ReactElement, { key: 'frost' }),
@@ -154,4 +191,4 @@ function Frost({ children, ...options }: Readonly<FrostProps>) {
 }
 
 export type { FrostBackdropProps, FrostCoat, FrostOptions, FrostProps };
-export { Frost, frostCoat, registerFrost, setFrostEnabled };
+export { Frost, registerFrost, setFrostEnabled, useFrostCoat };

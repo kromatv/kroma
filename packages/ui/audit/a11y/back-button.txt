@@ -1,4 +1,0 @@
-# BackButton  src/components/molecules/back-button/back-button.story.mdx
-
-## preview
-button "Back" tab

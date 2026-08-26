@@ -5,8 +5,6 @@ import type { ReactElement } from 'react';
 import { onScreen } from '#ui/testing';
 import { type Access, accessOf } from './a11y';
 import { type Cost, costOf } from './cost';
-import { signatureOf } from './paint';
-import { measured, type Work, workOf } from './work';
 
 interface Measured {
   id: string;
@@ -15,13 +13,9 @@ interface Measured {
   file: string;
   view: string;
   cost: Cost;
-  /** What the view looks like, leaf by leaf. See `paint.ts`. */
-  signature: readonly string[];
   /** What a screen reader gets from it, and what is wrong with that. See
    * `a11y.ts`. */
   access: Access;
-  /** What mounting it cost the CPU. See `work.ts`. */
-  work: Work;
   error?: string;
 }
 
@@ -82,23 +76,14 @@ const NO_COST: Cost = {
 // stopped rendering is a finding, not a gap in the table.
 function measure(story: Story, view: string, ui: () => ReactElement): Measurement {
   const common = { id: story.id, name: story.name, view };
-  const key = {};
   try {
-    const roots = rootsOf(render(measured(key, onScreen(ui()))).container);
-    return {
-      ...common,
-      cost: costOf(roots),
-      signature: signatureOf(roots),
-      access: accessOf(roots),
-      work: workOf(key),
-    };
+    const roots = rootsOf(render(onScreen(ui())).container);
+    return { ...common, cost: costOf(roots), access: accessOf(roots) };
   } catch (error) {
     return {
       ...common,
       cost: NO_COST,
-      signature: [],
       access: { lines: [], findings: [] },
-      work: { commits: 0, remounts: false },
       error: (error as Error).message.split('\n')[0],
     };
   } finally {

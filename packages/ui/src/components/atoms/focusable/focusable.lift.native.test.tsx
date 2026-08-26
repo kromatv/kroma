@@ -42,4 +42,9 @@ describe('the focus lift on native', () => {
     row();
     expect(box('Deux').style.zIndex).not.toBe('1');
   });
+
+  it('grounds them on a number rather than on nothing', () => {
+    row();
+    expect(box('Deux').style.zIndex).toBe('0');
+  });
 });

@@ -37,11 +37,12 @@ export const AudioFilterPanel = forwardRef<PanelHandle, AudioFilterPanelProps>(
           {MODES.map((m, i) => (
             <SelectRow
               key={m}
+              index={i}
               label={labels[m]}
               selected={m === value}
               focused={focus.index === i}
-              onActivate={() => pick(i)}
-              onFocus={focus.hover(i)}
+              onActivate={pick}
+              onFocus={focus.setIndex}
             />
           ))}
         </Box>

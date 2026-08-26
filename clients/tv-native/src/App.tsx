@@ -74,6 +74,12 @@ setServerBrowse(browseForServers);
 // The platform's backdrop blur, which frosts the kit's glass surfaces (episode
 // cards, glass buttons). tvOS composites UIVisualEffectView on the GPU, so the
 // shell hands it over; the kit itself stays free of the dependency (see Frost).
+//
+// Android is handed no blur TARGET, which expo-blur 57 would need to blur a
+// real backdrop there: pointed at the TV stage it sampled the wrong region
+// (the canvas is drawn through a scale the blur cannot see) and outside it,
+// nothing at all, at 21fps. What it draws instead is the tint, which is what
+// the design falls back to anyway.
 registerFrost(BlurView);
 
 // Android builds the libVLC plane; Apple has no module and registers nothing,

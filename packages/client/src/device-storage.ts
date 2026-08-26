@@ -13,12 +13,23 @@ export interface SessionStorage {
 }
 
 let installed: SessionStorage | null = null;
+const watchers = new Set<() => void>();
 
 /** Install the device store for a platform with no `localStorage` (React
  * Native has none; without this every save here is a silent no-op). Call it
  * once, before the app reads a session. */
 export function setSessionStorage(storage: SessionStorage | null): void {
   installed = storage;
+  for (const watcher of watchers) watcher();
+}
+
+/** Notified whenever the device store is swapped, so anything a module derived
+ * from a stored value at evaluation time can derive it again: a native shell
+ * installs its store only once the session file has been read, which is after
+ * every module has been evaluated. Returns an unsubscribe. */
+export function onDeviceStorageChange(listener: () => void): () => void {
+  watchers.add(listener);
+  return () => watchers.delete(listener);
 }
 
 /** The device store this platform is using, or null where there is none.

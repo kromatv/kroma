@@ -22,7 +22,9 @@ const seekTrack = sv({ base: { _focus: { ring: 'focusWash' } } });
 export interface SeekBarProps {
   cur: number;
   dur: number;
-  bufEnd: number;
+  /** How far ahead the backend holds, in absolute seconds. `null` when it has
+   *  none to report, and then the track carries no buffered fill at all. */
+  bufEnd: number | null;
   seekPreview: number | null;
   /** Empty = one continuous segment over the whole runtime. */
   chapters: Chapter[];
@@ -140,7 +142,7 @@ export function SeekBar({
   );
 
   const shownMs = shown * 1000;
-  const bufMs = bufEnd * 1000;
+  const bufMs = bufEnd == null ? null : bufEnd * 1000;
   const playheadX = offsetAt(shownMs, segs, trackWidth);
 
   let previewSec: number | null = null;
@@ -209,7 +211,7 @@ export function SeekBar({
           {segs.map((seg) => {
             const span = Math.max(1, seg.endMs - seg.startMs);
             const played = clamp01((shownMs - seg.startMs) / span);
-            const buffed = clamp01((bufMs - seg.startMs) / span);
+            const buffed = bufMs == null ? null : clamp01((bufMs - seg.startMs) / span);
             return (
               // `flex={span}`: a segment is as wide as its chapter is long, so the
               // playhead agrees with its fill. `h="100%"` mints one shared style,
@@ -225,12 +227,14 @@ export function SeekBar({
               >
                 {/* Insets vary per tick, so they bypass the shared cache via `style`.
                     Not scaleX: that would stretch the gradient and the pill caps. */}
-                <Box
-                  fill
-                  radius="pill"
-                  bg={seekBar().buffered}
-                  style={{ right: `${(1 - buffed) * 100}%` }}
-                />
+                {buffed == null ? null : (
+                  <Box
+                    fill
+                    radius="pill"
+                    bg={seekBar().buffered}
+                    style={{ right: `${(1 - buffed) * 100}%` }}
+                  />
+                )}
                 <Box
                   fill
                   radius="pill"

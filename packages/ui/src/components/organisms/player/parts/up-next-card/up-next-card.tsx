@@ -21,7 +21,9 @@ export interface UpNextItem {
 
 export interface UpNextCardProps {
   item: UpNextItem;
-  onActivate: () => void;
+  /** Handed the card's `item`, so one handler serves the whole sheet rather
+   *  than a closure per card. */
+  onActivate: (item: UpNextItem) => void;
   /** The first card of an opening sheet takes the focus. */
   autoFocus?: boolean;
   /** False for the parked PEEK, which is a picture of the sheet rather than the
@@ -118,7 +120,7 @@ export function UpNextCard({
           {interactive ? (
             <Focusable
               label={item.title}
-              onPress={onActivate}
+              onPress={() => onActivate(item)}
               autoFocus={autoFocus}
               focusScale={1}
               style={s.hit}

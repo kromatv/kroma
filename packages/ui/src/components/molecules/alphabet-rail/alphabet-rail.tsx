@@ -8,9 +8,10 @@
 // <ListRow> takes - because a scrub is a hit test over POSITIONS, and a letter
 // cannot know where it sits in a rail it cannot see.
 
-import { Children, isValidElement, type ReactNode, useEffectEvent, useMemo, useRef } from 'react';
+import { Children, isValidElement, type ReactNode, useMemo, useRef } from 'react';
 import { type StyleProp, useWindowDimensions, type View, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { useStableCallback } from '#ui/lib/stable-callback';
 import {
   AlphabetRailContext,
   type AlphabetRailState,
@@ -67,18 +68,14 @@ function Root({ label, range, onJump, style, children }: Readonly<AlphabetRailRo
   const rail = useRef<View>(null);
   const { bubble, panHandlers } = useLetterScrub(rail, slots, rowH, onJump);
 
-  // An effect event rather than a ref the render writes: stable for the
-  // context, always the latest handler, and legal for the compiler to memoise
-  // around. The context itself is a plain object - the compiler memoises it on
-  // the inputs it actually reads, where the useMemo this replaces keyed on a
-  // `lit` array rebuilt every render and so never hit at all.
-  const jump = useEffectEvent((letter: string) => onJump(letter));
+  // Not `useEffectEvent`: React returns a new closure from that on every render,
+  // so every letter's `onPress` would move and the whole rail would rebuild
+  // under a lens that only touched three of them.
+  const jump = useStableCallback(onJump);
   const lit = rangeIndices(slots, range);
   // Left to the React Compiler, which memoises this on the inputs it actually
-  // reads. A hand-written `useMemo` here cannot be spelled correctly: its deps
-  // would have to name effect events, which biome requires be left OUT of a
-  // dependency array - and the mismatch is what makes the compiler give up on
-  // the whole component.
+  // reads. A hand-written `useMemo` here would key on a `lit` array rebuilt
+  // every render, and so never hit at all.
   const context: AlphabetRailState = {
     indexOf: (value) => slots.findIndex((slot) => slot.value === value),
     lit,

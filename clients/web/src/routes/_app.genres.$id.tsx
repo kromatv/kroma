@@ -9,7 +9,7 @@ import {
   type SortMode,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, EmptyState, PageHeader } from '@kroma/ui/kit';
+import { Box, EmptyState, genreIcon, PageHeader } from '@kroma/ui/kit';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
@@ -17,7 +17,7 @@ import { useMemo } from 'react';
 import { BrowseBar } from '#web/features/catalog/browse-bar';
 import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
 import { isAuthed } from '#web/shared/lib/api';
-import { genreIcon } from '#web/shared/lib/genre-icon';
+
 import { catalogQueries } from '#web/shared/lib/queries';
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
 

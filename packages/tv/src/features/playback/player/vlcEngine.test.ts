@@ -2,6 +2,7 @@ import type { KromaClient, MediaItem } from '@kroma/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { EngineListeners } from '#tv/features/playback/player/engine';
 import { VlcEngine } from '#tv/features/playback/player/vlcEngine';
+import { registerVlcPlane } from '#tv/features/playback/player/vlcPlane';
 
 const listeners = (): EngineListeners => ({
   onTime: vi.fn(),
@@ -98,12 +99,13 @@ describe('VlcEngine controls', () => {
     expect(engine().e.audioFilterSupported()).toBe(true);
   });
 
-  // There is no anchored master to re-anchor onto, and VLC reports no buffered
-  // range, so the chrome draws no phantom buffer ahead of the picture.
-  it('seeks natively and claims nothing is buffered past the position', () => {
+  // There is no anchored master to re-anchor onto, and nothing to draw ahead of
+  // the picture: this backend never reports a buffered range at all.
+  it('seeks natively and never claims a buffered range', () => {
     const { e } = engine();
     e.reportTime(30_000, 1_470_000);
-    expect(e.bufferedEnd()).toBe(30);
+    expect(e.position()).toBe(30);
+    expect(e.bufferedEnd()).toBeNull();
     e.setAudioRendition(1);
     expect(e.viewState.audioTrack).toBe(1);
   });
@@ -165,5 +167,64 @@ describe('VlcEngine state', () => {
     const rows = e.debugRows();
     expect(rows.map((r) => r.label)).toContain('VLC buffer');
     expect(rows.find((r) => r.label === 'VLC buffer')?.value).toBe('60%');
+  });
+
+  it('reports a full cache as playing, not as buffering', () => {
+    const { e } = engine();
+
+    e.reportState('playing');
+    e.reportState('buffering', 100);
+
+    expect(e.debugRows().find((r) => r.label === 'VLC state')?.value).toBe('playing');
+  });
+
+  it('reports a full cache as paused while the film is held', () => {
+    const { e } = engine();
+
+    e.reportState('paused');
+    e.reportState('buffering', 100);
+
+    expect(e.debugRows().find((r) => r.label === 'VLC state')?.value).toBe('paused');
+  });
+
+  it('omits the decoder counters until libVLC has reported some', () => {
+    const { e } = engine();
+
+    const labels = e.debugRows().map((r) => r.label);
+
+    expect(labels).not.toContain('Dropped frames');
+    expect(labels).not.toContain('Bitrate');
+  });
+
+  it('counts a dropped picture against every picture decoded', () => {
+    const { e } = engine();
+
+    e.reportStats({ lostPictures: 3, displayedPictures: 97, inputBitrate: 1.25 });
+    const rows = e.debugRows();
+
+    expect(rows.find((r) => r.label === 'Dropped frames')?.value).toBe('3 / 100');
+    expect(rows.find((r) => r.label === 'Bitrate')?.value).toBe('10.0 Mb/s');
+  });
+
+  it('reports no buffered range, because libVLC has none to give', () => {
+    const { e, L } = engine();
+
+    e.reportState('buffering', 40);
+
+    // Cache fullness is not a length of film, and the seek bar would draw it as
+    // one. `bufferPercent` still drives the spinner.
+    expect(e.bufferedEnd()).toBeNull();
+    expect(L.onBuffered).toHaveBeenCalledWith(null);
+  });
+
+  it('releases the native player as soon as the engine is torn down', () => {
+    const releaseNow = vi.fn();
+    registerVlcPlane(null, releaseNow);
+    const { e } = engine();
+
+    e.destroy();
+
+    expect(releaseNow).toHaveBeenCalled();
+    registerVlcPlane(null);
   });
 });

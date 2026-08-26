@@ -1,4 +1,0 @@
-# IconButton  src/components/atoms/icon-button/icon-button.story.mdx
-
-## preview
-button "Volume" tab

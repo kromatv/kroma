@@ -3,7 +3,7 @@
 
 import type { TextStyle, ViewStyle } from 'react-native';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { frostCoat } from '#ui/components/atoms/frost';
+import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
@@ -60,7 +60,12 @@ interface KeyProps {
   label?: string;
   icon?: IconName;
   iconSize?: number;
-  onPress: () => void;
+  /** What the key stands for, handed back to `onPress`. Defaults to `label`,
+   *  which is enough for a key whose face is the character it types. */
+  value?: string;
+  /** Takes the key's `value`, so one handler serves a whole grid rather than a
+   *  closure per key: that is what keeps the keys out of a keystroke's render. */
+  onPress: (value: string) => void;
   style?: ViewStyle;
   textStyle?: TextStyle;
   /** The grid's scale, which is what the corner is taken from. */
@@ -72,16 +77,17 @@ function Key({
   label,
   icon,
   iconSize,
+  value,
   onPress,
   style,
   textStyle,
   size,
   autoFocus,
 }: Readonly<KeyProps>) {
-  const frost = frostCoat(face({ size }).root, { on: size !== 'tv' });
+  const frost = useFrostCoat(face({ size }).root, { on: size !== 'tv' });
   return (
     <Focusable
-      onPress={onPress}
+      onPress={() => onPress(value ?? label ?? '')}
       label={label}
       autoFocus={autoFocus}
       focusScale={1.08}

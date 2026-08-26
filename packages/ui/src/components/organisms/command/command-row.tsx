@@ -14,8 +14,10 @@ interface CommandRowProps {
   open: boolean;
   /** The row the keyboard cursor is on. */
   cursor: boolean;
-  onHover: () => void;
-  onPress: () => void;
+  /** Both are handed the row's `item`, so one handler serves the whole list
+   *  rather than a closure per row. */
+  onHover: (item: CommandItem) => void;
+  onPress: (item: CommandItem) => void;
 }
 
 function CommandRow({ item, open, cursor, onHover, onPress }: Readonly<CommandRowProps>) {
@@ -26,8 +28,8 @@ function CommandRow({ item, open, cursor, onHover, onPress }: Readonly<CommandRo
       // The pointer moves the SAME cursor the arrows do, rather than lighting a
       // second row of its own: with two highlights on screen, Enter opens
       // whichever one the reader was not looking at.
-      onHoverIn={onHover}
-      onPress={onPress}
+      onHoverIn={() => onHover(item)}
+      onPress={() => onPress(item)}
       sv={row}
       vars={{ cursor, open }}
     >

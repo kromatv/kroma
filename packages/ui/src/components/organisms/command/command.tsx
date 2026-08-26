@@ -11,6 +11,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { styles } from '#ui/core';
 import { WEB } from '#ui/lib/platform';
+import { useStableCallback } from '#ui/lib/stable-callback';
 import { useControllable } from '#ui/lib/use-controllable';
 import { CommandContext, type CommandState } from './command-context';
 import { useCommandKeys } from './command-keys';
@@ -79,6 +80,11 @@ function Root({
     [onSelect, onClose],
   );
 
+  // Stable, because it is a prop on every row: rebuilt with the rest of the
+  // context it would re-render the whole list on a keystroke that only moved
+  // the cursor.
+  const point = useStableCallback((item: CommandItem) => setCursor(flat.indexOf(item)));
+
   useCommandKeys({
     onStep: (rows) => setCursor((prev) => stepTo(prev, rows, flat.length)),
     onChoose: () => choose(flat[at]),
@@ -97,12 +103,12 @@ function Root({
         setQueryValue(next);
         setCursor(0);
       },
-      point: (item) => setCursor(flat.indexOf(item)),
+      point,
       choose,
       close: onClose,
       scroll: (offset, viewport) => scrollTo(sections, at, offset, viewport),
     }),
-    [flat, items.length, query, sections, at, selected, setQueryValue, choose, onClose],
+    [flat, items.length, query, sections, at, selected, setQueryValue, point, choose, onClose],
   );
 
   return (

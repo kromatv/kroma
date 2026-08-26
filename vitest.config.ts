@@ -2,9 +2,11 @@ import { fileURLToPath } from 'node:url';
 import { gitHistory } from '@kroma/bundler/git-history';
 import { kromaMdx } from '@kroma/bundler/mdx';
 import { propDocs } from '@kroma/bundler/props-docs';
+import { reactCompiler } from '@kroma/bundler/react-compiler';
 import { WEB_EXTENSIONS } from '@kroma/bundler/rnw';
 import { storyCode } from '@kroma/bundler/story-code';
 import { kromaModule } from '@kroma/module-sdk/vite';
+import react from '@vitejs/plugin-react';
 import { configDefaults, defineConfig } from 'vitest/config';
 
 const dir = (p: string) => fileURLToPath(new URL(p, import.meta.url));
@@ -90,6 +92,14 @@ const include = [
 // the two projects cannot drift apart in coverage.
 const nativeInclude = include.map((p) => p.replace('*.test.', '*.native.test.'));
 
+// The kit audit is its own project because it is the one place that must run
+// the React Compiler: it measures what a component costs to re-render, and
+// without the compiler it would measure work every shell already removes.
+const auditInclude = [
+  'packages/ui/audit/**/*.test.{ts,tsx}',
+  'packages/react-audit/src/**/*.test.{ts,tsx}',
+];
+
 export default defineConfig({
   test: {
     // Two projects: this repo has two resolution universes (web precedence vs.
@@ -107,7 +117,7 @@ export default defineConfig({
           setupFiles,
           include,
           // Overriding `exclude` replaces the defaults (incl. node_modules).
-          exclude: [...configDefaults.exclude, '**/*.native.test.*'],
+          exclude: [...configDefaults.exclude, '**/*.native.test.*', ...auditInclude],
           server,
         },
       },
@@ -127,6 +137,21 @@ export default defineConfig({
           environmentOptions,
           setupFiles,
           include: nativeInclude,
+          server,
+        },
+      },
+      {
+        plugins: [...plugins(), react(), reactCompiler()],
+        resolve: { alias, extensions: WEB_EXTENSIONS, dedupe },
+        test: {
+          name: 'audit',
+          environment: 'jsdom',
+          environmentOptions,
+          // The audit library FIRST: React reads the devtools hook it installs
+          // once, when the renderer initialises, so it has to be in place before
+          // react-dom is imported by anything.
+          setupFiles: [dir('./packages/react-audit/src/index.ts'), ...setupFiles],
+          include: auditInclude,
           server,
         },
       },

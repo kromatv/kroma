@@ -8,7 +8,7 @@ import { type ReactNode, useMemo } from 'react';
 import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { frostCoat } from '#ui/components/atoms/frost';
+import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Spinner } from '#ui/components/atoms/spinner';
 import { Text } from '#ui/components/atoms/text';
@@ -72,7 +72,7 @@ function Button({
   const group = useGroupMember(onFocus, onBlur);
   const shell = size ?? group.size ?? 'md';
   const s = buttonVariants({ variant, size: shell, block, active }, { disabled });
-  const frost = frostCoat([s.root, style], {
+  const frost = useFrostCoat([s.root, style], {
     on: FROSTED.has(variant) || (disabled && !UNFILLED.has(variant)),
   });
   const box = useMemo(() => [frost.style, group.style, style], [frost.style, group.style, style]);

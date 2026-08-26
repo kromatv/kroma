@@ -277,7 +277,7 @@ no element, takes exactly one child, reads that child's corner off its style or 
 in step with the surface's own.
 
 Where the child is a render function there is no element to clone, and the slot has
-nothing to merge into. `frostCoat(surfaceStyle, options)` is the form for that: it
+nothing to merge into. `useFrostCoat(surfaceStyle, options)` is the form for that: it
 hands back `{ style, layer }`, exactly one of which is ever set, and the owning
 component spreads the style onto its surface and renders the layer as its first
 child. Prefer the component; reach for the function only when the ladder's step 2

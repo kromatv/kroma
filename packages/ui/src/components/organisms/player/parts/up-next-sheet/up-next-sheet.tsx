@@ -243,7 +243,7 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
                           width={card}
                           interactive={open}
                           autoFocus={open && sec.offset === 0 && r === 0 && c === 0}
-                          onActivate={() => onPlay(it)}
+                          onActivate={onPlay}
                         />
                       ))}
                     </FocusRegion>

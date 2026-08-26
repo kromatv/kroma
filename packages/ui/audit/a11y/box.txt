@@ -1,7 +1,0 @@
-# Box  src/components/atoms/box/box.story.mdx
-
-## preview
-
-
-## scene:Centred column
-

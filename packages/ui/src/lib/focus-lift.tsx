@@ -15,8 +15,8 @@
 // It is wired into <Focusable> and the kit's focus containers, so components
 // inherit it rather than each remembering to stack themselves.
 
-import { createContext, type ReactNode, useContext, useMemo, useState } from 'react';
-import type { ViewStyle } from 'react-native';
+import { createContext, type ReactNode, type Ref, useContext, useMemo, useState } from 'react';
+import { type StyleProp, View, type ViewStyle } from 'react-native';
 
 type Report = (focused: boolean) => void;
 
@@ -46,7 +46,7 @@ export const GROUNDED: ViewStyle = { zIndex: 0 };
  *
  * ```tsx
  * <FocusLiftHost>
- *   {(held) => <View style={[style, held ? LIFTED : null]}>{children}</View>}
+ *   {(held) => <View style={[style, held ? LIFTED : GROUNDED]}>{children}</View>}
  * </FocusLiftHost>
  * ```
  */
@@ -69,4 +69,24 @@ export function FocusLiftHost({ children }: Readonly<{ children: (held: boolean)
   );
 
   return <LiftContext.Provider value={report}>{children(held > 0)}</LiftContext.Provider>;
+}
+
+/**
+ * A view that rises above its siblings while anything inside it holds the
+ * focus, and reports the same edge to the container around it.
+ */
+export function FocusLiftView({
+  style,
+  ref,
+  children,
+}: Readonly<{ style?: StyleProp<ViewStyle>; ref?: Ref<View>; children: ReactNode }>) {
+  return (
+    <FocusLiftHost>
+      {(held) => (
+        <View ref={ref} style={[style, held ? LIFTED : GROUNDED]}>
+          {children}
+        </View>
+      )}
+    </FocusLiftHost>
+  );
 }

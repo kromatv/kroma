@@ -23,6 +23,7 @@
     "./message-subset": "./src/message-subset.ts",
     "./polyfills-legacy": "./src/polyfills-legacy.ts",
     "./props-docs": "./src/props-docs.ts",
+    "./react-compiler": "./src/react-compiler.ts",
     "./rnw": "./src/rnw.ts",
     "./shell": "./src/shell.ts",
     "./site": "./src/site.ts",

@@ -18,7 +18,15 @@ function fakeClient() {
 
 function mount(client: KromaClient | null) {
   return render(
-    <CrashBoundary client={client} platform="Android TV" fallback={<div>fallback shown</div>}>
+    <CrashBoundary
+      client={client}
+      platform="Android TV"
+      fallback={(retry) => (
+        <button type="button" onClick={retry}>
+          fallback shown
+        </button>
+      )}
+    >
       <Boom />
     </CrashBoundary>,
   );

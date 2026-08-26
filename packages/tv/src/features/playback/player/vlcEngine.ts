@@ -10,6 +10,7 @@
 import type { AudioFilterMode } from '@kroma/ui';
 import { BaseTvEngine, type EngineOptions } from '#tv/features/playback/player/baseEngine';
 import type { TvEngine } from '#tv/features/playback/player/engine';
+import { releaseVlcPlanes, type VlcPlaneStats } from '#tv/features/playback/player/vlcPlane';
 
 interface VlcSourceState {
   uri: string;
@@ -23,6 +24,7 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
   private rate = 1;
   private bufferPercent = 0;
   private lastState = 'idle';
+  private stats: VlcPlaneStats | null = null;
   readonly source: VlcSourceState;
 
   constructor(opts: EngineOptions) {
@@ -74,6 +76,7 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
     if (this.destroyed) return;
     this.elSec = timeMs / 1000;
     this.listeners.onTime(this.position());
+    this.listeners.onBuffered(this.bufferedEnd());
     const seconds = lengthMs / 1000;
     if (seconds > 0 && seconds !== this.durSec) {
       this.durSec = seconds;
@@ -83,6 +86,23 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
 
   reportState(state: string, percent = 100): void {
     if (this.destroyed) return;
+    if (state === 'buffering') {
+      this.bufferPercent = percent;
+      this.listeners.onBuffered(this.bufferedEnd());
+      // VLC keeps firing Buffering while it plays, 100 included. Spinning on
+      // every one of them leaves the spinner over a picture that is running,
+      // and reporting them as the state leaves the panel reading `buffering`
+      // over a film that never stopped.
+      if (percent < 100) {
+        this.lastState = 'buffering';
+        this.listeners.onWaiting();
+        return;
+      }
+      this.lastState = this.paused ? 'paused' : 'playing';
+      this.listeners.onReady();
+      if (!this.paused) this.listeners.onPlaying();
+      return;
+    }
     this.lastState = state;
     if (state === 'playing') {
       this.paused = false;
@@ -91,15 +111,6 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
     } else if (state === 'paused') {
       this.paused = true;
       this.listeners.onPause();
-    } else if (state === 'buffering') {
-      this.bufferPercent = percent;
-      // VLC keeps firing Buffering while it plays, 100 included. Spinning on
-      // every one of them leaves the spinner over a picture that is running.
-      if (percent < 100) this.listeners.onWaiting();
-      else {
-        this.listeners.onReady();
-        if (!this.paused) this.listeners.onPlaying();
-      }
     } else if (state === 'ended') {
       this.listeners.onEnded();
     }
@@ -109,12 +120,34 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
     if (!this.destroyed) this.listeners.onError();
   }
 
+  /** libVLC's own media counters, pushed from the plane on the time tick. */
+  reportStats(stats: VlcPlaneStats): void {
+    if (this.destroyed) return;
+    this.stats = stats;
+  }
+
+  // Only what libVLC actually answered: a counter it never reported is left out
+  // rather than drawn as a zero, which would read as "no frames dropped".
   debugRows(): { label: string; value: string }[] {
-    return [
+    const rows = [
       { label: 'Plane', value: 'libVLC' },
       { label: 'VLC state', value: this.lastState },
       { label: 'VLC buffer', value: `${Math.round(this.bufferPercent)}%` },
     ];
+    const stats = this.stats;
+    if (!stats) return rows;
+    if (stats.displayedPictures > 0) {
+      rows.push({
+        label: 'Dropped frames',
+        value: `${stats.lostPictures} / ${stats.displayedPictures + stats.lostPictures}`,
+      });
+    }
+    // libVLC reports input bitrate in bytes per microsecond, which is megabytes
+    // per second, so a byte is eight bits away from the Mb/s the panel wants.
+    if (stats.inputBitrate > 0) {
+      rows.push({ label: 'Bitrate', value: `${(stats.inputBitrate * 8).toFixed(1)} Mb/s` });
+    }
+    return rows;
   }
 
   // The three below only move engine state: <VlcSurface> re-renders on the next
@@ -139,10 +172,12 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
     this.listeners.onTime(this.position());
   }
 
-  // VLC exposes no buffered range through the Android binding, so the reported
-  // edge is the position: the chrome draws no phantom buffer it cannot know.
-  bufferedEnd(): number {
-    return this.position();
+  // libVLC's Android binding has no buffered range: it reports how full its own
+  // cache is, which is a different quantity and one the seek bar would draw as
+  // a length of film. `bufferPercent` still drives the spinner, where a
+  // percentage is exactly what is being asked for.
+  bufferedEnd(): null {
+    return null;
   }
 
   // Direct-only: there is no anchored master to re-anchor onto, so every seek is
@@ -155,7 +190,11 @@ export class VlcEngine extends BaseTvEngine implements TvEngine {
     this.rendition = rendition;
   }
 
+  // The plane owns the native player, and React unmounts it a commit later than
+  // this: on an engine switch the next player is built in between, so without
+  // releasing here both decoders are resident at once.
   destroy(): void {
     this.destroyed = true;
+    releaseVlcPlanes();
   }
 }

@@ -255,13 +255,17 @@ export const ControlCluster = memo(function ControlCluster({
 
   return (
     <Box row align="center" gap={px(ROW_GAP)} pt={px(4)}>
-      <Box flex />
-      <Box row align="center" gap={px(TRANSPORT_GAP)}>
+      {/* The transport is centred by the two sides being the SAME width, not by
+          the middle taking what is left: Yoga folds a min-width into the flex
+          base, so a growing side box ends up its own minimum wider than a bare
+          spacer and drags the transport half a cluster to the left. The spacer
+          is the only thing that gives way, so a stage too narrow for the mirror
+          costs the centring rather than overlapping the cluster. */}
+      <Box w={clusterWidth} shrink={1} />
+      <Box row grow={1} center gap={px(TRANSPORT_GAP)}>
         {transport.map(render)}
       </Box>
-      {/* `minW`: without it the box takes half the free space and its
-          (non-shrinking) circles overflow left, through the transport. */}
-      <Box row flex align="center" justify="flex-end" gap={px(CLUSTER_GAP)} minW={clusterWidth}>
+      <Box row align="center" justify="flex-end" gap={px(CLUSTER_GAP)} w={clusterWidth}>
         {cluster.map(render)}
       </Box>
     </Box>

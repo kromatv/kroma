@@ -9,6 +9,7 @@ import { HAND } from '#ui/lib/cursor';
 import { bySize, CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
 import { partContext } from '#ui/lib/part-context';
+import { useStableCallback } from '#ui/lib/stable-callback';
 import { clamp, pageWindow } from './paging';
 
 const paginationVariants = svFor<{
@@ -98,6 +99,13 @@ function Root({
   const total = Math.max(1, Math.trunc(pageCount) || 1);
   const at = clamp(page, total);
 
+  // Stable, because it is every control's `onPress`: rebuilt with the rest of
+  // the context, paging re-rendered even the two ends that never move.
+  const go = useStableCallback((next: number) => {
+    const to = clamp(next, total);
+    if (to !== at) onPageChange(to);
+  });
+
   const ctx = useMemo<PaginationContext>(
     () => ({
       page: at,
@@ -105,13 +113,10 @@ function Root({
       siblings,
       size: shell,
       gap,
-      go: (next) => {
-        const to = clamp(next, total);
-        if (to !== at) onPageChange(to);
-      },
+      go,
       pageLabel,
     }),
-    [at, total, siblings, shell, gap, onPageChange, pageLabel],
+    [at, total, siblings, shell, gap, go, pageLabel],
   );
 
   return (
@@ -174,13 +179,14 @@ function Pages() {
   const slots = useMemo(() => pageWindow(page, pageCount, siblings), [page, pageCount, siblings]);
   return (
     <Row gap={gap}>
-      {slots.map((slot, at) =>
-        slot === 'gap' ? (
-          <Ellipsis key={at === 1 ? 'gap-start' : 'gap-end'} />
-        ) : (
-          <Item key={slot} page={slot} />
-        ),
-      )}
+      {/* Keyed by POSITION, not by page number: the window is always the same
+          length, so paging relabels the slots rather than changing which slots
+          exist, and a page key destroys and rebuilds a control that only had to
+          say a different number. */}
+      {slots.map((slot, at) => {
+        const seat = `seat-${at}`;
+        return slot === 'gap' ? <Ellipsis key={seat} /> : <Item key={seat} page={slot} />;
+      })}
     </Row>
   );
 }

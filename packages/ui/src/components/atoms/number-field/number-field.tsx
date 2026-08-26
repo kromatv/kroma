@@ -13,6 +13,7 @@ import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
 import { styles } from '#ui/core';
 import { bySize, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { useStableCallback } from '#ui/lib/stable-callback';
 import { useTDefault } from '#ui/services/i18n';
 
 interface NumberFieldProps
@@ -80,12 +81,14 @@ function NumberField({
     commit(bounded);
   };
 
-  const nudge = (direction: -1 | 1) => {
+  // Stable: it is both steppers' `onPress`, and a fresh one per value
+  // re-rendered the two buttons that had not changed.
+  const nudge = useStableCallback((direction: -1 | 1) => {
     const by = step ?? 1;
     const bounded = clampTo(snapTo(value + direction * by, by), min, max);
     setText(String(bounded));
     commit(bounded);
-  };
+  });
 
   return (
     <TextField

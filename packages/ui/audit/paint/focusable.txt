@@ -1,6 +1,0 @@
-# Focusable  src/components/atoms/focusable/focusable.story.mdx
-
-## preview
-div "first" var(--kroma-text)/16px/400/"Hanken Grotesk"/normal/25px/start/none/none << pad=16,28,16,28 op=1.000 bg=[var(--kroma-surface-2)] radius=[13px 13px 13px 13px] shadow=[var(--shadow-pop)] tf=[scale(1.06)] anim=[transform 200ms] flex=[row:center:normal:wrap:g0/0:n3]
-div "second" var(--kroma-text)/16px/400/"Hanken Grotesk"/normal/25px/start/none/none << pad=16,28,16,28 op=1.000 bg=[var(--kroma-surface-2)] radius=[13px 13px 13px 13px] tf=[scale(1)] anim=[transform 200ms] flex=[row:center:normal:wrap:g0/0:n3]
-div "third" var(--kroma-text)/16px/400/"Hanken Grotesk"/normal/25px/start/none/none << pad=16,28,16,28 op=1.000 bg=[var(--kroma-surface-2)] radius=[13px 13px 13px 13px] tf=[scale(1)] anim=[transform 200ms] flex=[row:center:normal:wrap:g0/0:n3]

@@ -7,6 +7,10 @@ class VlcPlayerModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("VlcPlayer")
 
+    // Called when the engine is torn down, so the core goes away on the next main
+    // thread pass instead of whenever React gets round to unmounting the view.
+    AsyncFunction("releaseAll") { VlcPlayerView.releaseAll() }
+
     View(VlcPlayerView::class) {
       Events("onPlayerTime", "onPlayerLoad", "onPlayerState", "onPlayerError")
 

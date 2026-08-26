@@ -13,16 +13,27 @@
 // the Back button at the same time.
 
 import type { ReportCategory } from '@kroma/core';
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView } from 'react-native';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { Animated, Pressable, type ViewStyle } from 'react-native';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import { PANEL_MAX, scaler } from '#ui/components/organisms/player/lib/metrics';
 import type { ControlId, PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import { PanelHeaderProvider } from '#ui/components/organisms/player/lib/panel-header';
+import { CARD_MS } from '#ui/components/organisms/player/lib/panel-slide';
 import { playerStyle } from '#ui/components/organisms/player/lib/style';
 import type { SubtitleAppearance } from '#ui/components/organisms/player/lib/subtitle-appearance';
 import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
 import type { PlayerController } from '#ui/components/organisms/player/types';
+import { ease } from '#ui/lib/ease';
+import { WEB } from '#ui/lib/platform';
 import { useT } from '#ui/services/i18n';
 import { menuEntries, movedEntries, panelTitle, type View } from './settings/entries';
 import type { SubtitleGenBundle } from './settings/gen';
@@ -57,7 +68,50 @@ interface SettingsPanelProps {
   scale?: number;
   /** Open straight into a sub-view (the Audio / Subtitles cluster quick-access). */
   initialView?: View;
+  /** False while the panel is leaving: it stays mounted for the exit, and the
+   *  picture expands from under it rather than from under nothing. */
+  shown?: boolean;
   onClose: () => void;
+}
+
+// Starts off its own edge whatever `shown` says, so a panel mounted open still
+// plays its entrance; the player remounts it on each open.
+// The browsers have no native driver (react-native-web falls back to a JS
+// animation), so there the panel travels on a CSS transition and the movement
+// belongs to the compositor rather than to the thread the chrome ticks on.
+function webPanelTravel(shown: boolean, width: number): ViewStyle {
+  return {
+    opacity: shown ? 1 : 0,
+    transform: `translateX(${shown ? 0 : width}px)`,
+    transitionProperty: 'transform, opacity',
+    transitionDuration: `${CARD_MS}ms`,
+    transitionTimingFunction: ease.out.css,
+    willChange: 'transform',
+  } as ViewStyle;
+}
+
+function useNativePanelTravel(shown: boolean, width: number) {
+  const [slide] = useState(() => new Animated.Value(1));
+  useEffect(() => {
+    if (WEB) return;
+    const anim = Animated.timing(slide, {
+      toValue: shown ? 0 : 1,
+      duration: CARD_MS,
+      easing: ease.out.native,
+      useNativeDriver: true,
+    });
+    anim.start();
+    return () => anim.stop();
+  }, [shown, slide]);
+  return {
+    opacity: slide.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+    transform: [{ translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [0, width] }) }],
+  };
+}
+
+function usePanelTravel(shown: boolean, width: number) {
+  const native = useNativePanelTravel(shown, width);
+  return WEB ? webPanelTravel(shown, width) : native;
 }
 
 export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(function SettingsPanel(
@@ -75,12 +129,14 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
     covers,
     scale = 1,
     initialView,
+    shown = true,
     onClose,
   },
   ref,
 ) {
   const t = useT();
   const px = scaler(scale);
+  const travel = usePanelTravel(shown, width ?? PANEL_MAX);
   const [view, setView] = useState<View>(initialView ?? 'menu');
   // Stable: the imperative handle depends on it, and a fresh arrow per render
   // would rebuild that handle on every keystroke.
@@ -141,10 +197,11 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
           left: 0,
           right: width ?? '44%',
           zIndex: 41,
+          pointerEvents: shown ? 'auto' : 'none',
         }}
       />
-      <ScrollView
-        style={[playerStyle.panel, { width: width ?? '44%', maxWidth: PANEL_MAX }]}
+      <Animated.ScrollView
+        style={[playerStyle.panel, { width: width ?? '44%', maxWidth: PANEL_MAX }, travel]}
         contentContainerStyle={{ paddingHorizontal: px(58), paddingVertical: px(56) }}
         showsVerticalScrollIndicator={false}
       >
@@ -178,7 +235,7 @@ export const SettingsPanel = forwardRef<PanelHandle, SettingsPanelProps>(functio
             />
           </PanelHeaderProvider>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
     </>
   );
 });

@@ -1,7 +1,0 @@
-# StoryboardThumb  src/components/organisms/player/parts/storyboard-thumb/storyboard-thumb.story.mdx
-
-## preview
-
-
-## scene:A scrub across the film
-

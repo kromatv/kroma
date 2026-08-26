@@ -36,12 +36,13 @@ export const QualityPanel = forwardRef<PanelHandle, QualityPanelProps>(function 
       {qualities.map((q, i) => (
         <SelectRow
           key={q.id}
+          index={i}
           label={q.label}
           sub={q.note}
           selected={q.id === current}
           focused={focus.index === i}
-          onActivate={() => pick(i)}
-          onFocus={focus.hover(i)}
+          onActivate={pick}
+          onFocus={focus.setIndex}
         />
       ))}
     </Box>

@@ -8,6 +8,7 @@ import { Box } from '#ui/components/atoms/box';
 import { useTheme } from '#ui/core';
 import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope';
+import { useStableCallback } from '#ui/lib/stable-callback';
 import {
   type Box2D,
   Context,
@@ -62,7 +63,10 @@ function Root<T extends string>({
   const boxes = useRef(new Map<string, Box2D>());
   const [thumb, setThumb] = useState<Box2D | null>(null);
 
-  const report = useEffectEvent((option: string, box: Box2D) => {
+  // Stable, not an effect event: it goes into the context, and React hands back
+  // a new closure from `useEffectEvent` on every render, which re-rendered every
+  // segment whenever one of them moved.
+  const report = useStableCallback((option: string, box: Box2D) => {
     boxes.current.set(option, box);
     if (option === value) setThumb(box);
   });
@@ -87,10 +91,7 @@ function Root<T extends string>({
   });
 
   // Left to the React Compiler, which memoises this on the inputs it actually
-  // reads. A hand-written `useMemo` here cannot be spelled correctly: its deps
-  // would have to name effect events, which biome requires be left OUT of a
-  // dependency array - and the mismatch is what makes the compiler give up on
-  // the whole component.
+  // reads.
   const ctx: SegmentGroupContext = {
     value,
     select,

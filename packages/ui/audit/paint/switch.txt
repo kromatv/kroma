@@ -1,5 +1,0 @@
-# Switch  src/components/atoms/switch/switch.story.mdx
-
-## preview
-div "" rgb(0, 0, 0)/medium/normal/depends on user agent/normal/normal//none/none << pad=3,3,3,3 op=0.000 bg=[var(--kroma-tint-10) var(--kroma-accent)] radius=[999px 999px 999px 999px 999px 999px 999px 999px] border=[1px var(--kroma-border-strong)|1px var(--kroma-border-strong)|1px var(--kroma-border-strong)|1px var(--kroma-border-strong)] anim=[background-color, border-color, color 150ms opacity 150ms] size=[width=46px,height=28px] flex=[row:center:normal:nowrap:g0/0:n2] abs=1
-div "" rgb(0, 0, 0)/medium/normal/depends on user agent/normal/normal//none/none << pad=3,3,3,3 op=1.000 bg=[var(--kroma-tint-10) var(--kroma-text)] radius=[999px 999px 999px 999px 999px 999px 999px 999px] border=[1px var(--kroma-border-strong)|1px var(--kroma-border-strong)|1px var(--kroma-border-strong)|1px var(--kroma-border-strong)] tf=[translateX(0px)] anim=[background-color, border-color, color 150ms transform 150ms] size=[width=46px,height=28px width=20px,height=20px] flex=[row:center:normal:nowrap:g0/0:n2]

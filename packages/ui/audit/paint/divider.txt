@@ -1,6 +1,0 @@
-# Divider  src/components/atoms/divider/divider.story.mdx
-
-## preview
-div "before" var(--kroma-text-dim)/13px/500/"Hanken Grotesk"/normal/18px/start/none/none << pad=0,0,0,0 op=1.000 flex=[column:center:normal:nowrap:g0/0:n3]
-div "" rgb(0, 0, 0)/medium/normal/depends on user agent/normal/normal//none/none << pad=12,0,12,0 op=1.000 bg=[var(--kroma-border)] size=[height=1px] flex=[column:center:normal:nowrap:g0/0:n3] self=[stretch]
-div "after" var(--kroma-text-dim)/13px/500/"Hanken Grotesk"/normal/18px/start/none/none << pad=0,0,0,0 op=1.000 flex=[column:center:normal:nowrap:g0/0:n3]

@@ -73,11 +73,12 @@ export const SubtitlesPanel = forwardRef<PanelHandle, SubtitlesPanelProps>(funct
     <Box>
       <Box style={panel.panelList}>
         <SelectRow
+          index={0}
           label={t('player.subtitlesOff')}
           selected={current == null}
           focused={focus.index === 0}
-          onActivate={() => activate(0)}
-          onFocus={focus.hover(0)}
+          onActivate={activate}
+          onFocus={focus.setIndex}
         />
         {subs.map((s, i) => {
           const codec = s.codec.toUpperCase();
@@ -90,6 +91,7 @@ export const SubtitlesPanel = forwardRef<PanelHandle, SubtitlesPanelProps>(funct
               opacity={s.selectable ? 1 : 0.4}
             >
               <SelectRow
+                index={i + 1}
                 label={
                   s.ai && s.label ? s.label : langName(t, s.language) || t('player.langUnknown')
                 }
@@ -97,8 +99,8 @@ export const SubtitlesPanel = forwardRef<PanelHandle, SubtitlesPanelProps>(funct
                 trailing={s.ai ? <AiBadge /> : null}
                 selected={current === s.index}
                 focused={focus.index === i + 1}
-                onActivate={() => (s.selectable ? activate(i + 1) : undefined)}
-                onFocus={focus.hover(i + 1)}
+                onActivate={activate}
+                onFocus={focus.setIndex}
               />
             </Box>
           );
@@ -119,15 +121,16 @@ export const SubtitlesPanel = forwardRef<PanelHandle, SubtitlesPanelProps>(funct
           return <Box key={s.index}>{row}</Box>;
         })}
         {gen.pending.map((g) => (
-          <GenRow key={g.id} gen={g} onCancel={() => gen.onCancel(g.id)} />
+          <GenRow key={g.id} gen={g} onCancel={gen.onCancel} />
         ))}
         {gen.canCreate && !wizardOpen ? (
           <SelectRow
+            index={createIndex}
             leading={<IconAi size={22} />}
             label={t('player.subCreateMissing')}
             focused={focus.index === createIndex}
-            onActivate={() => setWizardOpen(true)}
-            onFocus={focus.hover(createIndex)}
+            onActivate={activate}
+            onFocus={focus.setIndex}
           />
         ) : null}
       </Box>
@@ -182,7 +185,10 @@ function TrashButton({ label, onPress }: Readonly<{ label: string; onPress: () =
   );
 }
 
-function GenRow({ gen, onCancel }: Readonly<{ gen: SubtitleGeneration; onCancel: () => void }>) {
+function GenRow({
+  gen,
+  onCancel,
+}: Readonly<{ gen: SubtitleGeneration; onCancel: (id: string) => void }>) {
   const t = useT();
   const pct = Math.round(gen.progress * 100);
   const err = gen.status === 'error';
@@ -198,7 +204,7 @@ function GenRow({ gen, onCancel }: Readonly<{ gen: SubtitleGeneration; onCancel:
       <Box row align="center" gap={14}>
         <Text style={s.genLang}>{gen.lang ?? ''}</Text>
         <AiBadge />
-        <TrashButton label={t('player.subGenCancel')} onPress={onCancel} />
+        <TrashButton label={t('player.subGenCancel')} onPress={() => onCancel(gen.id)} />
       </Box>
       <Box row align="center" between mt={8}>
         <Box row align="center" gap={8}>

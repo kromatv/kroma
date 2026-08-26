@@ -2,6 +2,7 @@ import type { KromaClient, MediaItem } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineOptions } from './baseEngine';
 import { NATIVE_SEEK_AHEAD } from './baseEngine';
+import { nativeBufferBudget } from './bufferBudget';
 import type { EngineListeners } from './engine';
 import { ExpoVideoEngine } from './expoVideoEngine';
 
@@ -21,6 +22,7 @@ const { players, FakePlayer } = vi.hoisted(() => {
     timeUpdateEventInterval = 0;
     availableAudioTracks: { id: string }[] = [];
     audioTrack: unknown = null;
+    bufferOptions: unknown = null;
     plays = 0;
     pauses = 0;
     released = false;
@@ -92,6 +94,8 @@ vi.mock('expo-video', () => ({
   },
 }));
 
+vi.mock('react-native', () => ({ Platform: { OS: 'android' } }));
+
 type Fake = InstanceType<typeof FakePlayer>;
 
 const client = {
@@ -100,6 +104,7 @@ const client = {
     `master:${id}:${aac}:${startSec}:${audio}`,
 } as unknown as KromaClient;
 const item = { id: 'ev1' } as unknown as MediaItem;
+const budget = nativeBufferBudget();
 
 function mkListeners(): EngineListeners {
   return {
@@ -180,6 +185,17 @@ describe('ExpoVideoEngine construction', () => {
     const { e } = make();
     expect(current(e).timeUpdateEventInterval).toBeGreaterThan(0);
   });
+
+  it('bounds what Media3 may buffer, on every player it opens', () => {
+    const { e } = make({ direct: false, startSec: 0 });
+    expect(current(e).bufferOptions).toEqual(budget);
+
+    e.seekTo(NATIVE_SEEK_AHEAD + 120);
+
+    expect(players).toHaveLength(1);
+    expect(current(e).replaced).toHaveLength(1);
+    expect(current(e).bufferOptions).toEqual(budget);
+  });
 });
 
 describe('ExpoVideoEngine resume seek', () => {
@@ -217,6 +233,19 @@ describe('ExpoVideoEngine event mapping', () => {
     expect(e.position()).toBe(15);
     expect(listeners.onTime).toHaveBeenCalledWith(15);
     expect(listeners.onBuffered).toHaveBeenCalledWith(30);
+  });
+
+  it('takes the buffer off the event, so a player that throws still reports one', () => {
+    const { e, listeners } = make({ direct: true });
+    // Reading the property back off a player mid-swap throws, and the engine
+    // answers a throw with 0 - which the seek bar draws as nothing buffered.
+    Object.defineProperty(current(e), 'bufferedPosition', {
+      get() {
+        throw new Error('released');
+      },
+    });
+    current(e).emit('timeUpdate', { currentTime: 15, bufferedPosition: 42 });
+    expect(listeners.onBuffered).toHaveBeenCalledWith(42);
   });
 
   it('master reports position and buffer relative to the anchor', () => {
@@ -502,6 +531,19 @@ describe('ExpoVideoEngine player lifetime', () => {
     expect(first.released).toBe(true);
   });
 
+  it('releases at once when the ENGINE is destroyed, not a beat later', () => {
+    // Switching engines: whatever replaces this one opens its own decoder
+    // immediately, and a 2 GB television cannot hold two. There is no successor
+    // <VideoView> to wait for here, so the grace above buys nothing.
+    vi.useFakeTimers();
+    const { e } = make({ direct: true, startSec: 0 });
+    const player = current(e);
+
+    e.destroy();
+
+    expect(player.released).toBe(true);
+  });
+
   it('a retired player cannot write over the one that replaced it', () => {
     // AVFoundation reports a failed track load many seconds late.
     const { e, listeners } = make({ direct: false, startSec: 300 });
@@ -582,5 +624,78 @@ describe('ExpoVideoEngine player lifetime', () => {
 
     player.emit('statusChange', { status: 'error' });
     expect(listeners.onError).not.toHaveBeenCalled();
+  });
+});
+
+describe('what the stats panel asks the engine', () => {
+  const rowsOf = (e: ReturnType<typeof make>['e']) =>
+    Object.fromEntries((e.debugRows?.() ?? []).map((r) => [r.label, r.value]));
+
+  it('names the plane even before a player exists', () => {
+    const { e } = make({ direct: true });
+    e.destroy();
+    expect(rowsOf(e).Plane).toBeTruthy();
+  });
+
+  it('reports only what the player answered, never a zero standing for unknown', () => {
+    const { e } = make({ direct: true });
+    Object.assign(current(e), {
+      status: 'readyToPlay',
+      playbackRate: 1,
+      videoTrack: {
+        mimeType: 'video/hevc',
+        size: { width: 3840, height: 2160 },
+        frameRate: 23.976,
+        peakBitrate: 42_000_000,
+        averageBitrate: null,
+        bitrate: null,
+        videoRange: 'HLG',
+        isSupported: true,
+      },
+    });
+
+    const rows = rowsOf(e);
+    expect(rows['Player state']).toBe('readyToPlay');
+    expect(rows.Track).toBe('video/hevc');
+    expect(rows['Track size']).toBe('3840×2160');
+    expect(rows['Frame rate']).toBe('23.98 fps');
+    expect(rows.Bitrate).toBe('42.0 Mb/s');
+    expect(rows.Range).toBe('HLG');
+    // Playing at 1x is not a fact worth a row, and the device CAN decode it.
+    expect(rows.Rate).toBeUndefined();
+    expect(rows.Decoder).toBeUndefined();
+  });
+
+  it('says so when the device has no decoder for the track', () => {
+    const { e } = make({ direct: true });
+    Object.assign(current(e), {
+      status: 'readyToPlay',
+      playbackRate: 1.5,
+      videoTrack: {
+        mimeType: null,
+        size: { width: 0, height: 0 },
+        frameRate: null,
+        peakBitrate: null,
+        averageBitrate: null,
+        bitrate: null,
+        videoRange: null,
+        isSupported: false,
+      },
+    });
+
+    const rows = rowsOf(e);
+    expect(rows.Decoder).toBe('unsupported');
+    expect(rows.Rate).toBe('1.5x');
+    // Nothing the track left null is invented.
+    expect(rows.Track).toBeUndefined();
+    expect(rows['Track size']).toBeUndefined();
+    expect(rows.Bitrate).toBeUndefined();
+  });
+
+  it('survives a player that throws on every read, which is what a swap looks like', () => {
+    const { e } = make({ direct: true });
+    current(e).throwOnRead = true;
+    expect(() => e.debugRows?.()).not.toThrow();
+    expect(rowsOf(e).Plane).toBeTruthy();
   });
 });

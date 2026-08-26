@@ -14,8 +14,9 @@
 // that row last held.
 
 import { Children, type ReactNode, useCallback, useMemo, useState } from 'react';
-import type { LayoutChangeEvent } from 'react-native';
+import type { LayoutChangeEvent, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { FocusLiftView } from '#ui/lib/focus-lift';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
 import { FocusLine } from '#ui/lib/focus-scroll';
 
@@ -65,16 +66,21 @@ function Grid({ min, columns, width, gap = 24, rowGap, children }: Readonly<Grid
   }, []);
 
   const style = useMemo(() => ({ gap: rowGap ?? gap }), [gap, rowGap]);
+  const line = useMemo<ViewStyle>(() => ({ flexDirection: 'row', gap }), [gap]);
+  const cell = useMemo<ViewStyle>(
+    () => ({ width: cellWidth(room, count, gap) }),
+    [room, count, gap],
+  );
   return (
     <Box onLayout={onLayout}>
       <FocusColumn grid style={style}>
-        {room > 0 ? lines(children, count, cellWidth(room, count, gap), gap) : null}
+        {room > 0 ? lines(children, count, cell, line) : null}
       </FocusColumn>
     </Box>
   );
 }
 
-function lines(children: ReactNode, count: number, cell: number, gap: number): ReactNode[] {
+function lines(children: ReactNode, count: number, cell: ViewStyle, line: ViewStyle): ReactNode[] {
   const cells = Children.toArray(children);
   const rows: ReactNode[][] = [];
   for (let at = 0; at < cells.length; at += count) rows.push(cells.slice(at, at + count));
@@ -84,12 +90,12 @@ function lines(children: ReactNode, count: number, cell: number, gap: number): R
     // the slot's top once and never follow the focus down the grid.
     // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the row's identity.
     <FocusLine key={index}>
-      <FocusRegion style={{ flexDirection: 'row', gap }}>
+      <FocusRegion style={line}>
         {row.map((child, column) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the cell's slot in the row.
-          <Box key={column} w={cell}>
+          <FocusLiftView key={column} style={cell}>
             {child}
-          </Box>
+          </FocusLiftView>
         ))}
       </FocusRegion>
     </FocusLine>

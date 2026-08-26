@@ -11,7 +11,18 @@ import {
   type Translate,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Badge, Box, Chip, Divider, qualityTone, Rail, styles, Text } from '@kroma/ui/kit';
+import {
+  Badge,
+  Box,
+  Chip,
+  Divider,
+  genreIcon,
+  qualityTone,
+  Rail,
+  SORT_ICON,
+  styles,
+  Text,
+} from '@kroma/ui/kit';
 import { memo } from 'react';
 import type { CatalogEntry } from '#tv/features/catalog/home/AmbientBackdrop';
 
@@ -119,6 +130,7 @@ const BrowseFiltersImpl = function BrowseFilters({
             focusScale={1.06}
             active={mode === sort}
             pressed={mode === sort}
+            icon={SORT_ICON[mode]}
             label={t(SORT_LABEL_KEY[mode])}
             onPress={() => onSort(mode)}
           />
@@ -135,6 +147,7 @@ const BrowseFiltersImpl = function BrowseFilters({
             focusScale={1.06}
             active={!genre}
             pressed={!genre}
+            icon="layout-grid"
             label={t('browse.allGenres')}
             onPress={() => onGenre(undefined)}
           />
@@ -147,8 +160,15 @@ const BrowseFiltersImpl = function BrowseFilters({
                 focusScale={1.06}
                 active={g.slug === genre}
                 pressed={g.slug === genre}
+                icon={genreIcon(g.slug)}
+                // What the web puts in its genre dropdown. There is no dropdown
+                // here, the rail IS the control, so the count rides the chip:
+                // it is what says whether a genre is worth walking into.
+                count={g.count}
                 label={genreLabel(t, g.name)}
-                onPress={() => onGenre(g.slug)}
+                // Pressing the genre you are already in clears it, rather than
+                // making you walk back to "all" past everything between.
+                onPress={() => onGenre(g.slug === genre ? undefined : g.slug)}
               />
             ))
           : null}

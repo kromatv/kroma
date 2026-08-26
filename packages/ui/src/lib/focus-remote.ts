@@ -46,6 +46,28 @@ const REMOTE: Record<string, Direction> = {
 // up. One slot would let that teardown null the live handler.
 const handlers = new Set<(direction: Direction) => void>();
 
+// One physical press reaches this module by two transports: `useTVEventHandler`
+// below and, on Android's new architecture, the key host further down. WHICH of
+// them is live is a property of the build, not something readable here, so on a
+// build where both fire the ring steps twice for one press and the viewer sees
+// the focus skip every other item.
+//
+// The first transport to deliver a press owns the ring from then on. Which one
+// wins does not matter, only that it never changes: a build where both fire
+// keeps the one that spoke first, and a build where one fires never notices.
+// Deliberately not a time window - that would have to guess how fast a remote's
+// auto-repeat comes back, and swallowing THAT is what stops a long rail
+// scrolling under a held d-pad.
+type Transport = 'events' | 'host';
+let owner: Transport | null = null;
+
+function stepRing(direction: Direction, from: Transport): void {
+  owner ??= from;
+  if (owner !== from) return;
+  markPress();
+  for (const handle of handlers) handle(direction);
+}
+
 /** Call once at startup, before the first screen renders; calling it twice is
  * harmless, the navigator keeps only the latest pair. */
 export function configureRemote(): void {
@@ -87,8 +109,7 @@ export function useRemoteBridge(on = true): void {
     if (inputHeld()) return;
     const direction = REMOTE[event.eventType];
     if (!direction) return;
-    markPress();
-    for (const handle of handlers) handle(direction);
+    stepRing(direction, 'events');
   });
 }
 
@@ -142,10 +163,12 @@ export function useRemoteHostProps(): RemoteHostProps {
     // Auto-repeat from a held direction is how a TV scrolls a long rail.
     const direction = KEY_CODES[code];
     if (direction) {
-      markPress();
-      for (const handle of handlers) handle(direction);
+      stepRing(direction, 'host');
       // Fanned to the player chrome as well, the same way `useTVEventHandler`
-      // feeds both the navigator bridge and the player on tvOS.
+      // feeds both the navigator bridge and the player on tvOS. Sent whatever
+      // `stepRing` decided: the chrome keeps its own virtual focus and counts
+      // its own presses (see player/hooks/use-player-keys), so suppressing this
+      // to match the ring would leave the player deaf instead of steady.
       const remoteKey = REMOTE_KEY[code];
       if (remoteKey) for (const sub of remoteKeys) sub(remoteKey);
       return;

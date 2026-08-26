@@ -3,11 +3,6 @@
 
 import type { ViewStyle } from 'react-native';
 
-// Baked by the TV shells' Vite `define` (see @kroma/bundler's tvShellConfig).
-// Absent in the browser client, which is what the property read - rather than a
-// bare global - is for.
-const TV = (globalThis as { __KROMA_TV_TIER__?: boolean }).__KROMA_TV_TIER__ === true;
-
 export function gradient(css: string): ViewStyle {
   return { backgroundImage: css } as ViewStyle;
 }
@@ -68,18 +63,14 @@ export function promote(): ViewStyle {
 /** A CSS `backdrop-filter: blur(Npx)`, with the `-webkit-` spelling alongside
  * for the older TV WebKits. See css.ts for why native gets nothing. */
 export function backdropBlur(px: number): ViewStyle {
-  // Not on a television, at any strength.
+  // A television pays for this one: a backdrop-filter is not paid once, it
+  // re-blurs whenever anything BEHIND it changes, and a set composites that on
+  // the CPU. A 2024 Samsung panel measured 40fps with the blur and 60 without.
   //
-  // A backdrop-filter is not paid once: it re-blurs whenever anything BEHIND it
-  // changes, and a TV composites that on the CPU. The sign-in gate drifts a
-  // full-screen still behind every frosted control on screen - the keyboard,
-  // the buttons, the list rows - so each one re-blurred on every frame of the
-  // drift. A 2024 Samsung panel measured 40fps with the blur and 60 without it,
-  // for an effect nobody is looking at from the sofa.
-  //
-  // The sets lose nothing they had: the 2019 TV WebKits ignore the property
-  // outright, so the plain wash is already the fallback this tier ships.
-  if (TV) return {};
+  // That is the viewer's call to make, not this function's: the frost is behind
+  // a device setting (`settings.blur`), and hard-wiring the tier to off left
+  // that switch with nothing to switch. A 2019 TV WebKit ignores the property
+  // outright and keeps the plain wash either way.
   return {
     backdropFilter: `blur(${px}px)`,
     WebkitBackdropFilter: `blur(${px}px)`,

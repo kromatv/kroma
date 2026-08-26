@@ -11,8 +11,8 @@
 
 import { registerVlcPlane, type VlcPlaneProps } from '@kroma/tv';
 import type { ComponentType } from 'react';
-import { VlcPlayerView } from '../../modules/vlc-player';
+import { releaseVlcPlayers, VlcPlayerView } from '../../modules/vlc-player';
 
 export function installVlcPlane(): void {
-  registerVlcPlane(VlcPlayerView as ComponentType<VlcPlaneProps> | null);
+  registerVlcPlane(VlcPlayerView as ComponentType<VlcPlaneProps> | null, releaseVlcPlayers);
 }

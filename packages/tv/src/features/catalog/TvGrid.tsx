@@ -16,10 +16,8 @@ import { useMyList } from '#tv/app/providers/mylist';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient, useNav, useParams } from '#tv/app/router';
 import {
-  AMBIENT_FALLBACK,
   AmbientBackdrop,
   type CatalogEntry as Entry,
-  entryBackdrop,
   entryPoster,
 } from '#tv/features/catalog/home/AmbientBackdrop';
 import { HintBar } from '#tv/features/catalog/home/HintBar';
@@ -114,10 +112,7 @@ export function TvGrid() {
 
   return (
     <Box fill bg="bg" overflow="hidden" isolate>
-      <AmbientBackdrop
-        src={entryBackdrop(client, focused)}
-        colors={focused ? posterColors(focused.item.id) : AMBIENT_FALLBACK}
-      />
+      <AmbientBackdrop entry={focused} />
 
       <BrowseHeader
         label={t(LABEL_KEY[kind])}

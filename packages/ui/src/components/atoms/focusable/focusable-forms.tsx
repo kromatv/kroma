@@ -7,7 +7,7 @@ import {
 import type { AnySv } from '#ui/core';
 import type { RingToken } from '#ui/core/theme';
 import type { splitBoxLayers } from '#ui/lib/box-layers';
-import { LIFTED } from '#ui/lib/focus-lift';
+import { GROUNDED, LIFTED } from '#ui/lib/focus-lift';
 import { WEB } from '#ui/lib/platform';
 import { linkProps, platformRole } from './focusable-a11y';
 import { coatStack, focusRing } from './focusable-paint';
@@ -81,7 +81,7 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
     at.style,
     hover,
     lit ? at.focusedStyle : null,
-    lit ? LIFTED : null,
+    lit ? LIFTED : GROUNDED,
     lit && at.showRing ? focusRing(at.ringToken) : null,
     at.animated,
   ];
@@ -126,7 +126,7 @@ function liftedBox(
   focused: boolean,
 ): NavigatorStyle {
   const box = layers?.box;
-  return focused ? flat([box, LIFTED]) : (box as NavigatorStyle);
+  return flat([box, focused ? LIFTED : GROUNDED]);
 }
 
 function NavigatorForm({

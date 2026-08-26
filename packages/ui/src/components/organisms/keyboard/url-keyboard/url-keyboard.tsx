@@ -17,10 +17,11 @@ import {
 import {
   DELETE_KEY,
   type KeyboardLayout,
-  urlRows,
+  URL_ROWS,
 } from '#ui/components/organisms/keyboard/keyboard-layouts';
 import { usePhysicalTyping } from '#ui/components/organisms/keyboard/use-physical-typing';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
+import { useStableCallback } from '#ui/lib/stable-callback';
 import { useTDefault } from '#ui/services/i18n';
 
 interface UrlKeyboardProps {
@@ -64,11 +65,14 @@ function UrlKeyboard({
   // The keyboard is kit chrome: it must not make <I18nProvider> a mount
   // requirement for every screen that shows a keyboard.
   const t = useTDefault();
-  const rows = urlRows(letters);
-  const press = (k: string) => {
+  const rows = URL_ROWS[letters];
+  // One handler for the whole grid, whose identity never moves: a closure over
+  // `value` is rebuilt on every keystroke, and every key element with it.
+  const press = useStableCallback((k: string) => {
     if (k === DELETE_KEY) onValueChange(value.slice(0, -1));
     else onValueChange(value + k);
-  };
+  });
+  const clear = useStableCallback(() => onValueChange(''));
   return (
     // `grid`: Down from a key lands on the key below it, not wherever the next
     // row was last left.
@@ -83,7 +87,8 @@ function UrlKeyboard({
               icon={k === DELETE_KEY ? 'backspace' : undefined}
               iconSize={m.glyph}
               autoFocus={rowIndex === 0 && keyIndex === 0}
-              onPress={() => press(k)}
+              value={k}
+              onPress={press}
               style={s.key}
               textStyle={s.keyText}
             />
@@ -100,16 +105,10 @@ function UrlKeyboard({
           label={t('common.clear')}
           icon="eraser"
           iconSize={m.glyph - 2}
-          onPress={() => onValueChange('')}
+          onPress={clear}
           style={s.clearKey}
         />
-        <Key
-          size={size}
-          label="."
-          onPress={() => onValueChange(`${value}.`)}
-          style={s.key}
-          textStyle={s.keyText}
-        />
+        <Key size={size} label="." onPress={press} style={s.key} textStyle={s.keyText} />
         {onSubmit ? (
           <Button variant="primary" onPress={onSubmit} label={submitLabel} style={s.submit} />
         ) : null}

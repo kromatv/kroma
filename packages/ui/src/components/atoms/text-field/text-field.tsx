@@ -6,7 +6,7 @@ import { type ReactNode, type RefObject, useRef, useState } from 'react';
 import { type StyleProp, TextInput, type TextInputProps, type TextStyle } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { frostCoat } from '#ui/components/atoms/frost';
+import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { color, styles, useTheme } from '#ui/core';
@@ -126,7 +126,7 @@ function TextField({
   const autoCompleteProps = autoComplete ? { autoComplete } : null;
   const masked = type === 'password' && !revealed;
   const shell = fieldShell(metrics, { flat, focused, invalid, lift });
-  const frost = frostCoat({ borderRadius: controlRadius(metrics) }, { on: !flat });
+  const frost = useFrostCoat({ borderRadius: controlRadius(metrics) }, { on: !flat });
   return (
     <Box
       row

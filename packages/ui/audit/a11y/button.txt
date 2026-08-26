@@ -1,4 +1,0 @@
-# Button  src/components/atoms/button/button.story.mdx
-
-## preview
-button "Play" tab

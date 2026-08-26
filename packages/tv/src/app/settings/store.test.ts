@@ -2,7 +2,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { artworkSetting } from './registry';
-import { artworkPrefStore, reactivePref, useStoredPref } from './store';
+import { artworkPrefStore, perfHudPrefStore, reactivePref, useStoredPref } from './store';
 
 // jsdom ships no Storage implementation, so this test provides one rather than
 // skipping the assertion that the store actually persists to it.
@@ -51,6 +51,33 @@ describe('reactivePref', () => {
     expect(seen).toHaveBeenCalledTimes(1);
   });
 
+  it('reads a value stored after the pref was created', () => {
+    const pref = reactivePref('kroma:test-late', ['a', 'b'], 'a');
+    expect(pref.get()).toBe('a');
+
+    window.localStorage.setItem('kroma:test-late', 'b');
+
+    expect(pref.get()).toBe('b');
+  });
+
+  it('keeps a value set here even when the write could not land', () => {
+    Object.defineProperty(window, 'localStorage', {
+      value: {
+        getItem: () => null,
+        setItem: () => {
+          throw new Error('blocked');
+        },
+        removeItem: () => {},
+      },
+      configurable: true,
+    });
+    const pref = reactivePref('kroma:test-blocked', ['a', 'b'], 'a');
+
+    expect(() => pref.set('b')).not.toThrow();
+
+    expect(pref.get()).toBe('b');
+  });
+
   it('useStoredPref re-renders the consumer when ANY writer sets the pref', () => {
     const pref = reactivePref('kroma:test-hook', ['x', 'y'], 'x');
     const { result } = renderHook(() => useStoredPref(pref));
@@ -82,5 +109,33 @@ describe('the artwork quality row', () => {
 
     act(() => result.current[1]('full'));
     expect(artworkPrefStore.get()).toBe('full');
+  });
+});
+
+describe('a preference stored by an earlier run', () => {
+  it('is what the next module evaluation reads, not the fallback', async () => {
+    perfHudPrefStore.set('on');
+
+    vi.resetModules();
+    const next = await import('./store');
+
+    expect(next.perfHudPrefStore.get()).toBe('on');
+  });
+
+  it('re-applies the artwork scale when the device store arrives late', async () => {
+    vi.resetModules();
+    const core = await import('@kroma/core');
+    await import('./store');
+    const late = new Map([['kroma:artwork', 'medium']]);
+    expect(core.artworkScaleValue()).toBe(1);
+
+    core.setSessionStorage({
+      getItem: (k: string) => late.get(k) ?? null,
+      setItem: (k: string, v: string) => void late.set(k, v),
+      removeItem: (k: string) => void late.delete(k),
+    });
+
+    expect(core.artworkScaleValue()).toBe(0.5);
+    core.setSessionStorage(null);
   });
 });

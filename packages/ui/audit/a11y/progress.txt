@@ -1,8 +1,0 @@
-# Progress  src/components/atoms/progress/progress.story.mdx
-
-## preview
-progressbar "" [valuenow=42]
-
-## scene:Determinate and indeterminate
-progressbar "" [valuenow=42]
-progressbar "" [busy=true]

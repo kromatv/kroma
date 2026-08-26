@@ -47,8 +47,8 @@ export {
   keyRowWidth,
   LAYOUT_LETTER_ROWS,
   SearchKeyboard,
+  URL_ROWS,
   UrlKeyboard,
-  urlRows,
 } from './keyboard';
 export type { KromaIntroProps } from './kroma-intro';
 export { KromaIntro } from './kroma-intro';

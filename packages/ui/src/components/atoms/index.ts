@@ -28,7 +28,7 @@ export { ExpandableText } from './expandable-text';
 export type { FocusableProps, FocusState, HostElement } from './focusable';
 export { Focusable } from './focusable';
 export type { FrostBackdropProps, FrostCoat, FrostOptions, FrostProps } from './frost';
-export { Frost, frostCoat, registerFrost, setFrostEnabled } from './frost';
+export { Frost, registerFrost, setFrostEnabled, useFrostCoat } from './frost';
 export type { GridProps } from './grid';
 export { cellWidth, columnsFor, Grid } from './grid';
 export type { GroundProps } from './ground';

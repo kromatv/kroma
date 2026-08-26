@@ -18,7 +18,7 @@ import type { AudioFilterMode, PlaneRect } from '@kroma/ui';
 export interface EngineListeners {
   onTime(sec: number): void;
   onDuration(sec: number): void;
-  onBuffered(sec: number): void;
+  onBuffered(sec: number | null): void;
   onPlay(): void;
   onPause(): void;
   onWaiting(): void;
@@ -47,7 +47,11 @@ export interface TvEngine {
   isPaused(): boolean;
   position(): number;
   duration(): number;
-  bufferedEnd(): number;
+  /** How far ahead the backend holds, in absolute seconds, or `null` when it
+   *  has no buffered range to report - libVLC's Android binding exposes how
+   *  full its own cache is, which is not the same thing and must not be dressed
+   *  up as one. */
+  bufferedEnd(): number | null;
   seekTo(absSec: number): void;
   setAudioRendition(rendition: number): void;
   // Resize the native video plane to a fraction-rect, or `null` for fullscreen. Only AVPlay/mpv

@@ -666,6 +666,26 @@
         "wrangler": "^4.123.0",
       },
     },
+    "packages/react-audit": {
+      "name": "@kroma/react-audit",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@testing-library/react": "^16.3.0",
+        "@types/node": "^22.20.1",
+        "@types/react": "^19.2.18",
+        "react": "19.2.8",
+        "typescript": "^7.0.2",
+        "vite": "^8.2.1",
+        "vitest": "^4.1.10",
+      },
+      "peerDependencies": {
+        "@testing-library/react": ">=16",
+        "react": ">=18",
+      },
+      "optionalPeers": [
+        "@testing-library/react",
+      ],
+    },
     "packages/registry": {
       "name": "@kroma/registry",
       "version": "0.0.0",
@@ -797,6 +817,7 @@
         "react-tv-space-navigation": "6.0.0-beta1",
       },
       "devDependencies": {
+        "@kroma/react-audit": "workspace:*",
         "@kroma/workbench": "workspace:*",
         "@tabler/icons": "^3.46.0",
         "@types/node": "^22.20.1",
@@ -1426,6 +1447,8 @@
     "@kroma/package-source": ["@kroma/package-source@workspace:apps/packages"],
 
     "@kroma/push-relay": ["@kroma/push-relay@workspace:packages/push-relay"],
+
+    "@kroma/react-audit": ["@kroma/react-audit@workspace:packages/react-audit"],
 
     "@kroma/registry": ["@kroma/registry@workspace:packages/registry"],
 

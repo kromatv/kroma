@@ -349,3 +349,17 @@ describe('typing on a hardware keyboard', () => {
     expect(b).toEqual(['z']);
   });
 });
+
+describe('one physical press', () => {
+  it('moves the ring once when both transports carry it', async () => {
+    const { remote } = await load('android');
+    const ring = navigator();
+    renderHook(() => remote.useRemoteBridge());
+    const host = renderHook(() => remote.useRemoteHostProps());
+    // A build where the event stream AND the key host are both live: the ring
+    // must step one item, not two.
+    press('right');
+    keyDown(host.result.current, { code: 'ArrowRight' });
+    expect(ring.moves).toEqual(['right']);
+  });
+});

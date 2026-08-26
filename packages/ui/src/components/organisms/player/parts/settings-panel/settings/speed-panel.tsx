@@ -33,11 +33,12 @@ export const SpeedPanel = forwardRef<PanelHandle, SpeedPanelProps>(function Spee
       {RATES.map((r, i) => (
         <SelectRow
           key={r}
+          index={i}
           label={r === 1 ? t('player.normalSpeed') : `${r}×`}
           selected={r === rate}
           focused={focus.index === i}
-          onActivate={() => pick(i)}
-          onFocus={focus.hover(i)}
+          onActivate={pick}
+          onFocus={focus.setIndex}
         />
       ))}
     </Box>

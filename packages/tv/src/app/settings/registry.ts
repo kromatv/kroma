@@ -30,6 +30,7 @@ import {
   ARTWORK_SCALE,
   type ArtworkQuality,
   artworkPrefStore,
+  blurPrefStore,
   perfHudPrefStore,
   useStoredPref,
 } from './store';
@@ -130,6 +131,17 @@ export const artworkSetting: SettingsItem = choiceItem({
   useValue: () => useStoredPref(artworkPrefStore),
 });
 
+export const blurSetting: SettingsItem = toggleItem({
+  id: 'blur',
+  level: 'device',
+  label: 'settings.blur',
+  icon: 'blur',
+  useValue: () => {
+    const [on, set] = useStoredPref(blurPrefStore);
+    return [on === 'on', (next: boolean) => set(next ? 'on' : 'off')] as const;
+  },
+});
+
 export const perfHudSetting: SettingsItem = toggleItem({
   id: 'perfHud',
   level: 'device',
@@ -181,6 +193,7 @@ export const DEVICE_SETTINGS: readonly SettingsItem[] = [
   castReceiverSetting,
   gpuRenderingSetting,
   artworkSetting,
+  blurSetting,
   perfHudSetting,
   crashReportingSetting,
 ];
@@ -194,6 +207,7 @@ export const PROFILE_SETTINGS: readonly SettingsItem[] = [
   castReceiverSetting,
   gpuRenderingSetting,
   artworkSetting,
+  blurSetting,
   perfHudSetting,
   crashReportingSetting,
 ];
@@ -232,6 +246,7 @@ export const SETTINGS_GROUPS: Record<SettingsGroupId, SettingsGroup> = {
       castReceiverSetting,
       gpuRenderingSetting,
       artworkSetting,
+      blurSetting,
       crashReportingSetting,
     ],
   },

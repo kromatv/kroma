@@ -8,7 +8,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { View } from 'react-native';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { FocusLiftHost, LIFTED } from '#ui/lib/focus-lift';
+import { FocusLiftHost, FocusLiftView, LIFTED } from '#ui/lib/focus-lift';
 import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusScope } from '#ui/lib/focus-scope';
 
@@ -51,5 +51,34 @@ describe('the focus lift chain', () => {
     rerender(tree(false));
 
     expect(lifted()).toBe(false);
+  });
+});
+
+describe('a lifting container', () => {
+  const holder = (label: string) => screen.getByLabelText(label).parentElement as HTMLElement;
+
+  function pair() {
+    render(
+      <FocusScope>
+        <FocusLiftView>
+          <Focusable label="Tile" autoFocus />
+        </FocusLiftView>
+        <FocusLiftView>
+          <Focusable label="Elsewhere" />
+        </FocusLiftView>
+      </FocusScope>,
+    );
+  }
+
+  it('rises above the container beside it while it holds the focus', () => {
+    pair();
+
+    expect(holder('Tile').style.zIndex).toBe('1');
+  });
+
+  it('grounds itself on a number rather than on nothing', () => {
+    pair();
+
+    expect(holder('Elsewhere').style.zIndex).toBe('0');
   });
 });

@@ -10,12 +10,18 @@
 import type { MediaItem } from '@kroma/core';
 import { audioTracksOf } from '@kroma/core';
 import { createVideoPlayer, type VideoPlayer } from 'expo-video';
+import { Platform } from 'react-native';
 import {
   BaseTvEngine,
   type EngineOptions,
   NATIVE_SEEK_AHEAD,
 } from '#tv/features/playback/player/baseEngine';
+import { nativeBufferBudget } from '#tv/features/playback/player/bufferBudget';
 import type { TvEngine } from '#tv/features/playback/player/engine';
+
+// What the platform player is actually made of, so the stats panel names the
+// same thing the logs do.
+const PLANE = Platform.OS === 'android' ? 'media3' : 'AVPlayer';
 
 // The chrome interpolates between reports, so a coarser interval than the
 // frame rate is plenty and costs less.
@@ -30,24 +36,35 @@ const RETIRE_MS = 1000;
 // object to a native prop throws mid-commit, freezing the UI with the film
 // still playing behind it. Pause now (no decoding), release on a timer once
 // nothing refers to it.
-function retire(player: VideoPlayer): void {
+function retire(player: VideoPlayer, now = false): void {
   try {
     player.pause();
   } catch {
     // no-op: already gone.
   }
-  setTimeout(() => {
+  const free = () => {
     try {
       player.release();
     } catch {
       // no-op: released elsewhere, or the app is tearing down.
     }
-  }, RETIRE_MS);
+  };
+  // Immediately when the ENGINE is going away rather than one of its players:
+  // there is no successor <VideoView> to wait for, and whatever replaces this
+  // engine opens its own decoder at once. A second of both resident is what the
+  // low-memory killer takes the app for on a 2 GB set, and a libVLC core
+  // carrying a software decoder is the worst possible thing to hold it next to.
+  if (now) {
+    free();
+    return;
+  }
+  setTimeout(free, RETIRE_MS);
 }
 
 export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   readonly kind = 'video' as const;
   private player: VideoPlayer | null = null;
+  private bufSec: number | null = null;
   private subscriptions: { remove(): void }[] = [];
   private pendingSeek: number | null = null;
 
@@ -69,6 +86,9 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     if (this.destroyed) return;
     const player = createVideoPlayer({ uri: url });
     player.timeUpdateEventInterval = TIME_UPDATE_SEC;
+    // Survives `replace`, so a re-anchor keeps the bounds this player opened with.
+    const budget = nativeBufferBudget();
+    if (budget) player.bufferOptions = budget;
     // Only direct mode needs a seek: master's clock already starts at baseSec.
     this.pendingSeek = this.mode === 'direct' && seekSec > 0 ? seekSec : null;
     this.player = player;
@@ -97,6 +117,10 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
 
     add('timeUpdate', (payload: { currentTime: number; bufferedPosition?: number }) => {
       this.elSec = payload.currentTime;
+      // The event carries it, so take it from there: reading the property back
+      // off a player that is mid-swap throws, and `readNumber` answers that with
+      // a 0 the seek bar draws as "nothing buffered".
+      if (payload.bufferedPosition != null) this.bufSec = payload.bufferedPosition;
       this.listeners.onTime(this.position());
       const duration = this.readNumber(() => player.duration);
       // In master mode the reported duration is the remaining anchored span,
@@ -141,12 +165,13 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     this.elSec = seek;
   }
 
-  private teardown(): void {
+  private teardown(now = false): void {
     for (const sub of this.subscriptions) sub.remove();
     this.subscriptions = [];
     const retiring = this.player;
     this.player = null;
-    if (retiring) retire(retiring);
+    this.bufSec = null;
+    if (retiring) retire(retiring, now);
   }
 
   /** In master mode, re-anchors at `absSec` on the server; in direct mode, seeks
@@ -183,8 +208,47 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     this.paused = true;
   }
 
+  // Only what the platform player actually answered: a field it left null is
+  // left out rather than drawn as a zero, which would read as a measurement.
+  // `isSupported` is the one worth reading twice - it is the device saying it
+  // has no decoder for this track, which is the difference between a slow
+  // picture and no picture at all.
+  debugRows(): { label: string; value: string }[] {
+    const rows = [{ label: 'Plane', value: PLANE }];
+    const player = this.player;
+    if (!player) return rows;
+    const read = <T>(get: () => T): T | null => {
+      try {
+        return get();
+      } catch {
+        return null;
+      }
+    };
+
+    const status = read(() => player.status);
+    if (status) rows.push({ label: 'Player state', value: status });
+
+    const rate = read(() => player.playbackRate);
+    if (rate != null && rate !== 1) rows.push({ label: 'Rate', value: `${rate}x` });
+
+    const track = read(() => player.videoTrack);
+    if (!track) return rows;
+
+    if (track.mimeType) rows.push({ label: 'Track', value: track.mimeType });
+    if (track.size.width > 0) {
+      rows.push({ label: 'Track size', value: `${track.size.width}×${track.size.height}` });
+    }
+    if (track.frameRate)
+      rows.push({ label: 'Frame rate', value: `${track.frameRate.toFixed(2)} fps` });
+    const bitrate = track.peakBitrate ?? track.averageBitrate ?? track.bitrate;
+    if (bitrate) rows.push({ label: 'Bitrate', value: `${(bitrate / 1e6).toFixed(1)} Mb/s` });
+    if (track.videoRange) rows.push({ label: 'Range', value: track.videoRange });
+    if (!track.isSupported) rows.push({ label: 'Decoder', value: 'unsupported' });
+    return rows;
+  }
+
   bufferedEnd(): number {
-    const buffered = this.readNumber(() => this.player?.bufferedPosition ?? 0);
+    const buffered = this.bufSec ?? this.readNumber(() => this.player?.bufferedPosition ?? 0);
     return this.baseSec + Math.max(0, buffered);
   }
 
@@ -249,6 +313,6 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
 
   destroy(): void {
     this.destroyed = true;
-    this.teardown();
+    this.teardown(true);
   }
 }

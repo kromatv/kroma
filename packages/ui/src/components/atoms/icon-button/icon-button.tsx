@@ -4,7 +4,7 @@
 import { type ReactNode, useMemo } from 'react';
 import { StyleSheet, type ViewStyle } from 'react-native';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
-import { frostCoat } from '#ui/components/atoms/frost';
+import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import {
   type CornerValue,
@@ -169,7 +169,7 @@ function IconButton({
   const corner = asked === undefined ? undefined : radiusValue(asked);
   const glyphSize = glyph ?? Math.round(box$ * 0.4);
   const theme = useTheme();
-  const frost = frostCoat(metrics(box$, corner ?? theme.radius.pill), {
+  const frost = useFrostCoat(metrics(box$, corner ?? theme.radius.pill), {
     on: active || variant === 'glass' || variant === 'scrim' || variant === 'danger',
   });
   // Memoised, not inlined: <Focusable> keys its own style memo on this value,

@@ -258,6 +258,13 @@ export class MpvEngine extends BaseTvEngine {
     return this.baseSec + Math.max(this.elSec, this.cacheSec);
   }
 
+  debugRows(): { label: string; value: string }[] {
+    return [
+      { label: 'Plane', value: 'mpv' },
+      { label: 'Demuxer cache', value: `${this.cacheSec.toFixed(1)} s` },
+    ];
+  }
+
   seekTo(absSec: number): void {
     if (this.mode === 'direct') {
       // The original file is one fully-seekable VOD: every seek is native+absolute.

@@ -43,7 +43,7 @@ export interface EngineLifecycle {
   cur: number;
   setCur: React.Dispatch<React.SetStateAction<number>>;
   dur: number;
-  bufEnd: number;
+  bufEnd: number | null;
   decodedAspect: number | undefined;
   audioIndex: number;
   setAudioIndex: React.Dispatch<React.SetStateAction<number>>;
@@ -77,7 +77,7 @@ export function useEngineLifecycle(
   const [audioFilterSupported, setAudioFilterSupported] = useState(true);
   const [cur, setCur] = useState(0);
   const [dur, setDur] = useState(item.durationMs ? item.durationMs / 1000 : 0);
-  const [bufEnd, setBufEnd] = useState(0);
+  const [bufEnd, setBufEnd] = useState<number | null>(null);
   // Corrected by any engine that can read its own decoder; the catalog's
   // dimensions are anamorphic-uncorrected, so the engine wins once it answers.
   const [decodedAspect, setDecodedAspect] = useState<number | undefined>(undefined);

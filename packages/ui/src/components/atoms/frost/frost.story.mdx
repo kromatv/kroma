@@ -15,7 +15,7 @@ export const story = defineStory({
 
 The backdrop blur under a glass surface, and the kit's answer to React Native having no backdrop filter. Three behaviours from one call: a browser gets the real CSS `backdrop-filter`; the 2019 TV WebKits ignore that property, so a legacy Tizen or webOS keeps the plain wash rather than compositing a blur on the CPU; and a native target renders whatever blur view the shell handed over at startup (`registerFrost(BlurView)`), or nothing at all if it handed over none. The layer fills its parent, sits below the parent's own content, takes no press, and clips ITSELF to the corner it is given, so the surface never needs `overflow: hidden`, which would also crop the focus rings of the controls inside it. Most screens never write one: `<Surface tone="glass">`, the frosted `<Button>` coats, `<ListRow.Group>` and every field's well lay one down themselves.
 
-`<Frost>` renders no element of its own. It is a slot: it takes exactly one child, reads that child's corner off its style or its `<Box radius>` shorthand, and coats it, so there is no wrapper in the tree and no radius to keep in step by hand. For a control whose child is a render function, where there is no element to clone, call `frostCoat(surfaceStyle, options)` and spread the `style` it returns onto the surface while rendering its `layer` as the first child. Exactly one of the two is ever set.
+`<Frost>` renders no element of its own. It is a slot: it takes exactly one child, reads that child's corner off its style or its `<Box radius>` shorthand, and coats it, so there is no wrapper in the tree and no radius to keep in step by hand. For a control whose child is a render function, where there is no element to clone, call `useFrostCoat(surfaceStyle, options)` and spread the `style` it returns onto the surface while rendering its `layer` as the first child. Exactly one of the two is ever set.
 
 ```tsx
 <Frost amount={12}>
@@ -25,7 +25,7 @@ The backdrop blur under a glass surface, and the kit's answer to React Native ha
 </Frost>
 
 // A surface whose child is a render function has no element to coat:
-const coat = frostCoat(radiusValue('2xl'), { amount: 12 });
+const coat = useFrostCoat(radiusValue('2xl'), { amount: 12 });
 
 // Once, in the shell's entry file, so native frosts at all:
 registerFrost(BlurView);
@@ -41,7 +41,7 @@ registerFrost(BlurView);
 
 <Do>
 - Wrap the surface in it and let it read the corner off that child. It clips itself rather than asking the surface to clip its children, which would crop the focus rings of the controls inside.
-- Reach for `frostCoat()` only where there is no element to wrap, meaning a child that is a render function.
+- Reach for `useFrostCoat()` only where there is no element to wrap, meaning a child that is a render function.
 - Keep the fill above it translucent. The blur is what stops that translucency reading as a hole in the page.
 - Register the platform blur once in the shell. The kit ships no blur dependency of its own, the same inversion as voice search and the launcher.
 </Do>
@@ -51,5 +51,5 @@ registerFrost(BlurView);
 - Count on it: an unregistered native shell and every legacy TV panel show the wash alone, so the surface has to read without the blur.
 - Blur on a television. A backdrop filter is re-paid whenever anything behind it moves, and a 2024 Samsung measured 40fps with it against 60 without.
 - Pass `tint` to force a ground for the look of it: it is the native blur's tint only, does nothing on a browser, and the default already follows the app's ground.
-- Give it more than one child, or a child whose own children are a render function. The first is a `Children.only` throw, the second a `TypeError` telling you to call `frostCoat()`.
+- Give it more than one child, or a child whose own children are a render function. The first is a `Children.only` throw, the second a `TypeError` telling you to call `useFrostCoat()`.
 </Dont>

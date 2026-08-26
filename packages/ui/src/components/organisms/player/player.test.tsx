@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createRef, type ReactNode, type Ref } from 'react';
 import type { View } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -133,7 +133,7 @@ describe('<Player.Root> says why it was closed', () => {
 });
 
 describe('<Player.Root> and the overlays it owns', () => {
-  it('raises the stats overlay from the settings menu, and leaves it up when the panel goes', () => {
+  it('raises the stats overlay from the settings menu, and leaves it up when the panel goes', async () => {
     render(player(media));
     fireEvent.click(screen.getByLabelText('Settings'));
     fireEvent.click(screen.getByLabelText('Statistics'));
@@ -142,7 +142,7 @@ describe('<Player.Root> and the overlays it owns', () => {
     expect(screen.getByText('Direct · HEVC passthrough')).toBeTruthy();
 
     fireEvent.keyDown(window, { key: 'Escape' });
-    expect(screen.queryByLabelText('Statistics')).toBeNull();
+    await waitFor(() => expect(screen.queryByLabelText('Statistics')).toBeNull());
     expect(screen.getByText('Direct · HEVC passthrough')).toBeTruthy();
 
     fireEvent.click(screen.getByLabelText('Close'));

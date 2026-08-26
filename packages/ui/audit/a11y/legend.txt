@@ -1,7 +1,0 @@
-# Legend  src/components/molecules/legend/legend.story.mdx
-
-## preview
-
-
-## scene:Status board
-

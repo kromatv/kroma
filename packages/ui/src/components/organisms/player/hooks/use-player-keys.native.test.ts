@@ -164,6 +164,30 @@ describe('the Android key host', () => {
     unmount();
   });
 
+  it('counts one press once when both sources hear it', () => {
+    rn.os = 'android';
+    const { unmount } = renderHook(() => usePlayerKeys(params('a')));
+    // Which of the two is live depends on the architecture, not on anything
+    // this hook can read. A build where both fire routes one press twice, and
+    // the player's focus then steps two controls for one press of the d-pad.
+    act(() => {
+      rn.remote?.({ eventType: 'right', eventKeyAction: 0 } as HWEvent);
+      host.onKey?.('Right');
+    });
+    expect(routed()).toEqual(['Right']);
+    unmount();
+  });
+
+  it('passes auto-repeat straight through, which is how a held d-pad seeks', () => {
+    rn.os = 'android';
+    const { unmount } = renderHook(() => usePlayerKeys(params('a')));
+    act(() => {
+      for (let i = 0; i < 4; i++) host.onKey?.('Right');
+    });
+    expect(routed()).toEqual(['Right', 'Right', 'Right', 'Right']);
+    unmount();
+  });
+
   it('hands the router the latest params, like the event handler does', () => {
     const { rerender, unmount } = renderHook(({ tag }) => usePlayerKeys(params(tag)), {
       initialProps: { tag: 'first' },

@@ -1,7 +1,0 @@
-# Menu  src/components/organisms/menu/menu.story.mdx
-
-## preview
-button "Row actions" [expanded=false] tab
-
-## scene:Its own trigger
-button "Account" tab

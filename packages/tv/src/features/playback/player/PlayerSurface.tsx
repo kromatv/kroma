@@ -27,6 +27,12 @@ export function PlayerSurface({ pb, title }: Readonly<{ pb: Playback; title: str
         player={player}
         style={StyleSheet.absoluteFill}
         contentFit="contain"
+        // Android only, and load-bearing: Media3's default SurfaceView is composited
+        // from its own window, so a rounded parent does not clip it and the settings
+        // card's transform never reaches it - it punched a hole through the card and
+        // left the picture black. A TextureView draws inside the view hierarchy. The
+        // cost is HDR passthrough, which no card-shaped SurfaceView was delivering.
+        surfaceType="textureView"
         // The platform's controls would answer the remote before our chrome.
         nativeControls={false}
         accessibilityLabel={title}
@@ -57,7 +63,13 @@ function VlcSurface({
         {...engine.viewState}
         style={StyleSheet.absoluteFill}
         accessibilityLabel={title}
-        onPlayerTime={(e) => engine.reportTime(e.nativeEvent.timeMs, e.nativeEvent.lengthMs)}
+        onPlayerTime={(e) => {
+          const { timeMs, lengthMs, lostPictures, displayedPictures, inputBitrate } = e.nativeEvent;
+          if (lostPictures != null && displayedPictures != null && inputBitrate != null) {
+            engine.reportStats({ lostPictures, displayedPictures, inputBitrate });
+          }
+          engine.reportTime(timeMs, lengthMs);
+        }}
         onPlayerLoad={(e) => engine.reportTime(0, e.nativeEvent.lengthMs)}
         onPlayerState={(e) => engine.reportState(e.nativeEvent.state, e.nativeEvent.percent)}
         onPlayerError={() => engine.reportError()}

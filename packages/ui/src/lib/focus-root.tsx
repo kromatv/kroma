@@ -12,7 +12,7 @@
 // press without a legitimate target.
 
 import type { ReactNode } from 'react';
-import { Pressable, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import { Pressable, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { SpatialNavigationRoot, SpatialNavigationView } from 'react-tv-space-navigation';
 import { useRemoteHostProps } from './focus-remote';
 import { flat } from './nav-style';
@@ -57,12 +57,21 @@ export function FocusRoot({
           keyboard the television must be able to focus then, and a focusable
           spread over the whole screen would take that focus and never give it
           back. */}
-      {keyHost ? (
-        <Pressable focusable isTVSelectable hasTVPreferredFocus style={KEY_HOST} {...hostProps} />
-      ) : null}
-      <SpatialNavigationView direction="vertical" style={flat([FILL, style])}>
-        {children}
-      </SpatialNavigationView>
+      {/* Android hands a key to whichever view holds the PLATFORM focus, and
+          `topKeyDown` BUBBLES. The focus walks off the host onto the navigator's
+          own views as soon as one is focused, so a handler on the host alone
+          hears the first press and nothing after it. This wrapper is their
+          common ancestor, so it hears every press wherever the focus sits. It
+          must be the ONLY node on the bubble path carrying them, or the first
+          press arrives twice. Empty off Android. */}
+      <View style={FILL} {...hostProps}>
+        {keyHost ? (
+          <Pressable focusable isTVSelectable hasTVPreferredFocus style={KEY_HOST} />
+        ) : null}
+        <SpatialNavigationView direction="vertical" style={flat([FILL, style])}>
+          {children}
+        </SpatialNavigationView>
+      </View>
     </SpatialNavigationRoot>
   );
 }

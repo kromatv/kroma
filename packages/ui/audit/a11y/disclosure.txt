@@ -1,7 +1,0 @@
-# Disclosure  src/components/molecules/disclosure/disclosure.story.mdx
-
-## preview
-button "Advanced" [expanded=true] tab
-
-## scene:With its own panel
-button "Advanced" [expanded=true] tab

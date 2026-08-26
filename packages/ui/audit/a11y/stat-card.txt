@@ -1,7 +1,0 @@
-# StatCard  src/components/molecules/stat-card/stat-card.story.mdx
-
-## preview
-
-
-## scene:A number carrying something under it
-progressbar "" [valuenow=62]

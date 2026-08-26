@@ -1,7 +1,0 @@
-# PinField  src/components/molecules/pin-field/pin-field.story.mdx
-
-## preview
-group ""
-
-## scene:Rejected
-group ""

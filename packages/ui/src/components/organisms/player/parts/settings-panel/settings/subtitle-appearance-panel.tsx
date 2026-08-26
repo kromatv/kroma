@@ -1,7 +1,5 @@
-import { forwardRef, type ReactNode, useImperativeHandle } from 'react';
-import { Pressable } from 'react-native';
+import { forwardRef, type ReactNode, useEffectEvent, useImperativeHandle } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Progress } from '#ui/components/atoms/progress';
 import { Text } from '#ui/components/atoms/text';
 import { useListFocus } from '#ui/components/organisms/player/hooks/use-list-focus';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
@@ -16,12 +14,9 @@ import {
   subtitleStyle,
   subtitleWindowStyle,
 } from '#ui/components/organisms/player/lib/subtitle-appearance';
-import { VIRTUAL_FOCUS } from '#ui/components/organisms/player/lib/virtual-focus';
-import { styles, useTheme } from '#ui/core';
-import { a11yState } from '#ui/lib/a11y';
 import { gradient } from '#ui/lib/css';
 import { useT } from '#ui/services/i18n';
-import { panel, rowStyle } from './panel-style';
+import { AppearanceRow, Choice, Meter, Seg, Swatches } from './subtitle-appearance-parts';
 
 interface SubtitleAppearancePanelProps {
   appearance: SubtitleAppearance;
@@ -154,11 +149,10 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
         : []),
     ];
 
-    const focus = useListFocus({
-      count: rows.length,
-      onHorizontal: (i, d) => rows[i]?.nudge(d),
-      onBack,
-    });
+    // One effect event for the whole list: a closure per row would carry
+    // `appearance`, which every nudge replaces.
+    const nudge = useEffectEvent((i: number, dir: -1 | 1) => rows[i]?.nudge(dir));
+    const focus = useListFocus({ count: rows.length, onHorizontal: nudge, onBack });
     useImperativeHandle(ref, () => ({ onKey: focus.onKey }), [focus.onKey]);
 
     return (
@@ -182,11 +176,11 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
           {rows.map((r, i) => (
             <AppearanceRow
               key={r.key}
+              index={i}
               label={r.label}
               focused={focus.index === i}
-              onFocus={focus.hover(i)}
-              onDec={() => r.nudge(-1)}
-              onInc={() => r.nudge(1)}
+              onFocus={focus.setIndex}
+              onNudge={nudge}
             >
               {r.control}
             </AppearanceRow>
@@ -196,154 +190,3 @@ export const SubtitleAppearancePanel = forwardRef<PanelHandle, SubtitleAppearanc
     );
   },
 );
-
-function AppearanceRow({
-  label,
-  focused,
-  onFocus,
-  onDec,
-  onInc,
-  children,
-}: Readonly<{
-  label: string;
-  focused: boolean;
-  onFocus: () => void;
-  onDec: () => void;
-  onInc: () => void;
-  children: ReactNode;
-}>) {
-  const t = useT();
-  return (
-    <Box onPointerEnter={onFocus} style={rowStyle(panel.valueRow, panel.valueRowOn, focused)}>
-      <Box row align="center" between mb={11}>
-        <Text style={panel.valueLabel}>{label}</Text>
-        <Box row align="center" gap={16}>
-          <Arrow
-            glyph="◀"
-            label={`${t('common.decrease')} ${label}`}
-            dim={!focused}
-            onPress={onDec}
-          />
-          <Arrow
-            glyph="▶"
-            label={`${t('common.increase')} ${label}`}
-            dim={!focused}
-            onPress={onInc}
-          />
-        </Box>
-      </Box>
-      {children}
-    </Box>
-  );
-}
-
-function Arrow({
-  glyph,
-  label,
-  dim,
-  onPress,
-}: Readonly<{ glyph: string; label: string; dim: boolean; onPress: () => void }>) {
-  return (
-    <Pressable
-      {...VIRTUAL_FOCUS}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Text style={[s.arrow, { opacity: dim ? 0.4 : 1 }]} color="accentText">
-        {glyph}
-      </Text>
-    </Pressable>
-  );
-}
-
-function Choice({ label }: Readonly<{ label: string }>) {
-  return (
-    <Box row align="center" center px={14} style={panel.pill} accessibilityRole="text">
-      <Text style={panel.pillLabel} color="text/92">
-        {label}
-      </Text>
-    </Box>
-  );
-}
-
-function Seg<V extends string>({
-  value,
-  options,
-  onPick,
-}: Readonly<{ value: V; options: { v: V; label: string }[]; onPick: (v: V) => void }>) {
-  return (
-    <Box row gap={8}>
-      {options.map((o) => {
-        const on = o.v === value;
-        return (
-          <Pressable
-            {...VIRTUAL_FOCUS}
-            key={o.v}
-            onPress={() => onPick(o.v)}
-            accessibilityRole="button"
-            accessibilityLabel={o.label}
-            {...a11yState({ selected: on })}
-            style={[panel.pill, s.segCell, on ? s.segOn : null]}
-          >
-            <Text style={panel.pillLabel} color={on ? 'accentInk' : 'text/70'}>
-              {o.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </Box>
-  );
-}
-
-function Swatches({ value, onPick }: Readonly<{ value: string; onPick: (color: string) => void }>) {
-  const { colors } = useTheme();
-  return (
-    <Box row gap={14}>
-      {SUB_COLORS.map((c) => (
-        <Pressable
-          {...VIRTUAL_FOCUS}
-          key={c}
-          onPress={() => onPick(c)}
-          accessibilityRole="button"
-          accessibilityLabel={c}
-          {...a11yState({ selected: c === value })}
-        >
-          <Box
-            w={32}
-            h={32}
-            radius="pill"
-            bg={c}
-            style={{
-              boxShadow:
-                c === value ? `0 0 0 2px ${colors.accent}` : '0 0 0 1px rgba(255, 255, 255, 0.2)',
-            }}
-          />
-        </Pressable>
-      ))}
-    </Box>
-  );
-}
-
-function Meter({ value }: Readonly<{ value: number }>) {
-  return (
-    <Box row align="center" gap={14}>
-      <Box flex>
-        <Progress value={value / 100} trackColor="white/14" rounded />
-      </Box>
-      <Text style={s.meterValue}>{`${value}%`}</Text>
-    </Box>
-  );
-}
-
-const s = styles({
-  arrow: { px: 4, text: 'strongTv' },
-  meterValue: {
-    minW: 52,
-    textAlign: 'right',
-    text: 'sectionTv',
-    fontVariant: ['tabular-nums'],
-  },
-  segCell: { flex: 1, align: 'center' },
-  segOn: { bg: 'accent' },
-});

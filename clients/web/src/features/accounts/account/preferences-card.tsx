@@ -1,11 +1,13 @@
-// Preferences section: UI language (applied immediately) plus the preferred
-// audio and subtitle languages, which the parent persists with `PATCH /auth/me`.
+// Preferences section: UI language and the background blur (both applied
+// immediately, the blur per device) plus the preferred audio and subtitle
+// languages, which the parent persists with `PATCH /auth/me`.
 
 import { LANG_NO_PREF, LOCALES, langName, langOptions } from '@kroma/core';
 import { useLocale, useSetLocale, useT } from '@kroma/ui';
-import { ListRow, Select } from '@kroma/ui/kit';
-import { useMemo } from 'react';
+import { ListRow, Select, Switch } from '@kroma/ui/kit';
+import { useMemo, useState } from 'react';
 import { PrefRow } from '#web/features/accounts/account/ui';
+import { getBlurPref, setBlurPref } from '#web/shared/lib/blur-pref';
 
 // '' means "nothing picked" to <Select>, so "no preference" uses this sentinel
 // and is mapped back to `null` on the way to the server.
@@ -25,6 +27,7 @@ export function PreferencesCard({
   const t = useT();
   const locale = useLocale();
   const setLocale = useSetLocale();
+  const [blur, setBlur] = useState(getBlurPref);
 
   // Sorting ~190 names on every keystroke in the profile form above this card.
   const langs = useMemo(
@@ -56,6 +59,21 @@ export function PreferencesCard({
               <Select.Item key={l.code} value={l.code} label={t(l.labelKey)} />
             ))}
           </Select.Root>
+        }
+      />
+      <PrefRow
+        icon="blur"
+        label={t('settings.blur')}
+        desc={t('settings.blurDesc')}
+        control={
+          <Switch
+            label={t('settings.blur')}
+            checked={blur}
+            onCheckedChange={(on) => {
+              setBlur(on);
+              setBlurPref(on);
+            }}
+          />
         }
       />
       <PrefRow

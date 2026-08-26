@@ -22,6 +22,7 @@ import { Text } from '#ui/components/atoms/text';
 import { ListRow } from '#ui/components/molecules/list-row';
 import type { ControlSize } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
+import { useStableCallback } from '#ui/lib/stable-callback';
 
 const FACE: Record<ControlSize, CheckboxSize> = { sm: 'sm', md: 'sm', tv: 'tv' };
 
@@ -66,23 +67,27 @@ function Root(props: Readonly<ChoiceRootProps>) {
   const value = props.value;
   const onValueChange = props.onValueChange;
 
+  // Stable, because it is every row's `onPress`: rebuilt with the rest of the
+  // context, picking one row re-rendered all of them.
+  const toggle = useStableCallback((v: string) => {
+    if (!many) {
+      (onValueChange as (next: string) => void)(v);
+      return;
+    }
+    const current = value as readonly string[];
+    (onValueChange as (next: string[]) => void)(
+      current.includes(v) ? current.filter((x) => x !== v) : [...current, v],
+    );
+  });
+
   const ctx = useMemo<ChoiceContext>(
     () => ({
       mode: many ? 'multiple' : 'single',
       size,
       picked: (v) => (many ? (value as readonly string[]).includes(v) : value === v),
-      toggle: (v) => {
-        if (!many) {
-          (onValueChange as (next: string) => void)(v);
-          return;
-        }
-        const current = value as readonly string[];
-        (onValueChange as (next: string[]) => void)(
-          current.includes(v) ? current.filter((x) => x !== v) : [...current, v],
-        );
-      },
+      toggle,
     }),
-    [many, size, value, onValueChange],
+    [many, size, value, toggle],
   );
 
   return (

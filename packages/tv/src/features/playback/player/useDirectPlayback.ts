@@ -36,7 +36,7 @@ export interface Playback {
   waiting: boolean;
   cur: number;
   dur: number;
-  bufEnd: number;
+  bufEnd: number | null;
   /** The picture's display ratio, from the decoder where a backend can read it
    *  and from the catalog otherwise; undefined when neither knows. */
   aspect: number | undefined;

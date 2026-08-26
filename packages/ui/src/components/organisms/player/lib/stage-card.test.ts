@@ -102,6 +102,16 @@ describe('stageCard', () => {
     expect(mapped * 1600).toBeCloseTo(shrunk.left, 5);
   });
 
+  it('lands the picture in the same place with a middle scale and a shift', () => {
+    const { card, shrunk } = measure(1600, 900, 1);
+    const box = card.picture ?? { x: 0, y: 0, width: 1, height: 1 };
+    // Android's road (see parts/stage): scale about the default middle, then
+    // translate. It has to agree with `origin` to the pixel, or the two
+    // platforms put the card in different places.
+    const mapped = 0.5 + (box.x - 0.5) * card.scale + card.shift;
+    expect(mapped * 1600).toBeCloseTo(shrunk.left, 5);
+  });
+
   it('never grows the picture past its full-stage size', () => {
     expect(stageCard(1600, 1200, 0.5).scale).toBeLessThanOrEqual(1);
   });

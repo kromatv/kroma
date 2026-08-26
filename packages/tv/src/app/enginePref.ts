@@ -3,7 +3,8 @@
 
 import { isTizenRuntime, isWebOsRuntime, type MessageKey } from '@kroma/core';
 import { Platform } from 'react-native';
-import { reactivePref } from '#tv/app/settings/store';
+import { devicePref } from '#tv/app/devicePref';
+import type { ReactivePref } from '#tv/app/settings/store';
 import { mpvAvailable, shakaAvailable } from '#tv/features/playback/player/engine';
 import { vlcAvailable } from '#tv/features/playback/player/vlcPlane';
 
@@ -11,7 +12,28 @@ export type EnginePref = 'auto' | 'avplay' | 'webview' | 'shaka' | 'remux' | 'mp
 
 const ALL: readonly EnginePref[] = ['auto', 'avplay', 'webview', 'shaka', 'remux', 'mpv', 'vlc'];
 
-export const enginePrefStore = reactivePref('kroma:engine', ALL, 'auto');
+const stored = devicePref('kroma:engine', ALL, 'auto');
+const listeners = new Set<() => void>();
+let chosen: EnginePref | null = null;
+
+/** Reads through to the device store until this session picks an engine, because
+ * the native shells install that store only once the session file has been read:
+ * a value snapshot taken while this module is evaluated is always the `auto`
+ * fallback, and would pin the engine to it for the life of the process. A choice
+ * made here wins from then on, so it still holds where the write could not land. */
+export const enginePrefStore: ReactivePref<EnginePref> = {
+  get: () => chosen ?? stored.get(),
+  set(value: EnginePref) {
+    if (value === (chosen ?? stored.get())) return;
+    chosen = value;
+    stored.set(value);
+    for (const listener of listeners) listener();
+  },
+  subscribe(listener: () => void) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  },
+};
 
 /** A stored engine no longer offered on THIS platform is degraded to `auto` by
  * the playback engine resolver, not here. */

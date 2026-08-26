@@ -54,20 +54,20 @@ describe('the web half', () => {
     expect(web.promote()).toEqual({ transform: 'translateZ(0)', willChange: 'transform' });
   });
 
-  // A backdrop-filter is not paid once: it re-blurs whenever anything BEHIND it
-  // changes, and a television composites that on the CPU. With the sign-in
-  // artwork drifting behind every frosted control, a 2024 Samsung panel measured
-  // 40fps with the blur and 60 without. The sets lose nothing they had, since
-  // the 2019 WebKits ignore the property outright.
-  it('gives a television no blur at all, at any strength', async () => {
+  // A television pays for this one: a backdrop-filter re-blurs whenever anything
+  // behind it changes, and a set composites that on the CPU (a 2024 Samsung
+  // measured 40fps with it and 60 without). That is the viewer's call through
+  // the `settings.blur` switch, so the tier is given the same filter as anyone
+  // else rather than being wired to nothing.
+  it('gives a television the same blur, for its switch to turn off', async () => {
     Object.assign(globalThis, { __KROMA_TV_TIER__: true });
     vi.resetModules();
     try {
       const tv = await import('./css.web');
-      expect(tv.backdropBlur(12)).toEqual({});
-      expect(tv.backdropBlur(1)).toEqual({});
-      // Everything else the tier still gets.
-      expect(tv.promote()).toEqual({ transform: 'translateZ(0)', willChange: 'transform' });
+      expect(tv.backdropBlur(12)).toEqual({
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+      });
     } finally {
       Reflect.deleteProperty(globalThis, '__KROMA_TV_TIER__');
       vi.resetModules();

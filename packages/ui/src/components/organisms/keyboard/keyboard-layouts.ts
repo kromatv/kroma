@@ -48,10 +48,7 @@ export const LAYOUT_LETTER_ROWS: Record<KeyboardLayout, readonly (readonly strin
  * cannot be identified by the character it no longer prints. */
 export const DELETE_KEY = 'delete';
 
-/** Digits row, then the layout's lowercase letters chunked into rows of ten
- * with the URL specials appended to the tail (26 letters + 4 specials = three
- * even rows). */
-export function urlRows(layout: KeyboardLayout): string[][] {
+function buildUrlRows(layout: KeyboardLayout): readonly (readonly string[])[] {
   const keys = [
     ...LAYOUT_LETTER_ROWS[layout].flat().map((l) => l.toLowerCase()),
     '-',
@@ -63,3 +60,17 @@ export function urlRows(layout: KeyboardLayout): string[][] {
   for (let i = 0; i < keys.length; i += 10) rows.push(keys.slice(i, i + 10));
   return rows;
 }
+
+/**
+ * Digits row, then the layout's lowercase letters chunked into rows of ten with
+ * the URL specials appended to the tail (26 letters + 4 specials = three even
+ * rows).
+ *
+ * A table rather than the function that builds one: the React Compiler cannot
+ * memoise a call to an imported function, so a keyboard that asked for its rows
+ * through one got a fresh array every render, and rebuilt all forty-odd key
+ * elements with it. A member read off a constant it can hold still.
+ */
+export const URL_ROWS = Object.fromEntries(
+  KEYBOARD_LAYOUTS.map((layout) => [layout, buildUrlRows(layout)]),
+) as Record<KeyboardLayout, readonly (readonly string[])[]>;

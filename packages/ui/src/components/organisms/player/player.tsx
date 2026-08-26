@@ -13,7 +13,9 @@ import { useSeekNudge } from './hooks/use-seek-nudge';
 import { clamp01, sliderToVolume, volumeToSlider } from './lib/fmt';
 import { chromeMetrics, panelGeometry, scaler, TRANSPORT_HEIGHT } from './lib/metrics';
 import { type ControlId, controlOrder, type PanelHandle } from './lib/nav';
+import { usePanelSlide } from './lib/panel-slide';
 import type { SubtitleAppearance } from './lib/subtitle-appearance';
+import { surfaceShrink } from './lib/surface-shrink';
 import { CreditsCard, type CreditsCardItem } from './parts/credits-card';
 import { SettingsPanel } from './parts/settings-panel';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
@@ -183,11 +185,10 @@ function Root({
 
   const { settingsOpen, sheetOpen, settingsShrink, peekVisible, chromeShown } = deriveChrome(
     nav,
-    c,
     upNext,
     panel.covers,
   );
-  const nativeShrink = settingsOpen && c.surface !== 'video' && !panel.covers;
+  const settings = usePanelSlide(settingsOpen);
   const initialView = initialSettingsView(nav.overlay);
   // Measured rather than assumed, and it falls back to the design height:
   // `onLayout` is a ResizeObserver under react-native-web, and the legacy TV tier
@@ -217,7 +218,9 @@ function Root({
         ref={ref}
         fill
         z={60}
-        bg={c.surface === 'video' ? '#000000' : 'transparent'}
+        // Transparent ONLY over a hardware plane, which is behind the page and
+        // would be painted out; a surface React lays out sits on this ground.
+        bg={surfaceShrink(c.surface) === 'plane' ? 'transparent' : '#000000'}
         onLayout={onStageLayout}
         onPointerMove={input.onPointerMove}
       >
@@ -226,7 +229,6 @@ function Root({
             controller={c}
             stageSize={stageSize}
             settingsShrink={settingsShrink}
-            nativeShrink={nativeShrink}
             appearance={appearance}
             raised={nav.revealed}
             locked={locked}
@@ -308,9 +310,11 @@ function Root({
           />
 
           {/* settings / audio / subtitles panel (§5) */}
-          {settingsOpen ? (
+          {settings.mounted ? (
             <SettingsPanel
+              key={settings.run}
               ref={panelRef}
+              shown={settings.shown}
               initialView={initialView}
               width={panel.width}
               covers={panel.covers}
