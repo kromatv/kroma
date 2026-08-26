@@ -198,7 +198,16 @@ pub async fn fetch_merged(
         }
         tracing::warn!(registry = %f.registry.url, %error, "module registry unreachable; skipped");
     }
-    Ok(fetched.into_iter().flat_map(|f| f.modules).collect())
+    Ok(fetched
+        .into_iter()
+        .flat_map(|f| {
+            let official = f.registry.official;
+            f.modules.into_iter().map(move |mut m| {
+                m.official = official;
+                m
+            })
+        })
+        .collect())
 }
 
 /// Every registry row the admin editor shows, straight off the one pass that

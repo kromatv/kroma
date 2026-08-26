@@ -168,3 +168,31 @@ describe('verify', () => {
     });
   });
 });
+
+describe('a malformed assertion', () => {
+  let pair: CryptoKeyPair;
+  let certs: typeof fetch;
+
+  beforeEach(async () => {
+    resetKeyCache();
+    pair = await keypair();
+    certs = serving(await jwks(pair, 'kid-1'));
+  });
+
+  it('is refused rather than thrown on, whatever the signature contains', async () => {
+    const token = await sign(pair, 'kid-1', goodClaims());
+    const [header, claims] = token.split('.');
+
+    for (const signature of ['!', 'a', 'abc*', 'abcde', '', '💥']) {
+      const verdict = await verify(`${header}.${claims}.${signature}`, config, NOW, certs);
+      expect(verdict, signature).toMatchObject({ ok: false, status: 401 });
+    }
+  });
+
+  it('is refused when the identity provider answers 200 with something that is not JSON', async () => {
+    const token = await sign(pair, 'kid-1', goodClaims());
+    const notJson = (async () => new Response('<html>nope</html>')) as unknown as typeof fetch;
+
+    expect(await verify(token, config, NOW, notJson)).toMatchObject({ ok: false, status: 503 });
+  });
+});

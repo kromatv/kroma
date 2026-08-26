@@ -12,19 +12,17 @@
   "compatibility_date": "2026-08-26",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
-  // Cloudflare Access guards `/v1/admin/*`. None of these is a credential: the
-  // assertion is signed with a key only Cloudflare holds, so this Worker still
-  // ships no secret and there is nothing here to leak. Empty means the admin
-  // route answers 503, which is the safe way to be unconfigured. Fill them from
-  // Zero Trust → Access → Applications after creating the application:
-  //   ACCESS_TEAM_DOMAIN  <team>.cloudflareaccess.com
-  //   ACCESS_AUD          the application's Application Audience (AUD) tag
-  //   ADMIN_EMAILS        comma separated, and the policy should name the same
-  "vars": {
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": "",
-    "ADMIN_EMAILS": ""
-  },
+  // Cloudflare Access guards `/v1/admin/*`. The three settings live in
+  // `wrangler secret`, not here: an allow-list committed to a public repository
+  // publishes which identity has to be phished to reach the unfloored
+  // breakdowns, and a value in `vars` is reset on every deploy, which would
+  // silently shut the route after somebody set it in the dashboard.
+  //   bunx wrangler secret put ACCESS_TEAM_DOMAIN   # <team>.cloudflareaccess.com
+  //   bunx wrangler secret put ACCESS_AUD           # the application's AUD tag
+  //   bunx wrangler secret put ADMIN_EMAILS         # comma separated
+  // None of them is secret in the cryptographic sense; `secret` is simply the
+  // only store that is neither in git nor overwritten by a deploy. Unset means
+  // the admin route answers 503, which is the safe way to be unconfigured.
   // Keep a <name>.workers.dev URL alongside the custom domain (fallback + while
   // the stats.kroma.tv cert provisions).
   "workers_dev": true,

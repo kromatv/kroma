@@ -80,7 +80,12 @@ curl -X POST https://stats.kroma.tv/v1/forget \
 ```
 
 Holding the identifier is the whole authorisation, on the same rule a ping runs
-under, and it reaches exactly one row. The legal side of all this, the basis, the
+under, and it reaches exactly one row.
+**Switch it off first.** Erasing the row while the server is still reporting only
+buys a day: the next payload writes the row again, and because that row is new it
+stops counting for another seven days. Off, then erase, is the order that means
+what it says.
+ The legal side of all this, the basis, the
 processors, the retention and the rest of the rights, is
 [`anonymous-stats-gdpr.md`](anonymous-stats-gdpr.md).
 

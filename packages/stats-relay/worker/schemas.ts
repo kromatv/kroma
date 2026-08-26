@@ -6,14 +6,18 @@ import { z } from 'zod';
 
 const InstallId = z.string().regex(/^[0-9a-f]{64}$/, 'must be a 32-byte hex token');
 
+// Bounded as well as shaped: a regex that permits any length is a free way to
+// make the collector read megabytes before deciding it did not want them.
 const Tag = z
   .string()
   .trim()
+  .max(16)
   .regex(/^[a-z0-9][a-z0-9-]*$/, 'must be a lowercase language tag');
 
 const ModuleId = z
   .string()
   .trim()
+  .max(128)
   .regex(/^[a-z0-9]+(\.[a-z0-9-]+)+$/, 'must be a reverse-DNS module id');
 
 // Devices seen on one install in the last week, capped server-side at 50.

@@ -29,3 +29,8 @@ pub use accessors::*;
 pub use llm::*;
 pub use schema::*;
 pub use store::*;
+
+/// The statistics feature's own settings keys and the identity behind them.
+pub mod stats {
+    pub use crate::services::stats::{ensure_identity, ENABLED_KEY, ID_KEY, SENT_KEY};
+}

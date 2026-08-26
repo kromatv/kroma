@@ -21,27 +21,41 @@ export const SETTLE_DAYS = 7;
 /** No breakdown is published for fewer instances than this. */
 export const FLOOR = 5;
 
+/** One bar: what it names, and how many installs have it. */
+export interface Counted {
+  key: string;
+  n: number;
+}
+
 interface Aggregate {
   instances: number;
   clients: { tv: number; mobile: number; desktop: number; total: number };
-  versions: Record<string, number>;
-  platforms: Record<string, number>;
-  installs: Record<string, number>;
-  countries: Record<string, number>;
-  locales: Record<string, number>;
-  modules: Record<string, number>;
+  versions: Counted[];
+  platforms: Counted[];
+  installs: Counted[];
+  countries: Counted[];
+  locales: Counted[];
+  modules: Counted[];
   history: DailyRow[];
   updatedAt: number;
+}
+
+/** Heard from inside the active window. */
+export function active(row: InstanceRow, now: number): boolean {
+  return row.lastSeen >= now - ACTIVE_DAYS * DAY;
+}
+
+/** Active, but not around long enough to count yet. Not the same as dead: a row
+ * that went quiet two months ago is neither counted nor settling. */
+export function settling(row: InstanceRow, now: number): boolean {
+  return !row.flagged && active(row, now) && row.firstSeen > now - SETTLE_DAYS * DAY;
 }
 
 /** The rows that count: heard from recently, around long enough to be real, and
  * not flagged by the nightly sweep. */
 export function counted(rows: InstanceRow[], now: number): InstanceRow[] {
   return rows.filter(
-    (row) =>
-      !row.flagged &&
-      row.lastSeen >= now - ACTIVE_DAYS * DAY &&
-      row.firstSeen <= now - SETTLE_DAYS * DAY,
+    (row) => !row.flagged && active(row, now) && row.firstSeen <= now - SETTLE_DAYS * DAY,
   );
 }
 
@@ -51,27 +65,31 @@ function unique(values: string[]): string[] {
   return [...new Set(values)];
 }
 
-function tally(values: Iterable<string>): Record<string, number> {
-  const out: Record<string, number> = {};
+// A Map, not an object: the keys are language tags and version strings off the
+// wire, and `constructor` or `toString` read back as an inherited value that a
+// `?? 0` never sees. `Accept-Language: constructor` is a one-line page-breaker.
+function tally(values: Iterable<string>): Map<string, number> {
+  const out = new Map<string, number>();
   for (const value of values) {
     if (!value) continue;
-    out[value] = (out[value] ?? 0) + 1;
+    out.set(value, (out.get(value) ?? 0) + 1);
   }
   return out;
 }
 
-/** Drop every entry that fewer than `floor` instances share, and order what
- * survives by weight. A floor of 0 keeps everything, which only the
- * Access-gated view asks for. */
-export function floored(
-  counts: Record<string, number>,
-  floor: number = FLOOR,
-): Record<string, number> {
-  return Object.fromEntries(
-    Object.entries(counts)
-      .filter(([, n]) => n >= floor)
-      .sort(([a, na], [b, nb]) => nb - na || a.localeCompare(b)),
-  );
+/**
+ * Drop every entry that fewer than `floor` instances share, heaviest first. A
+ * floor of 0 keeps everything, which only the Access-gated view asks for.
+ *
+ * An array of pairs rather than an object, because an object reorders keys that
+ * look like array indices: a fork reporting `version: "2"` would jump to the
+ * head of the chart whatever its count.
+ */
+export function floored(counts: Map<string, number>, floor: number = FLOOR): Counted[] {
+  return [...counts]
+    .filter(([, n]) => n >= floor)
+    .sort(([a, na], [b, nb]) => nb - na || a.localeCompare(b))
+    .map(([key, n]) => ({ key, n }));
 }
 
 // `aarch64-apple-darwin` -> `apple-darwin`: the OS is the interesting half, and

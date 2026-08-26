@@ -86,9 +86,15 @@ Setting it up, once:
    `stats.kroma.tv`, path `/v1/admin`.
 3. Give it a policy allowing the emails that should get in, with whatever second
    factor the identity provider offers.
-4. Copy the application's AUD tag into `ACCESS_AUD` in `worker/wrangler.jsonc`,
-   the team domain into `ACCESS_TEAM_DOMAIN`, the same emails into
-   `ADMIN_EMAILS`, and deploy.
+4. Store the three settings, which live in `wrangler secret` rather than in the
+   config file: an allow-list committed to a public repository publishes which
+   identity has to be phished, and a value in `vars` is reset by the next deploy.
+
+   ```bash
+   bunx wrangler secret put ACCESS_TEAM_DOMAIN   # <team>.cloudflareaccess.com
+   bunx wrangler secret put ACCESS_AUD           # the application's AUD tag
+   bunx wrangler secret put ADMIN_EMAILS         # comma separated
+   ```
 
 Then open `https://stats.kroma.tv/v1/admin/stats` in a browser and Access will
 ask who you are. For a script, `cloudflared access token --app

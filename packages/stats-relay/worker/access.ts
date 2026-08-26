@@ -68,17 +68,27 @@ export function configFrom(env: {
   return { teamDomain, aud, emails };
 }
 
-function fromB64url(s: string): Uint8Array<ArrayBuffer> {
-  const padded = s.replaceAll('-', '+').replaceAll('_', '/');
-  const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
-  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.codePointAt(i) ?? 0;
-  return bytes;
+// `atob` throws on any character outside the alphabet and on a length of 1 mod
+// 4, and everything decoded here arrives from an unauthenticated caller. Null,
+// never an exception: a malformed assertion is a 401, not a 500 with the error
+// log filled in by whoever sent it.
+function fromB64url(s: string): Uint8Array<ArrayBuffer> | null {
+  try {
+    const padded = s.replaceAll('-', '+').replaceAll('_', '/');
+    const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
+    const bytes = new Uint8Array(new ArrayBuffer(binary.length));
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.codePointAt(i) ?? 0;
+    return bytes;
+  } catch {
+    return null;
+  }
 }
 
 function jsonPart(part: string): unknown {
+  const bytes = fromB64url(part);
+  if (!bytes) return null;
   try {
-    return JSON.parse(new TextDecoder().decode(fromB64url(part)));
+    return JSON.parse(new TextDecoder().decode(bytes));
   } catch {
     return null;
   }
@@ -94,7 +104,10 @@ async function keysFor(
   if (cache && cache.domain === teamDomain && now - cache.at < JWKS_TTL_MS) return cache.keys;
   const res = await fetcher(`https://${teamDomain}/cdn-cgi/access/certs`);
   if (!res.ok) return null;
-  const parsed = Jwks.safeParse(await res.json());
+  // A 200 carrying something that is not JSON is the identity provider being
+  // unreachable in a different costume, not a reason to throw.
+  const document = await res.json().catch(() => null);
+  const parsed = Jwks.safeParse(document);
   if (!parsed.success) return null;
   cache = { at: now, domain: teamDomain, keys: parsed.data.keys };
   return parsed.data.keys;
@@ -140,13 +153,10 @@ export async function verify(
     false,
     ['verify'],
   );
+  const signature = fromB64url(rawSignature);
+  if (!signature) return { ok: false, status: 401, reason: 'malformed assertion' };
   const signed = new TextEncoder().encode(`${rawHeader}.${rawClaims}`);
-  const valid = await crypto.subtle.verify(
-    'RSASSA-PKCS1-v1_5',
-    key,
-    fromB64url(rawSignature),
-    signed,
-  );
+  const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, signature, signed);
   if (!valid) return { ok: false, status: 401, reason: 'bad signature' };
 
   const claims = Claims.safeParse(jsonPart(rawClaims));

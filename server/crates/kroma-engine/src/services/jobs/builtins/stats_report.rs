@@ -11,15 +11,18 @@ use crate::services::stats::{self, Report};
 pub(super) const SPEC: Builtin = Builtin {
     key: JobKey("stats.report"),
     category: Category::Maintenance,
-    // Once a day, off the hour: every install would otherwise wake at the same
-    // minute in the same time zone and arrive as one spike.
-    schedule: Some("37 5 * * *"),
+    // Hourly, and the handler decides whether this is the install's hour. A
+    // fixed daily cron would put every server in the world on the same minute,
+    // which is both a spike at the far end and a crowd the collector's own
+    // fleet detection would have to tell apart from a fake one.
+    schedule: Some("11 * * * *"),
     triggers: &[],
     run,
 };
 
 pub(super) fn run(ctx: &JobContext) -> Result<()> {
     match stats::run(&ctx.state)? {
+        Report::NotYet => (),
         Report::Off => ctx.info("anonymous statistics are off; nothing was sent"),
         Report::Deferred(status) => ctx.info(format!(
             "the statistics endpoint answered {status}; the next run is the retry"

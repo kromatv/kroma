@@ -68,6 +68,12 @@ pub async fn put_settings(
     if written.iter().any(|k| k == "mediaConcurrency") {
         crate::infra::ffmpeg_gate::set_capacity(settings::media_workers(&state.settings));
     }
+    // Consent given is the moment the identifier exists: the settings page shows
+    // it, and it is what an operator quotes to have their row erased, so waiting
+    // for the first scheduled run would leave both looking broken for a day.
+    if written.iter().any(|k| k == settings::stats::ENABLED_KEY) {
+        settings::stats::ensure_identity(&state.settings, &state.db);
+    }
     // The embedded torrent engine's listen port / rate limits (rqbit*) are owned
     // by the Downloads sidecar now; it applies them on its next engine (re)start.
     // The SettingsUpdated event below is the signal a live-reconfig would key on.

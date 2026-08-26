@@ -111,7 +111,8 @@ curl -X POST https://stats.kroma.tv/v1/forget \
   -d '{"id":"<the identifier from your admin page>"}'
 ```
 
-Or write to privacy@kroma.tv and we will do it. The compliance record, including
+Turn the switch off before erasing: a server still reporting writes the row again
+the next day. Or write to privacy@kroma.tv and we will do it. The compliance record, including
 the legal basis, the processors and the retention periods, is
 [`docs/anonymous-stats-gdpr.md`](docs/anonymous-stats-gdpr.md). You have the right
 to complain to a supervisory authority: in Switzerland the FDPIC, in the EU the

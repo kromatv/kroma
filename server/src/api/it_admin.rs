@@ -122,6 +122,42 @@ async fn settings_put_persists_a_known_key() {
 }
 
 #[tokio::test]
+async fn switching_statistics_on_mints_the_identifier_the_settings_page_shows() {
+    let t = test_app();
+    let (_, before) = get(&t.app, "/api/admin/settings?view=general", Some(&t.token)).await;
+    assert!(
+        !row_exists(&before, "statsId"),
+        "nothing minted before consent"
+    );
+
+    let (status, _) = send(
+        &t.app,
+        "PUT",
+        "/api/admin/settings",
+        Some(&t.token),
+        Some(json!({ "anonStats": true })),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let (_, after) = get(&t.app, "/api/admin/settings?view=general", Some(&t.token)).await;
+    assert!(
+        row_exists(&after, "statsId"),
+        "the identifier an operator quotes to be erased has to exist the moment they consent"
+    );
+}
+
+fn row_exists(view: &serde_json::Value, key: &str) -> bool {
+    view["groups"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|g| g["rows"].as_array())
+        .flatten()
+        .any(|r| r["key"] == json!(key))
+}
+
+#[tokio::test]
 async fn settings_put_ignores_an_unknown_key() {
     let t = test_app();
     let (status, body) = send(

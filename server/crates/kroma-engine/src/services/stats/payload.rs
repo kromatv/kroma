@@ -32,7 +32,10 @@ pub struct Payload {
 pub fn build(state: &SharedState, id: String) -> Result<Payload> {
     let build = crate::services::settings::build_info();
     let devices = crate::db::devices_seen_since(&state.db, &active_since())?;
-    let (_, titles, _) = crate::db::counts(&state.db)?;
+    // Films and shows, not every episode row: a library of 40 series would
+    // otherwise report the top band and say nothing about its size.
+    let (_, _, shows) = crate::db::counts(&state.db)?;
+    let films = crate::db::list_movies(&state.db, None)?.len();
     Ok(Payload {
         schema: 1,
         id,
@@ -44,7 +47,7 @@ pub fn build(state: &SharedState, id: String) -> Result<Payload> {
         locales: locales::spoken(&devices),
         modules: enabled_official(state),
         users: buckets::users(crate::db::user_count(&state.db)?),
-        titles: buckets::titles(titles as i64),
+        titles: buckets::titles((films + shows) as i64),
     })
 }
 

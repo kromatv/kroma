@@ -48,6 +48,14 @@ const VERSION: u32 = 1;
 // [`module_stores`]), which is both how the admin's indexer keys and download
 // client passwords still travel and how this list stopped needing to know which
 // modules exist.
+// Settings a backup must not carry across machines. `statsId` names one row at
+// the statistics collector and holding it is the whole authorisation over that
+// row, so restoring a backup onto a second box would have two servers reporting
+// as one and would hand the erasure token to whoever holds the file. `anonStats`
+// is a consent, and consent does not restore: an operator who never gave it must
+// not find it given.
+const NOT_PORTABLE: &[&str] = &["statsId", "anonStats", "stats.lastSentAt"];
+
 const TABLES: &[&str] = &[
     "users",
     "settings",
@@ -60,6 +68,14 @@ const TABLES: &[&str] = &[
     "watched",
     "my_list",
 ];
+
+fn placeholders() -> String {
+    NOT_PORTABLE
+        .iter()
+        .map(|k| format!("'{k}'"))
+        .collect::<Vec<_>>()
+        .join(",")
+}
 
 /// A portable backup: one row-set per exported table, plus metadata. Serde-only
 /// (the clients treat the file as an opaque blob), so no ts-rs wire type.
@@ -91,10 +107,18 @@ pub fn export_portable(pool: &Pool, data_dir: &std::path::Path) -> Result<Backup
         if !table_exists(&conn, t)? {
             continue;
         }
-        tables.insert(
-            t.to_string(),
-            dump_query(&conn, &format!("SELECT * FROM {t}"))?,
-        );
+        let rows = if t == "settings" {
+            dump_query(
+                &conn,
+                &format!(
+                    "SELECT * FROM settings WHERE key NOT IN ({})",
+                    placeholders()
+                ),
+            )?
+        } else {
+            dump_query(&conn, &format!("SELECT * FROM {t}"))?
+        };
+        tables.insert(t.to_string(), rows);
     }
     let mut modules = BTreeMap::new();
     for (id, path) in module_stores(data_dir) {
@@ -205,6 +229,13 @@ mod tests {
             c.execute("INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('it1','movie','Film','mkv','lib','t')", []).unwrap();
             c.execute("INSERT INTO users (id,email,username,password_hash,created_at) VALUES ('u1','a@b.c','Al','ph','t')", []).unwrap();
             c.execute("INSERT INTO settings (key,value,updated_at) VALUES ('serverName','\"My KROMA\"','t')", []).unwrap();
+            for key in NOT_PORTABLE {
+                c.execute(
+                    "INSERT INTO settings (key,value,updated_at) VALUES (?1,'\"x\"','t')",
+                    [key],
+                )
+                .unwrap();
+            }
             c.execute("INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) VALUES ('u1','it1',1000,5000,'t')", []).unwrap();
             c.execute("INSERT INTO play_history (id,kind,title,started_at,ended_at) VALUES ('h1','movie','Film',1,2)", []).unwrap();
             c.execute(
@@ -302,5 +333,42 @@ mod tests {
         let summary = import_portable(&dst, &data_dir(&dst), &doc, true).unwrap();
         assert_eq!(summary, vec![("users".to_string(), 1)]);
         assert_eq!(count(&dst, "users"), 1);
+    }
+}
+
+#[cfg(test)]
+mod stats_identity_tests {
+    use super::*;
+
+    #[test]
+    fn a_backup_carries_the_server_name_and_neither_the_statistics_id_nor_the_consent() {
+        let dir = kroma_testing::temp_dir("backup-stats");
+        let pool = crate::init(&dir.path().join("kroma.db")).unwrap();
+        {
+            let conn = pool.get().unwrap();
+            for (key, value) in [
+                ("serverName", "\"My KROMA\""),
+                ("statsId", "\"a-minted-token\""),
+                ("anonStats", "true"),
+                ("stats.lastSentAt", "\"2026-08-26T00:00:00Z\""),
+            ] {
+                conn.execute(
+                    "INSERT OR REPLACE INTO settings (key,value,updated_at) VALUES (?1,?2,'t')",
+                    [key, value],
+                )
+                .unwrap();
+            }
+        }
+
+        let doc = export_portable(&pool, dir.path()).unwrap();
+
+        let keys: Vec<String> = doc.tables["settings"]
+            .iter()
+            .filter_map(|row| row.get("key").and_then(|v| v.as_str()).map(str::to_string))
+            .collect();
+        assert!(keys.contains(&"serverName".to_string()));
+        for absent in NOT_PORTABLE {
+            assert!(!keys.contains(&(*absent).to_string()), "{absent} travelled");
+        }
     }
 }

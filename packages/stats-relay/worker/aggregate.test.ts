@@ -37,13 +37,35 @@ describe('counted', () => {
 
 describe('floored', () => {
   it('drops an entry too few installs share', () => {
-    expect(floored({ common: FLOOR, rare: FLOOR - 1 })).toEqual({ common: FLOOR });
+    const counts = new Map([
+      ['common', FLOOR],
+      ['rare', FLOOR - 1],
+    ]);
+
+    expect(floored(counts)).toEqual([{ key: 'common', n: FLOOR }]);
   });
 
   it('orders what survives by weight, then by name', () => {
-    const counts = { b: FLOOR, a: FLOOR, c: FLOOR + 1 };
+    const counts = new Map([
+      ['b', FLOOR],
+      ['a', FLOOR],
+      ['c', FLOOR + 1],
+    ]);
 
-    expect(Object.keys(floored(counts))).toEqual(['c', 'a', 'b']);
+    expect(floored(counts).map((c) => c.key)).toEqual(['c', 'a', 'b']);
+  });
+
+  it('keeps a key that looks like a number where its count puts it', () => {
+    const counts = new Map([
+      ['2', FLOOR],
+      ['1.4.2', FLOOR + 3],
+    ]);
+
+    expect(floored(counts).map((c) => c.key)).toEqual(['1.4.2', '2']);
+  });
+
+  it('counts a key that names something on Object.prototype', () => {
+    expect(floored(new Map([['constructor', FLOOR]]))).toEqual([{ key: 'constructor', n: FLOOR }]);
   });
 });
 
@@ -66,7 +88,7 @@ describe('aggregate', () => {
   it('reports the operating system rather than the full build triple', () => {
     const result = aggregate(fleet(FLOOR, { target: 'aarch64-apple-darwin' }), [], NOW);
 
-    expect(result.platforms).toEqual({ 'apple-darwin': FLOOR });
+    expect(result.platforms).toEqual([{ key: 'apple-darwin', n: FLOOR }]);
   });
 
   it('suppresses a country only one or two installs are in', () => {
@@ -74,7 +96,7 @@ describe('aggregate', () => {
 
     const result = aggregate(rows, [], NOW);
 
-    expect(result.countries).toEqual({ CH: FLOOR });
+    expect(result.countries).toEqual([{ key: 'CH', n: FLOOR }]);
     expect(result.instances).toBe(FLOOR + 1);
   });
 
@@ -83,8 +105,8 @@ describe('aggregate', () => {
 
     const result = aggregate(rows, [], NOW);
 
-    expect(result.locales).toEqual({ 'de-de': FLOOR });
-    expect(result.modules).toEqual({ 'tv.kroma.vpn': FLOOR });
+    expect(result.locales).toEqual([{ key: 'de-de', n: FLOOR }]);
+    expect(result.modules).toEqual([{ key: 'tv.kroma.vpn', n: FLOOR }]);
   });
 
   it('passes the recorded history through and stamps when it answered', () => {
@@ -104,8 +126,8 @@ describe('aggregate with no floor', () => {
     const publicView = aggregate(rows, [], NOW);
     const adminView = aggregate(rows, [], NOW, 0);
 
-    expect(publicView.countries).toEqual({});
-    expect(adminView.countries).toEqual({ NZ: 1 });
-    expect(adminView.versions).toEqual({ '9.9.9': 1 });
+    expect(publicView.countries).toEqual([]);
+    expect(adminView.countries).toEqual([{ key: 'NZ', n: 1 }]);
+    expect(adminView.versions).toEqual([{ key: '9.9.9', n: 1 }]);
   });
 });

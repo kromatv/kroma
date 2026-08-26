@@ -17,7 +17,7 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { configFrom, verify } from './access';
-import { aggregate, counted } from './aggregate';
+import { aggregate, settling } from './aggregate';
 import { burstIds, dayOf } from './integrity';
 import { Forget, firstIssue, Ping } from './schemas';
 import { type D1Database, d1Store, type Store } from './store';
@@ -105,9 +105,18 @@ export function createApp(storeFor: (env: Env) => Store) {
   // Refuse an oversized body before anything reads it: a schema cannot reject
   // bytes it has not parsed, and buffering an unbounded body to discover it was
   // junk is exactly the work an attacker would like the collector to do.
+  // A declared length is checked first because it is free, but a caller can
+  // simply not declare one, so the body is also read through a ceiling before
+  // anything parses it.
   app.use('/v1/*', async (c, next) => {
     const declared = Number(c.req.header('content-length') ?? '0');
     if (declared > MAX_REQUEST_BYTES) return c.json({ error: 'body too large' }, 413);
+    if (c.req.method === 'POST') {
+      const body = await c.req.raw.clone().arrayBuffer();
+      if (body.byteLength > MAX_REQUEST_BYTES) {
+        return c.json({ error: 'body too large' }, 413);
+      }
+    }
     await next();
   });
 
@@ -190,7 +199,7 @@ export function createApp(storeFor: (env: Env) => Store) {
         ...aggregate(rows, history, now, 0),
         stored: rows.length,
         flagged: rows.filter((row) => row.flagged).length,
-        settling: rows.filter((row) => !counted([row], now).length && !row.flagged).length,
+        settling: rows.filter((row) => settling(row, now)).length,
         viewer: verdict.email,
       },
       200,

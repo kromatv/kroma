@@ -5,6 +5,7 @@ import { L } from '#site/components/localized-link';
 import { BarList } from '#site/components/stats/bar-list';
 import { StatTile } from '#site/components/stats/stat-tile';
 import { Trend } from '#site/components/stats/trend';
+import { displayName } from '#site/lib/display-name';
 import { getLocale } from '#site/lib/i18n';
 import { seo } from '#site/lib/seo';
 import { fetchStats, type Stats } from '#site/lib/stats';
@@ -56,8 +57,8 @@ function Note({
 function Numbers({ stats }: Readonly<{ stats: Stats }>) {
   const locale = getLocale();
   const count = (n: number) => n.toLocaleString(locale);
-  const regions = new Intl.DisplayNames([locale], { type: 'region' });
-  const languages = new Intl.DisplayNames([locale], { type: 'language' });
+  const regions = displayName('region', locale);
+  const languages = displayName('language', locale);
   const other = m.stats_other();
   const empty = m.stats_empty();
 
@@ -115,14 +116,14 @@ function Numbers({ stats }: Readonly<{ stats: Stats }>) {
           counts={stats.countries}
           empty={empty}
           otherLabel={other}
-          format={(code) => regions.of(code) ?? code}
+          format={regions}
         />
         <BarList
           title={m.stats_locales_title()}
           counts={stats.locales}
           empty={empty}
           otherLabel={other}
-          format={(tag) => languages.of(tag) ?? tag}
+          format={languages}
         />
         <BarList
           title={m.stats_modules_title()}

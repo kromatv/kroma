@@ -3,6 +3,7 @@
 //! in-memory as raw tars (the installer accepts zstd / gzip / raw, dispatched
 //! by magic bytes) and use `library: true` manifests so nothing is spawned.
 
+use kroma_module_supervisor::Source;
 use kroma_module_supervisor::{verify_sha256, Supervisor, SupervisorConfig};
 
 // The contract THIS build speaks, so a bump to it does not read as four broken
@@ -55,7 +56,7 @@ fn install_rejects_a_module_needing_a_newer_server() {
              "engines": { "server": ">=999.0.0" }, "library": true"#,
     ));
     let err = sup
-        .install(&bundle, None, ("upload", None))
+        .install(&bundle, None, uploaded())
         .unwrap_err()
         .to_string();
     assert!(
@@ -74,7 +75,7 @@ fn install_accepts_a_satisfied_engine_range() {
         r#""id": "com.example.demo", "name": "Demo", "version": "1.0.0",
              "engines": { "server": ">=0.1.0" }, "library": true"#,
     ));
-    let manifest = sup.install(&bundle, None, ("upload", None)).unwrap();
+    let manifest = sup.install(&bundle, None, uploaded()).unwrap();
     assert_eq!(manifest.id, "com.example.demo");
     assert_eq!(sup.installed_ids(), vec!["com.example.demo".to_string()]);
 }
@@ -89,7 +90,7 @@ fn install_still_rejects_reserved_ids() {
              "library": true"#,
     ));
     let err = sup
-        .install(&bundle, None, ("upload", None))
+        .install(&bundle, None, uploaded())
         .unwrap_err()
         .to_string();
     assert!(
@@ -109,7 +110,7 @@ fn install_refuses_an_engine_this_server_cannot_check() {
              "engines": { "ffmpeg": ">=6" }, "library": true"#,
     ));
     let err = sup
-        .install(&bundle, None, ("upload", None))
+        .install(&bundle, None, uploaded())
         .unwrap_err()
         .to_string();
     assert!(err.contains("cannot check"), "unexpected error: {err}");
@@ -127,7 +128,7 @@ fn install_refuses_a_bundle_built_for_another_manifest_contract() {
         r#"{ "id": "com.example.demo", "name": "Demo", "version": "1.0.0", "library": true }"#,
     );
     let err = sup
-        .install(&bundle, None, ("upload", None))
+        .install(&bundle, None, uploaded())
         .unwrap_err()
         .to_string();
     assert!(
@@ -152,7 +153,15 @@ fn install_reports_an_id_mismatch_before_the_contract_it_was_built_against() {
         r#"{ "id": "com.example.other", "name": "Other", "version": "1.0.0", "library": true }"#,
     );
     let err = sup
-        .install(&bundle, Some("com.example.demo"), ("registry", None))
+        .install(
+            &bundle,
+            Some("com.example.demo"),
+            Source {
+                kind: "registry",
+                url: None,
+                official: true,
+            },
+        )
         .unwrap_err()
         .to_string();
     assert!(err.contains("offered as"), "unexpected error: {err}");
@@ -181,13 +190,49 @@ fn upgrading_a_module_keeps_the_database_it_owns() {
         )))
     };
 
-    sup.install(&bundle("1.0.0"), None, ("upload", None))
-        .unwrap();
+    sup.install(&bundle("1.0.0"), None, uploaded()).unwrap();
     let store = dir.join("com.example.demo").join("module.sqlite");
     std::fs::write(&store, b"the module's own rows").unwrap();
-    sup.install(&bundle("2.0.0"), None, ("upload", None))
-        .unwrap();
+    sup.install(&bundle("2.0.0"), None, uploaded()).unwrap();
 
     assert_eq!(std::fs::read(&store).unwrap(), b"the module's own rows");
     assert_eq!(sup.installed_manifests()[0].version, "2.0.0");
+}
+
+fn uploaded() -> Source<'static> {
+    Source {
+        kind: "upload",
+        url: None,
+        official: false,
+    }
+}
+
+#[test]
+fn a_module_remembers_whether_the_official_catalog_served_it() {
+    let scratch = temp_modules_dir("origin-official");
+    let dir = scratch.path();
+    let sup = supervisor(dir, "9.9.9");
+    let bundle = tar_with_manifest(&current(
+        r#""id": "com.example.demo", "name": "Demo", "version": "1.0.0", "library": true"#,
+    ));
+
+    sup.install(
+        &bundle,
+        Some("com.example.demo"),
+        Source {
+            kind: "registry",
+            url: Some("https://github.com/owner/repo/releases/download/x/demo.kmod"),
+            official: true,
+        },
+    )
+    .unwrap();
+
+    assert!(
+        sup.origin("com.example.demo").official,
+        "an artifact URL names a release host, not the catalog that listed it"
+    );
+
+    sup.install(&bundle, Some("com.example.demo"), uploaded())
+        .unwrap();
+    assert!(!sup.origin("com.example.demo").official);
 }

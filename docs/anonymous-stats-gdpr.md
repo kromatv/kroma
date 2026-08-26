@@ -108,7 +108,7 @@ addendum.
 |---|---|
 | Withdraw consent (Art. 7(3)) | Admin → General → Privacy. Takes effect at once. |
 | Access (Art. 15) | Admin → Jobs → Anonymous statistics → Run now prints the exact payload. The identifier is shown in Admin → General → Privacy. |
-| Erasure (Art. 17) | `POST https://stats.kroma.tv/v1/forget` with `{"id":"<your identifier>"}`. Self-service, immediate, no request to anyone. |
+| Erasure (Art. 17) | `POST https://stats.kroma.tv/v1/forget` with `{"id":"<your identifier>"}`. Self-service, immediate, no request to anyone. Withdraw consent first: a server still reporting writes the row again the next day. |
 | Rectification (Art. 16) | The next day's payload replaces the row. |
 | Portability (Art. 20) | The payload is JSON, printed by the server that produced it. |
 | Object, or complain | privacy@kroma.tv, and the right to lodge a complaint with a supervisory authority, in Switzerland the FDPIC and in the EU the authority for your country. |

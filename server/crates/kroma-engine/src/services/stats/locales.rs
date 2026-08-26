@@ -7,6 +7,10 @@ use kroma_db::DeviceHints;
 /// The tag is what the device asked for, not what KROMA answered with, so a
 /// reader running the French UI on a German phone shows up as German. That is
 /// the whole reason to collect it.
+// The collector refuses a longer list, and a server whose devices speak more
+// languages than this is not the one the field exists to find.
+const MAX_TAGS: usize = 32;
+
 pub fn spoken(devices: &[DeviceHints]) -> Vec<String> {
     let mut tags: Vec<String> = devices
         .iter()
@@ -17,6 +21,7 @@ pub fn spoken(devices: &[DeviceHints]) -> Vec<String> {
         .collect();
     tags.sort();
     tags.dedup();
+    tags.truncate(MAX_TAGS);
     tags
 }
 
@@ -45,6 +50,15 @@ mod tests {
     #[test]
     fn a_device_that_asked_for_nothing_adds_nothing() {
         assert!(spoken(&[asking(None), asking(Some("  "))]).is_empty());
+    }
+
+    #[test]
+    fn a_server_hearing_more_languages_than_the_collector_accepts_sends_what_fits() {
+        let devices: Vec<DeviceHints> = (0..MAX_TAGS + 10)
+            .map(|i| asking(Some(&format!("l{i:03}"))))
+            .collect();
+
+        assert_eq!(spoken(&devices).len(), MAX_TAGS);
     }
 
     #[test]

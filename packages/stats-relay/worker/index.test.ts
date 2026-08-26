@@ -253,3 +253,20 @@ describe('sweep', () => {
     expect(await store.daily()).toEqual([{ day: '2027-01-15', instances: 1, clients: 3 }]);
   });
 });
+
+describe('the body ceiling', () => {
+  it('holds even when the caller declares no length at all', async () => {
+    const store = memoryStore();
+    const huge = JSON.stringify({ ...ping(), locales: Array.from({ length: 5000 }, () => 'fr') });
+    const request = new Request('https://stats.kroma.tv/v1/ping', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: huge,
+    });
+
+    const res = await send(store, request);
+
+    expect(res.status).toBe(413);
+    expect(store.rows.size).toBe(0);
+  });
+});
