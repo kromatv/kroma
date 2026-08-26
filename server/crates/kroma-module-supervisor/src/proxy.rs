@@ -7,18 +7,23 @@ use axum::body::Body;
 use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use futures_util::TryStreamExt as _;
 
 const MAX_PROXY_BODY_BYTES: usize = 256 * 1024 * 1024;
-const PROXY_TIMEOUT: Duration = Duration::from_secs(600);
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+// Bounds the gap between reads, not the length of the response: a whole-request
+// deadline would cap how long a module may stream an SSE feed that is supposed
+// to stay open.
+const READ_TIMEOUT: Duration = Duration::from_secs(600);
 
 // Shared by every proxied request: a client owns the connection pool, so one
 // per request means a fresh handshake and a socket left in TIME_WAIT each time.
-// The timeout is what stops a wedged sidecar pinning a request open forever.
 fn proxy_client() -> &'static reqwest::Client {
     static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
     CLIENT.get_or_init(|| {
         reqwest::Client::builder()
-            .timeout(PROXY_TIMEOUT)
+            .connect_timeout(CONNECT_TIMEOUT)
+            .read_timeout(READ_TIMEOUT)
             .build()
             .unwrap_or_default()
     })
@@ -53,9 +58,7 @@ pub async fn proxy_to(port: u16, path_and_query: &str, req: Request) -> Response
         Ok(b) => b,
         Err(_) => return (StatusCode::PAYLOAD_TOO_LARGE, "body too large").into_response(),
     };
-    let mut out = proxy_client()
-        .request(parts.method, &url)
-        .body(bytes.to_vec());
+    let mut out = proxy_client().request(parts.method, &url).body(bytes);
     for (name, value) in &parts.headers {
         if !is_hop_by_hop(name) {
             out = out.header(name.as_str(), value.as_bytes());
@@ -68,24 +71,18 @@ pub async fn proxy_to(port: u16, path_and_query: &str, req: Request) -> Response
             return (StatusCode::BAD_GATEWAY, "module unavailable").into_response();
         }
     };
-    let status = resp.status();
-    let headers = resp.headers().clone();
-    // Not `unwrap_or_default`: a body that dies mid-stream answered the client
-    // with a truncated 200, which reads as a short but complete payload.
-    let body = match resp.bytes().await {
-        Ok(body) => body,
-        Err(e) => {
-            tracing::warn!(port, error = %e, "module response body failed mid-stream");
-            return (StatusCode::BAD_GATEWAY, "module response truncated").into_response();
-        }
-    };
-    let mut builder = Response::builder().status(status);
-    for (name, value) in &headers {
+    let mut builder = Response::builder().status(resp.status());
+    for (name, value) in resp.headers() {
         if !is_hop_by_hop(name) {
             builder = builder.header(name, value);
         }
     }
+    // The status line is already sent, so a body that dies here cannot be
+    // answered with a 502; the log is the only place the cause survives.
+    let body = resp.bytes_stream().inspect_err(move |e| {
+        tracing::warn!(port, error = %e, "module response body failed mid-stream");
+    });
     builder
-        .body(Body::from(body))
+        .body(Body::from_stream(body))
         .unwrap_or_else(|_| (StatusCode::BAD_GATEWAY, "bad upstream response").into_response())
 }

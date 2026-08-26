@@ -128,8 +128,8 @@ impl RemoteHost {
             .insert(TypeId::of::<T>(), service as Arc<dyn Any + Send + Sync>);
     }
 
-    fn callback(&self) -> kroma_http::Fetch {
-        kroma_http::Fetch::new()
+    fn callback(&self) -> kroma_http::Loopback {
+        kroma_http::Loopback::new()
             .header("authorization", format!("Bearer {}", self.inner.host_token))
     }
 
@@ -669,7 +669,7 @@ async fn deliver_event(
 
 fn register_events(url: &str, module_id: &str, host_token: &str, topics: &[String]) {
     let body = serde_json::json!({ "moduleId": module_id, "topics": topics });
-    match kroma_http::Fetch::new()
+    match kroma_http::Loopback::new()
         .header("authorization", format!("Bearer {host_token}"))
         .post_json(url, &body)
     {
@@ -693,7 +693,7 @@ fn register_jobs(url: &str, module_id: &str, host_token: &str, specs: &[JobSpec]
             "category": spec.category,
             "schedule": spec.schedule,
         });
-        match kroma_http::Fetch::new()
+        match kroma_http::Loopback::new()
             .header("authorization", format!("Bearer {host_token}"))
             .post_json(url, &body)
         {

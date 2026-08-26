@@ -9,11 +9,15 @@ use kroma_module_host::ServerModule;
 use kroma_module_manifest::Registry;
 
 /// Register every module's manifest (+ packaged icon) into the host registry.
-pub fn register_all(_reg: &mut Registry) {}
+pub fn register_all(_reg: &mut Registry) {
+
+}
 
 /// The backend behavior of each module that ships one. Concrete over the app's
 /// `SharedState`, since the modules' `server_module()` constructors are
 /// specialized to it (the roster is the composition layer, so this is fine).
 pub fn server_modules() -> Vec<Box<dyn ServerModule<SharedState>>> {
-    vec![]
+    vec![
+
+    ]
 }

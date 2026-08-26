@@ -81,7 +81,7 @@ impl TranscriberClient {
                 "lang": lang,
             });
             std::thread::spawn(move || {
-                let text: Option<String> = kroma_http::Fetch::new()
+                let text: Option<String> = kroma_http::Loopback::new()
                     .header("authorization", format!("Bearer {token}"))
                     .max_time(3 * 60 * 60)
                     .post_json(&format!("{base}/_port/transcriber/transcribe"), &body)

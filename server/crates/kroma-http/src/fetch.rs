@@ -34,22 +34,12 @@ impl Default for Fetch {
     }
 }
 
+crate::builder::request_builder!(
+    Fetch,
+    query = "URL-encoded query parameter (GET only; sent via `--get --data-urlencode`)."
+);
+
 impl Fetch {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn header(mut self, name: &str, value: impl Into<String>) -> Self {
-        self.headers.push((name.to_string(), value.into()));
-        self
-    }
-
-    /// URL-encoded query parameter (GET only; sent via `--get --data-urlencode`).
-    pub fn query(mut self, name: &str, value: impl Into<String>) -> Self {
-        self.query.push((name.to_string(), value.into()));
-        self
-    }
-
     /// Route this request through a SOCKS5 proxy (`host:port` or a full
     /// `socks5://user:pass@host:port` URL). Uses `--socks5-hostname` so DNS
     /// resolves on the proxy side too (no local DNS leak).
@@ -74,12 +64,6 @@ impl Fetch {
     /// built with nghttp2 (`curl --version` lists `HTTP2`).
     pub fn http2(mut self) -> Self {
         self.http2 = true;
-        self
-    }
-
-    /// Network budget for the whole transfer (default 30s).
-    pub fn max_time(mut self, secs: u32) -> Self {
-        self.max_time_secs = secs;
         self
     }
 

@@ -23,7 +23,6 @@ kroma-module-host = { workspace = true }
 kroma-db = { workspace = true, optional = true }
 # User / Permission for local require() checks.
 kroma-domain = { workspace = true }
-# Sync curl client for the host callbacks (settings / events / jobs) to the core.
 kroma-http = { workspace = true }
 axum = { workspace = true }
 tokio = { workspace = true }

@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "id": "tv.kroma.vpn",
   "name": "VPN",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Managed WireGuard bridge (any provider) that torrent traffic routes through, with a live seal test. Disable it to stop the bridge and hide its page + routes.",
   "engines": {
     "server": ">=0.1.39"

@@ -150,7 +150,7 @@ fn post_event(supervisor: &Arc<Supervisor>, module_id: &str, topic: &str, payloa
     // Off the bus task: one slow module must not hold up the next event, and the
     // sidecar answers before it does the work anyway.
     tokio::task::spawn_blocking(move || {
-        let sent = kroma_http::Fetch::new()
+        let sent = kroma_http::Loopback::new()
             .header("authorization", format!("Bearer {token}"))
             .max_time(10)
             .post_bytes(&url, "application/json", body.as_bytes());

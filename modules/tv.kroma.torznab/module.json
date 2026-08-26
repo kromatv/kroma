@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "id": "tv.kroma.torznab",
   "name": "Torznab indexers",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "External Torznab / Newznab indexers (Jackett, Prowlarr).",
   "engines": {
     "server": ">=0.1.39"

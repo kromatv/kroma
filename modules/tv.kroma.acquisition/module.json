@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "id": "tv.kroma.acquisition",
   "name": "Acquisition",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "The acquisition feature: interactive/manual release search, quality scoring, grab + import, and the automatic wanted-list pass. Rides on the Downloads engine and the indexers. Disable it to remove search/grab/auto and hide the settings page.",
   "engines": {
     "server": ">=0.1.39"

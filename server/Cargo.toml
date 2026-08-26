@@ -77,6 +77,20 @@ rusqlite = { version = "0.40", features = ["bundled", "hooks"] }
 # HTTP / async runtime, shared by kroma-engine (i18n extractor, stream, services)
 # and the binary (router + handlers).
 axum = { version = "0.8", features = ["macros", "ws"] }
+# The loopback transport's pooled client. hyper rather than a batteries-included
+# client because kroma-http reaches every sidecar and axum already puts these
+# three there: on tv.kroma.mdns, reqwest cost 666 KB of binary against hyper's
+# 304 KB, for TLS, proxy and redirect machinery a call to 127.0.0.1 never uses.
+hyper = { version = "1", features = ["client", "http1"] }
+hyper-util = { version = "0.1", features = ["client-legacy", "http1", "tokio"] }
+http-body-util = "0.1"
+bytes = "1"
+# The supervisor's own client: it fetches a `.kmod` over https, so it carries the
+# TLS stack no sidecar has to.
+reqwest = { version = "0.12", default-features = false }
+# `TryStreamExt`, to see a proxied body die mid-stream. Already in the graph
+# under reqwest and hyper; this only names it.
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7", features = ["io"] }
 tower = "0.5"

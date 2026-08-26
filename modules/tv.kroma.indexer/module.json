@@ -3,7 +3,7 @@
   "schemaVersion": 2,
   "id": "tv.kroma.indexer",
   "name": "Indexers",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Native Cardigann indexer engine: searches trackers from community YAML definitions, no external Torznab aggregator.",
   "engines": {
     "server": ">=0.1.39"

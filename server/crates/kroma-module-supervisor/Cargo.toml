@@ -19,7 +19,8 @@ axum = { workspace = true }
 tokio = { workspace = true }
 # Async client: reverse-proxy to module processes on localhost + fetch .kmod /
 # catalog.json from a registry over https (rustls keeps the musl build C-free).
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { workspace = true, features = ["json", "rustls-tls", "stream"] }
+futures-util = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }

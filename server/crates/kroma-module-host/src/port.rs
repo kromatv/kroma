@@ -97,7 +97,7 @@ pub fn call_raw<B: serde::Serialize, T: serde::de::DeserializeOwned>(
 ) -> anyhow::Result<T> {
     let (base, token) =
         resolve().ok_or_else(|| anyhow::anyhow!("no module contributes this point"))?;
-    let resp = kroma_http::Fetch::new()
+    let resp = kroma_http::Loopback::new()
         .header("authorization", format!("Bearer {token}"))
         .post_json(
             &format!("{base}/_port/{path}"),
