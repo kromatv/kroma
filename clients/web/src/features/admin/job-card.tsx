@@ -1,6 +1,6 @@
 import type { JobInfo, MessageKey } from '@kroma/core';
 import { TABULAR } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
+import { useLocale, useT } from '@kroma/ui';
 import {
   Badge,
   type BadgeTone,
@@ -31,6 +31,7 @@ const CRON = {
 
 function JobMeta({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => void }>) {
   const t = useT();
+  const locale = useLocale();
   return (
     <Box minW={0}>
       <Row gap={10}>
@@ -46,7 +47,7 @@ function JobMeta({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => void }
           <Row gap={6}>
             <Icon name="clock" size={13} thickness={1.8} color="textMuted" />
             <Text variant="meta" color="textMuted">
-              {t('jobs.next')} {rel(job.nextRunAt)}
+              {t('jobs.next')} {rel(job.nextRunAt, locale)}
             </Text>
           </Row>
         ) : null}
@@ -221,11 +222,12 @@ function ScheduleChip({ job, onEdit }: Readonly<{ job: JobInfo; onEdit?: () => v
 
 function LastRun({ job }: Readonly<{ job: JobInfo }>) {
   const t = useT();
+  const locale = useLocale();
   const last = job.lastRun;
   if (!last || job.running) return null;
   return (
     <Text variant="meta" color="textMuted">
-      {t('jobs.last')} {rel(last.startedAt)}
+      {t('jobs.last')} {rel(last.startedAt, locale)}
       {last.durationMs != null ? ` · ${dur(last.durationMs)}` : ''}
     </Text>
   );

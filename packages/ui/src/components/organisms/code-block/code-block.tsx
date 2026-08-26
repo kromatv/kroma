@@ -12,6 +12,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { CopyButton } from '#ui/components/molecules/copy-button';
 import { styles } from '#ui/core';
+import { RingScopeProvider } from '#ui/lib/ring-scope';
 import { useCopy } from '#ui/lib/use-copy';
 import { lines } from './code-tokens';
 
@@ -64,9 +65,11 @@ function CodeBlock({ code, numbers, maxHeight = 320 }: Readonly<CodeBlockProps>)
   return (
     <Box bg="surface2" radius="md" style={[s.frame, { maxHeight }]}>
       {available ? (
-        <Box absolute style={s.copySlot}>
-          <CopyButton value={trimmed} iconOnly label="Copier le code" />
-        </Box>
+        <RingScopeProvider value="focusEdge">
+          <Box absolute style={s.copySlot}>
+            <CopyButton value={trimmed} iconOnly label="Copier le code" />
+          </Box>
+        </RingScopeProvider>
       ) : null}
       <ScrollView style={s.scrollY} contentContainerStyle={[s.body, available ? s.bodyCopy : null]}>
         {showNumbers ? (

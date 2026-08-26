@@ -1,8 +1,6 @@
 // <Menu>: the anchored action menu behind a "..." trigger (a download row's
-// pause/retry/remove, a card's overflow). The trigger is the kit's round
-// icon button; where the items appear is the platform's decision (see
-// ./menu-surface): an anchored panel with the menu keyboard under a pointer,
-// a dialog under a D-pad.
+// pause/retry/remove, a card's overflow). The trigger is the kit's round icon
+// button; where the items appear is the shell's decision (see ./menu-surface).
 
 import {
   Children,
@@ -17,6 +15,7 @@ import {
 import type { View } from 'react-native';
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
 import { useGroupSlot } from '#ui/lib/group-shape';
+import type { SurfacePresentation } from '#ui/lib/surface-presentation';
 import { useControllable } from '#ui/lib/use-controllable';
 import {
   MenuContext,
@@ -30,6 +29,8 @@ import { Item, labelOf, type MenuItemProps, Separator } from './menu-item';
 import { MenuSurface } from './menu-surface';
 import type { MenuRowSpec } from './menu-surface-dialog';
 
+type MenuPresentation = SurfacePresentation;
+
 interface MenuRootProps {
   /** Names the menu and, unless it names itself, the trigger. */
   label?: string;
@@ -38,6 +39,10 @@ interface MenuRootProps {
   onOpenChange?: (open: boolean, details: MenuOpenDetails) => void;
   /** Which trigger edge the panel hugs. `end` for a right-pinned row action. */
   align?: 'start' | 'end';
+  /** Where the items appear: `auto` (the default) asks the shell, and then the
+   *  platform - a dialog under a D-pad, an anchored panel under a pointer.
+   *  Naming one overrides both. */
+  presentation?: MenuPresentation;
   /** A <Menu.Trigger>, then the <Menu.Item>s and <Menu.Separator>s. Only DIRECT
    *  children take part in the menu. */
   children: ReactNode;
@@ -57,6 +62,7 @@ function Root({
   defaultOpen,
   onOpenChange,
   align = 'end',
+  presentation = 'auto',
   children,
 }: Readonly<MenuRootProps>) {
   const [open, setOpenState] = useControllable(openProp, defaultOpen ?? false);
@@ -97,6 +103,7 @@ function Root({
       {kids.filter((node) => !isEntry(node))}
       <MenuSurface
         open={open}
+        presentation={presentation}
         label={label}
         align={align}
         entries={entries}
@@ -175,6 +182,7 @@ export type {
   MenuItemProps,
   MenuOpenDetails,
   MenuOpenReason,
+  MenuPresentation,
   MenuRootProps,
   MenuTriggerBind,
   MenuTriggerProps,

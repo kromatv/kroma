@@ -44,6 +44,7 @@ pub fn store_localized(
         logo_url: core_meta.logo_url.clone(),
         cast: core_meta.cast.clone(),
         crew: core_meta.crew.clone(),
+        tmdb_genre_ids: core_meta.tmdb_genre_ids.clone(),
     };
     metadata_core::write_core(&conn, kind, id, &core)?;
     for (lang, m) in by_lang {
@@ -295,6 +296,7 @@ mod tests {
         assert!(seasons_with_cast(&p, "s1").unwrap().is_empty());
         let cast = vec![CastMember {
             name: "Adam".into(),
+            tmdb_id: None,
             character: Some("Mark".into()),
             profile_url: None,
         }];
@@ -337,6 +339,25 @@ mod tests {
             .is_none());
         assert!(!crate::has_vector(&p, "m1").unwrap());
         assert!(seasons_with_cast(&p, "s1").unwrap().is_empty());
+    }
+
+    #[test]
+    fn the_genre_ids_go_to_the_invariant_core_and_the_names_go_per_language() {
+        let p = pool();
+        let mut fr = meta(603, "Dune");
+        fr.genres = vec!["Science-fiction".into()];
+        let by_lang = HashMap::from([("fr".to_string(), fr)]);
+
+        store_localized(&p, metadata_core::ITEM, "m1", &meta(603, "Dune"), &by_lang).unwrap();
+
+        let core = metadata_core::get_core(&p, metadata_core::ITEM, "m1")
+            .unwrap()
+            .unwrap();
+        assert_eq!(core.tmdb_genre_ids, vec![878]);
+        let stored_fr = crate::translations::resolve_one(&p, "item", "m1", "fr")
+            .unwrap()
+            .unwrap();
+        assert_eq!(stored_fr.genres, vec!["Science-fiction".to_string()]);
     }
 
     #[test]

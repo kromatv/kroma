@@ -1,5 +1,5 @@
 import { CastProvider } from '@kroma/ui';
-import { Box } from '@kroma/ui/kit';
+import { Box, useBreakpoint } from '@kroma/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { GateLoading } from '#web/features/accounts/auth-gate';
 import { CatalogModalHosts } from '#web/features/catalog/modal-hosts';
@@ -10,10 +10,9 @@ import { ensureSession, isAuthed, kromaClient } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
 import { useRequireAuth } from '#web/shared/lib/require-auth';
 import { CastPicker } from '#web/shared/ui/cast-picker';
+import { CAST_PICKER_Z } from '#web/shared/ui/page';
 
 export const Route = createFileRoute('/_app')({
-  // Exchange the stored access token for a session bearer before any child
-  // loader runs, so the catalogue prefetch is authorised on its first try.
   // Without this the loaders race the boot exchange and 401-then-retry every
   // request on each reload.
   beforeLoad: async () => {
@@ -25,23 +24,37 @@ export const Route = createFileRoute('/_app')({
 const BROWSER_LABEL =
   typeof navigator === 'undefined' ? 'Web' : deviceInfo(navigator.userAgent, 'Web').label;
 
+const UNPOSITIONED = { position: 'static' } as const;
+
+const RAIL_WIDTH = 248;
+
 function AppLayout() {
   const { ready, authed } = useRequireAuth();
+  const step = useBreakpoint();
+  const wide = step === 'lg' || step === 'tv';
   useNotificationStream();
   if (!(ready && authed)) return <GateLoading />;
   return (
     <CastProvider client={kromaClient()} enabled deviceName={BROWSER_LABEL}>
-      <div className="app-frame">
-        <Sidebar />
-        <MobileTopbar />
-        <Outlet />
+      <Box row={wide} minH="100%">
+        {wide ? (
+          <Box w={RAIL_WIDTH} shrink={0}>
+            <Sidebar />
+          </Box>
+        ) : (
+          <MobileTopbar />
+        )}
+        {/* Unpositioned, as the frame's own element was: a `View` is
+            `position: relative` by default, and the player's root fills its
+            nearest positioned ancestor, so a positioned column here sizes
+            "fullscreen" to the content beside the rail. */}
+        <Box flex minW={0} style={UNPOSITIONED}>
+          <Outlet />
+        </Box>
         <CatalogModalHosts />
         <CastBar />
-      </div>
-      {/* Above the player (z-60): the picker opens from INSIDE it ("play this on
-          a TV"), and at the shared modal z-index it mounted behind the opaque
-          player, reading as a cast button that did nothing. */}
-      <Box z={70}>
+      </Box>
+      <Box z={CAST_PICKER_Z}>
         <CastPicker />
       </Box>
     </CastProvider>

@@ -14,6 +14,7 @@ import {
   webResolve,
 } from '@kroma/bundler/rnw';
 import { tvFrame } from '@kroma/bundler/tv-frame';
+import { tvShellHead } from '@kroma/bundler/tv-shell-head';
 import { kromaUI } from '@kroma/ui/vite';
 import babel from '@rolldown/plugin-babel';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
@@ -86,6 +87,7 @@ export function tvShellConfig(shellUrl: string, target: TvTarget) {
       // as a separate preset). A television has the least CPU to spare for a
       // re-render nobody needed.
       babel({ presets: [reactCompilerPreset()] }),
+      tvShellHead(),
       tvFrame({ enabled: !deviceDev }),
     ],
     // The workbench is reached through `?workbench`, which a television has no
@@ -170,6 +172,7 @@ export function tvShellLegacyConfig(
   return {
     plugins: [
       kromaUI(),
+      tvShellHead(),
       react(),
       // The legacy tier wants this MORE than the modern one: these are the
       // slowest engines KROMA ships to, and the compiler's output is ordinary

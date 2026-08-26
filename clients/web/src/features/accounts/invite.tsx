@@ -20,7 +20,7 @@ import {
 } from '@kroma/ui/kit';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
-import { PAGE_MAIN } from '#web/shared/ui';
+import { PageFrame } from '#web/shared/ui';
 
 const EXPIRY_DAYS = ['1', '7', '30'] as const;
 type ExpiryDays = (typeof EXPIRY_DAYS)[number];
@@ -69,11 +69,11 @@ export function InvitePage() {
 
   if (!allowed) {
     return (
-      <main className={PAGE_MAIN}>
+      <PageFrame>
         <EmptyState.Root icon="lock">
           <EmptyState.Title>{t('admin.noUsersPermission')}</EmptyState.Title>
         </EmptyState.Root>
-      </main>
+      </PageFrame>
     );
   }
 
@@ -96,7 +96,7 @@ export function InvitePage() {
   }
 
   return (
-    <main className={PAGE_MAIN}>
+    <PageFrame>
       <PageHeader.Root>
         <PageHeader.Title>{t('nav.inviteUser')}</PageHeader.Title>
         <PageHeader.Subtitle>{t('admin.inviteIntro')}</PageHeader.Subtitle>
@@ -181,7 +181,7 @@ export function InvitePage() {
           )}
         </Section.Root>
       ) : null}
-    </main>
+    </PageFrame>
   );
 }
 

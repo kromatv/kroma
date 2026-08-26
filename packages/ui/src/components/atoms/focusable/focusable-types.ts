@@ -1,4 +1,4 @@
-import type { ComponentRef, ReactNode, Ref } from 'react';
+import type { ComponentRef, ReactElement, ReactNode, Ref } from 'react';
 import type {
   AccessibilityRole,
   AccessibilityValue,
@@ -9,6 +9,7 @@ import type {
   ViewStyle,
 } from 'react-native';
 import type { AnySv, StyleDecl, SvStateName } from '#ui/core';
+import type { RingToken } from '#ui/core/theme';
 import type { A11yProps } from '#ui/lib/a11y';
 
 // `option` is not in React Native's union: react-native-web passes it through
@@ -24,6 +25,8 @@ type A11yState = A11yProps | undefined;
 /** What `aria-current` a control claims; see `current` on FocusableProps. */
 type FocusCurrent = 'page' | 'step';
 
+type HostElement = ReactElement<Record<string, unknown>>;
+
 /**
  * What a child render function is handed. `slots` is the recipe resolved
  * against the live interaction state, so a child spends finished values rather
@@ -38,6 +41,16 @@ interface FocusState<R extends AnySv = AnySv> {
 }
 
 interface FocusableProps<R extends AnySv = AnySv> {
+  /**
+   * A router's own link, written as an element (`as={<RouteLink to="/movies" />}`).
+   * On the browser targets it becomes the control's host element, so the control
+   * is a real `<a href>` whose click the router owns.
+   *
+   * Ignored where there is no document, and by a control the spatial navigator
+   * drives. Both fall back to the pressable, whose activation is `onPress`, so a
+   * control that has to work on either passes both.
+   */
+  as?: HostElement;
   /**
    * The component's recipe. <Focusable> owns the interaction state, so it is the
    * only place that can resolve one: it paints the `root` slot on itself and
@@ -63,14 +76,21 @@ interface FocusableProps<R extends AnySv = AnySv> {
   hitSlop?: number | Insets;
   /** A destination rather than an action: the control renders as an `<a href>`
    *  on the browser targets, so it is a real link to open in a tab, copy or
-   *  download. Ignored on the native platforms, which have no document. */
+   *  download. Ignored on the native platforms, which have no document.
+   *
+   *  For a route inside the app, use `as`: the browser owns a plain `href`, so
+   *  pairing one with an `onPress` that navigates does both. */
   href?: string;
   /** Reachable by the remote, but painting no interaction state: a control that
    *  is busy rather than unavailable. A spinner already says what is happening,
    *  and a hover highlight would promise a press that is not being taken. */
   inert?: boolean;
   focusScale?: number;
-  ring?: boolean;
+  /** Which focus ring, or none. `true` and the default take the ring an
+   *  enclosing `RingScope` names, falling back to `focusLift`; a token names one
+   *  outright, which is how a control flush with what clips it asks for
+   *  `focusInset`. `false` paints no ring, and suppresses the browser's. */
+  ring?: boolean | RingToken;
   style?: StyleProp<ViewStyle>;
   /**
    * One-off state layers, in the recipe vocabulary, merged over whatever `sv`
@@ -114,6 +134,42 @@ interface FocusableProps<R extends AnySv = AnySv> {
  *  state the outer render cannot see - a Pressable reports it from inside. */
 type Resolve = (pressed: boolean) => ReturnType<AnySv>;
 
+interface HostAt {
+  setBox: (view: View | null) => void;
+  label: string | undefined;
+  onLayout: FocusableProps['onLayout'];
+  role: FocusRole;
+  a11yState: A11yState;
+  style: StyleProp<ViewStyle>;
+  focusedStyle: ViewStyle | undefined;
+  hoveredStyle: ViewStyle | undefined;
+  pressedStyle: StyleProp<ViewStyle>;
+  animated: StyleProp<ViewStyle>;
+  showRing: boolean;
+  ringToken: RingToken;
+  focused: boolean;
+  focusVisible: boolean;
+  hovered: boolean;
+  pressed: boolean;
+  onFocus: () => void;
+  onBlur: () => void;
+  onHoverIn: () => void;
+  onHoverOut: () => void;
+  onPointerDown: () => void;
+  onPointerUp: () => void;
+  resolve: Resolve;
+  children: FocusableProps['children'];
+}
+
+interface TouchAt extends HostAt {
+  webKeys: WebKeys;
+  href: string | undefined;
+  controlled: boolean;
+  hitSlop: FocusableProps['hitSlop'];
+  onPress: () => void;
+  onLongPress: FocusableProps['onLongPress'];
+}
+
 /** Tab reachability, plus whichever activation keys the form underneath does
  *  not already answer, on the web; null elsewhere. */
 type WebKeys = {
@@ -121,4 +177,15 @@ type WebKeys = {
   onKeyDown: (event: { nativeEvent: { key: string }; preventDefault: () => void }) => void;
 } | null;
 
-export type { A11yState, FocusableProps, FocusCurrent, FocusRole, FocusState, Resolve, WebKeys };
+export type {
+  A11yState,
+  FocusableProps,
+  FocusCurrent,
+  FocusRole,
+  FocusState,
+  HostAt,
+  HostElement,
+  Resolve,
+  TouchAt,
+  WebKeys,
+};

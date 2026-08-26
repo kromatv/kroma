@@ -18,7 +18,7 @@ import {
 } from '@tabler/icons-react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { type CSSProperties, useEffect, useState } from 'react';
-import type { ViewStyle } from 'react-native';
+import { ScrollView, type ViewStyle } from 'react-native';
 import { UserChip, VersionInfo } from '#web/features/catalog/sidebar-account';
 import { useModuleNav } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
@@ -26,6 +26,7 @@ import { useAuth } from '#web/shared/lib/auth';
 import { CapabilityChip } from '#web/shared/ui/capability-chip';
 import { useNavActions } from '#web/shared/ui/nav-actions';
 import { NavMenuButton } from '#web/shared/ui/nav-menu-button';
+import type { RoutePath } from '#web/shared/ui/route-link';
 import { SideNav } from '#web/shared/ui/side-nav';
 import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
@@ -37,7 +38,6 @@ const SIDEBAR: CSSProperties = {
   height: '100vh',
   display: 'flex',
   flexDirection: 'column',
-  alignSelf: 'flex-start',
   borderRightWidth: 1,
   borderRightStyle: 'solid',
   borderRightColor: 'var(--kroma-border)',
@@ -75,13 +75,13 @@ const LOGO_LINK: CSSProperties = { display: 'block', color: 'inherit', textDecor
 
 const NAV_FILL = { backgroundColor: color('bg') } as const;
 
-const NAV: { labelKey: MessageKey; to: string; icon: TablerIcon; exact?: boolean }[] = [
+const NAV: { labelKey: MessageKey; to: RoutePath; icon: TablerIcon; exact?: boolean }[] = [
   { labelKey: 'nav.home', to: '/', icon: IconHome, exact: true },
   { labelKey: 'nav.search', to: '/search', icon: IconSearch },
-  { labelKey: 'nav.films', to: '/films', icon: IconMovie },
-  { labelKey: 'nav.series', to: '/series', icon: IconDeviceTv },
+  { labelKey: 'nav.films', to: '/movies', icon: IconMovie },
+  { labelKey: 'nav.series', to: '/shows', icon: IconDeviceTv },
   { labelKey: 'nav.genres', to: '/genres', icon: IconCategory },
-  { labelKey: 'nav.myList', to: '/mylist', icon: IconBookmark },
+  { labelKey: 'nav.myList', to: '/my-list', icon: IconBookmark },
 ];
 
 export function Sidebar() {
@@ -101,9 +101,9 @@ export function Sidebar() {
 // drawer's <Drawer.Panel>, which is why the two are separate.
 function SidebarBody() {
   return (
-    <div style={SIDE_NAV_FRAME}>
+    <ScrollView style={SIDE_NAV_FRAME}>
       <SidebarNav />
-    </div>
+    </ScrollView>
   );
 }
 
@@ -240,7 +240,7 @@ function AdminLink() {
       hasPermission(user, 'settings.manage') ||
       hasPermission(user, 'requests.manage'));
   return (
-    <SideNav.Item to="/admin" icon={IconSettings} dim={!isAdmin}>
+    <SideNav.Item to="/admin" icon={IconSettings} disabled={!isAdmin}>
       <SideNav.Label>{t(isAdmin ? 'nav.server' : 'nav.settings')}</SideNav.Label>
     </SideNav.Item>
   );

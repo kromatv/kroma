@@ -12,7 +12,7 @@ describe('push', () => {
     expect(title).toBe('Ready to watch');
     expect(options.body).toBe('Dune is now in your library.');
     expect(options.image).toBe('https://img.example/p.jpg');
-    expect(options.data).toMatchObject({ link: '/movie/ab12' });
+    expect(options.data).toMatchObject({ link: '/movies/ab12' });
   });
 
   it('collapses a retried delivery instead of stacking duplicates', async () => {

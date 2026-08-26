@@ -14,7 +14,14 @@
 // `setEntryDefaults` rather than at every call site.
 
 import type { TextStyle } from 'react-native';
-import { activeTheme, type ColorValue, type RadiusToken, radiusValue, styles } from '#ui/core';
+import {
+  activeTheme,
+  type ColorValue,
+  type RadiusToken,
+  radiusValue,
+  styles,
+  useBreakpoint,
+} from '#ui/core';
 
 type ControlSize = 'sm' | 'md' | 'tv';
 
@@ -223,6 +230,18 @@ export function entryDefaultSize(): ControlSize {
 /** The metrics for a size, defaulting to the shell's. */
 export function controlMetrics(size?: ControlSize): ControlMetrics {
   return CONTROL[size ?? entrySize];
+}
+
+/** The smallest ink a real text entry may carry. Under it, iOS Safari zooms the
+ *  page to the field the moment it takes focus. */
+export const NO_ZOOM_FONT_SIZE = 16;
+
+/**
+ * A field's ink size, floored at {@link NO_ZOOM_FONT_SIZE} on a handset: the
+ * `sm` shell reads at 13.5, which is under iOS Safari's zoom threshold.
+ */
+export function useEntryFontSize(fontSize: number): number {
+  return useBreakpoint() === 'base' ? Math.max(NO_ZOOM_FONT_SIZE, fontSize) : fontSize;
 }
 
 /** Web only, and `none` rather than width 0: Chrome's own focus ring is

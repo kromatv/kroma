@@ -1,12 +1,9 @@
 import type { StoredSession } from '@kroma/core';
 import { type ActivateResult, useT } from '@kroma/ui';
-import { Box, Spinner as BusyRing, Button, OtpField, Row, Text } from '@kroma/ui/kit';
-import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
+import { Box, Spinner as BusyRing, Button, OtpField, Row, Text, useShake } from '@kroma/ui/kit';
+import { type ReactNode, useEffect, useState } from 'react';
+import { Animated } from 'react-native';
 import { UserAvatar } from '#web/shared/ui/user-avatar';
-
-// Declared in styles.css, so the rejected PIN shakes without a keyframe the
-// vocabulary has no spelling for.
-const SHAKE: CSSProperties = { animation: 'otp-shake 0.4s ease' };
 
 export function PinEntry({
   account,
@@ -23,8 +20,9 @@ export function PinEntry({
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [shake, setShake] = useState(0);
+  const [rejections, setRejections] = useState(0);
   const [cooldown, setCooldown] = useState(0);
+  const shake = useShake(rejections);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -49,7 +47,7 @@ export function PinEntry({
     setPin('');
     if (r.retryAfter) setCooldown(r.retryAfter);
     setError(r.error || t('auth.pinIncorrect'));
-    setShake((n) => n + 1);
+    setRejections((n) => n + 1);
   };
 
   let status: ReactNode = null;
@@ -83,8 +81,7 @@ export function PinEntry({
         {t('pin.verifySubtitle')}
       </Text>
 
-      {/* key={shake} remounts the row so the shake animation replays each error. */}
-      <div key={shake} style={shake ? SHAKE : undefined}>
+      <Animated.View style={shake}>
         <OtpField.Root
           maxLength={4}
           value={pin}
@@ -99,7 +96,7 @@ export function PinEntry({
           disabled={locked}
           label={t('account.currentPin')}
         />
-      </div>
+      </Animated.View>
 
       <Row h={20} gap={8}>
         {status}

@@ -233,7 +233,7 @@ pub fn router(
     app = app.merge(plugin::asset_routes());
 
     // Single-binary deploy: serve the built web SPA on the same origin as the API,
-    // falling back to the SPA shell for client-side routes (e.g. /films). Skipped
+    // falling back to the SPA shell for client-side routes (e.g. /movies). Skipped
     // in dev (no KROMA_WEB_DIR), where the web runs on its own Vite server.
     // `precompressed_*` serves the build's `.br`/`.gz` siblings so static assets
     // cost the NAS zero compression CPU; files without one hit CompressionLayer.
@@ -330,10 +330,10 @@ mod tests {
             "public, max-age=31536000, immutable"
         );
 
-        let (status, shell) = text(&t.app, "GET", "/films", None, None).await;
+        let (status, shell) = text(&t.app, "GET", "/movies", None, None).await;
         assert_eq!(status, StatusCode::OK);
         assert!(shell.contains("<title>KROMA</title>"), "{shell}");
-        let (_, headers, _) = raw(&t.app, "GET", "/films", None, None, &[]).await;
+        let (_, headers, _) = raw(&t.app, "GET", "/movies", None, None, &[]).await;
         assert_eq!(headers[CACHE_CONTROL], "no-cache");
 
         let (status, body) = crate::api::test_support::get(&t.app, "/api/auth/config", None).await;
@@ -347,7 +347,7 @@ mod tests {
         assert!(is_hashed_asset("/assets/Poster-BKMFTghM.js"));
         assert!(!is_hashed_asset("/index.html"));
         assert!(!is_hashed_asset("/assets/entry-BKMFTghM.html"));
-        assert!(!is_hashed_asset("/films"));
+        assert!(!is_hashed_asset("/movies"));
         assert!(!is_hashed_asset("/favicon.ico"));
         assert!(!is_hashed_asset("/assets/logo-dark.svg"));
     }

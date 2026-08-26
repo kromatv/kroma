@@ -2,6 +2,7 @@
 //! IDs / credits / images via `curl`, and map the JSON into a [`Metadata`].
 
 mod details;
+mod details_json;
 mod lookup;
 mod seasons;
 

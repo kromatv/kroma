@@ -4,12 +4,21 @@ import {
   SpatialNavigationFocusableView,
   type SpatialNavigationNodeRef,
 } from 'react-tv-space-navigation';
-import { type AnySv, activeTheme, sharedStyle } from '#ui/core';
+import type { AnySv } from '#ui/core';
+import type { RingToken } from '#ui/core/theme';
 import type { splitBoxLayers } from '#ui/lib/box-layers';
 import { LIFTED } from '#ui/lib/focus-lift';
 import { WEB } from '#ui/lib/platform';
 import { linkProps, platformRole } from './focusable-a11y';
-import type { A11yState, FocusableProps, FocusRole, Resolve, WebKeys } from './focusable-types';
+import { coatStack, focusRing } from './focusable-paint';
+import type {
+  A11yState,
+  FocusableProps,
+  FocusRole,
+  Resolve,
+  TouchAt,
+  WebKeys,
+} from './focusable-types';
 import { Painted, TouchPressable } from './touch-pressable';
 
 // The navigator's `style` type follows whichever react-native copy the consuming
@@ -20,10 +29,6 @@ const flat = (style: StyleProp<ViewStyle>[]): NavigatorStyle =>
   StyleSheet.flatten(style) as NavigatorStyle;
 
 type NavigatorViewProps = ComponentProps<typeof SpatialNavigationFocusableView>['viewProps'];
-
-// Shared by identity per theme rather than minted per focused render: styleq
-// keys its cache on the object, and the ring follows the theme's accent.
-const focusRing = () => sharedStyle('focusable:ring', { ...activeTheme().ring.focusLift });
 
 function DisabledForm({
   at,
@@ -62,53 +67,27 @@ function DisabledForm({
   );
 }
 
-function TouchForm({
-  at,
-}: Readonly<{
-  at: {
-    boxRef: (view: View | null) => void;
-    webKeys: WebKeys;
-    href: string | undefined;
-    label: string | undefined;
-    onLayout: FocusableProps['onLayout'];
-    role: FocusRole;
-    a11yState: A11yState;
-    style: FocusableProps['style'];
-    focusedStyle: ViewStyle | undefined;
-    animated: FocusableProps['style'];
-    showRing: boolean;
-    pressedStyle: StyleProp<ViewStyle>;
-    hoveredStyle: ViewStyle | undefined;
-    onPress: () => void;
-    onLongPress: FocusableProps['onLongPress'];
-    onHoverIn: FocusableProps['onHoverIn'];
-    onHoverOut: () => void;
-    hitSlop: FocusableProps['hitSlop'];
-    controlled: boolean;
-    focused: boolean;
-    focusVisible: boolean;
-    hovered: boolean;
-    resolve: Resolve;
-    children: FocusableProps['children'];
-  };
-}>): ReactNode {
-  const lit = at.controlled && at.focusVisible;
+function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
+  // Not `at.controlled &&`: an uncontrolled control on a browser target reports
+  // its own DOM focus (the pressable forwards it), and a keyboard reaching it is
+  // the one thing a ring exists for. Gating this on `controlled` left every
+  // control in a pointer-driven shell with no focus state at all, and the page
+  // sheet's `:focus-visible` rule drawing a square outline in its place.
+  const lit = at.focusVisible;
   // Hover goes UNDER the focus coats: a control the cursor is over and the
   // remote is on is a focused control, not a doubly-lit one.
   const hover = at.hovered ? at.hoveredStyle : null;
-  const base = at.controlled
-    ? [
-        at.style,
-        hover,
-        lit ? at.focusedStyle : null,
-        lit ? LIFTED : null,
-        lit && at.showRing ? focusRing() : null,
-        at.animated,
-      ]
-    : [at.style, hover, at.animated];
+  const base = [
+    at.style,
+    hover,
+    lit ? at.focusedStyle : null,
+    lit ? LIFTED : null,
+    lit && at.showRing ? focusRing(at.ringToken) : null,
+    at.animated,
+  ];
   return (
     <TouchPressable
-      boxRef={at.boxRef}
+      boxRef={at.setBox}
       webKeys={at.webKeys}
       href={at.href}
       label={at.label}
@@ -121,13 +100,15 @@ function TouchForm({
       onLongPress={at.onLongPress}
       onHoverIn={at.onHoverIn}
       onHoverOut={at.onHoverOut}
+      onFocus={at.onFocus}
+      onBlur={at.onBlur}
       hitSlop={at.hitSlop}
       {...(at.controlled ? { unfocusable: true } : null)}
     >
       {(pressed) =>
         typeof at.children === 'function'
           ? at.children({
-              focused: at.controlled ? at.focused : false,
+              focused: at.focused,
               pressed,
               hovered: at.hovered,
               slots: at.resolve(pressed),
@@ -162,6 +143,7 @@ function NavigatorForm({
     focusedStyle: ViewStyle | undefined;
     animated: FocusableProps['style'];
     showRing: boolean;
+    ringToken: RingToken;
     focused: boolean;
     focusVisible: boolean;
     hovered: boolean;
@@ -186,22 +168,19 @@ function NavigatorForm({
     children: FocusableProps['children'];
   };
 }>): ReactNode {
-  const painted = [
-    at.layers ? at.layers.face : at.style,
-    at.hovered ? at.hoveredStyle : null,
-    at.pressed ? at.pressedStyle : null,
-    at.focusVisible ? at.focusedStyle : null,
-    // Above its neighbours for as long as it holds focus, on the single element
-    // the browser targets render: every view carries an explicit `z-index: 0`
-    // there, so equal siblings paint in DOM order and the NEXT tile in a row
-    // draws over the ring and the focus scale of the one before it. Native
-    // lifts the outer view instead, see `liftedBox`. Keyed on `focused`, not
-    // `focusVisible`: the lift is about what is selected, not about which input
-    // selected it.
-    WEB && at.focused ? LIFTED : null,
-    at.showRing && at.focusVisible ? focusRing() : null,
-    at.animated,
-  ];
+  const painted = coatStack({
+    base: at.layers ? at.layers.face : at.style,
+    hovered: at.hovered,
+    hoveredStyle: at.hoveredStyle,
+    pressed: at.pressed,
+    pressedStyle: at.pressedStyle,
+    focusVisible: at.focusVisible,
+    focusedStyle: at.focusedStyle,
+    lifted: WEB && at.focused,
+    showRing: at.showRing,
+    ringToken: at.ringToken,
+    animated: at.animated,
+  });
 
   return (
     <SpatialNavigationFocusableView

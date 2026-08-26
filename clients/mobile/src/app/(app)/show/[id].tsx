@@ -3,13 +3,13 @@
 // components/showEpisodes.tsx.
 
 import { sizedImageUrl } from '@kroma/core';
-import { Box, Button, Chip, styles, Text } from '@kroma/ui/kit';
+import { Box, Button, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions, type View } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
-import { CastRail, DetailHero, MetaBadge } from '#mobile/components/detail';
+import { CastRail, DetailHero, GenreChips, MetaBadge } from '#mobile/components/detail';
 import { type PopoverAnchor, PopoverMenu } from '#mobile/components/PopoverMenu';
 import { EpisodeRow, SeasonDownload, UpNextCard } from '#mobile/components/showEpisodes';
 import { ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
@@ -130,17 +130,7 @@ function ShowDetail({ id }: Readonly<{ id: string }>) {
             {show.metadata?.overview ? (
               <ExpandableText>{show.metadata.overview}</ExpandableText>
             ) : null}
-            {show.metadata?.genres?.length ? (
-              <Box style={s.genreRow}>
-                {show.metadata.genres.slice(0, 4).map((genre) => (
-                  <Chip
-                    key={genre}
-                    label={genre}
-                    onPress={() => router.push(`/genre/${encodeURIComponent(genre)}` as never)}
-                  />
-                ))}
-              </Box>
-            ) : null}
+            <GenreChips meta={show.metadata} />
             <Button
               variant="ghost"
               size="sm"
@@ -235,7 +225,6 @@ const s = styles({
   body: { gap: spacing.md, pt: spacing.md },
   metaText: { ...type.caption, color: 'text', fontWeight: '600' },
   rating: { ...type.caption, color: 'accentText', fontWeight: '700' },
-  genreRow: { row: true, wrap: true, gap: 8 },
   reportRow: { self: 'flex-start' },
   tabsRow: {
     row: true,

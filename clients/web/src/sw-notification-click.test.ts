@@ -7,7 +7,7 @@ describe('notificationclick', () => {
     return {
       event: {
         action: undefined,
-        notification: { close, data: { link: '/movie/ab12', actions: [] } },
+        notification: { close, data: { link: '/movies/ab12', actions: [] } },
         ...over,
       },
       close,
@@ -20,7 +20,7 @@ describe('notificationclick', () => {
     await sw.fire('notificationclick', event);
 
     expect(close).toHaveBeenCalled();
-    expect(sw.opened).toEqual(['https://kroma.test/movie/ab12']);
+    expect(sw.opened).toEqual(['https://kroma.test/movies/ab12']);
   });
 
   it('reuses a tab that is already open on this origin', async () => {
@@ -29,13 +29,13 @@ describe('notificationclick', () => {
 
     expect(sw.opened).toEqual([]);
     expect(sw.focused).toBe(1);
-    expect(sw.navigated).toEqual(['https://kroma.test/movie/ab12']);
+    expect(sw.navigated).toEqual(['https://kroma.test/movies/ab12']);
   });
 
   it('ignores a tab on another origin', async () => {
     const sw = load([{ url: 'https://elsewhere.test/' }]);
     await sw.fire('notificationclick', clickEvent().event);
-    expect(sw.opened).toEqual(['https://kroma.test/movie/ab12']);
+    expect(sw.opened).toEqual(['https://kroma.test/movies/ab12']);
     expect(sw.focused).toBe(0);
   });
 
@@ -132,13 +132,13 @@ describe('notificationclick', () => {
         close: vi.fn(),
         data: {
           link: '/requests',
-          actions: [{ id: 'watch', kind: 'link', href: '/movie/ab12' }],
+          actions: [{ id: 'watch', kind: 'link', href: '/movies/ab12' }],
         },
       },
     });
     await sw.fire('notificationclick', event);
 
-    expect(sw.opened).toEqual(['https://kroma.test/movie/ab12']);
+    expect(sw.opened).toEqual(['https://kroma.test/movies/ab12']);
     expect(sw.fetches).toEqual([]);
   });
 

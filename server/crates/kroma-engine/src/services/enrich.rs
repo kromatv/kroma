@@ -189,6 +189,7 @@ fn blank_metadata() -> Metadata {
         overview: None,
         release_date: None,
         genres: Vec::new(),
+        tmdb_genre_ids: Vec::new(),
         rating: None,
         poster_url: None,
         backdrop_url: None,

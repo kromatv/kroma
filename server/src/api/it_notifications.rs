@@ -476,7 +476,7 @@ async fn the_report_lifecycle_notifies_both_sides_but_not_on_reopen() {
     );
     assert_eq!(
         ana_inbox["notifications"][0]["link"],
-        json!(format!("/movie/{movie}"))
+        json!(format!("/movies/{movie}"))
     );
 
     // Reopening is moderator churn: the reporter hears nothing new.

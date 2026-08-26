@@ -19,12 +19,13 @@ import {
   IconWorld,
   type TablerIcon,
 } from '@tabler/icons-react';
+import type { RoutePath } from '#web/shared/ui/route-link';
 
 /** One console page. `cap: null` is visible to any admin (the read-only
  *  dashboard panels); otherwise the page needs that capability, mirroring the
  *  server-side guards in `api/admin.rs`. */
 export interface AdminNavItem {
-  to: string;
+  to: RoutePath;
   labelKey: MessageKey;
   cap: Permission | null;
   icon: TablerIcon;

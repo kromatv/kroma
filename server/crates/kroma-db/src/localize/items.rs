@@ -124,6 +124,23 @@ mod tests {
     }
 
     #[test]
+    fn a_locale_overlay_rewrites_the_genre_names_and_leaves_their_ids_alone() {
+        let p = pool();
+        let tr = TransData {
+            genres: vec!["Science-fiction".into()],
+            ..Default::default()
+        };
+        translations::put(&p, metadata_core::ITEM, "m1", "fr", translations::TMDB, &tr).unwrap();
+        let mut items = vec![item("m1", Kind::Movie)];
+
+        overlay_items(&p, &mut items, "fr").unwrap();
+
+        let m = items[0].metadata.as_ref().unwrap();
+        assert_eq!(m.genres, vec!["Science-fiction".to_string()]);
+        assert_eq!(m.tmdb_genre_ids, vec![878]);
+    }
+
+    #[test]
     fn a_translation_overlays_every_text_field_it_carries() {
         let p = pool();
         let tr = TransData {

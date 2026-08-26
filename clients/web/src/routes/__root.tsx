@@ -1,3 +1,4 @@
+import appCss from 'virtual:kroma.css?url';
 import { ConfirmHost } from '@kroma/ui/kit';
 import bricolageLatin from '@kroma/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
 import hankenLatin from '@kroma/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
@@ -15,7 +16,6 @@ import { MyListProvider } from '#web/shared/lib/mylist';
 import { queryClient } from '#web/shared/lib/query';
 import { WatchedProvider } from '#web/shared/lib/watched';
 import { NavActionsProvider } from '#web/shared/ui/nav-actions';
-import appCss from '#web/styles.css?url';
 
 // Dev-only: lazy so the devtools bundle never ships in the packaged SPA.
 const ReactQueryDevtools = import.meta.env.DEV

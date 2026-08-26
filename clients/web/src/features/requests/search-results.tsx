@@ -6,13 +6,14 @@ import { episodeTag, posterColors, type SearchHit } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, EmptyState, Row, Text } from '@kroma/ui/kit';
 
-import { useNavigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
 import type { DiscoverSearchState } from '#web/features/requests/use-discover-search';
 import { useAuth } from '#web/shared/lib/auth';
-import { POSTER_GRID, SkeletonRow } from '#web/shared/ui';
+import { SkeletonRow } from '#web/shared/ui';
 import { Poster } from '#web/shared/ui/poster';
+import { RouteLink } from '#web/shared/ui/route-link';
+import { TileGrid } from '#web/shared/ui/tile-grid';
 
 const COUNT = { fontVariant: ['tabular-nums' as const] };
 
@@ -20,7 +21,7 @@ function Section({
   title,
   count,
   children,
-}: Readonly<{ title: string; count: number; children: ReactNode }>) {
+}: Readonly<{ title: string; count: number; children: (width: number) => ReactNode }>) {
   return (
     <section style={BAND}>
       {/* Still an <h2>: <Text accessibilityRole="header"> can only render an h1. */}
@@ -32,7 +33,7 @@ function Section({
           </Text>
         </Row>
       </h2>
-      <div className={POSTER_GRID}>{children}</div>
+      <TileGrid>{children}</TileGrid>
     </section>
   );
 }
@@ -41,9 +42,8 @@ const BAND = { marginBottom: 36, animation: 'fade-in .25s var(--ease-out)' } as 
 
 const HEADING = { margin: 0 } as const;
 
-function LocalHit({ hit }: Readonly<{ hit: SearchHit }>) {
+function LocalHit({ hit, width }: Readonly<{ hit: SearchHit; width: number }>) {
   const { client } = useAuth();
-  const navigate = useNavigate();
   if (hit.type === 'show') {
     const show = hit.show;
     return (
@@ -51,14 +51,15 @@ function LocalHit({ hit }: Readonly<{ hit: SearchHit }>) {
         title={show.title}
         colors={posterColors(show.id)}
         poster={client.showPosterFor(show)}
-        onClick={() => navigate({ to: '/show/$id', params: { id: show.id } })}
+        width={width}
+        as={<RouteLink to="/shows/$id" params={{ id: show.id }} />}
       />
     );
   }
   const item = hit.item;
   // Episodes route to their show; movies to their own fiche.
   const episode = hit.type === 'episode' && item.showId ? item.showId : null;
-  const to = episode ? '/show/$id' : '/movie/$id';
+  const to = episode ? '/shows/$id' : '/movies/$id';
   return (
     <Poster
       title={item.episodeTitle ?? item.title}
@@ -66,7 +67,8 @@ function LocalHit({ hit }: Readonly<{ hit: SearchHit }>) {
       genre={episode ? [item.showTitle, episodeTag(item)].filter(Boolean).join(' · ') : undefined}
       colors={posterColors(item.id)}
       poster={client.posterFor(item)}
-      onClick={() => navigate({ to, params: { id: episode ?? item.id } })}
+      width={width}
+      as={<RouteLink to={to} params={{ id: episode ?? item.id }} />}
     />
   );
 }
@@ -96,18 +98,22 @@ export function SearchResults({ state }: Readonly<{ state: DiscoverSearchState }
     <Box mt={28}>
       {state.local.length > 0 ? (
         <Section title={t('discover.sectionLibrary')} count={state.local.length}>
-          {state.local.map((hit) => {
-            // Stable, unique key from the hit's own id (show vs item/episode).
-            const id = hit.type === 'show' ? hit.show.id : hit.item.id;
-            return <LocalHit key={`${hit.type}-${id}`} hit={hit} />;
-          })}
+          {(width) =>
+            state.local.map((hit) => {
+              // Stable, unique key from the hit's own id (show vs item/episode).
+              const id = hit.type === 'show' ? hit.show.id : hit.item.id;
+              return <LocalHit key={`${hit.type}-${id}`} hit={hit} width={width} />;
+            })
+          }
         </Section>
       ) : null}
       {state.canDiscover && state.discover.length > 0 ? (
         <Section title={t('discover.sectionDiscover')} count={state.discover.length}>
-          {state.discover.map((entry) => (
-            <DiscoverCard key={`${entry.kind}-${entry.tmdbId}`} entry={entry} />
-          ))}
+          {(width) =>
+            state.discover.map((entry) => (
+              <DiscoverCard key={`${entry.kind}-${entry.tmdbId}`} entry={entry} width={width} />
+            ))
+          }
         </Section>
       ) : null}
     </Box>

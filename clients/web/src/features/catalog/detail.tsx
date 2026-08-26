@@ -1,4 +1,10 @@
-import { canDirectPlay, type ItemId, type MediaItem, posterColors } from '@kroma/core';
+import {
+  type CrewMember,
+  canDirectPlay,
+  type ItemId,
+  type MediaItem,
+  posterColors,
+} from '@kroma/core';
 import { useT, useThemeAudio } from '@kroma/ui';
 import {
   BackButton,
@@ -80,7 +86,7 @@ export interface DetailHeroProps {
   meta: string;
   badges: QualityTone[];
   audioFlag?: string | null;
-  directors?: string[];
+  directors?: CrewMember[];
   tagline?: string | null;
   overview?: string | null;
   audio?: string;
@@ -264,6 +270,3 @@ function ThemeToggle({ theme }: Readonly<{ theme: ReturnType<typeof useThemeAudi
     </Box>
   );
 }
-
-// A run of inline links inside one paragraph: the kit lays a control out as a
-// block, so these stay <button>s and carry a standing underline rather than a

@@ -17,3 +17,7 @@ const alphaSuffix = (alpha: string | number) => `-${String(alpha).replace('.', '
  *  legal alpha and an illegal ident, so the dot becomes an underscore. */
 export const cssVar = (token: string, alpha?: string | number) =>
   `--kroma-${cssName(token)}${alpha === undefined ? '' : alphaSuffix(alpha)}`;
+
+/** A colour token read back, for a value that must name the property rather
+ *  than repeat its literal: `var(--kroma-bg)`. */
+export const cssRef = (token: string, alpha?: string | number) => `var(${cssVar(token, alpha)})`;

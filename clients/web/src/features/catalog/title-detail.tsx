@@ -2,7 +2,7 @@
 
 import type { ItemId } from '@kroma/core';
 import { useCast, useT } from '@kroma/ui';
-import { Text } from '@kroma/ui/kit';
+import { type HostElement, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import type { CSSProperties } from 'react';
@@ -15,8 +15,9 @@ import { useTitleRequest } from '#web/features/catalog/use-title-request';
 import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
 import { userQueries } from '#web/shared/lib/queries';
-import type { TitleView } from '#web/shared/lib/titleView';
+import type { SimilarTarget, TitleView } from '#web/shared/lib/titleView';
 import { useWatched } from '#web/shared/lib/watched';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 // The page gutter is a fluid CSS custom property, which no style number can
 // carry, so anything indented by it stays a plain element.
@@ -40,6 +41,24 @@ function progressMap(entries: readonly ProgressEntry[]): Record<string, number> 
   return map;
 }
 
+function similarLink(target: SimilarTarget): HostElement | undefined {
+  if (target.localId) {
+    return (
+      <RouteLink
+        to={target.kind === 'show' ? '/shows/$id' : '/movies/$id'}
+        params={{ id: target.localId }}
+      />
+    );
+  }
+  if (target.tmdbId == null) return undefined;
+  return (
+    <RouteLink
+      to="/discover/$type/$tmdbId"
+      params={{ type: target.kind === 'show' ? 'tv' : 'movie', tmdbId: String(target.tmdbId) }}
+    />
+  );
+}
+
 function TitleBody({
   view,
   owned,
@@ -58,7 +77,6 @@ function TitleBody({
   onRequestSeason,
   onRequestAll,
   onClearSelection,
-  onOpenSimilar,
 }: Readonly<{
   view: TitleView;
   owned: boolean;
@@ -77,7 +95,6 @@ function TitleBody({
   onRequestSeason: (season: number) => void;
   onRequestAll: () => void;
   onClearSelection: () => void;
-  onOpenSimilar: (key: string) => void;
 }>) {
   const t = useT();
   return (
@@ -120,7 +137,7 @@ function TitleBody({
         />
       )}
 
-      <SimilarRail title={t('content.similarTitles')} items={similarItems} onOpen={onOpenSimilar} />
+      <SimilarRail title={t('content.similarTitles')} items={similarItems} />
 
       {owned && localId ? <AiSuggestRail id={localId} /> : null}
     </>
@@ -149,8 +166,8 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
 
   const owned = view.localId != null && view.playable != null;
   const localId = view.localId;
-  let backTo: '/' | '/series' | '/search' = '/search';
-  if (owned) backTo = view.kind === 'show' ? '/series' : '/';
+  let backTo: '/' | '/shows' | '/search' = '/search';
+  if (owned) backTo = view.kind === 'show' ? '/shows' : '/';
 
   const { data: epProgress = {} } = useQuery({
     ...userQueries.progress(),
@@ -167,19 +184,6 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
     navigate({ to: '/watch/$id', params: { id } });
   };
 
-  const openSimilar = (key: string) => {
-    const s = view.similar.find((x) => x.key === key);
-    if (!s) return;
-    if (s.localId) {
-      navigate({ to: s.kind === 'show' ? '/show/$id' : '/movie/$id', params: { id: s.localId } });
-    } else if (s.tmdbId != null) {
-      navigate({
-        to: '/discover/$type/$tmdbId',
-        params: { type: s.kind === 'show' ? 'tv' : 'movie', tmdbId: String(s.tmdbId) },
-      });
-    }
-  };
-
   const fallbackOverlineKey = view.kind === 'show' ? 'content.series' : 'content.film';
   const overline = view.genres.length
     ? view.genres.slice(0, 3).join(' · ')
@@ -190,6 +194,7 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
     genre: s.genre,
     badge: null,
     poster: s.poster,
+    as: similarLink(s),
   }));
 
   return (
@@ -227,7 +232,6 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
         onRequestSeason={requestSeason}
         onRequestAll={requestAllSeasons}
         onClearSelection={clearSelection}
-        onOpenSimilar={openSimilar}
       />
     </main>
   );

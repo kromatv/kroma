@@ -60,7 +60,7 @@ export function IdentityCard({
               label={t('requests.openInLibrary')}
               onPress={() =>
                 navigate({
-                  to: req.kind === 'show' ? '/show/$id' : '/movie/$id',
+                  to: req.kind === 'show' ? '/shows/$id' : '/movies/$id',
                   params: { id: localId },
                 })
               }

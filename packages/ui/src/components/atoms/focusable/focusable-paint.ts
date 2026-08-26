@@ -1,8 +1,19 @@
 import { useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
-import { type AnySv, normalize, type StyleDecl, type SvStateName, stabilise } from '#ui/core';
+import {
+  type AnySv,
+  activeTheme,
+  normalize,
+  type StyleDecl,
+  type SvStateName,
+  sharedStyle,
+  stabilise,
+} from '#ui/core';
+import type { RingToken } from '#ui/core/theme';
 import { splitBoxLayers } from '#ui/lib/box-layers';
 import { ARROW, COLOUR_MOTION, HAND } from '#ui/lib/cursor';
+import { NO_OUTLINE } from '#ui/lib/field-shell';
+import { LIFTED } from '#ui/lib/focus-lift';
 import { WEB } from '#ui/lib/platform';
 import type { Resolve } from './focusable-types';
 
@@ -35,10 +46,10 @@ function usePair(a: StyleProp<ViewStyle>, b: StyleProp<ViewStyle>): StyleProp<Vi
   }, [a, b]);
 }
 
-function pointerCursor(disabled: boolean, onPress: unknown): ViewStyle | null {
+function pointerCursor(disabled: boolean, actionable: boolean): ViewStyle | null {
   if (!WEB) return null;
   if (disabled) return ARROW;
-  return onPress ? HAND : null;
+  return actionable ? HAND : null;
 }
 
 interface PaintInput {
@@ -51,7 +62,8 @@ interface PaintInput {
   disabled: boolean;
   inert: boolean;
   canPress: boolean;
-  onPress: (() => void) | undefined;
+  actionable: boolean;
+  showRing: boolean;
 }
 
 /** Resolves the recipe and the one-off state coats into the styles a form
@@ -66,7 +78,8 @@ function useFocusablePaint({
   disabled,
   inert,
   canPress,
-  onPress,
+  actionable,
+  showRing,
 }: PaintInput) {
   const coats = useMemo(
     () => ({ focus: coat(states?.focus), hover: coat(states?.hover), press: coat(states?.press) }),
@@ -102,14 +115,44 @@ function useFocusablePaint({
 
   // Under `painted`, never over it: a control that states its own cursor - a
   // resize seam asking for `col-resize` - has to keep it.
-  const cursor = pointerCursor(disabled, onPress);
+  const cursor = pointerCursor(disabled, actionable);
+  const ringOff = WEB && !showRing ? NO_OUTLINE : null;
   // Under `painted` as well: a control that states its own transition keeps it.
   const dressed = useMemo(
-    () => (WEB ? [COLOUR_MOTION, cursor, painted] : painted),
-    [cursor, painted],
+    () => (WEB ? [COLOUR_MOTION, cursor, ringOff, painted] : painted),
+    [cursor, ringOff, painted],
   );
 
   return { dressed, focusedStyle, hoveredStyle, layers, paintedPressed, resolve, rest };
 }
 
-export { useFocusablePaint };
+const focusRing = (token: RingToken) =>
+  sharedStyle(`focusable:ring:${token}`, { ...activeTheme().ring[token] });
+
+interface CoatStack {
+  base: StyleProp<ViewStyle>;
+  hovered: boolean;
+  hoveredStyle: ViewStyle | undefined;
+  pressed: boolean;
+  pressedStyle: StyleProp<ViewStyle>;
+  focusVisible: boolean;
+  focusedStyle: ViewStyle | undefined;
+  lifted: boolean;
+  showRing: boolean;
+  ringToken: RingToken;
+  animated: StyleProp<ViewStyle>;
+}
+
+function coatStack(at: CoatStack): StyleProp<ViewStyle>[] {
+  return [
+    at.base,
+    at.hovered ? at.hoveredStyle : null,
+    at.pressed ? at.pressedStyle : null,
+    at.focusVisible ? at.focusedStyle : null,
+    at.lifted ? LIFTED : null,
+    at.showRing && at.focusVisible ? focusRing(at.ringToken) : null,
+    at.animated,
+  ];
+}
+
+export { coatStack, focusRing, useFocusablePaint };

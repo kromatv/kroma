@@ -11,6 +11,7 @@ fn meta(title: &str, overview: &str, genres: &[&str], cast: &[&str]) -> Metadata
         overview: Some(overview.into()),
         release_date: None,
         genres: genres.iter().map(ToString::to_string).collect(),
+        tmdb_genre_ids: Vec::new(),
         rating: None,
         poster_url: None,
         backdrop_url: None,
@@ -20,6 +21,7 @@ fn meta(title: &str, overview: &str, genres: &[&str], cast: &[&str]) -> Metadata
             .iter()
             .map(|n| CastMember {
                 name: n.to_string(),
+                tmdb_id: None,
                 character: None,
                 profile_url: None,
             })

@@ -1,9 +1,10 @@
 //! TMDB *person* lookup: the biography and life facts behind a name in a
 //! title's cast or crew, for the person page.
 //!
-//! A person is not a library entity - there is no row to enrich, and the name
-//! is all a credit carries - so this resolves by name on demand:
-//! `search/person` for the id, then `person/{id}` for the profile.
+//! A person is not a library entity - there is no row to enrich - so this
+//! resolves on demand. A credit that kept the provider's person id goes
+//! straight to `person/{id}`; one stored before that is searched by name
+//! (`search/person`), which cannot tell two people of one name apart.
 //!
 //! Results are cached indefinitely, including a `None` miss, since the answer
 //! changes about as often as a birthday. An empty localized biography falls
@@ -62,21 +63,27 @@ fn credits_cache() -> &'static Mutex<HashMap<String, Vec<TmdbCredit>>> {
     CREDITS.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-/// The person TMDB knows under `name`, or `None` when nobody matches (or the
-/// provider is unreachable a miss no worse than an absent biography).
+/// The person `tmdb_id` names, or the one TMDB knows under `name` when no
+/// credit carried an id. `None` when nobody matches (or the provider is
+/// unreachable a miss no worse than an absent biography).
 ///
 /// Blocking: shells out to `curl` twice on a cache miss. Call it from a blocking
 /// context, never straight off the async runtime.
-pub fn detail(api_key: &str, language: &str, name: &str) -> Option<PersonDetail> {
+pub fn detail(
+    api_key: &str,
+    language: &str,
+    name: &str,
+    tmdb_id: Option<u64>,
+) -> Option<PersonDetail> {
     let name = name.trim();
-    if name.is_empty() {
+    if name.is_empty() && tmdb_id.is_none() {
         return None;
     }
-    let key = format!("{language}|{}", name.to_lowercase());
+    let key = cache_key(language, name, tmdb_id);
     if let Some(hit) = cache().lock().ok().and_then(|c| c.get(&key).cloned()) {
         return hit;
     }
-    let resolved = resolve(api_key, language, name);
+    let resolved = resolve(api_key, language, name, tmdb_id);
     if let Ok(mut c) = cache().lock() {
         c.insert(key, resolved.clone());
     }
@@ -89,24 +96,38 @@ pub fn detail(api_key: &str, language: &str, name: &str) -> Option<PersonDetail>
 ///
 /// Blocking: shells out to `curl` twice on a cache miss. Call it from a blocking
 /// context, never straight off the async runtime.
-pub fn filmography(api_key: &str, language: &str, name: &str) -> Vec<TmdbCredit> {
+pub fn filmography(
+    api_key: &str,
+    language: &str,
+    name: &str,
+    tmdb_id: Option<u64>,
+) -> Vec<TmdbCredit> {
     let name = name.trim();
-    if name.is_empty() {
+    if name.is_empty() && tmdb_id.is_none() {
         return Vec::new();
     }
-    let key = format!("{language}|{}", name.to_lowercase());
-    if let Some(hit) = credits_cache().lock().ok().and_then(|c| c.get(&key).cloned()) {
+    let key = cache_key(language, name, tmdb_id);
+    if let Some(hit) = credits_cache()
+        .lock()
+        .ok()
+        .and_then(|c| c.get(&key).cloned())
+    {
         return hit;
     }
-    let resolved = resolve_credits(api_key, language, name);
+    let resolved = resolve_credits(api_key, language, name, tmdb_id);
     if let Ok(mut c) = credits_cache().lock() {
         c.insert(key, resolved.clone());
     }
     resolved
 }
 
-fn resolve_credits(api_key: &str, language: &str, name: &str) -> Vec<TmdbCredit> {
-    let Some(id) = best_id(api_key, language, name) else {
+fn resolve_credits(
+    api_key: &str,
+    language: &str,
+    name: &str,
+    tmdb_id: Option<u64>,
+) -> Vec<TmdbCredit> {
+    let Some(id) = tmdb_id.or_else(|| best_id(api_key, language, name)) else {
         return Vec::new();
     };
     let params = [("language", language.to_string())];
@@ -135,12 +156,22 @@ fn resolve_credits(api_key: &str, language: &str, name: &str) -> Vec<TmdbCredit>
 }
 
 fn credit_from(c: &RawCredit, role: &str) -> TmdbCredit {
-    let title = c.title.clone().or_else(|| c.name.clone()).unwrap_or_default();
+    let title = c
+        .title
+        .clone()
+        .or_else(|| c.name.clone())
+        .unwrap_or_default();
     let date = c.release_date.as_deref().or(c.first_air_date.as_deref());
-    let year = date.and_then(|d| d.get(0..4)).and_then(|y| y.parse::<u32>().ok());
+    let year = date
+        .and_then(|d| d.get(0..4))
+        .and_then(|y| y.parse::<u32>().ok());
     let poster = c.poster_path.as_deref().map(|p| format!("{IMG}/w185{p}"));
     let backdrop = c.backdrop_path.as_deref().map(|p| format!("{IMG}/w300{p}"));
-    let character = if role == "cast" { c.character.clone() } else { None };
+    let character = if role == "cast" {
+        c.character.clone()
+    } else {
+        None
+    };
     let job = if role == "crew" { c.job.clone() } else { None };
     TmdbCredit {
         tmdb_id: c.id,
@@ -155,8 +186,20 @@ fn credit_from(c: &RawCredit, role: &str) -> TmdbCredit {
     }
 }
 
-fn resolve(api_key: &str, language: &str, name: &str) -> Option<PersonDetail> {
-    let id = best_id(api_key, language, name)?;
+fn cache_key(language: &str, name: &str, tmdb_id: Option<u64>) -> String {
+    match tmdb_id {
+        Some(id) => format!("{language}|#{id}"),
+        None => format!("{language}|{}", name.to_lowercase()),
+    }
+}
+
+fn resolve(
+    api_key: &str,
+    language: &str,
+    name: &str,
+    tmdb_id: Option<u64>,
+) -> Option<PersonDetail> {
+    let id = tmdb_id.or_else(|| best_id(api_key, language, name))?;
     let mut person = profile(api_key, language, id)?;
     if person.biography.is_none() && !language.starts_with("en") {
         person.biography = profile(api_key, "en-US", id).and_then(|p| p.biography);

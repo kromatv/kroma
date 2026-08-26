@@ -142,7 +142,7 @@ function Item({
       {onPress ? (
         <Focusable
           label={label ?? (typeof title === 'string' ? title : undefined)}
-          ring={false}
+          ring="focusEdge"
           focusScale={1}
           onPress={onPress}
           sv={timelineEntry}

@@ -21,7 +21,7 @@ import { Box, EmptyState, Icon, Img, ListRow, PageHeader, Row, Text } from '@kro
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { userQueries } from '#web/shared/lib/queries';
-import { PAGE_MAIN, Skeleton } from '#web/shared/ui';
+import { PageFrame, Skeleton } from '#web/shared/ui';
 
 // Releases at most this many days out get the accent "imminent" date.
 const IMMINENT_DAYS = 7;
@@ -50,7 +50,7 @@ export function ComingSoonPage() {
   }
 
   return (
-    <main className={PAGE_MAIN}>
+    <PageFrame>
       <PageHeader.Root>
         <PageHeader.Title>{t('requests.calendarTitle')}</PageHeader.Title>
         <PageHeader.Subtitle>{t('requests.calendarSubtitle')}</PageHeader.Subtitle>
@@ -104,7 +104,7 @@ export function ComingSoonPage() {
           </Box>
         </section>
       ))}
-    </main>
+    </PageFrame>
   );
 }
 

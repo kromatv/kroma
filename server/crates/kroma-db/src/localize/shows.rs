@@ -160,6 +160,7 @@ mod tests {
                 episodes: vec![item("e1", Kind::Episode)],
                 cast: vec![CastMember {
                     name: "A".into(),
+                    tmdb_id: None,
                     character: Some("orig".into()),
                     profile_url: None,
                 }],

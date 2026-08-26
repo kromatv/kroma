@@ -4,6 +4,7 @@
 
 import { compareTitles, type Sortable } from './browse';
 import { hueFromString } from './format';
+import { genreSlug, genreSlugs } from './genre';
 
 const byRating = compareTitles('rating');
 
@@ -20,21 +21,20 @@ function bestUnused<T extends Sortable>(list: readonly T[], used: ReadonlySet<T>
   return free ?? best;
 }
 
-/** Per-genre showcase pick: a highly-rated title with real backdrop art to
- * front each genre card. Scarcest genres are assigned first and every genre
- * takes its best not-yet-used title, so two cards only ever share art when a
- * genre has no unused candidate left. Deterministic across renders. Genres
- * whose titles have no backdrop at all are simply absent from the map. */
+/** Per-genre showcase pick, keyed by genre slug: a highly-rated title with
+ * real backdrop art to front each genre card. Scarcest genres are assigned
+ * first and every genre takes its best not-yet-used title, so two cards only
+ * ever share art when a genre has no unused candidate left. Deterministic
+ * across renders. Genres whose titles have no backdrop at all are simply
+ * absent from the map. */
 export function genreShowcases<T extends Sortable>(items: readonly T[]): Map<string, T> {
   const byGenre = new Map<string, T[]>();
   for (const it of items) {
     if (!it.metadata?.backdropUrl) continue;
-    for (const raw of it.metadata.genres ?? []) {
-      const name = raw.trim();
-      if (!name) continue;
-      const list = byGenre.get(name);
+    for (const slug of genreSlugs(it.metadata)) {
+      const list = byGenre.get(slug);
       if (list) list.push(it);
-      else byGenre.set(name, [it]);
+      else byGenre.set(slug, [it]);
     }
   }
   const order = [...byGenre.entries()].sort(
@@ -42,69 +42,53 @@ export function genreShowcases<T extends Sortable>(items: readonly T[]): Map<str
   );
   const used = new Set<T>();
   const picks = new Map<string, T>();
-  for (const [name, list] of order) {
+  for (const [slug, list] of order) {
     const pick = bestUnused(list, used);
     if (pick === undefined) continue; // unreachable: every list has at least one entry
-    picks.set(name, pick);
+    picks.set(slug, pick);
     used.add(pick);
   }
   return picks;
 }
 
 /** Signature hues for the common TMDB genres, spread around the colour wheel
- * (the chromatic nod to the KROMA brand). Keyed by lowercased display name in
- * both locales, since genre names arrive pre-localized from the server. */
+ * (the chromatic nod to the KROMA brand). Keyed by slug, so a genre keeps its
+ * colour whichever language the library stored its name in. */
 const GENRE_HUES: Readonly<Record<string, number>> = {
   action: 12,
-  'action & adventure': 20,
+  'action-adventure': 20,
   western: 28,
   history: 36,
-  histoire: 36,
   comedy: 46,
-  comédie: 46,
   reality: 60,
-  téléréalité: 60,
   war: 75,
-  guerre: 75,
-  'war & politics': 75,
+  'war-politics': 75,
   family: 90,
-  familial: 90,
   kids: 105,
-  enfants: 105,
   documentary: 125,
-  documentaire: 125,
   adventure: 150,
-  aventure: 150,
   animation: 172,
-  'science fiction': 195,
   'science-fiction': 195,
-  'sci-fi & fantasy': 208,
-  'science-fiction & fantastique': 208,
-  'tv movie': 218,
-  téléfilm: 218,
+  'sci-fi-fantasy': 208,
+  'tv-movie': 218,
   thriller: 232,
   mystery: 252,
-  mystère: 252,
   drama: 268,
-  drame: 268,
   fantasy: 285,
-  fantastique: 285,
   soap: 300,
-  feuilleton: 300,
   music: 315,
-  musique: 315,
   romance: 335,
   crime: 348,
   horror: 358,
-  horreur: 358,
 };
 
-/** The stable hue (0-359) for a genre name: curated for the common genres,
- * hashed for anything else, so every genre always gets the same colour. */
-export function genreHue(name: string): number {
-  const key = name.trim().toLowerCase();
+/** The stable hue (0-359) for a genre, named or slugged: curated for the
+ * genres TMDB publishes, hashed for anything else, so every genre always gets
+ * the same colour whatever it was called when it reached us. */
+export function genreHue(nameOrSlug: string): number {
+  const slug = genreSlug(nameOrSlug);
   // Same hash the key-art gradients use, so both palettes stay one implementation.
-  return GENRE_HUES[key] ?? hueFromString(key);
+  return GENRE_HUES[slug] ?? hueFromString(slug);
 }
 
 /** Deterministic two-stop gradient for a genre card (same shape `posterColors`

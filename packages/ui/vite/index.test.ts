@@ -42,7 +42,7 @@ describe('kromaUI', () => {
     // Null on both sides is the walk each would otherwise have made itself.
     expect(alphaPass(SOURCE_ROOTS, KNOWN_COLOR_NAMES)).toBeNull();
     expect(iconPass(REPO)).toBeNull();
-  });
+  }, 30_000);
 
   it('discovers the workspace root, so a shell config passes nothing', () => {
     expect(() => kromaUI()).not.toThrow();

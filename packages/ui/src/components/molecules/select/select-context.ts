@@ -51,7 +51,7 @@ interface SelectRowState {
    *  past: the ring is the keyboard's, the wash is the pointer's. */
   keyed?: boolean;
   onHoverIn?: () => void;
-  onLayout?: (y: number) => void;
+  onLayout?: (y: number, height: number) => void;
 }
 
 const DIALOG_ROW: SelectRowState = { presentation: 'dialog', active: false };

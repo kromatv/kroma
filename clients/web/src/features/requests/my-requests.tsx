@@ -27,8 +27,8 @@ import { useEffect, useRef, useState } from 'react';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
-import { seasonsSummary } from '#web/shared/lib/request-status';
-import { PAGE_MAIN, Skeleton } from '#web/shared/ui';
+import { requestStatusMeta, seasonsSummary } from '#web/shared/lib/request-status';
+import { PageFrame, Skeleton } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
 export function MyRequestsPage() {
@@ -74,7 +74,7 @@ export function MyRequestsPage() {
   };
 
   return (
-    <main className={PAGE_MAIN}>
+    <PageFrame>
       <PageHeader.Root>
         <PageHeader.Title>{t('requests.myTitle')}</PageHeader.Title>
         <PageHeader.Subtitle>{t('requests.mySubtitle')}</PageHeader.Subtitle>
@@ -126,7 +126,7 @@ export function MyRequestsPage() {
           />
         ))}
       </Box>
-    </main>
+    </PageFrame>
   );
 }
 
@@ -157,9 +157,17 @@ function RequestRow({
         })
       : null;
 
+  // The status rides INSIDE the control: the whole row is the one press target,
+  // so a chip parked beside it would leave two thirds of the card dead and ring
+  // only the part it did not cover. It joins the label rather than being read
+  // separately, which is what a row announcing "Mutiny, approved" wants.
   return (
     <Surface pad="none" p={14} radius="2xl" border="border" row align="center" gap={16}>
-      <Focusable onPress={onOpen} label={req.title} style={s.head}>
+      <Focusable
+        onPress={onOpen}
+        label={`${req.title} · ${t(requestStatusMeta(req.status).labelKey)}`}
+        style={s.head}
+      >
         <Box w={46} h={68} shrink={0}>
           <Img src={poster} background={`linear-gradient(158deg, ${c1}, ${c2})`} radius="lg" fill />
         </Box>
@@ -189,8 +197,9 @@ function RequestRow({
             </Text>
           ) : null}
         </Box>
+        <Box flex />
+        <RequestStatusChip status={req.status} progress={progress ?? req.progress ?? null} />
       </Focusable>
-      <RequestStatusChip status={req.status} progress={progress ?? req.progress ?? null} />
       {req.status === 'pending' ? (
         <IconButton
           control="sm"

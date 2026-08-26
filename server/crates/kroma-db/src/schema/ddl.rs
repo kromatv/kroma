@@ -507,6 +507,12 @@ pub(crate) const SCHEMA: &str = "
     -- out of the per-item `metadata` JSON so identity/availability/art/cast don't
     -- depend on which language was fetched, and switching UI language never
     -- touches this row (nor the embeddings derived from it).
+    --
+    -- A provider id is stored ON THE RECORD IT IDENTIFIES, under a
+    -- provider-qualified name: this title's own ids are the columns below, and
+    -- a credited person's rides on its member inside cast_json / crew_json (a
+    -- serde field, so people cost no schema change). Only a bare reference list
+    -- the title holds, like genres, earns a column of its own here.
     CREATE TABLE IF NOT EXISTS metadata_core (
         subject_kind TEXT NOT NULL,          -- 'item' | 'show'
         subject_id   TEXT NOT NULL,
@@ -520,6 +526,8 @@ pub(crate) const SCHEMA: &str = "
         logo_url     TEXT,
         cast_json    TEXT NOT NULL DEFAULT '[]',
         crew_json    TEXT NOT NULL DEFAULT '[]',
+        -- The NAMES are localized and live in `translations`; these do not.
+        tmdb_genre_ids TEXT NOT NULL DEFAULT '[]',
         updated_at   INTEGER NOT NULL,
         PRIMARY KEY (subject_kind, subject_id)
     );

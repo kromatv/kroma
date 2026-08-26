@@ -109,25 +109,23 @@ export function search(
   return ctx.json<SearchResponse>(`/search?${params.toString()}`);
 }
 
-/** Every movie + show one person is credited in (cast or key crew). Server-side
- * exact (case-insensitive) match over the catalogue metadata distinct from the
- * fuzzy {@link search} ordered best-known work first. */
+/** Every movie + show one person is credited in (cast or key crew), best-known
+ * work first. `person` is a display name or the slug a person URL carries; the
+ * server answers with the spelling the catalogue holds. */
 export function personCredits(
   ctx: RequestContext,
-  name: string,
+  person: string,
   opts?: { libraryId?: string },
 ): Promise<PersonResponse> {
-  const params = new URLSearchParams({ name });
+  const params = new URLSearchParams({ name: person });
   if (opts?.libraryId) params.set('library', opts.libraryId);
   return ctx.json<PersonResponse>(`/people?${params.toString()}`);
 }
 
 /** The person behind a credit biography, birth, birthplace from the metadata
- * provider. Independent of {@link personCredits} (which reads the local
- * catalogue), so a person page fires both in parallel and renders the
- * filmography whether or not the provider answers. */
-export function personDetails(ctx: RequestContext, name: string): Promise<PersonDetailResponse> {
-  const params = new URLSearchParams({ name });
+ * provider. `person` is a display name or a slug, as with {@link personCredits}. */
+export function personDetails(ctx: RequestContext, person: string): Promise<PersonDetailResponse> {
+  const params = new URLSearchParams({ name: person });
   return ctx.json<PersonDetailResponse>(`/people/details?${params.toString()}`);
 }
 

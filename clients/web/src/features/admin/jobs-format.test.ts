@@ -3,26 +3,37 @@ import { clock, dur, rel } from './jobs-format';
 
 afterEach(() => vi.useRealTimers());
 
-// Compare against a locally-constructed formatter so assertions stay independent
-// of the runtime's default locale.
-const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+// Compare against a locally-constructed formatter, pinned to the same locale the
+// call passes, so no assertion depends on the runtime's default.
+const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
 const NOW = new Date('2026-01-01T12:00:00Z').getTime();
 
 describe('rel', () => {
   it('formats sub-minute diffs in seconds', () => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
-    expect(rel(NOW + 3000)).toBe(rtf.format(3, 'second'));
-    expect(rel(NOW - 5000)).toBe(rtf.format(-5, 'second'));
+    expect(rel(NOW + 3000, 'en')).toBe(rtf.format(3, 'second'));
+    expect(rel(NOW - 5000, 'en')).toBe(rtf.format(-5, 'second'));
   });
 
   it('rolls up to minutes / hours / days at each boundary', () => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
-    expect(rel(NOW + 60_000)).toBe(rtf.format(1, 'minute')); // exactly 1 min
-    expect(rel(NOW + 90_000)).toBe(rtf.format(2, 'minute'));
-    expect(rel(NOW + 7_200_000)).toBe(rtf.format(2, 'hour'));
-    expect(rel(NOW + 3 * 86_400_000)).toBe(rtf.format(3, 'day'));
+    expect(rel(NOW + 60_000, 'en')).toBe(rtf.format(1, 'minute')); // exactly 1 min
+    expect(rel(NOW + 90_000, 'en')).toBe(rtf.format(2, 'minute'));
+    expect(rel(NOW + 7_200_000, 'en')).toBe(rtf.format(2, 'hour'));
+    expect(rel(NOW + 3 * 86_400_000, 'en')).toBe(rtf.format(3, 'day'));
+  });
+});
+
+describe("rel in the reader's language", () => {
+  // The regression this pins: the jobs page read `Intl`'s default, so a French
+  // account on an English browser got "in 8 minutes" beside "Prochaine".
+  it('follows the locale it is given, not the runtime default', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    expect(rel(NOW + 480_000, 'fr')).toBe('dans 8 minutes');
+    expect(rel(NOW - 360_000, 'fr')).toBe('il y a 6 minutes');
   });
 });
 
@@ -50,6 +61,6 @@ describe('dur', () => {
 
 describe('clock', () => {
   it('renders an hh:mm wall-clock time', () => {
-    expect(clock(NOW)).toMatch(/\d{1,2}:\d{2}/);
+    expect(clock(NOW, 'en')).toMatch(/\d{1,2}:\d{2}/);
   });
 });

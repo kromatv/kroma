@@ -1,5 +1,5 @@
-import type { SearchHit } from '@kroma/core';
-import { posterColors, qualityBadge, qualityBadgeForVideo } from '@kroma/core';
+import type { SearchHit, TitleGenres } from '@kroma/core';
+import { genreLabels, posterColors, qualityBadge, qualityBadgeForVideo } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   BackButton,
@@ -99,18 +99,18 @@ export function TvSearch() {
   const localHits = useCallback(
     (q: string): SearchResult[] => {
       const needle = q.toLowerCase();
-      const match = (title: string, genres?: string[] | null) =>
+      const match = (title: string, meta?: TitleGenres | null) =>
         title.toLowerCase().includes(needle) ||
-        (genres ?? []).some((g) => g.toLowerCase().includes(needle));
+        genreLabels(t, meta).some((g) => g.toLowerCase().includes(needle));
       const mv = movies
-        .filter((m) => match(m.title, m.metadata?.genres))
+        .filter((m) => match(m.title, m.metadata))
         .map((m) => toHit({ type: 'movie', item: m }));
       const sh = shows
-        .filter((show) => match(show.title, show.metadata?.genres))
+        .filter((show) => match(show.title, show.metadata))
         .map((show) => toHit({ type: 'show', show }));
       return [...mv, ...sh];
     },
-    [movies, shows, toHit],
+    [movies, shows, t, toHit],
   );
 
   // Debounced server search; the latest query wins (stale responses are dropped).

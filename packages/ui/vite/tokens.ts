@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { sourceRoots } from '../bundler/index.ts';
 import { colors, lightColors, splitAlpha, withAlpha } from '../src/core/tokens/colors.ts';
@@ -14,7 +13,12 @@ import {
 } from '../src/core/tokens/effects.ts';
 import { gutter, radius, rhythm, space } from '../src/core/tokens/layout.ts';
 import { fonts, SELF_HOSTED, tracking, typeSpec } from '../src/core/tokens/typography.ts';
-import { foldAlphas, scanAlphas } from './alpha-scan.ts';
+import { ADMIN_TABLE } from '../src/styles/admin-table.ts';
+import { MOTION } from '../src/styles/motion.ts';
+import { PAGE } from '../src/styles/page.ts';
+import { RESET } from '../src/styles/reset.ts';
+import { sheetCss } from '../src/styles/sheet.ts';
+import { scanAlphas } from './alpha-scan.ts';
 
 type ColorToken = keyof typeof colors;
 
@@ -189,20 +193,18 @@ export function fontsCss(display: FontDisplay = 'optional'): string {
   ).join('\n\n');
 }
 
-const readCss = (name: string) =>
-  readFileSync(fileURLToPath(new URL(`../src/styles/${name}.css`, import.meta.url)), 'utf8');
-
 /** Keyframes the components animate with, on every browser target. */
-export const motionCss = () => readCss('motion');
+export const motionCss = () => sheetCss(MOTION);
 
 /** The UA stylesheet undone, and nothing that assumes a page: what a target
  *  needs whatever chrome it goes on to supply itself. */
-export const resetCss = () => readCss('reset');
+export const resetCss = () => sheetCss(RESET);
 
-/** The page furniture on top of a reset: the grounded body, the focus ring and
- *  the scrollbars. Taken alone by a target that brings its own reset - a
- *  Tailwind app has preflight, and two unlayered resets would fight. */
-export const pageCss = () => readCss('base');
+/** The page furniture on top of a reset: the grounded body, the focus ring, the
+ *  scrollbars and the admin table grid. Taken alone by a target that brings its
+ *  own reset - a Tailwind app has preflight, and two unlayered resets would
+ *  fight. */
+export const pageCss = () => sheetCss([...PAGE, ...ADMIN_TABLE]);
 
 /** The reset and page furniture a browser target wants. A TV shell takes the
  *  reset alone, so this is not in the `tokens` half every target shares. */
@@ -224,7 +226,7 @@ export const baseCss = () => [resetCss(), pageCss()].join('\n\n');
  * is left on system-ui until a reload warms the cache. Nobody measures CLS on a
  * dev server, and a typeface that only appears every other F5 is the worse bug.
  */
-type FontDisplay = 'optional' | 'swap';
+export type FontDisplay = 'optional' | 'swap';
 
 /** The whole design system, framework-free: type, tokens, motion and the reset.
  *  A Tailwind app adds `@import "tailwindcss"` and `@kroma/ui/css/theme`. */
@@ -232,144 +234,9 @@ export function kromaCss(display: FontDisplay = 'optional'): string {
   return [fontsCss(display), tokensCss(), motionCss(), baseCss()].join('\n\n');
 }
 
-// Under `/css`, because a bare `@kroma/ui` resolves to the TypeScript entry and
-// Tailwind then tries to parse it as a stylesheet.
-const DIRECTIVE = /@import\s+["']@kroma\/ui\/css(\/[a-z]+)?["']\s*;/g;
-
-// Only the two that carry `@font-face` read the display; the rest take no
-// argument, and `tokensCss(roots)` takes a different one - so each is called
-// the way it is written rather than handed whatever this map holds.
-const EXPANSION: Record<string, (display: FontDisplay) => string> = {
-  '': (display) => kromaCss(display),
-  '/tokens': () => tokensCss(),
-  '/theme': () => themeCss(),
-  '/fonts': (display) => fontsCss(display),
-  '/motion': () => motionCss(),
-  '/reset': () => resetCss(),
-  '/page': () => pageCss(),
-  '/base': () => baseCss(),
-};
-
-const expand = (code: string, display: FontDisplay) =>
-  code.replace(DIRECTIVE, (_, which: string | undefined) => {
-    const emit = EXPANSION[which ?? ''];
-    if (!emit) {
-      throw new Error(
-        `[kroma-ui] no such stylesheet: @kroma/ui/css${which}. Known: ${Object.keys(EXPANSION)
-          .map((k) => `@kroma/ui/css${k}`)
-          .join(', ')}`,
-      );
-    }
-    return emit(display);
-  });
-
-interface BundleFile {
-  type: string;
-  fileName: string;
-  source?: unknown;
-}
-
-interface PluginContext {
-  addWatchFile?: (id: string) => void;
-}
-
-interface DevModule {
-  id: string | null;
-}
-
-interface DevEnvironment {
-  moduleGraph: { getModuleById(id: string): DevModule | undefined };
-  reloadModule?(module: DevModule): unknown;
-}
-
-interface FileChange {
-  file: string;
-  read(): string | Promise<string>;
-}
-
-interface PluginList {
-  plugins: readonly { name: string }[];
-  /** `serve` is the dev server, `build` everything shipped. */
-  command?: 'serve' | 'build';
-}
-
-interface CssPlugin {
-  name: string;
-  enforce: 'pre';
-  configResolved(config: PluginList): void;
-  transform(this: PluginContext, code: string, id: string): { code: string; map: null } | null;
-  hotUpdate(this: { environment?: DevEnvironment }, change: FileChange): Promise<void>;
-  generateBundle(options: unknown, bundle: Record<string, BundleFile>): void;
-}
-
-const NAME = 'kroma-tokens';
-
-const TAILWIND = '@tailwindcss/vite:generate';
-
-const OUT_OF_ORDER =
-  `[kroma-ui] kromaUI() must come before tailwindcss() in the Vite plugin list. ` +
-  `Tailwind resolves @import itself, so from there it swallows "@kroma/ui/css" and ` +
-  `the build ships every custom property undefined.`;
-
-// Watched, or the dev server keeps serving the CSS it generated at startup.
-const SOURCES = [
-  '../src/core/tokens/colors.ts',
-  '../src/core/tokens/css-var.ts',
-  '../src/core/tokens/effects.ts',
-  '../src/core/tokens/layout.ts',
-  '../src/core/tokens/typography.ts',
-  '../src/styles/base.css',
-  '../src/styles/reset.css',
-  '../src/styles/motion.css',
-].map((path) => fileURLToPath(new URL(path, import.meta.url)));
-
-/**
- * Expands the KROMA directives, the way `@import "tailwindcss"` expands into
- * Tailwind.
- *
- * Two hooks: Vite inlines nested CSS `@import`s inside its own plugin, so those
- * never reach `transform` and `generateBundle` sweeps the emitted assets.
- *
- * A source file that names an alpha step for the first time reopens the scan
- * and reloads the stylesheets that carry it, so a dev session does not have to
- * be restarted for `accent/45` to exist.
- */
-export function kromaTokens(): CssPlugin {
-  const expanded = new Set<string>();
-  let display: FontDisplay = 'optional';
-  return {
-    name: NAME,
-    enforce: 'pre',
-    configResolved({ plugins, command }) {
-      display = command === 'serve' ? 'swap' : 'optional';
-      const mine = plugins.findIndex((plugin) => plugin.name === NAME);
-      const tailwind = plugins.findIndex((plugin) => plugin.name.startsWith(TAILWIND));
-      if (mine === -1 || tailwind === -1 || tailwind > mine) return;
-      throw new Error(OUT_OF_ORDER);
-    },
-    transform(code, id) {
-      if (!id.includes('.css')) return null;
-      DIRECTIVE.lastIndex = 0;
-      if (!DIRECTIVE.test(code)) return null;
-      for (const file of SOURCES) this.addWatchFile?.(file);
-      expanded.add(id);
-      return { code: expand(code, display), map: null };
-    },
-    async hotUpdate({ file, read }) {
-      if (!(await foldAlphas(SOURCE_ROOTS, KNOWN_COLOR_NAMES, file, read))) return;
-      const environment = this.environment;
-      if (!environment?.reloadModule) return;
-      const stale = [...expanded]
-        .map((id) => environment.moduleGraph.getModuleById(id))
-        .filter((module) => module !== undefined);
-      await Promise.all(stale.map((module) => environment.reloadModule?.(module)));
-    },
-    generateBundle(_options, bundle) {
-      for (const file of Object.values(bundle)) {
-        if (file.type !== 'asset' || !file.fileName.endsWith('.css')) continue;
-        if (typeof file.source !== 'string' || !file.source.includes('@kroma/ui')) continue;
-        file.source = expand(file.source, display);
-      }
-    },
-  };
+/** What a television takes: the same sheet without the page furniture on top of
+ *  the reset. A TV shell hides overflow, grounds itself dark and owns its focus
+ *  visuals, so `page` would only fight it. */
+export function tvCss(display: FontDisplay = 'optional'): string {
+  return [fontsCss(display), tokensCss(), motionCss(), resetCss()].join('\n\n');
 }

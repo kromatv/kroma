@@ -123,6 +123,7 @@ mod tests {
             1,
             &[CastMember {
                 name: "Adam".into(),
+                tmdb_id: None,
                 character: Some("Mark".into()),
                 profile_url: None,
             }],

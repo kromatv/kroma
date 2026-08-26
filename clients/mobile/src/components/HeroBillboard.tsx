@@ -2,7 +2,7 @@
 // background, with the title, a genre line and Play / My list actions.
 
 import type { SectionItem } from '@kroma/core';
-import { sizedImageUrl } from '@kroma/core';
+import { genreLabels, sizedImageUrl } from '@kroma/core';
 import { Box, Button, styles, Text } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,7 +27,7 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
   const media = entry.type === 'movie' ? entry.item : entry.show;
   const id = media.id;
   const title = media.metadata?.title ?? media.title;
-  const genres = media.metadata?.genres?.slice(0, 3) ?? [];
+  const genres = genreLabels(t, media.metadata).slice(0, 3);
   const detailRoute = entry.type === 'movie' ? `/item/${id}` : `/show/${id}`;
   // Narrow portrait windows get the tall poster card; wide or landscape ones
   // get a backdrop (a landscape phone is wide but short; a poster would tower past it).

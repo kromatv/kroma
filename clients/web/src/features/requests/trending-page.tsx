@@ -5,14 +5,15 @@ import { hasPermission } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Button, EmptyState, Icon, PageHeader, Row, Text } from '@kroma/ui/kit';
 import { Link } from '@tanstack/react-router';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card';
 import {
   type TrendingPageState,
   useTrendingPage,
 } from '#web/features/requests/use-discover-search';
 import { useAuth } from '#web/shared/lib/auth';
-import { PAGE_MAIN, POSTER_GRID, SkeletonRow } from '#web/shared/ui';
+import { PageFrame, SkeletonRow } from '#web/shared/ui';
+import { TileGrid } from '#web/shared/ui/tile-grid';
 
 const PAGE_COUNT = { fontVariant: ['tabular-nums' as const] };
 
@@ -30,7 +31,6 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
   const { user } = useAuth();
   const canDiscover = !!user && hasPermission(user, 'requests.create');
   const [page, setPage] = useState(1);
-  const topRef = useRef<HTMLElement>(null);
   const state = useTrendingPage(type, page, canDiscover);
   const title = type === 'movie' ? t('discover.trendingMovies') : t('discover.trendingShows');
 
@@ -38,11 +38,11 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
   // rather than in an effect.
   const go = (next: number) => {
     setPage(Math.min(Math.max(1, next), state.totalPages));
-    topRef.current?.scrollIntoView({ block: 'start' });
+    window.scrollTo({ top: 0 });
   };
 
   return (
-    <main ref={topRef} className={PAGE_MAIN}>
+    <PageFrame>
       <Link to="/search" search={{ q: '', type: 'all' }} style={BACK_LINK}>
         <Icon name="arrow-left" size={16} thickness={2.2} color="textDim" />
         <Text variant="meta" color="textDim">
@@ -65,7 +65,7 @@ export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
           <Pager page={page} totalPages={state.totalPages} onGo={go} />
         </>
       )}
-    </main>
+    </PageFrame>
   );
 }
 
@@ -87,11 +87,13 @@ function Body({ state }: Readonly<{ state: TrendingPageState }>) {
   }
   return (
     <Box mt={32}>
-      <div className={POSTER_GRID}>
-        {state.entries.map((entry) => (
-          <DiscoverCard key={`${entry.kind}-${entry.tmdbId}`} entry={entry} />
-        ))}
-      </div>
+      <TileGrid>
+        {(width) =>
+          state.entries.map((entry) => (
+            <DiscoverCard key={`${entry.kind}-${entry.tmdbId}`} entry={entry} width={width} />
+          ))
+        }
+      </TileGrid>
     </Box>
   );
 }

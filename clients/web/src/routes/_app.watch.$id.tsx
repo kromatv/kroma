@@ -38,8 +38,8 @@ function WatchPage() {
       // episode, otherwise the movie page (mirrors the catalog cards' deep-link rule).
       onClose={() =>
         item.kind === 'episode' && item.showId
-          ? navigate({ to: '/show/$id', params: { id: item.showId }, replace: true })
-          : navigate({ to: '/movie/$id', params: { id: item.id }, replace: true })
+          ? navigate({ to: '/shows/$id', params: { id: item.showId }, replace: true })
+          : navigate({ to: '/movies/$id', params: { id: item.id }, replace: true })
       }
     />
   );

@@ -3,6 +3,7 @@
 
 import {
   collectGenres,
+  genreLabel,
   hasGenre,
   type MediaItem,
   type Show,
@@ -108,10 +109,10 @@ export function CatalogueScreen<T extends MediaItem | Show>({
           />
           {genres.map((g) => (
             <Chip
-              key={g.name}
-              label={g.name}
-              active={genre === g.name}
-              onPress={() => setGenre(genre === g.name ? null : g.name)}
+              key={g.slug}
+              label={genreLabel(t, g.name)}
+              active={genre === g.slug}
+              onPress={() => setGenre(genre === g.slug ? null : g.slug)}
             />
           ))}
         </ScrollView>

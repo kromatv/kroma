@@ -280,7 +280,9 @@ pub struct SearchResponse {
 
 /// `GET /api/people?name=…` every movie + show one person is credited in (cast
 /// or key crew), best-known work first. Reuses [`SearchHit`] so clients render the
-/// results with their existing card UI.
+/// results with their existing card UI. `name` comes back as the library's own
+/// spelling of whoever the lookup resolved to; on a miss it is the lookup,
+/// echoed.
 #[derive(Serialize)]
 pub struct PersonResponse {
     pub name: String,

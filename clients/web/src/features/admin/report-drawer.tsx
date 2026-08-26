@@ -78,7 +78,7 @@ export const ReportDrawer = createCallable<
   };
 
   // Movies + shows have a fiche route; an episode item has no standalone page.
-  const FICHE_ROUTES = { movie: '/movie/$id', show: '/show/$id' } as const;
+  const FICHE_ROUTES = { movie: '/movies/$id', show: '/shows/$id' } as const;
   const ficheTo =
     report.subjectKind === 'movie' || report.subjectKind === 'show'
       ? FICHE_ROUTES[report.subjectKind]

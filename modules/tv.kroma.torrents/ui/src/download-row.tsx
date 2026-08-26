@@ -312,7 +312,7 @@ function useOpenInKroma(dl: DownloadView): (() => void) | null {
   if (!localId) return null;
   return () =>
     navigate({
-      to: dl.kind === 'movie' ? '/movie/$id' : '/show/$id',
+      to: dl.kind === 'movie' ? '/movies/$id' : '/shows/$id',
       params: { id: localId },
     });
 }

@@ -21,7 +21,7 @@ export const story = defineStory({
   ),
 });
 
-The anchored action menu behind a "..." trigger: a download row's pause/retry/remove, a card's overflow. Composed rather than configured: **Root** owns the open state, **Trigger** opens it, **Item** is one action and **Separator** is a part rather than a string in a list. Under a pointer it is an anchored panel with the full menu keyboard, meaning arrows, type-ahead, Enter to fire and Esc to return to the trigger, announced as `role="menu"` through `aria-activedescendant`; under a D-pad the items open in a dialog, confined to the remote. Every way out is reported: `onOpenChange(open, { reason })` says `select`, `outside`, `escape` or `back`, the remote's Back button.
+The anchored action menu behind a "..." trigger: a download row's pause/retry/remove, a card's overflow. Composed rather than configured: **Root** owns the open state, **Trigger** opens it, **Item** is one action and **Separator** is a part rather than a string in a list. Where the items appear is the shell's decision, stated once with `setSurfacePresentation` and overridable per menu with `presentation`. Under a pointer it is an anchored panel with the full menu keyboard, meaning arrows, type-ahead, Enter to fire and Esc to return to the trigger, announced as `role="menu"` through `aria-activedescendant`; under a D-pad the items open in a dialog, confined to the remote. Every way out is reported: `onOpenChange(open, { reason })` says `select`, `outside`, `escape` or `back`, the remote's Back button.
 
 ```tsx
 <Menu.Root label={t('downloads.rowActions')} align="end">

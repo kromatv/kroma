@@ -24,6 +24,7 @@ import {
 import { Pressable, TextInput } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { styles } from '#ui/core';
+import { NO_ZOOM_FONT_SIZE } from '#ui/lib/field-shell';
 import { useCompleteOnce } from '#ui/lib/use-complete-once';
 import { useControllable } from '#ui/lib/use-controllable';
 import { OtpFieldContext, type OtpFieldState, OtpGroupStartContext } from './otp-field-context';
@@ -237,6 +238,7 @@ const s = styles({
     borderWidth: 0,
     outlineWidth: 0,
     color: 'transparent',
+    fontSize: NO_ZOOM_FONT_SIZE,
     z: 1,
   },
   hit: { absolute: true, left: 0, top: 0, w: '100%', h: '100%' },

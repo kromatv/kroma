@@ -29,6 +29,7 @@
     "./standalone-script": "./src/standalone-script.ts",
     "./story-code": "./src/story-code.ts",
     "./tv-frame": "./src/tv-frame.ts",
+    "./tv-shell-head": "./src/tv-shell-head.ts",
     "./workbench-stub": "./src/workbench-stub.tsx"
   },
   "scripts": {

@@ -1,12 +1,21 @@
-import { type GenreCount, type MessageKey, SORT_MODES, type SortMode } from '@kroma/core';
+import {
+  type GenreCount,
+  genreLabel,
+  genreOfSegment,
+  genreSegment,
+  type MessageKey,
+  SORT_MODES,
+  type SortMode,
+} from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,
   Chip,
   color,
   type IconName,
-  RING_ROOM,
   Row,
+  ringRoomBlock,
+  ringRoomInline,
   Select,
   useBreakpoint,
 } from '@kroma/ui/kit';
@@ -19,6 +28,7 @@ import {
   useState,
 } from 'react';
 import { genreIcon } from '#web/shared/lib/genre-icon';
+import { PAGE_GUTTER } from '#web/shared/ui/page';
 
 const SORT_LABEL_KEY: Record<SortMode, MessageKey> = {
   added: 'browse.sort.added',
@@ -43,12 +53,8 @@ const DOCK_TOP = 'calc(max(0.625rem, env(safe-area-inset-top)) + 2.75rem)';
 const BAR: CSSProperties = {
   position: 'sticky',
   zIndex: 30,
-  marginLeft: 'calc(var(--gutter-web) * -1)',
-  marginRight: 'calc(var(--gutter-web) * -1)',
   marginTop: 24,
   marginBottom: 24,
-  paddingLeft: 'var(--gutter-web)',
-  paddingRight: 'var(--gutter-web)',
   paddingTop: 10,
   paddingBottom: 10,
   borderBottomWidth: 1,
@@ -75,13 +81,9 @@ const STRIP: CSSProperties = {
   gap: 8,
   overflowX: 'auto',
   // A scrolling box cannot let a focus ring out: `overflow-x: auto` forces the
-  // cross axis away from `visible`, and `clip` is coerced to `hidden` there. So
-  // the room the ring needs is reserved INSIDE the box and taken back as margin,
-  // leaving the row where it was.
-  paddingTop: RING_ROOM,
-  paddingBottom: RING_ROOM,
-  marginTop: -RING_ROOM,
-  marginBottom: -RING_ROOM,
+  // cross axis away from `visible`, and `clip` is coerced to `hidden` there.
+  ...ringRoomBlock(),
+  ...ringRoomInline(),
   scrollbarWidth: 'none',
 };
 
@@ -183,11 +185,14 @@ export function BrowseBar({
   const stuck = useStuck(bar);
   const step = useBreakpoint();
   const wide = step === 'lg' || step === 'tv';
+  const gutter = PAGE_GUTTER[step];
+  const active = genre ? genreOfSegment(genre) : undefined;
   const inline = genres.slice(0, INLINE_GENRES);
-  if (genre && !inline.some((g) => g.name === genre)) {
-    const extra = genres.find((g) => g.name === genre);
+  if (active && !inline.some((g) => g.slug === active)) {
+    const extra = genres.find((g) => g.slug === active);
     if (extra) inline.push(extra);
   }
+  const activeLabel = active ? genreLabel(t, active) : undefined;
   const { fades, update } = useEdgeFades(strip, [inline.length]);
   const mask = fadeMask(fades);
 
@@ -196,15 +201,27 @@ export function BrowseBar({
   useEffect(() => {
     const el = strip.current;
     if (!el) return;
-    const index = genre ? [...el.children].findIndex((c) => c.textContent === genre) : 0;
+    const index = activeLabel
+      ? [...el.children].findIndex((c) => c.textContent === activeLabel)
+      : 0;
     const chip = el.children[Math.max(index, 0)];
     if (chip instanceof HTMLElement) {
       chip.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
     }
-  }, [genre]);
+  }, [activeLabel]);
 
   return (
-    <div ref={bar} style={{ ...(stuck ? BAR_STUCK : BAR), top: wide ? 0 : DOCK_TOP }}>
+    <div
+      ref={bar}
+      style={{
+        ...(stuck ? BAR_STUCK : BAR),
+        marginLeft: -gutter,
+        marginRight: -gutter,
+        paddingLeft: gutter,
+        paddingRight: gutter,
+        top: wide ? 0 : DOCK_TOP,
+      }}
+    >
       <Row gap={12}>
         {genres.length > 0 ? (
           <div
@@ -221,13 +238,13 @@ export function BrowseBar({
             />
             {inline.map((g) => (
               <Chip
-                key={g.name}
-                active={g.name === genre}
+                key={g.slug}
+                active={g.slug === active}
                 variant="subtle"
-                icon={genreIcon(g.name)}
-                label={g.name}
+                icon={genreIcon(g.slug)}
+                label={genreLabel(t, g.name)}
                 style={CHIP_PAD}
-                onPress={() => onGenre(g.name === genre ? undefined : g.name)}
+                onPress={() => onGenre(g.slug === active ? undefined : genreSegment(g.slug))}
               />
             ))}
           </div>
@@ -238,17 +255,17 @@ export function BrowseBar({
           <Select.Root
             label={t('browse.genres')}
             placeholder={t('browse.genres')}
-            value={genre ?? ALL_GENRES}
+            value={active ? genreSegment(active) : ALL_GENRES}
             onValueChange={(v) => onGenre(v === ALL_GENRES ? undefined : v)}
           >
             <Select.Trigger size="sm" style={GENRE_TRIGGER} />
             <Select.Item value={ALL_GENRES} label={t('browse.allGenres')} />
             {genres.map((g) => (
               <Select.Item
-                key={g.name}
-                value={g.name}
-                label={g.name}
-                icon={genreIcon(g.name)}
+                key={g.slug}
+                value={genreSegment(g.slug)}
+                label={genreLabel(t, g.name)}
+                icon={genreIcon(g.slug)}
                 note={String(g.count)}
               />
             ))}

@@ -4,8 +4,8 @@
 // /api/admin/llm*.
 import type { KromaClient } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Badge, Box, Icon, Row, Surface, Text } from '@kroma/ui/kit';
-import { type CSSProperties, useState } from 'react';
+import { Badge, Box, Focusable, Icon, Row, Surface, styles, Text } from '@kroma/ui/kit';
+import { useState } from 'react';
 import { ProviderBody } from '#web/features/admin/ai-provider-fields';
 import {
   type Busy,
@@ -20,18 +20,9 @@ import {
 
 export type { ProviderForm } from '#web/features/admin/ai-provider-spec';
 
-// The card's own header press target: a bare control, so it states the shape a
-// page reset would otherwise have given it.
-const HEADER_BUTTON: CSSProperties = {
-  display: 'block',
-  width: '100%',
-  margin: 0,
-  padding: 0,
-  border: 0,
-  background: 'none',
-  textAlign: 'left',
-  cursor: 'pointer',
-};
+const s = styles({
+  header: { row: true, align: 'center', gap: 12, px: 20, py: 16 },
+});
 
 function ProviderHeader({
   p,
@@ -49,29 +40,34 @@ function ProviderHeader({
   onToggle: () => void;
 }>) {
   const t = useT();
+  const name = p.name || t('admin.aiUntitledProvider');
   return (
-    <button type="button" onClick={onToggle} style={HEADER_BUTTON}>
-      <Row gap={12} px={20} py={16}>
-        <Box w={10} h={10} shrink={0} radius="circle" bg={isDefault ? 'accent' : 'tint/18'} />
-        <Box flex minW={0}>
-          <Row gap={8}>
-            <Text variant="label" lines={1}>
-              {p.name || t('admin.aiUntitledProvider')}
-            </Text>
-            <Badge tone="neutral">{p.provider}</Badge>
-            {isDefault ? <Badge tone="warning">{t('admin.aiDefault')}</Badge> : null}
-          </Row>
-          <Text variant="meta" color="textDim" lines={1} mt={2}>
-            {p.model || '-'}
-            {host ? ` · ${host}` : ''}
+    <Focusable
+      ring="focusInset"
+      style={s.header}
+      label={name}
+      expanded={expanded}
+      onPress={onToggle}
+    >
+      <Box w={10} h={10} shrink={0} radius="circle" bg={isDefault ? 'accent' : 'tint/18'} />
+      <Box flex minW={0}>
+        <Row gap={8}>
+          <Text variant="label" lines={1}>
+            {name}
           </Text>
-        </Box>
-        {probe ? (
-          <Box w={8} h={8} shrink={0} radius="circle" bg={probe.ok ? 'success' : 'danger'} />
-        ) : null}
-        <Icon name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color="textDim" />
-      </Row>
-    </button>
+          <Badge tone="neutral">{p.provider}</Badge>
+          {isDefault ? <Badge tone="warning">{t('admin.aiDefault')}</Badge> : null}
+        </Row>
+        <Text variant="meta" color="textDim" lines={1} mt={2}>
+          {p.model || '-'}
+          {host ? ` · ${host}` : ''}
+        </Text>
+      </Box>
+      {probe ? (
+        <Box w={8} h={8} shrink={0} radius="circle" bg={probe.ok ? 'success' : 'danger'} />
+      ) : null}
+      <Icon name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color="textDim" />
+    </Focusable>
   );
 }
 

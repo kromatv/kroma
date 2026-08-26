@@ -12,6 +12,16 @@ export type SavedTab = (typeof SAVED_TABS)[number];
 
 export type SavedKind = 'all' | 'movie' | 'show';
 
+export const SAVED_KINDS = ['all', 'movie', 'show'] as const;
+
+/** Narrows one search-param value, so a hand-edited URL cannot put the list in a
+ *  state its own controls could not reach. */
+export const isSavedSort = (v: unknown): v is SavedSort => SAVED_SORTS.includes(v as SavedSort);
+
+export const isSavedTab = (v: unknown): v is SavedTab => SAVED_TABS.includes(v as SavedTab);
+
+export const isSavedKind = (v: unknown): v is SavedKind => SAVED_KINDS.includes(v as SavedKind);
+
 export type SavedSource =
   | { from: 'movie'; movie: MovieView }
   | { from: 'show'; show: ShowView }

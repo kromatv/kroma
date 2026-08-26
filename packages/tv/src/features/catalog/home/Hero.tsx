@@ -1,5 +1,6 @@
 import {
   formatRuntime,
+  genreLabels,
   type KromaClient,
   type MediaItem,
   posterColors,
@@ -8,6 +9,7 @@ import {
   type Section,
   type SectionItem,
   type Show,
+  type Translate,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
@@ -121,7 +123,7 @@ export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<Her
             </>
           ) : null}
           <Text variant="labelTv" color="textMuted">
-            {heroLine(hero)}
+            {heroLine(t, hero)}
           </Text>
           {heroBadge ? <Badge tone={qualityTone(heroBadge)}>{heroBadge}</Badge> : null}
         </Box>
@@ -130,8 +132,6 @@ export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<Her
             {heroMeta.overview}
           </Text>
         ) : null}
-        {/* The hero's two actions are one row: Left and Right move
-            between them, Up and Down leave for the bar or the rails. */}
         <FocusRegion style={s.heroActions}>
           <Button
             size="tv"
@@ -157,14 +157,18 @@ export function Hero({ info, onPlay, onSelectShow, onSelectEntry }: Readonly<Her
 
 // Year · runtime · genre (quality lives in the badge). Shows have no
 // runtime, so it's just year · genre.
-function heroLine(e: SectionItem): string {
+function heroLine(t: Translate, e: SectionItem): string {
   if (e.type === 'show') {
-    return [e.show.year ? String(e.show.year) : null, e.show.metadata?.genres?.[0]]
+    return [e.show.year ? String(e.show.year) : null, genreLabels(t, e.show.metadata)[0]]
       .filter(Boolean)
       .join(' · ');
   }
   const m = e.item;
-  return [m.year ? String(m.year) : null, formatRuntime(m.durationMs), m.metadata?.genres?.[0]]
+  return [
+    m.year ? String(m.year) : null,
+    formatRuntime(m.durationMs),
+    genreLabels(t, m.metadata)[0],
+  ]
     .filter(Boolean)
     .join(' · ');
 }

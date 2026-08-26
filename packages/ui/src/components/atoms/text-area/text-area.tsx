@@ -21,6 +21,7 @@ import {
   fieldShell,
   NO_OUTLINE,
   PLACEHOLDER,
+  useEntryFontSize,
 } from '#ui/lib/field-shell';
 import { WEB } from '#ui/lib/platform';
 import { useControllable } from '#ui/lib/use-controllable';
@@ -71,6 +72,7 @@ function TextArea({
   ...box
 }: Readonly<TextAreaProps>) {
   const metrics = controlMetrics(size);
+  const fontSize = useEntryFontSize(metrics.fontSize);
   const theme = useTheme();
   const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState(false);
@@ -128,7 +130,7 @@ function TextArea({
           style={[
             s.entry,
             NO_OUTLINE,
-            { color: theme.colors.text, minHeight: min, maxHeight: max },
+            { color: theme.colors.text, minHeight: min, maxHeight: max, fontSize },
             textStyle,
             growth(autoSize, min, grown),
           ]}

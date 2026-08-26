@@ -5,7 +5,7 @@ import { ProfileTile } from '#web/features/accounts/profile-tile';
 
 const forgetLink = svFor<{ root: StyleDecl; label: StyleDecl }>()({
   slots: {
-    root: {},
+    root: { radius: 'sm' },
     label: { color: 'textDim', _hover: { color: 'text' }, _focus: { color: 'text' } },
   },
 });
@@ -67,12 +67,7 @@ export function ProfilePicker({
               onPress={() => onPick(p)}
             />
             {p.remembered ? (
-              <Focusable
-                sv={forgetLink}
-                ring={false}
-                label={t('auth.logout')}
-                onPress={() => onForget(p.id)}
-              >
+              <Focusable sv={forgetLink} label={t('auth.logout')} onPress={() => onForget(p.id)}>
                 {({ slots }) => (
                   <Text variant="meta" style={slots.label}>
                     {t('auth.logout')}

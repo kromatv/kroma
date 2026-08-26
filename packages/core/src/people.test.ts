@@ -6,6 +6,7 @@ import {
   jobLabel,
   personDisplayName,
   personInvolvement,
+  personSegment,
   roleLabels,
 } from './people';
 
@@ -31,6 +32,11 @@ describe('creditsPerson', () => {
 
   it('matches a crew member', () => {
     expect(creditsPerson(m, 'Denis Villeneuve')).toBe(true);
+  });
+
+  it('matches a credit through the slug a person URL carries', () => {
+    expect(creditsPerson(m, 'ana-de-armas')).toBe(true);
+    expect(creditsPerson(m, 'denis-villeneuve')).toBe(true);
   });
 
   it('returns false for an uncredited name', () => {
@@ -127,6 +133,17 @@ describe('personInvolvement', () => {
   });
 });
 
+describe('personSegment', () => {
+  it('reaches a person by the provider id their credit kept', () => {
+    expect(personSegment({ name: "Conan O'Brien", tmdbId: 10859 })).toBe('10859');
+  });
+
+  it('falls back to the folded name for a credit stored before ids were kept', () => {
+    expect(personSegment({ name: "Conan O'Brien" })).toBe('conan-o-brien');
+    expect(personSegment({ name: 'Timothée Chalamet', tmdbId: null })).toBe('timothee-chalamet');
+  });
+});
+
 describe('personDisplayName', () => {
   it('recovers the original casing from the credits', () => {
     const metas = [meta({ cast: [{ name: 'Timothée Chalamet' }] })];
@@ -136,6 +153,11 @@ describe('personDisplayName', () => {
   it('recovers casing from crew when not in cast', () => {
     const metas = [meta({ crew: [{ name: 'Hans Zimmer', job: 'Composer' }] })];
     expect(personDisplayName(metas, 'HANS ZIMMER')).toBe('Hans Zimmer');
+  });
+
+  it('recovers the accented spelling a slug lost', () => {
+    const metas = [meta({ cast: [{ name: 'Timothée Chalamet' }] })];
+    expect(personDisplayName(metas, 'timothee-chalamet')).toBe('Timothée Chalamet');
   });
 
   it('falls back to the given name when uncredited', () => {

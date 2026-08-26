@@ -4,7 +4,7 @@
 // feel live.
 
 import type { JobLog, JobRun, MessageKey } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { useLocale, useT } from '@kroma/ui';
 import { Box, type ColorValue, Divider, ListRow, Row, Text } from '@kroma/ui/kit';
 import { type CSSProperties, useState } from 'react';
 import { clock, dur, rel } from '#web/features/admin/jobs-format';
@@ -80,6 +80,7 @@ function RunRow({
   onClick,
 }: Readonly<{ run: JobRun; active: boolean; onClick: () => void }>) {
   const t = useT();
+  const locale = useLocale();
   const status = t(`jobs.status.${run.status}` as MessageKey);
   return (
     <ListRow.Root size="sm" selected={active} chevron={false} onPress={onClick}>
@@ -90,7 +91,7 @@ function RunRow({
         {status} · {t(`jobs.trigger.${run.trigger}` as MessageKey)}
       </ListRow.Label>
       <ListRow.Hint>
-        {rel(run.startedAt)}
+        {rel(run.startedAt, locale)}
         {run.durationMs != null ? ` · ${dur(run.durationMs)}` : ''}
       </ListRow.Hint>
     </ListRow.Root>
@@ -104,10 +105,11 @@ function logColor(level: string): ColorValue {
 }
 
 function LogLine({ log }: Readonly<{ log: JobLog }>) {
+  const locale = useLocale();
   return (
     <Row align="flex-start" gap={10}>
       <Text variant="meta" font="mono" color="textDim" shrink={0}>
-        {clock(log.ts)}
+        {clock(log.ts, locale)}
       </Text>
       <Text variant="meta" font="mono" color={logColor(log.level)} flex={1}>
         {log.message}

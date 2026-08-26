@@ -1,49 +1,58 @@
-import { Box, backdropBlur, gradient, Text } from '@kroma/ui/kit';
-import type { CSSProperties } from 'react';
+import { Box, backdropBlur, gradient, Text, useBreakpoint } from '@kroma/ui/kit';
+import type { CSSProperties, ReactNode } from 'react';
 import { useCrossfade } from '#web/shared/lib/use-crossfade';
 import { Image } from '#web/shared/ui';
+import { PAGE_GUTTER } from '#web/shared/ui/page';
 
-/** The browse pages' display title, shared with the routes' pending headers so
- * the skeleton does not jump on settle. */
-export const BROWSE_TITLE = 'browse-title';
+const TITLE = {
+  base: { fontSize: 36 },
+  md: { fontSize: 40 },
+  lg: { fontSize: 48 },
+  tv: { fontSize: 56 },
+} as const;
 
-// Bled to the content edges: the gutter is a fluid CSS custom property, which
-// no style number can carry, so the band stays a plain element.
+export function BrowseTitle({ children }: Readonly<{ children: ReactNode }>) {
+  const step = useBreakpoint();
+  return (
+    <Text variant="hero" accessibilityRole="header" style={TITLE[step]}>
+      {children}
+    </Text>
+  );
+}
+
 const BAND: CSSProperties = {
   position: 'relative',
   display: 'flex',
   flexDirection: 'column',
   justifyContent: 'flex-end',
   overflow: 'hidden',
-  marginLeft: 'calc(var(--gutter-web) * -1)',
-  marginRight: 'calc(var(--gutter-web) * -1)',
   marginTop: -36,
   minHeight: 'clamp(230px, 26vw, 340px)',
-  paddingLeft: 'var(--gutter-web)',
-  paddingRight: 'var(--gutter-web)',
   paddingTop: 64,
   paddingBottom: 20,
 };
 
+const bleed = (gutter: number): CSSProperties => ({
+  marginLeft: -gutter,
+  marginRight: -gutter,
+  paddingLeft: gutter,
+  paddingRight: gutter,
+});
+
 const LAYER: CSSProperties = { position: 'absolute', inset: 0 };
 
-// No-artwork fallback: the two-tone amber/violet wash, eased in from the left
-// so nothing hard-clips at the sidebar seam.
 const GLOW: CSSProperties = {
   ...LAYER,
   pointerEvents: 'none',
   background: [
     'radial-gradient(46% 95% at 12% 0%,',
     'color-mix(in srgb, var(--kroma-accent-wash) 17%, transparent), transparent 64%),',
-    // A violet the palette has no token for; kept as authored.
     'radial-gradient(42% 85% at 88% 0%, rgba(96, 78, 214, 0.15), transparent 64%)',
   ].join(' '),
   maskImage: 'linear-gradient(90deg, transparent, #000 4rem)',
   WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 4rem)',
 };
 
-// Near-opaque bg at the left and bottom edges: the left hides the sidebar
-// seam, the bottom hands the artwork off to the toolbar and grid below.
 const SCRIM = gradient(
   [
     'linear-gradient(90deg, var(--kroma-bg) 4%,',
@@ -66,7 +75,6 @@ const FADE_IN: CSSProperties = { ...LAYER, animation: 'fade-in .9s var(--ease-ou
 const CREDIT: CSSProperties = {
   position: 'absolute',
   bottom: 12,
-  right: 'var(--gutter-web)',
   animation: 'fade-in .9s var(--ease-out)',
 };
 
@@ -75,20 +83,12 @@ const TABULAR = { fontVariant: ['tabular-nums' as const] };
 
 export interface BrowseHeroProps {
   heading: string;
-  /** Small amber label over the title: the active genre, or the library. */
   eyebrow: string;
   countText?: string;
-  /** Backdrop of the view's current featured title; without one the hero
-   *  falls back to an ambient wash. */
   backdrop?: string | null;
-  /** Which title the artwork belongs to, named in the corner. */
   creditTitle?: string;
 }
 
-/** The cinematic band opening a catalogue page: the current view's own
- * artwork bled edge to edge behind the page title, crossfading as the caller
- * rotates through its featured titles, so filtering visibly repaints the page
- * with what it found. */
 export function BrowseHero({
   heading,
   eyebrow,
@@ -97,8 +97,9 @@ export function BrowseHero({
   creditTitle,
 }: Readonly<BrowseHeroProps>) {
   const prev = useCrossfade(backdrop);
+  const gutter = PAGE_GUTTER[useBreakpoint()];
   return (
-    <section style={BAND}>
+    <section style={{ ...BAND, ...bleed(gutter) }}>
       {backdrop ? (
         <>
           {prev ? <Image src={prev} fit="cover" position="center 22%" fill /> : null}
@@ -116,7 +117,7 @@ export function BrowseHero({
           {eyebrow}
         </Text>
         <Box row wrap align="baseline" gapX={16} gapY={12}>
-          <h1 className={BROWSE_TITLE}>{heading}</h1>
+          <BrowseTitle>{heading}</BrowseTitle>
           {countText ? (
             <Box radius="pill" border="white/10" bg="black/30" px={16} py={6} style={COUNT_FROST}>
               <Text variant="meta" color="textMuted" style={TABULAR}>
@@ -127,7 +128,7 @@ export function BrowseHero({
         </Box>
       </Box>
       {backdrop && creditTitle ? (
-        <div key={creditTitle} style={CREDIT}>
+        <div key={creditTitle} style={{ ...CREDIT, right: gutter }}>
           <Text variant="meta" color="white/35">
             {creditTitle}
           </Text>

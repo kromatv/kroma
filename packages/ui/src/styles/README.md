@@ -3,21 +3,39 @@
 The CSS half of the design system, for the targets that read CSS. The TV and native
 apps never load any of it. They consume the TypeScript tokens directly.
 
-There is no CSS to maintain here. `kroma.css` is a placeholder; everything real is
-emitted by `kromaUI()` (`@kroma/ui/vite`) from the TypeScript tokens, so the design
-system has one representation and the two halves cannot drift.
+**There are no `.css` files here, and no CSS text.** Every rule is data:
+`reset.ts`, `page.ts`, `admin-table.ts` and `motion.ts` are lists of `rule()`,
+`atMedia()` and `keyframes()` entries with colours read back through `cssRef`, and
+`sheet.ts` is the only thing that knows what CSS syntax looks like. `kromaUI()`
+(`@kroma/ui/vite`) compiles them, together with the tokens and the `@font-face`
+rules it generates from `src/core/tokens/`, into the stylesheet a build emits. One
+representation, so the two halves cannot drift.
 
 ## Using it
 
-An app's entry stylesheet writes one line:
+An app whose entry is TypeScript imports the sheet and Vite injects it:
+
+```ts
+import 'virtual:kroma.css';
+```
+
+A page that must be styled at first paint links it instead, which is a real
+request for an emitted, content-hashed asset:
+
+```tsx
+import appCss from 'virtual:kroma.css?url';
+```
+
+An app that still has a stylesheet of its own (because Tailwind needs one) writes
+the directive in it, and the plugin expands it in place:
 
 ```css
 @import "@kroma/ui/css";
 ```
 
-Where Tailwind runs, import the same stylesheet in parts. Tailwind's own preflight
-is already a reset, and a second unlayered one would outrank every utility it
-collides with (`h1 { font-size: inherit }` beats `text-4xl`):
+Where Tailwind runs, take the sheet in parts. Tailwind's own preflight is already
+a reset, and a second unlayered one would outrank every utility it collides with
+(`h1 { font-size: inherit }` beats `text-4xl`):
 
 ```css
 @import "tailwindcss";
@@ -28,21 +46,25 @@ collides with (`h1 { font-size: inherit }` beats `text-4xl`):
 @import "@kroma/ui/css/theme";
 ```
 
-| Specifier | Emits |
+| Part | Emits |
 | --- | --- |
-| `@kroma/ui/css` | fonts + tokens + motion + base |
-| `@kroma/ui/css/tokens` | the custom properties, both palettes |
-| `@kroma/ui/css/theme` | the Tailwind v4 bridge (`bg-accent`, `text-muted`, …) |
-| `@kroma/ui/css/fonts` | the `@font-face` rules |
-| `@kroma/ui/css/motion` | the component keyframes |
-| `@kroma/ui/css/reset` | the UA stylesheet undone, and nothing else |
-| `@kroma/ui/css/page` | body, focus ring, scrollbars, with the reset left out |
-| `@kroma/ui/css/base` | reset, body, focus ring, scrollbars |
+| `kroma` | fonts + tokens + motion + base: what an app wants |
+| `tv` | fonts + tokens + motion + reset: what a television wants |
+| `tokens` | the custom properties, both palettes |
+| `theme` | the Tailwind v4 bridge (`bg-accent`, `text-muted`, …) |
+| `fonts` | the `@font-face` rules |
+| `motion` | the component keyframes |
+| `reset` | the UA stylesheet undone, and nothing else |
+| `page` | body, focus ring, scrollbars, admin tables, with the reset left out |
+| `base` | `reset` and `page` together |
 
-The parts exist for `@kroma/tv`, which wants the type, the tokens and the reset but
-none of the page furniture on top of it (it hides overflow, grounds itself dark and
-owns its focus visuals), and for `apps/www`, which wants the furniture without the
-reset.
+Both doors name the same parts: `virtual:kroma-<part>.css`, or
+`@kroma/ui/css/<part>` in a stylesheet (`virtual:kroma.css` and `@kroma/ui/css`
+for the aggregate). `tv` is
+there because a television wants the type, the tokens and the reset but none of the
+page furniture on top of it: it hides overflow, grounds itself dark and owns its
+focus visuals. The single parts are for `apps/www`, which wants the furniture
+without the reset, and for anything else that needs one half only.
 
 ## The fonts come with a preload
 
@@ -78,16 +100,21 @@ A target that renders its own `<head>` instead of an `index.html` gets no such
 help. The TanStack sites carry the same two links by hand, in `@kroma/site-kit`'s
 `siteHead()` and in `apps/www`'s root route.
 
+The dev server declares `swap` rather than `optional`. There the sheet arrives with
+the module graph and a cold session has a hundred stories to transform first, so
+the preload is often reported unused and dropped, the block period expires, and the
+reader is left on `system-ui` until a reload warms the cache. Nobody measures CLS on
+a dev server, and a typeface that only appears every other F5 is the worse bug.
+
 ## Two rules the builds enforce the hard way
 
 **`kromaUI()` comes before `tailwindcss()`.** Tailwind resolves `@import` itself,
-so if it reaches the stylesheet first it silently drops the specifier it does not
-know and every custom property is missing from the bundle.
+so if it reaches a stylesheet first it silently drops the specifier it does not
+know and every custom property is missing from the bundle. The plugin fails the
+build rather than let that ship.
 
 **The directive belongs in the app's own entry stylesheet.** Vite inlines nested
 CSS `@import`s inside its own CSS plugin, where the plugin container's `transform`
 never sees them. `generateBundle` sweeps the emitted assets as a backstop, but
-Tailwind can consume a nested file before that runs.
-
-Both failures are silent: the build succeeds and ships
-`body { background: var(--kroma-bg) }` pointing at nothing.
+Tailwind can consume a nested file before that runs. The virtual specifier has no
+such trap: it is a module, so it resolves wherever it is imported.

@@ -171,6 +171,7 @@ mod tests {
         assert!(crate::seasons_with_cast(&pool, "s1").unwrap().is_empty());
         let cast = vec![CastMember {
             name: "Alice".into(),
+            tmdb_id: None,
             character: Some("Lead".into()),
             profile_url: None,
         }];

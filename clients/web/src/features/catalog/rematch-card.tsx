@@ -9,8 +9,6 @@ import { Image } from '#web/shared/ui';
 
 const candidateCard = sv({
   base: {
-    // A <button> shrink-to-fits: without this the card is as wide as its own
-    // longest word rather than as wide as the grid cell it sits in.
     w: '100%',
     overflow: 'hidden',
     radius: 'xl',

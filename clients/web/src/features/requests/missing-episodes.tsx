@@ -12,6 +12,7 @@ import {
   Focusable,
   Icon,
   IconButton,
+  RingScopeProvider,
   Row,
   Spinner,
   styles,
@@ -54,39 +55,41 @@ export function EpisodeList({
   const collapsed = !expanded && entries.length > COLLAPSE_OVER;
   const visible = collapsed ? entries.slice(0, COLLAPSED_ROWS) : entries;
   return (
-    <ul style={LIST}>
-      {visible.map((e, index) => (
-        <EpisodeRow
-          key={epKey(e)}
-          entry={e}
-          ruled={index > 0}
-          canAct={canAct}
-          busy={busyKeys.has(epKey(e))}
-          done={doneKeys.has(epKey(e))}
-          picked={selected.has(epKey(e))}
-          onToggle={() => onToggleRow(epKey(e))}
-          onSearch={() => onSearch([e])}
-        />
-      ))}
-      {entries.length > COLLAPSE_OVER ? (
-        <li style={LIST_ITEM}>
-          <Divider color="tint/4" />
-          <Box px={6} py={6} self="flex-start">
-            <Button
-              variant="ghost"
-              size="sm"
-              iconRight={collapsed ? 'chevron-down' : 'chevron-up'}
-              label={
-                collapsed
-                  ? t('requests.showMore', { count: entries.length - COLLAPSED_ROWS })
-                  : t('requests.showLess')
-              }
-              onPress={() => setExpanded((v) => !v)}
-            />
-          </Box>
-        </li>
-      ) : null}
-    </ul>
+    <RingScopeProvider value="focusInset">
+      <ul style={LIST}>
+        {visible.map((e, index) => (
+          <EpisodeRow
+            key={epKey(e)}
+            entry={e}
+            ruled={index > 0}
+            canAct={canAct}
+            busy={busyKeys.has(epKey(e))}
+            done={doneKeys.has(epKey(e))}
+            picked={selected.has(epKey(e))}
+            onToggle={() => onToggleRow(epKey(e))}
+            onSearch={() => onSearch([e])}
+          />
+        ))}
+        {entries.length > COLLAPSE_OVER ? (
+          <li style={LIST_ITEM}>
+            <Divider color="tint/4" />
+            <Box px={6} py={6} self="flex-start">
+              <Button
+                variant="ghost"
+                size="sm"
+                iconRight={collapsed ? 'chevron-down' : 'chevron-up'}
+                label={
+                  collapsed
+                    ? t('requests.showMore', { count: entries.length - COLLAPSED_ROWS })
+                    : t('requests.showLess')
+                }
+                onPress={() => setExpanded((v) => !v)}
+              />
+            </Box>
+          </li>
+        ) : null}
+      </ul>
+    </RingScopeProvider>
   );
 }
 
@@ -189,6 +192,7 @@ function RowAction({
     <IconButton
       variant="ghost"
       control="sm"
+      ring="focusEdge"
       icon="search"
       label={t('requests.searchTitle')}
       onPress={onSearch}

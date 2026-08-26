@@ -104,8 +104,9 @@ export function LoginSettings() {
           <button
             type="button"
             aria-label={t('common.close')}
+            tabIndex={-1}
             onClick={() => setOpen(false)}
-            className={MODAL_SCRIM}
+            style={MODAL_SCRIM}
           />
           <div style={LAYER}>
             <Box

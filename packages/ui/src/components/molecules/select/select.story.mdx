@@ -19,7 +19,7 @@ export const story = defineStory({
   ),
 });
 
-Pick one of a few, from a trigger that says what is picked. Composed rather than configured, in Radix's shape: **Root** owns the value and the open state, **Trigger** wears `<TextField>`'s well, **Value** says what is picked and **Item / Indicator** are the row. Where the options appear is the platform's decision: under a D-pad they open in a **Dialog** (a modal is its own view controller on tvOS, so the remote is confined to the options for free), and under a pointer they open as an anchored listbox popover with the full combobox keyboard, meaning arrows, Home/End, type-ahead, Enter to pick and Esc to return to the trigger, announced through `aria-activedescendant`. Every way out is reported: `onOpenChange(open, { reason })` says `select`, `outside`, `escape` or `back`, the remote's Back button.
+Pick one of a few, from a trigger that says what is picked. Composed rather than configured, in Radix's shape: **Root** owns the value and the open state, **Trigger** wears `<TextField>`'s well, **Value** says what is picked and **Item / Indicator** are the row. Where the options appear is the shell's decision, stated once with `setSurfacePresentation`: under a D-pad they open in a **Dialog** (a modal is its own view controller on tvOS, so the remote is confined to the options for free), and under a pointer they open as an anchored listbox popover with the full combobox keyboard, meaning arrows, Home/End, type-ahead, Enter to pick and Esc to return to the trigger, announced through `aria-activedescendant`. Every way out is reported: `onOpenChange(open, { reason })` says `select`, `outside`, `escape` or `back`, the remote's Back button.
 
 ```tsx
 <Select.Root label="Audio track" value={track} onValueChange={setTrack}>
@@ -46,8 +46,8 @@ Pick one of a few, from a trigger that says what is picked. Composed rather than
 
 ## Where the options appear
 
-`presentation` decides, and its default asks the platform: a popover under a
-pointer, a dialog under a D-pad. Naming one overrides that, which is what these
+`presentation` decides, and its default asks the shell and then the platform: a
+popover under a pointer, a dialog under a D-pad. Naming one overrides both, which is what these
 two scenes do, so both presentations can be read here rather than only the one
 this device would have chosen.
 

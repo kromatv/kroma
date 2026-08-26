@@ -1,4 +1,4 @@
-import { metaLine, posterColors, type Section } from '@kroma/core';
+import { genreLabels, metaLine, posterColors, type Section } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Badge, Box, Button, gradient, Row, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
@@ -10,6 +10,7 @@ import { useMyList } from '#web/shared/lib/mylist';
 import type { HeroEntry } from '#web/shared/lib/queries';
 import { useWatched } from '#web/shared/lib/watched';
 import { Image, Poster, PosterRail } from '#web/shared/ui';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 type HeroBadge = '4K' | 'HDR' | 'H.265';
 
@@ -129,13 +130,13 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
               <Button
                 variant="glass"
                 label={t('content.moreInfo')}
-                onPress={() => navigate({ to: '/movie/$id', params: { id: media.id } })}
+                onPress={() => navigate({ to: '/movies/$id', params: { id: media.id } })}
               />
             </>
           ) : (
             <Button
               label={t('content.moreInfo')}
-              onPress={() => navigate({ to: '/show/$id', params: { id: media.id } })}
+              onPress={() => navigate({ to: '/shows/$id', params: { id: media.id } })}
             />
           )}
         </Row>
@@ -149,9 +150,9 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
 export const MoviePoster = memo(function MoviePoster({
   item,
   width,
-}: Readonly<{ item: MovieView; width?: number }>) {
+  caption,
+}: Readonly<{ item: MovieView; width?: number; caption?: boolean }>) {
   const t = useT();
-  const navigate = useNavigate();
   const { isWatched, toggleWatched } = useWatched();
   const { inList, toggle: toggleList } = useMyList();
   return (
@@ -161,11 +162,12 @@ export const MoviePoster = memo(function MoviePoster({
       colors={posterColors(item.id)}
       poster={item.poster}
       width={width}
+      caption={caption}
       watched={isWatched(item.id)}
       onToggleWatched={() => toggleWatched(item.id)}
       inList={inList(item.id)}
       onToggleList={() => toggleList(item.id)}
-      onClick={() => navigate({ to: '/movie/$id', params: { id: item.id } })}
+      as={<RouteLink to="/movies/$id" params={{ id: item.id }} />}
     />
   );
 });
@@ -173,9 +175,9 @@ export const MoviePoster = memo(function MoviePoster({
 export const ShowPoster = memo(function ShowPoster({
   show,
   width,
-}: Readonly<{ show: ShowView; width?: number }>) {
+  caption,
+}: Readonly<{ show: ShowView; width?: number; caption?: boolean }>) {
   const t = useT();
-  const navigate = useNavigate();
   const { isWatched, toggleWatched } = useWatched();
   const { inList, toggle: toggleList } = useMyList();
   return (
@@ -185,12 +187,13 @@ export const ShowPoster = memo(function ShowPoster({
       colors={posterColors(show.id)}
       poster={show.poster}
       width={width}
+      caption={caption}
       progress={show.progress ?? null}
       watched={isWatched(show.id)}
       onToggleWatched={() => toggleWatched(show.id)}
       inList={inList(show.id)}
       onToggleList={() => toggleList(show.id)}
-      onClick={() => navigate({ to: '/show/$id', params: { id: show.id } })}
+      as={<RouteLink to="/shows/$id" params={{ id: show.id }} />}
     />
   );
 });
@@ -204,7 +207,6 @@ export const SectionPoster = memo(function SectionPoster({
   width,
 }: Readonly<{ entry: SectionEntry; width?: number }>) {
   const t = useT();
-  const navigate = useNavigate();
   const { client } = useAuth();
   const { isWatched, toggleWatched } = useWatched();
   const { inList, toggle: toggleList } = useMyList();
@@ -213,7 +215,7 @@ export const SectionPoster = memo(function SectionPoster({
     return (
       <Poster
         title={show.title}
-        genre={show.metadata?.genres?.[0] ?? t('content.series')}
+        genre={genreLabels(t, show.metadata)[0] ?? t('content.series')}
         colors={posterColors(show.id)}
         poster={client.showPosterFor(show)}
         width={width}
@@ -222,7 +224,7 @@ export const SectionPoster = memo(function SectionPoster({
         onToggleWatched={() => toggleWatched(show.id)}
         inList={inList(show.id)}
         onToggleList={() => toggleList(show.id)}
-        onClick={() => navigate({ to: '/show/$id', params: { id: show.id } })}
+        as={<RouteLink to="/shows/$id" params={{ id: show.id }} />}
       />
     );
   }
@@ -231,7 +233,7 @@ export const SectionPoster = memo(function SectionPoster({
   return (
     <Poster
       title={item.title}
-      genre={item.metadata?.genres?.[0] ?? t(isEpisode ? 'content.series' : 'content.film')}
+      genre={genreLabels(t, item.metadata)[0] ?? t(isEpisode ? 'content.series' : 'content.film')}
       colors={posterColors(item.id)}
       poster={client.posterFor(item)}
       width={width}
@@ -239,10 +241,12 @@ export const SectionPoster = memo(function SectionPoster({
       onToggleWatched={() => toggleWatched(item.id)}
       inList={inList(item.id)}
       onToggleList={() => toggleList(item.id)}
-      onClick={() =>
-        isEpisode
-          ? navigate({ to: '/show/$id', params: { id: item.showId ?? item.id } })
-          : navigate({ to: '/movie/$id', params: { id: item.id } })
+      as={
+        isEpisode ? (
+          <RouteLink to="/shows/$id" params={{ id: item.showId ?? item.id }} />
+        ) : (
+          <RouteLink to="/movies/$id" params={{ id: item.id }} />
+        )
       }
     />
   );

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KEYFRAMES } from './constants';
+import { KEYFRAMES } from './animations';
 
 export interface IntroShellProps {
   exiting: boolean;

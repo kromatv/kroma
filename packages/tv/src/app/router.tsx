@@ -29,7 +29,7 @@ export interface TvRoutes {
   home: undefined;
   grid: { kind: 'films' | 'series' | 'mylist' };
   genres: undefined;
-  genre: { name: string };
+  genre: { slug: string };
   search: undefined;
   person: { name: string };
   movie: { item: MediaItem };

@@ -16,15 +16,17 @@ pub mod media;
 pub mod metadata;
 pub mod naming;
 pub mod notifications;
+pub mod people;
 pub mod pipeline;
 pub mod playback;
 pub mod push;
 pub mod reports;
 pub mod requests;
 pub mod section;
+pub mod slug;
 
-// Flat re-export (mirrors the server's former `model.rs`). `naming` / `matching`
-// are intentionally not globbed here; reach them via their module path.
+// Flat re-export (mirrors the server's former `model.rs`). `naming`, `matching`,
+// `people` and `slug` are intentionally not globbed here; reach them via their module path.
 pub use accounts::*;
 pub use admin::*;
 pub use cast::*;

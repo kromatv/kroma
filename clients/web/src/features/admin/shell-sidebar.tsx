@@ -1,40 +1,54 @@
-// The console's navigation, in its two forms: the permanent aside from `lg` up
-// and the sheet a phone opens from its topbar. Both draw the same column.
-
 import { hasPermission } from '@kroma/core';
 import type { ModuleNav } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
-import { Box, color, Drawer, Logo, Row, Text } from '@kroma/ui/kit';
+import { Box, color, Drawer, Focusable, Logo, Row, sv, Text } from '@kroma/ui/kit';
 import { IconChevronRight } from '@tabler/icons-react';
-import { Link, useRouterState } from '@tanstack/react-router';
-import { type CSSProperties, useEffect, useState } from 'react';
-import type { ViewStyle } from 'react-native';
+import { useRouterState } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { ScrollView, type ViewStyle } from 'react-native';
 import { adminNavSections } from '#web/features/admin/admin-nav';
 import { PillDot } from '#web/features/admin/pill';
 import { useAdmin } from '#web/features/admin/shell-context';
-import { ADMIN_SIDEBAR, ADMIN_TOPBAR } from '#web/features/admin/web-style';
+import { ADMIN_BAR_TOP, ADMIN_RAIL_WIDTH } from '#web/features/admin/web-style';
 import { useModuleNavAll } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { formatUptime } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
+import { safeAreaTop } from '#web/shared/lib/safe-area';
 import { useNavActions } from '#web/shared/ui/nav-actions';
 import { NavMenuButton } from '#web/shared/ui/nav-menu-button';
+import { RouteLink } from '#web/shared/ui/route-link';
 import { SideNav } from '#web/shared/ui/side-nav';
 import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
-// The server card at the head of the sidebar is a router <a>, so it carries its
-// own reset rather than the kit's.
-const SERVER_LINK: CSSProperties = { display: 'block', textDecoration: 'none' };
-
 const NAV_FILL = { backgroundColor: color('bg') } as const;
 
-// `env()` has no React Native spelling, so the sheet's own insets stay CSS.
-const DRAWER_HEAD = {
+const serverCard = sv({
+  base: {
+    row: true,
+    align: 'center',
+    between: true,
+    px: 14,
+    py: 10,
+    radius: 'md',
+    bg: 'surface2',
+    border: 'borderStrong',
+    borderWidth: 1,
+    _hover: { bg: 'surface3' },
+  },
+});
+
+const RAIL_EDGE: ViewStyle = {
+  borderRightWidth: 1,
+  borderRightColor: color('border'),
+};
+
+const DRAWER_HEAD: ViewStyle = {
   paddingLeft: 24,
   paddingRight: 16,
-  paddingTop: 'max(24px, env(safe-area-inset-top))',
   paddingBottom: 16,
-} as unknown as ViewStyle;
+  ...safeAreaTop(24),
+};
 
 function AdminBrand() {
   const t = useT();
@@ -54,17 +68,15 @@ function AdminServerLink() {
   const { serverInfo } = useAdmin();
   return (
     <Box shrink={0} px={SIDE_NAV_GUTTER} pb={8}>
-      <Link to="/" style={SERVER_LINK}>
-        <Row between px={14} py={10} radius="md" bg="surface2" border="borderStrong">
-          <Row gap={10}>
-            <Logo markOnly size={17} />
-            <Text variant="label" color="accentText">
-              {serverInfo?.name ?? 'KROMA'}
-            </Text>
-          </Row>
-          <IconChevronRight size={17} stroke={1.8} color={color('success')} />
+      <Focusable sv={serverCard} as={<RouteLink to="/" />}>
+        <Row gap={10}>
+          <Logo markOnly size={17} />
+          <Text variant="label" color="accentText">
+            {serverInfo?.name ?? 'KROMA'}
+          </Text>
         </Row>
-      </Link>
+        <IconChevronRight size={17} stroke={1.8} color={color('success')} />
+      </Focusable>
     </Box>
   );
 }
@@ -80,9 +92,6 @@ function ModuleNavLink({ item }: Readonly<{ item: ModuleNav }>) {
 function AdminNav() {
   const t = useT();
   const { user } = useAuth();
-  // Module pages target a nav group by `section` (e.g. Torrents -> "acquisition")
-  // and render inside it beside the built-in pages; one whose section names no
-  // group at all falls into a generic "Module pages" group.
   const { sections, orphans } = adminNavSections(
     useModuleNavAll(),
     (cap) => !cap || (!!user && hasPermission(user, cap)),
@@ -136,23 +145,23 @@ function ServerStatusCard() {
   );
 }
 
-/** The permanent left navigation, which exists only from `lg` up. */
+/** The permanent left navigation, rendered only from `lg` up. */
 export function AdminSidebar() {
   return (
-    <aside className={ADMIN_SIDEBAR}>
+    <Box role="complementary" w={ADMIN_RAIL_WIDTH} shrink={0} h="100%" bg="bg" style={RAIL_EDGE}>
       <SideNav.Header>
         <AdminBrand />
       </SideNav.Header>
       <AdminServerLink />
-      {/* The only part of the sidebar that scrolls when the sections overflow. */}
-      <div style={SIDE_NAV_FRAME}>
+      <ScrollView style={SIDE_NAV_FRAME}>
         <AdminNav />
-      </div>
-    </aside>
+      </ScrollView>
+    </Box>
   );
 }
 
-/** The phone's pinned bar, and the sheet its menu opens. */
+/** The phone's pinned bar, and the sheet its menu opens. Rendered only below
+ *  `lg`. */
 export function AdminMobileTopbar() {
   const actions = useNavActions();
   const [open, setOpen] = useState(false);
@@ -160,7 +169,17 @@ export function AdminMobileTopbar() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional re-run key; pathname closes the drawer on navigation
   useEffect(() => setOpen(false), [pathname]);
   return (
-    <header className={ADMIN_TOPBAR}>
+    <Box
+      role="banner"
+      row
+      align="center"
+      between
+      shrink={0}
+      px={16}
+      pb={10}
+      bg="bg"
+      style={ADMIN_BAR_TOP}
+    >
       <Row gap={8}>
         <NavMenuButton open={open} onPress={() => setOpen(true)} />
         <AdminBrand />
@@ -187,6 +206,6 @@ export function AdminMobileTopbar() {
           <AdminNav />
         </Drawer.Panel>
       </Drawer.Root>
-    </header>
+    </Box>
   );
 }

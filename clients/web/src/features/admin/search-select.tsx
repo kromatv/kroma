@@ -21,6 +21,7 @@ import {
   Portal,
   Row,
   selectTriggerVariants,
+  styles,
   Text,
   useAnchoredPlacement,
   useTheme,
@@ -66,7 +67,7 @@ const OPTION: CSSProperties = {
   userSelect: 'none',
 };
 
-const FOCUS_RING_OFF = { focusRing: 'off' } as const;
+const s = styles({ ring: { ring: 'focusEdge' } });
 
 export function SearchSelect({
   value,
@@ -149,6 +150,7 @@ function SearchPanel({
 }>) {
   const listId = useId();
   const [q, setQ] = useState('');
+  const [focused, setFocused] = useState(false);
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLDivElement>(null);
@@ -234,7 +236,7 @@ function SearchPanel({
           width: at.width,
         }}
       >
-        <Row gap={8} px={12} py={10} dataSet={FOCUS_RING_OFF}>
+        <Row gap={8} px={12} py={10} style={focused ? s.ring : null}>
           <Icon name="search" size={14} color="textDim" />
           <input
             ref={input}
@@ -245,8 +247,9 @@ function SearchPanel({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             placeholder={searchPlaceholder}
-            data-focus-ring="off"
             style={entry}
           />
         </Row>

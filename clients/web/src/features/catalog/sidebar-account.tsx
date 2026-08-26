@@ -8,6 +8,7 @@ import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { type CSSProperties, type Ref, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 import { serverQueries } from '#web/shared/lib/queries';
+import { useFocusRing } from '#web/shared/lib/use-focus-ring';
 import { UserAvatar } from '#web/shared/ui/user-avatar';
 
 const TABULAR = { fontVariant: ['tabular-nums' as const] };
@@ -114,6 +115,7 @@ function UserChipTrigger({
 }: Readonly<{ bind: MenuTriggerBind; user: ChipUser; label: string }>) {
   const { ref, expanded, onPress } = bind;
   const [hovered, setHovered] = useState(false);
+  const focus = useFocusRing(CHIP_BUTTON, 'focusLift');
   return (
     <button
       ref={ref as unknown as Ref<HTMLButtonElement>}
@@ -123,7 +125,8 @@ function UserChipTrigger({
       onClick={onPress}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={CHIP_BUTTON}
+      {...focus.bind}
+      style={focus.style}
       title={label}
     >
       <Box

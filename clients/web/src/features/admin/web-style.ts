@@ -1,19 +1,13 @@
-// The browser-only shapes the kit's vocabulary deliberately does not carry:
-// React Native has no `position: fixed`, no viewport unit and no single-axis
-// overflow, so a prop for them would silently do nothing on a television. They
-// stay real CSS here, and every value they use is still a token.
+import type { ViewStyle } from 'react-native';
+import { safeAreaTop } from '#web/shared/lib/safe-area';
 
-/** The console's outer frame: one viewport-tall column, two columns from `lg`. */
-export const ADMIN_SHELL = 'admin-shell';
+export const ADMIN_RAIL_WIDTH = 256;
 
-/** The permanent left navigation, which exists only from `lg` up. */
-export const ADMIN_SIDEBAR = 'admin-sidebar';
+export const ADMIN_SCROLLER: ViewStyle = { flex: 1, minWidth: 0 };
 
-/** The phone's pinned bar, which exists only below `lg`. */
-export const ADMIN_TOPBAR = 'admin-topbar';
+export const ADMIN_SCROLLER_CONTENT: ViewStyle = { flexGrow: 1 };
 
-/** A panel that stays put while the column beside it scrolls, from `lg` up. */
-export const ADMIN_STICKY_ASIDE = 'admin-sticky-aside';
+export const ADMIN_BAR_TOP: ViewStyle = safeAreaTop(10);
 
 /** Marks a surface whose whole area presses: a table row, a store card. Set it
  *  as `data-pressable` and pair it with an [`ADMIN_PRESS`] button as the FIRST
@@ -22,5 +16,6 @@ export const ADMIN_STICKY_ASIDE = 'admin-sticky-aside';
 export const PRESSABLE = { pressable: 'true' } as const;
 
 /** The press of a pressable surface: a button covering it from UNDER its
- *  content, so the controls the surface carries stay real buttons beside it. */
+ *  content, so the controls the surface carries stay real buttons beside it.
+ *  Its rule is the kit's, shared with the module SDK's table. */
 export const ADMIN_PRESS = 'admin-press';

@@ -1,11 +1,15 @@
-// One line of the drawer. Two controls sit on it, side by side and never one
-// inside the other: the notification itself, and the read/unread toggle. The
-// kit's rule that a row is ONE focus stop is about a row that is one control
-// and whose indicator reflects its own state (DESIGN.md §2); a notification is
-// an object with a destination AND a piece of state the reader must be able to
-// change without going there, which is two verbs and so two controls. They are
+// One line of the drawer. Two controls sit on it, siblings and never one inside
+// the other: the notification itself, and the read/unread toggle. The kit's rule
+// that a row is ONE focus stop is about a row that is one control and whose
+// indicator reflects its own state (DESIGN.md §2); a notification is an object
+// with a destination AND a piece of state the reader must be able to change
+// without going there, which is two verbs and so two controls. They are
 // siblings, the way <SelectRow> and its trash button are in the player's
 // subtitles panel, so neither swallows the other's press.
+//
+// The row spans the whole line and the toggle is laid OVER its right end, rather
+// than the two sharing the width: a focus ring belongs around the notification,
+// and a row holding only the left two thirds of the line cannot draw one.
 
 import {
   type Notification,
@@ -14,9 +18,10 @@ import {
   type Translate,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Badge, Box, Icon, IconButton, ListRow, Row, Text } from '@kroma/ui/kit';
+import { Badge, Box, Icon, IconButton, ListRow, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
+import { notificationLink } from '#web/features/notifications/notification-link';
 import { useExactTime, useRelativeTime } from '#web/features/notifications/notification-time';
 import { useReadState } from '#web/features/notifications/use-notifications';
 import { NotificationCard } from '#web/shared/ui/notification-card';
@@ -58,7 +63,7 @@ export function NotificationEntry({
 
   function go(one: Notification) {
     markRead(ids);
-    const to = destinationOf(one);
+    const to = notificationLink(one);
     if (to) {
       onNavigate();
       void navigate({ to });
@@ -67,46 +72,46 @@ export function NotificationEntry({
 
   return (
     <Box bg={unread ? 'accent/6' : 'transparent'}>
-      <Row>
-        <Box flex minW={0}>
-          <ListRow.Root
-            size="sm"
-            label={[head.title, repeat, span].filter(Boolean).join(' · ')}
-            expanded={folded ? open : undefined}
-            onPress={() => (folded ? setOpen(!open) : go(head))}
-            chevron={false}
-            style={ROW_PAD}
-          >
-            <NotificationCard
-              event={head.event}
-              src={head.imageUrl ? sizedImageUrl(head.imageUrl, 96) : null}
-              unread={unread}
-              title={head.title}
-              titleTone={unread ? 'text' : 'textMuted'}
-              body={head.body}
-              repeat={repeat ? <Badge tone={unread ? 'warning' : 'neutral'}>{repeat}</Badge> : null}
-              meta={
-                span ? (
-                  <Text variant="meta" color="textDim" lines={1} mt={3}>
-                    {span}
-                  </Text>
-                ) : null
-              }
-              time={
-                <time dateTime={new Date(head.createdAt).toISOString()} style={TABULAR}>
-                  {latest}
-                </time>
-              }
-            />
-            {folded ? (
-              <ListRow.Trailing>
-                <Icon name={open ? 'chevron-up' : 'chevron-down'} size={16} color="textDim" />
-              </ListRow.Trailing>
-            ) : null}
-          </ListRow.Root>
+      <Box>
+        <ListRow.Root
+          size="sm"
+          label={[head.title, repeat, span].filter(Boolean).join(' · ')}
+          expanded={folded ? open : undefined}
+          onPress={() => (folded ? setOpen(!open) : go(head))}
+          chevron={false}
+          style={ROW_PAD}
+        >
+          <NotificationCard
+            event={head.event}
+            src={head.imageUrl ? sizedImageUrl(head.imageUrl, 96) : null}
+            unread={unread}
+            title={head.title}
+            titleTone={unread ? 'text' : 'textMuted'}
+            body={head.body}
+            repeat={repeat ? <Badge tone={unread ? 'warning' : 'neutral'}>{repeat}</Badge> : null}
+            meta={
+              span ? (
+                <Text variant="meta" color="textDim" lines={1} mt={3}>
+                  {span}
+                </Text>
+              ) : null
+            }
+            time={
+              <time dateTime={new Date(head.createdAt).toISOString()} style={TABULAR}>
+                {latest}
+              </time>
+            }
+          />
+          {folded ? (
+            <ListRow.Trailing>
+              <Icon name={open ? 'chevron-up' : 'chevron-down'} size={16} color="textDim" />
+            </ListRow.Trailing>
+          ) : null}
+        </ListRow.Root>
+        <Box absolute right={6} top={0} bottom={0} justify="center">
+          <ReadToggle unread={unread} title={head.title} ids={ids} />
         </Box>
-        <ReadToggle unread={unread} title={head.title} ids={ids} />
-      </Row>
+      </Box>
       {folded && open ? <Occurrences items={items} onOpen={go} /> : null}
     </Box>
   );
@@ -120,26 +125,29 @@ function ReadToggle({
   const t = useT();
   const { markRead, markUnread } = useReadState();
   return (
-    <Box pl={2} pr={8}>
-      <IconButton
-        variant="ghost"
-        diameter={34}
-        radius="lg"
-        active={unread}
-        label={`${t(unread ? 'notifications.markRead' : 'notifications.markUnread')} · ${title}`}
-        onPress={() => (unread ? markRead(ids) : markUnread(ids))}
-      >
-        <Icon
-          name={unread ? 'circle-filled' : 'circle'}
-          size={13}
-          color={unread ? 'accentText' : 'textDim'}
-        />
-      </IconButton>
-    </Box>
+    <IconButton
+      variant="ghost"
+      diameter={34}
+      // The card it sits in draws its rings inward, which on a 34px disc lands
+      // the ring inside the glyph. This one has room at the card's edge, so it
+      // takes the ring on its own boundary instead.
+      ring="focusEdge"
+      active={unread}
+      label={`${t(unread ? 'notifications.markRead' : 'notifications.markUnread')} · ${title}`}
+      onPress={() => (unread ? markRead(ids) : markUnread(ids))}
+    >
+      <Icon
+        name={unread ? 'circle-filled' : 'circle'}
+        size={13}
+        color={unread ? 'accentText' : 'textDim'}
+      />
+    </IconButton>
   );
 }
 
-const ROW_PAD = { paddingLeft: 8 } as const;
+// Room at the right for the toggle laid over the row, so a long title ellipses
+// before it reaches the button rather than running under it.
+const ROW_PAD = { paddingLeft: 8, paddingRight: 46 } as const;
 
 const TABULAR = { fontVariantNumeric: 'tabular-nums' } as const;
 
@@ -159,12 +167,4 @@ function Occurrences({
       ))}
     </Box>
   );
-}
-
-// The notification's own `link`, else its first `link`-kind action. `api`
-// actions (Approve, Deny) have no destination, deliberately not offered here,
-// since their notification links to the queue where the decision belongs.
-function destinationOf(notification: Notification): string | undefined {
-  if (notification.link) return notification.link;
-  return notification.actions.find((a) => a.kind === 'link')?.href;
 }

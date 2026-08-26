@@ -112,11 +112,11 @@ pub(super) fn request_link<S: HostStorage>(state: &S, req: &MediaRequest) -> Str
         RequestKind::Movie => db::movie_item_by_tmdb(&conn, req.tmdb_id)
             .ok()
             .flatten()
-            .map(|id| format!("/movie/{id}")),
+            .map(|id| format!("/movies/{id}")),
         RequestKind::Show => db::show_by_tmdb(&conn, req.tmdb_id)
             .ok()
             .flatten()
-            .map(|id| format!("/show/{id}")),
+            .map(|id| format!("/shows/{id}")),
     });
     local.unwrap_or_else(|| "/requests".to_string())
 }

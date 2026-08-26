@@ -1,20 +1,26 @@
-// Shared cast/crew ("person") helpers used by every client. People have no stable
-// id in KROMA cast/crew are embedded in each title's TMDB metadata and matched by
-// name so all of this keys off a case-insensitive name comparison.
-
 import type { Metadata } from '@kroma/client';
 import type { Translate } from './i18n';
+import { slugify } from './slug';
 
-function sameName(a: string, b: string): boolean {
-  return a.trim().toLowerCase() === b.trim().toLowerCase();
+/** The URL segment one person is reached by: the provider's id when their
+ * credit kept one, the folded name when it did not. Every credit stored before
+ * the id was kept has none, which is why a person URL is not always a number. */
+export function personSegment(person: Readonly<{ name: string; tmdbId?: number | null }>): string {
+  return person.tmdbId == null ? slugify(person.name) : String(person.tmdbId);
 }
 
-/** Does `meta` credit `name` in its cast OR key crew? (case-insensitive) */
+function samePerson(a: string, b: string): boolean {
+  const slug = slugify(a);
+  return slug !== '' && slug === slugify(b);
+}
+
+/** Does `meta` credit `name` in its cast OR key crew? `name` is a display name
+ * or a URL slug. */
 export function creditsPerson(meta: Metadata | null | undefined, name: string): boolean {
   if (!meta || !name.trim()) return false;
   return (
-    (meta.cast ?? []).some((c) => sameName(c.name, name)) ||
-    (meta.crew ?? []).some((c) => sameName(c.name, name))
+    (meta.cast ?? []).some((c) => samePerson(c.name, name)) ||
+    (meta.crew ?? []).some((c) => samePerson(c.name, name))
   );
 }
 
@@ -32,7 +38,7 @@ type CrewCredit = NonNullable<Metadata['crew']>[number];
 
 function scanCast(acc: PersonInvolvement, cast: readonly CastCredit[], name: string): void {
   for (const c of cast) {
-    if (!sameName(c.name, name)) continue;
+    if (!samePerson(c.name, name)) continue;
     acc.acted = true;
     if (!acc.profileUrl && c.profileUrl) acc.profileUrl = c.profileUrl;
   }
@@ -40,7 +46,7 @@ function scanCast(acc: PersonInvolvement, cast: readonly CastCredit[], name: str
 
 function scanCrew(acc: PersonInvolvement, crew: readonly CrewCredit[], name: string): void {
   for (const c of crew) {
-    if (!sameName(c.name, name)) continue;
+    if (!samePerson(c.name, name)) continue;
     if (!acc.jobs.includes(c.job)) acc.jobs.push(c.job);
     if (!acc.profileUrl && c.profileUrl) acc.profileUrl = c.profileUrl;
   }
@@ -60,16 +66,16 @@ export function personInvolvement(
   return acc;
 }
 
-/** Recover a person's display name with its original casing from titles' metadata
- * (a URL path or stored lookup may differ in case). Falls back to `name`. */
+/** The spelling titles' metadata holds for a person, recovered from the slug or
+ * the differently-cased name a URL carried. Falls back to `name`. */
 export function personDisplayName(
   metas: ReadonlyArray<Metadata | null | undefined>,
   name: string,
 ): string {
   for (const meta of metas) {
     if (!meta) continue;
-    for (const c of meta.cast ?? []) if (sameName(c.name, name)) return c.name;
-    for (const c of meta.crew ?? []) if (sameName(c.name, name)) return c.name;
+    for (const c of meta.cast ?? []) if (samePerson(c.name, name)) return c.name;
+    for (const c of meta.crew ?? []) if (samePerson(c.name, name)) return c.name;
   }
   return name;
 }

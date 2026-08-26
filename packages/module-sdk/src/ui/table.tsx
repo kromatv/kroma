@@ -4,7 +4,7 @@
 // <Table> (components/DESIGN.md §8) and it lives here instead -- in the SDK
 // rather than in one console, because a module's admin page needs the same
 // aligned rows the console's own pages do. The grid is in `@kroma/ui`'s
-// `styles/base.css` under `.admin-table-*`; a table states only its column
+// `styles/admin-table.ts` under `.admin-table-*`; a table states only its column
 // template, which reaches the rows as a custom property.
 
 import {

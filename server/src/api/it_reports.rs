@@ -354,7 +354,7 @@ async fn resolving_a_show_report_deep_links_the_reporter_to_the_show() {
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&m)).await;
     let row = &inbox["notifications"][0];
     assert_eq!(row["event"], json!("report.resolved"));
-    assert_eq!(row["link"], json!(format!("/show/{show}")));
+    assert_eq!(row["link"], json!(format!("/shows/{show}")));
 }
 
 #[tokio::test]

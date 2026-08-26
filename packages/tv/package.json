@@ -14,8 +14,7 @@
   "exports": {
     ".": "./src/index.tsx",
     "./mount": "./src/mount.web.tsx",
-    "./stage": "./src/shared/stage.ts",
-    "./tv.css": "./src/tv.css"
+    "./stage": "./src/shared/stage.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

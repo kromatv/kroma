@@ -18,12 +18,21 @@ function title(p: {
   rating?: number | null;
   releaseDate?: string | null;
   genres?: string[];
+  tmdbGenreIds?: number[];
 }): Sortable {
-  const { title, year = null, addedAt = '2020-01-01T00:00:00Z', rating, releaseDate, genres } = p;
+  const {
+    title,
+    year = null,
+    addedAt = '2020-01-01T00:00:00Z',
+    rating,
+    releaseDate,
+    genres,
+    tmdbGenreIds,
+  } = p;
   const meta =
     rating === undefined && releaseDate === undefined && genres === undefined
       ? null
-      : ({ rating, releaseDate, genres: genres ?? [] } as unknown as Metadata);
+      : ({ rating, releaseDate, genres: genres ?? [], tmdbGenreIds } as unknown as Metadata);
   return { title, year, addedAt, metadata: meta };
 }
 
@@ -168,15 +177,45 @@ describe('collectGenres', () => {
       title({ title: 'c', genres: ['Action'] }),
     ];
     expect(collectGenres(items)).toEqual([
-      { name: 'Action', count: 3 },
-      { name: 'Drama', count: 1 },
-      { name: 'Sci-Fi', count: 1 },
+      { slug: 'action', name: 'Action', count: 3 },
+      { slug: 'drama', name: 'Drama', count: 1 },
+      { slug: 'sci-fi', name: 'Sci-Fi', count: 1 },
     ]);
+  });
+
+  it('counts one genre once however the library spelled it', () => {
+    const items = [
+      title({ title: 'a', genres: ['Family'] }),
+      title({ title: 'b', genres: ['Familial'] }),
+    ];
+    expect(collectGenres(items)).toEqual([{ slug: 'family', name: 'Family', count: 2 }]);
+  });
+
+  // A genre with neither a row nor a foldable name is dropped, so anything
+  // pairing the surviving slugs with the raw `genres` array by POSITION reads
+  // its neighbour's name from there on.
+  it('names each genre from its own spelling, not the one at its old index', () => {
+    const blank = collectGenres([title({ title: 'a', genres: ['  ', 'Horror'] })]);
+    expect(blank).toEqual([{ slug: 'horror', name: 'Horror', count: 1 }]);
+
+    const unknown = collectGenres([
+      title({ title: 'b', tmdbGenreIds: [10751, 4242, 27], genres: ['Family', '!!!', 'Horror'] }),
+    ]);
+    expect(unknown.find((g) => g.slug === 'horror')?.name).toBe('Horror');
+  });
+
+  it('counts one genre once across the languages its titles were enriched in', () => {
+    const items = [
+      title({ title: 'a', tmdbGenreIds: [10751], genres: ['Family'] }),
+      title({ title: 'b', tmdbGenreIds: [10751], genres: ['Familial'] }),
+    ];
+
+    expect(collectGenres(items)).toEqual([{ slug: 'family', name: 'Family', count: 2 }]);
   });
 
   it('ignores blank/whitespace genres and titles without metadata', () => {
     const items = [title({ title: 'a', genres: ['Action', '  '] }), title({ title: 'b' })];
-    expect(collectGenres(items)).toEqual([{ name: 'Action', count: 1 }]);
+    expect(collectGenres(items)).toEqual([{ slug: 'action', name: 'Action', count: 1 }]);
   });
 });
 
@@ -186,6 +225,13 @@ describe('hasGenre', () => {
   it('matches a carried genre (trim-tolerant)', () => {
     expect(hasGenre(item, 'Comedy')).toBe(true);
     expect(hasGenre(item, '  Action ')).toBe(true);
+  });
+
+  it('matches a title through the provider id it was stored with', () => {
+    const stored = title({ title: 'a', tmdbGenreIds: [10765], genres: ['Sci-Fi & Fantasy'] });
+
+    expect(hasGenre(stored, 'Science-Fiction & Fantastique')).toBe(true);
+    expect(hasGenre(stored, 'sci-fi-fantasy')).toBe(true);
   });
 
   it('does not match an absent genre or a title without metadata', () => {

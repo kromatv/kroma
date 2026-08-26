@@ -6,11 +6,6 @@ import { color, styles } from '#ui/core';
 import { Polygon, Svg } from '#ui/lib/svg';
 import { useTDefault } from '#ui/services/i18n';
 
-// The web client hides the mark while a tile's action bar is up, since the lit
-// toggle says the same thing. Set here rather than by each surface: the mark is
-// what the rule is about.
-const MARK = { watchedMark: '' } as const;
-
 // A right triangle's optical centre is a third along each leg, not half.
 const CENTRE = 1 / 3;
 
@@ -46,7 +41,6 @@ function WatchedBadge({ size = 40, corner = 'top-left' }: Readonly<WatchedBadgeP
       z={1}
       w={size}
       h={size}
-      dataSet={MARK}
       style={s.mark}
       accessibilityRole="image"
       accessibilityLabel={t('content.watched')}

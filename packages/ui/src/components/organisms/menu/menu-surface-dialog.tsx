@@ -6,6 +6,7 @@ import type { View } from 'react-native';
 import { Dialog } from '#ui/components/organisms/dialog';
 import { FocusColumn } from '#ui/lib/focus-scope';
 import { pointerDriving } from '#ui/lib/input-source';
+import type { SurfacePresentation } from '#ui/lib/surface-presentation';
 import { type MenuDismissReason, MenuRowContext, type MenuRowState } from './menu-context';
 
 /** One actionable row, in the order the items were written. `at` is the
@@ -19,6 +20,7 @@ export interface MenuRowSpec {
 
 export interface MenuSurfaceProps {
   open: boolean;
+  presentation: SurfacePresentation;
   label: string | undefined;
   /** The <Menu.Item> and <Menu.Separator> elements, in order. */
   entries: readonly ReactElement[];

@@ -68,6 +68,8 @@ function TouchPressable({
   onLongPress,
   onHoverIn,
   onHoverOut,
+  onFocus,
+  onBlur,
   onLayout,
   hitSlop,
   unfocusable = false,
@@ -85,6 +87,8 @@ function TouchPressable({
   onLongPress?: () => void;
   onHoverIn?: () => void;
   onHoverOut?: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
   onLayout?: (event: LayoutChangeEvent) => void;
   hitSlop?: number | Insets;
   unfocusable?: boolean;
@@ -109,6 +113,8 @@ function TouchPressable({
       onLongPress={onLongPress}
       onHoverIn={onHoverIn}
       onHoverOut={onHoverOut}
+      onFocus={onFocus}
+      onBlur={onBlur}
       hitSlop={hitSlop}
       // The press dip measures the box too; both readings come off one element.
       onLayout={(event: LayoutChangeEvent) => {

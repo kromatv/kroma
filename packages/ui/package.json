@@ -30,8 +30,6 @@
     "./fonts": "./src/assets/fonts.ts",
     "./vite": "./vite/index.ts",
     "./vite/icon-catalog": "./vite/icon-catalog.ts",
-    "./css": "./src/styles/kroma.css",
-    "./css/*": "./src/styles/kroma.css",
     "./src/assets/*": "./src/assets/*"
   },
   "scripts": {

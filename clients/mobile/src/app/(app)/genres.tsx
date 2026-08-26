@@ -4,6 +4,8 @@
 import {
   collectGenres,
   genreColors,
+  genreLabel,
+  genreSegment,
   genreShowcases,
   type MediaItem,
   type Show,
@@ -23,6 +25,7 @@ import { useClient } from '#mobile/lib/session';
 import { groundShade, radius, spacing, type } from '#mobile/lib/theme';
 
 interface GenreTileModel {
+  slug: string;
   name: string;
   count: number;
   art: string | null;
@@ -50,12 +53,13 @@ export default function Genres() {
   const items = catalogue.data ?? [];
   const showcases = genreShowcases(items);
   const tiles: GenreTileModel[] = collectGenres(items).map((g) => {
-    const showcase = showcases.get(g.name);
+    const showcase = showcases.get(g.slug);
     return {
-      name: g.name,
+      slug: g.slug,
+      name: genreLabel(t, g.name),
       count: g.count,
       art: sizedImageUrl(client.resolveArt(showcase?.metadata?.backdropUrl), 480),
-      gradient: genreColors(g.name),
+      gradient: genreColors(g.slug),
     };
   });
 
@@ -72,12 +76,12 @@ export default function Genres() {
         key={cols}
         data={tiles}
         numColumns={cols}
-        keyExtractor={(g) => g.name}
+        keyExtractor={(g) => g.slug}
         columnWrapperStyle={{ gap: 12 }}
         contentContainerStyle={s.grid}
         renderItem={({ item: tile }) => (
           <Pressable
-            onPress={() => router.push(`/genre/${encodeURIComponent(tile.name)}` as never)}
+            onPress={() => router.push(`/genre/${genreSegment(tile.slug)}` as never)}
             style={({ pressed }) => [
               { width: tileW, height: tileW * 0.62, opacity: pressed ? 0.8 : 1 },
             ]}
@@ -85,7 +89,7 @@ export default function Genres() {
             <Box style={s.tile}>
               <LinearGradient colors={tile.gradient} style={StyleSheet.absoluteFill} />
               {tile.art ? (
-                <FadeImage uri={tile.art} seed={tile.name} style={StyleSheet.absoluteFill} />
+                <FadeImage uri={tile.art} seed={tile.slug} style={StyleSheet.absoluteFill} />
               ) : null}
               <LinearGradient
                 colors={[groundShade(0), groundShade(0), groundShade(0.85)]}

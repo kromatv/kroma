@@ -7,7 +7,7 @@ import { Box, Section } from '@kroma/ui/kit';
 import { useMemo } from 'react';
 import { CandidateCard } from '#web/features/catalog/rematch-card';
 import { type CandidateBand, rankCandidates } from '#web/features/catalog/rematch-ranking';
-import { TileGrid } from '#web/features/catalog/tile-grid';
+import { TileGrid } from '#web/shared/ui/tile-grid';
 
 const BAND_LABEL: Record<CandidateBand, MessageKey> = {
   likely: 'rematch.groupLikely',

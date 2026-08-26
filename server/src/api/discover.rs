@@ -317,6 +317,7 @@ fn flag_detail(
         overview: d.overview,
         tagline: d.tagline,
         genres: d.genres,
+        tmdb_genre_ids: d.tmdb_genre_ids,
         rating: d.rating,
         runtime_min: d.runtime_min,
         seasons,

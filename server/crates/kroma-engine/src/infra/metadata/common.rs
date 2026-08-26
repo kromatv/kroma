@@ -25,6 +25,8 @@ pub(super) struct RawCredits {
 #[derive(Debug, Deserialize)]
 pub(super) struct RawCast {
     #[serde(default)]
+    pub id: Option<u64>,
+    #[serde(default)]
     pub name: String,
     #[serde(default)]
     pub character: Option<String>,
@@ -37,6 +39,8 @@ pub(super) struct RawCast {
 #[derive(Debug, Deserialize)]
 pub(super) struct RawCrew {
     #[serde(default)]
+    pub id: Option<u64>,
+    #[serde(default)]
     pub name: String,
     #[serde(default)]
     pub job: String,
@@ -45,6 +49,8 @@ pub(super) struct RawCrew {
 /// TV `created_by` block (top-level on series details) the show's creators.
 #[derive(Debug, Deserialize)]
 pub(super) struct RawCreatedBy {
+    #[serde(default)]
+    pub id: Option<u64>,
     #[serde(default)]
     pub name: String,
 }
@@ -64,6 +70,7 @@ pub(super) fn build_cast(
         .take(max_cast)
         .map(|m| CastMember {
             name: m.name,
+            tmdb_id: m.id,
             character: m.character.filter(|s| !s.is_empty()),
             profile_url: m.profile_path.map(|p| format!("{IMG}/w185{p}")),
         })
@@ -94,6 +101,7 @@ pub(super) fn build_crew(
                 rank(&c.job),
                 CrewMember {
                     name: c.name,
+                    tmdb_id: c.id,
                     job: c.job,
                     profile_url: None,
                 },
@@ -106,6 +114,7 @@ pub(super) fn build_crew(
             rank("Creator"),
             CrewMember {
                 name: cb.name,
+                tmdb_id: cb.id,
                 job: "Creator".into(),
                 profile_url: None,
             },

@@ -30,12 +30,15 @@ import { inputHeld } from '#ui/lib/input-gate';
 import { markFocus } from '#ui/lib/perf';
 import { WEB } from '#ui/lib/platform';
 import { pressGuardActive } from '#ui/lib/press-guard';
+import { useRingScope } from '#ui/lib/ring-scope';
 import { claimProps } from './focusable-a11y';
 import { DisabledForm, NavigatorForm, TouchForm } from './focusable-forms';
+import { LinkForm } from './focusable-link';
 import { useFocusablePaint } from './focusable-paint';
-import type { A11yState, FocusableProps, FocusRole, WebKeys } from './focusable-types';
+import type { A11yState, FocusableProps, TouchAt } from './focusable-types';
 import { TV_HAS_POINTER } from './touch-pressable';
 import { useEntryFocus } from './use-entry-focus';
+import { useWebKeys } from './use-web-keys';
 
 function attach(box: RefObject<View | null>, outer: Ref<View> | undefined, view: View | null) {
   box.current = view;
@@ -43,29 +46,8 @@ function attach(box: RefObject<View | null>, outer: Ref<View> | undefined, view:
   else if (outer) outer.current = view;
 }
 
-function useWebKeys(
-  active: boolean,
-  role: FocusRole,
-  press: RefObject<() => void>,
-): { pressable: WebKeys; view: WebKeys } | null {
-  return useMemo(() => {
-    if (!WEB || !active) return null;
-    const answering = (owns: (key: string) => boolean): WebKeys => ({
-      tabIndex: 0,
-      onKeyDown: (event) => {
-        if (!owns(event.nativeEvent.key)) return;
-        event.preventDefault();
-        press.current();
-      },
-    });
-    return {
-      pressable: answering((key) => key === ' ' && role !== 'button'),
-      view: answering((key) => key === 'Enter' || key === ' '),
-    };
-  }, [active, role, press]);
-}
-
 function Focusable<R extends AnySv = AnySv>({
+  as,
   sv: recipe,
   vars,
   onPress,
@@ -81,12 +63,12 @@ function Focusable<R extends AnySv = AnySv>({
   href,
   inert = false,
   focusScale = 1,
-  ring: showRing = true,
+  ring = true,
   style,
   states,
   children,
   label,
-  role = href ? 'link' : 'button',
+  role = href || as ? 'link' : 'button',
   checked,
   selected,
   expanded,
@@ -108,6 +90,12 @@ function Focusable<R extends AnySv = AnySv>({
     () => claimProps({ checked, selected, expanded, pressed, busy }, value, current),
     [checked, selected, expanded, pressed, busy, value, current],
   );
+
+  // A surface that clips what it holds says which ring its controls draw; a
+  // control standing on its own keeps the one that lifts off the page.
+  const scopedRing = useRingScope();
+  const ringToken = typeof ring === 'string' ? ring : (scopedRing ?? 'focusLift');
+  const showRing = ring !== false;
 
   const webKeys = useWebKeys(!disabled && !inert && Boolean(onPress), role, pressRef);
 
@@ -193,7 +181,8 @@ function Focusable<R extends AnySv = AnySv>({
       disabled,
       inert,
       canPress,
-      onPress,
+      actionable: Boolean(onPress) || Boolean(as),
+      showRing,
     });
 
   // A disabled control is not a node at all, so the remote walks straight past
@@ -226,36 +215,39 @@ function Focusable<R extends AnySv = AnySv>({
   // screen is one the remote cannot reach, and registering with a navigator
   // that isn't there should throw at render.
   if (controlled || (!scoped && !Platform.isTV)) {
-    return (
-      <TouchForm
-        at={{
-          boxRef: setBox,
-          webKeys: webKeys?.pressable ?? null,
-          href,
-          label,
-          onLayout,
-          role,
-          a11yState: stateProps,
-          style: dressed,
-          focusedStyle,
-          animated,
-          showRing,
-          pressedStyle: paintedPressed,
-          hoveredStyle,
-          onPress: press,
-          onLongPress,
-          onHoverIn: hoverIn,
-          onHoverOut: hoverOut,
-          hitSlop,
-          controlled,
-          focused,
-          focusVisible,
-          hovered,
-          resolve,
-          children,
-        }}
-      />
-    );
+    const at: TouchAt = {
+      setBox,
+      webKeys: webKeys?.pressable ?? null,
+      href,
+      label,
+      onLayout,
+      role,
+      a11yState: stateProps,
+      style: dressed,
+      focusedStyle,
+      hoveredStyle,
+      pressedStyle: paintedPressed,
+      animated,
+      showRing,
+      ringToken,
+      controlled,
+      focused,
+      focusVisible,
+      hovered,
+      pressed: pointerPressed,
+      hitSlop,
+      onPress: press,
+      onLongPress,
+      onFocus: handleFocus,
+      onBlur: handleBlur,
+      onHoverIn: hoverIn,
+      onHoverOut: hoverOut,
+      onPointerDown: pointerDown,
+      onPointerUp: pointerUp,
+      resolve,
+      children,
+    };
+    return as && WEB ? <LinkForm as={as} at={at} /> : <TouchForm at={at} />;
   }
 
   const node = (
@@ -272,6 +264,7 @@ function Focusable<R extends AnySv = AnySv>({
         focusedStyle,
         animated,
         showRing,
+        ringToken,
         focused,
         focusVisible,
         hovered,
@@ -299,5 +292,5 @@ function Focusable<R extends AnySv = AnySv>({
   return isEntry ? <DefaultFocus>{node}</DefaultFocus> : node;
 }
 
-export type { FocusableProps, FocusCurrent, FocusState } from './focusable-types';
+export type { FocusableProps, FocusCurrent, FocusState, HostElement } from './focusable-types';
 export { Focusable };

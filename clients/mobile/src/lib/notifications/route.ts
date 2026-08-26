@@ -16,9 +16,14 @@ export function mobileRoute(link: string | undefined | null): string | null {
   const [, head, id] = path.split('/');
   switch (head) {
     case '':
+      return '/';
+    case 'movies':
+      return id ? `/item/${id}` : '/';
+    case 'shows':
+      return id ? `/show/${id}` : '/';
+    // An older self-hosted server still sends these links.
     case 'films':
     case 'series':
-      // The library's front door: the home tab is the phone's version of it.
       return '/';
     case 'movie':
     case 'item':

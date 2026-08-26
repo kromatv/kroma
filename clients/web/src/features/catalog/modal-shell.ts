@@ -1,30 +1,24 @@
-// The chrome the catalogue's three callable modals share. They predate the kit's
-// <Dialog> and paint their own centred panel over the page scrim, and none of
-// `position: fixed`, `88vh` or a scrolling pane has a name in the kit's
-// vocabulary, so the shell is CSS.
-
 import { color, radius } from '@kroma/ui/kit';
 import type { CSSProperties } from 'react';
+import { SCRIM_Z } from '#web/shared/ui/page';
 
 export const MODAL_LAYER: CSSProperties = {
   pointerEvents: 'none',
   position: 'fixed',
   inset: 0,
-  zIndex: 61,
+  zIndex: SCRIM_Z + 1,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   padding: 16,
 };
 
-/** The panel's box: full width up to `maxWidth`, clipped, and never taller than
- *  the window it floats in. */
 export function modalPanel(maxWidth: number): CSSProperties {
   return {
     pointerEvents: 'auto',
     display: 'flex',
     flexDirection: 'column',
-    maxHeight: '88vh',
+    maxHeight: '88%',
     width: '100%',
     maxWidth,
     overflow: 'hidden',

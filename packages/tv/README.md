@@ -14,7 +14,7 @@
 
 ```ts
 import { mountTv } from '@kroma/tv';
-import '@kroma/tv/tv.css';
+import 'virtual:kroma-tv.css';   // the kit's stylesheet, served by tvStylesheet()
 
 mountTv();          // renders the whole TV app into #root
 ```
@@ -54,7 +54,6 @@ import { TvApp } from '@kroma/tv';
 | `mountTv(props?)` | Render the TV app into `#root`. |
 | `TvApp` / `TvAppProps` | The root React component. |
 | `useFocusNav` | Spatial remote-navigation hook. |
-| `@kroma/tv/tv.css` | TV stylesheet (focus rings, rails, 10-foot scale). |
 
 ## Develop
 

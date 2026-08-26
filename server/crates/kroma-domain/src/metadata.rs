@@ -22,6 +22,13 @@ pub struct Metadata {
     #[serde(rename = "releaseDate", skip_serializing_if = "Option::is_none")]
     pub release_date: Option<String>,
     pub genres: Vec<String>,
+    // Parallel to `genres`: both come from one TMDB list and align by index.
+    #[serde(
+        rename = "tmdbGenreIds",
+        default,
+        skip_serializing_if = "Vec::is_empty"
+    )]
+    pub tmdb_genre_ids: Vec<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rating: Option<f32>,
     #[serde(rename = "posterUrl", skip_serializing_if = "Option::is_none")]
@@ -51,6 +58,9 @@ pub struct Metadata {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CastMember {
     pub name: String,
+    // None on every credit stored before the id was kept: those fold by name.
+    #[serde(rename = "tmdbId", default, skip_serializing_if = "Option::is_none")]
+    pub tmdb_id: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub character: Option<String>,
     // A TMDB URL until `crate::image::localize` rewrites it to a local path.
@@ -66,6 +76,8 @@ pub struct CastMember {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CrewMember {
     pub name: String,
+    #[serde(rename = "tmdbId", default, skip_serializing_if = "Option::is_none")]
+    pub tmdb_id: Option<u64>,
     pub job: String,
     #[serde(
         rename = "profileUrl",
@@ -171,6 +183,7 @@ mod tests {
     fn cast(name: &str) -> CastMember {
         CastMember {
             name: name.into(),
+            tmdb_id: None,
             character: None,
             profile_url: None,
         }
@@ -186,6 +199,7 @@ mod tests {
             overview: None,
             release_date: None,
             genres: Vec::new(),
+            tmdb_genre_ids: Vec::new(),
             rating: None,
             poster_url: None,
             backdrop_url: None,
@@ -197,6 +211,38 @@ mod tests {
             tvdb_id: None,
             tmdb_url: "https://themoviedb.org/movie/603".into(),
         }
+    }
+
+    #[test]
+    fn the_genre_ids_serialize_under_their_provider_qualified_wire_name() {
+        let meta = Metadata {
+            genres: vec!["Science Fiction".into()],
+            tmdb_genre_ids: vec![878],
+            ..metadata()
+        };
+
+        let json = serde_json::to_value(&meta).unwrap();
+
+        assert_eq!(json["tmdbGenreIds"], serde_json::json!([878]));
+        assert_eq!(json["genres"], serde_json::json!(["Science Fiction"]));
+    }
+
+    #[test]
+    fn a_title_with_no_genre_ids_omits_them_from_the_blob() {
+        let json = serde_json::to_value(metadata()).unwrap();
+
+        assert!(json.get("tmdbGenreIds").is_none());
+    }
+
+    #[test]
+    fn a_blob_stored_before_the_genre_ids_deserializes_without_them() {
+        let stored = r#"{"tmdbId":603,"title":"Dune","overview":null,
+            "genres":["Science Fiction"],"tmdbUrl":"https://themoviedb.org/movie/603"}"#;
+
+        let meta: Metadata = serde_json::from_str(stored).unwrap();
+
+        assert_eq!(meta.genres, vec!["Science Fiction".to_string()]);
+        assert!(meta.tmdb_genre_ids.is_empty());
     }
 
     #[test]

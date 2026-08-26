@@ -27,7 +27,9 @@ interface ExpandableTextProps extends Pick<TextProps, 'variant' | 'color' | 'sty
   children: string;
   /** How many lines the collapsed state shows. */
   lines?: number;
-  /** The affordance's text, in the host's language. Drawn as `… {moreLabel}`. */
+  /** The affordance's text, in the host's language. Drawn alone: a clamped
+   *  paragraph already ends in an ellipsis on every platform, and prefixing a
+   *  second one reads as two truncations. */
   moreLabel: string;
   /**
    * Grow and shrink between the two heights rather than jumping. On by
@@ -119,11 +121,9 @@ function ExpandableText({
           BEFORE the click. The hover callbacks fire on the browser targets
           alone, so the phone and the TV keep the plain label. */}
       {clampable && !expanded ? (
-        <Text
-          variant="meta"
-          color={hovered ? 'accent' : 'text'}
-          style={s.more}
-        >{`… ${moreLabel}`}</Text>
+        <Text variant="meta" color={hovered ? 'accent' : 'text'} style={s.more}>
+          {moreLabel}
+        </Text>
       ) : null}
     </Pressable>
   );

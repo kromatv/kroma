@@ -129,7 +129,7 @@ export function RequestSearchPanel({
                 ledger.data?.localId
                   ? () =>
                       navigate({
-                        to: kind === 'show' ? '/show/$id' : '/movie/$id',
+                        to: kind === 'show' ? '/shows/$id' : '/movies/$id',
                         params: { id: ledger.data.localId as string },
                       })
                   : null

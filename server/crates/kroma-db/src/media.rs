@@ -9,6 +9,7 @@ use rusqlite::OptionalExtension;
 use super::*;
 use kroma_domain::{Season, Show, ShowDetail, SplashEntry};
 
+mod person;
 mod show_detail;
 mod shows;
 mod splash;
@@ -16,6 +17,7 @@ mod splash;
 #[cfg(test)]
 mod test_support;
 
+pub use person::*;
 pub use show_detail::*;
 pub use shows::*;
 pub use splash::*;
@@ -86,40 +88,6 @@ pub fn get_items_by_ids(pool: &Pool, ids: &[String]) -> Result<Vec<MediaItem>> {
     let conn = pool.get()?;
     let ids: Vec<&str> = ids.iter().map(String::as_str).collect();
     Ok(items_by_ids_ordered(&conn, &ids)?)
-}
-
-/// `(movie_ids, show_ids)` crediting `name` in cast or crew, matched
-/// case-insensitively. Episodes are excluded: they inherit a show's credits.
-pub fn titles_by_person(pool: &Pool, name: &str) -> Result<(Vec<String>, Vec<String>)> {
-    let name = name.trim();
-    if name.is_empty() {
-        return Ok((Vec::new(), Vec::new()));
-    }
-    let conn = pool.get()?;
-    let movie_ids = person_ids(
-        &conn,
-        "SELECT id FROM items WHERE kind != 'episode' AND metadata IS NOT NULL AND (",
-        name,
-    )?;
-    let show_ids = person_ids(
-        &conn,
-        "SELECT id FROM shows WHERE metadata IS NOT NULL AND (",
-        name,
-    )?;
-    Ok((movie_ids, show_ids))
-}
-
-fn person_ids(conn: &rusqlite::Connection, prefix: &str, name: &str) -> Result<Vec<String>> {
-    let sql = format!(
-        "{prefix} \
-         EXISTS (SELECT 1 FROM json_each(metadata,'$.cast') c WHERE json_extract(c.value,'$.name') = ?1 COLLATE NOCASE) OR \
-         EXISTS (SELECT 1 FROM json_each(metadata,'$.crew') c WHERE json_extract(c.value,'$.name') = ?1 COLLATE NOCASE))"
-    );
-    let mut stmt = conn.prepare(&sql)?;
-    let ids = stmt
-        .query_map(params![name], |r| r.get::<_, String>(0))?
-        .collect::<rusqlite::Result<Vec<_>>>()?;
-    Ok(ids)
 }
 
 fn query_items(

@@ -1,81 +1,60 @@
-// The browser-only shapes of the side navigation. A row's rest, hover and
-// current-page faces are a stylesheet rule because a pointer's hover is a
-// pseudo-class and React Native has no spelling for one; the frames around it
-// are `position`, `100vh` and single-axis overflow, which it has no spelling
-// for either. Every number below comes from the control shell, never from a
-// value tuned here.
-
-import { CONTROL, RING_ROOM } from '@kroma/ui/kit';
-import type { CSSProperties } from 'react';
+import { CONTROL, type StyleDecl, svFor, typeSpec } from '@kroma/ui/kit';
 import type { ViewStyle } from 'react-native';
+import { safeAreaBottom } from '#web/shared/lib/safe-area';
 
-// The web client is a pointer at arm's length and says so once
-// (`setEntryDefaults` in router.tsx), so a navigation row wears the same shell
-// as every control on the page beside it.
 const SHELL = CONTROL.sm;
 
-/** One entry of the navigation, in `../../styles.css`: its rest, hover,
- *  current-page and unreachable faces. */
-export const SIDE_NAV_ROW = 'side-nav-row';
+const RHYTHM = 2;
 
-/** The column's side padding, and a row's own: the shell's, so a heading, a row
- *  and a footer share one left edge. */
+const LABEL_LINE = Math.round(typeSpec.label.size * typeSpec.label.ratio);
+
 export const SIDE_NAV_GUTTER = SHELL.px;
 
-/** The glyph at the head of a row. */
 export const SIDE_NAV_GLYPH = 18;
 
-/** The side padding of the bands above the column (the mark, the actions): the
- *  gutter plus the inset a 40px control's own box already carries, so a mark
- *  and a row's glyph read as one edge. */
-export const SIDE_NAV_BAND_X = SIDE_NAV_GUTTER + 8;
+// How far a 40px icon button's glyph already sits inside its own box, so a mark
+// beside the bands lines up with a row's glyph rather than with the row's edge.
+const GLYPH_INSET = 8;
 
-/** The navigation column: the rows, their headings and the footer under them.
- *  Grows to its frame so a footer can sit at the bottom edge with `mt="auto"`. */
-export const SIDE_NAV_COLUMN: CSSProperties = {
-  display: 'flex',
-  minHeight: 0,
-  flex: 1,
-  flexDirection: 'column',
-  paddingInline: SIDE_NAV_GUTTER,
-  paddingTop: 4,
-};
+export const SIDE_NAV_BAND_X = SIDE_NAV_GUTTER + GLYPH_INSET;
 
-/** The scrolling region an aside gives the column. In a phone's sheet the
- *  frame is the drawer's own `<Drawer.Panel>`, which is why it is not the
- *  column's. */
-export const SIDE_NAV_FRAME: CSSProperties = {
-  display: 'flex',
-  minHeight: 0,
-  flex: 1,
-  flexDirection: 'column',
-  overflowY: 'auto',
-  // A row brought into view lands off the edge that clips it by the room its
-  // focus ring stands in, rather than flush with it.
-  scrollPadding: RING_ROOM,
-};
+/**
+ * The glyph and the name carry their own ink, because React Native does not
+ * cascade a colour into a child the way `color` does in CSS.
+ */
+export const sideNavRow = svFor<{
+  root: StyleDecl;
+  label: StyleDecl;
+  glyph: { color: string };
+}>()({
+  slots: {
+    root: {
+      row: true,
+      align: 'center',
+      gap: SHELL.gap,
+      minH: SHELL.height,
+      my: RHYTHM / 2,
+      px: SHELL.px,
+      py: Math.round((SHELL.height - LABEL_LINE) / 2),
+      radius: SHELL.radius,
+      _hover: { bg: 'tint/4' },
+      _disabled: { opacity: 0.5 },
+    },
+    label: { flex: 1, minW: 0, color: 'textMuted', _hover: { color: 'text' } },
+    glyph: { color: 'textMuted', _hover: { color: 'text' } },
+  },
+  variants: {
+    current: {
+      true: {
+        root: { bg: 'accentSoft', _hover: { bg: 'accentSoftHover' } },
+        label: { color: 'accentText', _hover: { color: 'accentText' } },
+        glyph: { color: 'accentText', _hover: { color: 'accentText' } },
+      },
+    },
+  },
+  defaults: { current: false },
+});
 
-/** A row's name: it takes the width the glyph and the tail leave, and a label
- *  too long for it is cut rather than wrapped onto a second line. */
-export const SIDE_NAV_LABEL: CSSProperties = {
-  minWidth: 0,
-  flex: 1,
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-};
+export const SIDE_NAV_FRAME: ViewStyle = { flex: 1, minHeight: 0 };
 
-/** The tail of a row, held at its far end whatever the name before it measures. */
-export const SIDE_NAV_TRAILING: CSSProperties = {
-  display: 'flex',
-  flexShrink: 0,
-  alignItems: 'center',
-  gap: 6,
-  marginLeft: 'auto',
-};
-
-/** The footer's bottom inset. `env()` has no React Native spelling, so a
- *  phone's home indicator is cleared in CSS. */
-export const SIDE_NAV_SAFE_BOTTOM = {
-  paddingBottom: 'max(1.75rem, env(safe-area-inset-bottom))',
-} as unknown as ViewStyle;
+export const SIDE_NAV_SAFE_BOTTOM: ViewStyle = safeAreaBottom(28);

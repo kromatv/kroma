@@ -108,14 +108,14 @@ fn announce_movies<S: HostStorage>(state: &S, movies: &[AddedTitle]) -> usize {
             "notifications.media.addedOne.body",
         )
         .param("title", newest.title.clone())
-        .link(format!("/movie/{}", newest.id))
+        .link(format!("/movies/{}", newest.id))
         .image(newest.poster_url.clone())
         .push_category(PushCategory::MediaAvailable)
         .action(ActionSpec {
             id: "watch".into(),
             label_key: "notifications.action.watch".into(),
             kind: ActionKind::Link,
-            href: format!("/movie/{}", newest.id),
+            href: format!("/movies/{}", newest.id),
             method: None,
             style: ActionStyle::Primary,
         })
@@ -130,7 +130,7 @@ fn announce_movies<S: HostStorage>(state: &S, movies: &[AddedTitle]) -> usize {
         // knowing one of them is the film you have been waiting for.
         .param("title", newest.title.clone())
         .image(newest.poster_url.clone())
-        .link("/films")
+        .link("/movies")
     };
     super::emit(state, &Audience::Everyone, &spec)
 }
@@ -164,7 +164,7 @@ fn announce_episodes<S: HostStorage>(state: &S, show_id: &str, eps: &[AddedTitle
     )
     .param("title", show_title)
     .param(var, value)
-    .link(format!("/show/{show_id}"))
+    .link(format!("/shows/{show_id}"))
     .image(newest.poster_url.clone())
     .push_category(PushCategory::MediaAvailable);
     super::emit(state, &Audience::followers(show_id), &spec)
@@ -267,7 +267,7 @@ mod tests {
         let conn = state.db.get().unwrap();
         let rows = db::notifications::list_notifications(&conn, &user, 10, false).unwrap();
         assert_eq!(rows.len(), 1);
-        assert_eq!(rows[0].link.as_deref(), Some("/movie/m2"));
+        assert_eq!(rows[0].link.as_deref(), Some("/movies/m2"));
         assert_eq!(
             rows[0].params.get("title"),
             Some(&ParamValue::Text("Arrival".into()))
@@ -319,7 +319,7 @@ mod tests {
             rows[0].params.get("count"),
             Some(&ParamValue::Text("3".into()))
         );
-        assert_eq!(rows[0].link.as_deref(), Some("/films"));
+        assert_eq!(rows[0].link.as_deref(), Some("/movies"));
     }
 
     #[test]

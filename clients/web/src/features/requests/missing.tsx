@@ -22,7 +22,7 @@ import { MissingGroupCard } from '#web/features/requests/missing-group';
 import { epKey, groupByTitle, type MissingGroup } from '#web/features/requests/missing-model';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
-import { PAGE_MAIN, Skeleton } from '#web/shared/ui';
+import { PageFrame, Skeleton } from '#web/shared/ui';
 
 function toggleKey(prev: Set<string>, key: string): Set<string> {
   const n = new Set(prev);
@@ -120,7 +120,7 @@ export function MissingPage() {
   };
 
   return (
-    <main className={PAGE_MAIN}>
+    <PageFrame>
       <PageHeader.Root>
         <PageHeader.Title
           suffix={entries && entries.length > 0 ? String(entries.length) : undefined}
@@ -184,7 +184,7 @@ export function MissingPage() {
           />
         ))}
       </Box>
-    </main>
+    </PageFrame>
   );
 }
 

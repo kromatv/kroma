@@ -1,13 +1,21 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 // @vitest-environment jsdom
 
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { Focusable } from '#ui/components/atoms/focusable';
+import { activeTheme } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
+import { configureRemote } from '#ui/lib/focus-remote';
+import { FocusScope } from '#ui/lib/focus-scope';
 import { ListRow } from './list-row';
 
+beforeAll(() => configureRemote());
+
 afterEach(cleanup);
+
+// On the browser targets a control is one element, so the labelled host is also
+// the element the ring paints on.
+const painted = (label: string) => screen.getByLabelText(label);
 
 describe('ListRow.Group', () => {
   it('renders every member', () => {
@@ -55,29 +63,55 @@ describe('ListRow.Group', () => {
   });
 
   // The card clips its members, so a ring standing off one would survive as two
-  // stripes across its neighbours: the card says so, and the browser targets
-  // draw the ring inward (the rule in styles/base.css).
-  it('says its members wear the ring inward', () => {
-    const { container } = render(
-      <ListRow.Group>
-        <ListRow.Root onPress={vi.fn()}>
-          <ListRow.Label>Membre</ListRow.Label>
-        </ListRow.Root>
-      </ListRow.Group>,
+  // stripes across its neighbours. The card says so to everything it holds -
+  // including the controls a caller puts BESIDE a row, which is the case a rule
+  // keyed on the row itself could never reach.
+  it('hands every control in its card the inward ring, row or not', () => {
+    render(
+      <FocusScope>
+        <ListRow.Group>
+          <ListRow.Root>
+            <ListRow.Label>Membre</ListRow.Label>
+          </ListRow.Root>
+          <Focusable label="Bascule" autoFocus />
+        </ListRow.Group>
+      </FocusScope>,
     );
-    const card = container.querySelector('[data-focus-ring-inset]');
-    expect(card).toBeTruthy();
-    expect(card?.querySelector('[aria-label="Membre"]')).toBeTruthy();
+
+    const inset = activeTheme().ring.focusInset;
+    expect(painted('Bascule').style.outlineOffset).toBe(`${inset.outlineOffset}px`);
+    expect(painted('Bascule').style.outlineWidth).toBe(`${inset.outlineWidth}px`);
   });
 
-  it('marks itself with the hook the inward-ring rule is keyed on', () => {
-    // Resolved from the runner's root, the one path a test can be sure of:
-    // `import.meta.url` here is a Vite module id, not a file.
-    const css = readFileSync(resolve(process.cwd(), 'packages/ui/src/styles/base.css'), 'utf8');
+  // A member declines the STANDOFF ring, not every ring. Passing `ring={false}`
+  // here once suppressed the outline outright, and a focused row showed nothing.
+  it('still rings a focused member, drawn inward', () => {
+    render(
+      <FocusScope>
+        <ListRow.Group>
+          <ListRow.Root autoFocus onPress={vi.fn()}>
+            <ListRow.Label>Membre</ListRow.Label>
+          </ListRow.Root>
+        </ListRow.Group>
+      </FocusScope>,
+    );
 
-    expect(css).toContain('[data-focus-ring-inset] :focus-visible');
-    expect(css).toMatch(
-      /\[data-focus-ring-inset\] :focus-visible \{[^}]*outline-offset:\s*calc\(-1/,
+    const inset = activeTheme().ring.focusInset;
+    const row = painted('Membre');
+    expect(row.style.outlineWidth).toBe(`${inset.outlineWidth}px`);
+    expect(row.style.outlineOffset).toBe(`${inset.outlineOffset}px`);
+    expect(row.style.outlineStyle).not.toBe('none');
+  });
+
+  it('leaves a control outside it standing the ring off', () => {
+    render(
+      <FocusScope>
+        <Focusable label="Seul" autoFocus />
+      </FocusScope>,
+    );
+
+    expect(painted('Seul').style.outlineOffset).toBe(
+      `${activeTheme().ring.focusLift.outlineOffset}px`,
     );
   });
 

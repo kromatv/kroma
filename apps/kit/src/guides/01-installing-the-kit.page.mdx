@@ -13,10 +13,9 @@ emits nothing, and the `exports` map points at `.ts` and `.tsx` files, so the
 app's own bundler compiles the kit along with the app.
 
 That is not a shortcut taken to save a build step. A platform split in this kit is
-two files, `focus-nav.ts` beside `focus-nav.web.ts`, `select-options.tsx` beside
-`select-options.web.tsx`, and which of the pair wins is a resolver's decision. A
-published bundle would have made that decision once, at publish time, for every
-target at once.
+two files, `focus-nav.ts` beside `focus-nav.web.ts`, and which of the pair wins is
+a resolver's decision. A published bundle would have made that decision once, at
+publish time, for every target at once.
 
 <Figure caption="What the bundle reading this page can say about its own wiring. Each line is measured now, in this build. The stylesheet is read off the document, the faces are asked of the font set, the glyph count is whatever the icon pass kept.">
   <WiringCheck />
@@ -48,7 +47,7 @@ targets), `react-native-svg` and `react-tv-space-navigation`.
 | `@kroma/ui/kit/atoms/button` | one component, for a package that wants one |
 | `@kroma/ui` | the services half: `<Player>`, the service hooks, and `CastProvider` / `I18nProvider` / `LocaleProvider` |
 | `@kroma/ui/tokens` | the raw values, as TypeScript |
-| `@kroma/ui/css` | the same values as CSS custom properties, for a browser |
+| `virtual:kroma.css` | the same values as CSS custom properties, served by `kromaUI()` rather than exported |
 | `@kroma/ui/fonts` | `KIT_FONTS`, the Metro asset registrations |
 | `@kroma/ui/vite` | `kromaUI()`, the Vite plugin |
 | `@kroma/ui/bundler` | the icon pass, for a Metro config |
@@ -99,26 +98,39 @@ around it must not be externalised, or Node's CJS interop hands the server a
 `createPrefixer` that is `undefined`. `RNW_SSR_NO_EXTERNAL` is that list, kept
 beside the aliases that cause it.
 
-### The stylesheet is one line
+### The stylesheet is one import
 
-```css
-@import "@kroma/ui/css";
+```ts
+import 'virtual:kroma.css';
 ```
 
-`kromaUI()` expands that at build time from the TypeScript tokens, the way
-`@import "tailwindcss"` expands into Tailwind. So there is no generated CSS to
-commit, and the two representations of a colour cannot drift.
+There is no `.css` file to write: `kromaUI()` serves that module from the
+TypeScript tokens and the rules beside them, and Vite emits it as a
+content-hashed asset. A page that must be styled before its JavaScript runs
+links the same module instead, which is a real request:
 
-| Specifier | Emits |
+```tsx
+import appCss from 'virtual:kroma.css?url';
+```
+
+An app that keeps a stylesheet of its own, because Tailwind needs one, writes
+`@import "@kroma/ui/css";` in it and the plugin expands it in place, the way
+`@import "tailwindcss"` expands into Tailwind.
+
+| Part | Emits |
 | --- | --- |
-| `@kroma/ui/css` | fonts + tokens + motion + base: what an app wants |
-| `@kroma/ui/css/tokens` | the custom properties, both palettes |
-| `@kroma/ui/css/fonts` | the `@font-face` rules |
-| `@kroma/ui/css/motion` | the keyframes the components animate with |
-| `@kroma/ui/css/reset` | the UA stylesheet undone, and nothing else |
-| `@kroma/ui/css/page` | body, focus ring, scrollbars, with the reset left out |
-| `@kroma/ui/css/base` | `reset` and `page` together |
-| `@kroma/ui/css/theme` | the Tailwind v4 bridge: `bg-accent`, `text-muted`, … |
+| `virtual:kroma.css` / `@kroma/ui/css` | fonts + tokens + motion + base: what an app wants |
+| `virtual:kroma-tv.css` | fonts + tokens + motion + reset: what a television wants |
+| `virtual:kroma-tokens.css` | the custom properties, both palettes |
+| `virtual:kroma-fonts.css` | the `@font-face` rules |
+| `virtual:kroma-motion.css` | the keyframes the components animate with |
+| `virtual:kroma-reset.css` | the UA stylesheet undone, and nothing else |
+| `virtual:kroma-page.css` | body, focus ring, scrollbars, with the reset left out |
+| `virtual:kroma-base.css` | `reset` and `page` together |
+| `virtual:kroma-theme.css` | the Tailwind v4 bridge: `bg-accent`, `text-muted`, … |
+
+Every part answers to both doors: `virtual:kroma-<part>.css` from TypeScript, and
+`@kroma/ui/css/<part>` from a stylesheet.
 
 Take the parts where the whole would collide. A Tailwind app already has
 preflight, and a second unlayered reset outranks every utility it meets

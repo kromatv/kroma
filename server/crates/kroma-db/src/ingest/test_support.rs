@@ -93,6 +93,7 @@ pub(super) fn meta(tmdb: u64, title: &str) -> Metadata {
         overview: Some("an overview".into()),
         release_date: Some("2021-01-01".into()),
         genres: vec!["Science Fiction".into()],
+        tmdb_genre_ids: vec![878],
         rating: Some(8.0),
         poster_url: Some("/api/images/p.webp".into()),
         backdrop_url: None,
@@ -100,6 +101,7 @@ pub(super) fn meta(tmdb: u64, title: &str) -> Metadata {
         theme_url: None,
         cast: vec![CastMember {
             name: "Timothee".into(),
+            tmdb_id: None,
             character: Some("Paul".into()),
             profile_url: None,
         }],

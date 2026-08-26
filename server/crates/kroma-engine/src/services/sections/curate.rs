@@ -531,6 +531,7 @@ mod tests {
             overview: None,
             release_date: None,
             genres: genres.iter().map(|s| s.to_string()).collect(),
+            tmdb_genre_ids: Vec::new(),
             rating: Some(rating),
             poster_url: None,
             backdrop_url: None,
@@ -541,6 +542,7 @@ mod tests {
                 .iter()
                 .map(|d| crate::model::CrewMember {
                     name: d.to_string(),
+                    tmdb_id: None,
                     job: "Director".to_string(),
                     profile_url: None,
                 })

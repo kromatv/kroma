@@ -75,7 +75,7 @@ fn denying_a_request_tells_its_author_where_to_look() {
         param(&sent[0].1.params, "note").as_deref(),
         Some("duplicate")
     );
-    assert_eq!(sent[0].1.link.as_deref(), Some("/movie/item-42"));
+    assert_eq!(sent[0].1.link.as_deref(), Some("/movies/item-42"));
 }
 
 #[test]

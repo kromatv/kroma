@@ -72,8 +72,9 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
         <button
           type="button"
           aria-label={t('common.close')}
+          tabIndex={-1}
           onClick={() => call.end(false)}
-          className={MODAL_SCRIM}
+          style={MODAL_SCRIM}
         />
         <div style={MODAL_LAYER}>
           <section style={PANEL}>

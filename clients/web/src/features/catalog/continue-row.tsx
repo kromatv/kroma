@@ -5,12 +5,12 @@
 import { episodeTag, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
 import { Suspense } from 'react';
 import { SectionHeading } from '#web/features/catalog/cards';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
 import { Poster, PosterRail, RailSkeleton } from '#web/shared/ui';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 export function ContinueRow() {
   const { user, ready } = useAuth();
@@ -27,7 +27,6 @@ export function ContinueRow() {
 function ContinueRail() {
   const t = useT();
   const { client } = useAuth();
-  const navigate = useNavigate();
   const { data: items } = useSuspenseQuery(userQueries.continueWatching());
 
   if (items.length === 0) return null;
@@ -51,7 +50,7 @@ function ContinueRail() {
               colors={posterColors(item.id)}
               poster={client.posterFor(item)}
               progress={pct}
-              onClick={() => navigate({ to: '/watch/$id', params: { id: item.id } })}
+              as={<RouteLink to="/watch/$id" params={{ id: item.id }} />}
             />
           );
         }}

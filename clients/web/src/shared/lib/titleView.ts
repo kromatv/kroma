@@ -7,6 +7,7 @@ import {
   type DiscoverDetail,
   type DiscoverEntry,
   formatRuntime,
+  genreLabels,
   hasPermission,
   type KromaClient,
   type MediaItem,
@@ -59,7 +60,7 @@ export interface TitleView {
   runtimeMin: number | null;
   poster: string;
   backdrop: string | null;
-  directors: string[];
+  directors: CrewMember[];
   cast: CastMember[];
   themeUrl: string | null;
   video: VideoTrack | null;
@@ -72,8 +73,8 @@ export interface TitleView {
   similar: SimilarTarget[];
 }
 
-function dirsFromCrew(crew: CrewMember[] | null | undefined): string[] {
-  return (crew ?? []).filter((c) => c.job === 'Director' || c.job === 'Creator').map((c) => c.name);
+function directorsFromCrew(crew: CrewMember[] | null | undefined): CrewMember[] {
+  return (crew ?? []).filter((c) => c.job === 'Director' || c.job === 'Creator');
 }
 
 /** `discover` overlays availability + request state onto owned content; it is
@@ -111,11 +112,11 @@ export function buildTitleView(
       rating: meta?.rating ?? null,
       overview: meta?.overview ?? null,
       tagline: meta?.tagline ?? null,
-      genres: meta?.genres ?? [],
+      genres: genreLabels(t, meta),
       runtimeMin: null,
       poster: c.posterFor(item),
       backdrop: c.backdropFor(item),
-      directors: dirsFromCrew(meta?.crew),
+      directors: directorsFromCrew(meta?.crew),
       cast: meta?.cast ?? [],
       themeUrl: null,
       video: item.video,
@@ -129,7 +130,7 @@ export function buildTitleView(
         key: m.id,
         title: m.title,
         poster: c.posterFor(m),
-        genre: m.metadata?.genres?.[0] ?? t('content.film'),
+        genre: genreLabels(t, m.metadata)[0] ?? t('content.film'),
         localId: m.id,
         tmdbId: null,
         kind: 'movie' as const,
@@ -161,11 +162,11 @@ export function buildTitleView(
       rating: meta?.rating ?? null,
       overview: meta?.overview ?? null,
       tagline: meta?.tagline ?? null,
-      genres: meta?.genres ?? [],
+      genres: genreLabels(t, meta),
       runtimeMin: null,
       poster: c.showPosterFor(show),
       backdrop: c.backdropFor(show),
-      directors: dirsFromCrew(meta?.crew),
+      directors: directorsFromCrew(meta?.crew),
       cast: meta?.cast ?? [],
       themeUrl: c.themeFor(show),
       video: show.video,
@@ -198,11 +199,11 @@ export function buildTitleView(
     rating: d.rating,
     overview: d.overview,
     tagline: d.tagline,
-    genres: d.genres,
+    genres: genreLabels(t, d),
     runtimeMin: d.runtimeMin,
     poster: imageUrl(d.posterUrl) ?? '',
     backdrop: imageUrl(d.backdropUrl),
-    directors: dirsFromCrew(d.crew),
+    directors: directorsFromCrew(d.crew),
     cast: d.cast,
     themeUrl: null,
     video: null,

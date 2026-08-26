@@ -8,6 +8,7 @@ import {
   registerFrost,
   setEntryDefaults,
   setImageBackend,
+  setSurfacePresentation,
   setTheme,
   styles,
   ThemeProvider,
@@ -50,6 +51,12 @@ registerFrost(BlurView);
 // kit defaults to the 10-foot behaviour, where a field is a read-only value
 // with a caret and typing arrives from the on-screen keyboard instead.
 setEntryDefaults({ physicalKeyboard: true, size: 'md' });
+
+// And where an anchored surface goes: a phone screen has no room beside a
+// trigger for a popover, so a <Select> and a <Menu> open as sheets over it. The
+// kit's `auto` reads the spatial navigator, which a phone deliberately has none
+// of (see lib/surface-presentation).
+setSurfacePresentation('dialog');
 
 // And the same statement for the rest of the vocabulary: the phone's type ramp,
 // corners and spacing, so a kit component here is sized for a hand rather than

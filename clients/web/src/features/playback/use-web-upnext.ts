@@ -1,9 +1,9 @@
-import { formatRuntime, type MediaItem, metaLine } from '@kroma/core';
+import { formatRuntime, genreLabels, type MediaItem, metaLine, type Translate } from '@kroma/core';
 import { UP_NEXT_ART_W, type UpNextData, type UpNextItem } from '@kroma/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { kromaClient } from '#web/shared/lib/api';
 
-function toCard(item: MediaItem): UpNextItem {
+function toCard(t: Translate, item: MediaItem): UpNextItem {
   const c = kromaClient();
   const isEp = item.season != null && item.episode != null;
   return {
@@ -15,7 +15,7 @@ function toCard(item: MediaItem): UpNextItem {
       ? `S${item.season} E${item.episode} · ${formatRuntime(item.durationMs)}`
       : metaLine(item),
     posterUrl: c.backdropFor(item, UP_NEXT_ART_W) ?? c.posterFor(item, UP_NEXT_ART_W),
-    categoryLabel: item.metadata?.genres?.[0],
+    categoryLabel: genreLabels(t, item.metadata)[0],
   };
 }
 
@@ -26,7 +26,11 @@ const NO_EPISODES: MediaItem[] = [];
  * "À suivre" data (§10) for the web player: the upcoming episodes plus
  * content-similar recommendations, mapped to the shared up-next card shape.
  */
-export function useWebUpNext(item: MediaItem, following: MediaItem[] = NO_EPISODES): UpNextData {
+export function useWebUpNext(
+  t: Translate,
+  item: MediaItem,
+  following: MediaItem[] = NO_EPISODES,
+): UpNextData {
   const [similar, setSimilar] = useState<MediaItem[]>([]);
   // Recommend against the SHOW when watching an episode: episodes carry no
   // embedding of their own, so similar(episodeId) would be empty.
@@ -44,9 +48,9 @@ export function useWebUpNext(item: MediaItem, following: MediaItem[] = NO_EPISOD
 
   return useMemo(
     () => ({
-      nextEpisodes: following.map(toCard),
-      recommendations: similar.slice(0, 18).map(toCard),
+      nextEpisodes: following.map((e) => toCard(t, e)),
+      recommendations: similar.slice(0, 18).map((s) => toCard(t, s)),
     }),
-    [following, similar],
+    [t, following, similar],
   );
 }

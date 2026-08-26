@@ -8,7 +8,7 @@ import { ContinueRow } from '#web/features/catalog/continue-row';
 import { HomeSections } from '#web/features/catalog/home-sections';
 import { isAuthed } from '#web/shared/lib/api';
 import { catalogQueries, type HeroEntry } from '#web/shared/lib/queries';
-import { PAGE_MAIN, PageSkeleton } from '#web/shared/ui';
+import { PageFrame, PageSkeleton } from '#web/shared/ui';
 
 export const Route = createFileRoute('/_app/')({
   loader: async ({ context: { queryClient } }) => {
@@ -39,20 +39,20 @@ function HomePage() {
   if (hero) heroId = hero.type === 'movie' ? hero.movie.id : hero.show.id;
   if (movies.length === 0 && shows.length === 0) {
     return (
-      <main className={PAGE_MAIN}>
+      <PageFrame>
         <EmptyState.Root icon="movie">
           <EmptyState.Title>{t('content.homeEmpty')}</EmptyState.Title>
           <EmptyState.Hint>{t('content.homeEmptyHint')}</EmptyState.Hint>
         </EmptyState.Root>
-      </main>
+      </PageFrame>
     );
   }
   return (
-    <main className={PAGE_MAIN}>
+    <PageFrame>
       {hero ? <Hero entry={hero} /> : null}
       <ContinueRow />
       <HomeSections excludeId={heroId} />
       <ShowRail title={t('nav.series')} shows={shows} />
-    </main>
+    </PageFrame>
   );
 }

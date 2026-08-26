@@ -6,16 +6,13 @@
 
 import { type PersonDetail, personFacts } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
-import { Box, Button, color, DataField, Text } from '@kroma/ui/kit';
-import { useState } from 'react';
+import { Box, color, DataField, ExpandableText, Text } from '@kroma/ui/kit';
 
-const READ_MORE = { fontWeight: '700' } as const;
 const RULE = { borderBottomWidth: 1, borderBottomColor: color('border') } as const;
 
 export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null }>) {
   const t = useT();
   const locale = useLocale();
-  const [expanded, setExpanded] = useState(false);
   const facts = personFacts(t, detail, locale);
   const biography = detail?.biography?.trim() || null;
 
@@ -42,16 +39,9 @@ export function PersonProfile({ detail }: Readonly<{ detail: PersonDetail | null
                 {t('person.biography')}
               </Text>
             </h2>
-            <Text variant="body" color="white/70" lines={expanded ? undefined : 4}>
+            <ExpandableText lines={4} color="white/70" moreLabel={t('person.readMore')}>
               {biography}
-            </Text>
-            <Box row mt={8}>
-              <Button variant="ghost" size="sm" onPress={() => setExpanded((v) => !v)}>
-                <Text variant="meta" color="accent" style={READ_MORE}>
-                  {expanded ? t('person.readLess') : t('person.readMore')}
-                </Text>
-              </Button>
-            </Box>
+            </ExpandableText>
           </Box>
         ) : null}
       </Box>

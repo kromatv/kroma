@@ -1,6 +1,6 @@
-import type { CastMember } from '@kroma/core';
-import { posterColors, sizedImageUrl } from '@kroma/core';
-import { BackButton, Box, PersonCard, styles, Text, tintGradient } from '@kroma/ui/kit';
+import type { CastMember, TitleGenres } from '@kroma/core';
+import { genreLabels, genreSegment, genreSlugs, posterColors, sizedImageUrl } from '@kroma/core';
+import { BackButton, Box, Chip, PersonCard, styles, Text, tintGradient } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import type { ReactNode } from 'react';
@@ -20,6 +20,27 @@ export function MetaBadge({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <Box style={s.badge}>
       <Text style={s.badgeText}>{children}</Text>
+    </Box>
+  );
+}
+
+const MAX_GENRE_CHIPS = 4;
+
+export function GenreChips({ meta }: Readonly<{ meta: TitleGenres | null | undefined }>) {
+  const router = useRouter();
+  const t = useT();
+  const slugs = genreSlugs(meta).slice(0, MAX_GENRE_CHIPS);
+  const labels = genreLabels(t, meta);
+  if (slugs.length === 0) return null;
+  return (
+    <Box style={s.genreRow}>
+      {slugs.map((slug, index) => (
+        <Chip
+          key={slug}
+          label={labels[index] ?? slug}
+          onPress={() => router.push(`/genre/${genreSegment(slug)}` as never)}
+        />
+      ))}
     </Box>
   );
 }
@@ -116,6 +137,7 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
 }
 
 const s = styles({
+  genreRow: { row: true, wrap: true, gap: 8 },
   back: { absolute: true, z: 2 },
   heroText: { absolute: true, bottom: spacing.sm, gap: 6 },
   context: { ...type.caption, color: 'accentText', fontWeight: '700' },

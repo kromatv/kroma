@@ -4,6 +4,7 @@
 // `kromaClient()` (in-memory bearer, self-refreshing on 401), so these work the
 // same whether called from a loader or a component.
 import type { DiscoverDetail, DiscoverType, Show, ShowDetail, UpNext } from '@kroma/core';
+import { genreSlugs } from '@kroma/core';
 import { queryOptions } from '@tanstack/react-query';
 import {
   kromaClient,
@@ -94,9 +95,9 @@ export const catalogQueries = {
           c.upNext(show.id).catch(() => null),
           tmdbId != null ? c.discoverDetail('tv', tmdbId).catch(() => null) : Promise.resolve(null),
         ]);
-        const genres = new Set(show.metadata?.genres ?? []);
+        const genres = new Set(genreSlugs(show.metadata));
         const others = shows.filter((s) => s.id !== show.id);
-        const related = others.filter((s) => (s.metadata?.genres ?? []).some((g) => genres.has(g)));
+        const related = others.filter((s) => genreSlugs(s.metadata).some((g) => genres.has(g)));
         const similarShows = (related.length >= 3 ? related : others).slice(0, 12);
         return { detail, similarShows, upNext, discover };
       },
@@ -113,23 +114,23 @@ export const catalogQueries = {
           .catch(() => []),
     }),
 
-  personCredits: (name: string) =>
+  personCredits: (person: string) =>
     queryOptions({
-      queryKey: ['person', name] as const,
-      queryFn: () => kromaClient().personCredits(name),
+      queryKey: ['person', person] as const,
+      queryFn: () => kromaClient().personCredits(person),
     }),
 
   /** The provider profile behind a credit (biography, birth, birthplace). A
    * page renders fine without it, so a failed lookup resolves to an empty
    * envelope rather than throwing the route into its error boundary. */
-  personDetails: (name: string) =>
+  personDetails: (person: string) =>
     queryOptions({
-      queryKey: ['person-details', name] as const,
+      queryKey: ['person-details', person] as const,
       staleTime: 60 * 60_000,
       queryFn: () =>
         kromaClient()
-          .personDetails(name)
-          .catch(() => ({ name, person: null, credits: [] })),
+          .personDetails(person)
+          .catch(() => ({ name: person, person: null, credits: [] })),
     }),
 
   upNext: (showId: string) =>

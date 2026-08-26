@@ -173,9 +173,9 @@ async fn notify_reporter(state: &SharedState, report: &Report) {
 
 fn subject_route(report: &Report) -> &'static str {
     match report.subject_kind {
-        ReportSubjectKind::Show => "show",
+        ReportSubjectKind::Show => "shows",
         // A reported episode deep-links to its own item page, same as a movie.
-        ReportSubjectKind::Movie | ReportSubjectKind::Episode => "movie",
+        ReportSubjectKind::Movie | ReportSubjectKind::Episode => "movies",
     }
 }
 

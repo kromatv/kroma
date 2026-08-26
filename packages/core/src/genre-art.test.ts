@@ -32,13 +32,13 @@ describe('genreShowcases', () => {
       title({ title: 'better', rating: 9, genres: [' Drame '], backdropUrl: '/api/images/b.webp' }),
     ];
     const picks = genreShowcases(items);
-    expect(picks.get('Drame')?.title).toBe('better');
-    expect(picks.get('Crime')?.title).toBe('good');
+    expect(picks.get('drama')?.title).toBe('better');
+    expect(picks.get('crime')?.title).toBe('good');
   });
 
   it('has no pick for a genre whose titles all lack backdrops', () => {
     const picks = genreShowcases([title({ title: 'x', rating: 10, genres: ['Western'] })]);
-    expect(picks.get('Western')).toBeUndefined();
+    expect(picks.get('western')).toBeUndefined();
   });
 
   it('ignores blank genre names', () => {
@@ -59,9 +59,9 @@ describe('genreShowcases', () => {
       title({ title: 'other', rating: 5, genres: ['Drame'], backdropUrl: '/api/images/b.webp' }),
     ];
     const picks = genreShowcases(items);
-    // Guerre (scarcer) claims the shared hit; Drame falls back to its unused title.
-    expect(picks.get('Guerre')?.title).toBe('hit');
-    expect(picks.get('Drame')?.title).toBe('other');
+    // War (scarcer) claims the shared hit; Drama falls back to its unused title.
+    expect(picks.get('war')?.title).toBe('hit');
+    expect(picks.get('drama')?.title).toBe('other');
   });
 
   it('takes the best-rated unused candidate when a genre has several', () => {
@@ -70,7 +70,7 @@ describe('genreShowcases', () => {
       title({ title: 'best', rating: 9, genres: ['Drame'], backdropUrl: '/api/images/b.webp' }),
       title({ title: 'low', rating: 3, genres: ['Drame'], backdropUrl: '/api/images/c.webp' }),
     ];
-    expect(genreShowcases(items).get('Drame')?.title).toBe('best');
+    expect(genreShowcases(items).get('drama')?.title).toBe('best');
   });
 
   it('ignores a backdropped title whose metadata carries no genre list', () => {
@@ -81,7 +81,7 @@ describe('genreShowcases', () => {
       metadata: { rating: 10, backdropUrl: '/api/images/z.webp' } as unknown as Metadata,
     };
     const drama = title({ title: 'x', genres: ['Drame'], backdropUrl: '/api/images/a.webp' });
-    expect([...genreShowcases([ungenred, drama]).keys()]).toEqual(['Drame']);
+    expect([...genreShowcases([ungenred, drama]).keys()]).toEqual(['drama']);
   });
 
   it('reuses a title rather than leaving a genre bare', () => {
@@ -91,8 +91,8 @@ describe('genreShowcases', () => {
       backdropUrl: '/api/images/a.webp',
     });
     const picks = genreShowcases([only]);
-    expect(picks.get('Drame')?.title).toBe('only');
-    expect(picks.get('Guerre')?.title).toBe('only');
+    expect(picks.get('drama')?.title).toBe('only');
+    expect(picks.get('war')?.title).toBe('only');
   });
 });
 

@@ -11,13 +11,19 @@ import {
   sizedImageUrl,
   type Translate,
 } from '@kroma/core';
-import { Box, Chip, styles, Text } from '@kroma/ui/kit';
+import { Box, styles, Text } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { MediaRail, movieCard } from '#mobile/components/cards';
-import { CastRail, DetailActions, DetailHero, MetaBadge } from '#mobile/components/detail';
+import {
+  CastRail,
+  DetailActions,
+  DetailHero,
+  GenreChips,
+  MetaBadge,
+} from '#mobile/components/detail';
 import { ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { SplitColumns, useGutters } from '#mobile/lib/layout';
@@ -164,17 +170,7 @@ function ItemDetail({ id }: Readonly<{ id: string }>) {
             {media.metadata?.overview ? (
               <ExpandableText>{media.metadata.overview}</ExpandableText>
             ) : null}
-            {media.metadata?.genres?.length ? (
-              <Box style={s.genreRow}>
-                {media.metadata.genres.slice(0, 4).map((genre) => (
-                  <Chip
-                    key={genre}
-                    label={genre}
-                    onPress={() => router.push(`/genre/${encodeURIComponent(genre)}` as never)}
-                  />
-                ))}
-              </Box>
-            ) : null}
+            <GenreChips meta={media.metadata} />
           </>
         }
       />
@@ -201,5 +197,4 @@ const s = styles({
   body: { gap: spacing.md, pt: spacing.md },
   metaText: { ...type.caption, color: 'text', fontWeight: '600' },
   rating: { ...type.caption, color: 'accentText', fontWeight: '700' },
-  genreRow: { row: true, wrap: true, gap: 8 },
 });

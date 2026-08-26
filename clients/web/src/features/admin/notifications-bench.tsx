@@ -22,7 +22,6 @@ import {
 import { useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
 import { NotificationImageField } from '#web/features/admin/notification-image-field';
-import { ADMIN_STICKY_ASIDE } from '#web/features/admin/web-style';
 import { kromaClient } from '#web/shared/lib/api';
 import { NotificationCard } from '#web/shared/ui/notification-card';
 
@@ -116,7 +115,7 @@ export function NotificationBench() {
               icon="link"
               value={draft.link}
               onValueChange={(v) => edit({ link: v })}
-              placeholder="/movie/…"
+              placeholder="/movies/…"
             />
           </Field.Root>
         </Row>
@@ -128,70 +127,68 @@ export function NotificationBench() {
       </Surface>
 
       <Box w={{ base: '100%', lg: 384 }} shrink={0}>
-        <div className={ADMIN_STICKY_ASIDE}>
-          <Surface elevated pad="none" radius="xl" p={20} gap={16}>
-            <Text variant="label">{t('admin.notifPreview')}</Text>
-            <PreviewRow draft={draft} empty={t('admin.notifTitlePlaceholder')} />
+        <Surface elevated pad="none" radius="xl" p={20} gap={16}>
+          <Text variant="label">{t('admin.notifPreview')}</Text>
+          <PreviewRow draft={draft} empty={t('admin.notifTitlePlaceholder')} />
 
-            <Divider />
+          <Divider />
 
-            <Box gap={10}>
-              <Text variant="meta" color="textDim">
-                {t('admin.notifTestTarget')}
-              </Text>
-              <ChoiceList.Root
-                label={t('admin.notifTestTarget')}
-                value={target}
-                onValueChange={(next) => {
-                  setTarget(next as Target);
-                  setSent(null);
-                }}
-              >
-                {TARGETS.map((o) => (
-                  <ChoiceList.Item key={o.value} value={o.value}>
-                    <ChoiceList.Label>{t(o.label)}</ChoiceList.Label>
-                    <ChoiceList.Hint>{t(o.hint)}</ChoiceList.Hint>
-                  </ChoiceList.Item>
-                ))}
-              </ChoiceList.Root>
-            </Box>
-
-            {/* Said before the press: "everyone" writes a row into every account
-              on this server, and there is no unsend. */}
-            {target === 'everyone' ? (
-              <Row gap={10} align="flex-start" bg="accent/12" radius={10} px={12} py={10}>
-                <Icon name="alert-triangle" size={16} color="accent" />
-                <Text variant="meta" color="accent" style={NOTE}>
-                  {t('admin.notifTestEveryoneWarning')}
-                </Text>
-              </Row>
-            ) : null}
-
-            <Button
-              variant="primary"
-              icon="send"
-              block
-              label={busy ? t('common.loading') : t('admin.notifTestSend')}
-              disabled={busy || !draft.title.trim()}
-              onPress={() => void send()}
-            />
-
-            {sent !== null ? (
-              <Text variant="meta" color={sent > 0 ? 'success' : 'textDim'} style={CENTRED}>
-                {sent > 0 ? t('admin.notifTestSent', { n: sent }) : t('admin.notifTestMuted')}
-              </Text>
-            ) : null}
-            {error ? (
-              <Text variant="meta" color="danger" style={CENTRED}>
-                {error}
-              </Text>
-            ) : null}
-
+          <Box gap={10}>
             <Text variant="meta" color="textDim">
-              {t('admin.notifSendHint')}
+              {t('admin.notifTestTarget')}
             </Text>
-          </Surface>
-        </div>
+            <ChoiceList.Root
+              label={t('admin.notifTestTarget')}
+              value={target}
+              onValueChange={(next) => {
+                setTarget(next as Target);
+                setSent(null);
+              }}
+            >
+              {TARGETS.map((o) => (
+                <ChoiceList.Item key={o.value} value={o.value}>
+                  <ChoiceList.Label>{t(o.label)}</ChoiceList.Label>
+                  <ChoiceList.Hint>{t(o.hint)}</ChoiceList.Hint>
+                </ChoiceList.Item>
+              ))}
+            </ChoiceList.Root>
+          </Box>
+
+          {/* Said before the press: "everyone" writes a row into every account
+          on this server, and there is no unsend. */}
+          {target === 'everyone' ? (
+            <Row gap={10} align="flex-start" bg="accent/12" radius={10} px={12} py={10}>
+              <Icon name="alert-triangle" size={16} color="accent" />
+              <Text variant="meta" color="accent" style={NOTE}>
+                {t('admin.notifTestEveryoneWarning')}
+              </Text>
+            </Row>
+          ) : null}
+
+          <Button
+            variant="primary"
+            icon="send"
+            block
+            label={busy ? t('common.loading') : t('admin.notifTestSend')}
+            disabled={busy || !draft.title.trim()}
+            onPress={() => void send()}
+          />
+
+          {sent !== null ? (
+            <Text variant="meta" color={sent > 0 ? 'success' : 'textDim'} style={CENTRED}>
+              {sent > 0 ? t('admin.notifTestSent', { n: sent }) : t('admin.notifTestMuted')}
+            </Text>
+          ) : null}
+          {error ? (
+            <Text variant="meta" color="danger" style={CENTRED}>
+              {error}
+            </Text>
+          ) : null}
+
+          <Text variant="meta" color="textDim">
+            {t('admin.notifSendHint')}
+          </Text>
+        </Surface>
       </Box>
     </Box>
   );

@@ -69,6 +69,8 @@ pub struct DiscoverDetail {
     pub overview: Option<String>,
     pub tagline: Option<String>,
     pub genres: Vec<String>,
+    #[serde(default)]
+    pub tmdb_genre_ids: Vec<u32>,
     pub rating: Option<f32>,
     pub runtime_min: Option<u32>,
     // Empty for movies.

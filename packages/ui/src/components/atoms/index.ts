@@ -25,7 +25,7 @@ export type { DividerProps } from './divider';
 export { Divider } from './divider';
 export type { ExpandableTextProps } from './expandable-text';
 export { ExpandableText } from './expandable-text';
-export type { FocusableProps, FocusState } from './focusable';
+export type { FocusableProps, FocusState, HostElement } from './focusable';
 export { Focusable } from './focusable';
 export type { FrostBackdropProps, FrostCoat, FrostOptions, FrostProps } from './frost';
 export { Frost, frostCoat, registerFrost, setFrostEnabled } from './frost';

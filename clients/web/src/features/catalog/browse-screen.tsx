@@ -1,5 +1,7 @@
 import {
   collectGenres,
+  genreLabel,
+  genreOfSegment,
   hasGenre,
   type LetterMark,
   letterMarks,
@@ -24,9 +26,9 @@ import {
 import { AlphabetRail, type LetterRange } from '#web/features/catalog/alphabet-rail';
 import { BrowseBar } from '#web/features/catalog/browse-bar';
 import { BrowseHero } from '#web/features/catalog/browse-hero';
-import { rowBounds } from '#web/features/catalog/tile-layout';
 import { gridGeometry } from '#web/features/catalog/virtual-tile-grid';
-import { PAGE_MAIN } from '#web/shared/ui';
+import { rowBounds } from '#web/shared/lib/tile-layout';
+import { PageFrame } from '#web/shared/ui';
 
 // Below this the whole grid fits a couple of screens and the rail is noise.
 const RAIL_MIN_ITEMS = 24;
@@ -134,7 +136,7 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
 
   const genres = useMemo(() => collectGenres(items), [items]);
   const filtered = useMemo(
-    () => (genre ? items.filter((item) => hasGenre(item, genre)) : [...items]),
+    () => (genre ? items.filter((item) => hasGenre(item, genreOfSegment(genre))) : [...items]),
     [items, genre],
   );
   const view = useMemo(() => sortTitles(filtered, sort), [filtered, sort]);
@@ -195,10 +197,10 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
   const showRail = filtered.length >= RAIL_MIN_ITEMS && letters.size > 1;
 
   return (
-    <main className={PAGE_MAIN}>
+    <PageFrame>
       <BrowseHero
         heading={heading}
-        eyebrow={genre ?? t('browse.library')}
+        eyebrow={genre ? genreLabel(t, genreOfSegment(genre)) : t('browse.library')}
         countText={items.length > 0 ? t(countKey, { count: view.length }) : undefined}
         backdrop={featured?.backdrop}
         creditTitle={featured?.title}
@@ -231,6 +233,6 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
           ) : null}
         </>
       )}
-    </main>
+    </PageFrame>
   );
 }

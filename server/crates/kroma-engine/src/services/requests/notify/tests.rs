@@ -155,7 +155,7 @@ fn a_notification_links_to_the_title_once_it_is_in_the_library() {
     assert_eq!(request_link(&host, &away), "/requests");
 
     seed_movie_item(&host, "item-9", 42);
-    assert_eq!(request_link(&host, &away), "/movie/item-9");
+    assert_eq!(request_link(&host, &away), "/movies/item-9");
 
     let show = req(RequestKind::Show, RequestStatus::Pending);
     assert_eq!(
@@ -164,5 +164,5 @@ fn a_notification_links_to_the_title_once_it_is_in_the_library() {
         "no show with that tmdb id yet"
     );
     seed_show(&host, "show-9", 42, &[]);
-    assert_eq!(request_link(&host, &show), "/show/show-9");
+    assert_eq!(request_link(&host, &show), "/shows/show-9");
 }

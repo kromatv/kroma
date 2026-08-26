@@ -1,18 +1,9 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { color, radius } from '@kroma/ui/kit';
 import { describe, expect, it } from 'vitest';
+import { MODAL_SCRIM, SCRIM_Z } from '#web/shared/ui/page';
 import { FOOTER_RULE, HEADER_RULE, MODAL_BODY, MODAL_LAYER, modalPanel } from './modal-shell';
 
 const PANEL = modalPanel(768);
-
-// The scrim these panels float over is a stylesheet rule (`.modal-scrim`), so
-// the one number that pairs them lives on the other side of the app.
-const SCRIM_Z = Number(
-  /\.modal-scrim\s*\{[^}]*z-index:\s*(\d+)/.exec(
-    readFileSync(fileURLToPath(new URL('../../styles.css', import.meta.url)), 'utf8'),
-  )?.[1],
-);
 
 describe('the modal layer', () => {
   it('covers the window rather than a place in the page', () => {
@@ -21,7 +12,7 @@ describe('the modal layer', () => {
   });
 
   it('floats above the scrim it shares the page with', () => {
-    expect(SCRIM_Z).toBeGreaterThan(0);
+    expect(MODAL_SCRIM.zIndex).toBe(SCRIM_Z);
     expect(MODAL_LAYER.zIndex).toBeGreaterThan(SCRIM_Z);
   });
 
@@ -44,8 +35,8 @@ describe('the modal panel', () => {
     expect(modalPanel(1024).maxWidth).toBe(1024);
   });
 
-  it('never grows past the window it floats in', () => {
-    expect(PANEL.maxHeight).toBe('88vh');
+  it('never grows past the layer it floats in', () => {
+    expect(PANEL.maxHeight).toBe('88%');
   });
 
   it('clips itself and scrolls its body, so the header and footer stay put', () => {

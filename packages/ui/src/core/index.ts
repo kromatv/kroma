@@ -23,7 +23,7 @@ export type { BoxStyleProps, TextLayoutProps } from './shorthands';
 export { TEXT_STYLE_PROPS } from './shorthands';
 export type { SvState, SvStateName } from './states';
 export { sharedStyle, style, styles } from './styles';
-export type { Theme, ThemeOverrides, ThemeTokens } from './theme';
+export type { RingToken, Theme, ThemeOverrides, ThemeTokens } from './theme';
 export {
   activeTheme,
   applyTheme,

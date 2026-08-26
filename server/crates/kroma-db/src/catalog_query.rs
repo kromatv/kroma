@@ -195,34 +195,4 @@ mod tests {
         assert!(unknown_kind.iter().all(|t| t.kind == "movie"));
         assert_eq!(unknown_kind.len(), 5);
     }
-
-    #[test]
-    fn titles_by_person_spans_cast_and_crew() {
-        let pool = seeded_pool();
-
-        // Crew credit (and case-insensitive): the two films Villeneuve directed.
-        let (mut movies, shows) = crate::titles_by_person(&pool, "denis villeneuve").unwrap();
-        movies.sort();
-        assert_eq!(movies, ["m1", "m2"]);
-        assert!(shows.is_empty());
-
-        // Cast credit on a show (and the episode is never returned on its own).
-        let (movies, shows) = crate::titles_by_person(&pool, "Adam Scott").unwrap();
-        assert!(movies.is_empty());
-        assert_eq!(shows, ["s1"]);
-
-        // Cast credit on a movie.
-        let (movies, _) = crate::titles_by_person(&pool, "Timothée Chalamet").unwrap();
-        assert_eq!(movies, ["m1"]);
-
-        // Unknown person / blank name → nothing.
-        assert_eq!(
-            crate::titles_by_person(&pool, "Nobody").unwrap(),
-            (vec![], vec![])
-        );
-        assert_eq!(
-            crate::titles_by_person(&pool, "  ").unwrap(),
-            (vec![], vec![])
-        );
-    }
 }

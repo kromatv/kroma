@@ -19,6 +19,7 @@ pub(super) fn meta(rating: Option<f32>, backdrop: bool, overview: bool) -> Metad
         overview: overview.then(|| "An epic.".to_string()),
         release_date: None,
         genres: Vec::new(),
+        tmdb_genre_ids: Vec::new(),
         rating,
         poster_url: None,
         backdrop_url: backdrop.then(|| "https://img/b.jpg".to_string()),

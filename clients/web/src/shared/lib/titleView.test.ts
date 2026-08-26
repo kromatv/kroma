@@ -39,11 +39,11 @@ describe('buildTitleView: movie source', () => {
     expect(v.inLibrary).toBe(true);
     expect(v.year).toBe(2021);
     expect(v.rating).toBe(8.1);
-    expect(v.genres).toEqual(['Sci-Fi', 'Adventure']);
+    expect(v.genres).toEqual(['Sci-Fi', 'genre.adventure']);
     expect(v.runtimeMin).toBeNull();
     expect(v.poster).toBe('poster:mv1');
     expect(v.backdrop).toBe('bd:mv1');
-    expect(v.directors).toEqual(['Denis']); // Writer filtered out
+    expect(v.directors.map((d) => d.name)).toEqual(['Denis']); // Writer filtered out
     expect(v.themeUrl).toBeNull();
     expect(v.playable).toBe(movieItem);
     expect(v.playLabel).toBeNull();
@@ -56,7 +56,7 @@ describe('buildTitleView: movie source', () => {
         key: 's-a',
         title: 'A',
         poster: 'poster:s-a',
-        genre: 'Action',
+        genre: 'genre.action',
         localId: 's-a',
         tmdbId: null,
         kind: 'movie',

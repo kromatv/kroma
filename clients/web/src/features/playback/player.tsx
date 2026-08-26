@@ -53,7 +53,7 @@ export function Player({
   const [appearance, setAppearance] = useSubtitleAppearance();
   const storyboard = useStoryboard(item.id);
   const tileAt = useCallback((sec: number) => storyboard.tile(sec, PREVIEW_W), [storyboard]);
-  const upNext = useWebUpNext(item, following);
+  const upNext = useWebUpNext(t, item, following);
   const flags = useMemo(() => ({ ...WEB_FLAGS, cast: cast.available }), [cast.available]);
 
   // The engine already anchors at the saved position; this only shows the toast

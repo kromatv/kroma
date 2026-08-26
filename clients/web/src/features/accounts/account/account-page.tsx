@@ -24,7 +24,7 @@ import { SecurityCard } from '#web/features/accounts/account/security-card';
 import { SessionsCard } from '#web/features/accounts/account/sessions-card';
 import { useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
-import { PAGE_MAIN } from '#web/shared/ui';
+import { PageFrame } from '#web/shared/ui';
 
 export function AccountPage() {
   const t = useT();
@@ -32,11 +32,11 @@ export function AccountPage() {
 
   if (!user) {
     return (
-      <main className={PAGE_MAIN}>
+      <PageFrame>
         <EmptyState.Root icon="user-off">
           <EmptyState.Title>{t('account.signedOut')}</EmptyState.Title>
         </EmptyState.Root>
-      </main>
+      </PageFrame>
     );
   }
 
@@ -101,7 +101,7 @@ function ProfileEditor() {
   };
 
   return (
-    <main className={PAGE_MAIN}>
+    <PageFrame>
       <PageHeader.Root>
         <PageHeader.Title>{t('account.title')}</PageHeader.Title>
         <PageHeader.Subtitle>{t('account.subtitle')}</PageHeader.Subtitle>
@@ -213,7 +213,7 @@ function ProfileEditor() {
           </Row>
         ) : null}
       </div>
-    </main>
+    </PageFrame>
   );
 }
 

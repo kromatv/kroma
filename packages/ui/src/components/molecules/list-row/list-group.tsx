@@ -21,14 +21,13 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
 import { CONTROL, type ControlSize, entryDefaultSize } from '#ui/lib/field-shell';
+import { RingScopeProvider } from '#ui/lib/ring-scope';
 
 interface ListGroupSlot {
   size: ControlSize;
 }
 
 const InGroup = createContext<ListGroupSlot | null>(null);
-
-const INSET_RING = { focusRingInset: '' } as const;
 
 /** The group this row is a member of, or `null` when it stands alone. A member
  * must not draw a surface of its own, and takes the group's size. */
@@ -61,19 +60,21 @@ function ListGroup({ children, size, divider, style }: Readonly<ListGroupProps>)
         border="border"
         bg={metrics.bg}
         overflow="hidden"
-        // A member's ring is drawn inward: the browser targets draw the ring in
-        // CSS, where the row itself cannot say so (the rule is in styles/base.css).
-        dataSet={INSET_RING}
         style={style}
       >
-        <InGroup.Provider value={slot}>
-          {items.map((child, index) => (
-            <Fragment key={memberKey(child, index)}>
-              {index > 0 ? <Box h={1} mx={divider ?? metrics.px} bg="border" /> : null}
-              {child}
-            </Fragment>
-          ))}
-        </InGroup.Provider>
+        {/* The card clips, so everything in it draws its ring inward - the rows,
+            and equally the controls a caller puts beside a row, which have no
+            way of knowing what surface they are on. */}
+        <RingScopeProvider value="focusInset">
+          <InGroup.Provider value={slot}>
+            {items.map((child, index) => (
+              <Fragment key={memberKey(child, index)}>
+                {index > 0 ? <Box h={1} mx={divider ?? metrics.px} bg="border" /> : null}
+                {child}
+              </Fragment>
+            ))}
+          </InGroup.Provider>
+        </RingScopeProvider>
       </Box>
     </Frost>
   );

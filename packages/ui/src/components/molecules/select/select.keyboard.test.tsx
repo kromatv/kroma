@@ -440,8 +440,9 @@ describe('the anchored listbox', () => {
 
     const scroller = screen.getByRole('listbox').firstElementChild as HTMLElement;
     let scrollTop = 0;
-    // jsdom lays nothing out and scrolls nothing, so the panel is told the two
-    // measurements it reads back off the scroller.
+    // jsdom lays nothing out and scrolls nothing, so the panel is told the box it
+    // shows and the boxes the rows fill, and the offset it asks for is read back
+    // here.
     Object.defineProperty(scroller, 'scrollTop', {
       configurable: true,
       get: () => scrollTop,
@@ -449,7 +450,7 @@ describe('the anchored listbox', () => {
         scrollTop = next;
       },
     });
-    Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: FOLD });
+    layout(scroller, { height: FOLD });
     const rows = screen.getAllByRole('option');
     for (const [index, row] of rows.entries()) {
       layout(row, { y: index * ROW_HEIGHT, height: ROW_HEIGHT });

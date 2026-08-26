@@ -48,7 +48,11 @@ function TrendRail({
           </Link>
         }
       />
-      <PosterRail data={entries} extra={CAPTION_H} renderItem={(e) => <DiscoverCard entry={e} />} />
+      <PosterRail
+        data={entries}
+        extraHeight={CAPTION_H}
+        renderItem={(e) => <DiscoverCard entry={e} />}
+      />
     </section>
   );
 }

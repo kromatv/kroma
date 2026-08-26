@@ -17,6 +17,7 @@ pub(super) fn meta(title: &str) -> Metadata {
         overview: Some("orig overview".into()),
         release_date: None,
         genres: vec!["Original".into()],
+        tmdb_genre_ids: vec![878],
         rating: None,
         poster_url: None,
         backdrop_url: None,
@@ -24,6 +25,7 @@ pub(super) fn meta(title: &str) -> Metadata {
         theme_url: None,
         cast: vec![CastMember {
             name: "Actor".into(),
+            tmdb_id: None,
             character: Some("Orig Char".into()),
             profile_url: None,
         }],

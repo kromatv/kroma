@@ -10,7 +10,7 @@ import { type CSSProperties, useMemo, useRef, useState } from 'react';
 
 // The file input is a handle for the upload button, never a control a reader
 // sees; `display: none` has no React Native spelling.
-const OFFSCREEN: CSSProperties = { display: 'none' };
+const HIDDEN: CSSProperties = { display: 'none' };
 
 import { installBundle, message, updateModules } from '#web/features/admin/module-api';
 import { useModuleData } from '#web/features/admin/module-data';
@@ -114,7 +114,7 @@ function ModulesInner() {
         ref={fileRef}
         type="file"
         accept=".kmod,.tar"
-        style={OFFSCREEN}
+        style={HIDDEN}
         onChange={(e) => {
           onPick(e.target.files?.[0]);
           e.target.value = '';

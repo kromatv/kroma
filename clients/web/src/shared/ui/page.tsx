@@ -1,27 +1,34 @@
-// The single layout dialect for every page in the app, catalogue and admin
-// console alike. These are class names rather than <Box> props because neither
-// shape has a React Native spelling - a landmark element, a fluid clamp(), a
-// fixed position, a backdrop filter - so the rules live in `../../styles.css`
-// and this file names them.
+import { Box, type BoxProps, color, PageMain } from '@kroma/ui/kit';
+import type { CSSProperties } from 'react';
 
-/** The frame every screen's `<main>` sits in: the fluid `--gutter-web` side
- *  padding and the app's vertical rhythm. */
-export const PAGE_MAIN = 'page-main';
+export const PAGE_GUTTER = { base: 16, md: 24, lg: 40, tv: 56 } as const;
 
-/** The auto-filled poster grid every catalogue listing and result page renders
- *  into: cells as wide as the fluid `--card-w`, as many as the row holds. */
-export const POSTER_GRID = 'poster-grid';
+export function PageFrame({ children, ...box }: Readonly<BoxProps>) {
+  return (
+    <PageMain>
+      <Box px={PAGE_GUTTER} pt={36} pb={80} {...box}>
+        {children}
+      </Box>
+    </PageMain>
+  );
+}
 
-/**
- * The scrim a modal drops over the page.
- *
- * Its ink is the one colour in the app deeper than the page ground, and
- * deliberately not a token: a dialog has to read as sitting IN FRONT of the
- * page, which it cannot do while painted in the page's own colour.
- */
-export const MODAL_SCRIM = 'modal-scrim';
+/** Where the scrim sits, and so the floor a modal's own panel has to float
+ *  above (see `features/catalog/modal-shell`). */
+export const SCRIM_Z = 60;
 
-/** The ground the signed-out screens paint on: the gate, `/join` and the error
- *  page, which are one surface a reader meets in three places. */
+/** Above the player, which shares the scrim's floor: the cast picker opens from
+ *  inside the player and has to land in front of it. */
+export const CAST_PICKER_Z = SCRIM_Z + 10;
+
+export const MODAL_SCRIM: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: SCRIM_Z,
+  backgroundColor: color('black/66'),
+  backdropFilter: 'blur(3px)',
+  WebkitBackdropFilter: 'blur(3px)',
+};
+
 export const PAGE_RADIAL =
   'radial-gradient(120% 90% at 50% 0%, var(--kroma-surface-1), var(--kroma-bg) 70%)';

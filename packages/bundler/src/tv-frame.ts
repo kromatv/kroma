@@ -21,15 +21,11 @@ export interface TvFrameOptions {
  * desktop Chrome ignores the `<meta name="viewport">` a real TV webview reads
  * for its exact canvas. A `transform` on `#root` becomes the containing block
  * for the app's `position: fixed` full-screen layers, and the injected rules
- * outrank tv.css's own html/body/#root rules on specificity, without
+ * outrank the shell's own html/body/#root rules on specificity, without
  * `!important`.
  *
  * Never runs in `vite build` (`apply: 'serve'`). Press ` (backtick) to toggle
  * framed / full-window; the choice is remembered in localStorage.
- *
- * A handful of `vh`-based `clamp()`s in the TV CSS still resolve against the
- * real window, since CSS can't remap viewport units under a `transform`, so
- * they drift slightly on heavy up/down-scale.
  */
 export function tvFrame(options: TvFrameOptions = {}): DevOnlyHtmlPlugin {
   const width = options.width ?? 1920;
@@ -50,7 +46,7 @@ export function tvFrame(options: TvFrameOptions = {}): DevOnlyHtmlPlugin {
 
 function stageCss(w: number, h: number): string {
   return `
-/* KROMA dev TV frame injected by vite dev only (see clients/tv-frame.vite.ts) */
+/* KROMA dev TV frame injected by vite dev only (see @kroma/bundler tv-frame.ts) */
 html[data-tv-frame="on"], html[data-tv-frame="on"] body {
   height: 100%; margin: 0; overflow: hidden;
   background: #0b0b0d; /* letterbox bars */

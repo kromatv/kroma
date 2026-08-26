@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEnv } from '#tv/app/providers/env';
 import { useClient, useNav, useParams } from '#tv/app/router';
 import { useCastTarget } from '#tv/features/cast/castBridge';
+import { revealNativeSurface } from '#tv/features/playback/player/nativeSurface';
 import { PlayerSurface } from '#tv/features/playback/player/PlayerSurface';
 import type { Playback } from '#tv/features/playback/player/useDirectPlayback';
 import { useNowPlaying } from '#tv/features/playback/player/useNowPlaying';
@@ -79,7 +80,7 @@ export function TvPlayer() {
     };
   }, [client, item.id]);
   const next = following[0] ?? null;
-  const up = useTvUpNext(client, item, following);
+  const up = useTvUpNext(client, t, item, following);
 
   const goNext = useCallback(() => {
     if (advancedRef.current || !next) return;
@@ -112,16 +113,9 @@ export function TvPlayer() {
   const introActive =
     intro != null && pb.cur * 1000 >= intro.startMs && pb.cur * 1000 < intro.endMs;
 
-  // Native planes (mpv / ExoPlayer / AVPlay) render behind the page, so it must be
-  // transparent once a fresh frame is up (kept opaque while loading).
   useEffect(() => {
-    const native = pb.surface !== 'video';
-    // biome-ignore lint/style/noRestrictedGlobals: audited - the typeof guard returns before this on native, where there is no page to make transparent.
-    if (!native || !pb.ready || typeof document === 'undefined') return;
-    // biome-ignore lint/style/noRestrictedGlobals: audited - unreachable on native, the typeof guard above returns first.
-    const el = document.documentElement;
-    el.classList.add('kroma-native-surface');
-    return () => el.classList.remove('kroma-native-surface');
+    if (pb.surface === 'video' || !pb.ready) return;
+    return revealNativeSurface();
   }, [pb.surface, pb.ready]);
 
   const warn = playerWarn(pb, item, t);

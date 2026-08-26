@@ -1,5 +1,5 @@
 // <Select>: one value from a list. The trigger is shared; where the options
-// appear is the platform's decision (see ./select-options): a <Dialog> under a
+// appear is the shell's decision (see ./select-options): a <Dialog> under a
 // D-pad (on tvOS a modal is its own view controller, so the remote is
 // confined to the options) and an anchored listbox popover under a pointer,
 // with the combobox keyboard the browser's native select taught everyone.
@@ -75,10 +75,9 @@ interface SelectRootProps {
   /** What the trigger reads before anything is picked. No default: the product
    *  is not in this file's language. */
   placeholder?: string;
-  /** Where the options appear: `auto` (the default) asks the platform - a
-   *  dialog under a D-pad, an anchored popover under a pointer - and naming one
-   *  overrides it. `panel` has no native implementation and falls back to the
-   *  dialog there. */
+  /** Where the options appear: `auto` (the default) asks the shell, and then
+   *  the platform - a dialog under a D-pad, an anchored popover under a pointer.
+   *  Naming one overrides both. */
   presentation?: SelectPresentation;
   disabled?: boolean;
   /** A <Select.Trigger> and the <Select.Item>s, in any order. Only DIRECT

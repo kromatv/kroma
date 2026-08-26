@@ -1,27 +1,40 @@
+import { type CrewMember, personSegment } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Button, color, DataField, IconButton, Text } from '@kroma/ui/kit';
-import { useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import type { CSSProperties } from 'react';
+import { useFocusRing } from '#web/shared/lib/use-focus-ring';
 
 const FIELD_GAP_X = { base: 24, md: 44 } as const;
 const RULE = { borderTopWidth: 1, borderTopColor: color('white/8') } as const;
 
 const DIRECTOR_LINK: CSSProperties = {
-  background: 'none',
-  border: 0,
-  padding: 0,
   font: 'inherit',
   color: 'inherit',
   textDecoration: 'underline',
   textUnderlineOffset: 2,
-  cursor: 'pointer',
+  borderRadius: 4,
 };
+
+function DirectorLink({ person, label }: Readonly<{ person: CrewMember; label: string }>) {
+  const focus = useFocusRing(DIRECTOR_LINK);
+  return (
+    <Link
+      to="/people/$person"
+      params={{ person: personSegment(person) }}
+      aria-label={label}
+      style={focus.style}
+      {...focus.bind}
+    >
+      {person.name}
+    </Link>
+  );
+}
 
 const BOLD = { fontWeight: '600' } as const;
 
-export function DirectorsLine({ directors }: Readonly<{ directors?: string[] }>) {
+export function DirectorsLine({ directors }: Readonly<{ directors?: CrewMember[] }>) {
   const t = useT();
-  const navigate = useNavigate();
   if (!directors || directors.length === 0) return null;
   return (
     <Text variant="meta" color="white/60" mb={12}>
@@ -29,16 +42,9 @@ export function DirectorsLine({ directors }: Readonly<{ directors?: string[] }>)
         {t('content.directedBy')}
       </Text>{' '}
       {directors.map((d, i) => (
-        <span key={d}>
+        <span key={personSegment(d)}>
           {i > 0 ? ', ' : ''}
-          <button
-            type="button"
-            onClick={() => navigate({ to: '/person/$name', params: { name: d } })}
-            aria-label={t('person.viewWorks', { name: d })}
-            style={DIRECTOR_LINK}
-          >
-            {d}
-          </button>
+          <DirectorLink person={d} label={t('person.viewWorks', { name: d.name })} />
         </span>
       ))}
     </Text>

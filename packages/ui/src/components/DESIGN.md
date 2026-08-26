@@ -245,7 +245,29 @@ paints, animates or carries semantics keeps its element.
 `asChild` never appears on a control. A `<Focusable>` owns interaction state no
 merge can hand over, so composition there stays the ladder above: a named part,
 the `render` function form, or the context hook. Router delegation keeps its typed
-prop (`as={RouterLink}`).
+prop, `as`, and it is the router's link written as an ELEMENT:
+
+```tsx
+<Focusable sv={genreTile} as={<RouteLink to="/genre/$genre" params={{ genre }} />} />
+```
+
+An element, not a component, because a router's `to` is typed by the router's own
+generics and those only instantiate where the JSX is written. Hand `as` the
+component instead and forward `to` through `<Focusable>`, and a dead route
+compiles without a word, because `ComponentProps<typeof Link>` widens `to` back
+to `string`.
+
+The merge is the mirror of `<Slot>`'s: here the CONTROL wins. `<Focusable>` hands
+the element the coats it resolved, its ref, its a11y state and its children, and
+the element keeps only what the router put on it. Nothing composes, because the
+element renders the host and there is nothing to compose with. In return the
+delegate owns activation entirely. `<Focusable>` wires no press on this path,
+which is what keeps a plain click to one navigation and leaves a modified or
+middle click to the browser.
+
+Delegation is a browser-target mechanism. Where there is no document, and under
+the spatial navigator, `as` is ignored and the pressable renders instead, so a
+control that has to work on either passes `as` and `onPress` alike.
 
 A coat that does NOT depend on state is the one thing that composes through the
 slot rather than staying put, and `<Frost>` is the case: the blur is the same

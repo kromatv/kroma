@@ -1,4 +1,4 @@
-import '@kroma/tv/tv.css';
+import 'virtual:kroma-tv.css';
 import { mountTv } from '@kroma/tv/mount';
 import { resolveWebOsDeviceName } from './deviceName';
 import { webOsLan } from './lan';

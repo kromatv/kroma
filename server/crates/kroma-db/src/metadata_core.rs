@@ -33,11 +33,12 @@ pub struct MetaCore {
     pub logo_url: Option<String>,
     pub cast: Vec<CastMember>,
     pub crew: Vec<CrewMember>,
+    pub tmdb_genre_ids: Vec<u32>,
 }
 
 // Column list for core SELECTs keeps [`row_to_core`] index-stable.
-const CORE_COLS: &str =
-    "tmdb_id,imdb_id,tvdb_id,release_date,rating,poster_url,backdrop_url,logo_url,cast_json,crew_json";
+const CORE_COLS: &str = "tmdb_id,imdb_id,tvdb_id,release_date,rating,poster_url,backdrop_url,\
+     logo_url,cast_json,crew_json,tmdb_genre_ids";
 
 /// Upsert one subject's invariant core. Character names are stripped from `cast`
 /// before storing they are language-variant and belong in `translations`.
@@ -60,17 +61,20 @@ pub(crate) fn write_core(conn: &Connection, kind: &str, id: &str, core: &MetaCor
         .collect();
     let cast_json = serde_json::to_string(&cast).unwrap_or_else(|_| "[]".into());
     let crew_json = serde_json::to_string(&core.crew).unwrap_or_else(|_| "[]".into());
+    let genre_ids_json =
+        serde_json::to_string(&core.tmdb_genre_ids).unwrap_or_else(|_| "[]".into());
     conn.execute(
         "INSERT INTO metadata_core \
             (subject_kind,subject_id,tmdb_id,imdb_id,tvdb_id,release_date,rating,\
-             poster_url,backdrop_url,logo_url,cast_json,crew_json,updated_at) \
-         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13) \
+             poster_url,backdrop_url,logo_url,cast_json,crew_json,tmdb_genre_ids,updated_at) \
+         VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14) \
          ON CONFLICT(subject_kind,subject_id) DO UPDATE SET \
              tmdb_id=excluded.tmdb_id, imdb_id=excluded.imdb_id, tvdb_id=excluded.tvdb_id, \
              release_date=excluded.release_date, rating=excluded.rating, \
              poster_url=excluded.poster_url, backdrop_url=excluded.backdrop_url, \
              logo_url=excluded.logo_url, cast_json=excluded.cast_json, \
-             crew_json=excluded.crew_json, updated_at=excluded.updated_at",
+             crew_json=excluded.crew_json, tmdb_genre_ids=excluded.tmdb_genre_ids, \
+             updated_at=excluded.updated_at",
         params![
             kind,
             id,
@@ -84,6 +88,7 @@ pub(crate) fn write_core(conn: &Connection, kind: &str, id: &str, core: &MetaCor
             core.logo_url,
             cast_json,
             crew_json,
+            genre_ids_json,
             kroma_primitives::now_ms(),
         ],
     )?;
@@ -121,7 +126,6 @@ pub fn get_cores(conn: &Connection, kind: &str, ids: &[&str]) -> Result<HashMap<
     Ok(rows.into_iter().collect())
 }
 
-// Row mapper for a `SELECT CORE_COLS` (cols 0..=9).
 fn row_to_core(r: &Row) -> rusqlite::Result<MetaCore> {
     row_to_core_offset(r, 0)
 }
@@ -130,6 +134,7 @@ fn row_to_core(r: &Row) -> rusqlite::Result<MetaCore> {
 fn row_to_core_offset(r: &Row, base: usize) -> rusqlite::Result<MetaCore> {
     let cast_json: String = r.get(base + 8)?;
     let crew_json: String = r.get(base + 9)?;
+    let genre_ids_json: String = r.get(base + 10)?;
     Ok(MetaCore {
         tmdb_id: r.get::<_, Option<i64>>(base)?.map(|v| v as u64),
         imdb_id: r.get(base + 1)?,
@@ -141,6 +146,7 @@ fn row_to_core_offset(r: &Row, base: usize) -> rusqlite::Result<MetaCore> {
         logo_url: r.get(base + 7)?,
         cast: serde_json::from_str(&cast_json).unwrap_or_default(),
         crew: serde_json::from_str(&crew_json).unwrap_or_default(),
+        tmdb_genre_ids: serde_json::from_str(&genre_ids_json).unwrap_or_default(),
     })
 }
 
@@ -176,14 +182,17 @@ mod tests {
             logo_url: None,
             cast: vec![CastMember {
                 name: "Keanu".into(),
+                tmdb_id: None,
                 character: Some("Neo".into()),
                 profile_url: Some("/api/images/k.webp".into()),
             }],
             crew: vec![CrewMember {
                 name: "Wachowski".into(),
+                tmdb_id: None,
                 job: "Director".into(),
                 profile_url: None,
             }],
+            tmdb_genre_ids: vec![878, 28],
         }
     }
 
@@ -218,6 +227,36 @@ mod tests {
         assert!(got.rating.is_none());
 
         assert!(get_core(&p, ITEM, "missing").unwrap().is_none());
+    }
+
+    #[test]
+    fn the_genre_ids_survive_a_round_trip() {
+        let p = pool();
+
+        set_core(&p, ITEM, "m1", &sample_core()).unwrap();
+
+        assert_eq!(
+            get_core(&p, ITEM, "m1").unwrap().unwrap().tmdb_genre_ids,
+            vec![878, 28]
+        );
+    }
+
+    #[test]
+    fn a_row_stored_before_the_genre_ids_reads_as_having_none() {
+        let p = pool();
+        p.get()
+            .unwrap()
+            .execute(
+                "INSERT INTO metadata_core (subject_kind,subject_id,tmdb_id,updated_at) \
+                 VALUES ('item','old',603,0)",
+                [],
+            )
+            .unwrap();
+
+        let got = get_core(&p, ITEM, "old").unwrap().unwrap();
+
+        assert_eq!(got.tmdb_id, Some(603));
+        assert!(got.tmdb_genre_ids.is_empty());
     }
 
     #[test]

@@ -1,8 +1,15 @@
-import { formatRuntime, type KromaClient, type MediaItem, metaLine } from '@kroma/core';
+import {
+  formatRuntime,
+  genreLabels,
+  type KromaClient,
+  type MediaItem,
+  metaLine,
+  type Translate,
+} from '@kroma/core';
 import { UP_NEXT_ART_W, type UpNextData, type UpNextItem } from '@kroma/ui';
 import { useEffect, useMemo, useState } from 'react';
 
-function toCard(client: KromaClient, item: MediaItem): UpNextItem {
+function toCard(client: KromaClient, t: Translate, item: MediaItem): UpNextItem {
   const isEp = item.season != null && item.episode != null;
   return {
     id: item.id,
@@ -13,7 +20,7 @@ function toCard(client: KromaClient, item: MediaItem): UpNextItem {
       ? `S${item.season} E${item.episode} · ${formatRuntime(item.durationMs)}`
       : metaLine(item),
     posterUrl: client.backdropFor(item, UP_NEXT_ART_W) ?? client.posterFor(item, UP_NEXT_ART_W),
-    categoryLabel: item.metadata?.genres?.[0],
+    categoryLabel: genreLabels(t, item.metadata)[0],
   };
 }
 
@@ -29,6 +36,7 @@ const NO_EPISODES: MediaItem[] = [];
  * id -> item map so a chosen card can be handed to the router. */
 export function useTvUpNext(
   client: KromaClient,
+  t: Translate,
   item: MediaItem,
   following: MediaItem[] = NO_EPISODES,
 ): TvUpNext {
@@ -53,10 +61,10 @@ export function useTvUpNext(
     for (const s of recos) byId.set(s.id, s);
     return {
       data: {
-        nextEpisodes: following.map((e) => toCard(client, e)),
-        recommendations: recos.map((s) => toCard(client, s)),
+        nextEpisodes: following.map((e) => toCard(client, t, e)),
+        recommendations: recos.map((s) => toCard(client, t, s)),
       },
       byId,
     };
-  }, [client, following, similar]);
+  }, [client, t, following, similar]);
 }

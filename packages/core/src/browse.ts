@@ -3,6 +3,8 @@
 
 import type { Metadata } from '@kroma/client';
 
+import { genreEntries, genreSlug, genreSlugs } from './genre';
+
 /** The minimal shape every browse helper reads; `MediaItem`, `Show` and the web
  * view-models all satisfy it. */
 export interface Sortable {
@@ -78,29 +80,33 @@ export function sortTitles<T extends Sortable>(items: readonly T[], mode: SortMo
 }
 
 export interface GenreCount {
+  slug: string;
   name: string;
   count: number;
 }
 
-/** Most common first, ties broken alphabetically. */
+/** One row per genre, not per spelling: a library holding both `Family` and
+ * `Familial` counts them once. `name` is the first spelling seen, which only a
+ * genre with no copy of its own ever shows. Most common first, ties broken
+ * alphabetically. */
 export function collectGenres(items: readonly Sortable[]): GenreCount[] {
-  const counts = new Map<string, number>();
+  const counts = new Map<string, GenreCount>();
   for (const it of items) {
-    for (const raw of it.metadata?.genres ?? []) {
-      const name = raw.trim();
-      if (!name) continue;
-      counts.set(name, (counts.get(name) ?? 0) + 1);
+    for (const { slug, name } of genreEntries(it.metadata)) {
+      const seen = counts.get(slug);
+      if (seen) seen.count += 1;
+      else counts.set(slug, { slug, name: name.trim() || slug, count: 1 });
     }
   }
-  return [...counts.entries()]
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  return [...counts.values()].sort((a, b) => b.count - a.count || a.slug.localeCompare(b.slug));
 }
 
-/** Trim-tolerant exact match. */
+/** Matches a display name in either language or a URL slug against the item's
+ * own spellings, so `/genre/family` finds a title stored as `Familial`. */
 export function hasGenre(item: Sortable, genre: string): boolean {
-  const want = genre.trim();
-  return (item.metadata?.genres ?? []).some((g) => g.trim() === want);
+  const want = genreSlug(genre);
+  if (!want) return false;
+  return genreSlugs(item.metadata).includes(want);
 }
 
 /** Every fast-scroll bucket, in rail order: digits and symbols first, matching

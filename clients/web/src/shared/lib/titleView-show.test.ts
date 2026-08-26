@@ -46,7 +46,7 @@ describe('buildTitleView: show source', () => {
     expect(v.poster).toBe('spos:sh1');
     expect(v.backdrop).toBe('bd:sh1');
     expect(v.themeUrl).toBe('theme:sh1');
-    expect(v.directors).toEqual(['Vince']); // Creator counts as a director
+    expect(v.directors.map((d) => d.name)).toEqual(['Vince']); // Creator counts as a director
     expect(v.playable).toEqual(ep(1, 1));
     expect(v.playLabel).toBe('player.playEpisode:1,1');
     expect(v.canRequest).toBe(false); // no discover overlay

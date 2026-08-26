@@ -7,30 +7,21 @@ import {
   Dialog,
   EmptyState,
   Field,
+  Focusable,
   Grid,
   Icon,
   Img,
   InputGroup,
   Row,
   Spinner,
+  styles,
   Text,
 } from '@kroma/ui/kit';
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
 
-// A file input is a handle for the button beside it, never a control a reader
-// sees; a tile is a bare press target. Neither `display: none` nor a button
-// reset has a React Native spelling.
-const OFFSCREEN: CSSProperties = { display: 'none' };
+const HIDDEN: CSSProperties = { display: 'none' };
 
-const TILE_BUTTON: CSSProperties = {
-  minWidth: 0,
-  margin: 0,
-  padding: 0,
-  border: 0,
-  background: 'none',
-  textAlign: 'left',
-  cursor: 'pointer',
-};
+const s = styles({ tile: { minW: 0 } });
 
 import { useAsyncAction } from '#web/features/admin/hooks';
 import { kromaClient } from '#web/shared/lib/api';
@@ -130,7 +121,7 @@ function ImagePickerDialog({
           ref={fileRef}
           type="file"
           accept="image/*"
-          style={OFFSCREEN}
+          style={HIDDEN}
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) void upload(file);
@@ -193,7 +184,7 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
   return (
     <Grid min={140} gap={12}>
       {images.map((img) => (
-        <button key={img.name} type="button" onClick={() => onPick(img.url)} style={TILE_BUTTON}>
+        <Focusable key={img.name} style={s.tile} label={img.name} onPress={() => onPick(img.url)}>
           <Img
             src={kromaClient().resolveArt(img.url, 320)}
             alt={img.name}
@@ -204,7 +195,7 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
           <Text variant="meta" color="textDim" lines={1} mt={6}>
             {img.name}
           </Text>
-        </button>
+        </Focusable>
       ))}
     </Grid>
   );

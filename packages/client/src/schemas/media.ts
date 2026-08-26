@@ -83,6 +83,7 @@ export type Marker = z.infer<typeof Marker>;
 
 export const CastMember = z.object({
   name: z.string(),
+  tmdbId: z.number().nullish(),
   character: z.string().nullish(),
   profileUrl: z.string().nullish(),
 });
@@ -90,6 +91,7 @@ export type CastMember = z.infer<typeof CastMember>;
 
 export const CrewMember = z.object({
   name: z.string(),
+  tmdbId: z.number().nullish(),
   job: z.string(),
   profileUrl: z.string().nullish(),
 });
@@ -104,6 +106,7 @@ export const Metadata = z.object({
   overview: z.string().nullable(),
   releaseDate: z.string().nullish(),
   genres: z.array(z.string()),
+  tmdbGenreIds: z.array(z.number()).nullish(),
   rating: z.number().nullish(),
   posterUrl: z.string().nullish(),
   backdropUrl: z.string().nullish(),

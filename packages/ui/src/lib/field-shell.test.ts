@@ -1,4 +1,9 @@
+// @vitest-environment jsdom
+
+import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { pinDesignWidth } from '#ui/core';
+import { breakpoint } from '#ui/core/tokens';
 import {
   bySize,
   CONTROL,
@@ -8,10 +13,15 @@ import {
   entryDefaultPhysicalKeyboard,
   entryDefaultSize,
   fieldShell,
+  NO_ZOOM_FONT_SIZE,
   setEntryDefaults,
+  useEntryFontSize,
 } from './field-shell';
 
-afterEach(() => setEntryDefaults({ physicalKeyboard: false, size: 'md' }));
+afterEach(() => {
+  setEntryDefaults({ physicalKeyboard: false, size: 'md' });
+  pinDesignWidth();
+});
 
 describe('the shell defaults', () => {
   it('starts at the size a phone in the hand wants', () => {
@@ -93,5 +103,26 @@ describe('fieldShell', () => {
     expect(invalid.edge?.borderColor).toBe(edgeColor(false, true));
     expect(focused.edge?.borderColor).toBe(edgeColor(false, false));
     expect(invalid.edge?.borderColor).not.toBe(focused.edge?.borderColor);
+  });
+});
+
+describe('the zoom floor', () => {
+  const inkAt = (width: number, fontSize: number) => {
+    pinDesignWidth(width);
+    return renderHook(() => useEntryFontSize(fontSize)).result.current;
+  };
+
+  it('lifts a field under the floor to it on a handset, iOS Safari zooming below', () => {
+    expect(inkAt(390, CONTROL.sm.fontSize)).toBe(NO_ZOOM_FONT_SIZE);
+  });
+
+  it('leaves a field already at or above the floor alone, at any width', () => {
+    expect(inkAt(390, CONTROL.md.fontSize)).toBe(CONTROL.md.fontSize);
+    expect(inkAt(390, CONTROL.tv.fontSize)).toBe(CONTROL.tv.fontSize);
+  });
+
+  it('stops guarding from the first step up, where no browser zooms', () => {
+    expect(inkAt(breakpoint.md, CONTROL.sm.fontSize)).toBe(CONTROL.sm.fontSize);
+    expect(inkAt(breakpoint.lg, CONTROL.sm.fontSize)).toBe(CONTROL.sm.fontSize);
   });
 });

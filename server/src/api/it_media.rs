@@ -316,6 +316,50 @@ async fn people_lookup_merges_movie_and_show_credits() {
 }
 
 #[tokio::test]
+async fn a_person_slug_resolves_to_the_credit_it_was_folded_from() {
+    let t = test_app();
+    let movie = demo_item_id("The Matrix");
+    let cast = r#"{"tmdbId":1,"tmdbUrl":"","genres":[],"cast":[{"name":"Timothée Chalamet"}]}"#;
+    {
+        let conn = t.state.db.get().unwrap();
+        conn.execute(
+            "UPDATE items SET metadata = ?2 WHERE id = ?1",
+            (movie.as_str(), cast),
+        )
+        .unwrap();
+    }
+
+    let (status, body): (StatusCode, Value) =
+        get(&t.app, "/api/people?name=timothee-chalamet", Some(&t.token)).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["name"], json!("Timothée Chalamet"));
+    assert_eq!(body["results"].as_array().map(Vec::len), Some(1));
+}
+
+#[tokio::test]
+async fn a_person_id_answers_ahead_of_any_name() {
+    let t = test_app();
+    let movie = demo_item_id("The Matrix");
+    let cast = r#"{"tmdbId":1,"tmdbUrl":"","genres":[],"cast":[{"name":"Keanu Reeves","tmdbId":6384}]}"#;
+    {
+        let conn = t.state.db.get().unwrap();
+        conn.execute(
+            "UPDATE items SET metadata = ?2 WHERE id = ?1",
+            (movie.as_str(), cast),
+        )
+        .unwrap();
+    }
+
+    let (status, body): (StatusCode, Value) =
+        get(&t.app, "/api/people?name=6384", Some(&t.token)).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["name"], json!("Keanu Reeves"));
+    assert_eq!(body["results"].as_array().map(Vec::len), Some(1));
+}
+
+#[tokio::test]
 async fn person_details_are_a_soft_miss_without_a_provider() {
     let t = test_app(); // no TMDB key configured
     let (status, body): (StatusCode, Value) = get(

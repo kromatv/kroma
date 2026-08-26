@@ -3,7 +3,8 @@ import { dirname, join } from 'node:path';
 import { iconPass, kromaUi, sourceRoots, walkSources } from '../bundler/index.ts';
 import { alphaPass } from './alpha-scan.ts';
 import { kromaFontPreload } from './font-preload.ts';
-import { KNOWN_COLOR_NAMES, kromaTokens } from './tokens.ts';
+import { kromaTokens } from './stylesheet.ts';
+import { KNOWN_COLOR_NAMES } from './tokens.ts';
 
 export { tokensCss } from './tokens.ts';
 

@@ -18,14 +18,11 @@ import { Route as AppSplatRouteImport } from './routes/_app.$'
 import { Route as AppAccountRouteImport } from './routes/_app.account'
 import { Route as AppComingSoonRouteImport } from './routes/_app.coming-soon'
 import { Route as AppConnectRouteImport } from './routes/_app.connect'
-import { Route as AppFilmsRouteImport } from './routes/_app.films'
-import { Route as AppGenresRouteImport } from './routes/_app.genres'
 import { Route as AppInviteRouteImport } from './routes/_app.invite'
 import { Route as AppMissingRouteImport } from './routes/_app.missing'
-import { Route as AppMylistRouteImport } from './routes/_app.mylist'
+import { Route as AppMyListRouteImport } from './routes/_app.my-list'
 import { Route as AppRequestsRouteImport } from './routes/_app.requests'
 import { Route as AppSearchRouteImport } from './routes/_app.search'
-import { Route as AppSeriesRouteImport } from './routes/_app.series'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSplatRouteImport } from './routes/admin.$'
 import { Route as AdminAiRouteImport } from './routes/admin.ai'
@@ -42,10 +39,13 @@ import { Route as AdminStorageRouteImport } from './routes/admin.storage'
 import { Route as AdminStoreRouteImport } from './routes/admin.store'
 import { Route as AdminTranscoderRouteImport } from './routes/admin.transcoder'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AppGenreGenreRouteImport } from './routes/_app.genre.$genre'
-import { Route as AppMovieIdRouteImport } from './routes/_app.movie.$id'
-import { Route as AppPersonNameRouteImport } from './routes/_app.person.$name'
-import { Route as AppShowIdRouteImport } from './routes/_app.show.$id'
+import { Route as AppGenresIndexRouteImport } from './routes/_app.genres.index'
+import { Route as AppGenresIdRouteImport } from './routes/_app.genres.$id'
+import { Route as AppMoviesIndexRouteImport } from './routes/_app.movies.index'
+import { Route as AppMoviesIdRouteImport } from './routes/_app.movies.$id'
+import { Route as AppPeoplePersonRouteImport } from './routes/_app.people.$person'
+import { Route as AppShowsIndexRouteImport } from './routes/_app.shows.index'
+import { Route as AppShowsIdRouteImport } from './routes/_app.shows.$id'
 import { Route as AppTrendingTypeRouteImport } from './routes/_app.trending.$type'
 import { Route as AppWatchIdRouteImport } from './routes/_app.watch.$id'
 import { Route as AdminModulesIndexRouteImport } from './routes/admin.modules.index'
@@ -98,16 +98,6 @@ const AppConnectRoute = AppConnectRouteImport.update({
   path: '/connect',
   getParentRoute: () => AppRoute,
 } as any)
-const AppFilmsRoute = AppFilmsRouteImport.update({
-  id: '/films',
-  path: '/films',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppGenresRoute = AppGenresRouteImport.update({
-  id: '/genres',
-  path: '/genres',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppInviteRoute = AppInviteRouteImport.update({
   id: '/invite',
   path: '/invite',
@@ -118,9 +108,9 @@ const AppMissingRoute = AppMissingRouteImport.update({
   path: '/missing',
   getParentRoute: () => AppRoute,
 } as any)
-const AppMylistRoute = AppMylistRouteImport.update({
-  id: '/mylist',
-  path: '/mylist',
+const AppMyListRoute = AppMyListRouteImport.update({
+  id: '/my-list',
+  path: '/my-list',
   getParentRoute: () => AppRoute,
 } as any)
 const AppRequestsRoute = AppRequestsRouteImport.update({
@@ -131,11 +121,6 @@ const AppRequestsRoute = AppRequestsRouteImport.update({
 const AppSearchRoute = AppSearchRouteImport.update({
   id: '/search',
   path: '/search',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSeriesRoute = AppSeriesRouteImport.update({
-  id: '/series',
-  path: '/series',
   getParentRoute: () => AppRoute,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -218,24 +203,39 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
-const AppGenreGenreRoute = AppGenreGenreRouteImport.update({
-  id: '/genre/$genre',
-  path: '/genre/$genre',
+const AppGenresIndexRoute = AppGenresIndexRouteImport.update({
+  id: '/genres/',
+  path: '/genres/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppMovieIdRoute = AppMovieIdRouteImport.update({
-  id: '/movie/$id',
-  path: '/movie/$id',
+const AppGenresIdRoute = AppGenresIdRouteImport.update({
+  id: '/genres/$id',
+  path: '/genres/$id',
   getParentRoute: () => AppRoute,
 } as any)
-const AppPersonNameRoute = AppPersonNameRouteImport.update({
-  id: '/person/$name',
-  path: '/person/$name',
+const AppMoviesIndexRoute = AppMoviesIndexRouteImport.update({
+  id: '/movies/',
+  path: '/movies/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppShowIdRoute = AppShowIdRouteImport.update({
-  id: '/show/$id',
-  path: '/show/$id',
+const AppMoviesIdRoute = AppMoviesIdRouteImport.update({
+  id: '/movies/$id',
+  path: '/movies/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPeoplePersonRoute = AppPeoplePersonRouteImport.update({
+  id: '/people/$person',
+  path: '/people/$person',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppShowsIndexRoute = AppShowsIndexRouteImport.update({
+  id: '/shows/',
+  path: '/shows/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppShowsIdRoute = AppShowsIdRouteImport.update({
+  id: '/shows/$id',
+  path: '/shows/$id',
   getParentRoute: () => AppRoute,
 } as any)
 const AppTrendingTypeRoute = AppTrendingTypeRouteImport.update({
@@ -283,14 +283,11 @@ export interface FileRoutesByFullPath {
   '/account': typeof AppAccountRoute
   '/coming-soon': typeof AppComingSoonRoute
   '/connect': typeof AppConnectRoute
-  '/films': typeof AppFilmsRoute
-  '/genres': typeof AppGenresRoute
   '/invite': typeof AppInviteRoute
   '/missing': typeof AppMissingRoute
-  '/mylist': typeof AppMylistRoute
+  '/my-list': typeof AppMyListRoute
   '/requests': typeof AppRequestsRoute
   '/search': typeof AppSearchRoute
-  '/series': typeof AppSeriesRoute
   '/admin/$': typeof AdminSplatRoute
   '/admin/ai': typeof AdminAiRoute
   '/admin/backup': typeof AdminBackupRoute
@@ -307,14 +304,17 @@ export interface FileRoutesByFullPath {
   '/admin/transcoder': typeof AdminTranscoderRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
-  '/genre/$genre': typeof AppGenreGenreRoute
-  '/movie/$id': typeof AppMovieIdRoute
-  '/person/$name': typeof AppPersonNameRoute
-  '/show/$id': typeof AppShowIdRoute
+  '/genres/$id': typeof AppGenresIdRoute
+  '/movies/$id': typeof AppMoviesIdRoute
+  '/people/$person': typeof AppPeoplePersonRoute
+  '/shows/$id': typeof AppShowsIdRoute
   '/trending/$type': typeof AppTrendingTypeRoute
   '/watch/$id': typeof AppWatchIdRoute
   '/admin/modules/$id': typeof AdminModulesIdRoute
   '/admin/requests/$id': typeof AdminRequestsIdRoute
+  '/genres/': typeof AppGenresIndexRoute
+  '/movies/': typeof AppMoviesIndexRoute
+  '/shows/': typeof AppShowsIndexRoute
   '/admin/modules/': typeof AdminModulesIndexRoute
   '/admin/requests/': typeof AdminRequestsIndexRoute
   '/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute
@@ -326,14 +326,11 @@ export interface FileRoutesByTo {
   '/account': typeof AppAccountRoute
   '/coming-soon': typeof AppComingSoonRoute
   '/connect': typeof AppConnectRoute
-  '/films': typeof AppFilmsRoute
-  '/genres': typeof AppGenresRoute
   '/invite': typeof AppInviteRoute
   '/missing': typeof AppMissingRoute
-  '/mylist': typeof AppMylistRoute
+  '/my-list': typeof AppMyListRoute
   '/requests': typeof AppRequestsRoute
   '/search': typeof AppSearchRoute
-  '/series': typeof AppSeriesRoute
   '/admin/$': typeof AdminSplatRoute
   '/admin/ai': typeof AdminAiRoute
   '/admin/backup': typeof AdminBackupRoute
@@ -351,14 +348,17 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersRoute
   '/': typeof AppIndexRoute
   '/admin': typeof AdminIndexRoute
-  '/genre/$genre': typeof AppGenreGenreRoute
-  '/movie/$id': typeof AppMovieIdRoute
-  '/person/$name': typeof AppPersonNameRoute
-  '/show/$id': typeof AppShowIdRoute
+  '/genres/$id': typeof AppGenresIdRoute
+  '/movies/$id': typeof AppMoviesIdRoute
+  '/people/$person': typeof AppPeoplePersonRoute
+  '/shows/$id': typeof AppShowsIdRoute
   '/trending/$type': typeof AppTrendingTypeRoute
   '/watch/$id': typeof AppWatchIdRoute
   '/admin/modules/$id': typeof AdminModulesIdRoute
   '/admin/requests/$id': typeof AdminRequestsIdRoute
+  '/genres': typeof AppGenresIndexRoute
+  '/movies': typeof AppMoviesIndexRoute
+  '/shows': typeof AppShowsIndexRoute
   '/admin/modules': typeof AdminModulesIndexRoute
   '/admin/requests': typeof AdminRequestsIndexRoute
   '/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute
@@ -373,14 +373,11 @@ export interface FileRoutesById {
   '/_app/account': typeof AppAccountRoute
   '/_app/coming-soon': typeof AppComingSoonRoute
   '/_app/connect': typeof AppConnectRoute
-  '/_app/films': typeof AppFilmsRoute
-  '/_app/genres': typeof AppGenresRoute
   '/_app/invite': typeof AppInviteRoute
   '/_app/missing': typeof AppMissingRoute
-  '/_app/mylist': typeof AppMylistRoute
+  '/_app/my-list': typeof AppMyListRoute
   '/_app/requests': typeof AppRequestsRoute
   '/_app/search': typeof AppSearchRoute
-  '/_app/series': typeof AppSeriesRoute
   '/admin/$': typeof AdminSplatRoute
   '/admin/ai': typeof AdminAiRoute
   '/admin/backup': typeof AdminBackupRoute
@@ -398,14 +395,17 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRoute
   '/_app/': typeof AppIndexRoute
   '/admin/': typeof AdminIndexRoute
-  '/_app/genre/$genre': typeof AppGenreGenreRoute
-  '/_app/movie/$id': typeof AppMovieIdRoute
-  '/_app/person/$name': typeof AppPersonNameRoute
-  '/_app/show/$id': typeof AppShowIdRoute
+  '/_app/genres/$id': typeof AppGenresIdRoute
+  '/_app/movies/$id': typeof AppMoviesIdRoute
+  '/_app/people/$person': typeof AppPeoplePersonRoute
+  '/_app/shows/$id': typeof AppShowsIdRoute
   '/_app/trending/$type': typeof AppTrendingTypeRoute
   '/_app/watch/$id': typeof AppWatchIdRoute
   '/admin/modules/$id': typeof AdminModulesIdRoute
   '/admin/requests/$id': typeof AdminRequestsIdRoute
+  '/_app/genres/': typeof AppGenresIndexRoute
+  '/_app/movies/': typeof AppMoviesIndexRoute
+  '/_app/shows/': typeof AppShowsIndexRoute
   '/admin/modules/': typeof AdminModulesIndexRoute
   '/admin/requests/': typeof AdminRequestsIndexRoute
   '/_app/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute
@@ -421,14 +421,11 @@ export interface FileRouteTypes {
     | '/account'
     | '/coming-soon'
     | '/connect'
-    | '/films'
-    | '/genres'
     | '/invite'
     | '/missing'
-    | '/mylist'
+    | '/my-list'
     | '/requests'
     | '/search'
-    | '/series'
     | '/admin/$'
     | '/admin/ai'
     | '/admin/backup'
@@ -445,14 +442,17 @@ export interface FileRouteTypes {
     | '/admin/transcoder'
     | '/admin/users'
     | '/admin/'
-    | '/genre/$genre'
-    | '/movie/$id'
-    | '/person/$name'
-    | '/show/$id'
+    | '/genres/$id'
+    | '/movies/$id'
+    | '/people/$person'
+    | '/shows/$id'
     | '/trending/$type'
     | '/watch/$id'
     | '/admin/modules/$id'
     | '/admin/requests/$id'
+    | '/genres/'
+    | '/movies/'
+    | '/shows/'
     | '/admin/modules/'
     | '/admin/requests/'
     | '/discover/$type/$tmdbId'
@@ -464,14 +464,11 @@ export interface FileRouteTypes {
     | '/account'
     | '/coming-soon'
     | '/connect'
-    | '/films'
-    | '/genres'
     | '/invite'
     | '/missing'
-    | '/mylist'
+    | '/my-list'
     | '/requests'
     | '/search'
-    | '/series'
     | '/admin/$'
     | '/admin/ai'
     | '/admin/backup'
@@ -489,14 +486,17 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/'
     | '/admin'
-    | '/genre/$genre'
-    | '/movie/$id'
-    | '/person/$name'
-    | '/show/$id'
+    | '/genres/$id'
+    | '/movies/$id'
+    | '/people/$person'
+    | '/shows/$id'
     | '/trending/$type'
     | '/watch/$id'
     | '/admin/modules/$id'
     | '/admin/requests/$id'
+    | '/genres'
+    | '/movies'
+    | '/shows'
     | '/admin/modules'
     | '/admin/requests'
     | '/discover/$type/$tmdbId'
@@ -510,14 +510,11 @@ export interface FileRouteTypes {
     | '/_app/account'
     | '/_app/coming-soon'
     | '/_app/connect'
-    | '/_app/films'
-    | '/_app/genres'
     | '/_app/invite'
     | '/_app/missing'
-    | '/_app/mylist'
+    | '/_app/my-list'
     | '/_app/requests'
     | '/_app/search'
-    | '/_app/series'
     | '/admin/$'
     | '/admin/ai'
     | '/admin/backup'
@@ -535,14 +532,17 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/_app/'
     | '/admin/'
-    | '/_app/genre/$genre'
-    | '/_app/movie/$id'
-    | '/_app/person/$name'
-    | '/_app/show/$id'
+    | '/_app/genres/$id'
+    | '/_app/movies/$id'
+    | '/_app/people/$person'
+    | '/_app/shows/$id'
     | '/_app/trending/$type'
     | '/_app/watch/$id'
     | '/admin/modules/$id'
     | '/admin/requests/$id'
+    | '/_app/genres/'
+    | '/_app/movies/'
+    | '/_app/shows/'
     | '/admin/modules/'
     | '/admin/requests/'
     | '/_app/discover/$type/$tmdbId'
@@ -620,20 +620,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConnectRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/films': {
-      id: '/_app/films'
-      path: '/films'
-      fullPath: '/films'
-      preLoaderRoute: typeof AppFilmsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/genres': {
-      id: '/_app/genres'
-      path: '/genres'
-      fullPath: '/genres'
-      preLoaderRoute: typeof AppGenresRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/invite': {
       id: '/_app/invite'
       path: '/invite'
@@ -648,11 +634,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMissingRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/mylist': {
-      id: '/_app/mylist'
-      path: '/mylist'
-      fullPath: '/mylist'
-      preLoaderRoute: typeof AppMylistRouteImport
+    '/_app/my-list': {
+      id: '/_app/my-list'
+      path: '/my-list'
+      fullPath: '/my-list'
+      preLoaderRoute: typeof AppMyListRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/requests': {
@@ -667,13 +653,6 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof AppSearchRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/series': {
-      id: '/_app/series'
-      path: '/series'
-      fullPath: '/series'
-      preLoaderRoute: typeof AppSeriesRouteImport
       parentRoute: typeof AppRoute
     }
     '/admin/': {
@@ -788,32 +767,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/_app/genre/$genre': {
-      id: '/_app/genre/$genre'
-      path: '/genre/$genre'
-      fullPath: '/genre/$genre'
-      preLoaderRoute: typeof AppGenreGenreRouteImport
+    '/_app/genres/': {
+      id: '/_app/genres/'
+      path: '/genres'
+      fullPath: '/genres/'
+      preLoaderRoute: typeof AppGenresIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/movie/$id': {
-      id: '/_app/movie/$id'
-      path: '/movie/$id'
-      fullPath: '/movie/$id'
-      preLoaderRoute: typeof AppMovieIdRouteImport
+    '/_app/genres/$id': {
+      id: '/_app/genres/$id'
+      path: '/genres/$id'
+      fullPath: '/genres/$id'
+      preLoaderRoute: typeof AppGenresIdRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/person/$name': {
-      id: '/_app/person/$name'
-      path: '/person/$name'
-      fullPath: '/person/$name'
-      preLoaderRoute: typeof AppPersonNameRouteImport
+    '/_app/movies/': {
+      id: '/_app/movies/'
+      path: '/movies'
+      fullPath: '/movies/'
+      preLoaderRoute: typeof AppMoviesIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/show/$id': {
-      id: '/_app/show/$id'
-      path: '/show/$id'
-      fullPath: '/show/$id'
-      preLoaderRoute: typeof AppShowIdRouteImport
+    '/_app/movies/$id': {
+      id: '/_app/movies/$id'
+      path: '/movies/$id'
+      fullPath: '/movies/$id'
+      preLoaderRoute: typeof AppMoviesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/people/$person': {
+      id: '/_app/people/$person'
+      path: '/people/$person'
+      fullPath: '/people/$person'
+      preLoaderRoute: typeof AppPeoplePersonRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/shows/': {
+      id: '/_app/shows/'
+      path: '/shows'
+      fullPath: '/shows/'
+      preLoaderRoute: typeof AppShowsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/shows/$id': {
+      id: '/_app/shows/$id'
+      path: '/shows/$id'
+      fullPath: '/shows/$id'
+      preLoaderRoute: typeof AppShowsIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/trending/$type': {
@@ -873,21 +873,21 @@ interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
   AppComingSoonRoute: typeof AppComingSoonRoute
   AppConnectRoute: typeof AppConnectRoute
-  AppFilmsRoute: typeof AppFilmsRoute
-  AppGenresRoute: typeof AppGenresRoute
   AppInviteRoute: typeof AppInviteRoute
   AppMissingRoute: typeof AppMissingRoute
-  AppMylistRoute: typeof AppMylistRoute
+  AppMyListRoute: typeof AppMyListRoute
   AppRequestsRoute: typeof AppRequestsRoute
   AppSearchRoute: typeof AppSearchRoute
-  AppSeriesRoute: typeof AppSeriesRoute
   AppIndexRoute: typeof AppIndexRoute
-  AppGenreGenreRoute: typeof AppGenreGenreRoute
-  AppMovieIdRoute: typeof AppMovieIdRoute
-  AppPersonNameRoute: typeof AppPersonNameRoute
-  AppShowIdRoute: typeof AppShowIdRoute
+  AppGenresIdRoute: typeof AppGenresIdRoute
+  AppMoviesIdRoute: typeof AppMoviesIdRoute
+  AppPeoplePersonRoute: typeof AppPeoplePersonRoute
+  AppShowsIdRoute: typeof AppShowsIdRoute
   AppTrendingTypeRoute: typeof AppTrendingTypeRoute
   AppWatchIdRoute: typeof AppWatchIdRoute
+  AppGenresIndexRoute: typeof AppGenresIndexRoute
+  AppMoviesIndexRoute: typeof AppMoviesIndexRoute
+  AppShowsIndexRoute: typeof AppShowsIndexRoute
   AppDiscoverTypeTmdbIdRoute: typeof AppDiscoverTypeTmdbIdRoute
 }
 
@@ -896,21 +896,21 @@ const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
   AppComingSoonRoute: AppComingSoonRoute,
   AppConnectRoute: AppConnectRoute,
-  AppFilmsRoute: AppFilmsRoute,
-  AppGenresRoute: AppGenresRoute,
   AppInviteRoute: AppInviteRoute,
   AppMissingRoute: AppMissingRoute,
-  AppMylistRoute: AppMylistRoute,
+  AppMyListRoute: AppMyListRoute,
   AppRequestsRoute: AppRequestsRoute,
   AppSearchRoute: AppSearchRoute,
-  AppSeriesRoute: AppSeriesRoute,
   AppIndexRoute: AppIndexRoute,
-  AppGenreGenreRoute: AppGenreGenreRoute,
-  AppMovieIdRoute: AppMovieIdRoute,
-  AppPersonNameRoute: AppPersonNameRoute,
-  AppShowIdRoute: AppShowIdRoute,
+  AppGenresIdRoute: AppGenresIdRoute,
+  AppMoviesIdRoute: AppMoviesIdRoute,
+  AppPeoplePersonRoute: AppPeoplePersonRoute,
+  AppShowsIdRoute: AppShowsIdRoute,
   AppTrendingTypeRoute: AppTrendingTypeRoute,
   AppWatchIdRoute: AppWatchIdRoute,
+  AppGenresIndexRoute: AppGenresIndexRoute,
+  AppMoviesIndexRoute: AppMoviesIndexRoute,
+  AppShowsIndexRoute: AppShowsIndexRoute,
   AppDiscoverTypeTmdbIdRoute: AppDiscoverTypeTmdbIdRoute,
 }
 

@@ -1,4 +1,4 @@
-import { formatRuntime, qualityBadge } from '@kroma/core';
+import { formatRuntime, genreLabels, qualityBadge } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button, FocusRegion, styles, useFocusNav } from '@kroma/ui/kit';
 import { useMyList } from '#tv/app/providers/mylist';
@@ -34,7 +34,7 @@ export function TvMovieDetail() {
   const metaLong = [
     item.year ? String(item.year) : null,
     formatRuntime(item.durationMs),
-    meta?.genres?.[0],
+    genreLabels(t, meta)[0],
   ]
     .filter(Boolean)
     .join(' · ');

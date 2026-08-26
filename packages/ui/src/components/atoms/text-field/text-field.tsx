@@ -19,6 +19,7 @@ import {
   fieldShell,
   NO_OUTLINE,
   PLACEHOLDER,
+  useEntryFontSize,
 } from '#ui/lib/field-shell';
 import { useGroupMember } from '#ui/lib/group-shape';
 import { useControllable } from '#ui/lib/use-controllable';
@@ -115,6 +116,7 @@ function TextField({
   const group = useGroupMember(onFocus, onBlur);
   const metrics = controlMetrics(size ?? group.size ?? undefined);
   const CONTENT = metrics.line;
+  const fontSize = useEntryFontSize(metrics.fontSize);
   const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
@@ -187,7 +189,7 @@ function TextField({
           style={[
             s.input,
             NO_OUTLINE,
-            { color: theme.colors.text, minHeight: CONTENT, fontSize: metrics.fontSize },
+            { color: theme.colors.text, minHeight: CONTENT, fontSize },
             textStyle,
           ]}
         />
@@ -266,7 +268,7 @@ function RevealButton({
     <Box absolute style={[s.revealSlot, { right }]}>
       <Focusable
         label={revealed ? 'Hide password' : 'Show password'}
-        ring={false}
+        ring="focusEdge"
         onPress={onToggle}
         style={s.reveal}
         states={REVEAL_STATES}

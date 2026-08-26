@@ -14,6 +14,7 @@ export type {
   ColorValue,
   Resolved,
   Responsive,
+  RingToken,
   StyleDecl,
   SvState,
   TextLayoutProps,
@@ -47,6 +48,7 @@ export {
   sv,
   svFor,
   ThemeProvider,
+  themed,
   themeVersion,
   useBreakpoint,
   useSystemGround,
@@ -54,14 +56,14 @@ export {
   writeMode,
 } from './core';
 export * from './core/tokens';
-export type { AnchorPlacement } from './lib/anchor';
+export type { AnchorPlacement, AnchorRect, AnchorViewport } from './lib/anchor';
 export { placeUnder } from './lib/anchor';
-export type { ListKeysAt, PanelKeyEvent } from './lib/anchored-panel';
+export type { ListKeysAt, PanelKeyEvent, PanelScroll } from './lib/anchored-keys';
+export { useListKeys, useRowInView } from './lib/anchored-keys';
 export {
   PANEL_BACKDROP,
   PANEL_SHELL,
   useAnchoredPlacement,
-  useListKeys,
   useTriggerFocus,
 } from './lib/anchored-panel';
 export type { Rect } from './lib/cover-rect';
@@ -82,6 +84,7 @@ export { FocusColumn, FocusRegion, FocusScope } from './lib/focus-scope';
 export type { FocusScrollProps } from './lib/focus-scroll';
 export { FocusLine, FocusRail, FocusScroll, FocusSlot } from './lib/focus-scroll';
 export type { FocusNavHandlers } from './lib/focus-types';
+export { useFocusVisible } from './lib/focus-visible';
 export type {
   FieldErrors,
   Form,
@@ -122,8 +125,12 @@ export { REPORT_CATEGORIES } from './lib/report-categories';
 export type { RingGeometry, RingProps } from './lib/ring';
 export { RING_ROTATION, ringGeometry } from './lib/ring';
 export { ringRoomBlock, ringRoomInline } from './lib/ring-room';
+export { RingScopeProvider } from './lib/ring-scope';
+export { useShake } from './lib/shake';
 export type { SlotProps } from './lib/slot';
 export { Slot } from './lib/slot';
+export type { SurfacePresentation } from './lib/surface-presentation';
+export { setSurfacePresentation } from './lib/surface-presentation';
 export type { SurfaceWidth } from './lib/surface-shell';
 export { DIALOG_PAD, SURFACE_WIDTH } from './lib/surface-shell';
 export { SvgXml } from './lib/svg';

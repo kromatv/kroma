@@ -3,6 +3,7 @@ import {
   type GenreCount,
   genreAccent,
   genreColors,
+  genreLabel,
   genreShowcases,
   genreTint,
 } from '@kroma/core';
@@ -48,15 +49,15 @@ export function TvGenres() {
         <FocusScroll style={s.scroll} contentStyle={s.content} offsetFromStart={120}>
           <Grid min={CARD_MIN} gap={GAP}>
             {genres.map((g, index) => {
-              const pick = showcases.get(g.name);
+              const pick = showcases.get(g.slug);
               return (
                 <GenreCard
                   autoFocus={index === 0}
-                  key={g.name}
+                  key={g.slug}
                   genre={g}
                   count={t('person.titleCount', { count: g.count })}
                   backdrop={pick ? client.backdropFor(pick, CARD_MIN) : null}
-                  onPress={() => nav.go('genre', { name: g.name })}
+                  onPress={() => nav.go('genre', { slug: g.slug })}
                 />
               );
             })}
@@ -86,14 +87,15 @@ function GenreCard({
   onPress: () => void;
   autoFocus?: boolean;
 }>) {
+  const t = useT();
   return (
     <CategoryTile
-      label={genre.name}
+      label={genreLabel(t, genre.name)}
       meta={count}
       art={backdrop}
-      background={tintGradient(genreColors(genre.name))}
-      wash={genreTint(genre.name)}
-      accent={genreAccent(genre.name)}
+      background={tintGradient(genreColors(genre.slug))}
+      wash={genreTint(genre.slug)}
+      accent={genreAccent(genre.slug)}
       onPress={onPress}
       autoFocus={autoFocus}
     />

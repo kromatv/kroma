@@ -1,7 +1,14 @@
 // One genre: every movie and show carrying it, in a poster grid with the
 // genre's hue as the header accent.
 
-import { hasGenre, type MediaItem, type Show, sortTitles } from '@kroma/core';
+import {
+  genreLabel,
+  genreOfSegment,
+  hasGenre,
+  type MediaItem,
+  type Show,
+  sortTitles,
+} from '@kroma/core';
 import { Icon } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
@@ -25,7 +32,7 @@ export default function GenreRoute() {
 }
 
 function GenrePage({ name }: Readonly<{ name: string }>) {
-  const genre = decodeURIComponent(name);
+  const genre = genreOfSegment(decodeURIComponent(name));
   const t = useT();
   const client = useClient();
   const { width } = useWindowDimensions();
@@ -52,7 +59,7 @@ function GenrePage({ name }: Readonly<{ name: string }>) {
 
   return (
     <Screen padded={false}>
-      <PageHeader title={genre} />
+      <PageHeader title={genreLabel(t, genre)} />
       <PosterGrid
         cards={cards}
         empty={

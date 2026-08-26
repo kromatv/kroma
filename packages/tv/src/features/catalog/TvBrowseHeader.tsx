@@ -1,11 +1,14 @@
 import {
   formatRuntime,
   type GenreCount,
+  genreLabel,
+  genreLabels,
   type MessageKey,
   qualityBadge,
   qualityBadgeForVideo,
   SORT_MODES,
   type SortMode,
+  type Translate,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Badge, Box, Chip, Divider, qualityTone, Rail, styles, Text } from '@kroma/ui/kit';
@@ -19,9 +22,9 @@ const SORT_LABEL_KEY: Record<SortMode, MessageKey> = {
   rating: 'browse.sort.rating',
 };
 
-function entryLine(e: CatalogEntry, seasons: string | null): string {
+function entryLine(t: Translate, e: CatalogEntry, seasons: string | null): string {
   const mid = e.kind === 'movie' ? formatRuntime(e.item.durationMs) : seasons;
-  const genres = e.item.metadata?.genres?.slice(0, 2) ?? [];
+  const genres = genreLabels(t, e.item.metadata).slice(0, 2);
   return [e.item.year ? String(e.item.year) : null, mid, ...genres].filter(Boolean).join(' · ');
 }
 
@@ -80,7 +83,7 @@ function FocusEcho({ entry }: Readonly<{ entry: CatalogEntry }>) {
           </Text>
         ) : null}
         <Text variant="labelTv" color="textMuted">
-          {entryLine(entry, seasons)}
+          {entryLine(t, entry, seasons)}
         </Text>
         {badge ? <Badge tone={qualityTone(badge)}>{badge}</Badge> : null}
       </Box>
@@ -99,7 +102,7 @@ const BrowseFiltersImpl = function BrowseFilters({
   onSort: (mode: SortMode) => void;
   genres: GenreCount[];
   genre: string | undefined;
-  onGenre: (name: string | undefined) => void;
+  onGenre: (slug: string | undefined) => void;
 }>) {
   const t = useT();
   // A <Rail.Root> rather than a ScrollView: it scrolls to FOLLOW focus. The children
@@ -139,13 +142,13 @@ const BrowseFiltersImpl = function BrowseFilters({
         {genres.length > 0
           ? genres.map((g) => (
               <Chip
-                key={g.name}
+                key={g.slug}
                 variant="subtle"
                 focusScale={1.06}
-                active={g.name === genre}
-                pressed={g.name === genre}
-                label={g.name}
-                onPress={() => onGenre(g.name)}
+                active={g.slug === genre}
+                pressed={g.slug === genre}
+                label={genreLabel(t, g.name)}
+                onPress={() => onGenre(g.slug)}
               />
             ))
           : null}

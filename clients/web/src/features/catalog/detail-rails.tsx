@@ -1,12 +1,12 @@
 // The two horizontal rails under a detail hero: the cast, and similar titles.
 
-import { type CastMember, posterColors } from '@kroma/core';
+import { type CastMember, personSegment, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, color, Focusable, gradient, sv, Text } from '@kroma/ui/kit';
-import { useNavigate } from '@tanstack/react-router';
+import { Box, color, Focusable, gradient, type HostElement, sv, Text, themed } from '@kroma/ui/kit';
 import type { CSSProperties } from 'react';
 import { imageUrl } from '#web/shared/lib/api';
 import { Image, Poster, PosterRail } from '#web/shared/ui';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 // The page gutter is a fluid CSS custom property and `overflow-x` names one
 // axis, so both scrollers stay plain elements around kit content.
@@ -32,11 +32,12 @@ const AVATAR: CSSProperties = {
   aspectRatio: '1',
   borderRadius: '50%',
   marginBottom: 11,
-  transition: 'box-shadow .2s',
+  boxShadow: `0 8px 22px ${color('black/45')}`,
+  transition: 'outline-color .2s',
+  outlineColor: 'transparent',
 };
 
-const REST_SHADOW = `0 8px 22px ${color('black/45')}`;
-const LIT_SHADOW = `${REST_SHADOW}, 0 0 0 4px ${color('accent')}`;
+const avatarRing = themed((theme): CSSProperties => ({ ...AVATAR, ...theme.ring.focus }));
 
 const castTile = sv({ base: { shrink: 0, align: 'center', w: { base: 96, md: 112 } } });
 
@@ -76,7 +77,6 @@ const SIMILAR_SECTION: CSSProperties = { marginTop: 44 };
 
 function CastTile({ person }: Readonly<{ person: CastMember }>) {
   const t = useT();
-  const navigate = useNavigate();
   const [g1, g2] = posterColors(person.name);
   const photo = imageUrl(person.profileUrl);
   const face = <CastInitials name={person.name} g1={g1} g2={g2} />;
@@ -84,13 +84,14 @@ function CastTile({ person }: Readonly<{ person: CastMember }>) {
     <Focusable
       sv={castTile}
       focusScale={1.06}
+      ring={false}
       label={t('person.viewWorks', { name: person.name })}
-      onPress={() => navigate({ to: '/person/$name', params: { name: person.name } })}
+      as={<RouteLink to="/people/$person" params={{ person: personSegment(person) }} />}
     >
       {({ hovered, focused }) => (
         <>
           <Image
-            style={{ ...AVATAR, boxShadow: hovered || focused ? LIT_SHADOW : REST_SHADOW }}
+            style={hovered || focused ? avatarRing() : AVATAR}
             src={photo}
             alt={person.name}
             placeholder={face}
@@ -122,14 +123,11 @@ export interface SimilarItem {
   seasonCount?: number;
   badge: string | null;
   poster: string;
+  as?: HostElement;
 }
 
 /** Horizontal "Titres similaires" rail of poster tiles. */
-export function SimilarRail({
-  title,
-  items,
-  onOpen,
-}: Readonly<{ title: string; items: SimilarItem[]; onOpen: (id: string) => void }>) {
+export function SimilarRail({ title, items }: Readonly<{ title: string; items: SimilarItem[] }>) {
   if (items.length === 0) return null;
   return (
     <section style={SIMILAR_SECTION}>
@@ -147,7 +145,7 @@ export function SimilarRail({
               genre={m.genre}
               colors={posterColors(m.id)}
               poster={m.poster}
-              onClick={() => onOpen(m.id)}
+              as={m.as}
             />
           )}
         />

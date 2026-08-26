@@ -114,9 +114,9 @@ export function payload(over: Record<string, unknown> = {}) {
     id: 'n1',
     title: 'Ready to watch',
     body: 'Dune is now in your library.',
-    link: '/movie/ab12',
+    link: '/movies/ab12',
     imageUrl: 'https://img.example/p.jpg',
-    actions: [{ id: 'watch', label: 'Watch', kind: 'link', href: '/movie/ab12' }],
+    actions: [{ id: 'watch', label: 'Watch', kind: 'link', href: '/movies/ab12' }],
     ...over,
   };
 }

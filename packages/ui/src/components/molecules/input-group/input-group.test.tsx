@@ -3,9 +3,14 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
+import { pinDesignWidth } from '#ui/core';
+import { breakpoint } from '#ui/core/tokens';
 import { InputGroup } from './input-group';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  pinDesignWidth();
+});
 
 function positionOf(text: string): number {
   const group = screen.getByRole('group');
@@ -29,7 +34,9 @@ describe('<InputGroup>', () => {
   ] as const)('gives the entry the %s shell the group was asked for', (size, fontSize) => {
     // The shell's height, corner and padding all come from the Root, so the
     // entry inside it has to be told the same size or the group is one size
-    // and its text another.
+    // and its text another. Off a handset, where the zoom floor would lift the
+    // sm ink to 16 and stop it reporting the size.
+    pinDesignWidth(breakpoint.md);
     render(
       <InputGroup.Root label="Amount" size={size}>
         <InputGroup.Input placeholder="0.00" physicalKeyboard />

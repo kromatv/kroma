@@ -1,4 +1,11 @@
-import { episodeTag, type MediaItem, posterColors, type SectionItem, type Show } from '@kroma/core';
+import {
+  episodeTag,
+  genreLabels,
+  type MediaItem,
+  posterColors,
+  type SectionItem,
+  type Show,
+} from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,
@@ -82,7 +89,7 @@ export function TvHome() {
           <MediaCard
             key={`${key}-${show.id}`}
             title={show.title}
-            overline={show.metadata?.genres?.[0] ?? t('content.series')}
+            overline={genreLabels(t, show.metadata)[0] ?? t('content.series')}
             art={client.backdropFor(show, TILE_W) ?? client.showPosterFor(show, TILE_W)}
             tint={posterColors(show.id)}
             watched={isWatched(show.id)}
@@ -96,7 +103,7 @@ export function TvHome() {
         <MediaCard
           key={`${key}-${m.id}`}
           title={m.title}
-          overline={m.metadata?.genres?.[0] ?? t('content.film')}
+          overline={genreLabels(t, m.metadata)[0] ?? t('content.film')}
           art={client.backdropFor(m, TILE_W) ?? client.posterFor(m, TILE_W)}
           tint={posterColors(m.id)}
           watched={isWatched(m.id)}
@@ -168,7 +175,7 @@ export function TvHome() {
                 key={show.id}
                 title={show.title}
                 overline={
-                  show.metadata?.genres?.[0] ??
+                  genreLabels(t, show.metadata)[0] ??
                   t('content.seasonCount', { count: show.seasonCount })
                 }
                 art={client.backdropFor(show, TILE_W) ?? client.showPosterFor(show, TILE_W)}

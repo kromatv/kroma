@@ -25,9 +25,15 @@ function platformRole(role: FocusRole): AccessibilityRole {
   return role === 'option' ? 'menuitem' : role;
 }
 
-function linkProps(href: string | undefined, role: FocusRole): object | null {
-  if (!WEB || !href) return null;
-  return role === 'link' ? { href, accessibilityRole: undefined } : { href };
+/** The role a host element states for itself. An `<a href>` announces as a link
+ *  without one, so a control that renders as an anchor states none. */
+function hostRole(role: FocusRole): AccessibilityRole | undefined {
+  return WEB && role === 'link' ? undefined : platformRole(role);
 }
 
-export { claimProps, linkProps, platformRole };
+function linkProps(href: string | undefined, role: FocusRole): object | null {
+  if (!WEB || !href) return null;
+  return { href, accessibilityRole: hostRole(role) };
+}
+
+export { claimProps, hostRole, linkProps, platformRole };

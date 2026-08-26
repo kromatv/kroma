@@ -130,9 +130,10 @@ function Root({
         // it and its neighbour. The wash and the ring say the same thing without
         // moving anything.
         focusScale={standalone ? 1.02 : 1}
-        // A member's ring is the variant's, drawn INWARD: the default one stands
-        // off the row, and the card the row is flush with clips it to a stripe.
-        ring={standalone}
+        // A member is flush with the card that clips it, so it names the inward
+        // ring rather than declining one: `false` means "I paint no ring at all",
+        // which would leave a focused member with nothing.
+        ring={standalone ? true : 'focusInset'}
         sv={listRowVariants}
         vars={{ size: shell, pressable, standalone, selected: lit }}
         style={[frost.style, style]}

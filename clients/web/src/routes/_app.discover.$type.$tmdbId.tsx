@@ -21,7 +21,7 @@ export const Route = createFileRoute('/_app/discover/$type/$tmdbId')({
     // season gaps itself. Only not-owned titles render on the discover route.
     if (detail.localId) {
       throw redirect({
-        to: detail.kind === 'show' ? '/show/$id' : '/movie/$id',
+        to: detail.kind === 'show' ? '/shows/$id' : '/movies/$id',
         params: { id: detail.localId },
       });
     }

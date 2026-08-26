@@ -139,6 +139,7 @@ export const DiscoverDetail = z.object({
   overview: z.string().nullable(),
   tagline: z.string().nullable(),
   genres: z.array(z.string()),
+  tmdbGenreIds: z.array(z.number()).nullish(),
   rating: z.number().nullable(),
   runtimeMin: z.number().nullable(),
   seasons: z.array(DiscoverSeason),
@@ -208,9 +209,10 @@ export const TmdbCredit = z.object({
 });
 export type TmdbCredit = z.infer<typeof TmdbCredit>;
 
-/** `GET /api/people/details?name=…`; `person` is null whenever the provider has
- * nothing to say (no key, unknown name, provider down). `credits` carries the
- * TMDB combined filmography so the page can show titles not in the local library. */
+/** `GET /api/people/details?name=…`, where `name` is a display name or a person
+ * slug; `person` is null whenever the provider has nothing to say (no key,
+ * unknown name, provider down). `credits` carries the TMDB combined filmography
+ * so the page can show titles not in the local library. */
 export const PersonDetailResponse = z.object({
   name: z.string(),
   person: PersonDetail.nullish(),
@@ -218,7 +220,9 @@ export const PersonDetailResponse = z.object({
 });
 export type PersonDetailResponse = z.infer<typeof PersonDetailResponse>;
 
-/** `GET /api/people?name=…`. */
+/** `GET /api/people?name=…`, where `name` is a display name or a person slug.
+ * The `name` that comes back is the catalogue's own spelling of whoever it
+ * resolved to. */
 export const PersonResponse = z.object({
   name: z.string(),
   results: z.array(SearchHit),

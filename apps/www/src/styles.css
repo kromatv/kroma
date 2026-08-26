@@ -40,6 +40,18 @@
   }
 }
 
+/* The site's own focus ring. Unlayered on purpose: every control here is a
+   hand-written Tailwind element whose base class carries
+   `focus-visible:outline-none`, which is a layered utility, so a layered rule
+   would lose to it. The kit used to ship this and the site inherited it by
+   accident of cascade order; now that kit controls paint their own focus, the
+   ring for the site's controls belongs to the site. */
+:focus-visible {
+  outline: var(--ring-outline);
+  outline-offset: var(--ring-gap);
+  z-index: 1;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;

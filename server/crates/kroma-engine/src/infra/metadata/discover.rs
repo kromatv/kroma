@@ -50,6 +50,7 @@ pub struct DiscoverRawDetail {
     pub overview: Option<String>,
     pub tagline: Option<String>,
     pub genres: Vec<String>,
+    pub tmdb_genre_ids: Vec<u32>,
     pub rating: Option<f32>,
     pub runtime_min: Option<u32>,
     pub imdb_id: Option<String>,
@@ -225,6 +226,7 @@ pub fn detail(
         backdrop_url: d.backdrop_path.map(|p| format!("{IMG}/w1280{p}")),
         overview: d.overview.filter(|s| !s.is_empty()),
         tagline: d.tagline.filter(|s| !s.is_empty()),
+        tmdb_genre_ids: d.genres.iter().map(|g| g.id).collect(),
         genres: d.genres.into_iter().map(|g| g.name).collect(),
         rating: d.vote_average.filter(|v| *v > 0.0),
         runtime_min: d.runtime.filter(|&r| r > 0),
@@ -418,6 +420,7 @@ struct DetailResp {
 
 #[derive(Debug, Deserialize)]
 struct RawGenre {
+    id: u32,
     name: String,
 }
 

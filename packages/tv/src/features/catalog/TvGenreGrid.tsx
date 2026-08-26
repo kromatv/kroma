@@ -1,4 +1,4 @@
-import { compareTitles, hasGenre, posterColors, type SortMode } from '@kroma/core';
+import { compareTitles, genreLabel, hasGenre, posterColors, type SortMode } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Text, useFocusNav } from '@kroma/ui/kit';
 import { useEffect, useMemo, useState } from 'react';
@@ -21,25 +21,25 @@ const SORT: SortMode = 'rating';
  * already-loaded catalogue locally, ranked best-rated first, with the browse
  * screens' ambient backdrop following the focused tile. */
 export function TvGenreGrid() {
-  const { name } = useParams('genre');
+  const { slug } = useParams('genre');
   const { movies, shows } = useConnection();
   const client = useClient();
   const t = useT();
   const nav = useNav();
-  useFocusNav({ onBack: nav.back, resetKey: name });
+  useFocusNav({ onBack: nav.back, resetKey: slug });
 
   const [focusId, setFocusId] = useState<string | null>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: name is an intentional re-run key (a genre switch clears the focus echo), not read inside the effect
-  useEffect(() => setFocusId(null), [name]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: slug is an intentional re-run key (a genre switch clears the focus echo), not read inside the effect
+  useEffect(() => setFocusId(null), [slug]);
 
   const entries = useMemo<Entry[]>(() => {
     const tagged: Entry[] = [
-      ...movies.filter((m) => hasGenre(m, name)).map((m): Entry => ({ kind: 'movie', item: m })),
-      ...shows.filter((s) => hasGenre(s, name)).map((s): Entry => ({ kind: 'show', item: s })),
+      ...movies.filter((m) => hasGenre(m, slug)).map((m): Entry => ({ kind: 'movie', item: m })),
+      ...shows.filter((s) => hasGenre(s, slug)).map((s): Entry => ({ kind: 'show', item: s })),
     ];
     const cmp = compareTitles(SORT);
     return tagged.sort((a, b) => cmp(a.item, b.item));
-  }, [movies, shows, name]);
+  }, [movies, shows, slug]);
 
   const cards = useMemo<GridCard[]>(
     () =>
@@ -73,7 +73,7 @@ export function TvGenreGrid() {
           {t('nav.genres')}
         </Text>
         <Text variant="hero" style={TITLE}>
-          {name}
+          {genreLabel(t, slug)}
         </Text>
         <Text variant="labelTv" color="textMuted">
           {t('person.titleCount', { count: cards.length })}

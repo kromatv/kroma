@@ -90,8 +90,6 @@ function Item(props: Readonly<SelectItemProps>) {
           nativeID={row.nativeID}
           role="option"
           aria-label={option.label}
-          // The panel is a web-only presentation, and react-native-web reads
-          // the flat aria props rather than the state object.
           aria-selected={chosen}
           aria-disabled={disabled}
           tabIndex={-1}
@@ -99,7 +97,10 @@ function Item(props: Readonly<SelectItemProps>) {
             if (!disabled) pick(value);
           }}
           onHoverIn={row.onHoverIn}
-          onLayout={(event) => row.onLayout?.(event.nativeEvent.layout.y)}
+          onLayout={(event) => {
+            const { y, height } = event.nativeEvent.layout;
+            row.onLayout?.(y, height);
+          }}
           style={[
             slots.root,
             s.row,

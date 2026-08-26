@@ -14,7 +14,7 @@ import {
   type RowWindow,
   rowWindow,
   TILE_GAP,
-} from '#web/features/catalog/tile-layout';
+} from '#web/shared/lib/tile-layout';
 
 const OVERSCAN = 3;
 

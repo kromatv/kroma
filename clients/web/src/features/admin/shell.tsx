@@ -1,20 +1,18 @@
-// Admin console shell: the data/event context (server info + a refresh that
-// bumps on server events so pages stay live) and the frame the console's
-// navigation and pages sit in.
-
 import { KromaEvents } from '@kroma/core';
 import { AdminHostProvider, ModuleSlotProvider } from '@kroma/module-sdk';
+import { Box, useBreakpoint } from '@kroma/ui/kit';
 import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useMemo } from 'react';
+import { ScrollView } from 'react-native';
 import { usePoll } from '#web/features/admin/hooks';
 import { AdminModalHosts } from '#web/features/admin/modal-hosts';
 import { AdminContext } from '#web/features/admin/shell-context';
 import { AdminMobileTopbar, AdminSidebar } from '#web/features/admin/shell-sidebar';
-import { ADMIN_SHELL } from '#web/features/admin/web-style';
+import { ADMIN_SCROLLER, ADMIN_SCROLLER_CONTENT } from '#web/features/admin/web-style';
 import { moduleRegistry } from '#web/modules/registry';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { PAGE_MAIN } from '#web/shared/ui';
+import { PageFrame } from '#web/shared/ui';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
 
 export { PageHeader } from '@kroma/ui/kit';
@@ -37,10 +35,9 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
   );
   const { data: serverInfo } = usePoll(['admin', 'server'], () => client.adminServer(), 15000);
 
-  // Skip the high-frequency per-line frames (the pages that want them stream
-  // those themselves); coalesce the rest to one refresh per window, since e.g.
-  // an enrich pass emits one item.updated per title. Compared as plain strings:
-  // download.progress is a module's frame, not part of core's union.
+  // Coalesce to one refresh per window, since e.g. an enrich pass emits one
+  // item.updated per title. Compared as plain strings: download.progress is a
+  // module's frame, not part of core's union.
   useEffect(() => {
     const highFrequency = new Set([
       'job.log',
@@ -79,13 +76,16 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 export function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const step = useBreakpoint();
+  const wide = step === 'lg' || step === 'tv';
   return (
     <AdminProvider>
-      <div className={ADMIN_SHELL}>
-        <AdminSidebar />
-        <AdminMobileTopbar />
-        <main className={PAGE_MAIN}>{children}</main>
-      </div>
+      <Box row={wide} h="100%" bg="bg">
+        {wide ? <AdminSidebar /> : <AdminMobileTopbar />}
+        <ScrollView style={ADMIN_SCROLLER} contentContainerStyle={ADMIN_SCROLLER_CONTENT}>
+          <PageFrame>{children}</PageFrame>
+        </ScrollView>
+      </Box>
       <AdminModalHosts />
     </AdminProvider>
   );

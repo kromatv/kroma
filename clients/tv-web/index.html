@@ -8,14 +8,19 @@
          same path the desktop shell takes on macOS/Windows). -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>KROMA</title>
-    <!-- Critical: paint the stage black from the very first frame, before the
-         bundled CSS loads, so the launch never flashes a white body. -->
+    <!-- Stated here rather than in a stylesheet so the stage is black from the
+         very first frame, before the bundle loads, and the launch never flashes
+         a white body. -->
     <style>
       html,
       body {
         margin: 0;
         background: #0a0a0c;
         color-scheme: dark;
+      }
+      body {
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
       }
     </style>
   </head>

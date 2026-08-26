@@ -1,5 +1,5 @@
 import { useT } from '@kroma/ui';
-import { IconButton, type IconName, Menu } from '@kroma/ui/kit';
+import { Box, IconButton, type IconName, Menu } from '@kroma/ui/kit';
 
 export interface PosterAction {
   key: string;
@@ -14,14 +14,6 @@ export interface PosterAction {
 const INLINE = 2;
 const DISC = 32;
 const GLYPH = 16;
-
-function stop(event: { stopPropagation: () => void }) {
-  event.stopPropagation();
-}
-
-function stopActivation(event: { key: string; stopPropagation: () => void }) {
-  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation();
-}
 
 function ActionDisc({ action }: Readonly<{ action: PosterAction }>) {
   return (
@@ -57,25 +49,38 @@ function Overflow({ actions }: Readonly<{ actions: readonly PosterAction[] }>) {
   );
 }
 
-/** Nothing at all when `actions` is empty. */
-export function PosterActionBar({ actions }: Readonly<{ actions: readonly PosterAction[] }>) {
+export interface PosterActionBarProps {
+  actions: readonly PosterAction[];
+  shown: boolean;
+}
+
+/**
+ * Nothing at all when `actions` is empty. Hidden with opacity rather than by
+ * unmounting, so the discs stay in the tab order. The opacity steps between 0 and
+ * 1 rather than fading: a box under 1 is a backdrop root, so a fade would leave
+ * the discs' frost blind for its whole duration (@kroma/ui lib/css.web).
+ */
+export function PosterActionBar({ actions, shown }: Readonly<PosterActionBarProps>) {
   const t = useT();
   if (actions.length === 0) return null;
   const overflow = actions.length > INLINE + 1 ? actions.slice(INLINE) : [];
   const discs = overflow.length > 0 ? actions.slice(0, INLINE) : actions;
   return (
-    <div
-      className="poster-actions"
+    <Box
+      absolute
+      top={8}
+      right={8}
+      z={2}
+      gap={6}
+      opacity={shown ? 1 : 0}
+      pointerEvents={shown ? 'auto' : 'none'}
       role="toolbar"
-      aria-label={t('content.quickActions')}
-      onClick={stop}
-      onKeyDown={stopActivation}
-      onPointerDown={stop}
+      accessibilityLabel={t('content.quickActions')}
     >
       {discs.map((action) => (
         <ActionDisc key={action.key} action={action} />
       ))}
       {overflow.length > 0 ? <Overflow actions={overflow} /> : null}
-    </div>
+    </Box>
   );
 }

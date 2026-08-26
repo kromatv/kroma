@@ -1,30 +1,25 @@
 // The box an anchored list is drawn in, and the world behind it. Where it goes
-// and how it takes the keyboard is ./anchored-panel; this is only what the
-// panel looks like, which a select's listbox and a menu's items had written
-// twice between them.
+// is ./anchored-panel and how it takes the keyboard is ./anchored-keys.
 
-import type { ReactNode, Ref } from 'react';
+import type { ReactNode } from 'react';
 import { Pressable, type Role, ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import type { AnchorPlacement } from '#ui/lib/anchor';
+import type { PanelScroll } from '#ui/lib/anchored-keys';
 import { PANEL_BACKDROP, PANEL_SHELL } from '#ui/lib/anchored-panel';
 import { Portal } from '#ui/lib/portal';
 import { useTDefault } from '#ui/services/i18n';
 
 const PAD = 6;
-// Concentric with the rows inside it: the row radius plus PAD.
 const RADIUS = 'xl';
 
 interface AnchoredPopupProps {
   at: AnchorPlacement;
-  /** The list's own role: `listbox` for a select, `menu` for a menu. */
   role: Role;
   label: string | undefined;
-  /** What the trigger's `aria-controls` and `aria-activedescendant` point at. */
   listId: string;
   onDismiss: () => void;
-  /** The scroller, for a panel that keeps its active row in sight. */
-  scrollRef?: Ref<ScrollView>;
+  scroll?: PanelScroll;
   children: ReactNode;
 }
 
@@ -34,13 +29,12 @@ function AnchoredPopup({
   label,
   listId,
   onDismiss,
-  scrollRef,
+  scroll,
   children,
 }: Readonly<AnchoredPopupProps>) {
   const t = useTDefault();
   return (
     <Portal>
-      {/* The world behind the panel: one press anywhere out there closes it. */}
       <Pressable
         accessibilityLabel={t('common.close')}
         tabIndex={-1}
@@ -67,7 +61,7 @@ function AnchoredPopup({
           },
         ]}
       >
-        <ScrollView ref={scrollRef} style={{ maxHeight: at.maxHeight }}>
+        <ScrollView {...scroll} scrollEventThrottle={16} style={{ maxHeight: at.maxHeight }}>
           <Box p={PAD}>{children}</Box>
         </ScrollView>
       </Box>
