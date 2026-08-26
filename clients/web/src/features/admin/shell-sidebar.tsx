@@ -1,6 +1,6 @@
 import { hasPermission } from '@kroma/core';
 import type { ModuleNav } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
+import { useFormat, useT } from '@kroma/ui';
 import { Box, color, Drawer, Focusable, Logo, Row, sv, Text } from '@kroma/ui/kit';
 import { IconChevronRight } from '@tabler/icons-react';
 import { useRouterState } from '@tanstack/react-router';
@@ -12,7 +12,6 @@ import { useAdmin } from '#web/features/admin/shell-context';
 import { ADMIN_BAR_TOP, ADMIN_RAIL_WIDTH } from '#web/features/admin/web-style';
 import { useModuleNavAll } from '#web/modules/ModuleHostProvider';
 import { resolveModuleIcon } from '#web/modules/module-icons';
-import { formatUptime } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 import { safeAreaTop } from '#web/shared/lib/safe-area';
 import { useNavActions } from '#web/shared/ui/nav-actions';
@@ -126,6 +125,7 @@ function AdminNav() {
 
 function ServerStatusCard() {
   const t = useT();
+  const fmt = useFormat();
   const { serverInfo } = useAdmin();
   return (
     <Box p={14} radius="lg" bg="surface1" border="border">
@@ -139,7 +139,7 @@ function ServerStatusCard() {
         {serverInfo ? `${serverInfo.hostname} · v${serverInfo.version}` : '…'}
       </Text>
       <Text variant="meta" color="textDim" mt={3}>
-        {serverInfo ? t('admin.uptime', { uptime: formatUptime(serverInfo.uptimeSec) }) : ''}
+        {serverInfo ? t('admin.uptime', { uptime: fmt.uptime(serverInfo.uptimeSec) }) : ''}
       </Text>
     </Box>
   );

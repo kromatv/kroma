@@ -221,7 +221,7 @@ function PreviewRow({ draft, empty }: Readonly<{ draft: Draft; empty: string }>)
       titleTone={draft.title ? 'text' : 'textDim'}
       body={draft.body || t('admin.notifBodyPlaceholder')}
       bodyTone={draft.body ? 'textMuted' : 'textDim'}
-      time={t('notifications.justNow')}
+      time={t('format.justNow')}
     />
   );
 }

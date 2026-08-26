@@ -2,9 +2,8 @@
 // scoped by whatever the target block above it says (a season/episode there
 // makes this a TV search), and the picked row pre-fills the magnet + title.
 
-import { formatBytes } from '@kroma/core';
 import type { ManualReleaseView } from '@kroma/module-acquisition/schemas';
-import { useT } from '@kroma/module-sdk';
+import { useFormat, useT } from '@kroma/module-sdk';
 import { Box, Button, Field, Focusable, Icon, Row, sv, Text } from '@kroma/ui/kit';
 import type { CSSProperties } from 'react';
 
@@ -124,6 +123,7 @@ function ResultRow({
   onPick,
 }: Readonly<{ r: ManualReleaseView; last: boolean; onPick: () => void }>) {
   const t = useT();
+  const fmt = useFormat();
   return (
     <Focusable sv={resultRow} vars={{ last }} label={r.title} onPress={onPick}>
       <Box minW={0} flex>
@@ -146,7 +146,7 @@ function ResultRow({
           ) : null}
           {r.sizeBytes != null ? (
             <Text variant="meta" color="textDim">
-              {formatBytes(r.sizeBytes)}
+              {fmt.bytes(r.sizeBytes)}
             </Text>
           ) : null}
           {r.seeders != null ? (

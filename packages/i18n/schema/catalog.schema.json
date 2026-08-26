@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kroma.tv/schema/i18n-catalog.json",
+  "title": "Message catalog",
+  "description": "One locale's messages, key to template. The file is named after its locale code, and names itself in its own language under `lang.<code>`, which is what the engine reads instead of a separate locale table.",
+  "type": "object",
+  "propertyNames": {
+    "pattern": "^(\\$schema|[A-Za-z][A-Za-z0-9]*(\\.[A-Za-z0-9_-]+)*(_(zero|one|two|few|many|other))?)$"
+  },
+  "additionalProperties": {
+    "type": "string",
+    "description": "The template. `{name}` interpolates a variable, `$t(other.key)` quotes another message and is expanded once at load."
+  },
+  "properties": {
+    "$schema": { "type": "string" }
+  }
+}

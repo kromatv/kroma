@@ -1,12 +1,13 @@
 // Account tab: identity, one card of destination rows, sign-out. Everything
 // else lives in dedicated pages.
 
+import { useFormat } from '@kroma/ui';
 import { Box, Button, Icon, styles, Text } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '#mobile/components/Avatar';
-import { formatBytes, useDownloads } from '#mobile/lib/downloads';
+import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
@@ -43,6 +44,7 @@ function Row({
 
 export default function Profile() {
   const t = useT();
+  const fmt = useFormat();
   const router = useRouter();
   const { user, signOut, switchProfile } = useSession();
   const client = useClient();
@@ -85,7 +87,7 @@ export default function Profile() {
         <Row
           icon={<Icon name="download" size={19} thickness={2} color="accentText" />}
           label={t('offline.downloads')}
-          value={downloads.entries.length > 0 ? formatBytes(downloads.totalBytes) : undefined}
+          value={downloads.entries.length > 0 ? fmt.bytes(downloads.totalBytes) : undefined}
           onPress={() => router.push('/downloads' as never)}
         />
         <Row

@@ -36,6 +36,7 @@ const input = (over: Partial<WebStatsInput> = {}): WebStatsInput =>
     audioIndex: 0,
     bytes: 1_000_000_000,
     t,
+    locale: 'en',
     ...over,
   }) as WebStatsInput;
 
@@ -119,7 +120,7 @@ describe('buildWebStats', () => {
     expect(val('stats.streamBitrate')).toBe('8.20 Mb/s');
     expect(val('stats.bandwidth')).toBe('512 kb/s');
     expect(val('stats.stalls')).toBe('2 (3.3s)');
-    expect(val('stats.downloaded')).toBe('1.50 Go');
+    expect(val('stats.downloaded')).toBe('1.4 GB');
     expect(val('stats.codecs')).toBe('avc1.640028,mp4a.40.2');
   });
 
@@ -194,13 +195,13 @@ describe('buildWebStats', () => {
     expect(val('stats.streamBitrate')).toBeUndefined();
     expect(val('stats.bandwidth')).toBeUndefined();
     expect(val('stats.stalls')).toBe('3');
-    expect(val('stats.downloaded')).toBe('1.5 Mo');
+    expect(val('stats.downloaded')).toBe('1.4 MB');
     expect(val('stats.codecs')).toBeUndefined();
   });
 
   it('reports a sub-megabyte download in kilobytes', () => {
     const rows = buildWebStats(input({ engine: { bytesDownloaded: 4_400 } })).extra ?? [];
-    expect(rows.find((r) => r.label === 'stats.downloaded')?.value).toBe('4 Ko');
+    expect(rows.find((r) => r.label === 'stats.downloaded')?.value).toBe('4 KB');
   });
 
   it('shows a nonsense negative reading as absent rather than a negative rate', () => {

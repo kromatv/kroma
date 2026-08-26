@@ -1,6 +1,6 @@
-import { type PlaybackSession, resolveImageUrl } from '@kroma/core';
+import { type PlaybackSession, posterGradient, resolveImageUrl } from '@kroma/core';
 import { TABULAR } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
+import { useFormat, useT } from '@kroma/ui';
 import {
   Avatar,
   Box,
@@ -19,7 +19,6 @@ import {
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { PillDot } from '#web/features/admin/pill';
-import { formatMbps, posterGradient, timecode } from '#web/shared/lib/adminFormat';
 import { apiBase, kromaClient } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { useStoryboard } from '#web/shared/lib/use-storyboard';
@@ -75,6 +74,7 @@ export function NowPlayingCard({
   onStop,
 }: Readonly<{ s: PlaybackSession; avatarUrl?: string | null; onStop: () => void }>) {
   const t = useT();
+  const fmt = useFormat();
   const playing = s.state === 'playing';
   const pct = s.durationMs ? (s.positionMs / s.durationMs) * 100 : 0;
   const buffering = s.state === 'buffering';
@@ -149,13 +149,13 @@ export function NowPlayingCard({
 
         <Row gap={12}>
           <Text variant="meta" color="textMuted" style={TABULAR}>
-            {timecode(s.positionMs)}
+            {fmt.timecode(s.positionMs)}
           </Text>
           <Box flex>
             <Progress value={pct / 100} rounded />
           </Box>
           <Text variant="meta" color="textDim" style={TABULAR}>
-            {s.durationMs ? timecode(s.durationMs) : '-'}
+            {s.durationMs ? fmt.timecode(s.durationMs) : '-'}
           </Text>
         </Row>
 
@@ -190,7 +190,7 @@ export function NowPlayingCard({
           <DataField.Root size="sm">
             <DataField.Label>{t('admin.statBitrate')}</DataField.Label>
             <Text variant="meta" color="textMuted" style={TABULAR}>
-              {formatMbps(s.bitrate)} Mb/s
+              {fmt.mbps(s.bitrate)} Mb/s
             </Text>
           </DataField.Root>
           <DataField.Root size="sm">

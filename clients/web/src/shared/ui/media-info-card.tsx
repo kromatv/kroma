@@ -12,11 +12,10 @@ import {
   type SubtitleTrack,
   type VideoTrack,
 } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { useFormat, useT } from '@kroma/ui';
 import { Box, color, DataField, Grid, Row, Text } from '@kroma/ui/kit';
 import { IconFileInfo } from '@tabler/icons-react';
 import type { CSSProperties, ReactNode } from 'react';
-import { formatBytes, formatDuration } from '#web/shared/lib/adminFormat';
 
 const TOP_RULE = { borderTopWidth: 1, borderTopColor: color('white/6') } as const;
 const BOTTOM_RULE = { borderBottomWidth: 1, borderBottomColor: color('white/6') } as const;
@@ -31,6 +30,7 @@ export function FileCard({
   multi,
 }: Readonly<{ file: MediaFile; index: number; multi: boolean }>) {
   const t = useT();
+  const fmt = useFormat();
   return (
     <Box overflow="hidden" radius="xl" border="white/8" bg="white/2">
       <FileHeader file={file} index={index} multi={multi} />
@@ -40,11 +40,11 @@ export function FileCard({
           <FileField label={t('mediaInfo.container')} value={file.container.toUpperCase()} />
           <FileField
             label={t('mediaInfo.size')}
-            value={file.size != null ? formatBytes(file.size) : '-'}
+            value={file.size != null ? fmt.bytes(file.size) : '-'}
           />
           <FileField
             label={t('mediaInfo.duration')}
-            value={file.durationMs != null ? formatDuration(file.durationMs) : '-'}
+            value={file.durationMs != null ? fmt.duration(file.durationMs) : '-'}
           />
         </Grid>
       </Box>

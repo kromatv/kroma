@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  addCatalogs,
   type Catalogs,
   createTranslator,
   detectLocale,
@@ -7,7 +8,6 @@ import {
   LOCALES,
   normalizeLocale,
   translate,
-  translateIn,
 } from './i18n';
 
 describe('isLocale', () => {
@@ -94,30 +94,61 @@ describe('createTranslator', () => {
   });
 });
 
-describe('translateIn', () => {
+describe('catalogs added at runtime', () => {
   const catalogs: Catalogs = {
     fr: { greeting: 'Bonjour {name}', item_one: '{count} article', item: '{count} articles' },
     en: { greeting: 'Hello {name}' },
   };
 
-  it('translates against an explicit catalog set with interpolation', () => {
-    expect(translateIn(catalogs, 'en', 'greeting', { name: 'Max' })).toBe('Hello Max');
+  it('translates a scope against its own catalogs, with interpolation', () => {
+    const dispose = addCatalogs('probe.interpolation', catalogs);
+
+    expect(createTranslator('en', 'probe.interpolation')('greeting', { name: 'Max' })).toBe(
+      'Hello Max',
+    );
+
+    dispose();
   });
 
-  it('falls back to the French default when the locale lacks the key', () => {
-    expect(translateIn(catalogs, 'en', 'item', { count: 5 })).toBe('5 articles');
+  it('falls back inside the scope to its default locale', () => {
+    const dispose = addCatalogs('probe.fallback', catalogs);
+
+    expect(createTranslator('en', 'probe.fallback')('item', { count: 5 })).toBe('5 articles');
+
+    dispose();
   });
 
   it('picks the _one plural variant, else the base', () => {
-    expect(translateIn(catalogs, 'fr', 'item', { count: 1 })).toBe('1 article');
-    expect(translateIn(catalogs, 'fr', 'item', { count: 4 })).toBe('4 articles');
+    const dispose = addCatalogs('probe.plural', catalogs);
+    const t = createTranslator('fr', 'probe.plural');
+
+    expect(t('item', { count: 1 })).toBe('1 article');
+    expect(t('item', { count: 4 })).toBe('4 articles');
+
+    dispose();
   });
 
   it('keeps unknown interpolation tokens verbatim', () => {
-    expect(translateIn(catalogs, 'fr', 'greeting', { other: 'x' })).toBe('Bonjour {name}');
+    const dispose = addCatalogs('probe.tokens', catalogs);
+
+    expect(createTranslator('fr', 'probe.tokens')('greeting', { other: 'x' })).toBe(
+      'Bonjour {name}',
+    );
+
+    dispose();
   });
 
-  it('returns undefined for a key absent from every catalog', () => {
-    expect(translateIn(catalogs, 'en', 'missing.key')).toBeUndefined();
+  it('renders a key no catalog knows as the key itself', () => {
+    const dispose = addCatalogs('probe.missing', catalogs);
+
+    expect(createTranslator('en', 'probe.missing')('missing.key')).toBe('missing.key');
+
+    dispose();
+  });
+
+  it('leaves the app catalogs alone once the scope is disposed', () => {
+    addCatalogs('probe.dispose', { fr: { 'nav.home': 'Détourné' } })();
+
+    expect(translate('fr', 'nav.home')).not.toBe('Détourné');
   });
 });

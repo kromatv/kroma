@@ -2,6 +2,7 @@
 // ones are swipe-to-delete rows.
 
 import { episodeTag, formatRuntime, type MediaItem } from '@kroma/core';
+import { useFormat } from '@kroma/ui';
 import { Box, type ColorValue, Icon, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -15,7 +16,7 @@ import { FadeImage } from '#mobile/components/FadeImage';
 import { PageHeader } from '#mobile/components/PageHeader';
 import { ProgressRing } from '#mobile/components/ProgressRing';
 import { EmptyState, Screen } from '#mobile/components/ui';
-import { type DownloadEntry, formatBytes, useDownloads } from '#mobile/lib/downloads';
+import { type DownloadEntry, useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient } from '#mobile/lib/session';
@@ -36,11 +37,12 @@ function RowArt({ uri, seed }: Readonly<{ uri: string | null; seed: string }>) {
 
 function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
   const t = useT();
+  const fmt = useFormat();
   const router = useRouter();
   const downloads = useDownloads();
   const swipeRef = useRef<SwipeableMethods>(null);
   const { item } = entry;
-  const sub = [episodeTag(item), formatRuntime(item.durationMs), formatBytes(entry.sizeBytes)]
+  const sub = [episodeTag(item), formatRuntime(item.durationMs), fmt.bytes(entry.sizeBytes)]
     .filter(Boolean)
     .join(' · ');
 
@@ -172,6 +174,7 @@ function LegendItem({ tint, label }: Readonly<{ tint?: ColorValue; label: string
 
 function StorageMeter() {
   const t = useT();
+  const fmt = useFormat();
   const downloads = useDownloads();
   const storage = useQuery({
     queryKey: ['deviceStorage'],
@@ -202,12 +205,12 @@ function StorageMeter() {
         <Box style={{ flex: free / total }} />
       </Box>
       <Box style={s.meterLegend}>
-        {app > 0 ? <LegendItem tint="accent" label={`KROMA · ${formatBytes(app)}`} /> : null}
+        {app > 0 ? <LegendItem tint="accent" label={`KROMA · ${fmt.bytes(app)}`} /> : null}
         <LegendItem
           tint="borderStrong"
-          label={`${t('offline.storageOther')} · ${formatBytes(other)}`}
+          label={`${t('offline.storageOther')} · ${fmt.bytes(other)}`}
         />
-        <LegendItem label={`${t('offline.storageFree')} · ${formatBytes(free)}`} />
+        <LegendItem label={`${t('offline.storageFree')} · ${fmt.bytes(free)}`} />
       </Box>
     </Box>
   );

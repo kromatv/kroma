@@ -1,6 +1,6 @@
 import type { PlaybackSession, TopUser } from '@kroma/core';
 import { TABULAR } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
+import { useFormat, useT } from '@kroma/ui';
 import {
   Avatar,
   Box,
@@ -20,7 +20,6 @@ import { BandwidthSection, CpuSection, RamSection } from '#web/features/admin/da
 import { NowPlayingCard, StopStreamModal } from '#web/features/admin/dashboard-now-playing';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge';
 import { PageHeader, useAdmin, usePoll } from '#web/features/admin/shell';
-import { formatDuration } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 
 function RangeSelect({
@@ -168,9 +167,10 @@ const ROW_RULE = { borderBottomWidth: 1, borderBottomColor: color('tint/4') } as
 
 function TopUserCard({ u }: Readonly<{ u: TopUser }>) {
   const t = useT();
+  const fmt = useFormat();
   const rows = [
-    { label: t('admin.films'), val: formatDuration(u.filmsMs), on: u.filmsMs >= u.tvMs },
-    { label: t('admin.tv'), val: formatDuration(u.tvMs), on: u.tvMs > u.filmsMs },
+    { label: t('admin.films'), val: fmt.duration(u.filmsMs), on: u.filmsMs >= u.tvMs },
+    { label: t('admin.tv'), val: fmt.duration(u.tvMs), on: u.tvMs > u.filmsMs },
   ];
   return (
     <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
@@ -181,7 +181,7 @@ function TopUserCard({ u }: Readonly<{ u: TopUser }>) {
             {u.plays} {u.plays > 1 ? t('admin.plays') : t('admin.play')}
           </Text>
           <Text variant="meta" color="textMuted">
-            {formatDuration(u.watchedMs)}
+            {fmt.duration(u.watchedMs)}
           </Text>
         </Box>
       </Row>

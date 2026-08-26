@@ -17,6 +17,7 @@ vi.mock('#web/features/playback/web-stats', () => ({
 }));
 vi.mock('@kroma/ui', () => ({
   useAudioFilter: () => H.filter,
+  useLocale: () => 'en',
   useT: () => (k: string) => k,
 }));
 // `refineTrackLang` stays REAL: a stubbed matcher would only assert the stub.

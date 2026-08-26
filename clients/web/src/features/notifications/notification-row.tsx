@@ -22,7 +22,11 @@ import { Badge, Box, Icon, IconButton, ListRow, Text } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { notificationLink } from '#web/features/notifications/notification-link';
-import { useExactTime, useRelativeTime } from '#web/features/notifications/notification-time';
+import {
+  useExactTime,
+  useRelativeTime,
+  useStandaloneTime,
+} from '#web/features/notifications/notification-time';
 import { useReadState } from '#web/features/notifications/use-notifications';
 import { NotificationCard } from '#web/shared/ui/notification-card';
 
@@ -51,6 +55,7 @@ export function NotificationEntry({
   const t = useT();
   const navigate = useNavigate();
   const relative = useRelativeTime();
+  const standalone = useStandaloneTime();
   const { markRead } = useReadState();
   const [open, setOpen] = useState(false);
 
@@ -98,7 +103,7 @@ export function NotificationEntry({
             }
             time={
               <time dateTime={new Date(head.createdAt).toISOString()} style={TABULAR}>
-                {latest}
+                {standalone(head.createdAt)}
               </time>
             }
           />

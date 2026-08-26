@@ -3,11 +3,10 @@
 // the scale, the unit and the roles the two colours stand for.
 
 import type { MetricsSnapshot } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { useFormat, useT } from '@kroma/ui';
 import { Section, Text } from '@kroma/ui/kit';
 import { CHART_SERIES } from '#web/features/admin/chart-palette';
 import { MetricsChart } from '#web/features/admin/charts';
-import { decimal, formatMbps } from '#web/shared/lib/adminFormat';
 
 type Metrics = Readonly<{ metrics: MetricsSnapshot | null }>;
 
@@ -29,6 +28,7 @@ function LiveLabel() {
 
 export function BandwidthSection({ metrics }: Metrics) {
   const t = useT();
+  const fmt = useFormat();
   const local = metrics?.series.bwLocal ?? [];
   const remote = metrics?.series.bwRemote ?? [];
   return (
@@ -43,7 +43,7 @@ export function BandwidthSection({ metrics }: Metrics) {
         max={Math.max(1, ...local, ...remote)}
         label={t('admin.bandwidth')}
         sampleSec={sampleSec(metrics)}
-        formatValue={formatMbps}
+        formatValue={fmt.mbps}
         series={[
           {
             id: 'remote',
@@ -60,8 +60,8 @@ export function BandwidthSection({ metrics }: Metrics) {
           },
         ]}
         footer={t('admin.bwAverages', {
-          remote: formatMbps(avg(remote)),
-          local: formatMbps(avg(local)),
+          remote: fmt.mbps(avg(remote)),
+          local: fmt.mbps(avg(local)),
         })}
       />
     </Section.Root>
@@ -70,6 +70,7 @@ export function BandwidthSection({ metrics }: Metrics) {
 
 export function CpuSection({ metrics }: Metrics) {
   const t = useT();
+  const fmt = useFormat();
   const kroma = metrics?.series.cpuKroma ?? [];
   const sys = metrics?.series.cpuSystem ?? [];
   return (
@@ -95,8 +96,8 @@ export function CpuSection({ metrics }: Metrics) {
           },
         ]}
         footer={t('admin.cpuAverages', {
-          kroma: decimal(avg(kroma), 1),
-          sys: decimal(avg(sys), 1),
+          kroma: fmt.decimal(avg(kroma), 1),
+          sys: fmt.decimal(avg(sys), 1),
         })}
       />
     </Section.Root>
@@ -105,6 +106,7 @@ export function CpuSection({ metrics }: Metrics) {
 
 export function RamSection({ metrics }: Metrics) {
   const t = useT();
+  const fmt = useFormat();
   const kroma = metrics?.series.ramKroma ?? [];
   const sys = metrics?.series.ramSystem ?? [];
   return (
@@ -130,8 +132,8 @@ export function RamSection({ metrics }: Metrics) {
           },
         ]}
         footer={t('admin.ramAverages', {
-          kroma: decimal(avg(kroma), 2),
-          sys: decimal(avg(sys), 2),
+          kroma: fmt.decimal(avg(kroma), 2),
+          sys: fmt.decimal(avg(sys), 2),
         })}
       />
     </Section.Root>

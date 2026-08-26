@@ -1,9 +1,8 @@
 import type { SessionInfo } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { useFormat, useT } from '@kroma/ui';
 import { Badge, Box, Button, Icon, type IconName, ListRow, Row, Text } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { relativeSeen } from '#web/shared/lib/adminFormat';
 import { kromaClient } from '#web/shared/lib/api';
 import { type DeviceKind, deviceInfo } from '#web/shared/lib/device';
 import { userQueries } from '#web/shared/lib/queries';
@@ -16,6 +15,7 @@ const DEVICE_ICON: Record<DeviceKind, IconName> = {
 
 function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
   const t = useT();
+  const fmt = useFormat();
   const qc = useQueryClient();
   const [revoking, setRevoking] = useState(false);
   const { label, kind } = deviceInfo(session.userAgent, t('account.unknownDevice'));
@@ -41,7 +41,7 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
         <ListRow.Label>{label}</ListRow.Label>
         {session.current ? <Badge tone="success">{t('account.thisDevice')}</Badge> : null}
       </Row>
-      <ListRow.Hint>{relativeSeen(session.lastSeen)}</ListRow.Hint>
+      <ListRow.Hint>{fmt.elapsed(session.lastSeen)}</ListRow.Hint>
       <ListRow.Trailing>
         {session.current ? (
           <Text variant="meta" color="textDim">

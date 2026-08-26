@@ -20,7 +20,7 @@ export {
   KromaEvents as KromaEventStream,
   RequestId,
 } from '@kroma/core';
-export { useLocale, useT } from '@kroma/ui';
+export { useFormat, useLocale, useT } from '@kroma/ui';
 export type { AdminHostValue } from './admin/context';
 export { AdminHostProvider, useAdminHost } from './admin/context';
 export { Denied } from './admin/denied';

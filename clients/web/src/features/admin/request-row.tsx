@@ -2,11 +2,12 @@
 // requester, date, status chip, and quick approve/deny on pending rows.
 
 import type { MediaRequest, MessageKey } from '@kroma/core';
+import { posterGradient } from '@kroma/core';
 import { TABULAR, Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Avatar, Box, Row, Text } from '@kroma/ui/kit';
 import { Pill } from '#web/features/admin/pill';
-import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
+import { kindMeta } from '#web/features/admin/pipeline-meta';
 import { seasonsSummary } from '#web/shared/lib/request-status';
 import { Image } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
@@ -14,7 +15,7 @@ import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 function Poster({ req }: Readonly<{ req: MediaRequest }>) {
   return (
     <Box w={32} h={46} shrink={0} radius={4} overflow="hidden" shadow="card">
-      <div style={{ position: 'absolute', inset: 0, background: posterGrad(req.title) }} />
+      <div style={{ position: 'absolute', inset: 0, background: posterGradient(req.title) }} />
       <Image src={req.posterUrl} fit="cover" fill />
     </Box>
   );

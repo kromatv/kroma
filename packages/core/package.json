@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@kroma/client": "workspace:*",
+    "@kroma/i18n": "workspace:*",
     "zod": "^4.4.3"
   },
   "peerDependencies": {

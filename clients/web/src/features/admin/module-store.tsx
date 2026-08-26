@@ -4,8 +4,8 @@
 // installed state, and a live `module.op.*` stream replaces the action with a
 // download/install progress bar.
 
-import { formatBytes, type StoreCatalog, type StoreModule } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type { StoreCatalog, StoreModule } from '@kroma/core';
+import { useFormat, useT } from '@kroma/ui';
 import {
   Badge,
   Box,
@@ -95,6 +95,7 @@ function StoreCard({
   onUpdate: () => void;
 }>) {
   const t = useT();
+  const fmt = useFormat();
   const id = useId();
   return (
     <Surface
@@ -125,7 +126,7 @@ function StoreCard({
           </Text>
           {m.size ? (
             <Text variant="meta" color="textDim">
-              · {formatBytes(m.size)}
+              · {fmt.bytes(m.size)}
             </Text>
           ) : null}
           <Text variant="meta" color={m.source === 'Official' ? 'accentText' : 'textDim'}>

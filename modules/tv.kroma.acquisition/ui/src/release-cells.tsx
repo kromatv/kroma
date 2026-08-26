@@ -5,8 +5,7 @@
 // into -- but where it came from, how big it is and how many are seeding are the
 // same three facts in the same three columns. They were written twice.
 
-import { formatBytes } from '@kroma/core';
-import { TABULAR, Table, useT } from '@kroma/module-sdk';
+import { TABULAR, Table, useFormat, useT } from '@kroma/module-sdk';
 import { Icon, Row, Text } from '@kroma/ui/kit';
 
 export function ReleaseFacts({
@@ -22,6 +21,7 @@ export function ReleaseFacts({
   seeders: number | null;
 }>) {
   const t = useT();
+  const fmt = useFormat();
   return (
     <>
       <Table.Cell wide>
@@ -43,7 +43,7 @@ export function ReleaseFacts({
       </Table.Cell>
       <Table.Cell wide>
         <Text variant="meta" color="textDim" style={TABULAR}>
-          {sizeBytes != null ? formatBytes(sizeBytes) : '—'}
+          {sizeBytes != null ? fmt.bytes(sizeBytes) : '—'}
         </Text>
       </Table.Cell>
       <Table.Cell wide>

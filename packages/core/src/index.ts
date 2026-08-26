@@ -11,6 +11,7 @@ export * from './genre-art';
 export * from './handoff';
 export * from './hevc';
 export * from './i18n';
+export * from './intl';
 export * from './lang';
 export * from './match';
 export * from './notification-labels';

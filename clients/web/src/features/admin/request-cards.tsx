@@ -3,6 +3,7 @@
 // itself stays data + layout.
 
 import type { MediaRequest } from '@kroma/core';
+import { posterGradient } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Avatar,
@@ -19,7 +20,7 @@ import {
 } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { Pill } from '#web/features/admin/pill';
-import { kindMeta, posterGrad } from '#web/features/admin/pipeline-meta';
+import { kindMeta } from '#web/features/admin/pipeline-meta';
 import { Image } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
@@ -44,7 +45,7 @@ export function IdentityCard({
     <Surface elevated radius="xl" pad="lg">
       <Box row gap={16}>
         <Box w={70} h={104} shrink={0} radius="xs" overflow="hidden" shadow="pop">
-          <div style={{ position: 'absolute', inset: 0, background: posterGrad(req.title) }} />
+          <div style={{ position: 'absolute', inset: 0, background: posterGradient(req.title) }} />
           <Image src={posterUrl ?? req.posterUrl} fit="cover" fill />
         </Box>
         <Box minW={0} pt={4} align="flex-start" gap={10}>

@@ -87,15 +87,19 @@ impl Builder {
         let default = self.default.ok_or(BuildError::MissingDefault)?;
         let mut locales = Vec::with_capacity(self.raw.len() + self.parsed.len());
         for (code, json) in self.raw {
-            let entries =
+            let mut entries: HashMap<String, String> =
                 serde_json::from_str(&json).map_err(|e| BuildError::Catalog(code.clone(), e))?;
+            // `$schema` points an editor at the catalog schema; it is not a
+            // message, and the TypeScript half drops it for the same reason.
+            entries.remove("$schema");
             locales.push(Locale {
                 label_key: (self.label_key)(&code),
                 code,
                 entries,
             });
         }
-        for (code, entries) in self.parsed {
+        for (code, mut entries) in self.parsed {
+            entries.remove("$schema");
             locales.push(Locale {
                 label_key: (self.label_key)(&code),
                 code,
@@ -107,6 +111,18 @@ impl Builder {
         }
         // Default locale leads the ordering.
         locales.sort_by_key(|l| l.code != default);
+        // `$t(key)` references expand once, here, so translating stays a single
+        // interpolation pass. Mirrors `expandRefs` in @kroma/i18n. The default
+        // locale leads the ordering, so the rest borrow its entries as the
+        // fallback rather than each taking a copy of a few thousand strings.
+        if let Some((first, rest)) = locales.split_first_mut() {
+            let fallback = std::mem::take(&mut first.entries);
+            for locale in rest {
+                let entries = std::mem::take(&mut locale.entries);
+                locale.entries = crate::expand_refs(entries, &fallback);
+            }
+            first.entries = crate::expand_refs(fallback, &HashMap::new());
+        }
         Ok(I18n {
             default,
             locales,

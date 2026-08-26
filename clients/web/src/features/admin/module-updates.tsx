@@ -3,8 +3,8 @@
 // catalog fetch server-side), and live per-module progress off the
 // `module.op.*` stream.
 
-import { formatBytes, type StoreModule } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import type { StoreModule } from '@kroma/core';
+import { useFormat, useT } from '@kroma/ui';
 import { Box, Button, EmptyState, Icon, ListRow, Row, Text } from '@kroma/ui/kit';
 import type { OpModule } from '#web/features/admin/module-ops';
 import { OpProgress } from '#web/features/admin/module-store';
@@ -24,6 +24,7 @@ function UpdateRow({
   onOpen: () => void;
 }>) {
   const t = useT();
+  const fmt = useFormat();
   return (
     <ListRow.Root size="md" onPress={onOpen}>
       <ListRow.Leading>
@@ -42,7 +43,7 @@ function UpdateRow({
         </Text>
         {m.size ? (
           <Text variant="meta" color="textDim">
-            · {formatBytes(m.size)}
+            · {fmt.bytes(m.size)}
           </Text>
         ) : null}
       </Row>
@@ -81,6 +82,7 @@ export function UpdatesList({
   onOpen: (id: string) => void;
 }>) {
   const t = useT();
+  const fmt = useFormat();
   if (updates.length === 0) {
     return (
       <EmptyState.Root icon="circle-check">
@@ -100,7 +102,7 @@ export function UpdatesList({
       <Row wrap between gap={12}>
         <Text variant="meta" color="textMuted">
           {t('admin.modulesUpdatesCount', { count: updates.length })}
-          {totalSize > 0 && <Text color="textDim"> · {formatBytes(totalSize)}</Text>}
+          {totalSize > 0 && <Text color="textDim"> · {fmt.bytes(totalSize)}</Text>}
         </Text>
         <Button
           variant="primary"

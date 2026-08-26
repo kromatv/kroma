@@ -116,10 +116,3 @@ export async function deleteEntryFiles(entry: DownloadEntry): Promise<void> {
     paths.map((p) => FileSystem.deleteAsync(p, { idempotent: true }).catch(() => undefined)),
   );
 }
-
-export function formatBytes(bytes: number): string {
-  if (bytes <= 0) return '0 MB';
-  const gb = bytes / 1024 ** 3;
-  if (gb >= 1) return `${gb.toFixed(1)} GB`;
-  return `${Math.round(bytes / 1024 ** 2)} MB`;
-}

@@ -1,4 +1,4 @@
-import { interpolate, type TVars } from '@kroma/core';
+import { interpolate, type TVars } from '@kroma/i18n';
 
 type MessageLookup = (key: string, vars?: TVars) => string;
 

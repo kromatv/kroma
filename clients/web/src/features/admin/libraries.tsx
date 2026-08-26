@@ -1,5 +1,5 @@
 import type { AdminLibrary } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { useFormat, useT } from '@kroma/ui';
 import {
   Box,
   Button,
@@ -21,7 +21,6 @@ import {
 } from '#web/features/admin/libraries-modals';
 import { Pill } from '#web/features/admin/pill';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
-import { formatBytes, relativeSeen } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 import { TableSkeleton } from '#web/shared/ui';
 
@@ -109,6 +108,7 @@ function LibraryCard({
   onManage: () => void;
 }>) {
   const t = useT();
+  const fmt = useFormat();
   const { client } = useAuth();
   const [scanning, setScanning] = useState(false);
 
@@ -145,8 +145,8 @@ function LibraryCard({
       <Divider color="tint/5" />
 
       <Box row align="stretch">
-        <Stat label={t('admin.statSize')} value={formatBytes(lib.sizeBytes)} border />
-        <Stat label={t('admin.statLastScan')} value={relativeSeen(lib.lastScan)} />
+        <Stat label={t('admin.statSize')} value={fmt.bytes(lib.sizeBytes)} border />
+        <Stat label={t('admin.statLastScan')} value={fmt.elapsed(lib.lastScan)} />
       </Box>
       <Divider color="tint/5" />
 

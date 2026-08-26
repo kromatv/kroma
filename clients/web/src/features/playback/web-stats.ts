@@ -1,4 +1,11 @@
-import { type AudioTrack, formatTimecode as clock, type Translate } from '@kroma/core';
+import {
+  type AudioTrack,
+  formatTimecode as clock,
+  decimal,
+  formatBytes,
+  type Locale,
+  type Translate,
+} from '@kroma/core';
 import type { PlayerMeter, PlayerStats } from '@kroma/ui';
 import type { EngineLiveStats } from '#web/features/playback/engine-stats';
 import type { MovieView } from '#web/shared/lib/api';
@@ -6,16 +13,17 @@ import type { MovieView } from '#web/shared/lib/api';
 const READY = ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT', 'HAVE_FUTURE', 'HAVE_ENOUGH'];
 const NETWORK = ['EMPTY', 'IDLE', 'LOADING', 'NO_SOURCE'];
 
-function kbps(k: number | undefined): string | undefined {
+// `Mb/s` and `kb/s` are SI symbols, the same in every language; only the
+// decimal separator moves.
+function kbps(k: number | undefined, locale: Locale): string | undefined {
   if (!k || k <= 0) return undefined;
-  return k >= 1000 ? `${(k / 1000).toFixed(2)} Mb/s` : `${Math.round(k)} kb/s`;
+  return k >= 1000 ? `${decimal(k / 1000, locale, 2)} Mb/s` : `${Math.round(k)} kb/s`;
 }
 
-function bytesH(b: number | undefined): string | undefined {
-  if (!b || b <= 0) return undefined;
-  if (b >= 1e9) return `${(b / 1e9).toFixed(2)} Go`;
-  if (b >= 1e6) return `${(b / 1e6).toFixed(1)} Mo`;
-  return `${Math.round(b / 1e3)} Ko`;
+// Absent rather than zero: the overlay leaves a figure out instead of showing
+// a hollow one, and keeps that decision out of the row builder.
+function bytesH(b: number | undefined, locale: Locale): string | undefined {
+  return b && b > 0 ? formatBytes(b, locale) : undefined;
 }
 
 interface ConnLike {
@@ -39,6 +47,7 @@ export interface WebStatsInput {
   engine?: EngineLiveStats | null;
   bytes: number;
   t: Translate;
+  locale: Locale;
 }
 
 interface StatsMetrics {
@@ -115,7 +124,7 @@ function statsRows(s: WebStatsInput, m: StatsMetrics): ExtraRow[] {
     {
       group: media,
       label: t('stats.size'),
-      value: s.bytes ? `${(s.bytes / 1e9).toFixed(2)} Go` : '…',
+      value: bytesH(s.bytes, s.locale) ?? '…',
     },
   ];
   if (useHls) {
@@ -127,13 +136,13 @@ function statsRows(s: WebStatsInput, m: StatsMetrics): ExtraRow[] {
   }
   // Absent on direct-play / native HLS.
   if (engine) {
-    push(transport, t('stats.streamBitrate'), kbps(engine.streamBitrateKbps));
-    push(transport, t('stats.bandwidth'), kbps(engine.estBandwidthKbps));
+    push(transport, t('stats.streamBitrate'), kbps(engine.streamBitrateKbps, s.locale));
+    push(transport, t('stats.bandwidth'), kbps(engine.estBandwidthKbps, s.locale));
     if (engine.stalls != null) {
       const buffering = engine.bufferingSec ? ` (${engine.bufferingSec.toFixed(1)}s)` : '';
       push(transport, t('stats.stalls'), `${engine.stalls}${buffering}`);
     }
-    push(transport, t('stats.downloaded'), bytesH(engine.bytesDownloaded));
+    push(transport, t('stats.downloaded'), bytesH(engine.bytesDownloaded, s.locale));
     push(transport, t('stats.codecs'), engine.currentCodecs);
   }
   push(
@@ -171,7 +180,7 @@ function buildMeters(s: WebStatsInput, m: StatsMetrics): PlayerMeter[] {
       key: 'bandwidth',
       label: s.t('stats.bandwidth'),
       value: eng.estBandwidthKbps,
-      display: kbps(eng.estBandwidthKbps) ?? '-',
+      display: kbps(eng.estBandwidthKbps, s.locale) ?? '-',
       chart: 'throughput',
       chartLabel: s.t('stats.throughput'),
       band: true,
@@ -182,7 +191,7 @@ function buildMeters(s: WebStatsInput, m: StatsMetrics): PlayerMeter[] {
       key: 'bitrate',
       label: s.t('stats.streamBitrate'),
       value: eng.streamBitrateKbps,
-      display: kbps(eng.streamBitrateKbps) ?? '-',
+      display: kbps(eng.streamBitrateKbps, s.locale) ?? '-',
       chart: 'throughput',
     });
   }

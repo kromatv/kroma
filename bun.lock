@@ -562,6 +562,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@kroma/client": "workspace:*",
+        "@kroma/i18n": "workspace:*",
         "zod": "^4.4.3",
       },
       "devDependencies": {
@@ -576,6 +577,21 @@
       "optionalPeers": [
         "react",
         "react-native",
+      ],
+    },
+    "packages/i18n": {
+      "name": "@kroma/i18n",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/react": "^19.2.18",
+        "react": "19.2.8",
+        "typescript": "^7.0.2",
+      },
+      "peerDependencies": {
+        "react": ">=18",
+      },
+      "optionalPeers": [
+        "react",
       ],
     },
     "packages/lan-beacon": {
@@ -811,6 +827,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@kroma/core": "workspace:*",
+        "@kroma/i18n": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
         "@tabler/icons-react-native": "^3.46.0",
         "react-native-svg": "^15.15.5",
@@ -1415,6 +1432,8 @@
     "@kroma/core": ["@kroma/core@workspace:packages/core"],
 
     "@kroma/desktop": ["@kroma/desktop@workspace:clients/desktop"],
+
+    "@kroma/i18n": ["@kroma/i18n@workspace:packages/i18n"],
 
     "@kroma/kit": ["@kroma/kit@workspace:apps/kit"],
 

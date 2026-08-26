@@ -1,5 +1,4 @@
-import { formatBytes } from '@kroma/core';
-import { type MessageKey, useT } from '@kroma/module-sdk';
+import { type MessageKey, useFormat, useT } from '@kroma/module-sdk';
 import {
   Badge,
   Box,
@@ -216,6 +215,7 @@ function RowProgressCell({
   progress,
   tone,
 }: Readonly<{ dl: DownloadView; progress: number; tone: ColorValue }>) {
+  const fmt = useFormat();
   return (
     <Box>
       <Progress value={progress} color={tone} thickness={5} rounded />
@@ -225,7 +225,7 @@ function RowProgressCell({
         </Text>
         {dl.sizeBytes != null ? (
           <Text variant="meta" color="text/45" style={s.tabular}>
-            {formatBytes(dl.sizeBytes)}
+            {fmt.bytes(dl.sizeBytes)}
           </Text>
         ) : null}
       </Row>
@@ -241,6 +241,7 @@ function RowSpeedCell({
   stat: { downBps: number; upBps: number; peers: number; peersSeen: number };
 }>) {
   const t = useT();
+  const fmt = useFormat();
   if (!active) {
     return (
       <Text variant="meta" color="text/30">
@@ -252,11 +253,11 @@ function RowSpeedCell({
   return (
     <Box>
       <Text variant="meta" color="success" style={s.tabular}>
-        {formatBytes(stat.downBps)}/s
+        {fmt.bytes(stat.downBps)}/s
       </Text>
       <Row gap={6}>
         <Text variant="meta" color="text/35" style={s.tabular}>
-          {formatBytes(stat.upBps)}/s
+          {fmt.bytes(stat.upBps)}/s
         </Text>
         <Tooltip
           label={t('downloads.peersDetail', {

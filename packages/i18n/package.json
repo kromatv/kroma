@@ -1,0 +1,51 @@
+{
+  "name": "@kroma/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A small, fully-typed message engine: catalog interpolation, build-time key references, CLDR pluralisation, runtime catalog injection and locale detection. Framework-free, with optional React bindings.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/i18n"
+  },
+  "sideEffects": false,
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react/index.ts",
+    "./schema": "./schema/catalog.schema.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "react": "19.2.8",
+    "typescript": "^7.0.2"
+  },
+  "keywords": [
+    "i18n",
+    "internationalization",
+    "l10n",
+    "translation",
+    "pluralization",
+    "react",
+    "typescript"
+  ],
+  "files": [
+    "src",
+    "schema",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  }
+}

@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@kroma/core": "workspace:*",
+    "@kroma/i18n": "workspace:*",
     "@tabler/icons-react": "^3.46.0",
     "@tabler/icons-react-native": "^3.46.0",
     "react-native-svg": "^15.15.5",

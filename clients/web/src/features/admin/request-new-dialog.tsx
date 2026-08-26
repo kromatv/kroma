@@ -1,4 +1,4 @@
-import { apiErrorText, type DiscoverEntry } from '@kroma/core';
+import { apiErrorText, type DiscoverEntry, posterGradient } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,
@@ -17,7 +17,6 @@ import {
   Text,
 } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
-import { posterGrad } from '#web/features/admin/pipeline-meta';
 import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
 
@@ -225,7 +224,9 @@ function ResultRow({
     <ListRow.Root chevron={false} label={entry.title}>
       <ListRow.Leading>
         <Box w={52} h={76} shrink={0} radius="sm" overflow="hidden">
-          <div style={{ position: 'absolute', inset: 0, background: posterGrad(entry.title) }} />
+          <div
+            style={{ position: 'absolute', inset: 0, background: posterGradient(entry.title) }}
+          />
           <Image src={entry.posterUrl} fit="cover" fill />
         </Box>
       </ListRow.Leading>

@@ -21,7 +21,6 @@ const {
   DIR,
   deleteEntryFiles,
   ensureDir,
-  formatBytes,
   mediaPath,
   readIndex,
   readWanted,
@@ -168,17 +167,5 @@ describe('deleteEntryFiles', () => {
   it('does not throw when a file cannot be removed', async () => {
     fs.deleteAsync.mockRejectedValueOnce(new Error('EBUSY'));
     await expect(deleteEntryFiles(entry('a'))).resolves.toBeUndefined();
-  });
-});
-
-describe('formatBytes', () => {
-  it('reads in GB above a gigabyte and MB below it', () => {
-    expect(formatBytes(3 * 1024 ** 3)).toBe('3.0 GB');
-    expect(formatBytes(700 * 1024 ** 2)).toBe('700 MB');
-  });
-
-  it('shows nothing-yet as 0 MB rather than a negative or NaN', () => {
-    expect(formatBytes(0)).toBe('0 MB');
-    expect(formatBytes(-1)).toBe('0 MB');
   });
 });

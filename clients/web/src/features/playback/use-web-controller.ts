@@ -9,6 +9,7 @@ import {
   type PlayerStats,
   type SubtitleGenBundle,
   useAudioFilter,
+  useLocale,
   useT,
 } from '@kroma/ui';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -39,6 +40,7 @@ export interface WebController {
  */
 export function useWebController(item: MovieView): WebController {
   const t = useT();
+  const locale = useLocale();
   const pb = useVideoPlayback(item);
   const subs = useWebSubtitles(item, t);
   const filter = useAudioFilter(pb.videoRef, `${pb.anchor}:${pb.audioIndex}`);
@@ -163,6 +165,7 @@ export function useWebController(item: MovieView): WebController {
       engine: readEngineStats(pb.hlsRef.current, pb.shakaRef.current),
       bytes,
       t,
+      locale,
     });
   const getStats = useCallback(() => statsRef.current(), []);
 

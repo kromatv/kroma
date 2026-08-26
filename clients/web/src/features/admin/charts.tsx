@@ -4,10 +4,10 @@
 // the captions are the admin's own copy.
 
 import type { HistoryBucket } from '@kroma/core';
+import { useFormat } from '@kroma/ui';
 import { Chart, type ChartPoint, type ColorValue } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';
 import { CHART_SERIES } from '#web/features/admin/chart-palette';
-import { formatHours } from '#web/shared/lib/adminFormat';
 
 // Fallback only; the server is authoritative via `sampleIntervalMs`
 // (see server/crates/kroma-engine/src/infra/metrics.rs).
@@ -93,6 +93,7 @@ export function HistoryBars({
   buckets,
   label,
 }: Readonly<{ buckets: HistoryBucket[]; label: string }>) {
+  const fmt = useFormat();
   const totalFilms = buckets.reduce((sum, bucket) => sum + bucket.filmsMs, 0);
   const totalTv = buckets.reduce((sum, bucket) => sum + bucket.tvMs, 0);
   const data = buckets.map((bucket) => ({
@@ -101,14 +102,7 @@ export function HistoryBars({
     tv: bucket.tvMs,
   }));
   return (
-    <Chart.Root
-      data={data}
-      x="at"
-      height={HISTORY_HEIGHT}
-      format={formatHours}
-      label={label}
-      min={0}
-    >
+    <Chart.Root data={data} x="at" height={HISTORY_HEIGHT} format={fmt.hours} label={label} min={0}>
       <Chart.Grid />
       <Chart.Bar series="films" label="FILMS" color={CHART_SERIES.films} />
       <Chart.Bar series="tv" label="TV" color={CHART_SERIES.tv} stack />
@@ -117,7 +111,7 @@ export function HistoryBars({
       <Chart.Tooltip />
       <Chart.Legend />
       <Chart.Footer>
-        Totaux : Films {formatHours(totalFilms)} · TV {formatHours(totalTv)}
+        Totaux : Films {fmt.hours(totalFilms)} · TV {fmt.hours(totalTv)}
       </Chart.Footer>
     </Chart.Root>
   );

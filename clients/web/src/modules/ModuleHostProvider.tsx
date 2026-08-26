@@ -1,6 +1,6 @@
-import { hasPermission, type Locale, type MessageKey, type TVars, translateIn } from '@kroma/core';
+import { hasPermission, type TVars } from '@kroma/core';
 import type { KromaHost, ModuleNav, ModulePanel, ModuleRoute } from '@kroma/module-sdk';
-import { useLocale, useT } from '@kroma/ui';
+import { useScopedT, useT } from '@kroma/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import { useModuleHost } from '#web/modules/host';
@@ -9,15 +9,11 @@ import { moduleRegistry } from '#web/modules/registry';
 import { forgetRemote, isLoadedRemote, loadRuntimeRemotes } from '#web/modules/remotes';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** A translator bound to one module's own catalogs, falling back to the core ones. */
+/** A translator bound to one module's own catalogs, falling back to the core
+ *  ones. The module's messages were registered with the engine when the module
+ *  was, so this is the scope, not a second lookup. */
 export function useModuleT(moduleId: string): (key: string, vars?: TVars) => string {
-  const locale = useLocale();
-  const t = useT();
-  return useMemo(() => {
-    const catalogs = moduleRegistry.localesOf(moduleId) ?? {};
-    return (key: string, vars?: TVars) =>
-      translateIn(catalogs, locale as Locale, key, vars) ?? t(key as MessageKey, vars);
-  }, [moduleId, locale, t]);
+  return useT(moduleId);
 }
 
 interface ModuleHostValue {
@@ -129,8 +125,7 @@ export function useRefreshModules(): () => Promise<void> {
 export function useModuleNavAll(): ModuleNav[] {
   const { nav, disabledIds } = useContext(ModuleHostContext);
   const { user } = useAuth();
-  const locale = useLocale();
-  const t = useT();
+  const tOf = useScopedT();
   return useMemo(
     () =>
       nav
@@ -144,11 +139,9 @@ export function useModuleNavAll(): ModuleNav[] {
         })
         .map((n) => ({
           ...n,
-          label:
-            translateIn(moduleRegistry.localesOf(n.moduleId) ?? {}, locale as Locale, n.label) ??
-            t(n.label as MessageKey),
+          label: tOf(n.moduleId)(n.label),
         })),
-    [nav, disabledIds, user, locale, t],
+    [nav, disabledIds, user, tOf],
   );
 }
 

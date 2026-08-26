@@ -1,5 +1,5 @@
 import type { Volume } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { useFormat, useT } from '@kroma/ui';
 import {
   Box,
   Button,
@@ -19,7 +19,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { TextStyle } from 'react-native';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
-import { formatBytes } from '#web/shared/lib/adminFormat';
 import { useAuth } from '#web/shared/lib/auth';
 
 export const Route = createFileRoute('/admin/storage')({
@@ -28,6 +27,7 @@ export const Route = createFileRoute('/admin/storage')({
 
 function StoragePage() {
   const t = useT();
+  const fmt = useFormat();
   const { client } = useAuth();
   const { data, reload } = usePoll(['admin', 'storage'], () => client.adminStorage(), 10000);
   const [clearing, setClearing] = useState(false);
@@ -76,19 +76,17 @@ function StoragePage() {
         <Grid columns={3} gap={16}>
           <StatCard.Root>
             <StatCard.Label>{t('admin.totalCapacity')}</StatCard.Label>
-            <StatCard.Value>{formatBytes(data?.totalBytes ?? 0)}</StatCard.Value>
+            <StatCard.Value>{fmt.bytes(data?.totalBytes ?? 0)}</StatCard.Value>
           </StatCard.Root>
           <StatCard.Root>
             <StatCard.Label>{t('admin.used')}</StatCard.Label>
             <StatCard.Value unit={`${pctUsed}%`} color="accent">
-              {formatBytes(data?.usedBytes ?? 0)}
+              {fmt.bytes(data?.usedBytes ?? 0)}
             </StatCard.Value>
           </StatCard.Root>
           <StatCard.Root>
             <StatCard.Label>{t('admin.available')}</StatCard.Label>
-            <StatCard.Value color="success">
-              {formatBytes(data?.availableBytes ?? 0)}
-            </StatCard.Value>
+            <StatCard.Value color="success">{fmt.bytes(data?.availableBytes ?? 0)}</StatCard.Value>
           </StatCard.Root>
         </Grid>
       </Box>
@@ -120,12 +118,12 @@ function StoragePage() {
               unit={t('admin.transcodeCacheBudget', { limit: cache?.transcodeLimit ?? '20 Go' })}
               color="accent"
             >
-              {formatBytes(cache?.transcodeBytes ?? 0)}
+              {fmt.bytes(cache?.transcodeBytes ?? 0)}
             </StatCard.Value>
           </StatCard.Root>
           <StatCard.Root>
             <StatCard.Label>{t('admin.cachedImages')}</StatCard.Label>
-            <StatCard.Value unit={formatBytes(cache?.imagesBytes ?? 0)} color="accent">
+            <StatCard.Value unit={fmt.bytes(cache?.imagesBytes ?? 0)} color="accent">
               {(cache?.imagesCount ?? 0).toLocaleString()}
             </StatCard.Value>
           </StatCard.Root>
@@ -188,7 +186,7 @@ function StoragePage() {
           />
           <MaintRow
             title={t('admin.clearCache')}
-            desc={t('admin.clearCacheDesc', { size: formatBytes(data?.cache.bytes ?? 0) })}
+            desc={t('admin.clearCacheDesc', { size: fmt.bytes(data?.cache.bytes ?? 0) })}
             right={
               <Button
                 variant="danger"
@@ -242,6 +240,7 @@ function LimitSelect({
 
 function VolumeCard({ v }: Readonly<{ v: Volume }>) {
   const t = useT();
+  const fmt = useFormat();
   const pct = v.totalBytes ? Math.round((v.usedBytes / v.totalBytes) * 100) : 0;
   const nearFull = pct >= 80;
   return (
@@ -260,9 +259,9 @@ function VolumeCard({ v }: Readonly<{ v: Volume }>) {
         </Box>
         <Box shrink={0} align="flex-end">
           <Text variant="label" style={FIGURES}>
-            {formatBytes(v.usedBytes)}{' '}
+            {fmt.bytes(v.usedBytes)}{' '}
             <Text variant="label" color="text/40" style={QUIET}>
-              / {formatBytes(v.totalBytes)}
+              / {fmt.bytes(v.totalBytes)}
             </Text>
           </Text>
           <Text variant="meta" color={nearFull ? 'danger' : 'accent'}>

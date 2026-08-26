@@ -11,7 +11,6 @@ import { useTransferQueue } from './queue';
 import type { DownloadEntry, DownloadState } from './store';
 
 export type { DownloadEntry, DownloadState, OfflineSub } from './store';
-export { formatBytes } from './store';
 
 interface DownloadsApi {
   entries: DownloadEntry[];

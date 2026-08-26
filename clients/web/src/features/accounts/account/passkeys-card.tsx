@@ -4,11 +4,10 @@
 // shows a notice instead of the add button.
 
 import { apiErrorText, type PasskeyInfo } from '@kroma/core';
-import { useT } from '@kroma/ui';
+import { useFormat, useT } from '@kroma/ui';
 import { Box, Button, Icon, IconWell, ListRow, Text } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { relativeSeen } from '#web/shared/lib/adminFormat';
 import { kromaClient } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
 import { userQueries } from '#web/shared/lib/queries';
@@ -30,6 +29,7 @@ function PasskeyRow({
   onRemoved,
 }: Readonly<{ passkey: PasskeyInfo; onRemoved: () => void }>) {
   const t = useT();
+  const fmt = useFormat();
   const [removing, setRemoving] = useState(false);
 
   const remove = async () => {
@@ -46,7 +46,7 @@ function PasskeyRow({
     <ListRow.Root>
       <ListRow.Label>{passkey.name}</ListRow.Label>
       <ListRow.Hint>
-        {passkey.lastUsed ? relativeSeen(passkey.lastUsed) : t('account.passkeyNeverUsed')}
+        {passkey.lastUsed ? fmt.elapsed(passkey.lastUsed) : t('account.passkeyNeverUsed')}
       </ListRow.Hint>
       <ListRow.Leading>
         <Box center w={38} h={38} radius="xs" border="border" bg="surface2">

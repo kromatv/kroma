@@ -1,30 +1,30 @@
-import { useLocale, useT } from '@kroma/ui';
+// How a notification row says when it arrived.
+//
+// The elapsed wording is the shared one from @kroma/core, so the panel and the
+// admin console count time the same way. It comes back lowercase, because it
+// also goes inside "De {first} à {last}"; the row sentence-cases it where it
+// stands on its own.
 
-/**
- * A formatter for how long ago a row arrived, in the reader's language.
+import { sentenceCase } from '@kroma/core';
+import { useFormat, useLocale } from '@kroma/ui';
+
+/** A formatter for how long ago a row arrived, in the reader's language.
  *
  * A formatter rather than a component: the same words go into a row's
  * accessible name and into the span a folded run reads out, and neither can
  * take a node.
- *
- * `Intl.RelativeTimeFormat` renders the zero case as the CURRENT unit rather
- * than an elapsed one ("this minute"), so it is special-cased to "just now".
- * `short` style is used over `narrow`, which renders French as "-47 min".
  */
 export function useRelativeTime(): (at: number) => string {
-  const t = useT();
+  const fmt = useFormat();
+  return (at: number) => fmt.elapsed(at);
+}
+
+/** The same label, capitalised, for where it stands alone rather than inside a
+ * sentence. */
+export function useStandaloneTime(): (at: number) => string {
+  const relative = useRelativeTime();
   const locale = useLocale();
-  return (at: number) => {
-    const mins = Math.max(0, Math.round((Date.now() - at) / 60_000));
-    if (mins < 1) return t('notifications.justNow');
-    const fmt = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: 'short' });
-    if (mins < 60) return fmt.format(-mins, 'minute');
-    const hours = Math.round(mins / 60);
-    if (hours < 24) return fmt.format(-hours, 'hour');
-    const days = Math.round(hours / 24);
-    if (days < 7) return fmt.format(-days, 'day');
-    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(at);
-  };
+  return (at: number) => sentenceCase(relative(at), locale);
 }
 
 /**

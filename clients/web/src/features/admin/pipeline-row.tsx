@@ -3,21 +3,16 @@
 // the overall status pill, and a reprocess shortcut.
 
 import type { ElementRow, MessageKey, Translate, Treatment } from '@kroma/core';
+import { posterGradient } from '@kroma/core';
 import { Table } from '@kroma/module-sdk';
-import { useT } from '@kroma/ui';
+import { type Format, useFormat, useT } from '@kroma/ui';
 import { Box, type ColorValue, Icon, Row, Spinner, Text, Tooltip } from '@kroma/ui/kit';
 import { Pill, PillDot } from '#web/features/admin/pill';
-import {
-  fmtDur,
-  kindMeta,
-  overallMeta,
-  posterGrad,
-  statusMeta,
-} from '#web/features/admin/pipeline-meta';
+import { kindMeta, overallMeta, statusMeta } from '#web/features/admin/pipeline-meta';
 import { useAuth } from '#web/shared/lib/auth';
 import { Image } from '#web/shared/ui';
 
-function subLine(t: Translate, el: ElementRow): { text: string; color: ColorValue } {
+function subLine(t: Translate, fmt: Format, el: ElementRow): { text: string; color: ColorValue } {
   const names = (pred: (x: Treatment) => boolean) =>
     el.treatments
       .filter(pred)
@@ -35,7 +30,7 @@ function subLine(t: Translate, el: ElementRow): { text: string; color: ColorValu
       color: 'text/60',
     };
   }
-  const dur = fmtDur(el.durationMs);
+  const dur = el.durationMs ? fmt.duration(el.durationMs) : '';
   let text: string;
   if (el.kind === 'series') {
     text = [el.genre, el.seasonCount ? `${el.seasonCount} ${t('pipeline.seasons')}` : '']
@@ -63,7 +58,7 @@ function Poster({
     (kind === 'series' ? client.showPosterUrl(id) : client.posterUrl(id));
   return (
     <Box w={32} h={46} shrink={0} radius={4} overflow="hidden" shadow="card">
-      <div style={{ position: 'absolute', inset: 0, background: posterGrad(seed) }} />
+      <div style={{ position: 'absolute', inset: 0, background: posterGradient(seed) }} />
       <Image src={src} fit="cover" fill />
     </Box>
   );
@@ -130,9 +125,10 @@ export function ElementRowView({
   onReprocess,
 }: Readonly<{ el: ElementRow; onOpen: () => void; onReprocess: () => void }>) {
   const t = useT();
+  const fmt = useFormat();
   const km = kindMeta(el.kind);
   const om = overallMeta(el.overall);
-  const sub = subLine(t, el);
+  const sub = subLine(t, fmt, el);
 
   return (
     <Table.Row onPress={onOpen}>

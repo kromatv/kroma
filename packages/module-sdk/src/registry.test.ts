@@ -48,6 +48,27 @@ describe('ModuleRegistry register/unregister/has/ids', () => {
     expect(r.ids()).toEqual(['a']);
   });
 
+  it('publishes a module catalog to the sink it was given, and retracts it', () => {
+    const published: string[] = [];
+    const dispose = vi.fn();
+    const r = new ModuleRegistry((scope, catalogs) => {
+      published.push(`${scope}:${Object.keys(catalogs).join(',')}`);
+      return dispose;
+    });
+
+    r.register(mod('a', { locales: { en: { hi: 'Hi' } } }));
+    r.unregister('a');
+
+    expect(published).toEqual(['a:en']);
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a module catalog to itself when no sink was given', () => {
+    const r = new ModuleRegistry();
+
+    expect(() => r.register(mod('a', { locales: { en: { hi: 'Hi' } } }))).not.toThrow();
+  });
+
   it('throws on a duplicate registration', () => {
     const r = new ModuleRegistry();
     r.register(mod('a'));
@@ -60,15 +81,6 @@ describe('ModuleRegistry register/unregister/has/ids', () => {
     r.unregister('a');
     expect(r.has('a')).toBe(false);
     expect(() => r.unregister('nope')).not.toThrow();
-  });
-
-  it('localesOf returns a module catalog or undefined', () => {
-    const r = new ModuleRegistry();
-    r.register(mod('a', { locales: { en: { hi: 'Hi' } } }));
-    r.register(mod('b'));
-    expect(r.localesOf('a')).toEqual({ en: { hi: 'Hi' } });
-    expect(r.localesOf('b')).toBeUndefined();
-    expect(r.localesOf('missing')).toBeUndefined();
   });
 });
 
