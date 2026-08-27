@@ -9,6 +9,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
 import { activeTheme } from '#ui/core';
@@ -16,7 +17,7 @@ import { configureRemote } from '#ui/lib/focus-remote';
 import { FocusScope } from '#ui/lib/focus-scope';
 import { clearPressGuard } from '#ui/lib/press-guard';
 import { layout } from '#ui/testing';
-import { Select, type SelectRootProps } from './select';
+import { Select, type SelectSingleRootProps } from './select';
 
 beforeAll(() => configureRemote());
 
@@ -262,6 +263,33 @@ describe('the parts', () => {
     expect(screen.getByText('Qualité')).toBeTruthy();
   });
 
+  it('drops the pick when its value is handed back the empty string', () => {
+    const { rerender } = render(<Source value="server" />);
+
+    rerender(<Source value="" />);
+
+    expect(screen.getByRole('combobox').getAttribute('aria-label')).toBe('Source');
+    expect(screen.queryByText('kroma_server')).toBeNull();
+  });
+
+  it('reports nothing for a row it never collected as an option', () => {
+    const onValueChange = vi.fn();
+    render(
+      <Select.Root label="Source" defaultValue="all" onValueChange={onValueChange}>
+        <Select.Trigger />
+        <Select.Item value="all">Toutes les sources</Select.Item>
+        <Box>
+          <Select.Item value="server">kroma_server</Select.Item>
+        </Box>
+      </Select.Root>,
+    );
+
+    fireEvent.click(screen.getByLabelText('kroma_server'));
+
+    expect(onValueChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('combobox').getAttribute('aria-label')).toBe('Source');
+  });
+
   it('opens in a dialog under a D-pad, and Back says so', () => {
     const onOpenChange = vi.fn();
     render(
@@ -352,7 +380,7 @@ const RATES = ['1080p', '720p', '480p', '360p', '240p'];
 const ROW_HEIGHT = 44;
 const FOLD = ROW_HEIGHT * 2;
 
-function Quality({ onValueChange }: Readonly<Pick<SelectRootProps, 'onValueChange'>>) {
+function Quality({ onValueChange }: Readonly<Pick<SelectSingleRootProps, 'onValueChange'>>) {
   return (
     <Select.Root label="Qualité" defaultValue="1080p" onValueChange={onValueChange}>
       <Select.Trigger />

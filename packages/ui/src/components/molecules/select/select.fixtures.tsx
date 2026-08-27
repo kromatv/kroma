@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
-import { Box } from '#ui/components/atoms/box';
+import { Box, Row } from '#ui/components/atoms/box';
+
+import { Button } from '#ui/components/atoms/button';
 
 import type { IconName } from '#ui/components/atoms/icon';
 
@@ -105,5 +107,109 @@ function Composed() {
       <Select.Item value="1080p" label="1080p" note="8 Mb/s" />
       <Select.Item value="720p" label="720p" note="4 Mb/s" disabled />
     </Select.Root>
+  );
+}
+
+const STATUSES = [
+  { value: 'active', label: 'Downloading', icon: 'download' },
+  { value: 'done', label: 'Done', icon: 'circle-check' },
+  { value: 'failed', label: 'Failed', icon: 'alert-triangle' },
+] as const satisfies readonly { value: string; label: string; icon: IconName }[];
+
+function StatusPicker({
+  start = [],
+  size,
+  presentation,
+  defaultOpen = false,
+}: Readonly<{
+  start?: readonly string[];
+  size?: ControlSize;
+  presentation?: SelectPresentation;
+  defaultOpen?: boolean;
+}>) {
+  const [picked, setPicked] = useState<readonly string[]>(start);
+  return (
+    <Select.Root
+      multiple
+      label="Status"
+      placeholder="Any status"
+      value={picked}
+      onValueChange={setPicked}
+      presentation={presentation}
+      defaultOpen={defaultOpen}
+    >
+      <Select.Trigger size={size} block />
+      {STATUSES.map((status) => (
+        <Select.Item key={status.value} value={status.value} icon={status.icon}>
+          {status.label}
+        </Select.Item>
+      ))}
+    </Select.Root>
+  );
+}
+
+function Labelled({ name, children }: Readonly<{ name: string; children: ReactNode }>) {
+  return (
+    <Box gap={6}>
+      <Text variant="overline" color="textDim">
+        {name}
+      </Text>
+      {children}
+    </Box>
+  );
+}
+
+export function Statuses({ presentation }: Readonly<{ presentation: SelectPresentation }>) {
+  return (
+    <Box h={presentation === 'panel' ? 260 : 0} w={280}>
+      <StatusPicker start={['active', 'failed']} presentation={presentation} defaultOpen />
+    </Box>
+  );
+}
+
+export function Summaries({ size }: Readonly<{ size?: ControlSize }>) {
+  return (
+    <Box gap={20} w={280}>
+      <Labelled name="nothing picked">
+        <StatusPicker size={size} />
+      </Labelled>
+      <Labelled name="one picked">
+        <StatusPicker size={size} start={['done']} />
+      </Labelled>
+      <Labelled name="several picked">
+        <StatusPicker size={size} start={['active', 'done', 'failed']} />
+      </Labelled>
+    </Box>
+  );
+}
+
+export function Clearable() {
+  const [picked, setPicked] = useState<readonly string[]>(['done', 'failed']);
+  return (
+    <Row gap={10} w={380}>
+      <Box flex>
+        <Select.Root
+          multiple
+          label="Status"
+          placeholder="Any status"
+          value={picked}
+          onValueChange={setPicked}
+        >
+          <Select.Trigger block />
+          {STATUSES.map((status) => (
+            <Select.Item key={status.value} value={status.value} icon={status.icon}>
+              {status.label}
+            </Select.Item>
+          ))}
+        </Select.Root>
+      </Box>
+      <Button
+        variant="ghost"
+        icon="x"
+        label="Clear"
+        disabled={picked.length === 0}
+        onPress={() => setPicked([])}
+      />
+    </Row>
   );
 }

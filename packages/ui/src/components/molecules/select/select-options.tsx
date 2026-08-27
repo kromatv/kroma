@@ -5,6 +5,7 @@
 import { useId, useState } from 'react';
 import { useListKeys, useRowInView } from '#ui/lib/anchored-keys';
 import {
+  focusTrigger,
   useActiveDescendant,
   useAnchoredPlacement,
   useTriggerFocus,
@@ -26,8 +27,8 @@ function SelectOptions(props: Readonly<SelectSurfaceProps>) {
 const MIN_WIDTH = 160;
 const MAX_HEIGHT = 320;
 
-function firstEnabled(options: readonly SelectOption[], value: string): number {
-  const chosen = options.findIndex((option) => option.value === value && !option.disabled);
+function firstEnabled(options: readonly SelectOption[], values: readonly string[]): number {
+  const chosen = options.findIndex((option) => values.includes(option.value) && !option.disabled);
   if (chosen >= 0) return chosen;
   return Math.max(
     0,
@@ -40,12 +41,13 @@ function SelectPopover({
   label,
   options,
   items,
-  value,
+  values,
+  multiple,
   onPick,
   anchor,
 }: Readonly<SelectSurfaceProps>) {
   const baseId = useId();
-  const [active, setActive] = useState(() => firstEnabled(options, value));
+  const [active, setActive] = useState(() => firstEnabled(options, values));
   const keyed = useFocusVisible(active);
   const { scroll, onRowLayout } = useRowInView(active);
 
@@ -78,6 +80,7 @@ function SelectPopover({
     active: index === active,
     keyed,
     onHoverIn: () => setActive(index),
+    onPicked: () => focusTrigger(anchor),
     onLayout: (y, height) => onRowLayout(index, y, height),
   });
 
@@ -88,6 +91,7 @@ function SelectPopover({
       at={at}
       role={LISTBOX}
       label={label}
+      multiselectable={multiple}
       listId={`${baseId}-list`}
       onDismiss={() => onDismiss('outside')}
       scroll={scroll}

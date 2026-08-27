@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { Select, selectTriggerVariants } from './select';
-import { TRACKS, Tracks, Subtitles, Composed, Options } from './select.fixtures';
+import { TRACKS, Tracks, Subtitles, Composed, Options, Statuses, Summaries, Clearable } from './select.fixtures';
 
 export const story = defineStory({
   group: 'Input',
@@ -44,6 +44,64 @@ Pick one of a few, from a trigger that says what is picked. Composed rather than
   <Composed />
 </Scene>
 
+## Several values at once
+
+`multiple` turns the pick into a set. Each row toggles instead of replacing, the
+surface stays open so the next one is a press away, and every row wears a
+checkbox rather than the picked row wearing a tick. The value is an array both
+ways, empty when nothing is picked, and the listbox says `aria-multiselectable`
+so a screen reader announces a set rather than one choice.
+
+```tsx
+<Select.Root multiple label="Status" placeholder="Any status" value={picked} onValueChange={setPicked}>
+  <Select.Trigger />
+  <Select.Item value="active" icon="download">Downloading</Select.Item>
+  <Select.Item value="done" icon="circle-check">Done</Select.Item>
+  <Select.Item value="failed" icon="alert-triangle">Failed</Select.Item>
+</Select.Root>
+```
+
+Reach for it when the answer is a filter over a long list and the only room is a
+trigger: a set of statuses over a queue, a set of genres over a catalogue. Where
+the choices fit on the page, put them there instead. Three or four rows are a
+`<ChoiceList multiple>`, all readable at once, and a handful of one-word answers
+are `<Chip>`s, which show every state with nothing opened.
+
+<Scene name="Pick several">
+  Two statuses ticked. Pressing a row toggles it and leaves the list open for the
+  next one; pressing a ticked row unticks it.
+
+  <Statuses presentation="panel" />
+</Scene>
+
+<Scene name="Several under a D-pad">
+  The same set, in the presentation a remote gets: the dialog stays open as rows
+  are ticked, and Back is the way out. A television reaches a filter with the
+  same component and the same props.
+
+  <Statuses presentation="dialog" />
+</Scene>
+
+<Scene name="What the trigger says">
+  The summary at its three readings. Nothing picked reads as the placeholder, one
+  pick reads as that option with its icon, and several read as the first pick
+  plus a count. Assistive tech hears the whole list either way: the trigger's
+  name is `Status: Downloading, Failed`.
+
+  {story.take(({ size }) => (
+    <Summaries size={size} />
+  ))}
+</Scene>
+
+<Scene name="Clearing">
+  There is no clear button inside the control, because the value belongs to the
+  caller: emptying it is `onValueChange([])`. A filter bar with no room for a
+  second control can offer an "everything" row at the top of the list instead,
+  and clear from there.
+
+  <Clearable />
+</Scene>
+
 ## Where the options appear
 
 `presentation` decides, and its default asks the shell and then the platform: a
@@ -69,9 +127,13 @@ this device would have chosen.
 - Use a `note` for the fact that settles the choice: a bitrate, a codec, a count.
 - Wrap it in `<Field.Root>` for the label row. The select is the control, not the form row.
 - Give a composed row a `label`: it is what the trigger and assistive tech read.
+- Give a `multiple` select a `placeholder` that names the filter: it is what the trigger reads while nothing is picked.
 </Do>
 
 <Dont>
 - Reach for it with two options. Two Chips show both answers at once.
 - Put dozens of items in one: past a screenful it is a search problem, not a pick.
+- Give `multiple` a single string. The value is an array both ways, empty for nothing picked.
+- Use it for three rows that would fit on the page. That is a `<ChoiceList multiple>`, or a row of `<Chip>`s.
+- Add an option that means "all" and expect it to tick. A row that undoes the others is the caller's, and never part of the value.
 </Dont>

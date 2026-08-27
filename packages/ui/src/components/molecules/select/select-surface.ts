@@ -14,7 +14,8 @@ export interface SelectSurfaceProps {
   label: string | undefined;
   options: readonly SelectOption[];
   items: readonly ReactElement[];
-  value: string;
+  values: readonly string[];
+  multiple: boolean;
   onPick: (next: string) => void;
   onDismiss: (reason: SelectDismissReason) => void;
   anchor: RefObject<View | null>;

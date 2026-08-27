@@ -5,6 +5,7 @@
 import { type ReactNode, useMemo } from 'react';
 import { Pressable, type StyleProp, type TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { CheckboxFace } from '#ui/components/atoms/checkbox';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
@@ -73,10 +74,10 @@ function optionOf(props: Readonly<SelectItemProps>): SelectOption {
 
 function Item(props: Readonly<SelectItemProps>) {
   const { value, children, disabled = false } = props;
-  const { value: picked, pick } = useSelect('Item');
+  const { values, pick } = useSelect('Item');
   const row = useSelectRow();
   const option = optionOf(props);
-  const chosen = value === picked;
+  const chosen = values.includes(value);
   const state = useMemo(() => ({ value, chosen }), [value, chosen]);
   const composed = children !== undefined && textOf(children) === undefined;
   const body = (ink: StyleProp<TextStyle>) =>
@@ -94,7 +95,9 @@ function Item(props: Readonly<SelectItemProps>) {
           aria-disabled={disabled}
           tabIndex={-1}
           onPress={() => {
-            if (!disabled) pick(value);
+            if (disabled) return;
+            pick(value);
+            row.onPicked?.();
           }}
           onHoverIn={row.onHoverIn}
           onLayout={(event) => {
@@ -150,10 +153,13 @@ function ItemRow({ option, ink }: Readonly<{ option: SelectOption; ink: StylePro
   );
 }
 
-/** The tick on the picked row. <Select.Item> draws it for you; name it yourself
- *  only when the row's arrangement puts it somewhere else. */
+/** The picked row's face: a tick, or a checkbox where several rows can be
+ *  picked at once. <Select.Item> draws it for you; name it yourself only when
+ *  the row's arrangement puts it somewhere else. */
 function Indicator() {
+  const { multiple } = useSelect('Indicator');
   const { chosen } = useSelectItem('Indicator');
+  if (multiple) return <CheckboxFace checked={chosen} />;
   return (
     <Box w={18} align="center">
       {chosen ? <Icon name="check" size={16} color="accentText" /> : null}

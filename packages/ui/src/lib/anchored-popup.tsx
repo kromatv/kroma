@@ -2,7 +2,7 @@
 // is ./anchored-panel and how it takes the keyboard is ./anchored-keys.
 
 import type { ReactNode } from 'react';
-import { Pressable, type Role, ScrollView } from 'react-native';
+import { Pressable, type Role, ScrollView, type ViewProps } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import type { AnchorPlacement } from '#ui/lib/anchor';
 import type { PanelScroll } from '#ui/lib/anchored-keys';
@@ -13,10 +13,15 @@ import { useTDefault } from '#ui/services/i18n';
 const PAD = 6;
 const RADIUS = 'xl';
 
+// react-native-web forwards the attribute; React Native's own accessibility
+// props stop short of it, which is why the shape is asserted rather than typed.
+const MULTISELECTABLE = { 'aria-multiselectable': true } as unknown as ViewProps;
+
 interface AnchoredPopupProps {
   at: AnchorPlacement;
   role: Role;
   label: string | undefined;
+  multiselectable?: boolean;
   listId: string;
   onDismiss: () => void;
   scroll?: PanelScroll;
@@ -27,6 +32,7 @@ function AnchoredPopup({
   at,
   role,
   label,
+  multiselectable = false,
   listId,
   onDismiss,
   scroll,
@@ -42,6 +48,7 @@ function AnchoredPopup({
         style={PANEL_BACKDROP}
       />
       <Box
+        {...(multiselectable ? MULTISELECTABLE : null)}
         nativeID={listId}
         role={role}
         accessibilityLabel={label}

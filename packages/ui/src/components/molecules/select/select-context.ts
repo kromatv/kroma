@@ -30,8 +30,9 @@ interface SelectValueDetails {
 }
 
 interface SelectState {
-  value: string;
-  current: SelectOption | undefined;
+  values: readonly string[];
+  multiple: boolean;
+  picked: readonly SelectOption[];
   label: string | undefined;
   placeholder: string | undefined;
   open: boolean;
@@ -51,6 +52,7 @@ interface SelectRowState {
    *  past: the ring is the keyboard's, the wash is the pointer's. */
   keyed?: boolean;
   onHoverIn?: () => void;
+  onPicked?: () => void;
   onLayout?: (y: number, height: number) => void;
 }
 

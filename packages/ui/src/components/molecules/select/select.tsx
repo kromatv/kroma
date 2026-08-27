@@ -1,8 +1,9 @@
-// <Select>: one value from a list. The trigger is shared; where the options
-// appear is the shell's decision (see ./select-options): a <Dialog> under a
-// D-pad (on tvOS a modal is its own view controller, so the remote is
-// confined to the options) and an anchored listbox popover under a pointer,
-// with the combobox keyboard the browser's native select taught everyone.
+// <Select>: one value from a list, or a set of them under `multiple`. The
+// trigger is shared; where the options appear is the shell's decision (see
+// ./select-options): a <Dialog> under a D-pad (on tvOS a modal is its own view
+// controller, so the remote is confined to the options) and an anchored listbox
+// popover under a pointer, with the combobox keyboard the browser's native
+// select taught everyone.
 
 import {
   Children,
@@ -35,6 +36,11 @@ import {
 } from './select-context';
 import { Indicator, Item, optionOf, type SelectItemProps } from './select-item';
 import { SelectOptions } from './select-options';
+import {
+  type SelectMultipleValueProps,
+  type SelectSingleValueProps,
+  useSelectSelection,
+} from './select-selection';
 import type { SelectPresentation } from './select-surface';
 
 // The trigger IS a field: same well, same metrics table, so a select and an
@@ -62,10 +68,7 @@ const triggerVariants = sv({
   defaults: { size: 'md', invalid: false, filled: false, block: false },
 });
 
-interface SelectRootProps {
-  value?: string;
-  defaultValue?: string;
-  onValueChange?: (next: string, details: SelectValueDetails) => void;
+interface SelectRootBase {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean, details: SelectOpenDetails) => void;
@@ -85,32 +88,37 @@ interface SelectRootProps {
   children: ReactNode;
 }
 
+type SelectSingleRootProps = SelectRootBase & SelectSingleValueProps;
+type SelectMultipleRootProps = SelectRootBase & SelectMultipleValueProps;
+type SelectRootProps = SelectSingleRootProps | SelectMultipleRootProps;
+
 function isItem(node: ReactNode): node is ReactElement<SelectItemProps> {
   return isValidElement(node) && node.type === Item;
 }
 
-function Root({
-  value: valueProp,
-  defaultValue,
-  onValueChange,
-  open: openProp,
-  defaultOpen,
-  onOpenChange,
-  label,
-  placeholder,
-  presentation = 'auto',
-  disabled = false,
-  children,
-}: Readonly<SelectRootProps>) {
-  // '' is "nothing picked": no option may use it, or the placeholder never shows.
-  const [value, setValue] = useControllable(valueProp, defaultValue ?? '');
+function Root(props: Readonly<SelectRootProps>) {
+  const {
+    open: openProp,
+    defaultOpen,
+    onOpenChange,
+    label,
+    placeholder,
+    presentation = 'auto',
+    disabled = false,
+    children,
+  } = props;
+  const multiple = props.multiple === true;
+  const { values, choose } = useSelectSelection(props);
   const [open, setOpenState] = useControllable(openProp, defaultOpen ?? false);
   const anchor = useRef<View>(null);
 
   const kids = useMemo(() => Children.toArray(children), [children]);
   const items = useMemo(() => kids.filter(isItem), [kids]);
   const options = useMemo(() => items.map((item) => optionOf(item.props)), [items]);
-  const current = options.find((option) => option.value === value);
+  const picked = useMemo(
+    () => options.filter((option) => values.includes(option.value)),
+    [options, values],
+  );
 
   const setOpen = useCallback(
     (next: boolean, reason: SelectOpenReason) => {
@@ -122,17 +130,18 @@ function Root({
 
   const pick = useCallback(
     (next: string) => {
-      const item = options.find((option) => option.value === next);
-      setValue(next);
-      if (item) onValueChange?.(next, { item });
-      setOpen(false, 'select');
+      choose(
+        next,
+        options.find((option) => option.value === next),
+      );
+      if (!multiple) setOpen(false, 'select');
     },
-    [options, setValue, onValueChange, setOpen],
+    [options, choose, multiple, setOpen],
   );
 
   const state = useMemo<SelectState>(
-    () => ({ value, current, label, placeholder, open, disabled, anchor, setOpen, pick }),
-    [value, current, label, placeholder, open, disabled, setOpen, pick],
+    () => ({ values, multiple, picked, label, placeholder, open, disabled, anchor, setOpen, pick }),
+    [values, multiple, picked, label, placeholder, open, disabled, setOpen, pick],
   );
 
   return (
@@ -144,7 +153,8 @@ function Root({
         label={label ?? placeholder}
         options={options}
         items={items}
-        value={value}
+        values={values}
+        multiple={multiple}
         onPick={pick}
         onDismiss={(reason: SelectDismissReason) => setOpen(false, reason)}
         anchor={anchor}
@@ -177,7 +187,7 @@ function Trigger({
   children,
   ...focusProps
 }: Readonly<SelectTriggerProps>) {
-  const { label, placeholder, current, open, disabled, anchor, setOpen } = useSelect('Trigger');
+  const { label, placeholder, picked, open, disabled, anchor, setOpen } = useSelect('Trigger');
   const shell = size ?? entryDefaultSize();
   return (
     <Focusable
@@ -185,11 +195,11 @@ function Trigger({
       ref={anchor}
       role="combobox"
       expanded={open}
-      label={triggerName(label, placeholder, current)}
+      label={triggerName(label, placeholder, picked)}
       disabled={disabled}
       onPress={() => setOpen(true, 'trigger')}
       sv={triggerVariants}
-      vars={{ size: shell, invalid, filled: current !== undefined, block }}
+      vars={{ size: shell, invalid, filled: picked.length > 0, block }}
       style={style}
     >
       {(state) => (
@@ -208,23 +218,31 @@ function Trigger({
 function triggerName(
   label: string | undefined,
   placeholder: string | undefined,
-  current: SelectOption | undefined,
+  picked: readonly SelectOption[],
 ): string | undefined {
-  if (!current) return label ?? placeholder;
-  return label ? `${label}: ${current.label}` : current.label;
+  if (picked.length === 0) return label ?? placeholder;
+  const names = picked.map((option) => option.label).join(', ');
+  return label ? `${label}: ${names}` : names;
 }
 
 /** What is picked, rendered inside the trigger: the option's icon and label, or
- *  the placeholder while nothing is. */
+ *  the placeholder while nothing is. A `multiple` select names the first pick
+ *  and counts the rest; assistive tech hears them all. */
 function Value() {
-  const { current, placeholder } = useSelect('Value');
+  const { picked, placeholder } = useSelect('Value');
   const ink = useContext(SelectInkContext);
+  const [first, ...rest] = picked;
   return (
     <>
-      {current?.icon ? <Icon name={current.icon} size={18} color="textMuted" /> : null}
+      {first?.icon ? <Icon name={first.icon} size={18} color="textMuted" /> : null}
       <Text variant="body" lines={1} style={ink}>
-        {current?.label ?? placeholder ?? ''}
+        {first?.label ?? placeholder ?? ''}
       </Text>
+      {rest.length > 0 ? (
+        <Text variant="meta" color="textDim">
+          {`+${rest.length}`}
+        </Text>
+      ) : null}
     </>
   );
 }
@@ -234,11 +252,13 @@ const Select = { Root, Trigger, Value, Item, Indicator };
 export type {
   SelectDismissReason,
   SelectItemProps,
+  SelectMultipleRootProps,
   SelectOpenDetails,
   SelectOpenReason,
   SelectOption,
   SelectPresentation,
   SelectRootProps,
+  SelectSingleRootProps,
   SelectTriggerProps,
   SelectValueDetails,
 };

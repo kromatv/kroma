@@ -129,6 +129,13 @@ export function useTriggerFocus(anchor: RefObject<unknown>): void {
   }, [anchor]);
 }
 
+/** Takes the focus back, for a panel that outlives the press that moved it onto
+ *  a row: a pointer focuses what it presses, and the trigger owns the keyboard
+ *  for as long as the panel is open. */
+export function focusTrigger(anchor: RefObject<unknown>): void {
+  (anchor.current as AnchorHandle | null)?.focus?.();
+}
+
 /**
  * Wires the trigger to a panel it does not contain: its keys reach the panel's
  * keyboard, and `aria-controls`/`aria-haspopup` say what it opens. The trigger
