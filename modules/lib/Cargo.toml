@@ -24,3 +24,7 @@ license = "MIT"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
+
+[profile.dev]
+# Keep backtraces, drop full DWARF. debug/deps was 81 GB with the default.
+debug = "line-tables-only"

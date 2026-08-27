@@ -76,3 +76,7 @@ raw-window-handle = "0.6"
 # Process-group kill of the mpv sidecar tree (the AppImage runtime execs the real
 # mpv as a grandchild, so Child::kill alone orphans the player).
 libc = "0.2"
+
+[profile.dev]
+# Keep backtraces, drop full DWARF. debug/deps was 81 GB with the default.
+debug = "line-tables-only"

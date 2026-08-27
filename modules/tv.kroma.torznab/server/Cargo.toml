@@ -49,3 +49,7 @@ strip = true
 [profile.release-kmod]
 inherits = "release"
 panic = "abort"
+
+[profile.dev]
+# Keep backtraces, drop full DWARF. debug/deps was 81 GB with the default.
+debug = "line-tables-only"

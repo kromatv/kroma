@@ -281,3 +281,7 @@ opt-level = 3
 lto = true
 codegen-units = 1
 strip = true
+
+[profile.dev]
+# Keep backtraces, drop full DWARF. debug/deps was 81 GB with the default.
+debug = "line-tables-only"
