@@ -1,0 +1,76 @@
+import { defineStory } from '@kroma/workbench/story';
+import { stepperVariants } from './stepper';
+import { Footer, Kept, Validated, Walkthrough } from './stepper.fixtures';
+
+export const story = defineStory({
+  group: 'Actions',
+  variants: stepperVariants,
+  omit: ['state'],
+  component: Walkthrough,
+  args: { orientation: 'horizontal' },
+  controls: { orientation: ['horizontal', 'vertical'] },
+});
+
+A flow walked one step at a time: an account being set up, a television being paired. A **tablist** to assistive tech, named by `label`, where each step is a tab carrying its position (`Étape 2 sur 4 : Compte`) and the step being shown claims `aria-current="step"`. Composed, in Radix's shape: **Root** owns the flow, **List** is the indicator, **Item** is one step with **Label** and **Hint** inside it, **Panel** is the region a step owns, and **Previous** and **Next** are the two moves.
+
+A step joins the flow by RENDERING, not by being typed as a direct child, so pulling the steps out into a component of your own or building them with a `map` works. A Root that ends up with no steps at all throws instead of drawing an indicator nothing can move.
+
+The sequence is the rule. The Root remembers the furthest step the flow has been, and everything at or before that point can be gone back to while everything past it is disabled, so nobody skips ahead through the indicator. A flow whose owner decides what counts as done says so instead, with `complete`.
+
+```tsx
+<Stepper.Root label="Configuration" defaultValue="account">
+  <Stepper.List>
+    <Stepper.Item value="account" icon="user">
+      <Stepper.Label>Compte</Stepper.Label>
+      <Stepper.Hint>Adresse et mot de passe</Stepper.Hint>
+    </Stepper.Item>
+    <Stepper.Item value="library" icon="folder">
+      <Stepper.Label>Bibliothèque</Stepper.Label>
+    </Stepper.Item>
+  </Stepper.List>
+  <Stepper.Panel value="account">…</Stepper.Panel>
+  <Stepper.Panel value="library">…</Stepper.Panel>
+  <Row gap={12}>
+    <Stepper.Previous />
+    <Stepper.Next />
+  </Row>
+</Stepper.Root>
+```
+
+<Scene name="Down a column">
+  The same flow on its side, for a page with a sidebar rather than a header. The rule between two steps runs the other way and lands under the markers.
+
+  {story.take((props) => <Walkthrough {...props} orientation="vertical" />)}
+</Scene>
+
+<Scene name="A step that has to be earned">
+  `complete` is the caller's own answer to which steps are done, for a flow that validates: here the first step is done once the switch is on, and until then next is held back with `disabled`. Without `complete`, having been past a step is what makes it done.
+
+  <Validated />
+</Scene>
+
+<Scene name="Your own footer">
+  `useStepper()` hands anything inside the Root the flow it is running: where it is, how many steps there are, whether it may move, and `next`, `previous`, `goTo` and `reset`. `reset` puts it back at the first step and forgets how far it went, which is the other half of a wizard that ends in "Recommencer". Every one of those callbacks keeps its identity for the life of the flow, so it can sit in a dependency array. `<Stepper.Previous>` and `<Stepper.Next>` are thin wrappers over the same hook, which is why writing the row by hand costs nothing.
+
+  <Footer />
+</Scene>
+
+<Scene name="Coming back to what was typed">
+  A panel unmounts when its step is not the one showing, so what was in it starts again. `keepMounted` is the opt-out, and it is React's `<Activity>` underneath: the panel keeps its state, drops its effects, and so leaves the tab order and the D-pad ring while it is away. Pick a quality, step forward, step back.
+
+  <Kept />
+</Scene>
+
+<Do>
+- Name it: `label` is what a screen reader announces for the indicator.
+- Give a step a `<Stepper.Hint>` when its title alone does not say what it wants.
+- Pull the steps into a component of your own when two flows share them. That is what registration is for.
+- Reach for `useStepper()` before reaching for another prop on the Root.
+- Lift the values a flow collects. `keepMounted` keeps a panel's own state, not your form's.
+</Do>
+
+<Dont>
+- Add a step in the middle after the flow has mounted. Steps take their order from the order they render in, so a late arrival lands at the end.
+- Hide previous and next at the ends. They go dim and keep their place.
+- Use it for two steps. That is a form with a confirmation, not a flow.
+</Dont>
