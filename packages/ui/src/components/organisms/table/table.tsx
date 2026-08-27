@@ -1,50 +1,36 @@
-// <Table>: rows of the same shape, read down a column as much as across a row.
-//
-// There is no <table> on a television, so the grid is Yoga's: a row is a flex
-// row and a cell is a flex child of it. That has one consequence worth knowing
-// before writing one - a column is as wide as the cells in it, and the cells of
-// two different rows do not agree with each other unless every row holds the
-// same number of them.
-//
-// Nothing here can ask a child where it sits: Yoga has no `order` and there is
-// no `:first-child`. So each level hands its own direct children their position
-// once, and a rule is drawn by the row UNDER the seam rather than by the one
-// above it, which is what keeps a table from doubling its own bottom border.
-
-import { Children, isValidElement, type ReactNode, useMemo } from 'react';
+import { Children, isValidElement, type ReactElement, type ReactNode, useMemo } from 'react';
+import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Text } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
-import { space } from '#ui/core/tokens';
-import { partContext } from '#ui/lib/part-context';
+import { styles, useBreakpointStep } from '#ui/core';
+import { useStableCallback } from '#ui/lib/stable-callback';
+import { Cell } from './table-cell';
+import {
+  breakpointMask,
+  columnBox,
+  GridContext,
+  minWidthOf,
+  NO_COLUMNS,
+  type TableColumn,
+} from './table-columns';
+import {
+  type Place,
+  TableContext,
+  type TableSectionProps,
+  type TableVariant,
+  useTable,
+} from './table-context';
+import { Frame } from './table-frame';
+import { nextSort, type SortColumn, SortContext, type TableSort } from './table-sort';
 
-/** How a table meets the page: as a card of its own (`framed`), or as ruled
- * rows flush with the column of text around it (`plain`). */
-type TableVariant = 'framed' | 'plain';
-
-interface Context {
-  variant: TableVariant;
-  head: boolean;
-  /** Nothing is drawn above this part inside the table, so it carries no rule. */
-  top: boolean;
+function parts(children: ReactNode): ReactElement[] {
+  return Children.toArray(children).filter(isValidElement);
 }
 
-const [TableContext, useTable] = partContext<Context>('Table.Root');
-
-// Only an element can be handed a position, and a table's children are always
-// parts: anything else is dropped rather than left to shift the grid.
-function parts(children: ReactNode): ReactNode[] {
-  return Children.toArray(children).filter((child) => isValidElement(child));
-}
-
-function Placed({ items, places }: Readonly<{ items: ReactNode[]; places: Context[] }>) {
+function Placed({ items, places }: Readonly<{ items: ReactElement[]; places: Place[] }>) {
   return (
     <>
       {items.map((child, at) => (
-        // The position is the identity: this is the caller's own list, in the
-        // order it was written, and nothing reorders it.
-        // biome-ignore lint/suspicious/noArrayIndexKey: the position IS what the provider carries
-        <TableContext.Provider key={at} value={places[at] as Context}>
+        <TableContext.Provider key={child.key ?? at} value={places[at] as Place}>
           {child}
         </TableContext.Provider>
       ))}
@@ -57,35 +43,84 @@ interface TableRootProps {
   variant?: TableVariant;
   /** Names the table to assistive tech. Draws nothing. */
   label?: string;
-  /** A DIRECT <Table.Header>, <Table.Body> or <Table.Row> child: only a direct
-   *  child is given its position, and only a part that reads it is ruled. */
+  /** One entry per column, in the order the cells are written. Left out, every
+   *  cell takes an equal share. */
+  columns?: readonly TableColumn[];
+  /** The columns the rows are ordered by, first key first. The table never
+   *  reorders its own rows: they are the caller's. */
+  sort?: readonly SortColumn[];
+  /** Given, every heading whose column names one becomes the sort control. */
+  onSortChange?: (next: readonly SortColumn[], details: { column: string }) => void;
+  /** A press adds its column to the sort as the last tiebreak instead of
+   *  replacing it. */
+  multiple?: boolean;
+  /** A DIRECT <Table.Header>, <Table.Body> or <Table.Row> child. */
   children?: ReactNode;
 }
 
-function Root({ variant = 'framed', label, children }: Readonly<TableRootProps>) {
+function Root({
+  variant = 'framed',
+  label,
+  columns,
+  sort,
+  onSortChange,
+  multiple = false,
+  children,
+}: Readonly<TableRootProps>) {
   const sections = useMemo(() => parts(children), [children]);
   const places = useMemo(
-    () => sections.map((_, at) => ({ variant, head: false, top: at === 0 })),
+    () => sections.map((_, at) => ({ variant, head: false, ruled: at !== 0, at })),
     [variant, sections],
   );
+  const declared = useMemo(() => {
+    const list = columns ?? NO_COLUMNS;
+    return { list, boxes: list.map(columnBox), breakpoints: breakpointMask(list) };
+  }, [columns]);
+  const press = useStableCallback((column: string) => {
+    onSortChange?.(nextSort(sort ?? NO_SORT, column, multiple), { column });
+  });
+  const sorting = useMemo<TableSort | null>(() => {
+    if (!sort && !onSortChange) return null;
+    return { columns: sort ?? NO_SORT, press: onSortChange ? press : null };
+  }, [sort, onSortChange, press]);
   return (
-    <Box role="table" aria-label={label} style={variant === 'framed' ? s.framed : undefined}>
-      <Placed places={places} items={sections} />
-    </Box>
+    <SortContext.Provider value={sorting}>
+      <GridScope columns={declared.list} boxes={declared.boxes} breakpoints={declared.breakpoints}>
+        <Frame variant={variant} label={label}>
+          <Placed places={places} items={sections} />
+        </Frame>
+      </GridScope>
+    </SortContext.Provider>
   );
 }
 
-interface TableSectionProps {
-  /** A DIRECT <Table.Row> child. */
-  children?: ReactNode;
+function GridScope({
+  columns,
+  boxes,
+  breakpoints,
+  children,
+}: Readonly<{
+  columns: readonly TableColumn[];
+  boxes: readonly ViewStyle[];
+  breakpoints: number;
+  children: ReactNode;
+}>) {
+  const step = useBreakpointStep(breakpoints);
+  const value = useMemo(
+    () => ({ columns, boxes, step, minWidth: minWidthOf(columns, step) }),
+    [columns, boxes, step],
+  );
+  return <GridContext.Provider value={value}>{children}</GridContext.Provider>;
 }
 
+const NO_SORT: readonly SortColumn[] = [];
+
 function Section({ head, children }: Readonly<{ head: boolean } & TableSectionProps>) {
-  const { variant, top } = useTable(head ? 'Header' : 'Body');
+  const { variant, ruled } = useTable(head ? 'Header' : 'Body');
   const rows = useMemo(() => parts(children), [children]);
   const places = useMemo(
-    () => rows.map((_, at) => ({ variant, head, top: top && at === 0 })),
-    [variant, head, top, rows],
+    () => rows.map((_, at) => ({ variant, head, ruled: ruled || at !== 0, at })),
+    [variant, head, ruled, rows],
   );
   return (
     <Box role="rowgroup" bg={head && variant === 'framed' ? 'surface2' : undefined}>
@@ -94,12 +129,10 @@ function Section({ head, children }: Readonly<{ head: boolean } & TableSectionPr
   );
 }
 
-/** The heading row: its cells name their columns rather than filling them. */
 function Header({ children }: Readonly<TableSectionProps>) {
   return <Section head>{children}</Section>;
 }
 
-/** The rows the table is about. */
 function Body({ children }: Readonly<TableSectionProps>) {
   return <Section head={false}>{children}</Section>;
 }
@@ -110,56 +143,28 @@ interface TableRowProps {
 }
 
 function Row({ children }: Readonly<TableRowProps>) {
-  const { top } = useTable('Row');
-  return (
-    <Box row role="row" style={top ? undefined : s.rule}>
-      {children}
-    </Box>
+  const { variant, head, ruled } = useTable('Row');
+  const cells = useMemo(() => parts(children), [children]);
+  const places = useMemo(
+    () => cells.map((_, at) => ({ variant, head, ruled, at })),
+    [variant, head, ruled, cells],
   );
-}
-
-interface TableCellProps {
-  /** A string is set in the table's own type, in the head's ink or the body's;
-   *  anything else is drawn as it was written. */
-  children?: ReactNode;
-}
-
-function Cell({ children }: Readonly<TableCellProps>) {
-  const { head, variant } = useTable('Cell');
   return (
-    // `minW: 0` is what lets a long cell wrap inside its column instead of
-    // widening it past the ones beside it.
-    <Box
-      flex
-      minW={0}
-      role={head ? 'columnheader' : 'cell'}
-      style={variant === 'framed' ? s.cell : s.cellPlain}
-    >
-      {typeof children === 'string' ? (
-        <Text variant={head ? 'label' : 'body'} color={head ? 'text' : 'textMuted'}>
-          {children}
-        </Text>
-      ) : (
-        children
-      )}
+    <Box row role="row" style={ruled ? s.rule : undefined}>
+      <Placed places={places} items={cells} />
     </Box>
   );
 }
 
 const s = styles({
-  framed: { border: 'border', radius: 'md', bg: 'surface1', overflow: 'hidden' },
   rule: { borderTopWidth: 1, borderTopColor: 'border' },
-  cell: { px: space[3], py: space[2] },
-  // Flush with the text around it: a plain table has no frame to be inset from,
-  // and its first column has to line up with the paragraph above it.
-  cellPlain: { py: space[3] },
 });
 
 /**
  * Rows of the same shape.
  *
  * ```tsx
- * <Table.Root label="Modules">
+ * <Table.Root label="Modules" columns={[{ column: 'id' }, { width: 90 }]}>
  *   <Table.Header>
  *     <Table.Row>
  *       <Table.Cell>Module</Table.Cell>
@@ -177,5 +182,14 @@ const s = styles({
  */
 const Table = { Root, Header, Body, Row, Cell };
 
-export type { TableCellProps, TableRootProps, TableRowProps, TableSectionProps, TableVariant };
+export type { TableCellProps } from './table-cell';
+export type { SortDirection } from './table-sort';
+export type {
+  SortColumn,
+  TableColumn,
+  TableRootProps,
+  TableRowProps,
+  TableSectionProps,
+  TableVariant,
+};
 export { Table };

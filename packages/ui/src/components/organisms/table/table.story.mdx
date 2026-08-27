@@ -1,9 +1,10 @@
 import { defineStory } from '@kroma/workbench/story';
 import { Badge } from '#ui/components/atoms/badge';
+import { Box } from '#ui/components/atoms/box';
 import { Chip } from '#ui/components/atoms/chip';
 import { Text } from '#ui/components/atoms/text';
 import { Table } from './table';
-import { MODULES } from './table.fixtures';
+import { Columned, MODULES, ServerSorted, SortedByOne, SortedByTwo } from './table.fixtures';
 
 export const story = defineStory({
   group: 'Layout',
@@ -50,6 +51,80 @@ Rows of the same shape, read down a column as much as across a row. There is no 
   </Table.Body>
 </Table.Root>
 ```
+
+`columns` declares one entry per column, in the order the cells are written, and the Root publishes each entry's box for every row to apply to its nth cell. That is what makes a column a column: Yoga has no grid and cannot align two rows any other way. A column states a fixed `width`, or a `flex` share of what the fixed ones leave with a `min` it stops shrinking at. `from` drops it below a breakpoint, `align` sends its content to the other end, and `column` is the name it answers to in the sort. Left out entirely, every cell takes an equal share, which is what a two-column table of labels and readouts wants.
+
+```tsx
+columns={[
+  { column: 'name', flex: 2, min: 160 },
+  { column: 'state', width: 172 },
+  { column: 'added', width: 128, from: 'md' },
+  { column: 'bytes', width: 92, align: 'end' },
+]}
+```
+
+A heading sorts when its column names one and the Root takes an `onSortChange`. The sort is an ordered list, first key first, and a press is handed the whole next one, so the usual call site is `onSortChange={setSort}`. The table never reorders anything itself. The rows are the caller's children, in whatever order the caller put them, which for a table of any size is the order a server sent. That is also why there is no `defaultSort`: a sort the table owned would move the arrows and leave the rows where they were.
+
+```tsx
+const [sort, setSort] = useState([{ column: 'added', direction: 'desc' }]);
+const rows = ordered(downloads, sort);   // or the server's answer to `sort`
+
+<Table.Root label="Downloads" columns={COLUMNS} multiple sort={sort} onSortChange={setSort}>
+  <Table.Header>
+    <Table.Row>
+      <Table.Cell>Title</Table.Cell>
+      <Table.Cell>Added</Table.Cell>
+      <Table.Cell>Size</Table.Cell>
+    </Table.Row>
+  </Table.Header>
+  ...
+</Table.Root>
+```
+
+The whole heading is the control, so it is one D-pad stop with a hit area the size of the cell, and the arrow and the rank are faces inside it rather than targets of their own. On the browser targets it carries `aria-sort`, which a screen reader announces in its own language. React Native has no sort claim and no reader on those platforms reads one, so the rank is drawn rather than only announced, which also puts it in the heading's accessible name on both.
+
+<Scene name="Columns that hold, then scroll">
+  The same four columns at two widths. State, Added and Size state a `width` and keep it to the pixel; Title takes what is left and stops at its `min` of 160 rather than squeezing to nothing. Size sits at the end of its cell, where a number is read against the ones above it. Added names `from: 'md'` and is gone below that breakpoint, which follows the WINDOW rather than this canvas, so narrow the browser to watch it leave the header and every row at once.
+
+  The second table is narrower than those columns will shrink to, so it scrolls sideways. Drag it. The floor is the sum of every DRAWN column's `width` or `min`, which is why a column that dropped out below its breakpoint does not hold the table open, and why a table declaring no columns has no floor and no scroller. Without one, the last column is simply cut off by the frame, which is the bug this replaces.
+
+  {story.take(({ variant }) => (
+    <Box gap={24}>
+      <Box gap={8}>
+        <Text variant="overline" color="textDim">
+          620
+        </Text>
+        <Columned variant={variant} width={620} />
+      </Box>
+      <Box gap={8}>
+        <Text variant="overline" color="textDim">
+          440
+        </Text>
+        <Columned variant={variant} width={440} />
+      </Box>
+    </Box>
+  ))}
+</Scene>
+
+<Scene name="Sorting one column">
+  A press walks ascending, then descending, then out of the sort. The arrow says which way, and a column that can sort but is not sorting shows the idle glyph, so a reader knows the heading is a control before pressing it. Only one column sorts here: pressing another takes the sort with it.
+
+  {story.take(({ variant }) => <SortedByOne variant={variant} />)}
+</Scene>
+
+<Scene name="Two columns, and the rank that reads them">
+  `multiple` makes a press add its column to the sort as the last tiebreak instead of replacing it, so sorting by state and then by date within state is two presses in that order. The numeral after the arrow is the column's place in the list. It is drawn only once a second column joins, because a rank of one out of one says nothing.
+
+  There is no modifier key. Shift-click is a pointer's idea and a remote has none, so `multiple` is the whole mechanism and a press does the same thing under either hand. Cycling a column past descending drops it and leaves the ranks around it in order.
+
+  {story.take(({ variant }) => <SortedByTwo variant={variant} />)}
+</Scene>
+
+<Scene name="Sorted by the server">
+  What a real screen does with it. The press changes the query, the query is refetched, and the rows arrive already in order. The heading reports the new sort at once while the body is still the old answer, dimmed, so it is always clear which half has caught up. The line above the table is the request the sort becomes, and it moves as you press.
+
+  {story.take(({ variant }) => <ServerSorted variant={variant} />)}
+</Scene>
 
 <Scene name="Composed cells">
   A cell holds whatever it is about. Only a plain string is set in the table's own type; anything else is drawn as it was written, which is how a badge or a chip lands in a column.
@@ -142,10 +217,17 @@ Rows of the same shape, read down a column as much as across a row. There is no 
 - Write the same number of cells in every row: a column is as wide as the cells in it, and nothing else lines them up.
 - Name the table on the Root with `label`, so a reader who lands in the middle of it hears what it is.
 - Use `variant="plain"` where the table sits in a column of text: it has no frame to be inset from, so it lines up with the paragraph above it.
+- Order the rows yourself, in the same render that reports the sort. The table draws the sort; it never applies one.
+- Declare `columns` wherever a column has to hold its width: without one, a cell is as wide as its share of the row and nothing else.
+- Name a `column` only where sorting by it means something: one without a name is not a control and takes no stop.
+- Give a `flex` column a `min`, so a long title stops shrinking rather than squeezing to nothing. It is also what the table refuses to scroll narrower than.
 </Do>
 
 <Dont>
 - Reach for it for a long collection. A table materialises every row, so windowing is `<VirtualGrid>`.
 - Rule a row by hand: the seam belongs to the row under it, which is what keeps the last one from doubling the frame.
 - Put a control in a cell where the whole row is the thing being chosen. That is `<ListRow>`.
+- Ask for a modifier key to add a column to the sort. Set `multiple` and let each press build it, or the remote cannot reach it.
+- Write a different number of cells in the header and the body. The nth cell of every row is the nth column, and nothing else lines them up.
+- Give the arrow a press of its own. The heading is the control, and a target inside it is a second D-pad stop for the same act.
 </Dont>

@@ -82,7 +82,10 @@ export { Resizable, useResizablePanel } from './resizable';
 export type { SplashBackdropProps, SplashCover } from './splash-backdrop';
 export { SplashBackdrop } from './splash-backdrop';
 export type {
+  SortColumn,
+  SortDirection,
   TableCellProps,
+  TableColumn,
   TableRootProps,
   TableRowProps,
   TableSectionProps,
