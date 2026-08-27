@@ -2,12 +2,19 @@
 // the naming/organize tools. `moduleApiHook` binds it to the module the host is
 // rendering, so the id is never repeated here.
 
+import type { TorrentAnalysis } from '@kroma/module-acquisition/schemas';
 import { moduleApiHook } from '@kroma/module-sdk';
 import type {
   ClientTestResult,
   DownloadClientsView,
   DownloadClientView,
+  DownloadQuery,
   DownloadsView,
+  EpisodeInfo,
+  InspectedTorrent,
+  LimitsView,
+  LinkBody,
+  MatchCandidatesView,
   NamingTemplatesView,
   NamingView,
   OrganizePlan,
@@ -18,8 +25,21 @@ import type {
 
 const enc = encodeURIComponent;
 
+type QueryValue = string | number | boolean | null | undefined;
+
+function queryString(query: Record<string, QueryValue>): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null || value === '') continue;
+    params.set(key, String(value));
+  }
+  const search = params.toString();
+  return search ? `?${search}` : '';
+}
+
 export const useTorrentsApi = moduleApiHook((api) => ({
-  downloads: () => api.get<DownloadsView>('/downloads'),
+  downloads: (query: DownloadQuery = {}) =>
+    api.get<DownloadsView>(`/downloads${queryString({ ...query })}`),
   pause: (id: string) => api.post<void>(`/downloads/${enc(id)}/pause`),
   resume: (id: string) => api.post<void>(`/downloads/${enc(id)}/resume`),
   /** Re-attempt a failed grab (re-adds the torrent in the background). */
@@ -35,6 +55,38 @@ export const useTorrentsApi = moduleApiHook((api) => ({
   resumeAll: () => api.post<{ count: number }>('/downloads/resume-all'),
   /** Force a re-announce on every active download. */
   reannounceAll: () => api.post<{ count: number }>('/downloads/reannounce'),
+
+  /** What a `.torrent` an operator picked says about itself. Queues nothing:
+   *  the bytes are kept and the manual-add flow carries on from the magnet. They
+   *  go up raw because there is no JSON shape for a file. */
+  inspectTorrent: (file: Blob) =>
+    api.send<InspectedTorrent>('/downloads/torrent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-bittorrent' },
+      body: file,
+    }),
+
+  /** The engine-wide throughput and parallelism ceilings. */
+  limits: () => api.get<LimitsView>('/downloads/limits'),
+  saveLimits: (body: LimitsView) => api.put<LimitsView>('/downloads/limits', body),
+
+  /** Titles this download could be for, ranked. `q` overrides the search text
+   *  when the parsed release name is the reason nothing matched. */
+  candidates: (id: string, q?: string, kind?: string) =>
+    api.get<MatchCandidatesView>(`/downloads/${enc(id)}/candidates${queryString({ q, kind })}`),
+  /** Ranked titles for words an operator typed, with no download row yet: what
+   *  the manual-add flow pins a title with before anything is queued. */
+  searchTitles: (q: string, kind?: string, year?: number) =>
+    api.get<MatchCandidatesView>(`/downloads/candidates${queryString({ q, kind, year })}`),
+  /** What a queued torrent actually holds. The row carries its own link on
+   *  the server, so nothing hands a magnet back to the browser to ask. */
+  contents: (id: string) => api.get<TorrentAnalysis>(`/downloads/${enc(id)}/contents`),
+  /** What the provider calls each episode of one season, so a file list reads
+   *  as episodes rather than as filenames. Empty when it knows none. */
+  episodes: (tmdbId: number, season: number) =>
+    api.get<EpisodeInfo[]>(`/downloads/episodes${queryString({ tmdbId, season })}`),
+  /** Pin the title, at any stage of the download. */
+  link: (id: string, body: LinkBody) => api.put<void>(`/downloads/${enc(id)}/link`, body),
 
   clients: () => api.get<DownloadClientsView>('/download-clients'),
   createClient: (body: SaveDownloadClientBody) =>

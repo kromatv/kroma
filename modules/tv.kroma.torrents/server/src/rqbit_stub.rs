@@ -29,6 +29,8 @@ impl RqbitEngine {
 
     pub fn stop(&self) {}
 
+    pub fn set_rate_limits(&self, _download_bps: Option<u32>, _upload_bps: Option<u32>) {}
+
     pub fn client(self: &Arc<Self>) -> Box<dyn DownloadClient> {
         unreachable!("stub RqbitEngine cannot be constructed")
     }

@@ -21,9 +21,13 @@ mod engine;
 mod fetch;
 mod gate;
 mod grab;
+pub mod matching;
 mod ledger;
+mod throughput;
 
+pub use engine::LiveStat;
 pub use gate::active_proxy_url;
+pub use throughput::{bps_setting, DOWN_KBPS_KEY, MAX_ACTIVE_KEY, UP_KBPS_KEY};
 
 use fetch::fetch_torrent_file;
 
@@ -36,6 +40,8 @@ pub struct DownloadManager {
     vpn_status: Mutex<Option<VpnStatusView>>,
     paused_by_killswitch: Mutex<Vec<String>>,
     paused_by_disable: Mutex<Vec<String>>,
+    speed_history: Mutex<Vec<crate::SpeedSample>>,
+    starting_since: Mutex<Option<i64>>,
     state_dir: PathBuf,
     downloads_dir: PathBuf,
     // Held rather than threaded through: `engine_for` is called from the monitor
@@ -69,6 +75,8 @@ impl DownloadManager {
             vpn_status: Mutex::new(None),
             paused_by_killswitch: Mutex::new(Vec::new()),
             paused_by_disable: Mutex::new(Vec::new()),
+            speed_history: Mutex::new(Vec::new()),
+            starting_since: Mutex::new(None),
             downloads_dir: state_dir.join("downloads"),
             state_dir,
             host,
@@ -127,13 +135,35 @@ impl DownloadManager {
         let client = db::preferred_download_client(&conn)?
             .ok_or_else(|| anyhow!("no enabled download client"))?;
         drop(conn);
+        let cached = self.cached_metadata(magnet_or_url);
         // Direct, bypassing the VPN: a LAN indexer is unreachable via the tunnel.
-        let prefetched: Option<Vec<u8>> = (client.kind == "rqbit"
-            && magnet_or_url.starts_with("http"))
-        .then(|| fetch_torrent_file(magnet_or_url))
-        .transpose()?;
-        self.engine_for(&client)?
-            .list_files(magnet_or_url, prefetched.as_deref())
+        let fetched: Option<Vec<u8>> = match cached {
+            Some(_) => None,
+            None => (client.kind == "rqbit" && magnet_or_url.starts_with("http"))
+                .then(|| fetch_torrent_file(magnet_or_url))
+                .transpose()?,
+        };
+        let bytes = cached.as_deref().or(fetched.as_deref());
+        self.engine_for(&client)?.list_files(magnet_or_url, bytes)
+    }
+
+    /// This torrent's metadata, if we already hold it: an operator's uploaded
+    /// `.torrent`, or the copy the engine cached when it first resolved one.
+    /// `None` means it has to be found on the network.
+    pub fn cached_metadata(&self, magnet_or_url: &str) -> Option<Vec<u8>> {
+        let hash = crate::engine::magnet_info_hash(magnet_or_url)?;
+        crate::torrent_file::stored_bytes(&self.state_dir, Some(&hash)).or_else(|| {
+            std::fs::read(self.state_dir.join("session").join(format!("{hash}.torrent")))
+                .ok()
+                .filter(|bytes| !bytes.is_empty())
+        })
+    }
+
+    /// Whether this client's engine is merely not up YET, rather than absent.
+    /// Only the embedded engine warms up in the background; an external one is
+    /// a daemon that is either reachable or not.
+    pub fn engine_pending(&self, row: &DownloadClientRow) -> bool {
+        row.kind == crate::engine::EMBEDDED_KIND && crate::RQBIT_COMPILED && self.rqbit().is_none()
     }
 
     /// The engine for one configured client. The embedded one is in this process;
@@ -178,7 +208,8 @@ impl DownloadManager {
 pub struct GrabSpec {
     pub magnet_or_url: String,
     pub kind: String,
-    pub tmdb_id: u64,
+    #[serde(with = "crate::zero_as_none")]
+    pub tmdb_id: Option<u64>,
     pub title: Option<String>,
     pub year: Option<u32>,
     pub season: Option<u32>,

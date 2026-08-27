@@ -1969,6 +1969,7 @@ dependencies = [
  "kroma-scene",
  "kroma-testing",
  "librqbit",
+ "librqbit-core",
  "rusqlite",
  "serde",
  "serde_json",

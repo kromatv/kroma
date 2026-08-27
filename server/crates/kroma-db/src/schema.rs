@@ -161,4 +161,42 @@ mod tests {
             "{indexes:?}"
         );
     }
+
+    #[test]
+    fn init_repins_downloads_a_previous_release_marked_manual() {
+        let dir = kroma_testing::temp_dir("schema-match-source");
+        let path = dir.path().join("kroma.db");
+        let old = init(&path).unwrap();
+        old.get()
+            .unwrap()
+            .execute_batch(
+                "INSERT INTO downloads (id, client_id, client_ref, kind, tmdb_id, release_title, \
+                     magnet_or_url, grabbed_at, match_source) \
+                 VALUES ('d1', 'embedded', '', 'movie', 603, 'R', 'm', 0, 'manual'), \
+                        ('d2', 'embedded', '', 'movie', 0, 'R', 'm', 0, 'none'), \
+                        ('d3', 'embedded', '', 'movie', 42, 'R', 'm', 0, 'auto');",
+            )
+            .unwrap();
+        drop(old);
+
+        let pool = init(&path).unwrap();
+
+        let sources: Vec<Option<String>> = pool
+            .get()
+            .unwrap()
+            .prepare("SELECT match_source FROM downloads ORDER BY id")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<std::result::Result<_, _>>()
+            .unwrap();
+        assert_eq!(
+            sources,
+            [
+                Some("pinned".to_string()),
+                Some("none".to_string()),
+                Some("auto".to_string())
+            ]
+        );
+    }
 }

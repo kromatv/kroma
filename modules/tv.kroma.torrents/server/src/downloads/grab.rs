@@ -73,6 +73,9 @@ impl DownloadManager {
             details_url: spec.details_url,
             only_files: spec.only_files,
             upgrade: spec.upgrade,
+            lifetime_downloaded_bytes: 0,
+            lifetime_uploaded_bytes: 0,
+            match_source: spec.tmdb_id.map(|_| crate::MatchSource::Pinned),
         };
         db::insert_download(self.core(), &row)?;
         db::set_wanted_status(self.core(), &spec.wanted_ids, "grabbed", now_ms())?;
@@ -91,6 +94,13 @@ impl DownloadManager {
     /// Background phase of a grab: slow (up to a couple of minutes), and safe
     /// to run detached from the request that queued it.
     pub fn activate(&self, host: &dyn HostCtx, row: &DownloadRow) {
+        if !self.slot_available(host) {
+            tracing::info!(
+                release = %row.release_title,
+                "parallelism cap reached; download held in the queue"
+            );
+            return;
+        }
         let client = match self
             .store()
             .get()
@@ -109,6 +119,13 @@ impl DownloadManager {
         };
         let engine = match self.engine_for(&client) {
             Ok(e) => e,
+            Err(_) if self.engine_pending(&client) => {
+                tracing::info!(
+                    release = %row.release_title,
+                    "engine still starting; download held in the queue"
+                );
+                return;
+            }
             Err(e) => {
                 let _ = db::set_download_status(
                     self.core(),
@@ -149,7 +166,16 @@ impl DownloadManager {
         row: &DownloadRow,
         client: &DownloadClientRow,
     ) -> Result<Option<Vec<u8>>, ()> {
-        if client.kind != "rqbit" || !row.magnet_or_url.starts_with("http") {
+        if client.kind != "rqbit" {
+            return Ok(None);
+        }
+        if let Some(bytes) =
+            crate::torrent_file::stored_bytes(&self.state_dir, self.uploaded_hash(row).as_deref())
+        {
+            tracing::info!(id = %row.id, bytes = bytes.len(), "starting from the uploaded .torrent");
+            return Ok(Some(bytes));
+        }
+        if !row.magnet_or_url.starts_with("http") {
             return Ok(None);
         }
         match fetch_torrent_for(host, row) {
@@ -164,6 +190,17 @@ impl DownloadManager {
                 Err(())
             }
         }
+    }
+
+    pub fn keep_uploaded_torrent(&self, info_hash: &str, bytes: &[u8]) -> anyhow::Result<()> {
+        crate::torrent_file::store(&self.state_dir, info_hash, bytes)?;
+        Ok(())
+    }
+
+    fn uploaded_hash(&self, row: &DownloadRow) -> Option<String> {
+        row.info_hash
+            .clone()
+            .or_else(|| crate::engine::magnet_info_hash(&row.magnet_or_url))
     }
 
     fn reconcile_added(&self, row: &DownloadRow, engine: &dyn DownloadClient, client_ref: &str) {

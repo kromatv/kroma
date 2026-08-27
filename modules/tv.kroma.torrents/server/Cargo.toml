@@ -55,6 +55,14 @@ rusqlite = { version = "0.40", features = ["bundled"] }
 # db facade re-exports the indexers table from kroma-indexer for the queue view.
 # The acquisition vertical is its own crate (kroma-acquisition), which deps THIS one.
 sha1 = "0.10"
+# Bencode + info-hash for an uploaded `.torrent`, unconditionally: an operator
+# drops a file whether or not the EMBEDDED engine is compiled in, and every
+# external engine still needs the magnet we derive from those bytes. Same
+# version as the librqbit the `rqbit` feature pulls, so the two share one build.
+# `sha1-ring` explicitly, NOT the crate's default `sha1-crypto-hash`: librqbit's
+# `rust-tls` picks ring, and the shared `sha1w` asserts exactly one backend, so
+# the default would fail the build the moment the `rqbit` feature is on.
+librqbit-core = { version = "=9.0.0-rc.0", default-features = false, features = ["sha1-ring"] }
 anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -109,3 +117,7 @@ strip = true
 [profile.release-kmod]
 inherits = "release"
 panic = "abort"
+
+[profile.dev]
+# Keep backtraces, drop full DWARF. debug/deps was 81 GB with the default.
+debug = "line-tables-only"

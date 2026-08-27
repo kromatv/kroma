@@ -37,11 +37,29 @@ const download = {
   infoHash: 'ABC',
   posterUrl: null,
   localId: null,
+  year: 1999,
+  tmdbId: 603,
+  matchSource: 'auto',
+  lifetimeDownloadedBytes: 3607101440,
+  lifetimeUploadedBytes: 0,
+};
+
+const page = { page: 1, perPage: 25, total: 1, pageCount: 1 };
+
+const stats = {
+  downBps: 1024,
+  upBps: 0,
+  peers: 7,
+  active: 1,
+  byStatus: { downloading: 1 },
+  totalDownloadedBytes: 3607101440,
+  totalUploadedBytes: 0,
+  history: [{ atMs: 1, downBps: 1024, upBps: 0, active: 1, peers: 3 }],
 };
 
 describe('DownloadsView', () => {
   it('parses a queue with no VPN module installed', () => {
-    const view = DownloadsView.parse({ downloads: [download], vpn: null });
+    const view = DownloadsView.parse({ downloads: [download], vpn: null, page, stats });
     expect(view.downloads).toHaveLength(1);
     expect(view.downloads[0]?.progress).toBe(0.42);
     expect(view.vpn).toBeNull();
@@ -51,13 +69,20 @@ describe('DownloadsView', () => {
     const view = DownloadsView.parse({
       downloads: [],
       vpn: { connected: true, exitIp: '198.51.100.9', paused: false },
+      page,
+      stats,
     });
     expect(view.vpn).toEqual({ connected: true, exitIp: '198.51.100.9', paused: false });
   });
 
   it('rejects a VPN status that is missing a field', () => {
     expect(() =>
-      DownloadsView.parse({ downloads: [], vpn: { connected: true, exitIp: null } }),
+      DownloadsView.parse({
+        downloads: [],
+        vpn: { connected: true, exitIp: null },
+        page,
+        stats,
+      }),
     ).toThrow();
   });
 

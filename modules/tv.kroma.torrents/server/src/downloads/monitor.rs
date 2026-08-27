@@ -134,12 +134,60 @@ impl DownloadManager {
                 completed_any = true;
             }
         }
+        self.link_unresolved(host, &rows);
+        self.sample_throughput(host, &rows);
+        // Re-asserted every tick rather than only at session start, so a
+        // ceiling changed while a torrent is mid-flight takes hold without one.
+        self.apply_rate_limits(host);
+        self.fill_free_slots(host);
 
         if completed_any {
             // Import runs as a tracked job so its work shows in the console.
             host.trigger_job("acquisition.import", "download-complete");
         }
         true
+    }
+
+    // Best-effort titles for rows nothing has resolved. One row per tick: a
+    // provider lookup is a network call, and a queue that arrived unlinked all
+    // at once must not become a burst of them.
+    fn link_unresolved(&self, host: &dyn HostCtx, rows: &[db::DownloadRow]) {
+        let Some(row) = rows
+            .iter()
+            .find(|row| row.tmdb_id.is_none() && row.match_source.is_none())
+        else {
+            return;
+        };
+        self.auto_link(host, &row.id);
+    }
+
+    fn sample_throughput(&self, host: &dyn HostCtx, rows: &[db::DownloadRow]) {
+        let live = self.live_stats();
+        let (down, up, peers) = rows.iter().fold((0, 0, 0), |(down, up, peers), row| {
+            let stat = live.get(&row.id).copied().unwrap_or_default();
+            (down + stat.down_bps, up + stat.up_bps, peers + stat.peers)
+        });
+        let running = rows
+            .iter()
+            .filter(|row| matches!(row.status.as_str(), "downloading" | "seeding"))
+            .count() as u32;
+        self.record_speed(down, up, running, peers);
+        host.publish(Event::new(
+            "downloads.stats",
+            json!({
+                "downBps": down,
+                "upBps": up,
+                "active": running,
+                "peers": peers,
+            }),
+        ));
+    }
+
+    fn fill_free_slots(&self, host: &dyn HostCtx) {
+        for row in self.claim_free_slots(host) {
+            tracing::info!(release = %row.release_title, "queue slot free; starting held download");
+            self.activate(host, &row);
+        }
     }
 
     // Returns whether the row just completed (so the caller chains the import
@@ -232,6 +280,12 @@ impl DownloadManager {
                 _ => "downloading",
             }
         };
+        let _ = db::update_download_bytes(
+            self.core(),
+            &row.id,
+            status.lifetime_downloaded_bytes,
+            status.lifetime_uploaded_bytes,
+        );
         if finished {
             // save_path may only be known now (external clients).
             let _ = db::update_download_progress(

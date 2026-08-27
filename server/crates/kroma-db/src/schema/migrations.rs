@@ -153,10 +153,12 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     // counters reset with the process).
     "ALTER TABLE downloads ADD COLUMN downloaded_bytes INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE downloads ADD COLUMN uploaded_bytes INTEGER NOT NULL DEFAULT 0",
-    // How `tmdb_id` was decided: 'auto' from the release name, 'manual' from an
-    // operator correction. NULL is a row from before the column, which the
-    // automatic pass treats as unpinned. A 'manual' row is never re-matched.
+    // How `tmdb_id` was decided: 'auto' from the release name, 'pinned' from a
+    // grab that already named a title, 'none' once the automatic pass has looked
+    // and found nothing. NULL is a row it has not reached yet. A 'pinned' row is
+    // never re-matched.
     "ALTER TABLE downloads ADD COLUMN match_source TEXT",
+    "UPDATE downloads SET match_source = 'pinned' WHERE match_source = 'manual'",
     // Paging the queue orders by grabbed_at across every filter, and filtering
     // by client is a full scan without this.
     "CREATE INDEX IF NOT EXISTS idx_downloads_grabbed ON downloads(grabbed_at DESC)",

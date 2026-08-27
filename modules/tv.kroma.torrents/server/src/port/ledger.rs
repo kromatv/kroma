@@ -180,15 +180,40 @@ mod tests {
 
     type DbHost = kroma_module_sdk::host::testing::StubHost;
 
+    fn migrated_host() -> DbHost {
+        let host = DbHost::with_db("torrents-ledger");
+        let conn = host.store().get().unwrap();
+        kroma_module_sdk::db::apply_migrations(&conn, crate::db::MIGRATIONS).unwrap();
+        drop(conn);
+        host
+    }
+
+    fn with_manager(host: DbHost) -> DbHost {
+        let manager = DownloadManager::new(
+            Arc::new(host.clone()),
+            host.data_dir(),
+            host.db().clone(),
+            host.store().clone(),
+        );
+        host.with_service(manager)
+    }
+
+    fn seed_row(host: &DbHost, id: &str) {
+        crate::db::insert_download(host.db(), &row_with_id(id)).unwrap();
+    }
+
     // The routes as the core's reverse proxy drives them. The manager is NOT
     // registered here, which is the state this process is in between spawn and
     // wiring — and every method has to say so rather than panic.
     async fn call(path: &str, body: serde_json::Value) -> (StatusCode, serde_json::Value) {
-        let host = DbHost::with_db("torrents-ledger");
-        {
-            let conn = host.store().get().unwrap();
-            kroma_module_sdk::db::apply_migrations(&conn, crate::db::MIGRATIONS).unwrap();
-        }
+        post(migrated_host(), path, body).await
+    }
+
+    async fn post(
+        host: DbHost,
+        path: &str,
+        body: serde_json::Value,
+    ) -> (StatusCode, serde_json::Value) {
         let app = routes::<DbHost>().with_state(host);
         let req = Request::builder()
             .method("POST")
@@ -285,18 +310,66 @@ mod tests {
 
     #[tokio::test]
     async fn a_lifecycle_call_for_a_row_that_is_gone_is_false_rather_than_an_error() {
-        let (_, answer) = call(
+        let host = with_manager(migrated_host());
+
+        let (_, answer) = post(
+            host,
             "/_port/tv.kroma.torrents/grab/activate",
             json!({ "id": "ghost" }),
         )
         .await;
 
-        // The manager is absent here, so this is the manager error; what matters is
-        // that a missing row and a missing manager are told apart at all.
-        assert!(
-            answer["Err"].is_string() || answer["Ok"] == json!(false),
-            "{answer}"
-        );
+        assert_eq!(answer["Ok"], json!(false));
+    }
+
+    #[tokio::test]
+    async fn activating_a_row_the_ledger_holds_reaches_the_manager() {
+        let host = with_manager(migrated_host());
+        seed_row(&host, "d1");
+
+        let (_, answer) = post(
+            host.clone(),
+            "/_port/tv.kroma.torrents/grab/activate",
+            json!({ "id": "d1" }),
+        )
+        .await;
+
+        let conn = host.db().get().unwrap();
+        let row = crate::db::get_download(&conn, "d1").unwrap().unwrap();
+        assert_eq!(answer["Ok"], json!(true));
+        assert_eq!(row.status, "failed");
+        assert_eq!(row.error.as_deref(), Some("download client unavailable"));
+    }
+
+    #[tokio::test]
+    async fn dropping_the_data_of_a_row_that_is_gone_is_false_rather_than_an_error() {
+        let host = with_manager(migrated_host());
+
+        let (_, answer) = post(
+            host,
+            "/_port/tv.kroma.torrents/grab/drop-data",
+            json!({ "id": "ghost" }),
+        )
+        .await;
+
+        assert_eq!(answer["Ok"], json!(false));
+    }
+
+    #[tokio::test]
+    async fn dropping_the_data_of_a_row_leaves_the_row_in_the_ledger() {
+        let host = with_manager(migrated_host());
+        seed_row(&host, "d1");
+
+        let (_, answer) = post(
+            host.clone(),
+            "/_port/tv.kroma.torrents/grab/drop-data",
+            json!({ "id": "d1" }),
+        )
+        .await;
+
+        let conn = host.db().get().unwrap();
+        assert_eq!(answer["Ok"], json!(true));
+        assert!(crate::db::get_download(&conn, "d1").unwrap().is_some());
     }
 
     #[tokio::test]
@@ -328,7 +401,7 @@ mod tests {
         let spec: GrabSpec = serde_json::from_value(body).unwrap();
 
         assert_eq!(spec.magnet_or_url, "magnet:?xt=urn:btih:AB");
-        assert_eq!(spec.tmdb_id, 603);
+        assert_eq!(spec.tmdb_id, Some(603));
         assert_eq!(spec.wanted_ids, vec!["w1".to_string()]);
         assert!(spec.upgrade);
         // What a consumer did not send has to default, or a spec built by an older
@@ -369,6 +442,29 @@ mod tests {
         assert_eq!(json["save_path"], "/downloads/x");
         assert_eq!(json["status"], "completed");
         assert_eq!(json["upgrade"], false);
+        assert_eq!(json["tmdb_id"], 603);
+    }
+
+    #[test]
+    fn a_row_no_title_was_resolved_for_crosses_as_the_zero_an_import_pass_expects() {
+        let unresolved = DownloadRow {
+            tmdb_id: None,
+            ..row()
+        };
+
+        let json = serde_json::to_value(unresolved).unwrap();
+
+        assert_eq!(json["tmdb_id"], 0);
+    }
+
+    fn row_with_id(id: &str) -> DownloadRow {
+        DownloadRow {
+            id: id.into(),
+            request_id: None,
+            client_ref: String::new(),
+            status: "queued".into(),
+            ..row()
+        }
     }
 
     fn row() -> DownloadRow {
@@ -378,7 +474,7 @@ mod tests {
             client_ref: "r1".into(),
             request_id: Some("req-1".into()),
             kind: "movie".into(),
-            tmdb_id: 603,
+            tmdb_id: Some(603),
             title: Some("The Matrix".into()),
             year: Some(1999),
             season: None,
@@ -401,6 +497,9 @@ mod tests {
             details_url: None,
             only_files: None,
             upgrade: false,
+            lifetime_downloaded_bytes: 0,
+            lifetime_uploaded_bytes: 0,
+            match_source: None,
         }
     }
 }

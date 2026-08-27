@@ -56,6 +56,12 @@ pub struct TorrentStatus {
     pub save_path: Option<String>,
     pub files: Vec<String>,
     pub error: Option<String>,
+    // An engine module ships on its own tag, so a peer still on the pre-rename
+    // keys, or on one older than the fields, reaches this module every day.
+    #[serde(default, alias = "downloaded_bytes")]
+    pub lifetime_downloaded_bytes: u64,
+    #[serde(default, alias = "uploaded_bytes")]
+    pub lifetime_uploaded_bytes: u64,
 }
 
 /// One file inside a torrent, from a metadata-only listing.
@@ -193,6 +199,7 @@ mod tests {
     fn an_engine_answers_the_whole_client_contract() {
         let engine: Box<dyn DownloadClient> = Box::new(Stub);
 
+        assert_eq!(engine.kind(), "stub");
         assert_eq!(engine.test().unwrap(), "v1");
         let req = AddTorrentReq {
             magnet_or_url: "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567",
@@ -215,6 +222,32 @@ mod tests {
     fn default_trait_methods_on_engine() {
         assert!(Stub.list_files("magnet:?x", None).is_err());
         assert!(Stub.reannounce("ref").is_ok());
+    }
+
+    #[test]
+    fn an_engine_still_on_the_pre_rename_keys_is_read_at_its_word() {
+        let older = serde_json::json!({
+            "client_ref": "abc",
+            "name": "The.Matrix",
+            "info_hash": null,
+            "progress": 1.0,
+            "state": "seeding",
+            "down_bps": 0,
+            "up_bps": 0,
+            "peers": 0,
+            "peers_seen": 0,
+            "size_bytes": 0,
+            "save_path": null,
+            "files": [],
+            "error": null,
+            "downloaded_bytes": 4096,
+            "uploaded_bytes": 8192,
+        });
+
+        let status: TorrentStatus = serde_json::from_value(older).unwrap();
+
+        assert_eq!(status.lifetime_downloaded_bytes, 4096);
+        assert_eq!(status.lifetime_uploaded_bytes, 8192);
     }
 
     #[test]

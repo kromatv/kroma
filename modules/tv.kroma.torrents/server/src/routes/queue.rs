@@ -1,75 +1,148 @@
-//! `/downloads` the download queue + history, with pause / resume
-//! / remove (optionally deleting data). Readable and drivable by either
-//! `requests.manage` (the moderator who grabbed) or `settings.manage`.
+//! `GET /downloads` one page of the queue + history, narrowed by the filter
+//! bar and rolled up by the stat cards above it.
 
-use std::sync::Arc;
+use std::collections::HashMap;
 
-use axum::extract::{Path as AxPath, Query as AxQuery, State};
-use axum::http::StatusCode;
+use axum::extract::{Query as AxQuery, State};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post};
+use axum::routing::get;
 use axum::{Json, Router};
 use serde::Deserialize;
-use serde_json::json;
 
-use crate::db;
-use kroma_module_sdk::domain::{Permission, User};
+use kroma_module_sdk::host::{query, AuthUser, HostStorage};
 
-use crate::{DownloadView, DownloadsView};
-use kroma_module_sdk::host::{blocking, json_error, query, service, AuthUser, HostStorage};
+use super::view::{to_view, RowContext};
+use super::{dm, require_downloads};
+use crate::db::{self, DownloadFilter, DownloadOrder};
+use crate::downloads::LiveStat;
+use crate::{DownloadStatsView, DownloadsView, PageView};
 
-use crate::DownloadManager;
+const DEFAULT_PER_PAGE: u32 = 10;
+// One page has to stay small enough that the per-row request/catalog lookups
+// below cost less than the poll interval.
+const MAX_PER_PAGE: u32 = 100;
 
-fn dm<S: HostStorage>(state: &S) -> Arc<DownloadManager> {
-    service::<DownloadManager>(state).expect("download manager registered")
+fn statuses_in_group(group: &str) -> Vec<String> {
+    let names: &[&str] = match group {
+        "active" => &["queued", "downloading", "seeding", "paused"],
+        "done" => &["completed", "imported"],
+        "failed" => &["failed", "removed"],
+        "all" | "" => &[],
+        one => return vec![one.to_string()],
+    };
+    names.iter().copied().map(str::to_string).collect()
 }
 
-pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
-    Router::new()
-        .route("/downloads", get(list::<S>))
-        .route("/downloads/pause-all", post(pause_all::<S>))
-        .route("/downloads/resume-all", post(resume_all::<S>))
-        .route("/downloads/reannounce", post(reannounce_all::<S>))
-        .route("/downloads/{id}/pause", post(pause::<S>))
-        .route("/downloads/{id}/resume", post(resume::<S>))
-        .route("/downloads/{id}/retry", post(retry::<S>))
-        .route("/downloads/{id}/reannounce", post(reannounce::<S>))
-        .route("/downloads/{id}", axum::routing::delete(remove::<S>))
+fn comma_list(raw: Option<&str>) -> Vec<String> {
+    raw.map(|value| {
+        value
+            .split(',')
+            .map(str::trim)
+            .filter(|part| !part.is_empty() && *part != "all")
+            .map(str::to_string)
+            .collect()
+    })
+    .unwrap_or_default()
 }
 
-fn require_downloads<S: HostStorage>(state: &S, user: &User) -> Result<(), Response> {
-    if user.can(Permission::RequestsManage) || user.can(Permission::SettingsManage) {
-        Ok(())
-    } else {
-        state.require(user, Permission::SettingsManage)
+fn expand_status_groups(raw: Option<&str>) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for group in comma_list(raw) {
+        for status in statuses_in_group(&group) {
+            if !out.contains(&status) {
+                out.push(status);
+            }
+        }
+    }
+    out
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListParams {
+    #[serde(default)]
+    page: Option<u32>,
+    #[serde(default)]
+    per_page: Option<u32>,
+    /// Comma-separated groups (`active` | `done` | `failed`) or exact statuses;
+    /// several union.
+    #[serde(default)]
+    status: Option<String>,
+    /// Comma-separated engine ids.
+    #[serde(default)]
+    client_id: Option<String>,
+    /// Comma-separated `movie` | `season` | `episode`.
+    #[serde(default)]
+    kind: Option<String>,
+    #[serde(default)]
+    q: Option<String>,
+    #[serde(default)]
+    unlinked: Option<bool>,
+    #[serde(default)]
+    sort: Option<String>,
+    #[serde(default)]
+    dir: Option<String>,
+}
+
+fn trimmed(value: Option<String>) -> Option<String> {
+    value
+        .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty() && v != "all")
+}
+
+impl ListParams {
+    fn filter(&self) -> DownloadFilter {
+        DownloadFilter {
+            statuses: expand_status_groups(self.status.as_deref()),
+            client_ids: comma_list(self.client_id.as_deref()),
+            kinds: comma_list(self.kind.as_deref()),
+            search: trimmed(self.q.clone()),
+            unlinked: self.unlinked.unwrap_or(false),
+        }
+    }
+
+    fn order(&self) -> DownloadOrder {
+        DownloadOrder::parse(self.sort.as_deref(), self.dir.as_deref())
+    }
+
+    fn per_page(&self) -> u32 {
+        self.per_page
+            .unwrap_or(DEFAULT_PER_PAGE)
+            .clamp(1, MAX_PER_PAGE)
     }
 }
 
-const HISTORY_LIMIT: usize = 200;
+pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
+    Router::new().route("/downloads", get(list::<S>))
+}
 
 pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
     State(state): State<S>,
     AuthUser(user): AuthUser,
+    AxQuery(params): AxQuery<ListParams>,
 ) -> Result<Response, Response> {
     require_downloads(&state, &user)?;
-    let vpn = dm(&state).vpn_status();
-    // Polled from the engine so the panel still has stats when the live WebSocket
-    // can't reach the client. Blocking: engine stats run off the runtime.
-    let live = {
-        let mgr = dm(&state);
+    let manager = dm(&state);
+    let vpn = manager.vpn_status();
+    let history = manager.speed_history();
+    // Polled from the engine so the panel still has stats when the live
+    // WebSocket can't reach the client. Blocking: engine stats run off the
+    // runtime.
+    let live: HashMap<String, LiveStat> = {
+        let mgr = manager.clone();
         tokio::task::spawn_blocking(move || mgr.live_stats())
             .await
             .unwrap_or_default()
     };
     // Resolved before the blocking closure, which cannot borrow the host.
-    let indexers: std::collections::HashMap<String, String> = crate::port::indexers::names(&state)
+    let indexers: HashMap<String, String> = crate::port::indexers::names(&state)
         .into_iter()
         .map(|i| (i.id, i.name))
         .collect();
     // The client names come from this module's OWN database; the ledger below
     // from the shared one. Two files, so two lookups: resolved here because the
     // blocking closure gets only the one pool.
-    let clients: std::collections::HashMap<String, String> = query(state.store(), |pool| {
+    let clients: HashMap<String, String> = query(state.store(), |pool| {
         let conn = pool.get()?;
         Ok(db::list_download_clients(&conn)?
             .into_iter()
@@ -78,214 +151,130 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
     })
     .await
     .unwrap_or_default();
+
+    let filter = params.filter();
+    let order = params.order();
+    let per_page = params.per_page();
     let view = query(state.db(), move |pool| {
         let conn = pool.get()?;
-        let rows = db::list_downloads(&conn, HISTORY_LIMIT)?;
+        let total = db::count_downloads(&conn, &filter)?;
+        let page_count = (total as f64 / f64::from(per_page)).ceil().max(1.0) as u32;
+        let page = params.page.unwrap_or(1).clamp(1, page_count);
+        let offset = i64::from(page - 1) * i64::from(per_page);
+        let rows = db::page_downloads(&conn, &filter, order, offset, i64::from(per_page))?;
+        let totals = db::download_totals(&conn)?;
+
+        let ctx = RowContext {
+            indexers: &indexers,
+            clients: &clients,
+            live: &live,
+        };
         let downloads = rows
             .into_iter()
-            .map(|d| {
-                let req = d
-                    .request_id
-                    .as_deref()
-                    .and_then(|rid| db::get_request(&conn, rid).ok().flatten());
-                let title = req
-                    .as_ref()
-                    .map(|r| r.title.clone())
-                    .unwrap_or_else(|| d.release_title.clone());
-                let poster_url = req.as_ref().and_then(|r| r.poster_url.clone());
-                let indexer_name = d
-                    .indexer_id
-                    .as_deref()
-                    .and_then(|id| indexers.get(id).cloned());
-                let stats = live.get(&d.id).copied().unwrap_or((0, 0, 0, 0));
-                let local_id = req.as_ref().and_then(|r| {
-                    if d.kind == "movie" {
-                        db::movie_item_by_tmdb(&conn, r.tmdb_id).ok().flatten()
-                    } else {
-                        db::show_by_tmdb(&conn, r.tmdb_id).ok().flatten()
-                    }
-                });
-                DownloadView {
-                    id: d.id,
-                    client_name: clients
-                        .get(&d.client_id)
-                        .cloned()
-                        .unwrap_or_else(|| d.client_id.clone()),
-                    client_id: d.client_id,
-                    request_id: d.request_id,
-                    kind: d.kind,
-                    title,
-                    release_title: d.release_title,
-                    season: d.season,
-                    episodes: d.episodes,
-                    status: d.status,
-                    progress: d.progress,
-                    down_bps: stats.0,
-                    up_bps: stats.1,
-                    peers: stats.2,
-                    peers_seen: stats.3,
-                    size_bytes: d.size_bytes,
-                    score: d.score,
-                    error: d.error,
-                    grabbed_at: d.grabbed_at,
-                    completed_at: d.completed_at,
-                    imported_at: d.imported_at,
-                    indexer_name,
-                    details_url: d.details_url,
-                    info_hash: d.info_hash,
-                    poster_url,
-                    local_id,
-                }
-            })
+            .map(|row| to_view(&conn, &ctx, row))
             .collect();
-        Ok(DownloadsView { downloads, vpn })
+        let stats = DownloadStatsView {
+            down_bps: live.values().map(|s| s.down_bps).sum(),
+            up_bps: live.values().map(|s| s.up_bps).sum(),
+            peers: live.values().map(|s| s.peers).sum(),
+            active: db::running_download_count(&conn)?,
+            by_status: totals.by_status,
+            total_downloaded_bytes: totals.downloaded_bytes,
+            total_uploaded_bytes: totals.uploaded_bytes,
+            history,
+        };
+        Ok(DownloadsView {
+            downloads,
+            vpn,
+            page: PageView {
+                page,
+                per_page,
+                total,
+                page_count,
+            },
+            stats,
+        })
     })
     .await?;
     Ok(Json(view).into_response())
 }
 
-async fn act<S: HostStorage + Clone + Send + Sync + 'static>(
-    state: S,
-    user: User,
-    id: String,
-    f: impl FnOnce(&S, &str) -> anyhow::Result<()> + Send + 'static,
-) -> Result<Response, Response> {
-    require_downloads(&state, &user)?;
-    let st = state.clone();
-    let outcome = blocking(move || Ok(f(&st, &id))).await?;
-    match outcome {
-        Ok(()) => Ok(Json(json!({ "ok": true })).into_response()),
-        Err(e) if format!("{e:#}").contains("not found") => {
-            Err(state.lerr(&user, StatusCode::NOT_FOUND, "error.downloadNotFound"))
-        }
-        Err(e) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::db::{DownloadSort, SortDirection};
+
+    #[test]
+    fn a_group_expands_to_its_statuses_and_a_bare_status_stands_for_itself() {
+        assert_eq!(statuses_in_group("active").len(), 4);
+        assert_eq!(statuses_in_group("done"), ["completed", "imported"]);
+        assert_eq!(statuses_in_group("seeding"), ["seeding"]);
+        assert!(statuses_in_group("all").is_empty());
+        assert!(statuses_in_group("").is_empty());
     }
-}
 
-pub async fn pause<S: HostStorage + Clone + Send + Sync + 'static>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-    AxPath(id): AxPath<String>,
-) -> Result<Response, Response> {
-    let downloads = dm(&state);
-    act(state.clone(), user, id, move |_st, id| downloads.pause(id)).await
-}
+    #[test]
+    fn per_page_is_clamped_and_blank_filters_drop_out() {
+        let params = ListParams {
+            per_page: Some(5_000),
+            client_id: Some("  ".into()),
+            kind: Some("all".into()),
+            q: Some("  frieren ".into()),
+            ..ListParams::default()
+        };
 
-pub async fn resume<S: HostStorage + Clone + Send + Sync + 'static>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-    AxPath(id): AxPath<String>,
-) -> Result<Response, Response> {
-    let downloads = dm(&state);
-    act(state.clone(), user, id, move |_st, id| downloads.resume(id)).await
-}
+        let filter = params.filter();
 
-/// Asks the tracker for more peers on one download.
-pub async fn reannounce<S: HostStorage + Clone + Send + Sync + 'static>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-    AxPath(id): AxPath<String>,
-) -> Result<Response, Response> {
-    let downloads = dm(&state);
-    act(state.clone(), user, id, move |_st, id| {
-        downloads.reannounce(id)
-    })
-    .await
-}
-
-fn bulk_response(out: anyhow::Result<usize>) -> Result<Response, Response> {
-    match out {
-        Ok(count) => Ok(Json(json!({ "count": count })).into_response()),
-        Err(e) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
+        assert_eq!(params.per_page(), MAX_PER_PAGE);
+        assert!(filter.client_ids.is_empty());
+        assert!(filter.kinds.is_empty());
+        assert_eq!(filter.search.as_deref(), Some("frieren"));
     }
-}
 
-pub async fn pause_all<S: HostStorage + Clone + Send + Sync + 'static>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-) -> Result<Response, Response> {
-    require_downloads(&state, &user)?;
-    bulk_response(blocking(move || Ok(dm(&state).pause_all())).await?)
-}
+    #[test]
+    fn several_filters_of_one_kind_union_and_never_repeat_a_status() {
+        let params = ListParams {
+            status: Some("done,failed".into()),
+            kind: Some("movie, season".into()),
+            client_id: Some("embedded,box".into()),
+            ..ListParams::default()
+        };
 
-pub async fn resume_all<S: HostStorage + Clone + Send + Sync + 'static>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-) -> Result<Response, Response> {
-    require_downloads(&state, &user)?;
-    bulk_response(blocking(move || Ok(dm(&state).resume_all())).await?)
-}
+        let filter = params.filter();
 
-/// Forces a tracker re-announce on every active download.
-pub async fn reannounce_all<S: HostStorage + Clone + Send + Sync + 'static>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-) -> Result<Response, Response> {
-    require_downloads(&state, &user)?;
-    bulk_response(blocking(move || Ok(dm(&state).reannounce_all())).await?)
-}
-
-/// Re-attempts a failed step in the background: a `completed` download whose
-/// import failed is re-imported without re-downloading, a `failed` grab is reset
-/// and re-added.
-pub async fn retry<S: HostStorage + Clone + Send + Sync + 'static>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-    AxPath(id): AxPath<String>,
-) -> Result<Response, Response> {
-    require_downloads(&state, &user)?;
-    let ledger = state.db().clone();
-    let lookup_id = id.clone();
-    let status = blocking(move || {
-        let conn = ledger.get()?;
-        Ok(db::get_download(&conn, &lookup_id)?.map(|row| row.status))
-    })
-    .await?;
-    let Some(status) = status else {
-        return Err(json_error(StatusCode::NOT_FOUND, "download not found"));
-    };
-    if status == "completed" || status == "imported" {
-        // The import pass only considers `completed` rows, so an already-imported
-        // row is flipped back first; the import itself is idempotent.
-        if status == "imported" {
-            let ledger = state.db().clone();
-            let flip_id = id.clone();
-            blocking(move || {
-                db::set_download_status(&ledger, &flip_id, "completed", None)?;
-                Ok(())
-            })
-            .await?;
-        }
-        state.trigger_job("acquisition.import", "retry-import");
-        return Ok(Json(json!({ "ok": true })).into_response());
+        assert_eq!(
+            filter.statuses,
+            ["completed", "imported", "failed", "removed"]
+        );
+        assert_eq!(filter.kinds, ["movie", "season"]);
+        assert_eq!(filter.client_ids, ["embedded", "box"]);
     }
-    let reset_state = state.clone();
-    let row = match blocking(move || Ok(dm(&reset_state).retry(&id))).await? {
-        Ok(row) => row,
-        Err(e) if format!("{e:#}").contains("not found") => {
-            return Err(json_error(StatusCode::NOT_FOUND, "download not found"))
-        }
-        Err(e) => return Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
-    };
-    tokio::task::spawn_blocking(move || dm(&state).activate(&state, &row));
-    Ok(Json(json!({ "ok": true })).into_response())
-}
 
-#[derive(Debug, Deserialize)]
-pub struct RemoveParams {
-    #[serde(rename = "deleteData", default)]
-    delete_data: bool,
-}
+    #[test]
+    fn a_sort_name_nobody_defined_orders_by_the_default_instead_of_failing() {
+        let hostile = ListParams {
+            sort: Some("grabbed_at) --".into()),
+            dir: Some("'; DROP TABLE downloads".into()),
+            ..ListParams::default()
+        };
+        let asked = ListParams {
+            sort: Some("progress".into()),
+            dir: Some("asc".into()),
+            ..ListParams::default()
+        };
 
-pub async fn remove<S: HostStorage + Clone + Send + Sync + 'static>(
-    State(state): State<S>,
-    AuthUser(user): AuthUser,
-    AxPath(id): AxPath<String>,
-    AxQuery(params): AxQuery<RemoveParams>,
-) -> Result<Response, Response> {
-    let downloads = dm(&state);
-    act(state.clone(), user, id, move |_st, id| {
-        downloads.remove(id, params.delete_data)
-    })
-    .await
+        assert_eq!(hostile.order(), DownloadOrder::default());
+        assert_eq!(asked.order().sort, DownloadSort::Progress);
+        assert_eq!(asked.order().direction, SortDirection::Ascending);
+    }
+
+    #[test]
+    fn overlapping_groups_do_not_ask_for_the_same_status_twice() {
+        let params = ListParams {
+            status: Some("failed,failed".into()),
+            ..ListParams::default()
+        };
+
+        assert_eq!(params.filter().statuses, ["failed", "removed"]);
+    }
 }

@@ -186,8 +186,8 @@ mod tests {
     #[test]
     fn requests_with_active_downloads_rollup() {
         let pool = test_db();
-        seed_request(&pool, "req1");
-        seed_request(&pool, "req2");
+        seed_request(&pool, "req1", "T");
+        seed_request(&pool, "req2", "T");
 
         // req1: one live + one completed (+ a failed row that must be ignored).
         let mut a = download("a", "downloading", 10);

@@ -2,6 +2,7 @@ use anyhow::Result;
 use rusqlite::params;
 
 use crate::db::Pool;
+use crate::MatchSource;
 
 use super::DownloadRow;
 
@@ -11,15 +12,15 @@ pub fn insert_download(pool: &Pool, d: &DownloadRow) -> Result<()> {
         "INSERT INTO downloads (id, client_id, client_ref, request_id, kind, tmdb_id, title, year, \
             season, episodes, release_title, indexer_id, info_hash, magnet_or_url, size_bytes, \
             score, score_breakdown, status, progress, save_path, grabbed_at, details_url, only_files, \
-            upgrade) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24)",
+            upgrade, match_source) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)",
         params![
             d.id,
             d.client_id,
             d.client_ref,
             d.request_id,
             d.kind,
-            d.tmdb_id as i64,
+            d.tmdb_id.unwrap_or(0) as i64,
             d.title,
             d.year,
             d.season,
@@ -37,10 +38,68 @@ pub fn insert_download(pool: &Pool, d: &DownloadRow) -> Result<()> {
             d.grabbed_at,
             d.details_url,
             d.only_files.as_ref().map(|f| serde_json::to_string(f).unwrap_or_default()),
-            d.upgrade
+            d.upgrade,
+            d.match_source.map(MatchSource::as_str)
         ],
     )?;
     Ok(())
+}
+
+pub fn update_download_bytes(pool: &Pool, id: &str, downloaded: u64, uploaded: u64) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "UPDATE downloads SET downloaded_bytes = ?2, uploaded_bytes = ?3 WHERE id = ?1",
+        params![id, downloaded as i64, uploaded as i64],
+    )?;
+    Ok(())
+}
+
+/// Record that the automatic matcher looked and found nothing good enough, so
+/// the background pass stops asking about this row. An operator's correction
+/// replaces it.
+pub fn mark_download_match_tried(pool: &Pool, id: &str) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute(
+        "UPDATE downloads SET match_source = ?2 WHERE id = ?1 AND match_source IS NULL",
+        params![id, MatchSource::Unmatched.as_str()],
+    )?;
+    Ok(())
+}
+
+/// The title a download belongs to. `season` and `episodes` only mean anything
+/// for the matching `kind`; a movie carries neither.
+#[derive(Debug, Clone)]
+pub struct DownloadLink {
+    pub kind: String,
+    pub tmdb_id: u64,
+    pub title: Option<String>,
+    pub year: Option<u32>,
+    pub season: Option<u32>,
+    pub episodes: Option<Vec<u32>>,
+    pub source: MatchSource,
+}
+
+/// Pin (or re-pin) the title a download is for. Nothing else about the row
+/// moves: the torrent keeps downloading through a correction.
+pub fn link_download(pool: &Pool, id: &str, link: &DownloadLink) -> Result<bool> {
+    let conn = pool.get()?;
+    let n = conn.execute(
+        "UPDATE downloads SET kind = ?2, tmdb_id = ?3, title = ?4, year = ?5, season = ?6, \
+            episodes = ?7, match_source = ?8 WHERE id = ?1",
+        params![
+            id,
+            link.kind,
+            link.tmdb_id as i64,
+            link.title,
+            link.year,
+            link.season,
+            link.episodes
+                .as_ref()
+                .map(|e| serde_json::to_string(e).unwrap_or_default()),
+            link.source.as_str()
+        ],
+    )?;
+    Ok(n > 0)
 }
 
 /// Monitor tick write: progress + status (+ save_path once known).
@@ -148,7 +207,7 @@ mod tests {
         d1.only_files = Some(vec![0, 2]);
         d1.season = Some(2);
         d1.size_bytes = Some(2048);
-        d1.tmdb_id = 99;
+        d1.tmdb_id = Some(99);
         d1.upgrade = true;
         insert_download(&pool, &d1).unwrap();
         insert_download(&pool, &download("d2", "downloading", 20)).unwrap();
@@ -162,7 +221,7 @@ mod tests {
         assert_eq!(got.only_files, Some(vec![0, 2]));
         assert_eq!(got.season, Some(2));
         assert_eq!(got.size_bytes, Some(2048));
-        assert_eq!(got.tmdb_id, 99);
+        assert_eq!(got.tmdb_id, Some(99));
         // The import reads this to decide whether to delete what it replaced, so
         // a flag that does not survive the ledger would silently leave duplicates.
         assert!(got.upgrade);
@@ -294,5 +353,107 @@ mod tests {
             .to_string();
 
         assert!(err.contains("read only"), "{err}");
+    }
+
+    fn episode_link(source: MatchSource) -> DownloadLink {
+        DownloadLink {
+            kind: "episode".into(),
+            tmdb_id: 1399,
+            title: Some("Game of Thrones".into()),
+            year: Some(2011),
+            season: Some(2),
+            episodes: Some(vec![3, 4]),
+            source,
+        }
+    }
+
+    #[test]
+    fn a_correction_repins_every_field_the_title_is_made_of() {
+        let pool = test_db();
+        insert_download(&pool, &download("d1", "downloading", 10)).unwrap();
+
+        let moved = link_download(&pool, "d1", &episode_link(MatchSource::Pinned)).unwrap();
+
+        let conn = pool.get().unwrap();
+        let d = get_download(&conn, "d1").unwrap().unwrap();
+        assert!(moved);
+        assert_eq!(d.kind, "episode");
+        assert_eq!(d.tmdb_id, Some(1399));
+        assert_eq!(d.title.as_deref(), Some("Game of Thrones"));
+        assert_eq!(d.year, Some(2011));
+        assert_eq!(d.season, Some(2));
+        assert_eq!(d.episodes, Some(vec![3, 4]));
+        assert_eq!(d.match_source, Some(MatchSource::Pinned));
+    }
+
+    #[test]
+    fn the_torrent_keeps_downloading_through_a_correction() {
+        let pool = test_db();
+        insert_download(&pool, &download("d1", "downloading", 10)).unwrap();
+        update_download_progress(&pool, "d1", "downloading", 0.4, Some("/dl/path"), None).unwrap();
+
+        link_download(&pool, "d1", &episode_link(MatchSource::Pinned)).unwrap();
+
+        let conn = pool.get().unwrap();
+        let d = get_download(&conn, "d1").unwrap().unwrap();
+        assert_eq!(d.status, "downloading");
+        assert!((d.progress - 0.4).abs() < 1e-9);
+        assert_eq!(d.save_path.as_deref(), Some("/dl/path"));
+    }
+
+    #[test]
+    fn a_correction_the_database_refuses_fails_rather_than_reporting_success() {
+        let pool = test_db();
+        insert_download(&pool, &download("d1", "queued", 10)).unwrap();
+        pool.get()
+            .unwrap()
+            .execute_batch(
+                "CREATE TRIGGER refuse_link BEFORE UPDATE ON downloads \
+                 BEGIN SELECT RAISE(ABORT, 'read only'); END",
+            )
+            .unwrap();
+
+        let err = link_download(&pool, "d1", &episode_link(MatchSource::Pinned))
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("read only"), "{err}");
+    }
+
+    #[test]
+    fn linking_a_row_that_is_no_longer_there_reports_that_nothing_moved() {
+        let pool = test_db();
+
+        let moved = link_download(&pool, "gone", &episode_link(MatchSource::Pinned)).unwrap();
+
+        assert!(!moved);
+    }
+
+    #[test]
+    fn a_match_that_found_nothing_stops_the_background_pass_asking_again() {
+        let pool = test_db();
+        insert_download(&pool, &download("d1", "queued", 10)).unwrap();
+
+        mark_download_match_tried(&pool, "d1").unwrap();
+
+        let conn = pool.get().unwrap();
+        assert_eq!(
+            get_download(&conn, "d1").unwrap().unwrap().match_source,
+            Some(MatchSource::Unmatched)
+        );
+    }
+
+    #[test]
+    fn a_match_that_found_nothing_never_overwrites_an_operators_link() {
+        let pool = test_db();
+        insert_download(&pool, &download("d1", "queued", 10)).unwrap();
+        link_download(&pool, "d1", &episode_link(MatchSource::Pinned)).unwrap();
+
+        mark_download_match_tried(&pool, "d1").unwrap();
+
+        let conn = pool.get().unwrap();
+        let d = get_download(&conn, "d1").unwrap().unwrap();
+        assert_eq!(d.match_source, Some(MatchSource::Pinned));
+        assert_eq!(d.tmdb_id, Some(1399));
     }
 }

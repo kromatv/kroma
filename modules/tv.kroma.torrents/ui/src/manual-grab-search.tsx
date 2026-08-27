@@ -2,10 +2,45 @@
 // scoped by whatever the target block above it says (a season/episode there
 // makes this a TV search), and the picked row pre-fills the magnet + title.
 
+import { useAcquisitionApi } from '@kroma/module-acquisition/api';
 import type { ManualReleaseView } from '@kroma/module-acquisition/schemas';
-import { useFormat, useT } from '@kroma/module-sdk';
+import { apiErrorText, useFormat, useT } from '@kroma/module-sdk';
 import { Box, Button, Field, Focusable, Icon, Row, sv, Text } from '@kroma/ui/kit';
-import type { CSSProperties } from 'react';
+import { type CSSProperties, useState } from 'react';
+
+/** The indexer sweep, scoped by whatever the target step says: a season or an
+ *  episode there makes it a TV search, which is the only way to find one. */
+export function useIndexerSearch(kind: string, season: string, episode: string) {
+  const t = useT();
+  const acquisition = useAcquisitionApi();
+  const [query, setQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<ManualReleaseView[] | null>(null);
+  const [searchErr, setSearchErr] = useState<string | null>(null);
+
+  const onSearch = () => {
+    const words = query.trim();
+    if (!words) return;
+    setSearching(true);
+    setSearchErr(null);
+    acquisition
+      .search({
+        query: words,
+        kind,
+        season: kind !== 'movie' && season ? Number.parseInt(season, 10) : null,
+        episode: kind === 'episode' && episode ? Number.parseInt(episode, 10) : null,
+      })
+      .then((found) => {
+        setResults(found.releases);
+        const failed = found.indexers.filter((i) => i.error);
+        if (failed.length) setSearchErr(failed.map((i) => `${i.name}: ${i.error}`).join(' · '));
+      })
+      .catch((e) => setSearchErr(apiErrorText(e, t('manual.searchFailed'))))
+      .finally(() => setSearching(false));
+  };
+
+  return { query, setQuery, searching, searchErr, results, onSearch };
+}
 
 // The card the result rows are flush inside, which is why it clips their focus
 // ring inward (`data-focus-ring-inset`, in @kroma/ui's styles/base.css).
@@ -38,7 +73,6 @@ const resultRow = sv({
 
 export function SearchPanel({
   query,
-  scopeLabel,
   setQuery,
   searching,
   searchErr,
@@ -47,9 +81,6 @@ export function SearchPanel({
   onPick,
 }: Readonly<{
   query: string;
-  /** What the sweep is narrowed to (`S03E07`), from the target block; absent
-   *  for a movie search. */
-  scopeLabel: string | null;
   setQuery: (v: string) => void;
   searching: boolean;
   searchErr: string | null;
@@ -83,11 +114,6 @@ export function SearchPanel({
           loading={searching}
         />
       </Box>
-      {scopeLabel ? (
-        <Text variant="meta" color="info" mt={6}>
-          {t('manual.searchScoped', { scope: scopeLabel })}
-        </Text>
-      ) : null}
       {searchErr ? (
         <Text variant="meta" color="accentText" mt={6}>
           {searchErr}

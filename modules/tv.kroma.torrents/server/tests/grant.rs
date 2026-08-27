@@ -23,7 +23,7 @@ fn row(id: &str, request_id: Option<&str>) -> kroma_torrent::db::DownloadRow {
         client_ref: String::new(),
         request_id: request_id.map(str::to_string),
         kind: "movie".into(),
-        tmdb_id: 603,
+        tmdb_id: Some(603),
         title: Some("The Matrix".into()),
         year: Some(1999),
         season: None,
@@ -46,6 +46,9 @@ fn row(id: &str, request_id: Option<&str>) -> kroma_torrent::db::DownloadRow {
         details_url: None,
         only_files: None,
         upgrade: false,
+        lifetime_downloaded_bytes: 0,
+        lifetime_uploaded_bytes: 0,
+        match_source: None,
     }
 }
 

@@ -1,0 +1,173 @@
+//! What an operator can do to a row, or to every active row at once: pause,
+//! resume, ask the tracker for peers, retry the failed step, remove.
+
+use axum::extract::{Path as AxPath, Query as AxQuery, State};
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use axum::routing::post;
+use axum::{Json, Router};
+use serde::Deserialize;
+use serde_json::json;
+
+use kroma_module_sdk::domain::User;
+use kroma_module_sdk::host::{blocking, json_error, AuthUser, HostStorage};
+
+use super::{dm, require_downloads};
+use crate::db;
+
+pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
+    Router::new()
+        .route("/downloads/pause-all", post(pause_all::<S>))
+        .route("/downloads/resume-all", post(resume_all::<S>))
+        .route("/downloads/reannounce", post(reannounce_all::<S>))
+        .route("/downloads/{id}/pause", post(pause::<S>))
+        .route("/downloads/{id}/resume", post(resume::<S>))
+        .route("/downloads/{id}/retry", post(retry::<S>))
+        .route("/downloads/{id}/reannounce", post(reannounce::<S>))
+        .route("/downloads/{id}", axum::routing::delete(remove::<S>))
+}
+
+async fn act<S: HostStorage + Clone + Send + Sync + 'static>(
+    state: S,
+    user: User,
+    id: String,
+    f: impl FnOnce(&S, &str) -> anyhow::Result<()> + Send + 'static,
+) -> Result<Response, Response> {
+    require_downloads(&state, &user)?;
+    let st = state.clone();
+    let outcome = blocking(move || Ok(f(&st, &id))).await?;
+    match outcome {
+        Ok(()) => Ok(Json(json!({ "ok": true })).into_response()),
+        Err(e) if format!("{e:#}").contains("not found") => {
+            Err(state.lerr(&user, StatusCode::NOT_FOUND, "error.downloadNotFound"))
+        }
+        Err(e) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
+    }
+}
+
+pub async fn pause<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(state): State<S>,
+    AuthUser(user): AuthUser,
+    AxPath(id): AxPath<String>,
+) -> Result<Response, Response> {
+    let downloads = dm(&state);
+    act(state.clone(), user, id, move |_st, id| downloads.pause(id)).await
+}
+
+pub async fn resume<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(state): State<S>,
+    AuthUser(user): AuthUser,
+    AxPath(id): AxPath<String>,
+) -> Result<Response, Response> {
+    let downloads = dm(&state);
+    act(state.clone(), user, id, move |_st, id| downloads.resume(id)).await
+}
+
+/// Asks the tracker for more peers on one download.
+pub async fn reannounce<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(state): State<S>,
+    AuthUser(user): AuthUser,
+    AxPath(id): AxPath<String>,
+) -> Result<Response, Response> {
+    let downloads = dm(&state);
+    act(state.clone(), user, id, move |_st, id| {
+        downloads.reannounce(id)
+    })
+    .await
+}
+
+fn bulk_response(out: anyhow::Result<usize>) -> Result<Response, Response> {
+    match out {
+        Ok(count) => Ok(Json(json!({ "count": count })).into_response()),
+        Err(e) => Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
+    }
+}
+
+pub async fn pause_all<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(state): State<S>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    require_downloads(&state, &user)?;
+    bulk_response(blocking(move || Ok(dm(&state).pause_all())).await?)
+}
+
+pub async fn resume_all<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(state): State<S>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    require_downloads(&state, &user)?;
+    bulk_response(blocking(move || Ok(dm(&state).resume_all())).await?)
+}
+
+pub async fn reannounce_all<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(state): State<S>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    require_downloads(&state, &user)?;
+    bulk_response(blocking(move || Ok(dm(&state).reannounce_all())).await?)
+}
+
+/// Re-attempts a failed step in the background: a `completed` download whose
+/// import failed is re-imported without re-downloading, a `failed` grab is reset
+/// and re-added.
+pub async fn retry<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(state): State<S>,
+    AuthUser(user): AuthUser,
+    AxPath(id): AxPath<String>,
+) -> Result<Response, Response> {
+    require_downloads(&state, &user)?;
+    let ledger = state.db().clone();
+    let lookup_id = id.clone();
+    let status = blocking(move || {
+        let conn = ledger.get()?;
+        Ok(db::get_download(&conn, &lookup_id)?.map(|row| row.status))
+    })
+    .await?;
+    let Some(status) = status else {
+        return Err(json_error(StatusCode::NOT_FOUND, "download not found"));
+    };
+    if status == "completed" || status == "imported" {
+        // The import pass only considers `completed` rows, so an already-imported
+        // row is flipped back first; the import itself is idempotent.
+        if status == "imported" {
+            let ledger = state.db().clone();
+            let flip_id = id.clone();
+            blocking(move || {
+                db::set_download_status(&ledger, &flip_id, "completed", None)?;
+                Ok(())
+            })
+            .await?;
+        }
+        state.trigger_job("acquisition.import", "retry-import");
+        return Ok(Json(json!({ "ok": true })).into_response());
+    }
+    let reset_state = state.clone();
+    let row = match blocking(move || Ok(dm(&reset_state).retry(&id))).await? {
+        Ok(row) => row,
+        Err(e) if format!("{e:#}").contains("not found") => {
+            return Err(json_error(StatusCode::NOT_FOUND, "download not found"))
+        }
+        Err(e) => return Err(json_error(StatusCode::BAD_REQUEST, &format!("{e:#}"))),
+    };
+    tokio::task::spawn_blocking(move || dm(&state).activate(&state, &row));
+    Ok(Json(json!({ "ok": true })).into_response())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RemoveParams {
+    #[serde(rename = "deleteData", default)]
+    delete_data: bool,
+}
+
+pub async fn remove<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(state): State<S>,
+    AuthUser(user): AuthUser,
+    AxPath(id): AxPath<String>,
+    AxQuery(params): AxQuery<RemoveParams>,
+) -> Result<Response, Response> {
+    let downloads = dm(&state);
+    act(state.clone(), user, id, move |_st, id| {
+        downloads.remove(id, params.delete_data)
+    })
+    .await
+}

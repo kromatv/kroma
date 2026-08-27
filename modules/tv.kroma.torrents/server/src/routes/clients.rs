@@ -36,8 +36,14 @@ pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
         .route("/download-clients/{id}/test", post(test::<S>))
 }
 
-fn view_of(row: &DownloadClientRow) -> DownloadClientView {
+fn view_of(
+    row: &DownloadClientRow,
+    state: crate::EngineState,
+    starting_for_ms: Option<i64>,
+) -> DownloadClientView {
     DownloadClientView {
+        state,
+        starting_for_ms,
         id: row.id.clone(),
         kind: row.kind.clone(),
         name: row.name.clone(),
@@ -57,11 +63,21 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
-    let view = query(state.store(), |pool| {
+    let manager = super::dm(&state);
+    let view = query(state.store(), move |pool| {
         let conn = pool.get()?;
         let clients = db::list_download_clients(&conn)?
             .iter()
-            .map(view_of)
+            .map(|row| {
+                let state = (row.id == EMBEDDED_CLIENT_ID)
+                    .then(|| manager.embedded_state(row.enabled))
+                    .flatten()
+                    .unwrap_or(crate::EngineState::Unknown);
+                let starting = (state == crate::EngineState::Starting)
+                    .then(|| manager.starting_for())
+                    .flatten();
+                view_of(row, state, starting)
+            })
             .collect();
         Ok(DownloadClientsView {
             clients,
@@ -112,7 +128,7 @@ pub async fn create<S: HostStorage + Clone + Send + Sync + 'static>(
         priority: body.priority.unwrap_or(0),
         created_at: now_ms(),
     };
-    let view = view_of(&row);
+    let view = view_of(&row, crate::EngineState::Unknown, None);
     query(state.store(), move |pool| {
         db::insert_download_client(&pool, &row)
     })
@@ -179,7 +195,7 @@ pub async fn update<S: HostStorage + Clone + Send + Sync + 'static>(
     })
     .await?;
     match row {
-        Some(r) => Ok(Json(view_of(&r)).into_response()),
+        Some(r) => Ok(Json(view_of(&r, crate::EngineState::Unknown, None)).into_response()),
         None => Err(state.lerr(&user, StatusCode::NOT_FOUND, "error.clientNotFound")),
     }
 }

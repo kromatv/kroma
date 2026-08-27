@@ -13,6 +13,7 @@ import {
   IconButton,
   Row,
   Section,
+  Spinner,
   Surface,
   Switch,
   styles,
@@ -145,7 +146,7 @@ export function DownloadClientsSection() {
               <Switch checked={c.enabled} onCheckedChange={(v) => toggle(c, v)} label={c.name} />
             </Row>
             <Row between gap={12} mt={14} pt={12} style={s.footRule}>
-              <TestLine test={tests[c.id]} />
+              <EngineLine client={c} test={tests[c.id]} />
               <Row gap={8}>
                 <Button
                   variant="glass"
@@ -176,6 +177,36 @@ export function DownloadClientsSection() {
       <DownloadClientModal />
     </Section.Root>
   );
+}
+
+const SLOW_START_MS = 45_000;
+
+const STATE_TONE = {
+  ready: 'success',
+  starting: 'text/45',
+  stopped: 'text/30',
+  notCompiled: 'text/30',
+  unknown: 'text/30',
+} as const;
+
+function EngineLine({ client, test }: Readonly<{ client: DownloadClientView; test?: TestState }>) {
+  const t = useT();
+  if (!test && client.state !== 'unknown') {
+    const slow = client.state === 'starting' && (client.startingForMs ?? 0) >= SLOW_START_MS;
+    return (
+      <Row gap={6} align="center" shrink={1} minW={0}>
+        {client.state === 'starting' ? <Spinner size={12} /> : null}
+        <Text variant="meta" color={slow ? 'warning' : STATE_TONE[client.state]} lines={1}>
+          {slow
+            ? t('dlclients.state.startingSlow', {
+                minutes: String(Math.floor((client.startingForMs ?? 0) / 60_000)),
+              })
+            : t(`dlclients.state.${client.state}`)}
+        </Text>
+      </Row>
+    );
+  }
+  return <TestLine test={test} />;
 }
 
 function TestLine({ test }: Readonly<{ test?: TestState }>) {

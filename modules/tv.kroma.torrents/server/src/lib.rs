@@ -30,6 +30,9 @@ pub mod organize;
 pub mod port;
 pub mod proxycheck;
 pub mod routes;
+mod rqbit_session;
+pub mod torrent_file;
+pub(crate) mod zero_as_none;
 #[cfg(feature = "rqbit")]
 mod rqbit;
 #[cfg(not(feature = "rqbit"))]
@@ -91,13 +94,23 @@ impl<S: kroma_module_sdk::host::HostStorage + Clone + Send + Sync + 'static>
         // client row, start the engine, flip disable-paused rows back to active,
         // and ensure the resident monitor is running (spawned once). The VPN bridge
         // is its own module (ordered first by the dependency graph), so its SOCKS5
-        // is already up. Awaited (not detached) so a following disable cannot race.
-        if let Some(downloads) = kroma_module_sdk::host::service::<DownloadManager>(&host) {
-            downloads.seed_embedded_client();
+        // is already up.
+        let Some(downloads) = kroma_module_sdk::host::service::<DownloadManager>(&host) else {
+            return;
+        };
+        downloads.seed_embedded_client();
+        downloads.ensure_monitor(std::sync::Arc::new(host.clone()));
+        // Detached, because the host does not serve a route until every module
+        // has finished enabling and starting the engine is NETWORK work: a
+        // restored magnet with no peers sits in the DHT for minutes, and
+        // awaiting it here held the whole module's API at 502 for that long.
+        // Safe to detach: `start_rqbit` re-checks every guard itself, a disable
+        // landing first leaves it a no-op, and the monitor retries a start that
+        // was deferred.
+        tokio::spawn(async move {
             downloads.start_rqbit(&host).await;
             downloads.resume_after_enable();
-            downloads.ensure_monitor(std::sync::Arc::new(host.clone()));
-        }
+        });
     }
 
     async fn on_disable(&self, host: S) {

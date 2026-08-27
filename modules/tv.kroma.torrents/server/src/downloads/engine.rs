@@ -2,11 +2,23 @@ use std::sync::Arc;
 
 use kroma_module_sdk::host::HostCtx;
 
+use kroma_module_sdk::primitives::now_ms;
+
 use crate::db;
 use crate::{RqbitConfig, RqbitEngine};
 
+const SLOW_START: std::time::Duration = std::time::Duration::from_secs(30);
+
 use super::gate::{active_proxy_url, vpn_sealed_expected};
 use super::DownloadManager;
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct LiveStat {
+    pub down_bps: u64,
+    pub up_bps: u64,
+    pub peers: u32,
+    pub peers_seen: u32,
+}
 
 impl DownloadManager {
     /// Errors are logged, not fatal. The new session starts before the old one
@@ -38,10 +50,21 @@ impl DownloadManager {
             download_dir: self.downloads_dir.clone(),
             socks_proxy_url: proxy,
             listen_port: u16::try_from(host.setting_i64("rqbitPort", 0).max(0)).ok(),
-            download_bps: kbps_setting(host, "rqbitDownKbps"),
-            upload_bps: kbps_setting(host, "rqbitUpKbps"),
+            download_bps: super::bps_setting(host, super::DOWN_KBPS_KEY),
+            upload_bps: super::bps_setting(host, super::UP_KBPS_KEY),
         };
-        match RqbitEngine::start(&cfg).await {
+        *self.starting_since.lock().unwrap() = Some(now_ms());
+        let began = std::time::Instant::now();
+        let outcome = RqbitEngine::start(&cfg).await;
+        *self.starting_since.lock().unwrap() = None;
+        if began.elapsed() >= SLOW_START {
+            tracing::warn!(
+                seconds = began.elapsed().as_secs(),
+                "the embedded engine took a long time to restore its session; a torrent with no \
+                 cached metadata blocks the restore until the DHT answers for it"
+            );
+        }
+        match outcome {
             Ok(engine) => {
                 tracing::info!(
                     proxy = cfg.socks_proxy_url.is_some(),
@@ -58,12 +81,34 @@ impl DownloadManager {
         }
     }
 
+    /// How long the engine has been starting, in ms. `None` when it is not.
+    pub fn starting_for(&self) -> Option<i64> {
+        let since = (*self.starting_since.lock().unwrap())?;
+        Some((now_ms() - since).max(0))
+    }
+
     pub fn rqbit(&self) -> Option<Arc<RqbitEngine>> {
         self.rqbit.read().unwrap().clone()
     }
 
-    /// Per download id: down/up bps, peers, peers seen. Blocking.
-    pub fn live_stats(&self) -> std::collections::HashMap<String, (u64, u64, u32, u32)> {
+    /// `None` for an external engine: that one is a daemon this process can only
+    /// learn about by asking it, which is what the Test button is for.
+    pub fn embedded_state(&self, enabled: bool) -> Option<crate::EngineState> {
+        if !crate::RQBIT_COMPILED {
+            return Some(crate::EngineState::NotCompiled);
+        }
+        if !enabled {
+            return Some(crate::EngineState::Stopped);
+        }
+        Some(if self.rqbit().is_some() {
+            crate::EngineState::Ready
+        } else {
+            crate::EngineState::Starting
+        })
+    }
+
+    /// What every running download is doing, keyed by download id. Blocking.
+    pub fn live_stats(&self) -> std::collections::HashMap<String, LiveStat> {
         let mut out = std::collections::HashMap::new();
         let Ok(rows) = self
             .core()
@@ -73,7 +118,7 @@ impl DownloadManager {
             return out;
         };
         for row in rows {
-            if row.client_ref.is_empty() {
+            if row.never_reached_an_engine() {
                 continue;
             }
             let client = match self
@@ -86,7 +131,15 @@ impl DownloadManager {
             };
             if let Ok(engine) = self.engine_for(&client) {
                 if let Ok(Some(s)) = engine.status(&row.client_ref) {
-                    out.insert(row.id, (s.down_bps, s.up_bps, s.peers, s.peers_seen));
+                    out.insert(
+                        row.id,
+                        LiveStat {
+                            down_bps: s.down_bps,
+                            up_bps: s.up_bps,
+                            peers: s.peers,
+                            peers_seen: s.peers_seen,
+                        },
+                    );
                 }
             }
         }
@@ -186,9 +239,4 @@ impl DownloadManager {
             let _ = db::set_download_status(self.core(), &id, "downloading", None);
         }
     }
-}
-
-fn kbps_setting(host: &dyn HostCtx, key: &str) -> Option<u32> {
-    let kbps = host.setting_i64(key, 0);
-    (kbps > 0).then(|| u32::try_from(kbps.saturating_mul(1024)).unwrap_or(u32::MAX))
 }

@@ -22,6 +22,11 @@ type ManagedTorrentHandle = Arc<ManagedTorrent>;
 
 use crate::{AddTorrentReq, DownloadClient, TorrentState, TorrentStatus};
 
+// Shorter than the 30s a caller reaching this over the module bridge waits, so
+// the answer is always OURS: a caller that gives up first reports a transport
+// failure, which says nothing about the torrent.
+const METADATA_DEADLINE: Duration = Duration::from_secs(25);
+
 /// Everything the engine needs at start (mapped from server settings).
 #[derive(Debug, Clone, Default)]
 pub struct RqbitConfig {
@@ -48,6 +53,14 @@ impl RqbitEngine {
     pub async fn start(cfg: &RqbitConfig) -> Result<Arc<RqbitEngine>> {
         std::fs::create_dir_all(&cfg.download_dir).ok();
         std::fs::create_dir_all(&cfg.session_dir).ok();
+        // Before the session opens, because opening it is what waits on these.
+        let dropped = crate::rqbit_session::prune_unrestorable(&cfg.session_dir);
+        if dropped > 0 {
+            tracing::info!(
+                dropped,
+                "dropped persisted torrents with no metadata on disk; the ledger re-adds them"
+            );
+        }
         let opts = SessionOptions {
             persistence: Some(SessionPersistenceConfig::Json {
                 folder: Some(cfg.session_dir.clone()),
@@ -98,6 +111,15 @@ impl RqbitEngine {
             handle: tokio::runtime::Handle::current(),
             socks_proxy: cfg.socks_proxy_url.clone(),
         }))
+    }
+
+    /// Re-cap the session's throughput without restarting it: librqbit swaps
+    /// the limiter behind an `ArcSwap`, so a running torrent picks up the new
+    /// ceiling on its next block. `None` is unlimited.
+    pub fn set_rate_limits(&self, download_bps: Option<u32>, upload_bps: Option<u32>) {
+        let limits = &self.session.ratelimits;
+        limits.set_download_bps(download_bps.and_then(std::num::NonZeroU32::new));
+        limits.set_upload_bps(upload_bps.and_then(std::num::NonZeroU32::new));
     }
 
     /// Drain the session (stops all torrent activity). Used before a restart
@@ -227,6 +249,8 @@ fn status_of(handle: &ManagedTorrentHandle) -> TorrentStatus {
         save_path: None,
         files,
         error: stats.error,
+        lifetime_downloaded_bytes: stats.progress_bytes,
+        lifetime_uploaded_bytes: stats.uploaded_bytes,
     }
 }
 
@@ -306,11 +330,11 @@ impl DownloadClient for RqbitClient {
         };
         let response = engine.handle.block_on(async {
             tokio::time::timeout(
-                Duration::from_secs(90),
+                METADATA_DEADLINE,
                 engine.session.add_torrent(add, Some(opts)),
             )
             .await
-            .map_err(|_| anyhow!("timed out fetching torrent metadata"))?
+            .map_err(|_| anyhow!("no peer answered with this torrent's file list in time"))?
         })?;
         let info = match response {
             AddTorrentResponse::ListOnly(resp) => resp.info,
