@@ -199,6 +199,8 @@ impl QBittorrent {
                 .map(str::to_string),
             files,
             error: matches!(qstate, "error" | "missingFiles").then(|| format!("state: {qstate}")),
+            lifetime_downloaded_bytes: t.get("downloaded").and_then(Value::as_u64).unwrap_or(0),
+            lifetime_uploaded_bytes: t.get("uploaded").and_then(Value::as_u64).unwrap_or(0),
         }))
     }
 

@@ -27,6 +27,8 @@ const STATUS_FIELDS: &[&str] = &[
     "status",
     "rateDownload",
     "rateUpload",
+    "downloadedEver",
+    "uploadedEver",
     "peersConnected",
     "totalSize",
     "downloadDir",
@@ -164,6 +166,8 @@ impl Transmission {
                 .map(str::to_string),
             files,
             error,
+            lifetime_downloaded_bytes: t.get("downloadedEver").and_then(Value::as_u64).unwrap_or(0),
+            lifetime_uploaded_bytes: t.get("uploadedEver").and_then(Value::as_u64).unwrap_or(0),
         }))
     }
 

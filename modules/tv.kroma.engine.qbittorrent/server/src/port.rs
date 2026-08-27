@@ -79,6 +79,8 @@ struct Status {
     save_path: Option<String>,
     files: Vec<String>,
     error: Option<String>,
+    lifetime_downloaded_bytes: u64,
+    lifetime_uploaded_bytes: u64,
 }
 
 fn engine<S: HostCtx>(host: &S, client: &Client) -> QBittorrent {
@@ -155,6 +157,8 @@ fn wire(s: crate::TorrentStatus) -> Status {
         save_path: s.save_path,
         files: s.files,
         error: s.error,
+        lifetime_downloaded_bytes: s.lifetime_downloaded_bytes,
+        lifetime_uploaded_bytes: s.lifetime_uploaded_bytes,
     }
 }
 
@@ -341,6 +345,8 @@ mod tests {
             save_path: Some("/downloads".into()),
             files: vec!["a.mkv".into()],
             error: None,
+            lifetime_downloaded_bytes: 0,
+            lifetime_uploaded_bytes: 0,
         })
         .unwrap();
 
@@ -370,6 +376,8 @@ mod tests {
             save_path: None,
             files: Vec::new(),
             error: None,
+            lifetime_downloaded_bytes: 0,
+            lifetime_uploaded_bytes: 0,
         });
 
         assert_eq!(status.state, "seeding");
