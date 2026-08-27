@@ -313,6 +313,35 @@ impl HostCtx for RemoteHost {
         }
     }
 
+    // Asked of the core, which holds the provider credential.
+    fn metadata_candidates(
+        &self,
+        query: &str,
+        kind: &str,
+        year: Option<u32>,
+    ) -> Vec<kroma_domain::metadata::MatchCandidate> {
+        let mut call = self.callback().query("q", query).query("kind", kind);
+        if let Some(year) = year {
+            call = call.query("year", year.to_string());
+        }
+        call.get_json::<Vec<kroma_domain::metadata::MatchCandidate>>(
+            &self.host_url("metadata-search"),
+        )
+        .unwrap_or_default()
+    }
+
+    fn metadata_episodes(
+        &self,
+        tmdb_id: u64,
+        season: u32,
+    ) -> Vec<kroma_domain::metadata::EpisodeInfo> {
+        self.callback()
+            .query("tmdbId", tmdb_id.to_string())
+            .query("season", season.to_string())
+            .get_json::<Vec<kroma_domain::metadata::EpisodeInfo>>(&self.host_url("metadata-episodes"))
+            .unwrap_or_default()
+    }
+
     // Asked of the core, which owns the supervisor: a sidecar cannot see which
     // of its peers is installed or running, and must not care.
     fn contributions(&self, point: &str) -> Vec<kroma_module_host::Contribution> {

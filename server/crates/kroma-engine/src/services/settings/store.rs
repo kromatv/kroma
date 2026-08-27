@@ -204,6 +204,9 @@ fn defaults() -> BTreeMap<String, Value> {
     m.insert("rqbitPort".into(), json!(0));
     m.insert("rqbitDownKbps".into(), json!(0));
     m.insert("rqbitUpKbps".into(), json!(0));
+    // How many downloads may hold an engine slot at once (0 = no cap); the rest
+    // wait in the queue.
+    m.insert("torrentMaxActive".into(), json!(0));
     // `vpnWgConfig` is a secret: written via /api/admin/vpn, never returned in a
     // settings view.
     m.insert("vpnWgConfig".into(), json!(""));

@@ -20,7 +20,32 @@ pub use stub::StubHost;
 
 #[cfg(test)]
 mod fixtures {
+    use kroma_domain::metadata::{EpisodeInfo, MatchCandidate};
     use kroma_domain::{NotificationEvent, NotificationSpec, User};
+
+    pub fn candidate() -> MatchCandidate {
+        MatchCandidate {
+            tmdb_id: 438631,
+            title: "Dune".into(),
+            original_title: None,
+            year: Some(2021),
+            poster_url: None,
+            overview: None,
+            rating: None,
+            score: 0.98,
+            current: false,
+        }
+    }
+
+    pub fn episode() -> EpisodeInfo {
+        EpisodeInfo {
+            episode: 1,
+            name: Some("Winter Is Coming".into()),
+            overview: None,
+            air_date: Some("2011-04-17".into()),
+            still_url: None,
+        }
+    }
 
     pub fn spec() -> NotificationSpec {
         NotificationSpec::new(

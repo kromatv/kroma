@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex};
 use axum::http::StatusCode;
 use axum::response::Response;
 use kroma_db::Pool;
+use kroma_domain::metadata::{EpisodeInfo, MatchCandidate};
 use kroma_domain::{Audience, NotificationSpec, Permission, User};
 use kroma_testing::TempDir;
 
@@ -45,6 +46,8 @@ pub struct StubHost {
     data_dir: Arc<TempDir>,
     tmdb_key: Option<String>,
     metadata_language: String,
+    metadata_candidates: Vec<MatchCandidate>,
+    metadata_episodes: Vec<EpisodeInfo>,
     module_enabled: bool,
     libraries: Vec<LibraryFolders>,
     settings: Arc<Mutex<BTreeMap<String, serde_json::Value>>>,
@@ -91,6 +94,8 @@ impl StubHost {
             data_dir: Arc::new(data_dir),
             tmdb_key: None,
             metadata_language: "en".into(),
+            metadata_candidates: Vec::new(),
+            metadata_episodes: Vec::new(),
             module_enabled: true,
             libraries: Vec::new(),
             settings: Arc::new(Mutex::new(BTreeMap::new())),
@@ -145,6 +150,19 @@ impl StubHost {
     /// Answer `secret("tmdb")` with `key`.
     pub fn with_tmdb_key(mut self, key: &str) -> Self {
         self.tmdb_key = Some(key.into());
+        self
+    }
+
+    /// Answer `metadata_episodes()` with `episodes` (default: none).
+    pub fn with_metadata_episodes(mut self, episodes: Vec<EpisodeInfo>) -> Self {
+        self.metadata_episodes = episodes;
+        self
+    }
+
+    /// Answer `metadata_candidates()` with `candidates`, whatever is asked
+    /// (default: none, i.e. nothing matched).
+    pub fn with_metadata_candidates(mut self, candidates: Vec<MatchCandidate>) -> Self {
+        self.metadata_candidates = candidates;
         self
     }
 
@@ -328,6 +346,19 @@ impl HostCtx for StubHost {
     fn metadata_language(&self) -> String {
         self.metadata_language.clone()
     }
+
+    fn metadata_candidates(
+        &self,
+        _query: &str,
+        _kind: &str,
+        _year: Option<u32>,
+    ) -> Vec<MatchCandidate> {
+        self.metadata_candidates.clone()
+    }
+
+    fn metadata_episodes(&self, _tmdb_id: u64, _season: u32) -> Vec<EpisodeInfo> {
+        self.metadata_episodes.clone()
+    }
     fn contributions(&self, point: &str) -> Vec<crate::Contribution> {
         let prefix = format!("test.{point}");
         self.points
@@ -353,7 +384,7 @@ impl HostCtx for StubHost {
 mod tests {
     use serde_json::json;
 
-    use super::super::fixtures::user;
+    use super::super::fixtures::{candidate, episode, user};
     use super::*;
 
     // Every crate that tests against the seam now leans on these answers, so a
@@ -380,6 +411,8 @@ mod tests {
         assert!(host.library_folders().is_empty());
         assert!(host.secret("tmdb").is_none());
         assert_eq!(host.metadata_language(), "en");
+        assert!(host.metadata_candidates("Dune", "movie", None).is_empty());
+        assert!(host.metadata_episodes(1399, 1).is_empty());
         assert!(host.get_service(TypeId::of::<u32>()).is_none());
         assert!(host.data_dir().is_dir());
     }
@@ -389,6 +422,8 @@ mod tests {
         let host = StubHost::new()
             .with_tmdb_key("k")
             .with_metadata_language("fr-FR")
+            .with_metadata_candidates(vec![candidate()])
+            .with_metadata_episodes(vec![episode()])
             .with_module_enabled(false)
             .with_libraries(vec![LibraryFolders {
                 id: "lib1".into(),
@@ -402,6 +437,11 @@ mod tests {
 
         assert_eq!(host.secret("tmdb").as_deref(), Some("k"));
         assert_eq!(host.metadata_language(), "fr-FR");
+        assert_eq!(
+            host.metadata_candidates("anything", "movie", None)[0].tmdb_id,
+            438631
+        );
+        assert_eq!(host.metadata_episodes(1399, 2)[0].episode, 1);
         assert!(!host.module_enabled("tv.kroma.anything"));
         assert_eq!(host.library_folders()[0].folders, ["/media/films"]);
         assert_eq!(host.setting_str("str", "fallback"), "set");

@@ -29,6 +29,8 @@ where
         .route("/_host/enabled", get(module_enabled::<S>))
         .route("/_host/libraries", get(library_folders::<S>))
         .route("/_host/metadata-language", get(metadata_language::<S>))
+        .route("/_host/metadata-search", get(metadata_search::<S>))
+        .route("/_host/metadata-episodes", get(metadata_episodes::<S>))
         // By NAME: a sidecar asks for the credential it needs, and this route
         // never learns which vendors exist.
         .route("/_host/secret", get(secret::<S>))
@@ -239,6 +241,36 @@ async fn secret<S: HostCtx>(
 
 async fn metadata_language<S: HostCtx>(State(host): State<S>) -> Json<String> {
     Json(host.metadata_language())
+}
+
+#[derive(serde::Deserialize)]
+struct MetadataSearchQuery {
+    q: String,
+    #[serde(default)]
+    kind: String,
+    #[serde(default)]
+    year: Option<u32>,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct EpisodesQuery {
+    tmdb_id: u64,
+    season: u32,
+}
+
+async fn metadata_episodes<S: HostCtx>(
+    State(host): State<S>,
+    axum::extract::Query(params): axum::extract::Query<EpisodesQuery>,
+) -> Json<Vec<kroma_domain::metadata::EpisodeInfo>> {
+    Json(host.metadata_episodes(params.tmdb_id, params.season))
+}
+
+async fn metadata_search<S: HostCtx>(
+    State(host): State<S>,
+    axum::extract::Query(params): axum::extract::Query<MetadataSearchQuery>,
+) -> Json<Vec<kroma_domain::metadata::MatchCandidate>> {
+    Json(host.metadata_candidates(&params.q, &params.kind, params.year))
 }
 
 #[cfg(test)]

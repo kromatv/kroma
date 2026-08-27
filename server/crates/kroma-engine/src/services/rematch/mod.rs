@@ -12,21 +12,18 @@
 
 use anyhow::{bail, Result};
 
-use kroma_domain::matching::{self, Candidate, Query};
-
 use crate::db;
 use crate::infra::metadata::discover;
-use crate::model::{MatchCandidate, MatchCandidates};
+use crate::model::MatchCandidates;
 use crate::services::jobs::now_ms;
-use crate::services::settings;
 use crate::state::SharedState;
+
+mod search;
+
+pub use search::{ranked, MatchTarget};
 
 // A correction jumps ahead of the nightly backlog (mirrors `pipeline::reprocess`).
 const HIGH: i64 = 100;
-
-// How many candidates the picker offers. One TMDB page is 20; more than that and
-// the right title was never going to be found by scrolling.
-const MAX_CANDIDATES: usize = 20;
 
 /// Which catalog subject is being rematched. The wire vocabulary is
 /// `movie` | `show`; everything downstream needs a different spelling of it.
@@ -97,7 +94,6 @@ fn load(state: &SharedState, subject: Subject, id: &str) -> Result<Local> {
         ..local
     })
 }
-
 /// The ranked TMDB candidates for one element. `query` overrides the search text
 /// when the operator types their own (the parsed title is often the reason the
 /// automatic match failed); scoring still compares against the *parsed* title and
@@ -118,79 +114,19 @@ pub fn candidates(
         .filter(|q| !q.is_empty())
         .unwrap_or(&local.title)
         .to_string();
-
-    let Some(api_key) = state.config.tmdb_api_key.clone() else {
-        bail!("metadata disabled: set KROMA_TMDB_API_KEY");
+    let target = search::MatchTarget {
+        title: local.title.clone(),
+        year: local.year,
+        current_tmdb_id: local.current_tmdb_id,
     };
-    let lang = settings::metadata_language(&state.settings, &state.config);
-    // macOS filenames are NFD, so a title parsed from disk carries decomposed
-    // accents (`é` as `e` + U+0301). TMDB's search returns nothing for those (it
-    // even mismatches "Amélie" to an unrelated title), so strip the combining
-    // marks first. This keeps a precomposed `é` and only fixes the decomposed case.
-    let primary = matching::strip_combining(&search_text);
-    let mut hits = discover::search(&api_key, &lang, subject.scope(), &primary, 1)
-        .map_err(|()| anyhow::anyhow!("TMDB search failed"))?
-        .hits;
-    // Still nothing? TMDB is also picky about apostrophes and leading articles:
-    // "L'Île aux chiens" comes back empty while "ile aux chiens" finds it. Retry
-    // once with the fully folded form (lowercased, de-accented, punctuation and a
-    // leading article dropped) before giving up.
-    if hits.is_empty() {
-        let folded = matching::normalize(&search_text);
-        if !folded.is_empty() && folded != primary {
-            hits = discover::search(&api_key, &lang, subject.scope(), &folded, 1)
-                .map_err(|()| anyhow::anyhow!("TMDB search failed"))?
-                .hits;
-        }
-    }
-
-    let scored = rank(&local, hits);
+    let results = search::ranked(state, subject.scope(), &search_text, &target)?;
     Ok(MatchCandidates {
         query: search_text,
         year: local.year,
         current_tmdb_id: local.current_tmdb_id,
         pinned,
-        results: scored,
+        results,
     })
-}
-
-// Score every hit against the parsed title/year and sort most-likely first.
-fn rank(local: &Local, hits: Vec<discover::DiscoverHit>) -> Vec<MatchCandidate> {
-    let query = Query {
-        title: &local.title,
-        year: local.year,
-    };
-    let mut out: Vec<MatchCandidate> = hits
-        .into_iter()
-        .map(|h| {
-            let score = matching::score(
-                &query,
-                &Candidate {
-                    tmdb_id: h.tmdb_id,
-                    title: h.title.clone(),
-                    original_title: h.original_title.clone(),
-                    year: h.year,
-                    // Votes are a tiebreaker for the automatic pick; the picker
-                    // shows a human the posters, so they add nothing here.
-                    votes: 0,
-                },
-            );
-            MatchCandidate {
-                tmdb_id: h.tmdb_id,
-                title: h.title,
-                original_title: Some(h.original_title).filter(|s| !s.is_empty()),
-                year: h.year,
-                poster_url: h.poster_url,
-                overview: h.overview,
-                rating: h.rating,
-                score,
-                current: Some(h.tmdb_id) == local.current_tmdb_id,
-            }
-        })
-        .collect();
-    out.sort_by(|a, b| b.score.total_cmp(&a.score));
-    out.truncate(MAX_CANDIDATES);
-    out
 }
 
 /// Pin `tmdb_id` to this element (or clear the pin with `None`, restoring
@@ -221,29 +157,6 @@ pub fn apply(state: &SharedState, subject: Subject, id: &str, tmdb_id: Option<u6
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::RequestKind;
-
-    fn local(title: &str, year: Option<u32>, current: Option<u64>) -> Local {
-        Local {
-            title: title.to_string(),
-            year,
-            current_tmdb_id: current,
-        }
-    }
-
-    fn hit(id: u64, title: &str, year: Option<u32>) -> discover::DiscoverHit {
-        discover::DiscoverHit {
-            kind: RequestKind::Movie,
-            tmdb_id: id,
-            title: title.to_string(),
-            original_title: title.to_string(),
-            year,
-            poster_url: None,
-            backdrop_url: None,
-            overview: None,
-            rating: None,
-        }
-    }
 
     #[test]
     fn subject_parses_every_accepted_spelling() {
@@ -282,56 +195,6 @@ mod tests {
             asked.iter().all(|r| r.starts_with("/search/tv")),
             "{asked:?}"
         );
-    }
-
-    #[test]
-    fn rank_puts_the_best_scoring_candidate_first() {
-        let local = local("It", Some(1990), None);
-        let ranked = rank(
-            &local,
-            vec![hit(474350, "It", Some(2017)), hit(437, "It", Some(1990))],
-        );
-        assert_eq!(ranked[0].tmdb_id, 437);
-        assert!(ranked[0].score > ranked[1].score);
-    }
-
-    #[test]
-    fn rank_flags_the_stored_match_as_current() {
-        let local = local("Dune", Some(2021), Some(438631));
-        let ranked = rank(
-            &local,
-            vec![
-                hit(438631, "Dune", Some(2021)),
-                hit(841, "Dune", Some(1984)),
-            ],
-        );
-        assert!(ranked.iter().find(|c| c.tmdb_id == 438631).unwrap().current);
-        assert!(!ranked.iter().find(|c| c.tmdb_id == 841).unwrap().current);
-    }
-
-    #[test]
-    fn rank_keeps_low_scoring_candidates_for_the_operator_to_pick() {
-        // Unlike the automatic path, nothing is filtered out: the whole point is
-        // that the operator can choose a title scoring below the accept cutoff.
-        let local = local("Some Local Recording", None, None);
-        let ranked = rank(&local, vec![hit(1, "Frozen", Some(2013))]);
-        assert_eq!(ranked.len(), 1);
-        assert!(ranked[0].score < matching::MIN_SCORE);
-    }
-
-    #[test]
-    fn rank_caps_the_list() {
-        let local = local("X", None, None);
-        let hits = (0..50).map(|i| hit(i, "X", None)).collect();
-        assert_eq!(rank(&local, hits).len(), MAX_CANDIDATES);
-    }
-
-    #[test]
-    fn rank_omits_an_empty_original_title() {
-        let local = local("Dune", None, None);
-        let mut h = hit(1, "Dune", None);
-        h.original_title = String::new();
-        assert_eq!(rank(&local, vec![h])[0].original_title, None);
     }
 
     use crate::test_support::{seed_movie, test_state_with_tmdb, FakeTmdb};
@@ -422,6 +285,19 @@ mod tests {
             "the apostrophe survived: {}",
             asked[1]
         );
+    }
+
+    #[test]
+    fn a_title_that_folds_to_the_query_already_sent_is_not_searched_twice() {
+        let state = test_state_with_tmdb("test-key");
+        seed_titled(&state, "itm-1", "dune", Some(2021));
+
+        let tmdb = FakeTmdb::start(|_| (200, page(serde_json::json!([]))));
+
+        let out = candidates(&state, Subject::Movie, "itm-1", None).unwrap();
+
+        assert!(out.results.is_empty());
+        assert_eq!(tmdb.requests().len(), 1, "{:?}", tmdb.requests());
     }
 
     #[test]

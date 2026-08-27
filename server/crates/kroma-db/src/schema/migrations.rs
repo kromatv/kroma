@@ -148,4 +148,17 @@ pub(crate) const MIGRATIONS: &[&str] = &[
     "INSERT OR IGNORE INTO my_list (user_id, item_id, added_at) SELECT user_id, item_id, added_at FROM watch_later",
     "DROP INDEX IF EXISTS idx_watch_later_user",
     "DROP TABLE IF EXISTS watch_later",
+    // Per-download byte counters, so the queue can show a seeding ratio and an
+    // all-time up/down total that outlives the engine session (librqbit's own
+    // counters reset with the process).
+    "ALTER TABLE downloads ADD COLUMN downloaded_bytes INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE downloads ADD COLUMN uploaded_bytes INTEGER NOT NULL DEFAULT 0",
+    // How `tmdb_id` was decided: 'auto' from the release name, 'manual' from an
+    // operator correction. NULL is a row from before the column, which the
+    // automatic pass treats as unpinned. A 'manual' row is never re-matched.
+    "ALTER TABLE downloads ADD COLUMN match_source TEXT",
+    // Paging the queue orders by grabbed_at across every filter, and filtering
+    // by client is a full scan without this.
+    "CREATE INDEX IF NOT EXISTS idx_downloads_grabbed ON downloads(grabbed_at DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_downloads_client ON downloads(client_id, grabbed_at DESC)",
 ];

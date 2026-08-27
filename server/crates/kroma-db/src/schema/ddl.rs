@@ -591,7 +591,10 @@ pub(crate) const SCHEMA: &str = "
         imported_at     INTEGER,
         details_url     TEXT,
         only_files      TEXT,
-        upgrade         INTEGER NOT NULL DEFAULT 0
+        upgrade         INTEGER NOT NULL DEFAULT 0,
+        downloaded_bytes INTEGER NOT NULL DEFAULT 0,
+        uploaded_bytes  INTEGER NOT NULL DEFAULT 0,
+        match_source    TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_downloads_status ON downloads(status, grabbed_at DESC);
     CREATE INDEX IF NOT EXISTS idx_downloads_req    ON downloads(request_id);

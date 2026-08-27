@@ -12,6 +12,7 @@ export interface ModuleApi {
   post<T>(path: string, body?: unknown): Promise<T>;
   put<T>(path: string, body?: unknown): Promise<T>;
   delete<T>(path: string): Promise<T>;
+  send<T>(path: string, init: RequestInit): Promise<T>;
 }
 
 const send = <T>(ctx: RequestContext, base: string, path: string, init?: RequestInit): Promise<T> =>
@@ -28,5 +29,6 @@ export function moduleApi(ctx: RequestContext, id: string): ModuleApi {
     post: (path, body) => send(ctx, base, path, withBody('POST', body)),
     put: (path, body) => send(ctx, base, path, withBody('PUT', body)),
     delete: (path) => send(ctx, base, path, { method: 'DELETE' }),
+    send: (path, init) => send(ctx, base, path, init),
   };
 }

@@ -8,6 +8,7 @@ use std::sync::Arc;
 use axum::http::StatusCode;
 use axum::response::Response;
 
+use kroma_domain::metadata::{EpisodeInfo, MatchCandidate};
 use kroma_domain::{Audience, NotificationSpec, Permission, User};
 
 use super::{Contribution, Event, LibraryFolders};
@@ -70,6 +71,17 @@ pub trait HostCtx: Send + Sync + 'static {
 
     // The metadata language tag (e.g. `"fr-FR"`) for TMDB lookups.
     fn metadata_language(&self) -> String;
+
+    // Provider titles matching `query`, ranked most-likely-first against
+    // `(query, year)` by the same scoring the automatic path uses. `kind` is
+    // `movie` | `show`. Empty when no provider is configured, so a caller
+    // degrades to "nothing matched" rather than failing.
+    fn metadata_candidates(&self, query: &str, kind: &str, year: Option<u32>)
+        -> Vec<MatchCandidate>;
+
+    // One season's episodes, as the provider names them. Best-effort: an empty
+    // list is "nothing to add", never an error.
+    fn metadata_episodes(&self, tmdb_id: u64, season: u32) -> Vec<EpisodeInfo>;
 
     // Prefer the typed [`service`] helper.
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>>;
@@ -140,6 +152,19 @@ impl<T: HostCtx + ?Sized> HostCtx for std::sync::Arc<T> {
     }
     fn metadata_language(&self) -> String {
         (**self).metadata_language()
+    }
+
+    fn metadata_candidates(
+        &self,
+        query: &str,
+        kind: &str,
+        year: Option<u32>,
+    ) -> Vec<MatchCandidate> {
+        (**self).metadata_candidates(query, kind, year)
+    }
+
+    fn metadata_episodes(&self, tmdb_id: u64, season: u32) -> Vec<EpisodeInfo> {
+        (**self).metadata_episodes(tmdb_id, season)
     }
     fn get_service(&self, type_id: TypeId) -> Option<Arc<dyn Any + Send + Sync>> {
         (**self).get_service(type_id)
@@ -265,6 +290,19 @@ mod tests {
             self.note("metadata_language");
             "fr-FR".into()
         }
+        fn metadata_candidates(
+            &self,
+            query: &str,
+            _kind: &str,
+            _year: Option<u32>,
+        ) -> Vec<MatchCandidate> {
+            self.note(&format!("metadata_candidates:{query}"));
+            Vec::new()
+        }
+        fn metadata_episodes(&self, tmdb_id: u64, season: u32) -> Vec<EpisodeInfo> {
+            self.note(&format!("metadata_episodes:{tmdb_id}:{season}"));
+            Vec::new()
+        }
         fn contributions(&self, _point: &str) -> Vec<Contribution> {
             Vec::new()
         }
@@ -313,6 +351,8 @@ mod tests {
         assert!(host.library_folders().is_empty());
         assert_eq!(host.secret("tmdb").as_deref(), Some("key"));
         assert_eq!(host.metadata_language(), "fr-FR");
+        assert!(host.metadata_candidates("Dune", "movie", Some(2021)).is_empty());
+        assert!(host.metadata_episodes(1399, 2).is_empty());
         assert!(host.get_service(TypeId::of::<u8>()).is_none());
 
         assert_eq!(
@@ -333,6 +373,8 @@ mod tests {
                 "library_folders",
                 "secret:tmdb",
                 "metadata_language",
+                "metadata_candidates:Dune",
+                "metadata_episodes:1399:2",
                 "get_service",
             ]
         );

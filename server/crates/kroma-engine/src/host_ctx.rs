@@ -147,6 +147,49 @@ impl HostCtx for AppState {
         crate::services::settings::metadata_language(&self.settings, &self.config)
     }
 
+    fn metadata_candidates(
+        &self,
+        query: &str,
+        kind: &str,
+        year: Option<u32>,
+    ) -> Vec<kroma_domain::metadata::MatchCandidate> {
+        let scope = match kind {
+            "show" | "tv" | "season" | "episode" => {
+                crate::infra::metadata::discover::DiscoverScope::Shows
+            }
+            "movie" | "item" => crate::infra::metadata::discover::DiscoverScope::Movies,
+            _ => crate::infra::metadata::discover::DiscoverScope::All,
+        };
+        let target = crate::services::rematch::MatchTarget {
+            title: query.to_string(),
+            year,
+            current_tmdb_id: None,
+        };
+        crate::services::rematch::ranked(self, scope, query, &target).unwrap_or_default()
+    }
+
+    fn metadata_episodes(
+        &self,
+        tmdb_id: u64,
+        season: u32,
+    ) -> Vec<kroma_domain::metadata::EpisodeInfo> {
+        let Some(api_key) = self.config.tmdb_api_key.as_deref() else {
+            return Vec::new();
+        };
+        let lang = crate::services::settings::metadata_language(&self.settings, &self.config);
+        crate::infra::metadata::season_episodes(api_key, &lang, tmdb_id, season)
+            .episodes
+            .into_iter()
+            .map(|e| kroma_domain::metadata::EpisodeInfo {
+                episode: e.episode,
+                name: e.name,
+                overview: e.overview,
+                air_date: e.air_date,
+                still_url: e.still_url,
+            })
+            .collect()
+    }
+
     fn get_service(
         &self,
         type_id: std::any::TypeId,
@@ -166,10 +209,14 @@ mod tests {
     use serde_json::json;
 
     use super::*;
-    use crate::test_support::test_state;
+    use crate::test_support::{test_state, test_state_with_tmdb, FakeTmdb};
 
     fn body(env: &crate::infra::events::Envelope) -> serde_json::Value {
         serde_json::from_str(env.payload_unrouted()).unwrap()
+    }
+
+    fn page(results: serde_json::Value) -> serde_json::Value {
+        json!({ "page": 1, "total_pages": 1, "results": results })
     }
 
     fn user(state: &crate::state::SharedState, perms: &[Permission]) -> User {
@@ -414,5 +461,121 @@ mod tests {
     fn triggering_an_unknown_job_is_a_no_op_rather_than_a_panic() {
         let state = test_state();
         HostCtx::trigger_job(&*state, "no.such.job", "test");
+    }
+
+    #[test]
+    fn ranks_the_provider_titles_a_module_asked_about() {
+        let state = test_state_with_tmdb("test-key");
+
+        let _tmdb = FakeTmdb::start(|_| {
+            (
+                200,
+                page(json!([
+                    { "id": 605, "title": "The Matrix Revolutions", "release_date": "2003-11-05" },
+                    { "id": 603, "title": "The Matrix", "release_date": "1999-03-31" },
+                ])),
+            )
+        });
+
+        let found = HostCtx::metadata_candidates(&*state, "The Matrix", "movie", Some(1999));
+
+        assert_eq!(
+            found.iter().map(|c| c.tmdb_id).collect::<Vec<_>>(),
+            [603, 605],
+            "the 1999 title outranks the sequel because the module asked for 1999"
+        );
+        assert!(found[0].score > found[1].score);
+    }
+
+    #[test]
+    fn the_kind_a_module_names_picks_the_provider_scope() {
+        let state = test_state_with_tmdb("test-key");
+
+        let _tmdb = FakeTmdb::start(|path| match path {
+            "/search/movie" => (
+                200,
+                page(json!([{ "id": 841, "title": "Dune", "release_date": "1984-12-14" }])),
+            ),
+            "/search/tv" => (
+                200,
+                page(json!([{ "id": 87739, "name": "Dune", "first_air_date": "2025-01-01" }])),
+            ),
+            _ => (
+                200,
+                page(json!([{ "id": 1, "media_type": "movie", "title": "Dune" }])),
+            ),
+        });
+
+        let movies = HostCtx::metadata_candidates(&*state, "Dune", "movie", None);
+        let shows = HostCtx::metadata_candidates(&*state, "Dune", "show", None);
+        let anything = HostCtx::metadata_candidates(&*state, "Dune", "release", None);
+
+        assert_eq!(movies[0].tmdb_id, 841);
+        assert_eq!(shows[0].tmdb_id, 87739);
+        assert_eq!(anything[0].tmdb_id, 1);
+    }
+
+    #[test]
+    fn a_provider_that_answers_nothing_is_an_empty_candidate_list_not_an_error() {
+        let state = test_state_with_tmdb("test-key");
+
+        let _tmdb = FakeTmdb::start(|_| (500, json!({ "status_message": "boom" })));
+
+        let found = HostCtx::metadata_candidates(&*state, "Dune", "movie", None);
+
+        assert!(found.is_empty());
+    }
+
+    #[test]
+    fn names_the_episodes_of_the_season_a_module_asked_for() {
+        let state = test_state_with_tmdb("test-key");
+
+        let tmdb = FakeTmdb::start(|_| {
+            (
+                200,
+                json!({ "episodes": [
+                    {
+                        "episode_number": 1,
+                        "name": "Winter Is Coming",
+                        "overview": "Ned takes the offer.",
+                        "air_date": "2011-04-17",
+                        "still_path": "/still1.jpg",
+                    },
+                    { "episode_number": 2, "name": "", "overview": "", "air_date": "" },
+                ]}),
+            )
+        });
+
+        let episodes = HostCtx::metadata_episodes(&*state, 1399, 2);
+
+        assert_eq!(
+            tmdb.requests()[0].split('?').next(),
+            Some("/tv/1399/season/2")
+        );
+        assert_eq!(episodes[0].episode, 1);
+        assert_eq!(episodes[0].name.as_deref(), Some("Winter Is Coming"));
+        assert_eq!(episodes[0].overview.as_deref(), Some("Ned takes the offer."));
+        assert_eq!(episodes[0].air_date.as_deref(), Some("2011-04-17"));
+        assert_eq!(
+            episodes[0].still_url.as_deref(),
+            Some("https://image.tmdb.org/t/p/w300/still1.jpg")
+        );
+        assert_eq!(episodes[1].episode, 2);
+        assert_eq!(episodes[1].name, None);
+        assert_eq!(episodes[1].still_url, None);
+    }
+
+    #[test]
+    fn asks_the_provider_nothing_at_all_without_a_key() {
+        let state = test_state();
+
+        let tmdb = FakeTmdb::start(|_| (200, json!({})));
+
+        let episodes = HostCtx::metadata_episodes(&*state, 1399, 1);
+        let candidates = HostCtx::metadata_candidates(&*state, "Dune", "movie", None);
+
+        assert!(episodes.is_empty());
+        assert!(candidates.is_empty());
+        assert!(tmdb.requests().is_empty());
     }
 }

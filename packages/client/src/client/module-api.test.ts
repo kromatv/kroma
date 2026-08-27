@@ -51,6 +51,19 @@ describe('moduleApi', () => {
     expect(sent[1]?.init?.body).toBeUndefined();
   });
 
+  it('hands a raw request through for what a JSON body cannot carry', async () => {
+    const { ctx, sent } = makeCtx();
+    const upload = new FormData();
+    upload.append('file', new Blob(['x']), 'poster.png');
+
+    await moduleApi(ctx, 'tv.kroma.vpn').send('/import', { method: 'POST', body: upload });
+
+    expect(sent[0]?.path).toBe('/admin/m/tv.kroma.vpn/import');
+    expect(sent[0]?.init?.method).toBe('POST');
+    expect(sent[0]?.init?.body).toBe(upload);
+    expect(sent[0]?.init?.headers).toBeUndefined();
+  });
+
   it('URL-encodes the module id', async () => {
     const { ctx, sent } = makeCtx();
     await moduleApi(ctx, 'weird/id').get('/x');

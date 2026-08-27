@@ -108,6 +108,23 @@ impl<H: HostCtx> HostCtx for Recording<H> {
     fn metadata_language(&self) -> String {
         self.inner.metadata_language()
     }
+
+    fn metadata_candidates(
+        &self,
+        query: &str,
+        kind: &str,
+        year: Option<u32>,
+    ) -> Vec<kroma_domain::metadata::MatchCandidate> {
+        self.inner.metadata_candidates(query, kind, year)
+    }
+
+    fn metadata_episodes(
+        &self,
+        tmdb_id: u64,
+        season: u32,
+    ) -> Vec<kroma_domain::metadata::EpisodeInfo> {
+        self.inner.metadata_episodes(tmdb_id, season)
+    }
     fn contributions(&self, point: &str) -> Vec<crate::Contribution> {
         self.inner.contributions(point)
     }
@@ -121,7 +138,7 @@ impl<H: HostCtx> HostCtx for Recording<H> {
 mod tests {
     use serde_json::json;
 
-    use super::super::fixtures::{spec, user};
+    use super::super::fixtures::{candidate, episode, spec, user};
     use super::super::StubHost;
     use super::*;
 
@@ -129,12 +146,19 @@ mod tests {
     fn recording_forwards_everything_but_the_bus() {
         let inner = StubHost::new()
             .with_tmdb_key("k")
-            .with_metadata_language("fr-FR");
+            .with_metadata_language("fr-FR")
+            .with_metadata_candidates(vec![candidate()])
+            .with_metadata_episodes(vec![episode()]);
         let host = Recording::new(inner);
 
         // Forwarded, so the test still sees the real host's answers.
         assert_eq!(host.secret("tmdb").as_deref(), Some("k"));
         assert_eq!(host.metadata_language(), "fr-FR");
+        assert_eq!(
+            host.metadata_candidates("Dune", "movie", Some(2021))[0].tmdb_id,
+            438631
+        );
+        assert_eq!(host.metadata_episodes(1399, 2)[0].episode, 1);
         assert_eq!(host.setting_str("k", "fallback"), "fallback");
         assert!(host.require(&user(), Permission::LibraryManage).is_ok());
         assert!(host.require_any_admin(&user()).is_ok());
