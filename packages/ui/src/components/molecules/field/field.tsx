@@ -6,12 +6,13 @@
 // context. `Field.Input` and `Field.Textarea` are the doors to <TextField> and
 // <TextArea>, which is why neither atom is exported.
 
-import { Children, isValidElement, type ReactNode, useMemo } from 'react';
+import { Children, isValidElement, type ReactNode, useCallback, useMemo, useState } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
 import type { ControlSize } from '#ui/lib/field-shell';
+import { useGroupShape } from '#ui/lib/group-shape';
 import { partContext } from '#ui/lib/part-context';
 import { useControllable } from '#ui/lib/use-controllable';
 
@@ -22,6 +23,7 @@ interface FieldContext {
   size: ControlSize | undefined;
   value: string;
   setValue: (next: string) => void;
+  setFocused: (focused: boolean) => void;
 }
 
 const [Context, useField] = partContext<FieldContext>('Field.Root');
@@ -61,15 +63,17 @@ function Root({
   ...box
 }: Readonly<FieldRootProps>) {
   const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
+  const [focused, setFocused] = useState(false);
   const message = error || undefined;
   const field = useMemo<FieldContext>(
-    () => ({ label, invalid, error: message, size, value, setValue }),
+    () => ({ label, invalid, error: message, size, value, setValue, setFocused }),
     [label, invalid, message, size, value, setValue],
   );
   const at = useMemo(() => sort(children), [children]);
+  const group = useGroupShape(focused);
   return (
     <Context.Provider value={field}>
-      <Box gap={8} {...box}>
+      <Box gap={8} {...box} style={[group, box.style]}>
         {hideLabel ? null : (
           <Text variant="meta" color="textMuted">
             {label}
@@ -91,6 +95,11 @@ function sort(children: ReactNode): { control: ReactNode[]; note: ReactNode[] } 
   return at;
 }
 
+interface FocusHandlers {
+  onFocus?: () => void;
+  onBlur?: () => void;
+}
+
 interface EntryValue {
   /** Held by the entry itself. Given none of the three, it binds to the Root's. */
   value?: string;
@@ -98,14 +107,25 @@ interface EntryValue {
   onValueChange?: (next: string) => void;
 }
 
-function useEntry(part: string, own: Readonly<EntryValue>) {
+function useEntry(part: string, own: Readonly<EntryValue>, focus?: FocusHandlers) {
   const field = useField(part);
+  const { setFocused } = field;
+  const onFocus = useCallback(() => {
+    setFocused(true);
+    focus?.onFocus?.();
+  }, [setFocused, focus?.onFocus]);
+  const onBlur = useCallback(() => {
+    setFocused(false);
+    focus?.onBlur?.();
+  }, [setFocused, focus?.onBlur]);
   const owned =
     own.value !== undefined || own.defaultValue !== undefined || own.onValueChange !== undefined;
   return {
     label: field.label,
     invalid: field.invalid,
     size: field.size,
+    onFocus,
+    onBlur,
     ...(owned
       ? { value: own.value, defaultValue: own.defaultValue, onValueChange: own.onValueChange }
       : { value: field.value, onValueChange: field.setValue }),
@@ -119,7 +139,11 @@ interface FieldInputProps
 /** The single-line entry. `type` wires the keyboard, the autofill and the
  *  masking; the label, the invalid tint and the shell size come from the Root. */
 function Input({ value, defaultValue, onValueChange, ...props }: Readonly<FieldInputProps>) {
-  const entry = useEntry('Input', { value, defaultValue, onValueChange });
+  const entry = useEntry(
+    'Input',
+    { value, defaultValue, onValueChange },
+    { onFocus: props.onFocus, onBlur: props.onBlur },
+  );
   return <TextField {...props} {...entry} />;
 }
 
@@ -130,7 +154,11 @@ interface FieldTextareaProps
 /** The multi-line entry: it opens `rows` tall and grows to `maxRows`. One of its
  *  lines is one line of a <Field.Input>, so the two align in a form. */
 function Textarea({ value, defaultValue, onValueChange, ...props }: Readonly<FieldTextareaProps>) {
-  const entry = useEntry('Textarea', { value, defaultValue, onValueChange });
+  const entry = useEntry(
+    'Textarea',
+    { value, defaultValue, onValueChange },
+    { onFocus: props.onFocus, onBlur: props.onBlur },
+  );
   return <TextArea {...props} {...entry} />;
 }
 

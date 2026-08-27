@@ -78,10 +78,10 @@ function corners(
   };
 }
 
-// The focus ring is a boxShadow painted OUTSIDE the box, and a group collapses
-// the borders, so a focused member is otherwise overpainted by the one after it.
-// Only the member knows it is focused, which is why the group cannot lift it,
-// and why the group must never clip: an `overflow` there would cut the ring.
+// The ring is drawn OUTSIDE the box, and a group collapses the borders, so a
+// focused member would otherwise be overpainted by the one after it. Only the
+// member knows it is focused, which is why the group cannot lift it, and why the
+// group must never clip: an `overflow` there would cut the ring.
 const RAISED = { zIndex: 1 };
 
 function shapeOf(slot: GroupSlot, focused: boolean): ViewStyle {

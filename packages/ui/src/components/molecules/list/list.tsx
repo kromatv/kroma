@@ -44,9 +44,7 @@ function Root({ ordered = false, label, children }: Readonly<ListRootProps>) {
   return (
     <Box role="list" aria-label={label} style={s.list}>
       {items.map((child, at) => (
-        // The document order is fixed: the position IS the identity.
-        // biome-ignore lint/suspicious/noArrayIndexKey: the position IS what the provider carries
-        <ListContext.Provider key={at} value={places[at] as Context}>
+        <ListContext.Provider key={child.key ?? at} value={places[at] as Context}>
           {child}
         </ListContext.Provider>
       ))}

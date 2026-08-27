@@ -56,7 +56,9 @@ function Badge({ tone = '4K', size = 'sm', children }: Readonly<BadgeProps>) {
   const s = badgeVariants({ tone: known, size });
   return (
     <Box style={s.root}>
-      <Text style={s.label}>{children ?? tone}</Text>
+      <Text lines={1} style={s.label}>
+        {children ?? tone}
+      </Text>
     </Box>
   );
 }

@@ -25,7 +25,16 @@ const chipVariants = svFor<{
   icon: Pick<IconProps, 'color' | 'size'>;
 }>()({
   slots: {
-    root: { row: true, align: 'center', gap: 8, py: 6, px: 14, radius: 'pill', border: 'border' },
+    root: {
+      row: true,
+      align: 'center',
+      gap: 8,
+      py: 6,
+      px: 14,
+      radius: 'pill',
+      border: 'border',
+      shrink: 0,
+    },
     label: { font: 'ui', fontWeight: '600' },
     dot: { w: 7, h: 7, radius: 'circle', shrink: 0 },
     count: { font: 'ui', fontWeight: '600', opacity: 0.6 },
@@ -124,7 +133,11 @@ function Chip({
         <>
           {icon ? <Icon name={icon} thickness={2} {...state.slots.icon} /> : null}
           {dot ? <Box bg={active ? undefined : dot} style={state.slots.dot} /> : null}
-          {label === undefined ? null : <Text style={state.slots.label}>{label}</Text>}
+          {label === undefined ? null : (
+            <Text lines={1} style={state.slots.label}>
+              {label}
+            </Text>
+          )}
           {count === undefined ? null : (
             <Text style={state.slots.count}>{count.toLocaleString(locale)}</Text>
           )}

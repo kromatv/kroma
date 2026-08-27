@@ -80,10 +80,7 @@ function Root({ size, children }: Readonly<TimelineRootProps>) {
   return (
     <Box>
       {items.map((child, at) => (
-        // The position is the identity here: this is the caller's own list of
-        // children, in the order it was written, and nothing reorders it.
-        // biome-ignore lint/suspicious/noArrayIndexKey: the position IS what the provider carries
-        <TimelineContext.Provider key={at} value={rail[at] as Context}>
+        <TimelineContext.Provider key={child.key ?? at} value={rail[at] as Context}>
           {child}
         </TimelineContext.Provider>
       ))}
