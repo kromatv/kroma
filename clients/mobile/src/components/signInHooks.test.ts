@@ -26,6 +26,7 @@ const api = vi.hoisted(() => ({
 vi.mock('@kroma/core', () => ({
   KromaClient,
   discoverServers,
+  activeLocale: () => 'fr',
   clientUserAgent: () => 'Kroma/test',
 }));
 

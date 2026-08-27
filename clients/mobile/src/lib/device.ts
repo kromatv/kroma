@@ -3,7 +3,7 @@
 // clientUserAgent (shared with the TV app); this file supplies the phone's own
 // hardware fields.
 
-import { clientUserAgent, KromaClient } from '@kroma/core';
+import { activeLocale, clientUserAgent, KromaClient } from '@kroma/core';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { buildInfo } from '#mobile/lib/buildInfo';
@@ -32,5 +32,5 @@ const UA = userAgent();
 
 /** A client for `baseUrl` that identifies this phone on every request. */
 export function makeClient(baseUrl: string): KromaClient {
-  return new KromaClient({ baseUrl, userAgent: UA });
+  return new KromaClient({ baseUrl, userAgent: UA, locale: activeLocale() });
 }

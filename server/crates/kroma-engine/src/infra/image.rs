@@ -51,6 +51,25 @@ pub fn localize(data_dir: &Path, mut meta: Metadata) -> Metadata {
     meta
 }
 
+/// Caches only the artwork that carries the title as printed art for one
+/// language: the poster and the logo.
+pub fn localize_title_art(data_dir: &Path, mut meta: Metadata) -> Metadata {
+    // A download that failed leaves the remote URL in hand. Kept, it is stored
+    // as this language's art and served to every viewer straight from TMDB,
+    // bypassing the cache and announcing them to it. Dropped, the language
+    // simply has no art of its own and reads the core's, which is right.
+    meta.poster_url = meta
+        .poster_url
+        .as_deref()
+        .and_then(|url| cache(data_dir, url));
+    // Logo kept as PNG, not transcoded: transparency must survive.
+    meta.logo_url = meta
+        .logo_url
+        .as_deref()
+        .and_then(|url| cache_verbatim(data_dir, url, "png"));
+    meta
+}
+
 fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Option<String> {
     if !remote_url.starts_with("http") {
         return Some(remote_url.to_string());

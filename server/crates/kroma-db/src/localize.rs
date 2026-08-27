@@ -25,6 +25,23 @@ mod test_support;
 pub use items::*;
 pub use shows::*;
 
+/// Overlay `locale` onto one show's metadata blob, which is where the generated
+/// poster and card routes read a show's art from.
+pub fn overlay_show_metadata(
+    pool: &Pool,
+    show_id: &str,
+    meta: &mut Metadata,
+    locale: &str,
+) -> Result<()> {
+    let conn = pool.get()?;
+    if let Some(tr) =
+        translations::resolve_many(&conn, metadata_core::SHOW, &[show_id], locale)?.get(show_id)
+    {
+        apply(Some(meta), tr);
+    }
+    Ok(())
+}
+
 // Overlay one season's cast character names from its `season_cast` translation.
 fn overlay_season_cast(
     conn: &Connection,
@@ -60,12 +77,21 @@ fn apply(meta: Option<&mut Metadata>, tr: &TransData) {
     if !tr.genres.is_empty() {
         meta.genres = tr.genres.clone();
     }
+    if tr.poster_url.is_some() {
+        meta.poster_url = tr.poster_url.clone();
+    }
+    if tr.logo_url.is_some() {
+        meta.logo_url = tr.logo_url.clone();
+    }
     apply_characters(&mut meta.cast, &tr.characters);
 }
 
 // A show's metadata overlay (same fields; shows carry no per-title cast here).
 fn apply_show(show: &mut Show, tr: &TransData) {
     apply(show.metadata.as_mut(), tr);
+    if let Some(t) = &tr.title {
+        show.title = t.clone();
+    }
 }
 
 // Overlay localized character names onto a cast list, aligned by index (the

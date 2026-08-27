@@ -49,6 +49,9 @@ pub fn overlay_show_detail(pool: &Pool, detail: &mut ShowDetail, locale: &str) -
         for ep in &mut season.episodes {
             if let Some(t) = ep_tr.get(&ep.id) {
                 apply(ep.metadata.as_mut(), t);
+                if let Some(title) = &t.title {
+                    ep.title = title.clone();
+                }
             }
         }
         overlay_season_cast(&conn, &detail.show.id, season, locale)?;

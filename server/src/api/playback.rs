@@ -12,6 +12,7 @@ use serde::Deserialize;
 use crate::api::extract::AuthUser;
 use crate::api::util::{client_ip, query};
 use crate::db;
+use crate::i18n::ReqLocale;
 use crate::infra::events::ServerEvent;
 use crate::services::playback::{self, Ping};
 use crate::services::settings;
@@ -249,9 +250,12 @@ pub async fn list_progress(State(state): State<SharedState>, AuthUser(user): Aut
 pub async fn continue_watching(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
+    ReqLocale(locale): ReqLocale,
 ) -> Response {
     match query(&state.db, move |pool| {
-        db::continue_watching(&pool, &user.id)
+        let mut rows = db::continue_watching(&pool, &user.id)?;
+        db::localize::overlay_each(&pool, rows.iter_mut().map(|r| &mut r.item), locale)?;
+        Ok(rows)
     })
     .await
     {
@@ -266,9 +270,12 @@ pub async fn up_next(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     Path(show_id): Path<String>,
+    ReqLocale(locale): ReqLocale,
 ) -> Response {
     match query(&state.db, move |pool| {
-        db::up_next_episode(&pool, &user.id, &show_id)
+        let mut found = db::up_next_episode(&pool, &user.id, &show_id)?;
+        db::localize::overlay_each(&pool, found.as_mut().map(|(i, _)| i), locale)?;
+        Ok(found)
     })
     .await
     {
@@ -283,8 +290,15 @@ pub async fn up_next(
 pub async fn next_episode(
     State(state): State<SharedState>,
     Path(item_id): Path<String>,
+    ReqLocale(locale): ReqLocale,
 ) -> Response {
-    match query(&state.db, move |pool| db::next_episode(&pool, &item_id)).await {
+    match query(&state.db, move |pool| {
+        let mut item = db::next_episode(&pool, &item_id)?;
+        db::localize::overlay_each(&pool, item.as_mut(), locale)?;
+        Ok(item)
+    })
+    .await
+    {
         Ok(item) => Json(item).into_response(),
         Err(resp) => resp,
     }
@@ -298,9 +312,12 @@ const UP_NEXT_EPISODES: usize = 20;
 pub async fn following_episodes(
     State(state): State<SharedState>,
     Path(item_id): Path<String>,
+    ReqLocale(locale): ReqLocale,
 ) -> Response {
     match query(&state.db, move |pool| {
-        db::following_episodes(&pool, &item_id, UP_NEXT_EPISODES)
+        let mut items = db::following_episodes(&pool, &item_id, UP_NEXT_EPISODES)?;
+        db::localize::overlay_items(&pool, &mut items, locale)?;
+        Ok(items)
     })
     .await
     {

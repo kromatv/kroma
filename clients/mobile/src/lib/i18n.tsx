@@ -7,6 +7,7 @@ import {
   DEFAULT_LOCALE,
   type Locale,
   normalizeLocale,
+  setActiveLocale,
   type Translate,
 } from '@kroma/core';
 import { getLocales } from 'expo-localization';
@@ -61,7 +62,9 @@ export function I18nProvider({ children }: Readonly<{ children: ReactNode }>) {
 
   const locale = override ?? osLocale() ?? normalizeLocale(user?.language) ?? DEFAULT_LOCALE;
 
-  // Keep Accept-Language in sync so server-rendered strings match the UI.
+  // The session's client, and every client built outside this tree: the sign-in
+  // flow and the server probes each make their own, and they read activeLocale().
+  setActiveLocale(locale);
   useEffect(() => {
     client?.setLocale(locale);
   }, [client, locale]);

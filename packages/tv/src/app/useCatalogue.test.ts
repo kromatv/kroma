@@ -58,6 +58,7 @@ vi.mock('@kroma/core', () => {
   return {
     KromaClient,
     KromaEvents,
+    activeLocale: () => 'fr',
     discoverServer: H.discoverServer,
     loadSession: H.loadSession,
     forgetServer: H.forgetServer,

@@ -1,6 +1,7 @@
 // KROMA API origin resolution.
 
 import {
+  activeLocale,
   isTextSubtitle,
   KromaClient,
   loadSession,
@@ -81,7 +82,11 @@ export function ensureSession(): Promise<void> {
 }
 
 export function kromaClient(): KromaClient {
-  const c = new KromaClient({ baseUrl: apiBase(), authToken: sessionToken() });
+  const c = new KromaClient({
+    baseUrl: apiBase(),
+    authToken: sessionToken(),
+    locale: activeLocale(),
+  });
   c.setRefreshHandler(exchangeStoredSession);
   return c;
 }

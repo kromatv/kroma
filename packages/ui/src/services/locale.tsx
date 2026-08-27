@@ -11,15 +11,14 @@
 
 import {
   DEFAULT_LOCALE,
-  detectLocale,
-  isLocale,
+  deviceLocale,
   type KromaClient,
   type Locale,
-  loadLocalePref,
   normalizeLocale,
   saveLocalePref,
+  setActiveLocale,
 } from '@kroma/core';
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { I18nProvider } from './i18n';
 
 export interface LocaleProviderProps {
@@ -53,6 +52,20 @@ export function LocaleProvider({
   // below, not in this initializer.
   const [override, setOverride] = useState<Locale>(DEFAULT_LOCALE);
 
+  // The client's Accept-Language moves in the same step as the state, never in a
+  // later effect: a consumer's own effect runs before this component's, and would
+  // refetch under the old header.
+  const applied = useRef<Locale>(DEFAULT_LOCALE);
+  const apply = useCallback(
+    (next: Locale) => {
+      applied.current = next;
+      setOverride(next);
+      setActiveLocale(next);
+      client?.setLocale(next);
+    },
+    [client],
+  );
+
   // Post-hydration: adopt the device override (localStorage) or the browser
   // locale, unless the signed-in account's preference already applies (handled
   // by the effect below). Runs once on mount, client-side only. When the user is
@@ -61,9 +74,8 @@ export function LocaleProvider({
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only; account changes are handled separately.
   useEffect(() => {
     if (accountLocale) return;
-    const stored = loadLocalePref();
-    const detected = isLocale(stored) ? stored : detectLocale();
-    setOverride(detected);
+    const detected = deviceLocale();
+    apply(detected);
     if (onAccountChange) {
       onAccountChange(detected);
       client?.updateLanguage(detected).catch(() => {});
@@ -77,32 +89,36 @@ export function LocaleProvider({
   // accountLocale changes, so it leaves a signed-out device override alone.
   useEffect(() => {
     if (accountLocale) {
-      setOverride(accountLocale);
+      apply(accountLocale);
       saveLocalePref(accountLocale);
     }
-  }, [accountLocale]);
+  }, [accountLocale, apply]);
 
   const locale = override;
 
-  // Keep the API client (Accept-Language) and optionally <html lang> in sync.
+  // Catches the client arriving after the locale did (the TV reaches a server
+  // late). Reads the ref, never this render's `locale`, which on the commit that
+  // adopts a locale is still the previous one.
   useEffect(() => {
-    client?.setLocale(locale);
+    client?.setLocale(applied.current);
+  }, [client]);
+
+  useEffect(() => {
     // biome-ignore lint/style/noRestrictedGlobals: audited - guarded; there is no <html lang> to sync on a native target.
     if (syncHtmlLang && typeof document !== 'undefined') document.documentElement.lang = locale;
-  }, [client, locale, syncHtmlLang]);
+  }, [locale, syncHtmlLang]);
 
   const handleChange = useCallback(
     (next: Locale) => {
-      setOverride(next);
+      apply(next);
       saveLocalePref(next);
-      client?.setLocale(next);
       // Best-effort account sync so the choice follows the profile everywhere.
       if (onAccountChange) {
         onAccountChange(next);
         client?.updateLanguage(next).catch(() => {});
       }
     },
-    [client, onAccountChange],
+    [apply, client, onAccountChange],
   );
 
   return (

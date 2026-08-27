@@ -94,6 +94,27 @@ impl FromRequestParts<SharedState> for ReqLocale {
     }
 }
 
+/// The locale the request actually asked for, `None` when it sent no
+/// `Accept-Language`. Separate from [`ReqLocale`], which answers "what do we
+/// serve" and so has to name a locale even when nothing was said.
+pub struct AskedLocale(pub Option<&'static str>);
+
+impl FromRequestParts<SharedState> for AskedLocale {
+    type Rejection = Infallible;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        _state: &SharedState,
+    ) -> Result<Self, Self::Rejection> {
+        let asked = parts
+            .headers
+            .get(axum::http::header::ACCEPT_LANGUAGE)
+            .and_then(|v| v.to_str().ok())
+            .map(|h| detect_locale(None, Some(h)));
+        Ok(AskedLocale(asked))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -28,6 +28,7 @@ const SECTION_CAP: usize = 20;
 // Over-fetch margin so a row still fills after cross-row de-duplication.
 const FETCH: usize = SECTION_CAP + 16;
 const MIN_ITEMS: usize = 5;
+const MIN_AI_ROW: usize = 5;
 const MAX_SECTIONS: usize = 9;
 const MAX_THEMED: usize = 4;
 const MAX_CURATED: usize = 3;
@@ -67,7 +68,15 @@ pub fn build_home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str)
     }
 
     push_because(&mut out, state, pool, &ctx, locale);
-    push_ai_rows(&mut out, state, pool, user_id, discretionary_cap, floor);
+    push_ai_rows(
+        &mut out,
+        state,
+        pool,
+        user_id,
+        locale,
+        discretionary_cap,
+        floor,
+    );
     push_curated_rows(&mut out, pool, locale, discretionary_cap);
     push_themed_rows(&mut out, state, &ctx, locale, discretionary_cap, floor);
 
@@ -122,6 +131,7 @@ fn push_ai_rows(
     state: &SharedState,
     pool: &Pool,
     user_id: &str,
+    locale: &str,
     discretionary_cap: usize,
     floor: f32,
 ) {
@@ -131,8 +141,22 @@ fn push_ai_rows(
         }
         let query = embeddings::embed(&state.embedder, &gs.query);
         let ranked = state.vectors.nearest(&query, FETCH, &HashSet::new());
-        let reason = (!gs.reason.is_empty()).then_some(gs.reason);
-        out.push(&format!("ai:{}", gs.key), gs.title, reason, ranked, floor);
+        if gs.genres.is_empty() {
+            continue;
+        }
+        let ranked = db::keep_shelf(pool, ranked, &gs.genres, gs.form.kinds());
+        if ranked.len() < MIN_AI_ROW {
+            continue;
+        }
+        let reason = gs.reason.get(locale);
+        let reason = (!reason.is_empty()).then(|| reason.to_string());
+        out.push(
+            &format!("ai:{}", gs.key),
+            gs.title.get(locale).to_string(),
+            reason,
+            ranked,
+            floor,
+        );
     }
 }
 
@@ -617,7 +641,7 @@ mod tests {
             sections: Vec::new(),
             seen: HashSet::new(),
         };
-        push_ai_rows(&mut b, &state, &state.db, &user, MAX_SECTIONS, 0.0);
+        push_ai_rows(&mut b, &state, &state.db, &user, "fr", MAX_SECTIONS, 0.0);
         assert!(b.sections.is_empty());
 
         let mut capped = Builder {
@@ -625,7 +649,7 @@ mod tests {
             sections: Vec::new(),
             seen: HashSet::new(),
         };
-        push_ai_rows(&mut capped, &state, &state.db, &user, 0, 0.0);
+        push_ai_rows(&mut capped, &state, &state.db, &user, "fr", 0, 0.0);
         assert!(capped.sections.is_empty());
     }
 

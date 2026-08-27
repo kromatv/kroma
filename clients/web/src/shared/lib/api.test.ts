@@ -1,4 +1,10 @@
-import { KromaClient, sessionToken, setSessionToken } from '@kroma/core';
+import {
+  deviceLocale,
+  KromaClient,
+  sessionToken,
+  setActiveLocale,
+  setSessionToken,
+} from '@kroma/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   apiBase,
@@ -28,6 +34,23 @@ afterEach(() => {
   H.session = null;
   H.exchange.mockReset();
   setSessionToken(undefined);
+  setActiveLocale(deviceLocale());
+});
+
+describe('kromaClient', () => {
+  it('asks for the language the app is showing', async () => {
+    setActiveLocale('en');
+    const fetchSpy = vi.fn<typeof fetch>(
+      async () =>
+        new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } }),
+    );
+    vi.stubGlobal('fetch', fetchSpy);
+
+    await kromaClient().splash();
+
+    const headers = new Headers(fetchSpy.mock.calls[0]?.[1]?.headers);
+    expect(headers.get('accept-language')).toBe('en');
+  });
 });
 
 describe('apiBase', () => {

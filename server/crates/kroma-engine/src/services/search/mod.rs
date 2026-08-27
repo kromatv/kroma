@@ -43,7 +43,11 @@ pub struct Hit {
 // matches the whole season list. Collect several pages' worth of raw hits, fold
 // the episodes back under their show, and only then cut to `limit`.
 const CANDIDATE_FACTOR: usize = 8;
-const MAX_CANDIDATES: usize = 400;
+// tantivy cuts to this on raw score, before anything here has weighed a hit by
+// what kind of thing it is. A film that lost that race to a wall of episodes
+// matching on show_title is gone before the weighing runs, and no multiplier
+// brings back a document that was never collected, so the window is generous.
+const MAX_CANDIDATES: usize = 1200;
 // A show that did NOT match itself is represented by its best few episodes.
 const MAX_EPISODES_PER_SHOW: usize = 3;
 
@@ -143,10 +147,14 @@ impl SearchEngine {
     pub fn search(&self, raw: &str, limit: usize) -> Vec<Hit> {
         let active = self.active.read().unwrap().clone();
         let tokens = normalize(&active._index, raw);
-        let Some(query) = query::build(&self.fields, &tokens) else {
+        let searcher = active.reader.searcher();
+        let common: Vec<bool> = tokens
+            .iter()
+            .map(|t| query::is_common(&searcher, &self.fields, t))
+            .collect();
+        let Some(query) = query::build(&self.fields, &tokens, &common) else {
             return Vec::new();
         };
-        let searcher = active.reader.searcher();
         let limit = limit.max(1);
         let candidates = limit
             .saturating_mul(CANDIDATE_FACTOR)
@@ -158,8 +166,8 @@ impl SearchEngine {
         else {
             return Vec::new();
         };
-        let mut hits = Vec::with_capacity(top.len());
-        for (_score, addr) in top {
+        let mut scored = Vec::with_capacity(top.len());
+        for (score, addr) in top {
             let Ok(doc) = searcher.doc::<TantivyDocument>(addr) else {
                 continue;
             };
@@ -175,9 +183,20 @@ impl SearchEngine {
             let show_id = (kind == HitKind::Episode)
                 .then(|| field_str(&doc, self.fields.show_id))
                 .filter(|s| !s.is_empty());
-            hits.push(Hit { id, kind, show_id });
+            scored.push((Hit { id, kind, show_id }, score * kind_weight(kind)));
         }
+        scored.sort_by(|a, b| b.1.total_cmp(&a.1));
+        let hits = scored.into_iter().map(|(hit, _)| hit).collect();
         collapse_episodes(hits, limit)
+    }
+}
+
+// Reorders the collected window only, which is why MAX_CANDIDATES is wide.
+fn kind_weight(kind: HitKind) -> f32 {
+    match kind {
+        HitKind::Movie => 1.0,
+        HitKind::Show => 0.75,
+        HitKind::Episode => 0.4,
     }
 }
 

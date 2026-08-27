@@ -10,6 +10,7 @@
 
 import { saveLocalePref, setSessionStorage } from '@kroma/core';
 import { render } from '@testing-library/react';
+import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useLocale } from './i18n';
 import { LocaleProvider } from './locale';
@@ -102,6 +103,32 @@ describe('LocaleProvider', () => {
       </LocaleProvider>,
     );
     expect(client.setLocale).toHaveBeenCalledWith('en');
+  });
+
+  it('has told the client before a child sees the new locale', () => {
+    saveLocalePref('fr');
+    const client = fakeClient();
+    const seen: string[] = [];
+    function Watcher() {
+      const locale = useLocale();
+      useEffect(() => {
+        seen.push(`${locale}/${client.setLocale.mock.lastCall?.[0]}`);
+      }, [locale]);
+      return null;
+    }
+    const { rerender } = render(
+      <LocaleProvider client={client}>
+        <Watcher />
+      </LocaleProvider>,
+    );
+
+    rerender(
+      <LocaleProvider client={client} accountLanguage="en">
+        <Watcher />
+      </LocaleProvider>,
+    );
+
+    expect(seen.at(-1)).toBe('en/en');
   });
 
   // The TV's connect screen renders before any server is reached, and its copy

@@ -1,6 +1,7 @@
 //! The admin settings-view schema: the grouped, localised rows the console
 //! renders, with each row's current value overlaid from the store.
 
+use super::TMDB_LANGUAGE_AUTO;
 use std::sync::OnceLock;
 
 use serde::Serialize;
@@ -98,8 +99,11 @@ pub fn groups(
                         "tmdbLanguage",
                         t("admin.tmdbLanguage"),
                         Some(t("admin.tmdbLanguageHint")),
-                        "text",
-                        &[],
+                        "select",
+                        &tmdb_language_options()
+                            .iter()
+                            .map(String::as_str)
+                            .collect::<Vec<_>>(),
                         g("tmdbLanguage"),
                         true,
                     ),
@@ -485,6 +489,18 @@ pub fn groups(
         )],
         _ => Vec::new(),
     }
+}
+
+// TMDB takes a regional code and the region changes the artwork it picks, so
+// each language offers the one it is usually wanted in.
+fn tmdb_language_options() -> Vec<String> {
+    let mut opts = vec![TMDB_LANGUAGE_AUTO.to_string()];
+    opts.extend(
+        crate::i18n::SUPPORTED_LOCALES
+            .iter()
+            .map(|l| super::tmdb_region_of(l).to_string()),
+    );
+    opts
 }
 
 fn row(

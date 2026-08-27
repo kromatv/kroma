@@ -17,6 +17,7 @@ use crate::api::extract::AuthUser;
 use crate::api::util::blocking;
 use crate::db;
 use crate::i18n;
+use crate::i18n::AskedLocale;
 use crate::infra::metadata::discover;
 use crate::model::{
     DiscoverDetail, DiscoverEntry, DiscoverResponse, DiscoverSeason, Permission, RequestKind,
@@ -83,12 +84,13 @@ pub struct SearchParams {
 
 pub async fn search(
     State(state): State<SharedState>,
+    AskedLocale(reader): AskedLocale,
     AuthUser(user): AuthUser,
     Query(params): Query<SearchParams>,
 ) -> Result<Response, Response> {
     require(&user, Permission::RequestsCreate)?;
     let key = require_tmdb(&state, &user)?;
-    let lang = settings::metadata_language(&state.settings, &state.config);
+    let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
     let query = params.q.trim().to_string();
     if query.is_empty() {
         return Ok(Json(DiscoverResponse {
@@ -127,12 +129,13 @@ pub struct TrendingParams {
 /// `type=movie|tv` = a paginated single-kind list backing the full page.
 pub async fn trending(
     State(state): State<SharedState>,
+    AskedLocale(reader): AskedLocale,
     AuthUser(user): AuthUser,
     Query(params): Query<TrendingParams>,
 ) -> Result<Response, Response> {
     require(&user, Permission::RequestsCreate)?;
     let key = require_tmdb(&state, &user)?;
-    let lang = settings::metadata_language(&state.settings, &state.config);
+    let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
     let scope = scope_from_type(params.kind.as_deref());
     let page = params.page.unwrap_or(1);
     let out = blocking(move || {
@@ -152,6 +155,7 @@ pub async fn trending(
 /// `GET /api/discover/{movie|tv}/:tmdbId` detail + seasons + availability.
 pub async fn detail(
     State(state): State<SharedState>,
+    AskedLocale(reader): AskedLocale,
     AuthUser(user): AuthUser,
     Path((kind, tmdb_id)): Path<(String, u64)>,
 ) -> Result<Response, Response> {
@@ -163,7 +167,7 @@ pub async fn detail(
         "tv" | "show" => RequestKind::Show,
         _ => return Err(json_error(StatusCode::NOT_FOUND, "unknown media type")),
     };
-    let lang = settings::metadata_language(&state.settings, &state.config);
+    let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
     let out = blocking(move || {
         let detail = discover::detail(&key, &lang, kind, tmdb_id)
             .map_err(|()| anyhow::anyhow!("TMDB detail failed"))?;

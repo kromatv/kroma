@@ -47,7 +47,12 @@ pub fn resolve_person(pool: &Pool, lookup: &str) -> Result<Option<PersonMatch>> 
     };
     let conn = pool.get()?;
     let mut credits = read_credits(&conn, MOVIE_CREDITS, CreditedTitle::Movie, &keep)?;
-    credits.extend(read_credits(&conn, SHOW_CREDITS, CreditedTitle::Show, &keep)?);
+    credits.extend(read_credits(
+        &conn,
+        SHOW_CREDITS,
+        CreditedTitle::Show,
+        &keep,
+    )?);
     Ok(people::resolve_person(credits, lookup))
 }
 

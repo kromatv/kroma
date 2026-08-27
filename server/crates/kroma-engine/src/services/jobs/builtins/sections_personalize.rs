@@ -34,6 +34,7 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
         .unwrap_or(900)
         .clamp(64, 8192) as u32;
     state.vectors.refresh_if_stale(&state.db)?;
+    let vocabulary = crate::db::catalogue_genres(&state.db).unwrap_or_default();
 
     let users = crate::db::all_users_with_lang(&state.db)?;
     let total = users.len();
@@ -66,7 +67,8 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
             .ok()
             .flatten()
             .and_then(|(p, _)| p);
-        let (system, user) = generate::build_prompt(locale, prev.as_deref(), &clusters);
+        let (system, user) =
+            generate::build_prompt(locale, prev.as_deref(), &clusters, &vocabulary);
         ctx.debug(format!(
             "{}: {} taste clusters → {} ({} prompt chars)",
             short_id(uid),
@@ -76,7 +78,7 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
         ));
 
         match llm.complete(&system, &user, max_tokens) {
-            Ok(reply) => match generate::parse_response(&reply) {
+            Ok(reply) => match generate::parse_response(&reply, &vocabulary) {
                 Ok((profile, sections)) if !sections.is_empty() => {
                     let json = serde_json::to_string(&sections).unwrap_or_else(|_| "[]".into());
                     crate::db::set_user_taste(&state.db, uid, Some(&profile), &json)?;

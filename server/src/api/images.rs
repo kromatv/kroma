@@ -11,6 +11,7 @@ use crate::api::error::json_error;
 use crate::api::poster::render_poster;
 use crate::api::util::{blocking, query};
 use crate::db;
+use crate::i18n::ReqLocale;
 use crate::model::Kind;
 use crate::state::SharedState;
 use axum::routing::get;
@@ -42,14 +43,28 @@ pub async fn show_poster(
 pub async fn item_poster(
     State(state): State<SharedState>,
     Path(id): Path<String>,
+    ReqLocale(locale): ReqLocale,
 ) -> Result<Response, Response> {
     let id2 = id.clone();
-    let item = query(&state.db, move |pool| db::get_item(&pool, &id2))
-        .await?
-        .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
+    let item = query(&state.db, move |pool| {
+        let Some(mut item) = db::get_item(&pool, &id2)? else {
+            return Ok(None);
+        };
+        db::localize::overlay_each(&pool, std::iter::once(&mut item), locale)?;
+        Ok(Some(item))
+    })
+    .await?
+    .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
     if item.kind == Kind::Episode {
         if let Some(show_id) = item.show_id.clone() {
-            let art = query(&state.db, move |pool| db::show_poster_art(&pool, &show_id)).await?;
+            let art = query(&state.db, move |pool| {
+                let Some(mut meta) = db::show_metadata(&pool, &show_id)? else {
+                    return Ok(None);
+                };
+                db::localize::overlay_show_metadata(&pool, &show_id, &mut meta, locale)?;
+                Ok(meta.poster_url)
+            })
+            .await?;
             if let Some(url) = art {
                 return Ok(redirect_to_art(&url));
             }
@@ -201,17 +216,31 @@ pub async fn item_card(
     State(state): State<SharedState>,
     Path(id): Path<String>,
     Query(q): Query<CardQuery>,
+    ReqLocale(locale): ReqLocale,
 ) -> Result<Response, Response> {
-    let item = query(&state.db, move |pool| db::get_item(&pool, &id))
-        .await?
-        .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
+    let item = query(&state.db, move |pool| {
+        let Some(mut item) = db::get_item(&pool, &id)? else {
+            return Ok(None);
+        };
+        db::localize::overlay_each(&pool, std::iter::once(&mut item), locale)?;
+        Ok(Some(item))
+    })
+    .await?
+    .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
 
     // An episode's own metadata holds only its w300 still (in `backdropUrl`),
     // which upscales badly and has no title logo: art and logo come from the
     // show instead, so an episode card looks like a movie card.
     let show_meta = match (item.kind, item.show_id.clone()) {
         (Kind::Episode, Some(show_id)) => {
-            query(&state.db, move |pool| db::show_metadata(&pool, &show_id)).await?
+            query(&state.db, move |pool| {
+                let Some(mut meta) = db::show_metadata(&pool, &show_id)? else {
+                    return Ok(None);
+                };
+                db::localize::overlay_show_metadata(&pool, &show_id, &mut meta, locale)?;
+                Ok(Some(meta))
+            })
+            .await?
         }
         _ => None,
     };

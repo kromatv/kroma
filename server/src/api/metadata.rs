@@ -9,6 +9,7 @@ use axum::Json;
 use crate::api::error::json_error;
 use crate::api::util::{blocking, query};
 use crate::db;
+use crate::i18n::AskedLocale;
 use crate::infra::metadata::{self, Target};
 use crate::model::Kind;
 use crate::state::SharedState;
@@ -28,6 +29,7 @@ pub fn routes() -> Router<SharedState> {
 /// the item is unknown or TMDB has no match.
 pub async fn item_metadata(
     State(state): State<SharedState>,
+    AskedLocale(reader): AskedLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
     let api_key = require_tmdb_key(&state)?;
@@ -45,12 +47,13 @@ pub async fn item_metadata(
         (Target::Movie, item.title)
     };
 
-    resolve_metadata(state, api_key, target, title, year).await
+    resolve_metadata(state, api_key, target, title, year, reader).await
 }
 
 /// `GET /api/shows/:id/metadata` → TMDB details + IDs for one show.
 pub async fn show_metadata(
     State(state): State<SharedState>,
+    AskedLocale(reader): AskedLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
     let api_key = require_tmdb_key(&state)?;
@@ -60,7 +63,7 @@ pub async fn show_metadata(
         .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "show not found"))?
         .show;
 
-    resolve_metadata(state, api_key, Target::Tv, show.title, show.year).await
+    resolve_metadata(state, api_key, Target::Tv, show.title, show.year, reader).await
 }
 
 fn require_tmdb_key(state: &SharedState) -> Result<String, Response> {
@@ -78,8 +81,10 @@ async fn resolve_metadata(
     target: Target,
     title: String,
     year: Option<u32>,
+    reader: Option<&str>,
 ) -> Result<Response, Response> {
-    let language = crate::services::settings::metadata_language(&state.settings, &state.config);
+    let language =
+        crate::services::settings::metadata_language_for(&state.settings, &state.config, reader);
     let result = blocking(move || {
         Ok(metadata::lookup(
             &state.metadata_cache,

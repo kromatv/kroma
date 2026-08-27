@@ -1,9 +1,17 @@
 //! One table for every localized string, keyed `(subject_kind, subject_id, lang)`
 //! with `subject_kind` in `'item'|'show'|'episode'|'season_cast'|'curated'|'suggestion'`.
-//! Reads fall back requested lang -> `en` -> any available.
+//! Reads fall back requested lang -> `en`, and read only those two, so a
+//! catalog page costs the same whether the server stores two languages or ten.
 #![allow(dead_code)]
 
 use std::collections::HashMap;
+
+const FALLBACK: &str = "en";
+
+/// What a row is expected to carry. Bumped when the payload grows a field that
+/// existing rows cannot have, so a catalog written before the change is refilled
+/// instead of being mistaken for complete.
+pub const REV: u32 = 1;
 
 use serde::{Deserialize, Serialize};
 
@@ -31,16 +39,42 @@ pub struct TransData {
     pub characters: Vec<Option<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
+    // The poster and the logo carry the title as printed artwork; the backdrop
+    // has no text on it and is kept once per title on the core row.
+    #[serde(rename = "posterUrl", default, skip_serializing_if = "Option::is_none")]
+    pub poster_url: Option<String>,
+    #[serde(rename = "logoUrl", default, skip_serializing_if = "Option::is_none")]
+    pub logo_url: Option<String>,
+    /// The [`REV`] this row was written at; absent on everything written before
+    /// revisions existed, which reads as 0 and so as stale.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub rev: u32,
+}
+
+fn is_zero(v: &u32) -> bool {
+    *v == 0
 }
 
 impl TransData {
+    /// Whether the row would carry nothing at all. A revision on its own still
+    /// carries something: it records that the language was asked for and had
+    /// nothing, which is what stops it being asked again every pass.
     pub fn is_empty(&self) -> bool {
-        self.title.is_none()
+        self.rev == 0 && !self.has_text()
+    }
+
+    /// Whether the row says anything a reader would see. A row carrying only a
+    /// revision is a marker that the language was asked for and had nothing:
+    /// enough to stop asking, never enough to serve.
+    fn has_text(&self) -> bool {
+        !(self.title.is_none()
             && self.tagline.is_none()
             && self.overview.is_none()
             && self.genres.is_empty()
             && self.characters.is_empty()
             && self.reason.is_none()
+            && self.poster_url.is_none()
+            && self.logo_url.is_none())
     }
 }
 
@@ -81,7 +115,7 @@ pub(crate) fn write(
 /// `None` only when the subject has no translations at all.
 pub fn resolve_one(pool: &Pool, kind: &str, id: &str, lang: &str) -> Result<Option<TransData>> {
     let conn = pool.get()?;
-    let mut raw = load(&conn, kind, &[id])?;
+    let mut raw = load_for(&conn, kind, &[id], lang)?;
     Ok(raw.remove(id).and_then(|by_lang| pick(by_lang, lang)))
 }
 
@@ -92,7 +126,7 @@ pub fn resolve_many(
     ids: &[&str],
     lang: &str,
 ) -> Result<HashMap<String, TransData>> {
-    let raw = load(conn, kind, ids)?;
+    let raw = load_for(conn, kind, ids, lang)?;
     Ok(raw
         .into_iter()
         .filter_map(|(id, by_lang)| pick(by_lang, lang).map(|d| (id, d)))
@@ -115,6 +149,53 @@ pub fn all_for_kind(pool: &Pool, kind: &str) -> Result<HashMap<String, Vec<Trans
         }
     }
     Ok(out)
+}
+
+/// Which of `langs` this subject cannot serve from a current row: absent
+/// entirely, or written before [`REV`] and so missing whatever that revision
+/// added.
+/// Whether any of `ids` still owes a current row for one of `langs`.
+///
+/// One query for a whole season, where asking per episode would be one each.
+pub fn any_stale(pool: &Pool, kind: &str, ids: &[&str], langs: &[&str]) -> Result<bool> {
+    if ids.is_empty() || langs.is_empty() {
+        return Ok(false);
+    }
+    let stored = load_all(pool, kind, ids)?;
+    Ok(ids.iter().any(|id| {
+        let by_lang = stored.get(*id);
+        langs.iter().any(|lang| {
+            by_lang
+                .and_then(|m| m.get(*lang))
+                .is_none_or(|d| d.rev < REV)
+        })
+    }))
+}
+
+pub fn stale_langs(pool: &Pool, kind: &str, id: &str, langs: &[&str]) -> Result<Vec<String>> {
+    let conn = pool.get()?;
+    let mut stmt = conn.prepare(
+        "SELECT lang, data FROM translations \
+         WHERE subject_kind=?1 AND subject_id=?2 AND source=?3",
+    )?;
+    let rows = stmt.query_map(params![kind, id, TMDB], |r| {
+        Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
+    })?;
+    let mut current: Vec<String> = Vec::new();
+    for row in rows {
+        let (lang, json) = row?;
+        let rev = serde_json::from_str::<TransData>(&json)
+            .map(|d| d.rev)
+            .unwrap_or(0);
+        if rev >= REV {
+            current.push(lang);
+        }
+    }
+    Ok(langs
+        .iter()
+        .filter(|l| !current.iter().any(|c| c == *l))
+        .map(|l| (*l).to_string())
+        .collect())
 }
 
 pub fn languages_for(pool: &Pool, kind: &str, id: &str) -> Result<Vec<String>> {
@@ -144,11 +225,15 @@ pub fn delete_all(conn: &Connection, kind: &str, id: &str) -> Result<()> {
     Ok(())
 }
 
+/// Art is never merged across rows: an absent field means the core's art is the
+/// right one, so borrowing the fallback language's would hand a French reader an
+/// English poster on every title whose French art is the core's.
 fn pick(mut by_lang: HashMap<String, TransData>, lang: &str) -> Option<TransData> {
+    let fallback = by_lang.remove(FALLBACK).filter(TransData::has_text);
     by_lang
         .remove(lang)
-        .or_else(|| by_lang.remove("en"))
-        .or_else(|| by_lang.into_values().next())
+        .filter(TransData::has_text)
+        .or(fallback)
 }
 
 fn load(
@@ -156,15 +241,38 @@ fn load(
     kind: &str,
     ids: &[&str],
 ) -> Result<HashMap<String, HashMap<String, TransData>>> {
+    load_langs(conn, kind, ids, &[])
+}
+
+fn load_for(
+    conn: &Connection,
+    kind: &str,
+    ids: &[&str],
+    lang: &str,
+) -> Result<HashMap<String, HashMap<String, TransData>>> {
+    load_langs(conn, kind, ids, &[lang, FALLBACK])
+}
+
+fn load_langs(
+    conn: &Connection,
+    kind: &str,
+    ids: &[&str],
+    langs: &[&str],
+) -> Result<HashMap<String, HashMap<String, TransData>>> {
     let mut out: HashMap<String, HashMap<String, TransData>> = HashMap::new();
+    let filter = match langs.len() {
+        0 => String::new(),
+        n => format!(" AND lang IN ({})", vec!["?"; n].join(",")),
+    };
     let rows = super::query_by_subject_ids(
         conn,
         kind,
         ids,
+        langs,
         |ph| {
             format!(
                 "SELECT subject_id,lang,data FROM translations \
-                 WHERE subject_kind=? AND subject_id IN ({ph})"
+                 WHERE subject_kind=? AND subject_id IN ({ph}){filter}"
             )
         },
         |r| {
@@ -250,14 +358,7 @@ mod tests {
         );
 
         put(&p, "show", "s2", "ja", TMDB, &td("only ja")).unwrap();
-        assert_eq!(
-            resolve_one(&p, "show", "s2", "de")
-                .unwrap()
-                .unwrap()
-                .title
-                .as_deref(),
-            Some("only ja")
-        );
+        assert!(resolve_one(&p, "show", "s2", "de").unwrap().is_none());
 
         assert!(resolve_one(&p, "show", "missing", "fr").unwrap().is_none());
     }
@@ -283,6 +384,136 @@ mod tests {
     }
 
     #[test]
+    fn a_reader_in_the_primary_language_keeps_the_primary_art() {
+        let p = pool();
+        put(
+            &p,
+            "item",
+            "m1",
+            "fr",
+            TMDB,
+            &TransData {
+                title: Some("VF".into()),
+                ..TransData::default()
+            },
+        )
+        .unwrap();
+        put(
+            &p,
+            "item",
+            "m1",
+            "en",
+            TMDB,
+            &TransData {
+                title: Some("EN".into()),
+                poster_url: Some("/en.webp".into()),
+                ..TransData::default()
+            },
+        )
+        .unwrap();
+
+        let fr = resolve_one(&p, "item", "m1", "fr").unwrap().unwrap();
+
+        assert_eq!(fr.poster_url, None);
+    }
+
+    #[test]
+    fn a_row_written_before_the_payload_grew_counts_as_stale() {
+        let p = pool();
+        for lang in ["fr", "en"] {
+            put(
+                &p,
+                "item",
+                "m1",
+                lang,
+                TMDB,
+                &TransData {
+                    title: Some(lang.into()),
+                    ..TransData::default()
+                },
+            )
+            .unwrap();
+        }
+
+        let stale = stale_langs(&p, "item", "m1", &["fr", "en"]).unwrap();
+        assert_eq!(stale.len(), 2);
+
+        put(
+            &p,
+            "item",
+            "m1",
+            "en",
+            TMDB,
+            &TransData {
+                title: Some("EN".into()),
+                rev: REV,
+                ..TransData::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            stale_langs(&p, "item", "m1", &["fr", "en"]).unwrap(),
+            ["fr"]
+        );
+    }
+
+    #[test]
+    fn the_poster_follows_the_reader_and_the_backdrop_does_not() {
+        let p = pool();
+        put(
+            &p,
+            "item",
+            "m1",
+            "fr",
+            TMDB,
+            &TransData {
+                title: Some("VF".into()),
+                ..TransData::default()
+            },
+        )
+        .unwrap();
+        put(
+            &p,
+            "item",
+            "m1",
+            "en",
+            TMDB,
+            &TransData {
+                title: Some("EN".into()),
+                poster_url: Some("/en.webp".into()),
+                logo_url: Some("/en-logo.png".into()),
+                ..TransData::default()
+            },
+        )
+        .unwrap();
+
+        let en = resolve_one(&p, "item", "m1", "en").unwrap().unwrap();
+        assert_eq!(en.poster_url.as_deref(), Some("/en.webp"));
+        assert_eq!(en.logo_url.as_deref(), Some("/en-logo.png"));
+
+        let fr = resolve_one(&p, "item", "m1", "fr").unwrap().unwrap();
+        assert_eq!(fr.poster_url, None);
+        assert_eq!(fr.logo_url, None);
+    }
+
+    #[test]
+    fn a_reader_costs_two_rows_however_many_languages_the_server_stores() {
+        let p = pool();
+        for lang in ["en", "fr", "de", "ja", "pt", "es", "it", "nl"] {
+            put(&p, "show", "s1", lang, TMDB, &td(lang)).unwrap();
+        }
+
+        let conn = p.get().unwrap();
+        let served = load_for(&conn, "show", &["s1"], "fr").unwrap();
+
+        let langs = &served["s1"];
+        assert_eq!(langs.len(), 2);
+        assert!(langs.contains_key("fr"));
+        assert!(langs.contains_key("en"));
+    }
+
+    #[test]
     fn resolve_many_all_for_kind_and_load_all() {
         let p = pool();
         put(&p, "show", "s1", "en", TMDB, &td("A en")).unwrap();
@@ -293,9 +524,9 @@ mod tests {
 
         let conn = p.get().unwrap();
         let many = resolve_many(&conn, "show", &["s1", "s2", "ghost"], "fr").unwrap();
-        assert_eq!(many.len(), 2);
+        assert_eq!(many.len(), 1);
         assert_eq!(many["s1"].title.as_deref(), Some("A fr"));
-        assert_eq!(many["s2"].title.as_deref(), Some("B ja"));
+        assert!(!many.contains_key("s2"));
         drop(conn);
 
         let all = all_for_kind(&p, "show").unwrap();

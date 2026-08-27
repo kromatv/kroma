@@ -114,6 +114,7 @@ pub fn get_cores(conn: &Connection, kind: &str, ids: &[&str]) -> Result<HashMap<
         conn,
         kind,
         ids,
+        &[],
         |ph| {
             format!(
                 "SELECT subject_id,{CORE_COLS} FROM metadata_core \

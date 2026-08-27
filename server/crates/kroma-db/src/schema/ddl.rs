@@ -535,18 +535,21 @@ pub(crate) const SCHEMA: &str = "
 
     -- The GENERIC per-language translation cache: one table for every localized
     -- string in the app, so adding a language is inserting rows, never a schema
-    -- change. `resolve` falls back requested lang -> en -> any.
+    -- change. `resolve` falls back requested lang -> en, and skips a row that
+    -- carries only a revision: that is a marker saying the language was asked
+    -- for and had nothing, not something to serve.
     CREATE TABLE IF NOT EXISTS translations (
         subject_kind TEXT NOT NULL,   -- 'item'|'show'|'episode'|'season_cast'|'curated'|'suggestion'
         subject_id   TEXT NOT NULL,
         lang         TEXT NOT NULL,   -- a code from i18n::SUPPORTED_LOCALES
         source       TEXT NOT NULL,   -- 'tmdb' | 'llm' | 'manual'
-        data         TEXT NOT NULL,   -- JSON: {title,overview,tagline,genres,logoUrl,characters?,reason?}
+        data         TEXT NOT NULL,   -- JSON: {title,overview,tagline,genres,posterUrl?,logoUrl?,characters?,reason?,rev?}
         updated_at   INTEGER NOT NULL,
         PRIMARY KEY (subject_kind, subject_id, lang)
     );
-    -- Serve a whole home row in one language in a single indexed scan
-    -- (WHERE subject_kind=? AND lang=? AND subject_id IN (...)).
+    -- For the reads that name a language but no subject: which genres the
+    -- catalogue holds, and which titles carry one of them. A read that does
+    -- name its subjects is served by the primary key instead.
     CREATE INDEX IF NOT EXISTS idx_translations_lang ON translations(subject_kind, lang);
 
     -- The two SHARED tables below are written by a module and read by the core.

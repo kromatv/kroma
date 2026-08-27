@@ -16,6 +16,10 @@
 //! Split into the [`store`] (map + persistence + defaults), the typed functional
 //! [`accessors`] (+ library defs), and the admin view-model [`schema`].
 
+/// The dropdown value that means "no explicit choice": the fallback language
+/// defers to the server's own default.
+pub const TMDB_LANGUAGE_AUTO: &str = "Auto";
+
 mod accessors;
 mod llm;
 mod schema;

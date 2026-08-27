@@ -132,7 +132,7 @@ fn defaults() -> BTreeMap<String, Value> {
     m.insert("moduleRegistries".into(), json!([]));
     m.insert("uiLanguage".into(), json!("Français"));
     // Empty → the env-configured `KROMA_TMDB_LANGUAGE` (default "en-US").
-    m.insert("tmdbLanguage".into(), json!(""));
+    m.insert("tmdbLanguage".into(), json!(super::TMDB_LANGUAGE_AUTO));
     m.insert("timezone".into(), json!("Europe/Zurich (UTC+1)"));
     m.insert("autoUpdate".into(), json!(true));
     m.insert("updateChannel".into(), json!("Stable"));
@@ -230,7 +230,7 @@ fn defaults() -> BTreeMap<String, Value> {
     m.insert("namingCase".into(), json!("default"));
     // openai = any OpenAI-compatible server (Ollama, llama.cpp, LM Studio, …);
     // anthropic = Claude.
-    m.insert("llmEnabled".into(), json!(false));
+    m.insert("llmEnabled".into(), json!(true));
     m.insert("llmProvider".into(), json!("openai"));
     m.insert("llmBaseUrl".into(), json!(""));
     m.insert("llmModel".into(), json!(""));

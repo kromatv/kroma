@@ -24,6 +24,9 @@ pub fn set_item_metadata(pool: &Pool, id: &str, meta: &Metadata) -> Result<()> {
 /// Dual-writes one subject's metadata: a language-agnostic [`metadata_core`]
 /// row plus a [`translations`] row per language. Character names align by
 /// index to `core_meta`'s cast (TMDB keeps cast order across languages).
+///
+/// A language row carries the poster and the logo only where they differ from
+/// the core.
 pub fn store_localized(
     pool: &Pool,
     kind: &str,
@@ -55,12 +58,80 @@ pub fn store_localized(
             genres: m.genres.clone(),
             characters: m.cast.iter().map(|c| c.character.clone()).collect(),
             reason: None,
+            poster_url: differing_from(&m.poster_url, Some(&core.poster_url)),
+            logo_url: differing_from(&m.logo_url, Some(&core.logo_url)),
+            rev: translations::REV,
         };
         if !data.is_empty() {
             translations::write(&conn, kind, id, lang, translations::TMDB, &data)?;
         }
     }
     Ok(())
+}
+
+/// Write only the per-language rows, leaving the core alone: re-deriving it from
+/// whichever language happened to be fetched would move the artwork every
+/// fallback reader sees.
+pub fn fill_languages(
+    pool: &Pool,
+    kind: &str,
+    id: &str,
+    by_lang: &HashMap<String, Metadata>,
+    asked: &[String],
+) -> Result<()> {
+    let core = metadata_core::get_core(pool, kind, id)?;
+    let conn = pool.get()?;
+    // A language TMDB answered nothing for gets a row carrying only the
+    // revision, so the reader falls back and the next pass does not ask again.
+    for lang in asked {
+        if by_lang.contains_key(lang) {
+            continue;
+        }
+        translations::write(
+            &conn,
+            kind,
+            id,
+            lang,
+            translations::TMDB,
+            &TransData {
+                rev: translations::REV,
+                ..TransData::default()
+            },
+        )?;
+    }
+    let core_cast = core.as_ref().map_or(0, |c| c.cast.len());
+    for (lang, m) in by_lang {
+        // The character names are index-aligned to the core's cast, which this
+        // pass deliberately leaves alone. A credit added on TMDB since shifts
+        // them by one and labels every actor after it with the wrong part, so
+        // they are written only while the two still line up.
+        let characters: Vec<Option<String>> = if m.cast.len() == core_cast {
+            m.cast.iter().map(|c| c.character.clone()).collect()
+        } else {
+            Vec::new()
+        };
+        let data = TransData {
+            title: m.title.clone(),
+            tagline: m.tagline.clone(),
+            overview: m.overview.clone(),
+            genres: m.genres.clone(),
+            characters,
+            reason: None,
+            poster_url: differing_from(&m.poster_url, core.as_ref().map(|c| &c.poster_url)),
+            logo_url: differing_from(&m.logo_url, core.as_ref().map(|c| &c.logo_url)),
+            rev: translations::REV,
+        };
+        if !data.is_empty() {
+            translations::write(&conn, kind, id, lang, translations::TMDB, &data)?;
+        }
+    }
+    Ok(())
+}
+
+fn differing_from(lang: &Option<String>, core: Option<&Option<String>>) -> Option<String> {
+    lang.as_ref()
+        .filter(|v| core.and_then(Option::as_ref) != Some(*v))
+        .cloned()
 }
 
 /// Wipes all resolved TMDB metadata so the next enrichment starts from
@@ -174,6 +245,177 @@ pub fn clear_subject_metadata(pool: &Pool, kind: &str, id: &str) -> Result<()> {
 mod tests {
     use super::*;
     use crate::ingest::test_support::*;
+
+    fn cast_member(name: &str) -> kroma_domain::CastMember {
+        kroma_domain::CastMember {
+            name: name.into(),
+            tmdb_id: None,
+            character: Some(format!("{name} part")),
+            profile_url: None,
+        }
+    }
+
+    #[test]
+    fn character_names_are_not_written_onto_a_cast_that_has_moved_on() {
+        let p = pool();
+        {
+            let conn = p.get().unwrap();
+            conn.execute(
+                "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t')",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('m1','movie','Dune','mkv','lib','t')",
+                [],
+            )
+            .unwrap();
+        }
+        let mut core = meta(603, "Dune");
+        core.cast = vec![cast_member("Chalamet"), cast_member("Ferguson")];
+        store_localized(&p, metadata_core::ITEM, "m1", &core, &HashMap::new()).unwrap();
+
+        // TMDB gained a credit since, so this response has three where the core
+        // still has two. Aligned by index, the names would land on the wrong
+        // actors for every French reader.
+        let mut grown = meta(603, "Dune");
+        grown.cast = vec![
+            cast_member("Chalamet"),
+            cast_member("Zendaya"),
+            cast_member("Ferguson"),
+        ];
+        let mut by_lang = HashMap::new();
+        by_lang.insert("fr".to_string(), grown);
+
+        fill_languages(&p, metadata_core::ITEM, "m1", &by_lang, &["fr".to_string()]).unwrap();
+
+        let all = crate::translations::load_all(&p, metadata_core::ITEM, &["m1"]).unwrap();
+        let fr = all.get("m1").and_then(|by| by.get("fr")).unwrap();
+        assert!(fr.characters.is_empty());
+        assert_eq!(fr.title.as_deref(), Some("Dune"));
+    }
+
+    #[test]
+    fn a_language_that_was_not_asked_for_keeps_what_it_had() {
+        let p = pool();
+        {
+            let conn = p.get().unwrap();
+            conn.execute(
+                "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t')",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('m1','movie','Dune','mkv','lib','t')",
+                [],
+            )
+            .unwrap();
+        }
+        let core = meta(603, "Dune");
+        let mut both = HashMap::new();
+        both.insert("en".to_string(), core.clone());
+        both.insert("fr".to_string(), meta(603, "Dune (VF)"));
+        store_localized(&p, metadata_core::ITEM, "m1", &core, &both).unwrap();
+
+        // French came back empty because its request failed, not because TMDB
+        // has nothing. Marking it would destroy the row and stamp it current,
+        // so the caller leaves it out of `asked` and it must survive untouched.
+        fill_languages(
+            &p,
+            metadata_core::ITEM,
+            "m1",
+            &HashMap::new(),
+            &["en".to_string()],
+        )
+        .unwrap();
+
+        let all = crate::translations::load_all(&p, metadata_core::ITEM, &["m1"]).unwrap();
+        let fr = all.get("m1").and_then(|by| by.get("fr"));
+        assert_eq!(fr.and_then(|d| d.title.as_deref()), Some("Dune (VF)"));
+    }
+
+    #[test]
+    fn a_language_tmdb_has_nothing_for_is_asked_once_and_not_again() {
+        let p = pool();
+        {
+            let conn = p.get().unwrap();
+            conn.execute(
+                "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t')",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('m1','movie','Dune','mkv','lib','t')",
+                [],
+            )
+            .unwrap();
+        }
+        let core = meta(603, "Dune");
+        let mut first = HashMap::new();
+        first.insert("en".to_string(), core.clone());
+        store_localized(&p, metadata_core::ITEM, "m1", &core, &first).unwrap();
+
+        fill_languages(
+            &p,
+            metadata_core::ITEM,
+            "m1",
+            &HashMap::new(),
+            &["fr".to_string()],
+        )
+        .unwrap();
+
+        // The marker records that French was asked for and had nothing, so it
+        // stops being asked. It must not shadow the fallback while doing it: a
+        // French reader reads English, which is the whole point of having one.
+        let fr = crate::translations::resolve_one(&p, metadata_core::ITEM, "m1", "fr")
+            .unwrap()
+            .unwrap();
+        assert_eq!(fr.title.as_deref(), Some("Dune"));
+
+        let stale =
+            crate::translations::stale_langs(&p, metadata_core::ITEM, "m1", &["fr", "en"]).unwrap();
+        assert!(stale.is_empty(), "still stale: {stale:?}");
+    }
+
+    #[test]
+    fn a_language_added_later_is_filled_without_moving_the_core() {
+        let p = pool();
+        {
+            let conn = p.get().unwrap();
+            conn.execute(
+                "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t')",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('m1','movie','Dune','mkv','lib','t')",
+                [],
+            )
+            .unwrap();
+        }
+        let mut core = meta(603, "Dune");
+        core.poster_url = Some("/en.webp".to_string());
+        let mut first = HashMap::new();
+        first.insert("en".to_string(), core.clone());
+        store_localized(&p, metadata_core::ITEM, "m1", &core, &first).unwrap();
+
+        let mut fr = meta(603, "Dune VF");
+        fr.poster_url = Some("/fr.webp".to_string());
+        let mut later = HashMap::new();
+        later.insert("fr".to_string(), fr);
+        fill_languages(&p, metadata_core::ITEM, "m1", &later, &["fr".to_string()]).unwrap();
+
+        let stored = crate::translations::resolve_one(&p, metadata_core::ITEM, "m1", "fr")
+            .unwrap()
+            .unwrap();
+        assert_eq!(stored.title.as_deref(), Some("Dune VF"));
+        assert_eq!(stored.poster_url.as_deref(), Some("/fr.webp"));
+
+        let after = metadata_core::get_core(&p, metadata_core::ITEM, "m1")
+            .unwrap()
+            .unwrap();
+        assert_eq!(after.poster_url.as_deref(), Some("/en.webp"));
+    }
 
     #[test]
     fn metadata_write_localized_and_reset() {
@@ -361,7 +603,7 @@ mod tests {
     }
 
     #[test]
-    fn a_language_that_translates_nothing_leaves_no_row_behind() {
+    fn a_language_that_translates_nothing_is_recorded_but_never_served() {
         let p = pool();
         let bare = Metadata {
             title: None,
@@ -373,8 +615,13 @@ mod tests {
         let by_lang = HashMap::from([("de".to_string(), bare)]);
         store_localized(&p, metadata_core::ITEM, "m1", &meta(603, "Dune"), &by_lang).unwrap();
 
+        // A reader must not resolve to it: with no text of its own it would
+        // shadow the fallback and serve them the household's blob instead.
         assert!(crate::translations::resolve_one(&p, "item", "m1", "de")
             .unwrap()
             .is_none());
+        // The row is there all the same, so nothing asks TMDB for German again.
+        let stored = crate::translations::load_all(&p, metadata_core::ITEM, &["m1"]).unwrap();
+        assert!(stored.get("m1").is_some_and(|by| by.contains_key("de")));
     }
 }

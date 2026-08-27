@@ -1,7 +1,7 @@
 // Client-side authentication context: one authed KromaClient plus the
 // web-specific login, passkey and registration flows over `useAuthSession`.
 
-import { KromaClient, type StoredSession, type User } from '@kroma/core';
+import { activeLocale, KromaClient, type StoredSession, type User } from '@kroma/core';
 import { type ActivateResult, useAuthSession } from '@kroma/ui';
 import { useRouter } from '@tanstack/react-router';
 import { createContext, type ReactNode, useCallback, useContext, useMemo } from 'react';
@@ -33,7 +33,7 @@ interface AuthValue {
 const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const client = useMemo(() => new KromaClient({ baseUrl: apiBase() }), []);
+  const client = useMemo(() => new KromaClient({ baseUrl: apiBase(), locale: activeLocale() }), []);
   const auth = useAuthSession(client);
   const router = useRouter();
 
