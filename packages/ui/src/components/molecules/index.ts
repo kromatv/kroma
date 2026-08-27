@@ -29,6 +29,8 @@ export type { DataFieldRootProps, DataFieldValueProps } from './data-field';
 export { DataField } from './data-field';
 export type { DisclosureRootProps, DisclosureTriggerProps } from './disclosure';
 export { Disclosure } from './disclosure';
+export type { DropzoneRejection, DropzoneRootProps } from './dropzone';
+export { Dropzone } from './dropzone';
 export type { EmptyStateLayout, EmptyStateRootProps, EmptyStateSize } from './empty-state';
 export { EmptyState } from './empty-state';
 export type { FieldInputProps, FieldRootProps, FieldTextareaProps } from './field';

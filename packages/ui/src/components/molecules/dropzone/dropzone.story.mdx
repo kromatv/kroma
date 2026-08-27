@@ -1,0 +1,44 @@
+import { defineStory } from '@kroma/workbench/story';
+import { Bounded, Busy, Demo, OneKind } from './dropzone.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  component: Demo,
+  args: {
+    label: 'Upload a file',
+    accept: '.torrent',
+    multiple: false,
+    disabled: false,
+    loading: false,
+  },
+});
+
+The surface a file arrives on. It takes one two ways, dragged from the desktop or picked through the OS dialog when it is clicked, and it is the same control either way: the click opens a real hidden `<input type="file">`, so a keyboard or a screen reader is never shut out of a pattern that looks like it needs a mouse. The dashed edge is the whole point of the shape, because a filled control reads as something that DOES a thing when pressed rather than somewhere a thing goes. It highlights while a file is over it, and both of its rules are enforced before anything reaches the caller: `accept` filters the drop as well as the picker, `maxSize` turns away what is too big, and what was refused comes back through `onReject` with the rule it broke so the screen can SAY so instead of appearing to ignore the file. A zone that is `loading` stops taking anything and spins in place of its faces, which is what stops a slow upload being started twice.
+
+Dragging a file is a pointer-and-filesystem idea and a television has neither, so the native build draws the same surface as a plain focusable and opens nothing; a shell that wants a file there reaches for the platform's own picker.
+
+```tsx
+<Dropzone.Root accept=".torrent" maxSize={1024 * 1024} onDrop={([file]) => queue(file)}>
+  <Dropzone.Icon />
+  <Dropzone.Title>Drop a .torrent here</Dropzone.Title>
+  <Dropzone.Description>or click to browse</Dropzone.Description>
+</Dropzone.Root>
+```
+
+<Demo />
+
+## Only one kind of file
+
+`accept` filters the drop as well as the picker, so a dragged file that does not match is refused with `reason: 'type'` rather than quietly accepted.
+
+<OneKind />
+
+## A ceiling
+
+`maxSize` is in bytes, and what it turns away arrives in `onReject`. That is where the message an operator reads comes from.
+
+<Bounded />
+
+## While it works
+
+<Busy />
