@@ -15,9 +15,10 @@ tracking of any kind. There is no KROMA account to create, so there is nothing
 for us to hold. The app talks to the server you point it at, and (unless you
 sign in) to nothing else at all.
 
-**Your server can be asked to be counted, and is not by default.** The KROMA
-server software has one optional setting, off until an operator switches it on,
-that sends us a single anonymous payload a day: a random identifier that server
+**Your server counts itself among the KROMA installs running in the world, and
+you can stop it.** The server software has one setting, on by default and
+switched off in Admin → General → Privacy, that sends us a single anonymous
+payload a day: a random identifier that server
 minted for itself, its version and platform, how many devices used it in the
 last week, which languages those devices asked for, which official modules are
 on, and coarse size bands. It carries no name, no address, no titles and no
@@ -99,11 +100,11 @@ Your data is in two places, both of which you control: this device, and your
 server. Uninstalling the app clears the first. For the second, the operator of
 that server (normally you) decides what is kept and can delete it.
 
-If you switched anonymous statistics on, we hold one row naming your server by a
-random identifier, on the basis of that consent and nothing else. You can
-withdraw it with the same switch, read the exact payload in your server's own job
-log, and erase the row yourself with the identifier shown in Admin → General →
-Privacy:
+Unless you switched anonymous statistics off, we hold one row naming your server
+by a random identifier, on the basis of our legitimate interest in knowing what
+is running. You can object with that same switch, at once and without giving a
+reason, read the exact payload in your server's own job log, and erase the row
+yourself with the identifier shown in Admin → General → Privacy:
 
 ```
 curl -X POST https://stats.kroma.tv/v1/forget \
@@ -118,8 +119,7 @@ the legal basis, the processors and the retention periods, is
 to complain to a supervisory authority: in Switzerland the FDPIC, in the EU the
 authority for your country.
 
-If you did not switch it on, we hold nothing about you to disclose, correct or
-erase.
+If you switched it off before its first report, we hold nothing about you at all.
 
 ## Changes to this policy
 

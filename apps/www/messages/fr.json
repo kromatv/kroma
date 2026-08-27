@@ -358,7 +358,7 @@
   "stats_head_description": "Combien de serveurs KROMA tournent, dans quelles versions, et combien de téléviseurs, téléphones et ordinateurs ils desservent. Comptés depuis les serveurs dont les propriétaires ont activé les statistiques anonymes.",
   "stats_eyebrow": "Dans le monde",
   "stats_title": "KROMA, compté",
-  "stats_intro": "Chaque nombre ici vient de serveurs dont les propriétaires ont choisi d'être comptés. Les statistiques sont désactivées tant que personne ne les active, et un serveur envoie un seul relevé anonyme par jour : un identifiant aléatoire, une version, une plateforme, le nombre d'appareils utilisés cette semaine, les modules officiels activés et des tranches approximatives. Aucun nom, aucune adresse, aucun titre.",
+  "stats_intro": "Chaque nombre ici vient de serveurs KROMA qui envoient un relevé anonyme. Un serveur envoie un relevé par jour : un identifiant aléatoire, une version, une plateforme, le nombre d'appareils utilisés cette semaine, les langues que ces appareils demandent, les modules officiels activés et des tranches approximatives. Aucun nom, aucune adresse, aucun titre. Chaque opérateur peut le désactiver, et certains l'ont fait.",
   "stats_loading": "Lecture du collecteur…",
   "stats_failed": "Le collecteur est injoignable pour l'instant. La page n'a rien à montrer tant qu'il ne répond pas.",
   "stats_tile_instances": "Serveurs actifs",
@@ -380,9 +380,9 @@
   "stats_empty": "Rien à montrer pour l'instant.",
   "stats_other": "Tout le reste",
   "stats_method_title": "Comment c'est compté",
-  "stats_method_body": "Un serveur compte après sept jours de relevés, et cesse de compter trente jours après son dernier relevé. Une répartition n'est publiée que si au moins cinq serveurs la partagent, pour qu'une installation isolée ne soit jamais désignée. Les nouveaux venus identiques arrivés ensemble sont mis de côté. Rien ici n'est prouvable : le serveur est un logiciel libre que chacun peut modifier, alors voyez ces nombres comme un plancher, pas comme un recensement.",
+  "stats_method_body": "Un serveur compte après sept jours de relevés, et cesse de compter trente jours après son dernier relevé. Une répartition n'est publiée que si au moins cinq serveurs la partagent, pour qu'une installation isolée ne soit jamais désignée. Rien ici n'est prouvable : le serveur est un logiciel libre que chacun peut modifier, et chacun peut désactiver l'envoi, alors ces nombres ne sont ni un plancher ni un recensement.",
   "stats_updated": "Dernière mise à jour {when}.",
   "stats_optin_title": "Être compté, ou pas",
-  "stats_optin_body": "Administration → Général → Confidentialité, sur votre propre serveur. C'est désactivé tant que vous ne l'activez pas, et Administration → Tâches → Statistiques anonymes affiche le relevé exact avant l'envoi.",
+  "stats_optin_body": "Administration → Général → Confidentialité, sur votre propre serveur. C'est activé par défaut et le désactiver l'arrête aussitôt. Administration → Tâches → Statistiques anonymes affiche le relevé exact qui a été envoyé.",
   "stats_privacy_link": "Ce qui est collecté, sur quelle base, et comment l'effacer"
 }

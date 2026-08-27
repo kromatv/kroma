@@ -6,12 +6,12 @@
 
 ## Summary
 
-Add one opt-in setting to the server that, while it is on, posts a single
-anonymous payload a day to a new Worker at `stats.kroma.tv`: a random identifier
+Add one setting to the server, **on by default**, that while it is on posts a
+single  a random identifier
 the server minted for itself, its version and platform, how many devices used it
 this week and in which languages, which official modules are enabled, and coarse
-size bands. Publish the aggregate at kroma.tv/stats. Nothing is sent until an
-operator switches it on, and no KROMA app ever contacts the collector.
+size bands. Publish the aggregate at kroma.tv/stats. An operator switches it off
+in one place, and no KROMA app ever contacts the collector.
 
 ## Motivation
 
@@ -32,9 +32,20 @@ the reader this is meant to find.
 
 ## Proposal
 
-**Opt-in, off by default.** `anonStats` already exists in the settings defaults
-at `false`, already translated in both catalogs, read by nothing. This fills that
-slot and surfaces it under Admin → General → Privacy.
+**On by default, off in one switch.** `anonStats` already exists in the settings
+defaults, already translated in both catalogs, read by nothing. This fills that
+slot, flips the default to on, and surfaces it under Admin → General → Privacy.
+
+The basis is **legitimate interests (Art 6(1)(f))**, not consent. A default-on
+switch is not consent, and calling it consent is the kind of claim the code
+contradicts. The balancing test is written out in
+[`docs/anonymous-stats-gdpr.md`](../anonymous-stats-gdpr.md), together with the
+argument that the stored data is very likely not personal data at all: KROMA has
+no address, no account and no third party holding a mapping from an identifier to
+a person, so under Recital 26 there are no means reasonably likely to be used to
+identify anyone. The document does not lean on that argument, because a position
+that only holds if you win a contested reading is not a position worth resting
+on. It applies the full treatment anyway.
 
 **The server reports, never the app.** A television, phone or browser talks to
 its own server and to nothing else, which is what `PRIVACY.md` promises and what
@@ -64,19 +75,23 @@ new field is a change to it and to the schema number.
 
 ## What this costs
 
-**A promise, rewritten.** `PRIVACY.md`, both legal pages and the home page said
-"no telemetry" without qualification. They now say the apps collect nothing and
-the server can be asked to be counted. That is a smaller promise than the one
-made before, and the smaller promise is the one that will still be true.
+**A promise, rewritten, and this is the real cost.** `PRIVACY.md`, both legal
+pages and the home page said "no telemetry" without qualification. They now say
+the apps collect nothing and the server counts itself unless told not to. That is
+a smaller promise than the one made before. Self-hosted media is the audience
+least willing to be surprised by this, so the release that carries it says so in
+its own notes rather than in a footnote, and the switch is in the first settings
+page an operator opens.
 
 **A service to keep running, indefinitely.** `stats.kroma.tv` joins
 `push.kroma.tv`, `modules.kroma.tv` and `packages.kroma.tv` as something that
 has to stay up, be paid for, and be answered for. It is the first thing in this
 repository with a database binding.
 
-**A number that will be wrong.** Opt-in means the published count is a floor and
-nothing more. Anyone quoting it as adoption is quoting it wrongly, which is why
-the page says so in its own copy rather than in a footnote.
+**A number that will still be wrong.** Anyone can switch reporting off, and a
+fork can strip it, so the published count is neither a floor nor a census.
+Anyone quoting it as adoption is quoting it wrongly, which is why the page says
+so in its own copy rather than in a footnote.
 
 **A field that cannot be un-shipped.** Once `locales` is published, dropping it
 looks like hiding something. Every field here should be one worth defending in
@@ -97,13 +112,15 @@ absent from the set.
 option and it costs only the four questions above staying unanswered. The reason
 not to take it is that they are being answered anyway, by guessing.
 
-**Opt-out, on by default.** The truest count, and the position hardest to defend
-for GPL self-hosted software in the EU. Rejected.
+**Opt-in, off by default.** What this RFC originally proposed, and what was built
+first. Rejected on review: a number nobody sees is not worth the machinery behind
+it, and the case that this data is personal data at all is weak enough that
+demanding consent for it overstates what is being collected. The cost of the
+change is honesty about the promise, which is paid in the section above.
 
-**Ask on first admin login.** Better participation than a buried toggle. Rejected
-for now because it puts a consent dialog in the first-run flow, which is the one
-place a new operator should meet nothing but their library. Worth revisiting once
-the toggle has been out long enough to see whether anyone finds it.
+**Ask on first admin login.** Better than a buried toggle either way. Rejected
+because it puts a dialog in the first-run flow, which is the one place a new
+operator should meet nothing but their library.
 
 **Clients report directly.** Per-app numbers even from servers that opted out, at
 the cost of making the apps data collectors and breaking the "the app talks to

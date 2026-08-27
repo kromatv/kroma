@@ -5,14 +5,18 @@ is no way to tell whether a version is still out there before dropping support
 for it, no way to tell which modules are worth maintaining, and no answer to
 "how many people use this".
 
-This is the answer, and it is **off until you turn it on**.
+This is the answer, and it is **on until you turn it off**.
 
 ## The short version
 
-Admin → General → Privacy → *Anonymous usage statistics*. While it is off,
-nothing is sent and no identifier exists. While it is on, the server posts one
-payload a day to `stats.kroma.tv` and the numbers appear on
-[kroma.tv/stats](https://kroma.tv/stats).
+Admin → General → Privacy → *Anonymous usage statistics*. While it is on, the
+server posts one payload a day to `stats.kroma.tv` and the numbers appear on
+[kroma.tv/stats](https://kroma.tv/stats). Switch it off and it stops at once.
+
+The basis is legitimate interests rather than consent, because a default-on
+switch is not consent and calling it that would be a claim the code contradicts.
+The balancing test behind that, and the right to object, are in
+[`anonymous-stats-gdpr.md`](anonymous-stats-gdpr.md).
 
 **The apps send nothing.** A television, a phone or a browser talks to your
 server and to nothing else, exactly as before. The heartbeat is the server's,
@@ -40,7 +44,7 @@ One JSON body, once a day. This is all of it:
 
 | Field | What it is |
 |---|---|
-| `id` | 32 random bytes this server minted for itself the first time you switched statistics on. Not derived from any hardware, not the `instanceId` on `/api/health`, and never joined to an address. |
+| `id` | 32 random bytes this server minted for itself on the first start after this shipped. Not derived from any hardware, not the `instanceId` on `/api/health`, and never joined to an address. |
 | `version`, `commit` | Which build is running, so a version can be retired once nobody runs it. |
 | `target` | The build triple. The collector keeps only the operating system half of it. |
 | `install` | `docker`, `synology`, `binary` or `unknown`, from `KROMA_INSTALL`. |
@@ -60,13 +64,13 @@ module you installed from a third-party registry.
 ## Checking rather than trusting
 
 Admin → Jobs → *Anonymous statistics* → Run now. The run log prints the exact
-bytes that would leave the box, and prints `anonymous statistics are off;
-nothing was sent` when the toggle is off. The code is
+bytes that left the box, and prints `anonymous statistics are off; nothing was
+sent` when the toggle is off. The code is
 `server/crates/kroma-engine/src/services/stats/`.
 
 ## Turning it off, and erasing what was sent
 
-The same toggle. The server stops sending immediately. Its row drops out of the
+The toggle in Admin → General → Privacy. The server stops sending immediately. Its row drops out of the
 published numbers 30 days after its last report, and is deleted from the
 collector 90 days after it.
 

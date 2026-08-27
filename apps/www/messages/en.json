@@ -358,7 +358,7 @@
   "stats_head_description": "How many KROMA servers are running, on which versions, and how many televisions, phones and computers they serve. Counted from the servers whose owners switched anonymous statistics on.",
   "stats_eyebrow": "In the world",
   "stats_title": "KROMA, counted",
-  "stats_intro": "Every number here comes from servers whose owners chose to be counted. Statistics are off until someone turns them on, and what a server sends is one anonymous payload a day: a random identifier, a version, a platform, how many devices used it this week, which official modules are on, and coarse size bands. No name, no address, no titles.",
+  "stats_intro": "Every number here comes from KROMA servers reporting anonymously. A server sends one payload a day: a random identifier, a version, a platform, how many devices used it this week, the languages those devices ask for, which official modules are on, and coarse size bands. No name, no address, no titles. Any operator can switch it off, and some have.",
   "stats_loading": "Reading the collector…",
   "stats_failed": "The collector is unreachable right now. The page has nothing to show until it answers.",
   "stats_tile_instances": "Servers running",
@@ -380,9 +380,9 @@
   "stats_empty": "Nothing to show yet.",
   "stats_other": "Everything else",
   "stats_method_title": "How this is counted",
-  "stats_method_body": "A server counts once it has reported for seven days, and stops counting thirty days after its last report. A breakdown is published only where at least five servers share it, so a lone install is never singled out. Identical newcomers arriving together are set aside. Nothing here can be proved: the server is free software anyone can change, so treat these as the floor of what is out there, not a census.",
+  "stats_method_body": "A server counts once it has reported for seven days, and stops counting thirty days after its last report. A breakdown is published only where at least five servers share it, so a lone install is never singled out. Nothing here can be proved: the server is free software anyone can change, and anyone can switch reporting off, so treat these as neither a floor nor a census.",
   "stats_updated": "Last updated {when}.",
   "stats_optin_title": "Be counted, or don't",
-  "stats_optin_body": "Admin → General → Privacy, on your own server. It is off until you switch it on, and Admin → Jobs → Anonymous statistics prints the exact payload before it is sent.",
+  "stats_optin_body": "Admin → General → Privacy, on your own server. It is on by default and switching it off stops it at once. Admin → Jobs → Anonymous statistics prints the exact payload that was sent.",
   "stats_privacy_link": "What is collected, on what basis, and how to erase it"
 }

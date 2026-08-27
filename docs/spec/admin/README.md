@@ -224,9 +224,9 @@ When something is wrong, the owner needs to see it and hand it to someone who ca
   report is therefore a single click, not a scavenger hunt, and it is safe to attach to a
   public issue.
 - **Being counted.** The owner may let this install be counted among the KROMA servers
-  running in the world. It is off until they switch it on, it sends one anonymous payload
-  a day and nothing when off, and it carries no name, no address, no titles and no exact
-  counts. The payload is printed in full in its own job log before it is sent, so the
+  running in the world. It is on by default and one switch stops it at once, it sends one
+  anonymous payload a day and nothing when off, and it carries no name, no address, no
+  titles and no exact counts. The payload is printed in full in its own job log before it is sent, so the
   claim is checkable rather than trusted. What is in it is
   [`docs/anonymous-stats.md`](../../anonymous-stats.md).
 

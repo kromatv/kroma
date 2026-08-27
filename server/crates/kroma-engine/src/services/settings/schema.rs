@@ -716,15 +716,19 @@ mod tests {
     }
 
     #[test]
-    fn the_general_view_offers_anonymous_statistics_and_offers_them_off() {
+    fn the_general_view_offers_anonymous_statistics_and_offers_them_on() {
         let pool = test_pool();
         let s = Settings::load(&pool);
 
         let groups = groups("general", &s, &test_config(), "en");
 
-        let row = find_row(&groups, "anonStats").expect("the privacy group carries the toggle");
+        let row = find_row(&groups, "anonStats").expect("the privacy group carries the switch");
         assert_eq!(row.kind, "toggle");
-        assert_eq!(row.value, json!(false));
+        assert_eq!(
+            row.value,
+            json!(true),
+            "on by default, and one switch stops it"
+        );
         assert!(row.applied);
     }
 

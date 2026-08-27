@@ -40,22 +40,52 @@ machine. This record covers only what leaves it.
 
 ## Legal basis
 
-**Consent, Article 6(1)(a).** Nothing else is relied on, and legitimate interest
-is deliberately not claimed.
+**Legitimate interests, Article 6(1)(f).** Statistics are on by default and an
+operator switches them off in Admin → General → Privacy.
 
-The consent has to be worth the name, so:
+Consent is not relied on, and saying so plainly matters: a default-on switch is
+not consent, and calling it consent would be the kind of claim that fails the
+moment anyone reads the code.
 
-- **Freely given.** KROMA works identically with statistics off, which is how it
-  ships. Nothing is withheld, degraded, or nagged about.
-- **Specific.** The toggle does one thing. It is not bundled with updates, crash
-  reports or anything else.
-- **Informed.** Every field is documented, and the server prints the exact bytes
-  in its own job log before sending them, so the description can be checked
-  rather than believed.
-- **Unambiguous.** A switch an administrator moves, defaulted off. No pre-ticked
-  box, no consent inferred from continued use.
-- **Withdrawable as easily as given.** The same switch, taking effect on the next
-  run, with no explanation asked for.
+### The balancing test
+
+**The interest.** Knowing which versions are still running, which platforms are
+still in use, which official modules have users, and which languages readers
+actually ask for. Without it a version is retired by guessing, a module is
+maintained or dropped by guessing, and the question of what to translate next
+has no answer at all. That is a real and present interest of the project, not a
+speculative one.
+
+**Necessity.** The processing is limited to what answers those four questions.
+Every field maps to one of them (see the table below), and the fields that would
+answer them more precisely, exact counts and an install's address, are the ones
+deliberately left out. There is no less intrusive way to learn how many servers
+are running than to have servers say so.
+
+**Balance against the operator's rights.** The data cannot be traced to a person
+by the project or by anyone else it reaches: no address is stored, no account
+exists, no third party holds a mapping from the identifier to a human. The
+identifier is minted locally, at random, by the software. Nothing is sold,
+shared, profiled or used to make a decision about anyone. Against that, the
+intrusion is one HTTP request a day carrying a version string and some coarse
+bands.
+
+An operator who disagrees is not asked to justify it: the switch is in the
+settings page, it takes effect at once, and the row can be erased outright with
+a single request that needs nobody's permission.
+
+**Safeguards**, each of which exists because of this balance: coarse bands
+instead of counts, a device ceiling, a set of language tags rather than
+per-device values, only official module ids, no address stored, a floor of five
+before any breakdown is published, and deletion ninety days after a server goes
+quiet.
+
+### Transparency
+
+Article 13 is met by this document, by
+[`anonymous-stats.md`](anonymous-stats.md), by both published privacy pages, and
+by the server itself: the job prints the exact bytes it sent in its own run log,
+so the description here can be checked rather than believed.
 
 ## What is processed
 
@@ -106,7 +136,7 @@ addendum.
 
 | Right | How |
 |---|---|
-| Withdraw consent (Art. 7(3)) | Admin → General → Privacy. Takes effect at once. |
+| Object (Art. 21) | Admin → General → Privacy. Takes effect at once, and no reason is asked for. Where processing rests on legitimate interests this is the right that answers it, and here it is a switch rather than a request. |
 | Access (Art. 15) | Admin → Jobs → Anonymous statistics → Run now prints the exact payload. The identifier is shown in Admin → General → Privacy. |
 | Erasure (Art. 17) | `POST https://stats.kroma.tv/v1/forget` with `{"id":"<your identifier>"}`. Self-service, immediate, no request to anyone. Withdraw consent first: a server still reporting writes the row again the next day. |
 | Rectification (Art. 16) | The next day's payload replaces the row. |

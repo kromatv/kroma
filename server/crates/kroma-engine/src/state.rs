@@ -129,6 +129,12 @@ impl AppState {
         // Mint (or read back) this install's stable identity before anything can
         // serve `/api/health`.
         let instance_id = crate::services::settings::ensure_instance_id(&settings, &db);
+        // Minted here rather than on the statistics job's first run: the settings
+        // page shows it and an operator quotes it to have their row erased, so it
+        // has to exist from the moment the feature is on rather than an hour later.
+        if settings.get_bool(crate::services::stats::ENABLED_KEY, true) {
+            crate::services::stats::ensure_identity(&settings, &db);
+        }
         // Offline downloads draw from the same operator-facing budget as the HLS
         // remux sessions rather than inventing a second knob.
         let downloads = Arc::new(tokio::sync::Semaphore::new(

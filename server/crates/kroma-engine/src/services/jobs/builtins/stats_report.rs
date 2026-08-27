@@ -41,13 +41,16 @@ mod tests {
     use crate::test_support::test_state;
 
     #[test]
-    fn a_run_on_an_install_that_never_opted_in_succeeds_and_sends_nothing() {
+    fn a_run_on_an_install_that_switched_it_off_succeeds_and_sends_nothing() {
         let state = test_state();
+        state.settings.set_patch(
+            &state.db,
+            [(stats::ENABLED_KEY.to_string(), serde_json::json!(false))].into(),
+        );
         let ctx = JobContext::for_test(state.clone());
 
         run(&ctx).unwrap();
 
-        assert_eq!(state.settings.get_str(stats::ID_KEY, ""), "");
         assert_eq!(state.settings.get_str(stats::SENT_KEY, ""), "");
     }
 }

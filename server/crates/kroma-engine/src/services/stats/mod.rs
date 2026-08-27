@@ -171,9 +171,16 @@ mod tests {
             .set_patch(&state.db, [(ENABLED_KEY.to_string(), json!(true))].into());
     }
 
+    fn switch_off(state: &SharedState) {
+        state
+            .settings
+            .set_patch(&state.db, [(ENABLED_KEY.to_string(), json!(false))].into());
+    }
+
     #[test]
-    fn an_install_nobody_opted_in_sends_nothing_and_mints_no_id() {
+    fn an_install_whose_operator_switched_it_off_sends_nothing() {
         let state = test_state();
+        switch_off(&state);
         let calls = AtomicUsize::new(0);
 
         let report = report(&state, |_, _| {
@@ -184,8 +191,19 @@ mod tests {
 
         assert_eq!(report, Report::Off);
         assert_eq!(calls.load(Ordering::SeqCst), 0);
-        assert_eq!(state.settings.get_str(ID_KEY, ""), "");
         assert_eq!(state.settings.get_str(SENT_KEY, ""), "");
+    }
+
+    #[test]
+    fn statistics_are_on_until_somebody_turns_them_off() {
+        let state = test_state();
+
+        assert!(state.settings.get_bool(ENABLED_KEY, false));
+        assert_eq!(
+            state.settings.get_str(ID_KEY, "").len(),
+            64,
+            "the identifier exists from boot, because the settings page shows it"
+        );
     }
 
     #[test]

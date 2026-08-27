@@ -1,7 +1,7 @@
 // KROMA statistics collector: a Cloudflare Worker at stats.kroma.tv. It answers
 // one question, "how many KROMA servers are running, and how many devices do
-// they serve", from the heartbeat each install sends once a day while its
-// operator has anonymous statistics switched on. Nothing here is sent by an
+// they serve", from the heartbeat each install sends once a day unless its
+// operator has switched anonymous statistics off. Nothing here is sent by an
 // app: a KROMA client talks to its own server and to nothing else.
 //
 // Routes:
@@ -232,7 +232,7 @@ export function createApp(storeFor: (env: Env) => Store) {
  * nobody has heard from in a season.
  */
 export async function sweep(store: Store, now: number): Promise<void> {
-  await store.flag(burstIds(await store.all()));
+  await store.flag(burstIds(await store.all(), now));
   const counts = aggregate(await store.all(), [], now);
   await store.record(dayOf(now), counts.instances, counts.clients.total);
   await store.prune(now - RETAIN_DAYS * DAY);

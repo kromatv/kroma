@@ -122,12 +122,15 @@ async fn settings_put_persists_a_known_key() {
 }
 
 #[tokio::test]
-async fn switching_statistics_on_mints_the_identifier_the_settings_page_shows() {
+async fn the_settings_page_names_the_statistics_identifier_from_the_first_boot() {
     let t = test_app();
-    let (_, before) = get(&t.app, "/api/admin/settings?view=general", Some(&t.token)).await;
+
+    let (_, view) = get(&t.app, "/api/admin/settings?view=general", Some(&t.token)).await;
+
     assert!(
-        !row_exists(&before, "statsId"),
-        "nothing minted before consent"
+        row_exists(&view, "statsId"),
+        "the identifier an operator quotes to have their row erased has to be visible \
+         from the moment the server is reporting, which is its first start"
     );
 
     let (status, _) = send(
@@ -135,7 +138,7 @@ async fn switching_statistics_on_mints_the_identifier_the_settings_page_shows() 
         "PUT",
         "/api/admin/settings",
         Some(&t.token),
-        Some(json!({ "anonStats": true })),
+        Some(json!({ "anonStats": false })),
     )
     .await;
 
@@ -143,7 +146,8 @@ async fn switching_statistics_on_mints_the_identifier_the_settings_page_shows() 
     let (_, after) = get(&t.app, "/api/admin/settings?view=general", Some(&t.token)).await;
     assert!(
         row_exists(&after, "statsId"),
-        "the identifier an operator quotes to be erased has to exist the moment they consent"
+        "switching off stops the sending; it does not erase the row already written, \
+         which is what /v1/forget is for"
     );
 }
 
