@@ -124,6 +124,23 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+  audit:
+    name: Kit audit
+    needs: lanes
+    if: needs.lanes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile
+      - run: bun run ci test --audit
+
   # One report from the four shards: the lcov Sonar reads and the summary the
   # run page shows. Required on main in place of the shards themselves, so a
   # shard that never ran (a cancelled runner) cannot pass as a green run.

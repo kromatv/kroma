@@ -12,6 +12,14 @@ const vitest = join(root, 'node_modules/.bin/vitest');
 
 const COVERAGE = ['--coverage', '--coverage.reporter=lcov', '--coverage.reporter=text-summary'];
 
+// The audit project compiles with the React Compiler, so it instruments the
+// same sources a second time and its branch map carries the compiler's
+// memo-cache guards. Merged in, those count as uncovered conditions on lines
+// that hold no conditional, which caps every hooked kit file below what a test
+// of its source can reach. Coverage is measured over the two resolution
+// projects; the audit runs on its own.
+const MEASURED = ['--project', 'web', '--project', 'native'];
+
 async function codegen(): Promise<void> {
   await $`bun run test:codegen`.cwd(root);
 }
@@ -19,7 +27,14 @@ async function codegen(): Promise<void> {
 async function shard(spec: string): Promise<void> {
   const { index, total } = parseShard(spec);
   await codegen();
-  await $`${vitest} run --reporter=blob --shard=${index}/${total} ${COVERAGE}`.cwd(root);
+  await $`${vitest} run --reporter=blob --shard=${index}/${total} ${MEASURED} ${COVERAGE}`.cwd(
+    root,
+  );
+}
+
+async function audit(): Promise<void> {
+  await codegen();
+  await $`${vitest} run --project audit`.cwd(root);
 }
 
 async function merge(total: number | undefined): Promise<void> {
@@ -46,11 +61,13 @@ export async function main(argv: string[]): Promise<void> {
     args: argv,
     options: {
       shard: { type: 'string' },
+      audit: { type: 'boolean', default: false },
       merge: { type: 'boolean', default: false },
       expect: { type: 'string' },
     },
   });
   if (values.shard !== undefined) return shard(values.shard);
+  if (values.audit) return audit();
   if (values.merge) return merge(values.expect === undefined ? undefined : Number(values.expect));
   await codegen();
   await $`${vitest} run`.cwd(root);
