@@ -32,8 +32,53 @@ pub fn parse_release_name(name: &str) -> ParsedRelease {
     }
 
     let title_end = first_marker.unwrap_or(tokens.len());
-    out.title = tokens[..title_end].join(" ");
+    out.title = strip_trailing_noise(&tokens[..title_end]).join(" ");
     out
+}
+
+const TRAILING_NOISE: &[&str] = &[
+    "complete",
+    "completa",
+    "integrale",
+    "intégrale",
+    "integral",
+    "series",
+    "serie",
+    "multi",
+    "multi3",
+    "multi5",
+    "dual",
+    "dualaudio",
+    "french",
+    "truefrench",
+    "vf",
+    "vf2",
+    "vff",
+    "vfi",
+    "vfq",
+    "vo",
+    "vost",
+    "vostfr",
+    "subfrench",
+    "stfr",
+    "english",
+    "eng",
+];
+
+fn strip_trailing_noise(run: &[String]) -> &[String] {
+    let Some((_, rest)) = run.split_first() else {
+        return run;
+    };
+    let noise = rest
+        .iter()
+        .rev()
+        .take_while(|token| {
+            TRAILING_NOISE
+                .iter()
+                .any(|word| token.eq_ignore_ascii_case(word))
+        })
+        .count();
+    &run[..run.len() - noise]
 }
 
 // Remembers the earliest structural-marker index (the title ends before it).

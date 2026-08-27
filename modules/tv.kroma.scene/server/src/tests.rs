@@ -19,6 +19,31 @@ fn parses_classic_movie_names() {
 }
 
 #[test]
+fn a_language_or_completeness_tag_trailing_the_title_is_not_part_of_it() {
+    assert_eq!(p("Stargate Atlantis iNTEGRALE MULTi").title, "Stargate Atlantis");
+    assert_eq!(
+        p("Stargate.Atlantis.INTEGRALE.MULTi.1080p.BluRay.x265").title,
+        "Stargate Atlantis"
+    );
+    assert_eq!(p("Stargate Atlantis COMPLETE SERIES MULTI").title, "Stargate Atlantis");
+    assert_eq!(p("Kaamelott.Integrale.FRENCH.1080p").title, "Kaamelott");
+    assert_eq!(p("Le.Bureau.des.Legendes.S01.MULTi.1080p").title, "Le Bureau des Legendes");
+}
+
+#[test]
+fn the_same_words_inside_a_title_are_left_alone() {
+    assert_eq!(p("A.Complete.Unknown.2024.1080p.WEB-DL").title, "A Complete Unknown");
+    assert_eq!(p("The.French.Dispatch.2021.1080p.BluRay").title, "The French Dispatch");
+    assert_eq!(p("The French Connection 1971 1080p").title, "The French Connection");
+    assert_eq!(p("The.Complete.Unknown").title, "The Complete Unknown");
+}
+
+#[test]
+fn a_name_that_is_nothing_but_tags_keeps_a_title_rather_than_matching_everything() {
+    assert_eq!(p("MULTi.FRENCH.1080p").title, "MULTi");
+}
+
+#[test]
 fn parses_modern_web_names_with_hdr_and_dv() {
     let r = p("Dune Part Two 2024 2160p WEB-DL DV HDR10 HEVC DDP5.1-GRP");
     assert_eq!(r.title, "Dune Part Two");
