@@ -90,6 +90,7 @@ scripts/serve-nas.sh
 .idea/
 .vscode/*
 !.vscode/extensions.json
+.zed/
 
 # Logs
 *.log
