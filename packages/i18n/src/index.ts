@@ -1,5 +1,10 @@
 export { type DefineI18nConfig, defineI18n } from './define';
 export {
+  installKeyInspector,
+  installLocaleOverride,
+  type KeyInspector,
+} from './dev-overrides';
+export {
   createI18n,
   type I18n,
   type I18nConfig,
@@ -12,4 +17,12 @@ export { expandRefs, hasUnresolvedRef } from './nest';
 export { resolvePluralKey, selectCategory } from './plural';
 export type { Locale, MessageKey, Messages, Register, Translate } from './registry';
 export { SCHEMA_KEY } from './store';
-export type { Catalog, Catalogs, LocaleSet, PluralCategory, PluralRule, TVars } from './types';
+export type {
+  Catalog,
+  CatalogSource,
+  Catalogs,
+  LocaleSet,
+  PluralCategory,
+  PluralRule,
+  TVars,
+} from './types';

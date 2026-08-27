@@ -1,4 +1,5 @@
-import { translateChain } from './chain';
+import { answeringIndex, translateChain } from './chain';
+import { activeKeyInspector, onOverridesChange, overridesRevision } from './dev-overrides';
 import { CatalogStore, type SCHEMA_KEY } from './store';
 import type { Catalog, Catalogs, PluralRule, TVars } from './types';
 
@@ -65,21 +66,33 @@ export function createI18n<
   const { catalogs, defaultLocale, plural } = config;
   const store = new CatalogStore<L>(catalogs as unknown as Catalogs<L>, defaultLocale as L);
 
-  const render = (locale: L, scope: string | undefined, key: string, vars?: TVars): string =>
-    translateChain(store.chain(locale, scope), locale, key, vars, plural) ?? key;
+  type Bound = (key: K | (string & {}), vars?: TVars) => string;
 
   // One translator per locale and scope, forever. The closure reads the chain
   // on every call rather than capturing it, so an added catalog still reaches
-  // it and the cache never needs clearing. Identity matters: a React hook hands
-  // this straight to callers who put it in a `useMemo` dependency list, and a
-  // fresh closure per render would quietly defeat all of them.
-  const bound = new Map<string, (key: K | (string & {}), vars?: TVars) => string>();
+  // it. Identity matters: a React hook hands this straight to callers who put
+  // it in a `useMemo` dependency list, and a fresh closure per render would
+  // quietly defeat all of them.
+  const bound = new Map<string, Bound>();
+  let revision = overridesRevision();
 
   const translator = (locale: L, scope?: string) => {
+    const current = overridesRevision();
+    if (current !== revision) {
+      bound.clear();
+      revision = current;
+    }
     const cacheKey = scope === undefined ? locale : `${locale}\u0000${scope}`;
     let fn = bound.get(cacheKey);
     if (!fn) {
-      fn = (key, vars) => render(locale, scope, key, vars);
+      const inspector = activeKeyInspector();
+      fn = inspector
+        ? (key, vars) => {
+            const at = answeringIndex(store.chain(locale, scope), locale, key, vars, plural);
+            return inspector(key, at === -1 ? undefined : store.sources(locale, scope)[at], locale);
+          }
+        : (key, vars) =>
+            translateChain(store.chain(locale, scope), locale, key, vars, plural) ?? key;
       bound.set(cacheKey, fn);
     }
     return fn;
@@ -87,11 +100,18 @@ export function createI18n<
 
   return {
     defaultLocale: defaultLocale as L,
-    translate: (locale, key, vars) => render(locale, undefined, key, vars),
+    translate: (locale, key, vars) => translator(locale)(key, vars),
     translator,
     add: (scope, added) => store.add(scope, added),
     has: (key) => store.has(key),
-    version: () => store.version(),
-    subscribe: (listener) => store.subscribe(listener),
+    version: () => store.version() + overridesRevision(),
+    subscribe: (listener) => {
+      const stopStore = store.subscribe(listener);
+      const stopInspector = onOverridesChange(listener);
+      return () => {
+        stopStore();
+        stopInspector();
+      };
+    },
   } as I18n<L, CatalogMessages<C[D]>>;
 }

@@ -16,6 +16,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./react": "./src/react/index.ts",
+    "./devtools": "./src/devtools/index.ts",
+    "./vite": "./vite/index.ts",
     "./schema": "./schema/catalog.schema.json"
   },
   "scripts": {
@@ -24,7 +26,8 @@
   "devDependencies": {
     "@types/react": "^19.2.18",
     "react": "19.2.8",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1"
   },
   "keywords": [
     "i18n",

@@ -9,6 +9,13 @@ export type Catalog = Readonly<Record<string, string>>;
  *  it fall through to the default locale. */
 export type Catalogs<L extends string = string> = Readonly<Partial<Record<L, Catalog>>>;
 
+/** Where a catalog in a lookup came from: the scope that added it, or `null` for
+ *  the base catalogs the app was built with, and the locale it speaks. */
+export interface CatalogSource {
+  readonly scope: string | null;
+  readonly locale: string;
+}
+
 /** A CLDR plural category. Catalogs carry it as a key suffix (`key_one`). */
 export type PluralCategory = Intl.LDMLPluralRule;
 

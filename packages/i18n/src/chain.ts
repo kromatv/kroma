@@ -25,3 +25,22 @@ export function translateChain(
   }
   return undefined;
 }
+
+/** Where in `chain` {@link translateChain} would take the message from, or `-1`
+ *  when nothing answers. Pairs with `CatalogStore.sources` to say which catalog
+ *  spoke, which is what the key inspector reports. */
+export function answeringIndex(
+  chain: Chain,
+  locale: string,
+  key: string,
+  vars?: TVars,
+  plural?: PluralRule,
+): number {
+  let index = 0;
+  for (const catalog of chain) {
+    const lookup = vars ? resolvePluralKey(catalog, locale, key, vars, plural) : key;
+    if (catalog[lookup] !== undefined) return index;
+    index += 1;
+  }
+  return -1;
+}

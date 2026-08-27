@@ -44,6 +44,8 @@
   "devDependencies": {
     "@babel/core": "^8.0.1",
     "@kroma/bundler": "workspace:*",
+    "@kroma/i18n": "workspace:*",
+    "@kroma/i18n-devtools": "workspace:*",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/react-query-devtools": "^5.101.4",
     "@tanstack/router-cli": "^1.167.30",

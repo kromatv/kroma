@@ -1,0 +1,37 @@
+{
+  "name": "@kroma/i18n-devtools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "KROMA's in-app i18n dev tools: a floating badge that opens a panel to switch the locale for the session and to render every message as the key and the catalog that answered it. Loaded only by the dev server, through @kroma/i18n/vite.",
+  "author": "Maxime Scharwath <maxscharwath@gmail.com>",
+  "license": "GPL-2.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxscharwath/kroma.git",
+    "directory": "packages/i18n-devtools"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kroma/core": "workspace:*",
+    "@kroma/i18n": "workspace:*",
+    "@kroma/ui": "workspace:*",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "typescript": "^7.0.2"
+  }
+}

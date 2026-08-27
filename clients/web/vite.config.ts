@@ -8,6 +8,7 @@ import {
   webResolve,
 } from '@kroma/bundler/rnw';
 import { standaloneScript } from '@kroma/bundler/standalone-script';
+import { kromaI18nDevtools } from '@kroma/i18n/vite';
 import { kromaModule } from '@kroma/module-sdk/vite';
 import { kromaUI } from '@kroma/ui/vite';
 import babel from '@rolldown/plugin-babel';
@@ -25,6 +26,7 @@ export default defineConfig({
   plugins: [
     kromaUI(),
     kromaModule(),
+    kromaI18nDevtools(),
     buildInfoPlugin({ projectRoot: fileURLToPath(new URL('.', import.meta.url)) }),
     standaloneScript(swScript),
     tanstackStart({ spa: { enabled: true } }),
