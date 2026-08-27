@@ -6,7 +6,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminHostProvider } from './context';
-import { isAnyAdmin, useAsyncAction, useCap, usePoll } from './hooks';
+import { isAnyAdmin, useAsyncAction, useCap, useFetch, usePoll } from './hooks';
 
 const withPerms = (...permissions: Permission[]) => ({ permissions }) as Pick<User, 'permissions'>;
 
@@ -163,5 +163,50 @@ describe('usePoll', () => {
     const before = fn.mock.calls.length;
     await act(async () => result.current.reload());
     await waitFor(() => expect(fn.mock.calls.length).toBeGreaterThan(before));
+  });
+});
+
+describe('useFetch', () => {
+  it('fetches once and keeps the answer', async () => {
+    const fn = vi.fn(async () => ({ n: 1 }));
+    const { result } = renderHook(() => useFetch(['admin', 'once'], fn), { wrapper: wrapper() });
+
+    await waitFor(() => expect(result.current.data).toEqual({ n: 1 }));
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('asks for nothing, and is not loading, while its key is null', () => {
+    const fn = vi.fn(async () => 1);
+    const { result } = renderHook(() => useFetch(null, fn), { wrapper: wrapper() });
+
+    expect(fn).not.toHaveBeenCalled();
+    expect(result.current.data).toBeNull();
+    expect(result.current.loading).toBe(false);
+  });
+
+  it('fetches once the key arrives', async () => {
+    const fn = vi.fn(async () => 7);
+    const { result, rerender } = renderHook(
+      ({ key }: { key: string[] | null }) => useFetch(key, fn),
+      { wrapper: wrapper(), initialProps: { key: null as string[] | null } },
+    );
+
+    rerender({ key: ['admin', 'later'] });
+
+    await waitFor(() => expect(result.current.data).toBe(7));
+  });
+
+  it('reports a failure with its cause', async () => {
+    const boom = new Error('nope');
+    const { result } = renderHook(
+      () =>
+        useFetch(['admin', 'bad'], async () => {
+          throw boom;
+        }),
+      { wrapper: wrapper() },
+    );
+
+    await waitFor(() => expect(result.current.failed).toBe(true));
+    expect(result.current.error).toBe(boom);
   });
 });

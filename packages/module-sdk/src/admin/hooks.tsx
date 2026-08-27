@@ -5,6 +5,8 @@ import { type QueryKey, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 import { useAdminHost } from './context';
 
+const OFF: QueryKey = ['module-sdk', 'idle'];
+
 /** Polls `fn` every `intervalMs` through TanStack Query. Prefix `key` with `'admin'`
  * so `invalidateQueries(['admin'])` refreshes it, and put varying inputs in `key`.
  *
@@ -43,6 +45,38 @@ export function usePoll<T>(
   // LIE while the first fetch is out: an empty list and "not configured" are
   // both statements about the data, and neither is true yet.
   return { data: data ?? null, loading: isPending, failed: isError, error, reload };
+}
+
+/** Fetches `fn` once through TanStack Query and keeps the answer, for data that
+ * does not move: a torrent's file list, a season's episode names. Same shape as
+ * {@link usePoll}, so the two are interchangeable at a call site.
+ *
+ * A `null` key holds the request back until the inputs it needs exist, and
+ * reports `loading: false` while it waits, because nothing is in flight. */
+export function useFetch<T>(
+  key: QueryKey | null,
+  fn: () => Promise<T>,
+): {
+  data: T | null;
+  loading: boolean;
+  failed: boolean;
+  error: unknown;
+  reload: () => Promise<void>;
+} {
+  const queryClient = useQueryClient();
+  const asked = key !== null;
+  const { data, isPending, isError, error } = useQuery({
+    queryKey: key ?? OFF,
+    queryFn: fn,
+    enabled: asked,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+  const keyRef = useRef(key);
+  keyRef.current = key;
+  const reload = useCallback(async () => {
+    if (keyRef.current) await queryClient.invalidateQueries({ queryKey: keyRef.current });
+  }, [queryClient]);
+  return { data: data ?? null, loading: asked && isPending, failed: isError, error, reload };
 }
 
 /** `run(fn, onError?)` flips `busy` while `fn` runs and, on failure, sets `error` to `onError(e)`. */

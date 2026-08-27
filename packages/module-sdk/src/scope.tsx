@@ -7,6 +7,7 @@
 // module is then reserved for what it should mean: addressing a DIFFERENT one.
 
 import type { ModuleApi } from '@kroma/core';
+import { useScopedT } from '@kroma/ui';
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
 import { useAdminHost } from './admin/context';
 
@@ -15,6 +16,13 @@ const ModuleIdContext = createContext<string | null>(null);
 /** Mounted by the host around a module's page, carrying that module's id. */
 export function ModuleScope({ id, children }: Readonly<{ id: string; children: ReactNode }>) {
   return <ModuleIdContext.Provider value={id}>{children}</ModuleIdContext.Provider>;
+}
+
+/** Translate against THIS module's catalog first, then the app's. Outside a
+ *  module page it is the app's translator unchanged. */
+export function useT(): ReturnType<ReturnType<typeof useScopedT>> {
+  const id = useContext(ModuleIdContext);
+  return useScopedT()(id ?? '');
 }
 
 /** This module's own admin API, bound to `/api/admin/m/<its id>`. Paths are

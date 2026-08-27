@@ -20,7 +20,7 @@ export {
   KromaEvents as KromaEventStream,
   RequestId,
 } from '@kroma/core';
-export { useFormat, useLocale, useT } from '@kroma/ui';
+export { useFormat, useLocale } from '@kroma/ui';
 export type { AdminHostValue } from './admin/context';
 export { AdminHostProvider, useAdminHost } from './admin/context';
 export { Denied } from './admin/denied';
@@ -33,7 +33,7 @@ export {
   useModuleEnabled,
   useModuleEnabledCheck,
 } from './admin/engines';
-export { isAnyAdmin, useAsyncAction, useCap, usePoll } from './admin/hooks';
+export { isAnyAdmin, useAsyncAction, useCap, useFetch, usePoll } from './admin/hooks';
 export { ModuleFailed, ModuleLoading, ModuleUnavailable } from './admin/page-states';
 export { SettingsView } from './admin/settings';
 export type { EventBus, EventKey } from './bus';
@@ -62,7 +62,7 @@ export type {
   ModuleStatus,
 } from './registry';
 export { depEntries, ModuleRegistry } from './registry';
-export { ModuleScope, moduleApiHook, useModuleApi } from './scope';
+export { ModuleScope, moduleApiHook, useModuleApi, useT } from './scope';
 export { ModuleSlot, ModuleSlotProvider, useSlotEntries } from './slot';
 export type {
   ConfigField,
@@ -72,5 +72,24 @@ export type {
   ModuleManifest,
   PointReq,
 } from './types';
-export type { TableActionProps, TableCellProps, TableRootProps, TableRowProps } from './ui/table';
+export type {
+  TableActionProps,
+  TableCellProps,
+  TableColumnProps,
+  TableRootProps,
+  TableRowProps,
+} from './ui/table';
 export { TABULAR, Table } from './ui/table';
+export type {
+  PlainColumn,
+  SortableColumn,
+  SortDirection,
+  SortedColumn,
+  SortedTable,
+  SortedTableOptions,
+  TableHeading,
+  TableOrder,
+  TablePage,
+  TableQuery,
+} from './use-sorted-table';
+export { useSortedTable } from './use-sorted-table';
