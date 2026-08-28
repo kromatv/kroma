@@ -194,12 +194,15 @@ describe('AvplayEngine prepared (resume + audio mapping)', () => {
 });
 
 describe('AvplayEngine native listener events', () => {
-  it('current-play-time updates the absolute position + buffered', () => {
+  it('current-play-time moves the clock without calling the playhead a buffer', () => {
     const { e, a, listeners } = make({ direct: true, startSec: 0 });
+
     a.listener().oncurrentplaytime?.(5000);
+
     expect(e.position()).toBe(5);
     expect(listeners.onTime).toHaveBeenCalledWith(5);
-    expect(listeners.onBuffered).toHaveBeenCalledWith(5);
+    expect(listeners.onBuffered).not.toHaveBeenCalled();
+    expect(e.bufferedEnd()).toBeNull();
   });
 
   it('buffering + stream-completed + error map to the right callbacks', () => {
@@ -291,6 +294,19 @@ describe('AvplayEngine visibility + destroy', () => {
     document.dispatchEvent(new Event('visibilitychange'));
     expect(names()).toContain('restore');
     expect(lastArgs('restore')?.[2]).toBe('PLAYING');
+  });
+
+  it('comes back paused where the viewer had paused it', () => {
+    const { e, names, lastArgs } = make({ direct: true, startSec: 0 });
+    e.pause();
+
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    expect(names()).toContain('restore');
+    expect(lastArgs('restore')?.[2]).toBe('PAUSED');
   });
 
   it('destroy stops + closes the singleton and detaches the visibility listener', () => {

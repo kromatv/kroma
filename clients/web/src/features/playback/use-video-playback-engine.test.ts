@@ -39,6 +39,7 @@ vi.mock('#web/shared/lib/auth', () => ({
 
 const { useVideoPlayback } = await import('#web/features/playback/use-video-playback');
 const { attachMediaSource } = await import('#web/features/playback/video-engine');
+const { bindMediaEvents } = await import('#web/features/playback/media-events');
 
 const lastAttach = () => {
   const calls = vi.mocked(attachMediaSource).mock.calls;
@@ -236,5 +237,75 @@ describe('useVideoPlayback on Safari', () => {
     await settle();
     expect(lastAttach().useNativeHls).toBe(false);
     expect(lastAttach().useShaka).toBe(true);
+  });
+});
+
+describe('useVideoPlayback stall recovery', () => {
+  const lastBind = () => vi.mocked(bindMediaEvents).mock.calls.at(-1);
+  const boundAutoplay = () => lastBind()?.[5];
+
+  async function attached() {
+    H.decision = { kind: 'direct', aacMaster: false };
+    const { result } = render();
+    await settle();
+    const v = fakeVideo({ currentTime: 30 });
+    result.current.videoRef.current = v as unknown as HTMLVideoElement;
+    act(() => result.current.setEnginePref('direct'));
+    await settle();
+    return { result, v };
+  }
+
+  it('re-anchors where the engine gave up, at the position the picture froze at', async () => {
+    const { result, v } = await attached();
+    expect(result.current.anchor).toBe(30);
+    v.currentTime = 42;
+
+    act(() => lastAttach().onGiveUp());
+    await settle();
+
+    expect(result.current.anchor).toBe(42);
+  });
+
+  it('carries a viewer pause across the rebind a re-anchor causes', async () => {
+    const { v } = await attached();
+    act(() => lastBind()?.[2].setPlaying(false));
+    v.currentTime = 42;
+
+    act(() => lastAttach().onGiveUp());
+    await settle();
+
+    expect(boundAutoplay()).toBe(false);
+  });
+
+  it('re-anchors at the anchor itself when the element is already gone', async () => {
+    const { result } = await attached();
+    result.current.videoRef.current = null;
+
+    act(() => lastAttach().onGiveUp());
+    await settle();
+
+    expect(result.current.anchor).toBe(0);
+  });
+
+  it('arms the watch once the element is ready and the source resolved', async () => {
+    const { result } = await attached();
+
+    act(() => lastBind()?.[2].setReady(true));
+    await settle();
+
+    expect(result.current.ready).toBe(true);
+    expect(result.current.waiting).toBe(false);
+  });
+
+  it('lets a film the viewer had running start itself again', async () => {
+    const { v } = await attached();
+    act(() => lastBind()?.[2].setPlaying(false));
+    act(() => lastBind()?.[2].setPlaying(true));
+    v.currentTime = 42;
+
+    act(() => lastAttach().onGiveUp());
+    await settle();
+
+    expect(boundAutoplay()).toBe(true);
   });
 });

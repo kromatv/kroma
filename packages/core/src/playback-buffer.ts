@@ -95,6 +95,25 @@ export function reachableBufferEnd(ranges: TimeRanges, t: number): number {
   return Number.isNaN(end) ? 0 : end;
 }
 
+// A seek target may sit a hair before a range (rounding on a keyframe cut), but
+// must sit well inside its far edge: landing on the end leaves nothing to play
+// on from, which on a growing playlist is a stall at the production edge.
+const SEEK_HEAD_SEC = 0.1;
+const SEEK_TAIL_SEC = 0.3;
+
+/**
+ * Whether the playhead can be moved to `t` without waiting on a download. The
+ * question a seek asks before moving in place rather than re-anchoring, and the
+ * reason it is not `seekable`: that over-reports the whole runtime long before
+ * the remux has produced it.
+ */
+export function isPlayableAt(ranges: TimeRanges, t: number): boolean {
+  for (let i = 0; i < ranges.length; i += 1) {
+    if (t >= ranges.start(i) - SEEK_HEAD_SEC && t <= ranges.end(i) - SEEK_TAIL_SEC) return true;
+  }
+  return false;
+}
+
 /**
  * hls.js constructor options for `plan`. The gap numbers are the point: hls.js
  * defaults to a 0.1 s `maxBufferHole` and waits 2 s before nudging one, which on

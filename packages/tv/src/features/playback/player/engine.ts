@@ -53,6 +53,16 @@ export interface TvEngine {
    *  up as one. */
   bufferedEnd(): number | null;
   seekTo(absSec: number): void;
+  // Move the playhead a hair to unstick a decoder. Never a seek: a seek carries
+  // policy (the HTML engine re-anchors a target it cannot reach), and the point
+  // of this rung is that it is the cheap one.
+  nudge(): void;
+  // Unstick a playhead that has stopped with buffer still ahead of it, without
+  // rebuilding the source. `false` where the backend has no such recovery and
+  // the caller should reach for `restart` instead.
+  recoverStall?(): boolean;
+  // Rebuild the source at `absSec`, discarding whatever the backend still holds.
+  restart(absSec: number): void;
   setAudioRendition(rendition: number): void;
   // Resize the native video plane to a fraction-rect, or `null` for fullscreen. Only AVPlay/mpv
   // implement it; the HTML `<video>` engine CSS-transforms its element instead.

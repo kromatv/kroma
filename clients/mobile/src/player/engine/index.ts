@@ -9,7 +9,7 @@
 // copy-audio master retries once as AAC.
 
 import type { KromaClient, MediaItem } from '@kroma/core';
-import { type AudioTrack, useVideoPlayer } from 'expo-video';
+import { type AudioTrack, useVideoPlayer, type VideoPlayer } from 'expo-video';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { decideSource } from '#mobile/player/caps';
 import { useEngineControls } from './controls';
@@ -22,6 +22,11 @@ import {
 } from './types';
 
 export type { AudioFilterMode, Engine, EngineState } from './types';
+
+// Must be read before `started` is cleared for the new source.
+function resumeOnLoad(core: EngineCore, player: VideoPlayer): boolean {
+  return !core.started || player.playing;
+}
 
 export function useKromaEngine(
   client: KromaClient,
@@ -85,6 +90,7 @@ export function useKromaEngine(
   const load = useCallback(
     async (absSec: number) => {
       const id = ++core.loadId;
+      const resume = resumeOnLoad(core, player);
       setWaiting(true);
       setReady(false);
       let uri: string;
@@ -101,10 +107,12 @@ export function useKromaEngine(
       }
       if (id !== core.loadId) return;
       core.elSec = 0;
+      core.bufSec = 0;
       core.started = false;
-      core.resumeOnLoad = true;
+      core.resumeOnLoad = resume;
       setMode(core.mode);
       setCur(core.baseSec + (core.pendingSeek ?? 0));
+      setBuffered(core.baseSec + (core.pendingSeek ?? 0));
       const meta = item.metadata;
       await player
         .replaceAsync({

@@ -1,4 +1,4 @@
-import type { EngineDecision } from '@kroma/core';
+import { type EngineDecision, isPlayableAt } from '@kroma/core';
 import { useCallback, useRef, useState } from 'react';
 import type { VideoPlayback } from '#web/features/playback/video-engine';
 
@@ -70,16 +70,7 @@ export function useVideoTransport(opts: VideoTransportOptions): VideoTransport {
         return;
       }
       const rel = target - baseSec;
-      // Native only if the target is actually buffered - `seekable` over-reports
-      // the full duration before it is produced, which would seek into a hole.
-      let buffered = false;
-      for (let i = 0; i < v.buffered.length; i += 1) {
-        if (rel >= v.buffered.start(i) - 0.5 && rel <= v.buffered.end(i) + 0.5) {
-          buffered = true;
-          break;
-        }
-      }
-      if (buffered) {
+      if (isPlayableAt(v.buffered, rel)) {
         v.currentTime = Math.max(0, rel);
       } else {
         setAnchor(target);

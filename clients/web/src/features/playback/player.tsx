@@ -110,7 +110,6 @@ export function Player({
     <video
       key={`${pb.anchor}:${pb.audioIndex}`}
       ref={videoRef}
-      autoPlay
       playsInline
       crossOrigin="anonymous"
       style={{ borderRadius: 'inherit' }}

@@ -141,6 +141,17 @@ describe('bindMediaEvents', () => {
     expect(fv.playCalls()).toBe(1);
   });
 
+  it('leaves a film the viewer had paused alone when the element is re-attached', () => {
+    const fv = fakeVideo();
+    const s = mkSetters();
+
+    bindMediaEvents(fv.el, item, s, 0, 0, false);
+    fv.fire('canplay');
+
+    expect(s.setReady).toHaveBeenCalledWith(true);
+    expect(fv.playCalls()).toBe(0);
+  });
+
   it('anchors at the element clock when no offset is given', () => {
     const fv = fakeVideo();
     const s = mkSetters();

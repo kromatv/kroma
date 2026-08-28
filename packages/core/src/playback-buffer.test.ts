@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   bufferPlan,
   hlsBufferConfig,
+  isPlayableAt,
   itemBufferPlan,
   reachableBufferEnd,
   shakaStreamingConfig,
@@ -194,5 +195,47 @@ describe('engine config', () => {
 
     expect(hlsBufferConfig(bufferPlan(4_000_000)).maxBufferHole).toBe(hole);
     expect(reachableBufferEnd(ranges([[hole, 90]]), 0)).toBe(90);
+  });
+});
+
+describe('isPlayableAt', () => {
+  it('takes a target well inside a buffered range', () => {
+    expect(isPlayableAt(ranges([[10, 60]]), 30)).toBe(true);
+  });
+
+  it('forgives a target a hair before a range, where a keyframe cut rounds', () => {
+    expect(isPlayableAt(ranges([[30, 90]]), 29.95)).toBe(true);
+    expect(isPlayableAt(ranges([[30, 90]]), 29)).toBe(false);
+  });
+
+  it('refuses the far edge, which is a stall at the production edge', () => {
+    expect(isPlayableAt(ranges([[10, 60]]), 59.9)).toBe(false);
+    expect(isPlayableAt(ranges([[10, 60]]), 60.4)).toBe(false);
+    expect(isPlayableAt(ranges([[10, 60]]), 59.5)).toBe(true);
+  });
+
+  it('reads every range, not only the first', () => {
+    expect(
+      isPlayableAt(
+        ranges([
+          [0, 10],
+          [40, 90],
+        ]),
+        50,
+      ),
+    ).toBe(true);
+    expect(
+      isPlayableAt(
+        ranges([
+          [0, 10],
+          [40, 90],
+        ]),
+        25,
+      ),
+    ).toBe(false);
+  });
+
+  it('has nothing to play when nothing is buffered', () => {
+    expect(isPlayableAt(ranges([]), 0)).toBe(false);
   });
 });

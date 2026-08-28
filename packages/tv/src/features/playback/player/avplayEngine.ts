@@ -119,7 +119,6 @@ export class AvplayEngine extends BaseTvEngine {
         oncurrentplaytime: (ms: number) => {
           this.elSec = ms / 1000;
           this.listeners.onTime(this.baseSec + this.elSec);
-          this.listeners.onBuffered(this.baseSec + this.elSec);
         },
         onstreamcompleted: () => this.listeners.onEnded(),
         onerror: () => this.fail(),
@@ -185,7 +184,7 @@ export class AvplayEngine extends BaseTvEngine {
         // Direct sources restore at the ABSOLUTE position; anchored masters at
         // the relative one (their clock restarts at the anchor).
         const ms = Math.round((this.mode === 'direct' ? this.position() : this.elSec) * 1000);
-        this.api.restore(this.sourceUrl(), ms, 'PLAYING');
+        this.api.restore(this.sourceUrl(), ms, this.paused ? 'PAUSED' : 'PLAYING');
       }
     } catch {
       /* best effort */

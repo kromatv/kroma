@@ -7,6 +7,7 @@
 
 import {
   type AudioTrack,
+  attachHlsRecovery,
   type EngineDecision,
   hlsBufferConfig,
   itemBufferPlan,
@@ -38,6 +39,7 @@ export interface ShakaPlayerLike {
   destroy(): Promise<void>;
   getStats(): ShakaStatsLike;
   configure(config: Record<string, unknown>): boolean;
+  retryStreaming(retryDelaySeconds?: number): boolean;
 }
 interface ShakaStatic {
   Player: { new (): ShakaPlayerLike; isBrowserSupported(): boolean };
@@ -100,6 +102,9 @@ export interface AttachSourceOptions {
   shakaRef: { current: ShakaPlayerLike | null };
   setUseHls: (b: boolean) => void;
   setReady: (b: boolean) => void;
+  /** Called when an engine has failed past its own recovery, so the caller can
+   * re-anchor onto a fresh stream at wherever the picture froze. */
+  onGiveUp: () => void;
 }
 
 function seekToAnchor(v: HTMLVideoElement, startSec: number): void {
@@ -136,6 +141,7 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
     shakaRef,
     setUseHls,
     setReady,
+    onGiveUp,
   } = opts;
   setReady(false);
 
@@ -211,6 +217,7 @@ export function attachMediaSource(opts: AttachSourceOptions): () => void {
       ...hlsBufferConfig(plan),
     });
     hlsRef.current = hls;
+    attachHlsRecovery(Hls, hls, onGiveUp);
     hls.loadSource(url);
     hls.attachMedia(v);
   });

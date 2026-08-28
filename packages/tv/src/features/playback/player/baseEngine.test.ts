@@ -37,6 +37,7 @@ const item = { id: 'm1' } as unknown as MediaItem;
 class TestEngine extends BaseTvEngine {
   readonly kind = 'mpv' as const;
   readonly reanchorCalls: number[] = [];
+  readonly seekCalls: number[] = [];
 
   // biome-ignore lint/complexity/noUselessConstructor: exposes the protected base constructor for the test
   constructor(o: EngineOptions) {
@@ -51,7 +52,9 @@ class TestEngine extends BaseTvEngine {
   bufferedEnd(): number {
     return 0;
   }
-  seekTo(): void {}
+  seekTo(absSec: number): void {
+    this.seekCalls.push(absSec);
+  }
   setAudioRendition(): void {}
   destroy(): void {
     this.destroyed = true;
@@ -220,5 +223,26 @@ describe('BaseTvEngine fail / direct->master fallback', () => {
     expect(listeners.onError).not.toHaveBeenCalled();
     expect(listeners.onWaiting).not.toHaveBeenCalled();
     expect(e.reanchorCalls).toEqual([]);
+  });
+});
+
+describe('BaseTvEngine nudge', () => {
+  it('moves the playhead a hair through the backend seek', () => {
+    const e = make({ direct: true, startSec: 42 });
+
+    e.nudge();
+
+    expect(e.seekCalls).toHaveLength(1);
+    expect(e.seekCalls[0]).toBeCloseTo(42.1, 5);
+  });
+});
+
+describe('BaseTvEngine restart', () => {
+  it('hands a fresh source at the given position to the backend re-anchor', () => {
+    const e = make({ direct: false, startSec: 0 });
+
+    e.restart(1800);
+
+    expect(e.reanchorCalls).toEqual([1800]);
   });
 });

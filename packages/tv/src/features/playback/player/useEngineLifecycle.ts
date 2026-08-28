@@ -23,6 +23,7 @@ import {
   type TvEngine,
 } from '#tv/features/playback/player/engine';
 import { useResolvedStart } from '#tv/features/playback/player/useResolvedStart';
+import { useStallGuard } from '#tv/features/playback/player/useStallGuard';
 import { vlcAvailable } from '#tv/features/playback/player/vlcPlane';
 
 export interface EngineLifecycle {
@@ -225,6 +226,8 @@ export function useEngineLifecycle(
     return () => clearTimeout(id);
   }, [surface, ready, error, failKey, loadBeat]);
 
+  const stalled = useStallGuard(engineRef, ready && error === null);
+
   // Re-anchor the resume position so the rebuilt engine resumes here, not at 0.
   const setEngine = useCallback(
     (p: EnginePref) => {
@@ -254,7 +257,7 @@ export function useEngineLifecycle(
     error,
     ready,
     playing,
-    waiting,
+    waiting: waiting || stalled,
     cur,
     setCur,
     dur,

@@ -16,8 +16,14 @@ export interface MediaEventSetters {
   setReady: (b: boolean) => void;
 }
 
-/** Subscribes the media element's events to the state setters and drives a
- * resilient, ready-gated autoplay. Returns the unsubscribe cleanup. */
+/**
+ * Subscribes the media element's events to the state setters and drives a
+ * resilient, ready-gated autoplay. Returns the unsubscribe cleanup.
+ *
+ * Every binding is fresh, so `autoplay` is what carries the viewer's own
+ * play/pause across a re-attach: pass `false` and the first `canplay` is not
+ * taken as a reason to start a film nobody asked to resume.
+ */
 export function bindMediaEvents(
   v: HTMLVideoElement,
   item: MovieView,
@@ -26,6 +32,7 @@ export function bindMediaEvents(
   // Preferred over the element's `duration`, which for a growing HLS EVENT
   // playlist is only the produced edge, not the whole movie. 0 = unknown.
   knownDurationMs = 0,
+  autoplay = true,
 ): () => void {
   const {
     setCur,
@@ -62,7 +69,7 @@ export function bindMediaEvents(
   let started = false;
   const onReady = () => {
     setReady(true);
-    if (started || !v.paused) return;
+    if (started || !autoplay || !v.paused) return;
     const p = v.play();
     p?.catch(() => undefined);
   };

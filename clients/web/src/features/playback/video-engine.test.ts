@@ -17,9 +17,14 @@ const H = vi.hoisted(() => {
   }> = [];
   class FakeHls {
     static supported = true;
+    static Events = { ERROR: 'hlsError' };
+    static ErrorTypes = { NETWORK_ERROR: 'networkError', MEDIA_ERROR: 'mediaError' };
     static isSupported() {
       return FakeHls.supported;
     }
+    on = vi.fn();
+    startLoad = vi.fn();
+    recoverMediaError = vi.fn();
     loadSource = vi.fn();
     attachMedia = vi.fn();
     destroy = vi.fn();
@@ -45,6 +50,7 @@ const H = vi.hoisted(() => {
     );
     destroy = vi.fn(() => Promise.resolve());
     configure = vi.fn(() => true);
+    retryStreaming = vi.fn(() => true);
     constructor() {
       shakaInstances.push(this);
     }
@@ -87,6 +93,7 @@ describe('attachMediaSource direct-play', () => {
       shakaRef: { current: null },
       setUseHls: vi.fn(),
       setReady: vi.fn(),
+      onGiveUp: vi.fn(),
       ...over,
     };
   }
@@ -137,6 +144,7 @@ describe('attachMediaSource HLS master', () => {
       shakaRef: { current: null },
       setUseHls: vi.fn(),
       setReady: vi.fn(),
+      onGiveUp: vi.fn(),
       ...over,
     };
   }
@@ -206,6 +214,7 @@ describe('attachMediaSource HLS master via Shaka', () => {
       shakaRef: { current: null },
       setUseHls: vi.fn(),
       setReady: vi.fn(),
+      onGiveUp: vi.fn(),
       ...over,
     };
   }

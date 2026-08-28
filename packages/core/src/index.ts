@@ -20,6 +20,7 @@ export * from './permissions';
 export * from './person-facts';
 export * from './platform';
 export * from './playback-buffer';
+export * from './playback-stall';
 export * from './player';
 export * from './push-labels';
 export * from './remote';

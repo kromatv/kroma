@@ -18,6 +18,7 @@ const shakaMock = vi.hoisted(() => ({
   load: vi.fn(() => Promise.resolve()),
   configure: vi.fn(),
   destroy: vi.fn(() => Promise.resolve()),
+  retryStreaming: vi.fn(() => true),
 }));
 vi.mock('shaka-player/dist/shaka-player.compiled.js', () => ({
   default: {
@@ -30,20 +31,29 @@ vi.mock('shaka-player/dist/shaka-player.compiled.js', () => ({
       load = shakaMock.load;
       configure = shakaMock.configure;
       destroy = shakaMock.destroy;
+      retryStreaming = shakaMock.retryStreaming;
     },
   },
 }));
 const hlsMock = vi.hoisted(() => ({
   supported: false,
+  on: vi.fn(),
+  startLoad: vi.fn(),
+  recoverMediaError: vi.fn(),
   loadSource: vi.fn(),
   attachMedia: vi.fn(),
   destroy: vi.fn(),
 }));
 vi.mock('hls.js', () => ({
   default: class {
+    static Events = { ERROR: 'hlsError' };
+    static ErrorTypes = { NETWORK_ERROR: 'networkError', MEDIA_ERROR: 'mediaError' };
     static isSupported() {
       return hlsMock.supported;
     }
+    on = hlsMock.on;
+    startLoad = hlsMock.startLoad;
+    recoverMediaError = hlsMock.recoverMediaError;
     loadSource = hlsMock.loadSource;
     attachMedia = hlsMock.attachMedia;
     destroy = hlsMock.destroy;
@@ -634,5 +644,88 @@ describe('HtmlEngine destroy', () => {
     expect(fv.listenerCount('loadedmetadata')).toBe(0);
     fv.fire('loadedmetadata');
     expect(fv.get('currentTime')).toBe(0);
+  });
+});
+
+describe('HtmlEngine stall recovery', () => {
+  beforeEach(() => {
+    shakaMock.supported = true;
+    shakaMock.retryStreaming.mockClear();
+    hlsMock.supported = true;
+    hlsMock.on.mockClear();
+    hlsMock.recoverMediaError.mockClear();
+    hlsMock.startLoad.mockClear();
+  });
+
+  it('nudges the element itself, never through the seek policy', async () => {
+    const fv = fakeVideo();
+    const { engine, hlsMasterUrl } = makeEngine({ fv, direct: false, forceNativeHls: true });
+    await tick();
+    fv.set('currentTime', 42);
+    hlsMasterUrl.mockClear();
+
+    engine.nudge();
+
+    expect(fv.get('currentTime')).toBeCloseTo(42.1, 5);
+    expect(hlsMasterUrl).not.toHaveBeenCalled();
+  });
+
+  it('asks Shaka to retry the stream', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false, masterShaka: true, forceNativeHls: false });
+    await tick();
+    await tick();
+
+    expect(engine.recoverStall()).toBe(true);
+    expect(shakaMock.retryStreaming).toHaveBeenCalledTimes(1);
+  });
+
+  it('recovers a media error through hls.js', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false, forceNativeHls: false });
+    await tick();
+    await tick();
+
+    expect(engine.recoverStall()).toBe(true);
+    expect(hlsMock.recoverMediaError).toHaveBeenCalledTimes(1);
+  });
+
+  it('declines where neither MSE engine is attached', async () => {
+    const fv = fakeVideo();
+    const { engine } = makeEngine({ fv, direct: false, forceNativeHls: true });
+    await tick();
+    await tick();
+
+    expect(engine.recoverStall()).toBe(false);
+  });
+
+  it('restarts on a fresh master anchored where it is told', async () => {
+    const fv = fakeVideo();
+    const { engine, hlsMasterUrl } = makeEngine({ fv, direct: false, forceNativeHls: true });
+    await tick();
+    hlsMasterUrl.mockClear();
+
+    engine.restart(1800);
+    await tick();
+    await tick();
+
+    expect(hlsMasterUrl).toHaveBeenCalledWith('vid1', false, 1800, 0, { copyCodecs: DECODABLE });
+    expect(engine.position()).toBe(7.5);
+  });
+
+  it('re-anchors where hls.js has given up on a fatal error', async () => {
+    const fv = fakeVideo();
+    const { hlsMasterUrl } = makeEngine({ fv, direct: false, forceNativeHls: false });
+    await tick();
+    await tick();
+    fv.set('currentTime', 42);
+    hlsMasterUrl.mockClear();
+    const onError = hlsMock.on.mock.calls[0]?.[1] as (e: string, d: unknown) => void;
+
+    for (let i = 0; i < 3; i += 1) onError('hlsError', { type: 'mediaError', fatal: true });
+    await tick();
+
+    expect(hlsMock.recoverMediaError).toHaveBeenCalledTimes(2);
+    expect(hlsMasterUrl).toHaveBeenCalledWith('vid1', false, 42, 0, { copyCodecs: DECODABLE });
   });
 });
