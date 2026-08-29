@@ -29,18 +29,15 @@ vi.mock('react-native', () => ({
   },
 }));
 
-interface RemoteControl {
-  remoteControlSubscriber: (handle: (direction: string) => void) => () => void;
-  remoteControlUnsubscriber: (stop: () => void) => void;
+interface RemoteConfig {
+  subscribe: (handle: (direction: string) => void) => () => void;
 }
 
-const nav = vi.hoisted(() => ({ control: null as RemoteControl | null }));
+const nav = vi.hoisted(() => ({ config: null as RemoteConfig | null }));
 
-vi.mock('react-tv-space-navigation', () => ({
-  SpatialNavigation: {
-    configureRemoteControl: (control: RemoteControl) => {
-      nav.control = control;
-    },
+vi.mock('@kroma/spatial-nav/react', () => ({
+  configureRemote: (config: RemoteConfig) => {
+    nav.config = config;
   },
 }));
 
@@ -56,7 +53,7 @@ async function load(
   rn.os = os;
   rn.hasTvEvents = hasTvEvents;
   rn.remote = null;
-  nav.control = null;
+  nav.config = null;
   vi.resetModules();
 
   const remote: Remote = await import('./focus-remote');
@@ -67,8 +64,8 @@ async function load(
 
 function navigator(): { moves: string[]; stop: () => void } {
   const moves: string[] = [];
-  if (!nav.control) throw new Error('configureRemote never ran');
-  const stop = nav.control.remoteControlSubscriber((direction) => moves.push(direction));
+  if (!nav.config) throw new Error('configureRemote never ran');
+  const stop = nav.config.subscribe((direction) => moves.push(direction));
   return { moves, stop };
 }
 
@@ -113,13 +110,6 @@ describe('the navigator subscription', () => {
     renderHook(() => remote.useRemoteBridge());
     press('up');
     expect(only.moves).toEqual([]);
-  });
-
-  it('unsubscribes by calling the stopper it was given', async () => {
-    await load();
-    const stop = vi.fn();
-    nav.control?.remoteControlUnsubscriber(stop);
-    expect(stop).toHaveBeenCalledOnce();
   });
 });
 
@@ -361,5 +351,19 @@ describe('one physical press', () => {
     press('right');
     keyDown(host.result.current, { code: 'ArrowRight' });
     expect(ring.moves).toEqual(['right']);
+  });
+
+  it('moves the ring once when a nested scope draws a second key host', async () => {
+    const { remote } = await load('android');
+    const ring = navigator();
+
+    const screen = renderHook(() => remote.useRemoteHostProps());
+    const nested = renderHook(() => remote.useRemoteHostProps(false));
+
+    keyDown(screen.result.current, { code: 'ArrowRight' });
+    keyDown(nested.result.current, { code: 'ArrowRight' });
+
+    expect(ring.moves).toEqual(['right']);
+    expect(nested.result.current).toEqual({});
   });
 });

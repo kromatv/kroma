@@ -6,6 +6,7 @@
 import { onDeviceStorageChange, setArtworkScale } from '@kroma/core';
 import { setFrostEnabled } from '@kroma/ui/kit';
 import { useSyncExternalStore } from 'react';
+import { clientHardware } from '#tv/app/clientHardware';
 import { devicePref } from '#tv/app/devicePref';
 
 /** A subscribable one-of-N device preference (devicePref + change notification). */
@@ -16,7 +17,9 @@ export interface ReactivePref<T extends string> {
 }
 
 /** A reactive one-of-N preference stored under `key` (unknown stored values
- * read as `fallback`, writes never throw - see devicePref).
+ * read as `fallback`, writes never throw - see devicePref). A function
+ * `fallback` is called on each read, for a default that depends on something
+ * the shell installs after this module is evaluated.
  *
  * Reads through to the device store until this session sets a value, because
  * the native shells install that store only once the session file has been
@@ -27,17 +30,18 @@ export interface ReactivePref<T extends string> {
 export function reactivePref<T extends string>(
   key: string,
   values: readonly T[],
-  fallback: T,
+  fallback: T | (() => T),
 ): ReactivePref<T> {
-  const stored = devicePref(key, values, fallback);
+  const stored = () =>
+    devicePref(key, values, typeof fallback === 'string' ? fallback : fallback());
   const listeners = new Set<() => void>();
   let chosen: T | null = null;
   return {
-    get: () => chosen ?? stored.get(),
+    get: () => chosen ?? stored().get(),
     set(value: T) {
-      if (value === (chosen ?? stored.get())) return;
+      if (value === (chosen ?? stored().get())) return;
       chosen = value;
-      stored.set(value);
+      stored().set(value);
       for (const listener of listeners) listener();
     },
     subscribe(listener: () => void) {
@@ -63,15 +67,36 @@ export const perfHudPrefStore = reactivePref('kroma:perf-hud', ['off', 'on'] as 
  * can keep up; the lower steps trade sharpness for decode time and texture
  * memory, which is what a set with a weak SoC runs out of first while scrolling
  * a grid. Each step lands on its own rendition bucket at a rail tile (320 →
- * 320/240/160) and at the hero (960 → 960/780/480). */
+ * 320/240/160) and at the hero (960 → 960/780/480).
+ *
+ * The default is `full`, and `high` on a set reporting no more RAM than
+ * `LOW_MEMORY_GB` - the one capability read that tells a 2 GB Android TV box
+ * from a panel that keeps up, where a model name would tell nothing. A quality
+ * chosen in settings wins over both. */
 export const ARTWORK_SCALE = { full: 1, high: 0.75, medium: 0.5 } as const;
 
 export type ArtworkQuality = keyof typeof ARTWORK_SCALE;
 
+const LOW_MEMORY_GB = 2;
+
+// Latched on the first answer rather than read per call: a set's RAM does not
+// move mid-session, and a native shell installs its hardware source after this
+// module is evaluated, so the reads before that have nothing to answer with.
+let lowMemory: boolean | null = null;
+
+function defaultArtworkQuality(): ArtworkQuality {
+  if (lowMemory === null) {
+    const gb = clientHardware().memoryGb;
+    if (gb === null) return 'full';
+    lowMemory = gb <= LOW_MEMORY_GB;
+  }
+  return lowMemory ? 'high' : 'full';
+}
+
 export const artworkPrefStore = reactivePref(
   'kroma:artwork',
   Object.keys(ARTWORK_SCALE) as readonly ArtworkQuality[],
-  'full',
+  defaultArtworkQuality,
 );
 
 // Applied on import rather than from an effect, and this module is loaded by the

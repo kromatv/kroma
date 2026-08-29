@@ -5,12 +5,13 @@
 // momentum intact, a sideways swipe or shift+wheel pans the row. Only under a
 // D-pad, where no wheel exists, is the row translated by hand.
 //
-// LRUD orders siblings by REGISTRATION and `SpatialNavigationNode` cannot declare
-// an index, so a tile mounting at the head of a sliding window registers LAST and
-// walking left dies at the window's edge. The row therefore GROWS and never
-// shrinks: tiles are mounted from the start of the data up to the furthest the
-// selection has reached.
+// A tile registers with the navigator wherever the row puts it and declares no
+// slot of its own, so a tile mounting at the head of a sliding window would
+// register LAST and walking left would die at the window's edge. The row
+// therefore GROWS and never shrinks: tiles are mounted from the start of the
+// data up to the furthest the selection has reached.
 
+import { NavigatorView } from '@kroma/spatial-nav/react';
 import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type LayoutChangeEvent,
@@ -21,8 +22,8 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { SpatialNavigationView } from 'react-tv-space-navigation';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
+import { MovingStrip } from '#ui/components/organisms/virtual/moving-strip';
 import { styles } from '#ui/core';
 import { FocusLiftView } from '#ui/lib/focus-lift';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
@@ -30,7 +31,6 @@ import { FocusReporter } from '#ui/lib/focus-report';
 import { WEB } from '#ui/lib/platform';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { edgeScrollOffset, fitPitch, horizontalInset, maxOffset } from './edge-scroll';
-import { MovingRow } from './moving-row';
 import { edgeWidth, RailEdge } from './rail-edge';
 import { KEY_GRACE_MS, useKeyGrace } from './use-key-grace';
 
@@ -62,8 +62,8 @@ function VirtualRail<T>({
   edgeMargin = 1,
   arrows = true,
 }: Readonly<VirtualRailProps<T>>) {
-  // Without a <FocusScope> above there is no navigator, and its view THROWS on a
-  // missing root. Unscoped, the row keeps everything except the D-pad.
+  // Without a <FocusScope> above there is no navigator. Unscoped, the row keeps
+  // everything except the D-pad.
   const scoped = useInsideFocusScope();
   // Translated only where the D-pad drives the row; everywhere else the row is
   // a real scroller.
@@ -183,9 +183,8 @@ function VirtualRail<T>({
     const item = data[index];
     if (item === undefined) continue;
     tiles.push(
-      // <FocusReporter> is the only signal that fires in BOTH directions: the
-      // navigator's `onActive` is monotone, so a row wired to that scrolls
-      // right and freezes going left.
+      // <FocusReporter> rather than a node per tile: the tile's own focusable
+      // is already the node, and the row only needs to know which one took it.
       <FocusLiftView key={index} style={cell}>
         <FocusReporter onFocus={() => select(index)}>{renderItem(item, index)}</FocusReporter>
       </FocusLiftView>,
@@ -202,7 +201,7 @@ function VirtualRail<T>({
   const fadeEnd = fadeOn && offset < furthest - 1;
 
   const row = scoped ? (
-    <SpatialNavigationView direction="horizontal">{tiles}</SpatialNavigationView>
+    <NavigatorView direction="horizontal">{tiles}</NavigatorView>
   ) : (
     <View style={s.row}>{tiles}</View>
   );
@@ -216,9 +215,9 @@ function VirtualRail<T>({
     >
       {translated ? (
         <View style={clipStyles.clip}>
-          <MovingRow offset={offset} style={contentStyle}>
+          <MovingStrip axis="x" offset={offset} style={contentStyle}>
             {row}
-          </MovingRow>
+          </MovingStrip>
         </View>
       ) : (
         <ScrollView

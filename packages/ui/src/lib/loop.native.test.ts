@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 
 import { renderHook } from '@testing-library/react';
-import { Animated } from 'react-native';
+import { Animated, Easing } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type LoopKind, useLoop } from './loop';
 import { useLoop as useLoopWeb } from './loop.web';
 
-const KINDS: LoopKind[] = ['spin', 'sweep', 'pulse', 'blink'];
+const KINDS: LoopKind[] = ['spin', 'sweep', 'pulse', 'blink', 'halo'];
 
 function webLoop(kind: LoopKind, ms: number, active?: boolean) {
   return renderHook(() => useLoopWeb(kind, ms, active)).result.current;
@@ -52,6 +52,28 @@ describe('the native half', () => {
     // Down to the floor and back, each leg half the stated duration.
     const [legs] = sequence.mock.calls[0] ?? [];
     expect(legs).toHaveLength(2);
+    unmount();
+  });
+
+  it('swells the halo as it fades, both off the one driven value', () => {
+    const { result, unmount } = renderHook(() => useLoop('halo', 1800));
+    const style = result.current as { opacity: unknown; transform: [{ scale: unknown }] };
+    expect(style.opacity).toBeTypeOf('object');
+    expect(style.transform[0].scale).toBeTypeOf('object');
+    unmount();
+  });
+
+  it('eases the halo out and back in, where the breathing kinds ease in-out both ways', () => {
+    const timing = vi.spyOn(Animated, 'timing');
+    const { unmount } = renderHook(() => useLoop('halo', 1800));
+    const [out, back] = timing.mock.calls.map(([, config]) => config.easing);
+    // Sampled rather than compared by identity: `Easing.out(...)` builds a fresh
+    // function every call.
+    expect(out?.(0.25)).toBeCloseTo(Easing.out(Easing.ease)(0.25), 6);
+    expect(back?.(0.25)).toBeCloseTo(Easing.in(Easing.ease)(0.25), 6);
+    for (const [, config] of timing.mock.calls) {
+      expect(config).toMatchObject({ duration: 900, useNativeDriver: true });
+    }
     unmount();
   });
 
@@ -139,6 +161,17 @@ describe('the web half', () => {
 
   it('returns null while inactive, costing the page nothing', () => {
     expect(webLoop('spin', 800, false)).toBeNull();
+  });
+
+  it('spells the halo as keyframes whose two legs carry their own easing', () => {
+    const [rule] = webLoop('halo', 1800) as [{ animationKeyframes: Record<string, unknown>[] }];
+    // The same stops and the same curves as the native half: `Easing.ease` IS
+    // cubic-bezier(0.42, 0, 1, 1), which CSS calls `ease-in`.
+    expect(rule.animationKeyframes[0]).toEqual({
+      '0%': { opacity: 0.35, transform: 'scale(0.8)', animationTimingFunction: 'ease-out' },
+      '50%': { opacity: 0, transform: 'scale(1.3)', animationTimingFunction: 'ease-in' },
+      '100%': { opacity: 0.35, transform: 'scale(0.8)' },
+    });
   });
 });
 

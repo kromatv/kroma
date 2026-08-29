@@ -40,7 +40,7 @@ export const story = defineStory({
   ),
 });
 
-The browse screens' poster grid: a library of thousands, of which only the rows near the viewport are mounted. Focus reaches the end anyway, because the navigator registers a *virtual* node per row that outlives the tile rendered into it. On the web the wheel scrolls it too, and that moves the selection, unlike a `VirtualRail`'s wheel, because the navigator's `scrollTo` is implemented as a focus grab.
+The browse screens' poster grid: a library of thousands, of which only the rows near the viewport are mounted. Focus reaches the end anyway, because every row and every cell declares the slot it holds in the DATA, so a row that leaves the window and comes back lands where it was rather than at the end. On the web the wheel scrolls it too, and that moves the selection, unlike a `VirtualRail`'s wheel: the grid has no scroll position of its own, only a focused row.
 
 The columns are auto-filled from the grid's measured box, like `<Grid min>`: drag the preview's width and watch the count change rather than the last column leave the frame. Each tile is handed the width of the cell it lands in, which is what lets it size its own artwork request.
 

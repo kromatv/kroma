@@ -5,8 +5,9 @@
 // of the screen's life, and nothing on screen says why.
 
 import { cleanup, render, screen } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { View } from 'react-native';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { FocusLiftHost, FocusLiftView, LIFTED } from '#ui/lib/focus-lift';
 import { configureRemote } from '#ui/lib/focus-remote';
@@ -80,5 +81,43 @@ describe('a lifting container', () => {
     pair();
 
     expect(holder('Elsewhere').style.zIndex).toBe('0');
+  });
+});
+
+// The app mounts under <StrictMode> (mount.web.tsx), which double-invokes
+// renders and effects. A lift chain that reports from inside its `setHeld`
+// updater is counted twice there and warns that it updated one component while
+// another rendered - which is what left the ring on every tile it had passed.
+describe('a lift chain under StrictMode', () => {
+  function nested() {
+    render(
+      <StrictMode>
+        <FocusScope>
+          <FocusLiftView>
+            <FocusLiftView>
+              <Focusable label="Tile" autoFocus />
+            </FocusLiftView>
+          </FocusLiftView>
+        </FocusScope>
+      </StrictMode>,
+    );
+  }
+
+  it('never updates one container while another is rendering', () => {
+    const said: string[] = [];
+    const spy = vi.spyOn(console, 'error').mockImplementation((...a) => said.push(String(a[0])));
+
+    nested();
+
+    spy.mockRestore();
+    expect(said.filter((line) => /while rendering a different component/.test(line))).toEqual([]);
+  });
+
+  it('lifts every container between the control and the screen exactly once', () => {
+    nested();
+
+    const inner = screen.getByLabelText('Tile').parentElement as HTMLElement;
+    expect(inner.style.zIndex).toBe('1');
+    expect((inner.parentElement as HTMLElement).style.zIndex).toBe('1');
   });
 });

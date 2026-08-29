@@ -18,21 +18,17 @@ interface TvSearchResultsProps {
   /** The pane's width, when the chrome around it already knows it (the
    *  platform's own search shell). Omit and the grid measures its own box. */
   width?: number;
-  onOpen: (hit: SearchResult) => void;
   header?: ReactNode;
 }
 
 /** The results half of the search screen, shared by both chromes (our on-screen
  * keyboard and the platform's own), so the two only ever differ in how the query
  * is typed. */
-export function TvSearchResults({
-  hits,
-  query,
-  width,
-  onOpen,
-  header,
-}: Readonly<TvSearchResultsProps>) {
+export function TvSearchResults({ hits, query, width, header }: Readonly<TvSearchResultsProps>) {
   const t = useT();
+  // Read out here, not in the branch below: inside it `query` joins the grid's
+  // own cache guard, and then every keystroke rebuilds every poster.
+  const emptyMessage = query.trim() ? t('search.noResults') : t('search.empty');
   return (
     <FocusScroll style={s.scroll} offsetFromStart={80}>
       {header}
@@ -56,13 +52,13 @@ export function TvSearchResults({
               title={h.title}
               art={h.poster}
               tint={h.colors}
-              onPress={() => onOpen(h)}
+              onPress={h.onOpen}
             />
           ))}
         </Grid>
       ) : (
         <Text variant="leadTv" pt={20} color="text/40">
-          {query.trim() ? t('search.noResults') : t('search.empty')}
+          {emptyMessage}
         </Text>
       )}
     </FocusScroll>

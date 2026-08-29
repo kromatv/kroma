@@ -1,9 +1,6 @@
-import type { ComponentProps, ReactNode, RefObject } from 'react';
+import { NavigatorItem, type NavigatorItemProps, type NodeHandle } from '@kroma/spatial-nav/react';
+import type { ReactNode, RefObject } from 'react';
 import { Animated, type StyleProp, StyleSheet, type View, type ViewStyle } from 'react-native';
-import {
-  SpatialNavigationFocusableView,
-  type SpatialNavigationNodeRef,
-} from 'react-tv-space-navigation';
 import type { AnySv } from '#ui/core';
 import type { RingToken } from '#ui/core/theme';
 import type { splitBoxLayers } from '#ui/lib/box-layers';
@@ -24,11 +21,11 @@ import { Painted, TouchPressable } from './touch-pressable';
 // The navigator's `style` type follows whichever react-native copy the consuming
 // app resolves (the tvos fork on a TV, mainline on the phone), and those two are
 // not assignable to each other.
-type NavigatorStyle = ComponentProps<typeof SpatialNavigationFocusableView>['style'];
+type NavigatorStyle = NavigatorItemProps['style'];
 const flat = (style: StyleProp<ViewStyle>[]): NavigatorStyle =>
   StyleSheet.flatten(style) as NavigatorStyle;
 
-type NavigatorViewProps = ComponentProps<typeof SpatialNavigationFocusableView>['viewProps'];
+type ItemViewProps = NavigatorItemProps['viewProps'];
 
 function DisabledForm({
   at,
@@ -133,7 +130,7 @@ function NavigatorForm({
   entry,
   at,
 }: Readonly<{
-  entry: RefObject<SpatialNavigationNodeRef | null>;
+  entry: RefObject<NodeHandle | null>;
   at: {
     onLayout: FocusableProps['onLayout'];
     webKeys: WebKeys;
@@ -183,7 +180,7 @@ function NavigatorForm({
   });
 
   return (
-    <SpatialNavigationFocusableView
+    <NavigatorItem
       ref={entry}
       onSelect={at.press}
       onFocus={at.handleFocus}
@@ -213,14 +210,14 @@ function NavigatorForm({
                 onPointerCancel: at.onPointerUp,
               }
             : null),
-        } as NavigatorViewProps
+        } as ItemViewProps
       }
     >
-      {({ isFocused }: { isFocused: boolean }) => {
+      {({ focused }) => {
         const render = (pressed: boolean) =>
           typeof at.children === 'function'
             ? at.children({
-                focused: isFocused,
+                focused,
                 pressed,
                 hovered: at.hovered,
                 slots: at.resolve(pressed),
@@ -240,7 +237,7 @@ function NavigatorForm({
           />
         );
       }}
-    </SpatialNavigationFocusableView>
+    </NavigatorItem>
   );
 }
 

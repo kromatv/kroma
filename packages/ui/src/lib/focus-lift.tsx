@@ -15,7 +15,15 @@
 // It is wired into <Focusable> and the kit's focus containers, so components
 // inherit it rather than each remembering to stack themselves.
 
-import { createContext, type ReactNode, type Ref, useContext, useMemo, useState } from 'react';
+import {
+  createContext,
+  type ReactNode,
+  type Ref,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
 
 type Report = (focused: boolean) => void;
@@ -53,22 +61,26 @@ export const GROUNDED: ViewStyle = { zIndex: 0 };
 export function FocusLiftHost({ children }: Readonly<{ children: (held: boolean) => ReactNode }>) {
   const [held, setHeld] = useState(0);
   const parent = useFocusLift();
+  const lifted = held > 0;
 
   const report = useMemo<Report>(
-    () => (focused) => {
-      setHeld((n) => {
-        const next = Math.max(0, n + (focused ? 1 : -1));
-        // Only the edges concern the parent: this subtree either holds the
-        // focus or it does not, however many controls inside it come and go.
-        if (n === 0 && next > 0) parent?.(true);
-        if (n > 0 && next === 0) parent?.(false);
-        return next;
-      });
-    },
-    [parent],
+    () => (focused) => setHeld((n) => Math.max(0, n + (focused ? 1 : -1))),
+    [],
   );
 
-  return <LiftContext.Provider value={report}>{children(held > 0)}</LiftContext.Provider>;
+  // Only the edges concern the parent: this subtree either holds the focus or
+  // it does not, however many controls inside it come and go. Told from an
+  // effect rather than from inside the `setHeld` updater, because React runs an
+  // updater during the NEXT render - so reporting there updates one component
+  // while another is rendering, and StrictMode double-invokes it and counts the
+  // subtree twice. The cleanup is what lets go when a lifted subtree unmounts.
+  useEffect(() => {
+    if (!parent || !lifted) return;
+    parent(true);
+    return () => parent(false);
+  }, [lifted, parent]);
+
+  return <LiftContext.Provider value={report}>{children(lifted)}</LiftContext.Provider>;
 }
 
 /**

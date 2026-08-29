@@ -112,6 +112,64 @@ describe('the artwork quality row', () => {
   });
 });
 
+describe('the artwork default', () => {
+  const reporting = (gb: number | null) => ({
+    cpuCores: () => 4,
+    memoryBytes: () => (gb === null ? null : gb * 1024 ** 3),
+    freeMemoryBytes: () => null,
+  });
+
+  const boot = async (gb: number | null) => {
+    vi.resetModules();
+    const core = await import('@kroma/core');
+    const hardware = await import('#tv/app/clientHardware');
+    hardware.setHardwareSource(reporting(gb));
+    const store = await import('./store');
+    return { core, hardware, store };
+  };
+
+  it('stays full on a set that reports enough memory', async () => {
+    const { core, store } = await boot(4);
+
+    expect(store.artworkPrefStore.get()).toBe('full');
+    expect(core.artworkScaleValue()).toBe(1);
+  });
+
+  it('steps down to high on a set that reports the low-memory ceiling or less', async () => {
+    const { core, store } = await boot(2);
+
+    expect(store.artworkPrefStore.get()).toBe('high');
+    expect(core.artworkScaleValue()).toBe(0.75);
+  });
+
+  it('stays full where the set will not report its memory at all', async () => {
+    const { store } = await boot(null);
+
+    expect(store.artworkPrefStore.get()).toBe('full');
+  });
+
+  it('is beaten by the quality the viewer chose', async () => {
+    window.localStorage.setItem('kroma:artwork', 'full');
+
+    const { store } = await boot(2);
+
+    expect(store.artworkPrefStore.get()).toBe('full');
+    window.localStorage.removeItem('kroma:artwork');
+  });
+
+  it('reads the hardware source a native shell installs after this module is evaluated', async () => {
+    vi.resetModules();
+    const hardware = await import('#tv/app/clientHardware');
+    hardware.setHardwareSource(null);
+    const store = await import('./store');
+    expect(store.artworkPrefStore.get()).toBe('full');
+
+    hardware.setHardwareSource(reporting(2));
+
+    expect(store.artworkPrefStore.get()).toBe('high');
+  });
+});
+
 describe('a preference stored by an earlier run', () => {
   it('is what the next module evaluation reads, not the fallback', async () => {
     perfHudPrefStore.set('on');

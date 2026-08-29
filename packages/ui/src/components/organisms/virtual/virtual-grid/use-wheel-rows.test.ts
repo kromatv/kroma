@@ -3,8 +3,8 @@
 import { renderHook } from '@testing-library/react';
 import type { RefObject } from 'react';
 import type { View } from 'react-native';
-import type { SpatialNavigationVirtualizedListRef } from 'react-tv-space-navigation';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { GridRows } from './grid-rows';
 import { useWheelScroll } from './use-wheel-rows';
 
 let pan: ((delta: number) => void) | null = null;
@@ -17,12 +17,10 @@ vi.mock('#ui/lib/wheel-pan', () => ({
 const PITCH = 100;
 const SNAP_AFTER_MS = 160;
 
-function listRef(focused = 0) {
+function gridRows(focusedRow = 0) {
   const focus = vi.fn();
-  const ref = {
-    current: { currentlyFocusedItemIndex: focused, focus },
-  } as unknown as RefObject<SpatialNavigationVirtualizedListRef | null>;
-  return { ref, focus };
+  const rows: GridRows = { focusedRow, focus };
+  return { rows, focus };
 }
 
 const viewport = { current: null } as RefObject<View | null>;
@@ -45,14 +43,14 @@ afterEach(() => {
 
 describe('useWheelScroll', () => {
   it('reports no fraction until a wheel actually turns', () => {
-    const { ref } = listRef();
-    const { result } = renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
+    const { rows } = gridRows();
+    const { result } = renderHook(() => useWheelScroll(viewport, rows, 9, 0, PITCH));
     expect(result.current).toBeNull();
   });
 
   it('moves the strip 1:1 with the input, without banking', () => {
-    const { ref } = listRef();
-    const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
+    const { rows } = gridRows();
+    const { result, rerender } = renderHook(() => useWheelScroll(viewport, rows, 9, 0, PITCH));
 
     wheel(PITCH / 2);
     rerender();
@@ -60,8 +58,8 @@ describe('useWheelScroll', () => {
   });
 
   it('accumulates across events rather than restarting each time', () => {
-    const { ref } = listRef();
-    const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
+    const { rows } = gridRows();
+    const { result, rerender } = renderHook(() => useWheelScroll(viewport, rows, 9, 0, PITCH));
     wheel(PITCH);
     wheel(PITCH);
     rerender();
@@ -69,24 +67,16 @@ describe('useWheelScroll', () => {
   });
 
   it('picks up from wherever the selection already is', () => {
-    const { ref } = listRef(4);
-    const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
+    const { rows } = gridRows(4);
+    const { result, rerender } = renderHook(() => useWheelScroll(viewport, rows, 9, 0, PITCH));
     wheel(PITCH);
     rerender();
     expect(result.current).toBeCloseTo(5, 5);
   });
 
-  it('starts from the top when the list has not mounted yet', () => {
-    const ref = { current: null } as RefObject<SpatialNavigationVirtualizedListRef | null>;
-    const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
-    wheel(PITCH * 2);
-    rerender();
-    expect(result.current).toBeCloseTo(2, 5);
-  });
-
   it('clamps at the ends instead of running off the list', () => {
-    const { ref } = listRef();
-    const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 3, 0, PITCH));
+    const { rows } = gridRows();
+    const { result, rerender } = renderHook(() => useWheelScroll(viewport, rows, 3, 0, PITCH));
 
     wheel(-PITCH * 10);
     rerender();
@@ -98,8 +88,8 @@ describe('useWheelScroll', () => {
   });
 
   it('folds a header row into the last index', () => {
-    const { ref } = listRef();
-    const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 3, 1, PITCH));
+    const { rows } = gridRows();
+    const { result, rerender } = renderHook(() => useWheelScroll(viewport, rows, 3, 1, PITCH));
     wheel(PITCH * 100);
     rerender();
     // The header occupies list row 0, so the last content row is index 4.
@@ -107,8 +97,8 @@ describe('useWheelScroll', () => {
   });
 
   it('keeps focus following the viewport as rows are crossed', () => {
-    const { ref, focus } = listRef();
-    renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
+    const { rows, focus } = gridRows();
+    renderHook(() => useWheelScroll(viewport, rows, 9, 0, PITCH));
 
     // Under half a row: nearest is still 0, so nothing to re-focus.
     wheel(PITCH * 0.4);
@@ -119,8 +109,8 @@ describe('useWheelScroll', () => {
   });
 
   it('does not re-focus a row it is already on', () => {
-    const { ref, focus } = listRef();
-    renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
+    const { rows, focus } = gridRows();
+    renderHook(() => useWheelScroll(viewport, rows, 9, 0, PITCH));
     wheel(PITCH);
     expect(focus).toHaveBeenCalledTimes(1);
     wheel(PITCH * 0.1);
@@ -128,8 +118,8 @@ describe('useWheelScroll', () => {
   });
 
   it('snaps when the wheel stops, handing the transform back to the row', () => {
-    const { ref, focus } = listRef();
-    const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
+    const { rows, focus } = gridRows();
+    const { result, rerender } = renderHook(() => useWheelScroll(viewport, rows, 9, 0, PITCH));
 
     wheel(PITCH * 1.4);
     rerender();
@@ -143,8 +133,8 @@ describe('useWheelScroll', () => {
   });
 
   it('defers the snap while the wheel is still turning', () => {
-    const { ref } = listRef();
-    const { result, rerender } = renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
+    const { rows } = gridRows();
+    const { result, rerender } = renderHook(() => useWheelScroll(viewport, rows, 9, 0, PITCH));
 
     wheel(PITCH);
     vi.advanceTimersByTime(SNAP_AFTER_MS - 20);
@@ -160,8 +150,8 @@ describe('useWheelScroll', () => {
   });
 
   it('settles on the nearest row when the gesture ends mid-row', () => {
-    const { ref, focus } = listRef();
-    renderHook(() => useWheelScroll(viewport, ref, 9, 0, PITCH));
+    const { rows, focus } = gridRows();
+    renderHook(() => useWheelScroll(viewport, rows, 9, 0, PITCH));
 
     // 2.6 rows: nearest is 3, not the last row crossed.
     wheel(PITCH * 2.6);

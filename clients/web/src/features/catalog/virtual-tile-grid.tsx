@@ -1,6 +1,8 @@
 import {
   type CSSProperties,
   Fragment,
+  memo,
+  type ReactElement,
   type ReactNode,
   type RefObject,
   useLayoutEffect,
@@ -82,6 +84,39 @@ function useRowWindow(box: RefObject<HTMLDivElement | null>, shape: GridShape): 
   return shown;
 }
 
+interface GridRowProps<T> {
+  data: readonly T[];
+  from: number;
+  to: number;
+  top: number;
+  cell: number;
+  keyOf: (item: T) => string;
+  renderItem: (item: T, width: number) => ReactNode;
+}
+
+// Memoised, and the row takes the slice bounds rather than the slice: every
+// prop then holds still while the window moves, so a scroll re-renders the rows
+// that entered it and leaves the ones already on screen alone. The React
+// Compiler cannot do it from the grid - its cache slots are per component body,
+// and a row built in a map has no slot per iteration.
+const GridRow = memo(function GridRow<T>({
+  data,
+  from,
+  to,
+  top,
+  cell,
+  keyOf,
+  renderItem,
+}: Readonly<GridRowProps<T>>) {
+  return (
+    <div style={{ ...ROW, top, gap: TILE_GAP }}>
+      {data.slice(from, to).map((item) => (
+        <Fragment key={keyOf(item)}>{renderItem(item, cell)}</Fragment>
+      ))}
+    </div>
+  );
+}) as <T>(props: Readonly<GridRowProps<T>>) => ReactElement;
+
 export interface VirtualTileGridProps<T> {
   data: readonly T[];
   keyOf: (item: T) => string;
@@ -96,8 +131,7 @@ export function VirtualTileGrid<T>({ data, keyOf, renderItem }: Readonly<Virtual
   const room = useRoom(box);
   const shape = gridShape(room, data.length);
   const shown = useRowWindow(box, shape);
-  const rows: number[] = [];
-  for (let row = shown.first; row < shown.first + shown.count; row++) rows.push(row);
+  const rows = Array.from({ length: shown.count }, (_, at) => shown.first + at);
 
   return (
     <div
@@ -111,11 +145,16 @@ export function VirtualTileGrid<T>({ data, keyOf, renderItem }: Readonly<Virtual
         // window: keyed positionally, a shift of one row hands every key a
         // different title, and React remounts the lot. A remounted tile loses
         // the focus it was holding and replays its artwork's fade-in.
-        <div key={row} style={{ ...ROW, top: row * shape.pitch, gap: TILE_GAP }}>
-          {data.slice(row * shape.columns, (row + 1) * shape.columns).map((item) => (
-            <Fragment key={keyOf(item)}>{renderItem(item, shape.cell)}</Fragment>
-          ))}
-        </div>
+        <GridRow
+          key={row}
+          data={data}
+          from={row * shape.columns}
+          to={(row + 1) * shape.columns}
+          top={row * shape.pitch}
+          cell={shape.cell}
+          keyOf={keyOf}
+          renderItem={renderItem}
+        />
       ))}
     </div>
   );

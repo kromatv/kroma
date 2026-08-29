@@ -11,7 +11,6 @@ import { useT } from '@kroma/ui';
 import {
   armEscapeGuard,
   Box,
-  color,
   Divider,
   entryDefaultSize,
   Focusable,
@@ -24,6 +23,7 @@ import {
   styles,
   Text,
   useAnchoredPlacement,
+  useStableCallback,
   useTheme,
 } from '@kroma/ui/kit';
 import {
@@ -37,6 +37,7 @@ import {
   useState,
 } from 'react';
 import type { StyleProp, View, ViewStyle } from 'react-native';
+import { SearchOption } from './search-select-option';
 
 // A popup is `position: fixed` and its list scrolls on one axis, neither of
 // which React Native has, so the panel stays real CSS. Every value in it still
@@ -51,21 +52,6 @@ const BACKDROP: CSSProperties = {
 };
 
 const LIST: CSSProperties = { maxHeight: 256, overflowY: 'auto', padding: 6 };
-
-const OPTION: CSSProperties = {
-  position: 'relative',
-  display: 'flex',
-  width: '100%',
-  alignItems: 'center',
-  margin: 0,
-  padding: '8px 32px 8px 12px',
-  border: 0,
-  borderRadius: 4,
-  textAlign: 'left',
-  cursor: 'pointer',
-  outline: 'none',
-  userSelect: 'none',
-};
 
 const s = styles({ ring: { ring: 'focusEdge' } });
 
@@ -155,6 +141,7 @@ function SearchPanel({
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLDivElement>(null);
   const t = useT();
+  const pick = useStableCallback(onPick);
   const at = useAnchoredPlacement(anchor, { minWidth: 240, matchWidth: true, maxHeight: 320 });
   const theme = useTheme();
   const panel: CSSProperties = {
@@ -208,7 +195,7 @@ function SearchPanel({
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const hit = filtered[active];
-      if (hit) onPick(hit);
+      if (hit) pick(hit);
     } else if (e.key === 'Escape' || e.key === 'Tab') {
       e.preventDefault();
       if (e.key === 'Escape') armEscapeGuard();
@@ -261,34 +248,16 @@ function SearchPanel({
             </Text>
           ) : (
             filtered.map((o, i) => (
-              // A real button, not a div: the row is a pointer target, and the
-              // keyboard reaches it through the combobox input above rather than
-              // by focus, so `tabIndex={-1}` keeps it out of the tab ring while
-              // the element stays interactive for assistive tech.
-              <button
+              <SearchOption
                 key={o}
-                type="button"
                 id={`${listId}-${i}`}
-                role="option"
-                aria-selected={o === value}
-                tabIndex={-1}
-                onMouseEnter={() => setActive(i)}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => onPick(o)}
-                style={{
-                  ...OPTION,
-                  background: i === active ? color('tint/6') : 'transparent',
-                }}
-              >
-                <Text variant="meta" color={o === value ? 'accentText' : 'text'}>
-                  {o}
-                </Text>
-                {o === value ? (
-                  <Box absolute right={10}>
-                    <Icon name="check" size={14} thickness={2.4} color="accentText" />
-                  </Box>
-                ) : null}
-              </button>
+                option={o}
+                index={i}
+                selected={o === value}
+                active={i === active}
+                onHover={setActive}
+                onPick={pick}
+              />
             ))
           )}
         </div>

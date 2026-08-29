@@ -129,7 +129,7 @@ describe('usePressScale on the web', () => {
 
   it('scales a measured row by its own size, like the native half', () => {
     const { result } = renderHook(() => usePressScaleWeb());
-    act(() => result.current.onLayout(layout(900, 60)));
+    act(() => result.current.onLayout?.(layout(900, 60)));
     act(() => result.current.onPressIn());
     expect(result.current.style.transform).toEqual([{ scale: pressScaleFor(900) }]);
   });
@@ -174,7 +174,7 @@ describe('usePressScale on native', () => {
     // pixels a small button does, not collapse by the same percentage.
     const timing = vi.spyOn(Animated, 'timing');
     const { result } = renderHook(() => usePressScale());
-    act(() => result.current.onLayout(layout(900, 60)));
+    act(() => result.current.onLayout?.(layout(900, 60)));
     act(() => result.current.onPressIn());
     const [, config] = timing.mock.calls[0] ?? [];
     expect(config?.toValue).toBe(pressScaleFor(900));

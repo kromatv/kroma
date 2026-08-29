@@ -52,7 +52,7 @@ function usePlatformFocus(owner: FocusOwner | null, onEdge?: EdgeHandler): void 
 
 interface PlatformFocusState {
   owner: FocusOwner | null;
-  /** For <SpatialNavigationRoot>, whose directions are wider than the four a
+  /** For <NavigatorRoot>, whose directions are wider than the four a
    *  chrome is told about. */
   onEdge: (direction: string) => void;
   host: PlatformFocusHost;

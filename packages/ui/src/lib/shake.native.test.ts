@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { AccessibilityInfo, Animated } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { useShake } from './shake';
+import { useShake as useShakeWeb } from './shake.web';
 
 type Legs = Animated.CompositeAnimation[];
 
@@ -19,9 +20,16 @@ function prefers(reduced: boolean): void {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
-describe('useShake', () => {
+const LEG_MS = 80;
+
+function travelOf(style: unknown): number {
+  return (style as { transform: [{ translateX: number }] }).transform[0].translateX;
+}
+
+describe('the native half', () => {
   it('schedules nothing before the first refusal', () => {
     prefers(false);
     const sequence = vi.spyOn(Animated, 'sequence');
@@ -109,5 +117,78 @@ describe('useShake', () => {
 
     expect(stop).toHaveBeenCalled();
     expect(travel).toHaveProperty('_value', 0);
+  });
+});
+
+describe('the web half', () => {
+  it('holds home before the first refusal', () => {
+    prefers(false);
+
+    const { result } = renderHook(() => useShakeWeb(0));
+
+    expect(travelOf(result.current)).toBe(0);
+  });
+
+  it('walks the same five legs, one 80ms transition each', () => {
+    prefers(false);
+    vi.useFakeTimers();
+
+    const { result } = renderHook(() => useShakeWeb(1));
+    const seen = [travelOf(result.current)];
+    for (let leg = 1; leg < 5; leg += 1) {
+      act(() => vi.advanceTimersByTime(LEG_MS));
+      seen.push(travelOf(result.current));
+    }
+
+    expect(seen).toEqual([-8, 8, -8, 8, 0]);
+  });
+
+  it('leaves the interpolation to the compositor: transform and nothing else', () => {
+    prefers(false);
+
+    const { result } = renderHook(() => useShakeWeb(1));
+
+    // `ease-in-out` is `Easing.inOut(Easing.ease)` in the other dialect, the
+    // same pair lib/loop spells for its breathing kinds.
+    expect(result.current).toMatchObject({
+      transitionProperty: 'transform',
+      transitionDuration: `${LEG_MS}ms`,
+      transitionTimingFunction: 'ease-in-out',
+    });
+  });
+
+  it('wobbles once per refusal rather than once per render', () => {
+    prefers(false);
+    vi.useFakeTimers();
+
+    const { result, rerender } = renderHook(({ at }) => useShakeWeb(at), {
+      initialProps: { at: 1 },
+    });
+    act(() => vi.advanceTimersByTime(LEG_MS));
+    rerender({ at: 1 });
+
+    expect(travelOf(result.current)).toBe(8);
+  });
+
+  it('holds still for a reader who asked for less motion, travel being the whole effect', async () => {
+    prefers(true);
+
+    const { result, rerender } = renderHook(({ at }) => useShakeWeb(at), {
+      initialProps: { at: 0 },
+    });
+    await waitFor(() => expect(AccessibilityInfo.isReduceMotionEnabled).toHaveBeenCalled());
+    rerender({ at: 1 });
+
+    expect(travelOf(result.current)).toBe(0);
+  });
+
+  it('drops the legs it had not walked yet when it goes away mid-shake', () => {
+    prefers(false);
+    vi.useFakeTimers();
+
+    const { unmount } = renderHook(() => useShakeWeb(1));
+    unmount();
+
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

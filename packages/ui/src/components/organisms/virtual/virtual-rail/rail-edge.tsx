@@ -7,11 +7,11 @@ import { useEffect, useState } from 'react';
 import { Animated, Pressable, type ViewStyle } from 'react-native';
 import { Icon } from '#ui/components/atoms/icon';
 import { FOCUS_BLEED } from '#ui/components/organisms/virtual/clip';
+import { EASE_NATIVE, FADE, SETTLE_MS } from '#ui/components/organisms/virtual/strip-motion';
 import { styles } from '#ui/core';
 import { SHADE, shade } from '#ui/core/tokens';
 import { gradient } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
-import { EASE_NATIVE, FADE, SETTLE_MS } from './rail-motion';
 
 const EDGE_SHARE = 0.15;
 const EDGE_MIN = 88;

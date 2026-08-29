@@ -87,22 +87,22 @@ export const RNW_OPTIMIZE_INCLUDE = ['react-native-web'];
 // The packages an SSR target must NOT externalize, as a consequence of the
 // aliases above: `webResolve` lands inline-style-prefixer and css-in-js-utils
 // on their ESM `es/` builds (extensionless relative imports, resolved only
-// through Vite) and react-tv-space-navigation's bare `require('react-native')`
-// on react-native-web. Kept here rather than hand-copied into the one shell
-// that renders on a server, since it's a fact about the aliases, not the shell.
-export const RNW_SSR_NO_EXTERNAL = [
-  'react-native-web',
-  'inline-style-prefixer',
-  'css-in-js-utils',
-  'react-tv-space-navigation',
-];
+// through Vite). Kept here rather than hand-copied into the one shell that
+// renders on a server, since it's a fact about the aliases, not the shell.
+export const RNW_SSR_NO_EXTERNAL = ['react-native-web', 'inline-style-prefixer', 'css-in-js-utils'];
 
 // The workspace packages a dev server must serve from SOURCE: left out of
 // Vite's pre-bundle, since pre-bundling them means an edit to one is invisible
 // until the cache is cleared. Kept as one list because a source package
 // missing from a shell's copy is a dev server quietly serving a stale build
 // of it.
-export const KROMA_SOURCE_PACKAGES = ['@kroma/ui', '@kroma/core', '@kroma/tv', '@kroma/workbench'];
+export const KROMA_SOURCE_PACKAGES = [
+  '@kroma/ui',
+  '@kroma/core',
+  '@kroma/tv',
+  '@kroma/workbench',
+  '@kroma/spatial-nav',
+];
 
 // react-native-web's Animated implementation reads the React Native `global`,
 // which no browser defines: without this, every Animated component throws

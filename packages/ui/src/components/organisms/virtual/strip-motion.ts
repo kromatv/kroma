@@ -1,10 +1,10 @@
-// How the rail moves and fades, in one place for both renderers.
+// How a virtualised strip moves and fades, in one place for both renderers.
 //
-// The row's travel and its edge fades share one duration and one curve on
-// purpose - they are the same gesture settling - and the curve exists twice
-// only because the two renderers spell easing differently: CSS gets the
-// bezier as a string, Animated as an Easing. Declared together so they can
-// never drift apart.
+// The strip's travel and the rail's edge fades share one duration and one curve
+// on purpose - they are the same gesture settling - and the curve exists twice
+// only because the two renderers spell easing differently: CSS gets the bezier
+// as a string, Animated as an Easing. Declared together so they can never drift
+// apart.
 
 import { motion } from '#ui/core/tokens';
 import { ease } from '#ui/lib/ease';

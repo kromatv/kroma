@@ -29,21 +29,33 @@ interface BoxProps extends BoxStyleProps, Omit<ViewProps, 'style'> {
   dataSet?: Record<string, string | number | undefined>;
 }
 
-function Box({ children, asChild, style, ref, ...props }: Readonly<BoxProps>) {
+// A style, never the prop of the same name: react-native-web deprecated the
+// prop form, and every target has read it off the style since RN 0.71. One
+// frozen object per value, so a box that states one still shares its style by
+// identity.
+const HIT = {
+  auto: { pointerEvents: 'auto' },
+  none: { pointerEvents: 'none' },
+  'box-none': { pointerEvents: 'box-none' },
+  'box-only': { pointerEvents: 'box-only' },
+} as const satisfies Record<string, ViewStyle>;
+
+function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonly<BoxProps>) {
   const split = splitShorthand(props);
   const Host = asChild ? Slot : View;
+  const hit = pointerEvents ? HIT[pointerEvents] : null;
   // A box holding a breakpoint object is a different component, not a branch:
   // it is the only one that has to follow the design width, and a hook here
   // would tax every box in the app with a subscription it never reads.
   if (split.breakpoints !== 0) {
     return (
-      <FluidBox host={Host} split={split} style={style} ref={ref}>
+      <FluidBox host={Host} split={split} style={[hit, style]} ref={ref}>
         {children}
       </FluidBox>
     );
   }
   return (
-    <Host {...split.rest} ref={ref} style={[layoutOf(split, 0), style]}>
+    <Host {...split.rest} ref={ref} style={[layoutOf(split, 0), hit, style]}>
       {children}
     </Host>
   );

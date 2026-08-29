@@ -1,5 +1,5 @@
-// <VirtualGrid>: the browse screens' poster grid, virtualising a library of
-// thousands of tiles via react-tv-space-navigation's virtual focus nodes.
+// <VirtualGrid>: the browse screens' poster grid, mounting only the rows near
+// the viewport out of a library of thousands.
 //
 // The columns are auto-filled from the grid's own measured box, in <Grid>'s
 // vocabulary (`min` / `columns` / `gap`), rather than computed by the caller
@@ -7,29 +7,29 @@
 // whatever the user dragged it to, and a fixed column count on the second one
 // runs the last tiles off the right edge.
 
-import {
-  type ReactElement,
-  type RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
-import { type LayoutChangeEvent, View, type ViewStyle } from 'react-native';
-import {
-  SpatialNavigationVirtualizedGrid,
-  type SpatialNavigationVirtualizedListRef,
-} from 'react-tv-space-navigation';
+import { NavigatorNode, NavigatorView, type NodeHandle } from '@kroma/spatial-nav/react';
+import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Dimensions, type LayoutChangeEvent, View, type ViewStyle } from 'react-native';
 import { cellWidth, columnsFor } from '#ui/components/atoms/grid';
 import { clipStyles, OVERSCAN } from '#ui/components/organisms/virtual/clip';
+import { MovingStrip } from '#ui/components/organisms/virtual/moving-strip';
 import { FocusReporter } from '#ui/lib/focus-report';
 import { markGridFocus } from '#ui/lib/perf';
+import { useStableCallback } from '#ui/lib/stable-callback';
+import { GridRow } from './grid-row';
+import { freeOffset, type GridRows, rowMetrics, rowTop, rowWindow, stripOffset } from './grid-rows';
+import { useWheelScroll } from './use-wheel-rows';
 
 const NO_POINTER = { pointerEvents: 'none' } as const;
 const VIEWPORT: ViewStyle = { flex: 1, minHeight: 0 };
+// Every row is placed at its own offset down the strip, so only the mounted
+// ones have to exist and they still land where the whole list would put them.
+const ROW_BOX: ViewStyle = { position: 'absolute', left: 0 };
+const HEADER_BOX: ViewStyle = { ...ROW_BOX, top: 0 };
 
-import { useWheelScroll } from './use-wheel-rows';
+// Rows left before the grid asks for more. Enough that the next page is in
+// hand by the time a held D-pad reaches it.
+const END_THRESHOLD = 3;
 
 interface VirtualGridProps<T> {
   data: readonly T[];
@@ -52,8 +52,8 @@ interface VirtualGridProps<T> {
   /** Inset of the rows. Not of the viewport, which is what clips: padding there
    *  would inset the clip and shave the rows. */
   px?: number;
-  /** Room above the first row, for a focused tile's ring and scale: the list
-   *  parks the focused row at the content origin and the clip is flush there. */
+  /** Room above the first row, for a focused tile's ring and scale: the strip
+   *  parks the top row at the content origin and the clip is flush there. */
   pt?: number;
   /** The box width to assume until the grid has measured its own: the design
    *  width. Without one the first frame has no columns to draw. */
@@ -68,8 +68,8 @@ interface VirtualGridProps<T> {
    *  height either way, or nothing scrolls. */
   style?: ViewStyle;
   onEndReached?: () => void;
-  /** Opens the list on this ROW (not item index) with focus, via the list's ref
-   *  since the row isn't mounted yet for `autoFocus` to reach. */
+  /** Opens the grid on this ROW (not item index) with focus, since the row is
+   *  not mounted yet for `autoFocus` to reach. */
   initialIndex?: number;
 }
 
@@ -77,8 +77,8 @@ interface VirtualGridProps<T> {
  * A vertically scrolling grid of auto-filled tiles, rendering only the rows near
  * the viewport.
  *
- * The library translates its content rather than scrolling a real viewport, so
- * nothing clips without this wrapper's `clipStyles.column` box.
+ * The strip is translated rather than scrolled, so nothing clips without this
+ * component's `clipStyles.column` box.
  */
 function VirtualGrid<T>({
   data,
@@ -98,57 +98,131 @@ function VirtualGrid<T>({
   onEndReached,
   initialIndex,
 }: Readonly<VirtualGridProps<T>>) {
-  const list = useRef<SpatialNavigationVirtualizedListRef>(null);
   const viewport = useRef<View>(null);
-  const [measured, setMeasured] = useState(0);
+  // What to divide until the grid has measured its own box. A television never
+  // resizes, so the measurement settles on the first layout and never moves
+  // again; a desktop window pays one re-render per width it comes to rest at,
+  // which is why the box is rounded before it is compared.
+  const [screen] = useState(() => Dimensions.get('window').height);
+  const [box, setBox] = useState({ width: 0, height: 0 });
+  const [focusedRow, setFocusedRow] = useState(0);
 
-  // Mount-only: this is where the list OPENS. Re-running on prop change would
-  // yank focus back out from under the D-pad.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: opening position, not a binding.
-  useEffect(() => {
-    if (initialIndex) list.current?.focus(initialIndex);
-  }, []);
+  const nodes = useRef(new Map<number, NodeHandle>());
+  const wanted = useRef<number | null>(null);
 
-  // A television never resizes, so this settles on the first layout and the
-  // state never changes again; a desktop window pays one re-render per width it
-  // comes to rest at, which is why the width is rounded before it is compared.
   const onLayout = useCallback((event: LayoutChangeEvent) => {
-    const next = Math.round(event.nativeEvent.layout.width);
-    setMeasured((current) => (current === next ? current : next));
+    const measured = event.nativeEvent.layout;
+    const next = { width: Math.round(measured.width), height: Math.round(measured.height) };
+    setBox((current) =>
+      current.width === next.width && current.height === next.height ? current : next,
+    );
   }, []);
 
   const rowGapPx = rowGap ?? gap;
   const geometry = useMemo(() => {
-    const room = Math.max(0, (measured || width || 0) - px * 2);
-    const count = columns ?? (min ? columnsFor(room, min, gap) : 1);
+    const room = Math.max(0, (box.width || width || 0) - px * 2);
+    const count = Math.max(1, columns ?? (min ? columnsFor(room, min, gap) : 1));
     const cell = cellWidth(room, count, gap);
     return { count, cell, pitch: itemHeight ?? Math.round(cell * ratio) + rowGapPx };
-  }, [columns, gap, itemHeight, measured, min, px, ratio, rowGapPx, width]);
+  }, [columns, gap, itemHeight, box.width, min, px, ratio, rowGapPx, width]);
 
-  const contentStyle = useMemo<ViewStyle>(
-    () => ({ paddingHorizontal: px, paddingTop: pt }),
-    [px, pt],
+  const hasHeader = Boolean(header) && Boolean(headerHeight);
+  const metrics = useMemo(
+    () =>
+      rowMetrics({
+        rows: Math.ceil(data.length / geometry.count),
+        pitch: geometry.pitch,
+        header: hasHeader,
+        headerSize: headerHeight ?? 0,
+        viewport: box.height || screen,
+      }),
+    [data.length, geometry.count, geometry.pitch, hasHeader, headerHeight, box.height, screen],
   );
-  const rowStyle = useMemo<ViewStyle>(() => ({ gap }), [gap]);
+
+  const focusRow = useStableCallback((row: number) => {
+    const target = Math.min(Math.max(row, 0), Math.max(metrics.count - 1, 0));
+    wanted.current = target;
+    setFocusedRow(target);
+  });
+
+  // A row asked for before it exists: the window has to render it first, so
+  // this runs after every commit until the row is there to take the focus.
+  useEffect(() => {
+    const row = wanted.current;
+    if (row === null) return;
+    const node = nodes.current.get(row);
+    if (!node) return;
+    wanted.current = null;
+    node.focus();
+  });
+
+  // Mount-only: this is where the grid OPENS. Re-running on prop change would
+  // yank focus back out from under the D-pad.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: opening position, not a binding.
+  useEffect(() => {
+    if (initialIndex) focusRow(initialIndex);
+  }, []);
+
+  useEffect(() => {
+    if (metrics.count > 1 && focusedRow >= metrics.count - 1 - END_THRESHOLD) onEndReached?.();
+  }, [focusedRow, metrics.count, onEndReached]);
+
+  const onNode = useStableCallback((row: number, node: NodeHandle | null) => {
+    if (node) nodes.current.set(row, node);
+    else nodes.current.delete(row);
+  });
+
+  const onHeaderFocus = useStableCallback(() => setFocusedRow(0));
+
+  const onCellFocus = useStableCallback((index: number) => {
+    const row = Math.floor(index / geometry.count);
+    // Which cell took focus, for the on-screen read-out: a remote bug on a
+    // television has no inspector to ask.
+    markGridFocus(row, index % geometry.count);
+    setFocusedRow(row + metrics.headerRows);
+  });
 
   const cell = geometry.cell;
   const renderCell = useCallback(
-    ({ item, index }: { item: T; index: number }) => (
-      // Reports which cell took focus, for the on-screen read-out: a remote bug
-      // on a television has no inspector to ask.
-      <FocusReporter
-        onFocus={() => markGridFocus(Math.floor(index / geometry.count), index % geometry.count)}
-      >
+    (item: T, index: number) => (
+      <FocusReporter onFocus={() => onCellFocus(index)}>
         {renderItem(item, index, cell)}
       </FocusReporter>
     ),
-    [cell, geometry.count, renderItem],
+    [cell, onCellFocus, renderItem],
   );
 
-  const lastRow = Math.max(0, Math.ceil(data.length / geometry.count) - 1);
+  const contentStyle = useMemo<ViewStyle>(
+    () => ({ paddingHorizontal: px, paddingTop: pt, height: metrics.height }),
+    [px, pt, metrics.height],
+  );
+  const rowStyle = useMemo<ViewStyle>(() => ({ ...ROW_BOX, flexDirection: 'row', gap }), [gap]);
+
+  const rows = useMemo<GridRows>(() => ({ focus: focusRow, focusedRow }), [focusRow, focusedRow]);
+  const lastRow = Math.max(0, metrics.count - metrics.headerRows - 1);
   // While a gesture runs (fraction non-null) the pointer is shut out, or the
   // navigator would focus whatever slides beneath the stationary cursor.
-  const fraction = useWheelScroll(viewport, list, lastRow, header ? 1 : 0, geometry.pitch);
+  const fraction = useWheelScroll(viewport, rows, lastRow, metrics.headerRows, geometry.pitch);
+
+  const shown = rowWindow(focusedRow, metrics, OVERSCAN);
+  const offset =
+    fraction === null ? stripOffset(focusedRow, metrics) : freeOffset(fraction, metrics);
+  const mounted: ReactElement[] = [];
+  for (let row = Math.max(shown.start, metrics.headerRows); row <= shown.end; row += 1) {
+    mounted.push(
+      <GridRow
+        key={row}
+        data={data}
+        first={(row - metrics.headerRows) * geometry.count}
+        columns={geometry.count}
+        row={row}
+        top={rowTop(row, metrics)}
+        style={rowStyle}
+        renderCell={renderCell}
+        onNode={onNode}
+      />,
+    );
+  }
 
   return (
     <View style={style ?? VIEWPORT} ref={viewport} onLayout={onLayout}>
@@ -157,34 +231,24 @@ function VirtualGrid<T>({
           events too. */}
       <View style={[clipStyles.column, fraction === null ? null : NO_POINTER]}>
         {cell > 0 ? (
-          /* The library's ref type omits `| null`, which every real ref has before it attaches. */
-          <SpatialNavigationVirtualizedGrid
-            ref={list as RefObject<SpatialNavigationVirtualizedListRef>}
-            data={data as T[]}
-            numberOfColumns={geometry.count}
-            itemHeight={geometry.pitch}
-            additionalRenderedRows={OVERSCAN}
-            // A GRID is not a rail. The library's default, `stick-to-start`,
-            // parks the focused row at the top of the viewport, so every press of
-            // Down scrolls the grid by exactly one row and the ring never moves:
-            // the posters slide underneath it and the set reads as if the arrow
-            // did nothing. Rails want that behaviour - a rail's focused tile
-            // belongs at the left edge - but a grid has rows above and below worth
-            // seeing, so it scrolls only when the selection reaches an edge.
-            scrollBehavior="jump-on-scroll"
-            header={header}
-            headerSize={headerHeight}
-            rowContainerStyle={rowStyle}
-            style={contentStyle}
-            freeScrollFraction={fraction}
-            onEndReached={onEndReached}
-            renderItem={renderCell}
-          />
+          <MovingStrip axis="y" offset={offset} still={fraction !== null} style={contentStyle}>
+            <NavigatorView direction="vertical" alignInGrid>
+              {hasHeader && shown.start === 0 ? (
+                <NavigatorNode index={0} orientation="horizontal">
+                  <FocusReporter onFocus={onHeaderFocus}>
+                    <View style={HEADER_BOX}>{header}</View>
+                  </FocusReporter>
+                </NavigatorNode>
+              ) : null}
+              {mounted}
+            </NavigatorView>
+          </MovingStrip>
         ) : null}
       </View>
     </View>
   );
 }
 
+export type { GridRows } from './grid-rows';
 export type { VirtualGridProps };
 export { VirtualGrid };

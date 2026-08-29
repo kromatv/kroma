@@ -8,7 +8,7 @@
 // step along the line, and when the line refuses, drop to the next one and
 // rewind it to its edge.
 
-import { Directions } from 'react-tv-space-navigation';
+import { type Direction, Directions } from '@kroma/spatial-nav';
 import type { FocusBox } from './focus-here';
 
 /** How the walk watches the focus: a counter to tell a move from a refusal, and
@@ -18,7 +18,7 @@ export interface FocusProbe {
   box: () => FocusBox | null;
 }
 
-type Send = (direction: Directions) => void;
+type Send = (direction: Direction) => void;
 
 // A line is thin: two controls are on the same one when their tops sit closer
 // than half a control, which holds for a grid of equal tiles and for a row of
@@ -34,7 +34,7 @@ const MAX_STEPS = 64;
 // A move that reports whether the focus actually went anywhere: the navigator
 // says nothing when a direction is refused, so the sequence is the only answer.
 function stepper(send: Send, probe: FocusProbe) {
-  return (direction: Directions) => {
+  return (direction: Direction) => {
     const was = probe.seq();
     send(direction);
     return probe.seq() !== was;

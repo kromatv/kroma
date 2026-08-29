@@ -7,6 +7,7 @@
 // an actual television, next to the components it is inspecting.
 
 import { ARROW, Box, Chip, Divider, Field, HAND, Switch, style, Text } from '@kroma/ui/kit';
+import { memo } from 'react';
 import type { Control, ResolvedControl } from './derive';
 
 // Beyond this many options a row of chips stops being scannable and turns
@@ -17,7 +18,7 @@ interface ControlRowProps {
   name: string;
   control: Control;
   value: unknown;
-  onChange: (next: unknown) => void;
+  onChange: (name: string, next: unknown) => void;
 }
 
 // Steps a value forwards and backwards, showing where it currently sits.
@@ -86,7 +87,16 @@ function NumberControl({
   return <Stepper label={String(current)} onPrev={() => step(-1)} onNext={() => step(1)} />;
 }
 
-function ControlRow({ name, control, value, onChange }: Readonly<ControlRowProps>) {
+// Memoised, and it takes the prop's name so the panel hands down one `onChange`
+// for every row: the args object moves on every keystroke in a text control, and
+// without this boundary that re-rendered every control in the panel.
+const ControlRow = memo(function ControlRow({
+  name,
+  control,
+  value,
+  onChange,
+}: Readonly<ControlRowProps>) {
+  const set = (next: unknown) => onChange(name, next);
   // A boolean is a single row: the name on the left, the kit's own Switch on
   // the right, exactly as it would appear on a settings screen.
   if (control.kind === 'boolean') {
@@ -95,7 +105,7 @@ function ControlRow({ name, control, value, onChange }: Readonly<ControlRowProps
         <Text variant="meta" color="textDim">
           {name}
         </Text>
-        <Switch checked={value === true} onCheckedChange={onChange} label={name} />
+        <Switch checked={value === true} onCheckedChange={set} label={name} />
       </Box>
     );
   }
@@ -110,7 +120,7 @@ function ControlRow({ name, control, value, onChange }: Readonly<ControlRowProps
         <Field.Root label={name} hideLabel>
           <Field.Input
             value={typeof value === 'string' ? value : ''}
-            onValueChange={onChange}
+            onValueChange={set}
             physicalKeyboard
             // A field on a form screen takes the caret on mount; a prop editor
             // must not. Left on, opening any story with a text prop scrolled the
@@ -125,14 +135,14 @@ function ControlRow({ name, control, value, onChange }: Readonly<ControlRowProps
         </Field.Root>
       ) : null}
       {control.kind === 'select' ? (
-        <SelectControl options={control.options} value={value} onChange={onChange} />
+        <SelectControl options={control.options} value={value} onChange={set} />
       ) : null}
       {control.kind === 'number' ? (
-        <NumberControl control={control} value={value} onChange={onChange} />
+        <NumberControl control={control} value={value} onChange={set} />
       ) : null}
     </Box>
   );
-}
+});
 
 interface ControlsProps {
   controls: readonly ResolvedControl[];
@@ -186,7 +196,7 @@ function Controls({ controls, args, onChange, onReset }: Readonly<ControlsProps>
                 name={control.key}
                 control={control.control}
                 value={args[control.key]}
-                onChange={(next) => onChange(control.key, next)}
+                onChange={onChange}
               />
             ))}
           </Box>

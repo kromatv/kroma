@@ -8,410 +8,410 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as AppRouteImport } from './routes/_app'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as JoinRouteImport } from './routes/join'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AppIndexRouteImport } from './routes/_app.index'
-import { Route as AppSplatRouteImport } from './routes/_app.$'
-import { Route as AppAccountRouteImport } from './routes/_app.account'
-import { Route as AppComingSoonRouteImport } from './routes/_app.coming-soon'
-import { Route as AppConnectRouteImport } from './routes/_app.connect'
-import { Route as AppInviteRouteImport } from './routes/_app.invite'
-import { Route as AppMissingRouteImport } from './routes/_app.missing'
-import { Route as AppMyListRouteImport } from './routes/_app.my-list'
-import { Route as AppRequestsRouteImport } from './routes/_app.requests'
-import { Route as AppSearchRouteImport } from './routes/_app.search'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AdminSplatRouteImport } from './routes/admin.$'
-import { Route as AdminAiRouteImport } from './routes/admin.ai'
-import { Route as AdminBackupRouteImport } from './routes/admin.backup'
-import { Route as AdminGeneralRouteImport } from './routes/admin.general'
-import { Route as AdminJobsRouteImport } from './routes/admin.jobs'
-import { Route as AdminLibrariesRouteImport } from './routes/admin.libraries'
-import { Route as AdminLogsRouteImport } from './routes/admin.logs'
-import { Route as AdminNetworkRouteImport } from './routes/admin.network'
-import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
-import { Route as AdminPipelineRouteImport } from './routes/admin.pipeline'
-import { Route as AdminReportsRouteImport } from './routes/admin.reports'
-import { Route as AdminStorageRouteImport } from './routes/admin.storage'
-import { Route as AdminStoreRouteImport } from './routes/admin.store'
-import { Route as AdminTranscoderRouteImport } from './routes/admin.transcoder'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AppGenresIndexRouteImport } from './routes/_app.genres.index'
-import { Route as AppGenresIdRouteImport } from './routes/_app.genres.$id'
-import { Route as AppMoviesIndexRouteImport } from './routes/_app.movies.index'
-import { Route as AppMoviesIdRouteImport } from './routes/_app.movies.$id'
-import { Route as AppPeoplePersonRouteImport } from './routes/_app.people.$person'
-import { Route as AppShowsIndexRouteImport } from './routes/_app.shows.index'
-import { Route as AppShowsIdRouteImport } from './routes/_app.shows.$id'
-import { Route as AppTrendingTypeRouteImport } from './routes/_app.trending.$type'
-import { Route as AppWatchIdRouteImport } from './routes/_app.watch.$id'
-import { Route as AdminModulesIndexRouteImport } from './routes/admin.modules.index'
-import { Route as AdminModulesIdRouteImport } from './routes/admin.modules.$id'
-import { Route as AdminRequestsIndexRouteImport } from './routes/admin.requests.index'
-import { Route as AdminRequestsIdRouteImport } from './routes/admin.requests.$id'
-import { Route as AppDiscoverTypeTmdbIdRouteImport } from './routes/_app.discover.$type.$tmdbId'
+import { Route as rootRouteImport } from './routes/__root';
+import { Route as AppRouteImport } from './routes/_app';
+import { Route as AdminRouteImport } from './routes/admin';
+import { Route as JoinRouteImport } from './routes/join';
+import { Route as LoginRouteImport } from './routes/login';
+import { Route as AppIndexRouteImport } from './routes/_app.index';
+import { Route as AppSplatRouteImport } from './routes/_app.$';
+import { Route as AppAccountRouteImport } from './routes/_app.account';
+import { Route as AppComingSoonRouteImport } from './routes/_app.coming-soon';
+import { Route as AppConnectRouteImport } from './routes/_app.connect';
+import { Route as AppInviteRouteImport } from './routes/_app.invite';
+import { Route as AppMissingRouteImport } from './routes/_app.missing';
+import { Route as AppMyListRouteImport } from './routes/_app.my-list';
+import { Route as AppRequestsRouteImport } from './routes/_app.requests';
+import { Route as AppSearchRouteImport } from './routes/_app.search';
+import { Route as AdminIndexRouteImport } from './routes/admin.index';
+import { Route as AdminSplatRouteImport } from './routes/admin.$';
+import { Route as AdminAiRouteImport } from './routes/admin.ai';
+import { Route as AdminBackupRouteImport } from './routes/admin.backup';
+import { Route as AdminGeneralRouteImport } from './routes/admin.general';
+import { Route as AdminJobsRouteImport } from './routes/admin.jobs';
+import { Route as AdminLibrariesRouteImport } from './routes/admin.libraries';
+import { Route as AdminLogsRouteImport } from './routes/admin.logs';
+import { Route as AdminNetworkRouteImport } from './routes/admin.network';
+import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications';
+import { Route as AdminPipelineRouteImport } from './routes/admin.pipeline';
+import { Route as AdminReportsRouteImport } from './routes/admin.reports';
+import { Route as AdminStorageRouteImport } from './routes/admin.storage';
+import { Route as AdminStoreRouteImport } from './routes/admin.store';
+import { Route as AdminTranscoderRouteImport } from './routes/admin.transcoder';
+import { Route as AdminUsersRouteImport } from './routes/admin.users';
+import { Route as AppGenresIndexRouteImport } from './routes/_app.genres.index';
+import { Route as AppGenresIdRouteImport } from './routes/_app.genres.$id';
+import { Route as AppMoviesIndexRouteImport } from './routes/_app.movies.index';
+import { Route as AppMoviesIdRouteImport } from './routes/_app.movies.$id';
+import { Route as AppPeoplePersonRouteImport } from './routes/_app.people.$person';
+import { Route as AppShowsIndexRouteImport } from './routes/_app.shows.index';
+import { Route as AppShowsIdRouteImport } from './routes/_app.shows.$id';
+import { Route as AppTrendingTypeRouteImport } from './routes/_app.trending.$type';
+import { Route as AppWatchIdRouteImport } from './routes/_app.watch.$id';
+import { Route as AdminModulesIndexRouteImport } from './routes/admin.modules.index';
+import { Route as AdminModulesIdRouteImport } from './routes/admin.modules.$id';
+import { Route as AdminRequestsIndexRouteImport } from './routes/admin.requests.index';
+import { Route as AdminRequestsIdRouteImport } from './routes/admin.requests.$id';
+import { Route as AppDiscoverTypeTmdbIdRouteImport } from './routes/_app.discover.$type.$tmdbId';
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const JoinRoute = JoinRouteImport.update({
   id: '/join',
   path: '/join',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppSplatRoute = AppSplatRouteImport.update({
   id: '/$',
   path: '/$',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppAccountRoute = AppAccountRouteImport.update({
   id: '/account',
   path: '/account',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppComingSoonRoute = AppComingSoonRouteImport.update({
   id: '/coming-soon',
   path: '/coming-soon',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppConnectRoute = AppConnectRouteImport.update({
   id: '/connect',
   path: '/connect',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppInviteRoute = AppInviteRouteImport.update({
   id: '/invite',
   path: '/invite',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppMissingRoute = AppMissingRouteImport.update({
   id: '/missing',
   path: '/missing',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppMyListRoute = AppMyListRouteImport.update({
   id: '/my-list',
   path: '/my-list',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppRequestsRoute = AppRequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppSearchRoute = AppSearchRouteImport.update({
   id: '/search',
   path: '/search',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminSplatRoute = AdminSplatRouteImport.update({
   id: '/$',
   path: '/$',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminAiRoute = AdminAiRouteImport.update({
   id: '/ai',
   path: '/ai',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminBackupRoute = AdminBackupRouteImport.update({
   id: '/backup',
   path: '/backup',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminGeneralRoute = AdminGeneralRouteImport.update({
   id: '/general',
   path: '/general',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminJobsRoute = AdminJobsRouteImport.update({
   id: '/jobs',
   path: '/jobs',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminLibrariesRoute = AdminLibrariesRouteImport.update({
   id: '/libraries',
   path: '/libraries',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminLogsRoute = AdminLogsRouteImport.update({
   id: '/logs',
   path: '/logs',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminNetworkRoute = AdminNetworkRouteImport.update({
   id: '/network',
   path: '/network',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminPipelineRoute = AdminPipelineRouteImport.update({
   id: '/pipeline',
   path: '/pipeline',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminReportsRoute = AdminReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminStorageRoute = AdminStorageRouteImport.update({
   id: '/storage',
   path: '/storage',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminStoreRoute = AdminStoreRouteImport.update({
   id: '/store',
   path: '/store',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminTranscoderRoute = AdminTranscoderRouteImport.update({
   id: '/transcoder',
   path: '/transcoder',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AppGenresIndexRoute = AppGenresIndexRouteImport.update({
   id: '/genres/',
   path: '/genres/',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppGenresIdRoute = AppGenresIdRouteImport.update({
   id: '/genres/$id',
   path: '/genres/$id',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppMoviesIndexRoute = AppMoviesIndexRouteImport.update({
   id: '/movies/',
   path: '/movies/',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppMoviesIdRoute = AppMoviesIdRouteImport.update({
   id: '/movies/$id',
   path: '/movies/$id',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppPeoplePersonRoute = AppPeoplePersonRouteImport.update({
   id: '/people/$person',
   path: '/people/$person',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppShowsIndexRoute = AppShowsIndexRouteImport.update({
   id: '/shows/',
   path: '/shows/',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppShowsIdRoute = AppShowsIdRouteImport.update({
   id: '/shows/$id',
   path: '/shows/$id',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppTrendingTypeRoute = AppTrendingTypeRouteImport.update({
   id: '/trending/$type',
   path: '/trending/$type',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AppWatchIdRoute = AppWatchIdRouteImport.update({
   id: '/watch/$id',
   path: '/watch/$id',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 const AdminModulesIndexRoute = AdminModulesIndexRouteImport.update({
   id: '/modules/',
   path: '/modules/',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminModulesIdRoute = AdminModulesIdRouteImport.update({
   id: '/modules/$id',
   path: '/modules/$id',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminRequestsIndexRoute = AdminRequestsIndexRouteImport.update({
   id: '/requests/',
   path: '/requests/',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AdminRequestsIdRoute = AdminRequestsIdRouteImport.update({
   id: '/requests/$id',
   path: '/requests/$id',
   getParentRoute: () => AdminRoute,
-} as any)
+} as any);
 const AppDiscoverTypeTmdbIdRoute = AppDiscoverTypeTmdbIdRouteImport.update({
   id: '/discover/$type/$tmdbId',
   path: '/discover/$type/$tmdbId',
   getParentRoute: () => AppRoute,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof AppIndexRoute
-  '/admin': typeof AdminRouteWithChildren
-  '/join': typeof JoinRoute
-  '/login': typeof LoginRoute
-  '/$': typeof AppSplatRoute
-  '/account': typeof AppAccountRoute
-  '/coming-soon': typeof AppComingSoonRoute
-  '/connect': typeof AppConnectRoute
-  '/invite': typeof AppInviteRoute
-  '/missing': typeof AppMissingRoute
-  '/my-list': typeof AppMyListRoute
-  '/requests': typeof AppRequestsRoute
-  '/search': typeof AppSearchRoute
-  '/admin/$': typeof AdminSplatRoute
-  '/admin/ai': typeof AdminAiRoute
-  '/admin/backup': typeof AdminBackupRoute
-  '/admin/general': typeof AdminGeneralRoute
-  '/admin/jobs': typeof AdminJobsRoute
-  '/admin/libraries': typeof AdminLibrariesRoute
-  '/admin/logs': typeof AdminLogsRoute
-  '/admin/network': typeof AdminNetworkRoute
-  '/admin/notifications': typeof AdminNotificationsRoute
-  '/admin/pipeline': typeof AdminPipelineRoute
-  '/admin/reports': typeof AdminReportsRoute
-  '/admin/storage': typeof AdminStorageRoute
-  '/admin/store': typeof AdminStoreRoute
-  '/admin/transcoder': typeof AdminTranscoderRoute
-  '/admin/users': typeof AdminUsersRoute
-  '/admin/': typeof AdminIndexRoute
-  '/genres/$id': typeof AppGenresIdRoute
-  '/movies/$id': typeof AppMoviesIdRoute
-  '/people/$person': typeof AppPeoplePersonRoute
-  '/shows/$id': typeof AppShowsIdRoute
-  '/trending/$type': typeof AppTrendingTypeRoute
-  '/watch/$id': typeof AppWatchIdRoute
-  '/admin/modules/$id': typeof AdminModulesIdRoute
-  '/admin/requests/$id': typeof AdminRequestsIdRoute
-  '/genres/': typeof AppGenresIndexRoute
-  '/movies/': typeof AppMoviesIndexRoute
-  '/shows/': typeof AppShowsIndexRoute
-  '/admin/modules/': typeof AdminModulesIndexRoute
-  '/admin/requests/': typeof AdminRequestsIndexRoute
-  '/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute
+  '/': typeof AppIndexRoute;
+  '/admin': typeof AdminRouteWithChildren;
+  '/join': typeof JoinRoute;
+  '/login': typeof LoginRoute;
+  '/$': typeof AppSplatRoute;
+  '/account': typeof AppAccountRoute;
+  '/coming-soon': typeof AppComingSoonRoute;
+  '/connect': typeof AppConnectRoute;
+  '/invite': typeof AppInviteRoute;
+  '/missing': typeof AppMissingRoute;
+  '/my-list': typeof AppMyListRoute;
+  '/requests': typeof AppRequestsRoute;
+  '/search': typeof AppSearchRoute;
+  '/admin/$': typeof AdminSplatRoute;
+  '/admin/ai': typeof AdminAiRoute;
+  '/admin/backup': typeof AdminBackupRoute;
+  '/admin/general': typeof AdminGeneralRoute;
+  '/admin/jobs': typeof AdminJobsRoute;
+  '/admin/libraries': typeof AdminLibrariesRoute;
+  '/admin/logs': typeof AdminLogsRoute;
+  '/admin/network': typeof AdminNetworkRoute;
+  '/admin/notifications': typeof AdminNotificationsRoute;
+  '/admin/pipeline': typeof AdminPipelineRoute;
+  '/admin/reports': typeof AdminReportsRoute;
+  '/admin/storage': typeof AdminStorageRoute;
+  '/admin/store': typeof AdminStoreRoute;
+  '/admin/transcoder': typeof AdminTranscoderRoute;
+  '/admin/users': typeof AdminUsersRoute;
+  '/admin/': typeof AdminIndexRoute;
+  '/genres/$id': typeof AppGenresIdRoute;
+  '/movies/$id': typeof AppMoviesIdRoute;
+  '/people/$person': typeof AppPeoplePersonRoute;
+  '/shows/$id': typeof AppShowsIdRoute;
+  '/trending/$type': typeof AppTrendingTypeRoute;
+  '/watch/$id': typeof AppWatchIdRoute;
+  '/admin/modules/$id': typeof AdminModulesIdRoute;
+  '/admin/requests/$id': typeof AdminRequestsIdRoute;
+  '/genres/': typeof AppGenresIndexRoute;
+  '/movies/': typeof AppMoviesIndexRoute;
+  '/shows/': typeof AppShowsIndexRoute;
+  '/admin/modules/': typeof AdminModulesIndexRoute;
+  '/admin/requests/': typeof AdminRequestsIndexRoute;
+  '/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute;
 }
 export interface FileRoutesByTo {
-  '/join': typeof JoinRoute
-  '/login': typeof LoginRoute
-  '/$': typeof AppSplatRoute
-  '/account': typeof AppAccountRoute
-  '/coming-soon': typeof AppComingSoonRoute
-  '/connect': typeof AppConnectRoute
-  '/invite': typeof AppInviteRoute
-  '/missing': typeof AppMissingRoute
-  '/my-list': typeof AppMyListRoute
-  '/requests': typeof AppRequestsRoute
-  '/search': typeof AppSearchRoute
-  '/admin/$': typeof AdminSplatRoute
-  '/admin/ai': typeof AdminAiRoute
-  '/admin/backup': typeof AdminBackupRoute
-  '/admin/general': typeof AdminGeneralRoute
-  '/admin/jobs': typeof AdminJobsRoute
-  '/admin/libraries': typeof AdminLibrariesRoute
-  '/admin/logs': typeof AdminLogsRoute
-  '/admin/network': typeof AdminNetworkRoute
-  '/admin/notifications': typeof AdminNotificationsRoute
-  '/admin/pipeline': typeof AdminPipelineRoute
-  '/admin/reports': typeof AdminReportsRoute
-  '/admin/storage': typeof AdminStorageRoute
-  '/admin/store': typeof AdminStoreRoute
-  '/admin/transcoder': typeof AdminTranscoderRoute
-  '/admin/users': typeof AdminUsersRoute
-  '/': typeof AppIndexRoute
-  '/admin': typeof AdminIndexRoute
-  '/genres/$id': typeof AppGenresIdRoute
-  '/movies/$id': typeof AppMoviesIdRoute
-  '/people/$person': typeof AppPeoplePersonRoute
-  '/shows/$id': typeof AppShowsIdRoute
-  '/trending/$type': typeof AppTrendingTypeRoute
-  '/watch/$id': typeof AppWatchIdRoute
-  '/admin/modules/$id': typeof AdminModulesIdRoute
-  '/admin/requests/$id': typeof AdminRequestsIdRoute
-  '/genres': typeof AppGenresIndexRoute
-  '/movies': typeof AppMoviesIndexRoute
-  '/shows': typeof AppShowsIndexRoute
-  '/admin/modules': typeof AdminModulesIndexRoute
-  '/admin/requests': typeof AdminRequestsIndexRoute
-  '/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute
+  '/join': typeof JoinRoute;
+  '/login': typeof LoginRoute;
+  '/$': typeof AppSplatRoute;
+  '/account': typeof AppAccountRoute;
+  '/coming-soon': typeof AppComingSoonRoute;
+  '/connect': typeof AppConnectRoute;
+  '/invite': typeof AppInviteRoute;
+  '/missing': typeof AppMissingRoute;
+  '/my-list': typeof AppMyListRoute;
+  '/requests': typeof AppRequestsRoute;
+  '/search': typeof AppSearchRoute;
+  '/admin/$': typeof AdminSplatRoute;
+  '/admin/ai': typeof AdminAiRoute;
+  '/admin/backup': typeof AdminBackupRoute;
+  '/admin/general': typeof AdminGeneralRoute;
+  '/admin/jobs': typeof AdminJobsRoute;
+  '/admin/libraries': typeof AdminLibrariesRoute;
+  '/admin/logs': typeof AdminLogsRoute;
+  '/admin/network': typeof AdminNetworkRoute;
+  '/admin/notifications': typeof AdminNotificationsRoute;
+  '/admin/pipeline': typeof AdminPipelineRoute;
+  '/admin/reports': typeof AdminReportsRoute;
+  '/admin/storage': typeof AdminStorageRoute;
+  '/admin/store': typeof AdminStoreRoute;
+  '/admin/transcoder': typeof AdminTranscoderRoute;
+  '/admin/users': typeof AdminUsersRoute;
+  '/': typeof AppIndexRoute;
+  '/admin': typeof AdminIndexRoute;
+  '/genres/$id': typeof AppGenresIdRoute;
+  '/movies/$id': typeof AppMoviesIdRoute;
+  '/people/$person': typeof AppPeoplePersonRoute;
+  '/shows/$id': typeof AppShowsIdRoute;
+  '/trending/$type': typeof AppTrendingTypeRoute;
+  '/watch/$id': typeof AppWatchIdRoute;
+  '/admin/modules/$id': typeof AdminModulesIdRoute;
+  '/admin/requests/$id': typeof AdminRequestsIdRoute;
+  '/genres': typeof AppGenresIndexRoute;
+  '/movies': typeof AppMoviesIndexRoute;
+  '/shows': typeof AppShowsIndexRoute;
+  '/admin/modules': typeof AdminModulesIndexRoute;
+  '/admin/requests': typeof AdminRequestsIndexRoute;
+  '/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/_app': typeof AppRouteWithChildren
-  '/admin': typeof AdminRouteWithChildren
-  '/join': typeof JoinRoute
-  '/login': typeof LoginRoute
-  '/_app/$': typeof AppSplatRoute
-  '/_app/account': typeof AppAccountRoute
-  '/_app/coming-soon': typeof AppComingSoonRoute
-  '/_app/connect': typeof AppConnectRoute
-  '/_app/invite': typeof AppInviteRoute
-  '/_app/missing': typeof AppMissingRoute
-  '/_app/my-list': typeof AppMyListRoute
-  '/_app/requests': typeof AppRequestsRoute
-  '/_app/search': typeof AppSearchRoute
-  '/admin/$': typeof AdminSplatRoute
-  '/admin/ai': typeof AdminAiRoute
-  '/admin/backup': typeof AdminBackupRoute
-  '/admin/general': typeof AdminGeneralRoute
-  '/admin/jobs': typeof AdminJobsRoute
-  '/admin/libraries': typeof AdminLibrariesRoute
-  '/admin/logs': typeof AdminLogsRoute
-  '/admin/network': typeof AdminNetworkRoute
-  '/admin/notifications': typeof AdminNotificationsRoute
-  '/admin/pipeline': typeof AdminPipelineRoute
-  '/admin/reports': typeof AdminReportsRoute
-  '/admin/storage': typeof AdminStorageRoute
-  '/admin/store': typeof AdminStoreRoute
-  '/admin/transcoder': typeof AdminTranscoderRoute
-  '/admin/users': typeof AdminUsersRoute
-  '/_app/': typeof AppIndexRoute
-  '/admin/': typeof AdminIndexRoute
-  '/_app/genres/$id': typeof AppGenresIdRoute
-  '/_app/movies/$id': typeof AppMoviesIdRoute
-  '/_app/people/$person': typeof AppPeoplePersonRoute
-  '/_app/shows/$id': typeof AppShowsIdRoute
-  '/_app/trending/$type': typeof AppTrendingTypeRoute
-  '/_app/watch/$id': typeof AppWatchIdRoute
-  '/admin/modules/$id': typeof AdminModulesIdRoute
-  '/admin/requests/$id': typeof AdminRequestsIdRoute
-  '/_app/genres/': typeof AppGenresIndexRoute
-  '/_app/movies/': typeof AppMoviesIndexRoute
-  '/_app/shows/': typeof AppShowsIndexRoute
-  '/admin/modules/': typeof AdminModulesIndexRoute
-  '/admin/requests/': typeof AdminRequestsIndexRoute
-  '/_app/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute
+  __root__: typeof rootRouteImport;
+  '/_app': typeof AppRouteWithChildren;
+  '/admin': typeof AdminRouteWithChildren;
+  '/join': typeof JoinRoute;
+  '/login': typeof LoginRoute;
+  '/_app/$': typeof AppSplatRoute;
+  '/_app/account': typeof AppAccountRoute;
+  '/_app/coming-soon': typeof AppComingSoonRoute;
+  '/_app/connect': typeof AppConnectRoute;
+  '/_app/invite': typeof AppInviteRoute;
+  '/_app/missing': typeof AppMissingRoute;
+  '/_app/my-list': typeof AppMyListRoute;
+  '/_app/requests': typeof AppRequestsRoute;
+  '/_app/search': typeof AppSearchRoute;
+  '/admin/$': typeof AdminSplatRoute;
+  '/admin/ai': typeof AdminAiRoute;
+  '/admin/backup': typeof AdminBackupRoute;
+  '/admin/general': typeof AdminGeneralRoute;
+  '/admin/jobs': typeof AdminJobsRoute;
+  '/admin/libraries': typeof AdminLibrariesRoute;
+  '/admin/logs': typeof AdminLogsRoute;
+  '/admin/network': typeof AdminNetworkRoute;
+  '/admin/notifications': typeof AdminNotificationsRoute;
+  '/admin/pipeline': typeof AdminPipelineRoute;
+  '/admin/reports': typeof AdminReportsRoute;
+  '/admin/storage': typeof AdminStorageRoute;
+  '/admin/store': typeof AdminStoreRoute;
+  '/admin/transcoder': typeof AdminTranscoderRoute;
+  '/admin/users': typeof AdminUsersRoute;
+  '/_app/': typeof AppIndexRoute;
+  '/admin/': typeof AdminIndexRoute;
+  '/_app/genres/$id': typeof AppGenresIdRoute;
+  '/_app/movies/$id': typeof AppMoviesIdRoute;
+  '/_app/people/$person': typeof AppPeoplePersonRoute;
+  '/_app/shows/$id': typeof AppShowsIdRoute;
+  '/_app/trending/$type': typeof AppTrendingTypeRoute;
+  '/_app/watch/$id': typeof AppWatchIdRoute;
+  '/admin/modules/$id': typeof AdminModulesIdRoute;
+  '/admin/requests/$id': typeof AdminRequestsIdRoute;
+  '/_app/genres/': typeof AppGenresIndexRoute;
+  '/_app/movies/': typeof AppMoviesIndexRoute;
+  '/_app/shows/': typeof AppShowsIndexRoute;
+  '/admin/modules/': typeof AdminModulesIndexRoute;
+  '/admin/requests/': typeof AdminRequestsIndexRoute;
+  '/_app/discover/$type/$tmdbId': typeof AppDiscoverTypeTmdbIdRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
     | '/admin'
@@ -455,8 +455,8 @@ export interface FileRouteTypes {
     | '/shows/'
     | '/admin/modules/'
     | '/admin/requests/'
-    | '/discover/$type/$tmdbId'
-  fileRoutesByTo: FileRoutesByTo
+    | '/discover/$type/$tmdbId';
+  fileRoutesByTo: FileRoutesByTo;
   to:
     | '/join'
     | '/login'
@@ -499,7 +499,7 @@ export interface FileRouteTypes {
     | '/shows'
     | '/admin/modules'
     | '/admin/requests'
-    | '/discover/$type/$tmdbId'
+    | '/discover/$type/$tmdbId';
   id:
     | '__root__'
     | '/_app'
@@ -545,350 +545,350 @@ export interface FileRouteTypes {
     | '/_app/shows/'
     | '/admin/modules/'
     | '/admin/requests/'
-    | '/_app/discover/$type/$tmdbId'
-  fileRoutesById: FileRoutesById
+    | '/_app/discover/$type/$tmdbId';
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  AppRoute: typeof AppRouteWithChildren
-  AdminRoute: typeof AdminRouteWithChildren
-  JoinRoute: typeof JoinRoute
-  LoginRoute: typeof LoginRoute
+  AppRoute: typeof AppRouteWithChildren;
+  AdminRoute: typeof AdminRouteWithChildren;
+  JoinRoute: typeof JoinRoute;
+  LoginRoute: typeof LoginRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/_app': {
-      id: '/_app'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/_app';
+      path: '';
+      fullPath: '/';
+      preLoaderRoute: typeof AppRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/admin';
+      path: '/admin';
+      fullPath: '/admin';
+      preLoaderRoute: typeof AdminRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/join': {
-      id: '/join'
-      path: '/join'
-      fullPath: '/join'
-      preLoaderRoute: typeof JoinRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/join';
+      path: '/join';
+      fullPath: '/join';
+      preLoaderRoute: typeof JoinRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/login';
+      path: '/login';
+      fullPath: '/login';
+      preLoaderRoute: typeof LoginRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/_app/': {
-      id: '/_app/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/';
+      path: '/';
+      fullPath: '/';
+      preLoaderRoute: typeof AppIndexRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/$': {
-      id: '/_app/$'
-      path: '/$'
-      fullPath: '/$'
-      preLoaderRoute: typeof AppSplatRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/$';
+      path: '/$';
+      fullPath: '/$';
+      preLoaderRoute: typeof AppSplatRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/account': {
-      id: '/_app/account'
-      path: '/account'
-      fullPath: '/account'
-      preLoaderRoute: typeof AppAccountRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/account';
+      path: '/account';
+      fullPath: '/account';
+      preLoaderRoute: typeof AppAccountRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/coming-soon': {
-      id: '/_app/coming-soon'
-      path: '/coming-soon'
-      fullPath: '/coming-soon'
-      preLoaderRoute: typeof AppComingSoonRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/coming-soon';
+      path: '/coming-soon';
+      fullPath: '/coming-soon';
+      preLoaderRoute: typeof AppComingSoonRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/connect': {
-      id: '/_app/connect'
-      path: '/connect'
-      fullPath: '/connect'
-      preLoaderRoute: typeof AppConnectRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/connect';
+      path: '/connect';
+      fullPath: '/connect';
+      preLoaderRoute: typeof AppConnectRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/invite': {
-      id: '/_app/invite'
-      path: '/invite'
-      fullPath: '/invite'
-      preLoaderRoute: typeof AppInviteRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/invite';
+      path: '/invite';
+      fullPath: '/invite';
+      preLoaderRoute: typeof AppInviteRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/missing': {
-      id: '/_app/missing'
-      path: '/missing'
-      fullPath: '/missing'
-      preLoaderRoute: typeof AppMissingRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/missing';
+      path: '/missing';
+      fullPath: '/missing';
+      preLoaderRoute: typeof AppMissingRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/my-list': {
-      id: '/_app/my-list'
-      path: '/my-list'
-      fullPath: '/my-list'
-      preLoaderRoute: typeof AppMyListRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/my-list';
+      path: '/my-list';
+      fullPath: '/my-list';
+      preLoaderRoute: typeof AppMyListRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/requests': {
-      id: '/_app/requests'
-      path: '/requests'
-      fullPath: '/requests'
-      preLoaderRoute: typeof AppRequestsRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/requests';
+      path: '/requests';
+      fullPath: '/requests';
+      preLoaderRoute: typeof AppRequestsRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/search': {
-      id: '/_app/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof AppSearchRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/search';
+      path: '/search';
+      fullPath: '/search';
+      preLoaderRoute: typeof AppSearchRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/';
+      path: '/';
+      fullPath: '/admin/';
+      preLoaderRoute: typeof AdminIndexRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/$': {
-      id: '/admin/$'
-      path: '/$'
-      fullPath: '/admin/$'
-      preLoaderRoute: typeof AdminSplatRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/$';
+      path: '/$';
+      fullPath: '/admin/$';
+      preLoaderRoute: typeof AdminSplatRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/ai': {
-      id: '/admin/ai'
-      path: '/ai'
-      fullPath: '/admin/ai'
-      preLoaderRoute: typeof AdminAiRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/ai';
+      path: '/ai';
+      fullPath: '/admin/ai';
+      preLoaderRoute: typeof AdminAiRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/backup': {
-      id: '/admin/backup'
-      path: '/backup'
-      fullPath: '/admin/backup'
-      preLoaderRoute: typeof AdminBackupRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/backup';
+      path: '/backup';
+      fullPath: '/admin/backup';
+      preLoaderRoute: typeof AdminBackupRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/general': {
-      id: '/admin/general'
-      path: '/general'
-      fullPath: '/admin/general'
-      preLoaderRoute: typeof AdminGeneralRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/general';
+      path: '/general';
+      fullPath: '/admin/general';
+      preLoaderRoute: typeof AdminGeneralRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/jobs': {
-      id: '/admin/jobs'
-      path: '/jobs'
-      fullPath: '/admin/jobs'
-      preLoaderRoute: typeof AdminJobsRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/jobs';
+      path: '/jobs';
+      fullPath: '/admin/jobs';
+      preLoaderRoute: typeof AdminJobsRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/libraries': {
-      id: '/admin/libraries'
-      path: '/libraries'
-      fullPath: '/admin/libraries'
-      preLoaderRoute: typeof AdminLibrariesRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/libraries';
+      path: '/libraries';
+      fullPath: '/admin/libraries';
+      preLoaderRoute: typeof AdminLibrariesRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/logs': {
-      id: '/admin/logs'
-      path: '/logs'
-      fullPath: '/admin/logs'
-      preLoaderRoute: typeof AdminLogsRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/logs';
+      path: '/logs';
+      fullPath: '/admin/logs';
+      preLoaderRoute: typeof AdminLogsRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/network': {
-      id: '/admin/network'
-      path: '/network'
-      fullPath: '/admin/network'
-      preLoaderRoute: typeof AdminNetworkRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/network';
+      path: '/network';
+      fullPath: '/admin/network';
+      preLoaderRoute: typeof AdminNetworkRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/notifications': {
-      id: '/admin/notifications'
-      path: '/notifications'
-      fullPath: '/admin/notifications'
-      preLoaderRoute: typeof AdminNotificationsRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/notifications';
+      path: '/notifications';
+      fullPath: '/admin/notifications';
+      preLoaderRoute: typeof AdminNotificationsRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/pipeline': {
-      id: '/admin/pipeline'
-      path: '/pipeline'
-      fullPath: '/admin/pipeline'
-      preLoaderRoute: typeof AdminPipelineRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/pipeline';
+      path: '/pipeline';
+      fullPath: '/admin/pipeline';
+      preLoaderRoute: typeof AdminPipelineRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/reports': {
-      id: '/admin/reports'
-      path: '/reports'
-      fullPath: '/admin/reports'
-      preLoaderRoute: typeof AdminReportsRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/reports';
+      path: '/reports';
+      fullPath: '/admin/reports';
+      preLoaderRoute: typeof AdminReportsRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/storage': {
-      id: '/admin/storage'
-      path: '/storage'
-      fullPath: '/admin/storage'
-      preLoaderRoute: typeof AdminStorageRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/storage';
+      path: '/storage';
+      fullPath: '/admin/storage';
+      preLoaderRoute: typeof AdminStorageRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/store': {
-      id: '/admin/store'
-      path: '/store'
-      fullPath: '/admin/store'
-      preLoaderRoute: typeof AdminStoreRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/store';
+      path: '/store';
+      fullPath: '/admin/store';
+      preLoaderRoute: typeof AdminStoreRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/transcoder': {
-      id: '/admin/transcoder'
-      path: '/transcoder'
-      fullPath: '/admin/transcoder'
-      preLoaderRoute: typeof AdminTranscoderRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/transcoder';
+      path: '/transcoder';
+      fullPath: '/admin/transcoder';
+      preLoaderRoute: typeof AdminTranscoderRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/users';
+      path: '/users';
+      fullPath: '/admin/users';
+      preLoaderRoute: typeof AdminUsersRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/_app/genres/': {
-      id: '/_app/genres/'
-      path: '/genres'
-      fullPath: '/genres/'
-      preLoaderRoute: typeof AppGenresIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/genres/';
+      path: '/genres';
+      fullPath: '/genres/';
+      preLoaderRoute: typeof AppGenresIndexRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/genres/$id': {
-      id: '/_app/genres/$id'
-      path: '/genres/$id'
-      fullPath: '/genres/$id'
-      preLoaderRoute: typeof AppGenresIdRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/genres/$id';
+      path: '/genres/$id';
+      fullPath: '/genres/$id';
+      preLoaderRoute: typeof AppGenresIdRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/movies/': {
-      id: '/_app/movies/'
-      path: '/movies'
-      fullPath: '/movies/'
-      preLoaderRoute: typeof AppMoviesIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/movies/';
+      path: '/movies';
+      fullPath: '/movies/';
+      preLoaderRoute: typeof AppMoviesIndexRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/movies/$id': {
-      id: '/_app/movies/$id'
-      path: '/movies/$id'
-      fullPath: '/movies/$id'
-      preLoaderRoute: typeof AppMoviesIdRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/movies/$id';
+      path: '/movies/$id';
+      fullPath: '/movies/$id';
+      preLoaderRoute: typeof AppMoviesIdRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/people/$person': {
-      id: '/_app/people/$person'
-      path: '/people/$person'
-      fullPath: '/people/$person'
-      preLoaderRoute: typeof AppPeoplePersonRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/people/$person';
+      path: '/people/$person';
+      fullPath: '/people/$person';
+      preLoaderRoute: typeof AppPeoplePersonRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/shows/': {
-      id: '/_app/shows/'
-      path: '/shows'
-      fullPath: '/shows/'
-      preLoaderRoute: typeof AppShowsIndexRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/shows/';
+      path: '/shows';
+      fullPath: '/shows/';
+      preLoaderRoute: typeof AppShowsIndexRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/shows/$id': {
-      id: '/_app/shows/$id'
-      path: '/shows/$id'
-      fullPath: '/shows/$id'
-      preLoaderRoute: typeof AppShowsIdRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/shows/$id';
+      path: '/shows/$id';
+      fullPath: '/shows/$id';
+      preLoaderRoute: typeof AppShowsIdRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/trending/$type': {
-      id: '/_app/trending/$type'
-      path: '/trending/$type'
-      fullPath: '/trending/$type'
-      preLoaderRoute: typeof AppTrendingTypeRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/trending/$type';
+      path: '/trending/$type';
+      fullPath: '/trending/$type';
+      preLoaderRoute: typeof AppTrendingTypeRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/watch/$id': {
-      id: '/_app/watch/$id'
-      path: '/watch/$id'
-      fullPath: '/watch/$id'
-      preLoaderRoute: typeof AppWatchIdRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/watch/$id';
+      path: '/watch/$id';
+      fullPath: '/watch/$id';
+      preLoaderRoute: typeof AppWatchIdRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/admin/modules/': {
-      id: '/admin/modules/'
-      path: '/modules'
-      fullPath: '/admin/modules/'
-      preLoaderRoute: typeof AdminModulesIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/modules/';
+      path: '/modules';
+      fullPath: '/admin/modules/';
+      preLoaderRoute: typeof AdminModulesIndexRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/modules/$id': {
-      id: '/admin/modules/$id'
-      path: '/modules/$id'
-      fullPath: '/admin/modules/$id'
-      preLoaderRoute: typeof AdminModulesIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/modules/$id';
+      path: '/modules/$id';
+      fullPath: '/admin/modules/$id';
+      preLoaderRoute: typeof AdminModulesIdRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/requests/': {
-      id: '/admin/requests/'
-      path: '/requests'
-      fullPath: '/admin/requests/'
-      preLoaderRoute: typeof AdminRequestsIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/requests/';
+      path: '/requests';
+      fullPath: '/admin/requests/';
+      preLoaderRoute: typeof AdminRequestsIndexRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/admin/requests/$id': {
-      id: '/admin/requests/$id'
-      path: '/requests/$id'
-      fullPath: '/admin/requests/$id'
-      preLoaderRoute: typeof AdminRequestsIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
+      id: '/admin/requests/$id';
+      path: '/requests/$id';
+      fullPath: '/admin/requests/$id';
+      preLoaderRoute: typeof AdminRequestsIdRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
     '/_app/discover/$type/$tmdbId': {
-      id: '/_app/discover/$type/$tmdbId'
-      path: '/discover/$type/$tmdbId'
-      fullPath: '/discover/$type/$tmdbId'
-      preLoaderRoute: typeof AppDiscoverTypeTmdbIdRouteImport
-      parentRoute: typeof AppRoute
-    }
+      id: '/_app/discover/$type/$tmdbId';
+      path: '/discover/$type/$tmdbId';
+      fullPath: '/discover/$type/$tmdbId';
+      preLoaderRoute: typeof AppDiscoverTypeTmdbIdRouteImport;
+      parentRoute: typeof AppRoute;
+    };
   }
 }
 
 interface AppRouteChildren {
-  AppSplatRoute: typeof AppSplatRoute
-  AppAccountRoute: typeof AppAccountRoute
-  AppComingSoonRoute: typeof AppComingSoonRoute
-  AppConnectRoute: typeof AppConnectRoute
-  AppInviteRoute: typeof AppInviteRoute
-  AppMissingRoute: typeof AppMissingRoute
-  AppMyListRoute: typeof AppMyListRoute
-  AppRequestsRoute: typeof AppRequestsRoute
-  AppSearchRoute: typeof AppSearchRoute
-  AppIndexRoute: typeof AppIndexRoute
-  AppGenresIdRoute: typeof AppGenresIdRoute
-  AppMoviesIdRoute: typeof AppMoviesIdRoute
-  AppPeoplePersonRoute: typeof AppPeoplePersonRoute
-  AppShowsIdRoute: typeof AppShowsIdRoute
-  AppTrendingTypeRoute: typeof AppTrendingTypeRoute
-  AppWatchIdRoute: typeof AppWatchIdRoute
-  AppGenresIndexRoute: typeof AppGenresIndexRoute
-  AppMoviesIndexRoute: typeof AppMoviesIndexRoute
-  AppShowsIndexRoute: typeof AppShowsIndexRoute
-  AppDiscoverTypeTmdbIdRoute: typeof AppDiscoverTypeTmdbIdRoute
+  AppSplatRoute: typeof AppSplatRoute;
+  AppAccountRoute: typeof AppAccountRoute;
+  AppComingSoonRoute: typeof AppComingSoonRoute;
+  AppConnectRoute: typeof AppConnectRoute;
+  AppInviteRoute: typeof AppInviteRoute;
+  AppMissingRoute: typeof AppMissingRoute;
+  AppMyListRoute: typeof AppMyListRoute;
+  AppRequestsRoute: typeof AppRequestsRoute;
+  AppSearchRoute: typeof AppSearchRoute;
+  AppIndexRoute: typeof AppIndexRoute;
+  AppGenresIdRoute: typeof AppGenresIdRoute;
+  AppMoviesIdRoute: typeof AppMoviesIdRoute;
+  AppPeoplePersonRoute: typeof AppPeoplePersonRoute;
+  AppShowsIdRoute: typeof AppShowsIdRoute;
+  AppTrendingTypeRoute: typeof AppTrendingTypeRoute;
+  AppWatchIdRoute: typeof AppWatchIdRoute;
+  AppGenresIndexRoute: typeof AppGenresIndexRoute;
+  AppMoviesIndexRoute: typeof AppMoviesIndexRoute;
+  AppShowsIndexRoute: typeof AppShowsIndexRoute;
+  AppDiscoverTypeTmdbIdRoute: typeof AppDiscoverTypeTmdbIdRoute;
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -912,31 +912,31 @@ const AppRouteChildren: AppRouteChildren = {
   AppMoviesIndexRoute: AppMoviesIndexRoute,
   AppShowsIndexRoute: AppShowsIndexRoute,
   AppDiscoverTypeTmdbIdRoute: AppDiscoverTypeTmdbIdRoute,
-}
+};
 
-const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren);
 
 interface AdminRouteChildren {
-  AdminSplatRoute: typeof AdminSplatRoute
-  AdminAiRoute: typeof AdminAiRoute
-  AdminBackupRoute: typeof AdminBackupRoute
-  AdminGeneralRoute: typeof AdminGeneralRoute
-  AdminJobsRoute: typeof AdminJobsRoute
-  AdminLibrariesRoute: typeof AdminLibrariesRoute
-  AdminLogsRoute: typeof AdminLogsRoute
-  AdminNetworkRoute: typeof AdminNetworkRoute
-  AdminNotificationsRoute: typeof AdminNotificationsRoute
-  AdminPipelineRoute: typeof AdminPipelineRoute
-  AdminReportsRoute: typeof AdminReportsRoute
-  AdminStorageRoute: typeof AdminStorageRoute
-  AdminStoreRoute: typeof AdminStoreRoute
-  AdminTranscoderRoute: typeof AdminTranscoderRoute
-  AdminUsersRoute: typeof AdminUsersRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-  AdminModulesIdRoute: typeof AdminModulesIdRoute
-  AdminRequestsIdRoute: typeof AdminRequestsIdRoute
-  AdminModulesIndexRoute: typeof AdminModulesIndexRoute
-  AdminRequestsIndexRoute: typeof AdminRequestsIndexRoute
+  AdminSplatRoute: typeof AdminSplatRoute;
+  AdminAiRoute: typeof AdminAiRoute;
+  AdminBackupRoute: typeof AdminBackupRoute;
+  AdminGeneralRoute: typeof AdminGeneralRoute;
+  AdminJobsRoute: typeof AdminJobsRoute;
+  AdminLibrariesRoute: typeof AdminLibrariesRoute;
+  AdminLogsRoute: typeof AdminLogsRoute;
+  AdminNetworkRoute: typeof AdminNetworkRoute;
+  AdminNotificationsRoute: typeof AdminNotificationsRoute;
+  AdminPipelineRoute: typeof AdminPipelineRoute;
+  AdminReportsRoute: typeof AdminReportsRoute;
+  AdminStorageRoute: typeof AdminStorageRoute;
+  AdminStoreRoute: typeof AdminStoreRoute;
+  AdminTranscoderRoute: typeof AdminTranscoderRoute;
+  AdminUsersRoute: typeof AdminUsersRoute;
+  AdminIndexRoute: typeof AdminIndexRoute;
+  AdminModulesIdRoute: typeof AdminModulesIdRoute;
+  AdminRequestsIdRoute: typeof AdminRequestsIdRoute;
+  AdminModulesIndexRoute: typeof AdminModulesIndexRoute;
+  AdminRequestsIndexRoute: typeof AdminRequestsIndexRoute;
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -960,25 +960,16 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminRequestsIdRoute: AdminRequestsIdRoute,
   AdminModulesIndexRoute: AdminModulesIndexRoute,
   AdminRequestsIndexRoute: AdminRequestsIndexRoute,
-}
+};
 
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren);
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
   JoinRoute: JoinRoute,
   LoginRoute: LoginRoute,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
+  ._addFileTypes<FileRouteTypes>();

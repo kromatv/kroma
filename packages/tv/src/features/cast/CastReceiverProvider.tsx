@@ -25,8 +25,6 @@ import { deviceId } from '#tv/shared/device';
 
 const DRIFT_MS = 20_000;
 const FALLBACK_BEAT_MS = 10_000;
-const AUTH_TICK_MS = 100;
-const AUTH_WAIT_TICKS = 50;
 
 /** Mounts the cast receiver above the router so casting works even on the
  * signed-out picker; `client` is a prop (not `useClient()`) because it may
@@ -57,7 +55,7 @@ function CastReceiver({
 }: Readonly<{ client: KromaClient; lan?: LanDiscoveryBridge; name: string }>) {
   const nav = useNav();
   const t = useT();
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const { platform } = useEnv();
   const [castable] = useStoredPref(castReceiverPrefStore);
 
@@ -66,7 +64,7 @@ function CastReceiver({
   deps.current = { client, nav, t, platform, name };
 
   const applied = useRef(0);
-  const signedIn = Boolean(user);
+  const signedIn = ready && Boolean(user);
 
   // Say on the link that this television is up and castable, for as long as it
   // is. The phone's picker is fed by the server, which knows whose television
@@ -192,16 +190,6 @@ function CastReceiver({
         } else if (e.type === 'cast.command' && e.receiverId === id) void apply(e.seq, e.command);
       },
     });
-    // Wait for the bearer before opening anything: the stored user hydrates
-    // synchronously but the session token is minted a moment later, and a
-    // socket opened in that gap is refused. Capped, so a server that never
-    // mints one still gets the retry loop.
-    const whenAuthed = async () => {
-      for (let i = 0; i < AUTH_WAIT_TICKS && !stopped; i++) {
-        if (deps.current.client.hasAuth) return;
-        await new Promise((r) => setTimeout(r, AUTH_TICK_MS));
-      }
-    };
 
     // Push on change (the player re-renders ~4 Hz; only material changes send),
     // plus a slow position keepalive so a remote's scrubber cannot drift.
@@ -210,11 +198,8 @@ function CastReceiver({
       if (castReport(deps.current.t)) pushState();
     }, DRIFT_MS);
 
-    void whenAuthed().then(() => {
-      if (stopped) return;
-      events.connect();
-      void beat();
-    });
+    events.connect();
+    void beat();
 
     return () => {
       stopped = true;
@@ -223,9 +208,10 @@ function CastReceiver({
       clearTimeout(fallback);
       clearInterval(drift);
       // Closing the socket is what unregisters this TV; the HTTP delete only
-      // matters when the receiver came up through the fallback path.
+      // matters when the receiver came up through the fallback path, and only
+      // while there is still a bearer to send it with.
       events.close();
-      client.unregisterCast(id).catch(() => undefined);
+      if (client.hasAuth) client.unregisterCast(id).catch(() => undefined);
     };
   }, [signedIn, castable, client]);
 

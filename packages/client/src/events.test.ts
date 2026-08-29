@@ -1,38 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KromaEvents, type ServerEvent } from './events';
-
-// A controllable WebSocket stand-in. Each construction is recorded so tests can
-// drive its lifecycle callbacks by hand.
-class FakeWS {
-  static instances: FakeWS[] = [];
-  url: string;
-  protocol: string | undefined;
-  readyState = 0;
-  sent: string[] = [];
-  sendThrows = false;
-  onopen: (() => void) | null = null;
-  onmessage: ((ev: MessageEvent) => void) | null = null;
-  onclose: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  closed = false;
-  constructor(url: string, protocol?: string) {
-    this.url = url;
-    this.protocol = protocol;
-    FakeWS.instances.push(this);
-  }
-  send(data: string): void {
-    if (this.sendThrows) throw new Error('socket buffer full');
-    this.sent.push(data);
-  }
-  close(): void {
-    this.closed = true;
-  }
-}
-
-const WSImpl = FakeWS as unknown as typeof WebSocket;
+import { FakeWS, WSImpl } from './events.fixture';
 
 beforeEach(() => {
-  FakeWS.instances = [];
+  FakeWS.reset();
   vi.useFakeTimers();
 });
 afterEach(() => {

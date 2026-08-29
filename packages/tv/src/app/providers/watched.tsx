@@ -23,12 +23,12 @@ interface Watched {
 const Ctx = createContext<Watched | null>(null);
 
 export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const { client } = useConnection();
   const [ids, setIds] = useState<ReadonlySet<string>>(() => new Set());
 
   const refresh = useCallback(() => {
-    if (!user || !client) {
+    if (!ready || !user || !client) {
       setIds(new Set());
       return;
     }
@@ -36,7 +36,7 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
       .watched()
       .then((list) => setIds(new Set(list)))
       .catch(() => undefined);
-  }, [client, user]);
+  }, [client, user, ready]);
 
   useEffect(() => refresh(), [refresh]);
 

@@ -19,7 +19,7 @@ import {
   tintGradient,
   useFocusNav,
 } from '@kroma/ui/kit';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useConnection } from '#tv/app/providers/connection';
 import { useClient, useNav } from '#tv/app/router';
 import { TITLE } from '#tv/features/catalog/screenStyle';
@@ -37,6 +37,7 @@ export function TvGenres() {
   const catalogue = useMemo(() => [...movies, ...shows], [movies, shows]);
   const genres = useMemo(() => collectGenres(catalogue), [catalogue]);
   const showcases = useMemo(() => genreShowcases(catalogue), [catalogue]);
+  const openGenre = useCallback((slug: string) => nav.go('genre', { slug }), [nav]);
 
   return (
     <Box fill bg="bg" overflow="hidden">
@@ -58,7 +59,7 @@ export function TvGenres() {
                   genre={g}
                   count={t('person.titleCount', { count: g.count })}
                   backdrop={pick ? client.backdropFor(pick, CARD_MIN) : null}
-                  onPress={() => nav.go('genre', { slug: g.slug })}
+                  onSelect={openGenre}
                 />
               );
             })}
@@ -79,13 +80,13 @@ function GenreCard({
   genre,
   count,
   backdrop,
-  onPress,
+  onSelect,
   autoFocus,
 }: Readonly<{
   genre: GenreCount;
   count: string;
   backdrop: string | null;
-  onPress: () => void;
+  onSelect: (slug: string) => void;
   autoFocus?: boolean;
 }>) {
   const t = useT();
@@ -98,7 +99,7 @@ function GenreCard({
       background={tintGradient(genreColors(genre.slug))}
       wash={genreTint(genre.slug)}
       accent={genreAccent(genre.slug)}
-      onPress={onPress}
+      onPress={() => onSelect(genre.slug)}
       autoFocus={autoFocus}
     />
   );

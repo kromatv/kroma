@@ -1,13 +1,5 @@
 import type { RemoteKey, Translate } from '@kroma/core';
-import {
-  forwardRef,
-  memo,
-  type ReactNode,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useState,
-} from 'react';
+import { forwardRef, memo, type ReactNode, useImperativeHandle, useMemo, useState } from 'react';
 import { Animated, Pressable, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -25,11 +17,11 @@ import {
 } from '#ui/components/organisms/player/parts/up-next-card';
 import { RING_ROOM, styles } from '#ui/core';
 import { gradient, maskImage } from '#ui/lib/css';
-import { ease } from '#ui/lib/ease';
 import { FocusColumn, FocusRegion, FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope';
 import { FocusScroll } from '#ui/lib/focus-scroll';
 import { pointerDriving } from '#ui/lib/input-source';
 import { useT } from '#ui/services/i18n';
+import { useSheetSlide } from './slide';
 
 export type { UpNextItem };
 
@@ -132,17 +124,7 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
   const { height: stageHeight } = useWindowDimensions();
   const [sheetHeight, setSheetHeight] = useState(() => Math.round(stageHeight * SHEET_FRACTION));
 
-  const [slide] = useState(() => new Animated.Value(open ? 0 : 1));
-  useEffect(() => {
-    const anim = Animated.timing(slide, {
-      toValue: open ? 0 : 1,
-      duration: 340,
-      easing: ease.out.native,
-      useNativeDriver: true,
-    });
-    anim.start();
-    return () => anim.stop();
-  }, [open, slide]);
+  const slide = useSheetSlide(open, parkOffset(sheetHeight));
 
   // An open sheet is an OVERLAY: it takes the remote from the screen behind it
   // (which is also what stops ▲ off the top row climbing out of the sheet), and
@@ -185,20 +167,7 @@ const UpNextSheetBase = forwardRef<PanelHandle, UpNextSheetProps>(function UpNex
           const h = Math.round(e.nativeEvent.layout.height);
           setSheetHeight((prev) => (prev === h ? prev : h));
         }}
-        style={[
-          s.sheetBox,
-          SHEET_FILL,
-          {
-            transform: [
-              {
-                translateY: slide.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, parkOffset(sheetHeight)],
-                }),
-              },
-            ],
-          },
-        ]}
+        style={[s.sheetBox, SHEET_FILL, slide]}
       >
         {/* One column, so ▲ off the top row reaches the header rather than
             leaving the sheet. `bridge={false}`: the screen's remote bridge is

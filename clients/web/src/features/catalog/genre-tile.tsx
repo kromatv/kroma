@@ -19,8 +19,7 @@ import {
   svFor,
   Text,
 } from '@kroma/ui/kit';
-import { useEffect, useState } from 'react';
-import { Animated, Easing, type ViewStyle } from 'react-native';
+import { View, type ViewStyle } from 'react-native';
 
 import { RouteLink } from '#web/shared/ui/route-link';
 
@@ -40,21 +39,16 @@ const genreTile = svFor<{ root: StyleDecl; art: StyleDecl }>()({
 
 const ZOOM = 1.05;
 
-const EASE = Easing.bezier(...motion.bezier.out);
+// A CSS transition, not Animated: react-native-web has no native driver, so an
+// Animated value here is a rAF loop competing with React for the main thread.
+const ZOOM_TRANSITION = {
+  transitionProperty: 'transform',
+  transitionDuration: `${motion.duration.slow}ms`,
+  transitionTimingFunction: `cubic-bezier(${motion.bezier.out.join(', ')})`,
+} as ViewStyle;
 
-function useZoom(hovered: boolean): Animated.Value {
-  const [scale] = useState(() => new Animated.Value(1));
-  useEffect(() => {
-    const anim = Animated.timing(scale, {
-      toValue: hovered ? ZOOM : 1,
-      duration: motion.duration.slow,
-      easing: EASE,
-      useNativeDriver: true,
-    });
-    anim.start();
-    return () => anim.stop();
-  }, [hovered, scale]);
-  return scale;
+function zoom(hovered: boolean): ViewStyle {
+  return { ...ZOOM_TRANSITION, transform: [{ scale: hovered ? ZOOM : 1 }] };
 }
 
 export interface GenreTileProps {
@@ -106,10 +100,9 @@ function Art({
   hovered,
   style,
 }: Readonly<{ src: string | null; hovered: boolean; style: ViewStyle }>) {
-  const scale = useZoom(hovered);
   return (
-    <Animated.View style={[style, { transform: [{ scale }] }]}>
+    <View style={[style, zoom(hovered)]}>
       <Img src={src ? sizedImageUrl(src, 420) : null} fit="cover" position="50% 25%" fill />
-    </Animated.View>
+    </View>
   );
 }

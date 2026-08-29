@@ -1,6 +1,6 @@
 // Which decoder <Img> loads bytes with on the native targets. React Native's own
-// <Image> by default; an app registers another (expo-image on the phones) at its
-// root, so a target that does not install expo-image never sees it.
+// <Image> by default; an app registers another (expo-image, on the Expo targets)
+// at its root, so a target that does not install expo-image never sees it.
 
 import type { ReactElement } from 'react';
 import { Animated, type ImageStyle, type StyleProp } from 'react-native';

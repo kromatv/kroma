@@ -1,19 +1,13 @@
-// A handler whose identity never moves, whose body always sees the newest
-// render's values.
-//
-// `useEffectEvent` is NOT this, however much it reads like it. React returns a
-// NEW closure from it on every render (`updateEvent` in react-dom), so handing
-// one to a memoised child re-renders that child every time. React's own advice
-// is not to pass an effect event to another component; this is the reason, and
-// it is what made one keystroke re-render all forty keys of the on-screen
-// keyboard even after the closures were lifted out of the grid.
-//
-// Use an effect event for what it is for: reading fresh values from inside an
-// effect. Use this when the FUNCTION ITSELF is a prop.
-
 import { useCallback, useLayoutEffect, useRef } from 'react';
 
-/** One function, forever, that always calls the latest `fn`. */
+/** One function identity, forever, whose body always sees the latest render's
+ *  values. Reach for it when the FUNCTION ITSELF is a prop, and a moving
+ *  identity would re-render a memoised child or a whole list.
+ *
+ *  `useEffectEvent` is not a substitute: React returns a NEW closure from it on
+ *  every render (`updateEvent` in react-dom), which is why React's own advice is
+ *  not to pass an effect event to another component. Keep effect events for
+ *  reading fresh values inside an effect. */
 export function useStableCallback<A extends unknown[], R>(fn: (...args: A) => R) {
   const latest = useRef(fn);
   // Written in an effect, never during render: a ref the render phase touches

@@ -7,9 +7,9 @@
 // never unmounting what's already been reached (the navigator can only move to
 // a node that exists).
 
+import { NavigatorNode, NavigatorView } from '@kroma/spatial-nav/react';
 import { Children, type ReactElement, type ReactNode, useMemo } from 'react';
 import { ScrollView, type ViewStyle } from 'react-native';
-import { SpatialNavigationNode, SpatialNavigationView } from 'react-tv-space-navigation';
 import { VirtualRail } from '#ui/components/organisms/virtual';
 import { RING_ROOM } from '#ui/core/tokens';
 import { useInsideFocusScope } from '#ui/lib/focus-presence';
@@ -91,22 +91,21 @@ function GrowingRow({
       {/* The scroller scrolls; this is the row itself. A focus ring is drawn
           OUTSIDE the tile's box and a focused tile scales up, so it needs
           vertical room or the ring is clipped. */}
-      <SpatialNavigationView direction="horizontal" style={rowStyle}>
-        {/* Each tile gets a node keyed by its POSITION, and that is not
-            ceremony: the navigator registers nodes in the order they mount,
-            and a rail's tiles arrive as the data does. Without a stable slot
-            per position, Right walks the row in the order the server answered
-            rather than the order you can see. */}
+      <NavigatorView direction="horizontal" style={rowStyle}>
+        {/* Each tile gets a node that DECLARES its position, and that is not
+            ceremony: a rail's tiles arrive as the data does, so without a slot
+            of its own a tile takes the place its registration fell in and
+            Right walks the row in the order the server answered. */}
         {children.slice(0, count).map((child, index) => (
           // `onActive`, not `onFocus`: this node is a container, and its tile
           // is what takes the focus. A container asked for `onFocus` is a
           // focusable that can never be focused, and the remote dies on it.
           // biome-ignore lint/suspicious/noArrayIndexKey: the index IS the identity here - it is the slot in the row.
-          <SpatialNavigationNode key={index} onActive={isNearEnd(index) ? grow : undefined}>
+          <NavigatorNode key={index} index={index} onActive={isNearEnd(index) ? grow : undefined}>
             {child as ReactElement}
-          </SpatialNavigationNode>
+          </NavigatorNode>
         ))}
-      </SpatialNavigationView>
+      </NavigatorView>
     </FocusRail>
   );
 }

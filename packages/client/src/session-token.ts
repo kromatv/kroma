@@ -13,6 +13,23 @@ export function setSessionToken(token: string | undefined): void {
   memorySessionToken = token;
 }
 
+// The same handler `KromaClient.setRefreshHandler` holds, published here so
+// anything that needs a fresh bearer reads ONE notion of how to get one. The
+// event socket is the other caller: its refused handshake carries no readable
+// 401, so it cannot go through the client's own 401 path.
+let memorySessionRefresh: (() => Promise<string | undefined>) | undefined;
+
+/** How to mint a fresh session bearer, or undefined when nothing registered one. */
+export function sessionRefresh(): (() => Promise<string | undefined>) | undefined {
+  return memorySessionRefresh;
+}
+
+/** Set (or clear, with `undefined`) how a fresh session bearer is minted.
+ *  `KromaClient.setRefreshHandler` calls this; callers do not. */
+export function setSessionRefresh(fn?: () => Promise<string | undefined>): void {
+  memorySessionRefresh = fn;
+}
+
 /** The shape returned by a session-token exchange (`KromaClient.exchangeToken`). */
 export interface TokenExchange<U = unknown> {
   token: string;

@@ -123,6 +123,20 @@ describe('TvSearch', () => {
     expect(screen.getByRole('button', { name: 'b' })).toBeTruthy();
   });
 
+  it('remembers the search that found the result, not the prefix typed after it', async () => {
+    const { search } = mount({
+      search: vi.fn(async () => found({ type: 'movie', item: movie('m1', 'Blade Runner') })),
+    });
+    type('B');
+    const hit = await screen.findByRole('button', { name: 'Blade Runner' });
+    type('X');
+
+    fireEvent.click(hit);
+    expect(screen.getByRole('button', { name: 'b' })).toBeTruthy();
+    await waitFor(() => expect(search).toHaveBeenCalledWith('bx'));
+    expect(screen.queryByRole('button', { name: 'bx' })).toBeNull();
+  });
+
   it('opens a series the server found', async () => {
     const { nav } = mount({
       search: vi.fn(async () => found({ type: 'show', show: series('s1', 'Severance') })),

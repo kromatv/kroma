@@ -42,8 +42,7 @@ export default defineConfig({
     },
   },
   ssr: {
-    noExternal: ['@kroma/ui', '@kroma/core', ...RNW_SSR_NO_EXTERNAL],
-    optimizeDeps: { include: ['@kroma/ui > react-tv-space-navigation'] },
+    noExternal: ['@kroma/ui', '@kroma/core', '@kroma/spatial-nav', ...RNW_SSR_NO_EXTERNAL],
   },
   optimizeDeps: {
     exclude: ['@kroma/ui', '@kroma/core'],

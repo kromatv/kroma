@@ -1,5 +1,8 @@
-// Animated rather than a keyframe: a @keyframes rule cannot be re-fired, which
-// is why lib/loop.ts has a web half and this has none.
+// The refusal wobble, native (Apple TV / Android TV / phone).
+//
+// Driven by Animated with `useNativeDriver`, so the travel runs on the UI thread
+// and the JS thread never wakes for a frame. See shake.web.ts for the browser
+// half, which walks the same legs on a CSS transition.
 
 import { useEffect, useState } from 'react';
 import { Animated, Easing, type ViewStyle } from 'react-native';
@@ -7,7 +10,7 @@ import { useReducedMotion } from '#ui/lib/reduced-motion';
 
 const TRAVEL_PX = 8;
 const LEG_MS = 80;
-const LEGS = [-TRAVEL_PX, TRAVEL_PX, -TRAVEL_PX, TRAVEL_PX, 0];
+const LEGS = [-TRAVEL_PX, TRAVEL_PX, -TRAVEL_PX, TRAVEL_PX, 0] as const;
 
 /**
  * A transform that shakes once every time `at` changes, and nothing at all on

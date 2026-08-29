@@ -100,10 +100,15 @@ async function tick(ms = 0) {
   });
 }
 
+// The auth provider owns the signed-in flag: it reports it only once the stored
+// access token has been exchanged for a bearer, which is what `setSignedIn`
+// stands in for here.
 function signedIn() {
   H.loadSession.mockReturnValue({ serverUrl: 'http://tv.local' });
   H.initialServers.mockReturnValue([{ url: 'http://tv.local', name: 'Home' }]);
-  return renderHook(() => useCatalogue('tizen'));
+  const rendered = renderHook(() => useCatalogue('tizen'));
+  act(() => rendered.result.current.setSignedIn(true));
+  return rendered;
 }
 
 function stream() {
@@ -135,13 +140,22 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('useCatalogue boot session', () => {
-  it('builds a client for the saved server and loads the catalogue when signed in', async () => {
+  it('fetches nothing on a remembered session until its bearer is live', async () => {
     H.loadSession.mockReturnValue({ serverUrl: 'http://tv.local' });
     H.initialServers.mockReturnValue([{ url: 'http://tv.local', name: 'Home' }]);
+
+    renderHook(() => useCatalogue('tizen'));
+    await settle();
+
+    expect(H.movies).not.toHaveBeenCalled();
+    expect(H.health).not.toHaveBeenCalled();
+  });
+
+  it('builds a client for the saved server and loads the catalogue when signed in', async () => {
     H.movies.mockResolvedValue([{ id: 'm1' }]);
     H.shows.mockResolvedValue([{ id: 's1' }]);
 
-    const { result } = renderHook(() => useCatalogue('tizen'));
+    const { result } = signedIn();
     expect(H.instances[0]?.baseUrl).toBe('http://tv.local');
     expect(result.current.activeServerUrl).toBe('http://tv.local');
 
@@ -367,11 +381,9 @@ describe('useCatalogue deep links', () => {
 
 describe('useCatalogue error handling', () => {
   it('surfaces a fetch failure as the error status', async () => {
-    H.loadSession.mockReturnValue({ serverUrl: 'http://tv.local' });
-    H.initialServers.mockReturnValue([{ url: 'http://tv.local', name: 'Home' }]);
     H.movies.mockRejectedValue(new Error('boom'));
 
-    const { result } = renderHook(() => useCatalogue('tizen'));
+    const { result } = signedIn();
     await settle();
     expect(result.current.connection.status).toBe('error');
     expect(result.current.connection.error).toBe('boom');

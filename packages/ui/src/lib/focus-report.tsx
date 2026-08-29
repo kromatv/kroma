@@ -1,8 +1,9 @@
-// How a container learns that something inside it took the focus.
+// How a container learns WHICH of its items took the focus.
 //
-// Not `SpatialNavigationNode`'s `onActive`: "active" in LRUD means "on the path to
-// the focused node" and is monotone - walking right fires per tile, walking back
-// left fires nothing - so a row wired to it scrolls one way and freezes the other.
+// A navigator node answers a coarser question - the focus is somewhere inside
+// me - so a row that has to know which tile would need a node per tile. A
+// virtualised row's tiles are already the nodes, and this saves it a second
+// registration each.
 
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
 

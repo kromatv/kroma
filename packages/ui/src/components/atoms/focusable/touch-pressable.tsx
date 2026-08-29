@@ -11,12 +11,19 @@ import {
 } from 'react-native';
 import { usePressScale } from '#ui/lib/focus-transition';
 import { UNFOCUSABLE } from '#ui/lib/focus-types';
+import { type PressScale, useFlatPress } from '#ui/lib/press-dip';
 import { linkProps, platformRole } from './focusable-a11y';
 import type { A11yState, FocusRole, WebKeys } from './focusable-types';
 
 // Android TV boxes ship air mice and trackpad remotes; tvOS has no pointer
 // device at all, so it keeps the plain view and none of the Pressable's cost.
 const TV_HAS_POINTER = Platform.isTV && Platform.OS === 'android';
+
+// A phone PRESSES where a television FOCUSES: the focus scale and the ring
+// already answer the remote, so a TV control keeps the whole Pressable and
+// loses only the sinking. `Platform.isTV` is undefined under react-native-web,
+// so Tizen and webOS keep their dip.
+const usePressDip = Platform.isTV ? useFlatPress : usePressScale;
 
 // On a television the Pressable must be `unfocusable`: a view the platform can
 // focus swallows the directional presses and the remote goes dead (see
@@ -61,6 +68,19 @@ function Painted({
   );
 }
 
+// The press dip measures the box too; both readings come off one element.
+function boxLayout(
+  dip: PressScale,
+  own: ((event: LayoutChangeEvent) => void) | undefined,
+): ((event: LayoutChangeEvent) => void) | undefined {
+  const measure = dip.onLayout;
+  if (!measure) return own;
+  return (event: LayoutChangeEvent) => {
+    measure(event);
+    own?.(event);
+  };
+}
+
 function TouchPressable({
   base,
   pressedStyle,
@@ -100,7 +120,7 @@ function TouchPressable({
   boxRef?: Ref<View>;
   children: (pressed: boolean) => ReactNode;
 }>) {
-  const dip = usePressScale();
+  const dip = usePressDip();
   return (
     <AnimatedPressable
       ref={boxRef}
@@ -116,11 +136,7 @@ function TouchPressable({
       onFocus={onFocus}
       onBlur={onBlur}
       hitSlop={hitSlop}
-      // The press dip measures the box too; both readings come off one element.
-      onLayout={(event: LayoutChangeEvent) => {
-        dip.onLayout(event);
-        onLayout?.(event);
-      }}
+      onLayout={boxLayout(dip, onLayout)}
       onPressIn={dip.onPressIn}
       onPressOut={dip.onPressOut}
       style={[...base, dip.pressed ? pressedStyle : null, dip.style]}

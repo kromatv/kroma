@@ -1,10 +1,11 @@
-// The one focusable primitive: a node of the spatial navigator
-// (react-tv-space-navigation), never a natively focusable view.
+// The one focusable primitive: a node of the spatial navigator, never a
+// natively focusable view.
 //
 // Ring and scale are applied to the SAME element, because a box-shadow scales
 // with its element's transform: ring one view but scale a child and the outline
 // visibly detaches from the artwork it outlines.
 
+import { DefaultFocus } from '@kroma/spatial-nav/react';
 import {
   type Ref,
   type RefObject,
@@ -15,7 +16,6 @@ import {
   useState,
 } from 'react';
 import { Platform, type View } from 'react-native';
-import { DefaultFocus } from 'react-tv-space-navigation';
 import type { AnySv } from '#ui/core';
 import { markFocusSettled } from '#ui/lib/focus-entry';
 import { noteFocus } from '#ui/lib/focus-here';

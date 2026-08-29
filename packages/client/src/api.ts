@@ -30,6 +30,7 @@ import type { ReportQuery } from './client/reports';
 import * as reports from './client/reports';
 import * as requests from './client/requests';
 import * as subtitlesClient from './client/subtitles';
+import { setSessionRefresh } from './session-token';
 import type {
   Activity,
   AdminLibrary,
@@ -179,6 +180,17 @@ export class KromaClient {
   /** When set, a 401 on a non-auth endpoint triggers one refresh + retry before the error surfaces. */
   setRefreshHandler(fn?: () => Promise<string | undefined>): void {
     this.refreshHandler = fn;
+    setSessionRefresh(fn && (() => this.refreshSession()));
+  }
+
+  /** Mints a fresh bearer through the registered refresh handler and adopts it,
+   * resolving undefined when there is no handler or the session is unrecoverable.
+   * Also serves the event socket, whose refused handshake carries no readable
+   * 401 but needs the same one notion of "get me a fresh bearer". */
+  async refreshSession(): Promise<string | undefined> {
+    const token = await this.refreshHandler?.();
+    if (token) this.authToken = token;
+    return token;
   }
 
   /** Sent as `Accept-Language`; the server localises admin labels and error messages to match. */
@@ -225,14 +237,9 @@ export class KromaClient {
         !retried &&
         e instanceof KromaApiError &&
         e.status === 401 &&
-        this.refreshHandler &&
         !NO_REFRESH.has(path.split('?')[0] ?? path)
       ) {
-        const token = await this.refreshHandler();
-        if (token) {
-          this.authToken = token;
-          return this.json<T>(path, init, true);
-        }
+        if (await this.refreshSession()) return this.json<T>(path, init, true);
       }
       throw e;
     }

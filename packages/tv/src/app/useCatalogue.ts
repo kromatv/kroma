@@ -63,9 +63,10 @@ export function useCatalogue(platform: string): Catalogue {
   const liveClient = useRef(client);
   liveClient.current = client;
 
-  // Reported up by the auth provider; gates the catalogue + event stream so the
-  // signed-out picker makes no requests at all.
-  const [signedIn, setSignedIn] = useState(Boolean(bootSession));
+  // Reported up by the auth provider once the session's bearer is live; gates
+  // the catalogue + event stream so neither the signed-out picker nor a boot
+  // still exchanging its token makes a request.
+  const [signedIn, setSignedIn] = useState(false);
   const [status, setStatus] = useState<Status>(activeServerUrl ? 'connecting' : 'discovering');
   const [movies, setMovies] = useState<MediaItem[]>([]);
   const [shows, setShows] = useState<Show[]>([]);

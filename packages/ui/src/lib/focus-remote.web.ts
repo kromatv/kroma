@@ -1,7 +1,8 @@
 // Wiring the remote into the spatial navigator, on the browser targets, where
 // it arrives as ordinary key events on the document.
 
-import { Directions, SpatialNavigation } from 'react-tv-space-navigation';
+import { type Direction, Directions } from '@kroma/spatial-nav';
+import { configureRemote as configureNavigatorRemote } from '@kroma/spatial-nav/react';
 import { webDocument } from './dom';
 import { focusBox, focusSeq } from './focus-here';
 import { walkTab } from './focus-tab';
@@ -9,12 +10,10 @@ import { markPress } from './perf';
 
 const PROBE = { seq: focusSeq, box: focusBox };
 
-type Direction = 'up' | 'down' | 'left' | 'right' | 'enter';
-
-const handlers = new Set<(direction: Directions) => void>();
+const handlers = new Set<(direction: Direction) => void>();
 
 // Tizen and webOS name the four directions without the `Arrow` prefix.
-const KEYS: Record<string, Directions> = {
+const KEYS: Record<string, Direction> = {
   ArrowUp: Directions.UP,
   ArrowDown: Directions.DOWN,
   ArrowLeft: Directions.LEFT,
@@ -40,7 +39,7 @@ const KEYS: Record<string, Directions> = {
 type LegacyKeyboardEvent = { keyCode: number };
 const legacyCode = (event: KeyboardEvent): number => (event as LegacyKeyboardEvent).keyCode;
 
-const CODES: Record<number, Directions> = {
+const CODES: Record<number, Direction> = {
   37: Directions.LEFT,
   38: Directions.UP,
   39: Directions.RIGHT,
@@ -64,8 +63,8 @@ function dropStrayFocus(document: Document): void {
 }
 
 export function configureRemote(): void {
-  SpatialNavigation.configureRemoteControl({
-    remoteControlSubscriber: (handle: (direction: Directions) => void) => {
+  configureNavigatorRemote({
+    subscribe: (handle) => {
       handlers.add(handle);
       const document = webDocument();
       if (!document) {
@@ -109,7 +108,6 @@ export function configureRemote(): void {
         document.removeEventListener('keydown', onKey);
       };
     },
-    remoteControlUnsubscriber: (stop: () => void) => stop(),
   });
 }
 
@@ -120,7 +118,7 @@ export function configureRemote(): void {
  * direction the viewer was already moving.
  */
 export function postRemoteDirection(direction: Direction): void {
-  for (const handle of handlers) handle(direction as Directions);
+  for (const handle of handlers) handle(direction);
 }
 
 /** Nothing to mount: the listener above is not tied to a screen. Kept so

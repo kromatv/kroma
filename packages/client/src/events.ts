@@ -1,7 +1,7 @@
 // Live server events over WebSocket (`/api/events`), with reconnect backoff.
 
 import { z } from 'zod';
-import { sessionToken } from './session';
+import { sessionRefresh, sessionToken } from './session';
 import type { CastClientMessage, CastCommand, CastReceiver, CastState, StageStat } from './types';
 
 export type ServerEvent =
@@ -65,6 +65,7 @@ function decodeFrame<E extends { type: string }>(data: string): E | null {
 
 export interface KromaEventsOptions<E extends { type: string } = ServerEvent> {
   token?: () => string | undefined;
+  refresh?: () => Promise<string | undefined>;
   onEvent?: (event: E) => void;
   onOpen?: () => void;
   onClose?: () => void;
@@ -83,6 +84,8 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
   private closed = false;
   private retry = 0;
   private tokenWaits = 0;
+  private refreshSpent = false;
+  private refreshedToken: string | undefined;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(baseUrl: string, opts: KromaEventsOptions<E> = {}) {
@@ -118,7 +121,7 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
     // fresh on each (re)connect. A multi-server client (the TV) must supply
     // `token`: the fallback reads the default store, which would authenticate it
     // against the wrong server.
-    const token = this.opts.token?.() ?? sessionToken();
+    const token = this.refreshedToken ?? this.opts.token?.() ?? sessionToken();
     if (!token) {
       this.waitForToken();
       return;
@@ -130,10 +133,14 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
       this.scheduleReconnect();
       return;
     }
+    this.refreshedToken = undefined;
     this.ws = ws;
 
+    let opened = false;
     ws.onopen = () => {
+      opened = true;
       this.retry = 0;
+      this.refreshSpent = false;
       this.opts.onOpen?.();
     };
     ws.onmessage = (ev: MessageEvent) => {
@@ -143,7 +150,15 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
     };
     ws.onclose = () => {
       this.opts.onClose?.();
-      this.scheduleReconnect();
+      // The server answers an expired bearer with a 401 on the upgrade (ws.rs),
+      // which a WebSocket surfaces as a plain close carrying no readable status:
+      // closing without ever opening is the only sign the bearer may be at fault.
+      const refresh = this.opts.refresh ?? sessionRefresh();
+      if (this.closed || opened || this.refreshSpent || !refresh) {
+        this.scheduleReconnect();
+        return;
+      }
+      void this.refreshBearer(refresh);
     };
     ws.onerror = () => {
       try {
@@ -152,6 +167,25 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
         /* ignore */
       }
     };
+  }
+
+  // One exchange per opened socket: a dead session must cost one refresh, not
+  // one per reconnect, and the backoff is where a refused retry lands.
+  private async refreshBearer(refresh: () => Promise<string | undefined>): Promise<void> {
+    this.refreshSpent = true;
+    let token: string | undefined;
+    try {
+      token = await refresh();
+    } catch {
+      token = undefined;
+    }
+    if (this.closed) return;
+    if (!token) {
+      this.scheduleReconnect();
+      return;
+    }
+    this.refreshedToken = token;
+    this.connect();
   }
 
   // Not a failed connection: nothing was attempted, so this leaves the

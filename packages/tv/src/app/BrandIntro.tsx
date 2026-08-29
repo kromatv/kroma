@@ -151,12 +151,12 @@ function IntroFilm({ source, onDone }: Readonly<{ source: string | number; onDon
         nativeControls={false}
         accessibilityLabel="KROMA"
       />
-      <Animated.View pointerEvents="none" style={[s.veil, { opacity: veil }]} />
+      <Animated.View style={[s.veil, { opacity: veil }]} />
     </View>
   );
 }
 
 const s = styles({
   stage: { fill: true, z: 9999, bg: 'bg' },
-  veil: { fill: true, bg: 'bg' },
+  veil: { fill: true, bg: 'bg', pointerEvents: 'none' },
 });

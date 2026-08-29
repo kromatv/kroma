@@ -4,7 +4,7 @@
 // everything. `motion.pressScale` stays as the floor: the deepest a small
 // control goes, and what an unmeasured control falls back to.
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { motion } from '#ui/core/tokens';
 
@@ -36,11 +36,24 @@ export function useLongestSide(): {
 }
 
 /** What both halves of the press dip hand back; the animation itself is the
- *  platform's (Animated on native, a CSS transition on the web). */
+ *  platform's (Animated on native, a CSS transition on the web). A control that
+ *  does not dip hands back no `onLayout`: there is no size to read. */
 export interface PressScale {
   pressed: boolean;
   style: Record<string, unknown>;
-  onLayout: (event: LayoutChangeEvent) => void;
+  onLayout?: (event: LayoutChangeEvent) => void;
   onPressIn: () => void;
   onPressOut: () => void;
+}
+
+const FLAT: Record<string, unknown> = {};
+
+/** The dip, off: the control reports its press and never sinks, so it costs
+ *  neither an animated value nor a layout read. For a screen that FOCUSES
+ *  rather than presses. */
+export function useFlatPress(): PressScale {
+  const [pressed, setPressed] = useState(false);
+  const onPressIn = useCallback(() => setPressed(true), []);
+  const onPressOut = useCallback(() => setPressed(false), []);
+  return { pressed, style: FLAT, onPressIn, onPressOut };
 }

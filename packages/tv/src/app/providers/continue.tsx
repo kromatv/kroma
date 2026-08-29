@@ -22,12 +22,12 @@ interface Continue {
 const ContinueCtx = createContext<Continue | null>(null);
 
 export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const { client } = useConnection();
   const [items, setItems] = useState<ContinueItem[]>([]);
 
   const refresh = useCallback(() => {
-    if (!user || !client) {
+    if (!ready || !user || !client) {
       setItems([]);
       return;
     }
@@ -35,7 +35,7 @@ export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>
       .continueWatching()
       .then(setItems)
       .catch(() => undefined);
-  }, [client, user]);
+  }, [client, user, ready]);
 
   useEffect(() => {
     refresh();

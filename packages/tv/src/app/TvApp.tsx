@@ -171,12 +171,15 @@ const SCREENS: TvScreens = {
 function TvRouterGuard() {
   const nav = useNav();
   const { deepLink, movies, shows, clearDeepLink } = useConnection();
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
 
   useEffect(() => {
+    // Routing on a session that has not been resumed yet would send the TV home
+    // and back to the picker when the exchange turns out to fail.
+    if (!ready) return;
     const target = resolveRedirect(GUARD, { signedIn: Boolean(user) }, nav.route.name);
     if (target) nav.replace(target);
-  }, [user, nav]);
+  }, [ready, user, nav]);
 
   // Siri search, only once signed in: there is no catalogue before that.
   useEffect(() => {

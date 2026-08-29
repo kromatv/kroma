@@ -20,6 +20,7 @@
     "./kit": "./src/kit.ts",
     "./kit/*": "./src/components/*/index.ts",
     "./ssr": "./src/ssr.ts",
+    "./expo-image": "./src/lib/expo-image-backend.tsx",
     "./testing": "./src/testing.tsx",
     "./bundler": "./bundler/index.ts",
     "./workbench-config": "./src/workbench-config.tsx",
@@ -41,15 +42,16 @@
   "dependencies": {
     "@kroma/core": "workspace:*",
     "@kroma/i18n": "workspace:*",
+    "@kroma/spatial-nav": "workspace:*",
     "@tabler/icons-react": "^3.46.0",
     "@tabler/icons-react-native": "^3.46.0",
-    "react-native-svg": "^15.15.5",
-    "react-tv-space-navigation": "6.0.0-beta1"
+    "react-native-svg": "^15.15.5"
   },
   "peerDependencies": {
     "react": ">=18",
     "react-dom": ">=18",
     "react-native": "*",
+    "expo-image": "~57.0.3",
     "expo-video": "~57.0.2"
   },
   "devDependencies": {
@@ -67,6 +69,9 @@
     "zod": "^4.4.3"
   },
   "peerDependenciesMeta": {
+    "expo-image": {
+      "optional": true
+    },
     "expo-video": {
       "optional": true
     }

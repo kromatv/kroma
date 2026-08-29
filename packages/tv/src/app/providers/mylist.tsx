@@ -23,12 +23,12 @@ interface MyList {
 const Ctx = createContext<MyList | null>(null);
 
 export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const { client } = useConnection();
   const [ids, setIds] = useState<ReadonlySet<string>>(() => new Set());
 
   const refresh = useCallback(() => {
-    if (!user || !client) {
+    if (!ready || !user || !client) {
       setIds(new Set());
       return;
     }
@@ -36,7 +36,7 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
       .myList()
       .then((list) => setIds(new Set(list)))
       .catch(() => undefined);
-  }, [client, user]);
+  }, [client, user, ready]);
 
   useEffect(() => refresh(), [refresh]);
 

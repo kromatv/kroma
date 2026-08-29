@@ -1,4 +1,4 @@
-import { Directions } from 'react-tv-space-navigation';
+import { type Direction, Directions } from '@kroma/spatial-nav';
 import { describe, expect, it } from 'vitest';
 import type { FocusBox } from './focus-here';
 import { walkTab } from './focus-tab';
@@ -20,12 +20,12 @@ function grid(start: { row: number; col: number }) {
   };
   return {
     at,
-    sent: [] as Directions[],
+    sent: [] as Direction[],
     probe: {
       seq: () => seq,
       box: () => ({ top: at.row * TILE.h, left: at.col * TILE.w, height: TILE.h }),
     },
-    send(direction: Directions) {
+    send(direction: Direction) {
       this.sent.push(direction);
       if (direction === Directions.RIGHT) move(at.row, at.col + 1);
       if (direction === Directions.LEFT) move(at.row, at.col - 1);
@@ -65,7 +65,7 @@ describe('walkTab', () => {
     // A row with something to its left that is NOT part of it - a sidebar - is
     // what the box test is for: the rewind must not fall into it.
     type Id = 'last' | 'end' | 'start' | 'menu';
-    const NODES: Record<Id, { box: FocusBox; to: Partial<Record<Directions, Id>> }> = {
+    const NODES: Record<Id, { box: FocusBox; to: Partial<Record<Direction, Id>> }> = {
       last: { box: { top: 0, left: 100, height: 50 }, to: { [Directions.DOWN]: 'end' } },
       end: { box: { top: 50, left: 100, height: 50 }, to: { [Directions.LEFT]: 'start' } },
       start: {
@@ -91,7 +91,7 @@ describe('walkTab', () => {
     // rewind is refused nothing and the box never leaves the line, so "keep
     // going while the line goes backwards" is the only thing that ends the walk.
     type Id = 'above' | 'first' | 'last';
-    const NODES: Record<Id, { box: FocusBox; to: Partial<Record<Directions, Id>> }> = {
+    const NODES: Record<Id, { box: FocusBox; to: Partial<Record<Direction, Id>> }> = {
       above: { box: { top: 0, left: 200, height: 50 }, to: { [Directions.DOWN]: 'last' } },
       last: { box: { top: 50, left: 200, height: 50 }, to: { [Directions.LEFT]: 'first' } },
       first: { box: { top: 50, left: 0, height: 50 }, to: { [Directions.LEFT]: 'last' } },
@@ -121,10 +121,10 @@ describe('walkTab', () => {
   // either read can come back empty.
   function refusesAlong() {
     let seq = 0;
-    const sent: Directions[] = [];
+    const sent: Direction[] = [];
     // The line has ended (RIGHT refused), so the walk drops to the next one and
     // starts rewinding: every other direction moves.
-    const send = (d: Directions) => {
+    const send = (d: Direction) => {
       sent.push(d);
       if (d !== Directions.RIGHT) seq += 1;
     };

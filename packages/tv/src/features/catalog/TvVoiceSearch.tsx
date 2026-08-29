@@ -3,9 +3,9 @@
 // arrive) is a backend the shell registers; see `#tv/app/voiceSearch`.
 
 import { useLocale, useT } from '@kroma/ui';
-import { Box, Button, colors, Dialog, Icon, styles, Text } from '@kroma/ui/kit';
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Box, Button, colors, Dialog, Icon, styles, Text, useLoop } from '@kroma/ui/kit';
+import { useState } from 'react';
+import { Animated } from 'react-native';
 import type { VoiceSearchBackend } from '#tv/app/voiceSearch';
 
 export function TvVoiceSearch({
@@ -53,47 +53,15 @@ export function TvVoiceSearch({
   );
 }
 
-const PULSE_MS = 900;
+const PULSE_MS = 1800;
 const CIRCLE = 76;
 
-// Runs on the native driver (scale and opacity only) so the pulse keeps
-// animating no matter what the JS thread is doing with incoming results.
 function Pulse({ children }: Readonly<{ children: React.ReactNode }>) {
-  const value = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(value, {
-          toValue: 1,
-          duration: PULSE_MS,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(value, {
-          toValue: 0,
-          duration: PULSE_MS,
-          easing: Easing.in(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [value]);
+  const halo = useLoop('halo', PULSE_MS);
 
   return (
     <Box w={CIRCLE} h={CIRCLE} center>
-      <Animated.View
-        style={[
-          s.halo,
-          {
-            opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] }),
-            transform: [
-              { scale: value.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.3] }) },
-            ],
-          },
-        ]}
-      />
+      <Animated.View style={[s.halo, halo]} />
       <Box
         style={{
           width: 56,

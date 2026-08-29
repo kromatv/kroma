@@ -34,7 +34,7 @@ export function HandoffBeaconProvider({
   children: ReactNode;
 }>) {
   const [beacon, setBeacon] = useState<HandoffBeaconView | null>(null);
-  const { user, login } = useAuth();
+  const { user, ready, login } = useAuth();
   const { activeServerUrl } = useConnection();
   const { platform } = useEnv();
   const signedIn = Boolean(user);
@@ -49,8 +49,10 @@ export function HandoffBeaconProvider({
 
   useEffect(() => {
     // Only a signed-out TV waits: once there is an account, the beacon has done
-    // its job and would only offer a second one.
-    if (!client || !activeServerUrl || signedIn) {
+    // its job and would only offer a second one. A boot still resuming its
+    // session is not signed out either, or the beacon goes up and is retracted
+    // a round trip later.
+    if (!ready || !client || !activeServerUrl || signedIn) {
       setBeacon(null);
       return;
     }
@@ -68,7 +70,7 @@ export function HandoffBeaconProvider({
       running.current = null;
       handoff.stop();
     };
-  }, [client, activeServerUrl, signedIn, platform, login, lan]);
+  }, [ready, client, activeServerUrl, signedIn, platform, login, lan]);
 
   useEffect(() => {
     running.current?.rename(name);

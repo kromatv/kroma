@@ -1,6 +1,7 @@
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { lanBeacon } from '@kroma/lan-beacon';
 import { CastProvider, I18nProvider as KitI18nProvider } from '@kroma/ui';
+import { expoImageBackend } from '@kroma/ui/expo-image';
 import {
   applyMode,
   onPaper,
@@ -27,7 +28,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { installDeviceStore } from '#mobile/lib/deviceStore';
 import { DownloadsProvider } from '#mobile/lib/downloads';
 import { I18nProvider, useI18n } from '#mobile/lib/i18n';
-import { expoImageBackend } from '#mobile/lib/image-backend';
 import { isTablet } from '#mobile/lib/layout';
 import { useNotificationStream } from '#mobile/lib/notifications';
 import { usePushGrantRefresh, usePushLabels, usePushTaps } from '#mobile/lib/notifications/usePush';
@@ -38,8 +38,6 @@ SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 installDeviceStore();
 
-// The design system draws artwork through whichever decoder the app registers.
-// A phone wants expo-image's memory + disk cache; see lib/image-backend.
 setImageBackend(expoImageBackend);
 
 // Same inversion for glass: <Frost> has no blur of its own, so a shell that

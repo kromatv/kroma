@@ -1,7 +1,10 @@
+// @vitest-environment jsdom
+
+import { act, renderHook } from '@testing-library/react';
 import type { LayoutChangeEvent } from 'react-native';
 import { describe, expect, it } from 'vitest';
 import { motion } from '#ui/core/tokens';
-import { longestSideOf, pressScaleFor } from './press-dip';
+import { longestSideOf, pressScaleFor, useFlatPress } from './press-dip';
 
 describe('the press dip', () => {
   it('falls back to the design floor while unmeasured', () => {
@@ -43,5 +46,28 @@ describe('the measured side', () => {
 
   it('feeds straight into the scale, so an unmeasured control gets the floor', () => {
     expect(pressScaleFor(longestSideOf(layout(0, 0)))).toBe(motion.pressScale);
+  });
+});
+
+describe('a control that does not dip', () => {
+  it('still reports the press, which is what the press coat is painted from', () => {
+    const { result } = renderHook(() => useFlatPress());
+    expect(result.current.pressed).toBe(false);
+
+    act(() => result.current.onPressIn());
+    expect(result.current.pressed).toBe(true);
+
+    act(() => result.current.onPressOut());
+    expect(result.current.pressed).toBe(false);
+  });
+
+  it('asks for no measurement, so no layout pass reads its box', () => {
+    const { result } = renderHook(() => useFlatPress());
+    expect(result.current.onLayout).toBeUndefined();
+  });
+
+  it('adds no transform, so the focus scale it lands over survives the press', () => {
+    const { result } = renderHook(() => useFlatPress());
+    expect(result.current.style).toEqual({});
   });
 });

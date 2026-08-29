@@ -1,24 +1,25 @@
 // Free pixel wheel-scrolling with snap-on-stop for the virtualised grid, which
-// cannot be a scroll container (the library translates a strip and its virtual
-// focus nodes own that position). react-tv-space-navigation is PATCHED
-// (patches/react-tv-space-navigation@*.patch) to accept `freeScrollFraction`: a
-// fractional item index rendered without a transition.
+// cannot be a scroll container (its strip is translated and its focused row owns
+// that position). The fraction this returns is a fractional row index the strip
+// renders at without a transition; null hands the transform back to the row
+// transition, and that glide is the snap.
 
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import type { View } from 'react-native';
-import type { SpatialNavigationVirtualizedListRef } from 'react-tv-space-navigation';
+import { useStableCallback } from '#ui/lib/stable-callback';
 import { useWheelTravel } from '#ui/lib/wheel-pan';
+import type { GridRows } from './grid-rows';
 
 // Long enough that an inertia tail's sparse final events don't each snap.
 const SNAP_AFTER_MS = 160;
 
 /**
- * Returns the fractional row index to pass to the grid as `freeScrollFraction`,
- * or null when no gesture is running.
+ * Returns the fractional row index to render the strip at, or null when no
+ * gesture is running.
  */
 export function useWheelScroll(
   viewport: RefObject<View | null>,
-  list: RefObject<SpatialNavigationVirtualizedListRef | null>,
+  rows: GridRows,
   lastRow: number,
   headerRows: number,
   rowPitch: number,
@@ -35,13 +36,16 @@ export function useWheelScroll(
     };
   }, []);
 
+  const focusRow = useStableCallback((row: number) => rows.focus(row));
+  const startRow = useStableCallback(() => rows.focusedRow);
+
   const lastIndex = lastRow + headerRows;
 
   const pan = useCallback(
     (delta: number) => {
       if (!active.current) {
         active.current = true;
-        frac.current = list.current?.currentlyFocusedItemIndex ?? 0;
+        frac.current = startRow();
         committed.current = Math.round(frac.current);
       }
       frac.current = Math.min(lastIndex, Math.max(0, frac.current + delta / rowPitch));
@@ -49,21 +53,15 @@ export function useWheelScroll(
       const nearest = Math.round(frac.current);
       if (nearest !== committed.current) {
         committed.current = nearest;
-        list.current?.focus(nearest);
+        focusRow(nearest);
       }
       if (settle.current) clearTimeout(settle.current);
       settle.current = setTimeout(() => {
-        // Handing the transform back to the row transition is the snap.
         active.current = false;
-        const target = Math.round(frac.current);
-        if (target !== committed.current) {
-          committed.current = target;
-          list.current?.focus(target);
-        }
         setFraction(null);
       }, SNAP_AFTER_MS);
     },
-    [list, lastIndex, rowPitch],
+    [focusRow, startRow, lastIndex, rowPitch],
   );
   useWheelTravel(viewport, pan);
 

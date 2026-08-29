@@ -1,11 +1,13 @@
 /// <reference path="types/react-native-tv.d.ts" />
-// Feeds the TV remote into the spatial navigator (react-tv-space-navigation),
-// which reacts only to a posted stream of directions.
+// Feeds the TV remote into the spatial navigator, which reacts only to a posted
+// stream of directions.
 //
 // Read via `useTVEventHandler` rather than the plain emitter: this fork's
 // emitter export has been unreliable.
 
 import type { RemoteKey } from '@kroma/core';
+import { type Direction, Directions } from '@kroma/spatial-nav';
+import { configureRemote as configureNavigatorRemote } from '@kroma/spatial-nav/react';
 import { useCallback, useEffect, useEffectEvent } from 'react';
 import {
   type HWEvent,
@@ -14,31 +16,22 @@ import {
   type TVKeyEvent,
   useTVEventHandler,
 } from 'react-native';
-import { SpatialNavigation } from 'react-tv-space-navigation';
 import { inputHeld } from './input-gate';
 import { markPress } from './perf';
 import { isRemoteKeyUp } from './tv-remote';
 
-const UP = 'up';
-const DOWN = 'down';
-const LEFT = 'left';
-const RIGHT = 'right';
-const ENTER = 'enter';
-
-type Direction = typeof UP | typeof DOWN | typeof LEFT | typeof RIGHT | typeof ENTER;
-
 // Both Siri Remote input paths, clickpad and touch-surface swipes, land here:
 // they never fire for the same gesture.
 const REMOTE: Record<string, Direction> = {
-  up: UP,
-  down: DOWN,
-  left: LEFT,
-  right: RIGHT,
-  swipeUp: UP,
-  swipeDown: DOWN,
-  swipeLeft: LEFT,
-  swipeRight: RIGHT,
-  select: ENTER,
+  up: Directions.UP,
+  down: Directions.DOWN,
+  left: Directions.LEFT,
+  right: Directions.RIGHT,
+  swipeUp: Directions.UP,
+  swipeDown: Directions.DOWN,
+  swipeLeft: Directions.LEFT,
+  swipeRight: Directions.RIGHT,
+  select: Directions.ENTER,
 };
 
 // A SET, not a single slot: screens stack, so two navigators can be subscribed
@@ -68,17 +61,16 @@ function stepRing(direction: Direction, from: Transport): void {
   for (const handle of handlers) handle(direction);
 }
 
-/** Call once at startup, before the first screen renders; calling it twice is
- * harmless, the navigator keeps only the latest pair. */
+/** Call once at startup, before the first screen renders; a navigator mounted
+ * first never subscribes. Calling it twice is harmless. */
 export function configureRemote(): void {
-  SpatialNavigation.configureRemoteControl({
-    remoteControlSubscriber: (handle: (direction: Direction) => void) => {
+  configureNavigatorRemote({
+    subscribe: (handle) => {
       handlers.add(handle);
       return () => {
         handlers.delete(handle);
       };
     },
-    remoteControlUnsubscriber: (stop: () => void) => stop(),
   });
 }
 
@@ -120,11 +112,11 @@ export function useRemoteBridge(on = true): void {
 // clients/tv-native/plugins/with-tv-key-events.js) must also be set, or neither
 // half does anything.
 const KEY_CODES: Record<string, Direction> = {
-  ArrowUp: UP,
-  ArrowDown: DOWN,
-  ArrowLeft: LEFT,
-  ArrowRight: RIGHT,
-  Enter: ENTER,
+  ArrowUp: Directions.UP,
+  ArrowDown: Directions.DOWN,
+  ArrowLeft: Directions.LEFT,
+  ArrowRight: Directions.RIGHT,
+  Enter: Directions.ENTER,
 };
 
 // The same d-pad keys as the player's own vocabulary. The player chrome drives
@@ -155,7 +147,10 @@ const remoteKeys = new Set<(key: RemoteKey) => void>();
 const NO_HOST_PROPS: RemoteHostProps = {};
 const IS_ANDROID = Platform.OS === 'android';
 
-export function useRemoteHostProps(): RemoteHostProps {
+/** Spread by <FocusRoot>. `on` takes <FocusScope>'s `bridge`: the key events
+ * BUBBLE, so a scope nested inside another must not carry a second host or one
+ * press walks the ring twice. */
+export function useRemoteHostProps(on = true): RemoteHostProps {
   const onKeyDown = useCallback((event: NativeSyntheticEvent<TVKeyEvent>) => {
     // This is the DOWN event; `onKeyUp` is a separate prop nothing subscribes to.
     if (inputHeld()) return;
@@ -178,7 +173,7 @@ export function useRemoteHostProps(): RemoteHostProps {
     if (key !== 'Backspace' && key.length !== 1) return;
     for (const handle of typists) handle(key);
   }, []);
-  return IS_ANDROID ? { onKeyDown } : NO_HOST_PROPS;
+  return IS_ANDROID && on ? { onKeyDown } : NO_HOST_PROPS;
 }
 
 /**

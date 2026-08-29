@@ -44,15 +44,6 @@ const alias = [
     find: /^cloudflare:workers$/,
     replacement: dir('./packages/site-kit/test/cloudflare-workers.ts'),
   },
-  // The spatial navigator's webpack UMD bundle resolves its own `require`s past
-  // the alias above and lands on React Native's Flow source ("Unexpected token
-  // 'typeof'"); point the runner at its TS sources instead.
-  {
-    find: /^react-tv-space-navigation$/,
-    replacement: dir(
-      './node_modules/.bun/react-tv-space-navigation@6.0.0-beta1/node_modules/react-tv-space-navigation/src/index.ts',
-    ),
-  },
 ];
 
 // bun installs per workspace, so a renderer test can otherwise end up with

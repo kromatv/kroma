@@ -14,25 +14,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const nav = vi.hoisted(() => ({
   subscribe: null as ((handle: (direction: string) => void) => () => void) | null,
-  unsubscribe: null as ((stop: () => void) => void) | null,
 }));
 
-vi.mock('react-tv-space-navigation', () => ({
-  Directions: {
-    UP: 'up',
-    DOWN: 'down',
-    LEFT: 'left',
-    RIGHT: 'right',
-    ENTER: 'enter',
-  },
-  SpatialNavigation: {
-    configureRemoteControl: (control: {
-      remoteControlSubscriber: (handle: (direction: string) => void) => () => void;
-      remoteControlUnsubscriber: (stop: () => void) => void;
-    }) => {
-      nav.subscribe = control.remoteControlSubscriber;
-      nav.unsubscribe = control.remoteControlUnsubscriber;
-    },
+vi.mock('@kroma/spatial-nav/react', () => ({
+  configureRemote: (config: { subscribe: (handle: (direction: string) => void) => () => void }) => {
+    nav.subscribe = config.subscribe;
   },
 }));
 
@@ -168,7 +154,7 @@ describe('arrow keys', () => {
 
   it('stops listening once the navigator unsubscribes', () => {
     const { handle, stop } = mount();
-    nav.unsubscribe?.(stop);
+    stop();
     press('ArrowDown');
     expect(handle).not.toHaveBeenCalled();
   });

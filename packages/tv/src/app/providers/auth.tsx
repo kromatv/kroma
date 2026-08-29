@@ -12,7 +12,8 @@ import {
   type StoredSession,
   saveSession,
   setSessionToken,
-  type User,
+  sharedTokenExchange,
+  User,
 } from '@kroma/core';
 import {
   createContext,
@@ -35,10 +36,31 @@ function applyBearer(client: KromaClient | null, token?: string): void {
   setSessionToken(token);
 }
 
+function sameValue(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) && Array.isArray(b))
+    return a.length === b.length && a.every((v, i) => v === b[i]);
+  return a === b;
+}
+
+// Field by field off the schema, so a field added to `User` is compared too.
+function sameUser(a: User, b: User): boolean {
+  const before: Record<string, unknown> = a;
+  const after: Record<string, unknown> = b;
+  return Object.keys(User.shape).every((field) => sameValue(before[field], after[field]));
+}
+
+// A fresh object for the user we already have would change `user`'s identity and
+// re-run every consumer's refresh for nothing.
+function withUser(current: StoredSession | null, user: User): StoredSession | null {
+  if (!current || current.user.id !== user.id || sameUser(current.user, user)) return current;
+  return { ...current, user };
+}
+
 interface Auth {
   session: StoredSession | null;
   user: User | null;
   accounts: StoredSession[];
+  ready: boolean;
   login: (res: AuthResult, serverUrl: string) => void;
   activate: (account: StoredSession) => void;
   switchProfile: () => void;
@@ -65,73 +87,71 @@ export function AuthProvider({
 }>) {
   const [session, setSession] = useState<StoredSession | null>(() => loadSession());
   const [accounts, setAccounts] = useState<StoredSession[]>(() => loadAccounts());
+  // The access token whose bearer is live, so `ready` can be read during render:
+  // React runs a child's effects before its parent's, and a flag raised in this
+  // provider's effect would let one bearer-less round of requests out first.
+  const [resumed, setResumed] = useState<string | null>(null);
   const unlocked = useRef<Set<string>>(new Set(session ? [keyOf(session)] : []));
-  // The access token already exchanged for a bearer: the success path mints a
-  // new `session`, which would otherwise re-run the effect forever.
-  const exchangedRef = useRef<string | null>(null);
-  // Coalesce concurrent silent refreshes: a poster grid full of 401s must cause
-  // one exchange, not N, which would trip the brute-force guard.
-  const refreshingRef = useRef<Promise<string | undefined> | null>(null);
+
+  const ready = !client || !session || resumed === session.accessToken;
+
+  const drop = useCallback((c: KromaClient | null) => {
+    applyBearer(c);
+    c?.setRefreshHandler();
+    unlocked.current.clear();
+    clearSession();
+    setResumed(null);
+    setSession(null);
+  }, []);
 
   // The bearer is only applied when the session belongs to the server the client
   // points at: a token for server A must never ride a request to server B.
   useEffect(() => {
     if (!client) return;
-    const match = session && norm(session.serverUrl) === norm(activeServerUrl);
-    if (!match || !session) {
+    if (!session) {
       applyBearer(client);
       client.setRefreshHandler();
-      exchangedRef.current = null;
+      setResumed(null);
       return;
     }
-    client.setRefreshHandler(() => {
-      if (refreshingRef.current) return refreshingRef.current;
-      const s = loadSession();
-      if (!s) return Promise.resolve(undefined);
-      const p = client
-        .exchangeToken(s.accessToken)
-        .then((r) => r.token)
-        .catch(() => undefined)
-        .finally(() => {
-          refreshingRef.current = null;
-        });
-      refreshingRef.current = p;
-      return p;
-    });
-
-    if (exchangedRef.current === session.accessToken) {
-      return () => client.setRefreshHandler();
+    if (norm(session.serverUrl) !== norm(activeServerUrl)) {
+      drop(client);
+      return;
     }
-    exchangedRef.current = session.accessToken;
 
     let cancelled = false;
-    client
-      .exchangeToken(session.accessToken)
-      .then((res) => {
-        if (cancelled) return;
-        applyBearer(client, res.token);
-        setSession((cur) => (cur?.user.id === res.user.id ? { ...cur, user: res.user } : cur));
-        saveSession({ ...session, user: res.user });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        // Unresumable (revoked/expired token, or PIN required after a reset):
-        // drop to the picker rather than a signed-in state with no bearer.
-        applyBearer(client);
-        exchangedRef.current = null;
-        unlocked.current.clear();
-        clearSession();
-        setSession(null);
-      });
+    // One exchange for the boot and for a 401 alike: `sharedTokenExchange`
+    // coalesces them, so a poster grid full of 401s cannot trip the
+    // brute-force guard with N of them.
+    const resume = (stored: StoredSession): Promise<string | undefined> =>
+      sharedTokenExchange(() => client.exchangeToken(stored.accessToken))
+        .then((res) => {
+          if (cancelled) return undefined;
+          applyBearer(client, res.token);
+          setSession((cur) => withUser(cur, res.user));
+          saveSession({ ...stored, user: res.user });
+          setResumed(stored.accessToken);
+          return res.token as string | undefined;
+        })
+        .catch(() => {
+          if (cancelled) return undefined;
+          // Unresumable (revoked/expired token, or PIN required after a reset):
+          // drop to the picker rather than a signed-in state with no bearer.
+          drop(client);
+          return undefined;
+        });
+
+    client.setRefreshHandler(() => resume(session));
+    if (resumed !== session.accessToken) void resume(session);
     return () => {
       cancelled = true;
       client.setRefreshHandler();
     };
-  }, [client, session, activeServerUrl]);
+  }, [client, session, activeServerUrl, resumed, drop]);
 
   useEffect(() => {
-    onSignedInChange(Boolean(session));
-  }, [session, onSignedInChange]);
+    onSignedInChange(ready && Boolean(session));
+  }, [ready, session, onSignedInChange]);
 
   const enter = useCallback(
     (s: StoredSession) => {
@@ -146,9 +166,9 @@ export function AuthProvider({
 
   const login = useCallback(
     (res: AuthResult, serverUrl: string) => {
-      // Marked as already-exchanged so the effect does not re-exchange it.
+      // Its bearer is already live, so the effect must not exchange it again.
       applyBearer(client, res.token);
-      exchangedRef.current = res.accessToken;
+      setResumed(res.accessToken);
       enter({ serverUrl: norm(serverUrl), accessToken: res.accessToken, user: res.user });
     },
     [enter, client],
@@ -161,12 +181,7 @@ export function AuthProvider({
     [enter],
   );
 
-  const switchProfile = useCallback(() => {
-    applyBearer(client);
-    clearSession();
-    unlocked.current.clear();
-    setSession(null);
-  }, [client]);
+  const switchProfile = useCallback(() => drop(client), [client, drop]);
 
   const forget = useCallback(
     (userId: string, serverUrl: string) => {
@@ -190,13 +205,10 @@ export function AuthProvider({
     } catch {
       /* best-effort server-side revocation */
     }
-    applyBearer(client);
     if (active?.serverUrl) forgetAccountStore(active.user.id, active.serverUrl);
-    else clearSession();
-    unlocked.current.clear();
+    drop(client);
     setAccounts(loadAccounts());
-    setSession(null);
-  }, [client, session]);
+  }, [client, session, drop]);
 
   const updateUser = useCallback(
     (patch: Partial<User>) => {
@@ -221,6 +233,7 @@ export function AuthProvider({
       session,
       user: session?.user ?? null,
       accounts,
+      ready,
       login,
       activate,
       switchProfile,
@@ -229,7 +242,18 @@ export function AuthProvider({
       updateUser,
       isUnlocked,
     }),
-    [session, accounts, login, activate, switchProfile, forget, logout, updateUser, isUnlocked],
+    [
+      session,
+      accounts,
+      ready,
+      login,
+      activate,
+      switchProfile,
+      forget,
+      logout,
+      updateUser,
+      isUnlocked,
+    ],
   );
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }

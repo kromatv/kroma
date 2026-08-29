@@ -59,18 +59,11 @@ export function TvSearch() {
   // reopening it, so the second request is not silently dropped.
   useEffect(() => onSearchRequest(setQuery), []);
 
-  // A search "counts" once the user opens one of its results: remember the
-  // query then, so the recent list holds real searches, not typing prefixes.
-  const openHit = useCallback(
-    (h: SearchResult) => {
-      setRecent(addRecentSearch(query));
-      h.onOpen();
-    },
-    [query],
-  );
-
+  // A search "counts" once the user opens one of its results, and `found` is the
+  // query that produced that result, not the prefix left in the box by then.
   const toHit = useCallback(
-    (hit: SearchHit): SearchResult => {
+    (hit: SearchHit, found: string): SearchResult => {
+      const remember = () => setRecent(addRecentSearch(found));
       if (hit.type === 'show') {
         const show = hit.show;
         return {
@@ -79,7 +72,10 @@ export function TvSearch() {
           badge: qualityBadgeForVideo(show.video),
           poster: client.showPosterFor(show, RESULT_W),
           colors: posterColors(show.id),
-          onOpen: () => nav.go('show', { show }),
+          onOpen: () => {
+            remember();
+            nav.go('show', { show });
+          },
         };
       }
       const m = hit.item; // movie | episode both navigate to the item detail
@@ -89,7 +85,10 @@ export function TvSearch() {
         badge: qualityBadge(m),
         poster: client.posterFor(m, RESULT_W),
         colors: posterColors(m.id),
-        onOpen: () => nav.go('movie', { item: m }),
+        onOpen: () => {
+          remember();
+          nav.go('movie', { item: m });
+        },
       };
     },
     [client, nav],
@@ -104,10 +103,10 @@ export function TvSearch() {
         genreLabels(t, meta).some((g) => g.toLowerCase().includes(needle));
       const mv = movies
         .filter((m) => match(m.title, m.metadata))
-        .map((m) => toHit({ type: 'movie', item: m }));
+        .map((m) => toHit({ type: 'movie', item: m }, q));
       const sh = shows
         .filter((show) => match(show.title, show.metadata))
-        .map((show) => toHit({ type: 'show', show }));
+        .map((show) => toHit({ type: 'show', show }, q));
       return [...mv, ...sh];
     },
     [movies, shows, t, toHit],
@@ -126,7 +125,7 @@ export function TvSearch() {
       client
         .search(q)
         .then((res) => {
-          if (mine === seq.current) setHits(res.results.map(toHit));
+          if (mine === seq.current) setHits(res.results.map((hit) => toHit(hit, q)));
         })
         .catch(() => {
           if (mine === seq.current) setHits(localHits(q)); // offline / server down
@@ -150,7 +149,7 @@ export function TvSearch() {
             focusScale={1.06}
             label={term}
             onPress={() => setQuery(term)}
-            style={{ maxWidth: 240, paddingHorizontal: 18, paddingVertical: 8 }}
+            style={s.recentChip}
           />
         ))}
       </FocusRegion>
@@ -168,7 +167,6 @@ export function TvSearch() {
             hits={hits}
             query={query}
             width={width - RESULTS_PADDING}
-            onOpen={openHit}
             header={recentPills}
           />
         )}
@@ -228,7 +226,7 @@ export function TvSearch() {
           {recentPills}
         </FocusColumn>
 
-        <TvSearchResults hits={hits} query={query} width={RESULTS_WIDTH} onOpen={openHit} />
+        <TvSearchResults hits={hits} query={query} width={RESULTS_WIDTH} />
       </FocusRegion>
 
       {/* Spoken words land in the same `query` typing feeds, so the grid behind
@@ -255,6 +253,7 @@ const s = styles({
   columns: { row: true, flex: true, gap: COLUMN_GAP, minH: 0 },
   keyboardColumn: { w: KEYBOARD_W, shrink: 0 },
   recentRow: { row: true, wrap: true, gap: 10 },
+  recentChip: { maxW: 240, px: 18, py: 8 },
 });
 
 // The results grid draws 254pt posters, served from the server's 320 bucket.

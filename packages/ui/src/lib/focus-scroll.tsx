@@ -1,6 +1,7 @@
 // <FocusScroll> and <FocusSlot>: the page, scrolled by the focus, one ROW at a
 // time. A control that is in no row is its own row.
 
+import { NavigatorNode } from '@kroma/spatial-nav/react';
 import {
   type Context,
   createContext,
@@ -18,7 +19,6 @@ import {
   type View,
   type ViewStyle,
 } from 'react-native';
-import { SpatialNavigationNode } from 'react-tv-space-navigation';
 import { RING_ROOM } from '#ui/core/tokens';
 import { FocusLiftView } from '#ui/lib/focus-lift';
 import { pointerDriving } from '#ui/lib/input-source';
@@ -30,8 +30,6 @@ const PageScrollContext = createContext<((anchor: Anchor) => void) | null>(null)
 
 const RowContext = createContext<Anchor | null>(null);
 
-// react-tv-space-navigation's own rail scroller is unusable: React 19 spreads
-// `ref` like any prop and <Focusable>'s wins, so the library's ref is null.
 const RailScrollContext = createContext<((anchor: Anchor) => void) | null>(null);
 
 // The tvos react-native fork's ViewStyle and mainline's are not assignable to
@@ -221,12 +219,12 @@ function FocusSlot({
 }: Readonly<{ children: ReactNode; onActive?: () => void }>) {
   const row = useRef<View>(null);
   return (
-    <SpatialNavigationNode onActive={onActive}>
+    <NavigatorNode onActive={onActive}>
       <RowContext.Provider value={row}>
         {/* Adds no layout of its own: a column that stretches its child. */}
         <FocusLiftView ref={row}>{children}</FocusLiftView>
       </RowContext.Provider>
-    </SpatialNavigationNode>
+    </NavigatorNode>
   );
 }
 

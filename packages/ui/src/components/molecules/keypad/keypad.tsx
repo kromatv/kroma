@@ -12,7 +12,7 @@
 // own remembered key, so Down from 3 went to 4 and every vertical press read
 // as a diagonal.
 
-import { SpatialNavigationNode } from 'react-tv-space-navigation';
+import { NavigatorNode } from '@kroma/spatial-nav/react';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';
@@ -21,7 +21,6 @@ import { Text } from '#ui/components/atoms/text';
 import { type StyleDecl, styles, svFor } from '#ui/core';
 import { HAND } from '#ui/lib/cursor';
 import { keyFace } from '#ui/lib/field-shell';
-import { useInsideFocusScope } from '#ui/lib/focus-presence';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { useTDefault } from '#ui/services/i18n';
@@ -194,13 +193,12 @@ function PadKey({
   );
 }
 
-// The spacer under the centre column. Wrapped in a navigator node ONLY where
-// there is a navigator: a phone has none, and `SpatialNavigationNode` throws
-// rather than degrading the way <FocusRegion> and <Focusable> do - which is
-// what made this pad, and any screen holding it, unrenderable off a television.
 function PadSpacer({ size }: Readonly<{ size: KeypadSize }>) {
-  const box = size === 'compact' ? <Box w={80} h={64} /> : <Box w={88} h={72} />;
-  return useInsideFocusScope() ? <SpatialNavigationNode>{box}</SpatialNavigationNode> : box;
+  return (
+    <NavigatorNode>
+      {size === 'compact' ? <Box w={80} h={64} /> : <Box w={88} h={72} />}
+    </NavigatorNode>
+  );
 }
 
 const s = styles({

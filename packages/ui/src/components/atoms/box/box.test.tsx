@@ -41,3 +41,19 @@ describe('<Box asChild>', () => {
     expect(container.querySelectorAll('*')).toHaveLength(2);
   });
 });
+
+describe('a box that states its hit testing', () => {
+  it('puts it in the style, since the prop of that name is deprecated on the web', () => {
+    const { container } = render(<Box pointerEvents="none" testID="hit" />);
+
+    const host = container.firstElementChild as HTMLElement;
+    expect(host.style.pointerEvents).toBe('none');
+    expect(host.getAttribute('pointerEvents')).toBeNull();
+  });
+
+  it('lets the style a caller passes win over it', () => {
+    const { container } = render(<Box pointerEvents="none" style={{ pointerEvents: 'auto' }} />);
+
+    expect((container.firstElementChild as HTMLElement).style.pointerEvents).toBe('auto');
+  });
+});

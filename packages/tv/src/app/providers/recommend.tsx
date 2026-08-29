@@ -23,13 +23,13 @@ const Ctx = createContext<Recommend | null>(null);
 /** Bearer-scoped, so it must be mounted inside auth + connection; stays empty
  * until there is a session and a reachable server. */
 export function RecommendProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const { client } = useConnection();
   const [sections, setSections] = useState<Section[]>([]);
   const [featured, setFeatured] = useState<SectionItem | null>(null);
 
   useEffect(() => {
-    if (!user || !client) {
+    if (!ready || !user || !client) {
       setSections([]);
       setFeatured(null);
       return;
@@ -50,7 +50,7 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
     return () => {
       cancelled = true;
     };
-  }, [user, client]);
+  }, [ready, user, client]);
 
   // Mirror the rows into the Android TV / Google TV launcher home, guarded on the
   // serialized payload so render churn does not re-push. No-op without a backend.

@@ -7,7 +7,7 @@
 
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 
-export type LoopKind = 'spin' | 'sweep' | 'pulse' | 'blink';
+export type LoopKind = 'spin' | 'sweep' | 'pulse' | 'blink' | 'halo';
 
 const PULSE_LOW = 0.55;
 
@@ -15,9 +15,15 @@ const PULSE_LOW = 0.55;
 // other: 250% of the segment's own width is 100% of its parent's.
 const SWEEP_WIDTH = '40%';
 
+const HALO_OPACITY = 0.35;
+const HALO_FROM = 0.8;
+const HALO_TO = 1.3;
+
+type CssStep = ViewStyle & { transform?: string; animationTimingFunction?: string };
+
 /** react-native-web's keyframe extension, absent from React Native's style types. */
 type CssLoop = ViewStyle & {
-  animationKeyframes?: Record<string, ViewStyle & { transform?: string }>[];
+  animationKeyframes?: Record<string, CssStep>[];
   animationTimingFunction?: string;
   animationIterationCount?: string;
 };
@@ -51,6 +57,27 @@ const KEYFRAMES: Record<LoopKind, CssLoop> = {
   blink: {
     animationKeyframes: [{ '0%': { opacity: 1 }, '50%': { opacity: 0 }, '100%': { opacity: 1 } }],
     animationTimingFunction: 'ease-in-out',
+    animationIterationCount: 'infinite',
+  },
+  halo: {
+    // `ease-out` out and `ease-in` back, which is what `Easing.out(Easing.ease)`
+    // and `Easing.in(Easing.ease)` are: RN's `Easing.ease` IS cubic-bezier(0.42,
+    // 0, 1, 1), the curve CSS calls `ease-in`.
+    animationKeyframes: [
+      {
+        '0%': {
+          opacity: HALO_OPACITY,
+          transform: `scale(${HALO_FROM})`,
+          animationTimingFunction: 'ease-out',
+        },
+        '50%': {
+          opacity: 0,
+          transform: `scale(${HALO_TO})`,
+          animationTimingFunction: 'ease-in',
+        },
+        '100%': { opacity: HALO_OPACITY, transform: `scale(${HALO_FROM})` },
+      },
+    ],
     animationIterationCount: 'infinite',
   },
 };

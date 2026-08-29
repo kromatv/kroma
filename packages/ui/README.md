@@ -325,7 +325,7 @@ and it carries the signature 10-foot affordance: a solid amber ring plus a dark
 lift, with an optional scale (1.06 for rail tiles, 1.05 for posters, 1.04 for the
 primary action).
 
-The spatial navigator (`react-tv-space-navigation`) owns directional movement on
+The spatial navigator (`@kroma/spatial-nav`) owns directional movement on
 every target, so a browser TV and an Apple TV move focus by the same rules rather
 than by two engines that drift apart. What is platform-split is only how the remote
 reaches it, which is what `useFocusNav()` wires, plus the keys the navigator has no
@@ -336,7 +336,7 @@ opinion about:
   Pressable holds the platform's focus so the app hears the keys at all. Back and
   PlayPause are bridged separately, since the OS does not route them to a focusable.
 - **Web**: the remote arrives as ordinary `keydown` events on the document and feeds
-  the same navigator (`lib/focus-remote.web.ts`), which is why the library is in the
+  the same navigator (`lib/focus-remote.web.ts`), which is why the engine is in the
   browser bundles too. Back, the transport keys and a held OK's auto-repeats are
   handled beside it.
 - **Phones**: the TV remote APIs only exist in the react-native-tvos fork, so

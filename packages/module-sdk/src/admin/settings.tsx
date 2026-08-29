@@ -16,8 +16,9 @@ import {
   Surface,
   Switch,
   Text,
+  useStableCallback,
 } from '@kroma/ui/kit';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useAdminHost } from './context';
 import { Denied } from './denied';
 import { useCap } from './hooks';
@@ -73,7 +74,7 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
     };
   }, [client, view, attempt]);
 
-  function set(key: string, value: unknown) {
+  const set = useStableCallback((key: string, value: unknown) => {
     setGroups((gs) => (gs ? applySetting(gs, key, value) : gs));
     client
       .updateSettings({ [key]: value })
@@ -82,7 +83,7 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
         setTimeout(() => setSaved(false), 1500);
       })
       .catch(() => undefined);
-  }
+  });
 
   // Before the first answer there is nothing to show and nothing to claim: an
   // empty page would read as a settings view with no settings in it.
@@ -123,7 +124,7 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
             {g.rows.map((r, i) => (
               <Box key={r.key}>
                 {i > 0 ? <Divider spacing={0} /> : null}
-                <Row row={r} onChange={(v) => set(r.key, v)} />
+                <Row row={r} onChange={set} />
               </Box>
             ))}
           </Surface>
@@ -133,8 +134,15 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
   );
 }
 
-function Row({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: unknown) => void }>) {
+// Memoised: `applySetting` rebuilds every group and every row array on each
+// edit, so without this boundary one keystroke re-rendered every row on the
+// page rather than the one that changed.
+const Row = memo(function Row({
+  row,
+  onChange,
+}: Readonly<{ row: SettingRow; onChange: (key: string, v: unknown) => void }>) {
   const t = useT();
+  const change = (v: unknown) => onChange(row.key, v);
   return (
     <Box row align="center" justify="space-between" gap={20} px={22} py={16}>
       <Box shrink={1} style={{ minWidth: 0 }}>
@@ -150,10 +158,10 @@ function Row({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: unknow
           </Text>
         ) : null}
       </Box>
-      <Control row={row} onChange={onChange} />
+      <Control row={row} onChange={change} />
     </Box>
   );
-}
+});
 
 // An object would otherwise stringify to "[object Object]".
 function asText(v: unknown): string {
