@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "KROMA's in-app i18n dev tools: a floating badge that opens a panel to switch the locale for the session and to render every message as the key and the catalog that answered it. Loaded only by the dev server, through @kroma/i18n/vite.",
+  "description": "KROMA's in-app i18n dev tools: a floating panel that switches the locale for the session, marks every string on the page with what answered it, and names the key and file behind the one under the pointer. Engine-agnostic: it inspects whatever engine an adapter hands it. Loaded only by the dev server, through its own Vite plugin.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "license": "GPL-2.0-or-later",
   "repository": {
@@ -12,26 +12,49 @@
     "directory": "packages/i18n-devtools"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./kroma": "./src/engine/kroma/kroma.ts",
+    "./i18next": "./src/engine/i18next/i18next.ts",
+    "./paraglide": "./src/engine/paraglide/paraglide.ts",
+    "./vite": "./vite/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/core": "workspace:*",
-    "@kroma/i18n": "workspace:*",
     "@kroma/ui": "workspace:*",
     "zod": "^4.4.3"
   },
   "peerDependencies": {
+    "@kroma/i18n": "workspace:*",
     "react": ">=18",
-    "react-dom": ">=18"
+    "react-dom": ">=18",
+    "react-native": "*",
+    "i18next": "*",
+    "@inlang/paraglide-js": "*"
   },
   "devDependencies": {
+    "@jridgewell/trace-mapping": "^0.3.31",
+    "@kroma/i18n": "workspace:*",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "launch-editor": "^2.9.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "typescript": "^7.0.2"
+    "react-native": "*",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "@kroma/bundler": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@kroma/i18n": {
+      "optional": true
+    },
+    "i18next": {
+      "optional": true
+    },
+    "@inlang/paraglide-js": {
+      "optional": true
+    }
   }
 }

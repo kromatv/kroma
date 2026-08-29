@@ -91,7 +91,7 @@ describe('send', () => {
     const calls = stubGoogle({});
     const delivery = await send(account, 'DEVICE-A', NOTIFICATION, 1_700_000_000);
 
-    expect(delivery).toEqual({ ok: true, gone: false, status: 200 });
+    expect(delivery).toEqual({ ok: true, gone: false, status: 200, reason: '' });
     expect(calls[0]?.url).toBe('https://oauth2.googleapis.com/token');
     const form = new URLSearchParams(String(calls[0]?.init.body));
     expect(form.get('grant_type')).toBe('urn:ietf:params:oauth:grant-type:jwt-bearer');

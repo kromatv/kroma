@@ -59,7 +59,7 @@ export interface Delivery {
   ok: boolean;
   gone: boolean;
   status: number;
-  reason?: string;
+  reason: string;
 }
 
 /**

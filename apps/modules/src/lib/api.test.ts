@@ -123,7 +123,7 @@ describe('machineResponse', () => {
   it('sends /favicon.ico to the real asset instead of serving a second copy', async () => {
     const res = await machine('/favicon.ico');
     expect(res.status).toBe(301);
-    expect(res.headers.get('location')).toBe('https://modules.kroma.tv/favicon.svg');
+    expect(res.headers.get('location')).toBe('/favicon.svg');
   });
 
   it('leaves /favicon.svg to the asset handler, which answers before this worker', async () => {

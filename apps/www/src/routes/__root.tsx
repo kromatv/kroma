@@ -40,7 +40,11 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
     preload(href, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
   }
   return (
-    <html lang={lang}>
+    // The ground is stamped on this element by the script below, before React
+    // hydrates and from a cookie no prerendered document could have read. The
+    // attribute React renders is therefore always one short, and saying so is
+    // what stops it reporting a mismatch it cannot fix.
+    <html lang={lang} suppressHydrationWarning>
       <head>
         <HeadContent />
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a literal, and it has to run before the first paint */}

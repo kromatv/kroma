@@ -1,8 +1,13 @@
 export { type DefineI18nConfig, defineI18n } from './define';
 export {
+  type AppLocales,
+  activeAppLocales,
+  installAppLocales,
   installKeyInspector,
   installLocaleOverride,
   type KeyInspector,
+  onOverridesChange,
+  type Rendered,
 } from './dev-overrides';
 export {
   createI18n,
@@ -11,7 +16,7 @@ export {
   type InferRegister,
   type ScopedTranslate,
 } from './i18n';
-export { interpolate } from './interpolate';
+export { hasToken, interpolate, tokensIn } from './interpolate';
 export { createLocales } from './locales';
 export { expandRefs, hasUnresolvedRef } from './nest';
 export { resolvePluralKey, selectCategory } from './plural';

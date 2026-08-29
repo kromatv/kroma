@@ -12,6 +12,26 @@ function build() {
 }
 
 describe('createI18n', () => {
+  it("keeps a catalog's $schema pointer out of the messages it answers with", () => {
+    const i18n = createI18n({
+      catalogs: {
+        en: { $schema: './schema.json', greeting: 'Hi' },
+        fr: { greeting: 'Bonjour' },
+      },
+      defaultLocale: 'en',
+    });
+
+    expect([i18n.translate('en', 'greeting'), i18n.has('$schema')]).toEqual(['Hi', false]);
+  });
+
+  it('renders the key itself where no catalog in the chain answers', () => {
+    expect(build().translator('fr', 'tv.kroma.notes')('nothing.answers')).toBe('nothing.answers');
+  });
+
+  it('names every locale it answers in, the default one first', () => {
+    expect(build().locales()).toEqual(['en', 'fr']);
+  });
+
   it('translates, pluralises and falls back to the default locale', () => {
     const i18n = build();
 

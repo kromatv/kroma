@@ -114,7 +114,7 @@ export { useLoop } from './lib/loop';
 export { OverlayHost } from './lib/overlay-host';
 export type { PerfReport } from './lib/perf';
 export { perfReport, perfRunning, resetPerf, startPerf, stopPerf } from './lib/perf';
-export { Portal } from './lib/portal';
+export { Portal, PortalHost } from './lib/portal';
 export {
   armPressGuard,
   clearPressGuard,

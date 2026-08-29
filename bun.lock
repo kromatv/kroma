@@ -139,6 +139,7 @@
       "devDependencies": {
         "@cloudflare/vite-plugin": "^1.53.1",
         "@inlang/paraglide-js": "^2.24.0",
+        "@kroma/i18n-devtools": "workspace:*",
         "@mdx-js/rollup": "^3.1.1",
         "@tailwindcss/vite": "^4.3.3",
         "@tanstack/router-cli": "^1.167.30",
@@ -605,22 +606,35 @@
       "name": "@kroma/i18n-devtools",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/core": "workspace:*",
-        "@kroma/i18n": "workspace:*",
         "@kroma/ui": "workspace:*",
         "zod": "^4.4.3",
       },
       "devDependencies": {
+        "@jridgewell/trace-mapping": "^0.3.31",
+        "@kroma/bundler": "workspace:*",
+        "@kroma/i18n": "workspace:*",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.4",
+        "launch-editor": "^2.9.1",
         "react": "19.2.8",
         "react-dom": "19.2.8",
+        "react-native": "*",
         "typescript": "^7.0.2",
+        "vite": "^8.2.1",
       },
       "peerDependencies": {
+        "@inlang/paraglide-js": "*",
+        "@kroma/i18n": "workspace:*",
+        "i18next": "*",
         "react": ">=18",
         "react-dom": ">=18",
+        "react-native": "*",
       },
+      "optionalPeers": [
+        "@inlang/paraglide-js",
+        "@kroma/i18n",
+        "i18next",
+      ],
     },
     "packages/lan-beacon": {
       "name": "@kroma/lan-beacon",
@@ -2626,6 +2640,8 @@
 
     "lan-network": ["lan-network@0.2.1", "", { "bin": { "lan-network": "dist/lan-network-cli.js" } }, "sha512-ONPnazC96VKDntab9j9JKwIWhZ4ZUceB4A9Epu4Ssg0hYFmtHZSeQ+n15nIwTFmcBUKtExOer8WTJ4GF9MO64A=="],
 
+    "launch-editor": ["launch-editor@2.14.1", "", { "dependencies": { "picocolors": "^1.1.1", "shell-quote": "^1.8.4" } }, "sha512-QWBrQsMpH7gPr965dsKD/3cKWiNoTjpATQf++Xq63N6sKRGMwlVXz41O1IZTMfZQgBctD/K5Zt06+/I6pP6+HA=="],
+
     "leven": ["leven@3.1.0", "", {}, "sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A=="],
 
     "lighthouse-logger": ["lighthouse-logger@1.4.2", "", { "dependencies": { "debug": "^2.6.9", "marky": "^1.2.2" } }, "sha512-gPWxznF6TKmUHrOQjlVo2UbaL2EJ71mb2CCeRs/2qBpi4L/g4LUVc9+3lKQ6DTUZwJswfM7ainGrLO1+fOqa2g=="],
@@ -3627,6 +3643,8 @@
     "jest-validate/pretty-format": ["pretty-format@29.7.0", "", { "dependencies": { "@jest/schemas": "^29.6.3", "ansi-styles": "^5.0.0", "react-is": "^18.0.0" } }, "sha512-Pdlw/oPxN+aXdmM9R00JVC9WVFoCLTKJvDVLgmJ+qAffBMxsV85l/Lu7sNx4zSzPyoL2euImuEwHhOXdEgNFZQ=="],
 
     "jest-worker/supports-color": ["supports-color@8.1.1", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-MpUEN2OodtUzxvKQl72cUF7RQ5EiHsGvSsVG0ia9c5RbWGL2CI4C7EpPS8UTBIplnlzZiNuV56w+FuNxy3ty2Q=="],
+
+    "launch-editor/shell-quote": ["shell-quote@1.10.0", "", {}, "sha512-w1aiOKwKuRgtwAReIIj89puqg+I7GvX4IbLrvmhXbzQsj1+Zwi4VO3+fa6ZF91TWSjIxoEkKnMeHcLEODK5ZXA=="],
 
     "lighthouse-logger/debug": ["debug@2.6.9", "", { "dependencies": { "ms": "2.0.0" } }, "sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA=="],
 

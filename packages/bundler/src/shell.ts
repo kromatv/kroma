@@ -15,7 +15,7 @@ import {
 } from '@kroma/bundler/rnw';
 import { tvFrame } from '@kroma/bundler/tv-frame';
 import { tvShellHead } from '@kroma/bundler/tv-shell-head';
-import { kromaI18nDevtools } from '@kroma/i18n/vite';
+import { kromaI18nDevtools } from '@kroma/i18n-devtools/vite';
 import { kromaUI } from '@kroma/ui/vite';
 import babel from '@rolldown/plugin-babel';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';

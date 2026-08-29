@@ -10,7 +10,7 @@ import {
   webResolve,
 } from '@kroma/bundler/rnw';
 import { storyCode } from '@kroma/bundler/story-code';
-import { kromaI18nDevtools } from '@kroma/i18n/vite';
+import { kromaI18nDevtools } from '@kroma/i18n-devtools/vite';
 import { kromaUI } from '@kroma/ui/vite';
 import { kromaIconCatalog } from '@kroma/ui/vite/icon-catalog';
 import react from '@vitejs/plugin-react';

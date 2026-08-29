@@ -82,7 +82,7 @@ export async function send(
       body: JSON.stringify(fcmMessage(notification, deviceToken)),
     },
   );
-  if (response.ok) return { ok: true, gone: false, status: response.status };
+  if (response.ok) return { ok: true, gone: false, status: response.status, reason: '' };
 
   const text = await response.text();
   // Google's vocabulary for a dead token: 404/410, or UNREGISTERED in the body.

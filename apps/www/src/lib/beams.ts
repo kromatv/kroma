@@ -185,9 +185,16 @@ export function mountBeams(canvas: HTMLCanvasElement, opts: BeamOptions = {}): (
     if (!raf && !dead && visible && !document.hidden) raf = requestAnimationFrame(draw);
   };
 
+  // Resizing the canvas empties its drawing buffer, so the frame after a resize
+  // is transparent until something draws into it. Waiting for the running loop
+  // to come round leaves that empty frame composited - a black hero for a
+  // quarter of a second, on a window resize or on any reflow above it. Draw
+  // into the new buffer here, whether or not the loop is asleep.
   const ro = new ResizeObserver(() => {
     measure();
-    if (raf === 0) draw(performance.now()); // repaint a paused frame at the new size
+    cancelAnimationFrame(raf);
+    raf = 0;
+    draw(performance.now());
   });
   ro.observe(canvas);
   const io = new IntersectionObserver((es) => {

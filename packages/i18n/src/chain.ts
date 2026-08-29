@@ -26,21 +26,31 @@ export function translateChain(
   return undefined;
 }
 
-/** Where in `chain` {@link translateChain} would take the message from, or `-1`
- *  when nothing answers. Pairs with `CatalogStore.sources` to say which catalog
- *  spoke, which is what the key inspector reports. */
-export function answeringIndex(
+/** What a lookup found: the index in the chain that answered, `-1` when
+ *  nothing did, and the message it rendered. */
+export interface Resolved {
+  readonly at: number;
+  readonly text: string | undefined;
+}
+
+/** Render `key` and say which catalog it came from, in one walk. Pairs with
+ *  `CatalogStore.sources` to name the catalog that spoke, which is what the key
+ *  inspector reports. Kept apart from {@link translateChain} rather than
+ *  wrapping it: the plain path runs for every string the app draws and does not
+ *  allocate. */
+export function resolveInChain(
   chain: Chain,
   locale: string,
   key: string,
   vars?: TVars,
   plural?: PluralRule,
-): number {
+): Resolved {
   let index = 0;
   for (const catalog of chain) {
     const lookup = vars ? resolvePluralKey(catalog, locale, key, vars, plural) : key;
-    if (catalog[lookup] !== undefined) return index;
+    const template = catalog[lookup];
+    if (template !== undefined) return { at: index, text: interpolate(template, vars) };
     index += 1;
   }
-  return -1;
+  return { at: -1, text: undefined };
 }

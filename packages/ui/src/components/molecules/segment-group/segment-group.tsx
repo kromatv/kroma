@@ -153,10 +153,10 @@ function Thumb({ at, radius }: Readonly<{ at: Box2D | null; radius: number }>) {
   if (!at) return null;
   return (
     <Animated.View
-      pointerEvents="none"
       style={[
         THUMB,
         {
+          pointerEvents: 'none',
           backgroundColor: theme.colors.accentSoft,
           borderRadius: radius,
           transform: [{ translateX: x }],

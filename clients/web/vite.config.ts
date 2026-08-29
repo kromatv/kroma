@@ -8,7 +8,7 @@ import {
   webResolve,
 } from '@kroma/bundler/rnw';
 import { standaloneScript } from '@kroma/bundler/standalone-script';
-import { kromaI18nDevtools } from '@kroma/i18n/vite';
+import { kromaI18nDevtools } from '@kroma/i18n-devtools/vite';
 import { kromaModule } from '@kroma/module-sdk/vite';
 import { kromaUI } from '@kroma/ui/vite';
 import babel from '@rolldown/plugin-babel';

@@ -379,7 +379,16 @@ jobs:
           name: coverage-rust
           path: server
       - run: bun run ci sonar prepare
+      # A pull request carries its own context and the action reads it. Anything
+      # else has to say which branch it is, or the analysis lands on the default
+      # one: a manual run from a feature branch would otherwise overwrite main's
+      # and measure its own diff against main's baseline, which counts most of
+      # the repository as new code.
       - uses: SonarSource/sonarqube-scan-action@2f77a1ec69fb1d595b06f35ab27e97605bdef703 # v5.3.2
+        with:
+          args: >-
+            ${{ github.event_name != 'pull_request' &&
+            format('-Dsonar.branch.name={0}', github.ref_name) || '' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io

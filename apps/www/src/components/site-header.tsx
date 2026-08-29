@@ -11,12 +11,15 @@ import { m } from '#site/paraglide/messages';
 function useNav() {
   const lang = useLang();
   const home = localizePath('/', lang);
+  // Keyed by `id`, not by the label: the label is a translated string, so
+  // keying on it makes React throw the link away and build a new one whenever
+  // the language changes - and two links that ever read the same would collide.
   return [
-    { kind: 'anchor', label: m.nav_features(), href: `${home}#fonctionnalites` },
-    { kind: 'anchor', label: m.nav_platforms(), href: `${home}#plateformes` },
-    { kind: 'route', label: m.nav_modules(), to: '/modules' },
-    { kind: 'route', label: m.nav_install(), to: '/download' },
-    { kind: 'route', label: m.nav_blog(), to: '/blog' },
+    { id: 'features', kind: 'anchor', label: m.nav_features(), href: `${home}#fonctionnalites` },
+    { id: 'platforms', kind: 'anchor', label: m.nav_platforms(), href: `${home}#plateformes` },
+    { id: 'modules', kind: 'route', label: m.nav_modules(), to: '/modules' },
+    { id: 'install', kind: 'route', label: m.nav_install(), to: '/download' },
+    { id: 'blog', kind: 'route', label: m.nav_blog(), to: '/blog' },
   ] as const;
 }
 
@@ -37,11 +40,11 @@ export function SiteHeader() {
         <nav aria-label={m.header_home()} className="hidden items-center gap-8 md:flex">
           {nav.map((l) =>
             l.kind === 'route' ? (
-              <L key={l.label} to={l.to} className={linkCls} activeClassName="text-text">
+              <L key={l.id} to={l.to} className={linkCls} activeClassName="text-text">
                 {l.label}
               </L>
             ) : (
-              <a key={l.label} href={l.href} className={linkCls}>
+              <a key={l.id} href={l.href} className={linkCls}>
                 {l.label}
               </a>
             ),
@@ -78,7 +81,7 @@ export function SiteHeader() {
                 {nav.map((l) =>
                   l.kind === 'route' ? (
                     <L
-                      key={l.label}
+                      key={l.id}
                       to={l.to}
                       className="rounded-lg px-3 py-2.5 text-sm font-medium text-muted hover:bg-wash hover:text-text"
                     >
@@ -86,7 +89,7 @@ export function SiteHeader() {
                     </L>
                   ) : (
                     <a
-                      key={l.label}
+                      key={l.id}
                       href={l.href}
                       className="rounded-lg px-3 py-2.5 text-sm font-medium text-muted hover:bg-wash hover:text-text"
                     >

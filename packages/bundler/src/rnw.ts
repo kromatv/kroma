@@ -46,7 +46,7 @@ const KIT_SRC = fileURLToPath(new URL('../../ui/src', import.meta.url));
 export function webResolve(
   alias: Record<string, string> = {},
   extraDedupe: string[] = [],
-): UserConfig['resolve'] {
+): NonNullable<UserConfig['resolve']> {
   return {
     alias: [
       ...Object.entries(alias).map(([find, replacement]) => ({ find, replacement })),

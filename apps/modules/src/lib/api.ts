@@ -37,7 +37,7 @@ app.get('/ping', (c) => c.text('pong'));
 // `<link rel="icon">` in the page, so point it at the real file rather than
 // keeping a second copy of the mark inlined here under a name that is not its
 // format.
-app.get('/favicon.ico', (c) => c.redirect(new URL('/favicon.svg', c.req.url).toString(), 301));
+app.get('/favicon.ico', (c) => c.redirect('/favicon.svg', 301));
 
 app.get('/icon/:id/:file', async (c) => {
   const { id, file } = c.req.param();

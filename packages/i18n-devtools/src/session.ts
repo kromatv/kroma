@@ -1,20 +1,22 @@
 import { z } from 'zod';
 
 const KEY = 'kroma:i18n-devtools';
+
 const MAX_CHARS = 512;
 
 const Session = z.object({
   open: z.boolean().default(false),
-  keys: z.boolean().default(false),
-  locale: z.string().max(16).nullable().default(null),
+  editor: z.string().max(64).nullable().default(null),
   x: z.number().finite().nullable().default(null),
   y: z.number().finite().nullable().default(null),
 });
 
 export type DevtoolsSession = z.infer<typeof Session>;
 
-const CLOSED: DevtoolsSession = { open: false, keys: false, locale: null, x: null, y: null };
+const CLOSED: DevtoolsSession = { open: false, editor: null, x: null, y: null };
 
+/** How the panel is arranged, which is all a tab remembers. What the tools are
+ *  doing to the page is not here but in `live.ts`: see the note there. */
 export function readSession(): DevtoolsSession {
   try {
     const stored = sessionStorage.getItem(KEY);

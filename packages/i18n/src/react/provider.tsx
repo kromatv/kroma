@@ -1,11 +1,10 @@
-import { type ReactNode, useMemo, useSyncExternalStore } from 'react';
-import { activeLocaleOverride, onOverridesChange, overridesRevision } from '../dev-overrides';
+import { type ReactNode, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { activeLocaleOverride, installAppLocales, onOverridesChange } from '../dev-overrides';
 import type { I18n } from '../i18n';
 import type { Locale } from '../registry';
 import type { Catalog } from '../types';
 import { I18nContext, type I18nValue } from './context';
 
-const revisionOnServer = () => 0;
 const localeOverrideOnServer = () => null;
 
 export interface I18nProviderProps {
@@ -28,22 +27,31 @@ export function I18nProvider({
   // components, and a store watch in each of them would mean a set insert per
   // mount for something that changes only when a module registers a catalog.
   const version = useSyncExternalStore(i18n.subscribe, i18n.version, i18n.version);
-  const revision = useSyncExternalStore(onOverridesChange, overridesRevision, revisionOnServer);
   const override = useSyncExternalStore(
     onOverridesChange,
     activeLocaleOverride,
     localeOverrideOnServer,
   );
   const active = (override as Locale | null) ?? locale;
+  // A shell that passes an inline handler would otherwise rebuild the
+  // translator on every render of this provider, and a caller holding it in a
+  // dependency list would re-run with it.
+  const change = useRef(onLocaleChange);
+  change.current = onLocaleChange;
+  // The dev tools reach an engine they were never handed, so the engine says
+  // what it can render rather than being read out of the app's own table.
+  useEffect(() => {
+    installAppLocales({ codes: i18n.locales(), resolved: locale });
+  }, [i18n, locale]);
   const value = useMemo<I18nValue>(
-    () => ({ i18n, locale: active, version, setLocale: (next) => onLocaleChange?.(next) }),
-    [i18n, active, version, onLocaleChange],
+    () => ({
+      i18n,
+      locale: active,
+      version,
+      translator: (scope) => i18n.translator(active, scope as string) as never,
+      setLocale: (next) => change.current?.(next),
+    }),
+    [i18n, active, version],
   );
-  // React Compiler memoisation is per mount, so a component that already
-  // resolved a string would keep showing it without a remount.
-  return (
-    <I18nContext.Provider key={revision} value={value}>
-      {children}
-    </I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

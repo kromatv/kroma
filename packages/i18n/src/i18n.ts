@@ -1,4 +1,4 @@
-import { answeringIndex, translateChain } from './chain';
+import { resolveInChain, translateChain } from './chain';
 import { activeKeyInspector, onOverridesChange, overridesRevision } from './dev-overrides';
 import { CatalogStore, type SCHEMA_KEY } from './store';
 import type { Catalog, Catalogs, PluralRule, TVars } from './types';
@@ -13,6 +13,8 @@ export type ScopedTranslate<K extends string> = (key: K | (string & {}), vars?: 
 
 export interface I18n<L extends string, M extends Catalog> {
   readonly defaultLocale: L;
+  /** Every locale the base catalogs answer in, the default one first. */
+  locales(): readonly L[];
   /** Render one message. Unknown keys render as the key itself, which is a
    *  visible placeholder rather than an empty hole. */
   translate(locale: L, key: keyof M & string, vars?: TVars): string;
@@ -88,8 +90,15 @@ export function createI18n<
       const inspector = activeKeyInspector();
       fn = inspector
         ? (key, vars) => {
-            const at = answeringIndex(store.chain(locale, scope), locale, key, vars, plural);
-            return inspector(key, at === -1 ? undefined : store.sources(locale, scope)[at], locale);
+            const { at, text } = resolveInChain(
+              store.chain(locale, scope),
+              locale,
+              key,
+              vars,
+              plural,
+            );
+            const from = at === -1 ? undefined : store.sources(locale, scope)[at];
+            return inspector({ key, from, locale, text: text ?? key, vars });
           }
         : (key, vars) =>
             translateChain(store.chain(locale, scope), locale, key, vars, plural) ?? key;
@@ -98,8 +107,14 @@ export function createI18n<
     return fn;
   };
 
+  const codes = [
+    defaultLocale as L,
+    ...(Object.keys(catalogs) as L[]).filter((code) => code !== defaultLocale),
+  ];
+
   return {
     defaultLocale: defaultLocale as L,
+    locales: () => codes,
     translate: (locale, key, vars) => translator(locale)(key, vars),
     translator,
     add: (scope, added) => store.add(scope, added),

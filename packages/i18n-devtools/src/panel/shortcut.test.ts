@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { chordLabel, isApplePlatform, isChord, isEditableTarget } from './shortcut';
+import { isApplePlatform, isChord, isEditableTarget, letterOf, modifierLabel } from './shortcut';
 
 const chord = (init: KeyboardEventInit) =>
   new KeyboardEvent('keydown', { code: 'KeyK', ctrlKey: true, altKey: true, ...init });
@@ -59,10 +59,21 @@ describe('isEditableTarget', () => {
   });
 });
 
-describe('chordLabel', () => {
-  it('spells the chord the way each platform writes it', () => {
-    expect(chordLabel('KeyK', false)).toBe('Ctrl+Alt+K');
-    expect(chordLabel('KeyK', true)).toBe('⌃⌥K');
+describe('how a chord is written', () => {
+  it('prints a modifier as the symbol a Mac puts on the key', () => {
+    expect(modifierLabel('ctrl', true)).toBe('⌃');
+    expect(modifierLabel('alt', true)).toBe('⌥');
+    expect(modifierLabel('shift', true)).toBe('⇧');
+  });
+
+  it('spells it out everywhere else', () => {
+    expect(modifierLabel('ctrl', false)).toBe('Ctrl');
+    expect(modifierLabel('shift', false)).toBe('Shift');
+  });
+
+  it('names the key a code stands for', () => {
+    expect(letterOf('KeyK')).toBe('K');
+    expect(letterOf('Escape')).toBe('Escape');
   });
 });
 

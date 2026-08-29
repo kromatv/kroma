@@ -1,15 +1,19 @@
-import { createContext, useCallback, useContext } from 'react';
+import { createContext, useContext } from 'react';
 import type { I18n, ScopedTranslate } from '../i18n';
 import type { Locale, MessageKey, Translate } from '../registry';
 import type { Catalog } from '../types';
 
-/** The instance and the locale a provider hands down. `version` changes when a
- *  scope is added or removed: the provider watches the store once, on behalf of
- *  every consumer, rather than each of them opening its own subscription. */
+/** What a provider hands down. `version` changes when a scope is added or a
+ *  dev switch moves; it is carried rather than derived because it is what
+ *  rebuilds `translator` beside it, and a memoiser that cannot see a value
+ *  being read will prune the dependency and serve a stale translator. The
+ *  provider watches the store once, on behalf of every consumer, rather than
+ *  each of them opening its own subscription. */
 export interface I18nValue {
   i18n: I18n<string, Catalog>;
   locale: Locale;
   version: number;
+  translator: (scope?: string) => ScopedTranslate<MessageKey>;
   setLocale: (locale: Locale) => void;
 }
 
@@ -37,19 +41,13 @@ function useI18nValue(): I18nValue {
 export function useT(scope: string): ScopedTranslate<MessageKey>;
 export function useT(): Translate;
 export function useT(scope?: string): ScopedTranslate<MessageKey> {
-  const { i18n, locale } = useI18nValue();
-  return i18n.translator(locale, scope as string) as ScopedTranslate<MessageKey>;
+  return useI18nValue().translator(scope);
 }
 
 /** A factory for scoped translators, for a view that renders rows belonging to
  *  several scopes at once and so cannot call {@link useT} once per row. */
 export function useScopedT(): (scope: string) => ScopedTranslate<MessageKey> {
-  const { i18n, locale, version } = useI18nValue();
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `version` is what says the catalogs moved; without it a caller holding this in a dependency list keeps a stale scope.
-  return useCallback(
-    (scope: string) => i18n.translator(locale, scope) as ScopedTranslate<MessageKey>,
-    [i18n, locale, version],
-  );
+  return useI18nValue().translator;
 }
 
 export function useLocale(): Locale {

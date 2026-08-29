@@ -95,7 +95,7 @@ export async function send(
     text = await response.text();
   }
 
-  if (response.ok) return { ok: true, gone: false, status: response.status };
+  if (response.ok) return { ok: true, gone: false, status: response.status, reason: '' };
 
   const reason = reasonOf(text);
   // 410 is the documented "gone". The 400s that mean it are narrow on purpose:

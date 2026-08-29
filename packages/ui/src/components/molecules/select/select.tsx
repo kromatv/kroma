@@ -31,9 +31,11 @@ import {
   type SelectOpenReason,
   type SelectOption,
   type SelectState,
-  type SelectValueDetails,
   useSelect,
 } from './select-context';
+
+export type { SelectValueDetails } from './select-context';
+
 import { Indicator, Item, optionOf, type SelectItemProps } from './select-item';
 import { SelectOptions } from './select-options';
 import {
@@ -260,6 +262,5 @@ export type {
   SelectRootProps,
   SelectSingleRootProps,
   SelectTriggerProps,
-  SelectValueDetails,
 };
 export { Select, triggerVariants as selectTriggerVariants };

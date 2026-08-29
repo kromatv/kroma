@@ -77,3 +77,10 @@ describe('resolvePluralKey', () => {
     expect(resolvePluralKey(en, 'en', 'hi', { count: 2 })).toBe('hi');
   });
 });
+
+describe('a locale Intl cannot parse', () => {
+  it('is asked for once and answered without throwing', () => {
+    expect(() => selectCategory('not a locale', 1)).not.toThrow();
+    expect(() => selectCategory('not a locale', 2)).not.toThrow();
+  });
+});

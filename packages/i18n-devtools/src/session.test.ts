@@ -11,21 +11,21 @@ afterEach(() => {
 });
 
 describe('the dev-tools session', () => {
-  it('starts closed, with nothing overridden', () => {
-    expect(readSession()).toEqual({ open: false, keys: false, locale: null, x: null, y: null });
+  it('starts closed, with the panel where it has never been moved', () => {
+    expect(readSession()).toEqual({ open: false, editor: null, x: null, y: null });
   });
 
-  it('remembers a switch across a reload, which is what a hot reload is', () => {
-    writeSession({ open: true, keys: true, locale: 'fr' });
+  it('remembers a choice across a reload, which is what a hot reload is', () => {
+    writeSession({ open: true, editor: 'zed', x: 40 });
 
-    expect(readSession()).toMatchObject({ open: true, keys: true, locale: 'fr' });
+    expect(readSession()).toMatchObject({ open: true, editor: 'zed', x: 40 });
   });
 
   it('merges a patch over what is stored rather than replacing it', () => {
-    writeSession({ open: true, locale: 'fr' });
+    writeSession({ open: true, editor: 'zed' });
     writeSession({ x: 40, y: 60 });
 
-    expect(readSession()).toMatchObject({ open: true, locale: 'fr', x: 40, y: 60 });
+    expect(readSession()).toMatchObject({ open: true, editor: 'zed', x: 40, y: 60 });
   });
 
   it('falls back to closed when the stored blob is not what it claims', () => {
@@ -49,12 +49,15 @@ describe('the dev-tools session', () => {
   it('reads as closed where the platform has no session storage', () => {
     vi.stubGlobal('sessionStorage', undefined);
 
-    expect(readSession()).toEqual({ open: false, keys: false, locale: null, x: null, y: null });
+    expect(readSession()).toEqual({ open: false, editor: null, x: null, y: null });
   });
 
   it('still answers a patch where there is no session storage to keep it in', () => {
     vi.stubGlobal('sessionStorage', undefined);
 
-    expect(writeSession({ open: true, locale: 'fr' })).toMatchObject({ open: true, locale: 'fr' });
+    expect(writeSession({ open: true, editor: 'zed' })).toMatchObject({
+      open: true,
+      editor: 'zed',
+    });
   });
 });

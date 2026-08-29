@@ -15,16 +15,22 @@ import { WEB } from '#ui/lib/platform';
 
 export type { IconName, IconProps } from '#ui/lib/glyph';
 
+// A glyph is the size it was asked for wherever it is drawn. On the web it is a
+// flex item like any other, so a row that runs out of room squashes it into a
+// sliver rather than shortening the words beside it; React Native does not
+// shrink a child by default and needs none of this.
+const FIRM = (WEB ? { flexShrink: 0 } : null) as ViewStyle | null;
+
 // The palette holds a handful of alphas, and icons re-render on every focus
 // move in a 10-foot grid, so the fade styles are worth remembering. On the web
-// the fade is opacity and NOTHING else - an `alignSelf` here would overrule the
-// well that centres the glyph; natively the wrapper's `alignItems` keeps the
-// glyph from being stretched by a column.
+// the fade is opacity and the rule above - an `alignSelf` here would overrule
+// the well that centres the glyph; natively the wrapper's `alignItems` keeps
+// the glyph from being stretched by a column.
 const FADES = new Map<number | string, ViewStyle>();
 function fade(opacity: number | string): ViewStyle {
   const hit = FADES.get(opacity);
   if (hit) return hit;
-  const style = (WEB ? { opacity } : { opacity, alignItems: 'flex-start' }) as ViewStyle;
+  const style = (WEB ? { opacity, ...FIRM } : { opacity, alignItems: 'flex-start' }) as ViewStyle;
   FADES.set(opacity, style);
   return style;
 }
@@ -34,7 +40,8 @@ function Icon(props: Readonly<IconProps>) {
   // Spread rather than a literal prop: the key is decided per platform, and a
   // computed key cannot be written inline without losing the type of the rest.
   const weight = { [STROKE_PROP]: thickness };
-  if (opacity === 1) return <Glyph size={size} color={color} {...weight} />;
+  if (opacity === 1)
+    return <Glyph size={size} color={color} style={FIRM ?? undefined} {...weight} />;
   // A translucent colour (`textDim`, `textMuted`) fades the FINISHED glyph, in
   // one composite, rather than each of its strokes - see `splitAlpha`. The DOM
   // build spreads extra props onto the <svg> element alone, where CSS opacity

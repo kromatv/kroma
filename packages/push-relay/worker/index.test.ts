@@ -318,6 +318,22 @@ describe('what Apple is told about one notification', () => {
     }
   });
 
+  it('keeps a rejection the upstream wrote out of the shape of its own log line', async () => {
+    const grant = await seal(SECRET, { t: 'apns', d: 'DEVICE-A', e: 4_000_000_000 });
+    const logged: string[] = [];
+    const wrote = vi.spyOn(console, 'error').mockImplementation((line: string) => {
+      logged.push(line);
+    });
+    stubApple(400, JSON.stringify({ reason: `Bad\nDevice\r{"event":"forged"}${'x'.repeat(400)}` }));
+
+    await worker.fetch(post('/v1/push', { grant, notification: NOTIFICATION }), env);
+    wrote.mockRestore();
+
+    const { reason } = JSON.parse(logged[0] ?? '{}') as { reason: string };
+    expect(reason).not.toMatch(/[\n\r]/);
+    expect(reason).toHaveLength(200);
+  });
+
   it('reads no reason out of a body that is not one', async () => {
     const grant = await seal(SECRET, { t: 'apns', d: 'DEVICE-A', e: 4_000_000_000 });
     for (const body of ['<html>502 Bad Gateway</html>', '{"reason":{"code":7}}']) {

@@ -1,6 +1,7 @@
 import type { TVars } from './types';
 
 const TOKEN = /\{(\w+)}/g;
+const ANY_TOKEN = /\{\w+}/;
 
 /** Substitute `{name}` tokens from `vars`. Unknown tokens are kept verbatim.
  *
@@ -13,4 +14,16 @@ export function interpolate(template: string, vars?: TVars): string {
   return template.replace(TOKEN, (whole, name: string) =>
     Object.hasOwn(vars, name) ? String(vars[name]) : whole,
   );
+}
+
+/** Whether `text` still names a `{token}`. After {@link interpolate} that means
+ *  a variable the caller never passed, since an unknown token is kept
+ *  verbatim. */
+export function hasToken(text: string): boolean {
+  return ANY_TOKEN.test(text);
+}
+
+/** The `{token}` names `text` still carries. */
+export function tokensIn(text: string): string[] {
+  return [...text.matchAll(TOKEN)].map(([, name]) => name as string);
 }

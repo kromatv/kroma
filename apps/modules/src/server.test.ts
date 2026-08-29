@@ -70,7 +70,7 @@ describe('the worker entry', () => {
     const res = await server.fetch(req('/favicon.ico'), {}, ctx());
 
     expect(res.status).toBe(301);
-    expect(res.headers.get('location')).toBe('https://modules.kroma.tv/favicon.svg');
+    expect(res.headers.get('location')).toBe('/favicon.svg');
     expect(calls).toEqual([]);
   });
 

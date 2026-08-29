@@ -16,6 +16,7 @@
       "!**/.tanstack",
       "!**/*.gen.ts",
       "!**/routeTree.gen.ts",
+      "!apps/www/src/paraglide",
       "!**/*.template.html",
       "!clients/synology",
       "!server",

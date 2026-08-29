@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { cloudflare } from '@cloudflare/vite-plugin';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import { kromaI18nDevtools } from '@kroma/i18n-devtools/vite';
 import { kromaUI } from '@kroma/ui/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
@@ -17,6 +18,7 @@ export default defineConfig({
   plugins: [
     cloudflare({ configPath: './wrangler.jsonc', viteEnvironment: { name: 'ssr' } }),
     kromaUI(),
+    kromaI18nDevtools(),
     tailwindcss(),
     mdxPlugin(),
     modulesPlugin(),

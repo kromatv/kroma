@@ -37,6 +37,15 @@ export interface Env {
 // Bodies are tiny and fixed-shape; anything larger is not one of ours.
 const MAX_REQUEST_BYTES = 8 * 1024;
 
+// A push service's rejection text is its own, and arrives unbounded: keep it
+// printable and short before it reaches a log line, so neither a newline nor a
+// long body can shape what the log says.
+const REASON_MAX = 200;
+
+function printable(reason: string): string {
+  return reason.replace(/[^ -~]/g, '').slice(0, REASON_MAX);
+}
+
 const app = new Hono<{ Bindings: Env }>();
 
 // Every route answers JSON, including its failures, so a server never has to
@@ -153,7 +162,7 @@ app.post('/v1/push', validate(PushRequest), async (c) => {
       event: 'relay.rejected',
       transport: payload.t,
       status: delivery.status,
-      reason: delivery.reason,
+      reason: printable(delivery.reason),
     }),
   );
   return c.json({ error: `push service returned ${delivery.status}` }, 502);

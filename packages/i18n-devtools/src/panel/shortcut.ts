@@ -25,7 +25,19 @@ export function isApplePlatform(platform: string): boolean {
   return APPLE.test(platform);
 }
 
-export function chordLabel(code: string, apple: boolean): string {
-  const key = code.replace(/^Key/, '');
-  return apple ? `⌃⌥${key}` : `Ctrl+Alt+${key}`;
+/** A key held down rather than pressed. */
+export type Modifier = 'ctrl' | 'alt' | 'shift';
+
+const PRINTED: Record<Modifier, string> = { ctrl: '⌃', alt: '⌥', shift: '⇧' };
+const SPELLED: Record<Modifier, string> = { ctrl: 'Ctrl', alt: 'Alt', shift: 'Shift' };
+
+/** How a modifier is drawn here: the symbol a Mac prints on the key, the word
+ *  everywhere else. */
+export function modifierLabel(modifier: Modifier, apple: boolean): string {
+  return apple ? PRINTED[modifier] : SPELLED[modifier];
+}
+
+/** The key a code names, as it is printed on it. */
+export function letterOf(code: string): string {
+  return code.replace(/^Key/, '');
 }

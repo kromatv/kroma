@@ -7,4 +7,9 @@ function Portal({ children }: Readonly<{ children: ReactNode }>) {
   return <>{children}</>;
 }
 
-export { Portal };
+/** Web-only: see `portal.web.tsx`. Native draws in place either way. */
+function PortalHost({ children }: Readonly<{ container: Element | null; children: ReactNode }>) {
+  return <>{children}</>;
+}
+
+export { Portal, PortalHost };
