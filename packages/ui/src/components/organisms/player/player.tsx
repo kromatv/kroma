@@ -6,6 +6,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
 import { styles } from '#ui/core';
 import type { StoryboardTile } from '#ui/services/storyboard';
+import { PLAYER_ROOT_ID, useIdleCursor } from './hooks/use-idle-cursor';
 import { usePlayerCredits } from './hooks/use-player-credits';
 import { usePlayerKeys } from './hooks/use-player-keys';
 import { usePlayerNav } from './hooks/use-player-nav';
@@ -168,6 +169,8 @@ function Root({
     metrics.controls,
   );
 
+  useIdleCursor(flags.pointer && !nav.revealed);
+
   const creditsKey = (key: RemoteKey): boolean =>
     handleCreditsKey(key, creditsFocus, setCreditsFocus, () => onPlayNext?.(), credits.cancel);
 
@@ -216,6 +219,7 @@ function Root({
     <PlayerSlotContext.Provider value={true}>
       <Box
         ref={ref}
+        nativeID={PLAYER_ROOT_ID}
         fill
         z={60}
         // Transparent ONLY over a hardware plane, which is behind the page and
