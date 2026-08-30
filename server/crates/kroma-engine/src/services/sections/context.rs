@@ -17,9 +17,11 @@ pub struct Context {
     pub month: u8,
     pub weekday: Weekday,
     pub part_of_day: PartOfDay,
-    pub last_played: Option<String>,
+    pub last_finished: Option<String>,
     // Recent distinct watched ids: the taste window for the "For You" centroid.
     pub watched: Vec<String>,
+    // What "Continue watching" already occupies on the same screen.
+    pub in_progress: Vec<String>,
 }
 
 impl Context {
@@ -35,8 +37,9 @@ impl Context {
             month: u8::from(now.month()),
             weekday: now.weekday(),
             part_of_day,
-            last_played: db::last_played(pool, user_id).ok().flatten(),
+            last_finished: db::last_finished(pool, user_id).ok().flatten(),
             watched: db::recent_watched_ids(pool, user_id).unwrap_or_default(),
+            in_progress: db::continue_watching_ids(pool, user_id).unwrap_or_default(),
         }
     }
 
@@ -58,8 +61,9 @@ mod tests {
             month: 1,
             weekday,
             part_of_day: part,
-            last_played: None,
+            last_finished: None,
             watched: Vec::new(),
+            in_progress: Vec::new(),
         }
     }
 

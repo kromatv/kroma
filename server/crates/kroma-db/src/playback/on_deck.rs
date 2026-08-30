@@ -6,13 +6,14 @@ use rusqlite::{params, Connection};
 // The episode after the last watched one, for every show the user has watched and
 // left with no episode in progress, newest show first: `(item_id, watched_at)`.
 // A show that is caught up yields no row (the JOIN finds nothing to play).
-const SQL: &str = "\
+fn sql() -> String {
+    let resumable = crate::playback::resumable_sql();
+    format!(
+        "\
 WITH busy AS ( \
     SELECT DISTINCT pi.show_id AS show_id \
       FROM progress p JOIN items pi ON pi.id = p.item_id \
-     WHERE p.user_id = ?1 AND pi.show_id IS NOT NULL \
-       AND p.position_ms > 15000 \
-       AND (p.duration_ms IS NULL OR p.position_ms < p.duration_ms * 95 / 100) \
+     WHERE p.user_id = ?1 AND pi.show_id IS NOT NULL AND {resumable} \
 ), seen AS ( \
     SELECT i.show_id AS show_id, \
            MAX(w.watched_at) AS watched_at, \
@@ -33,14 +34,16 @@ SELECT next.id, seen.watched_at \
           AND NOT EXISTS (SELECT 1 FROM progress p2 \
                            WHERE p2.user_id = ?1 AND p2.item_id = e.id) \
         ORDER BY e.season, e.episode LIMIT 1) \
- ORDER BY seen.watched_at DESC LIMIT ?2";
+ ORDER BY seen.watched_at DESC LIMIT ?2"
+    )
+}
 
 pub(super) fn on_deck(
     conn: &Connection,
     user_id: &str,
     limit: usize,
 ) -> Result<Vec<(String, String)>> {
-    let mut stmt = conn.prepare(SQL)?;
+    let mut stmt = conn.prepare(&sql())?;
     let rows = stmt
         .query_map(params![user_id, limit as i64], |r| {
             Ok((r.get(0)?, r.get(1)?))

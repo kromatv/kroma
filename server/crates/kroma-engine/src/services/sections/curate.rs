@@ -81,10 +81,12 @@ pub fn build_catalog(items: &[MediaItem], shows: &[Show]) -> Vec<CatalogEntry> {
 fn meta_bits(meta: Option<&crate::model::Metadata>) -> (f32, Vec<String>, Vec<String>) {
     match meta {
         Some(m) => {
+            let mut seen = HashSet::new();
             let directors = m
                 .crew
                 .iter()
                 .filter(|c| DIRECTING_JOBS.contains(&c.job.as_str()))
+                .filter(|c| seen.insert(c.name.as_str()))
                 .map(|c| c.name.clone())
                 .collect();
             (m.rating.unwrap_or(0.0), m.genres.clone(), directors)
@@ -620,6 +622,27 @@ mod tests {
         let v1 = cat.iter().find(|e| e.id == "v1").unwrap();
         assert_eq!(v1.rating, 0.0);
         assert!(v1.genres.is_empty());
+    }
+
+    #[test]
+    fn a_person_credited_twice_joins_their_collection_once() {
+        let items: Vec<MediaItem> = (0..MIN_ITEMS)
+            .map(|i| {
+                item(
+                    &format!("m{i}"),
+                    &format!("Film {i}"),
+                    Kind::Movie,
+                    Some(meta(8.0, &["Drama"], &["Villeneuve", "Villeneuve"])),
+                )
+            })
+            .collect();
+
+        let cat = build_catalog(&items, &[]);
+        let rows = director_collections(&cat);
+
+        assert_eq!(cat[0].directors, vec!["Villeneuve"]);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].item_ids.len(), MIN_ITEMS);
     }
 
     #[test]

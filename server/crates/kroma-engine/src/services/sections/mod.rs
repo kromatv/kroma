@@ -47,7 +47,7 @@ pub fn build_home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str)
     let mut out = Builder {
         pool,
         sections: Vec::new(),
-        seen: HashSet::new(),
+        seen: ctx.in_progress.iter().cloned().collect(),
     };
 
     // Reserve the tail slots for the baseline browse rows (Trending, plus
@@ -114,7 +114,7 @@ pub fn build_home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str)
 // horror film) and this row claims a specific resemblance to one seed. No-op when
 // the seed has no genres, or with a discriminative backend.
 fn push_because(out: &mut Builder, state: &SharedState, pool: &Pool, ctx: &Context, locale: &str) {
-    if let Some(last) = &ctx.last_played {
+    if let Some(last) = &ctx.last_finished {
         if let Some(title) = last_title(pool, last) {
             let heading = i18n::t(locale, "content.becauseYouWatched", &[("title", &title)]);
             let ranked = db::genre_guard(pool, last, state.vectors.similar(last, FETCH));
@@ -268,11 +268,12 @@ impl Builder<'_> {
         if self.sections.len() >= MAX_SECTIONS {
             return false;
         }
+        let mut taken: HashSet<&str> = HashSet::new();
         let fresh: Vec<&str> = ranked
             .iter()
             .filter(|(_, score)| *score >= floor)
             .map(|(id, _)| id.as_str())
-            .filter(|i| !self.seen.contains(*i))
+            .filter(|i| !self.seen.contains(*i) && taken.insert(*i))
             .take(SECTION_CAP)
             .collect();
         if fresh.len() < MIN_ITEMS {
@@ -297,11 +298,7 @@ impl Builder<'_> {
 }
 
 fn last_title(pool: &Pool, id: &str) -> Option<String> {
-    db::items_by_ids(pool, &[id])
-        .ok()?
-        .into_iter()
-        .next()
-        .map(|i| i.title)
+    db::get_title(pool, id).ok()?.map(|t| t.title)
 }
 
 #[cfg(test)]
@@ -448,6 +445,28 @@ mod tests {
     }
 
     #[test]
+    fn a_ranked_list_that_repeats_a_title_spends_one_slot_on_it() {
+        let pool = test_pool();
+        let ids: Vec<String> = (0..SECTION_CAP).map(|i| format!("m{i}")).collect();
+        let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+        seed_movies(&pool, &refs);
+        let mut b = Builder {
+            pool: &pool,
+            sections: Vec::new(),
+            seen: HashSet::new(),
+        };
+        let ranked: Vec<(String, f32)> = ids
+            .iter()
+            .flat_map(|id| [(id.clone(), 1.0), (id.clone(), 1.0)])
+            .collect();
+
+        assert!(b.push("row1", "Row".into(), None, ranked, NO_FLOOR));
+
+        let shown: Vec<&str> = b.sections[0].items.iter().map(|i| i.id()).collect();
+        assert_eq!(shown, refs);
+    }
+
+    #[test]
     fn builder_push_rejects_once_at_max_sections() {
         let pool = test_pool();
         seed_movies(&pool, &["a", "b", "c", "d", "e"]);
@@ -582,6 +601,26 @@ mod tests {
         assert_eq!(recent.items.len(), 6);
         // The quality gate means every emitted row clears MIN_ITEMS (nothing thin).
         assert!(sections.iter().all(|s| s.items.len() >= MIN_ITEMS));
+    }
+
+    #[test]
+    fn a_film_left_half_watched_is_not_offered_again_under_the_continue_rail() {
+        let state = test_support::test_state();
+        let ids: Vec<String> = (0..8).map(|i| format!("m{i}")).collect();
+        let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+        seed_movies(&state.db, &refs);
+        let user = crate::db::create_user(&state.db, "cw@t.dev", "Cw", "h", &[])
+            .unwrap()
+            .id;
+        crate::db::upsert_progress(&state.db, &user, "m0", 60_000, Some(600_000)).unwrap();
+
+        let sections = build_home(&state, &state.db, "en", &user);
+
+        assert!(sections.iter().any(|s| s.id == "recent"));
+        assert!(sections
+            .iter()
+            .flat_map(|s| &s.items)
+            .all(|i| i.id() != "m0"));
     }
 
     #[test]

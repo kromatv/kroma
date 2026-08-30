@@ -17,13 +17,13 @@ const LIMIT: usize = 30;
 pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>> {
     let conn = pool.get()?;
     // The JOIN drops any orphan progress row whose item no longer exists.
-    let mut stmt = conn.prepare(
+    let mut stmt = conn.prepare(&format!(
         "SELECT p.item_id,p.position_ms,p.duration_ms,p.updated_at \
          FROM progress p JOIN items i ON i.id = p.item_id \
-         WHERE p.user_id = ?1 AND p.position_ms > 15000 \
-           AND (p.duration_ms IS NULL OR p.position_ms < p.duration_ms * 95 / 100) \
+         WHERE p.user_id = ?1 AND {} \
          ORDER BY p.updated_at DESC LIMIT ?2",
-    )?;
+        super::resumable_sql()
+    ))?;
     let mut rows: Vec<(String, i64, Option<i64>, String)> = stmt
         .query_map(params![user_id, LIMIT as i64], |r| {
             Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
@@ -101,6 +101,31 @@ pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>
     Ok(out)
 }
 
+/// The ids "Continue watching" occupies, plus the parent show of any episode
+/// among them: what the home generator must not offer again in a row below it.
+pub fn continue_watching_ids(pool: &Pool, user_id: &str) -> Result<Vec<String>> {
+    let conn = pool.get()?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT p.item_id FROM progress p JOIN items i ON i.id = p.item_id \
+         WHERE p.user_id = ?1 AND {} \
+         ORDER BY p.updated_at DESC LIMIT ?2",
+        super::resumable_sql()
+    ))?;
+    let mut ids: Vec<String> = stmt
+        .query_map(params![user_id, LIMIT as i64], |r| r.get::<_, String>(0))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    drop(stmt);
+    ids.extend(
+        on_deck(&conn, user_id, LIMIT)?
+            .into_iter()
+            .map(|(id, _)| id),
+    );
+    let refs: Vec<&str> = ids.iter().map(String::as_str).collect();
+    let shows = crate::show_ids_for(pool, &refs)?;
+    ids.extend(shows);
+    Ok(ids)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -143,6 +168,32 @@ mod tests {
         assert_eq!(cw[0].duration_ms, Some(100_000));
         assert_eq!(cw[1].position_ms, 30_000);
         assert_eq!(cw[1].duration_ms, None);
+    }
+
+    #[test]
+    fn the_ids_already_on_the_continue_rail_include_the_parent_show() {
+        let (pool, uid) = pool_with_user();
+        seed_show(&pool, "s1", "e", 3);
+        {
+            let conn = pool.get().unwrap();
+            conn.execute(
+                "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) \
+                 VALUES (?1,'e1',20000,100000,'2021-01-01T00:00:00Z')",
+                params![uid],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) \
+                 VALUES (?1,'m1',5000,100000,'2021-01-02T00:00:00Z')",
+                params![uid],
+            )
+            .unwrap();
+        }
+
+        let mut ids = continue_watching_ids(&pool, &uid).unwrap();
+        ids.sort();
+
+        assert_eq!(ids, vec!["e1".to_string(), "s1".to_string()]);
     }
 
     #[test]

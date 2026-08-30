@@ -2,7 +2,9 @@ use std::sync::atomic::AtomicU32;
 
 use rusqlite::params;
 
+use crate::pool::Pool;
 use crate::testing::TempPool;
+use kroma_domain::Permission;
 
 pub(super) static SEQ: AtomicU32 = AtomicU32::new(0);
 
@@ -49,4 +51,10 @@ pub(super) fn seeded() -> TempPool {
     .unwrap();
     drop(conn);
     pool
+}
+
+pub(super) fn seeded_user(pool: &Pool) -> String {
+    crate::create_user(pool, "h@e.com", "h", "hash", &[Permission::Playback])
+        .unwrap()
+        .id
 }

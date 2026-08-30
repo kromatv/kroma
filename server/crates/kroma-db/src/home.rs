@@ -55,14 +55,25 @@ pub fn recently_added_ids(pool: &Pool, n: usize) -> Result<Vec<String>> {
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
 
-/// The user's most recently finished item id (for "Because you watched …").
-pub fn last_played(pool: &Pool, user_id: &str) -> Result<Option<String>> {
+/// The user's most recently **finished** title id (for "Because you watched …").
+///
+/// Finished means what it means in "Continue watching": marked watched, or left
+/// past 95% of the runtime. Merely opening a title is not a taste signal. An
+/// episode answers as its parent show, the only seed of the two that carries an
+/// embedding to rank from.
+pub fn last_finished(pool: &Pool, user_id: &str) -> Result<Option<String>> {
+    let percent = crate::playback::FINISHED_PERCENT;
     let conn = pool.get()?;
-    let mut stmt = conn.prepare(
-        "SELECT item_id FROM play_history \
-         WHERE user_id = ?1 AND item_id IS NOT NULL \
-         ORDER BY ended_at DESC LIMIT 1",
-    )?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT COALESCE(i.show_id, f.item_id) FROM ( \
+             SELECT item_id, watched_at AS at FROM watched WHERE user_id = ?1 \
+             UNION ALL \
+             SELECT item_id, updated_at FROM progress \
+              WHERE user_id = ?1 AND duration_ms IS NOT NULL \
+                AND position_ms >= duration_ms * {percent} / 100 \
+         ) f LEFT JOIN items i ON i.id = f.item_id \
+         ORDER BY f.at DESC LIMIT 1"
+    ))?;
     let mut rows = stmt.query_map(params![user_id], |r| r.get::<_, String>(0))?;
     Ok(rows.next().transpose()?)
 }
@@ -74,7 +85,7 @@ mod tests {
     use std::sync::atomic::Ordering;
 
     #[test]
-    fn recently_added_last_played_and_trending() {
+    fn recently_added_and_trending() {
         let p = seeded();
         {
             let conn = p.get().unwrap();
@@ -94,9 +105,72 @@ mod tests {
                                                       // Newest added_at first: nogen (2022) before c2 (2021) before c1 (2020).
         let idx = |id: &str| recent.iter().position(|x| x == id).unwrap();
         assert!(idx("nogen") < idx("c2") && idx("c2") < idx("c1"));
+    }
 
-        assert!(last_played(&p, "u1").unwrap().is_some());
-        assert!(last_played(&p, "nobody").unwrap().is_none());
+    #[test]
+    fn a_film_sampled_for_a_few_seconds_seeds_nothing() {
+        let p = seeded();
+        let user = seeded_user(&p);
+        let conn = p.get().unwrap();
+        conn.execute(
+            "INSERT INTO play_history (id,user_id,item_id,kind,title,started_at,ended_at) \
+             VALUES ('p1',?1,'c1','movie','T',0,strftime('%s','now'))",
+            params![user],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) \
+             VALUES (?1,'c1',5000,7200000,'2026-01-01T00:00:00Z')",
+            params![user],
+        )
+        .unwrap();
+        drop(conn);
+
+        assert!(last_finished(&p, &user).unwrap().is_none());
+        assert!(last_finished(&p, "nobody").unwrap().is_none());
+    }
+
+    #[test]
+    fn the_newest_finished_title_is_the_seed() {
+        let p = seeded();
+        let user = seeded_user(&p);
+        let conn = p.get().unwrap();
+        conn.execute(
+            "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) \
+             VALUES (?1,'c1',6900000,7200000,'2026-01-01T00:00:00Z')",
+            params![user],
+        )
+        .unwrap();
+        drop(conn);
+
+        assert_eq!(last_finished(&p, &user).unwrap().as_deref(), Some("c1"));
+
+        p.get()
+            .unwrap()
+            .execute(
+                "INSERT INTO watched (user_id,item_id,watched_at) \
+                 VALUES (?1,'c2','2026-02-01T00:00:00Z')",
+                params![user],
+            )
+            .unwrap();
+
+        assert_eq!(last_finished(&p, &user).unwrap().as_deref(), Some("c2"));
+    }
+
+    #[test]
+    fn a_finished_episode_seeds_its_show() {
+        let p = seeded();
+        let user = seeded_user(&p);
+        p.get()
+            .unwrap()
+            .execute(
+                "INSERT INTO watched (user_id,item_id,watched_at) \
+                 VALUES (?1,'e1','2026-02-01T00:00:00Z')",
+                params![user],
+            )
+            .unwrap();
+
+        assert_eq!(last_finished(&p, &user).unwrap().as_deref(), Some("sh1"));
     }
 
     #[test]

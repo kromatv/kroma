@@ -157,8 +157,9 @@ mod tests {
             month,
             weekday,
             part_of_day: part,
-            last_played: None,
+            last_finished: None,
             watched: Vec::new(),
+            in_progress: Vec::new(),
         }
     }
 

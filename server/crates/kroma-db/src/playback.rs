@@ -22,6 +22,16 @@ pub use show_progress::*;
 pub use up_next::*;
 pub use watch_state::*;
 
+pub(crate) const RESUME_FLOOR_MS: i64 = 15_000;
+pub(crate) const FINISHED_PERCENT: i64 = 95;
+
+pub(crate) fn resumable_sql() -> String {
+    format!(
+        "p.position_ms > {RESUME_FLOOR_MS} \
+         AND (p.duration_ms IS NULL OR p.position_ms < p.duration_ms * {FINISHED_PERCENT} / 100)"
+    )
+}
+
 /// Upsert one item's playback position for a user.
 pub fn upsert_progress(
     pool: &Pool,
