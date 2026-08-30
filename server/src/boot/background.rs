@@ -19,6 +19,10 @@ pub async fn spawn(state: &state::SharedState) {
     services::search::spawn_reindex(state.clone());
 
     state.hls.spawn_reaper();
+    // Shells out to make each candidate device encode a test frame, so it must
+    // not sit in the request that starts the first session - and the operator
+    // gets the verdict in the log at boot rather than after a playback fails.
+    tokio::task::spawn_blocking(infra::hls::prime_hwaccel);
     state
         .playback
         .spawn_reaper(state.db.clone(), state.events.clone());

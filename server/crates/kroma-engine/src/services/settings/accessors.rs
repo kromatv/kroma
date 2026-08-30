@@ -52,9 +52,10 @@ pub fn server_name(settings: &Settings) -> String {
     }
 }
 
-/// Max concurrent segment ffmpegs (functional cap), 1..=32. Segments are cheap
-/// stream-copies (video is never re-encoded), so the bound is generous; it seeds
-/// the semaphore in [`crate::infra::hls::HlsEngine`].
+/// Max concurrent HLS sessions (functional cap), 1..=32. Most are stream-copies
+/// and cost almost nothing, so the bound is generous; the ones that re-encode a
+/// picture hold the box down themselves (see [`crate::infra::ffmpeg_gate`]). It
+/// seeds the semaphore in [`crate::infra::hls::HlsEngine`].
 pub fn max_transcodes(settings: &Settings) -> usize {
     settings.get_i64("maxConcurrent", 8).clamp(1, 32) as usize
 }

@@ -19,9 +19,10 @@ use tokio::time::sleep;
 use tracing::{info, warn};
 
 use super::ffmpeg::{detect_burst, keyframe_before, spawn_stream};
-use super::hwaccel::detect as detect_hwaccel;
+use super::hwaccel::Pipeline;
 use super::naming::{contains, content_type, is_safe_name, seg_index, session_dir};
-use super::StreamMode;
+use super::{StreamMode, VideoMode};
+use crate::infra::ffmpeg_gate;
 
 const FILE_WAIT: Duration = Duration::from_secs(20);
 // History kept behind the SLOWEST reader of a session (see `prune_cutoff`), so
@@ -39,6 +40,10 @@ pub(super) struct Session {
     // Real stream start (s): the keyframe at-or-before the requested anchor,
     // which the client uses as `baseSec`.
     start: f64,
+    // Held only where the picture is re-encoded on the CPU, and dropped with the
+    // session: for as long as it lives, background media passes are held to one
+    // at a time (see `infra::ffmpeg_gate`).
+    _cpu: Option<ffmpeg_gate::Reservation>,
 }
 
 impl Session {
@@ -120,6 +125,10 @@ impl Sessions {
     }
 
     /// Returns the media playlist bytes plus the real stream start (s) for `baseSec`.
+    ///
+    /// `source` is the file's own frame size where the catalog knows it: it is
+    /// what the picture costs to decode, and so half of what the box is being
+    /// asked to keep up with.
     pub async fn master(
         &self,
         key: &str,
@@ -127,8 +136,9 @@ impl Sessions {
         audio: u32,
         mode: StreamMode,
         start_secs: f64,
+        source: Option<(u32, u32)>,
     ) -> Option<(Vec<u8>, f64)> {
-        let session = match self.ensure(key, input, audio, mode, start_secs).await {
+        let session = match self.ensure(key, input, audio, mode, start_secs, source).await {
             Ok(s) => s,
             Err(e) => {
                 warn!(error = %e, session = %key, "failed to start HLS remux");
@@ -196,6 +206,7 @@ impl Sessions {
         audio: u32,
         mode: StreamMode,
         start_secs: f64,
+        source: Option<(u32, u32)>,
     ) -> std::io::Result<Arc<Session>> {
         // The anchor is part of the key, so an existing session is always the right one.
         {
@@ -207,7 +218,15 @@ impl Sessions {
         }
         // Both shell out on their first call: must not run under the lock.
         let start = keyframe_before(input, start_secs).await;
-        let accel = detect_hwaccel();
+        // Off the reactor: the first call makes every candidate device encode a
+        // test frame, and this one runs inside the request that starts a session.
+        let target = mode.video.box_size();
+        let pipeline = tokio::task::spawn_blocking(move || Pipeline::choose(source, target))
+            .await
+            .unwrap_or_else(|_| Pipeline::choose(source, target));
+        // The one case worth taking the box away from background work: no device,
+        // and a picture that has to be rebuilt frame by frame while someone waits.
+        let on_the_cpu = pipeline.on_the_cpu() && !matches!(mode.video, VideoMode::Copy);
 
         let mut map = self.inner.lock().await;
         if let Some(s) = map.get(key) {
@@ -219,8 +238,8 @@ impl Sessions {
         let dir = self.root.join(session_dir(key));
         super::reclaim::discard_dir(&dir);
         std::fs::create_dir_all(&dir)?;
-        let child = spawn_stream(input, &dir, audio, mode, start_secs, self.burst, accel)?;
-        info!(session = %key, audio, mode = ?mode, anchor = start_secs, start, accel = accel.label(), "started HLS remux");
+        let child = spawn_stream(input, &dir, audio, mode, start_secs, self.burst, pipeline)?;
+        info!(session = %key, audio, mode = ?mode, anchor = start_secs, start, accel = pipeline.accel.label(), effort = pipeline.effort.label(), "started HLS remux");
         let session = Arc::new(Session {
             dir,
             child: Mutex::new(child),
@@ -228,6 +247,7 @@ impl Sessions {
             low_seg: AtomicU64::new(u64::MAX),
             pruned: AtomicU64::new(0),
             start,
+            _cpu: on_the_cpu.then(ffmpeg_gate::reserve),
         });
         map.insert(key.to_string(), session.clone());
         Ok(session)

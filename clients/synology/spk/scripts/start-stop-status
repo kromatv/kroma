@@ -21,6 +21,19 @@ LOG="${VAR}/kroma.log"
 DATA_DIR="${KROMA_DATA_DIR:-}"
 [ -n "${DATA_DIR}" ] || DATA_DIR="${VAR}/data"
 
+# VA-API finds its driver by scanning LIBVA_DRIVERS_PATH, and the bundled static
+# ffmpeg carries no default that matches DSM's layout. Every directory a Synology
+# is known to keep one in is offered; libva ignores the ones that are not there.
+# Empty on a NAS with no driver at all, which is the same as not setting it.
+va_drivers_path() {
+    _p=""
+    for d in /var/packages/synocli-videodriver/target/lib \
+             /usr/lib/dri /usr/lib/x86_64-linux-gnu/dri; do
+        [ -d "$d" ] && _p="${_p:+$_p:}$d"
+    done
+    printf '%s' "$_p"
+}
+
 start_daemon() {
     mkdir -p "${DATA_DIR}" 2>/dev/null
     if [ ! -d "${DATA_DIR}" ]; then
@@ -28,6 +41,10 @@ start_daemon() {
         DATA_DIR="${VAR}/data"
     fi
     mkdir -p "${DATA_DIR}"
+    # Only when something was found: an empty LIBVA_DRIVERS_PATH tells libva to
+    # search nowhere, which is worse than leaving it its own default.
+    _va="${LIBVA_DRIVERS_PATH:-$(va_drivers_path)}"
+    [ -n "${_va}" ] && export LIBVA_DRIVERS_PATH="${_va}"
     PATH="${TARGET}/ffmpeg:${PATH}" \
     KROMA_PORT="${KROMA_PORT:-4040}" \
     KROMA_MOVIES_DIRS="${KROMA_MOVIES_DIRS}" \

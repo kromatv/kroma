@@ -55,18 +55,14 @@ pub async fn hls_master(
         .iter()
         .find(|t| t.index == audio)
         .map(|t| t.codec.as_str());
+    let source_frame = item.video.as_ref().and_then(|v| v.width.zip(v.height));
     let effective = mode
         .for_client_audio(selected_codec, q.copy.as_deref())
         .for_client_video(
             item.video.as_ref().map(|v| v.codec.as_str()),
             q.video.as_deref(),
         )
-        .for_client_frame(
-            item.video
-                .as_ref()
-                .and_then(|v| v.width.zip(v.height)),
-            q.maxw.zip(q.maxh),
-        );
+        .for_client_frame(source_frame, q.maxw.zip(q.maxh));
     if effective != mode {
         return Redirect::temporary(&hls_master_path(&item.id, effective, anchor, audio))
             .into_response();
@@ -86,7 +82,11 @@ pub async fn hls_master(
             "media file unavailable (mount offline?)",
         );
     }
-    match state.hls.master(&item.id, &abs, audio, mode, anchor).await {
+    match state
+        .hls
+        .master(&item.id, &abs, audio, mode, anchor, source_frame)
+        .await
+    {
         // `X-Hls-Start` is the real start (the keyframe at-or-before the anchor, where
         // `-noaccurate_seek` begins); the client needs it to align clock and subtitles.
         Some((body, start)) => {

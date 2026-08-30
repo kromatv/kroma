@@ -81,6 +81,43 @@ All configuration is via environment variables:
 | `KROMA_ALLOWED_ORIGINS`| *(empty)* | Extra browser origins allowed to read the API. See [Which browsers are answered](#which-browsers-are-answered). |
 | `RUST_LOG`         | `info`      | Standard `tracing` filter, e.g. `kroma_server=debug`. Inherited by the module sidecars. |
 | `KROMA_MODULE_LOG` | *(empty)*   | Overrides `RUST_LOG` for the module sidecars only, e.g. `kroma_indexer=debug`. Their output is drained into the core's log and Admin → Modules → *module* → Journaux. |
+| `KROMA_HWACCEL`    | *(probed)*  | Pins the re-encode pipeline: `qsv`, `vaapi`, `nvenc`, `videotoolbox`, or `software` to rule hardware out of a problem. See [Hardware transcoding](#hardware-transcoding). |
+| `KROMA_RENDER_NODE`| `/dev/dri/renderD128` | Which DRM render node VAAPI/QSV open, for a host with more than one. |
+| `KROMA_ENCODE_EFFORT`| *(from the box)* | Pins the software encoder tier: `quality` or `realtime`. |
+| `KROMA_FFMPEG_CONCURRENCY`| *(cores − 1)* | How many background media passes (storyboards, fingerprints, subtitle extraction) may run at once. |
+
+## Hardware transcoding
+
+Direct play never re-encodes anything, and most playback is direct play. The
+exception is a source the client's decoder cannot take: HEVC on an H.264-only
+TV, or a 4K frame on a decoder that stops at 1080p. That re-encode is the one
+part of the delivery path that costs real CPU, and on a NAS a single 4K→1080p
+stream will saturate the box on its own.
+
+On an Intel iGPU (QuickSync), an AMD/Intel GPU (VAAPI), an NVIDIA card (NVENC)
+or an Apple machine (VideoToolbox), the same job runs on fixed-function silicon
+at a few percent CPU. KROMA probes for one at startup, and **makes each
+candidate encode a test frame before believing it**. A device that is listed but
+has no driver, or whose render node the service user cannot open, is otherwise
+indistinguishable from no device at all.
+
+The verdict is in the log on every boot:
+
+```
+INFO video re-encodes run on hardware accel=vaapi reason=h264_vaapi encoded a test frame
+WARN video re-encodes run on the CPU reason=/dev/dri/renderD128 is not readable by this user …
+```
+
+Three things have to be true, and the log line names whichever one is not:
+
+1. **ffmpeg has the encoder.** Many static builds do not. Check with
+   `ffmpeg -hide_banner -encoders | grep -E 'h264_(vaapi|qsv|nvenc)'`.
+2. **The render node is there.** `ls -l /dev/dri` should show a `renderD*` node.
+   In Docker it has to be passed in: `--device /dev/dri:/dev/dri`.
+3. **The service user can open it.** The node is usually `root:render` (or
+   `root:videodriver` on DSM) with no access for anyone else, so the user KROMA
+   runs as must be in that group: `--group-add` under Docker, and the Synology
+   package joins `videodriver` at install.
 
 ## Behind a reverse proxy
 

@@ -42,11 +42,16 @@ TARGET="x86_64-unknown-linux-musl"
 # Digest-pinned: a moving tag swaps rustc underneath and invalidates every cached
 # build artifact (CI caches server/target across runs).
 RUST_IMAGE="${RUST_IMAGE:-messense/rust-musl-cross:x86_64-musl@sha256:ce75e9174325d4fbb3de85c309e2d7ca29f7500169bc4b5d2c611ff7e86d549a}"
-# Static ffmpeg/ffprobe, tried in order: the primary stays first so a normal build
-# ships what it always has, and BtbN's GPL static build (different machine, different
-# network) only decides whether an outage of the primary costs a release.
-FFMPEG_URL="${FFMPEG_URL:-https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz}"
-FFMPEG_FALLBACK_URL="${FFMPEG_FALLBACK_URL:-https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz}"
+# Static ffmpeg/ffprobe, tried in order. BtbN's GPL build is the primary because
+# it is the one configured with `--enable-vaapi --enable-libvpl`: every DSM box
+# with an Intel iGPU (DS918+, DS920+, DS423+ …) has a QuickSync encoder, and the
+# johnvansickle build cannot reach it - it carries libx264 and no h264_vaapi,
+# h264_qsv or h264_nvenc at all, so a 4K→1080p downscale landed on the CPU on
+# every NAS this package has ever shipped to. johnvansickle stays as the fallback
+# (different machine, different network) so an outage still produces a package,
+# at the cost of hardware transcoding until the next build.
+FFMPEG_URL="${FFMPEG_URL:-https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz}"
+FFMPEG_FALLBACK_URL="${FFMPEG_FALLBACK_URL:-https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz}"
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SKEL="$ROOT/clients/synology/spk"
@@ -101,6 +106,16 @@ fetch_ffmpeg() {
     && xz -t "$2" 2>/dev/null
 }
 
+# The cache is keyed by the URL it was filled from. Without this, changing the
+# source above would be silently ignored on every machine that already has a
+# populated cache - including the one that decides whether the release can
+# transcode on hardware.
+FF_STAMP="$FF/.source"
+if [ -x "$FF/ffmpeg" ] && [ "$(cat "$FF_STAMP" 2>/dev/null)" != "$FFMPEG_URL" ]; then
+  say "Cached ffmpeg came from a different source, refetching"
+  rm -rf "$FF"
+fi
+
 if [ ! -x "$FF/ffmpeg" ]; then
   say "Fetching static ffmpeg/ffprobe"
   if ! fetch_ffmpeg "$FFMPEG_URL" "$WORK/ff.tar.xz"; then
@@ -124,6 +139,19 @@ if [ ! -x "$FF/ffmpeg" ]; then
   # tarball, and an archive for the wrong architecture.
   "$FF/ffmpeg" -version >/dev/null 2>&1 \
     || { echo "downloaded ffmpeg does not run"; exit 1; }
+  printf '%s' "$FFMPEG_URL" > "$FF_STAMP"
+fi
+
+# Say out loud whether this package can transcode on an iGPU. Not fatal: the
+# fallback source produces a working, CPU-only package, and a release is worth
+# more than hardware transcoding. But it must never go unnoticed again.
+# The payload is a Linux binary, so only a Linux build host can be asked.
+if ! "$FF/ffmpeg" -version >/dev/null 2>&1; then
+  say "Skipping the encoder check: the payload is a Linux binary and this host cannot run it"
+elif "$FF/ffmpeg" -hide_banner -encoders 2>/dev/null | grep -qE 'h264_(vaapi|qsv)'; then
+  say "ffmpeg carries the Intel hardware encoders (QuickSync/VAAPI)"
+else
+  say "WARNING: this ffmpeg has NO hardware H.264 encoder - every re-encode on the NAS will run on the CPU"
 fi
 
 say "Staging payload"

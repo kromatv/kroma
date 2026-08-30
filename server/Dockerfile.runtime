@@ -25,6 +25,12 @@
 #     docker run -p 4040:4040 -v kroma-data:/data -v /media:/media \
 #       -e KROMA_MEDIA_DIRS=/media ghcr.io/maxscharwath/kroma:latest
 #
+# Hardware transcoding: pass the render node in, or every re-encode lands on the
+# CPU. The device alone is not enough - the container user has to be able to open
+# it, which is what --group-add is for:
+#     docker run ... --device /dev/dri:/dev/dri \
+#       --group-add "$(getent group render | cut -d: -f3)" ...
+#
 # Optional HTTPS (auto self-signed cert, off by default): publish 4443, set
 # KROMA_HTTPS=1, and on the bridge network pass the host's real IP/DNS via
 # KROMA_TLS_SANS (the container can't detect it). The cert persists in /data/tls.

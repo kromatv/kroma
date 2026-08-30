@@ -28,6 +28,7 @@ pub(in crate::infra::hls) fn fake_session(dir: PathBuf, age: Duration) -> Arc<Se
         low_seg: AtomicU64::new(u64::MAX),
         pruned: AtomicU64::new(0),
         start: 0.0,
+        _cpu: None,
     })
 }
 

@@ -14,6 +14,17 @@ services:
     ports:
       - "4040:4040" # HTTP + web app
       # - "4443:4443"   # uncomment with KROMA_HTTPS=1 below
+    # The iGPU, without which every re-encode runs on the CPU. Direct play never
+    # needs it; a 4K source going to a 1080p-only decoder does, and one such
+    # stream will saturate a NAS on its own. Uncomment on any host with Intel
+    # QuickSync or an AMD/Intel GPU (`ls /dev/dri` shows a renderD* node).
+    # The container user must also be able to open it: on most hosts that means
+    # adding the render group's numeric id to `group_add` below.
+    # devices:
+    #   - /dev/dri:/dev/dri
+    # group_add:
+    #   - "44"   # video   (check with: getent group video render)
+    #   - "104"  # render
     environment:
       # Library roots INSIDE the container (match the bind-mounts below).
       KROMA_MEDIA_DIRS: /media

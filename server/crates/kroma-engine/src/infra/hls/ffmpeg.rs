@@ -6,11 +6,11 @@ use std::process::Stdio;
 
 use tokio::process::{Child, Command};
 
-use super::hwaccel::HwAccel;
+use super::hwaccel::Pipeline;
 use super::naming::contains;
 use super::{StreamMode, VideoMode};
 
-const SEGMENT_SECONDS: &str = "6";
+const SEGMENT_SECONDS: u32 = 6;
 /// The write pattern handed to `-hls_segment_filename`; `naming::seg_index`
 /// parses what it produces.
 pub const SEGMENT_PATTERN: &str = "seg_%05d.m4s";
@@ -19,6 +19,19 @@ pub const SEGMENT_PATTERN: &str = "seg_%05d.m4s";
 const READRATE: &str = "2.0";
 // Seconds read at full speed before READRATE throttling starts (ffmpeg >= 6.1).
 const READRATE_BURST: &str = "60";
+
+/// A keyframe every segment, counted from the first frame OUT rather than from
+/// the source clock: a seek runs under `-copyts`, so an expression in absolute
+/// time would force a keyframe on every frame until `n_forced * 6` caught up
+/// with the anchor.
+///
+/// Left alone, the encoder keys on its own schedule (~10 s at libx264's default
+/// keyint) and the HLS muxer can only cut where it finds one, so segments run
+/// half again as long as the playlist asks for and the first one costs that much
+/// media before anything can be played.
+fn keyframe_cadence() -> String {
+    format!("expr:if(isnan(prev_forced_t),1,gte(t,prev_forced_t+{SEGMENT_SECONDS}))")
+}
 
 /// What `ffmpeg <args>` printed, both streams together because which one carries
 /// the answer varies by build. Empty where ffmpeg could not be run at all.
@@ -88,7 +101,7 @@ pub fn spawn_stream(
     mode: StreamMode,
     start_secs: f64,
     burst: bool,
-    accel: HwAccel,
+    pipeline: Pipeline,
 ) -> std::io::Result<Child> {
     let seeking = start_secs > 0.5;
     let copying_video = matches!(mode.video, VideoMode::Copy);
@@ -102,7 +115,7 @@ pub fn spawn_stream(
     } else {
         // Puts the decode on the device too where there is one, so a 4K source
         // never touches the CPU on its way to a 1080p screen.
-        cmd.args(accel.input_args());
+        cmd.args(pipeline.accel.input_args(pipeline.effort));
     }
     if seeking {
         // Required for A/V sync: an accurate seek backs the video to a keyframe but
@@ -128,14 +141,15 @@ pub fn spawn_stream(
     } else {
         // The picture only shrinks when the client said its decoder needs it to;
         // the filter runs in whatever memory the device decoded into.
-        if let Some(filter) = accel.video_filter(mode.video.box_size()) {
+        if let Some(filter) = pipeline.accel.video_filter(mode.video.box_size(), pipeline.effort) {
             cmd.arg("-vf").arg(filter);
         }
         // 8-bit H.264 whatever the device, because the re-encode exists for
         // decoders the source defeats and must land on the one profile every
         // target reads. HDR sources are not tone-mapped (no zimg) and come out
         // washed-out.
-        cmd.args(accel.encoder_args());
+        cmd.args(pipeline.accel.encoder_args(pipeline.effort));
+        cmd.arg("-force_key_frames").arg(keyframe_cadence());
     }
     if mode.audio.transcode() {
         if let Some(af) = mode.audio.filter_chain() {
@@ -145,7 +159,8 @@ pub fn spawn_stream(
     } else {
         cmd.args(["-c:a", "copy"]);
     }
-    cmd.args(["-f", "hls", "-hls_time", SEGMENT_SECONDS])
+    let segment_seconds = SEGMENT_SECONDS.to_string();
+    cmd.args(["-f", "hls", "-hls_time", segment_seconds.as_str()])
         .args(["-hls_playlist_type", "event"])
         .args(["-hls_segment_type", "fmp4"])
         .args(["-hls_fmp4_init_filename", "init.mp4"])
@@ -165,4 +180,26 @@ pub fn spawn_stream(
         }
     }
     cmd.spawn()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_keyframe_cadence_is_measured_from_the_first_frame_out() {
+        let expr = keyframe_cadence();
+
+        assert!(expr.contains("prev_forced_t"), "{expr}");
+        assert!(expr.contains("isnan"), "{expr}");
+        // Never `n_forced * 6`: under `-copyts` a seek starts the output at the
+        // anchor, and an expression in absolute time forces a keyframe on every
+        // frame until the count has caught up with it.
+        assert!(!expr.contains("n_forced"), "{expr}");
+    }
+
+    #[test]
+    fn a_keyframe_lands_on_every_segment_boundary() {
+        assert!(keyframe_cadence().contains(&format!("+{SEGMENT_SECONDS})")));
+    }
 }

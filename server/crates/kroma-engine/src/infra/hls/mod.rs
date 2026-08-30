@@ -14,6 +14,9 @@ mod hwaccel;
 mod naming;
 mod reclaim;
 mod session;
+mod software;
+
+pub use hwaccel::prime as prime_hwaccel;
 
 use std::path::Path;
 use std::sync::Arc;
@@ -313,6 +316,9 @@ impl HlsEngine {
     /// (input `-ss`, 0 = start), muxing the `audio`-th audio track. Returns the
     /// playlist text + the REAL stream start (s) - the keyframe at-or-before
     /// `anchor` - for the client's `baseSec`.
+    ///
+    /// `source` is the file's own frame size where the catalog knows it, which is
+    /// what a re-encode has to decode before it can encode anything.
     pub async fn master(
         &self,
         item_id: &str,
@@ -320,11 +326,12 @@ impl HlsEngine {
         audio: u32,
         mode: StreamMode,
         anchor: u64,
+        source: Option<(u32, u32)>,
     ) -> Option<(String, f64)> {
         let key = session_key(item_id, mode, anchor, audio);
         let (bytes, start) = self
             .sessions
-            .master(&key, Path::new(input), audio, mode, anchor as f64)
+            .master(&key, Path::new(input), audio, mode, anchor as f64, source)
             .await?;
         Some((String::from_utf8(bytes).ok()?, start))
     }

@@ -79,6 +79,35 @@ package.
 > `{ "defaults": { "run-as": "root" } }` and rebuild it then reads everything
 > without granting permissions (less safe; your call for a personal NAS).
 
+## Hardware transcoding (Intel models)
+
+Most playback is direct play and re-encodes nothing. What costs CPU is a source
+the player's decoder refuses, say a 4K frame going to a 1080p-only decoder, and
+on a NAS one such stream will take the whole box.
+
+Every Intel Synology (DS918+, DS920+, DS423+, DS220+ …) has a QuickSync encoder
+that does the same job at a few percent CPU. The package now ships an ffmpeg
+built with VAAPI/QSV and joins the `videodriver` group at install, which are the
+two things that were missing: the previous static ffmpeg carried libx264 and no
+hardware encoder at all, so the silicon was unreachable however the NAS was
+configured.
+
+Check what your box settled on after an upgrade:
+
+```bash
+grep 'video re-encodes' /var/packages/kroma/var/kroma.log
+```
+
+`accel=vaapi` or `accel=qsv` means it is on the iGPU. `run on the CPU` names the
+reason. The usual one on a model with no iGPU (the Ryzen units: DS923+, DS1522+,
+DS723+) is that there is genuinely nothing to use, and playback of a 4K source to
+a 1080p-only device will remain slow. Direct play to a capable client is the
+answer there.
+
+VA-API also needs a driver. DSM does not always carry one; SynoCommunity's
+`synocli-videodriver` package installs it where it is missing, and the service
+picks it up from `/var/packages/synocli-videodriver/target/lib` on restart.
+
 ## Notes
 - **x86_64 only** for now (covers DS2xx+/DS9xx+/DS16xx+ etc.). ARM models need an
   `aarch64-musl` build ask and I'll add the target.
