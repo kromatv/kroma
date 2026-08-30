@@ -46,8 +46,9 @@ export const TV_FLAGS: PlayerFlags = {
 
 /** Why the player asked to be closed: `close` is the chrome's own back control,
  *  `back` the remote's Back button (and the key a browser TV shell delivers it
- *  as), `stop` the remote's Stop media key. */
-export type PlayerCloseReason = 'close' | 'back' | 'stop';
+ *  as), `stop` the remote's Stop media key, `ended` the film running out with
+ *  nothing to offer after it. */
+export type PlayerCloseReason = 'close' | 'back' | 'stop' | 'ended';
 
 export interface PlayerCloseDetails {
   reason: PlayerCloseReason;

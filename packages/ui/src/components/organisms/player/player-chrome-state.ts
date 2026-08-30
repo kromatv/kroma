@@ -11,6 +11,7 @@ function deriveChrome(
   nav: ReturnType<typeof usePlayerNav>,
   upNext: UpNextData,
   panelCovers: boolean,
+  over = false,
 ) {
   const settingsOpen =
     nav.overlay === 'settings' || nav.overlay === 'audio' || nav.overlay === 'subtitles';
@@ -19,8 +20,8 @@ function deriveChrome(
   // card takes is the surface's business (see lib/surface-shrink).
   const settingsShrink = settingsOpen && !panelCovers;
   const hasUpNext = upNext.nextEpisodes.length + upNext.recommendations.length > 0;
-  const peekVisible = nav.revealed && hasUpNext && !settingsShrink && !nav.overlay;
-  const chromeShown = nav.revealed && !nav.overlay;
+  const peekVisible = !over && nav.revealed && hasUpNext && !settingsShrink && !nav.overlay;
+  const chromeShown = !over && nav.revealed && !nav.overlay;
   return { settingsOpen, sheetOpen, settingsShrink, peekVisible, chromeShown };
 }
 

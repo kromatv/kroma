@@ -26,6 +26,25 @@ function handleCreditsKey(
   return false;
 }
 
+function handlePostPlayKey(
+  key: RemoteKey,
+  focus: 'play' | 'home',
+  setFocus: Dispatch<SetStateAction<'play' | 'home'>>,
+  onPlay: () => void,
+  onHome: () => void,
+): void {
+  if (key === 'Left' || key === 'Right') {
+    setFocus((f) => (f === 'play' ? 'home' : 'play'));
+    return;
+  }
+  if (key === 'Enter' || key === 'Play' || key === 'PlayPause') {
+    if (focus === 'play') onPlay();
+    else onHome();
+    return;
+  }
+  if (key === 'Back') onHome();
+}
+
 function playerInputHandlers(
   nav: ReturnType<typeof usePlayerNav>,
   c: PlayerController,
@@ -51,4 +70,4 @@ function playerInputHandlers(
   };
 }
 
-export { handleCreditsKey, playerInputHandlers };
+export { handleCreditsKey, handlePostPlayKey, playerInputHandlers };

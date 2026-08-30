@@ -1710,6 +1710,7 @@
   "player.directPlayUnknown": "Codec inconnu, lecture directe tentée.",
   "player.directPlayVp9": "Lecture directe en VP9.",
   "player.dismiss": "Ignorer",
+  "player.finishedWatching": "Vous avez terminé {title}",
   "player.forward": "Avancer",
   "player.frameTooLarge": "Cette vidéo est trop grande pour cet appareil",
   "player.frameTooLargeHint": "Elle est en {source} et cet appareil lit jusqu'en {ceiling}. Essayez sur un autre.",

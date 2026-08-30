@@ -63,3 +63,36 @@ describe('routeRemoteKey while locked', () => {
     expect(poke).not.toHaveBeenCalled();
   });
 });
+
+describe('routeRemoteKey once the film is over', () => {
+  function over() {
+    const handleKey = vi.fn();
+    const poke = vi.fn();
+    const onKey = vi.fn();
+    const params = {
+      nav: nav({ handleKey, poke, revealed: true, overlay: null }),
+      panelRef: { current: null },
+      locked: false,
+      credits: { active: true, onKey: vi.fn(() => true) },
+      postPlay: { active: true, onKey },
+    } as unknown as PlayerKeysParams;
+    return { params, handleKey, poke, onKey };
+  }
+
+  it('hands the end screen every key, and the chrome none of them', () => {
+    const { params, handleKey, poke, onKey } = over();
+    for (const key of ['Right', 'Enter', 'Back', 'PlayPause', 'Down'] as const) {
+      routeRemoteKey(params, key);
+    }
+    expect(onKey).toHaveBeenCalledTimes(5);
+    expect(handleKey).not.toHaveBeenCalled();
+    expect(poke).not.toHaveBeenCalled();
+  });
+
+  it('outranks the credits card, which belongs to a film still running', () => {
+    const { params, onKey } = over();
+    routeRemoteKey(params, 'Enter');
+    expect(params.credits?.onKey).not.toHaveBeenCalled();
+    expect(onKey).toHaveBeenCalledWith('Enter');
+  });
+});

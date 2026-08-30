@@ -163,6 +163,8 @@ export function TvPlayer() {
       onPlayItem={onPlayItem}
       onPlayNext={next ? goNext : undefined}
       nextTitle={nextTitle}
+      postPlay={up.postPlay}
+      onGoHome={nav.home}
       introActive={introActive}
       onSkipIntro={intro ? () => pb.seekTo(intro.endMs / 1000) : undefined}
       onClose={nav.back}

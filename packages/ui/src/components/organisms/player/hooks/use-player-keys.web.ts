@@ -106,6 +106,18 @@ export function usePlayerKeys(params: Readonly<PlayerKeysParams>): void {
       return;
     }
 
+    // The end-of-film screen is a screen of its own: nothing is playing, so the
+    // media shortcuts below have nothing to act on, and its two buttons are a
+    // row Tab walks the way the remote does.
+    if (params.postPlay?.active) {
+      const tab = e.shiftKey ? 'Left' : 'Right';
+      const key = e.key === 'Tab' ? tab : resolveRemoteKey(e);
+      if (!key) return;
+      e.preventDefault();
+      routeRemoteKey(params, key);
+      return;
+    }
+
     // Tab walks the chrome, and never the browser's own tab order: the chrome
     // is the only focus this screen has, so a second one behind it would take
     // the keyboard somewhere the eye is not.

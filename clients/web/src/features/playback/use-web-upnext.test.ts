@@ -53,7 +53,7 @@ describe('what it recommends against', () => {
   it('says nothing rather than throwing when the server will not answer', async () => {
     api.similar.mockRejectedValue(new Error('offline'));
     const { result } = renderHook(() => useWebUpNext(t, MOVIE));
-    await waitFor(() => expect(result.current.recommendations).toEqual([]));
+    await waitFor(() => expect(result.current.data.recommendations).toEqual([]));
   });
 
   it('stops at eighteen recommendations, however many came back', async () => {
@@ -61,14 +61,14 @@ describe('what it recommends against', () => {
       Array.from({ length: 40 }, (_, i) => ({ ...MOVIE, id: `r${i}` }) as MediaItem),
     );
     const { result } = renderHook(() => useWebUpNext(t, MOVIE));
-    await waitFor(() => expect(result.current.recommendations).toHaveLength(18));
+    await waitFor(() => expect(result.current.data.recommendations).toHaveLength(18));
   });
 });
 
 describe('the cards', () => {
   it("titles an episode by the episode's own name, with the runtime on the sub-line", () => {
     const { result } = renderHook(() => useWebUpNext(t, MOVIE, [EPISODE]));
-    const card = result.current.nextEpisodes[0];
+    const card = result.current.data.nextEpisodes[0];
     expect(card?.title).toBe('Good News About Hell');
     expect(card?.subtitle).toBe('S1 E1 · 53min');
   });
@@ -76,23 +76,23 @@ describe('the cards', () => {
   it('falls back to the show title for an episode that has no name of its own', () => {
     const unnamed = { ...EPISODE, episodeTitle: undefined } as unknown as MediaItem;
     const { result } = renderHook(() => useWebUpNext(t, MOVIE, [unnamed]));
-    expect(result.current.nextEpisodes[0]?.title).toBe('Severance');
+    expect(result.current.data.nextEpisodes[0]?.title).toBe('Severance');
   });
 
   it('asks for artwork at the width the card is drawn', () => {
     const { result } = renderHook(() => useWebUpNext(t, MOVIE, [MOVIE]));
-    expect(result.current.nextEpisodes[0]?.posterUrl).toContain('?w=');
+    expect(result.current.data.nextEpisodes[0]?.posterUrl).toContain('?w=');
     expect(api.backdropFor).toHaveBeenCalledWith(MOVIE, expect.any(Number));
   });
 
   it('falls back to the poster where there is no backdrop', () => {
     api.backdropFor.mockReturnValue(null as unknown as string);
     const { result } = renderHook(() => useWebUpNext(t, MOVIE, [MOVIE]));
-    expect(result.current.nextEpisodes[0]?.posterUrl).toContain('/poster/');
+    expect(result.current.data.nextEpisodes[0]?.posterUrl).toContain('/poster/');
   });
 
   it('carries the first genre as the category label', () => {
     const { result } = renderHook(() => useWebUpNext(t, MOVIE, [MOVIE]));
-    expect(result.current.nextEpisodes[0]?.categoryLabel).toBe('genre.science-fiction');
+    expect(result.current.data.nextEpisodes[0]?.categoryLabel).toBe('genre.science-fiction');
   });
 });

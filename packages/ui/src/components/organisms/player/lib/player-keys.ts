@@ -15,6 +15,9 @@ export interface PlayerKeysParams {
   locked: boolean;
   intro?: { active: boolean; onSkip: () => void };
   credits?: { active: boolean; onKey: (key: RemoteKey) => boolean };
+  /** The end-of-film screen. While it is up there is no film left to drive, so
+   *  it takes every key rather than getting first refusal on some. */
+  postPlay?: { active: boolean; onKey: (key: RemoteKey) => void };
 }
 
 /**
@@ -34,14 +37,19 @@ export function tabDirection(nav: PlayerNav, backwards: boolean): RemoteKey {
 
 /**
  * Route one logical remote key (§3, §15). While locked only Back / OK get
- * through, and both mean "dismiss". Otherwise the chrome reveals first and
- * swallows the key (§16), then the panel, skip-intro and credits card each get
- * first refusal before the nav machine sees it.
+ * through, and both mean "dismiss". The end-of-film screen takes everything.
+ * Otherwise the chrome reveals first and swallows the key (§16), then the
+ * panel, skip-intro and credits card each get first refusal before the nav
+ * machine sees it.
  */
 export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): void {
   const { nav } = p;
   if (p.locked) {
     if (key === 'Back' || key === 'Enter') nav.handleKey('Back');
+    return;
+  }
+  if (p.postPlay?.active) {
+    p.postPlay.onKey(key);
     return;
   }
 

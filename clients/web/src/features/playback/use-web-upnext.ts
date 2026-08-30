@@ -1,5 +1,11 @@
 import { formatRuntime, genreLabels, type MediaItem, metaLine, type Translate } from '@kroma/core';
-import { UP_NEXT_ART_W, type UpNextData, type UpNextItem } from '@kroma/ui';
+import {
+  POST_PLAY_ART_W,
+  type PostPlayItem,
+  UP_NEXT_ART_W,
+  type UpNextData,
+  type UpNextItem,
+} from '@kroma/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { kromaClient } from '#web/shared/lib/api';
 
@@ -19,18 +25,37 @@ function toCard(t: Translate, item: MediaItem): UpNextItem {
   };
 }
 
+function toOffer(item: MediaItem): PostPlayItem {
+  const c = kromaClient();
+  return {
+    id: item.id,
+    title: item.title,
+    subtitle: metaLine(item),
+    rating: item.metadata?.rating,
+    overview: item.metadata?.overview,
+    artUrl: c.backdropFor(item, POST_PLAY_ART_W) ?? c.posterFor(item, POST_PLAY_ART_W),
+  };
+}
+
 // Stable empty default so the memo below doesn't recompute for a movie.
 const NO_EPISODES: MediaItem[] = [];
 
+/** The up-next data plus the one film the end of this one offers. */
+export interface WebUpNext {
+  data: UpNextData;
+  postPlay: PostPlayItem | null;
+}
+
 /**
  * "À suivre" data (§10) for the web player: the upcoming episodes plus
- * content-similar recommendations, mapped to the shared up-next card shape.
+ * content-similar recommendations, mapped to the shared up-next card shape,
+ * and the nearest neighbour as the film the end of this one offers.
  */
 export function useWebUpNext(
   t: Translate,
   item: MediaItem,
   following: MediaItem[] = NO_EPISODES,
-): UpNextData {
+): WebUpNext {
   const [similar, setSimilar] = useState<MediaItem[]>([]);
   // Recommend against the SHOW when watching an episode: episodes carry no
   // embedding of their own, so similar(episodeId) would be empty.
@@ -46,11 +71,17 @@ export function useWebUpNext(
     };
   }, [recoId]);
 
-  return useMemo(
-    () => ({
-      nextEpisodes: following.map((e) => toCard(t, e)),
-      recommendations: similar.slice(0, 18).map((s) => toCard(t, s)),
-    }),
-    [t, following, similar],
-  );
+  return useMemo(() => {
+    // A library that holds the same film twice answers itself as its own
+    // nearest neighbour, and offering what just finished is worse than offering
+    // nothing.
+    const offer = similar.find((s) => s.id !== item.id) ?? null;
+    return {
+      data: {
+        nextEpisodes: following.map((e) => toCard(t, e)),
+        recommendations: similar.slice(0, 18).map((s) => toCard(t, s)),
+      },
+      postPlay: offer ? toOffer(offer) : null,
+    };
+  }, [t, item.id, following, similar]);
 }

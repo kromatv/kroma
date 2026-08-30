@@ -7,7 +7,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
 import { DEFAULT_SUB_APPEARANCE } from './lib/subtitle-appearance';
 import type { CreditsCardItem } from './parts/credits-card';
+import type { PostPlayItem } from './parts/post-play';
 import type { SubtitleGenBundle } from './parts/settings-panel/settings/gen';
+import type { UpNextData } from './parts/up-next-sheet';
 import { Player } from './player';
 import { fakeController } from './player.fixture';
 import { type PlayerCloseDetails, type PlayerController, WEB_FLAGS } from './types';
@@ -31,12 +33,18 @@ const media = (
   </Player.Media>
 );
 
+const NO_UP_NEXT: UpNextData = { nextEpisodes: [], recommendations: [] };
+
 interface Over {
   onClose?: (details: PlayerCloseDetails) => void;
   controller?: PlayerController;
   ref?: Ref<View>;
   onPlayNext?: () => void;
   nextTitle?: CreditsCardItem;
+  upNext?: UpNextData;
+  postPlay?: PostPlayItem;
+  onGoHome?: () => void;
+  onPlayItem?: (item: { id: string }) => void;
 }
 
 function player(children: ReactNode, over: Over = {}) {
@@ -51,9 +59,12 @@ function player(children: ReactNode, over: Over = {}) {
         appearance={DEFAULT_SUB_APPEARANCE}
         onAppearanceChange={() => {}}
         subtitleGen={NO_GEN}
-        upNext={{ nextEpisodes: [], recommendations: [] }}
+        upNext={over.upNext ?? NO_UP_NEXT}
         onPlayNext={over.onPlayNext}
         nextTitle={over.nextTitle}
+        postPlay={over.postPlay}
+        onGoHome={over.onGoHome}
+        onPlayItem={over.onPlayItem}
         onClose={over.onClose ?? (() => {})}
       >
         {children}
@@ -152,6 +163,90 @@ describe('<Player.Root> says why it was closed', () => {
     render(player(media, { onClose }));
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledWith({ reason: 'back' });
+  });
+});
+
+const OFFER: PostPlayItem = {
+  id: 'br',
+  title: 'Blade Runner',
+  subtitle: '1982 · 1h57',
+  overview: 'A blade runner hunts four replicants.',
+};
+
+describe('<Player.Root> when the film is over', () => {
+  it('names the film that just finished, so the screen says where the viewer is', () => {
+    const { rerender } = render(player(media, { postPlay: OFFER }));
+
+    rerender(player(media, { postPlay: OFFER, controller: fakeController({ endedNonce: 1 }) }));
+
+    expect(screen.getByText('You finished Blade Runner 2049')).toBeTruthy();
+  });
+
+  it('offers the next film instead of leaving', () => {
+    const onClose = vi.fn();
+    const { rerender } = render(player(media, { onClose, postPlay: OFFER }));
+    expect(screen.queryByText('Blade Runner')).toBeNull();
+
+    rerender(
+      player(media, { onClose, postPlay: OFFER, controller: fakeController({ endedNonce: 1 }) }),
+    );
+
+    expect(screen.getByText('Blade Runner')).toBeTruthy();
+    expect(screen.getByText('A blade runner hunts four replicants.')).toBeTruthy();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('takes the up-next peek off the stage: the end screen is the whole screen', () => {
+    const upNext = {
+      nextEpisodes: [],
+      recommendations: [{ id: 'mm', title: 'Memories of Murder' }],
+    };
+    const { rerender } = render(player(media, { postPlay: OFFER, upNext }));
+    expect(screen.getByText('Memories of Murder')).toBeTruthy();
+
+    rerender(
+      player(media, { postPlay: OFFER, upNext, controller: fakeController({ endedNonce: 1 }) }),
+    );
+
+    expect(screen.queryByText('Memories of Murder')).toBeNull();
+    expect(screen.getByText('Blade Runner')).toBeTruthy();
+  });
+
+  it('plays the offered film on OK, which opens on the play button', () => {
+    const onPlayItem = vi.fn();
+    const { rerender } = render(player(media, { postPlay: OFFER, onPlayItem }));
+    rerender(
+      player(media, { postPlay: OFFER, onPlayItem, controller: fakeController({ endedNonce: 1 }) }),
+    );
+
+    fireEvent.keyDown(window, { key: 'Enter' });
+
+    expect(onPlayItem).toHaveBeenCalledWith(expect.objectContaining({ id: 'br' }));
+  });
+
+  it('reaches home with one press to the right, and Back goes there too', () => {
+    const onGoHome = vi.fn();
+    const onPlayItem = vi.fn();
+    const props = { postPlay: OFFER, onGoHome, onPlayItem };
+    const { rerender } = render(player(media, props));
+    rerender(player(media, { ...props, controller: fakeController({ endedNonce: 1 }) }));
+
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    fireEvent.keyDown(window, { key: 'Enter' });
+    expect(onGoHome).toHaveBeenCalledTimes(1);
+    expect(onPlayItem).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onGoHome).toHaveBeenCalledTimes(2);
+  });
+
+  it('leaves as `ended` when there is no film to offer', () => {
+    const onClose = vi.fn();
+    const { rerender } = render(player(media, { onClose }));
+
+    rerender(player(media, { onClose, controller: fakeController({ endedNonce: 1 }) }));
+
+    expect(onClose).toHaveBeenCalledWith({ reason: 'ended' });
   });
 });
 

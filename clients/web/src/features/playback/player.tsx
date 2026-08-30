@@ -37,6 +37,7 @@ export function Player({
   following,
   onPlayNext,
   onPlayItem,
+  onGoHome,
   onClose,
 }: Readonly<{
   item: MovieView;
@@ -44,6 +45,7 @@ export function Player({
   following?: MediaItem[];
   onPlayNext?: () => void;
   onPlayItem?: (id: string) => void;
+  onGoHome?: () => void;
   onClose: () => void;
 }>) {
   const t = useT();
@@ -141,10 +143,12 @@ export function Player({
       appearance={appearance}
       onAppearanceChange={setAppearance}
       subtitleGen={subtitleGen}
-      upNext={upNext}
+      upNext={upNext.data}
       onPlayItem={(i) => onPlayItem?.(i.id)}
       onPlayNext={onPlayNext}
       nextTitle={nextTitle}
+      postPlay={upNext.postPlay}
+      onGoHome={onGoHome}
       introActive={introActive}
       onSkipIntro={intro ? () => pb.seekTo(intro.endMs / 1000) : undefined}
       // The shared chrome is typed against React Native, but under

@@ -1710,6 +1710,7 @@
   "player.directPlayUnknown": "Unknown codec, trying direct play.",
   "player.directPlayVp9": "Direct play in VP9.",
   "player.dismiss": "Dismiss",
+  "player.finishedWatching": "You finished {title}",
   "player.forward": "Forward",
   "player.frameTooLarge": "This video is too big for this device",
   "player.frameTooLargeHint": "It is in {source} and this device plays up to {ceiling}. Try it on another one.",
