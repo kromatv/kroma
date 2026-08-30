@@ -3,12 +3,16 @@
 use anyhow::Result;
 use rusqlite::params;
 
+use super::on_deck::on_deck;
 use crate::hydrate::items_by_ids_ordered;
 use crate::pool::Pool;
 use crate::rows::parse_metadata;
 use kroma_domain::{ContinueItem, Kind, MediaItem};
 
-/// "Continue watching": resumable items (started, not yet ~finished), newest
+const LIMIT: usize = 30;
+
+/// "Continue watching": resumable items (started, not yet ~finished), plus the
+/// episode a show is left on when none of it is mid-play (at position 0). Newest
 /// first, each carried as a full [`MediaItem`] so clients render normal cards.
 pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>> {
     let conn = pool.get()?;
@@ -18,14 +22,25 @@ pub fn continue_watching(pool: &Pool, user_id: &str) -> Result<Vec<ContinueItem>
          FROM progress p JOIN items i ON i.id = p.item_id \
          WHERE p.user_id = ?1 AND p.position_ms > 15000 \
            AND (p.duration_ms IS NULL OR p.position_ms < p.duration_ms * 95 / 100) \
-         ORDER BY p.updated_at DESC LIMIT 30",
+         ORDER BY p.updated_at DESC LIMIT ?2",
     )?;
-    let rows: Vec<(String, i64, Option<i64>, String)> = stmt
-        .query_map(params![user_id], |r| {
+    let mut rows: Vec<(String, i64, Option<i64>, String)> = stmt
+        .query_map(params![user_id, LIMIT as i64], |r| {
             Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
         })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     drop(stmt);
+
+    // A show whose last episode was finished holds no resume row, so it would fall
+    // off the list entirely: the episode it is left on joins at position 0, ordered
+    // among the rest by when that show was last watched.
+    rows.extend(
+        on_deck(&conn, user_id, LIMIT)?
+            .into_iter()
+            .map(|(id, at)| (id, 0, None, at)),
+    );
+    rows.sort_by(|a, b| b.3.cmp(&a.3));
+    rows.truncate(LIMIT);
 
     let ids: Vec<&str> = rows.iter().map(|(id, _, _, _)| id.as_str()).collect();
     let items = items_by_ids_ordered(&conn, &ids)?;
@@ -165,5 +180,59 @@ mod tests {
         // Poster comes from the show; backdrop keeps the episode-specific still.
         assert_eq!(meta.poster_url.as_deref(), Some("show-poster.jpg"));
         assert_eq!(meta.backdrop_url.as_deref(), Some("episode-still.jpg"));
+    }
+
+    #[test]
+    fn continue_watching_offers_the_next_episode_once_one_is_finished() {
+        let (pool, uid) = pool_with_user();
+        seed_show(&pool, "s1", "e", 3);
+
+        {
+            let conn = pool.get().unwrap();
+            conn.execute(
+                "INSERT INTO watched (user_id,item_id,watched_at) \
+                 VALUES (?1,'e1','2021-01-05T00:00:00Z')",
+                params![uid],
+            )
+            .unwrap();
+        }
+
+        let cw = continue_watching(&pool, &uid).unwrap();
+
+        let ids: Vec<&str> = cw.iter().map(|c| c.item.id.as_str()).collect();
+        assert_eq!(ids, vec!["e2"]);
+        assert_eq!(cw[0].position_ms, 0);
+        assert_eq!(cw[0].updated_at, "2021-01-05T00:00:00Z");
+    }
+
+    #[test]
+    fn continue_watching_skips_a_show_caught_up_or_already_mid_episode() {
+        let (pool, uid) = pool_with_user();
+        seed_show(&pool, "s1", "a", 2);
+        seed_show(&pool, "s2", "b", 2);
+
+        {
+            let conn = pool.get().unwrap();
+            for id in ["a1", "a2", "b1"] {
+                conn.execute(
+                    "INSERT INTO watched (user_id,item_id,watched_at) \
+                     VALUES (?1,?2,'2021-01-01T00:00:00Z')",
+                    params![uid, id],
+                )
+                .unwrap();
+            }
+            conn.execute(
+                "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) \
+                 VALUES (?1,'b2',20000,100000,'2021-01-02T00:00:00Z')",
+                params![uid],
+            )
+            .unwrap();
+        }
+
+        let cw = continue_watching(&pool, &uid).unwrap();
+
+        let ids: Vec<&str> = cw.iter().map(|c| c.item.id.as_str()).collect();
+        assert_eq!(ids, vec!["b2"]);
+        assert_eq!(cw[0].position_ms, 20_000);
     }
 }

@@ -10,6 +10,7 @@
 //! session.
 
 mod ffmpeg;
+mod hwaccel;
 mod naming;
 mod reclaim;
 mod session;
@@ -19,14 +20,72 @@ use std::sync::Arc;
 
 use session::Sessions;
 
-/// One program's video treatment: stream-copy, or a transcode to the 8-bit H.264
-/// every target decodes. A picture is orders of magnitude dearer to re-encode
-/// than a soundtrack, so [`StreamMode::for_client_video`] is the only thing that
-/// ever reaches for `H264`.
+/// The boxes a downscale fits the picture inside. A BOX rather than a height,
+/// because a decoder's ceiling is two numbers and scope content hits the width
+/// one first: 3840x1604 is under a 1920-tall limit and still four times too wide.
+/// A closed set, because the box is part of the session key and every distinct
+/// value is another ffmpeg and another copy of the segments on disk.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Rung {
+    P1080,
+    P720,
+}
+
+impl Rung {
+    /// Width, height. The picture keeps its aspect and fits INSIDE this, so a
+    /// scope frame comes out wider and shorter than the box.
+    pub const fn box_size(self) -> (u32, u32) {
+        match self {
+            Self::P1080 => (1920, 1080),
+            Self::P720 => (1280, 720),
+        }
+    }
+
+    /// The largest rung that fits inside a decoder capped at `max`, or None when
+    /// even the smallest does not (a device no downscale reaches).
+    fn under(max: (u32, u32)) -> Option<Self> {
+        [Self::P1080, Self::P720].into_iter().find(|r| {
+            let (w, h) = r.box_size();
+            w <= max.0 && h <= max.1
+        })
+    }
+
+    const fn token(self) -> &'static str {
+        match self {
+            Self::P1080 => "h264-1080-",
+            Self::P720 => "h264-720-",
+        }
+    }
+}
+
+/// One program's video treatment: stream-copy, a transcode to the 8-bit H.264
+/// every target decodes, or that transcode scaled down to a rung the client's
+/// decoder accepts. A picture is orders of magnitude dearer to re-encode than a
+/// soundtrack, so [`StreamMode::for_client_video`] is the only thing that ever
+/// reaches past `Copy`.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum VideoMode {
     Copy,
     H264,
+    H264At(Rung),
+}
+
+impl VideoMode {
+    /// The box the picture is fitted inside, or None where it keeps its own size.
+    pub const fn box_size(self) -> Option<(u32, u32)> {
+        match self {
+            Self::H264At(rung) => Some(rung.box_size()),
+            Self::Copy | Self::H264 => None,
+        }
+    }
+
+    const fn token(self) -> &'static str {
+        match self {
+            Self::Copy => "",
+            Self::H264 => H264_PREFIX,
+            Self::H264At(rung) => rung.token(),
+        }
+    }
 }
 
 /// One program's audio treatment: stream-copy, plain stereo-AAC transcode, or an
@@ -60,9 +119,15 @@ impl StreamMode {
 
     /// Parse the `{mode}` URL path segment (also the token used in session keys).
     pub fn parse(s: &str) -> Option<Self> {
-        let (video, rest) = match s.strip_prefix(H264_PREFIX) {
-            Some(rest) => (VideoMode::H264, rest),
-            None => (VideoMode::Copy, s),
+        // Longest prefix first: `h264-1080-` also starts with `h264-`.
+        let (video, rest) = if let Some(rest) = s.strip_prefix(Rung::P1080.token()) {
+            (VideoMode::H264At(Rung::P1080), rest)
+        } else if let Some(rest) = s.strip_prefix(Rung::P720.token()) {
+            (VideoMode::H264At(Rung::P720), rest)
+        } else if let Some(rest) = s.strip_prefix(H264_PREFIX) {
+            (VideoMode::H264, rest)
+        } else {
+            (VideoMode::Copy, s)
         };
         let audio = match rest {
             "copy" => AudioMode::Copy,
@@ -103,22 +168,43 @@ impl StreamMode {
         }
     }
 
-    // Inverse of `parse`; emitted by the client URL builder in `packages/client media.ts`.
-    pub fn token(self) -> &'static str {
-        match (self.video, self.audio) {
-            (VideoMode::Copy, AudioMode::Copy) => "copy",
-            (VideoMode::Copy, AudioMode::Aac) => "aac",
-            (VideoMode::Copy, AudioMode::AacStandard) => "aac-standard",
-            (VideoMode::Copy, AudioMode::AacNight) => "aac-night",
-            (VideoMode::H264, AudioMode::Copy) => "h264-copy",
-            (VideoMode::H264, AudioMode::Aac) => "h264-aac",
-            (VideoMode::H264, AudioMode::AacStandard) => "h264-aac-standard",
-            (VideoMode::H264, AudioMode::AacNight) => "h264-aac-night",
+    /// The mode whose picture actually fits the decoder it is going to. A decoder
+    /// has a size ceiling as surely as it has a codec list, and no player works
+    /// around one: a frame over it either refuses to open or falls to a software
+    /// decoder that cannot keep up. `source` is the file's own size and `max`
+    /// what the client declared; either absent leaves the mode alone.
+    ///
+    /// Both axes count. Overrides a copy AND a full-size re-encode, because a
+    /// re-encode at the source's size is just as unplayable as the source.
+    pub fn for_client_frame(self, source: Option<(u32, u32)>, max: Option<(u32, u32)>) -> Self {
+        let (Some(source), Some(max)) = (source, max) else {
+            return self;
+        };
+        if source.0 <= max.0 && source.1 <= max.1 {
+            return self;
         }
+        Rung::under(max).map_or(self, |rung| Self {
+            video: VideoMode::H264At(rung),
+            ..self
+        })
+    }
+
+    // Inverse of `parse`; emitted by the client URL builder in `packages/client media.ts`.
+    pub fn token(self) -> String {
+        format!("{}{}", self.video.token(), self.audio.token())
     }
 }
 
 impl AudioMode {
+    const fn token(self) -> &'static str {
+        match self {
+            Self::Copy => "copy",
+            Self::Aac => "aac",
+            Self::AacStandard => "aac-standard",
+            Self::AacNight => "aac-night",
+        }
+    }
+
     fn transcode(self) -> bool {
         !matches!(self, Self::Copy)
     }
@@ -261,7 +347,12 @@ impl HlsEngine {
 mod tests {
     use super::*;
 
-    const VIDEO_MODES: [VideoMode; 2] = [VideoMode::Copy, VideoMode::H264];
+    const VIDEO_MODES: [VideoMode; 4] = [
+        VideoMode::Copy,
+        VideoMode::H264,
+        VideoMode::H264At(Rung::P1080),
+        VideoMode::H264At(Rung::P720),
+    ];
     const AUDIO_MODES: [AudioMode; 4] = [
         AudioMode::Copy,
         AudioMode::Aac,
@@ -277,12 +368,73 @@ mod tests {
         StreamMode::new(VideoMode::Copy, audio)
     }
 
+    // The Chromecast HD's own ceiling, which is square because its decoders
+    // declare one size limit for both axes.
+    const CHROMECAST_HD: (u32, u32) = (1920, 1920);
+
+    #[test]
+    fn scales_a_source_larger_than_the_decoder_the_client_declared() {
+        let copy = StreamMode::new(VideoMode::Copy, AudioMode::Copy);
+
+        let scaled = copy.for_client_frame(Some((3840, 2160)), Some(CHROMECAST_HD));
+
+        assert_eq!(scaled.video, VideoMode::H264At(Rung::P1080));
+        assert_eq!(scaled.audio, AudioMode::Copy);
+        assert_eq!(scaled.token(), "h264-1080-copy");
+    }
+
+    #[test]
+    fn scales_a_scope_frame_that_is_only_too_wide() {
+        let copy = StreamMode::new(VideoMode::Copy, AudioMode::Copy);
+
+        // 1604 rows clears a 1920 ceiling; 3840 columns do not.
+        let scaled = copy.for_client_frame(Some((3840, 1604)), Some(CHROMECAST_HD));
+
+        assert_eq!(scaled.video, VideoMode::H264At(Rung::P1080));
+    }
+
+    #[test]
+    fn leaves_a_picture_the_client_can_already_take() {
+        let copy = StreamMode::new(VideoMode::Copy, AudioMode::Copy);
+
+        assert_eq!(
+            copy.for_client_frame(Some((1920, 1080)), Some(CHROMECAST_HD)),
+            copy
+        );
+        assert_eq!(copy.for_client_frame(Some((3840, 2160)), None), copy);
+        assert_eq!(copy.for_client_frame(None, Some(CHROMECAST_HD)), copy);
+    }
+
+    #[test]
+    fn overrides_a_full_size_re_encode_too_because_it_is_just_as_unplayable() {
+        let full = StreamMode::new(VideoMode::H264, AudioMode::Aac);
+
+        let scaled = full.for_client_frame(Some((3840, 2160)), Some(CHROMECAST_HD));
+
+        assert_eq!(scaled.video, VideoMode::H264At(Rung::P1080));
+        assert_eq!(scaled.audio, AudioMode::Aac);
+    }
+
+    #[test]
+    fn drops_to_the_largest_rung_a_smaller_decoder_still_holds() {
+        let copy = StreamMode::new(VideoMode::Copy, AudioMode::Copy);
+
+        assert_eq!(
+            copy.for_client_frame(Some((3840, 2160)), Some((1280, 800))).video,
+            VideoMode::H264At(Rung::P720)
+        );
+        assert_eq!(
+            copy.for_client_frame(Some((3840, 2160)), Some((640, 480))).video,
+            VideoMode::Copy
+        );
+    }
+
     #[test]
     fn mode_tokens_round_trip() {
         for video in VIDEO_MODES {
             for audio in AUDIO_MODES {
                 let mode = StreamMode::new(video, audio);
-                assert_eq!(StreamMode::parse(mode.token()), Some(mode));
+                assert_eq!(StreamMode::parse(&mode.token()), Some(mode));
             }
         }
         assert_eq!(StreamMode::parse("bogus"), None);

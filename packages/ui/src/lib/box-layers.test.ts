@@ -25,6 +25,13 @@ describe('splitBoxLayers', () => {
     });
   });
 
+  it('does not grow the face for a box prop that cannot outsize it', () => {
+    const { box, face } = splitBoxLayers({ flexShrink: 0, marginTop: 40, backgroundColor: 'red' });
+
+    expect(box).toEqual({ flexShrink: 0, marginTop: 40 });
+    expect(StyleSheet.flatten(face)).toEqual({ backgroundColor: 'red' });
+  });
+
   it('leaves a pure paint style whole, with no box', () => {
     const style = { backgroundColor: 'red', borderRadius: 8 };
     const layers = splitBoxLayers(style);

@@ -11,6 +11,7 @@
 // never leaves duplicates behind.
 package expo.modules.tvlauncher
 
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.util.Log
@@ -30,11 +31,39 @@ object WatchNext {
      */
     @Synchronized
     fun sync(context: Context, json: String) {
+        val wanted = wantedFrom(json) ?: return
+        try {
+            // Reconcile against what is ACTUALLY published, not a local record that
+            // can go stale on reinstall or race with a concurrent sync (which was
+            // duplicating rows). Query our existing rows grouped by item id, then:
+            // delete every row for an unwanted id, and every DUPLICATE row for a
+            // wanted id (keeping one to refresh).
+            val existing = existingRows(context) // itemId -> [row, ...]
+            val dismissals = LauncherStore.dismissals(context)
+            var published = 0
+            var touched = 0
+            for ((itemId, o) in wanted) {
+                val outcome = reconcile(context, itemId, o, existing[itemId].orEmpty(), dismissals)
+                if (outcome != Outcome.DISMISSED) published++
+                if (outcome == Outcome.WRITTEN) touched++
+            }
+            for ((itemId, rows) in existing) {
+                if (!wanted.containsKey(itemId)) for (row in rows) removeRow(context, row.id)
+            }
+            Log.i(TAG, "watch-next synced $published item(s), $touched written")
+        } catch (e: Exception) {
+            Log.w(TAG, "watch-next sync failed", e)
+        }
+    }
+
+    private enum class Outcome { DISMISSED, UNCHANGED, WRITTEN }
+
+    private fun wantedFrom(json: String): Map<String, JSONObject>? {
         val arr = try {
             JSONArray(json)
         } catch (e: Exception) {
             Log.w(TAG, "bad continue-watching payload", e)
-            return
+            return null
         }
         val wanted = LinkedHashMap<String, JSONObject>()
         for (i in 0 until arr.length()) {
@@ -42,46 +71,57 @@ object WatchNext {
             val id = o.optString("id")
             if (id.isNotEmpty()) wanted[id] = o
         }
+        return wanted
+    }
 
-        try {
-            // Reconcile against what is ACTUALLY published, not a local record that
-            // can go stale on reinstall or race with a concurrent sync (which was
-            // duplicating rows). Query our existing rows grouped by item id, then:
-            // delete every row for an unwanted id, and every DUPLICATE row for a
-            // wanted id (keeping one to refresh).
-            val existing = existingRows(context) // itemId -> [rowId, ...]
-            for ((itemId, o) in wanted) {
-                val rows = existing[itemId].orEmpty()
-                // Drop all existing rows for this id, then insert one fresh (a Watch
-                // Next program has no stable natural key to upsert on).
-                for (rowId in rows) removeRow(context, rowId)
-                insertRow(context, itemId, o)
-            }
-            for ((itemId, rows) in existing) {
-                if (!wanted.containsKey(itemId)) for (rowId in rows) removeRow(context, rowId)
-            }
-            Log.i(TAG, "watch-next synced ${wanted.size} item(s)")
-        } catch (e: Exception) {
-            Log.w(TAG, "watch-next sync failed", e)
+    // One item's rows brought in line with the payload. Keeps ONE row per item and
+    // writes only when this item actually moved: rewriting the whole row on every
+    // sync is what the Watch Next guidelines forbid, and a delete + insert is a
+    // rewrite. A card the user swiped away stays away until they watch more of it.
+    private fun reconcile(
+        context: Context,
+        itemId: String,
+        o: JSONObject,
+        rows: List<Row>,
+        dismissals: JSONObject,
+    ): Outcome {
+        if (LauncherStore.isDismissed(dismissals, itemId, o.optLong("updatedAtMs", 0))) {
+            for (row in rows) removeRow(context, row.id)
+            return Outcome.DISMISSED
         }
+        val keep = rows.firstOrNull()
+        for (row in rows.drop(1)) removeRow(context, row.id)
+        if (keep == null) {
+            insertRow(context, itemId, o)
+            return Outcome.WRITTEN
+        }
+        val moved = keep.positionMs != o.optLong("progressMs", 0) ||
+            keep.engagedAtMs != o.optLong("updatedAtMs", 0)
+        if (!moved) return Outcome.UNCHANGED
+        updateRow(context, keep.id, itemId, o)
+        return Outcome.WRITTEN
     }
 
     /** Remove every KROMA Watch Next row (called on sign-out). */
     @Synchronized
     fun clear(context: Context) {
         runCatching {
-            for ((_, rows) in existingRows(context)) for (rowId in rows) removeRow(context, rowId)
+            for ((_, rows) in existingRows(context)) for (row in rows) removeRow(context, row.id)
         }
     }
+
+    private data class Row(val id: Long, val positionMs: Long, val engagedAtMs: Long)
 
     // Our currently-published Watch Next rows, grouped by item id (the
     // internalProviderId). A query returns only this app's own programs, so any
     // row we see is ours to reconcile. Duplicates for one id land in the list.
-    private fun existingRows(context: Context): Map<String, List<Long>> {
-        val out = HashMap<String, MutableList<Long>>()
+    private fun existingRows(context: Context): Map<String, List<Row>> {
+        val out = HashMap<String, MutableList<Row>>()
         val projection = arrayOf(
             TvContractCompat.WatchNextPrograms._ID,
             TvContractCompat.WatchNextPrograms.COLUMN_INTERNAL_PROVIDER_ID,
+            TvContractCompat.WatchNextPrograms.COLUMN_LAST_PLAYBACK_POSITION_MILLIS,
+            TvContractCompat.WatchNextPrograms.COLUMN_LAST_ENGAGEMENT_TIME_UTC_MILLIS,
         )
         context.contentResolver.query(
             TvContractCompat.WatchNextPrograms.CONTENT_URI,
@@ -91,19 +131,42 @@ object WatchNext {
             null,
         )?.use { c ->
             while (c.moveToNext()) {
-                val rowId = c.getLong(0)
                 val itemId = c.getString(1) ?: continue
-                out.getOrPut(itemId) { mutableListOf() }.add(rowId)
+                out.getOrPut(itemId) { mutableListOf() }
+                    .add(Row(c.getLong(0), c.getLong(2), c.getLong(3)))
             }
         }
         return out
     }
 
     private fun insertRow(context: Context, itemId: String, o: JSONObject) {
+        context.contentResolver.insert(
+            TvContractCompat.WatchNextPrograms.CONTENT_URI,
+            programValues(itemId, o),
+        )
+    }
+
+    private fun updateRow(context: Context, rowId: Long, itemId: String, o: JSONObject) {
+        context.contentResolver.update(
+            TvContractCompat.buildWatchNextProgramUri(rowId),
+            programValues(itemId, o),
+            null,
+            null,
+        )
+    }
+
+    private fun programValues(itemId: String, o: JSONObject): ContentValues {
         val isEpisode = o.optString("kind") == "episode"
         val type =
             if (isEpisode) TvContractCompat.WatchNextPrograms.TYPE_TV_EPISODE
             else TvContractCompat.WatchNextPrograms.TYPE_MOVIE
+        val dur = o.optLong("durationMs", 0)
+        val pos = o.optLong("progressMs", 0)
+        // An untouched episode in the continue list is the NEXT one of a series being
+        // watched, which the launcher words and sorts differently from a resume.
+        val watchNextType =
+            if (pos == 0L && isEpisode) TvContractCompat.WatchNextPrograms.WATCH_NEXT_TYPE_NEXT
+            else TvContractCompat.WatchNextPrograms.WATCH_NEXT_TYPE_CONTINUE
         // An episode links to its SHOW: the app's movie catalogue cannot resolve
         // an episode id (see launcher-links.ts), the show detail can resume it.
         val showId = o.optString("showId")
@@ -112,27 +175,28 @@ object WatchNext {
             else "kroma://item/${Uri.encode(itemId)}"
         val builder = WatchNextProgram.Builder()
             .setType(type)
-            .setWatchNextType(TvContractCompat.WatchNextPrograms.WATCH_NEXT_TYPE_CONTINUE)
+            .setWatchNextType(watchNextType)
             .setTitle(o.optString("title"))
             .setInternalProviderId(itemId)
-            .setLastEngagementTimeUtcMillis(
-                o.optLong("updatedAtMs", System.currentTimeMillis()),
-            )
+            // Required of every video program in the row, and it has to be the id the
+            // app knows the asset by, so the launcher can reconcile the two.
+            .setContentId(itemId)
+            .setLastEngagementTimeUtcMillis(o.optLong("updatedAtMs", 0))
             .setIntentUri(Uri.parse(target))
+        if (isEpisode) {
+            // Required attributes of a TV episode; without them the row is malformed
+            // and a strict launcher drops it.
+            o.optInt("season", 0).takeIf { it > 0 }?.let { builder.setSeasonNumber(it) }
+            o.optInt("episode", 0).takeIf { it > 0 }?.let { builder.setEpisodeNumber(it) }
+        }
         o.optString("subtitle").takeIf { it.isNotEmpty() }?.let { builder.setDescription(it) }
         o.optString("imageUrl").takeIf { it.isNotEmpty() }?.let {
             builder.setPosterArtUri(Uri.parse(it))
             builder.setPosterArtAspectRatio(TvContractCompat.PreviewPrograms.ASPECT_RATIO_16_9)
         }
-        val dur = o.optLong("durationMs", 0)
-        val pos = o.optLong("progressMs", 0)
         if (dur > 0) builder.setDurationMillis(dur.toInt())
         if (pos > 0) builder.setLastPlaybackPositionMillis(pos.toInt())
-
-        context.contentResolver.insert(
-            TvContractCompat.WatchNextPrograms.CONTENT_URI,
-            builder.build().toContentValues(),
-        )
+        return builder.build().toContentValues()
     }
 
     private fun removeRow(context: Context, rowId: Long) {

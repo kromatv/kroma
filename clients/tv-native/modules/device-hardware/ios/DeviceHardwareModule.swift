@@ -24,6 +24,12 @@ public class DeviceHardwareModule: Module {
     Function("freeMemoryBytes") {
       freeMemoryBytes()
     }
+
+    // VideoToolbox publishes no decoder size limit, so Apple declares none and
+    // playback is never gated on frame size here.
+    Function("decoderFrameLimits") {
+      [String: [String: Int]]()
+    }
   }
 }
 

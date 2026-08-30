@@ -22,7 +22,7 @@ const track = (over: Partial<AudioTrack> & { index: number }): AudioTrack => ({
 describe('AudioPanel', () => {
   it('says the file carries none rather than drawing an empty list', () => {
     show(<AudioPanel tracks={[]} current={0} onSelect={vi.fn()} onBack={vi.fn()} />);
-    expect(screen.getByText('No audio track detected.')).toBeTruthy();
+    expect(screen.getByText('No audio track on this file.')).toBeTruthy();
   });
 
   it('names a track by its own title, and by its language when it has none', () => {

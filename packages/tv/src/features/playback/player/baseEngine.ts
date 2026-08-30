@@ -5,6 +5,7 @@
 
 import {
   decodableAudioCodecs,
+  decoderMaxFrame,
   type KromaClient,
   type MediaItem,
   STALL_NUDGE_SEC,
@@ -80,7 +81,7 @@ export abstract class BaseTvEngine implements TvEngine {
           // Declared on every master, not just the fallback one: the server copies
           // audio unless it is told what this device decodes, so a master that says
           // nothing is served a codec it may only be able to play as silence.
-          { copyCodecs: decodableAudioCodecs() },
+          { copyCodecs: decodableAudioCodecs(), maxFrame: decoderMaxFrame(this.item) },
         );
   }
 

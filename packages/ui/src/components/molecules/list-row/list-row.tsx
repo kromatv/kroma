@@ -16,7 +16,7 @@ import { nameOf } from '#ui/lib/name-of';
 import { ListGroup, useListGroup } from './list-group';
 import { ListRowContext } from './list-row-context';
 import { Hint, Label, Leading, Trailing } from './list-row-parts';
-import { listRowVariants } from './list-row-variants';
+import { listRowVariants, type RowGround } from './list-row-variants';
 
 // The well has two steps to the shell's three, and a phone's row takes the
 // pointer-sized one.
@@ -70,6 +70,12 @@ interface ListRowRootProps extends Omit<FocusableProps, 'children' | 'style' | '
   /** The control shell's size, defaulting to the group's, then to the app's
    *  (`setEntryDefaults`). */
   size?: ControlSize;
+  /** What the row is drawn on: `artwork` (a browse screen, a sign-in splash),
+   *  where it blurs and lifts off the picture behind it, or `surface` (a
+   *  dialog's card, a settings panel), where it does neither. Defaults to
+   *  `artwork`; a member of a <ListRow.Group> is on the group's card whatever
+   *  it says. */
+  ground?: RowGround;
   /** Whether the row draws the disclosure chevron. Defaults to true for a
    *  pressable row with no <ListRow.Trailing>. Set false for a row that acts in
    *  place: a choice, a toggle, anything that goes nowhere. */
@@ -86,6 +92,7 @@ function Root({
   icon,
   label,
   size,
+  ground: asked = 'artwork',
   chevron: wantsChevron,
   children,
   onPress,
@@ -97,9 +104,13 @@ function Root({
 }: Readonly<ListRowRootProps>) {
   const group = useListGroup();
   const standalone = group === null;
+  const ground = standalone ? asked : 'surface';
   const shell = size ?? group?.size ?? entryDefaultSize();
   const metrics = CONTROL[shell];
-  const frost = useFrostCoat({ borderRadius: controlRadius(metrics) }, { on: standalone });
+  const frost = useFrostCoat(
+    { borderRadius: controlRadius(metrics) },
+    { on: ground === 'artwork' },
+  );
   const pressable = onPress !== undefined;
 
   const at = useMemo(() => sort(children), [children]);
@@ -107,7 +118,7 @@ function Root({
   // settings row that announced `selected: false` would be reported as one
   // option among several by every screen reader that walked it.
   const lit = selected ?? false;
-  const slots = listRowVariants({ size: shell, standalone, pressable, selected: lit });
+  const slots = listRowVariants({ size: shell, standalone, ground, pressable, selected: lit });
   const ctx = useMemo(() => ({ size: shell, metrics, slots }), [shell, metrics, slots]);
 
   const leading = at.leading.length > 0 ? at.leading : iconWell(icon, shell);
@@ -135,7 +146,7 @@ function Root({
         // which would leave a focused member with nothing.
         ring={standalone ? true : 'focusInset'}
         sv={listRowVariants}
-        vars={{ size: shell, pressable, standalone, selected: lit }}
+        vars={{ size: shell, pressable, standalone, ground, selected: lit }}
         style={[frost.style, style]}
       >
         {(state) => (
@@ -159,6 +170,6 @@ function Root({
 
 const ListRow = { Root, Leading, Label, Hint, Trailing, Group: ListGroup };
 
-export type { ListRowSize } from './list-row-variants';
+export type { ListRowSize, RowGround } from './list-row-variants';
 export type { ListRowRootProps };
 export { ListRow, listRowVariants };

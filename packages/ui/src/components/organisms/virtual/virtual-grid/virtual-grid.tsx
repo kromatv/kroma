@@ -42,8 +42,8 @@ interface VirtualGridProps<T> {
   /** Tile height ÷ tile width (a 2:3 poster is 1.5), which with the measured
    *  cell width is the row pitch. */
   ratio?: number;
-  /** An explicit row pitch in px (tile height + `rowGap`), for tiles that are
-   *  not `ratio`-shaped. Wins over `ratio`. */
+  /** An explicit tile height in px, for tiles that are not `ratio`-shaped. Wins
+   *  over `ratio`; `rowGap` is added to it the same way. */
   itemHeight?: number;
   /** Between tiles in a row, and what the column maths removes. */
   gap?: number;
@@ -69,7 +69,7 @@ interface VirtualGridProps<T> {
   style?: ViewStyle;
   onEndReached?: () => void;
   /** Opens the grid on this ROW (not item index) with focus, since the row is
-   *  not mounted yet for `autoFocus` to reach. */
+   *  not mounted yet for `autoFocus` to reach. Read once, on mount. */
   initialIndex?: number;
 }
 
@@ -109,6 +109,7 @@ function VirtualGrid<T>({
 
   const nodes = useRef(new Map<number, NodeHandle>());
   const wanted = useRef<number | null>(null);
+  const ringed = useRef<number | null>(null);
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
     const measured = event.nativeEvent.layout;
@@ -123,7 +124,7 @@ function VirtualGrid<T>({
     const room = Math.max(0, (box.width || width || 0) - px * 2);
     const count = Math.max(1, columns ?? (min ? columnsFor(room, min, gap) : 1));
     const cell = cellWidth(room, count, gap);
-    return { count, cell, pitch: itemHeight ?? Math.round(cell * ratio) + rowGapPx };
+    return { count, cell, pitch: (itemHeight ?? Math.round(cell * ratio)) + rowGapPx };
   }, [columns, gap, itemHeight, box.width, min, px, ratio, rowGapPx, width]);
 
   const hasHeader = Boolean(header) && Boolean(headerHeight);
@@ -132,11 +133,21 @@ function VirtualGrid<T>({
       rowMetrics({
         rows: Math.ceil(data.length / geometry.count),
         pitch: geometry.pitch,
+        gap: rowGapPx,
         header: hasHeader,
         headerSize: headerHeight ?? 0,
         viewport: box.height || screen,
       }),
-    [data.length, geometry.count, geometry.pitch, hasHeader, headerHeight, box.height, screen],
+    [
+      data.length,
+      geometry.count,
+      geometry.pitch,
+      rowGapPx,
+      hasHeader,
+      headerHeight,
+      box.height,
+      screen,
+    ],
   );
 
   const focusRow = useStableCallback((row: number) => {
@@ -146,21 +157,26 @@ function VirtualGrid<T>({
   });
 
   // A row asked for before it exists: the window has to render it first, so
-  // this runs after every commit until the row is there to take the focus.
+  // this runs after every commit until the row REPORTS the ring. Asking once is
+  // not enough - a row registers, unregisters and registers again as the window
+  // settles, and the navigator hands the focus to a neighbour each time the row
+  // holding it leaves the tree. The header registers under row 0 like any other,
+  // so a request can always name something that will answer it.
   useEffect(() => {
     const row = wanted.current;
     if (row === null) return;
-    const node = nodes.current.get(row);
-    if (!node) return;
-    wanted.current = null;
-    node.focus();
+    if (ringed.current === row) {
+      wanted.current = null;
+      return;
+    }
+    nodes.current.get(row)?.focus();
   });
 
   // Mount-only: this is where the grid OPENS. Re-running on prop change would
   // yank focus back out from under the D-pad.
   // biome-ignore lint/correctness/useExhaustiveDependencies: opening position, not a binding.
   useEffect(() => {
-    if (initialIndex) focusRow(initialIndex);
+    if (initialIndex !== undefined) focusRow(initialIndex);
   }, []);
 
   useEffect(() => {
@@ -172,13 +188,19 @@ function VirtualGrid<T>({
     else nodes.current.delete(row);
   });
 
-  const onHeaderFocus = useStableCallback(() => setFocusedRow(0));
+  const onHeaderNode = useStableCallback((node: NodeHandle | null) => onNode(0, node));
+
+  const onHeaderFocus = useStableCallback(() => {
+    ringed.current = 0;
+    setFocusedRow(0);
+  });
 
   const onCellFocus = useStableCallback((index: number) => {
     const row = Math.floor(index / geometry.count);
     // Which cell took focus, for the on-screen read-out: a remote bug on a
     // television has no inspector to ask.
     markGridFocus(row, index % geometry.count);
+    ringed.current = row + metrics.headerRows;
     setFocusedRow(row + metrics.headerRows);
   });
 
@@ -234,7 +256,7 @@ function VirtualGrid<T>({
           <MovingStrip axis="y" offset={offset} still={fraction !== null} style={contentStyle}>
             <NavigatorView direction="vertical" alignInGrid>
               {hasHeader && shown.start === 0 ? (
-                <NavigatorNode index={0} orientation="horizontal">
+                <NavigatorNode ref={onHeaderNode} index={0} orientation="horizontal">
                   <FocusReporter onFocus={onHeaderFocus}>
                     <View style={HEADER_BOX}>{header}</View>
                   </FocusReporter>

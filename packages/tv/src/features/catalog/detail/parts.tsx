@@ -1,4 +1,5 @@
-import type { CastMember } from '@kroma/core';
+import type { CastMember, CrewMember, Translate } from '@kroma/core';
+import { directorsOf, jobLabel } from '@kroma/core';
 import { endsAtClock, useLocale, useT } from '@kroma/ui';
 import {
   AVATAR_GRADIENTS,
@@ -11,6 +12,7 @@ import {
   styles,
   Text,
 } from '@kroma/ui/kit';
+import { useMemo } from 'react';
 import { useClient, useNav } from '#tv/app/router';
 
 /** "Se termine à 21h32 si vous lancez maintenant", only when a runtime is known. */
@@ -29,24 +31,49 @@ export function EndsAtHint({ runtimeMs }: Readonly<{ runtimeMs?: number | null }
   );
 }
 
-/** Top-billed cast. Shows the real TMDB headshot when present, else a
- * per-position gradient with initials. Each face opens that person's titles. */
-export function CastRow({ cast }: Readonly<{ cast?: CastMember[] | null }>) {
+interface Face {
+  name: string;
+  role: string | null | undefined;
+  profileUrl: string | null | undefined;
+}
+
+function billing(t: Translate, cast?: CastMember[] | null, crew?: CrewMember[] | null): Face[] {
+  const authors = directorsOf(crew).map((c) => ({
+    name: c.name,
+    role: jobLabel(t, c.job),
+    profileUrl: c.profileUrl,
+  }));
+  const named = new Set(authors.map((a) => a.name));
+  const acting = (cast ?? [])
+    .filter((p) => !named.has(p.name))
+    .map((p) => ({ name: p.name, role: p.character, profileUrl: p.profileUrl }));
+  return [...authors, ...acting].slice(0, 16);
+}
+
+/** Who made the title, then who is in it: the directors (a show's creators)
+ * lead the row, ahead of the top-billed cast. Shows the real TMDB headshot when
+ * present, else a per-position gradient with initials. Each face opens that
+ * person's titles. */
+export function CastRow({
+  cast,
+  crew,
+}: Readonly<{ cast?: CastMember[] | null; crew?: CrewMember[] | null }>) {
   const t = useT();
   const client = useClient();
   const nav = useNav();
-  if (!cast || cast.length === 0) return null;
+  const faces = useMemo(() => billing(t, cast, crew), [t, cast, crew]);
+  if (faces.length === 0) return null;
   return (
     <Box mt={32} gap={16}>
       <Text style={s.sectionLabel} color="text/55">
         {t('content.cast')}
       </Text>
-      <Rail.Root inset={6}>
-        {cast.slice(0, 16).map((p, i) => (
+      <Rail.Root inset={6} grow={false}>
+        {faces.map((p, i) => (
           <PersonCard
-            key={`${p.name}-${p.character ?? ''}`}
+            key={`${p.name}-${p.role ?? ''}`}
             name={p.name}
-            role={p.character}
+            role={p.role}
             photo={client.resolveArt(p.profileUrl, FACE_W)}
             gradient={CAST_GRADIENTS[i % CAST_GRADIENTS.length] as string}
             label={t('person.viewWorks', { name: p.name })}

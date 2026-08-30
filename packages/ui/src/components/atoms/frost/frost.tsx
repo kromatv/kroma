@@ -6,7 +6,7 @@ import {
   type ReactNode,
   useSyncExternalStore,
 } from 'react';
-import { Platform, type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { type CornerValue, onPaper, radiusValue, styles } from '#ui/core';
 import { backdropBlur } from '#ui/lib/css';
 import { WEB } from '#ui/lib/platform';
@@ -20,18 +20,8 @@ interface FrostBackdropProps {
   /** Open string union: expo-blur's tint set is wider than the three the kit
    *  asks for, and the registered component must remain assignable. */
   tint?: 'light' | 'dark' | 'default' | (string & {});
-  /** Android only. expo-blur draws NOTHING there unless it is told how: its
-   *  `blurMethod` defaults to `'none'`, so a frost that works on Apple TV is
-   *  invisible on Android until this is passed. Open union for the same reason
-   *  as `tint`. */
-  blurMethod?: 'none' | 'dimezisBlurView' | 'dimezisBlurViewSdk31Plus' | (string & {});
   style?: StyleProp<ViewStyle>;
 }
-
-// `dimezisBlurView` rather than the Sdk31Plus variant: that one needs API 31 and
-// the oldest sets this ships to are Android 9. Undefined off Android, where the
-// platform blurs on the GPU and the prop means nothing.
-const ANDROID_BLUR = Platform.OS === 'android' ? 'dimezisBlurView' : undefined;
 
 let PlatformFrost: ComponentType<FrostBackdropProps> | null = null;
 
@@ -128,7 +118,6 @@ function coatOf(surface: StyleProp<ViewStyle>, options: FrostOptions): FrostCoat
       <PlatformFrost
         // expo-blur's 0-100 scale: about four steps to the CSS pixel.
         intensity={Math.min(100, amount * 4)}
-        blurMethod={ANDROID_BLUR}
         tint={tint ?? (onPaper() ? 'light' : 'dark')}
         style={[s.fill, s.clip, typeof corner === 'number' ? { borderRadius: corner } : null]}
       />

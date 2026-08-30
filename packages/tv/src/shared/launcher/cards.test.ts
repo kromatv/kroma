@@ -136,7 +136,12 @@ describe('buildWatchNext', () => {
 
   it('prefers the show title and episode title, and links the episode to its show', () => {
     const tile = buildWatchNext(
-      [resume({}, { showTitle: 'Show', episodeTitle: 'Pilot', showId: 'sh_9', kind: 'episode' })],
+      [
+        resume(
+          { positionMs: 300_000 },
+          { showTitle: 'Show', episodeTitle: 'Pilot', showId: 'sh_9', kind: 'episode' },
+        ),
+      ],
       fakeClient(null),
     )[0] as WatchNextItem;
     expect(tile).toMatchObject({
@@ -146,6 +151,26 @@ describe('buildWatchNext', () => {
       kind: 'episode',
     });
     expect(tile.backdropUrl).toBeUndefined();
+  });
+
+  it('leaves out content the viewer has barely started', () => {
+    const barely = [
+      resume({ positionMs: 5_000, durationMs: 4_000_000 }),
+      resume({ positionMs: 5_000 }, { showId: 'sh_1', kind: 'episode' }),
+    ];
+
+    expect(buildWatchNext(barely, fakeClient())).toEqual([]);
+  });
+
+  it('carries one episode per series, the most recent', () => {
+    const two = [
+      resume({ positionMs: 300_000 }, { id: 'ep_2', showId: 'sh_1', kind: 'episode' }),
+      resume({ positionMs: 400_000 }, { id: 'ep_1', showId: 'sh_1', kind: 'episode' }),
+    ];
+
+    const tiles = buildWatchNext(two, fakeClient());
+
+    expect(tiles.map((t) => t.id)).toEqual(['ep_2']);
   });
 
   it('omits the progress parameter and zeroes duration when there is no duration', () => {

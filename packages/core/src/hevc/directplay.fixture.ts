@@ -15,11 +15,18 @@ export function makeItem(p: {
   container?: string;
   videoCodec?: string;
   bitDepth?: number;
+  width?: number;
+  height?: number;
   audio: AudioTrack[];
 }): MediaItem {
   return {
     container: p.container ?? 'mp4',
-    video: { codec: p.videoCodec ?? 'h264', bitDepth: p.bitDepth ?? 8 },
+    video: {
+      codec: p.videoCodec ?? 'h264',
+      bitDepth: p.bitDepth ?? 8,
+      width: p.width ?? null,
+      height: p.height ?? null,
+    },
     audio: p.audio[0] ?? null,
     audioTracks: p.audio,
     durationMs: 1000,

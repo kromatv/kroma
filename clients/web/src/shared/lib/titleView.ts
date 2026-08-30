@@ -6,6 +6,7 @@ import {
   type CrewMember,
   type DiscoverDetail,
   type DiscoverEntry,
+  directorsOf,
   formatRuntime,
   genreLabels,
   hasPermission,
@@ -73,10 +74,6 @@ export interface TitleView {
   similar: SimilarTarget[];
 }
 
-function directorsFromCrew(crew: CrewMember[] | null | undefined): CrewMember[] {
-  return (crew ?? []).filter((c) => c.job === 'Director' || c.job === 'Creator');
-}
-
 /** `discover` overlays availability + request state onto owned content; it is
  * null when unavailable or the viewer lacks permission. */
 export type TitleInput =
@@ -116,7 +113,7 @@ export function buildTitleView(
       runtimeMin: null,
       poster: c.posterFor(item),
       backdrop: c.backdropFor(item),
-      directors: directorsFromCrew(meta?.crew),
+      directors: directorsOf(meta?.crew),
       cast: meta?.cast ?? [],
       themeUrl: null,
       video: item.video,
@@ -166,7 +163,7 @@ export function buildTitleView(
       runtimeMin: null,
       poster: c.showPosterFor(show),
       backdrop: c.backdropFor(show),
-      directors: directorsFromCrew(meta?.crew),
+      directors: directorsOf(meta?.crew),
       cast: meta?.cast ?? [],
       themeUrl: c.themeFor(show),
       video: show.video,
@@ -203,7 +200,7 @@ export function buildTitleView(
     runtimeMin: d.runtimeMin,
     poster: imageUrl(d.posterUrl) ?? '',
     backdrop: imageUrl(d.backdropUrl),
-    directors: directorsFromCrew(d.crew),
+    directors: directorsOf(d.crew),
     cast: d.cast,
     themeUrl: null,
     video: null,

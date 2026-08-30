@@ -15,6 +15,11 @@ import expo.modules.kotlin.modules.ModuleDefinition
  * from the app's own extension, not a list an app pushes - so this module
  * exists only here and the app treats it as an optional capability.
  *
+ * The traffic is not one-way: the launcher asks for the rows again when the user
+ * adds one of our channels, and reports the cards they remove, both with the app
+ * closed. [LauncherReceiver] answers from the last payload JS pushed, which is why
+ * every push is also written to [LauncherStore].
+ *
  * Every call is fire-and-forget on a background thread. A provider write is
  * disk I/O against another process, the caller is a React effect, and nothing
  * in the app waits on the result: a launcher row that fails to publish must
@@ -31,12 +36,22 @@ class TvLauncherModule : Module() {
 
     Function("setContinueWatching") { json: String ->
       val ctx = context
-      Thread { WatchNext.sync(ctx, json) }.start()
+      Thread {
+        LauncherStore.rememberWatchNext(ctx, json)
+        WatchNext.sync(ctx, json)
+      }.start()
     }
 
     Function("setHomeChannel") { json: String ->
       val ctx = context
-      Thread { HomeChannel.sync(ctx, json) }.start()
+      // The launcher's add-channel screen refuses anything but
+      // startActivityForResult, so the ask needs the Activity, read here on the
+      // JS thread while there certainly is one.
+      val activity = appContext.activityProvider?.currentActivity
+      Thread {
+        LauncherStore.rememberHome(ctx, json)
+        HomeChannel.sync(ctx, activity, json)
+      }.start()
     }
 
     Function("clear") {
@@ -44,6 +59,7 @@ class TvLauncherModule : Module() {
       Thread {
         WatchNext.clear(ctx)
         HomeChannel.clear(ctx)
+        LauncherStore.clear(ctx)
       }.start()
     }
   }

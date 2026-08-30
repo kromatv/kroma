@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite';
 import { Catalog } from '../src/lib/catalog.ts';
 import { type SiteCatalog, toSiteCatalog } from '../src/lib/modules.ts';
+import { fetchBody } from './fetch-body.ts';
 
 // The official module catalog, fetched once per build and compiled into the
 // bundle as `virtual:kroma-modules`. The browser never requests it: the list is
@@ -19,13 +20,7 @@ const MAX_BYTES = 2 * 1024 * 1024;
 const TIMEOUT_MS = 15_000;
 
 async function fetchCatalog(): Promise<SiteCatalog> {
-  const res = await fetch(CATALOG_URL, { signal: AbortSignal.timeout(TIMEOUT_MS) });
-  if (!res.ok) throw new Error(`${CATALOG_URL} answered ${res.status} ${res.statusText}`);
-
-  const body = await res.text();
-  if (body.length > MAX_BYTES) {
-    throw new Error(`${CATALOG_URL} returned ${body.length} bytes, over the ${MAX_BYTES} ceiling`);
-  }
+  const body = await fetchBody(CATALOG_URL, { timeoutMs: TIMEOUT_MS, maxBytes: MAX_BYTES });
 
   const parsed = Catalog.safeParse(JSON.parse(body));
   if (!parsed.success) throw new Error(`${CATALOG_URL} is not a catalog: ${parsed.error.message}`);

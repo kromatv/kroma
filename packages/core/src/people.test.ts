@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { Translate } from './i18n';
 import {
   creditsPerson,
+  directorsOf,
   jobLabel,
   personDisplayName,
   personInvolvement,
@@ -189,6 +190,24 @@ describe('roleLabels', () => {
   it('de-duplicates identical resolved labels', () => {
     const labels = roleLabels(t, { acted: false, jobs: ['Gaffer', 'Gaffer'], profileUrl: null });
     expect(labels).toEqual(['Gaffer']);
+  });
+});
+
+describe('directorsOf', () => {
+  it('keeps directors and creators, in the order given', () => {
+    const crew = [
+      { name: 'Charlie', job: 'Writer' },
+      { name: 'Michel', job: 'Director' },
+      { name: 'Vince', job: 'Creator' },
+      { name: 'Jon', job: 'Original Music Composer' },
+    ];
+
+    expect(directorsOf(crew).map((c) => c.name)).toEqual(['Michel', 'Vince']);
+  });
+
+  it('answers empty for a title with no crew', () => {
+    expect(directorsOf(null)).toEqual([]);
+    expect(directorsOf(undefined)).toEqual([]);
   });
 });
 

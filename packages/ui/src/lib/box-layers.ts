@@ -9,20 +9,28 @@
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { styles } from '#ui/core';
 
-/** The props that describe the control's box in its parent, not its face. */
-const BOX_PROPS = new Set([
+/** The box props that can leave the box LARGER than the face inside it, and so
+ * the only ones the face has to grow to fill. The rest place the box in its
+ * parent or cap it; a face that grows for those fills whatever height the
+ * parent happened to offer, which on a centred column is the whole screen. */
+const SIZING_PROPS = new Set([
   'flex',
   'flexGrow',
-  'flexShrink',
   'flexBasis',
   'alignSelf',
   'width',
   'height',
   'minWidth',
   'minHeight',
+  'aspectRatio',
+]);
+
+/** The props that describe the control's box in its parent, not its face. */
+const BOX_PROPS = new Set([
+  ...SIZING_PROPS,
+  'flexShrink',
   'maxWidth',
   'maxHeight',
-  'aspectRatio',
   'margin',
   'marginTop',
   'marginRight',
@@ -63,14 +71,19 @@ export function splitBoxLayers(style: StyleProp<ViewStyle>): {
   const box: Record<string, unknown> = {};
   const face: Record<string, unknown> = {};
   let boxed = false;
+  let sized = false;
   for (const key of Object.keys(flat)) {
     if (BOX_PROPS.has(key)) {
       box[key] = flat[key];
       boxed = true;
+      sized ||= SIZING_PROPS.has(key);
     } else {
       face[key] = flat[key];
     }
   }
   if (!boxed) return { face: style };
-  return { box: box as ViewStyle, face: [face as ViewStyle, s.faceFill] };
+  return {
+    box: box as ViewStyle,
+    face: sized ? [face as ViewStyle, s.faceFill] : (face as ViewStyle),
+  };
 }

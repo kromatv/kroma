@@ -25,13 +25,13 @@ export interface FocusRootProps {
    *  registered, in the order they registered, without taking presses meant for
    *  something else. */
   active?: boolean;
-  /** Whether to draw the key host below. False only while a platform chrome
-   *  owns the television's focus, which is Apple TV's search screen and nothing
-   *  else (see focus-platform). */
+  /** Whether to draw the key host below. False while a platform chrome owns the
+   *  television's focus, which is Apple TV's search screen and nothing else
+   *  (see focus-platform), and false wherever `bridge` is. */
   keyHost?: boolean;
   /** Whether this root carries the Android key transport. Default true; false
-   *  for a scope nested inside another, whose second host would deliver each
-   *  press again on the way up. See {@link ScreenScopeProps.bridge}. */
+   *  for a scope that reuses another root's, whose second host would deliver
+   *  each press again on the way up. See {@link ScreenScopeProps.bridge}. */
   bridge?: boolean;
   /** A direction the navigator handled with nothing to move to. */
   onEdge?: (direction: string) => void;
@@ -61,7 +61,9 @@ export function FocusRoot({
           Gone while a platform chrome is up: it is the chrome's field and
           keyboard the television must be able to focus then, and a focusable
           spread over the whole screen would take that focus and never give it
-          back. */}
+          back. Gone too when this root carries no transport: Android delivers a
+          press to whatever holds the platform focus, so a host that takes it
+          without a handler above it is where the remote goes to die. */}
       {/* Android hands a key to whichever view holds the PLATFORM focus, and
           `topKeyDown` BUBBLES. The focus walks off the host onto the navigator's
           own views as soon as one is focused, so a handler on the host alone
@@ -70,7 +72,7 @@ export function FocusRoot({
           must be the ONLY node on the bubble path carrying them, or the first
           press arrives twice. Empty off Android. */}
       <View style={FILL} {...hostProps}>
-        {keyHost ? (
+        {keyHost && bridge ? (
           <Pressable focusable isTVSelectable hasTVPreferredFocus style={KEY_HOST} />
         ) : null}
         <NavigatorView direction="vertical" style={flat([FILL, style])}>

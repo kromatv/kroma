@@ -9,6 +9,7 @@ use super::*;
 use kroma_domain::ProgressEntry;
 
 mod continue_watching;
+mod on_deck;
 mod show_progress;
 mod up_next;
 mod watch_state;

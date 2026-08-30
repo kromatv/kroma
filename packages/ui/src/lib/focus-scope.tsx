@@ -26,12 +26,12 @@ interface ScreenScopeProps extends FocusScopeProps {
    *  its own mount. Omit for the usual case: one scope per screen. */
   entryKey?: string | number;
   /**
-   * Mount this scope's remote transports. Default true; only a scope drawn
-   * INSIDE another one passes `false`: the event bridge fans to every
-   * registered navigator and Android's key events bubble, so a nested one
-   * would deliver each press twice. An `<OverlayHost>` dialog reuses the
-   * screen's, a `<Modal>`-backed one is in its own view controller and needs
-   * its own.
+   * Mount this scope's remote transports. Default true; a scope that reuses
+   * another root's passes `false`: the event bridge fans to every registered
+   * navigator, so a second one would deliver each press twice. An
+   * `<OverlayHost>` dialog reuses the screen's, a `<Modal>`-backed one is in
+   * its own view controller and needs its own. Reusing means leaving the
+   * platform focus behind as well; see {@link FocusRootProps.keyHost}.
    */
   bridge?: boolean;
   /** Whether this scope answers the remote. See {@link FocusRootProps.active}. */

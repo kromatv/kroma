@@ -22,6 +22,9 @@ export interface RowSpec {
   rows: number;
   /** A row's height plus the gap after it. */
   pitch: number;
+  /** The gap inside `pitch`. The bottom row on screen has none after it, so a
+   *  viewport holds one row more than its height divides into. */
+  gap: number;
   header: boolean;
   /** The header's own height, which need not be a row's. */
   headerSize: number;
@@ -35,7 +38,9 @@ export interface RowMetrics {
   headerRows: number;
   pitch: number;
   headerSize: number;
-  /** Whole rows the viewport shows, at least one. */
+  /** Whole rows the viewport shows, at least one. Also the page the strip
+   *  moves by, so a row that is on screen is a row a press can reach without
+   *  the list moving. */
   visible: number;
   /** Everything the strip holds, in px. */
   height: number;
@@ -48,7 +53,14 @@ export interface RowWindow {
 
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value));
 
-export function rowMetrics({ rows, pitch, header, headerSize, viewport }: RowSpec): RowMetrics {
+export function rowMetrics({
+  rows,
+  pitch,
+  gap,
+  header,
+  headerSize,
+  viewport,
+}: RowSpec): RowMetrics {
   const size = Math.max(1, pitch);
   const head = header ? headerSize : 0;
   return {
@@ -56,7 +68,7 @@ export function rowMetrics({ rows, pitch, header, headerSize, viewport }: RowSpe
     headerRows: header ? 1 : 0,
     pitch: size,
     headerSize: head,
-    visible: Math.max(1, Math.floor(viewport / size)),
+    visible: Math.max(1, Math.floor((viewport + gap) / size)),
     height: head + rows * size,
   };
 }

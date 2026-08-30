@@ -8,8 +8,12 @@
      - <queries>: since Android 11, package visibility means an app cannot see or
        message the TV launcher without declaring it. Without this the AppsFilter
        BLOCKS the interaction, so `requestChannelBrowsable` never reaches the
-       launcher and our channels never surface. The two Google TV packages plus
-       the channel-browsable intent (which covers non-Google launchers too). -->
+       launcher and our channels never surface. The Android TV pair
+       (tvlauncher + tvrecommendations), the Google TV launcher (launcherx) and
+       the channel-browsable intent, which covers non-Google launchers too.
+     - LauncherReceiver: the launcher talks back. It asks for our rows when the
+       user adds one of our channels (INITIALIZE_PROGRAMS), and tells us when a
+       card is removed from the home, which can both happen with the app closed. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <uses-permission android:name="com.android.providers.tv.permission.READ_EPG_DATA" />
   <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA" />
@@ -17,8 +21,22 @@
   <queries>
     <package android:name="com.google.android.tvlauncher" />
     <package android:name="com.google.android.tvrecommendations" />
+    <package android:name="com.google.android.apps.tv.launcherx" />
     <intent>
       <action android:name="android.media.tv.action.REQUEST_CHANNEL_BROWSABLE" />
     </intent>
   </queries>
+
+  <application>
+    <receiver
+      android:name="expo.modules.tvlauncher.LauncherReceiver"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.media.tv.action.INITIALIZE_PROGRAMS" />
+        <action android:name="android.media.tv.action.PREVIEW_PROGRAM_BROWSABLE_DISABLED" />
+        <action android:name="android.media.tv.action.WATCH_NEXT_PROGRAM_BROWSABLE_DISABLED" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+    </receiver>
+  </application>
 </manifest>

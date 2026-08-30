@@ -141,6 +141,18 @@ describe('hlsMasterUrl', () => {
     );
   });
 
+  it('declares both axes of the decoder ceiling, which the server fits the picture inside', () => {
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, { maxFrame: { width: 1920, height: 1920 } })).toBe(
+      'http://kroma.test/api/items/abc/hls/copy/0/0/index.m3u8?maxw=1920&maxh=1920',
+    );
+  });
+
+  it('declares no ceiling for a device that never probed one', () => {
+    expect(hlsMasterUrl(ctx, 'abc', false, 0, 0, { maxFrame: undefined })).toBe(
+      'http://kroma.test/api/items/abc/hls/copy/0/0/index.m3u8',
+    );
+  });
+
   it('puts the anchor (rounded, clamped) and audio track in the path', () => {
     expect(hlsMasterUrl(ctx, 'abc', false, 600.4, 1)).toBe(
       'http://kroma.test/api/items/abc/hls/copy/600/1/index.m3u8',

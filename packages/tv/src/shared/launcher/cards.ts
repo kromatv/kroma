@@ -34,11 +34,26 @@ export type WatchNextItem = {
   imageUrl: string;
   backdropUrl?: string;
   showId?: string;
+  season?: number;
+  episode?: number;
   progressMs: number;
   durationMs: number;
   kind: string;
   updatedAtMs: number;
 };
+
+// Google's Watch Next rules for what may go in the row: a movie counts as started
+// past 3% or two minutes, whichever comes first, an episode past two minutes. An
+// entry at position 0 is the next episode of a series being watched, which earns
+// its place without being started at all.
+const STARTED_MS = 120_000;
+
+function isStarted(c: ContinueItem): boolean {
+  if (c.positionMs <= 0) return true;
+  if (c.positionMs >= STARTED_MS) return true;
+  if (c.item.kind === 'episode') return false;
+  return c.durationMs ? c.positionMs / c.durationMs >= 0.03 : false;
+}
 
 function toProgram(movie: MediaItem, client: KromaClient): HomeProgram {
   const art = `${client.baseUrl}/api/items/${encodeURIComponent(movie.id)}/card?v=${encodeURIComponent(movie.addedAt)}`;
@@ -91,7 +106,18 @@ function cardArt(c: ContinueItem, client: KromaClient): string {
 // `backdropUrl` is the clean art for Top Shelf, which draws its own title and
 // progress bar and would otherwise show two.
 export function buildWatchNext(items: ContinueItem[], client: KromaClient): WatchNextItem[] {
-  return items.map((c) => {
+  // One entry per series, the newest: the row is not allowed to carry two episodes
+  // of the same show.
+  const shows = new Set<string>();
+  const eligible = items.filter((c) => {
+    if (!isStarted(c)) return false;
+    const show = c.item.showId;
+    if (!show) return true;
+    if (shows.has(show)) return false;
+    shows.add(show);
+    return true;
+  });
+  return eligible.map((c) => {
     const it = c.item;
     return {
       id: it.id,
@@ -102,6 +128,8 @@ export function buildWatchNext(items: ContinueItem[], client: KromaClient): Watc
       // Launchers link an episode card to the SHOW: the movie catalogue cannot
       // resolve an episode id.
       showId: it.showId ?? undefined,
+      season: it.season ?? undefined,
+      episode: it.episode ?? undefined,
       progressMs: Math.round(c.positionMs),
       durationMs: Math.round(c.durationMs ?? 0),
       kind: it.kind,

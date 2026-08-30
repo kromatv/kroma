@@ -24,6 +24,10 @@ use super::{byte_sink, load_item};
 pub struct HlsQuery {
     pub copy: Option<String>,
     pub video: Option<String>,
+    /// The largest picture this client's decoder accepts, both axes. Absent means
+    /// it never probed one, and the source's own size stands.
+    pub maxw: Option<u32>,
+    pub maxh: Option<u32>,
 }
 
 /// `GET /api/items/:id/hls/:mode/:anchor/:audio/index.m3u8` (mode = an audio
@@ -56,6 +60,12 @@ pub async fn hls_master(
         .for_client_video(
             item.video.as_ref().map(|v| v.codec.as_str()),
             q.video.as_deref(),
+        )
+        .for_client_frame(
+            item.video
+                .as_ref()
+                .and_then(|v| v.width.zip(v.height)),
+            q.maxw.zip(q.maxh),
         );
     if effective != mode {
         return Redirect::temporary(&hls_master_path(&item.id, effective, anchor, audio))

@@ -1,6 +1,12 @@
-import type { Metadata } from '@kroma/client';
+import type { CrewMember, Metadata } from '@kroma/client';
 import type { Translate } from './i18n';
 import { slugify } from './slug';
+
+/** The crew credits that stand for a title's authorship: a film's directors, a
+ * show's creators, in the order the provider listed them. */
+export function directorsOf(crew: readonly CrewMember[] | null | undefined): CrewMember[] {
+  return (crew ?? []).filter((c) => c.job === 'Director' || c.job === 'Creator');
+}
 
 /** The URL segment one person is reached by: the provider's id when their
  * credit kept one, the folded name when it did not. Every credit stored before

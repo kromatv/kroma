@@ -4,7 +4,13 @@
 // original file, or ask the server to remux it". See backend.web.ts for the
 // browser half; the hook that drives playback never learns which it got.
 
-import { type KromaClient, type MediaItem, nativeDirectPlayable, type PlayEnv } from '@kroma/core';
+import {
+  beyondDecoder,
+  type KromaClient,
+  type MediaItem,
+  nativeDirectPlayable,
+  type PlayEnv,
+} from '@kroma/core';
 import type { AudioFilterMode } from '@kroma/ui';
 import { Platform } from 'react-native';
 import type { EnginePref } from '#tv/app/enginePref';
@@ -45,10 +51,16 @@ export interface EnginePlan {
  */
 export function planEngine(item: MediaItem, _env: PlayEnv, pref: EnginePref): EnginePlan {
   const os = Platform.OS === 'ios' ? 'ios' : 'android';
-  // VLC is asked for by name only. It carries its own decoders, so it always
+  // A picture over this device's decoder ceiling can only arrive smaller than it
+  // left, so it takes the server path whatever else was asked for. This outranks
+  // the engine preference, VLC included: carrying your own decoders answers a
+  // codec the platform lacks, never a frame its hardware refuses, and libVLC's
+  // software fallback on a set that HAS a ceiling drops every frame it decodes.
+  const oversized = beyondDecoder(item) != null;
+  // VLC is asked for by name only. It carries its own decoders, so it otherwise
   // takes the original file: routing it through the remux would spend the
   // server's CPU working around a limit this engine does not have.
-  if (pref === 'vlc' && vlcAvailable()) {
+  if (!oversized && pref === 'vlc' && vlcAvailable()) {
     return {
       eng: 'vlc',
       surface: 'vlc',
@@ -57,7 +69,7 @@ export function planEngine(item: MediaItem, _env: PlayEnv, pref: EnginePref): En
       rebuildKey: 'vlc',
     };
   }
-  const direct = pref !== 'remux' && nativeDirectPlayable(item, os);
+  const direct = pref !== 'remux' && !oversized && nativeDirectPlayable(item, os);
   const eng: Engine = direct ? 'expo-direct' : 'expo-remux';
   return {
     eng,

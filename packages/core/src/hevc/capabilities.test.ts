@@ -16,6 +16,7 @@ import {
   decodableVideoCodecs,
   detectCapabilities,
   type PlaybackCapabilities,
+  setDecoderFrameLimits,
 } from './capabilities';
 
 type G = Record<string, unknown>;
@@ -302,5 +303,29 @@ describe('capabilities (cached)', () => {
     g.tizen = {};
     expect(capabilities()).toBe(first);
     expect(capabilities().source).toBe('videoElement');
+  });
+});
+
+describe('setDecoderFrameLimits', () => {
+  afterEach(() => setDecoderFrameLimits(null));
+
+  it('carries an injected ceiling into both the native and the browser answer', () => {
+    const limits = { hevc: { width: 1920, height: 1920 } };
+
+    setDecoderFrameLimits(limits);
+
+    expect(asReactNative('android', detectCapabilities).frameLimits).toEqual(limits);
+    expect(detectCapabilities().frameLimits).toEqual(limits);
+  });
+
+  it('drops the memoized capabilities so a ceiling set after the first read still lands', () => {
+    const before = capabilities();
+
+    setDecoderFrameLimits({ hevc: { width: 1920, height: 1920 } });
+
+    expect(before.frameLimits).toBeUndefined();
+    expect(capabilities().frameLimits).toEqual({ hevc: { width: 1920, height: 1920 } });
+    setDecoderFrameLimits(null);
+    expect(capabilities().frameLimits).toBeUndefined();
   });
 });

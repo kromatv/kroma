@@ -29,8 +29,10 @@ import { LogBox, Platform } from 'react-native';
 
 LogBox.ignoreAllLogs(true);
 
+import { setDecoderFrameLimits } from '@kroma/core';
 import { lanBeacon } from '@kroma/lan-beacon';
 import { useEffect, useState } from 'react';
+import { decoderFrameLimits } from '../modules/device-hardware';
 import { browseForServers } from '../modules/server-discovery';
 import { startLauncherLinks } from './lib/launcher-links';
 import { nativeHardware } from './lib/native-hardware';
@@ -62,6 +64,10 @@ setVoiceSearchBackend(nativeVoiceSearch);
 // Hermes exposes no `navigator.hardwareConcurrency` / `deviceMemory`, so the
 // About screen's numbers come from the native module instead.
 setHardwareSource(nativeHardware);
+// How large a picture this set's decoders take, which decides whether a title
+// direct-plays at all. Every other client guesses from the codec alone, and a
+// television that stops at 1080p answers a 4K file with a slideshow.
+setDecoderFrameLimits(decoderFrameLimits());
 // And on Apple TV the keyboard belongs to the platform too, because that is the
 // only keyboard the Siri Remote will dictate into (see the module).
 setSearchShell(nativeSearchShell);

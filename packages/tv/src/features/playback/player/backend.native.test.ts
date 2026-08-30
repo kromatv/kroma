@@ -15,7 +15,12 @@ vi.mock('react-native', () => ({
 }));
 
 const nativeDirectPlayable = vi.hoisted(() => vi.fn(() => true));
-vi.mock('@kroma/core', () => ({ nativeDirectPlayable }));
+const beyondDecoder = vi.hoisted(() => vi.fn(() => null));
+const OVERSIZED = {
+  frame: { width: 3840, height: 2160 },
+  limit: { width: 1920, height: 1920 },
+} as never;
+vi.mock('@kroma/core', () => ({ beyondDecoder, nativeDirectPlayable }));
 
 const built = vi.hoisted(() => ({ args: [] as unknown[] }));
 vi.mock('#tv/features/playback/player/expoVideoEngine', () => ({
@@ -93,6 +98,25 @@ describe('the one question it asks', () => {
   it('asks the server to remux when it cannot', () => {
     nativeDirectPlayable.mockReturnValue(false);
     expect(plan()).toMatchObject({ eng: 'expo-remux', playbackMode: 'remux' });
+  });
+
+  it('sends a picture over the decoder ceiling to the server, which is the only path that scales', () => {
+    nativeDirectPlayable.mockReturnValue(true);
+    beyondDecoder.mockReturnValue(OVERSIZED);
+
+    expect(plan()).toMatchObject({ eng: 'expo-remux', playbackMode: 'remux' });
+
+    beyondDecoder.mockReturnValue(null);
+  });
+
+  it('outranks even a named engine, because no decoder here takes that frame', () => {
+    vlc.available = true;
+    beyondDecoder.mockReturnValue(OVERSIZED);
+
+    expect(plan('vlc')).toMatchObject({ eng: 'expo-remux' });
+
+    beyondDecoder.mockReturnValue(null);
+    expect(plan('vlc')).toMatchObject({ eng: 'vlc' });
   });
 
   it('never reports a transcode, because the audio is never re-encoded', () => {

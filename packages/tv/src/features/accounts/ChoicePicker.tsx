@@ -2,12 +2,27 @@
 // Virtualised: a TV's cost follows the number of mounted focusables.
 
 import { useT } from '@kroma/ui';
-import { DIALOG_PAD, Dialog, Icon, ListRow, SURFACE_WIDTH, VirtualGrid } from '@kroma/ui/kit';
+import {
+  CONTROL,
+  DIALOG_PAD,
+  Dialog,
+  Icon,
+  ListRow,
+  RING_ROOM,
+  SURFACE_WIDTH,
+  VirtualGrid,
+} from '@kroma/ui/kit';
 import type { ChoiceItem } from '#tv/app/settings/items';
 
-const ROW_HEIGHT = 68;
-const ROW_GAP = 8;
-const LIST_HEIGHT = ROW_HEIGHT * 7 + ROW_GAP * 6;
+const ROW_HEIGHT = CONTROL.tv.height;
+// Rows stand a ring apart, so a focused one never lays its ring on its
+// neighbour and the strip's top padding hides the row above rather than
+// leaving a sliver of it in the ring's room.
+const ROW_GAP = RING_ROOM;
+const VISIBLE_ROWS = 7;
+// The strip parks the top row of a page at the content origin and the clip is
+// flush there, so the room that row's ring stands in is the content's padding.
+const LIST_HEIGHT = (ROW_HEIGHT + ROW_GAP) * VISIBLE_ROWS;
 
 // <ListRow.Root> is `width: '100%'`, and a virtualised row container has no
 // width of its own to resolve against, so the row collapses to its trailing
@@ -45,13 +60,16 @@ export function ChoicePicker({
       <VirtualGrid
         data={options}
         columns={1}
-        itemHeight={ROW_HEIGHT + ROW_GAP}
+        itemHeight={ROW_HEIGHT}
+        rowGap={ROW_GAP}
+        pt={RING_ROOM}
         width={ROW_WIDTH}
         style={{ height: LIST_HEIGHT, width: ROW_WIDTH }}
-        initialIndex={current > 0 ? current : undefined}
+        initialIndex={current}
         renderItem={(option) => (
           <ListRow.Root
             style={{ height: ROW_HEIGHT, width: ROW_WIDTH }}
+            ground="surface"
             chevron={false}
             role="option"
             selected={option === value}

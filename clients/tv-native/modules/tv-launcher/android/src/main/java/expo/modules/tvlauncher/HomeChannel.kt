@@ -11,14 +11,18 @@
 // (PreviewChannelHelper.getAllChannels proved unreliable - it can miss our own rows,
 // which is what let the duplicates accumulate).
 //
-// Each program deep-links back via `kroma://item/<id>`. Note: only the first channel
-// an app publishes is shown automatically; the rest need the user to enable them via
-// the launcher's "Customize channels". A big featured hero is NOT available to
-// third-party apps on the Google TV home.
+// Each program deep-links back via `kroma://item/<id>`. Publishing a channel does not
+// put it on the home: browsable is read-only for an app, so each row has to be offered
+// once through requestChannelBrowsable and accepted by the user. A big featured hero is
+// NOT available to third-party apps.
 package expo.modules.tvlauncher
 
+import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.net.Uri
@@ -34,13 +38,16 @@ import org.json.JSONObject
 object HomeChannel {
     private const val TAG = "KromaHomeChannel"
     private const val KEY_PREFIX = "kroma:row:"
+    private const val REQUEST_SHOW_CHANNEL = 4931
+
+    private var askedThisRun = false
 
     /** Sync a list of launcher rows: `[{title, items:[{id,title,subtitle?,
      * imageUrl?,kind}]}]`, in display order. One preview channel per entry, keyed by
      * ROW INDEX so it reuses the same channel across syncs. `[]` clears every KROMA
      * channel. */
     @Synchronized
-    fun sync(context: Context, json: String) {
+    fun sync(context: Context, activity: Activity?, json: String) {
         val specs = try {
             JSONArray(json)
         } catch (e: Exception) {
@@ -54,19 +61,27 @@ object HomeChannel {
             existing.forEach { (id, key) -> if (key.isNotEmpty()) byKey[key] = id }
 
             val wantedKeys = HashSet<String>()
+            val dismissals = LauncherStore.dismissals(context)
+            var onHome = 0
             for (i in 0 until specs.length()) {
                 val spec = specs.optJSONObject(i) ?: continue
                 val key = KEY_PREFIX + i
                 wantedKeys.add(key)
                 val title = spec.optString("title", "KROMA")
                 val items = spec.optJSONArray("items") ?: JSONArray()
-                val channelId = byKey[key]
-                    ?: publishChannel(context, helper, key, title, makeDefault = byKey.isEmpty() && i == 0)
-                // Refresh the title (the section name can change) and mark the channel
-                // browsable - so it shows on the home without the user toggling it in
-                // "Customize channels" - in a single provider write. See applyChannel.
-                applyChannel(context, channelId, title)
-                reconcilePrograms(context, channelId, items)
+                val channelId = byKey[key] ?: publishChannel(context, helper, key, title)
+                renameChannel(context, channelId, title)
+                reconcilePrograms(context, channelId, items, dismissals)
+                // The row is on the home or it is not, and the column says which. Offer
+                // the first one that is not, once per app run: a channel the user
+                // accepted never asks again, and a decline is not re-asked until the
+                // next launch.
+                if (isBrowsable(context, channelId)) {
+                    onHome++
+                } else if (!askedThisRun) {
+                    askedThisRun = true
+                    askToShow(context, activity, channelId, key)
+                }
             }
 
             // Delete stale rows (a slot we no longer publish) and the legacy pile-up
@@ -80,7 +95,7 @@ object HomeChannel {
                     removed++
                 }
             }
-            Log.i(TAG, "home-channel synced ${wantedKeys.size} row(s), removed $removed stale")
+            Log.i(TAG, "home-channel synced ${wantedKeys.size} row(s), $onHome on the home, removed $removed stale")
         } catch (e: Exception) {
             Log.w(TAG, "home-channel sync failed", e)
         }
@@ -112,14 +127,13 @@ object HomeChannel {
         return out
     }
 
-    // Publish a new named channel keyed by `key`; make the very first one the
-    // default (auto-shown) and request the rest browsable so the user can add them.
+    // Publish a new named channel keyed by `key`. Publishing alone never puts a row
+    // on the home: the ask is a separate step, above.
     private fun publishChannel(
         context: Context,
         helper: PreviewChannelHelper,
         key: String,
         title: String,
-        makeDefault: Boolean,
     ): Long {
         val channel = PreviewChannel.Builder()
             .setDisplayName(title)
@@ -127,24 +141,50 @@ object HomeChannel {
             .setAppLinkIntentUri(Uri.parse("kroma://home"))
             .apply { bannerBitmap(context)?.let { setLogo(it) } }
             .build()
-        val id = if (makeDefault) helper.publishDefaultChannel(channel) else helper.publishChannel(channel)
-        runCatching { TvContractCompat.requestChannelBrowsable(context, id) }
-        return id
+        return helper.publishChannel(channel)
     }
 
-    // Set the display name (the section title can change) and mark the channel
-    // browsable (best effort: some launchers honor an app marking its OWN channel
-    // browsable and show it without the user opting in via "Customize channels";
-    // strict ones ignore it and still require the manual toggle) - both in a single
-    // provider write.
-    private fun applyChannel(context: Context, channelId: Long, title: String) {
+    // Two ways to ask, because the platform one is not enough on Google TV: its
+    // launcher takes the system's CHANNEL_BROWSABLE_REQUESTED broadcast and draws
+    // nothing. The same launcher exposes the add-channel screen as an ACTIVITY, so
+    // the owning app can open it itself; the broadcast stays as the fallback for
+    // launchers that only implement that half.
+    private fun askToShow(context: Context, activity: Activity?, channelId: Long, key: String) {
+        val intent = Intent(TvContractCompat.ACTION_REQUEST_CHANNEL_BROWSABLE)
+            .putExtra(TvContractCompat.EXTRA_CHANNEL_ID, channelId)
+        val handled = context.packageManager.resolveActivity(intent, 0) != null
+        val opener = activity?.takeIf { handled }
+        Log.i(TAG, "asking to show $key: launcher=$handled opened=${opener != null}")
+        if (opener != null) {
+            Handler(Looper.getMainLooper()).post {
+                runCatching { opener.startActivityForResult(intent, REQUEST_SHOW_CHANNEL) }
+            }
+        } else {
+            runCatching { TvContractCompat.requestChannelBrowsable(context, channelId) }
+        }
+    }
+
+    // Only the display name: COLUMN_BROWSABLE is read-only for us (the platform gives
+    // it to system apps alone), so whether a row is on the home is the user's answer
+    // to the prompt, never a column we can write.
+    private fun renameChannel(context: Context, channelId: Long, title: String) {
         runCatching {
             val values = ContentValues().apply {
                 put(TvContractCompat.Channels.COLUMN_DISPLAY_NAME, title)
-                put(TvContractCompat.Channels.COLUMN_BROWSABLE, 1)
             }
             context.contentResolver.update(TvContractCompat.buildChannelUri(channelId), values, null, null)
         }
+    }
+
+    private fun isBrowsable(context: Context, channelId: Long): Boolean {
+        val projection = arrayOf(TvContractCompat.Channels.COLUMN_BROWSABLE)
+        return context.contentResolver.query(
+            TvContractCompat.buildChannelUri(channelId),
+            projection,
+            null,
+            null,
+            null,
+        )?.use { c -> c.moveToFirst() && c.getInt(0) == 1 } ?: false
     }
 
     private fun deleteChannel(context: Context, channelId: Long) {
@@ -152,8 +192,18 @@ object HomeChannel {
         runCatching { context.contentResolver.delete(TvContractCompat.buildChannelUri(channelId), null, null) }
     }
 
+    /** How a card removed from the home is remembered: per ROW, so dropping a film
+     * from "Continue watching" leaves it in "Recently added". A Watch Next card has
+     * no channel and is keyed by its item id alone. */
+    fun dismissKey(channelId: Long, itemId: String): String = "$channelId:$itemId"
+
     // Insert/refresh this channel's programs and drop the ones no longer listed.
-    private fun reconcilePrograms(context: Context, channelId: Long, items: JSONArray) {
+    private fun reconcilePrograms(
+        context: Context,
+        channelId: Long,
+        items: JSONArray,
+        dismissals: JSONObject,
+    ) {
         val wanted = LinkedHashMap<String, JSONObject>()
         for (i in 0 until items.length()) {
             val o = items.optJSONObject(i) ?: continue
@@ -163,6 +213,7 @@ object HomeChannel {
         val existing = existingPrograms(context, channelId) // itemId -> [programId]
         for ((itemId, o) in wanted) {
             for (rowId in existing[itemId].orEmpty()) removeRow(context, rowId)
+            if (LauncherStore.isDismissed(dismissals, dismissKey(channelId, itemId), 0)) continue
             insertRow(context, channelId, itemId, o)
         }
         for ((itemId, rows) in existing) {

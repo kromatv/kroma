@@ -4,6 +4,9 @@ import { bySize, type ControlSize } from '#ui/lib/field-shell';
 
 type ListRowSize = ControlSize;
 
+/** What a <ListRow.Root> is drawn on. See its `ground` variant. */
+type RowGround = 'artwork' | 'surface';
+
 const listRowVariants = svFor<{
   root: StyleDecl;
   label: StyleDecl;
@@ -25,13 +28,21 @@ const listRowVariants = svFor<{
       hint: { fontSize: Math.round(m.fontSize * 0.86) },
       chevron: { size: Math.round(m.fontSize * 1.2) },
     })),
+    /** What is behind the row. Over `artwork` the translucent well is blurred
+     *  and lifted, which is what makes it read as an object on a picture; on a
+     *  `surface` - a dialog's card, a settings panel - there is nothing to
+     *  stand off, and a blur and a drop shadow on every row of a list that
+     *  recycles are paid per frame for nothing. Only the shape changes: the
+     *  well, the corner and the outward ring are the same row either way. */
+    ground: {
+      artwork: { root: { shadow: 'card' } },
+      surface: {},
+    },
     /** Its own object, or one member of a <ListRow.Group>'s single card. A
      *  member draws no surface: the group carries the well, the blur, the
      *  edge and the lift for the whole list. */
     standalone: {
-      // The well is translucent, so <Frost> blurs what shows through and the
-      // lift is what keeps the row off the artwork behind it.
-      true: { root: { border: 'border', shadow: 'card' } },
+      true: { root: { border: 'border' } },
       // A member is flush with the card that clips it, so its ring is drawn
       // INWARD - the same width, ink and gap, on the only side there is.
       false: {
@@ -51,8 +62,8 @@ const listRowVariants = svFor<{
       true: { root: { bg: 'accentSoft' }, label: { color: 'accentText' } },
     },
   },
-  defaults: { size: 'md', pressable: false, standalone: true, selected: false },
+  defaults: { size: 'md', pressable: false, standalone: true, ground: 'artwork', selected: false },
 });
 
-export type { ListRowSize };
+export type { ListRowSize, RowGround };
 export { listRowVariants };

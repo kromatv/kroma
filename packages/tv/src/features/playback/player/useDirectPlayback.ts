@@ -6,12 +6,11 @@ import {
   declaredAspect,
   type KromaClient,
   type MediaItem,
-  type MessageKey,
 } from '@kroma/core';
 import { type AudioFilterMode, type PlaneRect, usePlaybackHeartbeat, useT } from '@kroma/ui';
 import { useCallback, useRef, useState } from 'react';
 import type { EnginePref } from '#tv/app/enginePref';
-import type { Surface, TvEngine } from '#tv/features/playback/player/engine';
+import type { PlayerFailure, Surface, TvEngine } from '#tv/features/playback/player/engine';
 import { useEngineLifecycle } from '#tv/features/playback/player/useEngineLifecycle';
 import { useResumeAndPersist } from '#tv/features/playback/player/useResumeAndPersist';
 import { useSeekGesture } from '#tv/features/playback/player/useSeekGesture';
@@ -29,7 +28,7 @@ export interface Playback {
   setAudioFilter: (mode: AudioFilterMode) => void;
   audioFilterSupported: boolean;
   verdict: DirectPlayVerdict | null;
-  error: MessageKey | null;
+  error: PlayerFailure | null;
   terminated: string | null;
   ready: boolean;
   playing: boolean;

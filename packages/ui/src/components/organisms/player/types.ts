@@ -191,6 +191,9 @@ export interface PlayerController {
   ready: boolean;
   /** Already-localized warning/error string, or null. */
   error: string | null;
+  /** The line under {@link error}: what the viewer can do about it. Null when
+   *  the headline says everything there is to say. */
+  errorHint?: string | null;
   /** Bumps once each time playback reaches the natural end (autoplay trigger). */
   endedNonce: number;
   surface: PlayerSurface;

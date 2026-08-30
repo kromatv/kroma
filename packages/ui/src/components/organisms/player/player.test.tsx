@@ -116,6 +116,29 @@ describe('<Player> as a compound', () => {
   });
 });
 
+describe('<Player> with a title that will not play', () => {
+  const loading = { ...fakeController(), waiting: true, ready: false };
+  const REASON = 'This video is too big for this device';
+
+  it('prints the reason across the picture instead of spinning at it', () => {
+    render(
+      player(media, {
+        controller: { ...loading, error: REASON, errorHint: 'Try it on another one.' },
+      }),
+    );
+
+    expect(screen.getByText(REASON)).toBeTruthy();
+    expect(screen.getByText('Try it on another one.')).toBeTruthy();
+    expect(screen.queryByRole('progressbar')).toBeNull();
+  });
+
+  it('still spins for a title that is merely slow to arrive', () => {
+    render(player(media, { controller: loading }));
+
+    expect(screen.getByRole('progressbar')).toBeTruthy();
+  });
+});
+
 describe('<Player.Root> says why it was closed', () => {
   it('reports the chrome`s own back control as `close`', () => {
     const onClose = vi.fn();

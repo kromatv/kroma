@@ -1,10 +1,10 @@
 import {
   audioTracksOf,
+  beyondDecoder,
   canDirectPlay,
   type DirectPlayVerdict,
   type KromaClient,
   type MediaItem,
-  type MessageKey,
   preferredAudioIndex,
 } from '@kroma/core';
 import { storedAudioFilter } from '@kroma/ui';
@@ -18,6 +18,7 @@ import { createTvEngine, type EnginePlan, planEngine } from '#tv/features/playba
 import { detectTvEnv } from '#tv/features/playback/player/detectTvEnv';
 import {
   type EngineListeners,
+  type PlayerFailure,
   renditionFor,
   type Surface,
   type TvEngine,
@@ -37,7 +38,7 @@ export interface EngineLifecycle {
   setEngine: (p: EnginePref) => void;
   audioFilterSupported: boolean;
   verdict: DirectPlayVerdict | null;
-  error: MessageKey | null;
+  error: PlayerFailure | null;
   ready: boolean;
   playing: boolean;
   waiting: boolean;
@@ -68,7 +69,7 @@ export function useEngineLifecycle(
   const engineRef = useRef<TvEngine | null>(null);
   const startedRef = useRef(false);
 
-  const [error, setError] = useState<MessageKey | null>(null);
+  const [error, setError] = useState<PlayerFailure | null>(null);
   const [playing, setPlaying] = useState(false);
   const [waiting, setWaiting] = useState(true);
   const [ready, setReady] = useState(false);
@@ -108,25 +109,33 @@ export function useEngineLifecycle(
   // new title resets it by construction and one bad file cannot pin the session.
   const [vlcFallbackFor, setVlcFallbackFor] = useState<string | null>(null);
   const fellBackToVlc = vlcFallbackFor === item.id;
+  // A picture over this device's decoder ceiling. The server's master is the one
+  // route that can shrink it, so `planEngine` sends it there; VLC is excluded
+  // from the fallback below because it would answer the frame the hardware
+  // refused with its own software decoder, which on a set that HAS a ceiling is a
+  // slideshow rather than a film.
+  const overrun = beyondDecoder(item) !== null;
   // Both ways a title can die end here: the engine reporting an error, and the load
   // watchdog giving up on one that never errors and never becomes ready - which is
   // precisely the silently-undecodable case this engine exists for. Only from
   // `auto`, and only once: an explicit choice is the viewer's, and a VLC failure
   // has nowhere left to fall.
   const giveUp = useEffectEvent(() => {
-    if (enginePref === 'auto' && !fellBackToVlc && vlcAvailable()) {
+    if (!overrun && enginePref === 'auto' && !fellBackToVlc && vlcAvailable()) {
       setVlcFallbackFor(item.id);
       return;
     }
-    setError(failKey);
+    setError(failure);
   });
   const plan = planEngine(item, env, fellBackToVlc ? 'vlc' : enginePref);
   const { surface, playbackMode, deviceLabel, rebuildKey } = plan;
   const durationSec = item.durationMs ? item.durationMs / 1000 : 0;
   // Remux-only server: an undecodable video codec here truly cannot play.
   const playVerdict = useMemo(() => canDirectPlay(item), [item]);
-  const failKey: MessageKey =
-    surface === 'video' && !playVerdict.canDirectPlay ? playVerdict.messageKey : 'player.cantPlay';
+  const failure: PlayerFailure =
+    surface === 'video' && !playVerdict.canDirectPlay
+      ? playVerdict
+      : { messageKey: 'player.cantPlay', hintKey: 'player.cantPlayHint' };
 
   const { startSec, setStartSec } = useResolvedStart(client, item);
 
@@ -195,7 +204,7 @@ export function useEngineLifecycle(
       engine.destroy();
     };
     // `rebuildKey` stands in for every backend flag the plan resolved.
-  }, [client, item, rebuildKey, durationSec, startSec, failKey]);
+  }, [client, item, rebuildKey, durationSec, startSec, failure.messageKey]);
 
   useEffect(() => {
     engineRef.current?.setAudioRendition(renditionFor(item, audioIndex));
@@ -224,7 +233,7 @@ export function useEngineLifecycle(
       giveUp();
     }, graceMs);
     return () => clearTimeout(id);
-  }, [surface, ready, error, failKey, loadBeat]);
+  }, [surface, ready, error, failure.messageKey, loadBeat]);
 
   const stalled = useStallGuard(engineRef, ready && error === null);
 
@@ -257,7 +266,9 @@ export function useEngineLifecycle(
     error,
     ready,
     playing,
-    waiting: waiting || stalled,
+    // A dead title is not buffering: without this the stage spins forever behind
+    // the message saying why it never will.
+    waiting: (waiting || stalled) && error === null,
     cur,
     setCur,
     dur,

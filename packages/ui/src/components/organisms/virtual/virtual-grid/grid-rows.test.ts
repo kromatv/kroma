@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { freeOffset, pageRow, rowMetrics, rowTop, rowWindow, stripOffset } from './grid-rows';
 
 /** A 350px viewport clips this grid to three rows. */
-const GRID = { rows: 10, pitch: 100, header: true, headerSize: 60, viewport: 350 };
+const GRID = { rows: 10, pitch: 100, gap: 0, header: true, headerSize: 60, viewport: 350 };
 const METRICS = rowMetrics(GRID);
 const BARE = rowMetrics({ ...GRID, header: false });
 
@@ -28,6 +28,17 @@ describe('rowMetrics', () => {
 
   it('keeps the pitch off zero, which is what an unmeasured grid reports', () => {
     expect(rowMetrics({ ...GRID, pitch: 0, viewport: 0 }).pitch).toBe(1);
+  });
+
+  it('counts the row whose gap falls outside the viewport', () => {
+    // Seven 68px rows and the six 8px gaps between them.
+    const shown = rowMetrics({ ...GRID, pitch: 76, gap: 8, viewport: 524, header: false });
+    expect(shown.visible).toBe(7);
+  });
+
+  it('does not count a row the viewport only half shows', () => {
+    const shown = rowMetrics({ ...GRID, pitch: 76, gap: 8, viewport: 560, header: false });
+    expect(shown.visible).toBe(7);
   });
 });
 

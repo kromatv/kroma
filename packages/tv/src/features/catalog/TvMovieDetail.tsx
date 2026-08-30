@@ -70,7 +70,7 @@ export function TvMovieDetail() {
       }
     >
       <EndsAtHint runtimeMs={item.durationMs} />
-      <CastRow cast={item.metadata?.cast} />
+      <CastRow cast={item.metadata?.cast} crew={item.metadata?.crew} />
       <TvAiSuggestRow id={item.id} />
     </TvDetailScaffold>
   );

@@ -38,6 +38,16 @@ export interface AudioCapabilities {
   vorbis: boolean;
 }
 
+export interface FrameSize {
+  width: number;
+  height: number;
+}
+
+/** The largest frame each video decoder accepts, keyed by the codec name an
+ * item carries (ffprobe's: `hevc`, `h264`, `av1`, `vp9`). A codec with no entry
+ * is not gated on size. */
+export type DecoderFrameLimits = Readonly<Record<string, FrameSize>>;
+
 export interface PlaybackCapabilities {
   hevc: boolean;
   hevc10bit: boolean;
@@ -45,8 +55,24 @@ export interface PlaybackCapabilities {
   av1: boolean;
   vp9: boolean;
   hdr: boolean;
+  /** Absent where the runtime will not say, which gates nothing. */
+  frameLimits?: DecoderFrameLimits;
   audio: AudioCapabilities;
   source: 'mediaSource' | 'videoElement' | 'platform-tv' | 'unknown';
+}
+
+let injectedLimits: DecoderFrameLimits | undefined;
+
+/**
+ * How large a picture this device's decoders will actually accept, which no Web
+ * API reports and every platform table above guesses at: a shell that can ask
+ * the platform hands the answer over at the app root, before the first render.
+ * Null clears it. Drops the cached capabilities, so it may be called either side
+ * of the first {@link capabilities} read.
+ */
+export function setDecoderFrameLimits(limits: DecoderFrameLimits | null): void {
+  injectedLimits = limits ?? undefined;
+  cached = null;
 }
 
 function supportsType(type: string): boolean {
@@ -106,6 +132,7 @@ export function detectCapabilities(): PlaybackCapabilities {
       av1: false,
       vp9: true,
       hdr: true,
+      frameLimits: injectedLimits,
       audio: tvAudio,
       source: 'platform-tv',
     };
@@ -131,6 +158,7 @@ export function detectCapabilities(): PlaybackCapabilities {
     av1: supportsType(PROBE.av1Main),
     vp9: supportsType(PROBE.vp9),
     hdr: detectHdr(),
+    frameLimits: injectedLimits,
     audio,
     source: usingMse ? 'mediaSource' : 'videoElement',
   };

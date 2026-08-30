@@ -188,11 +188,16 @@ export type HlsAudioFilter = 'standard' | 'night';
  * black; omitted means no declaration, an empty array means none. `copyCodecs`
  * is read only for a copy request, `videoCodecs` for every mode - the video axis
  * is independent of the audio one, and the server answers a mismatch with a
- * redirect to the mode it will actually produce. */
+ * redirect to the mode it will actually produce. `maxFrame` is the largest
+ * picture this device's decoder accepts: a bigger source is fitted inside the
+ * nearest rung under it, which is the one override no player can work around for
+ * itself. Both axes, because a scope frame breaks the width limit while clearing
+ * the height one. */
 export interface HlsMasterDeclaration {
   filter?: HlsAudioFilter;
   copyCodecs?: string[];
   videoCodecs?: string[];
+  maxFrame?: { width: number; height: number };
 }
 
 export function hlsMasterUrl(
@@ -201,7 +206,7 @@ export function hlsMasterUrl(
   aac = false,
   startSec = 0,
   audio = 0,
-  { filter, copyCodecs, videoCodecs }: HlsMasterDeclaration = {},
+  { filter, copyCodecs, videoCodecs, maxFrame }: HlsMasterDeclaration = {},
 ): string {
   // The anchor, audio index and filter mode are all in the path, so each seek
   // position and language gets its own session with its own child URLs - no
@@ -217,6 +222,9 @@ export function hlsMasterUrl(
   if (copyCodecs && mode === 'copy')
     params.push(`copy=${encodeURIComponent(copyCodecs.join(','))}`);
   if (videoCodecs) params.push(`video=${encodeURIComponent(videoCodecs.join(','))}`);
+  if (maxFrame && maxFrame.width > 0 && maxFrame.height > 0) {
+    params.push(`maxw=${Math.round(maxFrame.width)}`, `maxh=${Math.round(maxFrame.height)}`);
+  }
   return params.length ? `${base}?${params.join('&')}` : base;
 }
 

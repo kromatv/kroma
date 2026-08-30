@@ -84,7 +84,7 @@ function PersonCard({
     >
       {(state) => (
         <>
-          <Box style={state.slots.face}>
+          <Box collapsable={false} style={state.slots.face}>
             <Avatar
               name={name}
               src={photo ?? null}

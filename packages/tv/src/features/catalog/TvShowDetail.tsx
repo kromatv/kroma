@@ -163,7 +163,10 @@ export function TvShowDetail() {
       {/* Cast for the selected season (TMDB season credits), falling back to the
           show's overall cast until the season is enriched. */}
       <FocusSlot>
-        <CastRow cast={activeSeason?.cast?.length ? activeSeason.cast : meta?.cast} />
+        <CastRow
+          cast={activeSeason?.cast?.length ? activeSeason.cast : meta?.cast}
+          crew={meta?.crew}
+        />
       </FocusSlot>
 
       <FocusSlot>

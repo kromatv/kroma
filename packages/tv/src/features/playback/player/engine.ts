@@ -1,6 +1,7 @@
 import {
   audioTrackId,
   audioTracksOf,
+  type DirectPlayVerdict,
   type MediaItem,
   resolveAudioRelativeIndex,
 } from '@kroma/core';
@@ -13,6 +14,10 @@ import type { AudioFilterMode, PlaneRect } from '@kroma/ui';
 // page, which `<video>`/MSE on Tizen cannot do, so it is the right backend for
 // surround passthrough + seamless in-place audio switching. webOS and plain
 // compatible MP4 stay on the HTML engine.
+
+/** Why a title stopped, as the player renders it: a direct-play verdict without
+ * the verdict, because the reasons are the same reasons. */
+export type PlayerFailure = Omit<DirectPlayVerdict, 'canDirectPlay'>;
 
 /** Normalised lifecycle callbacks the hook subscribes to (absolute seconds). */
 export interface EngineListeners {

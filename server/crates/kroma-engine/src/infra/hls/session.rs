@@ -19,6 +19,7 @@ use tokio::time::sleep;
 use tracing::{info, warn};
 
 use super::ffmpeg::{detect_burst, keyframe_before, spawn_stream};
+use super::hwaccel::detect as detect_hwaccel;
 use super::naming::{contains, content_type, is_safe_name, seg_index, session_dir};
 use super::StreamMode;
 
@@ -204,8 +205,9 @@ impl Sessions {
                 return Ok(s.clone());
             }
         }
-        // Shells out to ffprobe: must not run under the lock.
+        // Both shell out on their first call: must not run under the lock.
         let start = keyframe_before(input, start_secs).await;
+        let accel = detect_hwaccel();
 
         let mut map = self.inner.lock().await;
         if let Some(s) = map.get(key) {
@@ -217,8 +219,8 @@ impl Sessions {
         let dir = self.root.join(session_dir(key));
         super::reclaim::discard_dir(&dir);
         std::fs::create_dir_all(&dir)?;
-        let child = spawn_stream(input, &dir, audio, mode, start_secs, self.burst)?;
-        info!(session = %key, audio, mode = ?mode, anchor = start_secs, start, "started HLS remux");
+        let child = spawn_stream(input, &dir, audio, mode, start_secs, self.burst, accel)?;
+        info!(session = %key, audio, mode = ?mode, anchor = start_secs, start, accel = accel.label(), "started HLS remux");
         let session = Arc::new(Session {
             dir,
             child: Mutex::new(child),

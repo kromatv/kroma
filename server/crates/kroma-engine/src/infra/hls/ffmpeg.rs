@@ -6,6 +6,7 @@ use std::process::Stdio;
 
 use tokio::process::{Child, Command};
 
+use super::hwaccel::HwAccel;
 use super::naming::contains;
 use super::{StreamMode, VideoMode};
 
@@ -19,18 +20,27 @@ const READRATE: &str = "2.0";
 // Seconds read at full speed before READRATE throttling starts (ffmpeg >= 6.1).
 const READRATE_BURST: &str = "60";
 
-/// `-readrate_initial_burst` only exists from ffmpeg 6.1; older builds get a
-/// plain `-readrate` and a slightly slower first segment.
-pub fn detect_burst() -> bool {
+/// What `ffmpeg <args>` printed, both streams together because which one carries
+/// the answer varies by build. Empty where ffmpeg could not be run at all.
+pub(super) fn ffmpeg_output(args: &[&str]) -> Vec<u8> {
     std::process::Command::new("ffmpeg")
-        .args(["-hide_banner", "-h", "full"])
+        .args(args)
         .output()
         .map(|o| {
             let mut s = o.stdout;
             s.extend_from_slice(&o.stderr);
-            contains(&s, b"readrate_initial_burst")
+            s
         })
-        .unwrap_or(false)
+        .unwrap_or_default()
+}
+
+/// `-readrate_initial_burst` only exists from ffmpeg 6.1; older builds get a
+/// plain `-readrate` and a slightly slower first segment.
+pub fn detect_burst() -> bool {
+    contains(
+        &ffmpeg_output(&["-hide_banner", "-h", "full"]),
+        b"readrate_initial_burst",
+    )
 }
 
 /// The keyframe at-or-before `anchor`, which is where the remux really starts
@@ -78,6 +88,7 @@ pub fn spawn_stream(
     mode: StreamMode,
     start_secs: f64,
     burst: bool,
+    accel: HwAccel,
 ) -> std::io::Result<Child> {
     let seeking = start_secs > 0.5;
     let copying_video = matches!(mode.video, VideoMode::Copy);
@@ -88,6 +99,10 @@ pub fn spawn_stream(
     // cannot keep a 4K source ahead of the player.
     if copying_video {
         cmd.args(["-threads", "1"]);
+    } else {
+        // Puts the decode on the device too where there is one, so a 4K source
+        // never touches the CPU on its way to a 1080p screen.
+        cmd.args(accel.input_args());
     }
     if seeking {
         // Required for A/V sync: an accurate seek backs the video to a keyframe but
@@ -111,12 +126,16 @@ pub fn spawn_stream(
     if copying_video {
         cmd.args(["-c:v", "copy"]);
     } else {
-        // 8-bit H.264 because the fallback exists for decoders the source defeats,
-        // so it must land on the one profile every target reads. HDR sources are
-        // not tone-mapped (no zimg) and come out washed-out.
-        cmd.args([
-            "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
-        ]);
+        // The picture only shrinks when the client said its decoder needs it to;
+        // the filter runs in whatever memory the device decoded into.
+        if let Some(filter) = accel.video_filter(mode.video.box_size()) {
+            cmd.arg("-vf").arg(filter);
+        }
+        // 8-bit H.264 whatever the device, because the re-encode exists for
+        // decoders the source defeats and must land on the one profile every
+        // target reads. HDR sources are not tone-mapped (no zimg) and come out
+        // washed-out.
+        cmd.args(accel.encoder_args());
     }
     if mode.audio.transcode() {
         if let Some(af) = mode.audio.filter_chain() {

@@ -4,6 +4,7 @@ import { type ChannelBuild, toCanaryBuilds } from '../src/lib/channels.ts';
 import { Feed } from '../src/lib/release-feed.ts';
 import { TARGET_IDS } from '../src/lib/release-targets.ts';
 import { type SiteRelease, toSiteReleases } from '../src/lib/releases.ts';
+import { fetchBody } from './fetch-body.ts';
 
 // The site offers the releases as of its last deploy, so `bun run deploy:site`
 // has to follow a promotion for the buttons to move on.
@@ -36,13 +37,11 @@ function headers(): HeadersInit {
 
 async function page(number: number): Promise<unknown[]> {
   const url = `${RELEASES_URL}?per_page=100&page=${number}`;
-  const res = await fetch(url, { headers: headers(), signal: AbortSignal.timeout(TIMEOUT_MS) });
-  if (!res.ok) throw new Error(`${url} answered ${res.status} ${res.statusText}`);
-
-  const body = await res.text();
-  if (body.length > MAX_BYTES) {
-    throw new Error(`${url} returned ${body.length} bytes, over the ${MAX_BYTES} ceiling`);
-  }
+  const body = await fetchBody(url, {
+    headers: headers(),
+    timeoutMs: TIMEOUT_MS,
+    maxBytes: MAX_BYTES,
+  });
 
   const entries: unknown = JSON.parse(body);
   if (!Array.isArray(entries)) throw new Error(`${url} did not answer with a list of releases`);

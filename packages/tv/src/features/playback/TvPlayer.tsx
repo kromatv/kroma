@@ -28,10 +28,12 @@ import { useTvUpNext } from '#tv/features/playback/use-tv-upnext';
 
 const PREVIEW_W = 256;
 
-// Priority order: stream/codec error -> direct-play verdict (in-page surface
-// only) -> audio support. Null when nothing to warn about.
+// Warnings only: a title that will not play at all is the controller's `error`,
+// which the stage prints across the picture instead of hinting at it in a corner.
+// Priority order: direct-play verdict (in-page surface only) -> audio support.
+// Null when nothing to warn about.
 function playerWarn(pb: Playback, item: MediaItem, t: Translate): string | null {
-  if (pb.error) return t(pb.error);
+  if (pb.error) return null;
   if (pb.surface === 'video' && pb.verdict && !pb.verdict.canDirectPlay)
     return t(pb.verdict.messageKey, pb.verdict.messageVars);
   const audio = audioSupport(item);

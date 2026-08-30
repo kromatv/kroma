@@ -4,6 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { CONTROL } from '#ui/lib/field-shell';
+import { onScreen } from '#ui/testing';
 import { ListRow } from './list-row';
 
 afterEach(cleanup);
@@ -259,5 +260,41 @@ describe('ListRow', () => {
 
     expect(tail(fixed, 'on').flexShrink).toBe('0');
     expect(tail(supple, 'a very long value indeed').flexShrink).toBe('1');
+  });
+  it('lifts a row that stands on artwork', () => {
+    const { container } = render(
+      <ListRow.Root>
+        <ListRow.Label>Sur l'affiche</ListRow.Label>
+      </ListRow.Root>,
+    );
+
+    expect(getComputedStyle(rowOf(container, "Sur l'affiche")).boxShadow).toBeTruthy();
+  });
+
+  it('drops the lift on a surface, and keeps the row its own object', () => {
+    const { container } = render(
+      <ListRow.Root ground="surface">
+        <ListRow.Label>Sur la carte</ListRow.Label>
+      </ListRow.Root>,
+    );
+    const row = getComputedStyle(rowOf(container, 'Sur la carte'));
+
+    expect(row.boxShadow).toBeFalsy();
+    expect(row.backgroundColor).toBeTruthy();
+    expect(row.borderTopLeftRadius).not.toBe('0px');
+  });
+
+  it('keeps the ring outside the row it draws on a surface', () => {
+    const { container } = render(
+      onScreen(
+        <ListRow.Root ground="surface" autoFocus onPress={vi.fn()}>
+          <ListRow.Label>Sur la carte</ListRow.Label>
+        </ListRow.Root>,
+      ),
+    );
+
+    expect(
+      Number(rowOf(container, 'Sur la carte').style.outlineOffset.replace('px', '')),
+    ).toBeGreaterThan(0);
   });
 });
