@@ -32,6 +32,7 @@ import { WEB } from '#ui/lib/platform';
 import { pressGuardActive } from '#ui/lib/press-guard';
 import { useRingScope } from '#ui/lib/ring-scope';
 import { claimProps } from './focusable-a11y';
+import { contentFor } from './focusable-delegate';
 import { DisabledForm, NavigatorForm, TouchForm } from './focusable-forms';
 import { LinkForm } from './focusable-link';
 import { useFocusablePaint } from './focusable-paint';
@@ -47,7 +48,7 @@ function attach(box: RefObject<View | null>, outer: Ref<View> | undefined, view:
 }
 
 function Focusable<R extends AnySv = AnySv>({
-  as,
+  asChild = false,
   sv: recipe,
   vars,
   onPress,
@@ -68,7 +69,7 @@ function Focusable<R extends AnySv = AnySv>({
   states,
   children,
   label,
-  role = href || as ? 'link' : 'button',
+  role = href || asChild ? 'link' : 'button',
   checked,
   selected,
   expanded,
@@ -170,6 +171,7 @@ function Focusable<R extends AnySv = AnySv>({
   // Whether anything downstream can report a press, so a recipe's `_press` is
   // only resolved where it can land: a pointerless television cannot.
   const canPress = WEB || !Platform.isTV || TV_HAS_POINTER;
+  const content = contentFor(asChild, children);
   const { dressed, focusedStyle, hoveredStyle, layers, paintedPressed, resolve, rest } =
     useFocusablePaint({
       recipe,
@@ -181,7 +183,7 @@ function Focusable<R extends AnySv = AnySv>({
       disabled,
       inert,
       canPress,
-      actionable: Boolean(onPress) || Boolean(as),
+      actionable: Boolean(onPress) || asChild,
       showRing,
     });
 
@@ -205,7 +207,7 @@ function Focusable<R extends AnySv = AnySv>({
           focused,
           hovered,
           slots: rest,
-          children,
+          children: content,
         }}
       />
     );
@@ -245,9 +247,9 @@ function Focusable<R extends AnySv = AnySv>({
       onPointerDown: pointerDown,
       onPointerUp: pointerUp,
       resolve,
-      children,
+      children: content,
     };
-    return as && WEB ? <LinkForm as={as} at={at} /> : <TouchForm at={at} />;
+    return asChild && WEB ? <LinkForm child={children} at={at} /> : <TouchForm at={at} />;
   }
 
   const node = (
@@ -284,7 +286,7 @@ function Focusable<R extends AnySv = AnySv>({
         onLongPress,
         hitSlop,
         resolve,
-        children,
+        children: content,
       }}
     />
   );
@@ -292,5 +294,7 @@ function Focusable<R extends AnySv = AnySv>({
   return isEntry ? <DefaultFocus>{node}</DefaultFocus> : node;
 }
 
+export type { Delegate } from './focusable-delegate';
+export { delegateOf } from './focusable-delegate';
 export type { FocusableProps, FocusCurrent, FocusState, HostElement } from './focusable-types';
 export { Focusable };

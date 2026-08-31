@@ -77,13 +77,15 @@ function Item({
       vars={{ current }}
       current={current ? 'page' : undefined}
       disabled={disabled}
-      as={<RouteLink to={to} />}
+      asChild
     >
       {({ slots }) => (
-        <RowContext.Provider value={slots}>
-          <Glyph size={SIDE_NAV_GLYPH} stroke={1.7} color={slots.glyph.color} />
-          {children}
-        </RowContext.Provider>
+        <RouteLink to={to}>
+          <RowContext.Provider value={slots}>
+            <Glyph size={SIDE_NAV_GLYPH} stroke={1.7} color={slots.glyph.color} />
+            {children}
+          </RowContext.Provider>
+        </RouteLink>
       )}
     </Focusable>
   );

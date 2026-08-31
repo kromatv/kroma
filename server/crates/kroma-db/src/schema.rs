@@ -163,6 +163,77 @@ mod tests {
     }
 
     #[test]
+    fn init_names_the_series_a_play_was_logged_without() {
+        let dir = kroma_testing::temp_dir("schema-history-series");
+        let path = dir.path().join("kroma.db");
+        let old = init(&path).unwrap();
+        old.get()
+            .unwrap()
+            .execute_batch(
+                "INSERT INTO libraries (id,name,kind,path,added_at) \
+                     VALUES ('lib-tv','Series','tv','/media','2026-01-01');\
+                 INSERT INTO shows (id,library,title,added_at) \
+                     VALUES ('hotd','lib-tv','House of the Dragon','2026-01-01');\
+                 INSERT INTO items (id,kind,title,container,library,show_id,season,episode,added_at) \
+                     VALUES ('ep','episode','Salt and Sea, Fire and Blood','mkv','lib-tv','hotd',3,1,'2026-01-01');\
+                 INSERT INTO play_history (id,user_id,username,item_id,kind,title,started_at,ended_at,watched_ms) \
+                     VALUES ('p1','u1','alice','ep','episode','Salt and Sea, Fire and Blood',0,100,1000);",
+            )
+            .unwrap();
+        drop(old);
+
+        let pool = init(&path).unwrap();
+
+        let row: (Option<String>, Option<i64>, Option<i64>, Option<String>) = pool
+            .get()
+            .unwrap()
+            .query_row(
+                "SELECT show_title, season, episode, library FROM play_history WHERE id = 'p1'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+            )
+            .unwrap();
+        assert_eq!(
+            row,
+            (
+                Some("House of the Dragon".to_string()),
+                Some(3),
+                Some(1),
+                Some("lib-tv".to_string())
+            )
+        );
+    }
+
+    #[test]
+    fn init_leaves_a_play_whose_title_has_left_the_catalog_blank() {
+        let dir = kroma_testing::temp_dir("schema-history-gone");
+        let path = dir.path().join("kroma.db");
+        let old = init(&path).unwrap();
+        old.get()
+            .unwrap()
+            .execute(
+                "INSERT INTO play_history (id,user_id,username,item_id,kind,title,started_at,ended_at,watched_ms) \
+                 VALUES ('p1','u1','alice','deleted','episode','The Dundies',0,100,1000)",
+                [],
+            )
+            .unwrap();
+        drop(old);
+
+        let pool = init(&path).unwrap();
+
+        let row: (Option<String>, Option<i64>, Option<String>) = pool
+            .get()
+            .unwrap()
+            .query_row(
+                "SELECT show_title, season, library FROM play_history WHERE id = 'p1'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(row, (None, None, None));
+    }
+
+    #[test]
     fn init_repins_downloads_a_previous_release_marked_manual() {
         let dir = kroma_testing::temp_dir("schema-match-source");
         let path = dir.path().join("kroma.db");

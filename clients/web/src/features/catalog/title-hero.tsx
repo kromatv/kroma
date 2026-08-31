@@ -1,6 +1,6 @@
 import { formatRuntime, type ItemId } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Button } from '@kroma/ui/kit';
+import { Button, type HostElement } from '@kroma/ui/kit';
 import {
   audioFlagLabel,
   audioString,
@@ -25,7 +25,7 @@ export function TitleHero({
   toggleList,
   onPlay,
   onRequest,
-  onBack,
+  back,
 }: Readonly<{
   view: TitleView;
   owned: boolean;
@@ -38,7 +38,7 @@ export function TitleHero({
   toggleList: (id: string) => void;
   onPlay: (id: string) => void;
   onRequest: () => void;
-  onBack: () => void;
+  back: HostElement;
 }>) {
   const t = useT();
   const playable = owned ? view.playable : null;
@@ -93,7 +93,7 @@ export function TitleHero({
       primaryAction={
         owned ? undefined : <RequestCta view={view} busy={busy} onRequest={onRequest} />
       }
-      onBack={onBack}
+      back={back}
       onPlay={playable ? () => onPlay(playable.id) : undefined}
       onReport={
         owned && localId

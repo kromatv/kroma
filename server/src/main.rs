@@ -10,6 +10,9 @@
 
 // Request guards use the axum `Response` as their Err type so handlers can `?`.
 #![allow(clippy::result_large_err)]
+// The hot-patch loop stands in for boot::serve, so the HTTPS and TLS path that
+// one owns is unreachable in that build and only in that build.
+#![cfg_attr(feature = "hotpatch", allow(dead_code))]
 
 mod api;
 mod boot;
@@ -52,5 +55,8 @@ async fn main() -> anyhow::Result<()> {
     boot::background::spawn(&state).await;
     plan.deferred(&state);
 
+    #[cfg(feature = "hotpatch")]
+    return boot::hot::run(state, supervisor, addr).await;
+    #[cfg(not(feature = "hotpatch"))]
     boot::serve::run(state, supervisor, addr).await
 }

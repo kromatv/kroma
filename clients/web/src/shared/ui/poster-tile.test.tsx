@@ -24,9 +24,13 @@ const ACTIONS: PosterAction[] = [
 function tile(watched: boolean) {
   return render(
     <I18nProvider locale="en">
-      <PosterTile label="Dune" background="none" watched={watched} actions={ACTIONS}>
-        {() => null}
-      </PosterTile>
+      <PosterTile
+        label="Dune"
+        background="none"
+        watched={watched}
+        actions={ACTIONS}
+        art={() => null}
+      />
     </I18nProvider>,
   );
 }
@@ -34,13 +38,8 @@ function tile(watched: boolean) {
 function Tile() {
   return (
     <I18nProvider locale="en">
-      <PosterTile
-        label="Dune"
-        background="none"
-        actions={ACTIONS}
-        as={<RouteLink to="/movies/$id" params={{ id: 'dune' }} />}
-      >
-        {() => null}
+      <PosterTile label="Dune" background="none" actions={ACTIONS} art={() => null} asChild>
+        <RouteLink to="/movies/$id" params={{ id: 'dune' }} />
       </PosterTile>
     </I18nProvider>
   );

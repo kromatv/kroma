@@ -1,4 +1,5 @@
 import { type PlaybackSession, posterGradient, resolveImageUrl } from '@kroma/core';
+import type { Translate } from '@kroma/i18n';
 import { TABULAR } from '@kroma/module-sdk';
 import { useFormat, useT } from '@kroma/ui';
 import {
@@ -68,6 +69,27 @@ function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
   );
 }
 
+function transportTone(state: string, t: Translate): { color: ColorValue; label: string } {
+  if (state === 'buffering') return { color: 'accent', label: t('admin.buffering') };
+  if (state === 'playing') return { color: 'success', label: t('admin.playing') };
+  return { color: 'text/50', label: t('admin.paused') };
+}
+
+function pipeTone(mode: string, t: Translate): { ink: ColorValue; bg: ColorValue; label: string } {
+  if (mode === 'transcode') {
+    return { ink: 'accent', bg: 'accentWash/14', label: t('admin.audioTranscode') };
+  }
+  if (mode === 'remux') return { ink: 'info', bg: 'info/14', label: t('admin.remux') };
+  return { ink: 'success', bg: 'success/14', label: t('admin.directPlay') };
+}
+
+function subtitleOf(s: PlaybackSession, t: Translate): string {
+  if (s.kind === 'episode' && s.season != null) {
+    return t('admin.episodeShort', { season: s.season, episode: s.episode ?? '' });
+  }
+  return s.year == null ? '' : String(s.year);
+}
+
 export function NowPlayingCard({
   s,
   avatarUrl,
@@ -77,34 +99,16 @@ export function NowPlayingCard({
   const fmt = useFormat();
   const playing = s.state === 'playing';
   const pct = s.durationMs ? (s.positionMs / s.durationMs) * 100 : 0;
+  const loaded = s.durationMs && s.bufferedMs != null ? s.bufferedMs / s.durationMs : undefined;
   const buffering = s.state === 'buffering';
-  // `transcode` = the audio was re-encoded to AAC; `remux` = HLS repackage with
-  // both streams copied. Video is NEVER transcoded, so it always reads as direct.
+  // What the CLIENT reported it is doing. The server's own account of a session,
+  // including a picture it had to re-encode, is the Transcodage section.
   const transcode = s.mode === 'transcode';
-  const remux = s.mode === 'remux';
   const lan = s.network === 'LAN';
 
-  let stateColor: ColorValue = 'text/50';
-  let stateLabel = t('admin.paused');
-  if (buffering) {
-    stateColor = 'accent';
-    stateLabel = t('admin.buffering');
-  } else if (playing) {
-    stateColor = 'success';
-    stateLabel = t('admin.playing');
-  }
-
-  let pipe: { ink: ColorValue; bg: ColorValue; label: string } = {
-    ink: 'success',
-    bg: 'success/14',
-    label: t('admin.directPlay'),
-  };
-  if (transcode) pipe = { ink: 'accent', bg: 'accentWash/14', label: t('admin.audioTranscode') };
-  else if (remux) pipe = { ink: 'info', bg: 'info/14', label: t('admin.remux') };
-  let sub = '';
-  if (s.kind === 'episode' && s.season != null)
-    sub = t('admin.episodeShort', { season: s.season, episode: s.episode ?? '' });
-  else if (s.year != null) sub = String(s.year);
+  const { color: stateColor, label: stateLabel } = transportTone(s.state, t);
+  const pipe = pipeTone(s.mode, t);
+  const sub = subtitleOf(s, t);
 
   return (
     <Surface elevated pad="none" radius={16} border="border" row gap={18} px={20} py={18}>
@@ -152,7 +156,7 @@ export function NowPlayingCard({
             {fmt.timecode(s.positionMs)}
           </Text>
           <Box flex>
-            <Progress value={pct / 100} rounded />
+            <Progress value={pct / 100} buffered={loaded} waiting={buffering} rounded />
           </Box>
           <Text variant="meta" color="textDim" style={TABULAR}>
             {s.durationMs ? fmt.timecode(s.durationMs) : '-'}

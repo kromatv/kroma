@@ -3,7 +3,6 @@
 
 use std::net::SocketAddr;
 
-use axum::body::Body;
 use axum::extract::{ConnectInfo, Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
@@ -11,6 +10,8 @@ use serde::Deserialize;
 
 use crate::api::error::json_error;
 use crate::infra::hls::StreamMode;
+use crate::infra::metrics::ByteSink;
+use crate::infra::stream::metered_body;
 use crate::state::SharedState;
 
 use super::{byte_sink, load_item};
@@ -40,6 +41,8 @@ pub async fn hls_master(
     State(state): State<SharedState>,
     Path((id, mode, anchor, audio)): Path<(String, String, u64, u32)>,
     Query(q): Query<HlsQuery>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
 ) -> Response {
     let Some(mode) = StreamMode::parse(&mode) else {
         return json_error(StatusCode::BAD_REQUEST, "bad mode");
@@ -90,7 +93,7 @@ pub async fn hls_master(
         // `X-Hls-Start` is the real start (the keyframe at-or-before the anchor, where
         // `-noaccurate_seek` begins); the client needs it to align clock and subtitles.
         Some((body, start)) => {
-            let mut resp = playlist_response(body);
+            let mut resp = playlist_response(body, byte_sink(&state, &headers, &addr));
             if let Ok(v) = header::HeaderValue::from_str(&format!("{start:.3}")) {
                 resp.headers_mut().insert("X-Hls-Start", v);
             }
@@ -130,9 +133,10 @@ pub async fn hls_file(
     let immutable = !file.ends_with(".m3u8");
     match state.hls.file(&id, mode, anchor, audio, &file).await {
         Some((bytes, ct)) => {
-            byte_sink(&state, &headers, &addr).add(bytes.len() as u64);
+            let sink = byte_sink(&state, &headers, &addr);
             Response::builder()
                 .header(header::CONTENT_TYPE, ct)
+                .header(header::CONTENT_LENGTH, bytes.len())
                 // Each anchor's URLs are unique, so segment bytes never change; event
                 // playlists grow.
                 .header(
@@ -143,7 +147,7 @@ pub async fn hls_file(
                         "no-store"
                     },
                 )
-                .body(Body::from(bytes))
+                .body(metered_body(std::io::Cursor::new(bytes), sink))
                 .unwrap()
         }
         // A segment that has not been produced yet 404s the same way one that was
@@ -171,11 +175,13 @@ fn hls_master_path(id: &str, mode: StreamMode, anchor: u64, audio: u32) -> Strin
     )
 }
 
-fn playlist_response(body: String) -> Response {
+fn playlist_response(body: String, sink: ByteSink) -> Response {
+    let bytes = body.into_bytes();
     Response::builder()
         .header(header::CONTENT_TYPE, "application/vnd.apple.mpegurl")
+        .header(header::CONTENT_LENGTH, bytes.len())
         .header(header::CACHE_CONTROL, "no-store")
-        .body(Body::from(body))
+        .body(metered_body(std::io::Cursor::new(bytes), sink))
         .unwrap()
 }
 

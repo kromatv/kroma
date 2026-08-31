@@ -1,1 +1,782 @@
-[]
+[
+  {
+    "id": "ADMIN-1",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 1,
+    "status": "SHIPPED",
+    "text": "The dashboard opens with every live playback session, newest first,",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 14
+  },
+  {
+    "id": "ADMIN-2",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 2,
+    "status": "SHIPPED",
+    "text": "With nothing playing, the section says so in one sentence rather",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 17
+  },
+  {
+    "id": "ADMIN-3",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 3,
+    "status": "SHIPPED",
+    "text": "Each session names the viewer, the title, the position against the",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 21
+  },
+  {
+    "id": "ADMIN-4",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 4,
+    "status": "SHIPPED",
+    "text": "An owner with permission to manage users can end any session, and",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 24
+  },
+  {
+    "id": "ADMIN-5",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 5,
+    "status": "AGREED",
+    "text": "Every resource chart carries a **scope** control naming which series",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 34
+  },
+  {
+    "id": "ADMIN-6",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 6,
+    "status": "AGREED",
+    "text": "Every resource chart carries a footer stating the mean of each series",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 38
+  },
+  {
+    "id": "ADMIN-7",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 7,
+    "status": "AGREED",
+    "text": "Hovering any point reveals every series' value at that instant,",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 41
+  },
+  {
+    "id": "ADMIN-8",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 8,
+    "status": "AGREED",
+    "text": "The range control offers, in this order: live, the last 12 hours,",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 44
+  },
+  {
+    "id": "ADMIN-9",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 9,
+    "status": "AGREED",
+    "text": "\"Live\" is the rolling in-memory window the server samples at its own",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 48
+  },
+  {
+    "id": "ADMIN-10",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 10,
+    "status": "AGREED",
+    "text": "A range with no stored samples says the server has not been running",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 52
+  },
+  {
+    "id": "ADMIN-11",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 11,
+    "status": "AGREED",
+    "text": "Persisted samples are downsampled as they age, so a year of history",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 56
+  },
+  {
+    "id": "ADMIN-12",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 12,
+    "status": "SHIPPED",
+    "text": "The bandwidth chart draws two series, traffic to clients on the",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 64
+  },
+  {
+    "id": "ADMIN-13",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 13,
+    "status": "SHIPPED",
+    "text": "Bandwidth is measured from bytes the delivery handlers actually",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 68
+  },
+  {
+    "id": "ADMIN-14",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 14,
+    "status": "AGREED",
+    "text": "The bandwidth scope control offers all traffic, local only, or",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 72
+  },
+  {
+    "id": "ADMIN-15",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 15,
+    "status": "AGREED",
+    "text": "The vertical scale is chosen from the data in the window and",
+    "file": "docs/spec/admin/dashboard-live.md",
+    "line": 75
+  },
+  {
+    "id": "ADMIN-16",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 16,
+    "status": "AGREED",
+    "text": "The processor chart draws two series, what KROMA costs and what the",
+    "file": "docs/spec/admin/dashboard-resources.md",
+    "line": 17
+  },
+  {
+    "id": "ADMIN-17",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 17,
+    "status": "SHIPPED",
+    "text": "KROMA's figure is the whole process tree, the server and every",
+    "file": "docs/spec/admin/dashboard-resources.md",
+    "line": 20
+  },
+  {
+    "id": "ADMIN-18",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 18,
+    "status": "AGREED",
+    "text": "The processor scope control offers both series, KROMA alone, or the",
+    "file": "docs/spec/admin/dashboard-resources.md",
+    "line": 25
+  },
+  {
+    "id": "ADMIN-19",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 19,
+    "status": "SHIPPED",
+    "text": "A third series names the share of KROMA's own figure that is media",
+    "file": "docs/spec/admin/dashboard-resources.md",
+    "line": 28
+  },
+  {
+    "id": "ADMIN-20",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 20,
+    "status": "AGREED",
+    "text": "The memory chart draws the same two series as the processor chart,",
+    "file": "docs/spec/admin/dashboard-resources.md",
+    "line": 35
+  },
+  {
+    "id": "ADMIN-21",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 21,
+    "status": "SHIPPED",
+    "text": "KROMA's memory is the resident set of the whole process tree, for",
+    "file": "docs/spec/admin/dashboard-resources.md",
+    "line": 38
+  },
+  {
+    "id": "ADMIN-22",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 22,
+    "status": "AGREED",
+    "text": "The memory scope control offers both series, KROMA alone, or the",
+    "file": "docs/spec/admin/dashboard-resources.md",
+    "line": 41
+  },
+  {
+    "id": "ADMIN-23",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 23,
+    "status": "AGREED",
+    "text": "Each series keeps one colour for the life of the product. A reader",
+    "file": "docs/spec/admin/dashboard-resources.md",
+    "line": 44
+  },
+  {
+    "id": "ADMIN-24",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 24,
+    "status": "AGREED",
+    "text": "Sampling runs whether or not anyone is looking, because the history",
+    "file": "docs/spec/admin/dashboard-resources.md",
+    "line": 52
+  },
+  {
+    "id": "ADMIN-25",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 25,
+    "status": "AGREED",
+    "text": "The server states its own sample interval alongside the data, so a",
+    "file": "docs/spec/admin/dashboard-resources.md",
+    "line": 56
+  },
+  {
+    "id": "ADMIN-26",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 26,
+    "status": "AGREED",
+    "text": "The panel ranks accounts by time watched over a chosen window, most",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 14
+  },
+  {
+    "id": "ADMIN-27",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 27,
+    "status": "AGREED",
+    "text": "Each card breaks its total down by kind of media, one row for movies",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 17
+  },
+  {
+    "id": "ADMIN-28",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 28,
+    "status": "AGREED",
+    "text": "An account that watched nothing in the window still appears, with",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 22
+  },
+  {
+    "id": "ADMIN-29",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 29,
+    "status": "AGREED",
+    "text": "The window control offers the last 24 hours, 7 days, 30 days, 90",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 25
+  },
+  {
+    "id": "ADMIN-30",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 30,
+    "status": "AGREED",
+    "text": "With more accounts than fit, the panel pages through them rather",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 28
+  },
+  {
+    "id": "ADMIN-31",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 31,
+    "status": "AGREED",
+    "text": "Each card carries the account's avatar where it has one, and falls",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 31
+  },
+  {
+    "id": "ADMIN-32",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 32,
+    "status": "AGREED",
+    "text": "The panel plots time watched per bucket over a chosen window,",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 45
+  },
+  {
+    "id": "ADMIN-33",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 33,
+    "status": "AGREED",
+    "text": "The bucket width is chosen from the window so the chart always",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 49
+  },
+  {
+    "id": "ADMIN-34",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 34,
+    "status": "AGREED",
+    "text": "The panel carries three independent filters: kind of media, account,",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 53
+  },
+  {
+    "id": "ADMIN-35",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 35,
+    "status": "AGREED",
+    "text": "The account filter lists every account with history in the window,",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 56
+  },
+  {
+    "id": "ADMIN-36",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 36,
+    "status": "AGREED",
+    "text": "A footer states the total time for each kind of media over the whole",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 59
+  },
+  {
+    "id": "ADMIN-37",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 37,
+    "status": "AGREED",
+    "text": "The panel links to the full history screen",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 62
+  },
+  {
+    "id": "ADMIN-38",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 38,
+    "status": "AGREED",
+    "text": "Each kind of media keeps one colour across this panel, the top-viewer",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 66
+  },
+  {
+    "id": "ADMIN-39",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 39,
+    "status": "AGREED",
+    "text": "The panel ranks titles by number of plays over a chosen window, most",
+    "file": "docs/spec/admin/dashboard-most-watched.md",
+    "line": 13
+  },
+  {
+    "id": "ADMIN-40",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 40,
+    "status": "AGREED",
+    "text": "Each column is headed by the artwork of its own top title, labelled",
+    "file": "docs/spec/admin/dashboard-most-watched.md",
+    "line": 21
+  },
+  {
+    "id": "ADMIN-41",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 41,
+    "status": "AGREED",
+    "text": "Each entry names the title, its play count, and how many distinct",
+    "file": "docs/spec/admin/dashboard-most-watched.md",
+    "line": 24
+  },
+  {
+    "id": "ADMIN-42",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 42,
+    "status": "AGREED",
+    "text": "An entry is a series where the plays were episodes, not a row per",
+    "file": "docs/spec/admin/dashboard-most-watched.md",
+    "line": 28
+  },
+  {
+    "id": "ADMIN-43",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 43,
+    "status": "AGREED",
+    "text": "Each entry carries its poster, and falls back to a title-seeded",
+    "file": "docs/spec/admin/dashboard-most-watched.md",
+    "line": 32
+  },
+  {
+    "id": "ADMIN-44",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 44,
+    "status": "AGREED",
+    "text": "A column with no plays in the window says so in its own words rather",
+    "file": "docs/spec/admin/dashboard-most-watched.md",
+    "line": 35
+  },
+  {
+    "id": "ADMIN-45",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 45,
+    "status": "AGREED",
+    "text": "The panel carries two filters, account and window, defaulting to",
+    "file": "docs/spec/admin/dashboard-most-watched.md",
+    "line": 39
+  },
+  {
+    "id": "ADMIN-46",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 46,
+    "status": "AGREED",
+    "text": "Selecting an entry opens that title's own watch history",
+    "file": "docs/spec/admin/dashboard-most-watched.md",
+    "line": 42
+  },
+  {
+    "id": "ADMIN-47",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 47,
+    "status": "AGREED",
+    "text": "A play is one finished session in the log, whatever fraction of the",
+    "file": "docs/spec/admin/dashboard-most-watched.md",
+    "line": 50
+  },
+  {
+    "id": "ADMIN-48",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 48,
+    "status": "AGREED",
+    "text": "Two sessions of the same title by the same account count as two",
+    "file": "docs/spec/admin/dashboard-most-watched.md",
+    "line": 54
+  },
+  {
+    "id": "ADMIN-49",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 49,
+    "status": "AGREED",
+    "text": "The view is the full history screen ([`watch-history.md`](watch-history.md))",
+    "file": "docs/spec/admin/watch-history-item.md",
+    "line": 13
+  },
+  {
+    "id": "ADMIN-50",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 50,
+    "status": "AGREED",
+    "text": "The header names the title beside the number of plays in scope, so",
+    "file": "docs/spec/admin/watch-history-item.md",
+    "line": 18
+  },
+  {
+    "id": "ADMIN-51",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 51,
+    "status": "AGREED",
+    "text": "The table drops the title column, which is the same on every row,",
+    "file": "docs/spec/admin/watch-history-item.md",
+    "line": 21
+  },
+  {
+    "id": "ADMIN-52",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 52,
+    "status": "AGREED",
+    "text": "Rows are ordered by when they were watched, most recent first, and",
+    "file": "docs/spec/admin/watch-history-item.md",
+    "line": 24
+  },
+  {
+    "id": "ADMIN-53",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 53,
+    "status": "AGREED",
+    "text": "A title nobody has played says so, rather than showing an empty",
+    "file": "docs/spec/admin/watch-history-item.md",
+    "line": 27
+  },
+  {
+    "id": "ADMIN-54",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 54,
+    "status": "AGREED",
+    "text": "The view is reachable from every surface that names a title with a",
+    "file": "docs/spec/admin/watch-history-item.md",
+    "line": 34
+  },
+  {
+    "id": "ADMIN-55",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 55,
+    "status": "AGREED",
+    "text": "The view has its own address. An owner can send it to someone, or",
+    "file": "docs/spec/admin/watch-history-item.md",
+    "line": 38
+  },
+  {
+    "id": "ADMIN-56",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 56,
+    "status": "AGREED",
+    "text": "For a series, the view covers every episode of that series, and",
+    "file": "docs/spec/admin/watch-history-item.md",
+    "line": 41
+  },
+  {
+    "id": "ADMIN-57",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 57,
+    "status": "AGREED",
+    "text": "Watch history is a first-class admin screen with its own entry in",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 14
+  },
+  {
+    "id": "ADMIN-58",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 58,
+    "status": "AGREED",
+    "text": "The screen shows every session in scope as a table, one row per",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 17
+  },
+  {
+    "id": "ADMIN-59",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 59,
+    "status": "AGREED",
+    "text": "The header states how many rows the current filters match, before",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 20
+  },
+  {
+    "id": "ADMIN-60",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 60,
+    "status": "AGREED",
+    "text": "The columns are the account, the kind of media, the title, the",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 24
+  },
+  {
+    "id": "ADMIN-61",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 61,
+    "status": "AGREED",
+    "text": "An episode's title names its series, its season, its episode number",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 28
+  },
+  {
+    "id": "ADMIN-62",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 62,
+    "status": "AGREED",
+    "text": "Any column can order the table, ascending or descending, and the",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 33
+  },
+  {
+    "id": "ADMIN-63",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 63,
+    "status": "AGREED",
+    "text": "The table pages or virtualises rather than rendering everything.",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 45
+  },
+  {
+    "id": "ADMIN-64",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 64,
+    "status": "AGREED",
+    "text": "The screen filters by library, by account, and by window, each",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 53
+  },
+  {
+    "id": "ADMIN-65",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 65,
+    "status": "AGREED",
+    "text": "The window control offers the same choices as the dashboard's, plus",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 56
+  },
+  {
+    "id": "ADMIN-66",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 66,
+    "status": "AGREED",
+    "text": "Filters live in the address, so a filtered view can be sent to",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 60
+  },
+  {
+    "id": "ADMIN-67",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 67,
+    "status": "AGREED",
+    "text": "Arriving from a dashboard panel applies the filters that panel sent,",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 63
+  },
+  {
+    "id": "ADMIN-68",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 68,
+    "status": "AGREED",
+    "text": "A session is written to the log when it ends, carrying everything",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 75
+  },
+  {
+    "id": "ADMIN-69",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 69,
+    "status": "AGREED",
+    "text": "The log is kept indefinitely by default. It is small, it is the only",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 79
+  },
+  {
+    "id": "ADMIN-70",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 70,
+    "status": "AGREED",
+    "text": "The log survives a backup and restore, because a restored server",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 83
+  },
+  {
+    "id": "ADMIN-71",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 71,
+    "status": "AGREED",
+    "text": "An account deleted from the server keeps its rows, attributed to the",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 86
+  },
+  {
+    "id": "ADMIN-72",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 72,
+    "status": "AGREED",
+    "text": "The screen requires the permission to manage users. A watch history",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 95
+  },
+  {
+    "id": "ADMIN-73",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 73,
+    "status": "AGREED",
+    "text": "A member can always read their own history. What the product does",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 99
+  },
+  {
+    "id": "ADMIN-74",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 74,
+    "status": "AGREED",
+    "text": "A column is bounded in height and scrolls inside that bound. The",
+    "file": "docs/spec/admin/dashboard-most-watched.md",
+    "line": 17
+  },
+  {
+    "id": "ADMIN-75",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 75,
+    "status": "AGREED",
+    "text": "A card opens the full history screen",
+    "file": "docs/spec/admin/dashboard-audience.md",
+    "line": 34
+  },
+  {
+    "id": "ADMIN-76",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 76,
+    "status": "AGREED",
+    "text": "A screen narrowed to one title names that title in the filter row",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 66
+  },
+  {
+    "id": "ADMIN-77",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 77,
+    "status": "AGREED",
+    "text": "When a session was watched is written out in full, the date and the",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 36
+  },
+  {
+    "id": "ADMIN-78",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 78,
+    "status": "AGREED",
+    "text": "A row opens the title it names, at that title's own page, wherever",
+    "file": "docs/spec/admin/watch-history.md",
+    "line": 40
+  }
+]

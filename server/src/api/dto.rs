@@ -6,7 +6,7 @@
 use serde::Serialize;
 
 use crate::infra::metrics::DiskInfo;
-use crate::model::{AdminUser, MediaItem, Permission, Show, User};
+use crate::model::{AdminUser, MediaItem, Permission, Show, User, WatchTotals};
 use crate::services::pairing::PollState;
 use crate::services::settings::SettingGroup;
 
@@ -207,13 +207,16 @@ pub struct HistoryBucket {
     pub tv_ms: i64,
 }
 
-/// `GET /api/admin/stats/history`.
+/// `GET /api/admin/stats/history`. `bucket_days` is the width chosen from the
+/// window, so a client labels the axis with what it actually got.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HistoryStats {
     pub buckets: Vec<HistoryBucket>,
     pub total_films_ms: i64,
     pub total_tv_ms: i64,
+    pub totals: WatchTotals,
+    pub bucket_days: i64,
 }
 
 /// `GET /api/admin/stats/overview`.

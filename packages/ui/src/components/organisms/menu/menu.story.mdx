@@ -43,10 +43,18 @@ The anchored action menu behind a "..." trigger: a download row's pause/retry/re
 - Order by frequency, destructive last after a `<Menu.Separator>`.
 - Name the menu with Root's `label`. The trigger takes it as its accessible name.
 - Reach for `render` when the trigger is not a round icon button; spread `bind` onto the control itself.
+- Write a row that goes somewhere as a link, so the browser can open it in a tab:
+
+```tsx
+<Menu.Item icon="user-circle" asChild>
+  <RouteLink to="/account">Mon compte</RouteLink>
+</Menu.Item>
+```
+
+  The row closes the menu itself and leaves the navigation to the link. A menu that also opens under a D-pad states `onSelect` alongside, because the dialog presentation renders no link.
 </Do>
 
 <Dont>
 - Hide the row's ONE primary action in the overflow. Promote it to its own button.
-- Use a menu for navigation; menus fire actions.
 - Nest a pressable inside `<Menu.Trigger>`: the trigger already presses.
 </Dont>

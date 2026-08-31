@@ -1,11 +1,16 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { View } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { CONTROL } from '#ui/lib/field-shell';
 import { onScreen } from '#ui/testing';
 import { ListRow } from './list-row';
+
+function Anchor({ to, ...host }: Readonly<Record<string, unknown>>) {
+  return <View {...(host as object)} {...({ href: to } as object)} />;
+}
 
 afterEach(cleanup);
 
@@ -296,5 +301,60 @@ describe('ListRow', () => {
     expect(
       Number(rowOf(container, 'Sur la carte').style.outlineOffset.replace('px', '')),
     ).toBeGreaterThan(0);
+  });
+});
+
+describe('a ListRow that delegates its host to a link', () => {
+  it('renders the row itself as the anchor, with its parts inside', () => {
+    render(
+      <ListRow.Root asChild>
+        <Anchor to="/settings">
+          <ListRow.Label>Reglages</ListRow.Label>
+        </Anchor>
+      </ListRow.Root>,
+    );
+
+    expect(screen.getByLabelText('Reglages').tagName).toBe('A');
+    expect(screen.getByLabelText('Reglages').textContent).toBe('Reglages');
+  });
+
+  it('announces itself as the link it is rather than as nothing', () => {
+    render(
+      <ListRow.Root asChild>
+        <Anchor to="/settings">
+          <ListRow.Label>Reglages</ListRow.Label>
+        </Anchor>
+      </ListRow.Root>,
+    );
+
+    expect(screen.getByLabelText('Reglages').getAttribute('role')).toBeNull();
+  });
+
+  it('washes on hover, as a row that goes somewhere should', () => {
+    const { container } = render(
+      <ListRow.Root asChild>
+        <Anchor to="/settings">
+          <ListRow.Label>Reglages</ListRow.Label>
+        </Anchor>
+      </ListRow.Root>,
+    );
+    const row = rowOf(container, 'Reglages');
+    const resting = row.style.backgroundColor;
+
+    fireEvent.pointerEnter(row);
+
+    expect(row.style.backgroundColor).not.toBe(resting);
+  });
+
+  it('draws the disclosure chevron a row that goes somewhere draws', () => {
+    const { container } = render(
+      <ListRow.Root asChild>
+        <Anchor to="/settings">
+          <ListRow.Label>Reglages</ListRow.Label>
+        </Anchor>
+      </ListRow.Root>,
+    );
+
+    expect(container.querySelector('.tabler-icon-chevron-right')).toBeTruthy();
   });
 });

@@ -4,6 +4,7 @@
 
 import type { TorrentAnalysis } from '@kroma/module-acquisition/schemas';
 import { moduleApiHook } from '@kroma/module-sdk';
+import type { VpnBandwidthRange, VpnBandwidthView } from '@kroma/module-vpn/schemas';
 import type {
   ClientTestResult,
   DownloadClientsView,
@@ -65,6 +66,11 @@ export const useTorrentsApi = moduleApiHook((api) => ({
       headers: { 'Content-Type': 'application/x-bittorrent' },
       body: file,
     }),
+
+  /** How much the engine moved over `range`, split by whether the VPN bridge
+   *  carried it. */
+  bandwidth: (range: VpnBandwidthRange) =>
+    api.get<VpnBandwidthView>(`/downloads/bandwidth?range=${range}`),
 
   /** The engine-wide throughput and parallelism ceilings. */
   limits: () => api.get<LimitsView>('/downloads/limits'),

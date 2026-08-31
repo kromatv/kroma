@@ -3,7 +3,13 @@
 // its id, which `moduleApiHook` binds without the module naming itself.
 
 import { moduleApiHook } from '@kroma/module-sdk';
-import type { SaveVpnBody, VpnAdminView, VpnTestResult } from './schemas';
+import type {
+  SaveVpnBody,
+  VpnAdminView,
+  VpnBandwidthRange,
+  VpnBandwidthView,
+  VpnTestResult,
+} from './schemas';
 
 export const useVpnApi = moduleApiHook((api) => ({
   status: () => api.get<VpnAdminView>('/vpn'),
@@ -12,4 +18,7 @@ export const useVpnApi = moduleApiHook((api) => ({
   save: (body: SaveVpnBody) => api.put<{ wgConfigured: boolean }>('/vpn', body),
   /** Live seal probe: exit IP through the proxy vs direct. */
   test: () => api.post<VpnTestResult>('/vpn/test'),
+  /** `null` when no download module is installed to answer. */
+  bandwidth: (range: VpnBandwidthRange) =>
+    api.get<VpnBandwidthView | null>(`/vpn/bandwidth?range=${range}`),
 }));

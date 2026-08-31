@@ -1,141 +1,183 @@
-// The dashboard's three live metric sections. Each is the same plot over a
-// different pair of the server's series, so what differs between them is only
-// the scale, the unit and the roles the two colours stand for.
-
 import type { MetricsSnapshot } from '@kroma/core';
 import { useFormat, useT } from '@kroma/ui';
-import { Section, Text } from '@kroma/ui/kit';
 import { CHART_SERIES } from '#web/features/admin/chart-palette';
-import { MetricsChart } from '#web/features/admin/charts';
+import { MetricsChart, type MetricsSeries } from '#web/features/admin/charts';
+import {
+  meanOf,
+  ResourceSection,
+  startedAtOf,
+  stepSecOf,
+  useMetricsWindow,
+  useScopeChoice,
+} from '#web/features/admin/dashboard-resource-panel';
 
-type Metrics = Readonly<{ metrics: MetricsSnapshot | null }>;
+const BANDWIDTH_SCOPES = ['all', 'local', 'remote'] as const;
+const HOST_SCOPES = ['all', 'kroma', 'system'] as const;
 
-const sampleSec = (metrics: MetricsSnapshot | null) => (metrics?.sampleIntervalMs ?? 3000) / 1000;
+const HOST_MAX = 100;
 
-const avg = (values: number[]) =>
-  values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+type Scoped<S extends string> = MetricsSeries & { of: S };
+
+function drawn<S extends string>(series: readonly Scoped<S>[], scope: S | 'all'): MetricsSeries[] {
+  return series.filter((one) => scope === 'all' || one.of === scope);
+}
 
 const pct = (value: number) => `${Math.round(value)} %`;
 
-function LiveLabel() {
-  const t = useT();
-  return (
-    <Text variant="label" color="textMuted">
-      {t('admin.realtime')}
-    </Text>
-  );
-}
+const isComplete = (metrics: MetricsSnapshot | null) => metrics?.complete !== false;
 
-export function BandwidthSection({ metrics }: Metrics) {
+export function BandwidthSection() {
   const t = useT();
   const fmt = useFormat();
+  const scope = useScopeChoice(BANDWIDTH_SCOPES);
+  const { range, metrics } = useMetricsWindow();
   const local = metrics?.series.bwLocal ?? [];
   const remote = metrics?.series.bwRemote ?? [];
+  const shown = drawn(
+    [
+      {
+        field: 'remote',
+        of: 'remote',
+        label: t('admin.legendRemote'),
+        data: remote,
+        color: CHART_SERIES.remote,
+      },
+      {
+        field: 'local',
+        of: 'local',
+        label: t('admin.legendLocal'),
+        data: local,
+        color: CHART_SERIES.local,
+        fill: true,
+      },
+    ],
+    scope.value,
+  );
   return (
-    <Section.Root mt={28}>
-      <Section.Header>
-        <Section.Title>{t('admin.bandwidth')}</Section.Title>
-        <Section.Actions>
-          <LiveLabel />
-        </Section.Actions>
-      </Section.Header>
+    <ResourceSection
+      title={t('admin.bandwidth')}
+      scope={scope}
+      range={range}
+      complete={isComplete(metrics)}
+    >
       <MetricsChart
-        max={Math.max(1, ...local, ...remote)}
+        max={Math.max(1, ...shown.flatMap((one) => one.data))}
         label={t('admin.bandwidth')}
-        sampleSec={sampleSec(metrics)}
+        startedAtSec={startedAtOf(metrics)}
+        stepSec={stepSecOf(metrics)}
         formatValue={fmt.mbps}
-        series={[
-          {
-            id: 'remote',
-            label: t('admin.legendRemote'),
-            data: remote,
-            color: CHART_SERIES.remote,
-          },
-          {
-            id: 'local',
-            label: t('admin.legendLocal'),
-            data: local,
-            color: CHART_SERIES.local,
-            fill: true,
-          },
-        ]}
+        series={shown}
         footer={t('admin.bwAverages', {
-          remote: fmt.mbps(avg(remote)),
-          local: fmt.mbps(avg(local)),
+          remote: fmt.mbps(meanOf(metrics?.means?.bwRemote, remote)),
+          local: fmt.mbps(meanOf(metrics?.means?.bwLocal, local)),
         })}
       />
-    </Section.Root>
+    </ResourceSection>
   );
 }
 
-export function CpuSection({ metrics }: Metrics) {
+export function CpuSection() {
   const t = useT();
   const fmt = useFormat();
+  const scope = useScopeChoice(HOST_SCOPES);
+  const { range, metrics } = useMetricsWindow();
   const kroma = metrics?.series.cpuKroma ?? [];
-  const sys = metrics?.series.cpuSystem ?? [];
+  const system = metrics?.series.cpuSystem ?? [];
+  const media = metrics?.series.cpuMedia ?? [];
   return (
-    <Section.Root mt={28}>
-      <Section.Header>
-        <Section.Title>{t('admin.cpu')}</Section.Title>
-        <Section.Actions>
-          <LiveLabel />
-        </Section.Actions>
-      </Section.Header>
+    <ResourceSection
+      title={t('admin.cpu')}
+      scope={scope}
+      range={range}
+      complete={isComplete(metrics)}
+    >
       <MetricsChart
-        max={100}
+        max={HOST_MAX}
         label={t('admin.cpu')}
-        sampleSec={sampleSec(metrics)}
+        startedAtSec={startedAtOf(metrics)}
+        stepSec={stepSecOf(metrics)}
         formatValue={pct}
-        series={[
-          { id: 'sys', label: t('admin.legendSystem'), data: sys, color: CHART_SERIES.cpuSystem },
-          {
-            id: 'kroma',
-            label: t('admin.legendKromaServer'),
-            data: kroma,
-            color: CHART_SERIES.kroma,
-          },
-        ]}
-        footer={t('admin.cpuAverages', {
-          kroma: fmt.decimal(avg(kroma), 1),
-          sys: fmt.decimal(avg(sys), 1),
+        series={drawn(
+          [
+            {
+              field: 'sys',
+              of: 'system',
+              label: t('admin.legendSystem'),
+              data: system,
+              color: CHART_SERIES.cpuSystem,
+            },
+            {
+              field: 'kroma',
+              of: 'kroma',
+              label: t('admin.legendKromaServer'),
+              data: kroma,
+              color: CHART_SERIES.kroma,
+            },
+            {
+              field: 'media',
+              of: 'kroma',
+              label: t('admin.legendTranscoding'),
+              data: media,
+              color: CHART_SERIES.cpuMedia,
+              fill: true,
+            },
+          ],
+          scope.value,
+        )}
+        footer={t('admin.cpuAveragesWithMedia', {
+          kroma: fmt.decimal(meanOf(metrics?.means?.cpuKroma, kroma), 1),
+          media: fmt.decimal(meanOf(metrics?.means?.cpuMedia, media), 1),
+          sys: fmt.decimal(meanOf(metrics?.means?.cpuSystem, system), 1),
         })}
       />
-    </Section.Root>
+    </ResourceSection>
   );
 }
 
-export function RamSection({ metrics }: Metrics) {
+export function RamSection() {
   const t = useT();
   const fmt = useFormat();
+  const scope = useScopeChoice(HOST_SCOPES);
+  const { range, metrics } = useMetricsWindow();
   const kroma = metrics?.series.ramKroma ?? [];
-  const sys = metrics?.series.ramSystem ?? [];
+  const system = metrics?.series.ramSystem ?? [];
   return (
-    <Section.Root mt={28}>
-      <Section.Header>
-        <Section.Title>{t('admin.ram')}</Section.Title>
-        <Section.Actions>
-          <LiveLabel />
-        </Section.Actions>
-      </Section.Header>
+    <ResourceSection
+      title={t('admin.ram')}
+      scope={scope}
+      range={range}
+      complete={isComplete(metrics)}
+    >
       <MetricsChart
-        max={100}
+        max={HOST_MAX}
         label={t('admin.ram')}
-        sampleSec={sampleSec(metrics)}
+        startedAtSec={startedAtOf(metrics)}
+        stepSec={stepSecOf(metrics)}
         formatValue={pct}
-        series={[
-          { id: 'sys', label: t('admin.legendSystem'), data: sys, color: CHART_SERIES.ramSystem },
-          {
-            id: 'kroma',
-            label: t('admin.legendKromaServer'),
-            data: kroma,
-            color: CHART_SERIES.kroma,
-          },
-        ]}
+        series={drawn(
+          [
+            {
+              field: 'sys',
+              of: 'system',
+              label: t('admin.legendSystem'),
+              data: system,
+              color: CHART_SERIES.ramSystem,
+            },
+            {
+              field: 'kroma',
+              of: 'kroma',
+              label: t('admin.legendKromaServer'),
+              data: kroma,
+              color: CHART_SERIES.kroma,
+            },
+          ],
+          scope.value,
+        )}
         footer={t('admin.ramAverages', {
-          kroma: fmt.decimal(avg(kroma), 2),
-          sys: fmt.decimal(avg(sys), 2),
+          kroma: fmt.decimal(meanOf(metrics?.means?.ramKroma, kroma), 2),
+          sys: fmt.decimal(meanOf(metrics?.means?.ramSystem, system), 2),
         })}
       />
-    </Section.Root>
+    </ResourceSection>
   );
 }

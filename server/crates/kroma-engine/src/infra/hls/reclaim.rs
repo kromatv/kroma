@@ -128,7 +128,7 @@ impl Sessions {
             for (id, s) in map.iter() {
                 if now.duration_since(*s.last_access.lock().await) > IDLE_TIMEOUT {
                     dead.push(id.clone());
-                } else if let Some(cutoff) = s.prune_cutoff() {
+                } else if let Some(cutoff) = s.window.cutoff() {
                     plans.push((s.dir.clone(), cutoff));
                 }
             }

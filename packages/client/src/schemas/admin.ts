@@ -122,10 +122,37 @@ export const StorageInfo = z.object({
 });
 export type StorageInfo = z.infer<typeof StorageInfo>;
 
+/** The windows every dashboard chart and the history screen offer. `live` is the
+ *  server's rolling in-memory ring; every other value is read from persisted
+ *  samples and survives a restart. */
+export const MetricRange = z.enum(['live', '12h', '24h', '7d', '30d', '90d', '1y', 'all']);
+export type MetricRange = z.infer<typeof MetricRange>;
+
+/** The mean of each series over the window on screen, for the chart footers. */
+export const MetricMeans = z.object({
+  cpuKroma: z.number(),
+  cpuSystem: z.number(),
+  cpuMedia: z.number(),
+  ramKroma: z.number(),
+  ramSystem: z.number(),
+  bwLocal: z.number(),
+  bwRemote: z.number(),
+});
+export type MetricMeans = z.infer<typeof MetricMeans>;
+
+export const WatchKind = z.enum(['movie', 'tv']);
+export type WatchKind = z.infer<typeof WatchKind>;
+
+/** Milliseconds watched per kind. Every kind is present, zeroes included. */
+export const WatchTotals = z.record(WatchKind, z.number());
+export type WatchTotals = z.infer<typeof WatchTotals>;
+
 /** Time-series history (oldest → newest). Percentages are 0..100. */
 export const MetricsSeries = z.object({
   cpuKroma: z.array(z.number()),
   cpuSystem: z.array(z.number()),
+  /** The ffmpeg share of `cpuKroma`. */
+  cpuMedia: z.array(z.number()).default([]),
   ramKroma: z.array(z.number()),
   ramSystem: z.array(z.number()),
   bwLocal: z.array(z.number()),
@@ -135,8 +162,14 @@ export type MetricsSeries = z.infer<typeof MetricsSeries>;
 
 /** A point-in-time metrics snapshot plus the recent history series. */
 export const MetricsSnapshot = z.object({
+  /** The whole process tree, ffmpeg children included, not the server alone. */
   cpuKroma: z.number(),
   cpuSystem: z.number(),
+  /** What the ffmpeg children alone cost, out of `cpuKroma`. */
+  cpuMedia: z.number().default(0),
+  /** How many child processes the server is holding open. */
+  mediaProcs: z.number().default(0),
+  cores: z.number().default(0),
   ramKromaBytes: z.number(),
   ramUsedBytes: z.number(),
   ramTotalBytes: z.number(),
@@ -145,8 +178,121 @@ export const MetricsSnapshot = z.object({
   uptimeSecs: z.number(),
   sampleIntervalMs: z.number().default(3000),
   series: MetricsSeries,
+  /** Which window `series` covers. */
+  range: MetricRange.default('live'),
+  /** Unix seconds of the first sample in `series`. */
+  startedAt: z.number().default(0),
+  /** Seconds between two samples in `series`. */
+  stepSecs: z.number().default(3),
+  means: MetricMeans.nullish(),
+  /** False where the server has no samples covering the whole window, so a
+   *  client says "not running that long" instead of drawing zeroes. */
+  complete: z.boolean().default(true),
 });
 export type MetricsSnapshot = z.infer<typeof MetricsSnapshot>;
+
+/** The pipeline the host re-encodes on, and the sentence explaining it: a device
+ *  that is present, listed and unusable looks exactly like no device at all. */
+export const TranscodeHardware = z.object({
+  accel: z.string(),
+  reason: z.string(),
+  accelerated: z.boolean(),
+});
+export type TranscodeHardware = z.infer<typeof TranscodeHardware>;
+
+/** One live remux. `speed` is the figure to read first: under 1.0 the encoder is
+ *  producing less than a second of film per second and the player will run dry. */
+export const LiveTranscode = z.object({
+  id: z.string(),
+  itemId: z.string(),
+  audioTrack: z.number(),
+  /** `copy` | `h264` | `h264-1080` | `h264-720`. */
+  video: z.string(),
+  /** `copy` | `aac` | `aac-standard` | `aac-night`. */
+  audio: z.string(),
+  transcodesVideo: z.boolean(),
+  transcodesAudio: z.boolean(),
+  /** `videotoolbox` | `qsv` | `vaapi` | `nvenc` | `software`. */
+  accel: z.string(),
+  /** `quality` | `realtime`; only means anything on the software path. */
+  effort: z.string(),
+  onTheCpu: z.boolean(),
+  pid: z.number().nullish(),
+  sourceWidth: z.number().nullish(),
+  sourceHeight: z.number().nullish(),
+  targetWidth: z.number().nullish(),
+  targetHeight: z.number().nullish(),
+  anchorSecs: z.number(),
+  startedAt: z.number(),
+  speed: z.number(),
+  fps: z.number(),
+  frames: z.number(),
+  dropped: z.number(),
+  outTimeMs: z.number(),
+  segments: z.number(),
+  bytes: z.number(),
+  running: z.boolean(),
+  title: z.string().nullish(),
+  showTitle: z.string().nullish(),
+  season: z.number().nullish(),
+  episode: z.number().nullish(),
+  /** Percent of the whole box this one ffmpeg is spending. */
+  cpu: z.number().nullish(),
+});
+export type LiveTranscode = z.infer<typeof LiveTranscode>;
+
+/** `GET /api/admin/transcodes`. */
+export const Transcodes = z.object({
+  hardware: TranscodeHardware,
+  sessions: z.array(LiveTranscode),
+  encoding: z.number(),
+  cacheBytes: z.number(),
+});
+export type Transcodes = z.infer<typeof Transcodes>;
+
+/** One finished playback: who watched what, when, and on which device. */
+export const PlayEntry = z.object({
+  id: z.string(),
+  userId: z.string().nullish(),
+  username: z.string(),
+  itemId: z.string().nullish(),
+  /** The series an episode belongs to, so a row opens the show rather than one
+   *  episode. Absent for a film. */
+  showId: z.string().nullish(),
+  /** False where the title has left the catalog, so a row does not offer a link
+   *  into a page that no longer exists. */
+  inCatalog: z.boolean().default(true),
+  kind: z.string(),
+  title: z.string(),
+  showTitle: z.string().nullish(),
+  season: z.number().nullish(),
+  episode: z.number().nullish(),
+  device: z.string().nullish(),
+  player: z.string().nullish(),
+  /** `direct` | `transcode`. */
+  mode: z.string().nullish(),
+  /** `LAN` | `WAN`. */
+  network: z.string().nullish(),
+  videoLabel: z.string().nullish(),
+  audioLabel: z.string().nullish(),
+  /** The library the title belongs to, for the history screen's filter. */
+  library: z.string().nullish(),
+  startedAt: z.number(),
+  endedAt: z.number(),
+  watchedMs: z.number(),
+});
+export type PlayEntry = z.infer<typeof PlayEntry>;
+
+/** One entry of the history screen's library filter. */
+export const HistoryLibrary = z.object({ id: z.string(), name: z.string() });
+export type HistoryLibrary = z.infer<typeof HistoryLibrary>;
+
+/** `GET /api/admin/stats/plays`: one page of the watch log, newest first. */
+export const PlaysPage = z.object({
+  plays: z.array(PlayEntry),
+  total: z.number(),
+});
+export type PlaysPage = z.infer<typeof PlaysPage>;
 
 /** One weekly bucket of the play-history chart. */
 export const HistoryBucket = z.object({
@@ -156,13 +302,44 @@ export const HistoryBucket = z.object({
 });
 export type HistoryBucket = z.infer<typeof HistoryBucket>;
 
-/** `GET /api/admin/stats/history`. */
+/** `GET /api/admin/stats/history`. `bucketDays` is the width the server chose
+ *  from the window, so a client labels the axis with what it actually got. */
 export const HistoryStats = z.object({
   buckets: z.array(HistoryBucket),
   totalFilmsMs: z.number(),
   totalTvMs: z.number(),
+  totals: WatchTotals.nullish(),
+  bucketDays: z.number().default(7),
 });
 export type HistoryStats = z.infer<typeof HistoryStats>;
+
+/** One title in the most-watched panel. `viewers` is the number of distinct
+ *  accounts, which is what separates one person watching eight times from eight
+ *  people watching once. */
+export const MostWatchedEntry = z.object({
+  itemId: z.string(),
+  title: z.string(),
+  kind: WatchKind,
+  year: z.number().nullish(),
+  posterUrl: z.string().nullish(),
+  plays: z.number(),
+  viewers: z.number(),
+});
+export type MostWatchedEntry = z.infer<typeof MostWatchedEntry>;
+
+/** One column of the most-watched panel: a kind, and its ranking. An empty
+ *  `entries` is an answer, not a reason to drop the column. */
+export const MostWatchedColumn = z.object({
+  kind: WatchKind,
+  entries: z.array(MostWatchedEntry),
+});
+export type MostWatchedColumn = z.infer<typeof MostWatchedColumn>;
+
+/** `GET /api/admin/stats/most-watched`. */
+export const MostWatched = z.object({
+  columns: z.array(MostWatchedColumn),
+});
+export type MostWatched = z.infer<typeof MostWatched>;
 
 /** Per-series aggregate over its episodes, for the elements list. */
 export const EpStats = z.object({
@@ -190,13 +367,19 @@ export const Activity = z.object({
 export type Activity = z.infer<typeof Activity>;
 
 /** Aggregated per-user watch stats over a window (dashboard "Top des
- * utilisateurs"). Keyed by `username` here, so it carries no branded id. */
+ * utilisateurs"). `filmsMs` and `tvMs` are kept beside `byKind` because they are
+ * what the first version of the card read; new callers use `byKind`, which
+ * carries every kind including the ones that are zero. */
 export const TopUser = z.object({
   username: z.string(),
+  /** Absent for a play recorded against no account. */
+  userId: z.string().nullish(),
+  avatarUrl: z.string().nullish(),
   plays: z.number(),
   watchedMs: z.number(),
   filmsMs: z.number(),
   tvMs: z.number(),
+  byKind: WatchTotals.nullish(),
 });
 export type TopUser = z.infer<typeof TopUser>;
 
@@ -224,6 +407,7 @@ export const PlaybackSession = z.object({
   ip: z.string(),
   state: z.string(),
   positionMs: z.number(),
+  bufferedMs: z.number().nullish(),
   durationMs: z.number().nullable(),
   startedAt: z.number(),
 });

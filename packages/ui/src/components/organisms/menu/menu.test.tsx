@@ -2,6 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
+import { View } from 'react-native';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { activeTheme } from '#ui/core';
@@ -234,5 +235,87 @@ describe('<Menu>', () => {
     expect(() => render(<Menu.Trigger />)).toThrow(
       '<Menu.Trigger> must be used inside <Menu.Root>',
     );
+  });
+});
+
+function Account({ onNavigate }: Readonly<{ onNavigate?: () => void }>) {
+  return (
+    <Menu.Root label="Account">
+      <Menu.Trigger />
+      <Menu.Item icon="user-circle" asChild>
+        <Anchor to="/account" onNavigate={onNavigate}>
+          Mon compte
+        </Anchor>
+      </Menu.Item>
+    </Menu.Root>
+  );
+}
+
+// A router's link composes the click it is handed with its own, the caller's
+// first, which is the order the menu leans on to close before it navigates.
+function Anchor({ to, onNavigate, onClick, ...host }: Readonly<Record<string, unknown>>) {
+  const click = (event: { preventDefault: () => void }) => {
+    (onClick as ((event: unknown) => void) | undefined)?.(event);
+    event.preventDefault();
+    (onNavigate as (() => void) | undefined)?.();
+  };
+  return <View {...(host as object)} {...({ href: to, onClick: click } as object)} />;
+}
+
+describe('a Menu.Item that delegates its host to a link', () => {
+  it('renders the row as an anchor that still announces as a menu item', () => {
+    render(<Account />);
+
+    fireEvent.click(screen.getByLabelText('Account'));
+
+    expect(screen.getByRole('menuitem').tagName).toBe('A');
+    expect(screen.getByRole('menuitem').getAttribute('href')).toBe('/account');
+  });
+
+  it('takes its name from the words the element was written around', () => {
+    render(<Account />);
+
+    fireEvent.click(screen.getByLabelText('Account'));
+
+    expect(screen.getByRole('menuitem').getAttribute('aria-label')).toBe('Mon compte');
+  });
+
+  it('closes the menu when the link is pressed, leaving the link to navigate', () => {
+    const onNavigate = vi.fn();
+    render(<Account onNavigate={onNavigate} />);
+
+    fireEvent.click(screen.getByLabelText('Account'));
+    fireEvent.click(screen.getByRole('menuitem'));
+
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('presses the link for the keyboard, which cannot reach it', () => {
+    const onNavigate = vi.fn();
+    render(<Account onNavigate={onNavigate} />);
+    const trigger = screen.getByLabelText('Account');
+
+    fireEvent.click(trigger);
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('renders no link at all for a disabled row', () => {
+    render(
+      <Menu.Root label="Account">
+        <Menu.Trigger />
+        <Menu.Item icon="user-circle" disabled asChild>
+          <Anchor to="/account">Mon compte</Anchor>
+        </Menu.Item>
+      </Menu.Root>,
+    );
+
+    fireEvent.click(screen.getByLabelText('Account'));
+
+    expect(screen.getByRole('menu').querySelector('a')).toBeNull();
+    expect(screen.getByRole('menuitem').textContent).toBe('Mon compte');
   });
 });

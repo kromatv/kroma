@@ -1,5 +1,7 @@
 import { type ReactNode, useState } from 'react';
 
+import { Avatar } from '#ui/components/atoms/avatar';
+
 import { Box, Row } from '#ui/components/atoms/box';
 
 import { Button } from '#ui/components/atoms/button';
@@ -180,6 +182,56 @@ export function Summaries({ size }: Readonly<{ size?: ControlSize }>) {
         <StatusPicker size={size} start={['active', 'done', 'failed']} />
       </Labelled>
     </Box>
+  );
+}
+
+const MEMBERS = ['Ada Lovelace', 'Grace Hopper', 'Katherine Johnson'] as const;
+
+export function Members({ presentation }: Readonly<{ presentation: SelectPresentation }>) {
+  const [who, setWho] = useState('Ada Lovelace');
+  return (
+    <Box h={presentation === 'panel' ? 240 : 0} w={240}>
+      <Select.Root
+        label="Member"
+        value={who}
+        onValueChange={setWho}
+        presentation={presentation}
+        defaultOpen
+      >
+        <Select.Trigger block />
+        <Select.Item value="everyone" label="Every member" icon="users" />
+        {MEMBERS.map((name) => (
+          <Select.Item key={name} value={name} label={name}>
+            <Select.Media>
+              <Avatar name={name} size={18} circle shadow={false} />
+            </Select.Media>
+          </Select.Item>
+        ))}
+      </Select.Root>
+    </Box>
+  );
+}
+
+export function LongOptions() {
+  const [range, setRange] = useState('live');
+  return (
+    <Row justify="flex-end" w={420}>
+      <Box h={220}>
+        <Select.Root
+          label="Window"
+          value={range}
+          onValueChange={setRange}
+          presentation="panel"
+          defaultOpen
+        >
+          <Select.Trigger />
+          <Select.Item value="live" label="Real time" />
+          <Select.Item value="12h" label="The last twelve hours" />
+          <Select.Item value="24h" label="The last twenty-four hours" />
+          <Select.Item value="all" label="Everything on record" />
+        </Select.Root>
+      </Box>
+    </Row>
   );
 }
 

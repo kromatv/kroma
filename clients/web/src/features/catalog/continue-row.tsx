@@ -50,8 +50,10 @@ function ContinueRail() {
               colors={posterColors(item.id)}
               poster={client.posterFor(item)}
               progress={pct}
-              as={<RouteLink to="/watch/$id" params={{ id: item.id }} />}
-            />
+              asChild
+            >
+              <RouteLink to="/watch/$id" params={{ id: item.id }} />
+            </Poster>
           );
         }}
       />

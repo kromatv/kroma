@@ -61,6 +61,7 @@ function AnchoredPopup({
           PANEL_SHELL,
           {
             left: at.left,
+            right: at.right,
             top: at.top,
             bottom: at.bottom,
             minWidth: at.width,

@@ -1,10 +1,9 @@
 // What <Select>'s parts share: the Root's state, and the per-row plumbing the
 // open surface hands each <Select.Item>.
 
-import type { RefObject } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { createContext, useContext } from 'react';
 import type { StyleProp, TextStyle, View } from 'react-native';
-import type { IconName } from '#ui/components/atoms/icon';
 import { partContext } from '#ui/lib/part-context';
 
 /** Why the surface closed. `back` is the remote's Back button (and, in a
@@ -21,7 +20,6 @@ interface SelectOption {
   value: string;
   label: string;
   note?: string;
-  icon?: IconName;
   disabled?: boolean;
 }
 
@@ -33,6 +31,7 @@ interface SelectState {
   values: readonly string[];
   multiple: boolean;
   picked: readonly SelectOption[];
+  media: ReadonlyMap<string, ReactNode>;
   label: string | undefined;
   placeholder: string | undefined;
   open: boolean;

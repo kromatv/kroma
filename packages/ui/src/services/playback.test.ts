@@ -8,7 +8,7 @@
 // must fire exactly once - it shows the viewer a message and halts playback, so
 // a second firing on the next ping would talk over itself.
 
-import { KromaApiError, type KromaClient } from '@kroma/core';
+import { KromaApiError, type KromaClient, type PlaybackPing } from '@kroma/core';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePlaybackHeartbeat } from './playback';
@@ -37,7 +37,7 @@ vi.mock('@kroma/core', async (real) => {
  * id each ping was sent with. */
 function fakeClient(over: Record<string, unknown> = {}) {
   const client = {
-    pingPlayback: vi.fn(async (_ping: { sessionId: string }) => undefined),
+    pingPlayback: vi.fn(async (_ping: PlaybackPing) => undefined),
     stopPlayback: vi.fn(async (_sessionId: string) => undefined),
     ...over,
   };
@@ -126,6 +126,95 @@ describe('pinging', () => {
     expect(idOf(a)).not.toBe(idOf(b));
     expect(idOf(a).startsWith('web-')).toBe(true);
   });
+
+  it('carries the buffered position in milliseconds when the surface can read it', async () => {
+    const client = fakeClient();
+    renderHook(() => usePlaybackHeartbeat(params({ client, getBuffered: () => 48.25 })));
+    await settle();
+    expect(client.pingPlayback).toHaveBeenCalledWith(
+      expect.objectContaining({ bufferedMs: 48_250 }),
+    );
+  });
+
+  it('leaves the buffered position off the ping when the surface cannot say', async () => {
+    const client = fakeClient();
+    renderHook(() => usePlaybackHeartbeat(params({ client, getBuffered: () => undefined })));
+    await settle();
+    expect(client.pingPlayback.mock.calls[0]?.[0].bufferedMs).toBeUndefined();
+  });
+});
+
+describe('opening a session', () => {
+  it('opens none for a surface that never starts playing', async () => {
+    const client = fakeClient();
+    renderHook(() => usePlaybackHeartbeat(params({ client, getState: () => 'buffering' })));
+    await act(async () => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(client.pingPlayback).not.toHaveBeenCalled();
+  });
+
+  it('sends no stop for a session it never opened', async () => {
+    const client = fakeClient();
+    const { unmount } = renderHook(() =>
+      usePlaybackHeartbeat(params({ client, getState: () => 'buffering' })),
+    );
+    await settle();
+    unmount();
+    await settle();
+    expect(client.stopPlayback).not.toHaveBeenCalled();
+  });
+
+  // A hidden tab's timer is clamped to one wake-up a minute, so the beat lands
+  // after the server's 30s TTL has already closed and logged the session. Pinging
+  // the same id then opens another, and the reaper writes another row a minute
+  // later, forever.
+  it('opens no new session when a late beat finds the playhead where it left it', async () => {
+    const client = fakeClient();
+    let state: 'playing' | 'paused' = 'playing';
+    renderHook(() => usePlaybackHeartbeat(params({ client, getState: () => state })));
+    await settle();
+    state = 'paused';
+
+    await act(async () => {
+      vi.setSystemTime(Date.now() + 60_000);
+      vi.advanceTimersByTime(10_000);
+    });
+
+    expect(client.pingPlayback).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens a fresh session when a late beat finds the playhead moved on', async () => {
+    const client = fakeClient();
+    let position = 30;
+    renderHook(() => usePlaybackHeartbeat(params({ client, getPosition: () => position })));
+    await settle();
+    position = 95;
+
+    await act(async () => {
+      vi.setSystemTime(Date.now() + 60_000);
+      vi.advanceTimersByTime(10_000);
+    });
+
+    expect(client.pingPlayback).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps one session id when the client is swapped underneath a running player', async () => {
+    const a = fakeClient();
+    const b = fakeClient();
+    const { rerender } = renderHook(({ client }) => usePlaybackHeartbeat(params({ client })), {
+      initialProps: { client: a },
+    });
+    await settle();
+
+    rerender({ client: b });
+    await settle();
+
+    expect(b.pingPlayback.mock.calls[0]?.[0].sessionId).toBe(
+      a.pingPlayback.mock.calls[0]?.[0].sessionId,
+    );
+    expect(a.stopPlayback).not.toHaveBeenCalled();
+  });
 });
 
 describe('stopping', () => {
@@ -137,7 +226,21 @@ describe('stopping', () => {
     await settle();
     const sid = client.pingPlayback.mock.calls[0]?.[0].sessionId;
     unmount();
+    await settle();
     expect(client.stopPlayback).toHaveBeenCalledWith(sid);
+  });
+
+  // A stop that overtakes its own ping ends nothing, and the ping behind it
+  // registers a session no one will ever close.
+  it('holds the stop back until its last ping has landed', async () => {
+    const client = fakeClient({ pingPlayback: vi.fn(() => new Promise<void>(() => undefined)) });
+    const { unmount } = renderHook(() => usePlaybackHeartbeat(params({ client })));
+    await settle();
+
+    unmount();
+    await settle();
+
+    expect(client.stopPlayback).not.toHaveBeenCalled();
   });
 
   it('stops pinging after unmount', async () => {

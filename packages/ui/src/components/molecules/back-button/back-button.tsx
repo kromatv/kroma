@@ -9,7 +9,7 @@
 import { Button } from '#ui/components/atoms/button';
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
 
-interface BackButtonProps extends Omit<IconButtonProps, 'icon' | 'children'> {
+interface BackButtonProps extends Omit<IconButtonProps, 'icon'> {
   /** Where it goes, spelled out beside the chevron: "Modules", not "Back". A
    *  header uses it so the destination is readable; a control floating over
    *  artwork leaves it off and stays a disc. */

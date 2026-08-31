@@ -36,6 +36,14 @@ Each variant carries three coats of feedback, one per input: the ring for the re
 <Button variant="outline" active={inList} label="My list" />
 ```
 
+A button that GOES somewhere states the route as its one child, and the label and the glyph keep composing inside it. See `asChild` on **Focusable**.
+
+```tsx
+<Button variant="glass" label="More info" asChild>
+  <RouteLink to="/movies/$id" params={{ id }} />
+</Button>
+```
+
 <Do>
 - One `primary` button per screen: it answers "what happens on Enter".
 - Use `outline` with `active` for toggles that read as pressed, not as actions.
@@ -44,5 +52,6 @@ Each variant carries three coats of feedback, one per input: the ring for the re
 
 <Dont>
 - Use `danger` for anything reversible. It promises destruction.
+- Navigate from `onPress` where the button could be a link: write `asChild`, so the browser gets a real href.
 - Stack two `primary` buttons; demote one to `glass` or `ghost`.
 </Dont>

@@ -7,7 +7,7 @@
 import { type ReactNode, useMemo } from 'react';
 import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
+import { delegateOf, Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Spinner } from '#ui/components/atoms/spinner';
@@ -44,6 +44,8 @@ interface ButtonProps
    *  The control stays focusable - a submit that dropped out of the navigator
    *  mid-spin would strand the remote on nothing. */
   loading?: boolean;
+  /** Anything richer than `label`. Under `asChild` it is instead the one element
+   *  the button renders as, whose own children take this place. */
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
   /** Focus scale. Defaults to the design's 1.04 for the primary action, and to
@@ -61,6 +63,7 @@ function Button({
   iconRight,
   label,
   loading = false,
+  asChild = false,
   children,
   style,
   disabled = false,
@@ -70,6 +73,7 @@ function Button({
   onBlur,
   ...focusProps
 }: Readonly<ButtonProps>) {
+  const delegate = delegateOf(asChild, children);
   const group = useGroupMember(onFocus, onBlur);
   const shell = size ?? group.size ?? entryDefaultSize();
   const s = buttonVariants({ variant, size: shell, block, active }, { disabled });
@@ -80,6 +84,7 @@ function Button({
   return (
     <Focusable
       {...focusProps}
+      asChild={asChild}
       onPress={loading ? undefined : onPress}
       onFocus={group.onFocus}
       onBlur={group.onBlur}
@@ -92,23 +97,25 @@ function Button({
       vars={{ variant, size: shell, block, active }}
       style={box}
     >
-      {(state) => (
-        <>
-          {frost.layer}
-          <Dimmable dim={disabled}>
-            <ButtonContent
-              glyph={state.slots.icon}
-              icon={icon}
-              iconRight={iconRight}
-              label={label}
-              labelStyle={state.slots.label}
-              loading={loading}
-            >
-              {children}
-            </ButtonContent>
-          </Dimmable>
-        </>
-      )}
+      {(state) =>
+        delegate.wrap(
+          <>
+            {frost.layer}
+            <Dimmable dim={disabled}>
+              <ButtonContent
+                glyph={state.slots.icon}
+                icon={icon}
+                iconRight={iconRight}
+                label={label}
+                labelStyle={state.slots.label}
+                loading={loading}
+              >
+                {delegate.content}
+              </ButtonContent>
+            </Dimmable>
+          </>,
+        )
+      }
     </Focusable>
   );
 }

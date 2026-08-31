@@ -8,7 +8,7 @@ use axum::http::StatusCode;
 use serde_json::json;
 
 use crate::api::test_support::{get, seed_session, send, test_app, text};
-use crate::model::Permission;
+use crate::model::{Permission, PlayRecord};
 
 fn member(t: &crate::api::test_support::TestApp, tag: &str) -> String {
     let (_id, token) = seed_session(
@@ -65,7 +65,10 @@ async fn stats_top_users_and_history_return_their_shapes() {
 
     let (status, top) = get(&t.app, "/api/admin/stats/top-users?days=7", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
-    assert!(top["users"].is_array());
+    let owner = &top["users"][0];
+    assert!(owner["userId"].is_string(), "{top}");
+    assert_eq!(owner["byKind"]["movie"], json!(0));
+    assert_eq!(owner["byKind"]["tv"], json!(0));
 
     let (status, hist) = get(&t.app, "/api/admin/stats/history?days=28", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
@@ -79,12 +82,135 @@ async fn stats_top_users_and_history_return_their_shapes() {
 }
 
 #[tokio::test]
+async fn the_watch_log_is_the_owners_to_read_and_a_member_gets_only_their_own() {
+    let t = test_app();
+    let (member_id, member_token) = seed_session(
+        &t.state,
+        "log-member@test.dev",
+        "log-member",
+        &[Permission::Playback],
+    );
+
+    let (status, page) = get(&t.app, "/api/admin/stats/plays", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(page["plays"].is_array());
+    assert!(page["total"].is_number());
+
+    let (status, _) = get(&t.app, "/api/admin/stats/plays", Some(&member_token)).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    let (status, _) = get(
+        &t.app,
+        &format!("/api/admin/stats/plays?user={member_id}"),
+        Some(&member_token),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _) = get(
+        &t.app,
+        "/api/admin/stats/plays?user=somebody-else",
+        Some(&member_token),
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn a_column_the_table_does_not_have_cannot_order_it() {
+    let t = test_app();
+
+    let (status, _) = get(
+        &t.app,
+        "/api/admin/stats/plays?sort=endedAt:asc",
+        Some(&t.token),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    for sort in ["rowid:asc", "endedAt:sideways", "title%3B%20DROP"] {
+        let (status, _) = get(
+            &t.app,
+            &format!("/api/admin/stats/plays?sort={sort}"),
+            Some(&t.token),
+        )
+        .await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{sort}");
+    }
+}
+
+#[tokio::test]
+async fn every_kind_gets_a_most_watched_column_and_a_filter_the_log_can_answer() {
+    let t = test_app();
+
+    let (status, panel) = get(&t.app, "/api/admin/stats/most-watched", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        panel["columns"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c["kind"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        ["movie", "tv"]
+    );
+
+    let (status, filter) = get(&t.app, "/api/admin/stats/libraries", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(filter["libraries"].is_array());
+}
+
+#[tokio::test]
+async fn a_most_watched_column_stops_at_twenty_entries() {
+    let t = test_app();
+    let now = time::OffsetDateTime::now_utc().unix_timestamp();
+    for at in 0..25 {
+        crate::db::record_play(
+            &t.state.db,
+            &PlayRecord {
+                user_id: Some("u1".into()),
+                username: Some("alice".into()),
+                item_id: Some(format!("film-{at}")),
+                kind: "movie".into(),
+                title: format!("Film {at}"),
+                started_at: now - 60,
+                ended_at: now,
+                watched_ms: 60_000,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    }
+
+    let (status, panel) = get(&t.app, "/api/admin/stats/most-watched", Some(&t.token)).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(panel["columns"][0]["entries"].as_array().unwrap().len(), 20);
+}
+
+#[tokio::test]
+async fn a_kind_the_server_does_not_hold_is_refused_rather_than_ignored() {
+    let t = test_app();
+
+    let (status, _) = get(&t.app, "/api/admin/stats/history?kind=tv", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, _) = get(
+        &t.app,
+        "/api/admin/stats/history?kind=cassette",
+        Some(&t.token),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
 async fn stats_are_admin_only() {
     let t = test_app();
     let m = member(&t, "stats-member");
     for uri in [
         "/api/admin/stats/top-users",
         "/api/admin/stats/history",
+        "/api/admin/stats/most-watched",
+        "/api/admin/stats/libraries",
         "/api/admin/stats/overview",
     ] {
         let (status, _) = get(&t.app, uri, Some(&m)).await;
@@ -695,7 +821,7 @@ async fn the_admin_surface_of_a_module_that_is_not_running_is_simply_absent() {
 }
 
 #[tokio::test]
-async fn a_finished_session_lands_in_the_weekly_watch_history() {
+async fn a_finished_session_lands_in_the_watch_history_chart() {
     let t = test_app();
     let movie = crate::api::test_support::demo_item_id("The Matrix");
     send(
@@ -718,10 +844,17 @@ async fn a_finished_session_lands_in_the_weekly_watch_history() {
     let (status, body) = get(&t.app, "/api/admin/stats/history?days=28", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);
     let buckets = body["buckets"].as_array().expect("buckets");
-    assert_eq!(buckets.len(), 4, "28 days is four weekly buckets");
+    assert_eq!(
+        body["bucketDays"],
+        json!(1),
+        "a month is short enough for days"
+    );
+    assert_eq!(buckets.len(), 28, "{body}");
     assert!(buckets.iter().all(|b| b["tvMs"] == json!(0)), "{body}");
     assert_eq!(body["totalTvMs"], json!(0));
-    assert_eq!(body["totalFilmsMs"], buckets[3]["filmsMs"]);
+    assert_eq!(body["totals"]["tv"], json!(0));
+    assert_eq!(body["totalFilmsMs"], buckets[27]["filmsMs"]);
+    assert_eq!(body["totals"]["movie"], buckets[27]["filmsMs"]);
 
     let episode = crate::api::test_support::demo_item_id("Islands");
     send(
@@ -742,7 +875,7 @@ async fn a_finished_session_lands_in_the_weekly_watch_history() {
     .await;
     let (_, body) = get(&t.app, "/api/admin/stats/history?days=28", Some(&t.token)).await;
     let buckets = body["buckets"].as_array().expect("buckets");
-    assert_eq!(body["totalTvMs"], buckets[3]["tvMs"]);
+    assert_eq!(body["totalTvMs"], buckets[27]["tvMs"]);
 
     let (status, top) = get(&t.app, "/api/admin/stats/top-users?days=7", Some(&t.token)).await;
     assert_eq!(status, StatusCode::OK);

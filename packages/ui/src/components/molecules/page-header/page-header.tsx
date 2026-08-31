@@ -111,14 +111,22 @@ interface PageHeaderBackProps {
   /** Where it goes, named: "Modules", not "Back". A reader should know the
    *  destination before pressing. */
   label: string;
-  onPress: () => void;
+  onPress?: () => void;
+  /** Render onto the one element the children name, so the way back is a real
+   *  link. See `asChild` on <Focusable>. */
+  asChild?: boolean;
+  children?: ReactNode;
 }
 
 /** The way out, beside the heading. Reading order is where a reader looks to
  *  leave, so it sits before the title rather than among the page's actions at
  *  the far end. */
-function Back({ label, onPress }: Readonly<PageHeaderBackProps>) {
-  return <BackButton diameter={36} label={label} onPress={onPress} />;
+function Back({ label, onPress, asChild, children }: Readonly<PageHeaderBackProps>) {
+  return (
+    <BackButton diameter={36} label={label} onPress={onPress} asChild={asChild}>
+      {children}
+    </BackButton>
+  );
 }
 
 /** The page-level controls, pinned to the far end of the header. */

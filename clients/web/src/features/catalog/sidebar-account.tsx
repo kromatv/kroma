@@ -4,11 +4,12 @@ import buildInfo from 'virtual:build-info';
 import { useT } from '@kroma/ui';
 import { Box, Menu, type MenuTriggerBind, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { useRouterState } from '@tanstack/react-router';
 import { type CSSProperties, type Ref, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 import { serverQueries } from '#web/shared/lib/queries';
 import { useFocusRing } from '#web/shared/lib/use-focus-ring';
+import { RouteLink } from '#web/shared/ui/route-link';
 import { UserAvatar } from '#web/shared/ui/user-avatar';
 
 const TABULAR = { fontVariant: ['tabular-nums' as const] };
@@ -66,7 +67,6 @@ export function VersionInfo() {
 /** The signed-in profile, and the account menu it opens. */
 export function UserChip() {
   const t = useT();
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
   // Return to the current page after switching profile.
   const href = useRouterState({ select: (s) => s.location.href });
@@ -74,16 +74,12 @@ export function UserChip() {
   return (
     <Menu.Root label={t('nav.account')} align="start">
       <Menu.Trigger render={userChipTrigger(user, t('nav.account'))} />
-      <Menu.Item
-        icon="user-circle"
-        label={t('nav.accountSettings')}
-        onSelect={() => void navigate({ to: '/account' })}
-      />
-      <Menu.Item
-        icon="users"
-        label={t('nav.changeProfile')}
-        onSelect={() => void navigate({ to: '/login', search: { redirect: href } })}
-      />
+      <Menu.Item icon="user-circle" label={t('nav.accountSettings')} asChild>
+        <RouteLink to="/account" />
+      </Menu.Item>
+      <Menu.Item icon="users" label={t('nav.changeProfile')} asChild>
+        <RouteLink to="/login" search={{ redirect: href }} />
+      </Menu.Item>
       <Menu.Separator />
       <Menu.Item
         icon="logout"

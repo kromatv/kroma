@@ -138,14 +138,22 @@ const SORTABLE: readonly TableColumn[] = [{ column: 'id' }, { column: 'port' }, 
 
 function Sortable({
   multiple = false,
+  required = false,
+  initial = [],
   onSortChange,
-}: Readonly<{ multiple?: boolean; onSortChange?: (next: readonly SortColumn[]) => void }>) {
-  const [sort, setSort] = useState<readonly SortColumn[]>([]);
+}: Readonly<{
+  multiple?: boolean;
+  required?: boolean;
+  initial?: readonly SortColumn[];
+  onSortChange?: (next: readonly SortColumn[]) => void;
+}>) {
+  const [sort, setSort] = useState<readonly SortColumn[]>(initial);
   return (
     <Table.Root
       label="Modules"
       columns={SORTABLE}
       multiple={multiple}
+      required={required}
       sort={sort}
       onSortChange={(next) => {
         setSort(next);
@@ -180,6 +188,17 @@ describe('a heading that sorts', () => {
     });
 
     expect(cycle).toEqual(['ascending', 'descending', 'none']);
+  });
+
+  it('turns the last column around instead of clearing a sort it cannot do without', () => {
+    render(<Sortable required initial={[{ column: 'id', direction: 'desc' }]} />);
+
+    const cycle = [0, 1].map(() => {
+      press('Module');
+      return heading(0).getAttribute('aria-sort');
+    });
+
+    expect(cycle).toEqual(['ascending', 'descending']);
   });
 
   it('hands the caller the whole next sort rather than one direction', () => {

@@ -14,6 +14,7 @@ use serde_json::json;
 
 use kroma_module_sdk::host::{call_raw, pinned_resolver, service, HostCtx};
 
+use crate::bandwidth::{BandwidthView, Range};
 use crate::dtos::VpnStatusView;
 use crate::DownloadManager;
 
@@ -43,6 +44,7 @@ pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
             post(seal_check::<S>),
         )
         .route("/_port/tv.kroma.torrents/vpn/restart", post(restart::<S>))
+        .route("/_port/tv.kroma.torrents/vpn/bandwidth", post(bandwidth::<S>))
 }
 
 // Every method answers `Option<_>`: this process may be up while the manager it
@@ -82,6 +84,27 @@ async fn seal_check<S: HostCtx + Clone + Send + Sync + 'static>(
     .ok()
     .flatten();
     Json(seal)
+}
+
+#[derive(Debug, Clone, Default, serde::Deserialize)]
+#[serde(default)]
+struct BandwidthAsk {
+    range: String,
+}
+
+async fn bandwidth<S: HostCtx + Clone + Send + Sync + 'static>(
+    State(host): State<S>,
+    Json(ask): Json<BandwidthAsk>,
+) -> Json<Option<BandwidthView>> {
+    let view = tokio::task::spawn_blocking(move || {
+        manager(&host)?
+            .bandwidth(&host, Range::parse(&ask.range))
+            .ok()
+    })
+    .await
+    .ok()
+    .flatten();
+    Json(view)
 }
 
 async fn restart<S: HostCtx + Clone + Send + Sync + 'static>(
@@ -129,6 +152,7 @@ mod tests {
             "/_port/tv.kroma.torrents/vpn/status",
             "/_port/tv.kroma.torrents/vpn/seal-check",
             "/_port/tv.kroma.torrents/vpn/restart",
+            "/_port/tv.kroma.torrents/vpn/bandwidth",
         ] {
             let (status, answer) = call(path).await;
 
@@ -158,6 +182,13 @@ mod tests {
         assert_eq!(json["connected"], true);
         assert_eq!(json["exitIp"], "203.0.113.7");
         assert_eq!(json["paused"], false);
+    }
+
+    #[test]
+    fn a_caller_that_names_no_window_is_answered_with_the_day() {
+        let ask: BandwidthAsk = serde_json::from_value(json!({})).unwrap();
+
+        assert_eq!(Range::parse(&ask.range), Range::Day);
     }
 
     #[test]

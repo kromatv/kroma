@@ -22,20 +22,19 @@ import {
   Text,
 } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
 import { requestStatusMeta, seasonsSummary } from '#web/shared/lib/request-status';
 import { PageFrame, Skeleton } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 export function MyRequestsPage() {
   const t = useT();
   const { client } = useAuth();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const requestsQuery = userQueries.myRequests();
   const { data: requests, isPending } = useQuery({
     ...requestsQuery,
@@ -93,11 +92,9 @@ export function MyRequestsPage() {
         <EmptyState.Root icon="inbox">
           <EmptyState.Title>{t('requests.myEmpty')}</EmptyState.Title>
           <EmptyState.Actions>
-            <Button
-              size="sm"
-              label={t('requests.myEmptyCta')}
-              onPress={() => navigate({ to: '/search', search: { q: '', type: 'all' } })}
-            />
+            <Button size="sm" label={t('requests.myEmptyCta')} asChild>
+              <RouteLink to="/search" search={{ q: '', type: 'all' }} />
+            </Button>
           </EmptyState.Actions>
         </EmptyState.Root>
       ) : null}
@@ -110,23 +107,28 @@ export function MyRequestsPage() {
             progress={progress[req.id]}
             busy={busyId === req.id}
             onCancel={() => cancel(req)}
-            onOpen={() => {
-              if (req.status === 'available') {
-                navigate({ to: '/search', search: { q: '', type: 'all' } });
-              } else {
-                navigate({
-                  to: '/discover/$type/$tmdbId',
-                  params: {
-                    type: req.kind === 'show' ? 'tv' : 'movie',
-                    tmdbId: String(req.tmdbId),
-                  },
-                });
-              }
-            }}
           />
         ))}
       </Box>
     </PageFrame>
+  );
+}
+
+function RequestLink({ req, children }: Readonly<{ req: MediaRequest; children: ReactNode }>) {
+  if (req.status === 'available') {
+    return (
+      <RouteLink to="/search" search={{ q: '', type: 'all' }}>
+        {children}
+      </RouteLink>
+    );
+  }
+  return (
+    <RouteLink
+      to="/discover/$type/$tmdbId"
+      params={{ type: req.kind === 'show' ? 'tv' : 'movie', tmdbId: String(req.tmdbId) }}
+    >
+      {children}
+    </RouteLink>
   );
 }
 
@@ -135,13 +137,11 @@ function RequestRow({
   progress,
   busy,
   onCancel,
-  onOpen,
 }: Readonly<{
   req: MediaRequest;
   progress?: number;
   busy: boolean;
   onCancel: () => void;
-  onOpen: () => void;
 }>) {
   const t = useT();
   const locale = useLocale();
@@ -164,41 +164,48 @@ function RequestRow({
   return (
     <Surface pad="none" p={14} radius="2xl" border="border" row align="center" gap={16}>
       <Focusable
-        onPress={onOpen}
+        asChild
         label={`${req.title} · ${t(requestStatusMeta(req.status).labelKey)}`}
         style={s.head}
       >
-        <Box w={46} h={68} shrink={0}>
-          <Img src={poster} background={`linear-gradient(158deg, ${c1}, ${c2})`} radius="lg" fill />
-        </Box>
-        <Box minW={0} shrink={1}>
-          <Text variant="label" lines={1}>
-            {req.title}
-          </Text>
-          <Text variant="meta" color="textDim" mt={2}>
-            {[
-              req.year ? String(req.year) : '',
-              req.kind === 'show' ? (seasons ?? t('requests.allSeasons')) : '',
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
-          {upcoming ? (
-            <Row gap={4} mt={4}>
-              <Icon name="calendar-clock" size={13} thickness={1.9} color="accent" />
-              <Text variant="meta" color="accent">
-                {upcoming}
-              </Text>
-            </Row>
-          ) : null}
-          {req.note ? (
-            <Text variant="meta" color="dangerHover" mt={4}>
-              {req.note}
+        <RequestLink req={req}>
+          <Box w={46} h={68} shrink={0}>
+            <Img
+              src={poster}
+              background={`linear-gradient(158deg, ${c1}, ${c2})`}
+              radius="lg"
+              fill
+            />
+          </Box>
+          <Box minW={0} shrink={1}>
+            <Text variant="label" lines={1}>
+              {req.title}
             </Text>
-          ) : null}
-        </Box>
-        <Box flex />
-        <RequestStatusChip status={req.status} progress={progress ?? req.progress ?? null} />
+            <Text variant="meta" color="textDim" mt={2}>
+              {[
+                req.year ? String(req.year) : '',
+                req.kind === 'show' ? (seasons ?? t('requests.allSeasons')) : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
+            {upcoming ? (
+              <Row gap={4} mt={4}>
+                <Icon name="calendar-clock" size={13} thickness={1.9} color="accent" />
+                <Text variant="meta" color="accent">
+                  {upcoming}
+                </Text>
+              </Row>
+            ) : null}
+            {req.note ? (
+              <Text variant="meta" color="dangerHover" mt={4}>
+                {req.note}
+              </Text>
+            ) : null}
+          </Box>
+          <Box flex />
+          <RequestStatusChip status={req.status} progress={progress ?? req.progress ?? null} />
+        </RequestLink>
       </Focusable>
       {req.status === 'pending' ? (
         <IconButton

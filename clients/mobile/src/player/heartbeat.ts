@@ -8,10 +8,16 @@
 
 import { KromaApiError, type KromaClient, KromaEvents, type MediaItem } from '@kroma/core';
 import * as Device from 'expo-device';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 const PING_MS = 10_000;
+
+// The server drops a session 30 s after its last beat and logs it to history
+// (SESSION_TTL in services/playback/registry.rs). A beat later than that is not a
+// heartbeat: the registry has already closed and recorded the session, so pinging
+// the same id opens a NEW one. A suspended app is where this bites.
+const SESSION_TTL_MS = 30_000;
 
 export interface HeartbeatSnapshot {
   positionSec: number;
@@ -46,6 +52,24 @@ function newSessionId(device: string): string {
   return `mob-${slug}-${Date.now().toString(36)}-${(sessionSeq++).toString(36)}`;
 }
 
+function deviceLabel(): string {
+  return Device.modelName ?? (Platform.OS === 'ios' ? 'iPhone' : 'Android');
+}
+
+interface Session {
+  itemId: string;
+  id: string;
+  /** Whether the server knows this session, so a title that never played is
+   *  neither registered nor stopped. */
+  opened: boolean;
+  terminated: boolean;
+  lastBeat: { at: number; positionSec: number } | null;
+}
+
+function openSession(itemId: string, device: string): Session {
+  return { itemId, id: newSessionId(device), opened: false, terminated: false, lastBeat: null };
+}
+
 export function useHeartbeat(
   client: KromaClient,
   item: MediaItem,
@@ -58,16 +82,23 @@ export function useHeartbeat(
   snapRef.current = snapshot;
   const onTerminatedRef = useRef(onTerminated);
   onTerminatedRef.current = onTerminated;
+  const [device] = useState(deviceLabel);
+  // One id per title watched, NOT one per effect run: a client swapped
+  // underneath a running player is the same viewing, and re-minting here would
+  // strand the previous id for the reaper to log as a play of its own.
+  const session = useRef<Session | null>(null);
+  // A stop that overtakes its own ping ends nothing, and the ping then leaves a
+  // session no one will ever close.
+  const inFlight = useRef<Promise<unknown>>(Promise.resolve());
+  const clientRef = useRef(client);
+  clientRef.current = client;
 
   useEffect(() => {
-    const device = Device.modelName ?? (Platform.OS === 'ios' ? 'iPhone' : 'Android');
-    const sessionId = newSessionId(device);
-    // Once terminated: stop pinging (a ping would re-register the session the
-    // admin just removed) and skip the redundant stop on unmount.
-    let terminated = false;
+    if (session.current?.itemId !== item.id) session.current = openSession(item.id, device);
+    const live = session.current;
     const fireTerminated = (message: string) => {
-      if (terminated) return;
-      terminated = true;
+      if (live.terminated) return;
+      live.terminated = true;
       onTerminatedRef.current?.(message);
     };
 
@@ -84,11 +115,23 @@ export function useHeartbeat(
     };
 
     const ping = () => {
-      if (terminated) return;
+      if (live.terminated) return;
       const s = snapRef.current();
-      void client
+      const now = Date.now();
+      const previous = live.lastBeat;
+      live.lastBeat = { at: now, positionSec: s.positionSec };
+      const beforeGap = previous && now - previous.at > SESSION_TTL_MS ? previous : null;
+      if (beforeGap) live.opened = false;
+      if (!live.opened) {
+        if (pingState(s) !== 'playing') return;
+        // Re-opening across a gap takes a playhead that moved through it: the
+        // transport flag survives a suspended app, the position does not.
+        if (beforeGap && s.positionSec <= beforeGap.positionSec) return;
+      }
+      live.opened = true;
+      inFlight.current = client
         .pingPlayback({
-          sessionId,
+          sessionId: live.id,
           itemId: item.id,
           positionMs: Math.round(s.positionSec * 1000),
           durationMs: Math.round(s.durationSec * 1000) || null,
@@ -116,7 +159,7 @@ export function useHeartbeat(
     // next ping.
     const events = new KromaEvents(client.baseUrl, {
       onEvent: (e) => {
-        if (e.type === 'playback.terminate' && e.sessionId === sessionId) {
+        if (e.type === 'playback.terminate' && e.sessionId === live.id) {
           fireTerminated(e.message);
         }
       },
@@ -127,7 +170,22 @@ export function useHeartbeat(
       clearInterval(timer);
       events.close();
       save();
-      if (!terminated) void client.stopPlayback(sessionId).catch(() => undefined);
     };
-  }, [client, item.id]);
+  }, [client, item.id, device]);
+
+  // Ending the session is the TITLE's lifecycle, not the loop's: a client
+  // swapped underneath a running player rebinds the loop above, and stopping
+  // here would log a second history row for one viewing.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: item.id is the reset key that ends one title's session, not a value this closure reads.
+  useEffect(() => {
+    return () => {
+      const live = session.current;
+      if (!live || live.terminated || !live.opened) return;
+      live.opened = false;
+      const owner = clientRef.current;
+      inFlight.current = inFlight.current
+        .then(() => owner.stopPlayback(live.id))
+        .catch(() => undefined);
+    };
+  }, [item.id]);
 }

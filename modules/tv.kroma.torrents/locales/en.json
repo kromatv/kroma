@@ -129,6 +129,8 @@
   "downloads.vpnBlocked": "Kill switch engaged: downloads held, VPN unreachable",
   "downloads.vpnDown": "VPN unreachable",
   "downloads.vpnOk": "VPN active · exit IP {ip}",
+  "downloads.vpnSealedDay": "{total} through the tunnel over the last 24 hours.",
+  "downloads.vpnUnsealedDay": "{total} moved outside the tunnel over the last 24 hours.",
   "downloads.waiting": "{count} waiting",
   "manual.add": "Add",
   "manual.addFailed": "Add failed",

@@ -154,6 +154,7 @@ impl AppState {
         // Likewise, reset any pipeline ledger task stranded `running` by that
         // crash back to `pending` so its stage picks it up again.
         crate::services::pipeline::recover_on_boot(&db);
+        let metrics = Metrics::new(db.clone());
         // `new_cyclic` seeds the weak self-reference (`me`) during construction so
         // `trigger_job` can re-share the full state; the closure is FnOnce, so the
         // pre-built services above move straight in.
@@ -171,7 +172,7 @@ impl AppState {
             handoff: handoff::new(),
             playback: Registry::new(),
             cast: crate::services::cast::Registry::new(),
-            metrics: Metrics::new(),
+            metrics,
             embedder,
             search: Arc::new(SearchEngine::new().expect("init search index")),
             vectors: Arc::new(VectorCache::new()),

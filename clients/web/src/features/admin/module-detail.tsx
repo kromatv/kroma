@@ -25,6 +25,7 @@ import { InstallModal } from '#web/features/admin/module-install';
 import { ModuleLogs } from '#web/features/admin/module-logs';
 import { useModuleRestart, useStoreOps } from '#web/features/admin/module-ops';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 export function ModuleDetailPage({ id }: Readonly<{ id: string }>) {
   if (!useCap('settings.manage')) return <Denied />;
@@ -61,7 +62,9 @@ function ModuleDetailInner({ id }: Readonly<{ id: string }>) {
   return (
     <>
       <PageHeader.Root>
-        <PageHeader.Back label={t('admin.modulesTitle')} onPress={back} />
+        <PageHeader.Back label={t('admin.modulesTitle')} asChild>
+          <RouteLink to="/admin/modules" />
+        </PageHeader.Back>
         <PageHeader.Title>{name}</PageHeader.Title>
         <PageHeader.Subtitle>{id}</PageHeader.Subtitle>
         <PageHeader.Actions>

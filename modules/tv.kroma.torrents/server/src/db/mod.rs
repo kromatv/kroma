@@ -18,11 +18,13 @@ pub use kroma_module_sdk::db::*;
 // The indexers table is owned by the indexer module; the queue view + acquisition
 // reach it over the indexer module's own db point, not a re-export here.
 
+mod bandwidth;
 mod clients;
 mod downloads;
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 
+pub use bandwidth::*;
 pub use clients::*;
 pub use downloads::*;
 
@@ -45,6 +47,21 @@ pub const MIGRATIONS: &str = "
         priority   INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS vpn_bandwidth (
+        at                  INTEGER NOT NULL,
+        step_secs           INTEGER NOT NULL,
+        sealed_down_bytes   INTEGER NOT NULL DEFAULT 0,
+        sealed_up_bytes     INTEGER NOT NULL DEFAULT 0,
+        unsealed_down_bytes INTEGER NOT NULL DEFAULT 0,
+        unsealed_up_bytes   INTEGER NOT NULL DEFAULT 0,
+        bypass_down_bytes   INTEGER NOT NULL DEFAULT 0,
+        bypass_up_bytes     INTEGER NOT NULL DEFAULT 0,
+        sealed_secs         INTEGER NOT NULL DEFAULT 0,
+        unsealed_secs       INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (step_secs, at)
+    );
+    CREATE INDEX IF NOT EXISTS idx_vpn_bandwidth_at ON vpn_bandwidth(at);
 ";
 
 // The seeded embedded-engine row id (created at boot when compiled in).

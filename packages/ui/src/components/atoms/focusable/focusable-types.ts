@@ -25,7 +25,8 @@ type A11yState = A11yProps | undefined;
 /** What `aria-current` a control claims; see `current` on FocusableProps. */
 type FocusCurrent = 'page' | 'step';
 
-type HostElement = ReactElement<Record<string, unknown>>;
+/** The element a control renders in place of its own, named by `asChild`. */
+type HostElement = ReactElement<{ children?: ReactNode }>;
 
 /**
  * What a child render function is handed. `slots` is the recipe resolved
@@ -42,15 +43,16 @@ interface FocusState<R extends AnySv = AnySv> {
 
 interface FocusableProps<R extends AnySv = AnySv> {
   /**
-   * A router's own link, written as an element (`as={<RouteLink to="/movies" />}`).
-   * On the browser targets it becomes the control's host element, so the control
-   * is a real `<a href>` whose click the router owns.
+   * Render onto the one element the children resolve to instead of onto a
+   * pressable of the caller's own: a router's link, so the control is a real
+   * `<a href>` whose click the router owns. That element's own children are the
+   * control's content.
    *
    * Ignored where there is no document, and by a control the spatial navigator
    * drives. Both fall back to the pressable, whose activation is `onPress`, so a
    * control that has to work on either passes both.
    */
-  as?: HostElement;
+  asChild?: boolean;
   /**
    * The component's recipe. <Focusable> owns the interaction state, so it is the
    * only place that can resolve one: it paints the `root` slot on itself and
@@ -74,12 +76,10 @@ interface FocusableProps<R extends AnySv = AnySv> {
    *  focus states from this prop. */
   focused?: boolean;
   hitSlop?: number | Insets;
-  /** A destination rather than an action: the control renders as an `<a href>`
-   *  on the browser targets, so it is a real link to open in a tab, copy or
-   *  download. Ignored on the native platforms, which have no document.
-   *
-   *  For a route inside the app, use `as`: the browser owns a plain `href`, so
-   *  pairing one with an `onPress` that navigates does both. */
+  /** A destination outside the app: the control renders as an `<a href>` on the
+   *  browser targets, so it is a real link to open in a tab, copy or download.
+   *  Ignored on the native platforms, which have no document. A route INSIDE the
+   *  app is `asChild` instead, so the router owns the click. */
   href?: string;
   /** Reachable by the remote, but painting no interaction state: a control that
    *  is busy rather than unavailable. A spinner already says what is happening,
@@ -97,6 +97,9 @@ interface FocusableProps<R extends AnySv = AnySv> {
    * resolves. What `style` is to the rest state, this is to the others.
    */
   states?: Partial<Record<SvStateName, StyleDecl>>;
+  /** The control's content, or a function of its live state. Under `asChild` it
+   *  is instead the one element the control renders as, whose own children are
+   *  the content. */
   children?: ReactNode | ((state: FocusState<R>) => ReactNode);
   label?: string;
   /** What the control IS to assistive tech. Defaults to `button`; a control

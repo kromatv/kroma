@@ -34,6 +34,19 @@ export function onScreen(ui: ReactElement): ReactElement {
   );
 }
 
+/** The node under `root` that measures itself, i.e. the one react-native-web
+ * gave an `onLayout`. Throws unless there is exactly one, so a caller measuring
+ * "the" box cannot silently start measuring a different one. */
+export function measuring(root: Element): Element {
+  const boxes = [...root.querySelectorAll('div')].filter(
+    (el) => (el as { __reactLayoutHandler?: unknown }).__reactLayoutHandler !== undefined,
+  );
+  if (boxes.length !== 1) {
+    throw new Error(`expected one node that measures itself, found ${boxes.length}`);
+  }
+  return boxes[0] as Element;
+}
+
 /** Hand a rendered node the box a browser would have measured, firing the
  * `onLayout` it was given. react-native-web reports layout through a
  * ResizeObserver, which jsdom does not implement, so nothing a component

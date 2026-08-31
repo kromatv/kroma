@@ -1,3 +1,19 @@
 {
-  "nav.vpn": "VPN"
+  "nav.vpn": "VPN",
+  "vpnBandwidth.bypassed": "{total} moved on a download client the bridge does not carry.",
+  "vpnBandwidth.direction": "Direction",
+  "vpnBandwidth.down": "Downloaded",
+  "vpnBandwidth.empty": "Nothing has been recorded yet. The figures start once a download moves.",
+  "vpnBandwidth.gap": "Nothing left the tunnel, but the bridge was down for {duration} of this period.",
+  "vpnBandwidth.inTunnel": "Through the tunnel",
+  "vpnBandwidth.leaked": "{total} of unprotected traffic moved while the bridge was not sealed.",
+  "vpnBandwidth.noBridge": "No WireGuard bridge is configured, so none of this traffic went through a tunnel.",
+  "vpnBandwidth.noEngine": "No download module is installed, so nothing is routing through the bridge to measure.",
+  "vpnBandwidth.otherClient": "Other client",
+  "vpnBandwidth.outsideTunnel": "Outside the tunnel",
+  "vpnBandwidth.sealed": "The bridge held for the whole period, so every byte below went through the tunnel.",
+  "vpnBandwidth.throughTunnel": "{total} through the tunnel",
+  "vpnBandwidth.title": "Tunnel bandwidth",
+  "vpnBandwidth.up": "Uploaded",
+  "vpnBandwidth.window": "Period"
 }

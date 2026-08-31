@@ -7,7 +7,7 @@
 import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
+import { delegateOf, Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { IconWell, type IconWellSize } from '#ui/components/atoms/icon-well';
@@ -83,7 +83,9 @@ interface ListRowRootProps extends Omit<FocusableProps, 'children' | 'style' | '
   /** The row's parts. Only a DIRECT <ListRow.Leading> or <ListRow.Trailing>
    *  child is sorted into its slot, so those two may be written anywhere;
    *  everything else is the middle column, in the order it was written. The
-   *  first plain text in that column is the row's accessible name. */
+   *  first plain text in that column is the row's accessible name. Under
+   *  `asChild` it is instead the one element the row renders as, whose own
+   *  children are the parts. */
   children?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }
@@ -94,6 +96,7 @@ function Root({
   size,
   ground: asked = 'artwork',
   chevron: wantsChevron,
+  asChild = false,
   children,
   onPress,
   href,
@@ -102,6 +105,7 @@ function Root({
   style,
   ...focusProps
 }: Readonly<ListRowRootProps>) {
+  const delegate = delegateOf(asChild, children);
   const group = useListGroup();
   const standalone = group === null;
   const ground = standalone ? asked : 'surface';
@@ -111,9 +115,10 @@ function Root({
     { borderRadius: controlRadius(metrics) },
     { on: ground === 'artwork' },
   );
-  const pressable = onPress !== undefined;
+  const pressable = onPress !== undefined || asChild;
 
-  const at = useMemo(() => sort(children), [children]);
+  const parts = delegate.content;
+  const at = useMemo(() => sort(parts), [parts]);
   // The row only CLAIMS a selection where the caller gave it one: a plain
   // settings row that announced `selected: false` would be reported as one
   // option among several by every screen reader that walked it.
@@ -128,6 +133,7 @@ function Root({
     <ListRowContext.Provider value={ctx}>
       <Focusable
         {...focusProps}
+        asChild={asChild}
         onPress={onPress}
         href={href}
         // A row that does nothing is not a button. Left to the default it would
@@ -149,20 +155,22 @@ function Root({
         vars={{ size: shell, pressable, standalone, ground, selected: lit }}
         style={[frost.style, style]}
       >
-        {(state) => (
-          <>
-            {frost.layer}
-            {leading}
-            {/* minW 0: without it a long label pushes the trailing slot off the
-                row instead of ellipsing, which is the one thing a row of a
-                settings list must never do. */}
-            <Box flex minW={0} gap={2}>
-              {at.content}
-            </Box>
-            {at.trailing}
-            {chevron ? <Icon name="chevron-right" {...state.slots.chevron} /> : null}
-          </>
-        )}
+        {(state) =>
+          delegate.wrap(
+            <>
+              {frost.layer}
+              {leading}
+              {/* minW 0: without it a long label pushes the trailing slot off the
+                  row instead of ellipsing, which is the one thing a row of a
+                  settings list must never do. */}
+              <Box flex minW={0} gap={2}>
+                {at.content}
+              </Box>
+              {at.trailing}
+              {chevron ? <Icon name="chevron-right" {...state.slots.chevron} /> : null}
+            </>,
+          )
+        }
       </Focusable>
     </ListRowContext.Provider>
   );

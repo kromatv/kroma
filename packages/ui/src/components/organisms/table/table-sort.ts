@@ -55,13 +55,20 @@ function sortPlace(columns: readonly SortColumn[], column: string): SortPlace | 
   return found ? { direction: found.direction, rank: at + 1 } : null;
 }
 
+interface SortRules {
+  multiple: boolean;
+  required: boolean;
+}
+
 function nextSort(
   columns: readonly SortColumn[],
   column: string,
-  multiple: boolean,
+  { multiple, required }: SortRules,
 ): readonly SortColumn[] {
   const place = sortPlace(columns, column);
-  const direction = NEXT_DIRECTION[place?.direction ?? 'none'];
+  const alone = !multiple || (place !== null && columns.length === 1);
+  const direction =
+    NEXT_DIRECTION[place?.direction ?? 'none'] ?? (required && alone ? 'asc' : null);
   if (!multiple) return direction ? [{ column, direction }] : [];
   if (!direction) return columns.filter((entry) => entry.column !== column);
   if (!place) return [...columns, { column, direction }];

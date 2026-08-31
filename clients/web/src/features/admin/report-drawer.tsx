@@ -4,14 +4,34 @@
 
 import type { Report, ReportStatus } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Avatar, Box, Button, color, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
-import { useNavigate } from '@tanstack/react-router';
+import {
+  Avatar,
+  Box,
+  Button,
+  color,
+  Drawer,
+  type HostElement,
+  IconButton,
+  Row,
+  Text,
+} from '@kroma/ui/kit';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { Pill } from '#web/features/admin/pill';
 import { categoryMeta, kindLabelKey, soft, statusMeta } from '#web/features/admin/report-meta';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 const FLEX_1 = { flex: 1 } as const;
+
+function ficheLink(report: Report): HostElement | null {
+  if (report.subjectKind === 'movie') {
+    return <RouteLink to="/movies/$id" params={{ id: report.subjectId }} />;
+  }
+  if (report.subjectKind === 'show') {
+    return <RouteLink to="/shows/$id" params={{ id: report.subjectId }} />;
+  }
+  return null;
+}
 
 function Identity({ report }: Readonly<{ report: Report }>) {
   const t = useT();
@@ -58,9 +78,9 @@ export const ReportDrawer = createCallable<
   void
 >(({ call, report: initial, canManage, onResolve, onDismiss, onReopen, onDelete }) => {
   const t = useT();
-  const navigate = useNavigate();
   const [report, setReport] = useState(initial);
   const [busy, setBusy] = useState(false);
+  const fiche = ficheLink(report);
   // react-call keeps us mounted for `unmountingDelay` ms after `call.end()`,
   // which is the window the kit Drawer's slide-out plays in.
   const close = () => call.end();
@@ -76,13 +96,6 @@ export const ReportDrawer = createCallable<
     void onDelete(report);
     close();
   };
-
-  // Movies + shows have a fiche route; an episode item has no standalone page.
-  const FICHE_ROUTES = { movie: '/movies/$id', show: '/shows/$id' } as const;
-  const ficheTo =
-    report.subjectKind === 'movie' || report.subjectKind === 'show'
-      ? FICHE_ROUTES[report.subjectKind]
-      : null;
 
   return (
     <Drawer.Root
@@ -128,15 +141,17 @@ export const ReportDrawer = createCallable<
             </Text>
           )}
 
-          {ficheTo ? (
+          {fiche ? (
             <Row mt={16} self="flex-start">
               <Button
                 variant="glass"
                 size="sm"
                 icon="external-link"
                 label={t('reports.viewTitle')}
-                onPress={() => navigate({ to: ficheTo, params: { id: report.subjectId } })}
-              />
+                asChild
+              >
+                {fiche}
+              </Button>
             </Row>
           ) : null}
         </Box>

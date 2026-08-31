@@ -227,7 +227,16 @@ pub(crate) const SCHEMA: &str = "
         library    TEXT,
         started_at INTEGER NOT NULL,
         ended_at   INTEGER NOT NULL,
-        watched_ms INTEGER NOT NULL DEFAULT 0
+        watched_ms INTEGER NOT NULL DEFAULT 0,
+        device      TEXT,
+        player      TEXT,
+        mode        TEXT,
+        network     TEXT,
+        video_label TEXT,
+        audio_label TEXT,
+        show_title  TEXT,
+        season      INTEGER,
+        episode     INTEGER
     );
     CREATE INDEX IF NOT EXISTS idx_history_user  ON play_history(user_id, ended_at DESC);
     CREATE INDEX IF NOT EXISTS idx_history_ended ON play_history(ended_at DESC);
@@ -598,6 +607,24 @@ pub(crate) const SCHEMA: &str = "
     );
     CREATE INDEX IF NOT EXISTS idx_downloads_status ON downloads(status, grabbed_at DESC);
     CREATE INDEX IF NOT EXISTS idx_downloads_req    ON downloads(request_id);
+
+    -- The dashboard's resource series, one row per rolled-up window. `at` is the
+    -- unix second the window opens on and `step_secs` how wide it is, so a row
+    -- carries its own resolution as the retention ladder folds it coarser with
+    -- age (see kroma_engine::infra::metrics::rollup).
+    CREATE TABLE IF NOT EXISTS metric_samples (
+        at         INTEGER NOT NULL,
+        step_secs  INTEGER NOT NULL,
+        cpu_kroma  REAL NOT NULL,
+        cpu_system REAL NOT NULL,
+        cpu_media  REAL NOT NULL,
+        ram_kroma  REAL NOT NULL,
+        ram_system REAL NOT NULL,
+        bw_local   REAL NOT NULL,
+        bw_remote  REAL NOT NULL,
+        PRIMARY KEY (step_secs, at)
+    );
+    CREATE INDEX IF NOT EXISTS idx_metric_samples_at ON metric_samples(at);
 
     -- The transcription progress channel. A whisper run is minutes long and
     -- drives live progress plus a mid-run cancel, which do not fit the buffered

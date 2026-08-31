@@ -1,7 +1,7 @@
 import { useT } from '@kroma/ui';
 import { Box, Button, EmptyState, If } from '@kroma/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { MoviePoster, ShowPoster } from '#web/features/catalog/cards';
 import {
@@ -29,6 +29,7 @@ import { useMyList } from '#web/shared/lib/mylist';
 import { catalogQueries } from '#web/shared/lib/queries';
 import { useWatched } from '#web/shared/lib/watched';
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
+import { RouteLink } from '#web/shared/ui/route-link';
 import { TileCaption } from '#web/shared/ui/tile-caption';
 import { TileGrid } from '#web/shared/ui/tile-grid';
 
@@ -118,18 +119,15 @@ function NoMatches({ onClear }: Readonly<{ onClear: () => void }>) {
 
 function TabEmpty({ tab }: Readonly<{ tab: SavedTab }>) {
   const t = useT();
-  const navigate = useNavigate();
   const copy = SAVED_TAB_COPY[tab];
   return (
     <EmptyState.Root icon={copy.icon}>
       <EmptyState.Title>{t(copy.emptyTitle)}</EmptyState.Title>
       <EmptyState.Hint>{t(copy.emptyHint)}</EmptyState.Hint>
       <EmptyState.Actions>
-        <Button
-          icon="search"
-          label={t('requests.myEmptyCta')}
-          onPress={() => navigate({ to: '/search', search: { q: '', type: 'all' } })}
-        />
+        <Button icon="search" label={t('requests.myEmptyCta')} asChild>
+          <RouteLink to="/search" search={{ q: '', type: 'all' }} />
+        </Button>
       </EmptyState.Actions>
     </EmptyState.Root>
   );

@@ -5,6 +5,9 @@ use std::process::Stdio;
 
 use tokio::process::Command;
 
+use super::super::hwaccel::{HwAccel, Pipeline};
+use super::super::software::Effort;
+use super::super::{AudioMode, VideoMode};
 use super::*;
 
 pub(in crate::infra::hls) const LIVE: Duration = Duration::from_secs(1);
@@ -21,12 +24,24 @@ pub(in crate::infra::hls) fn fake_session(dir: PathBuf, age: Duration) -> Arc<Se
     let last = Instant::now()
         .checked_sub(age)
         .expect("monotonic clock older than the test window");
+    let plan = Plan::new(
+        "it:copy:0:a0",
+        0,
+        StreamMode::new(VideoMode::Copy, AudioMode::Copy),
+        Pipeline {
+            accel: HwAccel::Software,
+            effort: Effort::Quality,
+        },
+        None,
+        child.id(),
+        0.0,
+    );
     Arc::new(Session {
         dir,
         child: Mutex::new(child),
         last_access: Mutex::new(last),
-        low_seg: AtomicU64::new(u64::MAX),
-        pruned: AtomicU64::new(0),
+        window: Window::new(),
+        plan,
         start: 0.0,
         _cpu: None,
     })

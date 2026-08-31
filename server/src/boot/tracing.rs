@@ -4,20 +4,43 @@
 use kroma_engine::infra;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
+/// What a server with no `RUST_LOG` says about itself.
+///
+/// The bare `warn` matters more than any entry after it. An `EnvFilter` built
+/// only from `target=level` directives drops every target that matches none of
+/// them, so anything not named here was silent in production, at every level:
+/// a NAS ran for six weeks without one line explaining which encoder it had
+/// settled on or why a remux refused to start, because `kroma_engine` was not
+/// on the list. A floor of `warn` means a problem is never silent again, and
+/// the entries above it are the subsystems whose ordinary progress an operator
+/// reads rather than debugs.
+///
+/// Every developer runs with `RUST_LOG` set, which replaces this wholesale.
+/// That is why nobody saw it.
+const DEFAULT_FILTER: &str = "warn,\
+    kroma_server=info,\
+    kroma_engine=info,\
+    kroma_module_supervisor=info,\
+    tower_http=info,axum=info,librqbit=info";
+
+/// Days of rolling log kept on disk. `tracing_appender` deletes nothing on its
+/// own, so before this was set a NAS accumulated one file per day forever. Long
+/// enough to still hold the week a viewer eventually gets round to reporting.
+const KEEP_DAYS: usize = 30;
+
 pub fn init_tracing(
     log_dir: &std::path::Path,
 ) -> Option<tracing_appender::non_blocking::WorkerGuard> {
-    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-        EnvFilter::new(
-            // The supervisor is included: module spawn/stop/hot-reload is
-            // operator-visible behaviour, and it was silently filtered out.
-            "kroma_server=info,kroma_module_supervisor=info,tower_http=info,axum=info,librqbit=info",
-        )
-    });
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(DEFAULT_FILTER));
 
     let (file_layer, guard) = match std::fs::create_dir_all(log_dir) {
         Ok(()) => {
-            let appender = tracing_appender::rolling::daily(log_dir, "kroma.log");
+            let appender = tracing_appender::rolling::Builder::new()
+                .rotation(tracing_appender::rolling::Rotation::DAILY)
+                .filename_prefix("kroma.log")
+                .max_log_files(KEEP_DAYS)
+                .build(log_dir)
+                .unwrap_or_else(|_| tracing_appender::rolling::daily(log_dir, "kroma.log"));
             let (writer, guard) = tracing_appender::non_blocking(appender);
             let layer = tracing_subscriber::fmt::layer()
                 .with_ansi(false)
@@ -100,6 +123,44 @@ mod tests {
         infra::logbuf::LOG_BUFFER
             .snapshot(200, None, Some("core"), Some(q))
             .pop()
+    }
+
+    // Emitted through the real filter, so what is asserted is what a server with
+    // no RUST_LOG would actually have written.
+    fn under_default_filter(emit: impl FnOnce()) {
+        let subscriber = tracing_subscriber::registry()
+            .with(EnvFilter::new(DEFAULT_FILTER))
+            .with(LogBufferLayer);
+        tracing::subscriber::with_default(subscriber, emit);
+    }
+
+    // The bug this pins: the default filter named only two of our crates, so a
+    // production server dropped every line the engine emitted, warnings and
+    // errors included, and a NAS ran for six weeks with nothing to read.
+    #[test]
+    fn the_engine_narrates_itself_in_production() {
+        under_default_filter(|| {
+            tracing::info!(
+                target: "kroma_engine::infra::hls::session",
+                "boot-tracing-engine-marker"
+            );
+        });
+
+        assert!(latest("boot-tracing-engine-marker").is_some());
+    }
+
+    #[test]
+    fn a_crate_nobody_listed_still_gets_to_report_a_problem() {
+        under_default_filter(|| {
+            tracing::warn!(target: "some_dependency", "boot-tracing-stranger-warn");
+            tracing::info!(target: "some_dependency", "boot-tracing-stranger-info");
+        });
+
+        assert!(latest("boot-tracing-stranger-warn").is_some());
+        assert!(
+            latest("boot-tracing-stranger-info").is_none(),
+            "without buying its ordinary chatter"
+        );
     }
 
     #[test]

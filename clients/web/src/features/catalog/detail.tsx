@@ -14,6 +14,7 @@ import {
   color,
   Ground,
   gradient,
+  type HostElement,
   IconButton,
   Text,
   useBreakpoint,
@@ -93,7 +94,7 @@ export interface DetailHeroProps {
   subtitles?: string;
   playLabel?: string;
   primaryAction?: ReactNode;
-  onBack: () => void;
+  back: HostElement;
   onPlay?: () => void;
   castItemId?: ItemId;
   watched?: boolean;
@@ -123,7 +124,7 @@ export function DetailHero({
   subtitles,
   playLabel,
   primaryAction,
-  onBack,
+  back,
   onPlay,
   castItemId,
   watched,
@@ -158,7 +159,9 @@ export function DetailHero({
 
       <Box absolute z={3} left={CORNER_LEFT} top={CORNER_TOP}>
         <Ground tone="dark">
-          <BackButton diameter={42} label={t('common.back')} onPress={onBack} />
+          <BackButton diameter={42} label={t('common.back')} asChild>
+            {back}
+          </BackButton>
         </Ground>
       </Box>
 

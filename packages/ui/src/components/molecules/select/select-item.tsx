@@ -2,7 +2,7 @@
 // the pointer's anchored listbox. Which one it renders is the surface's
 // decision, handed down through the row context.
 
-import { type ReactNode, useMemo } from 'react';
+import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import { Pressable, type StyleProp, type TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { CheckboxFace } from '#ui/components/atoms/checkbox';
@@ -30,7 +30,7 @@ const optionVariants = sv({
       radius: 'md',
       _hover: { bg: 'tint/8' },
     },
-    ink: { shrink: 1 },
+    ink: { grow: 1, shrink: 1 },
   },
   variants: {
     chosen: { true: { ink: { color: 'text' } }, false: { ink: { color: 'textMuted' } } },
@@ -40,36 +40,59 @@ const optionVariants = sv({
 
 interface SelectItemProps {
   value: string;
-  /** The row. A plain string child IS the label; anything else is the row
+  /** The row. A DIRECT <Select.Media> child is its head, wherever it is
+   *  written; a plain string beside it IS the label; anything else is the row
    *  itself, and then `label` is what the trigger and assistive tech read. */
   children?: ReactNode;
   label?: string;
   /** The fact that settles the choice: a bitrate, a codec, a count. */
   note?: string;
+  /** The head of the row, as a glyph the kit can size. A mark it cannot size
+   *  goes through <Select.Media>, which wins the head from it. */
   icon?: IconName;
   disabled?: boolean;
 }
 
-function textOf(children: ReactNode): string | undefined {
-  if (typeof children === 'string') return children;
-  if (typeof children === 'number') return String(children);
+interface Sorted {
+  media: ReactNode[];
+  body: ReactNode[];
+}
+
+function sort(children: ReactNode): Sorted {
+  const at: Sorted = { media: [], body: [] };
+  for (const child of Children.toArray(children)) {
+    if (isValidElement(child) && child.type === Media) at.media.push(child);
+    else at.body.push(child);
+  }
+  return at;
+}
+
+function textOf(body: readonly ReactNode[]): string | undefined {
+  if (body.length !== 1) return undefined;
+  const [only] = body;
+  if (typeof only === 'string') return only;
+  if (typeof only === 'number') return String(only);
   return undefined;
 }
 
-function labelOf(props: Readonly<SelectItemProps>): string {
-  return props.label ?? textOf(props.children) ?? props.value;
-}
-
-/** The descriptor a <Select.Item> declares: what the trigger renders when it is
- *  the pick, and what the listbox keyboard types ahead over. */
+/** The descriptor a <Select.Item> declares: what names it in the trigger, and
+ *  what the listbox keyboard types ahead over. */
 function optionOf(props: Readonly<SelectItemProps>): SelectOption {
   return {
     value: props.value,
-    label: labelOf(props),
+    label: props.label ?? textOf(sort(props.children).body) ?? props.value,
     note: props.note,
-    icon: props.icon,
     disabled: props.disabled,
   };
+}
+
+/** The head a <Select.Item> declares: a written <Select.Media>, else the `icon`
+ *  sugar. The Root keys these by value, so the trigger draws the pick's. */
+function mediaOf(props: Readonly<SelectItemProps>): ReactNode {
+  const { media } = sort(props.children);
+  if (media.length > 0) return media;
+  if (props.icon === undefined) return null;
+  return <Media name={props.icon} />;
 }
 
 function Item(props: Readonly<SelectItemProps>) {
@@ -79,9 +102,14 @@ function Item(props: Readonly<SelectItemProps>) {
   const option = optionOf(props);
   const chosen = values.includes(value);
   const state = useMemo(() => ({ value, chosen }), [value, chosen]);
-  const composed = children !== undefined && textOf(children) === undefined;
-  const body = (ink: StyleProp<TextStyle>) =>
-    composed ? children : <ItemRow option={option} ink={ink} />;
+  const body = sort(children).body;
+  const composed = body.length > 0 && textOf(body) === undefined;
+  const content = (ink: StyleProp<TextStyle>) => (
+    <>
+      {mediaOf(props)}
+      {composed ? body : <ItemRow option={option} ink={ink} />}
+    </>
+  );
 
   if (row.presentation === 'panel') {
     const slots = optionVariants({ chosen });
@@ -112,7 +140,7 @@ function Item(props: Readonly<SelectItemProps>) {
             disabled ? s.disabled : null,
           ]}
         >
-          {body(slots.ink)}
+          {content(slots.ink)}
         </Pressable>
       </SelectItemContext.Provider>
     );
@@ -129,7 +157,7 @@ function Item(props: Readonly<SelectItemProps>) {
         sv={optionVariants}
         vars={{ chosen }}
       >
-        {(focus) => body(focus.slots.ink)}
+        {(focus) => content(focus.slots.ink)}
       </Focusable>
     </SelectItemContext.Provider>
   );
@@ -138,11 +166,9 @@ function Item(props: Readonly<SelectItemProps>) {
 function ItemRow({ option, ink }: Readonly<{ option: SelectOption; ink: StyleProp<TextStyle> }>) {
   return (
     <>
-      {option.icon ? <Icon name={option.icon} size={18} color="textMuted" /> : null}
       <Text variant="body" lines={1} style={ink}>
         {option.label}
       </Text>
-      <Box flex />
       {option.note ? (
         <Text variant="meta" color="textDim">
           {option.note}
@@ -151,6 +177,24 @@ function ItemRow({ option, ink }: Readonly<{ option: SelectOption; ink: StylePro
       <Indicator />
     </>
   );
+}
+
+const GLYPH = 18;
+
+/** The mark that stands for an option, at the head of its row and again in the
+ *  trigger once that row is the pick. <Select.Item>'s `icon` is the sugar for
+ *  the common case; write this instead where the mark is the option's own. */
+function Media({
+  name,
+  children,
+}: Readonly<{
+  name?: IconName;
+  /** A mark the kit cannot size: give it 18px, so a column of faces lines up
+   *  with a column of glyphs. */
+  children?: ReactNode;
+}>) {
+  if (name) return <Icon name={name} size={GLYPH} color="textMuted" />;
+  return <Box shrink={0}>{children}</Box>;
 }
 
 /** The picked row's face: a tick, or a checkbox where several rows can be
@@ -176,4 +220,4 @@ const s = styles({
 });
 
 export type { SelectItemProps };
-export { Indicator, Item, optionOf };
+export { Indicator, Item, Media, mediaOf, optionOf };

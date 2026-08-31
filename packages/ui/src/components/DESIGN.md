@@ -116,6 +116,11 @@ screen reader or steals a D-pad stop.
   contents walks its direct children once, sorts them, and publishes what it
   learned through context: a position (`first`/`middle`/`last`), a padding, the
   layout the shell takes. `<ButtonGroup>` and `<InputGroup>` are both this.
+- **What it publishes may be a face rather than a measurement.**
+  `<Select.Root>` keys each item's `<Select.Media>` by that item's value, so
+  `<Select.Value>` draws the pick's mark out of the context rather than out of a
+  surface that is not open yet. A part whose face has to appear somewhere else is
+  still a part; it is not an `avatar` prop.
 
 The corollary is real API, and it must be documented on the component. A part must
 be a direct child to be sorted, and only a part that reads the context takes part
@@ -242,32 +247,84 @@ A wrapper whose only job is layout its child could carry hands that layout to th
 child and renders nothing. It exists to DELETE elements; a component whose wrapper
 paints, animates or carries semantics keeps its element.
 
-`asChild` never appears on a control. A `<Focusable>` owns interaction state no
-merge can hand over, so composition there stays the ladder above: a named part,
-the `render` function form, or the context hook. Router delegation keeps its typed
-prop, `as`, and it is the router's link written as an ELEMENT:
+### `asChild` on a control, and why it is the same rule
+
+**`asChild` is how a control goes somewhere. It is the recommended pattern, and a
+control that navigates uses it rather than a press handler.** A press that calls
+the router is a link the browser cannot see: cmd-click and middle-click do
+nothing, there is no address to copy, the status bar stays empty on hover, and
+assistive tech is told "button" for a thing that is a link. `clients/web` holds a
+gate that fails a build where a press handler navigates, including one that calls
+a navigator a hook handed it.
+
+A control takes `asChild` too, and it is Radix's spelling: the one element the
+children resolve to becomes the control's host, so a route is a real `<a href>`
+the browser can open in a tab, copy or middle-click.
+
+It is also not a cost. Delegation deletes a pressable pair per control, so a
+delegated grid touches FEWER fibers than the same grid without it, and under the
+spatial navigator the host element is dropped before it is ever built, which is
+why a television pays nothing for the pattern. The numbers are pinned in
+[`audit/delegation.test.tsx`](../../audit/delegation.test.tsx).
 
 ```tsx
-<Focusable sv={genreTile} as={<RouteLink to="/genre/$genre" params={{ genre }} />} />
+<Button label="More info" asChild>
+  <RouteLink to="/movies/$id" params={{ id }} />
+</Button>
 ```
 
-An element, not a component, because a router's `to` is typed by the router's own
-generics and those only instantiate where the JSX is written. Hand `as` the
-component instead and forward `to` through `<Focusable>`, and a dead route
-compiles without a word, because `ComponentProps<typeof Link>` widens `to` back
-to `string`.
+The element is written as JSX at the call site rather than handed over as a
+component, because a router's `to` is typed by the router's own generics and
+those only instantiate where the JSX is written. Forward `to` through the control
+instead and a dead route compiles without a word, since
+`ComponentProps<typeof Link>` widens `to` back to `string`.
 
-The merge is the mirror of `<Slot>`'s: here the CONTROL wins. `<Focusable>` hands
-the element the coats it resolved, its ref, its a11y state and its children, and
-the element keeps only what the router put on it. Nothing composes, because the
-element renders the host and there is nothing to compose with. In return the
-delegate owns activation entirely. `<Focusable>` wires no press on this path,
-which is what keeps a plain click to one navigation and leaves a modified or
-middle click to the browser.
+**The child's children are the control's `children`, and nothing else moves.**
+That is the whole answer to the question a control raises and a wrapper does not:
+a control composes its own inside. `label`, `icon` and the loading spinner are
+props, so they keep composing around the child's children, and the delegate above
+is self-closing because the button had nothing else to say. Written with content,
+that content lands exactly where `<Button>{…}</Button>` would have put it. This is
+Radix's `Slottable` without the marker element: the kit has one slot per control,
+so there is nothing to disambiguate.
+
+Where the content has to follow the interaction state, the render function
+returns the element. It stays on the control, so its state argument keeps the
+recipe's own slot types:
+
+```tsx
+<Focusable sv={sideNavRow} vars={{ current }} asChild>
+  {({ slots }) => (
+    <RouteLink to={to}>
+      <Icon name={icon} color={slots.glyph.color} />
+    </RouteLink>
+  )}
+</Focusable>
+```
+
+**One merge, not two.** A control delegates through the same rules as `<Box>`:
+the child keeps what the router put on it, `style` composes with the child's
+declarations last, both handlers run, both refs attach. The two sets barely
+collide in practice, because a control contributes coats, a ref and a11y state
+while a link contributes `href` and its own preload handlers. `style` lands
+flattened on this path alone, because a router's link spreads the style it is
+handed into its own active-state style and spreading an array yields
+`{ 0: …, 1: … }`.
+
+The one thing that does not merge is activation: the control wires no press here,
+so a plain click is one navigation and a modified or middle click stays the
+browser's. State-dependent coats still do not merge; the control resolves them
+and hands the finished values over, exactly as before.
 
 Delegation is a browser-target mechanism. Where there is no document, and under
-the spatial navigator, `as` is ignored and the pressable renders instead, so a
-control that has to work on either passes `as` and `onPress` alike.
+the spatial navigator, the element is dropped and the pressable renders its
+content instead, so a control that has to work on either passes `onPress` too. A
+disabled control drops it as well: an `<a>` cannot be disabled.
+
+A component that is both a layout and a control has ONE `asChild`, and it means
+the control's: `<ListRow.Root asChild>` puts its parts inside the link rather than
+around it, and the row's hover wash and semantics follow, because a delegated row
+goes somewhere just as a pressable one does.
 
 A coat that does NOT depend on state is the one thing that composes through the
 slot rather than staying put, and `<Frost>` is the case: the blur is the same

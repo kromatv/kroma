@@ -1,7 +1,7 @@
-import { Children, isValidElement, type ReactElement, type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
-import { styles, useBreakpointStep } from '#ui/core';
+import { useBreakpointStep } from '#ui/core';
 import { useStableCallback } from '#ui/lib/stable-callback';
 import { Cell } from './table-cell';
 import {
@@ -12,31 +12,11 @@ import {
   NO_COLUMNS,
   type TableColumn,
 } from './table-columns';
-import {
-  type Place,
-  TableContext,
-  type TableSectionProps,
-  type TableVariant,
-  useTable,
-} from './table-context';
+import { type TableSectionProps, type TableVariant, useTable } from './table-context';
 import { Frame } from './table-frame';
+import { Placed, parts } from './table-place';
+import { Row } from './table-row';
 import { nextSort, type SortColumn, SortContext, type TableSort } from './table-sort';
-
-function parts(children: ReactNode): ReactElement[] {
-  return Children.toArray(children).filter(isValidElement);
-}
-
-function Placed({ items, places }: Readonly<{ items: ReactElement[]; places: Place[] }>) {
-  return (
-    <>
-      {items.map((child, at) => (
-        <TableContext.Provider key={child.key ?? at} value={places[at] as Place}>
-          {child}
-        </TableContext.Provider>
-      ))}
-    </>
-  );
-}
 
 interface TableRootProps {
   /** Defaults to `framed`. */
@@ -54,6 +34,9 @@ interface TableRootProps {
   /** A press adds its column to the sort as the last tiebreak instead of
    *  replacing it. */
   multiple?: boolean;
+  /** The sort can never be handed back empty: a press on the last column
+   *  sorting turns it around rather than dropping it. */
+  required?: boolean;
   /** A DIRECT <Table.Header>, <Table.Body> or <Table.Row> child. */
   children?: ReactNode;
 }
@@ -65,6 +48,7 @@ function Root({
   sort,
   onSortChange,
   multiple = false,
+  required = false,
   children,
 }: Readonly<TableRootProps>) {
   const sections = useMemo(() => parts(children), [children]);
@@ -77,7 +61,7 @@ function Root({
     return { list, boxes: list.map(columnBox), breakpoints: breakpointMask(list) };
   }, [columns]);
   const press = useStableCallback((column: string) => {
-    onSortChange?.(nextSort(sort ?? NO_SORT, column, multiple), { column });
+    onSortChange?.(nextSort(sort ?? NO_SORT, column, { multiple, required }), { column });
   });
   const sorting = useMemo<TableSort | null>(() => {
     if (!sort && !onSortChange) return null;
@@ -137,29 +121,6 @@ function Body({ children }: Readonly<TableSectionProps>) {
   return <Section head={false}>{children}</Section>;
 }
 
-interface TableRowProps {
-  /** A DIRECT <Table.Cell> child per column. */
-  children?: ReactNode;
-}
-
-function Row({ children }: Readonly<TableRowProps>) {
-  const { variant, head, ruled } = useTable('Row');
-  const cells = useMemo(() => parts(children), [children]);
-  const places = useMemo(
-    () => cells.map((_, at) => ({ variant, head, ruled, at })),
-    [variant, head, ruled, cells],
-  );
-  return (
-    <Box row role="row" style={ruled ? s.rule : undefined}>
-      <Placed places={places} items={cells} />
-    </Box>
-  );
-}
-
-const s = styles({
-  rule: { borderTopWidth: 1, borderTopColor: 'border' },
-});
-
 /**
  * Rows of the same shape.
  *
@@ -183,13 +144,7 @@ const s = styles({
 const Table = { Root, Header, Body, Row, Cell };
 
 export type { TableCellProps } from './table-cell';
+export type { TableRowProps } from './table-row';
 export type { SortDirection } from './table-sort';
-export type {
-  SortColumn,
-  TableColumn,
-  TableRootProps,
-  TableRowProps,
-  TableSectionProps,
-  TableVariant,
-};
+export type { SortColumn, TableColumn, TableRootProps, TableSectionProps, TableVariant };
 export { Table };

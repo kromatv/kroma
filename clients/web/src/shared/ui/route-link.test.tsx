@@ -14,7 +14,11 @@ import { RouteLink } from '#web/shared/ui/route-link';
 afterEach(cleanup);
 
 function Nav() {
-  return <Focusable label="Genres" as={<RouteLink to="/genres" />} />;
+  return (
+    <Focusable label="Genres" asChild>
+      <RouteLink to="/genres" />
+    </Focusable>
+  );
 }
 
 async function stage() {

@@ -6,6 +6,7 @@
 
 mod actions;
 mod add;
+mod bandwidth;
 mod clients;
 mod contents;
 mod limits;
@@ -30,6 +31,7 @@ pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     clients::routes::<S>()
         .merge(queue::routes::<S>())
         .merge(actions::routes::<S>())
+        .merge(bandwidth::routes::<S>())
         .merge(limits::routes::<S>())
         .merge(add::routes::<S>())
         .merge(link::routes::<S>())

@@ -70,6 +70,8 @@ export function Player({
   usePlaybackSession({
     item,
     getPosition: pb.getPosition,
+    videoRef,
+    baseSec: pb.baseSec,
     playing: pb.playing,
     waiting: pb.waiting,
     mode: wc.playbackMode,

@@ -6,11 +6,12 @@ import type { ReactNode } from 'react';
 import { Pressable, type StyleProp, type TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
-import { Focusable } from '#ui/components/atoms/focusable';
+import { type Delegate, delegateOf, Focusable } from '#ui/components/atoms/focusable';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { styles, sv } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
+import { cloneHost } from '#ui/lib/slot';
 import { type MenuRowState, useMenuRow } from './menu-context';
 
 const menuItemVariants = sv({
@@ -38,12 +39,20 @@ type MenuTone = 'default' | 'danger';
 
 interface MenuItemProps {
   /** The row. A plain string child IS the label; anything else is the row
-   *  itself, and then `label` is what assistive tech and the type-ahead read. */
+   *  itself, and then `label` is what assistive tech and the type-ahead read.
+   *  Under `asChild` it is instead the one element the row renders as, whose own
+   *  children take this place. */
   children?: ReactNode;
   label?: string;
   icon?: IconName;
-  onSelect: () => void;
+  /** What picking the row does. Optional only for a row that delegates, and a
+   *  delegating row that must also work under a D-pad states both: the dialog
+   *  presentation renders no link. */
+  onSelect?: () => void;
   disabled?: boolean;
+  /** Render onto the one element the children name, so the row is a real link.
+   *  Ignored in the dialog presentation, as on any control. */
+  asChild?: boolean;
   /** `danger` is the destructive tail of the list: red ink, red wash. */
   tone?: MenuTone;
 }
@@ -55,7 +64,7 @@ function textOf(children: ReactNode): string | undefined {
 }
 
 function labelOf(props: Readonly<MenuItemProps>): string {
-  return props.label ?? textOf(props.children) ?? '';
+  return props.label ?? textOf(delegateOf(props.asChild, props.children).content) ?? '';
 }
 
 interface RowFaceProps {
@@ -85,47 +94,51 @@ interface RowProps {
   disabled: boolean;
   danger: boolean;
   composed: boolean;
-  children: ReactNode;
+  delegate: Delegate;
 }
 
-function PanelRow({ row, label, icon, disabled, danger, composed, children }: Readonly<RowProps>) {
+function PanelRow({ row, label, icon, disabled, danger, composed, delegate }: Readonly<RowProps>) {
   const slots = menuItemVariants({ danger });
   const wash = danger ? s.activeDanger : s.active;
+  const face = composed ? (
+    delegate.content
+  ) : (
+    <RowFace icon={icon} label={label} danger={danger} iconSize={15} ink={[slots.ink, s.label]} />
+  );
+  const at = {
+    nativeID: row.nativeID,
+    role: 'menuitem' as const,
+    // A composed row has no label of its own, and an EMPTY name is worse than
+    // none: it hides the words the row does draw.
+    accessibilityLabel: label || undefined,
+    'aria-disabled': disabled,
+    tabIndex: -1,
+    style: [
+      slots.root,
+      s.row,
+      row.active ? wash : null,
+      row.active && row.keyed ? s.keyed : null,
+      disabled ? s.disabled : null,
+    ],
+  };
+  // The link navigates itself, so the row's own handler only has the menu to
+  // close, and it runs first because the router's click is composed after it.
+  // An unavailable row keeps its pressable: a link cannot be disabled.
+  if (delegate.host && !disabled) {
+    return cloneHost(delegate.wrap(face), {
+      ...at,
+      onClick: row.fire,
+      onPointerEnter: row.onHoverIn,
+    });
+  }
   return (
-    <Pressable
-      nativeID={row.nativeID}
-      role="menuitem"
-      // A composed row has no label of its own, and an EMPTY name is worse than
-      // none: it hides the words the row does draw.
-      accessibilityLabel={label || undefined}
-      aria-disabled={disabled}
-      tabIndex={-1}
-      onPress={row.fire}
-      onHoverIn={row.onHoverIn}
-      style={[
-        slots.root,
-        s.row,
-        row.active ? wash : null,
-        row.active && row.keyed ? s.keyed : null,
-        disabled ? s.disabled : null,
-      ]}
-    >
-      {composed ? (
-        children
-      ) : (
-        <RowFace
-          icon={icon}
-          label={label}
-          danger={danger}
-          iconSize={15}
-          ink={[slots.ink, s.label]}
-        />
-      )}
+    <Pressable {...at} onPress={row.fire} onHoverIn={row.onHoverIn}>
+      {face}
     </Pressable>
   );
 }
 
-function DialogRow({ row, label, icon, disabled, danger, composed, children }: Readonly<RowProps>) {
+function DialogRow({ row, label, icon, disabled, danger, composed, delegate }: Readonly<RowProps>) {
   return (
     <Focusable
       role="menuitem"
@@ -137,7 +150,7 @@ function DialogRow({ row, label, icon, disabled, danger, composed, children }: R
     >
       {(focus) =>
         composed ? (
-          children
+          delegate.content
         ) : (
           <>
             <RowFace
@@ -156,19 +169,21 @@ function DialogRow({ row, label, icon, disabled, danger, composed, children }: R
 }
 
 function Item(props: Readonly<MenuItemProps>) {
-  const { children, icon, disabled = false, tone = 'default' } = props;
+  const { asChild, children, icon, disabled = false, tone = 'default' } = props;
   const row = useMenuRow('Item');
+  const delegate = delegateOf(asChild, children);
   const shared = {
     row,
+    delegate,
     label: labelOf(props),
     icon,
     disabled,
     danger: tone === 'danger',
-    composed: children !== undefined && textOf(children) === undefined,
+    composed: delegate.content !== undefined && textOf(delegate.content) === undefined,
   };
 
-  if (row.presentation === 'panel') return <PanelRow {...shared}>{children}</PanelRow>;
-  return <DialogRow {...shared}>{children}</DialogRow>;
+  if (row.presentation === 'panel') return <PanelRow {...shared} />;
+  return <DialogRow {...shared} />;
 }
 
 /** A rule between two groups of actions. */

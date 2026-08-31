@@ -108,6 +108,58 @@ describe('placeUnder', () => {
     expect(grows.maxWidth).toBe(VIEW.width - 40 - EDGE);
   });
 
+  it('hangs a growing panel off the trigger edge the room is on', () => {
+    const at = placeUnder(triggerAt({ left: 780, top: 100, width: 130 }), VIEW, {
+      minWidth: 160,
+      matchWidth: true,
+      maxHeight: 320,
+      grow: true,
+    });
+
+    expect(at.left).toBeUndefined();
+    expect(at.right).toBe(VIEW.width - 940);
+    expect(at.maxWidth).toBe(940 - EDGE);
+  });
+
+  it('gives a panel against the right edge the whole viewport to grow into', () => {
+    const at = placeUnder(triggerAt({ left: VIEW.width - 170, top: 100, width: 130 }), VIEW, {
+      minWidth: 160,
+      matchWidth: true,
+      maxHeight: 320,
+      grow: true,
+    });
+
+    expect(at.right).toBe(EDGE);
+    expect(at.maxWidth).toBe(VIEW.width - 2 * EDGE);
+  });
+
+  it('keeps a panel wider than the viewport anchored by its left edge', () => {
+    const at = placeUnder(
+      triggerAt({ left: 40, top: 100 }),
+      { width: 200, height: 768 },
+      {
+        minWidth: 300,
+        maxHeight: 320,
+        grow: true,
+      },
+    );
+
+    expect(at.left).toBe(EDGE);
+    expect(at.right).toBeUndefined();
+    expect(at.maxWidth).toBe(300);
+  });
+
+  it('leaves a panel that cannot grow anchored by its left edge', () => {
+    const at = placeUnder(triggerAt({ left: 780, top: 100, width: 130 }), VIEW, {
+      minWidth: 160,
+      matchWidth: true,
+      maxHeight: 320,
+    });
+
+    expect(at.left).toBe(780);
+    expect(at.right).toBeUndefined();
+  });
+
   it('places against the trigger alone when there is no viewport to clamp to', () => {
     const at = placeUnder(triggerAt({ left: 40, top: 100 }), null, {
       minWidth: 180,

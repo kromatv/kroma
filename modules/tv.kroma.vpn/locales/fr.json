@@ -1,3 +1,19 @@
 {
-  "nav.vpn": "VPN"
+  "nav.vpn": "VPN",
+  "vpnBandwidth.bypassed": "{total} sont passés par un client de téléchargement que le tunnel ne prend pas en charge.",
+  "vpnBandwidth.direction": "Sens",
+  "vpnBandwidth.down": "Téléchargé",
+  "vpnBandwidth.empty": "Rien n'a encore été enregistré. Le relevé démarre au premier téléchargement.",
+  "vpnBandwidth.gap": "Rien n'est sorti du tunnel, mais celui-ci est resté coupé {duration} sur cette période.",
+  "vpnBandwidth.inTunnel": "Dans le tunnel",
+  "vpnBandwidth.leaked": "{total} de trafic non protégé sont passés alors que le tunnel n'était pas étanche.",
+  "vpnBandwidth.noBridge": "Aucun tunnel WireGuard n'est configuré, donc rien de ce trafic n'est passé par un VPN.",
+  "vpnBandwidth.noEngine": "Aucun module de téléchargement n'est installé, donc rien ne passe par le tunnel à mesurer.",
+  "vpnBandwidth.otherClient": "Autre client",
+  "vpnBandwidth.outsideTunnel": "Hors tunnel",
+  "vpnBandwidth.sealed": "Le tunnel a tenu sur toute la période, tout ce qui suit est donc passé par le VPN.",
+  "vpnBandwidth.throughTunnel": "{total} par le tunnel",
+  "vpnBandwidth.title": "Débit du tunnel",
+  "vpnBandwidth.up": "Envoyé",
+  "vpnBandwidth.window": "Période"
 }

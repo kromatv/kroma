@@ -5,6 +5,7 @@
 // react-native-web maps it straight to CSS. One value, three renderers.
 
 import { colors } from './colors.ts';
+import { radius } from './layout.ts';
 import type { TokenOf } from './registry';
 
 export const shadow = {
@@ -47,11 +48,13 @@ export const RING_WIDTH = 4;
  * radius, not 16). */
 export const RING_GAP = 6;
 
+const RING_INSET = RING_GAP + RING_WIDTH;
+
 /** How much room a focused control needs beside it, for anything that clips or
- * abuts it - a scroll view's edge, the capsule a nav item sits in: the gap, the
- * ring itself, and a hair more so the ring never lands on the very pixel that
- * clips it. */
-export const RING_ROOM = RING_GAP + RING_WIDTH + 2;
+ * abuts it - a scroll view's edge, the capsule a nav item sits in: the ring and
+ * its gap, and a hair more so the ring never lands on the very pixel that clips
+ * it. */
+export const RING_ROOM = RING_INSET + 2;
 
 /** A focus ring, as a style: an outline standing `RING_GAP` off the control,
  * optionally over a shadow. */
@@ -61,6 +64,7 @@ export interface RingStyle {
   outlineColor: string;
   outlineOffset: number;
   boxShadow?: string;
+  borderRadius?: number;
 }
 
 /** The 10-foot focus treatment: a CLEAN solid amber ring plus a dark drop
@@ -84,9 +88,13 @@ export function standoff(color: string, lift?: string): RingStyle {
 
 /** The same ring, drawn INSIDE the control: for a row that is flush with the
  * card clipping it (a <ListRow.Group> member), where there is no outside to
- * stand off into. Same width, same ink, the same gap - measured inward. */
+ * stand off into. Same width, same ink, the same gap - measured inward.
+ *
+ * A browser paints an outline's corner at the element's own radius moved by the
+ * offset, and a row flush with a card has no radius of its own to move: without
+ * this the ring is a square drawn inside a round card. */
 export function standoffInside(color: string): RingStyle {
-  return { ...standoff(color), outlineOffset: -(RING_GAP + RING_WIDTH) };
+  return { ...standoff(color), outlineOffset: -RING_INSET, borderRadius: RING_INSET + radius.xs };
 }
 
 /** The same ring, drawn ON the control's edge: for a row that abuts its

@@ -14,15 +14,35 @@ const host = (label: string) => screen.getByLabelText(label);
 
 describe('a Focusable given a router link on a platform with no document', () => {
   it('renders its own pressable rather than the element it was handed', () => {
-    render(<Focusable label="Genres" as={<Anchor to="/genres" />} />);
+    render(
+      <Focusable label="Genres" asChild>
+        <Anchor to="/genres" />
+      </Focusable>,
+    );
 
     expect(host('Genres').getAttribute('href')).toBeNull();
+  });
+
+  it('shows the content the delegated element was written around', () => {
+    render(
+      <Focusable label="Genres" asChild>
+        <Anchor to="/genres">
+          <span data-testid="inside">Genres</span>
+        </Anchor>
+      </Focusable>,
+    );
+
+    expect(screen.getByTestId('inside').textContent).toBe('Genres');
   });
 
   it('keeps onPress as the way the control is activated', () => {
     const onPress = vi.fn();
 
-    render(<Focusable label="Genres" onPress={onPress} as={<Anchor to="/genres" />} />);
+    render(
+      <Focusable label="Genres" onPress={onPress} asChild>
+        <Anchor to="/genres" />
+      </Focusable>,
+    );
     fireEvent.click(host('Genres'));
 
     expect(onPress).toHaveBeenCalledTimes(1);

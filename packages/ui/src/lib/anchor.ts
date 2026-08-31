@@ -17,7 +17,8 @@ export interface AnchorViewport {
 }
 
 export interface AnchorPlacement {
-  left: number;
+  left?: number;
+  right?: number;
   top?: number;
   bottom?: number;
   width: number;
@@ -51,17 +52,23 @@ export function placeUnder(
   const above = trigger.top - ANCHOR_GAP - EDGE;
   const flip = below < MIN_ROOM && above > below;
   const maxHeight = Math.min(at.maxHeight, Math.max(0, flip ? above : below));
-  const left = at.align === 'end' ? trigger.left + trigger.width - width : trigger.left;
-  const clampedLeft = Math.max(EDGE, Math.min(left, view.width - width - EDGE));
-  const maxWidth = at.grow ? Math.max(width, view.width - clampedLeft - EDGE) : undefined;
-  if (flip) {
-    return {
-      left: clampedLeft,
-      bottom: view.height - trigger.top + ANCHOR_GAP,
-      width,
-      maxWidth,
-      maxHeight,
-    };
-  }
-  return { left: clampedLeft, top: bottomEdge + ANCHOR_GAP, width, maxHeight, maxWidth };
+  const vertical = flip
+    ? { bottom: view.height - trigger.top + ANCHOR_GAP }
+    : { top: bottomEdge + ANCHOR_GAP };
+  return { ...spread(trigger, view, { ...at, width }), ...vertical, width, maxHeight };
+}
+
+function spread(
+  trigger: AnchorRect,
+  view: AnchorViewport,
+  at: { width: number; align?: 'start' | 'end'; grow?: boolean },
+): Pick<AnchorPlacement, 'left' | 'right' | 'maxWidth'> {
+  const wanted = at.align === 'end' ? trigger.left + trigger.width - at.width : trigger.left;
+  const left = Math.max(EDGE, Math.min(wanted, view.width - at.width - EDGE));
+  if (!at.grow) return { left };
+  const right = view.width - left - at.width;
+  const rightward = Math.max(at.width, view.width - left - EDGE);
+  const leftward = left + at.width - EDGE;
+  if (right < EDGE || rightward >= leftward) return { left, maxWidth: rightward };
+  return { right, maxWidth: leftward };
 }

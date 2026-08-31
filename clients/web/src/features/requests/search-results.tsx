@@ -52,8 +52,10 @@ function LocalHit({ hit, width }: Readonly<{ hit: SearchHit; width: number }>) {
         colors={posterColors(show.id)}
         poster={client.showPosterFor(show)}
         width={width}
-        as={<RouteLink to="/shows/$id" params={{ id: show.id }} />}
-      />
+        asChild
+      >
+        <RouteLink to="/shows/$id" params={{ id: show.id }} />
+      </Poster>
     );
   }
   const item = hit.item;
@@ -68,8 +70,10 @@ function LocalHit({ hit, width }: Readonly<{ hit: SearchHit; width: number }>) {
       colors={posterColors(item.id)}
       poster={client.posterFor(item)}
       width={width}
-      as={<RouteLink to={to} params={{ id: episode ?? item.id }} />}
-    />
+      asChild
+    >
+      <RouteLink to={to} params={{ id: episode ?? item.id }} />
+    </Poster>
   );
 }
 

@@ -47,6 +47,15 @@ impl<R: AsyncRead + Unpin> AsyncRead for CountingReader<R> {
     }
 }
 
+/// A response body that meters into `sink` through a [`CountingReader`], so a
+/// body the client abandons counts only what it took.
+pub fn metered_body<R>(reader: R, sink: ByteSink) -> Body
+where
+    R: AsyncRead + Unpin + Send + 'static,
+{
+    Body::from_stream(ReaderStream::new(CountingReader::new(reader, sink)))
+}
+
 /// Honours `Range: bytes=start-end`: `206 Partial Content` with a
 /// `Content-Range` when satisfiable, else a full `200 OK`. Never buffers the
 /// whole file. Pass [`ByteSink::none`] to opt out of bandwidth metering.
@@ -97,10 +106,7 @@ pub async fn stream_file(path: &Path, req_headers: &HeaderMap, sink: ByteSink) -
 }
 
 fn full_response(file: File, total_size: u64, content_type: &str, sink: ByteSink) -> Response {
-    let stream = ReaderStream::new(CountingReader { inner: file, sink });
-    let body = Body::from_stream(stream);
-
-    let mut resp = Response::new(body);
+    let mut resp = Response::new(metered_body(file, sink));
     let headers = resp.headers_mut();
     set_common_headers(headers, content_type);
     headers.insert(header::CONTENT_LENGTH, HeaderValue::from(total_size));
@@ -117,14 +123,7 @@ fn partial_response(
     sink: ByteSink,
 ) -> Response {
     let length = end - start + 1;
-    let limited = file.take(length);
-    let stream = ReaderStream::new(CountingReader {
-        inner: limited,
-        sink,
-    });
-    let body = Body::from_stream(stream);
-
-    let mut resp = Response::new(body);
+    let mut resp = Response::new(metered_body(file.take(length), sink));
     *resp.status_mut() = StatusCode::PARTIAL_CONTENT;
     let headers = resp.headers_mut();
     set_common_headers(headers, content_type);
@@ -243,5 +242,44 @@ pub async fn stream_or_demo_error(
     match abs_path {
         Some(p) => stream_file(Path::new(p), req_headers, sink).await,
         None => json_error(StatusCode::NOT_FOUND, "demo item has no media").into_response(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::Ordering;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn counts_a_chunk_as_it_is_read_and_nothing_beyond_it() {
+        let (sink, delivered) = ByteSink::counting();
+        let mut reader = CountingReader::new(std::io::Cursor::new(vec![0u8; 8_192]), sink);
+        let mut taken = [0u8; 1_024];
+
+        reader.read_exact(&mut taken).await.unwrap();
+
+        assert_eq!(delivered.load(Ordering::Relaxed), 1_024);
+    }
+
+    #[tokio::test]
+    async fn a_body_read_to_the_end_counts_every_byte() {
+        let (sink, delivered) = ByteSink::counting();
+        let body = metered_body(std::io::Cursor::new(vec![0u8; 40_000]), sink);
+
+        let read = axum::body::to_bytes(body, usize::MAX).await.unwrap();
+
+        assert_eq!(read.len(), 40_000);
+        assert_eq!(delivered.load(Ordering::Relaxed), 40_000);
+    }
+
+    #[tokio::test]
+    async fn a_body_dropped_unread_counts_nothing() {
+        let (sink, delivered) = ByteSink::counting();
+        let body = metered_body(std::io::Cursor::new(vec![0u8; 40_000]), sink);
+
+        drop(body);
+
+        assert_eq!(delivered.load(Ordering::Relaxed), 0);
     }
 }

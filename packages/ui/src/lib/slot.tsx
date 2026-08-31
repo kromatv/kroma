@@ -24,6 +24,7 @@ import {
   type ReactNode,
   type Ref,
 } from 'react';
+import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 
 type AnyProps = Record<string, unknown>;
 
@@ -82,6 +83,13 @@ interface SlotProps {
   [prop: string]: unknown;
 }
 
+// React 19: the ref rides on props for a function component, but cloneElement
+// still carries the element's own ref separately.
+function propsOf(child: ReactElement): AnyProps {
+  const el = child as ReactElement<AnyProps> & { ref?: Ref<unknown> };
+  return el.ref !== undefined && !('ref' in el.props) ? { ...el.props, ref: el.ref } : el.props;
+}
+
 /**
  * Renders its props onto its one child. The building block behind every
  * `asChild` prop in the kit: `<Box asChild>` is `<Slot {...boxProps}>`.
@@ -96,13 +104,25 @@ interface SlotProps {
 function Slot({ children, ...slotProps }: Readonly<SlotProps>) {
   const child = Children.only(children);
   if (!isValidElement(child)) throw new Error('<Slot> needs exactly one element child');
-  const el = child as ReactElement<AnyProps> & { ref?: Ref<unknown> };
-  // React 19: the ref rides on props for a function component, but cloneElement
-  // still carries the element's own ref separately.
-  const childProps: AnyProps =
-    el.ref !== undefined && !('ref' in el.props) ? { ...el.props, ref: el.ref } : el.props;
-  return cloneElement(el, mergeSlotProps(slotProps, childProps));
+  return cloneElement(child as ReactElement<AnyProps>, mergeSlotProps(slotProps, propsOf(child)));
+}
+
+/**
+ * The same merge, onto an element a control took as its host: `asChild` on a
+ * control goes through here rather than through `<Slot>`, because the control
+ * has already put its own face inside the element.
+ *
+ * `style` lands flattened, alone among the props. A router's link spreads the
+ * style it is handed into its own active-state style, and spreading an array
+ * yields `{ 0: …, 1: … }`.
+ */
+function cloneHost(host: ReactElement, props: AnyProps): ReactElement {
+  const merged = mergeSlotProps(props, propsOf(host));
+  return cloneElement(host as ReactElement<AnyProps>, {
+    ...merged,
+    style: StyleSheet.flatten(merged.style as StyleProp<ViewStyle>),
+  });
 }
 
 export type { SlotProps };
-export { mergeSlotProps, Slot };
+export { cloneHost, mergeSlotProps, Slot };

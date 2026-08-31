@@ -7,6 +7,7 @@ import {
   IconClockBolt,
   IconDatabase,
   IconFlag,
+  IconHistory,
   IconInbox,
   IconLayoutDashboard,
   IconLibrary,
@@ -54,6 +55,12 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         icon: IconLayoutDashboard,
       },
       { to: '/admin/users', labelKey: 'admin.navUsers', cap: 'users.manage', icon: IconUsers },
+      {
+        to: '/admin/history',
+        labelKey: 'admin.historyScreen',
+        cap: 'users.manage',
+        icon: IconHistory,
+      },
       {
         to: '/admin/requests',
         labelKey: 'admin.navRequests',

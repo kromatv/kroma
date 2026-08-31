@@ -67,14 +67,16 @@ function AdminServerLink() {
   const { serverInfo } = useAdmin();
   return (
     <Box shrink={0} px={SIDE_NAV_GUTTER} pb={8}>
-      <Focusable sv={serverCard} as={<RouteLink to="/" />}>
-        <Row gap={10}>
-          <Logo markOnly size={17} />
-          <Text variant="label" color="accentText">
-            {serverInfo?.name ?? 'KROMA'}
-          </Text>
-        </Row>
-        <IconChevronRight size={17} stroke={1.8} color={color('success')} />
+      <Focusable sv={serverCard} asChild>
+        <RouteLink to="/">
+          <Row gap={10}>
+            <Logo markOnly size={17} />
+            <Text variant="label" color="accentText">
+              {serverInfo?.name ?? 'KROMA'}
+            </Text>
+          </Row>
+          <IconChevronRight size={17} stroke={1.8} color={color('success')} />
+        </RouteLink>
       </Focusable>
     </Box>
   );

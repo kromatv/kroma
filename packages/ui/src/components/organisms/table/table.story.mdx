@@ -81,6 +81,17 @@ const rows = ordered(downloads, sort);   // or the server's answer to `sort`
 </Table.Root>
 ```
 
+A row that GOES somewhere is the link itself, and its cells are written inside it. The whole row is the hit area and the one D-pad stop, no cell carries a link of its own, and the row keeps its `role="row"`, so a reader walks the same grid as before. A row with nowhere to go is written without `asChild` and stays a plain row, which is how a title the catalog no longer holds avoids becoming a dead link. See `asChild` on **Focusable**.
+
+```tsx
+<Table.Row asChild>
+  <RouteLink to="/shows/$id" params={{ id }}>
+    <Table.Cell>Severance</Table.Cell>
+    <Table.Cell>S2E7</Table.Cell>
+  </RouteLink>
+</Table.Row>
+```
+
 The whole heading is the control, so it is one D-pad stop with a hit area the size of the cell, and the arrow and the rank are faces inside it rather than targets of their own. On the browser targets it carries `aria-sort`, which a screen reader announces in its own language. React Native has no sort claim and no reader on those platforms reads one, so the rank is drawn rather than only announced, which also puts it in the heading's accessible name on both.
 
 <Scene name="Columns that hold, then scroll">
@@ -108,6 +119,8 @@ The whole heading is the control, so it is one D-pad stop with a hit area the si
 
 <Scene name="Sorting one column">
   A press walks ascending, then descending, then out of the sort. The arrow says which way, and a column that can sort but is not sorting shows the idle glyph, so a reader knows the heading is a control before pressing it. Only one column sorts here: pressing another takes the sort with it.
+
+  `required` cuts the third step, so the last column sorting turns around instead of dropping out. Set it wherever the rows arrive in some order whatever the reader does, which is every table a server pages: there the third press would put the idle glyph back on a heading while the rows underneath it did not move.
 
   {story.take(({ variant }) => <SortedByOne variant={variant} />)}
 </Scene>
@@ -230,4 +243,5 @@ The whole heading is the control, so it is one D-pad stop with a hit area the si
 - Ask for a modifier key to add a column to the sort. Set `multiple` and let each press build it, or the remote cannot reach it.
 - Write a different number of cells in the header and the body. The nth cell of every row is the nth column, and nothing else lines them up.
 - Give the arrow a press of its own. The heading is the control, and a target inside it is a second D-pad stop for the same act.
+- Put the link in one cell when the whole row goes there. Write `asChild` on the row: an anchor cannot hold another anchor, and half a row is a smaller target.
 </Dont>

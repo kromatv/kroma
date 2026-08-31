@@ -75,8 +75,18 @@ pub fn restart_engine(host: &dyn HostCtx) {
 }
 
 fn ask<T: serde::de::DeserializeOwned>(host: &dyn HostCtx, method: &str) -> Option<T> {
+    ask_with(host, method, &json!({}))
+}
+
+/// One [`DOWNLOAD_VPN`] method, with a body. `None` when nothing answers the
+/// point or the call failed.
+pub(crate) fn ask_with<T: serde::de::DeserializeOwned>(
+    host: &dyn HostCtx,
+    method: &str,
+    body: &serde_json::Value,
+) -> Option<T> {
     let resolve = pinned_resolver(host, DOWNLOAD_VPN, None)?;
-    call_raw(&resolve, &format!("{DOWNLOAD_VPN}/{method}"), &json!({}))
+    call_raw(&resolve, &format!("{DOWNLOAD_VPN}/{method}"), body)
         .ok()
         .flatten()
 }

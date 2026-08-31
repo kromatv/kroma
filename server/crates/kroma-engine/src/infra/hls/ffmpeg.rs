@@ -159,6 +159,12 @@ pub fn spawn_stream(
     } else {
         cmd.args(["-c:a", "copy"]);
     }
+    // A second is fine-grained enough for a dashboard and cheap enough that a
+    // two-hour session's log is about a megabyte, inside the directory the
+    // reclaim sweep takes away with the rest of it.
+    cmd.arg("-progress")
+        .arg(dir.join(super::progress::FILE))
+        .args(["-stats_period", "1"]);
     let segment_seconds = SEGMENT_SECONDS.to_string();
     cmd.args(["-f", "hls", "-hls_time", segment_seconds.as_str()])
         .args(["-hls_playlist_type", "event"])

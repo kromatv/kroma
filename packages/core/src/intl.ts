@@ -153,6 +153,36 @@ export function formatUptime(t: Translate, seconds: number): string {
  *  cases it has no notion of are catalog keys: no timestamp at all, one it
  *  cannot read, and "just now" (it renders zero as the current unit, "this
  *  minute", rather than an elapsed one). */
+const STAMPS = new Map<Locale, Intl.DateTimeFormat | null>();
+
+// Same shape as `dateFormat`: built once per locale, and a runtime that refuses
+// the option bag falls back rather than throwing at a call site.
+function stampFormat(locale: Locale): Intl.DateTimeFormat | null {
+  const cached = STAMPS.get(locale);
+  if (cached !== undefined) return cached;
+  let made: Intl.DateTimeFormat | null = null;
+  try {
+    made = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' });
+  } catch {
+    made = null;
+  }
+  STAMPS.set(locale, made);
+  return made;
+}
+
+/** A timestamp written out in full: the date and the time of day, in the
+ *  locale's own order. Where [`formatElapsed`] answers "how long ago", this
+ *  answers "when", which is what a log wants: two rows a minute apart both read
+ *  "2 days ago", and a reader auditing a history needs to tell them apart. */
+export function formatStamp(locale: Locale, at: string | number | null | undefined): string | null {
+  if (at === null || at === undefined || at === '') return null;
+  const then = typeof at === 'number' ? at : Date.parse(at);
+  if (Number.isNaN(then)) return null;
+  return (
+    stampFormat(locale)?.format(then) ?? new Date(then).toISOString().slice(0, 16).replace('T', ' ')
+  );
+}
+
 export function formatElapsed(
   t: Translate,
   locale: Locale,

@@ -16,13 +16,13 @@ import {
   Text,
 } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { MissingGroupCard } from '#web/features/requests/missing-group';
 import { epKey, groupByTitle, type MissingGroup } from '#web/features/requests/missing-model';
 import { useAuth } from '#web/shared/lib/auth';
 import { userQueries } from '#web/shared/lib/queries';
 import { PageFrame, Skeleton } from '#web/shared/ui';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 function toggleKey(prev: Set<string>, key: string): Set<string> {
   const n = new Set(prev);
@@ -49,7 +49,6 @@ const DONE_DECAY_MS = 30_000;
 
 export function MissingPage() {
   const t = useT();
-  const navigate = useNavigate();
   const { user, client } = useAuth();
   const queryClient = useQueryClient();
   const query = userQueries.missing();
@@ -154,8 +153,10 @@ export function MissingPage() {
               size="sm"
               icon="search"
               label={t('requests.myEmptyCta')}
-              onPress={() => navigate({ to: '/search', search: { q: '', type: 'all' } })}
-            />
+              asChild
+            >
+              <RouteLink to="/search" search={{ q: '', type: 'all' }} />
+            </Button>
           </EmptyState.Actions>
         </EmptyState.Root>
       ) : null}
@@ -172,15 +173,6 @@ export function MissingPage() {
             onToggleRow={(key) => setSelected((s) => toggleKey(s, key))}
             onToggleGroup={(pick) => setSelected((s) => toggleKeys(s, g.items.map(epKey), pick))}
             onSearch={(items) => runGroup(g, items)}
-            onOpen={() =>
-              navigate({
-                to: '/discover/$type/$tmdbId',
-                params: {
-                  type: g.kind === 'movie' ? 'movie' : 'tv',
-                  tmdbId: String(g.tmdbId),
-                },
-              })
-            }
           />
         ))}
       </Box>

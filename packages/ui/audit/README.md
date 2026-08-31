@@ -9,15 +9,16 @@ check is either a rule that is simply never allowed, or a worklist you read.
 | Broken views | `audit.test.tsx` | A story that stopped rendering |
 | Accessible tree (`a11y.ts`) | `audit.test.tsx` | Nameless controls, roles claiming a state they never report, aria references pointing at nothing |
 | List-render allocations (`fanout-scan.ts`) | `audit.test.tsx` | A prop the React Compiler cannot cache, so a whole list re-renders when one item changed |
-| Rail interaction cost (`rail-cost.test.tsx`) | `--project audit` | What one press of Right costs the row the home screen is built from |
+| `asChild` fan-out | `delegation.test.tsx` | A delegated row reaching the rows beside it when it takes the focus |
+| Rail interaction cost | `rail-cost.test.tsx` | What one press of Right costs the row the home screen is built from |
 | Native driver left off (`perf-scan.ts`) | `audit.test.tsx` | An animation running through JS that the native driver would have taken |
 | Source perf worklist (`perf-scan.ts`) | `bun run perf:scan` | Faults a rendered tree cannot show: a layout animation, a memo that memoises nothing, a context value rebuilt per render |
 | DOM structure (`cost.ts`) | `bun run kit:dom` | Elements that paint nothing, carry no semantics and hold no text |
 | Interaction cost (`sweep.ts`, `perf.ts`) | `bun run kit:perf` | Components destroyed and rebuilt by a single press |
 
-The first three are gates because they pass today, so a failure means something
-broke rather than something was already broken. The last two are worklists: the
-kit still carries real faults in both, and a gate born red is not a gate.
+The first six are gates because they pass today, so a failure means something
+broke rather than something was already broken. The last three are worklists: the
+kit still carries real faults in them, and a gate born red is not a gate.
 
 ## Why it runs the React Compiler
 
@@ -46,19 +47,29 @@ KROMA_PERF_ONLY=keyboard bun run kit:perf
 
 It presses ONE control per story view, which is its blind spot: nothing in it
 walks a row. `rail-cost.test.tsx` covers the case the sweep cannot reach, with
-`@kroma/react-audit` driving a real `<VirtualRail>` under the D-pad. It is a
-gate: a press must leave the window alone, whether or not it translates the row.
-What it caught was the rail's own cell wrappers - the tiles themselves always
-bailed out, since `renderItem` is an identity under `<Rail.List>`, but `select()`
-grows `mounted`, and that dep rebuilt all eleven `<FocusLiftView>`/
-`<FocusReporter>` pairs and their react-native-web views. `<RailCell>` is that
-pair, extracted and memoised.
+`@kroma/react-audit` driving a real `<Rail.List>` under the D-pad. It is a gate:
+a press must leave the mounted window alone whether or not it translates the row,
+and the press that reaches the end of the window must add one tile rather than
+rebuild the tiles already there.
+
+**Measure the row, or half the gate is vacuous.** `edgeScrollOffset` returns 0
+for a zero viewport, and jsdom has no ResizeObserver, so a rail that was never
+measured can never translate: every press reads as the still case. The test fires
+the rail's own `onLayout` through `layout()` (`#ui/testing`) at 1920px. That is
+what separates the first four presses, where only the highlight moves, from the
+ones past the edge margin, where the row moves under it.
+
+What the gate does NOT hold the rail to: the press that GROWS the window
+re-renders every tile already in it, nine updates for one mount at that viewport.
+The row rebuilds its whole `tiles` array whenever `mounted` changes, so every
+cell gets a new element even though only the last one is new. Nothing is
+destroyed and no focus or animated value is lost, which is why it is an accepted
+cost rather than a second gate.
 
 **Record from before the mount.** `record()`'s docs say so and this is why: React
 leaves the `PerformedWork` flag on a fiber that bailed out, so a recording opened
 mid-interaction reads every fiber an EARLIER press touched as touched by this
-one. The first measurement of this rail grew by one tile per press on presses
-that changed nothing, and read as a re-render storm that was not there.
+one. `churn` needs it for a second reason: it reads the first commit as the mount.
 
 It reads React's own fiber tree through `__REACT_DEVTOOLS_GLOBAL_HOOK__`
 (`hook.ts`), installed as a setup file because the renderer reads that hook once,
@@ -102,7 +113,7 @@ bun run perf:scan --rule identity-memo
   (`left`/`top`/`width`/`height`/`strokeDashoffset`) to a value. The native
   driver has no node for those, so there is nothing to switch on: the fix is to
   animate `transform` instead, or to accept the cost. A **worklist**, because
-  sometimes the honest answer is to accept it — `scaleX` on a pill turns its
+  sometimes the honest answer is to accept it: `scaleX` on a pill turns its
   semicircular caps into ellipses, and RN has no per-corner x/y radii to correct
   them with. The finding names the properties that make the call, so it does not
   have to be re-derived each time it is read.
@@ -132,7 +143,7 @@ naming every path it tried, rather than dying inside babel.
 
 Everything that knows this repo lives in one file, `scripts/audit-target.ts`:
 the compiler's location, and `shippedTrees()`, which works the trees out from the
-same `workspaces` globs the package manager reads — so a new client is covered
+same `workspaces` globs the package manager reads, so a new client is covered
 the day it is added, and porting the audit to another repo is that file.
 
 ## What the compiler skipped, and what it could not cache
@@ -161,7 +172,7 @@ another component. When the FUNCTION ITSELF is a prop, use
 
 **The kit is clean because the kit is gated.** `--all` widens the same scan to
 every workspace that ships source, and the number there is not zero: the shells
-and `packages/tv` — the whole 10-foot experience — were never scanned by
+and `packages/tv`, the whole 10-foot experience, were never scanned by
 anything. That is a worklist to work down, not a gate: the gate covers the kit,
 where it passes.
 

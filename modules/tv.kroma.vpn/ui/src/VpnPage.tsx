@@ -31,6 +31,7 @@ import {
 } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { useVpnApi } from './api';
+import { VpnBandwidthSection } from './bandwidth-panel';
 import type { VpnTestResult } from './schemas';
 
 const MONO = { fontFamily: 'monospace', fontSize: 13 } as const;
@@ -50,6 +51,7 @@ export default function VpnPage() {
       <Box mt={24}>
         <VpnCard />
       </Box>
+      <VpnBandwidthSection />
       <SettingsView view="vpn" titleKey="admin.vpnTitle" subtitleKey="admin.vpnSub" embedded />
     </>
   );

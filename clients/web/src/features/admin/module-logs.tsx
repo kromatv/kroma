@@ -4,11 +4,11 @@
 
 import { useT } from '@kroma/ui';
 import { Box, Button, Row, Surface, Text } from '@kroma/ui/kit';
-import { useNavigate } from '@tanstack/react-router';
 import { LogLines } from '#web/features/admin/log-lines';
 import { Label } from '#web/features/admin/module-detail-sections';
 import { usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 const LIMIT = 100;
 const POLL_MS = 5000;
@@ -16,7 +16,6 @@ const POLL_MS = 5000;
 /** The last lines module `id` logged, refreshed while the page is open. */
 export function ModuleLogs({ id }: Readonly<{ id: string }>) {
   const t = useT();
-  const navigate = useNavigate();
   const { client } = useAuth();
   const { data } = usePoll(
     ['admin', 'logs', 'module', id],
@@ -34,8 +33,10 @@ export function ModuleLogs({ id }: Readonly<{ id: string }>) {
           size="sm"
           icon="terminal-2"
           label={t('admin.modulesLogsOpenAll')}
-          onPress={() => void navigate({ to: '/admin/logs', search: { source: id } })}
-        />
+          asChild
+        >
+          <RouteLink to="/admin/logs" search={{ source: id }} />
+        </Button>
       </Row>
       <Text variant="meta" color="textMuted" mb={12}>
         {t('admin.modulesLogsHint')}

@@ -22,11 +22,12 @@ mod settings;
 mod stats;
 mod storage;
 pub mod store;
+mod transcodes;
 mod users;
 
 use std::sync::Arc;
 
-use axum::extract::{OriginalUri, Path as AxPath, Request, State};
+use axum::extract::{OriginalUri, Path as AxPath, Query, Request, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -39,7 +40,7 @@ use serde_json::json;
 
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
-use crate::api::util::query;
+use crate::api::util::{blocking, query};
 use crate::i18n;
 use crate::infra::events::ServerEvent;
 use crate::model::{Permission, User};
@@ -66,6 +67,7 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .merge(settings::routes())
         .merge(storage::routes())
         .merge(stats::routes())
+        .merge(transcodes::routes())
         .merge(jobs::routes())
         .merge(llm::routes())
         .merge(logs::routes())
@@ -206,11 +208,25 @@ pub async fn terminate_session(
     Ok(Json(json!({ "ok": true })).into_response())
 }
 
-/// `GET /api/admin/metrics` → CPU / RAM / bandwidth snapshot + history.
+#[derive(Debug, Deserialize)]
+pub struct RangeQuery {
+    #[serde(default)]
+    pub range: Option<String>,
+}
+
+/// `GET /api/admin/metrics?range=live|12h|24h|7d|30d|90d|1y|all` → CPU / RAM /
+/// bandwidth now, plus the series over that window.
 pub async fn metrics(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
+    Query(q): Query<RangeQuery>,
 ) -> Result<Response, Response> {
     require_any_admin(&user)?;
-    Ok(Json(state.metrics.snapshot()).into_response())
+    let range = crate::infra::metrics::Range::parse(q.range.as_deref().unwrap_or_default());
+    if range == crate::infra::metrics::Range::Live {
+        return Ok(Json(state.metrics.snapshot()).into_response());
+    }
+    let metrics = state.metrics.clone();
+    let snapshot = blocking(move || metrics.snapshot_over(range)).await?;
+    Ok(Json(snapshot).into_response())
 }

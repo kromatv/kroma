@@ -129,6 +129,8 @@
   "downloads.vpnBlocked": "Coupe-circuit actif : téléchargements bloqués, VPN injoignable",
   "downloads.vpnDown": "VPN injoignable",
   "downloads.vpnOk": "VPN actif · IP de sortie {ip}",
+  "downloads.vpnSealedDay": "{total} sont passés par le tunnel ces dernières 24 heures.",
+  "downloads.vpnUnsealedDay": "{total} sont passés hors du tunnel ces dernières 24 heures.",
   "downloads.waiting": "{count} en attente",
   "manual.add": "Ajouter",
   "manual.addFailed": "L'ajout a échoué",

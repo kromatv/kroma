@@ -4,7 +4,7 @@ import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { Select, selectTriggerVariants } from './select';
-import { TRACKS, Tracks, Subtitles, Composed, Options, Statuses, Summaries, Clearable } from './select.fixtures';
+import { TRACKS, Tracks, Subtitles, Composed, LongOptions, Members, Options, Statuses, Summaries, Clearable } from './select.fixtures';
 
 export const story = defineStory({
   group: 'Input',
@@ -19,7 +19,7 @@ export const story = defineStory({
   ),
 });
 
-Pick one of a few, from a trigger that says what is picked. Composed rather than configured, in Radix's shape: **Root** owns the value and the open state, **Trigger** wears `<TextField>`'s well, **Value** says what is picked and **Item / Indicator** are the row. Where the options appear is the shell's decision, stated once with `setSurfacePresentation`: under a D-pad they open in a **Dialog** (a modal is its own view controller on tvOS, so the remote is confined to the options for free), and under a pointer they open as an anchored listbox popover with the full combobox keyboard, meaning arrows, Home/End, type-ahead, Enter to pick and Esc to return to the trigger, announced through `aria-activedescendant`. Every way out is reported: `onOpenChange(open, { reason })` says `select`, `outside`, `escape` or `back`, the remote's Back button.
+Pick one of a few, from a trigger that says what is picked. Composed rather than configured, in Radix's shape: **Root** owns the value and the open state, **Trigger** wears `<TextField>`'s well, **Value** says what is picked and **Item / Media / Indicator** are the row. Where the options appear is the shell's decision, stated once with `setSurfacePresentation`: under a D-pad they open in a **Dialog** (a modal is its own view controller on tvOS, so the remote is confined to the options for free), and under a pointer they open as an anchored listbox popover with the full combobox keyboard, meaning arrows, Home/End, type-ahead, Enter to pick and Esc to return to the trigger, announced through `aria-activedescendant`. Every way out is reported: `onOpenChange(open, { reason })` says `select`, `outside`, `escape` or `back`, the remote's Back button.
 
 ```tsx
 <Select.Root label="Audio track" value={track} onValueChange={setTrack}>
@@ -42,6 +42,54 @@ Pick one of a few, from a trigger that says what is picked. Composed rather than
   A row written out of the parts, beside the one-line sugar and a disabled option.
 
   <Composed />
+</Scene>
+
+## A row that stands for a person
+
+`<Select.Media>` is the head of a row, and the mark it draws is a face as readily
+as a glyph. Write it anywhere inside the item. The Root sorts it out of the
+children the way `<Callout>` does, so the row keeps its label, its note and its
+tick around whatever you put there.
+
+```tsx
+<Select.Item value={member.id} label={member.username}>
+  <Select.Media>
+    <Avatar name={member.username} src={member.photo} size={18} circle shadow={false} />
+  </Select.Media>
+</Select.Item>
+```
+
+The same mark reaches the trigger once that row is the pick. The Root reads the
+head off each item as it walks its children and keys it by value, so
+`<Select.Value>` looks up what is picked rather than reaching into a surface that
+is not open yet. `icon` stays the sugar for a glyph the kit can size, and a
+written `<Select.Media>` wins the head from it.
+
+The kit sizes a glyph. It cannot size an `<Avatar>` it did not write, so give
+that the same 18px and a column of faces lines up with a column of glyphs. `src`
+is optional. With no photo the disc draws the member's initials over the colour
+their name hashes to, which is the one they wear on every other screen.
+
+<Scene name="Members">
+  A member filter: an "everyone" row that is not a person keeps its glyph, and the
+  three that are wear their faces.
+
+  <Members presentation="panel" />
+</Scene>
+
+## Options longer than the trigger
+
+An option is never cut short to fit the trigger it hangs from. The panel takes the
+width its longest row asks for, growing away from whichever of its edges has the
+room, so a select in the trailing actions of a header opens leftwards instead of
+being squeezed against the window. A row stays on ONE line either way: past the
+width the viewport can give, the label ellipses rather than wrapping.
+
+<Scene name="A narrow trigger">
+  The trigger says "Real time" and is that wide. The panel is as wide as "The last
+  twenty-four hours", and every row reads in full.
+
+  <LongOptions />
 </Scene>
 
 ## Several values at once
@@ -127,6 +175,7 @@ this device would have chosen.
 - Use a `note` for the fact that settles the choice: a bitrate, a codec, a count.
 - Wrap it in `<Field.Root>` for the label row. The select is the control, not the form row.
 - Give a composed row a `label`: it is what the trigger and assistive tech read.
+- Size what you put in a `<Select.Media>` to 18px, so the faces line up with the glyphs.
 - Give a `multiple` select a `placeholder` that names the filter: it is what the trigger reads while nothing is picked.
 </Do>
 

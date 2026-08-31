@@ -10,10 +10,11 @@ import {
   useTriggerKeys,
 } from '#ui/lib/anchored-panel';
 import { AnchoredPopup } from '#ui/lib/anchored-popup';
+import { webDocument } from '#ui/lib/dom';
 import { useFocusVisible } from '#ui/lib/focus-visible';
 import { useSurfacePresentation } from '#ui/lib/surface-presentation';
 import { MenuRowContext, type MenuRowState } from './menu-context';
-import { type MenuRowSpec, MenuSurfaceDialog, type MenuSurfaceProps } from './menu-surface-dialog';
+import { MenuSurfaceDialog, type MenuSurfaceProps } from './menu-surface-dialog';
 
 function MenuSurface(props: Readonly<MenuSurfaceProps>) {
   const presentation = useSurfacePresentation(props.presentation);
@@ -75,16 +76,21 @@ function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<
   });
   useTriggerFocus(anchor);
 
+  // A delegated row has no `select`: its link is what activation reaches, which
+  // a pointer has already done by the time the row reports the press and the
+  // keyboard has to do here.
   const fire = useCallback(
-    (row: MenuRowSpec | undefined) => {
+    (index: number, byKey: boolean) => {
+      const row = rows[index];
       if (!row || row.disabled) return;
       onDismiss('select');
-      row.select();
+      if (row.select) row.select();
+      else if (byKey) webDocument()?.getElementById(`${baseId}-${index}`)?.click();
     },
-    [onDismiss],
+    [baseId, onDismiss, rows],
   );
 
-  const fireAt = useCallback((index: number) => fire(rows[index]), [fire, rows]);
+  const fireAt = useCallback((index: number) => fire(index, false), [fire]);
 
   const { onKeyDown } = useListKeys({
     count: rows.length,
@@ -92,7 +98,7 @@ function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<
     setActive,
     disabledAt: (i) => rows[i]?.disabled === true,
     labelAt: (i) => rows[i]?.label ?? '',
-    onPick: (i) => fire(rows[i]),
+    onPick: (i) => fire(i, true),
     onClose: () => onDismiss('escape'),
   });
 

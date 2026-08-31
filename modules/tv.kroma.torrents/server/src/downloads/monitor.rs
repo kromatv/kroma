@@ -108,7 +108,9 @@ impl DownloadManager {
         if reseed_due {
             self.reseed_stalled(host);
         }
-        self.tick(host)
+        let had_active = self.tick(host);
+        self.sample_bandwidth(host);
+        had_active
     }
 
     // Returns whether anything is still active (drives the tick cadence).

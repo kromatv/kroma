@@ -1,4 +1,5 @@
 import { usePlaybackHeartbeat } from '@kroma/ui';
+import type { RefObject } from 'react';
 import type { MovieView } from '#web/shared/lib/api';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
@@ -10,12 +11,27 @@ import { useAuth } from '#web/shared/lib/auth';
 interface Params {
   item: MovieView;
   getPosition: () => number;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  /** Where the element's clock sits on the title's, so a buffered range reads as
+   *  an absolute position on a re-anchored stream. */
+  baseSec: number;
   playing: boolean;
   waiting: boolean;
   audioLabel?: string;
   subtitleLabel?: string;
   mode: 'direct' | 'remux' | 'transcode';
   onTerminated?: (message: string) => void;
+}
+
+function bufferedAhead(video: HTMLVideoElement | null, baseSec: number): number | undefined {
+  if (!video) return undefined;
+  const { buffered, currentTime } = video;
+  for (let i = 0; i < buffered.length; i++) {
+    if (currentTime >= buffered.start(i) && currentTime <= buffered.end(i)) {
+      return baseSec + buffered.end(i);
+    }
+  }
+  return undefined;
 }
 
 function uaInfo(): { player: string; device: string } {
@@ -44,6 +60,7 @@ export function usePlaybackSession(params: Params): void {
     itemId: params.item.id,
     durationMs: params.item.durationMs ?? null,
     getPosition: params.getPosition,
+    getBuffered: () => bufferedAhead(params.videoRef.current, params.baseSec),
     getState: () => {
       if (!params.playing) return 'paused';
       return params.waiting ? 'buffering' : 'playing';

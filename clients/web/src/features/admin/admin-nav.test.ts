@@ -71,6 +71,15 @@ describe('the console pages', () => {
     expect(new Set(sections).size).toBe(sections.length);
   });
 
+  it('keeps the watch history beside the dashboard, behind the users permission', () => {
+    const beside = NAV_GROUPS.find((group) => group.items.some((item) => item.to === '/admin'));
+
+    expect(beside?.items.find((item) => item.to === '/admin/history')).toMatchObject({
+      labelKey: 'admin.historyScreen',
+      cap: 'users.manage',
+    });
+  });
+
   it('reads the dashboard as current only on its own path', () => {
     const dashboard = NAV_GROUPS.flatMap((group) => group.items).find(
       (item) => item.to === '/admin',

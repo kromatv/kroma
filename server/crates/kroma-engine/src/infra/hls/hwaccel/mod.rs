@@ -16,7 +16,7 @@ use std::sync::OnceLock;
 
 use super::software::Effort;
 
-pub use probe::{detect, prime};
+pub use probe::{detect, detected, prime, Detection};
 
 /// What one re-encode runs on: the device that shrinks the picture and, where
 /// that device is the CPU, how hard it is allowed to work per frame. The two are

@@ -194,7 +194,7 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
     genre: s.genre,
     badge: null,
     poster: s.poster,
-    as: similarLink(s),
+    link: similarLink(s),
   }));
 
   return (
@@ -211,7 +211,7 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
         toggleList={toggleList}
         onPlay={play}
         onRequest={onRequestClick}
-        onBack={() => navigate({ to: backTo })}
+        back={<RouteLink to={backTo} />}
       />
 
       <TitleBody

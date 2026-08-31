@@ -2,8 +2,8 @@ import { createLink, type LinkProps } from '@tanstack/react-router';
 import { View, type ViewProps } from 'react-native';
 
 /**
- * The element `<Focusable as>` renders in place of its pressable, so a route
- * becomes a real `<a href>`.
+ * The element a control's `asChild` renders in place of its pressable, so a
+ * route becomes a real `<a href>`.
  *
  * Everything the router computes rides through to react-native-web, which is
  * what turns `href` into an anchor.

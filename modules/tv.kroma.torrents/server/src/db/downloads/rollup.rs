@@ -31,6 +31,45 @@ pub fn download_totals(conn: &Connection) -> rusqlite::Result<DownloadTotals> {
     })
 }
 
+/// The same lifetime counters as [`download_totals`], split by whether the row
+/// runs on the engine `embedded_client_id` names.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct TransferredBytes {
+    pub embedded_down: u64,
+    pub embedded_up: u64,
+    pub external_down: u64,
+    pub external_up: u64,
+}
+
+pub fn transferred_bytes(
+    conn: &Connection,
+    embedded_client_id: &str,
+) -> rusqlite::Result<TransferredBytes> {
+    let mut stmt = conn.prepare(
+        "SELECT client_id = ?1, COALESCE(SUM(downloaded_bytes), 0), \
+         COALESCE(SUM(uploaded_bytes), 0) FROM downloads GROUP BY client_id = ?1",
+    )?;
+    let mut out = TransferredBytes::default();
+    let rows = stmt.query_map([embedded_client_id], |r| {
+        Ok((
+            r.get::<_, i64>(0)? != 0,
+            r.get::<_, i64>(1)?.max(0) as u64,
+            r.get::<_, i64>(2)?.max(0) as u64,
+        ))
+    })?;
+    for row in rows {
+        let (embedded, down, up) = row?;
+        if embedded {
+            out.embedded_down = down;
+            out.embedded_up = up;
+        } else {
+            out.external_down = down;
+            out.external_up = up;
+        }
+    }
+    Ok(out)
+}
+
 /// How many downloads are occupying an engine slot right now, for the
 /// parallelism cap. `queued` rows are the ones waiting for one, so they do not
 /// count against it.
@@ -71,6 +110,39 @@ mod tests {
         assert_eq!(totals.by_status.get("downloading"), Some(&1));
         assert_eq!(totals.downloaded_bytes, 1000);
         assert_eq!(totals.uploaded_bytes, 500);
+    }
+
+    #[test]
+    fn an_external_engines_bytes_are_counted_apart_from_the_embedded_ones() {
+        let pool = seeded_ledger();
+        let mut remote = download("d_remote", "downloading", 60);
+        remote.client_id = "transmission-1".into();
+        insert_download(&pool, &remote).unwrap();
+        update_download_bytes(&pool, "d_d", 900, 450).unwrap();
+        update_download_bytes(&pool, "d_remote", 100, 20).unwrap();
+        let conn = pool.get().unwrap();
+
+        let bytes = transferred_bytes(&conn, "embedded").unwrap();
+
+        assert_eq!(
+            bytes,
+            TransferredBytes {
+                embedded_down: 900,
+                embedded_up: 450,
+                external_down: 100,
+                external_up: 20,
+            }
+        );
+    }
+
+    #[test]
+    fn an_empty_ledger_transferred_nothing_on_either_engine() {
+        let pool = test_db();
+        let conn = pool.get().unwrap();
+
+        let bytes = transferred_bytes(&conn, "embedded").unwrap();
+
+        assert_eq!(bytes, TransferredBytes::default());
     }
 
     #[test]

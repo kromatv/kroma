@@ -17,6 +17,7 @@ import {
   formatElapsed,
   formatHours,
   formatMbps,
+  formatStamp,
   formatTimecodeMs,
   formatUptime,
 } from '@kroma/core';
@@ -31,6 +32,10 @@ export interface Format {
   /** How long ago a timestamp was, in words, from an ISO string or epoch
    *  milliseconds. Null reads as "never". */
   elapsed: (at: string | number | null | undefined) => string;
+  /** A timestamp in full, date and time of day, for a log where "2 days ago"
+   *  would collapse rows a reader needs to tell apart. Null where there is no
+   *  readable timestamp, so a caller picks its own dash. */
+  stamp: (at: string | number | null | undefined) => string | null;
   /** Uptime at the coarsest useful scale, from seconds. */
   uptime: (seconds: number) => string;
   /** Watch time to the minute, from milliseconds. */
@@ -59,6 +64,7 @@ function formatFor(locale: Locale, t: Translate): Format {
     bytes: (bytes) => formatBytes(bytes, locale),
     decimal: (n, digits) => decimal(n, locale, digits),
     elapsed: (at) => formatElapsed(t, locale, at),
+    stamp: (at) => formatStamp(locale, at),
     uptime: (seconds) => formatUptime(t, seconds),
     duration: (ms) => formatDuration(t, ms),
     hours: (ms) => formatHours(ms, locale),

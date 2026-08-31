@@ -34,7 +34,22 @@ va_drivers_path() {
     printf '%s' "$_p"
 }
 
+# The daemon appends its whole stdout here for the life of the install, and this
+# is the only log that also carries the module sidecars' output, so it is the one
+# an operator is sent to. Nothing rotated it: six weeks of a live NAS came to
+# 16 MB and it only ever grew. One generation is kept, so the pair is bounded at
+# twice the cap and a restart never costs the run that led up to it.
+LOG_MAX_BYTES=8388608
+
+roll_log() {
+    [ -f "${LOG}" ] || return 0
+    _size=$(wc -c < "${LOG}" 2>/dev/null) || return 0
+    [ "${_size}" -gt "${LOG_MAX_BYTES}" ] || return 0
+    mv -f "${LOG}" "${LOG}.1" 2>/dev/null
+}
+
 start_daemon() {
+    roll_log
     mkdir -p "${DATA_DIR}" 2>/dev/null
     if [ ! -d "${DATA_DIR}" ]; then
         echo "$(date) data folder ${DATA_DIR} unavailable, using ${VAR}/data" >> "${LOG}"

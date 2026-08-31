@@ -18,11 +18,11 @@ import {
   Surface,
   Text,
 } from '@kroma/ui/kit';
-import { useNavigate } from '@tanstack/react-router';
 import { Pill } from '#web/features/admin/pill';
 import { kindMeta } from '#web/features/admin/pipeline-meta';
 import { Image } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 export function IdentityCard({
   req,
@@ -39,7 +39,6 @@ export function IdentityCard({
   localId?: string | null;
 }>) {
   const t = useT();
-  const navigate = useNavigate();
   const km = kindMeta(req.kind === 'show' ? 'series' : 'film');
   return (
     <Surface elevated radius="xl" pad="lg">
@@ -59,13 +58,14 @@ export function IdentityCard({
               size="sm"
               icon="external-link"
               label={t('requests.openInLibrary')}
-              onPress={() =>
-                navigate({
-                  to: req.kind === 'show' ? '/shows/$id' : '/movies/$id',
-                  params: { id: localId },
-                })
-              }
-            />
+              asChild
+            >
+              {req.kind === 'show' ? (
+                <RouteLink to="/shows/$id" params={{ id: localId }} />
+              ) : (
+                <RouteLink to="/movies/$id" params={{ id: localId }} />
+              )}
+            </Button>
           ) : null}
         </Box>
       </Box>

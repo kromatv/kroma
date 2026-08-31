@@ -15,6 +15,7 @@ pub(super) struct Snapshot {
     pub(super) video_label: String,
     pub(super) audio_label: String,
     pub(super) bitrate: f64,
+    pub(super) library: String,
 }
 
 pub(super) fn snapshot(item: &MediaItem) -> Snapshot {
@@ -52,6 +53,7 @@ pub(super) fn snapshot(item: &MediaItem) -> Snapshot {
         video_label,
         audio_label,
         bitrate: bitrate_mbps(item),
+        library: item.library.clone(),
     }
 }
 
@@ -181,6 +183,7 @@ mod tests {
         assert_eq!(snap.kind, "movie");
         assert_eq!(snap.video_label, "4K HDR · H.265");
         assert_eq!(snap.audio_label, "5.1 · EAC3");
+        assert_eq!(snap.library, "lib");
     }
 
     #[test]

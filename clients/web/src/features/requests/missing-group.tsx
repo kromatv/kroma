@@ -28,6 +28,7 @@ import {
 } from '@kroma/ui/kit';
 import { EpisodeList } from '#web/features/requests/missing-episodes';
 import { epKey, type MissingGroup } from '#web/features/requests/missing-model';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 function episodesOf(group: MissingGroup): CalendarEntry[] {
   if (group.kind === 'movie') return [];
@@ -43,7 +44,6 @@ export function MissingGroupCard({
   onToggleRow,
   onToggleGroup,
   onSearch,
-  onOpen,
 }: Readonly<{
   group: MissingGroup;
   canManage: boolean;
@@ -53,7 +53,6 @@ export function MissingGroupCard({
   onToggleRow: (key: string) => void;
   onToggleGroup: (pick: boolean) => void;
   onSearch: (items: CalendarEntry[]) => void;
-  onOpen: () => void;
 }>) {
   const t = useT();
   const [c1, c2] = posterColors(String(group.tmdbId));
@@ -81,9 +80,15 @@ export function MissingGroupCard({
         ) : (
           <Box w={20} />
         )}
-        <Focusable onPress={onOpen} label={group.title} style={s.head}>
+        <Focusable asChild label={group.title} style={s.head}>
           {(state) => (
-            <>
+            <RouteLink
+              to="/discover/$type/$tmdbId"
+              params={{
+                type: group.kind === 'movie' ? 'movie' : 'tv',
+                tmdbId: String(group.tmdbId),
+              }}
+            >
               <Box w={36} h={52} shrink={0}>
                 <Img
                   src={poster}
@@ -98,7 +103,7 @@ export function MissingGroupCard({
                 </Text>
                 <GroupMeta group={group} episodeCount={episodes.length} />
               </Box>
-            </>
+            </RouteLink>
           )}
         </Focusable>
         {canAct ? (

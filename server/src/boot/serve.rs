@@ -116,7 +116,7 @@ async fn await_jobs_drained(state: &state::SharedState) {
     }
 }
 
-async fn shutdown_signal() {
+pub(super) async fn shutdown_signal() {
     let ctrl_c = async {
         let _ = tokio::signal::ctrl_c().await;
     };

@@ -45,6 +45,16 @@ A focusable menu or settings row, composed of named parts. This shape had been w
 </ListRow.Root>
 ```
 
+A row that goes somewhere rather than acting in place is the link itself, and its parts go inside it. See `asChild` on **Focusable**.
+
+```tsx
+<ListRow.Root icon="settings" asChild>
+  <RouteLink to="/account/playback">
+    <ListRow.Label>Playback</ListRow.Label>
+  </RouteLink>
+</ListRow.Root>
+```
+
 <Scene name="A list">
   {story.take(({ icon, label, hint }) => (
     <Box minW={320} gap={10}>

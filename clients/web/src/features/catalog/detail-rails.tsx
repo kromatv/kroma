@@ -86,10 +86,10 @@ function CastTile({ person }: Readonly<{ person: CastMember }>) {
       focusScale={1.06}
       ring={false}
       label={t('person.viewWorks', { name: person.name })}
-      as={<RouteLink to="/people/$person" params={{ person: personSegment(person) }} />}
+      asChild
     >
       {({ hovered, focused }) => (
-        <>
+        <RouteLink to="/people/$person" params={{ person: personSegment(person) }}>
           <Image
             style={hovered || focused ? avatarRing() : AVATAR}
             src={photo}
@@ -110,7 +110,7 @@ function CastTile({ person }: Readonly<{ person: CastMember }>) {
               {person.character}
             </Text>
           ) : null}
-        </>
+        </RouteLink>
       )}
     </Focusable>
   );
@@ -123,7 +123,7 @@ export interface SimilarItem {
   seasonCount?: number;
   badge: string | null;
   poster: string;
-  as?: HostElement;
+  link?: HostElement;
 }
 
 /** Horizontal "Titres similaires" rail of poster tiles. */
@@ -145,8 +145,10 @@ export function SimilarRail({ title, items }: Readonly<{ title: string; items: S
               genre={m.genre}
               colors={posterColors(m.id)}
               poster={m.poster}
-              as={m.as}
-            />
+              asChild={m.link !== undefined}
+            >
+              {m.link}
+            </Poster>
           )}
         />
       </div>

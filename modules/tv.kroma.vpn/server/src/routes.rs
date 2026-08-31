@@ -7,7 +7,7 @@
 
 use std::collections::BTreeMap;
 
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
@@ -15,6 +15,7 @@ use serde_json::{json, Value};
 
 use kroma_module_sdk::domain::Permission;
 
+use crate::bandwidth::{engine_bandwidth, range_or_default};
 use crate::{SaveVpnBody, VpnAdminView, VpnTestResult};
 use kroma_module_sdk::host::{blocking, service, AuthUser, HostCtx};
 
@@ -29,6 +30,24 @@ where
     Router::new()
         .route("/vpn", get(status::<S>).put(save::<S>))
         .route("/vpn/test", post(test::<S>))
+        .route("/vpn/bandwidth", get(bandwidth::<S>))
+}
+
+#[derive(Debug, Default, serde::Deserialize)]
+struct RangeParams {
+    #[serde(default)]
+    range: Option<String>,
+}
+
+async fn bandwidth<S: HostCtx + Clone + Send + Sync + 'static>(
+    State(state): State<S>,
+    AuthUser(user): AuthUser,
+    Query(params): Query<RangeParams>,
+) -> Result<Response, Response> {
+    state.require(&user, Permission::SettingsManage)?;
+    let range = range_or_default(params.range.as_deref().unwrap_or_default()).to_string();
+    let view = blocking(move || Ok(engine_bandwidth(&state, &range))).await?;
+    Ok(Json(view).into_response())
 }
 
 // `GET /vpn`

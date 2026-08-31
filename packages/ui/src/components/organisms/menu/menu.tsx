@@ -77,7 +77,7 @@ function Root({
             at,
             label: labelOf(entry.props),
             disabled: entry.props.disabled === true,
-            select: entry.props.onSelect,
+            ...(entry.props.onSelect ? { select: entry.props.onSelect } : null),
           },
         ]
       : [],

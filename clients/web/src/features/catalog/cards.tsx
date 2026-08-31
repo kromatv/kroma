@@ -1,7 +1,6 @@
 import { genreLabels, metaLine, posterColors, type Section } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Badge, Box, Button, gradient, Row, Text } from '@kroma/ui/kit';
-import { useNavigate } from '@tanstack/react-router';
 import { type CSSProperties, memo } from 'react';
 import { VirtualTileGrid } from '#web/features/catalog/virtual-tile-grid';
 import type { MovieView, ShowView } from '#web/shared/lib/api';
@@ -76,7 +75,6 @@ const HERO_SCRIM = gradient(
  * content edges (cancels the page gutter) and faded into the rails below. */
 export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
   const t = useT();
-  const navigate = useNavigate();
   const media = entry.type === 'movie' ? entry.movie : entry.show;
   const colors = posterColors(media.id);
   const gradient = `linear-gradient(158deg, ${colors[0]}, ${colors[1]})`;
@@ -123,21 +121,17 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
         <Row wrap gap={14}>
           {entry.type === 'movie' ? (
             <>
-              <Button
-                label={t('content.play')}
-                onPress={() => navigate({ to: '/watch/$id', params: { id: media.id } })}
-              />
-              <Button
-                variant="glass"
-                label={t('content.moreInfo')}
-                onPress={() => navigate({ to: '/movies/$id', params: { id: media.id } })}
-              />
+              <Button label={t('content.play')} asChild>
+                <RouteLink to="/watch/$id" params={{ id: media.id }} />
+              </Button>
+              <Button variant="glass" label={t('content.moreInfo')} asChild>
+                <RouteLink to="/movies/$id" params={{ id: media.id }} />
+              </Button>
             </>
           ) : (
-            <Button
-              label={t('content.moreInfo')}
-              onPress={() => navigate({ to: '/shows/$id', params: { id: media.id } })}
-            />
+            <Button label={t('content.moreInfo')} asChild>
+              <RouteLink to="/shows/$id" params={{ id: media.id }} />
+            </Button>
           )}
         </Row>
       </Box>
@@ -167,8 +161,10 @@ export const MoviePoster = memo(function MoviePoster({
       onToggleWatched={() => toggleWatched(item.id)}
       inList={inList(item.id)}
       onToggleList={() => toggleList(item.id)}
-      as={<RouteLink to="/movies/$id" params={{ id: item.id }} />}
-    />
+      asChild
+    >
+      <RouteLink to="/movies/$id" params={{ id: item.id }} />
+    </Poster>
   );
 });
 
@@ -193,8 +189,10 @@ export const ShowPoster = memo(function ShowPoster({
       onToggleWatched={() => toggleWatched(show.id)}
       inList={inList(show.id)}
       onToggleList={() => toggleList(show.id)}
-      as={<RouteLink to="/shows/$id" params={{ id: show.id }} />}
-    />
+      asChild
+    >
+      <RouteLink to="/shows/$id" params={{ id: show.id }} />
+    </Poster>
   );
 });
 
@@ -224,8 +222,10 @@ export const SectionPoster = memo(function SectionPoster({
         onToggleWatched={() => toggleWatched(show.id)}
         inList={inList(show.id)}
         onToggleList={() => toggleList(show.id)}
-        as={<RouteLink to="/shows/$id" params={{ id: show.id }} />}
-      />
+        asChild
+      >
+        <RouteLink to="/shows/$id" params={{ id: show.id }} />
+      </Poster>
     );
   }
   const { item } = entry;
@@ -241,14 +241,14 @@ export const SectionPoster = memo(function SectionPoster({
       onToggleWatched={() => toggleWatched(item.id)}
       inList={inList(item.id)}
       onToggleList={() => toggleList(item.id)}
-      as={
-        isEpisode ? (
-          <RouteLink to="/shows/$id" params={{ id: item.showId ?? item.id }} />
-        ) : (
-          <RouteLink to="/movies/$id" params={{ id: item.id }} />
-        )
-      }
-    />
+      asChild
+    >
+      {isEpisode ? (
+        <RouteLink to="/shows/$id" params={{ id: item.showId ?? item.id }} />
+      ) : (
+        <RouteLink to="/movies/$id" params={{ id: item.id }} />
+      )}
+    </Poster>
   );
 });
 

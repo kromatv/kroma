@@ -10,12 +10,13 @@ import type { SurfacePresentation } from '#ui/lib/surface-presentation';
 import { type MenuDismissReason, MenuRowContext, type MenuRowState } from './menu-context';
 
 /** One actionable row, in the order the items were written. `at` is the
- *  position among the ENTRIES, which count the separators too. */
+ *  position among the ENTRIES, which count the separators too. `select` is
+ *  absent on a row that delegates, whose link is what activation reaches. */
 export interface MenuRowSpec {
   at: number;
   label: string;
   disabled: boolean;
-  select: () => void;
+  select?: () => void;
 }
 
 export interface MenuSurfaceProps {
@@ -68,7 +69,7 @@ export function MenuSurfaceDialog({
     (spec: MenuRowSpec) => {
       if (spec.disabled) return;
       onDismiss('select');
-      spec.select();
+      spec.select?.();
     },
     [onDismiss],
   );

@@ -2,6 +2,7 @@
 
 import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
+import { View } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button } from '#ui/components/atoms/button';
 import { Text } from '#ui/components/atoms/text';
@@ -122,5 +123,44 @@ describe('PageHeader.Actions', () => {
     expect(rendered.compareDocumentPosition(heading)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     fireEvent.click(rendered);
     expect(back).toHaveBeenCalledTimes(1);
+  });
+});
+
+function Anchor({ to, ...host }: Readonly<Record<string, unknown>>) {
+  return <View {...(host as object)} {...({ href: to } as object)} />;
+}
+
+describe('a PageHeader.Back that delegates its host to a link', () => {
+  it('is the anchor itself, still sorted before the heading', () => {
+    renderRaw(
+      <PageHeader.Root>
+        <PageHeader.Back label="Modules" asChild>
+          <Anchor to="/admin/modules" />
+        </PageHeader.Back>
+        <PageHeader.Title>Acquisition</PageHeader.Title>
+      </PageHeader.Root>,
+    );
+    const back = screen.getByLabelText('Modules');
+
+    expect(back.tagName).toBe('A');
+    expect(back.getAttribute('href')).toBe('/admin/modules');
+    expect(back.compareDocumentPosition(screen.getByRole('heading'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
+  it('keeps drawing the chevron inside the element it delegates to', () => {
+    renderRaw(
+      <PageHeader.Root>
+        <PageHeader.Back label="Modules" asChild>
+          <Anchor to="/admin/modules" />
+        </PageHeader.Back>
+        <PageHeader.Title>Acquisition</PageHeader.Title>
+      </PageHeader.Root>,
+    );
+
+    expect(
+      screen.getByLabelText('Modules').querySelector('.tabler-icon-chevron-left'),
+    ).toBeTruthy();
   });
 });

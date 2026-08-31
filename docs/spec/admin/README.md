@@ -9,6 +9,20 @@ without a reason a single hobbyist would recognise. Admin is the surface the own
 a handful of times a year, at install, when adding a source, when something breaks, and
 should ask nothing of them the rest of the time.
 
+## Chapters
+
+The dashboard and the record it reads have their own chapters. Each states what one screen
+must do; this file stays the landing page for running a server at all.
+
+| Chapter | What it covers |
+|---|---|
+| [`dashboard-live.md`](dashboard-live.md) | What is playing now, the bandwidth chart, and the scope/range contract all three resource charts share |
+| [`dashboard-resources.md`](dashboard-resources.md) | Processor and memory, and what KROMA's share of them means |
+| [`dashboard-audience.md`](dashboard-audience.md) | Top viewers, and time watched over time |
+| [`dashboard-most-watched.md`](dashboard-most-watched.md) | Which titles the household actually uses the server for |
+| [`watch-history.md`](watch-history.md) | The full record, its own screen, and what the log keeps |
+| [`watch-history-item.md`](watch-history-item.md) | The same record narrowed to one title |
+
 ## First-run
 
 Status: **AGREED**

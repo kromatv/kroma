@@ -1,16 +1,7 @@
 import { sizedImageUrl, type Translate } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import {
-  ArtScrim,
-  Box,
-  type HostElement,
-  Img,
-  Progress,
-  rhythm,
-  Text,
-  VirtualRail,
-} from '@kroma/ui/kit';
-import { type ReactElement, useState } from 'react';
+import { ArtScrim, Box, Img, Progress, rhythm, Text, VirtualRail } from '@kroma/ui/kit';
+import { type ReactElement, type ReactNode, useState } from 'react';
 import type { PosterAction } from '#web/shared/ui/poster-action-bar';
 import { ART_FADE, PosterTile } from '#web/shared/ui/poster-tile';
 
@@ -26,7 +17,8 @@ export interface PosterProps {
   onToggleList?: () => void;
   width?: number;
   caption?: boolean;
-  as?: HostElement;
+  children?: ReactNode;
+  asChild?: boolean;
 }
 
 const RAIL_TILE = rhythm.cardWidth;
@@ -103,7 +95,8 @@ export function Poster({
   onToggleList,
   width,
   caption = true,
-  as,
+  asChild,
+  children,
 }: Readonly<PosterProps>) {
   const t = useT();
   const [imgOk, setImgOk] = useState(true);
@@ -112,13 +105,12 @@ export function Poster({
   return (
     <PosterTile
       label={title}
-      as={as}
+      asChild={asChild}
       width={width}
       background={`linear-gradient(158deg, ${colors[0]} 0%, ${colors[1]} 70%)`}
       watched={watched === true}
       actions={tileActions(t, { inList, onToggleList, watched, onToggleWatched })}
-    >
-      {(engaged) => {
+      art={(engaged) => {
         const revealed = !showImg || engaged;
         return (
           <>
@@ -168,6 +160,8 @@ export function Poster({
           </>
         );
       }}
+    >
+      {children}
     </PosterTile>
   );
 }

@@ -5,11 +5,11 @@
 //! client cannot reach re-anchors by reloading the master at `?t=<secs>`.
 //!
 //! This half starts sessions and serves out of them; [`super::reclaim`] is what
-//! takes them away again.
+//! takes them away again, and [`super::live`] is what the admin sees of them.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -20,23 +20,22 @@ use tracing::{info, warn};
 
 use super::ffmpeg::{detect_burst, keyframe_before, spawn_stream};
 use super::hwaccel::Pipeline;
+use super::live::Plan;
 use super::naming::{contains, content_type, is_safe_name, seg_index, session_dir};
+use super::window::Window;
 use super::{StreamMode, VideoMode};
 use crate::infra::ffmpeg_gate;
 
 const FILE_WAIT: Duration = Duration::from_secs(20);
-// History kept behind the SLOWEST reader of a session (see `prune_cutoff`), so
-// it bounds a backward seek rather than a buffer depth.
-pub(super) const KEEP_BEHIND_SEGS: u64 = 45;
 
 pub(super) struct Session {
     pub(super) dir: PathBuf,
     pub(super) child: Mutex<Child>,
     pub(super) last_access: Mutex<Instant>,
-    // Lowest segment asked for since the last reap, i.e. the trailing edge of
-    // what someone is actually reading. `u64::MAX` = nothing asked for yet.
-    low_seg: AtomicU64,
-    pruned: AtomicU64,
+    pub(super) window: Window,
+    // How this session was started, so the admin can be told what the box is
+    // spending its cycles on without re-deriving it from the key.
+    pub(super) plan: Plan,
     // Real stream start (s): the keyframe at-or-before the requested anchor,
     // which the client uses as `baseSec`.
     start: f64,
@@ -51,43 +50,8 @@ impl Session {
         *self.last_access.lock().await = Instant::now();
     }
 
-    async fn finished(&self) -> bool {
+    pub(super) async fn finished(&self) -> bool {
         matches!(self.child.lock().await.try_wait(), Ok(Some(_)))
-    }
-
-    /// Folds a request into the retention floor. `false` when the segment is
-    /// already pruned, in which case the floor is left alone: an index from
-    /// behind the prune mark would underflow the cutoff, hold the whole window
-    /// open, and keep the session too fresh for anything to reclaim it.
-    fn note_request(&self, idx: u64) -> bool {
-        if self.is_pruned(idx) {
-            return false;
-        }
-        self.low_seg.fetch_min(idx, Ordering::Relaxed);
-        true
-    }
-
-    fn is_pruned(&self, idx: u64) -> bool {
-        idx < self.pruned.load(Ordering::Relaxed)
-    }
-
-    /// How far the retention window may advance, or `None` to keep everything.
-    ///
-    /// Measured from the LOWEST index requested since the last reap, not the
-    /// highest. A player that prefetches far ahead, and a second viewer further
-    /// back on the same key, both used to drag the cutoff past the trailing
-    /// reader and 404 the segments it was about to play.
-    ///
-    /// Taking the floor also resets it: a session nobody read this round keeps
-    /// everything it has rather than pruning against a stale mark.
-    pub(super) fn prune_cutoff(&self) -> Option<u64> {
-        let floor = self.low_seg.swap(u64::MAX, Ordering::Relaxed);
-        if floor == u64::MAX {
-            return None;
-        }
-        let cutoff = floor.checked_sub(KEEP_BEHIND_SEGS).filter(|c| *c > 0)?;
-        self.pruned.fetch_max(cutoff, Ordering::Relaxed);
-        Some(cutoff)
     }
 }
 
@@ -117,7 +81,7 @@ impl Sessions {
 
     /// Retune the disk budget at runtime; 0 = unlimited.
     pub fn set_budget(&self, bytes: u64) {
-        self.budget.store(bytes, Ordering::Relaxed);
+        self.budget.store(bytes, std::sync::atomic::Ordering::Relaxed);
     }
 
     pub fn bytes(&self) -> u64 {
@@ -173,7 +137,7 @@ impl Sessions {
         let idx = seg_index(name);
         // A pruned segment is never reproduced (the remux only moves forward), so
         // 404 now instead of burning FILE_WAIT on a poll that cannot succeed.
-        if idx.is_some_and(|i| !session.note_request(i)) {
+        if idx.is_some_and(|i| !session.window.note(i)) {
             return None;
         }
         let path = session.dir.join(name);
@@ -189,7 +153,7 @@ impl Sessions {
                 return Some((bytes, content_type(name)));
             }
             // A reap during the wait can delete what this poll is waiting for.
-            if idx.is_some_and(|i| session.is_pruned(i)) {
+            if idx.is_some_and(|i| session.window.is_pruned(i)) {
                 return None;
             }
             if Instant::now() >= deadline {
@@ -241,11 +205,11 @@ impl Sessions {
         let child = spawn_stream(input, &dir, audio, mode, start_secs, self.burst, pipeline)?;
         info!(session = %key, audio, mode = ?mode, anchor = start_secs, start, accel = pipeline.accel.label(), effort = pipeline.effort.label(), "started HLS remux");
         let session = Arc::new(Session {
+            plan: Plan::new(key, audio, mode, pipeline, source, child.id(), start_secs),
             dir,
             child: Mutex::new(child),
             last_access: Mutex::new(Instant::now()),
-            low_seg: AtomicU64::new(u64::MAX),
-            pruned: AtomicU64::new(0),
+            window: Window::new(),
             start,
             _cpu: on_the_cpu.then(ffmpeg_gate::reserve),
         });
@@ -256,76 +220,3 @@ impl Sessions {
 
 #[cfg(test)]
 pub(super) mod testing;
-
-#[cfg(test)]
-mod tests {
-    use super::testing::{fake_session, LIVE};
-    use super::*;
-
-    fn probe(low: Option<u64>) -> Arc<Session> {
-        let s = fake_session(PathBuf::from("/nonexistent"), LIVE);
-        if let Some(idx) = low {
-            s.note_request(idx);
-        }
-        s
-    }
-
-    #[tokio::test]
-    async fn a_session_nobody_read_this_round_keeps_everything() {
-        assert_eq!(probe(None).prune_cutoff(), None);
-    }
-
-    #[tokio::test]
-    async fn the_window_is_kept_behind_the_trailing_reader() {
-        let s = probe(Some(KEEP_BEHIND_SEGS + 10));
-        assert_eq!(s.prune_cutoff(), Some(10));
-        assert!(s.is_pruned(9));
-        assert!(!s.is_pruned(10));
-    }
-
-    #[tokio::test]
-    async fn a_prefetch_far_ahead_does_not_prune_what_the_reader_still_needs() {
-        let s = probe(Some(5));
-        s.note_request(5_000); // the same client buffering minutes ahead
-        assert_eq!(s.prune_cutoff(), None);
-        assert!(!s.is_pruned(0));
-    }
-
-    // Two viewers share a session key: the one further ahead must not evict the
-    // segments the one behind is about to play.
-    #[tokio::test]
-    async fn a_reader_further_ahead_does_not_prune_a_reader_behind_it() {
-        let s = probe(Some(KEEP_BEHIND_SEGS + 2));
-        s.note_request(KEEP_BEHIND_SEGS * 4);
-        assert_eq!(s.prune_cutoff(), Some(2));
-        assert!(!s.is_pruned(2));
-    }
-
-    #[tokio::test]
-    async fn a_request_for_a_pruned_segment_does_not_reopen_the_window() {
-        let s = probe(Some(KEEP_BEHIND_SEGS + 100));
-        assert_eq!(s.prune_cutoff(), Some(100));
-
-        // A backward seek to something the playlist still lists but the reaper
-        // has already deleted: it 404s, and must not become the new floor.
-        assert!(!s.note_request(5));
-        assert_eq!(s.prune_cutoff(), None);
-
-        s.note_request(KEEP_BEHIND_SEGS + 200);
-        assert_eq!(
-            s.prune_cutoff(),
-            Some(200),
-            "a servable request still advances it"
-        );
-    }
-
-    #[tokio::test]
-    async fn the_floor_resets_each_round_so_a_seek_back_is_not_pruned() {
-        let s = probe(Some(KEEP_BEHIND_SEGS + 100));
-        assert_eq!(s.prune_cutoff(), Some(100));
-        s.note_request(KEEP_BEHIND_SEGS + 120);
-        // A later round never un-prunes, but it also never prunes past its own floor.
-        assert_eq!(s.prune_cutoff(), Some(120));
-        assert!(s.is_pruned(119));
-    }
-}

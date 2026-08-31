@@ -5,14 +5,20 @@ use super::*;
 
 use rusqlite::OptionalExtension;
 
+mod metrics;
 mod play_history;
+mod play_sort;
 mod stats;
+mod watch_stats;
 
 #[cfg(test)]
 mod test_support;
 
+pub use metrics::*;
 pub use play_history::*;
+pub use play_sort::*;
 pub use stats::*;
+pub use watch_stats::*;
 
 /// Every persisted setting as `(key, value)` pairs (value is parsed JSON).
 pub fn settings_all(pool: &Pool) -> Result<Vec<(String, serde_json::Value)>> {

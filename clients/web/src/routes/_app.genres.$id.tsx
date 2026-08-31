@@ -12,7 +12,7 @@ import { useT } from '@kroma/ui';
 import { Box, EmptyState, genreIcon, PageHeader } from '@kroma/ui/kit';
 
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useMemo } from 'react';
 import { BrowseBar } from '#web/features/catalog/browse-bar';
 import { type CatalogEntry, CatalogGrid } from '#web/features/catalog/cards';
@@ -20,6 +20,7 @@ import { isAuthed } from '#web/shared/lib/api';
 
 import { catalogQueries } from '#web/shared/lib/queries';
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 interface GenreSearch {
   sort?: SortMode;
@@ -51,10 +52,11 @@ export const Route = createFileRoute('/_app/genres/$id')({
 
 function GenreHeader({ genre }: Readonly<{ genre: string }>) {
   const t = useT();
-  const navigate = useNavigate();
   return (
     <PageHeader.Root>
-      <PageHeader.Back label={t('nav.genres')} onPress={() => void navigate({ to: '/genres' })} />
+      <PageHeader.Back label={t('nav.genres')} asChild>
+        <RouteLink to="/genres" />
+      </PageHeader.Back>
       <PageHeader.Title icon={genreIcon(genre)}>{genreLabel(t, genre)}</PageHeader.Title>
     </PageHeader.Root>
   );

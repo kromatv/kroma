@@ -1,9 +1,9 @@
 import {
   Box,
   color,
+  delegateOf,
   Focusable,
   gradient,
-  type HostElement,
   motion,
   styles,
   useFocusVisible,
@@ -52,25 +52,28 @@ const s = styles({
 
 export interface PosterTileProps {
   label: string;
-  as?: HostElement;
   width?: number;
   background: string;
   watched?: boolean;
   actions: readonly PosterAction[];
-  children: (engaged: boolean) => ReactNode;
+  art: (engaged: boolean) => ReactNode;
+  children?: ReactNode;
+  asChild?: boolean;
   footer?: ReactNode;
 }
 
 export function PosterTile({
   label,
-  as,
   width,
   background,
   watched = false,
   actions,
+  art,
+  asChild,
   children,
   footer,
 }: Readonly<PosterTileProps>) {
+  const delegate = delegateOf(asChild, children);
   const [hovered, setHovered] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
   // Focus counts only when the viewer asked for it. A click focuses the disc it
@@ -100,15 +103,17 @@ export function PosterTile({
       onBlur={() => setFocusWithin(false)}
     >
       <Box style={hovered ? [LIFT_MOTION, s.lift] : LIFT_MOTION}>
-        <Focusable label={label} as={as} style={s.hit}>
-          <Box style={[s.art, gradient(background), ART_MOTION, hovered ? s.artLit : null]}>
-            {children(engaged)}
-            {watched ? (
-              <Box fill pointerEvents="none" opacity={fold ? 1 : 0}>
-                <WatchedBadge corner="top-right" />
-              </Box>
-            ) : null}
-          </Box>
+        <Focusable label={label} asChild={asChild} style={s.hit}>
+          {delegate.wrap(
+            <Box style={[s.art, gradient(background), ART_MOTION, hovered ? s.artLit : null]}>
+              {art(engaged)}
+              {watched ? (
+                <Box fill pointerEvents="none" opacity={fold ? 1 : 0}>
+                  <WatchedBadge corner="top-right" />
+                </Box>
+              ) : null}
+            </Box>,
+          )}
         </Focusable>
         <PosterActionBar actions={actions} shown={engaged} />
       </Box>

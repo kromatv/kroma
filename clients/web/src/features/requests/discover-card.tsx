@@ -20,8 +20,8 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
   const [requesting, setRequesting] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState(entry.requestStatus);
   const [c1, c2] = posterColors(String(entry.tmdbId));
-  const art = sizedImageUrl(entry.posterUrl, width ?? rhythm.cardWidth);
-  const showImg = Boolean(art) && imgOk;
+  const poster = sizedImageUrl(entry.posterUrl, width ?? rhythm.cardWidth);
+  const showImg = Boolean(poster) && imgOk;
   const owned = entry.inLibrary && entry.localId;
   const canRequest = !owned && !optimisticStatus;
   // One id for both owned and discover titles, so a bookmark on a title that is
@@ -91,7 +91,7 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
   return (
     <PosterTile
       label={entry.title}
-      as={fiche}
+      asChild
       width={width}
       background={tint}
       watched={seen}
@@ -104,11 +104,10 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
           rating={entry.rating ?? null}
         />
       }
-    >
-      {() => (
+      art={() => (
         <>
           {showImg ? (
-            <Img src={art} alt={entry.title} radius="lg" fill onError={() => setImgOk(false)} />
+            <Img src={poster} alt={entry.title} radius="lg" fill onError={() => setImgOk(false)} />
           ) : (
             <Box fill justify="flex-end" p={12}>
               <Text variant="label" color="white/90" lines={3}>
@@ -121,6 +120,8 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
           </Box>
         </>
       )}
+    >
+      {fiche}
     </PosterTile>
   );
 }

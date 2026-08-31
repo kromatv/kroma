@@ -144,34 +144,34 @@ function TmdbFilmography({ credits }: Readonly<{ credits: readonly TmdbCredit[] 
             key={`${credit.mediaType}-${credit.tmdbId}`}
             style={s.credit}
             label={credit.title}
-            as={
-              <RouteLink
-                to="/discover/$type/$tmdbId"
-                params={{
-                  type: credit.mediaType === 'tv' ? 'tv' : 'movie',
-                  tmdbId: String(credit.tmdbId),
-                }}
-              />
-            }
+            asChild
           >
-            <Box aspect={2 / 3} radius="md" overflow="hidden" shadow="card">
-              <Image src={credit.posterUrl ?? null} alt={credit.title} fit="cover" fill />
-            </Box>
-            <Text variant="label" lines={2}>
-              {credit.title}
-            </Text>
-            <Box row align="center" gap={6}>
-              {credit.year ? (
-                <Text variant="meta" color="textDim">
-                  {credit.year}
-                </Text>
-              ) : null}
-              {credit.character ? (
-                <Text variant="meta" color="textMuted" lines={1}>
-                  · {credit.character}
-                </Text>
-              ) : null}
-            </Box>
+            <RouteLink
+              to="/discover/$type/$tmdbId"
+              params={{
+                type: credit.mediaType === 'tv' ? 'tv' : 'movie',
+                tmdbId: String(credit.tmdbId),
+              }}
+            >
+              <Box aspect={2 / 3} radius="md" overflow="hidden" shadow="card">
+                <Image src={credit.posterUrl ?? null} alt={credit.title} fit="cover" fill />
+              </Box>
+              <Text variant="label" lines={2}>
+                {credit.title}
+              </Text>
+              <Box row align="center" gap={6}>
+                {credit.year ? (
+                  <Text variant="meta" color="textDim">
+                    {credit.year}
+                  </Text>
+                ) : null}
+                {credit.character ? (
+                  <Text variant="meta" color="textMuted" lines={1}>
+                    · {credit.character}
+                  </Text>
+                ) : null}
+              </Box>
+            </RouteLink>
           </Focusable>
         ))}
       </div>

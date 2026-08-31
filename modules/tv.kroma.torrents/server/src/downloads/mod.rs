@@ -17,6 +17,7 @@ use kroma_module_sdk::db::Pool;
 use kroma_module_sdk::host::HostCtx;
 use kroma_module_sdk::primitives::now_ms;
 
+mod bandwidth;
 mod engine;
 mod fetch;
 mod gate;
@@ -41,6 +42,7 @@ pub struct DownloadManager {
     paused_by_killswitch: Mutex<Vec<String>>,
     paused_by_disable: Mutex<Vec<String>>,
     speed_history: Mutex<Vec<crate::SpeedSample>>,
+    bandwidth: Mutex<crate::bandwidth::meter::Meter>,
     starting_since: Mutex<Option<i64>>,
     state_dir: PathBuf,
     downloads_dir: PathBuf,
@@ -76,6 +78,7 @@ impl DownloadManager {
             paused_by_killswitch: Mutex::new(Vec::new()),
             paused_by_disable: Mutex::new(Vec::new()),
             speed_history: Mutex::new(Vec::new()),
+            bandwidth: Mutex::new(crate::bandwidth::meter::Meter::default()),
             starting_since: Mutex::new(None),
             downloads_dir: state_dir.join("downloads"),
             state_dir,

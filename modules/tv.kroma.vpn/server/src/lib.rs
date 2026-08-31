@@ -18,6 +18,7 @@
 //! holding the SOCKS port, so [`Vpn::apply`] reaps one by pidfile on every pass,
 //! including the pass that finds no config at all.
 
+pub mod bandwidth;
 pub mod port;
 mod provision;
 pub mod routes;

@@ -5,10 +5,21 @@
 
 import { apiErrorText, KromaApiError, type MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { Box, Button, color, Disclosure, EmptyState, Logo, Row, Text } from '@kroma/ui/kit';
-import { useNavigate, useRouter, useRouterState } from '@tanstack/react-router';
+import {
+  Box,
+  Button,
+  color,
+  Disclosure,
+  EmptyState,
+  type HostElement,
+  Logo,
+  Row,
+  Text,
+} from '@kroma/ui/kit';
+import { useRouter, useRouterState } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import { PAGE_RADIAL } from '#web/shared/ui';
+import { RouteLink } from '#web/shared/ui/route-link';
 
 type Kind = 'notFound' | 'unauthorized' | 'forbidden' | 'server';
 
@@ -32,16 +43,15 @@ function ErrorScreen({
   detail,
   trace,
   onRetry,
-  onSignIn,
+  signIn,
 }: Readonly<{
   kind: Kind;
   detail?: string | null;
   trace?: string | null;
   onRetry?: () => void;
-  onSignIn?: () => void;
+  signIn?: HostElement;
 }>) {
   const t = useT();
-  const router = useRouter();
   const { code, title, body } = COPY[kind];
 
   return (
@@ -76,16 +86,20 @@ function ErrorScreen({
                   onPress={onRetry}
                 />
               ) : null}
-              {onSignIn ? (
-                <Button size="sm" icon="login" label={t('auth.login')} onPress={onSignIn} />
+              {signIn ? (
+                <Button size="sm" icon="login" label={t('auth.login')} asChild>
+                  {signIn}
+                </Button>
               ) : null}
               <Button
-                variant={onSignIn ? 'glass' : 'primary'}
+                variant={signIn ? 'glass' : 'primary'}
                 size="sm"
                 icon="home"
                 label={t('error.home')}
-                onPress={() => void router.navigate({ to: '/' })}
-              />
+                asChild
+              >
+                <RouteLink to="/" />
+              </Button>
             </Row>
           </EmptyState.Actions>
         </EmptyState.Root>
@@ -124,7 +138,6 @@ const NUMERAL = {
  * variant from the error's status and offers a retry that re-runs the route. */
 export function RouteError({ error, reset }: Readonly<{ error: Error; reset: () => void }>) {
   const router = useRouter();
-  const navigate = useNavigate();
   const href = useRouterState({ select: (s) => s.location.href });
   const kind = kindOf(error);
 
@@ -139,17 +152,15 @@ export function RouteError({ error, reset }: Readonly<{ error: Error; reset: () 
 
   // 401: the session is gone but `user` may still be cached locally, so the
   // ambient gate won't show. Send them to /login instead, which returns here.
-  const onSignIn =
-    kind === 'unauthorized'
-      ? () => void navigate({ to: '/login', search: { redirect: href } })
-      : undefined;
+  const signIn =
+    kind === 'unauthorized' ? <RouteLink to="/login" search={{ redirect: href }} /> : undefined;
 
   // Only surface the raw message for server errors (404/401/403 are self-evident
   // and the message would just be noise).
   const detail = kind === 'server' ? apiErrorText(error, '') || null : null;
   const trace = kind === 'server' ? traceOf(error) : null;
   return (
-    <ErrorScreen kind={kind} detail={detail} trace={trace} onRetry={onRetry} onSignIn={onSignIn} />
+    <ErrorScreen kind={kind} detail={detail} trace={trace} onRetry={onRetry} signIn={signIn} />
   );
 }
 

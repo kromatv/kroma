@@ -30,6 +30,9 @@ export interface PlaybackPing {
   itemId: string;
   positionMs: number;
   durationMs?: number | null;
+  /** Absolute position the surface has buffered up to, for the dashboard's seek
+   *  bar. Omitted by a client that cannot read its own buffer. */
+  bufferedMs?: number | null;
   state?: 'playing' | 'paused' | 'buffering';
   mode?: 'direct' | 'remux' | 'transcode';
   player?: string;

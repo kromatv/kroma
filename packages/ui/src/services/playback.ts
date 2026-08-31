@@ -19,6 +19,9 @@ export interface PlaybackHeartbeatParams {
   durationMs: number | null;
   /** Absolute current position in seconds (offset-aware on the web seamless stream). */
   getPosition: () => number;
+  /** Absolute position the surface has buffered up to, in seconds, where it can
+   * say. Omitted from the ping when absent or undefined. */
+  getBuffered?: () => number | undefined;
   /** The current transport state (`buffering` = playing but stalled/rebuffering). */
   getState: () => 'playing' | 'paused' | 'buffering';
   /** Label of the audio track the viewer has selected (omit → keep server default). */
@@ -47,6 +50,11 @@ export interface PlaybackHeartbeatParams {
   pingSignal?: unknown;
 }
 
+// Mirrors SESSION_TTL in the server's playback registry. A beat that lands later
+// than this has already been reaped, so pinging again opens a SECOND session
+// rather than refreshing the first.
+const SERVER_TTL_MS = 30_000;
+
 let sessionSeq = 0;
 
 function newSessionId(prefix: string): string {
@@ -65,6 +73,15 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
   const [sessionId] = useState(() => newSessionId(params.idPrefix));
   // Once terminated we stop pinging and don't send a redundant stop on unmount.
   const terminated = useRef(false);
+  // A session exists on the server only once a beat has landed, so a surface
+  // that never plays neither opens one nor closes one.
+  const opened = useRef(false);
+  // When the last beat left, and where the playhead was, which is what tells a
+  // resumed viewing from a tab the browser has only been throttling.
+  const beat = useRef<{ at: number; positionMs: number } | null>(null);
+  const inFlight = useRef<Promise<void> | null>(null);
+  const clientRef = useRef(params.client);
+  clientRef.current = params.client;
 
   const fireTerminated = useEffectEvent((message: string) => {
     if (terminated.current) return;
@@ -74,18 +91,33 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
 
   const send = useEffectEvent(() => {
     if (!params.enabled || terminated.current) return;
-    params.client
+    const state = params.getState();
+    const positionMs = Math.round(params.getPosition() * 1000);
+    const now = Date.now();
+    const last = beat.current;
+    // Nothing has played, so there is no session to open. A surface that only
+    // ever buffers or sits paused is not a viewing.
+    if (!opened.current && state !== 'playing') return;
+    // A background tab's timer is clamped to about one wake-up a minute, so the
+    // beat arrives after the server has reaped and logged the session. Opening
+    // another one on an unmoved playhead writes a row a minute, forever.
+    if (last && now - last.at >= SERVER_TTL_MS && positionMs === last.positionMs) return;
+    beat.current = { at: now, positionMs };
+    opened.current = true;
+    const buffered = params.getBuffered?.();
+    inFlight.current = params.client
       .pingPlayback({
         sessionId,
         itemId: params.itemId,
-        positionMs: Math.round(params.getPosition() * 1000),
+        positionMs,
         durationMs: params.durationMs,
-        state: params.getState(),
+        state,
         mode: params.mode,
         player: params.player,
         device: params.device,
         audio: params.getAudio?.(),
         subtitle: params.getSubtitle?.(),
+        ...(buffered === undefined ? {} : { bufferedMs: Math.round(buffered * 1000) }),
       })
       .catch((e: unknown) => {
         // 410 Gone → an admin terminated this session (WS fallback).
@@ -100,7 +132,7 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
     const ping = () => send();
     ping();
     const iv = setInterval(ping, 10000);
-    const { client, videoRef } = params;
+    const { videoRef } = params;
     const v = videoRef?.current;
     v?.addEventListener('play', ping);
     v?.addEventListener('pause', ping);
@@ -108,9 +140,27 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
       clearInterval(iv);
       v?.removeEventListener('play', ping);
       v?.removeEventListener('pause', ping);
-      if (!terminated.current) client.stopPlayback(sessionId).catch(() => undefined);
     };
   }, [params.client, params.enabled]);
+
+  // The stop belongs to the component's life, not to the effect above: that one
+  // re-runs when the client is swapped underneath a playing surface, and ending
+  // the session there would close a viewing nobody left. Held behind the last
+  // ping, because a stop that overtakes it ends nothing and leaves the ping
+  // behind it registering a session no one will ever close.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: unmount only; the client is read through a ref.
+  useEffect(
+    () => () => {
+      if (terminated.current || !opened.current) return;
+      const stop = () => {
+        clientRef.current.stopPlayback(sessionId).catch(() => undefined);
+      };
+      const pending = inFlight.current;
+      if (pending) void pending.then(stop, stop);
+      else stop();
+    },
+    [],
+  );
 
   // Prompt ping when the caller's play state changes (web passes React `playing`).
   useEffect(() => {

@@ -11,12 +11,16 @@
 
 mod ffmpeg;
 mod hwaccel;
+mod live;
 mod naming;
+mod progress;
 mod reclaim;
 mod session;
 mod software;
+mod window;
 
-pub use hwaccel::prime as prime_hwaccel;
+pub use hwaccel::{prime as prime_hwaccel, Detection};
+pub use live::Transcode;
 
 use std::path::Path;
 use std::sync::Arc;
@@ -57,6 +61,14 @@ impl Rung {
         match self {
             Self::P1080 => "h264-1080-",
             Self::P720 => "h264-720-",
+        }
+    }
+
+    // The token without the trailing separator the audio axis is joined by.
+    const fn label(self) -> &'static str {
+        match self {
+            Self::P1080 => "h264-1080",
+            Self::P720 => "h264-720",
         }
     }
 }
@@ -334,6 +346,19 @@ impl HlsEngine {
             .master(&key, Path::new(input), audio, mode, anchor as f64, source)
             .await?;
         Some((String::from_utf8(bytes).ok()?, start))
+    }
+
+    /// Every remux running right now, newest first: what it is producing, on
+    /// what silicon, and whether it is keeping ahead of the player.
+    pub async fn live(&self) -> Vec<Transcode> {
+        self.sessions.live().await
+    }
+
+    /// The pipeline this host settled on for re-encodes, and the sentence that
+    /// explains it. A device that is present, listed and unusable looks exactly
+    /// like no device at all, and the reason is the only thing that separates them.
+    pub fn hardware() -> &'static Detection {
+        hwaccel::detected()
     }
 
     /// A child file (init or segment) of the `(mode, anchor, audio)` session.

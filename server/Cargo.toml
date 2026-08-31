@@ -155,6 +155,9 @@ kroma-engine = { path = "crates/kroma-engine" }
 # reads, so nothing in this tree links a module or knows what one is for.
 
 [features]
+# Dev only, and never in a shipped build: the subsecond hot-patch client that
+# `dx serve --hot-patch` talks to. It opens a websocket to the dev server.
+hotpatch = ["dep:dioxus-devtools"]
 # Nothing here selects a module's build any more; see the note above `[features]`.
 default = []
 
@@ -223,6 +226,9 @@ kroma-module-manifest = { workspace = true }
 # Out-of-process module supervisor: spawn/proxy installed .kmod module processes.
 kroma-module-supervisor = { workspace = true }
 rand = "0.10"
+# The hot-patch client (feature `hotpatch`). `serve` is the feature carrying
+# serve_subsecond_with_args, the re-entrant loop boot/hot.rs runs its router in.
+dioxus-devtools = { version = "0.7", optional = true, features = ["serve"] }
 
 # Optional HTTPS listener with an auto-generated self-signed certificate (src/tls.rs).
 # `axum-server` terminates TLS with rustls while keeping axum's make-service +
@@ -285,3 +291,15 @@ strip = true
 [profile.dev]
 # Keep backtraces, drop full DWARF. debug/deps was 81 GB with the default.
 debug = "line-tables-only"
+
+# Dependencies carry no debug info at all. Only KROMA's own frames are ever read
+# in a backtrace, and the DWARF of ~470 third-party crates is what the linker
+# spends the dev loop on: dropping it took an edit under src/api from 30.1s to
+# 5.7s, and one under kroma-domain from 47.2s to 10.1s.
+[profile.dev.package."*"]
+debug = false
+
+# Build scripts and proc macros are RUN at build time and never shipped, so they
+# are the one place in a dev profile where optimising pays for itself.
+[profile.dev.build-override]
+opt-level = 3

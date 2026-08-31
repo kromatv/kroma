@@ -67,10 +67,10 @@ export function GenreTile({ genre, count, backdrop }: Readonly<GenreTileProps>) 
       sv={genreTile}
       label={label}
       style={gradient(`linear-gradient(150deg, ${from}, ${to})`)}
-      as={<RouteLink to="/genres/$id" params={{ id: genreSegment(genre.slug) }} />}
+      asChild
     >
       {({ hovered, slots }) => (
-        <>
+        <RouteLink to="/genres/$id" params={{ id: genreSegment(genre.slug) }}>
           <Art src={backdrop} hovered={hovered} style={slots.art} />
           <Box fill pointerEvents="none" style={gradient(genreTint(genre.slug))} />
           <Box
@@ -89,7 +89,7 @@ export function GenreTile({ genre, count, backdrop }: Readonly<GenreTileProps>) 
               {count}
             </Text>
           </Box>
-        </>
+        </RouteLink>
       )}
     </Focusable>
   );

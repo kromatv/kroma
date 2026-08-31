@@ -3,7 +3,7 @@
 
 import { type ReactNode, useMemo } from 'react';
 import { StyleSheet, type ViewStyle } from 'react-native';
-import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
+import { delegateOf, Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import {
@@ -141,6 +141,8 @@ interface IconButtonProps extends Omit<FocusableProps, 'children' | 'focusScale'
    *  <ButtonGroup>, where a member that grows tears the line it shares with
    *  its neighbours. */
   focusScale?: number;
+  /** Richer content in place of `icon`. Under `asChild` it is instead the one
+   *  element the button renders as, whose own children take this place. */
   children?: ReactNode;
 }
 
@@ -156,11 +158,13 @@ function IconButton({
   style,
   states,
   focusScale,
+  asChild = false,
   children,
   onFocus,
   onBlur,
   ...focusProps
 }: Readonly<IconButtonProps>) {
+  const delegate = delegateOf(asChild, children);
   const group = useGroupMember(onFocus, onBlur);
   const row = control ?? group.size;
   const shell = CONTROL[row ?? entryDefaultSize()];
@@ -182,6 +186,7 @@ function IconButton({
   return (
     <Focusable
       {...focusProps}
+      asChild={asChild}
       onFocus={group.onFocus}
       onBlur={group.onBlur}
       focusScale={focusScale ?? (group.grouped ? 1 : 1.04)}
@@ -190,12 +195,15 @@ function IconButton({
       vars={{ variant, active, focusFill }}
       style={box}
     >
-      {(state) => (
-        <>
-          {frost.layer}
-          {children ?? (icon ? <Icon name={icon} size={glyphSize} {...state.slots.icon} /> : null)}
-        </>
-      )}
+      {(state) =>
+        delegate.wrap(
+          <>
+            {frost.layer}
+            {delegate.content ??
+              (icon ? <Icon name={icon} size={glyphSize} {...state.slots.icon} /> : null)}
+          </>,
+        )
+      }
     </Focusable>
   );
 }

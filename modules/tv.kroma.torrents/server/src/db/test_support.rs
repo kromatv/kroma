@@ -6,7 +6,7 @@ use super::{apply_migrations, DownloadClientRow, DownloadRow, Pool, MIGRATIONS};
 
 // A fresh temp DB with the core schema (via `temp_pool`, so the `requests`
 // table the downloads FK points at exists) plus this module's own tables.
-pub(super) fn test_db() -> TempPool {
+pub(crate) fn test_db() -> TempPool {
     let pool = kroma_module_sdk::db::testing::temp_pool("torrents-test");
     {
         let conn = pool.get().unwrap();

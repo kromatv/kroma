@@ -18,6 +18,7 @@
 
 #[cfg(feature = "rqbit")]
 mod announce;
+pub mod bandwidth;
 // The organize vertical, moved out of the core kroma-engine crate so the core
 // depends on ZERO module crates. The acquisition vertical (search / grab / auto /
 // import) lives in its own `kroma-acquisition` crate, which depends on THIS crate

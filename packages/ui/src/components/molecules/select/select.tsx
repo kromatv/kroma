@@ -36,7 +36,7 @@ import {
 
 export type { SelectValueDetails } from './select-context';
 
-import { Indicator, Item, optionOf, type SelectItemProps } from './select-item';
+import { Indicator, Item, Media, mediaOf, optionOf, type SelectItemProps } from './select-item';
 import { SelectOptions } from './select-options';
 import {
   type SelectMultipleValueProps,
@@ -117,6 +117,10 @@ function Root(props: Readonly<SelectRootProps>) {
   const kids = useMemo(() => Children.toArray(children), [children]);
   const items = useMemo(() => kids.filter(isItem), [kids]);
   const options = useMemo(() => items.map((item) => optionOf(item.props)), [items]);
+  const media = useMemo(
+    () => new Map<string, ReactNode>(items.map((item) => [item.props.value, mediaOf(item.props)])),
+    [items],
+  );
   const picked = useMemo(
     () => options.filter((option) => values.includes(option.value)),
     [options, values],
@@ -142,8 +146,20 @@ function Root(props: Readonly<SelectRootProps>) {
   );
 
   const state = useMemo<SelectState>(
-    () => ({ values, multiple, picked, label, placeholder, open, disabled, anchor, setOpen, pick }),
-    [values, multiple, picked, label, placeholder, open, disabled, setOpen, pick],
+    () => ({
+      values,
+      multiple,
+      picked,
+      media,
+      label,
+      placeholder,
+      open,
+      disabled,
+      anchor,
+      setOpen,
+      pick,
+    }),
+    [values, multiple, picked, media, label, placeholder, open, disabled, setOpen, pick],
   );
 
   return (
@@ -227,16 +243,16 @@ function triggerName(
   return label ? `${label}: ${names}` : names;
 }
 
-/** What is picked, rendered inside the trigger: the option's icon and label, or
+/** What is picked, rendered inside the trigger: the option's mark and label, or
  *  the placeholder while nothing is. A `multiple` select names the first pick
  *  and counts the rest; assistive tech hears them all. */
 function Value() {
-  const { picked, placeholder } = useSelect('Value');
+  const { picked, placeholder, media } = useSelect('Value');
   const ink = useContext(SelectInkContext);
   const [first, ...rest] = picked;
   return (
     <>
-      {first?.icon ? <Icon name={first.icon} size={18} color="textMuted" /> : null}
+      {first ? media.get(first.value) : null}
       <Text variant="body" lines={1} style={ink}>
         {first?.label ?? placeholder ?? ''}
       </Text>
@@ -249,7 +265,7 @@ function Value() {
   );
 }
 
-const Select = { Root, Trigger, Value, Item, Indicator };
+const Select = { Root, Trigger, Value, Item, Media, Indicator };
 
 export type {
   SelectDismissReason,
