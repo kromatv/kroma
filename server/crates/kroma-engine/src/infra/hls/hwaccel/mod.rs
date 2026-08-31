@@ -62,7 +62,7 @@ pub enum HwAccel {
 const DEFAULT_RENDER_NODE: &str = "/dev/dri/renderD128";
 
 pub(super) fn render_node() -> &'static str {
-    static NODE: OnceLock<&'static str> = OnceLock::new();
+    static NODE: OnceLock<&str> = OnceLock::new();
     NODE.get_or_init(|| match std::env::var("KROMA_RENDER_NODE") {
         Ok(v) if !v.trim().is_empty() => Box::leak(v.trim().to_owned().into_boxed_str()),
         _ => DEFAULT_RENDER_NODE,

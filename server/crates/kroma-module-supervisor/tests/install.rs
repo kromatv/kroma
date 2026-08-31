@@ -20,7 +20,7 @@ fn tar_with_manifest(manifest: &str) -> Vec<u8> {
     let bytes = manifest.as_bytes();
     let mut header = tar::Header::new_gnu();
     header.set_size(bytes.len() as u64);
-    header.set_mode(0o644);
+    header.set_mode(0o600);
     header.set_cksum();
     builder
         .append_data(&mut header, "module.json", bytes)

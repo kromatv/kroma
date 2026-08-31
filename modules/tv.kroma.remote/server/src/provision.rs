@@ -101,7 +101,7 @@ pub async fn download(data_dir: &Path) -> Result<PathBuf, String> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(&dest, std::fs::Permissions::from_mode(0o755));
+        let _ = std::fs::set_permissions(&dest, std::fs::Permissions::from_mode(0o700));
     }
 
     // Validate: it must actually run, else discard the (partial/corrupt) file.

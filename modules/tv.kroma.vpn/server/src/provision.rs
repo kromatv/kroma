@@ -95,7 +95,7 @@ async fn download(data_dir: &Path) -> Result<PathBuf, String> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
-        let _ = std::fs::set_permissions(&dest, std::fs::Permissions::from_mode(0o755));
+        let _ = std::fs::set_permissions(&dest, std::fs::Permissions::from_mode(0o700));
     }
 
     let runs = Command::new(&dest)

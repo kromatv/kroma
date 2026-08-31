@@ -914,3 +914,26 @@ async fn an_official_catalog_that_reports_its_own_outage_is_a_failure_not_an_emp
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert!(message.contains("is unreachable"), "{message}");
 }
+
+#[tokio::test]
+async fn transcodes_names_the_silicon_even_when_nothing_is_re_encoding() {
+    let t = test_app();
+    let (status, body) = get(&t.app, "/api/admin/transcodes", Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["sessions"].as_array().map(Vec::len), Some(0));
+    assert_eq!(body["encoding"], json!(0));
+    assert_eq!(body["cacheBytes"], json!(0));
+
+    let hardware = &body["hardware"];
+    assert!(hardware["accel"].as_str().is_some_and(|a| !a.is_empty()));
+    assert!(hardware["reason"].as_str().is_some_and(|r| !r.is_empty()));
+    assert!(hardware["accelerated"].is_boolean());
+}
+
+#[tokio::test]
+async fn transcodes_is_admin_only() {
+    let t = test_app();
+    let m = member(&t, "transcodes-member");
+    let (status, _) = get(&t.app, "/api/admin/transcodes", Some(&m)).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}

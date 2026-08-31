@@ -50,7 +50,7 @@ fn install_module(dir: &Path, id: &str, marker: &Path) {
     )
     .unwrap();
     use std::os::unix::fs::PermissionsExt;
-    std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o700)).unwrap();
 }
 
 fn ready_flag(dir: &Path, id: &str) -> PathBuf {
@@ -147,7 +147,7 @@ fn stop_kills_a_module_that_ignores_the_signal() {
     )
     .unwrap();
     use std::os::unix::fs::PermissionsExt;
-    std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o700)).unwrap();
 
     let sup = supervisor(dir);
     sup.spawn("com.example.deaf").expect("spawn");

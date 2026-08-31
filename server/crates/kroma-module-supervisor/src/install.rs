@@ -105,7 +105,7 @@ impl Supervisor {
                 use std::os::unix::fs::PermissionsExt;
                 let bin = dest.join(MODULE_BIN);
                 if bin.exists() {
-                    std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o755))?;
+                    std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o700))?;
                 }
             }
             self.write_origin(&id, origin.0, origin.1);

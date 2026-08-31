@@ -34,7 +34,7 @@ fn ytdlp_shim_dir() -> Option<PathBuf> {
     if !stub.exists() {
         std::fs::write(&stub, "#!/bin/sh\nexit 0\n").ok()?;
     }
-    std::fs::set_permissions(&stub, std::fs::Permissions::from_mode(0o755)).ok()?;
+    std::fs::set_permissions(&stub, std::fs::Permissions::from_mode(0o700)).ok()?;
     Some(dir)
 }
 
