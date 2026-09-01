@@ -102,6 +102,19 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # Read the checkout's state BEFORE anything stamps it, and hand the answer
+      # to @kroma/build-info. The stamp below rewrites tauri.conf.json, so git
+      # would otherwise mark every official installer `-dirty` for a change the
+      # About screen's `version` row already reports.
+      - name: Record tree state before stamping
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "KROMA_BUILD_DIRTY=1" >> "$GITHUB_ENV"
+          else
+            echo "KROMA_BUILD_DIRTY=0" >> "$GITHUB_ENV"
+          fi
+
       # Stamp the release version into the installers so a desktop build always
       # matches the release (a stable tag is X.Y.Z).
       # Skipped only for a bare build-only dispatch (channel none).

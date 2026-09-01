@@ -155,6 +155,17 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: ./clients/desktop/scripts/fetch-libmpv-windows.ps1
+      # Read the checkout's state BEFORE anything stamps it: the steps around this
+      # one rewrite tauri.conf.json (and stage a DLL), so git would otherwise mark
+      # every build `-dirty` for changes the version row already reports.
+      - name: Record tree state before stamping
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "KROMA_BUILD_DIRTY=1" >> "$GITHUB_ENV"
+          else
+            echo "KROMA_BUILD_DIRTY=0" >> "$GITHUB_ENV"
+          fi
       - name: Stage libmpv-2.dll for bundling (Windows)
         if: runner.os == 'Windows'
         shell: pwsh

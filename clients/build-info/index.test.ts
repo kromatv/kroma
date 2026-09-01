@@ -157,6 +157,10 @@ describe('productVersion', () => {
 });
 
 describe('collectBuildInfo', { timeout: 30_000 }, () => {
+  afterEach(() => {
+    delete process.env.KROMA_BUILD_DIRTY;
+  });
+
   it('reports the commit, branch and remote of a real checkout', () => {
     const dir = project({ git: true, remote: 'git@github.com:owner/repo.git' });
     const info = collectBuildInfo(dir);
@@ -173,6 +177,32 @@ describe('collectBuildInfo', { timeout: 30_000 }, () => {
     expect(collectBuildInfo(dir).dirty).toBe(false);
 
     writeFileSync(join(dir, 'a.txt'), 'changed');
+    expect(collectBuildInfo(dir).dirty).toBe(true);
+  });
+
+  it('believes a release pipeline that measured the checkout before stamping it', () => {
+    const dir = project({ git: true });
+    writeFileSync(join(dir, 'a.txt'), 'the version stamp');
+
+    process.env.KROMA_BUILD_DIRTY = '0';
+
+    expect(collectBuildInfo(dir).dirty).toBe(false);
+  });
+
+  it('still reports dirt the pipeline declared', () => {
+    const dir = project({ git: true });
+
+    process.env.KROMA_BUILD_DIRTY = '1';
+
+    expect(collectBuildInfo(dir).dirty).toBe(true);
+  });
+
+  it('ignores a declaration it cannot read, and asks git instead', () => {
+    const dir = project({ git: true });
+    writeFileSync(join(dir, 'a.txt'), 'changed');
+
+    process.env.KROMA_BUILD_DIRTY = 'yes';
+
     expect(collectBuildInfo(dir).dirty).toBe(true);
   });
 

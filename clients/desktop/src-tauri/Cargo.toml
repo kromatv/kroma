@@ -4,7 +4,7 @@
 
 [package]
 name = "kroma-desktop"
-version = "0.1.3"
+version = "0.1.39"
 description = "KROMA Steam Deck client (Tauri shell over @kroma/tv, native mpv playback)"
 edition = "2021"
 # Tauri v2's dependency graph (darling / time / serde_with) needs >= 1.88.
@@ -37,6 +37,8 @@ serde_json = "1"
 #              libmpv is the PRIMARY engine but the mpv BINARY (mpv.rs) stays as an
 #              automatic fallback when the in-process GPU context can't initialise
 #              (the Deck's fragile EGL/Wayland stack) - so the sidecar is still bundled.
+#              On Linux the in-process engine is opt-in and has NO UI overlay (see
+#              libmpv_linux.rs); the sidecar is what the player chrome draws over.
 # Disable for a lean webview-only build (`--no-default-features`): the in-page <video>
 # path then handles playback (no libmpv link/bundle needed).
 default = ["libmpv"]
@@ -73,6 +75,10 @@ libmpv2 = { version = "6.0.0", optional = true }
 # so `WebviewWindow::window_handle()` returns a matching RawWindowHandle). Only used
 # in a libmpv build; harmless otherwise.
 raw-window-handle = "0.6"
+# The window's X11 shape (video_hole.rs): GDK's shape_combine_region cuts the
+# picture's box out of the window so the mpv plane below shows through. 0.18 is
+# Tauri v2's own gtk, so `WebviewWindow::gtk_window()` hands back a matching type.
+gtk = "0.18"
 # Process-group kill of the mpv sidecar tree (the AppImage runtime execs the real
 # mpv as a grandchild, so Child::kill alone orphans the player).
 libc = "0.2"

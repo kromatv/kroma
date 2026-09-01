@@ -1,7 +1,15 @@
+use std::io::{Read, Write};
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
-use std::time::Duration;
+use std::time::{Duration, Instant};
+
+use serde_json::Value;
+
+// A rung gets this long to configure its video output once IPC answers.
+const VO_PROBE_WINDOW: Duration = Duration::from_secs(6);
+// Ours, so a reply is told apart from mpv's events and its own startup chatter.
+const VO_PROBE_ID: u64 = 9001;
 
 const BASE_ARGS: &[&str] = &[
     "--idle=yes",
@@ -164,9 +172,16 @@ pub(super) fn start_mpv(binary: &str, sock: &Path) -> Result<(Child, UnixStream)
         };
 
         match await_socket(&mut child, sock) {
-            Some(stream) => {
+            Some(stream) if await_video_output(sock) => {
                 eprintln!("KROMA: mpv up [{}]", cfg.join(" "));
                 return Ok((child, stream));
+            }
+            Some(_) => {
+                kill_tree(&mut child);
+                eprintln!(
+                    "KROMA: mpv answered but never configured a video output [{}]; trying a more compatible one",
+                    cfg.join(" ")
+                );
             }
             None => {
                 kill_tree(&mut child);
@@ -178,6 +193,76 @@ pub(super) fn start_mpv(binary: &str, sock: &Path) -> Result<(Child, UnixStream)
         }
     }
     Err("socket-timeout")
+}
+
+// An answering IPC socket does not mean a rung can draw. `--vo=gpu-next` on a
+// driver stack with no usable GL context keeps running with `vo-configured`
+// false forever, so the socket alone settles the ladder on an output that never
+// shows a frame (measured on SteamOS 3.8, where the next rung down does work).
+// `--force-window=yes` configures the output at startup, so a working rung
+// answers `true` while still idle - but only once it has finished initialising,
+// which is why this waits for `true` rather than trusting the first reading.
+fn await_video_output(sock: &Path) -> bool {
+    // A SECOND connection, never the one handed back to the caller: probing on
+    // the app's own stream would consume the events its pump is there to read
+    // and leave a read timeout on a file description the pump blocks in.
+    let Ok(probe) = UnixStream::connect(sock) else {
+        return true;
+    };
+    if probe
+        .set_read_timeout(Some(Duration::from_millis(250)))
+        .is_err()
+    {
+        return true;
+    }
+    // An mpv too old to know the property never answers one, and a rung that
+    // cannot be measured must not be failed on a guess.
+    poll_vo_configured(&probe).unwrap_or(true)
+}
+
+fn poll_vo_configured(stream: &UnixStream) -> Option<bool> {
+    let probe = format!(
+        "{{\"command\":[\"get_property\",\"vo-configured\"],\"request_id\":{VO_PROBE_ID}}}\n"
+    );
+    let deadline = Instant::now() + VO_PROBE_WINDOW;
+    let mut pending = String::new();
+    let mut buf = [0u8; 2048];
+    let mut answered = None;
+    while Instant::now() < deadline {
+        if (&*stream).write_all(probe.as_bytes()).is_err() {
+            break;
+        }
+        match (&*stream).read(&mut buf) {
+            Ok(0) => break,
+            Ok(n) => pending.push_str(&String::from_utf8_lossy(&buf[..n])),
+            Err(_) => continue,
+        }
+        while let Some(end) = pending.find('\n') {
+            let line: String = pending.drain(..=end).collect();
+            if let Some(state) = vo_configured_reply(&line) {
+                // A `false` here is only "not yet": keep asking until the window
+                // closes, or the first rung would be failed for being slow.
+                if state {
+                    return Some(true);
+                }
+                answered = Some(false);
+            }
+        }
+    }
+    answered
+}
+
+// `Some(state)` for a reply to our own probe, `None` for anything else on the
+// wire: an event, another reply, or an error because the property is unknown.
+fn vo_configured_reply(line: &str) -> Option<bool> {
+    let msg: Value = serde_json::from_str(line.trim()).ok()?;
+    if msg.get("request_id")?.as_u64()? != VO_PROBE_ID {
+        return None;
+    }
+    if msg.get("error")?.as_str()? != "success" {
+        return None;
+    }
+    msg.get("data")?.as_bool()
 }
 
 // The ~15s window is generous because a cold sidecar launch unpacks ~50 MB
@@ -213,4 +298,44 @@ pub(super) fn kill_tree(child: &mut Child) {
     }
     signal_group(pgid, libc::SIGKILL);
     let _ = child.wait();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::vo_configured_reply;
+
+    #[test]
+    fn reads_a_live_video_output_out_of_our_own_reply() {
+        let line = r#"{"data":true,"request_id":9001,"error":"success"}"#;
+
+        assert_eq!(vo_configured_reply(line), Some(true));
+    }
+
+    #[test]
+    fn reads_an_output_that_has_not_come_up_yet() {
+        let line = r#"{"data":false,"request_id":9001,"error":"success"}"#;
+
+        assert_eq!(vo_configured_reply(line), Some(false));
+    }
+
+    #[test]
+    fn ignores_a_reply_meant_for_someone_else() {
+        let line = r#"{"data":true,"request_id":1,"error":"success"}"#;
+
+        assert_eq!(vo_configured_reply(line), None);
+    }
+
+    #[test]
+    fn ignores_an_event_line() {
+        let line = r#"{"event":"file-loaded"}"#;
+
+        assert_eq!(vo_configured_reply(line), None);
+    }
+
+    #[test]
+    fn ignores_an_mpv_too_old_to_know_the_property() {
+        let line = r#"{"request_id":9001,"error":"property not found"}"#;
+
+        assert_eq!(vo_configured_reply(line), None);
+    }
 }

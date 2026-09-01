@@ -299,7 +299,9 @@ function Stage({
   );
 }
 
-const STAGE_ID = 'kroma-player-stage';
+/** The picture box's DOM id: what web CSS sizes an in-page `<video>` through,
+ * and what a shell measures to place a native plane behind the page. */
+export const STAGE_ID = 'kroma-player-stage';
 
 const s = styles({
   stage: { fill: true, z: 2, overflow: 'hidden' },

@@ -1676,7 +1676,7 @@ dependencies = [
 
 [[package]]
 name = "kroma-desktop"
-version = "0.1.3"
+version = "0.1.39"
 dependencies = [
  "cc",
  "libc",

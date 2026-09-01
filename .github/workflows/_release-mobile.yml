@@ -87,6 +87,19 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # Read the checkout's state BEFORE the stamp below rewrites the tracked
+      # app.json, or @kroma/build-info (called from app.config.ts during
+      # prebuild) marks every official build `-dirty` for a change the version
+      # it stamped already reports.
+      - name: Record tree state before stamping
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "KROMA_BUILD_DIRTY=1" >> "$GITHUB_ENV"
+          else
+            echo "KROMA_BUILD_DIRTY=0" >> "$GITHUB_ENV"
+          fi
+
       - name: Stamp version + build number into app.json
         run: bun .github/scripts/stamp-mobile-version.ts "${{ inputs.triplet }}" "${{ inputs.build }}"
 
@@ -267,6 +280,17 @@ jobs:
           # skips prebuild and silently rebuilds the OLD project: the arm64
           # fix would have been cached straight over.
           key: ios-mobile-v3-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'clients/mobile/package.json', 'clients/mobile/app.json', 'clients/mobile/app.config.ts', 'clients/mobile/plugins/**') }}
+
+      # Read the checkout's state BEFORE the stamp below rewrites the tracked
+      # app.json, or the build reports itself `-dirty` (see the android job).
+      - name: Record tree state before stamping
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "KROMA_BUILD_DIRTY=1" >> "$GITHUB_ENV"
+          else
+            echo "KROMA_BUILD_DIRTY=0" >> "$GITHUB_ENV"
+          fi
 
       # AFTER the cache, deliberately. This rewrites app.json with a build
       # number derived from the clock, so hashing it would change the cache key

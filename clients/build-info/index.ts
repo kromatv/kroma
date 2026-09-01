@@ -86,6 +86,21 @@ function repoRootOf(projectRoot: string): string {
   return path.resolve(projectRoot, '..', '..');
 }
 
+/**
+ * Whether the tree the binary was built from differs from its commit.
+ *
+ * `KROMA_BUILD_DIRTY` (`0`/`1`) wins when set, because a release pipeline stamps
+ * the version into the tree BEFORE the bundler runs: git would then call every
+ * official build dirty for a change the `version` field already reports. CI
+ * measures the checkout before it stamps and passes the answer down.
+ */
+function treeIsDirty(projectRoot: string): boolean {
+  const declared = process.env.KROMA_BUILD_DIRTY;
+  if (declared === '0') return false;
+  if (declared === '1') return true;
+  return Boolean(git('status --porcelain', projectRoot));
+}
+
 export function collectBuildInfo(
   projectRoot: string,
   overrides?: { version?: string | null },
@@ -102,7 +117,7 @@ export function collectBuildInfo(
     commit: git('rev-parse --short HEAD', projectRoot),
     commitFull: git('rev-parse HEAD', projectRoot),
     branch: git('rev-parse --abbrev-ref HEAD', projectRoot),
-    dirty: Boolean(git('status --porcelain', projectRoot)),
+    dirty: treeIsDirty(projectRoot),
     buildDate: new Date().toISOString(),
     repository: browsableRemote(git('config --get remote.origin.url', projectRoot)),
   };

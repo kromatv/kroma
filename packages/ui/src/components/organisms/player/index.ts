@@ -1,6 +1,7 @@
 // One player chrome for web + TV. Styled with Tailwind, legacy-safe: flex only,
 // no /opacity (see ./tw).
 
+export { PLAYER_ROOT_ID } from './hooks/use-idle-cursor';
 export {
   AUDIO_FILTER_KEY,
   audioFilterLabels,
@@ -36,7 +37,9 @@ export type { CreditsCardItem } from './parts/credits-card';
 // The width the end-of-film hero is drawn at, so a host asks for art that size.
 export { POST_PLAY_ART_W, type PostPlayItem } from './parts/post-play';
 export type { SubtitleGenBundle, SubtitleGenRequest } from './parts/settings-panel/settings/gen';
+export { STAGE_ID as PLAYER_STAGE_ID } from './parts/stage/stage';
 export { StatsPanel } from './parts/stats-panel';
+export { SUBTITLE_LAYER_ID as PLAYER_SUBTITLE_ID } from './parts/subtitle-renderer/subtitle-renderer';
 export type { SurfaceRadius } from './parts/surface-radius';
 export { SurfaceRadiusProvider, useSurfaceRadius } from './parts/surface-radius';
 // The width the sheet draws a card at, so a host asks for artwork that size.

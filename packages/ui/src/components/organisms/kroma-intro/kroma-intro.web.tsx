@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { SAFETY_MS, SAFETY_SLACK_MS, VIDEO_SOURCES } from './constants';
+import { HIDDEN_RECHECKS, SAFETY_MS, SAFETY_SLACK_MS, VIDEO_SOURCES } from './constants';
 import { CssIntro } from './css-intro';
 import { IntroShell } from './intro-shell';
 import { useIntroExit } from './use-intro-exit';
@@ -47,19 +47,24 @@ const POSTER =
 // Module-level so the recheck can re-arm itself: an effect event may not call
 // itself from its own body. A hidden tab defers the media fetch entirely, so
 // instead of burning the intro while parked in the background, the timer
-// re-checks once per safety window.
-function armStallSafety(opts: {
-  video: { current: HTMLVideoElement | null };
-  arm: (ms: number, run: () => void) => void;
-  exit: () => void;
-  looping: () => boolean;
-}): void {
+// re-checks once per safety window - HIDDEN_RECHECKS times, then hands off
+// anyway rather than leaving the overlay over the app for good.
+function armStallSafety(
+  opts: {
+    video: { current: HTMLVideoElement | null };
+    arm: (ms: number, run: () => void) => void;
+    exit: () => void;
+    looping: () => boolean;
+  },
+  rechecksLeft = HIDDEN_RECHECKS,
+): void {
   if (opts.looping()) return;
   const d = opts.video.current?.duration;
   const ms = d && Number.isFinite(d) && d > 0 ? d * 1000 + SAFETY_SLACK_MS : SAFETY_MS;
   opts.arm(ms, () => {
     const v = opts.video.current;
-    if (document.hidden && v?.readyState === 0) armStallSafety(opts);
+    const stillParked = document.hidden && v?.readyState === 0;
+    if (stillParked && rechecksLeft > 0) armStallSafety(opts, rechecksLeft - 1);
     else opts.exit();
   });
 }
@@ -184,6 +189,7 @@ function VideoIntro({
     if (document.hidden) {
       pendingVisible = true;
       document.addEventListener('visibilitychange', onVisible);
+      rearmSafety();
     } else {
       begin();
     }

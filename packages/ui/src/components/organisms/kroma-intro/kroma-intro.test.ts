@@ -2,7 +2,7 @@
 import { act, cleanup, render } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { EXIT_MS } from './constants';
+import { EXIT_MS, HIDDEN_RECHECKS, SAFETY_MS } from './constants';
 import { KromaIntro } from './index';
 
 const play = vi.fn<() => Promise<void>>();
@@ -100,5 +100,54 @@ describe('KromaIntro (film path)', () => {
       video.dispatchEvent(new Event('error'));
     });
     expect(container.querySelector('video')).toBeNull();
+  });
+});
+
+describe('KromaIntro (mounted while the page is hidden)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    stubMedia();
+    play.mockReset();
+    play.mockResolvedValue(undefined);
+    Object.defineProperty(HTMLMediaElement.prototype, 'duration', {
+      configurable: true,
+      writable: true,
+      value: Number.NaN,
+    });
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true });
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+  });
+
+  it('keeps the film waiting while the page is still parked', async () => {
+    const onDone = vi.fn();
+
+    await mount(onDone);
+    act(() => vi.advanceTimersByTime(SAFETY_MS + EXIT_MS));
+
+    expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it('hands off anyway once the re-checks run out', async () => {
+    const onDone = vi.fn();
+
+    await mount(onDone);
+    act(() => vi.advanceTimersByTime((HIDDEN_RECHECKS + 1) * SAFETY_MS + EXIT_MS));
+
+    expect(onDone).toHaveBeenCalledTimes(1);
+  });
+
+  it('plays the film as soon as the page is shown', async () => {
+    await mount(vi.fn());
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false });
+
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    expect(play).toHaveBeenCalled();
   });
 });

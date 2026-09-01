@@ -210,6 +210,7 @@ export function SubtitleRenderer({
   // Multi-line cues keep their hard breaks, which <Text> already does for newlines.
   return (
     <Box
+      nativeID={SUBTITLE_LAYER_ID}
       absolute
       left={0}
       right={0}
@@ -234,3 +235,8 @@ export function SubtitleRenderer({
     </Box>
   );
 }
+
+/** The cue band's DOM id, present only while a cue is on screen. A shell drawing
+ * the picture on a plane behind the page measures it to keep the band out of the
+ * plane's way. */
+export const SUBTITLE_LAYER_ID = 'kroma-player-subtitles';

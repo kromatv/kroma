@@ -1,8 +1,16 @@
 // In-process libmpv engine for Linux (Steam Deck / desktop). Mirrors mpv.rs /
 // libmpv_win.rs's Tauri surface (`mpv_load` / `mpv_command` + `mpv://…` events) so
 // the frontend `MpvEngine` drives it unchanged. On X11, mpv embeds via `--wid` into
-// the GTK window's X11 XID and its gpu VO renders a child surface behind the
-// transparent webview - in-process, no second window or IPC socket.
+// the GTK window's X11 XID - in-process, no second window or IPC socket.
+//
+// It does NOT render *behind* the webview: `--wid` hands mpv the same X drawable
+// the webview paints into, and mpv repaints all of it, so nothing the UI draws
+// survives. Measured on SteamOS 3.8: with the film paused, the keys that raise the
+// transport changed zero pixels. So this path plays video but has no overlay - no
+// controls, and no subtitles either, because `sub-auto=no` / `sid=no` in
+// libmpv_shared leave subtitles to the UI layer that is no longer visible. Only the
+// two-window sidecar overlays today; a single-window overlay needs mpv's render API
+// (render into an FBO the shell composites) rather than `--wid`.
 //
 // This path is guarded rather than primary: the mpv BINARY (mpv.rs) exists because
 // the Deck's EGL/Wayland GPU stack is fragile, and a separate process can walk a VO
@@ -26,6 +34,13 @@ use crate::libmpv_shared::{self, MpvSlot};
 
 pub type InprocState = MpvSlot;
 
+fn vo_choice() -> String {
+    match std::env::var("KROMA_MPV_VO") {
+        Ok(vo) if !vo.trim().is_empty() => vo.trim().to_owned(),
+        _ => "gpu".to_owned(),
+    }
+}
+
 /// Build the engine embedded in the X11 window `xid` and spawn the event pump. Call
 /// once the window exists. Returns whether the engine came up, so the caller falls
 /// back to the mpv binary on failure (the Deck must never be left without a player).
@@ -33,8 +48,10 @@ pub fn init(app: &AppHandle, xid: u64) -> bool {
     let mpv = match Mpv::with_initializer(|init| {
         init.set_property("wid", xid as i64)?;
         // VA-API (the Deck's APU) for HEVC/H264, dav1d for AV1. `auto-safe` avoids
-        // the copy-back hwdec modes that flicker.
-        init.set_property("vo", "gpu")?;
+        // the copy-back hwdec modes that flicker. `KROMA_MPV_VO` pins the output the
+        // same way it does for the binary backend, so a driver stack that cannot
+        // bring up `gpu` has one knob rather than two.
+        init.set_property("vo", vo_choice().as_str())?;
         init.set_property("hwdec", "auto-safe")?;
         libmpv_shared::apply_common_options(&init)
     }) {

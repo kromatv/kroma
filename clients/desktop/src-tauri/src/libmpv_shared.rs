@@ -75,6 +75,11 @@ pub fn apply_common_options(init: &MpvInitializer) -> MpvResult<()> {
     // page. Every built-in script has to be named individually - `load-scripts`
     // governs only the USER scripts from the config directory, not the ones mpv
     // ships, so setting it alone leaves all of the below running.
+    // Tolerate an option this libmpv has never heard of: Linux links the SYSTEM
+    // libmpv, which lags the pinned 0.41 sidecar (SteamOS 3.8 ships 0.40), and
+    // aborting the whole init over one missing name is how the in-process engine
+    // gave up and fell back to the sidecar there. An option that does not exist
+    // names a script that does not run, which is the state being asked for.
     for option in [
         "load-scripts",
         "load-stats-overlay",
@@ -87,9 +92,18 @@ pub fn apply_common_options(init: &MpvInitializer) -> MpvResult<()> {
         "osc",
         "ytdl",
     ] {
-        init.set_property(option, "no")?;
+        match init.set_property(option, "no") {
+            Ok(()) => {}
+            Err(e) if is_unknown_option(&e) => {}
+            Err(e) => return Err(e),
+        }
     }
     Ok(())
+}
+
+// mpv's MPV_ERROR_OPTION_NOT_FOUND / MPV_ERROR_PROPERTY_NOT_FOUND.
+fn is_unknown_option(error: &libmpv2::Error) -> bool {
+    matches!(error, libmpv2::Error::Raw(-5 | -8))
 }
 
 /// Observe the properties the frontend `MpvEngine` reacts to. The ids (1..5)
