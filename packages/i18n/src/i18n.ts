@@ -1,11 +1,16 @@
+import type { NamespaceCatalogs } from './announce';
 import { resolveInChain, translateChain } from './chain';
 import { activeKeyInspector, onOverridesChange, overridesRevision } from './dev-overrides';
+import { Namespaces } from './namespaces';
 import { CatalogStore, type SCHEMA_KEY } from './store';
 import type { Catalog, Catalogs, PluralRule, TVars } from './types';
 
 /** A catalog's messages: everything but the `$schema` pointer. Distinct from
  *  `Messages` in ./registry, which is the augmented map for the whole app. */
 export type CatalogMessages<C> = Omit<C, typeof SCHEMA_KEY>;
+
+/** Namespaces offered for fetching: by name, then by locale. */
+export type LazyCatalogs = Readonly<Record<string, NamespaceCatalogs>>;
 
 /** A translator bound to one scope: the scope's own keys are not knowable from
  *  here, so any string is accepted while the base keys still autocomplete. */
@@ -25,9 +30,18 @@ export interface I18n<L extends string, M extends Catalog> {
   /** Add a scope's catalogs at runtime, as a module being loaded would.
    *  Returns a disposer; adding the same scope again replaces it. */
   add(scope: string, catalogs: Catalogs<string>): () => void;
-  /** Whether the base catalogs declare `key`. */
-  has(key: string): boolean;
-  /** A snapshot that changes whenever a scope is added or removed. */
+  /** A namespace the running code needs, as the chunk carrying it says on
+   *  evaluation: a catalog given outright lands now, a loader is fetched for
+   *  every warmed locale. */
+  register(namespace: string, catalogs: NamespaceCatalogs): void;
+  /** Fetch every needed namespace in `locale`, now and as more are registered.
+   *  The provider calls it for the locale it renders. */
+  warm(locale: L): void;
+  /** What is still being fetched for `locale`, to suspend on; `null` when
+   *  everything needed has landed. */
+  pending(locale: L): Promise<void> | null;
+  /** A snapshot that changes whenever a scope is added or removed, or a
+   *  locale's fetches have all landed. */
   version(): number;
   subscribe(listener: () => void): () => void;
 }
@@ -38,17 +52,10 @@ export interface I18nConfig<C extends Record<string, Record<string, string>>> {
   /** Override plural category selection. Only needed where `Intl.PluralRules`
    *  is absent or disagrees with a peer implementation you have to match. */
   plural?: PluralRule;
+  /** Namespaces not shipped in `catalogs`, fetched per locale when a key of
+   *  theirs misses. */
+  lazy?: LazyCatalogs;
 }
-
-/** What {@link Register} should be augmented with for a given instance:
- *
- *  ```ts
- *  declare module '@kroma/i18n' {
- *    interface Register extends InferRegister<typeof i18n> {}
- *  }
- *  ``` */
-export type InferRegister<I> =
-  I extends I18n<infer L, infer M> ? { locale: L; messages: M } : never;
 
 /**
  * Build a translator from JSON catalogs.
@@ -65,8 +72,22 @@ export function createI18n<
   type L = keyof C & string;
   type K = keyof CatalogMessages<C[D]> & string;
 
-  const { catalogs, defaultLocale, plural } = config;
+  const { catalogs, defaultLocale, plural, lazy } = config;
   const store = new CatalogStore<L>(catalogs as unknown as Catalogs<L>, defaultLocale as L);
+  const namespaces = new Namespaces(
+    {
+      extend: (locale, catalog) => store.extend({ [locale]: catalog }),
+      changed: () => store.changed(),
+    },
+    catalogs,
+  );
+  for (const [namespace, sources] of Object.entries(lazy ?? {})) {
+    namespaces.announce(namespace, sources, false);
+  }
+  const missed = (locale: string, key: string): string => {
+    namespaces.missed(key, locale);
+    return key;
+  };
 
   type Bound = (key: K | (string & {}), vars?: TVars) => string;
 
@@ -84,7 +105,7 @@ export function createI18n<
       bound.clear();
       revision = current;
     }
-    const cacheKey = scope === undefined ? locale : `${locale}\u0000${scope}`;
+    const cacheKey = scope === undefined ? locale : `${locale} ${scope}`;
     let fn = bound.get(cacheKey);
     if (!fn) {
       const inspector = activeKeyInspector();
@@ -98,10 +119,11 @@ export function createI18n<
               plural,
             );
             const from = at === -1 ? undefined : store.sources(locale, scope)[at];
-            return inspector({ key, from, locale, text: text ?? key, vars });
+            return inspector({ key, from, locale, text: text ?? missed(locale, key), vars });
           }
         : (key, vars) =>
-            translateChain(store.chain(locale, scope), locale, key, vars, plural) ?? key;
+            translateChain(store.chain(locale, scope), locale, key, vars, plural) ??
+            missed(locale, key);
       bound.set(cacheKey, fn);
     }
     return fn;
@@ -118,7 +140,9 @@ export function createI18n<
     translate: (locale, key, vars) => translator(locale)(key, vars),
     translator,
     add: (scope, added) => store.add(scope, added),
-    has: (key) => store.has(key),
+    register: (namespace, announced) => namespaces.announce(namespace, announced, true),
+    warm: (locale) => namespaces.warm(locale),
+    pending: (locale) => namespaces.pending(locale),
     version: () => store.version() + overridesRevision(),
     subscribe: (listener) => {
       const stopStore = store.subscribe(listener);

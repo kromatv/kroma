@@ -1,0 +1,19 @@
+{
+  "offline.cancelDownload": "Cancel download",
+  "offline.download": "Download",
+  "offline.downloadSeason": "Download season",
+  "offline.downloaded": "Downloaded",
+  "offline.downloading": "Downloading {percent}%",
+  "offline.downloads": "Downloads",
+  "offline.empty": "No downloads yet. Use the download button on a movie or episode to watch it offline.",
+  "offline.failed": "Download failed. Your server may need an update.",
+  "offline.pause": "Pause",
+  "offline.paused": "Paused",
+  "offline.queued": "Waiting",
+  "offline.remove": "Remove download",
+  "offline.resume": "Resume",
+  "offline.storageFree": "Free",
+  "offline.storageOther": "Used",
+  "offline.storageUsed": "{size} used",
+  "offline.unavailable": "Not available offline on this device"
+}

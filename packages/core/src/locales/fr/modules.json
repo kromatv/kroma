@@ -1,0 +1,16 @@
+{
+  "modules.accessDenied": "Accès refusé",
+  "modules.errorDetails": "Détails",
+  "modules.errorDisabled": "Ce module est désactivé.",
+  "modules.errorDisabledHint": "Activez-le dans Modules pour utiliser cette page.",
+  "modules.errorNotRunning": "Le module est installé mais son processus ne tourne pas.",
+  "modules.errorNotRunningHint": "Il n'a peut-être pas réussi à démarrer. Le redémarrer résout généralement le problème.",
+  "modules.errorServerDown": "Le serveur ne répond pas.",
+  "modules.errorServerDownHint": "Il redémarre peut-être, ou il est arrêté. La page fonctionnera de nouveau une fois qu'il sera revenu.",
+  "modules.errorStatus": "HTTP {status}",
+  "modules.loadFailed": "Cette page n'a pas pu être chargée",
+  "modules.loadFailedHint": "Le module est installé ; ses données n'ont pas répondu.",
+  "modules.sectionDenied": "Tu n'as pas la permission d'accéder à cette section.",
+  "modules.unavailable": "Module indisponible",
+  "modules.unavailableHint": "Il n'est pas installé, ou il a été désactivé."
+}

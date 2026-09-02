@@ -1,0 +1,16 @@
+{
+  "modules.accessDenied": "Access denied",
+  "modules.errorDetails": "Details",
+  "modules.errorDisabled": "This module is disabled.",
+  "modules.errorDisabledHint": "Enable it under Modules to use this page.",
+  "modules.errorNotRunning": "The module is installed but its process is not running.",
+  "modules.errorNotRunningHint": "It may have failed to start. Restarting it usually fixes this.",
+  "modules.errorServerDown": "The server is not responding.",
+  "modules.errorServerDownHint": "It may be restarting or stopped. The page will work again once it is back.",
+  "modules.errorStatus": "HTTP {status}",
+  "modules.loadFailed": "This page could not be loaded",
+  "modules.loadFailedHint": "The module is installed; its data did not answer.",
+  "modules.sectionDenied": "You don't have permission to access this section.",
+  "modules.unavailable": "Module unavailable",
+  "modules.unavailableHint": "It is not installed, or it has been turned off."
+}

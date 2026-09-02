@@ -19,7 +19,7 @@ vi.mock('@tanstack/react-start/plugin/vite', async (importOriginal) => {
   };
 });
 
-const EN = fileURLToPath(new URL('../../core/src/locales/en.json', import.meta.url));
+const EN = fileURLToPath(new URL('../../core/src/locales/en/admin.json', import.meta.url));
 
 function siteRoot(files: Record<string, string> = {}): string {
   const root = mkdtempSync(join(tmpdir(), 'kroma-site-'));
@@ -34,12 +34,26 @@ function siteRoot(files: Record<string, string> = {}): string {
 const config = (root: string, options?: KromaSiteOptions): UserConfig =>
   kromaSite(pathToFileURL(join(root, 'vite.config.ts')).href, options);
 
-const plugins = (c: UserConfig): Plugin[] => (c.plugins as Plugin[]).flat(9).filter(Boolean);
+// `.filter` on the name, not on truthiness: the React compiler pass is an
+// async plugin, and Vite awaits the promise the array holds for it.
+const plugins = (c: UserConfig): Plugin[] =>
+  (c.plugins as Plugin[]).flat(9).filter((plugin) => plugin?.name);
 
 const names = (c: UserConfig): string[] => plugins(c).map((p) => p.name);
 
+// What `kroma()` folds into the config through its `config` hook, as Vite
+// would merge it: the site's own config carries none of it directly.
+function shared(c: UserConfig): UserConfig {
+  const hook = plugins(c).find((p) => p.name === 'kroma:shell')?.config as (
+    this: unknown,
+    user: UserConfig,
+    env: unknown,
+  ) => UserConfig;
+  return hook.call(null, c, { command: 'serve', mode: 'development' });
+}
+
 const aliases = (c: UserConfig) =>
-  c.resolve?.alias as { find: string | RegExp; replacement: string }[];
+  shared(c).resolve?.alias as { find: string | RegExp; replacement: string }[];
 
 const find = (c: UserConfig, spec: string) => aliases(c).find((a) => a.find === spec)?.replacement;
 
@@ -50,17 +64,15 @@ function subset(c: UserConfig): Record<string, string> {
 }
 
 describe('kromaSite', () => {
-  it('is the message subset, the design system, TanStack Start and React, in that order', () => {
+  it('is the message subset, then everything kroma() brings with TanStack Start before React', () => {
     const listed = names(config(siteRoot()));
-    const kit = listed.filter((n) => n.startsWith('kroma-'));
+    const start = listed.findIndex((n) => n.startsWith('tanstack'));
 
     expect(listed[0]).toBe('kroma:message-subset');
-    expect(kit.length).toBeGreaterThan(0);
-    // The design system is one contiguous run, so a plugin added to kromaUI()
-    // cannot land on the far side of TanStack and lose its `enforce: 'pre'`.
-    expect(listed.slice(1, 1 + kit.length)).toEqual(kit);
-    expect(listed.findIndex((n) => n.startsWith('tanstack'))).toBe(1 + kit.length);
-    expect(listed.at(-1)).toMatch(/^vite:react/);
+    expect(listed[1]).toBe('kroma:shell');
+    expect(start).toBeGreaterThan(listed.indexOf('kroma-i18n-devtools'));
+    expect(listed.findIndex((n) => n.startsWith('vite:react'))).toBeGreaterThan(start);
+    expect(listed.at(-1)).toBe('kroma:workerd-builtins-dev');
   });
 
   it('stands in for the workerd-only builtin, in dev alone, with a module that throws', () => {
@@ -82,11 +94,14 @@ describe('kromaSite', () => {
 
   it('roots the site at the directory of the config file it was handed', () => {
     const root = siteRoot();
-    expect(find(config(root), '#site')).toBe(join(root, 'src'));
+    const c = config(root);
+
+    expect(c.root).toBe(join(root, '/'));
+    expect(find(c, '#site')).toBe(join(root, 'src'));
   });
 
   it('keeps the kit and its react-native-web deps out of the server externals', () => {
-    const noExternal = config(siteRoot()).ssr?.noExternal;
+    const noExternal = shared(config(siteRoot())).ssr?.noExternal;
 
     expect(noExternal).toContain('@kroma/ui');
     expect(noExternal).toContain('@kroma/core');
@@ -94,7 +109,7 @@ describe('kromaSite', () => {
   });
 
   it('gives react-native-web the global it reads on a browser', () => {
-    expect(config(siteRoot()).define).toEqual({ global: 'globalThis' });
+    expect(shared(config(siteRoot())).define).toMatchObject({ global: 'globalThis' });
   });
 
   it('carries the site own aliases alongside the react-native redirect', () => {

@@ -39,7 +39,6 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.53.1",
     "@inlang/paraglide-js": "^2.24.0",
-    "@kroma/i18n-devtools": "workspace:*",
     "@mdx-js/rollup": "^3.1.1",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-cli": "^1.167.30",

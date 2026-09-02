@@ -1,0 +1,12 @@
+{
+  "search.backHint": "‹ Back to exit",
+  "search.empty": "Type with the remote to search a title, a genre or an actor…",
+  "search.hint": "{right} browse · OK open · {left} back to keyboard",
+  "search.noResults": "No results",
+  "search.placeholder": "Movies, shows, genres…",
+  "search.recent": "RECENT SEARCHES",
+  "search.results": "RESULTS",
+  "search.voice": "Voice search",
+  "search.voiceHint": "Results come in while you talk",
+  "search.voiceListening": "Speak now…"
+}

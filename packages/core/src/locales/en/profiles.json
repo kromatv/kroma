@@ -1,0 +1,9 @@
+{
+  "profiles.add": "Add",
+  "profiles.addProfile": "Add profile",
+  "profiles.chooseHint": "{left} {right} Choose · OK Select",
+  "profiles.deviceSettings": "Settings",
+  "profiles.navHint": "{left} {right} Navigate · OK Select",
+  "profiles.serverOffline": "Offline",
+  "profiles.subtitle": "Pick a profile, or link a device with Quick Connect."
+}

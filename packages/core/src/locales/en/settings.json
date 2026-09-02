@@ -1,0 +1,17 @@
+{
+  "settings.blur": "Background blur",
+  "settings.blurDesc": "Turn it off on a machine that composites the blur on the CPU.",
+  "settings.builtAt": "Built",
+  "settings.castReceiver": "Allow control from other devices",
+  "settings.commit": "Commit",
+  "settings.content": "Content",
+  "settings.crashReporting": "Send crash reports to your server",
+  "settings.device": "Device",
+  "settings.languages": "Languages",
+  "settings.libraryCount": "{count} libraries",
+  "settings.libraryCount_one": "{count} library",
+  "settings.mediaCount": "{count} media items",
+  "settings.mediaCount_one": "{count} media item",
+  "settings.playback": "Playback",
+  "settings.version": "Version"
+}

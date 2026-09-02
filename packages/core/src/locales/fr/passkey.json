@@ -1,0 +1,11 @@
+{
+  "passkey.authFailed": "Échec de la connexion par clé d’accès",
+  "passkey.ceremonyExpired": "La demande de clé d’accès a expiré, veuillez réessayer",
+  "passkey.defaultName": "Clé d’accès",
+  "passkey.noPasskeys": "Aucune clé d’accès n’est enregistrée pour ce compte",
+  "passkey.notFound": "Clé d’accès introuvable",
+  "passkey.originInvalid": "Les clés d’accès nécessitent une connexion sécurisée (HTTPS)",
+  "passkey.originMissing": "Origine de la requête manquante",
+  "passkey.registerFailed": "Impossible d’enregistrer la clé d’accès",
+  "passkey.startFailed": "Impossible de démarrer la demande de clé d’accès"
+}

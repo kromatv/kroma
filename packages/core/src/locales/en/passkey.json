@@ -1,0 +1,11 @@
+{
+  "passkey.authFailed": "Passkey sign-in failed",
+  "passkey.ceremonyExpired": "The passkey request expired, please try again",
+  "passkey.defaultName": "Passkey",
+  "passkey.noPasskeys": "No passkey is registered for this account",
+  "passkey.notFound": "Passkey not found",
+  "passkey.originInvalid": "Passkeys require a secure (HTTPS) connection",
+  "passkey.originMissing": "Missing request origin",
+  "passkey.registerFailed": "Couldn't register the passkey",
+  "passkey.startFailed": "Couldn't start the passkey request"
+}

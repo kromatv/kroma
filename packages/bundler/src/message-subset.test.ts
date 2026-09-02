@@ -78,7 +78,7 @@ describe('the subset', () => {
   });
 });
 
-const EN = fileURLToPath(new URL('../../core/src/locales/en.json', import.meta.url));
+const EN = fileURLToPath(new URL('../../core/src/locales/en/admin.json', import.meta.url));
 
 const full = () => JSON.parse(readFileSync(EN, 'utf8')) as Record<string, string>;
 

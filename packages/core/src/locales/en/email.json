@@ -1,0 +1,20 @@
+{
+  "email.reset.button": "Choose a new password",
+  "email.reset.codeLabel": "8-character code",
+  "email.reset.codeNote": "The link alone is not enough: you will need the {code} your server owner gave you. Without it, nobody can use this link — not even us.",
+  "email.reset.footer": "This link expires soon and can only be used once. If you did not ask for it, ignore this email: nothing changes.",
+  "email.reset.heading": "Password reset",
+  "email.reset.intro": "Someone asked to reset the password for this account on {name}.",
+  "email.reset.preheader": "The link alone is not enough: you will need the code your server owner gave you.",
+  "email.reset.subject": "Reset your password · {name}",
+  "email.reset.text": "Someone asked to reset the password for this account on {name}.\n\nOpen this link to choose a new one:\n{url}\n\nThe link alone is not enough: you will need the 8-character code your server owner gave you.\nIf you did not ask for it, ignore this email: nothing changes.",
+  "email.test.subject": "KROMA — SMTP test",
+  "email.test.text": "If you can read this, your KROMA server's SMTP settings work.",
+  "email.verify.button": "Confirm my address",
+  "email.verify.footer": "This link expires in 7 days and can only be used once. If you did not ask for it, ignore this email: nothing changes.",
+  "email.verify.heading": "Confirm your email address",
+  "email.verify.intro": "This address was registered for your account on {name}. Confirm that it belongs to you.",
+  "email.verify.preheader": "One click to confirm your address.",
+  "email.verify.subject": "Confirm your email address · {name}",
+  "email.verify.text": "This address was registered for your account on {name}.\n\nOpen this link to confirm it belongs to you:\n{url}\n\nIf you did not ask for it, ignore this email: nothing changes."
+}

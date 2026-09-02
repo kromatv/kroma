@@ -5,6 +5,9 @@ node_modules/
 # Bun
 bun.lockb
 
+# Written by the i18n Vite plugin from the catalog folder (bun run i18n:types).
+packages/core/src/locales/messages.d.ts
+
 # Builds
 dist/
 # Per-tier slices of a built TV package (clients/tizen/scripts/slice.ts).

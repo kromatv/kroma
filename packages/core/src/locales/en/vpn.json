@@ -1,0 +1,19 @@
+{
+  "vpn.bridgeDown": "Tunnel down",
+  "vpn.bridgeUp": "Tunnel up",
+  "vpn.configKept": "A configuration is already stored; pasting a new one replaces it.",
+  "vpn.configure": "Configure",
+  "vpn.directIp": "direct IP {ip}",
+  "vpn.modalHelp": "Paste your VPN provider's WireGuard configuration (Mullvad, AirVPN, Proton, a self-hosted peer...). Prefer a P2P-friendly server. Only torrent traffic goes through the tunnel; the rest of the server is unaffected.",
+  "vpn.modalTitle": "WireGuard configuration",
+  "vpn.modeOff": "No VPN: torrent traffic goes out directly. Paste a WireGuard config to tunnel it.",
+  "vpn.modeSocks": "External SOCKS5 proxy.",
+  "vpn.modeWireguard": "WireGuard config managed by KROMA. Torrent traffic goes through the tunnel (local port :{port}).",
+  "vpn.notSealed": "The tunnel is not diverting traffic (same IP or proxy unreachable)",
+  "vpn.reconfigure": "Reconfigure",
+  "vpn.removeConfig": "Remove config",
+  "vpn.sealed": "Tunnel sealed · exit IP {ip}",
+  "vpn.test": "Test",
+  "vpn.testFailed": "Test failed",
+  "vpn.title": "VPN (WireGuard)"
+}

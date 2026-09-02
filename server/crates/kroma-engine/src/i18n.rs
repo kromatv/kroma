@@ -1,6 +1,7 @@
 //! KROMA's i18n wiring over the generic [`kroma_i18n`] engine: the default
 //! locale, the supported set, and the shared catalogs in
-//! `packages/core/src/locales` (the same files the TS clients bundle).
+//! `packages/core/src/locales/<locale>/<namespace>.json` (the same files the TS
+//! clients bundle), gathered by `build.rs` into one list of parts.
 
 use std::convert::Infallible;
 use std::sync::OnceLock;
@@ -13,19 +14,13 @@ use crate::state::SharedState;
 
 pub const DEFAULT_LOCALE: &str = "fr";
 
-pub const SUPPORTED_LOCALES: &[&str] = &["fr", "en"];
-
-// Path anchored to this crate's manifest dir, so `../../../` reaches the repo root.
-macro_rules! catalog {
-    ($code:literal) => {
-        include_str!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../packages/core/src/locales/",
-            $code,
-            ".json"
-        ))
-    };
+mod parts {
+    include!(concat!(env!("OUT_DIR"), "/catalog_parts.rs"));
 }
+
+/// Every locale with a catalog folder, in folder order. The folder is the one
+/// place a language is added, so this is read from it rather than repeated.
+pub const SUPPORTED_LOCALES: &[&str] = parts::LOCALES;
 
 // The catalogs are shared with the TypeScript clients, which select a variant
 // through `Intl.PluralRules`. French puts zero in `one` there and English does
@@ -34,11 +29,14 @@ macro_rules! catalog {
 fn i18n() -> &'static I18n {
     static ENGINE: OnceLock<I18n> = OnceLock::new();
     ENGINE.get_or_init(|| {
-        I18n::builder()
-            .default_locale(DEFAULT_LOCALE)
-            .plural_rule(kroma_i18n::cldr)
-            .catalog_json("fr", catalog!("fr"))
-            .catalog_json("en", catalog!("en"))
+        parts::CATALOG_PARTS
+            .iter()
+            .fold(
+                I18n::builder()
+                    .default_locale(DEFAULT_LOCALE)
+                    .plural_rule(kroma_i18n::cldr),
+                |builder, (code, json)| builder.catalog_json(*code, *json),
+            )
             .build()
             .expect("KROMA i18n catalogs")
     })
@@ -123,10 +121,10 @@ mod tests {
     fn config_matches_built_engine() {
         let e = i18n();
         assert_eq!(e.default_locale(), DEFAULT_LOCALE);
-        assert_eq!(
-            e.supported().collect::<Vec<_>>(),
-            SUPPORTED_LOCALES.to_vec()
-        );
+        let mut supported = e.supported().collect::<Vec<_>>();
+        supported.sort_unstable();
+        assert_eq!(supported, SUPPORTED_LOCALES.to_vec());
+        assert!(SUPPORTED_LOCALES.contains(&DEFAULT_LOCALE));
         assert_eq!(
             t("fr", "content.seasonCount", &[("count", "1")]),
             "1 saison"
@@ -140,6 +138,11 @@ mod tests {
             "1 season"
         );
         assert_eq!(normalize("en-US"), Some("en"));
+    }
+
+    #[test]
+    fn the_lazy_namespaces_of_the_clients_are_eager_here() {
+        assert_ne!(t("fr", "admin.noAdminAccess", &[]), "admin.noAdminAccess");
     }
 
     #[test]

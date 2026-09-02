@@ -1,0 +1,12 @@
+{
+  "profileMenu.changePin": "Change PIN",
+  "profileMenu.gpuRendering": "GPU rendering (restarts the app)",
+  "profileMenu.navHint": "{up} {down} Navigate · {left} {right} Change · OK Confirm · Back",
+  "profileMenu.off": "Off",
+  "profileMenu.on": "On",
+  "profileMenu.perfHud": "Performance overlay",
+  "profileMenu.pin": "PIN",
+  "profileMenu.quitApp": "Quit KROMA",
+  "profileMenu.removePin": "Remove PIN",
+  "profileMenu.setPin": "Set a PIN"
+}

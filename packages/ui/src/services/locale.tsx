@@ -10,7 +10,6 @@
 // reached), so even pre-auth copy is translated.
 
 import {
-  DEFAULT_LOCALE,
   deviceLocale,
   type KromaClient,
   type Locale,
@@ -45,17 +44,17 @@ export function LocaleProvider({
 }: Readonly<LocaleProviderProps>) {
   const accountLocale = normalizeLocale(accountLanguage);
 
-  // Start from the deterministic project default so the SSR/prerendered shell and
-  // the first client render agree (no hydration mismatch). `detectLocale()` reads
-  // `navigator`/localStorage which differ between the Node prerender and the
-  // browser so the real device locale is adopted post-hydration in the effect
-  // below, not in this initializer.
-  const [override, setOverride] = useState<Locale>(DEFAULT_LOCALE);
+  // The right locale from the first render: a catalog is fetched per locale
+  // rendered, so starting in the default and switching after hydration would
+  // download two languages. On the server there is no navigator or storage, so
+  // this resolves to the default there, and the prerendered shell carries no
+  // translated markup for the two to disagree on.
+  const [override, setOverride] = useState<Locale>(() => accountLocale ?? deviceLocale());
 
   // The client's Accept-Language moves in the same step as the state, never in a
   // later effect: a consumer's own effect runs before this component's, and would
   // refetch under the old header.
-  const applied = useRef<Locale>(DEFAULT_LOCALE);
+  const applied = useRef<Locale>(override);
   const apply = useCallback(
     (next: Locale) => {
       applied.current = next;
@@ -66,11 +65,11 @@ export function LocaleProvider({
     [client],
   );
 
-  // Post-hydration: adopt the device override (localStorage) or the browser
-  // locale, unless the signed-in account's preference already applies (handled
-  // by the effect below). Runs once on mount, client-side only. When the user is
-  // signed in but has no account-level language set, sync the detected locale to
-  // the server so server-rendered content (notifications, push) matches the UI.
+  // On mount: hand the device locale to the client's Accept-Language, unless the
+  // signed-in account's preference already applies (handled by the effect
+  // below). When the user is signed in but has no account-level language set,
+  // sync the detected locale to the server so server-rendered content
+  // (notifications, push) matches the UI.
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only; account changes are handled separately.
   useEffect(() => {
     if (accountLocale) return;

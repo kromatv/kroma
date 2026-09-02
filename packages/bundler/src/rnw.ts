@@ -104,6 +104,10 @@ export const KROMA_SOURCE_PACKAGES = [
   '@kroma/spatial-nav',
 ];
 
+/** The dev server's dependency pre-bundle, the same for every shell: the
+ *  workspace packages served from source stay out, react-native-web goes in. */
+export const RNW_OPTIMIZE_DEPS = { exclude: KROMA_SOURCE_PACKAGES, include: RNW_OPTIMIZE_INCLUDE };
+
 // react-native-web's Animated implementation reads the React Native `global`,
 // which no browser defines: without this, every Animated component throws
 // `ReferenceError: global is not defined` the moment it unmounts and tries to

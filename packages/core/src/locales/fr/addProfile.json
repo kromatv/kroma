@@ -1,0 +1,21 @@
+{
+  "addProfile.addManually": "Ajouter manuellement",
+  "addProfile.addManuallySub": "Saisir l'adresse d'un serveur distant",
+  "addProfile.availableServers": "Serveurs disponibles",
+  "addProfile.checking": "Vérification…",
+  "addProfile.localServers": "Serveurs locaux",
+  "addProfile.navHint": "{up} {down} Naviguer · OK Choisir · Retour Annuler",
+  "addProfile.new": "nouveau",
+  "addProfile.noLocal": "Aucun serveur trouvé sur le réseau",
+  "addProfile.other": "Autre",
+  "addProfile.profileCount": "{count} profils",
+  "addProfile.profileCount_one": "{count} profil",
+  "addProfile.reachable": "En ligne",
+  "addProfile.savedServers": "Serveurs enregistrés",
+  "addProfile.searching": "Recherche…",
+  "addProfile.showCount": "{count} séries",
+  "addProfile.showCount_one": "{count} série",
+  "addProfile.subtitle": "Choisissez le serveur, puis liez votre profil par connexion rapide.",
+  "addProfile.title": "Ajouter un profil",
+  "addProfile.unreachable": "Injoignable"
+}

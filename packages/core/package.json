@@ -14,7 +14,8 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./react": "./src/react/index.ts"
+    "./react": "./src/react/index.ts",
+    "./vite": "./vite/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -40,6 +41,7 @@
   "devDependencies": {
     "@types/react": "^19.2.18",
     "react": "19.2.8",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1"
   }
 }

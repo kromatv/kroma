@@ -1,0 +1,17 @@
+{
+  "playbackEngine.auto": "Automatique",
+  "playbackEngine.autoNote": "Lit le fichier tel quel quand l'appareil en est capable, sinon passe par le serveur",
+  "playbackEngine.avplay": "Lecteur Samsung",
+  "playbackEngine.avplayNote": "Le décodeur intégré aux téléviseurs Tizen",
+  "playbackEngine.mpv": "Lecteur mpv",
+  "playbackEngine.mpvNote": "Le lecteur natif de l'application bureau",
+  "playbackEngine.remux": "Remux serveur",
+  "playbackEngine.remuxNote": "Le serveur remballe le fichier à la volée, sans réencoder l'image",
+  "playbackEngine.shaka": "Shaka Player",
+  "playbackEngine.shakaNote": "Lecteur JavaScript, pour les flux segmentés",
+  "playbackEngine.title": "Moteur de lecture",
+  "playbackEngine.vlc": "Lecteur VLC",
+  "playbackEngine.vlcNote": "Décodeurs logiciels embarqués, pour ce que la puce refuse",
+  "playbackEngine.webview": "Lecteur du navigateur",
+  "playbackEngine.webviewNote": "La balise vidéo du navigateur, sans bibliothèque"
+}

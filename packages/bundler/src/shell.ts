@@ -4,21 +4,10 @@
 
 import { networkInterfaces } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { collectBuildInfo, productVersion } from '@kroma/build-info';
+import { kroma } from '@kroma/bundler';
 import { legacyFinalize } from '@kroma/bundler/legacy-finalize';
-import { kromaMdx } from '@kroma/bundler/mdx';
-import {
-  KROMA_SOURCE_PACKAGES,
-  RNW_DEFINE,
-  RNW_OPTIMIZE_INCLUDE,
-  webResolve,
-} from '@kroma/bundler/rnw';
 import { tvFrame } from '@kroma/bundler/tv-frame';
 import { tvShellHead } from '@kroma/bundler/tv-shell-head';
-import { kromaI18nDevtools } from '@kroma/i18n-devtools/vite';
-import { kromaUI } from '@kroma/ui/vite';
-import babel from '@rolldown/plugin-babel';
-import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import type { ConfigEnv, UserConfig } from 'vite';
 
 export interface TvTarget {
@@ -45,17 +34,6 @@ function lanIp(): string | undefined {
     .find((a) => a.family === 'IPv4' && !a.internal)?.address;
 }
 
-/** Vite `define` entries a browser shell bakes in: `__KROMA_VERSION__` (compared
- * by the server-compatibility banner) and `__KROMA_BUILD__` (full commit/branch
- * identity for the About screen). */
-export function buildDefine(repoRoot: string, shellDir: string): Record<string, string> {
-  const info = collectBuildInfo(shellDir, { version: productVersion(repoRoot) ?? 'dev' });
-  return {
-    __KROMA_VERSION__: JSON.stringify(info.version),
-    __KROMA_BUILD__: JSON.stringify(info),
-  };
-}
-
 // Which tier is being built, as a member expression rather than a bare global:
 // the browser client never defines it, and a bare identifier would throw there
 // (same reason as `globalThis.__KROMA_LEGACY_TIER__` below).
@@ -68,52 +46,39 @@ export function buildDefine(repoRoot: string, shellDir: string): Record<string, 
 // engines that ignore the property outright.
 const TV_TIER = { 'globalThis.__KROMA_TV_TIER__': 'true' } as const;
 
+// `#tv/workbench` must come first: Vite matches string aliases by prefix in
+// order, and a bare `#tv` listed first would swallow it.
+function tvAlias(shellUrl: string, stubWorkbench: boolean): Record<string, string> {
+  return {
+    ...(stubWorkbench
+      ? { '#tv/workbench': fileURLToPath(new URL('workbench-stub.tsx', import.meta.url)) }
+      : {}),
+    '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)),
+  };
+}
+
 export function tvShellConfig(shellUrl: string, target: TvTarget) {
-  const repoRoot = fileURLToPath(new URL('../..', shellUrl));
-  const shellDir = fileURLToPath(new URL('.', shellUrl));
   const deviceDev = target.deviceDev === true && process.env.KROMA_TV_DEVICE === '1';
   const floor = target.chromeFloor ?? 99;
   return ({ command }: ConfigEnv): UserConfig => ({
-    define: { ...buildDefine(repoRoot, shellDir), ...RNW_DEFINE, ...TV_TIER },
+    define: TV_TIER,
     // tvFrame() is dev-only: letterboxes into a 1920x1080 stage in a desktop
     // browser; off in device mode, where the panel already is that canvas.
-    plugins: [
-      kromaUI(),
-      kromaI18nDevtools(),
-      // Before react(): the workbench behind `?workbench` reads the kit's
-      // `.docs.mdx` files, which have to be JSX before the React transform.
-      kromaMdx(),
-      react(),
-      // The same auto-memoisation the web client gets, over the same kit source
-      // (plugin-react v6 dropped its built-in Babel pass, so the compiler runs
-      // as a separate preset). A television has the least CPU to spare for a
-      // re-render nobody needed.
-      babel({ presets: [reactCompilerPreset()] }),
-      tvShellHead(),
-      tvFrame({ enabled: !deviceDev }),
-    ],
+    //
     // The workbench is reached through `?workbench`, which a television has no
     // way to ask for: in a package it is a lazy chunk nothing can ever fetch,
     // measured at 169 kB. Stubbed for `build` only, so the dev server keeps it.
-    // `#tv/workbench` must come first, since Vite matches string aliases by
-    // prefix in order and a bare `#tv` would swallow it.
-    resolve: webResolve({
-      ...(command === 'build'
-        ? { '#tv/workbench': fileURLToPath(new URL('workbench-stub.tsx', import.meta.url)) }
-        : {}),
-      '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)),
-    }),
+    plugins: [
+      kroma({ mdx: true, alias: tvAlias(shellUrl, command === 'build') }),
+      tvShellHead(),
+      tvFrame({ enabled: !deviceDev }),
+    ],
     // Packaged TV apps load from a local path: assets must be referenced relatively.
     base: './',
     server: {
       host: deviceDev ? true : undefined,
       port: target.port,
       hmr: deviceDev ? { host: lanIp(), protocol: 'ws' } : undefined,
-      fs: { allow: [repoRoot] },
-    },
-    optimizeDeps: {
-      exclude: KROMA_SOURCE_PACKAGES,
-      include: RNW_OPTIMIZE_INCLUDE,
     },
     // Down-levels modern CSS (color-mix, oklch) to plain fallbacks. Chrome
     // version is encoded as major << 16.
@@ -160,7 +125,6 @@ export function tvShellLegacyConfig(
   target: TvTarget,
   tier: LegacyTier = 'legacy',
 ): UserConfig {
-  const repoRoot = fileURLToPath(new URL('../..', shellUrl));
   const deep = tier === 'deep';
   const chrome = deep ? target.deepLegacyChrome : target.legacyChrome;
   if (!chrome) throw new Error(`tv.target for ${target.platform} has no ${tier} chrome floor`);
@@ -173,13 +137,8 @@ export function tvShellLegacyConfig(
   const gate = dir === tiers.at(-1)?.dir ? tiers : undefined;
   return {
     plugins: [
-      kromaUI(),
+      kroma({ alias: tvAlias(shellUrl, true) }),
       tvShellHead(),
-      react(),
-      // The legacy tier wants this MORE than the modern one: these are the
-      // slowest engines KROMA ships to, and the compiler's output is ordinary
-      // JS that legacyFinalize goes on to transpile down like everything else.
-      babel({ presets: [reactCompilerPreset()] }),
       legacyFinalize({
         distDir: fileURLToPath(new URL('dist', shellUrl)),
         chrome,
@@ -204,22 +163,14 @@ export function tvShellLegacyConfig(
     // nothing and the colour is lost. The tier takes the literal values instead,
     // the same branch native already takes.
     define: {
-      ...RNW_DEFINE,
       ...TV_TIER,
       'import.meta.url': 'document.baseURI',
       'globalThis.__KROMA_LEGACY_TIER__': 'true',
       ...(deep ? { 'globalThis.__KROMA_DEEP_TIER__': 'true' } : {}),
     },
-    // `#tv/workbench` must come first: Vite matches string aliases by prefix in
-    // order, and a bare `#tv` listed first would swallow it.
-    resolve: webResolve({
-      '#tv/workbench': fileURLToPath(new URL('workbench-stub.tsx', import.meta.url)),
-      '#tv': fileURLToPath(new URL('../../packages/tv/src', shellUrl)),
-    }),
     base: './',
     // appinfo/manifest + icons are already copied into dist/ by the modern build.
     publicDir: false,
-    server: { fs: { allow: [repoRoot] } },
     // Assets live under dist/<tier>/. JS/HTML resolve against dist/index.html
     // (needs the subdirectory); the stylesheet resolves against its own
     // dist/<tier>/style.css (the prefix would double up).

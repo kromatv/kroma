@@ -26,6 +26,8 @@
     "packages/site-kit/test/cloudflare-workers.ts",
     // Written by `bun run modules:gen` from the module manifests.
     "packages/modules-generated/**",
+    // Written by the i18n Vite plugin from the catalog folder, and gitignored.
+    "packages/core/src/locales/messages.d.ts",
     "**/*.gen.ts",
     "**/routeTree.gen.ts"
   ],
@@ -87,7 +89,9 @@
         // reading stdin (`bun run sonar:precheck`).
         "src/cli.ts",
         "src/precheck.ts",
-        "scripts/*.ts"
+        "scripts/*.ts",
+        // A package's Vite plugin, and the CLI beside it (`bun run i18n:types`).
+        "vite/*.ts"
       ]
     },
 

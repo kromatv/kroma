@@ -100,8 +100,8 @@ function FailureDetail({ status, text }: Readonly<{ status?: number; text: strin
     <Box align="center" gap={6} mt={4}>
       <Text variant="overline" color="text/40">
         {status === undefined
-          ? t('admin.moduleErrorDetails')
-          : `${t('admin.moduleErrorDetails')} · ${t('admin.moduleErrorStatus', { status })}`}
+          ? t('modules.errorDetails')
+          : `${t('modules.errorDetails')} · ${t('modules.errorStatus', { status })}`}
       </Text>
       <EmptyState.Detail>{text}</EmptyState.Detail>
     </Box>
@@ -113,13 +113,13 @@ type FailureKind = 'serverDown' | 'notRunning' | 'unknown';
 const COPY: Record<FailureKind, { icon: IconName; title: MessageKey; hint: MessageKey }> = {
   serverDown: {
     icon: 'server-off',
-    title: 'admin.moduleErrorServerDown',
-    hint: 'admin.moduleErrorServerDownHint',
+    title: 'modules.errorServerDown',
+    hint: 'modules.errorServerDownHint',
   },
   notRunning: {
     icon: 'plug-off',
-    title: 'admin.moduleErrorNotRunning',
-    hint: 'admin.moduleErrorNotRunningHint',
+    title: 'modules.errorNotRunning',
+    hint: 'modules.errorNotRunningHint',
   },
   unknown: { icon: 'alert-triangle', title: 'modules.loadFailed', hint: 'modules.loadFailedHint' },
 };

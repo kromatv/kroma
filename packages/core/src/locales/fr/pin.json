@@ -1,0 +1,11 @@
+{
+  "pin.backHint": "Retour pour revenir aux profils",
+  "pin.changeSubtitle": "Saisissez votre code actuel",
+  "pin.clearSubtitle": "Saisissez votre code pour le supprimer",
+  "pin.confirmSubtitle": "Saisissez à nouveau le code",
+  "pin.lockedRetry": "Réessayez dans {seconds} s",
+  "pin.mismatch": "Les codes ne correspondent pas",
+  "pin.setSubtitle": "Choisissez un code à 4 chiffres",
+  "pin.verifySubtitle": "Profil protégé par code",
+  "pin.verifying": "Vérification…"
+}

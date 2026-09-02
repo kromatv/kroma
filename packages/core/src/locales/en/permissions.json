@@ -1,0 +1,19 @@
+{
+  "permissions.library": "Library",
+  "permissions.libraryHint": "Scans, libraries, metadata",
+  "permissions.playback": "Playback",
+  "permissions.playbackHint": "Watch the catalogue + resume",
+  "permissions.playbackHintDefault": "Watch the catalogue + resume (default)",
+  "permissions.reportsManage": "Manage reports",
+  "permissions.reportsManageHint": "Triage user-submitted problem reports",
+  "permissions.requestAuto": "Auto-approve",
+  "permissions.requestAutoHint": "This account's requests skip the approval queue",
+  "permissions.requestCreate": "Requests",
+  "permissions.requestCreateHint": "Search TMDB and request movies/shows",
+  "permissions.requestManage": "Request management",
+  "permissions.requestManageHint": "Approve/deny requests, manage downloads",
+  "permissions.settings": "Settings",
+  "permissions.settingsHint": "Server configuration",
+  "permissions.users": "Users",
+  "permissions.usersHint": "Manage accounts + invite"
+}

@@ -3,21 +3,22 @@ import type { TVars } from './types';
 /**
  * The seam that makes this package typed without a generic at every call site.
  *
- * A project augments it once, next to where it builds its instance, and from
- * then on {@link Locale}, {@link MessageKey} and {@link Translate} are its own
- * locales and its own keys everywhere they are imported:
+ * The `@kroma/i18n/vite` plugin augments it from the catalog folder, with the
+ * locales it found and every namespace's messages folded into one map:
  *
  * ```ts
- * export const i18n = createI18n({ catalogs: { fr, en }, defaultLocale: 'fr' });
- *
  * declare module '@kroma/i18n' {
- *   interface Register extends InferRegister<typeof i18n> {}
+ *   interface Register {
+ *     locale: 'en' | 'fr';
+ *     messages: typeof navMessages & typeof playerMessages;
+ *   }
  * }
  * ```
  *
- * Left alone it stays empty and the three types widen to `string`, so the
- * package is usable before it is configured and a consumer that never augments
- * it still compiles.
+ * From then on {@link Locale}, {@link MessageKey} and {@link Translate} are the
+ * app's own everywhere they are imported. Left alone it stays empty and the
+ * types widen to `string`, so the package is usable before it is configured
+ * and a consumer that never augments it still compiles.
  */
 // biome-ignore lint/suspicious/noEmptyInterface: the augmentation target; a type alias cannot be reopened.
 export interface Register {}

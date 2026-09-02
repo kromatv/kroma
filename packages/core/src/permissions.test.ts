@@ -19,8 +19,8 @@ describe('PERMISSIONS', () => {
 
   it('gives every entry a label and hint i18n key', () => {
     for (const p of PERMISSIONS) {
-      expect(p.labelKey).toMatch(/^admin\.perm/);
-      expect(p.hintKey).toMatch(/^admin\.perm.*Hint$/);
+      expect(p.labelKey).toMatch(/^permissions\./);
+      expect(p.hintKey).toMatch(/^permissions\..*Hint$/);
     }
   });
 });

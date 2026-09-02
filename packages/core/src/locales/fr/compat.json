@@ -1,0 +1,3 @@
+{
+  "compat.serverOutdated": "Votre serveur (v{server}) est plus ancien que cette application (v{client}) ne le requiert. Mettez a jour le serveur."
+}

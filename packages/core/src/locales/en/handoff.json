@@ -1,0 +1,20 @@
+{
+  "handoff.checkHint": "Look at the bottom of the TV screen.",
+  "handoff.checkPrompt": "Type the code {name} is showing",
+  "handoff.checkRequired": "This TV asks for the code on its screen",
+  "handoff.checkTooMany": "Too many wrong codes. Start again on the TV.",
+  "handoff.checkWrong": "Wrong code. Read it off the TV again.",
+  "handoff.connecting": "Signing in…",
+  "handoff.gone": "No longer waiting",
+  "handoff.nearbyEmpty": "No TV is waiting",
+  "handoff.nearbyEmptyHint": "Open KROMA on your TV and leave it on the sign-in screen.",
+  "handoff.nearbySearching": "Looking for TVs…",
+  "handoff.nearbySub": "Pick your TV to sign it in. Nothing to scan, nothing to type.",
+  "handoff.nearbyTitle": "TVs on this network",
+  "handoff.otherWays": "Other ways to connect",
+  "handoff.rowDone": "Signed in",
+  "handoff.tooManyHere": "Too many TVs are already waiting on this network",
+  "handoff.tooOften": "This TV announced itself too often. It will try again shortly.",
+  "handoff.tvBeacon": "On your phone this TV is listed as {name}",
+  "handoff.tvCheck": "Code {check}"
+}

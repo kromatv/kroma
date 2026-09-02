@@ -1,0 +1,19 @@
+{
+  "offline.cancelDownload": "Annuler le téléchargement",
+  "offline.download": "Télécharger",
+  "offline.downloadSeason": "Télécharger la saison",
+  "offline.downloaded": "Téléchargé",
+  "offline.downloading": "Téléchargement {percent}%",
+  "offline.downloads": "Téléchargements",
+  "offline.empty": "Aucun téléchargement. Utilisez le bouton de téléchargement d'un film ou d'un épisode pour le regarder hors ligne.",
+  "offline.failed": "Téléchargement échoué. Votre serveur doit peut-être être mis à jour.",
+  "offline.pause": "Mettre en pause",
+  "offline.paused": "En pause",
+  "offline.queued": "En attente",
+  "offline.remove": "Supprimer le téléchargement",
+  "offline.resume": "Reprendre",
+  "offline.storageFree": "Libre",
+  "offline.storageOther": "Utilisé",
+  "offline.storageUsed": "{size} utilisés",
+  "offline.unavailable": "Indisponible hors ligne sur cet appareil"
+}

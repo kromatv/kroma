@@ -126,7 +126,7 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
   }
   return (
     <ListRow.Root size="md">
-      <ListRow.Label>{inv.permissions.join(', ') || t('admin.permPlayback')}</ListRow.Label>
+      <ListRow.Label>{inv.permissions.join(', ') || t('permissions.playback')}</ListRow.Label>
       <ListRow.Hint>
         {t('admin.expiresOn', {
           date: new Date(inv.expiresAt * 1000).toLocaleDateString('fr-FR'),

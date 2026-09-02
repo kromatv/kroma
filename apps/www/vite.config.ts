@@ -1,66 +1,61 @@
-import { fileURLToPath } from 'node:url';
 import { cloudflare } from '@cloudflare/vite-plugin';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
-import { kromaI18nDevtools } from '@kroma/i18n-devtools/vite';
-import { kromaUI } from '@kroma/ui/vite';
+import { kroma } from '@kroma/bundler';
 import tailwindcss from '@tailwindcss/vite';
-import { tanstackStart } from '@tanstack/react-start/plugin/vite';
-import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { mdxPlugin } from './vite/mdx.ts';
 import { modulesPlugin } from './vite/modules.ts';
 import { ogPlugin } from './vite/og.tsx';
 import { releasesPlugin } from './vite/releases.ts';
 
-const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
+const NOT_FOUND = {
+  prerender: { enabled: true, autoSubfolderIndex: false },
+  sitemap: { exclude: true },
+};
+
+// Prerender once per canonical path: a hash link or a trailing slash is the
+// same page, and a duplicate would also be listed twice in the sitemap.
+function onePerPath() {
+  const seen = new Set<string>();
+  return (page: { path: string; sitemap?: { exclude?: boolean } }) => {
+    const drop = () => {
+      page.sitemap = { ...page.sitemap, exclude: true };
+      return false;
+    };
+    if (page.path.includes('#')) return drop();
+    const key =
+      page.path.length > 1 && page.path.endsWith('/') ? page.path.slice(0, -1) : page.path;
+    if (seen.has(key)) return drop();
+    seen.add(key);
+    return true;
+  };
+}
 
 export default defineConfig({
   plugins: [
     cloudflare({ configPath: './wrangler.jsonc', viteEnvironment: { name: 'ssr' } }),
-    kromaUI(),
-    kromaI18nDevtools(),
+    kroma({
+      alias: { '#site': './src' },
+      start: {
+        pages: [
+          { path: '/404', ...NOT_FOUND },
+          { path: '/fr/404', ...NOT_FOUND },
+        ],
+        prerender: {
+          enabled: true,
+          crawlLinks: true,
+          retryCount: 3,
+          retryDelay: 1000,
+          filter: onePerPath(),
+        },
+        sitemap: { enabled: true, host: 'https://kroma.tv' },
+      },
+    }),
     tailwindcss(),
     mdxPlugin(),
     modulesPlugin(),
     releasesPlugin(),
     ogPlugin(),
-    tanstackStart({
-      pages: [
-        {
-          path: '/404',
-          prerender: { enabled: true, autoSubfolderIndex: false },
-          sitemap: { exclude: true },
-        },
-        {
-          path: '/fr/404',
-          prerender: { enabled: true, autoSubfolderIndex: false },
-          sitemap: { exclude: true },
-        },
-      ],
-      prerender: {
-        enabled: true,
-        crawlLinks: true,
-        retryCount: 3,
-        retryDelay: 1000,
-        filter: (() => {
-          const seen = new Set<string>();
-          return (page: { path: string; sitemap?: { exclude?: boolean } }) => {
-            const drop = () => {
-              page.sitemap = { ...page.sitemap, exclude: true };
-              return false;
-            };
-            if (page.path.includes('#')) return drop();
-            const p = page.path;
-            const key = p.length > 1 && p.endsWith('/') ? p.slice(0, -1) : p;
-            if (seen.has(key)) return drop();
-            seen.add(key);
-            return true;
-          };
-        })(),
-      },
-      sitemap: { enabled: true, host: 'https://kroma.tv' },
-    }),
-    react(),
     paraglideVitePlugin({
       project: './project.inlang',
       outdir: './src/paraglide',
@@ -77,14 +72,4 @@ export default defineConfig({
       ],
     }),
   ],
-  resolve: {
-    alias: [{ find: '#site', replacement: fileURLToPath(new URL('./src', import.meta.url)) }],
-    dedupe: ['react', 'react-dom'],
-  },
-  server: {
-    fs: { allow: [repoRoot] },
-  },
-  ssr: {
-    noExternal: ['@kroma/ui'],
-  },
 });

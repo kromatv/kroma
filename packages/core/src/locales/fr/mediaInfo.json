@@ -1,0 +1,16 @@
+{
+  "mediaInfo.action": "Détails du média",
+  "mediaInfo.audio": "Audio",
+  "mediaInfo.bit": "bits",
+  "mediaInfo.container": "Conteneur",
+  "mediaInfo.default": "Défaut",
+  "mediaInfo.duration": "Durée",
+  "mediaInfo.noFile": "Aucun fichier pour cet élément.",
+  "mediaInfo.noSubs": "Aucun",
+  "mediaInfo.size": "Taille",
+  "mediaInfo.subtitles": "Sous-titres",
+  "mediaInfo.title": "Détails du média",
+  "mediaInfo.unknownFile": "Fichier inconnu",
+  "mediaInfo.unprobed": "Analyse du fichier en attente.",
+  "mediaInfo.video": "Vidéo"
+}

@@ -11,7 +11,7 @@ export function RealtimeBadge() {
     <Row shrink={0} gap={10} px={16} py={8} radius="pill" bg="surface1" border="border">
       <PillDot tone="accent" size={7} pulse />
       <Text variant="meta" color="textMuted">
-        {t('admin.realtimeActivity')}
+        {t('nav.realtimeActivity')}
       </Text>
     </Row>
   );

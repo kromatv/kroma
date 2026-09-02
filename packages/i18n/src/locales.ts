@@ -1,9 +1,13 @@
 import type { LocaleSet } from './types';
 
+/** The namespace holding each locale's name for itself, the one catalog an app
+ *  needs before anything renders. */
+export const LABEL_NAMESPACE = 'lang';
+
 /** Where a locale's name for itself lives in its own catalog. One spelling,
  *  because both the locale set and `defineI18n` read it. */
 export function labelKey<L extends string>(code: L): `lang.${L}` {
-  return `lang.${code}`;
+  return `${LABEL_NAMESPACE}.${code}`;
 }
 
 /** The locales a product ships, knowable without loading a single message:

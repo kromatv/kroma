@@ -15,12 +15,16 @@ const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url));
 const VIRTUAL = 'virtual:build-info';
 const RESOLVED = `\0${VIRTUAL}`;
 
-function hooks() {
-  const plugin = buildInfoPlugin({ projectRoot: PROJECT_ROOT }) as {
-    name: string;
-    resolveId: (source: string) => string | null;
-    load: (id: string) => string | null;
-  };
+interface Hooks {
+  name: string;
+  configResolved: (this: unknown, config: { root: string }) => void;
+  resolveId: (source: string) => string | null;
+  load: (id: string) => string | null;
+}
+
+function hooks(root = PROJECT_ROOT): Hooks {
+  const plugin = buildInfoPlugin() as unknown as Hooks;
+  plugin.configResolved.call(null, { root });
   return plugin;
 }
 
@@ -87,8 +91,7 @@ describe('serving the module', () => {
 
 describe('the stamp it serves', () => {
   function stamp(projectRoot = PROJECT_ROOT) {
-    const plugin = buildInfoPlugin({ projectRoot }) as { load: (id: string) => string | null };
-    const code = plugin.load(RESOLVED) ?? '';
+    const code = hooks(projectRoot).load(RESOLVED) ?? '';
     const json = /export default (\{.*?\});/s.exec(code)?.[1];
     if (!json) throw new Error('no default export in the generated module');
     return JSON.parse(json) as Record<string, unknown>;

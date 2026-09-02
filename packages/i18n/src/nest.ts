@@ -13,10 +13,17 @@ export function hasUnresolvedRef(template: string): boolean {
   return ANY_REF.test(template);
 }
 
+function firstTemplate(chain: readonly Catalog[], key: string): string | undefined {
+  for (const catalog of chain) {
+    const template = catalog[key];
+    if (template !== undefined) return template;
+  }
+  return undefined;
+}
+
 function resolveOne(
   key: string,
-  own: Catalog,
-  fallback: Catalog,
+  chain: readonly Catalog[],
   done: Map<string, string>,
   visiting: Set<string>,
 ): string | undefined {
@@ -24,12 +31,12 @@ function resolveOne(
   if (cached !== undefined) return cached;
   if (visiting.has(key)) return undefined;
 
-  const template = own[key] ?? fallback[key];
+  const template = firstTemplate(chain, key);
   if (template === undefined) return undefined;
 
   visiting.add(key);
   const expanded = template.replace(REF, (whole, ref: string) => {
-    return resolveOne(ref, own, fallback, done, visiting) ?? whole;
+    return resolveOne(ref, chain, done, visiting) ?? whole;
   });
   visiting.delete(key);
 
@@ -37,13 +44,18 @@ function resolveOne(
   return expanded;
 }
 
+function defined(catalog: Catalog | undefined): catalog is Catalog {
+  return catalog !== undefined;
+}
+
 /** Expand `$t(other.key)` references inside catalog values, once, so a term
  *  written in one place reads the same everywhere it is quoted.
  *
- *  A reference resolves against its own locale first, then the default locale.
- *  One that names a missing key, or that closes a cycle, is left standing as
- *  `$t(...)` rather than throwing: a catalog is data, and a bad entry must not
- *  take the app down at import. Guard the shipped catalogs with
+ *  A reference resolves against its own locale first, then the default locale,
+ *  then the same two in `against`: the catalogs already built, for a part that
+ *  arrives later. One that names a missing key, or that closes a cycle, is left
+ *  standing as `$t(...)` rather than throwing: a catalog is data, and a bad
+ *  entry must not take the app down at import. Guard the shipped catalogs with
  *  {@link hasUnresolvedRef} in a test instead.
  *
  *  Runs at construction, never per translation, which is what lets
@@ -51,6 +63,7 @@ function resolveOne(
 export function expandRefs<C extends Record<string, Record<string, string>>>(
   catalogs: C,
   defaultLocale: keyof C & string,
+  against?: Readonly<Record<string, Catalog | undefined>>,
 ): C {
   const cats = catalogs as Record<string, Catalog | undefined>;
   const fallback = cats[defaultLocale] ?? {};
@@ -66,12 +79,13 @@ export function expandRefs<C extends Record<string, Record<string, string>>>(
       out[locale] = catalog;
       continue;
     }
+    const chain = [catalog, fallback, against?.[locale], against?.[defaultLocale]].filter(defined);
     const done = new Map<string, string>();
     const visiting = new Set<string>();
     const expanded: Record<string, string> = {};
     for (const [key, template] of Object.entries(catalog)) {
       expanded[key] = quotes(template)
-        ? (resolveOne(key, catalog, fallback, done, visiting) ?? template)
+        ? (resolveOne(key, chain, done, visiting) ?? template)
         : template;
     }
     out[locale] = expanded;

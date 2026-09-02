@@ -83,7 +83,7 @@ export function LoginSettings() {
 
   const contentLine = (h: Health) =>
     [
-      t('admin.libraryCount', { count: h.libraries }),
+      t('settings.libraryCount', { count: h.libraries }),
       t('settings.mediaCount', { count: h.items }),
       t('browse.count.series', { count: h.shows }),
     ].join(' · ');

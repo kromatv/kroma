@@ -1,0 +1,16 @@
+{
+  "browse.allGenres": "All",
+  "browse.count.movies": "{count} movies",
+  "browse.count.movies_one": "{count} movie",
+  "browse.count.series": "{count} series",
+  "browse.count.series_one": "{count} series",
+  "browse.genres": "Genres",
+  "browse.jumpToLetter": "Jump to {letter}",
+  "browse.letterNav": "Jump to a letter",
+  "browse.library": "Library",
+  "browse.sort.added": "Recently added",
+  "browse.sort.rating": "Rating",
+  "browse.sort.release": "Release date",
+  "browse.sort.title": "Title (A-Z)",
+  "browse.sortBy": "Sort by"
+}

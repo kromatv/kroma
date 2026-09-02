@@ -9,9 +9,9 @@ export function Denied() {
   return (
     <Box center px={24} style={{ minHeight: '60vh' as unknown as number }}>
       <Surface pad="lg" elevated align="center" gap={8}>
-        <Text variant="h2">{t('admin.accessDenied')}</Text>
+        <Text variant="h2">{t('modules.accessDenied')}</Text>
         <Text variant="body" color="textDim">
-          {t('admin.sectionDenied')}
+          {t('modules.sectionDenied')}
         </Text>
       </Surface>
     </Box>

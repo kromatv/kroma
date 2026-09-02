@@ -1,0 +1,23 @@
+{
+  "nav.account": "Compte",
+  "nav.accountSettings": "Paramètres du compte",
+  "nav.changeProfile": "Changer de profil",
+  "nav.comingSoon": "Bientôt disponible",
+  "nav.connectDevice": "Connecter un appareil",
+  "nav.films": "Films",
+  "nav.genres": "Genres",
+  "nav.home": "Accueil",
+  "nav.inviteUser": "Inviter un utilisateur",
+  "nav.menu": "Menu",
+  "nav.missing": "Manquants",
+  "nav.myList": "Ma liste",
+  "nav.realtimeActivity": "Activité en temps réel",
+  "nav.requests": "Mes demandes",
+  "nav.search": "Rechercher",
+  "nav.series": "Séries",
+  "nav.server": "Serveur",
+  "nav.settings": "Réglages",
+  "nav.thisDevice": "Cet appareil",
+  "nav.versionClient": "Client",
+  "nav.versionServer": "Serveur"
+}

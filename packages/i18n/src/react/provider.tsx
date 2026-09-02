@@ -33,6 +33,9 @@ export function I18nProvider({
     localeOverrideOnServer,
   );
   const active = (override as Locale | null) ?? locale;
+  // During render, not in an effect: the children render right after this and
+  // suspend on what is in flight, so the fetches have to be started first.
+  i18n.warm(active);
   // A shell that passes an inline handler would otherwise rebuild the
   // translator on every render of this provider, and a caller holding it in a
   // dependency list would re-run with it.

@@ -284,5 +284,9 @@ the build on anything a legacy engine cannot parse.
   relay Worker's secrets (`packages/push-relay/`).
 - **English for code, comments, identifiers and commit messages.** User-facing copy
   is French. That is content, not code. No emoji in the product.
-- Every user-visible string is a translation key; modules ship their own
+- Every user-visible string is a translation key. The core catalogs are one
+  folder per language and one file per namespace,
+  `packages/core/src/locales/{en,fr}/<namespace>.json`: nothing lists them, the
+  Vite plugin finds, types and bundles them with the code that names their keys
+  (see [`docs/i18n.md`](docs/i18n.md)); modules ship their own
   `locales/{en,fr}.json` resolved against the module's catalog first.

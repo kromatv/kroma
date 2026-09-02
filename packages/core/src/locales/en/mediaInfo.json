@@ -1,0 +1,16 @@
+{
+  "mediaInfo.action": "Media details",
+  "mediaInfo.audio": "Audio",
+  "mediaInfo.bit": "bit",
+  "mediaInfo.container": "Container",
+  "mediaInfo.default": "Default",
+  "mediaInfo.duration": "Duration",
+  "mediaInfo.noFile": "No file for this element.",
+  "mediaInfo.noSubs": "None",
+  "mediaInfo.size": "Size",
+  "mediaInfo.subtitles": "Subtitles",
+  "mediaInfo.title": "Media details",
+  "mediaInfo.unknownFile": "Unknown file",
+  "mediaInfo.unprobed": "File analysis pending.",
+  "mediaInfo.video": "Video"
+}

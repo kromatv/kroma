@@ -1,0 +1,6 @@
+{
+  "time.daysAgo": "il y a {n} j",
+  "time.hoursAgo": "il y a {n} h",
+  "time.justNow": "à l'instant",
+  "time.minutesAgo": "il y a {n} min"
+}

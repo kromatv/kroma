@@ -1,0 +1,12 @@
+{
+  "profileMenu.changePin": "Modifier le code PIN",
+  "profileMenu.gpuRendering": "Rendu GPU (redémarre l'app)",
+  "profileMenu.navHint": "{up} {down} Naviguer · {left} {right} Modifier · OK Valider · Retour",
+  "profileMenu.off": "Désactivé",
+  "profileMenu.on": "Activé",
+  "profileMenu.perfHud": "Mesures de performance",
+  "profileMenu.pin": "Code PIN",
+  "profileMenu.quitApp": "Quitter KROMA",
+  "profileMenu.removePin": "Supprimer le code PIN",
+  "profileMenu.setPin": "Définir un code PIN"
+}

@@ -16,7 +16,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./react": "./src/react/index.ts",
-    "./schema": "./schema/catalog.schema.json"
+    "./schema": "./schema/catalog.schema.json",
+    "./vite": "./vite/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -39,13 +40,18 @@
   "files": [
     "src",
     "schema",
+    "vite",
     "README.md"
   ],
   "peerDependencies": {
-    "react": ">=18"
+    "react": ">=18",
+    "vite": ">=6"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "vite": {
       "optional": true
     }
   }

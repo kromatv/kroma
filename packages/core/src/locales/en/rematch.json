@@ -1,0 +1,21 @@
+{
+  "rematch.action": "Fix the match",
+  "rematch.applied": "Match updated, metadata is reloading.",
+  "rematch.apply": "Use this title",
+  "rematch.applyFailed": "Could not update the match.",
+  "rematch.confidence": "{score}% confidence",
+  "rematch.confidenceValue": "{score}%",
+  "rematch.current": "Current",
+  "rematch.groupLikely": "Likely matches",
+  "rematch.groupOther": "Other results",
+  "rematch.loadFailed": "Could not load TMDB suggestions.",
+  "rematch.noResults": "No TMDB results for this search.",
+  "rematch.parsedAs": "Detected as {title}",
+  "rematch.pinned": "Manual choice",
+  "rematch.reset": "Restore automatic matching",
+  "rematch.search": "Search",
+  "rematch.searchPlaceholder": "Search TMDB for another title",
+  "rematch.subtitle": "Pick the right TMDB title for this element.",
+  "rematch.title": "Fix the TMDB match",
+  "rematch.tmdbId": "TMDB #{id}"
+}

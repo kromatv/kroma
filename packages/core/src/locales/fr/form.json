@@ -1,0 +1,10 @@
+{
+  "form.email": "Cette adresse e-mail n’a pas l’air valide.",
+  "form.mismatch": "Les deux ne correspondent pas.",
+  "form.number": "Chiffres uniquement.",
+  "form.required": "Ce champ est requis.",
+  "form.submitFailed": "L’envoi a échoué. Réessayez.",
+  "form.tooLong": "Utilisez au plus {max} caractères.",
+  "form.tooShort": "Utilisez au moins {min} caractères.",
+  "form.url": "Cette adresse web n’a pas l’air valide."
+}

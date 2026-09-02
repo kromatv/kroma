@@ -252,7 +252,7 @@ function PendingInviteRow({ inv, onChange }: Readonly<{ inv: Invite; onChange: (
         <IconWell name="mail" size="sm" />
         <Box flex minW={180} gap={2}>
           <Text variant="label" lines={1}>
-            {labels.join(' · ') || t('admin.permPlayback')}
+            {labels.join(' · ') || t('permissions.playback')}
           </Text>
           <Text variant="meta" color="textDim" lines={1}>
             {inv.createdBy

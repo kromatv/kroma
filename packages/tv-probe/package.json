@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@kroma/client": "workspace:*",
+    "@kroma/i18n": "workspace:*",
     "playwright": "1.62.1"
   },
   "devDependencies": {

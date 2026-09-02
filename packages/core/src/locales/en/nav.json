@@ -1,0 +1,23 @@
+{
+  "nav.account": "Account",
+  "nav.accountSettings": "Account settings",
+  "nav.changeProfile": "Switch profile",
+  "nav.comingSoon": "Coming soon",
+  "nav.connectDevice": "Connect a device",
+  "nav.films": "Movies",
+  "nav.genres": "Genres",
+  "nav.home": "Home",
+  "nav.inviteUser": "Invite a user",
+  "nav.menu": "Menu",
+  "nav.missing": "Missing",
+  "nav.myList": "My list",
+  "nav.realtimeActivity": "Real-time activity",
+  "nav.requests": "My requests",
+  "nav.search": "Search",
+  "nav.series": "Series",
+  "nav.server": "Server",
+  "nav.settings": "Settings",
+  "nav.thisDevice": "This device",
+  "nav.versionClient": "Client",
+  "nav.versionServer": "Server"
+}

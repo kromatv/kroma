@@ -26,6 +26,18 @@ describe('expandRefs', () => {
     expect(out.fr.hi).toBe('Bonjour KROMA');
   });
 
+  it('reaches catalogs already built, own locale first, for a part added later', () => {
+    const built = { en: { brand: 'KROMA', unit: 'season' }, fr: { unit: 'saison' } };
+
+    const out = expandRefs(
+      { en: { of: 'A $t(unit) of $t(brand)' }, fr: { of: 'Une $t(unit) de $t(brand)' } },
+      'en',
+      built,
+    );
+
+    expect([out.en.of, out.fr.of]).toEqual(['A season of KROMA', 'Une saison de KROMA']);
+  });
+
   it('expands a chain of references', () => {
     const out = expandRefs({ en: { a: 'A', b: '$t(a)B', c: '$t(b)C' } }, 'en');
 

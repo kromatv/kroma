@@ -1,0 +1,20 @@
+{
+  "email.reset.button": "Choisir un nouveau mot de passe",
+  "email.reset.codeLabel": "code à 8 caractères",
+  "email.reset.codeNote": "Le lien seul ne suffit pas : il vous faudra le {code} que le propriétaire du serveur vous a transmis. Sans lui, personne ne peut utiliser ce lien — pas même nous.",
+  "email.reset.footer": "Ce lien expire bientôt et ne peut servir qu'une fois. Si vous n'êtes pas à l'origine de cette demande, ignorez ce courriel : rien ne change.",
+  "email.reset.heading": "Réinitialisation du mot de passe",
+  "email.reset.intro": "Quelqu'un a demandé à réinitialiser le mot de passe de ce compte sur {name}.",
+  "email.reset.preheader": "Le lien seul ne suffit pas : il vous faudra le code transmis par le propriétaire du serveur.",
+  "email.reset.subject": "Réinitialisez votre mot de passe · {name}",
+  "email.reset.text": "Quelqu'un a demandé à réinitialiser le mot de passe de ce compte sur {name}.\n\nOuvrez ce lien pour en choisir un nouveau :\n{url}\n\nLe lien seul ne suffit pas : il vous faudra le code à 8 caractères que le propriétaire du serveur vous a transmis.\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce courriel : rien ne change.",
+  "email.test.subject": "KROMA — test SMTP",
+  "email.test.text": "Si vous lisez ce message, les réglages SMTP de votre serveur KROMA fonctionnent.",
+  "email.verify.button": "Confirmer mon adresse",
+  "email.verify.footer": "Ce lien expire dans 7 jours et ne peut servir qu'une fois. Si vous n'êtes pas à l'origine de cette demande, ignorez ce courriel : rien ne change.",
+  "email.verify.heading": "Confirmez votre adresse e-mail",
+  "email.verify.intro": "Cette adresse a été renseignée pour votre compte sur {name}. Confirmez qu'elle vous appartient.",
+  "email.verify.preheader": "Un clic suffit pour confirmer votre adresse.",
+  "email.verify.subject": "Confirmez votre adresse e-mail · {name}",
+  "email.verify.text": "Cette adresse a été renseignée pour votre compte sur {name}.\n\nOuvrez ce lien pour confirmer qu'elle vous appartient :\n{url}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce courriel : rien ne change."
+}

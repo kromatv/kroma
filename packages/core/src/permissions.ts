@@ -15,24 +15,28 @@ export interface PermissionMeta {
 /** All grantable permissions, in display order. Keep in sync with the Rust
  * `Permission` enum (`server/src/domain/accounts.rs`). */
 export const PERMISSIONS: readonly PermissionMeta[] = [
-  { key: 'playback', labelKey: 'admin.permPlayback', hintKey: 'admin.permPlaybackHint' },
-  { key: 'library.manage', labelKey: 'admin.permLibrary', hintKey: 'admin.permLibraryHint' },
-  { key: 'users.manage', labelKey: 'admin.permUsers', hintKey: 'admin.permUsersHint' },
-  { key: 'settings.manage', labelKey: 'admin.permSettings', hintKey: 'admin.permSettingsHint' },
+  { key: 'playback', labelKey: 'permissions.playback', hintKey: 'permissions.playbackHint' },
+  { key: 'library.manage', labelKey: 'permissions.library', hintKey: 'permissions.libraryHint' },
+  { key: 'users.manage', labelKey: 'permissions.users', hintKey: 'permissions.usersHint' },
+  { key: 'settings.manage', labelKey: 'permissions.settings', hintKey: 'permissions.settingsHint' },
   {
     key: 'requests.create',
-    labelKey: 'admin.permRequestCreate',
-    hintKey: 'admin.permRequestCreateHint',
+    labelKey: 'permissions.requestCreate',
+    hintKey: 'permissions.requestCreateHint',
   },
   {
     key: 'requests.manage',
-    labelKey: 'admin.permRequestManage',
-    hintKey: 'admin.permRequestManageHint',
+    labelKey: 'permissions.requestManage',
+    hintKey: 'permissions.requestManageHint',
   },
-  { key: 'requests.auto', labelKey: 'admin.permRequestAuto', hintKey: 'admin.permRequestAutoHint' },
+  {
+    key: 'requests.auto',
+    labelKey: 'permissions.requestAuto',
+    hintKey: 'permissions.requestAutoHint',
+  },
   {
     key: 'reports.manage',
-    labelKey: 'admin.permReportsManage',
-    hintKey: 'admin.permReportsManageHint',
+    labelKey: 'permissions.reportsManage',
+    hintKey: 'permissions.reportsManageHint',
   },
 ];

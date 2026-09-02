@@ -1,0 +1,21 @@
+{
+  "addProfile.addManually": "Add manually",
+  "addProfile.addManuallySub": "Enter a distant server's address",
+  "addProfile.availableServers": "Available servers",
+  "addProfile.checking": "Checking…",
+  "addProfile.localServers": "Local servers",
+  "addProfile.navHint": "{up} {down} Navigate · OK Choose · Back Cancel",
+  "addProfile.new": "new",
+  "addProfile.noLocal": "No server found on the network",
+  "addProfile.other": "Other",
+  "addProfile.profileCount": "{count} profiles",
+  "addProfile.profileCount_one": "{count} profile",
+  "addProfile.reachable": "Online",
+  "addProfile.savedServers": "Saved servers",
+  "addProfile.searching": "Searching…",
+  "addProfile.showCount": "{count} series",
+  "addProfile.showCount_one": "{count} series",
+  "addProfile.subtitle": "Choose the server, then link your profile with Quick Connect.",
+  "addProfile.title": "Add a profile",
+  "addProfile.unreachable": "Unreachable"
+}

@@ -1,0 +1,21 @@
+{
+  "rematch.action": "Corriger la fiche",
+  "rematch.applied": "Correspondance mise à jour, les métadonnées se rechargent.",
+  "rematch.apply": "Utiliser ce titre",
+  "rematch.applyFailed": "Impossible de mettre à jour la correspondance.",
+  "rematch.confidence": "Confiance {score} %",
+  "rematch.confidenceValue": "{score} %",
+  "rematch.current": "Actuel",
+  "rematch.groupLikely": "Correspondances probables",
+  "rematch.groupOther": "Autres résultats",
+  "rematch.loadFailed": "Impossible de charger les propositions TMDB.",
+  "rematch.noResults": "Aucun résultat sur TMDB pour cette recherche.",
+  "rematch.parsedAs": "Détecté comme {title}",
+  "rematch.pinned": "Choix manuel",
+  "rematch.reset": "Rétablir la correspondance automatique",
+  "rematch.search": "Chercher",
+  "rematch.searchPlaceholder": "Chercher un autre titre sur TMDB",
+  "rematch.subtitle": "Choisissez le bon titre TMDB pour cet élément.",
+  "rematch.title": "Corriger la correspondance TMDB",
+  "rematch.tmdbId": "TMDB #{id}"
+}

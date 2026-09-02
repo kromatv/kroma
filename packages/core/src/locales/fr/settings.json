@@ -1,0 +1,17 @@
+{
+  "settings.blur": "Flou d'arrière-plan",
+  "settings.blurDesc": "À désactiver sur une machine qui compose le flou sur le processeur.",
+  "settings.builtAt": "Compilé le",
+  "settings.castReceiver": "Autoriser le contrôle depuis un autre appareil",
+  "settings.commit": "Commit",
+  "settings.content": "Contenu",
+  "settings.crashReporting": "Envoyer les rapports de plantage à votre serveur",
+  "settings.device": "Appareil",
+  "settings.languages": "Langues",
+  "settings.libraryCount": "{count} bibliothèques",
+  "settings.libraryCount_one": "{count} bibliothèque",
+  "settings.mediaCount": "{count} médias",
+  "settings.mediaCount_one": "{count} média",
+  "settings.playback": "Lecture",
+  "settings.version": "Version"
+}

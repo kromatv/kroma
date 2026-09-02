@@ -21,7 +21,7 @@ describe('createI18n', () => {
       defaultLocale: 'en',
     });
 
-    expect([i18n.translate('en', 'greeting'), i18n.has('$schema')]).toEqual(['Hi', false]);
+    expect(i18n.translate('en', 'greeting')).toBe('Hi');
   });
 
   it('renders the key itself where no catalog in the chain answers', () => {
@@ -179,15 +179,5 @@ describe('runtime catalogs', () => {
     i18n.add('mod', { en: { own: 'Mine' } });
 
     expect(listener).not.toHaveBeenCalled();
-  });
-});
-
-describe('has', () => {
-  it('answers for the default catalog, which is the complete one', () => {
-    const i18n = build();
-
-    expect(i18n.has('greeting')).toBe(true);
-    expect(i18n.has('lang.fr')).toBe(false);
-    expect(i18n.has('nope')).toBe(false);
   });
 });

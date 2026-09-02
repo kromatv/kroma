@@ -16,25 +16,28 @@ export interface BuildInfo {
 }
 
 /**
- * Serves `virtual:build-info`, a module with no on-disk file. `projectRoot` is
- * the client being built: the version is read and git runs there, so the answer
- * does not depend on the directory the build was launched from.
+ * Serves `virtual:build-info`, a module with no on-disk file. The version is
+ * read and git runs in the config's root, the client being built, so the
+ * answer does not depend on the directory the build was launched from.
  */
-export function buildInfoPlugin({ projectRoot }: { projectRoot: string }): Plugin {
+export function buildInfoPlugin(): Plugin {
   const virtualId = 'virtual:build-info';
   const resolvedId = `\0${virtualId}`;
-  const collected = collectBuildInfo(projectRoot);
-  const info: BuildInfo = {
-    ...collected,
-    commit: collected.commit ?? 'unknown',
-    commitFull: collected.commitFull ?? 'unknown',
-    branch: collected.branch ?? 'unknown',
-  };
-  const json = JSON.stringify(info);
-  const names = 'version, commit, commitFull, branch, dirty, buildDate, repository';
-  const code = `export default ${json};\nexport const { ${names} } = ${json};\n`;
+  let code = '';
   return {
     name: 'kroma-build-info',
+    configResolved(config) {
+      const collected = collectBuildInfo(config.root);
+      const info: BuildInfo = {
+        ...collected,
+        commit: collected.commit ?? 'unknown',
+        commitFull: collected.commitFull ?? 'unknown',
+        branch: collected.branch ?? 'unknown',
+      };
+      const json = JSON.stringify(info);
+      const names = 'version, commit, commitFull, branch, dirty, buildDate, repository';
+      code = `export default ${json};\nexport const { ${names} } = ${json};\n`;
+    },
     resolveId: (source) => (source === virtualId ? resolvedId : null),
     load: (id) => (id === resolvedId ? code : null),
   };

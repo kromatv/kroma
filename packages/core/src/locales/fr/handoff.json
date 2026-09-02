@@ -1,0 +1,20 @@
+{
+  "handoff.checkHint": "Regarde en bas de l'écran de la TV.",
+  "handoff.checkPrompt": "Saisis le code affiché sur {name}",
+  "handoff.checkRequired": "Cette TV demande le code affiché sur son écran",
+  "handoff.checkTooMany": "Trop de codes faux. Recommence sur la TV.",
+  "handoff.checkWrong": "Code incorrect. Relis-le sur la TV.",
+  "handoff.connecting": "Connexion…",
+  "handoff.gone": "N'attend plus",
+  "handoff.nearbyEmpty": "Aucune TV en attente",
+  "handoff.nearbyEmptyHint": "Ouvre KROMA sur ta TV et laisse-la sur l'écran de connexion.",
+  "handoff.nearbySearching": "Recherche de TV…",
+  "handoff.nearbySub": "Choisis ta TV pour la connecter. Rien à scanner, rien à saisir.",
+  "handoff.nearbyTitle": "TV sur ce réseau",
+  "handoff.otherWays": "Autres façons de se connecter",
+  "handoff.rowDone": "Connectée",
+  "handoff.tooManyHere": "Trop de TV attendent déjà sur ce réseau",
+  "handoff.tooOften": "Cette TV s’est annoncée trop souvent. Elle réessaiera dans un instant.",
+  "handoff.tvBeacon": "Sur ton téléphone, cette TV apparaît sous le nom {name}",
+  "handoff.tvCheck": "Code {check}"
+}

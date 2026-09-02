@@ -1,0 +1,14 @@
+{
+  "opt.auto": "Auto",
+  "opt.autoF": "Automatic",
+  "opt.beta": "Beta",
+  "opt.darkKroma": "Dark (Kroma)",
+  "opt.disabled": "Disabled",
+  "opt.preferQuality": "Prefer quality",
+  "opt.preferSpeed": "Prefer speed",
+  "opt.preferred": "Preferred",
+  "opt.required": "Required",
+  "opt.stable": "Stable",
+  "opt.system": "System",
+  "opt.unlimited": "Unlimited"
+}

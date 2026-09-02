@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "sideEffects": false,
   "description": "KROMA frontend module contract: the KromaModule manifest, host context, typed event bus, and dependency-ordered registry every @kroma/module-* package targets. Mirrors the Rust kroma-module-sdk.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "license": "GPL-2.0-or-later",

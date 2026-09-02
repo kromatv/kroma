@@ -1,0 +1,17 @@
+{
+  "playbackEngine.auto": "Automatic",
+  "playbackEngine.autoNote": "Plays the file as-is when the device can, otherwise goes through the server",
+  "playbackEngine.avplay": "Samsung player",
+  "playbackEngine.avplayNote": "The decoder built into Tizen televisions",
+  "playbackEngine.mpv": "mpv player",
+  "playbackEngine.mpvNote": "The desktop app's native player",
+  "playbackEngine.remux": "Server remux",
+  "playbackEngine.remuxNote": "The server repackages the file on the fly, without re-encoding the picture",
+  "playbackEngine.shaka": "Shaka Player",
+  "playbackEngine.shakaNote": "A JavaScript player, for segmented streams",
+  "playbackEngine.title": "Playback engine",
+  "playbackEngine.vlc": "VLC player",
+  "playbackEngine.vlcNote": "Bundled software decoders, for what the chip refuses",
+  "playbackEngine.webview": "Browser player",
+  "playbackEngine.webviewNote": "The browser's own video element, no library"
+}

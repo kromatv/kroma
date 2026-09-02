@@ -1,5 +1,6 @@
 //! Assembling an [`I18n`] from catalogs.
 
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
@@ -12,6 +13,7 @@ pub enum BuildError {
     MissingDefault,
     DefaultNotLoaded(String),
     Catalog(String, serde_json::Error),
+    DuplicateKey(String, String),
 }
 
 impl fmt::Display for BuildError {
@@ -20,6 +22,9 @@ impl fmt::Display for BuildError {
             BuildError::MissingDefault => write!(f, "no default locale set"),
             BuildError::DefaultNotLoaded(c) => write!(f, "no catalog for default locale `{c}`"),
             BuildError::Catalog(c, e) => write!(f, "catalog `{c}` is not a flat string map: {e}"),
+            BuildError::DuplicateKey(c, k) => {
+                write!(f, "catalog `{c}` defines `{k}` in two of its parts")
+            }
         }
     }
 }
@@ -70,13 +75,15 @@ impl Builder {
     }
 
     /// Add a locale from a flat `{ "key": "value" }` JSON catalog. Parsed at
-    /// [`build`](Self::build).
+    /// [`build`](Self::build). A locale may arrive in several parts, one file
+    /// per namespace; the parts merge and must not repeat a key.
     pub fn catalog_json(mut self, code: impl Into<String>, json: impl Into<String>) -> Self {
         self.raw.push((code.into(), json.into()));
         self
     }
 
-    /// Add a locale from an already-parsed map.
+    /// Add a locale from an already-parsed map. Merges like
+    /// [`catalog_json`](Self::catalog_json).
     pub fn catalog(mut self, code: impl Into<String>, entries: HashMap<String, String>) -> Self {
         self.parsed.push((code.into(), entries));
         self
@@ -85,26 +92,14 @@ impl Builder {
     /// Parse/validate everything and construct the engine.
     pub fn build(self) -> Result<I18n, BuildError> {
         let default = self.default.ok_or(BuildError::MissingDefault)?;
-        let mut locales = Vec::with_capacity(self.raw.len() + self.parsed.len());
+        let mut locales: Vec<Locale> = Vec::new();
         for (code, json) in self.raw {
-            let mut entries: HashMap<String, String> =
+            let entries: HashMap<String, String> =
                 serde_json::from_str(&json).map_err(|e| BuildError::Catalog(code.clone(), e))?;
-            // `$schema` points an editor at the catalog schema; it is not a
-            // message, and the TypeScript half drops it for the same reason.
-            entries.remove("$schema");
-            locales.push(Locale {
-                label_key: (self.label_key)(&code),
-                code,
-                entries,
-            });
+            merge_part(&mut locales, code, entries, self.label_key)?;
         }
-        for (code, mut entries) in self.parsed {
-            entries.remove("$schema");
-            locales.push(Locale {
-                label_key: (self.label_key)(&code),
-                code,
-                entries,
-            });
+        for (code, entries) in self.parsed {
+            merge_part(&mut locales, code, entries, self.label_key)?;
         }
         if !locales.iter().any(|l| l.code == default) {
             return Err(BuildError::DefaultNotLoaded(default));
@@ -129,6 +124,36 @@ impl Builder {
             plural: self.plural,
         })
     }
+}
+
+fn merge_part(
+    locales: &mut Vec<Locale>,
+    code: String,
+    mut entries: HashMap<String, String>,
+    label_key: fn(&str) -> String,
+) -> Result<(), BuildError> {
+    // `$schema` points an editor at the catalog schema; it is not a message,
+    // and the TypeScript half drops it for the same reason.
+    entries.remove("$schema");
+    let Some(locale) = locales.iter_mut().find(|l| l.code == code) else {
+        locales.push(Locale {
+            label_key: label_key(&code),
+            code,
+            entries,
+        });
+        return Ok(());
+    };
+    for (key, value) in entries {
+        match locale.entries.entry(key) {
+            Entry::Occupied(taken) => {
+                return Err(BuildError::DuplicateKey(code, taken.key().clone()));
+            }
+            Entry::Vacant(slot) => {
+                slot.insert(value);
+            }
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -203,6 +228,41 @@ mod tests {
             .build()
             .unwrap();
         assert_eq!(i18n.translate("de", "hi", &[("name", "Ana")]), "Hallo Ana");
+    }
+
+    #[test]
+    fn a_locale_assembles_from_several_parts_that_may_quote_each_other() {
+        let i18n = I18n::builder()
+            .default_locale("en")
+            .catalog_json("en", r#"{ "nav.home": "Home" }"#)
+            .catalog_json("en", r#"{ "player.back": "Back to $t(nav.home)" }"#)
+            .catalog_json("fr", r#"{ "nav.home": "Accueil" }"#)
+            .build()
+            .unwrap();
+
+        assert_eq!(i18n.translate("en", "player.back", &[]), "Back to Home");
+        assert_eq!(i18n.translate("fr", "nav.home", &[]), "Accueil");
+        assert_eq!(i18n.supported().collect::<Vec<_>>(), ["en", "fr"]);
+    }
+
+    #[test]
+    fn a_key_two_parts_both_define_is_an_error_that_names_it() {
+        let Err(err) = I18n::builder()
+            .default_locale("en")
+            .catalog_json("en", r#"{ "nav.home": "Home" }"#)
+            .catalog(
+                "en",
+                HashMap::from([("nav.home".to_string(), "Start".to_string())]),
+            )
+            .build()
+        else {
+            panic!("a repeated key is an error")
+        };
+
+        assert!(matches!(err, BuildError::DuplicateKey(..)));
+        let message = err.to_string();
+        assert!(message.contains("`en`"), "{message}");
+        assert!(message.contains("`nav.home`"), "{message}");
     }
 
     #[test]

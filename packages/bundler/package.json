@@ -12,8 +12,10 @@
     "directory": "packages/bundler"
   },
   "exports": {
+    ".": "./src/kroma.ts",
     "./build-info": "./src/build-info.ts",
     "./deep-tier": "./src/deep-tier.ts",
+    "./deps-without-maps": "./src/deps-without-maps.ts",
     "./exit-after-build": "./src/exit-after-build.ts",
     "./git-history": "./src/git-history.ts",
     "./legacy-css": "./src/legacy-css.ts",
@@ -41,6 +43,7 @@
     "@babel/plugin-transform-classes": "^7.29.7",
     "@babel/preset-env": "^7.29.7",
     "@kroma/build-info": "workspace:*",
+    "@kroma/core": "workspace:*",
     "@kroma/i18n": "workspace:*",
     "@kroma/i18n-devtools": "workspace:*",
     "@kroma/ui": "workspace:*",

@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { LABEL_NAMESPACE, namespaceOf } from '@kroma/i18n';
 import type { Plugin } from 'vite';
 
 const KIT_SRC = fileURLToPath(new URL('../../ui/src', import.meta.url));
@@ -51,7 +52,11 @@ export function subsetCatalog(
 ): Record<string, string> {
   const kept: Record<string, string> = {};
   for (const [key, message] of Object.entries(catalog)) {
-    if (key.startsWith('lang.') || keys.has(key) || keys.has(key.replace(PLURAL, ''))) {
+    if (
+      namespaceOf(key) === LABEL_NAMESPACE ||
+      keys.has(key) ||
+      keys.has(key.replace(PLURAL, ''))
+    ) {
       kept[key] = message;
     }
   }
