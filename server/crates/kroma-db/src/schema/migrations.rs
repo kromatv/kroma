@@ -228,4 +228,33 @@ pub(crate) const MIGRATIONS: &[&str] = &[
           OR (h.episode IS NULL AND i.episode IS NOT NULL))",
     "UPDATE play_history AS h SET library = i.library \
        FROM items i WHERE i.id = h.item_id AND h.library IS NULL",
+    // One row per admin-minted credential reset. The code is stored as a hash
+    // (same PBKDF2 as passwords), never in clear.
+    "CREATE TABLE IF NOT EXISTS credential_resets (\
+        token       TEXT PRIMARY KEY,\
+        user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,\
+        code_hash   TEXT NOT NULL,\
+        attempts    INTEGER NOT NULL DEFAULT 0,\
+        created_by  TEXT REFERENCES users(id) ON DELETE SET NULL,\
+        created_at  TEXT NOT NULL,\
+        expires_at  INTEGER NOT NULL,\
+        used_at     TEXT)",
+    // The address's proof of ownership: set when a verification link confirms,
+    // cleared whenever the address changes.
+    "ALTER TABLE users ADD COLUMN email_verified_at TEXT",
+    // One row per admin-minted email verification. No code: reaching the
+    // mailbox is itself the proof, so the link alone suffices.
+    "CREATE TABLE IF NOT EXISTS email_verifications (\
+        token       TEXT PRIMARY KEY,\
+        user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,\
+        email       TEXT NOT NULL,\
+        created_by  TEXT REFERENCES users(id) ON DELETE SET NULL,\
+        created_at  TEXT NOT NULL,\
+        expires_at  INTEGER NOT NULL,\
+        used_at     TEXT)",
+    // One open reset request per account, asked from the sign-in screen and
+    // cleared when the owner mints a reset.
+    "CREATE TABLE IF NOT EXISTS reset_requests (\
+        user_id     TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,\
+        created_at  TEXT NOT NULL)",
 ];

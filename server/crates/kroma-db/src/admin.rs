@@ -61,21 +61,29 @@ fn row_to_admin_user(r: &Row) -> rusqlite::Result<User> {
 
 /// All accounts for the admin "Membres & partage" table, oldest first (owner is
 /// account 0). `online` is left false here the handler fills it from the live
-/// playback registry.
+/// playback registry. A reset request counts for [`RESET_REQUEST_FRESH_DAYS`],
+/// then goes stale and stops showing.
 pub fn admin_users(pool: &Pool) -> Result<Vec<kroma_domain::AdminUser>> {
     let conn = pool.get()?;
+    let cutoff = (time::OffsetDateTime::now_utc()
+        - time::Duration::days(RESET_REQUEST_FRESH_DAYS))
+    .format(&time::format_description::well_known::Rfc3339)
+    .unwrap_or_default();
     let mut stmt = conn.prepare(
-        "SELECT id,email,username,avatar_url,created_at,permissions,last_seen,(pin_hash IS NOT NULL),audio_language,subtitle_language \
-         FROM users ORDER BY created_at",
+        "SELECT users.id,email,username,avatar_url,users.created_at,permissions,last_seen,(pin_hash IS NOT NULL),audio_language,subtitle_language,(email_verified_at IS NOT NULL),(rr.created_at IS NOT NULL) \
+         FROM users LEFT JOIN reset_requests rr ON rr.user_id = users.id AND rr.created_at > ?1 \
+         ORDER BY users.created_at",
     )?;
-    let rows = stmt.query_map([], |r| {
+    let rows = stmt.query_map([cutoff], |r| {
         let user = row_to_admin_user(r)?;
         let last_seen: Option<String> = r.get(6)?;
-        Ok((user, last_seen))
+        let email_verified: bool = r.get(10)?;
+        let reset_requested: bool = r.get(11)?;
+        Ok((user, last_seen, email_verified, reset_requested))
     })?;
     let mut out = Vec::new();
     for row in rows {
-        let (u, last_seen) = row?;
+        let (u, last_seen, email_verified, reset_requested) = row?;
         out.push(kroma_domain::AdminUser {
             role: kroma_domain::role_label(&u.permissions).to_string(),
             id: u.id,
@@ -86,10 +94,17 @@ pub fn admin_users(pool: &Pool) -> Result<Vec<kroma_domain::AdminUser>> {
             created_at: u.created_at,
             last_seen,
             online: false,
+            email_verified,
+            has_pin: u.has_pin,
+            reset_requested,
         });
     }
     Ok(out)
 }
+
+/// Days a sign-in-screen reset request stays on the member row before it is
+/// treated as stale.
+const RESET_REQUEST_FRESH_DAYS: i64 = 30;
 
 /// Fetch one full user by id (with email + permissions), or `None`.
 #[allow(dead_code)] // public lookup helper; used by admin tooling/tests.

@@ -13,7 +13,9 @@
 mod grants;
 pub mod handoff;
 pub mod quickconnect;
-mod throttle;
+// Public: the same per-caller ceiling guards the other unauthenticated routes
+// (reset requests) without each growing its own limiter.
+pub mod throttle;
 
 pub use grants::{Granted, Orphaned, PollState};
 pub use handoff::{Handoff, HandoffInner};

@@ -41,7 +41,8 @@ pub struct SettingRow {
     pub label: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub desc: Option<String>,
-    // `toggle` | `select` | `text` | `value`.
+    // `toggle` | `select` | `text` | `value` | `secret` (multi-line write-only)
+    // | `password` (single-line write-only) | `action` (a button, no value).
     pub kind: &'static str,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub options: Vec<String>,
@@ -170,75 +171,139 @@ pub fn groups(
                 ],
             ),
         ],
-        "network" => vec![group(
-            "admin.portsDiscovery",
-            None,
-            vec![
-                row(
-                    "publicAddress",
-                    t("admin.publicAddress"),
-                    None,
-                    "value",
-                    &[],
-                    json!(public_address(config)),
-                    true,
-                ),
-                row(
-                    "port",
-                    t("admin.port"),
-                    Some(t("admin.portHint")),
-                    "value",
-                    &[],
-                    json!(config.port.to_string()),
-                    true,
-                ),
-                row(
-                    "localDiscovery",
-                    t("admin.localDiscovery"),
-                    Some(t("admin.localDiscoveryHint")),
-                    "toggle",
-                    &[],
-                    g("localDiscovery"),
-                    true,
-                ),
-                row(
-                    "localNetworks",
-                    t("admin.localNetworks"),
-                    Some(t("admin.localNetworksHint")),
-                    "text",
-                    &[],
-                    g("localNetworks"),
-                    true,
-                ),
-                row(
-                    "httpsEnabled",
-                    t("admin.httpsEnabled"),
-                    Some(t("admin.httpsEnabledHint")),
-                    "toggle",
-                    &[],
-                    g("httpsEnabled"),
-                    true,
-                ),
-                row(
-                    "httpsPort",
-                    t("admin.httpsPort"),
-                    Some(t("admin.httpsPortHint")),
-                    "text",
-                    &[],
-                    g("httpsPort"),
-                    true,
-                ),
-                row(
-                    "httpsRedirect",
-                    t("admin.httpsRedirect"),
-                    Some(t("admin.httpsRedirectHint")),
-                    "toggle",
-                    &[],
-                    g("httpsRedirect"),
-                    true,
-                ),
-            ],
-        )],
+        "network" => vec![
+            group(
+                "admin.portsDiscovery",
+                None,
+                vec![
+                    row(
+                        "publicAddress",
+                        t("admin.publicAddress"),
+                        None,
+                        "value",
+                        &[],
+                        json!(public_address(config)),
+                        true,
+                    ),
+                    row(
+                        "port",
+                        t("admin.port"),
+                        Some(t("admin.portHint")),
+                        "value",
+                        &[],
+                        json!(config.port.to_string()),
+                        true,
+                    ),
+                    row(
+                        "localDiscovery",
+                        t("admin.localDiscovery"),
+                        Some(t("admin.localDiscoveryHint")),
+                        "toggle",
+                        &[],
+                        g("localDiscovery"),
+                        true,
+                    ),
+                    row(
+                        "localNetworks",
+                        t("admin.localNetworks"),
+                        Some(t("admin.localNetworksHint")),
+                        "text",
+                        &[],
+                        g("localNetworks"),
+                        true,
+                    ),
+                    row(
+                        "httpsEnabled",
+                        t("admin.httpsEnabled"),
+                        Some(t("admin.httpsEnabledHint")),
+                        "toggle",
+                        &[],
+                        g("httpsEnabled"),
+                        true,
+                    ),
+                    row(
+                        "httpsPort",
+                        t("admin.httpsPort"),
+                        Some(t("admin.httpsPortHint")),
+                        "text",
+                        &[],
+                        g("httpsPort"),
+                        true,
+                    ),
+                    row(
+                        "httpsRedirect",
+                        t("admin.httpsRedirect"),
+                        Some(t("admin.httpsRedirectHint")),
+                        "toggle",
+                        &[],
+                        g("httpsRedirect"),
+                        true,
+                    ),
+                ],
+            ),
+            group(
+                "admin.email",
+                Some("admin.emailDesc"),
+                vec![
+                    row(
+                        "smtpEnabled",
+                        t("admin.smtpEnabled"),
+                        Some(t("admin.smtpEnabledHint")),
+                        "toggle",
+                        &[],
+                        g("smtpEnabled"),
+                        true,
+                    ),
+                    row(
+                        "smtpHost",
+                        t("admin.smtpHost"),
+                        None,
+                        "text",
+                        &[],
+                        g("smtpHost"),
+                        true,
+                    ),
+                    row(
+                        "smtpPort",
+                        t("admin.smtpPort"),
+                        None,
+                        "text",
+                        &[],
+                        g("smtpPort"),
+                        true,
+                    ),
+                    row(
+                        "smtpUsername",
+                        t("admin.smtpUsername"),
+                        None,
+                        "text",
+                        &[],
+                        g("smtpUsername"),
+                        true,
+                    ),
+                    row(
+                        "smtpFrom",
+                        t("admin.smtpFrom"),
+                        Some(t("admin.smtpFromHint")),
+                        "text",
+                        &[],
+                        g("smtpFrom"),
+                        true,
+                    ),
+                    password_row(
+                        "smtpPassword",
+                        t("admin.smtpPassword"),
+                        Some(t("admin.smtpPasswordHint")),
+                        !settings.get_str("smtpPassword", "").is_empty(),
+                    ),
+                    action_row(
+                        "smtpTest",
+                        t("admin.smtpTest"),
+                        Some(t("admin.smtpTestHint")),
+                    ),
+                ],
+            ),
+        ],
         "transcoder" => vec![group(
             "admin.qualityPerf",
             Some("admin.qualityPerfDesc"),
@@ -524,6 +589,43 @@ fn row(
     }
 }
 
+fn secret_row(key: &str, label: String, desc: Option<String>, configured: bool) -> SettingRow {
+    SettingRow {
+        key: key.to_string(),
+        label,
+        desc,
+        kind: "secret",
+        options: vec![],
+        value: Value::Null,
+        applied: true,
+        configured: Some(configured),
+    }
+}
+
+/// A single-line write-only credential (a password, not a PEM): same "never
+/// sent back" rule as `secret`, but masked and single-line on the client.
+fn password_row(key: &str, label: String, desc: Option<String>, configured: bool) -> SettingRow {
+    SettingRow {
+        kind: "password",
+        ..secret_row(key, label, desc, configured)
+    }
+}
+
+/// A button that runs a server-side action named by `key` (the client maps the
+/// key to its endpoint). No value, nothing persisted.
+fn action_row(key: &str, label: String, desc: Option<String>) -> SettingRow {
+    SettingRow {
+        key: key.to_string(),
+        label,
+        desc,
+        kind: "action",
+        options: vec![],
+        value: Value::Null,
+        applied: true,
+        configured: None,
+    }
+}
+
 fn transcode_dir(config: &crate::config::Config) -> String {
     config.data_dir.join("hls").to_string_lossy().to_string()
 }
@@ -630,6 +732,29 @@ mod tests {
                 assert!(!wire.contains(secret), "{view} view leaked {secret}");
             }
         }
+    }
+
+    #[test]
+    fn network_view_offers_smtp_but_never_the_password() {
+        let pool = test_pool();
+        let s = Settings::load(&pool);
+        s.set_patch(
+            &pool,
+            std::collections::BTreeMap::from([
+                ("smtpEnabled".to_string(), json!(true)),
+                ("smtpHost".to_string(), json!("mail.example.com")),
+                ("smtpPassword".to_string(), json!("s3cr3t")),
+            ]),
+        );
+
+        let groups = groups("network", &s, &test_config(), "en");
+        let password = find_row(&groups, "smtpPassword").unwrap();
+        assert_eq!(password.kind, "password");
+        assert_eq!(password.configured, Some(true));
+        assert!(password.value.is_null());
+
+        let wire = serde_json::to_string(&groups).unwrap();
+        assert!(!wire.contains("s3cr3t"));
     }
 
     #[test]

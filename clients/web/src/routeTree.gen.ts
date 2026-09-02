@@ -13,6 +13,8 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ResetRouteImport } from './routes/reset'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppSplatRouteImport } from './routes/_app.$'
 import { Route as AppAccountRouteImport } from './routes/_app.account'
@@ -72,6 +74,16 @@ const JoinRoute = JoinRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetRoute = ResetRouteImport.update({
+  id: '/reset',
+  path: '/reset',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -285,6 +297,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
+  '/reset': typeof ResetRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/$': typeof AppSplatRoute
   '/account': typeof AppAccountRoute
   '/coming-soon': typeof AppComingSoonRoute
@@ -329,6 +343,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
+  '/reset': typeof ResetRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/$': typeof AppSplatRoute
   '/account': typeof AppAccountRoute
   '/coming-soon': typeof AppComingSoonRoute
@@ -377,6 +393,8 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
+  '/reset': typeof ResetRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/_app/$': typeof AppSplatRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/coming-soon': typeof AppComingSoonRoute
@@ -426,6 +444,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/join'
     | '/login'
+    | '/reset'
+    | '/verify-email'
     | '/$'
     | '/account'
     | '/coming-soon'
@@ -470,6 +490,8 @@ export interface FileRouteTypes {
   to:
     | '/join'
     | '/login'
+    | '/reset'
+    | '/verify-email'
     | '/$'
     | '/account'
     | '/coming-soon'
@@ -517,6 +539,8 @@ export interface FileRouteTypes {
     | '/admin'
     | '/join'
     | '/login'
+    | '/reset'
+    | '/verify-email'
     | '/_app/$'
     | '/_app/account'
     | '/_app/coming-soon'
@@ -565,6 +589,8 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   JoinRoute: typeof JoinRoute
   LoginRoute: typeof LoginRoute
+  ResetRoute: typeof ResetRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -595,6 +621,20 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset': {
+      id: '/reset'
+      path: '/reset'
+      fullPath: '/reset'
+      preLoaderRoute: typeof ResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -990,6 +1030,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   JoinRoute: JoinRoute,
   LoginRoute: LoginRoute,
+  ResetRoute: ResetRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

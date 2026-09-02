@@ -3,7 +3,7 @@
 
 # Requirement index
 
-78 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+88 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ADMIN - [admin](admin/)
 
@@ -85,3 +85,13 @@
 - **ADMIN-76** (AGREED) - A screen narrowed to one title names that title in the filter row <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-77** (AGREED) - When a session was watched is written out in full, the date and the <sub>[watch-history.md](admin/watch-history.md)</sub>
 - **ADMIN-78** (AGREED) - A row opens the title it names, at that title's own page, wherever <sub>[watch-history.md](admin/watch-history.md)</sub>
+- **ADMIN-79** (AGREED) - A reset is a single-use, time-limited link plus a short one-time <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-80** (AGREED) - The code is eight characters from a thirty-two-symbol alphabet with <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-81** (AGREED) - A new reset invalidates any unused previous one for the same account. <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-82** (AGREED) - Delivery is the owner's choice, per server: copy the link and code <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-83** (AGREED) - The kroma.tv relay sees the destination address and the link, never <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-84** (AGREED) - The owner can clear a user's profile PIN. Clearing is the only PIN <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-85** (AGREED) - An address on an account is unverified until the mailbox proves <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-86** (AGREED) - The owner sends a verification from the member editor, with the <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-87** (AGREED) - Changing the address clears the verified state: the proof belongs <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-88** (AGREED) - A user who cannot sign in can ask for a reset from the sign-in <sub>[README.md](admin/README.md)</sub>

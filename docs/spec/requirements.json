@@ -778,5 +778,105 @@
     "text": "A row opens the title it names, at that title's own page, wherever",
     "file": "docs/spec/admin/watch-history.md",
     "line": 40
+  },
+  {
+    "id": "ADMIN-79",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 79,
+    "status": "AGREED",
+    "text": "A reset is a single-use, time-limited link plus a short one-time",
+    "file": "docs/spec/admin/README.md",
+    "line": 110
+  },
+  {
+    "id": "ADMIN-80",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 80,
+    "status": "AGREED",
+    "text": "The code is eight characters from a thirty-two-symbol alphabet with",
+    "file": "docs/spec/admin/README.md",
+    "line": 116
+  },
+  {
+    "id": "ADMIN-81",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 81,
+    "status": "AGREED",
+    "text": "A new reset invalidates any unused previous one for the same account.",
+    "file": "docs/spec/admin/README.md",
+    "line": 120
+  },
+  {
+    "id": "ADMIN-82",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 82,
+    "status": "AGREED",
+    "text": "Delivery is the owner's choice, per server: copy the link and code",
+    "file": "docs/spec/admin/README.md",
+    "line": 124
+  },
+  {
+    "id": "ADMIN-83",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 83,
+    "status": "AGREED",
+    "text": "The kroma.tv relay sees the destination address and the link, never",
+    "file": "docs/spec/admin/README.md",
+    "line": 132
+  },
+  {
+    "id": "ADMIN-84",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 84,
+    "status": "AGREED",
+    "text": "The owner can clear a user's profile PIN. Clearing is the only PIN",
+    "file": "docs/spec/admin/README.md",
+    "line": 147
+  },
+  {
+    "id": "ADMIN-85",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 85,
+    "status": "AGREED",
+    "text": "An address on an account is unverified until the mailbox proves",
+    "file": "docs/spec/admin/README.md",
+    "line": 157
+  },
+  {
+    "id": "ADMIN-86",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 86,
+    "status": "AGREED",
+    "text": "The owner sends a verification from the member editor, with the",
+    "file": "docs/spec/admin/README.md",
+    "line": 162
+  },
+  {
+    "id": "ADMIN-87",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 87,
+    "status": "AGREED",
+    "text": "Changing the address clears the verified state: the proof belongs",
+    "file": "docs/spec/admin/README.md",
+    "line": 167
+  },
+  {
+    "id": "ADMIN-88",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 88,
+    "status": "AGREED",
+    "text": "A user who cannot sign in can ask for a reset from the sign-in",
+    "file": "docs/spec/admin/README.md",
+    "line": 136
   }
 ]

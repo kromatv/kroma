@@ -17,11 +17,13 @@ import type {
   Permission,
   PlaybackSession,
   PlaysPage,
+  ResetCreated,
   ServerInfo,
   SettingsView,
   StorageInfo,
   TopUser,
   Transcodes,
+  VerificationCreated,
 } from '../types';
 import { JSON_HEADERS, type RequestContext } from './base';
 
@@ -119,6 +121,33 @@ export async function deleteUser(ctx: RequestContext, id: string): Promise<void>
   await ctx.json<void>(`/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
+/** Mint a credential reset (requires `users.manage`). The returned `code` is
+ * the one-time code the owner reads to the user; it is never stored in clear. */
+export function resetUser(ctx: RequestContext, id: string): Promise<ResetCreated> {
+  return ctx.json<ResetCreated>(`/admin/users/${encodeURIComponent(id)}/reset`, {
+    method: 'POST',
+  });
+}
+
+/** Clear a user's profile PIN (requires `users.manage`). Remembered devices
+ * re-lock and ask for the account credential on the next switch-in. */
+export async function clearUserPin(ctx: RequestContext, id: string): Promise<void> {
+  await ctx.json<void>(`/admin/users/${encodeURIComponent(id)}/pin`, { method: 'DELETE' });
+}
+
+/** Mint an email-verification link for the account's current address and try
+ * to deliver it (requires `users.manage`). No code: reaching the mailbox is
+ * itself the proof. */
+export function sendEmailVerification(
+  ctx: RequestContext,
+  id: string,
+): Promise<VerificationCreated> {
+  return ctx.json<VerificationCreated>(
+    `/admin/users/${encodeURIComponent(id)}/email-verification`,
+    { method: 'POST' },
+  );
+}
+
 export function adminSettings(ctx: RequestContext, view: string): Promise<SettingsView> {
   return ctx.json<SettingsView>(`/admin/settings?view=${encodeURIComponent(view)}`);
 }
@@ -133,6 +162,12 @@ export function updateSettings(
     headers: JSON_HEADERS,
     body: JSON.stringify(patch),
   });
+}
+
+/** Sends a short probe to the caller's own address with the saved SMTP
+ *  settings; resolves with the address it went to. */
+export function testSmtpSettings(ctx: RequestContext): Promise<{ sentTo: string }> {
+  return ctx.json<{ sentTo: string }>('/admin/settings/smtp-test', { method: 'POST' });
 }
 
 export interface BackupImportResult {

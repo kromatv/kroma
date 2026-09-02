@@ -21,6 +21,9 @@ const USERS: AdminUser[] = [
     role: 'Propriétaire',
     createdAt: '2026-01-01',
     online: true,
+    emailVerified: false,
+    hasPin: false,
+    resetRequested: false,
   },
 ];
 

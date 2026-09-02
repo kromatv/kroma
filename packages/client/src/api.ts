@@ -95,6 +95,8 @@ import type {
   RequestCoverageBody,
   RequestLedgerView,
   RequestsView,
+  ResetCheck,
+  ResetCreated,
   SearchResponse,
   SearchScope,
   SeasonLedgerView,
@@ -112,6 +114,7 @@ import type {
   Transcodes,
   UpNext,
   User,
+  VerificationCreated,
   WantedEntry,
 } from './types';
 
@@ -453,6 +456,21 @@ export class KromaClient {
   changePassword(current: string, next: string): Promise<void> {
     return accounts.changePassword(this.ctx, current, next);
   }
+  checkReset(token: string): Promise<ResetCheck> {
+    return accounts.checkReset(this.ctx, token);
+  }
+  redeemReset(token: string, code: string, password: string): Promise<void> {
+    return accounts.redeemReset(this.ctx, token, code, password);
+  }
+  requestPasswordReset(identifier: string): Promise<void> {
+    return accounts.requestPasswordReset(this.ctx, identifier);
+  }
+  checkEmailVerification(token: string): Promise<ResetCheck> {
+    return accounts.checkEmailVerification(this.ctx, token);
+  }
+  confirmEmailVerification(token: string): Promise<void> {
+    return accounts.confirmEmailVerification(this.ctx, token);
+  }
   listSessions(): Promise<SessionInfo[]> {
     return accounts.sessions(this.ctx);
   }
@@ -790,11 +808,23 @@ export class KromaClient {
   deleteUser(id: string): Promise<void> {
     return admin.deleteUser(this.ctx, id);
   }
+  resetUser(id: string): Promise<ResetCreated> {
+    return admin.resetUser(this.ctx, id);
+  }
+  clearUserPin(id: string): Promise<void> {
+    return admin.clearUserPin(this.ctx, id);
+  }
+  sendEmailVerification(id: string): Promise<VerificationCreated> {
+    return admin.sendEmailVerification(this.ctx, id);
+  }
   adminSettings(view: string): Promise<SettingsView> {
     return admin.adminSettings(this.ctx, view);
   }
   updateSettings(patch: Record<string, unknown>): Promise<{ updated: string[] }> {
     return admin.updateSettings(this.ctx, patch);
+  }
+  testSmtpSettings(): Promise<{ sentTo: string }> {
+    return admin.testSmtpSettings(this.ctx);
   }
   /** Download a portable backup as a Blob; `password` encrypts it (`.kroma`). */
   exportBackup(password?: string): Promise<Blob> {

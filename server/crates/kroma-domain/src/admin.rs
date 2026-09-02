@@ -22,6 +22,14 @@ pub struct AdminUser {
     #[serde(rename = "lastSeen", skip_serializing_if = "Option::is_none")]
     pub last_seen: Option<String>,
     pub online: bool,
+    #[serde(rename = "emailVerified")]
+    pub email_verified: bool,
+    #[serde(rename = "hasPin")]
+    pub has_pin: bool,
+    /// The user asked for a credential reset from the sign-in screen and the
+    /// owner has not minted one since.
+    #[serde(rename = "resetRequested")]
+    pub reset_requested: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

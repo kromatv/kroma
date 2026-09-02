@@ -23,6 +23,7 @@ export function LoginForm({
   onBack,
   onSubmit,
   onPasskey,
+  onForgot,
 }: Readonly<{
   profile: PublicUser | null;
   busy: boolean;
@@ -33,6 +34,7 @@ export function LoginForm({
   onBack: () => void;
   onSubmit: (identifier: string, password: string) => void;
   onPasskey?: () => void;
+  onForgot?: (identifier: string) => void;
 }>) {
   const t = useT();
   const [identifier, setIdentifier] = useState(profile?.username ?? '');
@@ -135,6 +137,15 @@ export function LoginForm({
             disabled={busy}
           />
         ) : null}
+        {onForgot ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            label={t('auth.forgotPassword')}
+            onPress={() => onForgot(identifier.trim())}
+            disabled={busy}
+          />
+        ) : null}
         {canGoBack ? (
           <Button
             variant="ghost"
@@ -144,6 +155,86 @@ export function LoginForm({
             onPress={onBack}
           />
         ) : null}
+      </Box>
+    </form>
+  );
+}
+
+/** The "forgot password" road: no self-service reset exists (the owner mints
+ * one by hand, code read aloud), so this only notifies the owner. The answer is
+ * the same whether or not the identifier names an account. */
+export function ForgotForm({
+  initialIdentifier = '',
+  busy,
+  sent,
+  onBack,
+  onSubmit,
+}: Readonly<{
+  initialIdentifier?: string;
+  busy: boolean;
+  sent: boolean;
+  onBack: () => void;
+  onSubmit: (identifier: string) => void;
+}>) {
+  const t = useT();
+  const [identifier, setIdentifier] = useState(initialIdentifier);
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (identifier.trim()) onSubmit(identifier.trim());
+      }}
+      style={FORM}
+    >
+      <Box w="100%" maxW={COLUMN} mx="auto" align="center" gap={20}>
+        <Text variant="subheading" accessibilityRole="header">
+          {t('auth.forgotTitle')}
+        </Text>
+
+        {sent ? (
+          <Box w="100%">
+            <Callout.Root tone="accent" size="md" icon="circle-check">
+              <Callout.Title>{t('auth.forgotSentTitle')}</Callout.Title>
+              <Callout.Detail>{t('auth.forgotSentHint')}</Callout.Detail>
+            </Callout.Root>
+          </Box>
+        ) : (
+          <>
+            <Text variant="meta" color="textDim" textAlign="center">
+              {t('auth.forgotHint')}
+            </Text>
+            <Field.Root w="100%" size="md" label={t('auth.emailOrUsername')} hideLabel>
+              <Field.Input
+                lift
+                icon="user"
+                placeholder={t('auth.emailOrUsername')}
+                value={identifier}
+                onValueChange={setIdentifier}
+                autoComplete="username"
+                autoFocus
+              />
+            </Field.Root>
+            <input type="submit" hidden />
+            <Button
+              block
+              label={busy ? t('common.loading') : t('auth.forgotSubmit')}
+              loading={busy}
+              disabled={busy || !identifier.trim()}
+              onPress={() => {
+                if (identifier.trim()) onSubmit(identifier.trim());
+              }}
+            />
+          </>
+        )}
+
+        <Button
+          variant="ghost"
+          size="sm"
+          icon="chevron-left"
+          label={t('common.back')}
+          onPress={onBack}
+        />
       </Box>
     </form>
   );

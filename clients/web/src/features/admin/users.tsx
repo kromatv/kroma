@@ -115,9 +115,16 @@ function UsersPageInner() {
                     shadow={false}
                   />
                   <Box minW={0}>
-                    <Text variant="label" lines={1}>
-                      {u.username}
-                    </Text>
+                    <Box row align="center" gap={8}>
+                      <Text variant="label" lines={1}>
+                        {u.username}
+                      </Text>
+                      {u.resetRequested ? (
+                        <Pill ink="accentText" bg="accentWash/16">
+                          {t('admin.resetRequested')}
+                        </Pill>
+                      ) : null}
+                    </Box>
                     <Text variant="meta" color="textDim" lines={1}>
                       {u.email}
                     </Text>

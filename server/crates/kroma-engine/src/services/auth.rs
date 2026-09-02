@@ -86,6 +86,17 @@ pub(crate) fn ct_eq(a: &[u8], b: &[u8]) -> bool {
 pub(crate) use kroma_primitives::random_bytes;
 pub use kroma_primitives::{random_token, random_u32};
 
+/// A fresh one-time reset code: 8 characters from a 32-symbol alphabet with no
+/// ambiguous glyphs (no 0/O, 1/I). 32^8 is large enough that a 5-attempt lockout
+/// makes brute force impractical.
+pub fn random_code() -> String {
+    const ALPHABET: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    random_bytes(8)
+        .iter()
+        .map(|b| ALPHABET[(b % 32) as usize] as char)
+        .collect()
+}
+
 // 600k PBKDF2 iterations hold a thread for hundreds of ms and `/auth/login`
 // reaches them without a session, so the worker's core is handed to another
 // thread. `block_in_place` panics on a current-thread runtime, hence the flavour check.

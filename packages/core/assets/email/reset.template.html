@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>{{subject}}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0A0A0C;">
+<div style="display:none;max-height:0;overflow:hidden;">{{preheader}}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0A0A0C;">
+<tr><td align="center" style="padding:48px 16px;">
+
+  <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;width:100%;background-color:#121216;border:1px solid #26262E;border-radius:16px;overflow:hidden;font-family:'Hanken Grotesk',-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+    <tr><td align="center" style="padding:36px 40px 0;">
+      {{> logo}}
+    </td></tr>
+
+    <tr><td align="center" style="padding:26px 40px 0;">
+      <div style="font-size:26px;line-height:1.15;font-weight:700;letter-spacing:-0.02em;color:#F4F3F0;">{{heading}}</div>
+    </td></tr>
+
+    <tr><td align="center" style="padding:14px 40px 0;">
+      <div style="font-size:15px;line-height:1.6;color:#9B9B99;">{{intro}}</div>
+    </td></tr>
+
+    <tr><td align="center" style="padding:28px 40px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0">
+        <tr><td bgcolor="#F4B642" style="border-radius:12px;">
+          <a href="{{url}}" style="display:inline-block;padding:14px 34px;font-size:15px;font-weight:700;color:#0A0A0C;text-decoration:none;border-radius:12px;">{{buttonLabel}}</a>
+        </td></tr>
+      </table>
+    </td></tr>
+
+    {{> code-note}}
+
+    <tr><td align="center" style="padding:26px 40px 0;">
+      <div style="font-size:12px;line-height:1.6;color:#7A7A79;word-break:break-all;">{{url}}</div>
+    </td></tr>
+
+    <tr><td style="padding:30px 40px 36px;">
+      <div style="border-top:1px solid #26262E;padding-top:20px;font-size:12px;line-height:1.6;color:#7A7A79;text-align:center;">
+        {{footer}}
+      </div>
+    </td></tr>
+
+  </table>
+
+  <div style="padding-top:22px;font-size:11px;letter-spacing:0.08em;color:#7A7A79;font-family:'Hanken Grotesk',-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">{{serverName}} · KROMA</div>
+
+</td></tr>
+</table>
+</body>
+</html>

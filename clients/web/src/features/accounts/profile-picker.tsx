@@ -1,6 +1,15 @@
 import type { StoredSession } from '@kroma/core';
 import { useT } from '@kroma/ui';
-import { AddTile, Box, Focusable, type StyleDecl, styles, svFor, Text } from '@kroma/ui/kit';
+import {
+  AddTile,
+  Box,
+  Button,
+  Focusable,
+  type StyleDecl,
+  styles,
+  svFor,
+  Text,
+} from '@kroma/ui/kit';
 import { ProfileTile } from '#web/features/accounts/profile-tile';
 
 const forgetLink = svFor<{ root: StyleDecl; label: StyleDecl }>()({
@@ -28,12 +37,14 @@ export function ProfilePicker({
   onPick,
   onForget,
   onAdd,
+  onForgot,
 }: Readonly<{
   tiles: ProfileChoice[];
   error: string | null;
   onPick: (tile: ProfileChoice) => void;
   onForget: (userId: string) => void;
   onAdd: () => void;
+  onForgot?: () => void;
 }>) {
   const t = useT();
   return (
@@ -87,6 +98,17 @@ export function ProfilePicker({
         <Text variant="meta" color="danger" mt={32}>
           {error}
         </Text>
+      ) : null}
+
+      {onForgot ? (
+        <Box mt={40}>
+          <Button
+            variant="ghost"
+            size="sm"
+            label={t('auth.forgotPassword')}
+            onPress={() => onForgot()}
+          />
+        </Box>
       ) : null}
     </Box>
   );

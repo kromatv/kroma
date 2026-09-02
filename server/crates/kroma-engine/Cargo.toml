@@ -27,6 +27,8 @@ kroma-push = { workspace = true }
 axum = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
+# Account email (credential reset, address verification) via the operator's SMTP.
+lettre = { workspace = true }
 # The storyboard hwaccel probe writes a throwaway frame; a guard removes it even
 # when the decode fails and the probe returns early.
 tempfile = { workspace = true }

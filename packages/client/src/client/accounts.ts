@@ -7,6 +7,7 @@ import {
   type InviteCreated,
   type Permission,
   PublicUser,
+  ResetCheck,
   SessionInfo,
   SessionResult,
   User,
@@ -157,7 +158,8 @@ export function updateLanguage(
 
 /** Change the signed-in account's password after verifying the current one.
  * Resolves on 204; throws `KromaApiError` on 401 (wrong current) / 400 (too
- * short). There is no email-based reset (LAN self-hosted, no mail service). */
+ * short). A forgotten password goes through the owner-minted reset instead
+ * (see {@link requestPasswordReset}). */
 export async function changePassword(
   ctx: RequestContext,
   current: string,
@@ -167,6 +169,56 @@ export async function changePassword(
     method: 'PATCH',
     headers: JSON_HEADERS,
     body: JSON.stringify({ current, next }),
+  });
+}
+
+/** Check a credential-reset token (public used by the reset page). */
+export function checkReset(ctx: RequestContext, token: string): Promise<ResetCheck> {
+  return ctx
+    .json<ResetCheck>(`/auth/reset/${encodeURIComponent(token)}`)
+    .then((r) => validate(ResetCheck, r));
+}
+
+/** Redeem a credential reset: the link token plus the code the owner read to
+ * the user. Resolves on 204; throws `KromaApiError` on 400 (invalid/locked). */
+export async function redeemReset(
+  ctx: RequestContext,
+  token: string,
+  code: string,
+  password: string,
+): Promise<void> {
+  await ctx.json<void>('/auth/reset', {
+    method: 'POST',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ token, code, password }),
+  });
+}
+
+/** Ask the owner for a credential reset, from the sign-in screen. Always
+ * resolves on 204 whether or not `identifier` names an account, so the screen
+ * never reveals who is registered; throttled per source IP. */
+export async function requestPasswordReset(ctx: RequestContext, identifier: string): Promise<void> {
+  await ctx.json<void>('/auth/reset-request', {
+    method: 'POST',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ identifier }),
+  });
+}
+
+/** Check an email-verification token (public used by the verify page). */
+export function checkEmailVerification(ctx: RequestContext, token: string): Promise<ResetCheck> {
+  return ctx
+    .json<ResetCheck>(`/auth/verify-email/${encodeURIComponent(token)}`)
+    .then((r) => validate(ResetCheck, r));
+}
+
+/** Confirm an email verification. Resolves on 204; throws `KromaApiError` on
+ * 400 (unknown, expired, used, or the address changed since minting). */
+export async function confirmEmailVerification(ctx: RequestContext, token: string): Promise<void> {
+  await ctx.json<void>('/auth/verify-email', {
+    method: 'POST',
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ token }),
   });
 }
 

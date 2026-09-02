@@ -88,6 +88,9 @@ bytes = "1"
 # The supervisor's own client: it fetches a `.kmod` over https, so it carries the
 # TLS stack no sidecar has to.
 reqwest = { version = "0.12", default-features = false }
+# SMTP for operator-owned credential-reset email. rustls, never native-tls: the
+# TLS stack is already rustls everywhere above.
+lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "tokio1-rustls-tls"] }
 # `TryStreamExt`, to see a proxied body die mid-stream. Already in the graph
 # under reqwest and hyper; this only names it.
 futures-util = { version = "0.3", default-features = false, features = ["std"] }

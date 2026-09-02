@@ -225,3 +225,62 @@ async fn admin_user_delete_rejects_removing_the_last_owner() {
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn the_smtp_probe_refuses_while_email_is_switched_off() {
+    let t = test_app();
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/settings/smtp-test",
+        Some(&t.token),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(!body["error"].as_str().unwrap_or_default().is_empty());
+}
+
+#[tokio::test]
+async fn the_smtp_probe_reports_the_transport_s_own_words_when_the_dial_fails() {
+    let t = test_app();
+    t.state.settings.set_patch(
+        &t.state.db,
+        [
+            ("smtpEnabled".to_string(), json!(true)),
+            ("smtpHost".to_string(), json!("127.0.0.1")),
+            ("smtpPort".to_string(), json!(1)),
+            ("smtpFrom".to_string(), json!("kroma@test.dev")),
+        ]
+        .into_iter()
+        .collect(),
+    );
+
+    let (status, body) = send(
+        &t.app,
+        "POST",
+        "/api/admin/settings/smtp-test",
+        Some(&t.token),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_GATEWAY);
+    assert!(!body["error"].as_str().unwrap_or_default().is_empty());
+}
+
+#[tokio::test]
+async fn the_smtp_probe_is_closed_to_a_member_who_cannot_manage_settings() {
+    let t = test_app();
+    let (_, viewer) = seed_session(&t.state, "ray@test.dev", "ray", &[Permission::Playback]);
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/settings/smtp-test",
+        Some(&viewer),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}

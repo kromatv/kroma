@@ -1,5 +1,8 @@
 //! Member management: the full account list plus permission / username edits and
-//! account removal (the "Membres & partage" table).
+//! account removal (the "Membres & partage" table). The reset and
+//! verification links the owner mints live in `users/links.rs`.
+
+mod links;
 
 use axum::extract::{Path as AxPath, State};
 use axum::http::StatusCode;
@@ -12,9 +15,9 @@ use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
 use crate::infra::events::ServerEvent;
-use crate::model::Permission;
+use crate::model::{Permission, User};
 use crate::state::SharedState;
-use axum::routing::{get, patch};
+use axum::routing::{get, patch, post};
 use axum::Router;
 
 /// Admin user management. Paths are relative to the `/api/admin` nest.
@@ -22,6 +25,25 @@ pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/users", get(list_users))
         .route("/users/{id}", patch(update_user).delete(delete_user))
+        .route("/users/{id}/reset", post(links::reset_user))
+        .route(
+            "/users/{id}/email-verification",
+            post(links::send_email_verification),
+        )
+        .route("/users/{id}/pin", axum::routing::delete(clear_user_pin))
+}
+
+async fn target_or_404(state: &SharedState, user: &User, id: &str) -> Result<User, Response> {
+    let id = id.to_string();
+    query(&state.db, move |pool| db::user_by_id(&pool, &id))
+        .await?
+        .ok_or_else(|| {
+            lerr(
+                super::user_locale(user),
+                StatusCode::NOT_FOUND,
+                "error.userNotFound",
+            )
+        })
 }
 
 /// `GET /api/admin/users` → full member list (the "Membres & partage" table).
@@ -134,18 +156,30 @@ pub async fn delete_user(
             "admin.cantDeleteSelf",
         ));
     }
-    let id2 = id.clone();
-    if query(&state.db, move |pool| db::user_by_id(&pool, &id2))
-        .await?
-        .is_none()
-    {
-        return Err(lerr(
-            super::user_locale(&user),
-            StatusCode::NOT_FOUND,
-            "error.userNotFound",
-        ));
-    }
+    target_or_404(&state, &user, &id).await?;
     query(&state.db, move |pool| db::delete_user(&pool, &id)).await?;
+    state.events.publish(ServerEvent::LibraryUpdated);
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+/// `DELETE /api/admin/users/:id/pin` → clear a user's profile PIN. The PIN is a
+/// local convenience lock, not the credential, so clearing is the only verb the
+/// owner needs; remembered devices re-lock and ask for the credential on the
+/// next switch-in.
+pub async fn clear_user_pin(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+    AxPath(id): AxPath<String>,
+) -> Result<Response, Response> {
+    super::require(&user, Permission::UsersManage)?;
+    target_or_404(&state, &user, &id).await?;
+    let id3 = id.clone();
+    query(&state.db, move |pool| {
+        db::set_user_pin(&pool, &id3, None)?;
+        db::reset_access_pin_verified(&pool, &id3)
+    })
+    .await?;
+    crate::api::pin::reset(&id);
     state.events.publish(ServerEvent::LibraryUpdated);
     Ok(StatusCode::NO_CONTENT.into_response())
 }

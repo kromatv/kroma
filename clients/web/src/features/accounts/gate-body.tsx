@@ -7,7 +7,7 @@ import {
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { useEffect, useState } from 'react';
-import { LoginForm, RegisterForm } from '#web/features/accounts/auth-forms';
+import { ForgotForm, LoginForm, RegisterForm } from '#web/features/accounts/auth-forms';
 import { PinEntry } from '#web/features/accounts/pin-entry';
 import { type ProfileChoice, ProfilePicker } from '#web/features/accounts/profile-picker';
 import { useAuth } from '#web/shared/lib/auth';
@@ -17,6 +17,7 @@ type Mode =
   | { kind: 'pick' }
   | { kind: 'login'; user: PublicUser | null; expired?: boolean }
   | { kind: 'register' }
+  | { kind: 'forgot'; identifier: string }
   | { kind: 'pin'; account: StoredSession };
 
 export function GateBody() {
@@ -27,6 +28,7 @@ export function GateBody() {
   const [canPick, setCanPick] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [forgotSent, setForgotSent] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +121,20 @@ export function GateBody() {
     }
   }
 
+  async function doForgot(identifier: string) {
+    setBusy(true);
+    try {
+      await client.requestPasswordReset(identifier);
+    } catch {
+      // Swallowed on purpose: the confirmation is uniform whether the request
+      // reached the server or not, so this screen never answers "does this
+      // account exist?".
+    } finally {
+      setBusy(false);
+      setForgotSent(true);
+    }
+  }
+
   if (mode.kind === 'login') {
     return (
       <LoginForm
@@ -134,6 +150,26 @@ export function GateBody() {
         }}
         onSubmit={doLogin}
         onPasskey={doPasskeyLogin}
+        onForgot={(identifier) => {
+          setError(null);
+          setForgotSent(false);
+          setMode({ kind: 'forgot', identifier });
+        }}
+      />
+    );
+  }
+
+  if (mode.kind === 'forgot') {
+    return (
+      <ForgotForm
+        initialIdentifier={mode.identifier}
+        busy={busy}
+        sent={forgotSent}
+        onBack={() => {
+          setError(null);
+          setMode({ kind: 'login', user: null });
+        }}
+        onSubmit={doForgot}
       />
     );
   }

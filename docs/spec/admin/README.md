@@ -103,6 +103,71 @@ The owner manages who else may use the server. Three actions, kept deliberately 
 Roles, per-user library visibility, session lifetime and what survives an account deletion
 are all [`accounts.md`](../accounts/README.md). This section is only the admin verbs.
 
+### Credential reset
+
+Status: **AGREED**
+
+**ADMIN-79** (AGREED) - A reset is a single-use, time-limited link plus a short one-time
+code. The link alone is not enough: the user opens the link and enters the code to choose
+a new secret. The owner sees the code once, at minting, and reads it to the user by whatever
+channel they trust. The code never travels the mail path, so intercepting the email gives
+nothing.
+
+**ADMIN-80** (AGREED) - The code is eight characters from a thirty-two-symbol alphabet with
+no ambiguous glyphs. After five wrong attempts the reset is locked and the owner must mint
+a new one. The code expires with the link.
+
+**ADMIN-81** (AGREED) - A new reset invalidates any unused previous one for the same account.
+Completing a reset ends every session and device for that account, so a stolen credential
+dies with the old password. The owner never sees the new secret.
+
+**ADMIN-82** (AGREED) - Delivery is the owner's choice, per server: copy the link and code
+by hand, send the link through the operator's own mail server, or send the link through the
+kroma.tv relay. The mail path never carries the code. The hand-copied link may embed it, so
+a hand-delivered reset is one click for the user: the owner already holds both halves, and
+their own channel is the trusted one. The operator's mail server settings can be validated
+in place: a test sends a short probe to the owner's own address, proving host, credentials
+and deliverability before a user's reset depends on them.
+
+**ADMIN-83** (AGREED) - The kroma.tv relay sees the destination address and the link, never
+the code, never the password, and cannot reset anything. It holds the published app's mail
+credential so a self-hosted server does not have to, and it keeps no record of what it sent.
+
+**ADMIN-88** (AGREED) - A user who cannot sign in can ask for a reset from the sign-in
+screen, naming their account by email or username. The answer is uniform whether or not the
+account exists, so the screen never reveals who is registered, and requests are throttled
+per source. The request marks the member for the owner, who mints the reset by hand; minting
+clears the mark, and a stale one fades on its own. There is no self-service reset: the code
+an owner reads aloud is what keeps a mailbox from being enough.
+
+### PIN reset
+
+Status: **AGREED**
+
+**ADMIN-84** (AGREED) - The owner can clear a user's profile PIN. Clearing is the only PIN
+verb the owner has: the PIN is a local convenience lock, not the credential, so there is
+nothing to rotate and nothing the owner needs to see. Clearing re-locks every remembered
+device for that account, so the next switch-in asks for the account's credential rather
+than the forgotten PIN.
+
+### Email verification
+
+Status: **AGREED**
+
+**ADMIN-85** (AGREED) - An address on an account is unverified until the mailbox proves
+itself. Verification is a single-use, time-limited link sent to the address; opening it
+and confirming marks the address verified. Unlike a credential reset there is no
+out-of-band code: reaching the mailbox is itself the proof, so the link alone suffices.
+
+**ADMIN-86** (AGREED) - The owner sends a verification from the member editor, with the
+same delivery choices as a credential reset: copy the link by hand, the operator's own
+mail server, or the kroma.tv relay. The verified state is shown next to the address, and
+the email is written in the recipient's language.
+
+**ADMIN-87** (AGREED) - Changing the address clears the verified state: the proof belongs
+to the mailbox, not the account. A verification link names the address it was minted for
+and verifies nothing once the account's address no longer matches it.
+
 ### Lockout recovery
 
 Status: **AGREED**

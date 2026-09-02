@@ -94,6 +94,18 @@ pub fn revoke_other_sessions(pool: &Pool, user_id: &str, keep_token: &str) -> Re
     Ok(())
 }
 
+/// Drop every session and device token for the user. A completed credential
+/// reset evicts everything, so a stolen credential dies with the old password.
+pub fn revoke_all_sessions(pool: &Pool, user_id: &str) -> Result<()> {
+    let conn = pool.get()?;
+    conn.execute("DELETE FROM sessions WHERE user_id = ?1", params![user_id])?;
+    conn.execute(
+        "DELETE FROM access_tokens WHERE user_id = ?1",
+        params![user_id],
+    )?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -149,5 +161,22 @@ mod tests {
         assert!(session_user(&p, "sess-phone").unwrap().is_none());
         assert!(access_token_user(&p, "dev-phone").unwrap().is_none());
         assert!(list_access_tokens(&p, &user.id).unwrap().is_empty());
+    }
+
+    #[test]
+    fn revoke_all_sessions_evicts_everything() {
+        let p = pool();
+        let user = mk_user(&p, "a@b.c", "alice");
+        create_access_token(&p, "dev-phone", &user.id, FUTURE, true, Some("iPhone")).unwrap();
+        create_access_token(&p, "dev-laptop", &user.id, FUTURE, true, Some("Mac")).unwrap();
+        create_session(&p, "sess-phone", &user.id, FUTURE, Some("dev-phone")).unwrap();
+        create_session(&p, "sess-laptop", &user.id, FUTURE, Some("dev-laptop")).unwrap();
+
+        revoke_all_sessions(&p, &user.id).unwrap();
+
+        assert!(session_user(&p, "sess-phone").unwrap().is_none());
+        assert!(session_user(&p, "sess-laptop").unwrap().is_none());
+        assert!(access_token_user(&p, "dev-phone").unwrap().is_none());
+        assert!(access_token_user(&p, "dev-laptop").unwrap().is_none());
     }
 }

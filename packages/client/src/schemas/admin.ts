@@ -20,6 +20,11 @@ export const AdminUser = z.object({
   createdAt: z.string(),
   lastSeen: z.string().nullish(),
   online: z.boolean(),
+  emailVerified: z.boolean(),
+  hasPin: z.boolean(),
+  /** The user asked for a credential reset from the sign-in screen and the
+   * owner has not minted one since. */
+  resetRequested: z.boolean(),
 });
 export type AdminUser = z.infer<typeof AdminUser>;
 

@@ -21,7 +21,7 @@ use crate::state::SharedState;
 
 use super::{issue_tokens, user_agent};
 
-const MIN_PASSWORD_LEN: usize = 8;
+pub(crate) const MIN_PASSWORD_LEN: usize = 8;
 
 #[derive(Debug, Deserialize)]
 pub struct RegisterBody {

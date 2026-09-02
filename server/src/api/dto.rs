@@ -92,6 +92,40 @@ pub struct InviteCreated {
     pub expires_at: i64,
 }
 
+/// `POST /api/admin/users/:id/reset` result the reset link plus the one-time
+/// code the owner reads to the user. `delivered` is `manual` | `smtp`.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResetCreated {
+    pub token: String,
+    pub code: String,
+    pub url: Option<String>,
+    pub expires_at: i64,
+    pub delivered: String,
+}
+
+/// `GET /api/auth/reset/:token` the public check before the reset form.
+/// Reused by `/api/auth/verify-email/:token`, same shape.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResetCheck {
+    pub valid: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub username: Option<String>,
+}
+
+/// `POST /api/admin/users/:id/email-verification` result the verification link.
+/// No code: reaching the mailbox is itself the proof. `delivered` is
+/// `manual` | `smtp`.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VerificationCreated {
+    pub token: String,
+    pub url: Option<String>,
+    pub expires_at: i64,
+    pub delivered: String,
+}
+
 /// `POST /api/auth/quickconnect/initiate` a device-pairing request.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

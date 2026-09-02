@@ -260,6 +260,14 @@ fn defaults() -> BTreeMap<String, Value> {
     m.insert("notifications.apns.keyId".into(), json!(""));
     m.insert("notifications.apns.teamId".into(), json!(""));
     m.insert("notifications.fcm.serviceAccount".into(), json!(""));
+    // Operator SMTP for credential-reset email. The password is a secret: never
+    // returned in a settings view.
+    m.insert("smtpEnabled".into(), json!(false));
+    m.insert("smtpHost".into(), json!(""));
+    m.insert("smtpPort".into(), json!(587));
+    m.insert("smtpUsername".into(), json!(""));
+    m.insert("smtpFrom".into(), json!(""));
+    m.insert("smtpPassword".into(), json!(""));
     m
 }
 

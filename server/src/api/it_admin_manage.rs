@@ -346,3 +346,39 @@ async fn an_admin_rename_obeys_the_same_uniqueness_as_a_self_service_one() {
         "{body}"
     );
 }
+
+#[tokio::test]
+async fn clearing_a_pin_relocks_the_account_s_remembered_devices() {
+    let t = test_app();
+    let (uid, member) = seed_session(&t.state, "zoe@test.dev", "zoe", &[Permission::Playback]);
+    let (status, body) = send(
+        &t.app,
+        "PATCH",
+        "/api/auth/me/pin",
+        Some(&member),
+        Some(json!({ "pin": "4242" })),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["user"]["hasPin"], json!(true));
+
+    let (status, _) = send(
+        &t.app,
+        "DELETE",
+        &format!("/api/admin/users/{uid}/pin"),
+        Some(&t.token),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let (_, body) = get(&t.app, "/api/admin/users", Some(&t.token)).await;
+    let row = body["users"]
+        .as_array()
+        .expect("the member list")
+        .iter()
+        .find(|u| u["id"] == json!(uid))
+        .expect("the member")
+        .clone();
+    assert_eq!(row["hasPin"], json!(false));
+}

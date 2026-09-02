@@ -170,6 +170,31 @@ pub(crate) const SCHEMA: &str = "
         expires_at  INTEGER NOT NULL,
         used_at     TEXT
     );
+    CREATE TABLE IF NOT EXISTS credential_resets (
+        token       TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        code_hash   TEXT NOT NULL,
+        attempts    INTEGER NOT NULL DEFAULT 0,
+        created_by  TEXT REFERENCES users(id) ON DELETE SET NULL,
+        created_at  TEXT NOT NULL,
+        expires_at  INTEGER NOT NULL,
+        used_at     TEXT
+    );
+    -- `email` pins the address the link was minted for: changing the account's
+    -- address must not let an old link verify the new one.
+    CREATE TABLE IF NOT EXISTS email_verifications (
+        token       TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        email       TEXT NOT NULL,
+        created_by  TEXT REFERENCES users(id) ON DELETE SET NULL,
+        created_at  TEXT NOT NULL,
+        expires_at  INTEGER NOT NULL,
+        used_at     TEXT
+    );
+    CREATE TABLE IF NOT EXISTS reset_requests (
+        user_id     TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        created_at  TEXT NOT NULL
+    );
     -- `item_id` is a movie item id OR a show id; intentionally NOT an items FK
     -- so a show can be marked watched as a whole.
     CREATE TABLE IF NOT EXISTS watched (

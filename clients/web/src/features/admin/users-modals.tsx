@@ -1,4 +1,11 @@
-import { type AdminUser, type Invite, PERMISSIONS, type Permission } from '@kroma/core';
+import {
+  type AdminUser,
+  type Invite,
+  PERMISSIONS,
+  type Permission,
+  type ResetCreated,
+  type VerificationCreated,
+} from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,
@@ -21,6 +28,87 @@ import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
 const DASHED = { borderWidth: 1, borderColor: color('text/25'), borderStyle: 'dashed' } as const;
+
+// `navigator.clipboard` is undefined outside a secure context, so on a
+// plain-http LAN address this throws synchronously, not via rejection.
+async function copyText(url: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const LINK_KIND = {
+  reset: {
+    path: '/reset',
+    manualKey: 'admin.resetManual',
+    sentKey: 'admin.resetSent',
+  },
+  verify: {
+    path: '/verify-email',
+    manualKey: 'admin.verificationManual',
+    sentKey: 'admin.verificationSent',
+  },
+} as const;
+
+/** A minted link (reset or verification) with its copy button and the delivery
+ * outcome: sent by email, or manual when no delivery is configured. A reset's
+ * HAND-COPY link embeds the code (the owner holds both halves anyway, and their
+ * channel is the trusted one) so the user only picks a new password; the emailed
+ * link never carries it. When the server knows no public URL at all, the link
+ * is composed from the browser's own origin — right for an owner browsing the
+ * very server they admin. */
+function LinkResult({
+  kind,
+  label,
+  url,
+  token,
+  delivered,
+  code,
+}: Readonly<{
+  kind: 'reset' | 'verify';
+  label: string;
+  url: string | null;
+  token: string;
+  delivered: string;
+  code?: string;
+}>) {
+  const t = useT();
+  const [copied, setCopied] = useState(false);
+  const { path, manualKey, sentKey } = LINK_KIND[kind];
+  const base =
+    url ??
+    (typeof window !== 'undefined' ? `${window.location.origin}${path}?token=${token}` : null);
+  const shown =
+    kind === 'reset' && delivered === 'manual' && base && code ? `${base}&code=${code}` : base;
+  return (
+    <Box gap={8}>
+      {shown ? (
+        <InputGroup.Root label={label}>
+          <InputGroup.Input value={shown} autoFocus={false} />
+          <InputGroup.Addon align="inline-end">
+            <InputGroup.Button
+              icon="copy"
+              label={copied ? t('common.copied') : t('common.copy')}
+              onPress={() => {
+                void copyText(shown).then((ok) => {
+                  if (!ok) return;
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                });
+              }}
+            />
+          </InputGroup.Addon>
+        </InputGroup.Root>
+      ) : null}
+      <Text variant="meta" color="textMuted">
+        {delivered === 'manual' ? t(manualKey) : t(sentKey)}
+      </Text>
+    </Box>
+  );
+}
 
 export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChange: () => void }>) {
   const t = useT();
@@ -118,8 +206,9 @@ function usePermissionSet(
   return [perms, toggle];
 }
 
-/** Edit a user (name + permissions, with a guarded delete). Resolves `true` when
- * the user was saved or deleted (the caller refreshes), `false` on dismiss. */
+/** Edit a user (name + permissions, email verification, access recovery, with a
+ * guarded delete). Resolves `true` when the user was saved or deleted (the
+ * caller refreshes), `false` on dismiss. */
 export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ call, user }) => {
   const t = useT();
   const { client, user: me } = useAuth();
@@ -127,6 +216,9 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
   const [perms, toggle] = usePermissionSet(user.permissions);
   const { busy, error, run } = useAsyncAction();
   const isSelf = me?.id === user.id;
+  const [reset, setReset] = useState<ResetCreated | null>(null);
+  const [verification, setVerification] = useState<VerificationCreated | null>(null);
+  const [pinCleared, setPinCleared] = useState(false);
 
   const save = () =>
     run(
@@ -155,6 +247,44 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
     );
   };
 
+  const resetAccess = async () => {
+    const ok = await confirm({
+      title: t('admin.resetAccess'),
+      message: t('admin.resetUserConfirm', { name: user.username }),
+      confirmLabel: t('admin.resetAccess'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!ok) return;
+    run(
+      async () => setReset(await client.resetUser(user.id)),
+      () => t('admin.resetAccessFailed'),
+    );
+  };
+
+  const sendVerification = () =>
+    run(
+      async () => setVerification(await client.sendEmailVerification(user.id)),
+      () => t('admin.verificationFailed'),
+    );
+
+  const clearPin = async () => {
+    const ok = await confirm({
+      title: t('admin.clearPin'),
+      message: t('admin.confirmClearPin', { name: user.username }),
+      confirmLabel: t('admin.clearPin'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    run(
+      async () => {
+        await client.clearUserPin(user.id);
+        setPinCleared(true);
+      },
+      () => t('admin.updateFailed'),
+    );
+  };
+
   return (
     <Dialog.Root
       open
@@ -176,6 +306,101 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
           </Text>
         ) : null}
       </Box>
+
+      <Box>
+        <Text variant="overline" color="textDim" mb={8}>
+          {t('admin.email')}
+        </Text>
+        <ListRow.Root size="md">
+          <ListRow.Leading>
+            <Icon name="mail" size={18} thickness={1.8} color="textDim" />
+          </ListRow.Leading>
+          <ListRow.Label>{user.email}</ListRow.Label>
+          <ListRow.Hint>
+            {user.emailVerified ? t('admin.emailVerified') : t('admin.emailUnverified')}
+          </ListRow.Hint>
+          <ListRow.Trailing>
+            <Button
+              variant="glass"
+              size="sm"
+              label={t('admin.sendVerification')}
+              onPress={() => void sendVerification()}
+              disabled={busy}
+            />
+          </ListRow.Trailing>
+        </ListRow.Root>
+        {verification ? (
+          <Callout.Root tone="accent">
+            <Callout.Title>{t('admin.verificationLink')}</Callout.Title>
+            <LinkResult
+              kind="verify"
+              label={t('admin.verificationLink')}
+              url={verification.url}
+              token={verification.token}
+              delivered={verification.delivered}
+            />
+          </Callout.Root>
+        ) : null}
+      </Box>
+
+      <Box>
+        <Text variant="overline" color="textDim" mb={8}>
+          {t('admin.accessSection')}
+        </Text>
+        {user.resetRequested ? (
+          <Box mb={12}>
+            <Callout.Root tone="accent" size="sm" icon="info-circle">
+              <Callout.Title>{t('admin.resetRequested')}</Callout.Title>
+              <Callout.Detail>{t('admin.resetRequestedHint')}</Callout.Detail>
+            </Callout.Root>
+          </Box>
+        ) : null}
+        <Row gap={8} wrap>
+          <Button
+            variant="glass"
+            size="sm"
+            icon="key"
+            label={t('admin.resetAccess')}
+            onPress={() => void resetAccess()}
+            disabled={busy}
+          />
+          <Button
+            variant="glass"
+            size="sm"
+            icon="lock"
+            label={pinCleared ? t('admin.pinCleared') : t('admin.clearPin')}
+            onPress={() => void clearPin()}
+            disabled={busy || pinCleared || !user.hasPin}
+          />
+        </Row>
+        <Text variant="meta" color="textDim" mt={8}>
+          {t('admin.resetAccessHint')}
+        </Text>
+        {reset ? (
+          <Callout.Root tone="accent">
+            <Callout.Title>{t('admin.resetCode')}</Callout.Title>
+            <Text
+              variant="heading"
+              textAlign="center"
+              style={{ fontFamily: 'monospace', letterSpacing: 4 }}
+            >
+              {reset.code}
+            </Text>
+            <Text variant="meta" color="textMuted">
+              {t('admin.resetCodeHint')}
+            </Text>
+            <LinkResult
+              kind="reset"
+              label={t('admin.resetLink')}
+              url={reset.url}
+              token={reset.token}
+              delivered={reset.delivered}
+              code={reset.code}
+            />
+          </Callout.Root>
+        ) : null}
+      </Box>
+
       <Dialog.Footer>
         <Dialog.Actions
           onCancel={() => call.end(false)}

@@ -20,12 +20,16 @@ use axum::Router;
 mod credentials;
 mod profile;
 mod quick_connect;
+mod reset;
 mod session;
+mod verify_email;
 
 use credentials::{change_password, login, register};
 use profile::{update_me, upload_avatar};
 use quick_connect::{quick_authorize, quick_initiate, quick_poll};
+use reset::{check_reset, redeem_reset, request_reset};
 use session::{exchange_token, list_sessions, logout, relock, revoke_session};
+use verify_email::{check_verification, confirm_verification};
 
 pub(crate) use session::issue_tokens;
 pub(super) use session::mint_device_tokens;
@@ -49,6 +53,11 @@ pub fn routes() -> Router<SharedState> {
         .route("/auth/quickconnect/initiate", post(quick_initiate))
         .route("/auth/quickconnect/authorize", post(quick_authorize))
         .route("/auth/quickconnect/poll", get(quick_poll))
+        .route("/auth/reset/{token}", get(check_reset))
+        .route("/auth/reset", post(redeem_reset))
+        .route("/auth/reset-request", post(request_reset))
+        .route("/auth/verify-email/{token}", get(check_verification))
+        .route("/auth/verify-email", post(confirm_verification))
         .route("/users", get(list_users))
         .route(
             "/users/avatar",

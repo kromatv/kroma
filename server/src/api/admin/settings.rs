@@ -19,7 +19,9 @@ use axum::Router;
 
 /// Admin settings. Paths are relative to the `/api/admin` nest.
 pub fn routes() -> Router<SharedState> {
-    Router::new().route("/settings", get(get_settings).put(put_settings))
+    Router::new()
+        .route("/settings", get(get_settings).put(put_settings))
+        .route("/settings/smtp-test", axum::routing::post(smtp_test))
 }
 
 #[derive(Debug, Deserialize)]
@@ -71,4 +73,30 @@ pub async fn put_settings(
     // The SettingsUpdated event below is the signal a live-reconfig would key on.
     state.events.publish(ServerEvent::SettingsUpdated);
     Ok(Json(json!({ "updated": written })).into_response())
+}
+
+/// `POST /api/admin/settings/smtp-test` → send a short probe to the caller's own
+/// address with the saved SMTP settings. The answer names the address it went
+/// to; a failure carries the localized reason plus the transport's own words.
+pub async fn smtp_test(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    super::require(&user, Permission::SettingsManage)?;
+    let loc = super::user_locale(&user);
+    if !state.settings.get_bool("smtpEnabled", false) {
+        return Err(crate::api::error::lerr(
+            loc,
+            axum::http::StatusCode::BAD_REQUEST,
+            "admin.smtpTestDisabled",
+        ));
+    }
+    if let Err(e) = crate::services::email::send_test(&state.settings, &user.email, loc).await {
+        let prefix = crate::i18n::t(loc, "admin.smtpTestFailed", &[]);
+        return Err(crate::api::error::json_error(
+            axum::http::StatusCode::BAD_GATEWAY,
+            &format!("{prefix}: {e}"),
+        ));
+    }
+    Ok(Json(json!({ "sentTo": user.email })).into_response())
 }

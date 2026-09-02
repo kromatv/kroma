@@ -97,6 +97,35 @@ export const QuickConnectInit = z.object({
 });
 export type QuickConnectInit = z.infer<typeof QuickConnectInit>;
 
+/** `POST /api/admin/users/:id/reset` the link plus the one-time code the owner
+ * reads to the user. `delivered` is `manual` | `smtp`. */
+export const ResetCreated = z.object({
+  token: z.string(),
+  code: z.string(),
+  url: z.string().nullable(),
+  expiresAt: z.number(),
+  delivered: z.string(),
+});
+export type ResetCreated = z.infer<typeof ResetCreated>;
+
+/** `GET /api/auth/reset/:token` the public check before the reset form.
+ * Reused by `/api/auth/verify-email/:token`, same shape. */
+export const ResetCheck = z.object({
+  valid: z.boolean(),
+  username: z.string().nullish(),
+});
+export type ResetCheck = z.infer<typeof ResetCheck>;
+
+/** `POST /api/admin/users/:id/email-verification` the verification link. No
+ * code: reaching the mailbox is itself the proof. */
+export const VerificationCreated = z.object({
+  token: z.string(),
+  url: z.string().nullable(),
+  expiresAt: z.number(),
+  delivered: z.string(),
+});
+export type VerificationCreated = z.infer<typeof VerificationCreated>;
+
 export type AuthConfig = z.infer<typeof AuthConfig>;
 export type AuthResult = z.infer<typeof AuthResult>;
 export type Permission = z.infer<typeof Permission>;

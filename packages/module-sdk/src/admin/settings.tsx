@@ -3,10 +3,17 @@
 // Changes persist immediately (optimistic) via PUT /api/admin/settings. Shared
 // by the built-in settings pages AND the VPN / Acquisition module pages.
 
-import type { MessageKey, SettingGroup, SettingRow } from '@kroma/core';
+import {
+  apiErrorText,
+  type KromaClient,
+  type MessageKey,
+  type SettingGroup,
+  type SettingRow,
+} from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,
+  Button,
   CardSkeleton,
   Divider,
   Field,
@@ -31,12 +38,14 @@ interface SettingsViewProps {
   embedded?: boolean;
 }
 
-// A `secret` row records only WHETHER it now holds a value, not the value
-// itself: the server never sends one back, and keeping it in state would put
-// a signing key in the React tree for the rest of the session.
+// A `secret`/`password` row records only WHETHER it now holds a value, not the
+// value itself: the server never sends one back, and keeping it in state would
+// put a signing key in the React tree for the rest of the session.
 function applySetting(groups: SettingGroup[], key: string, value: unknown): SettingGroup[] {
   const applied = (r: SettingRow): SettingRow =>
-    r.kind === 'secret' ? { ...r, value: '', configured: Boolean(value) } : { ...r, value };
+    r.kind === 'secret' || r.kind === 'password'
+      ? { ...r, value: '', configured: Boolean(value) }
+      : { ...r, value };
   return groups.map((g) => ({
     ...g,
     rows: g.rows.map((r) => (r.key === key ? applied(r) : r)),
@@ -188,8 +197,17 @@ function Control({ row, onChange }: Readonly<{ row: SettingRow; onChange: (v: un
   if (row.kind === 'text') {
     return <EditableText label={row.label} value={asText(row.value)} onCommit={onChange} />;
   }
-  if (row.kind === 'secret') {
-    return <SecretInput configured={Boolean(row.configured)} onCommit={onChange} />;
+  if (row.kind === 'secret' || row.kind === 'password') {
+    return (
+      <SecretInput
+        configured={Boolean(row.configured)}
+        masked={row.kind === 'password'}
+        onCommit={onChange}
+      />
+    );
+  }
+  if (row.kind === 'action') {
+    return <ActionControl actionKey={row.key} />;
   }
   // value (read-only)
   return (
@@ -225,16 +243,25 @@ function SettingSelect({
   );
 }
 
-// A write-only credential (PEM key or service-account JSON): starts empty
-// every time, since the server never sends a stored secret back, and blur
-// commits only a non-empty value so leaving the field alone can never wipe a
-// working key by accident. Removing one is the Clear button's job.
+// A write-only credential: starts empty every time, since the server never
+// sends a stored secret back, and blur commits only a non-empty value so
+// leaving the field alone can never wipe a working key by accident. Removing
+// one is the Clear button's job. `masked` picks the shape the credential
+// wants: one hidden line for a password, a wrapping box for a PEM key or a
+// service-account JSON.
 function SecretInput({
   configured,
+  masked,
   onCommit,
-}: Readonly<{ configured: boolean; onCommit: (v: string) => void }>) {
+}: Readonly<{ configured: boolean; masked: boolean; onCommit: (v: string) => void }>) {
   const t = useT();
   const [v, setV] = useState('');
+  const commit = () => {
+    if (!v.trim()) return;
+    onCommit(v);
+    setV('');
+  };
+  const placeholder = configured ? t('admin.secretReplace') : undefined;
   return (
     <Box align="flex-end" gap={6}>
       <Field.Root
@@ -243,16 +270,17 @@ function SecretInput({
         value={v}
         onValueChange={setV}
       >
-        <Field.Textarea
-          rows={3}
-          placeholder={configured ? t('admin.secretReplace') : undefined}
-          minW={280}
-          onBlur={() => {
-            if (!v.trim()) return;
-            onCommit(v);
-            setV('');
-          }}
-        />
+        {masked ? (
+          <Field.Input
+            type="password"
+            autoComplete="off"
+            placeholder={placeholder}
+            minW={280}
+            onBlur={commit}
+          />
+        ) : (
+          <Field.Textarea rows={3} placeholder={placeholder} minW={280} onBlur={commit} />
+        )}
       </Field.Root>
       <Box row align="center" gap={10}>
         <Text variant="overline" color={configured ? 'success' : 'text/30'}>
@@ -275,6 +303,63 @@ function SecretInput({
           </Focusable>
         ) : null}
       </Box>
+    </Box>
+  );
+}
+
+// An `action` row's server call and strings, keyed by the row's `key`. Core
+// actions live here; a module page renders its own buttons rather than
+// registering here.
+type T = ReturnType<typeof useT>;
+interface ActionSpec {
+  label: MessageKey;
+  running: MessageKey;
+  failed: MessageKey;
+  run: (client: KromaClient) => Promise<{ sentTo: string }>;
+  ok: (t: T, r: { sentTo: string }) => string;
+}
+const ACTIONS: Record<string, ActionSpec> = {
+  smtpTest: {
+    label: 'admin.smtpTestRun',
+    running: 'admin.smtpTestSending',
+    failed: 'admin.smtpTestFailed',
+    run: (client) => client.testSmtpSettings(),
+    ok: (t, r) => t('admin.smtpTestOk', { email: r.sentTo }),
+  },
+};
+
+function ActionControl({ actionKey }: Readonly<{ actionKey: string }>) {
+  const t = useT();
+  const { client } = useAdminHost();
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const action = ACTIONS[actionKey];
+  if (!action) return null;
+  return (
+    <Box align="flex-end" gap={6}>
+      <Button
+        variant="glass"
+        size="sm"
+        icon="mail"
+        label={busy ? t(action.running) : t(action.label)}
+        loading={busy}
+        onPress={() => {
+          setBusy(true);
+          setResult(null);
+          action
+            .run(client)
+            .then((r) => setResult({ ok: true, text: action.ok(t, r) }))
+            .catch((e: unknown) =>
+              setResult({ ok: false, text: apiErrorText(e, t(action.failed)) }),
+            )
+            .finally(() => setBusy(false));
+        }}
+      />
+      {result ? (
+        <Text variant="overline" color={result.ok ? 'success' : 'danger'}>
+          {result.text}
+        </Text>
+      ) : null}
     </Box>
   );
 }
