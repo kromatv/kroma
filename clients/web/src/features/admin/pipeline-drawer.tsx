@@ -1,5 +1,5 @@
 import type { ElementRow, MessageKey } from '@kroma/core';
-import { posterGradient } from '@kroma/core';
+import { ItemId, posterGradient, ShowId } from '@kroma/core';
 import { useFormat, useT } from '@kroma/ui';
 import { Box, Button, Callout, color, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
 import { createCallable } from 'react-call';
@@ -11,8 +11,10 @@ import { Image } from '#web/shared/ui';
 function DrawerPoster({ el }: Readonly<{ el: ElementRow }>) {
   const { client } = useAuth();
   const src =
-    (el.poster ? client.resolveArt(el.poster) : null) ??
-    (el.kind === 'series' ? client.showPosterUrl(el.id) : client.posterUrl(el.id));
+    (el.poster ? client.media.artwork.resolve(el.poster) : null) ??
+    (el.kind === 'series'
+      ? client.media.artwork.showPosterUrl(ShowId.parse(el.id))
+      : client.media.artwork.posterUrl(ItemId.parse(el.id)));
   return (
     <Box w={70} h={104} shrink={0} radius="xs" overflow="hidden" shadow="pop">
       <div style={{ position: 'absolute', inset: 0, background: posterGradient(el.title) }} />

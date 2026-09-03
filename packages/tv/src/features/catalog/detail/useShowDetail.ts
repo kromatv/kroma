@@ -1,4 +1,4 @@
-import type { ShowDetail, UpNext } from '@kroma/core';
+import type { ItemId, ShowDetail, ShowId, UpNext } from '@kroma/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient } from '#tv/app/router';
@@ -10,7 +10,7 @@ export interface ShowDetailState {
   setSeason: React.Dispatch<React.SetStateAction<number | null>>;
   activeSeason: ShowDetail['seasons'][number] | null;
   epProgress: Record<string, number>;
-  toggleEpisodeWatched: (id: string) => void;
+  toggleEpisodeWatched: (id: ItemId) => void;
   upNext: UpNext | null;
 }
 
@@ -18,7 +18,7 @@ export interface ShowDetailState {
  * Everything the series screen loads for one show: its seasons, the selected
  * season, per-episode resume progress and the server's up-next pick.
  */
-export function useShowDetail(showId: string): ShowDetailState {
+export function useShowDetail(showId: ShowId): ShowDetailState {
   const client = useClient();
   const watched = useWatched();
   const [detail, setDetail] = useState<ShowDetail | null>(null);
@@ -30,7 +30,7 @@ export function useShowDetail(showId: string): ShowDetailState {
   // biome-ignore lint/correctness/useExhaustiveDependencies: show.id intentionally re-fetches when switching shows (the screen is reused on this route); it gates the effect even though the body reads it only indirectly.
   useEffect(() => {
     let cancelled = false;
-    client
+    client.playback
       .progress()
       .then((entries) => {
         if (cancelled) return;
@@ -53,7 +53,7 @@ export function useShowDetail(showId: string): ShowDetailState {
   // drop the local progress bar with it instead of leaving a stale one under a
   // watched badge.
   const toggleEpisodeWatched = useCallback(
-    (id: string) => {
+    (id: ItemId) => {
       const nowWatched = !watched.has(id);
       watched.toggle(id);
       if (nowWatched) {
@@ -72,7 +72,7 @@ export function useShowDetail(showId: string): ShowDetailState {
     setDetail(null);
     setSeason(null);
     setError(null);
-    client
+    client.media
       .show(showId)
       .then((d) => {
         if (cancelled) return;
@@ -97,7 +97,7 @@ export function useShowDetail(showId: string): ShowDetailState {
   const [upNext, setUpNext] = useState<UpNext | null>(null);
   useEffect(() => {
     let cancelled = false;
-    client
+    client.playback
       .upNext(showId)
       .then((r) => {
         if (!cancelled) setUpNext(r);

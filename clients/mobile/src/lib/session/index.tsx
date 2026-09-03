@@ -3,7 +3,8 @@
 // accessToken is stored and exchanged on demand for a short-lived bearer kept
 // in memory; a 401 mid-flight silently re-exchanges.
 
-import { type KromaClient, normalizeServerUrl, setSessionToken, type User } from '@kroma/core';
+import type { QueryClient } from '@kroma/client/query';
+import { normalizeServerUrl, setSessionToken, type User } from '@kroma/core';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 import { makeClient } from '#mobile/lib/device';
 import {
@@ -19,7 +20,7 @@ import { sameAccount, useAccountStore, useServerStore } from './stores';
 export interface AuthSession {
   status: 'booting' | 'signedOut' | 'signedIn';
   serverUrl: string | null;
-  client: KromaClient | null;
+  client: QueryClient | null;
   user: User | null;
   servers: ServerEntry[];
   accounts: MobileAccount[];
@@ -48,7 +49,7 @@ export function useSession(): AuthSession {
 }
 
 /** The signed-in client; screens behind the auth gate can rely on it. */
-export function useClient(): KromaClient {
+export function useClient(): QueryClient {
   const { client } = useSession();
   if (!client) throw new Error('useClient before sign-in');
   return client;
@@ -58,7 +59,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
   const [status, setStatus] = useState<AuthSession['status']>('booting');
   const [serverUrl, setServerUrl] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [client, setClient] = useState<KromaClient | null>(null);
+  const [client, setClient] = useState<QueryClient | null>(null);
   const accounts = useAccountStore();
   const servers = useServerStore();
 
@@ -66,15 +67,11 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
     (url: string, accessToken: string, token: string, freshUser: User) => {
       const next = makeClient(url);
       next.setAuthToken(token);
-      // The live-events WebSocket authenticates through this module-level
-      // store, not the client instance; without it the socket 401s silently
-      // forever.
-      setSessionToken(token);
       next.setRefreshHandler(async () => {
         try {
-          const { token: newToken, user: refreshed } = await next.exchangeToken(accessToken);
+          const { token: newToken, user: refreshed } =
+            await next.accounts.exchangeToken(accessToken);
           next.setAuthToken(newToken);
-          setSessionToken(newToken);
           setUser(refreshed);
           return newToken;
         } catch {
@@ -112,7 +109,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
         const abort = new AbortController();
         const timer = setTimeout(() => abort.abort(), 5000);
         try {
-          const health = await makeClient(normalized).health({ signal: abort.signal });
+          const health = await makeClient(normalized).media.health({ signal: abort.signal });
           setServerUrl(normalized);
           // `name` is LAN-only: a server reached over the internet answers
           // without one, and `touch` then keeps whatever label we already had.
@@ -134,7 +131,7 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
   const login = useCallback(
     async (identifier: string, password: string) => {
       if (!serverUrl) throw new Error('no server');
-      const result = await makeClient(serverUrl).login(identifier, password);
+      const result = await makeClient(serverUrl).accounts.login(identifier, password);
       enterSession(serverUrl, result.accessToken, result.token, result.user);
     },
     [serverUrl, enterSession],
@@ -143,14 +140,14 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
   const switchAccount = useCallback(
     async (account: MobileAccount, pin?: string) => {
       const probe = makeClient(account.serverUrl);
-      const { token, user: fresh } = await probe.exchangeToken(account.accessToken, pin);
+      const { token, user: fresh } = await probe.accounts.exchangeToken(account.accessToken, pin);
       enterSession(account.serverUrl, account.accessToken, token, fresh);
     },
     [enterSession],
   );
 
   const relockAccount = useCallback(async (account: MobileAccount) => {
-    await makeClient(account.serverUrl).relock(account.accessToken);
+    await makeClient(account.serverUrl).accounts.relock(account.accessToken);
   }, []);
 
   const forgetSecrets = useCallback((url: string, userId: string) => {
@@ -175,10 +172,11 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       if (forgetActive && activeUser && serverUrl) {
         accounts.forget(serverUrl, activeUser.id);
         forgetSecrets(serverUrl, activeUser.id);
-        if (current && active) void current.logout(active.accessToken).catch(() => undefined);
+        if (current && active)
+          void current.accounts.logout(active.accessToken).catch(() => undefined);
       } else if (current && active) {
         // Back to the profile picker: re-arm the PIN gate on this credential.
-        void current.relock(active.accessToken).catch(() => undefined);
+        void current.accounts.relock(active.accessToken).catch(() => undefined);
       }
     },
     [client, user, serverUrl, accounts, forgetSecrets],

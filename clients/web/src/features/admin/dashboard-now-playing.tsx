@@ -35,7 +35,7 @@ function NowPlayingThumb({ s }: Readonly<{ s: PlaybackSession }>) {
   const story = useStoryboard(s.itemId, { generate: false });
   const [posterFailed, setPosterFailed] = useState(false);
   const frame = story.tile(s.positionMs / 1000, THUMB_W);
-  const poster = kromaClient().posterUrl(s.itemId);
+  const poster = kromaClient().media.artwork.posterUrl(s.itemId);
 
   return (
     <Box
@@ -223,7 +223,7 @@ export const StopStreamModal = createCallable<{ session: PlaybackSession }, bool
     async function stop() {
       setBusy(true);
       try {
-        await client.terminateSession(session.id, message);
+        await client.admin.terminateSession(session.id, message);
         call.end(true);
       } finally {
         setBusy(false);

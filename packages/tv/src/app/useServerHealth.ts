@@ -35,7 +35,7 @@ export function useServerHealth(
         const ctrl = new AbortController();
         const to = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
         try {
-          const health = await client.health({ signal: ctrl.signal });
+          const health = await client.media.health({ signal: ctrl.signal });
           setServerVersion(health.version);
           return true;
         } catch {

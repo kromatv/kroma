@@ -64,8 +64,8 @@ export function AiPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    client
-      .adminLlm()
+    client.llm
+      .config()
       .then((c) => setConfig(toConfig(c)))
       .catch(() => undefined);
   }, [client]);
@@ -106,7 +106,7 @@ export function AiPage() {
         0,
         cfg.providers.findIndex((p) => p.key === cfg.defaultKey),
       );
-      await client.saveLlm({
+      await client.llm.save({
         enabled: cfg.enabled,
         defaultIndex,
         providers: cfg.providers.map((p) => ({
@@ -123,7 +123,7 @@ export function AiPage() {
       });
       // Re-fetch to adopt the server-assigned ids, which the per-provider key
       // probe needs.
-      setConfig(toConfig(await client.adminLlm()));
+      setConfig(toConfig(await client.llm.config()));
       setSaved(true);
     } catch {
       setError(t('jobs.saveFailed'));

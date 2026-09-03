@@ -3,7 +3,7 @@
 // the overall status pill, and a reprocess shortcut.
 
 import type { ElementRow, MessageKey, Translate, Treatment } from '@kroma/core';
-import { posterGradient } from '@kroma/core';
+import { ItemId, posterGradient, ShowId } from '@kroma/core';
 import { Table } from '@kroma/module-sdk';
 import { type Format, useFormat, useT } from '@kroma/ui';
 import { Box, type ColorValue, Icon, Row, Spinner, Text, Tooltip } from '@kroma/ui/kit';
@@ -54,8 +54,10 @@ function Poster({
   // Prefer the cached TMDB poster; fall back to the by-id endpoint, then the
   // gradient placeholder (onError) if neither has real art.
   const src =
-    (poster ? client.resolveArt(poster) : null) ??
-    (kind === 'series' ? client.showPosterUrl(id) : client.posterUrl(id));
+    (poster ? client.media.artwork.resolve(poster) : null) ??
+    (kind === 'series'
+      ? client.media.artwork.showPosterUrl(ShowId.parse(id))
+      : client.media.artwork.posterUrl(ItemId.parse(id)));
   return (
     <Box w={32} h={46} shrink={0} radius={4} overflow="hidden" shadow="card">
       <div style={{ position: 'absolute', inset: 0, background: posterGradient(seed) }} />

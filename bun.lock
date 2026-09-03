@@ -80,7 +80,7 @@
         "hono": "^4.13.2",
         "react": "19.2.8",
         "react-dom": "19.2.8",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@kroma/bundler": "workspace:*",
@@ -133,7 +133,7 @@
         "@tanstack/react-start": "^1.168.46",
         "react": "19.2.8",
         "react-dom": "19.2.8",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@cloudflare/vite-plugin": "^1.53.1",
@@ -212,6 +212,7 @@
       "dependencies": {
         "@gorhom/bottom-sheet": "^5.2.14",
         "@kesha-antonov/react-native-background-downloader": "^4.6.1",
+        "@kroma/client": "workspace:*",
         "@kroma/core": "workspace:*",
         "@kroma/lan-beacon": "workspace:*",
         "@kroma/media3-ffmpeg": "workspace:*",
@@ -250,7 +251,7 @@
         "react-native-screens": "4.26.0",
         "react-native-svg": "15.15.5",
         "react-native-worklets": "0.10.1",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@babel/core": "^7.29.7",
@@ -269,7 +270,7 @@
         "react": "19.2.8",
         "react-dom": "19.2.8",
         "react-native-web": "^0.21.2",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@kroma/bundler": "workspace:*",
@@ -343,6 +344,7 @@
       "name": "@kroma/web",
       "version": "0.0.0",
       "dependencies": {
+        "@kroma/client": "workspace:*",
         "@kroma/core": "workspace:*",
         "@kroma/module-acquisition": "workspace:*",
         "@kroma/module-indexer": "workspace:*",
@@ -363,7 +365,7 @@
         "react-dom": "19.2.8",
         "react-native-web": "^0.21.2",
         "shaka-player": "^5.2.5",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@babel/core": "^8.0.1",
@@ -391,7 +393,7 @@
         "react": "19.2.8",
         "react-dom": "19.2.8",
         "react-native-web": "^0.21.2",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@kroma/bundler": "workspace:*",
@@ -414,7 +416,7 @@
         "@kroma/ui": "workspace:*",
         "@tanstack/react-query": "^5.101.4",
         "@tanstack/react-router": "^1.170.29",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@types/react": "^19.2.18",
@@ -432,7 +434,7 @@
         "@kroma/ui": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
         "react-call": "^2.0.2",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@types/react": "^19.2.18",
@@ -449,6 +451,7 @@
         "@kroma/module-sdk": "workspace:*",
         "@kroma/ui": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@types/react": "^19.2.18",
@@ -471,7 +474,7 @@
         "@tanstack/react-query": "^5.101.4",
         "@tanstack/react-router": "^1.170.29",
         "react-call": "^2.0.2",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@types/react": "^19.2.18",
@@ -488,7 +491,7 @@
         "@kroma/module-sdk": "workspace:*",
         "@kroma/ui": "workspace:*",
         "@tabler/icons-react": "^3.46.0",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@types/react": "^19.2.18",
@@ -506,6 +509,7 @@
         "@babel/plugin-transform-classes": "^7.29.7",
         "@babel/preset-env": "^7.29.7",
         "@kroma/build-info": "workspace:*",
+        "@kroma/client": "workspace:*",
         "@kroma/core": "workspace:*",
         "@kroma/i18n": "workspace:*",
         "@kroma/i18n-devtools": "workspace:*",
@@ -540,7 +544,7 @@
       "name": "@kroma/ci-tools",
       "version": "0.0.0",
       "dependencies": {
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "bun-types": "^1.4.0",
@@ -552,11 +556,20 @@
       "version": "0.0.0",
       "dependencies": {
         "@kroma/registry": "workspace:*",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
+        "@tanstack/react-query": "^5.101.4",
         "typescript": "^7.0.2",
       },
+      "peerDependencies": {
+        "@tanstack/react-query": "^5",
+        "vite": ">=6",
+      },
+      "optionalPeers": [
+        "@tanstack/react-query",
+        "vite",
+      ],
     },
     "packages/core": {
       "name": "@kroma/core",
@@ -564,7 +577,7 @@
       "dependencies": {
         "@kroma/client": "workspace:*",
         "@kroma/i18n": "workspace:*",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@types/react": "^19.2.18",
@@ -604,7 +617,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@kroma/ui": "workspace:*",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@jridgewell/trace-mapping": "^0.3.31",
@@ -688,7 +701,7 @@
       "dependencies": {
         "@kroma/registry": "workspace:*",
         "hono": "^4.13.2",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "bun-types": "^1.4.0",
@@ -715,7 +728,7 @@
       "dependencies": {
         "@hono/zod-validator": "^0.9.0",
         "hono": "^4.13.2",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "typescript": "^7.0.2",
@@ -746,7 +759,7 @@
       "name": "@kroma/registry",
       "version": "0.0.0",
       "dependencies": {
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "typescript": "^7.0.2",
@@ -796,7 +809,7 @@
       "name": "@kroma/sonar-tools",
       "version": "0.0.0",
       "dependencies": {
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "bun-types": "^1.4.0",
@@ -850,6 +863,7 @@
         "shaka-player": "^5.2.5",
       },
       "devDependencies": {
+        "@kroma/client": "workspace:*",
         "@types/qrcode-generator": "^1.0.6",
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.4",
@@ -877,7 +891,7 @@
         "@clack/core": "1.4.3",
         "@clack/prompts": "1.7.0",
         "citty": "0.2.2",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "devDependencies": {
         "@types/node": "^22.20.1",
@@ -911,6 +925,7 @@
         "react-native-svg": "^15.15.5",
       },
       "devDependencies": {
+        "@kroma/client": "workspace:*",
         "@kroma/react-audit": "workspace:*",
         "@kroma/workbench": "workspace:*",
         "@tabler/icons": "^3.46.0",
@@ -922,7 +937,7 @@
         "react-native": "npm:react-native-tvos@0.86.0-2",
         "react-native-web": "^0.21.2",
         "typescript": "^7.0.2",
-        "zod": "^4.4.3",
+        "zod": "^4.5.4",
       },
       "peerDependencies": {
         "expo-image": "~57.0.3",
@@ -3449,7 +3464,7 @@
 
     "youch-core": ["youch-core@0.3.3", "", { "dependencies": { "@poppinss/exception": "^1.2.2", "error-stack-parser-es": "^1.0.5" } }, "sha512-ho7XuGjLaJ2hWHoK8yFnsUGy2Y5uDpqSTq1FkHLK4/oqKtyUU1AFbOOxY4IpC9f0fTLjwYbslUz0Po5BpD1wrA=="],
 
-    "zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
+    "zod": ["zod@4.5.4", "", {}, "sha512-sC95tT5iHHH9gtpj6A81kh+NEaRAUFN+qlUPDUbRfOMvNf5QCBqsb3WgvnpVtK5Y+4UfA6KqufotuTvMGiTlsA=="],
 
     "zwitch": ["zwitch@2.0.4", "", {}, "sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A=="],
 
@@ -3587,9 +3602,15 @@
 
     "@tanstack/router-cli/yargs": ["yargs@17.7.3", "", { "dependencies": { "cliui": "^8.0.1", "escalade": "^3.1.1", "get-caller-file": "^2.0.5", "require-directory": "^2.1.1", "string-width": "^4.2.3", "y18n": "^5.0.5", "yargs-parser": "^21.1.1" } }, "sha512-GZtjxm/J/4TSxuL3FNYjCmLktBTnIw/rVmKSIyKeYAZpmJB2ig9VauCC5xsa82GNKVKDAqpOn3KVzNt0zmrU0g=="],
 
+    "@tanstack/router-generator/zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
+
     "@tanstack/router-plugin/unplugin": ["unplugin@3.3.0", "", { "dependencies": { "@jridgewell/remapping": "^2.3.5", "picomatch": "^4.0.4", "webpack-virtual-modules": "^0.6.2" }, "peerDependencies": { "@farmfe/core": "*", "@rspack/core": "*", "bun-types-no-globals": "*", "esbuild": "*", "rolldown": "*", "rollup": "*", "unloader": "*", "vite": "*", "webpack": "*" }, "optionalPeers": ["@farmfe/core", "@rspack/core", "bun-types-no-globals", "esbuild", "rolldown", "rollup", "unloader", "vite", "webpack"] }, "sha512-qa66K+crbfyE6JK10GjvbJeRrOsuC/JpbnHctfyp/i4oBTxWOzJfRZyDiOk1PtErMFRu8JhsU/wPvOdBNWe5Rg=="],
 
+    "@tanstack/router-plugin/zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
+
     "@tanstack/start-plugin-core/@babel/code-frame": ["@babel/code-frame@7.27.1", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.27.1", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg=="],
+
+    "@tanstack/start-plugin-core/zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
 
     "@testing-library/jest-dom/aria-query": ["aria-query@5.3.2", "", {}, "sha512-COROpnaoap1E2F000S62r6A60uHZnmlvomhfyT2DlTcrY1OrBKn2UhH7qn5wTC9zMvD0AY7csdPSNwKP+7WiQw=="],
 

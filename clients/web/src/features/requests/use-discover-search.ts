@@ -35,13 +35,13 @@ export function useDiscoverSearch(query: string, type: DiscoverType): DiscoverSe
     queryFn: async () => {
       const c = kromaClient();
       const [local, discover] = await Promise.all([
-        c
+        c.media
           .search(q, { limit: 24 })
           .then((r) => r.results)
           .catch(() => [] as SearchHit[]),
         canDiscover
-          ? c
-              .discoverSearch(q, { type })
+          ? c.discovery
+              .search(q, { type })
               .then((r) => r.results)
               .catch(() => [] as DiscoverEntry[])
           : Promise.resolve<DiscoverEntry[]>([]),
@@ -76,7 +76,7 @@ export interface TrendingState {
 export function useTrending(enabled: boolean): TrendingState {
   const { data, isFetching } = useQuery({
     queryKey: ['discover', 'trending', 'all'],
-    queryFn: () => kromaClient().discoverTrending(),
+    queryFn: () => kromaClient().discovery.trending(),
     enabled,
     select: (r) => r.results,
   });

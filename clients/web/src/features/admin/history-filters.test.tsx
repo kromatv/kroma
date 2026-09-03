@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { type AdminUser, UserId } from '@kroma/core';
+import { type AdminUser, LibraryId, UserId } from '@kroma/core';
 import { I18nProvider } from '@kroma/ui';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -8,13 +8,13 @@ import { HistoryFilters } from '#web/features/admin/history-filters';
 import type { HistorySearch } from '#web/features/admin/history-query';
 
 const LIBRARIES = [
-  { id: 'nas-films', name: 'Films' },
-  { id: 'nas-series', name: 'Séries' },
+  { id: LibraryId.parse('nas-films'), name: 'Films' },
+  { id: LibraryId.parse('nas-series'), name: 'Séries' },
 ];
 
 const USERS: AdminUser[] = [
   {
-    id: UserId.of('u1'),
+    id: UserId.parse('u1'),
     email: 'max@kroma.tv',
     username: 'maxime',
     permissions: [],
@@ -57,13 +57,13 @@ describe("the watch history's filters", () => {
   });
 
   it('names the library the address arrived with', () => {
-    mount({ library: 'nas-series' });
+    mount({ library: LibraryId.parse('nas-series') });
 
     expect(screen.getByText('Séries')).toBeTruthy();
   });
 
   it('names the account the address arrived with', () => {
-    mount({ user: 'u1' });
+    mount({ user: UserId.parse('u1') });
 
     expect(screen.getByText('maxime')).toBeTruthy();
   });
@@ -88,7 +88,13 @@ describe("the watch history's filters", () => {
 
   it('drops the title in one press and leaves the other filters as they were', () => {
     const asked = mount(
-      { item: 'hotd', library: 'nas-series', user: 'u1', range: '7d', page: 4 },
+      {
+        item: 'hotd',
+        library: LibraryId.parse('nas-series'),
+        user: UserId.parse('u1'),
+        range: '7d',
+        page: 4,
+      },
       'House of the Dragon',
     );
 

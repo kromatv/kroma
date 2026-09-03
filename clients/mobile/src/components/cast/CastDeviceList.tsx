@@ -4,7 +4,7 @@
 // (<CastPanel>): the player is a native fullScreenModal, and @gorhom's sheet
 // renders into a host that sits behind it.
 
-import type { CastReceiver, DiscoveredTv, FinalRefusal, GrantResult } from '@kroma/core';
+import type { CastReceiver, DeviceId, DiscoveredTv, FinalRefusal, GrantResult } from '@kroma/core';
 import { checkRetryable, grantRefusal } from '@kroma/core';
 import { useCast } from '@kroma/ui';
 import { Badge, Box, Icon, styles, Text } from '@kroma/ui/kit';
@@ -18,7 +18,7 @@ import { useClient } from '#mobile/lib/session';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 export interface CastDeviceListProps {
-  onPick: (receiverId: string | null) => void;
+  onPick: (receiverId: DeviceId | null) => void;
   offerLocal?: boolean;
 }
 
@@ -52,7 +52,7 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
       granting.current = true;
       setAttempt({ handle: tv.handle, state: 'signingIn' });
       try {
-        await client.handoffGrant(tv.handle, { proof: tv.proof, check });
+        await client.handoff.grant(tv.handle, { proof: tv.proof, check });
         setAttempt({ handle: tv.handle, state: 'done' });
         setAsking(null);
         return 'granted';

@@ -27,7 +27,7 @@ const session = vi.hoisted(() => ({
 
 vi.mock('#mobile/lib/session', () => ({
   useSession: () => ({ user: session.user, setUser: session.setUser }),
-  useClient: () => ({ updateAccount: session.updateAccount }),
+  useClient: () => ({ accounts: { update: session.updateAccount } }),
 }));
 
 import { useLangPrefs } from './langPrefs';

@@ -31,7 +31,7 @@ export function ContinueProvider({ children }: Readonly<{ children: ReactNode }>
       setItems([]);
       return;
     }
-    client
+    client.playback
       .continueWatching()
       .then(setItems)
       .catch(() => undefined);

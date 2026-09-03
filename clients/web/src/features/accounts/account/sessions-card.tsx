@@ -23,8 +23,8 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
   const revoke = async () => {
     setRevoking(true);
     try {
-      await kromaClient().revokeSession(session.id);
-      await qc.invalidateQueries({ queryKey: ['sessions'] });
+      await kromaClient().accounts.revokeSession(session.id);
+      await qc.invalidateQueries({ queryKey: userQueries.sessions().queryKey });
     } finally {
       setRevoking(false);
     }

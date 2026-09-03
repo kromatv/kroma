@@ -1,3 +1,4 @@
+import { fakeClient } from '@kroma/client/test';
 import type { ContinueItem, KromaClient, MediaItem, Section } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -10,11 +11,8 @@ import {
 beforeEach(() => vi.clearAllMocks());
 afterEach(() => vi.restoreAllMocks());
 
-function fakeClient(backdrop: string | null = 'http://s/back.jpg'): KromaClient {
-  return {
-    baseUrl: 'http://s',
-    backdropFor: vi.fn(() => backdrop),
-  } as unknown as KromaClient;
+function launcherClient(backdrop: string | null = 'http://kroma.test/back.jpg'): KromaClient {
+  return fakeClient({ media: { artwork: { backdropFor: vi.fn(() => backdrop) } } });
 }
 
 function movie(over: Record<string, unknown> = {}): MediaItem {
@@ -38,7 +36,7 @@ describe('buildHomeChannels', () => {
       movieSection('for-you', 'For you', [movie({ id: 'a', title: 'A' })]),
       movieSection('recent', 'Recently added', [movie({ id: 'b', title: 'B', year: null })]),
     ];
-    const channels = buildHomeChannels(sections, fakeClient());
+    const channels = buildHomeChannels(sections, launcherClient());
     expect(channels).toEqual([
       { title: 'Recently added', items: [expect.objectContaining({ id: 'b', subtitle: '' })] },
       { title: 'For you', items: [expect.objectContaining({ id: 'a', subtitle: '2021' })] },
@@ -48,14 +46,14 @@ describe('buildHomeChannels', () => {
   it('builds a movie program with card art, backdrop and the year subtitle', () => {
     const channel = buildHomeChannels(
       [movieSection('recent', 'Recently added', [movie({ id: 'x y', addedAt: '2026-02-02' })])],
-      fakeClient(),
+      launcherClient(),
     )[0] as HomeChannelSpec;
     expect(channel.items[0]).toEqual({
       id: 'x y',
       title: 'Dune',
       subtitle: '2021',
-      imageUrl: 'http://s/api/items/x%20y/card?v=2026-02-02',
-      backdropUrl: 'http://s/back.jpg',
+      imageUrl: 'http://kroma.test/api/items/x%20y/card?v=2026-02-02',
+      backdropUrl: 'http://kroma.test/back.jpg',
       kind: 'movie',
     });
   });
@@ -63,7 +61,7 @@ describe('buildHomeChannels', () => {
   it('drops the backdrop when the client has none', () => {
     const channel = buildHomeChannels(
       [movieSection('recent', 'Recently added', [movie()])],
-      fakeClient(null),
+      launcherClient(null),
     )[0] as HomeChannelSpec;
     expect(channel.items[0]?.backdropUrl).toBeUndefined();
   });
@@ -73,7 +71,7 @@ describe('buildHomeChannels', () => {
     const section = movieSection('recent', 'Recently added', [movie({ id: 'dup' }), ...many]);
     section.items.push({ type: 'movie', item: movie({ id: 'dup' }) } as Section['items'][number]);
     section.items.push({ type: 'show', show: { id: 'sh' } } as unknown as Section['items'][number]);
-    const channel = buildHomeChannels([section], fakeClient())[0] as HomeChannelSpec;
+    const channel = buildHomeChannels([section], launcherClient())[0] as HomeChannelSpec;
     expect(channel.items).toHaveLength(20);
     expect(channel.items.filter((p) => p.id === 'dup')).toHaveLength(1);
   });
@@ -84,13 +82,13 @@ describe('buildHomeChannels', () => {
       title: 'Recently added',
       items: [{ type: 'show', show: { id: 's' } }],
     } as unknown as Section;
-    expect(buildHomeChannels([section], fakeClient())).toEqual([]);
+    expect(buildHomeChannels([section], launcherClient())).toEqual([]);
   });
 
   it('ignores rows outside the generic set', () => {
     const sections = [movieSection('themed-halloween', 'Spooky', [movie()])];
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    expect(buildHomeChannels(sections, fakeClient())).toEqual([]);
+    expect(buildHomeChannels(sections, launcherClient())).toEqual([]);
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('no generic home rows'),
       expect.anything(),
@@ -99,7 +97,7 @@ describe('buildHomeChannels', () => {
 
   it('stays quiet when there are no sections at all', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    expect(buildHomeChannels([], fakeClient())).toEqual([]);
+    expect(buildHomeChannels([], launcherClient())).toEqual([]);
     expect(warn).not.toHaveBeenCalled();
   });
 });
@@ -119,13 +117,14 @@ function resume(
 
 describe('buildWatchNext', () => {
   it('maps a movie into a resume tile with a progress-stamped card', () => {
-    const tile = buildWatchNext([resume()], fakeClient())[0] as WatchNextItem;
+    const tile = buildWatchNext([resume()], launcherClient())[0] as WatchNextItem;
     expect(tile).toEqual({
       id: 'itm_1',
       title: 'Dune',
       subtitle: '2021',
-      imageUrl: 'http://s/api/items/itm_1/card?label=Reprendre&v=2026-01-01&progress=0.250',
-      backdropUrl: 'http://s/back.jpg',
+      imageUrl:
+        'http://kroma.test/api/items/itm_1/card?label=Reprendre&v=2026-01-01&progress=0.250',
+      backdropUrl: 'http://kroma.test/back.jpg',
       showId: undefined,
       progressMs: 1000,
       durationMs: 4000,
@@ -142,7 +141,7 @@ describe('buildWatchNext', () => {
           { showTitle: 'Show', episodeTitle: 'Pilot', showId: 'sh_9', kind: 'episode' },
         ),
       ],
-      fakeClient(null),
+      launcherClient(null),
     )[0] as WatchNextItem;
     expect(tile).toMatchObject({
       title: 'Show',
@@ -159,7 +158,7 @@ describe('buildWatchNext', () => {
       resume({ positionMs: 5_000 }, { showId: 'sh_1', kind: 'episode' }),
     ];
 
-    expect(buildWatchNext(barely, fakeClient())).toEqual([]);
+    expect(buildWatchNext(barely, launcherClient())).toEqual([]);
   });
 
   it('carries one episode per series, the most recent', () => {
@@ -168,7 +167,7 @@ describe('buildWatchNext', () => {
       resume({ positionMs: 400_000 }, { id: 'ep_1', showId: 'sh_1', kind: 'episode' }),
     ];
 
-    const tiles = buildWatchNext(two, fakeClient());
+    const tiles = buildWatchNext(two, launcherClient());
 
     expect(tiles.map((t) => t.id)).toEqual(['ep_2']);
   });
@@ -176,14 +175,16 @@ describe('buildWatchNext', () => {
   it('omits the progress parameter and zeroes duration when there is no duration', () => {
     const tile = buildWatchNext(
       [resume({ durationMs: null, positionMs: 0 })],
-      fakeClient(),
+      launcherClient(),
     )[0] as WatchNextItem;
-    expect(tile.imageUrl).toBe('http://s/api/items/itm_1/card?label=Reprendre&v=2026-01-01');
+    expect(tile.imageUrl).toBe(
+      'http://kroma.test/api/items/itm_1/card?label=Reprendre&v=2026-01-01',
+    );
     expect(tile.durationMs).toBe(0);
   });
 
   it('falls back to an empty subtitle when there is neither episode nor year', () => {
-    const tile = buildWatchNext([resume({}, { year: null })], fakeClient())[0] as WatchNextItem;
+    const tile = buildWatchNext([resume({}, { year: null })], launcherClient())[0] as WatchNextItem;
     expect(tile.subtitle).toBe('');
   });
 
@@ -192,7 +193,7 @@ describe('buildWatchNext', () => {
     vi.setSystemTime(new Date('2026-05-05T00:00:00Z'));
     const tile = buildWatchNext(
       [resume({ updatedAt: 'not-a-date' })],
-      fakeClient(),
+      launcherClient(),
     )[0] as WatchNextItem;
     expect(tile.updatedAtMs).toBe(Date.parse('2026-05-05T00:00:00Z'));
     vi.useRealTimers();

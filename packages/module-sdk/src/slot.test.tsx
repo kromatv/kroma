@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { RequestId } from '@kroma/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -9,6 +10,8 @@ import { ModuleRegistry } from './registry';
 import { ModuleSlot, ModuleSlotProvider } from './slot';
 
 const MANIFEST = { id: 'tv.kroma.acq', version: '1.0.0' };
+
+const REQUEST = RequestId.parse('r1');
 
 function mod(id: string, label: string, order?: number) {
   return defineModule(
@@ -30,7 +33,7 @@ function mount(registry: ModuleRegistry, enabled: { id: string; enabled?: boolea
   // The enabled flags come from `GET /api/modules`, which the slot reads through
   // the shared ['modules'] query; seeding it keeps the test off the network.
   queryClient.setQueryData(['modules'], enabled);
-  const client = { modules: () => Promise.resolve(enabled) } as never;
+  const client = { modules: { list: () => Promise.resolve(enabled) } } as never;
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <AdminHostProvider value={{ client, user: null, apiBase: '' }}>
@@ -41,7 +44,7 @@ function mount(registry: ModuleRegistry, enabled: { id: string; enabled?: boolea
   return render(
     <ModuleSlot
       name="requests.detail"
-      requestId="r1"
+      requestId={REQUEST}
       kind="show"
       title="Alien"
       canGrab
@@ -84,13 +87,13 @@ describe('ModuleSlot', () => {
   it('renders the fallback with no provider at all, rather than throwing', () => {
     const queryClient = new QueryClient();
     queryClient.setQueryData(['modules'], []);
-    const client = { modules: () => Promise.resolve([]) } as never;
+    const client = { modules: { list: () => Promise.resolve([]) } } as never;
     render(
       <QueryClientProvider client={queryClient}>
         <AdminHostProvider value={{ client, user: null, apiBase: '' }}>
           <ModuleSlot
             name="requests.detail"
-            requestId="r1"
+            requestId={REQUEST}
             kind="movie"
             title="Heat"
             canGrab={false}

@@ -29,7 +29,7 @@ function ConnectPage() {
     setBusy(true);
     setStatus('idle');
     try {
-      await client.quickConnectAuthorize(c);
+      await client.accounts.quickConnect.authorize(c);
       setStatus('ok');
     } catch {
       setStatus('err');

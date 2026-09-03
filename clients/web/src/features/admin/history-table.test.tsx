@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { PlayEntry } from '@kroma/core';
+import { ItemId, type PlayEntry, ShowId } from '@kroma/core';
 import { I18nProvider } from '@kroma/ui';
 import { pinDesignWidth } from '@kroma/ui/kit';
 import {
@@ -118,7 +118,7 @@ describe('the watch history table', () => {
   });
 
   it('opens a film on its own page', async () => {
-    await mount([play({ itemId: 'goodfellas', kind: 'movie' })]);
+    await mount([play({ itemId: ItemId.parse('goodfellas'), kind: 'movie' })]);
 
     expect(firstRow().getAttribute('href')).toBe('/movies/goodfellas');
   });
@@ -126,8 +126,8 @@ describe('the watch history table', () => {
   it('opens the series an episode belongs to, which is the page that exists', async () => {
     await mount([
       play({
-        itemId: 'ep7',
-        showId: 'sev',
+        itemId: ItemId.parse('ep7'),
+        showId: ShowId.parse('sev'),
         kind: 'episode',
         title: 'Chikhai Bardo',
         showTitle: 'Severance',
@@ -138,7 +138,7 @@ describe('the watch history table', () => {
   });
 
   it('makes the whole row the link rather than the title written inside it', async () => {
-    await mount([play({ itemId: 'goodfellas', kind: 'movie' })]);
+    await mount([play({ itemId: ItemId.parse('goodfellas'), kind: 'movie' })]);
 
     expect(firstRow().tagName).toBe('A');
     expect(within(firstRow()).queryByRole('link')).toBeNull();
@@ -147,7 +147,7 @@ describe('the watch history table', () => {
   it('leaves a row whose title has left the catalog with nowhere to send the reader', async () => {
     await mount([
       play({
-        itemId: 'gone',
+        itemId: ItemId.parse('gone'),
         kind: 'episode',
         inCatalog: false,
         title: 'The Dundies',

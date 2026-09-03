@@ -4,7 +4,7 @@
 // closes on an ack rather than waiting for the new art (the fiche live-refreshes
 // on the update event). Gated on `library.manage` by the caller AND the server.
 
-import { apiErrorText } from '@kroma/core';
+import { apiErrorText, ItemId, ShowId } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Button, Callout, Field, IconButton, Spinner, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
@@ -33,6 +33,7 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
   ({ call, kind, id, title }) => {
     const t = useT();
     const { client } = useAuth();
+    const subjectId = kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
     // `submitted` drives the request; `undefined` means "search the parsed title",
     // which is what the modal opens with. Typing alone does not refetch.
     const [submitted, setSubmitted] = useState<string | undefined>(undefined);
@@ -47,7 +48,7 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
       error: loadError,
     } = useQuery({
       queryKey: ['rematch', kind, id, submitted ?? ''] as const,
-      queryFn: () => client.matchCandidates(kind, id, submitted),
+      queryFn: () => client.media.rematch.candidates(kind, subjectId, submitted),
       // TMDB search is a live third-party call; a stale candidate list is useless.
       staleTime: 0,
     });
@@ -57,8 +58,8 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
     const apply = (tmdbId: number | null) => {
       setApplying(tmdbId ?? 'reset');
       setApplyError(null);
-      client
-        .setMatch(kind, id, tmdbId)
+      client.media.rematch
+        .set(kind, subjectId, tmdbId)
         .then(() => call.end(true))
         .catch((e) => setApplyError(apiErrorText(e, t('rematch.applyFailed'))))
         .finally(() => setApplying(null));

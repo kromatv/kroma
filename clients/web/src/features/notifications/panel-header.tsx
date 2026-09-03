@@ -34,7 +34,7 @@ export function PanelHeader({
   async function markAll() {
     setBusy(true);
     try {
-      await kromaClient().markAllNotificationsRead();
+      await kromaClient().notifications.markAllRead();
       await queryClient.invalidateQueries({ queryKey: userQueries.notifications().queryKey });
     } finally {
       setBusy(false);

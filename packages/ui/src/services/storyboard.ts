@@ -2,7 +2,7 @@
 // thumbnails for the seek preview. The server builds it lazily, so this polls while
 // `pending`, then preloads the image so the first hover/scrub doesn't flash empty.
 
-import type { KromaClient, StoryboardManifest } from '@kroma/core';
+import type { ItemId, KromaClient, StoryboardManifest } from '@kroma/core';
 import { useCallback, useEffect, useState } from 'react';
 import { Image } from 'react-native';
 import { webDocument } from '#ui/lib/dom';
@@ -44,7 +44,7 @@ const MAX_TRIES = FAST_POLLS + 240; // ~1 h overall bound
  */
 export function useStoryboard(
   client: KromaClient,
-  itemId: string,
+  itemId: ItemId,
   { generate = true }: { generate?: boolean } = {},
 ): Storyboard {
   const [manifest, setManifest] = useState<StoryboardManifest | null>(null);
@@ -72,7 +72,7 @@ export function useStoryboard(
     };
 
     const poll = () => {
-      client
+      client.media
         .storyboard(itemId)
         .then((res) => {
           if (cancelled || resolved) return;
@@ -85,7 +85,7 @@ export function useStoryboard(
           }
           if (!res) return; // no usable file/duration: silently fall back to the time label
           resolved = true;
-          const url = client.resolveArt(res.url) ?? res.url;
+          const url = client.media.artwork.resolve(res.url) ?? res.url;
           setManifest(res);
           setSheetUrl(url);
           preload(url);

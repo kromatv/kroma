@@ -215,7 +215,7 @@ export const SectionPoster = memo(function SectionPoster({
         title={show.title}
         genre={genreLabels(t, show.metadata)[0] ?? t('content.series')}
         colors={posterColors(show.id)}
-        poster={client.showPosterFor(show)}
+        poster={client.media.artwork.showPosterFor(show)}
         width={width}
         progress={show.progress ?? null}
         watched={isWatched(show.id)}
@@ -235,7 +235,7 @@ export const SectionPoster = memo(function SectionPoster({
       title={item.title}
       genre={genreLabels(t, item.metadata)[0] ?? t(isEpisode ? 'content.series' : 'content.film')}
       colors={posterColors(item.id)}
-      poster={client.posterFor(item)}
+      poster={client.media.artwork.posterFor(item)}
       width={width}
       watched={isWatched(item.id)}
       onToggleWatched={() => toggleWatched(item.id)}

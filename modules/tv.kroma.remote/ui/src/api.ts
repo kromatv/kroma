@@ -3,7 +3,7 @@
 // here.
 
 import { moduleApiHook } from '@kroma/module-sdk';
-import type { RemoteAccessView } from './schemas';
+import { RemoteAccessView } from './schemas';
 
 /** A blank/omitted `token` keeps the stored one; an empty field never wipes it. */
 export interface RemoteAccessSave {
@@ -13,8 +13,8 @@ export interface RemoteAccessSave {
 }
 
 export const useRemoteApi = moduleApiHook((api) => ({
-  status: () => api.get<RemoteAccessView>('/remote'),
+  status: () => api.get('/remote', RemoteAccessView),
   /** Returns before the connector has reacted: the server reconciles `enabled`
    *  asynchronously, so the status may still be the old one. */
-  save: (body: RemoteAccessSave) => api.put<RemoteAccessView>('/remote', body),
+  save: (body: RemoteAccessSave) => api.put('/remote', body, RemoteAccessView),
 }));

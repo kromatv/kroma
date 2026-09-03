@@ -1,13 +1,16 @@
 // KROMA API origin resolution.
 
+import { createQueryClient, type QueryClient } from '@kroma/client/query';
 import {
   activeLocale,
+  createKromaClient,
   isTextSubtitle,
-  KromaClient,
+  type KromaClient,
   loadSession,
   type MediaItem,
   resolveImageUrl,
   type Show,
+  type SubtitleId,
   sessionToken,
   setSessionToken,
   sharedTokenExchange,
@@ -59,11 +62,11 @@ function exchangeStoredSession(): Promise<string | undefined> {
   const active = loadSession();
   if (!active) return Promise.resolve(undefined);
   return sharedTokenExchange(() =>
-    new KromaClient({ baseUrl: apiBase() }).exchangeToken(active.accessToken),
+    createKromaClient({ baseUrl: apiBase() }).accounts.exchangeToken(active.accessToken),
   )
     .then((res) => {
       setSessionToken(res.token);
-      return res.token as string | undefined;
+      return res.token;
     })
     .catch(() => {
       setSessionToken(undefined);
@@ -81,8 +84,8 @@ export function ensureSession(): Promise<void> {
   return exchangeStoredSession().then(() => undefined);
 }
 
-export function kromaClient(): KromaClient {
-  const c = new KromaClient({
+export function kromaClient(): QueryClient {
+  const c = createQueryClient({
     baseUrl: apiBase(),
     authToken: sessionToken(),
     locale: activeLocale(),
@@ -105,7 +108,7 @@ export interface SubtitleView {
   url: string | null;
   downloaded?: boolean;
   label?: string;
-  subId?: string;
+  subId?: SubtitleId;
   provider?: string;
 }
 
@@ -128,17 +131,21 @@ export function toMovieView(c: KromaClient, item: MediaItem): MovieView {
     index,
     language: s.language,
     codec: s.codec,
-    url: isTextSubtitle(s.codec) ? c.subtitleUrl(item.id, index) : null,
+    url: isTextSubtitle(s.codec) ? c.media.subtitleUrl(item.id, index) : null,
   }));
   return {
     ...item,
-    poster: c.posterFor(item),
-    backdrop: c.backdropFor(item),
-    stream: c.streamUrl(item.id),
+    poster: c.media.artwork.posterFor(item),
+    backdrop: c.media.artwork.backdropFor(item),
+    stream: c.media.streamUrl(item.id),
     subs,
   };
 }
 
 export function toShowView(c: KromaClient, show: Show): ShowView {
-  return { ...show, poster: c.showPosterFor(show), backdrop: c.backdropFor(show) };
+  return {
+    ...show,
+    poster: c.media.artwork.showPosterFor(show),
+    backdrop: c.media.artwork.backdropFor(show),
+  };
 }

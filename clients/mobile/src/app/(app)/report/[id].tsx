@@ -42,7 +42,7 @@ function ReportProblem({ id }: Readonly<{ id: string }>) {
     setState('busy');
     setError(null);
     try {
-      await client.createReport({
+      await client.reports.create({
         subjectKind: (kind ?? 'movie') as ReportSubjectKind,
         subjectId: id,
         category,

@@ -4,6 +4,7 @@ import {
   type KromaClient,
   type MediaItem,
   preferredSubIndex,
+  type SubtitleId,
 } from '@kroma/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -12,7 +13,7 @@ export interface SubView {
   language: string | null;
   url: string | null;
   label?: string;
-  subId?: string;
+  subId?: SubtitleId;
   ai?: boolean;
 }
 
@@ -41,8 +42,8 @@ export function useSubtitleSelection(
   // biome-ignore lint/correctness/useExhaustiveDependencies: `nonce` is the reload trigger (bumped by reload()) that forces a re-fetch after a generation completes; it is intentionally a dependency though the body does not read it.
   useEffect(() => {
     let cancelled = false;
-    client
-      .downloadedSubtitles(item.id)
+    client.subtitles
+      .downloaded(item.id)
       .then((d) => !cancelled && setDownloaded(d))
       .catch(() => undefined);
     return () => {
@@ -59,7 +60,7 @@ export function useSubtitleSelection(
         .map((s, index) => ({
           index,
           language: s.language,
-          url: isTextSubtitle(s.codec) ? client.subtitleUrl(item.id, index) : null,
+          url: isTextSubtitle(s.codec) ? client.media.subtitleUrl(item.id, index) : null,
         }))
         .filter((s) => s.url),
     [client, item],
@@ -80,7 +81,7 @@ export function useSubtitleSelection(
     const gen: SubView[] = downloaded.map((d, i) => ({
       index: 1000 + i,
       language: d.language,
-      url: client.resolveArt(d.url) ?? d.url,
+      url: client.media.artwork.resolve(d.url) ?? d.url,
       label: d.label,
       subId: d.id,
       ai: true,

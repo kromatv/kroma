@@ -1,4 +1,11 @@
-import { formatRuntime, genreLabels, type MediaItem, metaLine, type Translate } from '@kroma/core';
+import {
+  formatRuntime,
+  genreLabels,
+  ItemId,
+  type MediaItem,
+  metaLine,
+  type Translate,
+} from '@kroma/core';
 import {
   POST_PLAY_ART_W,
   type PostPlayItem,
@@ -15,12 +22,12 @@ function toCard(t: Translate, item: MediaItem): UpNextItem {
   return {
     id: item.id,
     title: isEp ? (item.episodeTitle ?? item.title) : item.title,
-    // The runtime belongs to this line and to nothing else: the card used to
-    // print it again in a chip of its own.
     subtitle: isEp
       ? `S${item.season} E${item.episode} · ${formatRuntime(item.durationMs)}`
       : metaLine(item),
-    posterUrl: c.backdropFor(item, UP_NEXT_ART_W) ?? c.posterFor(item, UP_NEXT_ART_W),
+    posterUrl:
+      c.media.artwork.backdropFor(item, UP_NEXT_ART_W) ??
+      c.media.artwork.posterFor(item, UP_NEXT_ART_W),
     categoryLabel: genreLabels(t, item.metadata)[0],
   };
 }
@@ -33,7 +40,9 @@ function toOffer(item: MediaItem): PostPlayItem {
     subtitle: metaLine(item),
     rating: item.metadata?.rating,
     overview: item.metadata?.overview,
-    artUrl: c.backdropFor(item, POST_PLAY_ART_W) ?? c.posterFor(item, POST_PLAY_ART_W),
+    artUrl:
+      c.media.artwork.backdropFor(item, POST_PLAY_ART_W) ??
+      c.media.artwork.posterFor(item, POST_PLAY_ART_W),
   };
 }
 
@@ -63,7 +72,7 @@ export function useWebUpNext(
   useEffect(() => {
     let cancelled = false;
     kromaClient()
-      .similar(recoId)
+      .media.similar(ItemId.parse(recoId))
       .then((list) => !cancelled && setSimilar(list))
       .catch(() => undefined);
     return () => {

@@ -23,7 +23,7 @@ export function SecurityCard() {
     e?.preventDefault();
     if (!valid) return;
     save.run(async () => {
-      await client.changePassword(current, next);
+      await client.accounts.changePassword(current, next);
       setCurrent('');
       setNext('');
       setConfirm('');

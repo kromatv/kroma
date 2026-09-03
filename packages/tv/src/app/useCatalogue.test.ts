@@ -2,7 +2,7 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// The health monitor and event stream are real but inert here: `client.health`
+// The health monitor and event stream are real but inert here: `media.health`
 // resolves and `KromaEvents` never emits.
 const H = vi.hoisted(() => {
   const norm = (u: string) => (u || '').replace(/\/+$/, '');
@@ -35,19 +35,17 @@ interface StreamHooks {
 }
 
 vi.mock('@kroma/core', () => {
-  class KromaClient {
-    baseUrl: string;
-    hasAuth = false;
-    movies = H.movies;
-    shows = H.shows;
-    status = H.status;
-    health = H.health;
-    itemProgress = H.itemProgress;
-    constructor(opts: { baseUrl: string }) {
-      this.baseUrl = opts.baseUrl;
-      H.instances.push(this);
-    }
-  }
+  const createKromaClient = (opts: { baseUrl: string }) => {
+    const client = {
+      baseUrl: opts.baseUrl,
+      hasAuth: false,
+      admin: { status: H.status },
+      media: { movies: H.movies, shows: H.shows, health: H.health },
+      playback: { itemProgress: H.itemProgress },
+    };
+    H.instances.push(client);
+    return client;
+  };
   class KromaEvents {
     constructor(url: string, opts: unknown) {
       H.streams.push({ url, opts: opts as StreamHooks });
@@ -56,7 +54,7 @@ vi.mock('@kroma/core', () => {
     close() {}
   }
   return {
-    KromaClient,
+    createKromaClient,
     KromaEvents,
     activeLocale: () => 'fr',
     discoverServer: H.discoverServer,

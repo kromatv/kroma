@@ -34,16 +34,19 @@ export function HeroBillboard({ entry }: Readonly<{ entry: SectionItem }>) {
   const wide = useIsWide();
   const backdrop = wide || width > height;
   const poster =
-    entry.type === 'movie' ? client.posterFor(entry.item) : client.showPosterFor(entry.show);
+    entry.type === 'movie'
+      ? client.media.artwork.posterFor(entry.item)
+      : client.media.artwork.showPosterFor(entry.show);
   const art = backdrop
-    ? (sizedImageUrl(client.backdropFor(media), 1600) ?? sizedImageUrl(poster, 1600))
-    : (sizedImageUrl(poster, 780) ?? sizedImageUrl(client.backdropFor(media), 780));
+    ? (sizedImageUrl(client.media.artwork.backdropFor(media), 1600) ?? sizedImageUrl(poster, 1600))
+    : (sizedImageUrl(poster, 780) ?? sizedImageUrl(client.media.artwork.backdropFor(media), 780));
 
-  const myList = useQuery({ queryKey: ['myList'], queryFn: () => client.myList() });
+  const myListQuery = client.query.playback.myList();
+  const myList = useQuery(myListQuery);
   const inList = (myList.data ?? []).includes(id);
   const toggleList = useMutation({
-    mutationFn: () => (inList ? client.removeFromList(id) : client.addToList(id)),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['myList'] }),
+    mutationFn: () => (inList ? client.playback.removeFromList(id) : client.playback.addToList(id)),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: myListQuery.queryKey }),
   });
 
   const play = () => {

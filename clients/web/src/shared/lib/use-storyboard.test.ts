@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { ItemId } from '@kroma/core';
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -10,7 +11,10 @@ const shared = vi.fn((client: unknown, itemId: string, opts?: unknown) => ({
   opts,
 }));
 
-vi.mock('@kroma/core', () => ({ loadSession: () => loadSession() }));
+vi.mock('@kroma/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kroma/core')>()),
+  loadSession: () => loadSession(),
+}));
 vi.mock('@kroma/ui', () => ({ useStoryboard: shared }));
 vi.mock('#web/shared/lib/api', () => ({ kromaClient: () => kromaClient() }));
 
@@ -24,7 +28,7 @@ afterEach(() => {
 describe('useStoryboard', () => {
   it('keeps one client while the token holds, so the polling effect is not torn down every render', () => {
     loadSession.mockReturnValue({ accessToken: 'a' });
-    const { rerender } = renderHook(() => useStoryboard('item-1'));
+    const { rerender } = renderHook(() => useStoryboard(ItemId.parse('item-1')));
     rerender();
     rerender();
 
@@ -35,7 +39,7 @@ describe('useStoryboard', () => {
 
   it('mints a fresh client when the token changes, so a new session is not served by the old one', () => {
     loadSession.mockReturnValue({ accessToken: 'a' });
-    const { rerender } = renderHook(() => useStoryboard('item-1'));
+    const { rerender } = renderHook(() => useStoryboard(ItemId.parse('item-1')));
     loadSession.mockReturnValue({ accessToken: 'b' });
     rerender();
 
@@ -46,7 +50,7 @@ describe('useStoryboard', () => {
 
   it('reads a signed-out session without minting a client per render', () => {
     loadSession.mockReturnValue(null);
-    const { rerender } = renderHook(() => useStoryboard('item-1'));
+    const { rerender } = renderHook(() => useStoryboard(ItemId.parse('item-1')));
     rerender();
 
     expect(kromaClient).toHaveBeenCalledTimes(1);
@@ -54,7 +58,7 @@ describe('useStoryboard', () => {
 
   it('hands the item and the options straight through', () => {
     loadSession.mockReturnValue({ accessToken: 'a' });
-    renderHook(() => useStoryboard('item-9', { generate: true }));
+    renderHook(() => useStoryboard(ItemId.parse('item-9'), { generate: true }));
 
     expect(shared).toHaveBeenCalledWith(expect.anything(), 'item-9', { generate: true });
   });

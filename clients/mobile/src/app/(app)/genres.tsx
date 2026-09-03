@@ -43,7 +43,7 @@ export default function Genres() {
     queryKey: ['genreCatalogue'],
     staleTime: 10 * 60_000,
     queryFn: async (): Promise<(MediaItem | Show)[]> => {
-      const [movies, shows] = await Promise.all([client.movies(), client.shows()]);
+      const [movies, shows] = await Promise.all([client.media.movies(), client.media.shows()]);
       return [...movies, ...shows];
     },
   });
@@ -58,7 +58,7 @@ export default function Genres() {
       slug: g.slug,
       name: genreLabel(t, g.name),
       count: g.count,
-      art: sizedImageUrl(client.resolveArt(showcase?.metadata?.backdropUrl), 480),
+      art: sizedImageUrl(client.media.artwork.resolve(showcase?.metadata?.backdropUrl), 480),
       gradient: genreColors(g.slug),
     };
   });

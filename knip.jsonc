@@ -55,6 +55,14 @@
   ],
 
   "workspaces": {
+    // Three resolutions no static tool can follow: a domain's endpoints are
+    // loaded by `import.meta.glob` / `require.context` (see
+    // `src/api/discover*.ts`), the Vite half of that discovery is picked by
+    // extension precedence, and `src/api/index.ts` - which re-exports every
+    // domain - is written by `bun run gen:types` and gitignored.
+    "packages/client": {
+      "entry": ["src/api/*/index.ts", "src/api/*/client.ts", "src/api/discover.web.ts", "vite/*.ts"]
+    },
     ".": {
       // `clients/tv-build` and `clients/expo-build` hold no package.json, so
       // they belong to the root's scope rather than a workspace of their own.

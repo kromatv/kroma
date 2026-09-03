@@ -43,7 +43,7 @@ const THUMB_WIDTH = 36;
 const LIST_HEIGHT = 360;
 
 function posterOf(client: KromaClient, entry: MostWatchedEntry, width?: number): string | null {
-  return client.resolveArt(entry.posterUrl, width);
+  return client.media.artwork.resolve(entry.posterUrl, width);
 }
 
 function viewersLabel(t: Translate, count: number): string {
@@ -60,7 +60,7 @@ export function MostWatchedSection() {
   const { data } = usePoll(
     ['admin', 'mostWatched', range.value, account.value],
     () =>
-      client.mostWatched({
+      client.admin.mostWatched({
         days: daysOf(range.value),
         user: account.value === EVERYONE ? undefined : account.value,
       }),

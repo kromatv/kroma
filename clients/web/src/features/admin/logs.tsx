@@ -54,7 +54,7 @@ export function LogsPage({
   const { data } = usePoll(
     ['admin', 'logs', level, source, q],
     () =>
-      client.adminLogs({
+      client.admin.logs({
         level: level === 'all' ? undefined : level,
         source: source === 'all' ? undefined : source,
         q: q || undefined,

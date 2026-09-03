@@ -1,7 +1,7 @@
 // A my-list id can name a movie OR a show, so the ids are resolved against both
 // catalogues, in the order the server returned them (newest first).
 
-import { ItemId, type MediaItem, type Show, ShowId } from '@kroma/core';
+import type { MediaItem, Show } from '@kroma/core';
 import { Box, Icon, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
@@ -23,22 +23,21 @@ export default function MyList() {
   const gutters = useGutters();
   const { cardW } = gridMetrics(width, gutters.left + gutters.right);
 
-  const ids = useQuery({ queryKey: ['myList'], queryFn: () => client.myList() });
-  // Same keys as the Films / Series tabs: one cache, three readers.
-  const movies = useQuery({ queryKey: ['movies'], queryFn: () => client.movies() });
-  const shows = useQuery({ queryKey: ['shows'], queryFn: () => client.shows() });
+  const ids = useQuery(client.query.playback.myList());
+  const movies = useQuery(client.query.media.movies());
+  const shows = useQuery(client.query.media.shows());
 
   const cards: CardModel[] = useMemo(() => {
     const movieById = new Map<string, MediaItem>((movies.data ?? []).map((m) => [m.id, m]));
     const showById = new Map<string, Show>((shows.data ?? []).map((s) => [s.id, s]));
     const out: CardModel[] = [];
     for (const id of ids.data ?? []) {
-      const movie = movieById.get(ItemId.of(id));
+      const movie = movieById.get(id);
       if (movie) {
         out.push(movieCard(movie, client, cardW));
         continue;
       }
-      const show = showById.get(ShowId.of(id));
+      const show = showById.get(id);
       if (show) out.push(showCard(show, client, cardW));
     }
     return out;

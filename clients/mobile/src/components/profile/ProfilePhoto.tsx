@@ -15,7 +15,7 @@ export function ProfilePhoto() {
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarNote, setAvatarNote] = useState<Note>(null);
 
-  const avatar = client.resolveArt(user?.avatarUrl);
+  const avatar = client.media.artwork.resolve(user?.avatarUrl);
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -30,7 +30,7 @@ export function ProfilePhoto() {
     setAvatarNote(null);
     try {
       const blob = await (await fetch(asset.uri)).blob();
-      const { avatarUrl } = await client.uploadAvatar(blob);
+      const { avatarUrl } = await client.accounts.uploadAvatar(blob);
       if (user) setUser({ ...user, avatarUrl });
     } catch {
       setAvatarNote({ text: t('account.avatarFailed'), ok: false });

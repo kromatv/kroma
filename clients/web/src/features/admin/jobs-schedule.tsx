@@ -30,7 +30,7 @@ export const ScheduleModal = createCallable<{ job: JobInfo }, boolean>(({ call, 
   const save = () =>
     run(
       async () => {
-        await client.updateJob(job.key, { schedule: value.trim() || null });
+        await client.jobs.update(job.key, { schedule: value.trim() || null });
         call.end(true);
       },
       (e) =>

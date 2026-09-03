@@ -86,7 +86,7 @@ export const ExportModal = createCallable<void, boolean>(({ call }) => {
     setError(null);
     try {
       const pw = encrypt ? password.trim() : undefined;
-      const blob = await client.exportBackup(pw || undefined);
+      const blob = await client.admin.backup.export(pw || undefined);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -150,7 +150,7 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
       setBusy(true);
       setError(null);
       try {
-        const res = await client.importBackup(file, {
+        const res = await client.admin.backup.import(file, {
           password: encrypted ? password.trim() || undefined : undefined,
           reset,
         });

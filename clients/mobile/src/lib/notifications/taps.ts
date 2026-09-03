@@ -64,7 +64,7 @@ export async function handleTap(
 
   if (action) {
     try {
-      await client.runNotificationAction(action);
+      await client.notifications.runAction(action);
       return null;
     } catch {
       // Offline, or already reviewed by someone else: open the app so it can

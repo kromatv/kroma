@@ -23,7 +23,7 @@ function Probe() {
 function fakeClient() {
   const client = {
     setLocale: vi.fn(),
-    updateLanguage: vi.fn(async () => undefined),
+    accounts: { updateLanguage: vi.fn(async () => undefined) },
   };
   return client as unknown as Parameters<typeof LocaleProvider>[0]['client'] & typeof client;
 }

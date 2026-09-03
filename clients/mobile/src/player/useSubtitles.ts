@@ -57,8 +57,8 @@ export function useSubtitles(
   useEffect(() => {
     if (offline) return;
     let cancelled = false;
-    client
-      .downloadedSubtitles(item.id)
+    client.subtitles
+      .downloaded(item.id)
       .then((d) => !cancelled && setDownloaded(d))
       .catch(() => undefined);
     return () => {
@@ -82,12 +82,12 @@ export function useSubtitles(
       .map((s) => ({
         index: s.index,
         language: s.language,
-        url: client.subtitleUrl(item.id, s.index),
+        url: client.media.subtitleUrl(item.id, s.index),
       }));
     const gen: SubView[] = downloaded.map((d, i) => ({
       index: 1000 + i,
       language: d.language,
-      url: client.resolveArt(d.url) ?? d.url,
+      url: client.media.artwork.resolve(d.url) ?? d.url,
       label: d.label,
       ai: true,
     }));

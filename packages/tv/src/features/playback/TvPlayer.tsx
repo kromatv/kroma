@@ -73,8 +73,8 @@ export function TvPlayer() {
     advancedRef.current = false;
     setFollowing([]);
     let cancelled = false;
-    client
-      .followingEpisodes(item.id)
+    client.playback
+      .following(item.id)
       .then((list) => !cancelled && setFollowing(list))
       .catch(() => undefined);
     return () => {
@@ -129,14 +129,16 @@ export function TvPlayer() {
           next.season != null && next.episode != null
             ? `S${next.season} E${next.episode}`
             : undefined,
-        posterUrl: client.backdropFor(next, UP_NEXT_ART_W) ?? client.posterFor(next, UP_NEXT_ART_W),
+        posterUrl:
+          client.media.artwork.backdropFor(next, UP_NEXT_ART_W) ??
+          client.media.artwork.posterFor(next, UP_NEXT_ART_W),
       }
     : null;
 
   // Targets exactly what is playing: for a series, the episode, not the show.
   const onReport = useCallback(
     async (category: ReportCategory) => {
-      await client.createReport({
+      await client.reports.create({
         subjectKind: item.kind === 'episode' ? 'episode' : 'movie',
         subjectId: item.id,
         category,

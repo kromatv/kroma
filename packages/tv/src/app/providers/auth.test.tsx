@@ -16,7 +16,7 @@ const SERVER = 'http://tv.local';
 const ACCESS_TOKEN = 'access-1';
 const sessionTokenOf = (exchange: number) => `session-${exchange}`;
 const USER = {
-  id: UserId.of('u1'),
+  id: UserId.parse('u1'),
   email: 'alex@kroma.tv',
   username: 'Alex',
   permissions: [],

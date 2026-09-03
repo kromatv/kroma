@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { fakeClient } from '@kroma/client/test';
 import type { KromaClient } from '@kroma/core';
 import { cleanup, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -11,9 +12,9 @@ function Boom(): ReactNode {
   throw new Error('kaboom');
 }
 
-function fakeClient() {
+function crashClient() {
   const reportCrash = vi.fn().mockResolvedValue(undefined);
-  return { client: { reportCrash } as unknown as KromaClient, reportCrash };
+  return { client: fakeClient({ diagnostics: { crash: reportCrash } }), reportCrash };
 }
 
 function mount(client: KromaClient | null) {
@@ -42,14 +43,14 @@ afterEach(() => {
 
 describe('CrashBoundary', () => {
   it('renders the fallback instead of the crashed tree', () => {
-    const { client } = fakeClient();
+    const { client } = crashClient();
     mount(client);
     expect(screen.getByText('fallback shown')).toBeTruthy();
   });
 
   it('reports the crash when the user opted in', () => {
     crashReportingPrefStore.set('on');
-    const { client, reportCrash } = fakeClient();
+    const { client, reportCrash } = crashClient();
     mount(client);
     expect(reportCrash).toHaveBeenCalledTimes(1);
     const report = reportCrash.mock.calls[0]?.[0];
@@ -59,7 +60,7 @@ describe('CrashBoundary', () => {
 
   it('stays silent when the user has not opted in', () => {
     crashReportingPrefStore.set('off');
-    const { client, reportCrash } = fakeClient();
+    const { client, reportCrash } = crashClient();
     mount(client);
     expect(reportCrash).not.toHaveBeenCalled();
   });
@@ -73,7 +74,7 @@ describe('CrashBoundary', () => {
   it('swallows a failed report', async () => {
     crashReportingPrefStore.set('on');
     const reportCrash = vi.fn().mockRejectedValue(new Error('offline'));
-    mount({ reportCrash } as unknown as KromaClient);
+    mount(fakeClient({ diagnostics: { crash: reportCrash } }));
     await Promise.resolve();
     expect(reportCrash).toHaveBeenCalledTimes(1);
     expect(screen.getByText('fallback shown')).toBeTruthy();

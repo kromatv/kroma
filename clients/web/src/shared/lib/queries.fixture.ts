@@ -1,46 +1,59 @@
 import { beforeEach, vi } from 'vitest';
 
-export interface Client {
-  [k: string]: ReturnType<typeof vi.fn>;
-  movies: ReturnType<typeof vi.fn>;
-  shows: ReturnType<typeof vi.fn>;
-  show: ReturnType<typeof vi.fn>;
-  item: ReturnType<typeof vi.fn>;
-  featured: ReturnType<typeof vi.fn>;
-  similar: ReturnType<typeof vi.fn>;
-  upNext: ReturnType<typeof vi.fn>;
-  discoverDetail: ReturnType<typeof vi.fn>;
-  personDetails: ReturnType<typeof vi.fn>;
-  followingEpisodes: ReturnType<typeof vi.fn>;
+const endpoint = () => vi.fn();
+
+const BASE_URL = 'http://kroma.test';
+
+const domains = {
+  media: {
+    movies: endpoint(),
+    shows: endpoint(),
+    show: endpoint(),
+    item: endpoint(),
+    featured: endpoint(),
+    similar: endpoint(),
+    people: endpoint(),
+    person: endpoint(),
+    home: endpoint(),
+    health: endpoint(),
+    splash: endpoint(),
+  },
+  playback: {
+    progress: endpoint(),
+    continueWatching: endpoint(),
+    upNext: endpoint(),
+    following: endpoint(),
+  },
+  discovery: { detail: endpoint(), trending: endpoint() },
+  requests: { list: endpoint(), calendar: endpoint(), missing: endpoint() },
+  accounts: { sessions: endpoint(), passkeys: { list: endpoint() } },
+  notifications: { list: endpoint(), prefs: endpoint(), push: { key: endpoint() } },
+};
+
+type Endpoint = (...args: unknown[]) => unknown;
+type Namespace = { [name: string]: Endpoint | Namespace };
+interface Options {
+  queryKey: unknown[];
+  queryFn: () => unknown;
+}
+type QueryNamespace = { [name: string]: ((...args: unknown[]) => Options) | QueryNamespace };
+
+function queriesOf(node: Namespace, path: readonly string[]): QueryNamespace {
+  const tree: QueryNamespace = {};
+  for (const [name, member] of Object.entries(node)) {
+    const here = [...path, name];
+    tree[name] =
+      typeof member === 'function'
+        ? (...args: unknown[]) => ({
+            queryKey: ['kroma', BASE_URL, ...here, ...args],
+            queryFn: () => member(...args),
+          })
+        : queriesOf(member, here);
+  }
+  return tree;
 }
 
-export const c: Client = {
-  movies: vi.fn(),
-  shows: vi.fn(),
-  show: vi.fn(),
-  item: vi.fn(),
-  featured: vi.fn(),
-  similar: vi.fn(),
-  upNext: vi.fn(),
-  discoverDetail: vi.fn(),
-  personDetails: vi.fn(),
-  followingEpisodes: vi.fn(),
-  personCredits: vi.fn(),
-  home: vi.fn(),
-  continueWatching: vi.fn(),
-  progress: vi.fn(),
-  listRequests: vi.fn(),
-  getCalendar: vi.fn(),
-  getMissing: vi.fn(),
-  listSessions: vi.fn(),
-  listPasskeys: vi.fn(),
-  listNotifications: vi.fn(),
-  getNotificationPrefs: vi.fn(),
-  pushKey: vi.fn(),
-  health: vi.fn(),
-  splash: vi.fn(),
-  discoverTrending: vi.fn(),
-};
+export const c = { ...domains, query: queriesOf(domains, []) };
 
 // biome-ignore lint/suspicious/noExplicitAny: the options are heterogeneous by design
 export async function run(opts: any) {
@@ -54,10 +67,10 @@ export function show(id: string, genres: string[] = [], tmdbId: number | null = 
 /** Registers the per-test reset every `queries` suite shares. */
 export function installHarness(): void {
   beforeEach(() => {
-    for (const fn of Object.values(c)) fn.mockReset();
-    c.shows.mockResolvedValue([]);
-    c.upNext.mockResolvedValue(null);
-    c.discoverDetail.mockResolvedValue(null);
-    c.followingEpisodes.mockResolvedValue([]);
+    vi.resetAllMocks();
+    c.media.shows.mockResolvedValue([]);
+    c.playback.upNext.mockResolvedValue(null);
+    c.discovery.detail.mockResolvedValue(null);
+    c.playback.following.mockResolvedValue([]);
   });
 }

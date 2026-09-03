@@ -20,7 +20,7 @@
   "dependencies": {
     "@kroma/registry": "workspace:*",
     "hono": "^4.13.2",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "bun-types": "^1.4.0",

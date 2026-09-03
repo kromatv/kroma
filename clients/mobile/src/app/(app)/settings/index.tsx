@@ -24,7 +24,7 @@ export default function Settings() {
   const localeLabel = LOCALES.find((l) => l.code === locale)?.labelKey;
   // The server names its own version on the public health endpoint, the same
   // place the web client's sidebar reads it from.
-  const health = useQuery({ queryKey: ['health', serverUrl], queryFn: () => client.health() });
+  const health = useQuery(client.query.media.health());
   const { repository } = buildInfo;
 
   return (

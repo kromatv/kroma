@@ -12,7 +12,7 @@ vi.mock('#tv/app/providers/auth', () => ({
   useAuth: () => ({ user: H.user, updateUser: H.updateUser }),
 }));
 vi.mock('#tv/app/router', () => ({
-  useClient: () => ({ updateAccount: H.updateAccount }),
+  useClient: () => ({ accounts: { update: H.updateAccount } }),
 }));
 
 const { useLangPrefs } = await import('#tv/app/langPref');

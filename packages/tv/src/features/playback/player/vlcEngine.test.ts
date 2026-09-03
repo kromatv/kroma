@@ -1,4 +1,5 @@
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import { ItemId, type MediaItem } from '@kroma/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { EngineListeners } from '#tv/features/playback/player/engine';
 import { VlcEngine } from '#tv/features/playback/player/vlcEngine';
@@ -18,8 +19,10 @@ const listeners = (): EngineListeners => ({
   onSurfaceChange: vi.fn(),
 });
 
-const item = { id: 'ep1', durationMs: 1_470_000 } as MediaItem;
-const client = { streamUrl: (id: string) => `http://server/api/items/${id}/stream` } as KromaClient;
+const item = { id: ItemId.parse('ep1'), durationMs: 1_470_000 } as MediaItem;
+const client = fakeClient({
+  media: { streamUrl: (id: string) => `http://server/api/items/${id}/stream` },
+});
 
 function engine(startSec = 0, L = listeners(), durationSec = 1470) {
   return {

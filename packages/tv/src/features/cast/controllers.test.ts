@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { CastController } from '@kroma/core';
+import { type CastController, ControllerId } from '@kroma/core';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -9,7 +9,11 @@ import {
   useCastControllers,
 } from '#tv/features/cast/controllers';
 
-const remote = (id: string, name = id): CastController => ({ id, name, username: 'max' });
+const remote = (id: string, name = id): CastController => ({
+  id: ControllerId.parse(id),
+  name,
+  username: 'max',
+});
 
 beforeEach(() => {
   // Also clears the roster, which is the point: module state outlives a test.
@@ -44,7 +48,7 @@ describe('the remotes driving this TV', () => {
   it('hangs up through the receiver socket', () => {
     const send = vi.fn();
     setCastUplink(send);
-    kickCastController('a');
+    kickCastController(ControllerId.parse('a'));
     expect(send).toHaveBeenCalledWith({ type: 'cast.kick', controllerId: 'a' });
   });
 
@@ -54,7 +58,7 @@ describe('the remotes driving this TV', () => {
     setCastControllers([remote('a')]);
 
     setCastUplink(null);
-    kickCastController('a');
+    kickCastController(ControllerId.parse('a'));
     expect(send).not.toHaveBeenCalled();
     // The server dropped this receiver with its socket, so the same remote
     // coming back is a fresh arrival - and worth announcing again.

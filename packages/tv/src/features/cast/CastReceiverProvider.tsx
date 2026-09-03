@@ -122,7 +122,7 @@ function CastReceiver({
               seed={who.username}
               size={40}
               roundness={0.35}
-              src={deps.current.client.resolveArt(who.avatarUrl ?? undefined, 40)}
+              src={deps.current.client.media.artwork.resolve(who.avatarUrl ?? undefined, 40)}
             />
           ),
           tone: 'success',
@@ -139,7 +139,7 @@ function CastReceiver({
         return;
       }
       try {
-        const reply = await deps.current.client.announceCast({
+        const reply = await deps.current.client.cast.announce({
           receiverId: id,
           name: deps.current.name,
           platform: deps.current.platform,
@@ -211,7 +211,7 @@ function CastReceiver({
       // matters when the receiver came up through the fallback path, and only
       // while there is still a bearer to send it with.
       events.close();
-      if (client.hasAuth) client.unregisterCast(id).catch(() => undefined);
+      if (client.hasAuth) client.cast.unregister(id).catch(() => undefined);
     };
   }, [signedIn, castable, client]);
 

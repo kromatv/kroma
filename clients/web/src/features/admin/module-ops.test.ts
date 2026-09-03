@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { ModuleId } from '@kroma/core';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -41,8 +42,8 @@ const started = {
   kind: 'install' as const,
   requested: 'tv.kroma.torrents',
   modules: [
-    { id: 'tv.kroma.indexer', name: 'Indexers', version: '0.1.0', size: 1000 },
-    { id: 'tv.kroma.torrents', name: 'Torrents', version: '0.1.5', size: 4000 },
+    { id: ModuleId.parse('tv.kroma.indexer'), name: 'Indexers', version: '0.1.0', size: 1000 },
+    { id: ModuleId.parse('tv.kroma.torrents'), name: 'Torrents', version: '0.1.5', size: 4000 },
   ],
 };
 
@@ -69,7 +70,7 @@ describe('foldOpEvent', () => {
     ops = foldOpEvent(ops, {
       type: 'module.op.progress',
       op: 'op1',
-      id: 'tv.kroma.indexer',
+      id: ModuleId.parse('tv.kroma.indexer'),
       phase: 'download',
       received: 500,
       total: 1000,
@@ -80,7 +81,7 @@ describe('foldOpEvent', () => {
     ops = foldOpEvent(ops, {
       type: 'module.op.progress',
       op: 'op1',
-      id: 'tv.kroma.indexer',
+      id: ModuleId.parse('tv.kroma.indexer'),
       phase: 'install',
     });
     // Missing byte fields keep the last known counts.
@@ -89,7 +90,7 @@ describe('foldOpEvent', () => {
     ops = foldOpEvent(ops, {
       type: 'module.op.done',
       op: 'op1',
-      id: 'tv.kroma.indexer',
+      id: ModuleId.parse('tv.kroma.indexer'),
       version: '0.1.0',
     });
     expect(mod(op(ops, 'op1'), 'tv.kroma.indexer').phase).toBe('done');
@@ -106,7 +107,7 @@ describe('foldOpEvent', () => {
     ops = foldOpEvent(ops, {
       type: 'module.op.progress',
       op: 'op1',
-      id: 'tv.kroma.vpn',
+      id: ModuleId.parse('tv.kroma.vpn'),
       phase: 'download',
       received: 1,
       total: 10,
@@ -117,10 +118,13 @@ describe('foldOpEvent', () => {
   it('ignores frames for an op it never saw start and unknown types', () => {
     const ops = foldOpEvent(
       {},
-      { type: 'module.op.progress', op: 'ghost', id: 'x', phase: 'download' },
+      { type: 'module.op.progress', op: 'ghost', id: ModuleId.parse('x'), phase: 'download' },
     );
     expect(ops).toEqual({});
-    const after = foldOpEvent({}, { type: 'module.changed', id: 'x', enabled: true });
+    const after = foldOpEvent(
+      {},
+      { type: 'module.changed', id: ModuleId.parse('x'), enabled: true },
+    );
     expect(after).toEqual({});
   });
 
@@ -136,7 +140,7 @@ describe('foldOpEvent', () => {
     ops = foldOpEvent(ops, {
       type: 'module.op.progress',
       op: 'op1',
-      id: 'tv.kroma.vpn',
+      id: ModuleId.parse('tv.kroma.vpn'),
       phase: 'download',
       received: 5,
     });
@@ -145,7 +149,10 @@ describe('foldOpEvent', () => {
 
   it('ignores a done or finished frame for an op it never saw start', () => {
     expect(
-      foldOpEvent({}, { type: 'module.op.done', op: 'ghost', id: 'x', version: '1.0.0' }),
+      foldOpEvent(
+        {},
+        { type: 'module.op.done', op: 'ghost', id: ModuleId.parse('x'), version: '1.0.0' },
+      ),
     ).toEqual({});
     expect(foldOpEvent({}, { type: 'module.op.finished', op: 'ghost', ok: false })).toEqual({});
   });
@@ -155,7 +162,7 @@ describe('foldOpEvent', () => {
     ops = foldOpEvent(ops, {
       type: 'module.op.done',
       op: 'op1',
-      id: 'tv.kroma.vpn',
+      id: ModuleId.parse('tv.kroma.vpn'),
       version: '2.0.0',
     });
     expect(op(ops, 'op1').order).toEqual(['tv.kroma.indexer', 'tv.kroma.torrents', 'tv.kroma.vpn']);
@@ -167,7 +174,7 @@ describe('foldOpEvent', () => {
       {},
       {
         ...started,
-        modules: [{ id: 'tv.kroma.notes', name: 'Notes', version: '0.1.0' }],
+        modules: [{ id: ModuleId.parse('tv.kroma.notes'), name: 'Notes', version: '0.1.0' }],
       },
     );
     expect(mod(op(ops, 'op1'), 'tv.kroma.notes').total).toBeNull();

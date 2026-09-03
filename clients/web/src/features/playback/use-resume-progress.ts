@@ -29,7 +29,7 @@ export function useResumeProgress(
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    client
+    client.playback
       .itemProgress(item.id)
       .then((p) => {
         if (cancelled || !p) return;
@@ -67,7 +67,7 @@ export function useResumeProgress(
     const creditsMs = (item.markers ?? []).find((m) => m.kind === 'credits')?.startMs;
     const finished = pos > durSec * 0.97 || (creditsMs != null && pos >= creditsMs / 1000);
     if (finished) setWatched(item.id, true);
-    else void client.saveProgress(item.id, pos * 1000, durSec * 1000).catch(() => undefined);
+    else void client.playback.save(item.id, pos * 1000, durSec * 1000).catch(() => undefined);
   }, [videoRef, client, user, item.id, item.durationMs, item.markers, position, setWatched]);
 
   useEffect(() => {

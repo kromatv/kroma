@@ -121,7 +121,17 @@ export default defineConfig({
         // unless named outright. Derived from the web list so an extension
         // can't be added to one universe and forgotten in the other.
         resolve: {
-          alias,
+          alias: [
+            // @kroma/client discovers its domains per bundler: `discover.web.ts`
+            // is Vite's glob, `discover.ts` is Metro's `require.context`, which
+            // the runner has not got. This project resolves the plain file, so
+            // point it at the Vite half rather than shim a bundler global.
+            {
+              find: /^\.\/api\/discover$/,
+              replacement: dir('./packages/client/src/api/discover.web.ts'),
+            },
+            ...alias,
+          ],
           extensions: WEB_EXTENSIONS.filter((e) => !e.startsWith('.web.')),
           dedupe,
         },

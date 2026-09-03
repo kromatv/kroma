@@ -61,7 +61,7 @@ const H = vi.hoisted(() => {
 });
 
 vi.mock('#web/shared/lib/api', () => ({
-  kromaClient: () => ({ hlsMasterUrl: H.hlsMasterUrl }),
+  kromaClient: () => ({ media: { hlsMasterUrl: H.hlsMasterUrl } }),
 }));
 vi.mock('hls.js', () => ({ default: H.FakeHls }));
 vi.mock('shaka-player/dist/shaka-player.compiled.js', () => ({ default: H.FakeShaka }));

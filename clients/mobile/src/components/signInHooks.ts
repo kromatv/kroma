@@ -84,9 +84,9 @@ export function useServerRoster(serverUrl: string | null): PublicUser[] {
     void (async () => {
       try {
         const probe = makeClient(serverUrl);
-        const config = await probe.authConfig();
+        const config = await probe.accounts.config();
         if (cancelled || !config.publicUserList || !config.hasAccounts) return;
-        const users = await probe.users();
+        const users = await probe.accounts.users();
         if (!cancelled) setRoster(users);
       } catch {
         // No roster; saved accounts + the form still work.

@@ -72,8 +72,7 @@ export function PlayerBody({
   const navigatedRef = useRef(false);
   const viewRef = useRef<VideoViewRef>(null);
   const next = useQuery({
-    queryKey: ['next', item.id],
-    queryFn: () => client.nextEpisode(item.id),
+    ...client.query.playback.nextEpisode(item.id),
     enabled: !localUri && item.kind === 'episode',
     staleTime: 5 * 60_000,
   });
@@ -120,7 +119,7 @@ export function PlayerBody({
     if (engine.endedNonce === 0 || navigatedRef.current) return;
     navigatedRef.current = true;
     engine.shutdown();
-    void client
+    void client.playback
       .nextEpisode(item.id)
       .then((next) => {
         if (next) router.replace(`/player/${next.id}` as never);

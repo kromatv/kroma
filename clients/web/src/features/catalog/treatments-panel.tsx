@@ -4,7 +4,7 @@
 // action. The treatment list needs `settings.manage`; fixing a match needs
 // `library.manage`. Either shows the strip; each control gates itself.
 
-import { hasPermission, type MessageKey, type Treatment } from '@kroma/core';
+import { hasPermission, ItemId, type MessageKey, ShowId, type Treatment } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Button, color, Spinner, Text } from '@kroma/ui/kit';
 import {
@@ -49,6 +49,7 @@ export function TreatmentsPanel({
   const { user, client } = useAuth();
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
+  const subjectId = kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
   const admin = !!user && hasPermission(user, 'settings.manage');
   const canFix = !!user && hasPermission(user, 'library.manage');
 
@@ -57,7 +58,7 @@ export function TreatmentsPanel({
     queryKey,
     queryFn: async (): Promise<Treatment[]> => {
       const c = kromaClient();
-      const r = await (kind === 'show' ? c.showProcessing(id) : c.itemProcessing(id));
+      const r = await (kind === 'show' ? c.pipeline.show(subjectId) : c.pipeline.item(subjectId));
       return r.treatments;
     },
     enabled: admin,
@@ -75,8 +76,8 @@ export function TreatmentsPanel({
 
   const reprocess = () => {
     setBusy(true);
-    client
-      .reprocessSubject(kind, id)
+    client.pipeline
+      .reprocessSubject(kind, subjectId)
       .then(() => setTimeout(() => queryClient.invalidateQueries({ queryKey }), 1500))
       .catch(() => {})
       .finally(() => setTimeout(() => setBusy(false), 1500));

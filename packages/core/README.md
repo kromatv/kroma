@@ -44,10 +44,10 @@ const caps = capabilities();              // cached device probe
 const verdict = canDirectPlay(item, caps);
 
 if (verdict.canDirectPlay) {
-  // stream client.streamUrl(item.id) straight into <video>
+  // stream client.media.streamUrl(item.id) straight into <video>
 } else if (audioSupport(item, caps).canPlay === false) {
   // video decodes but audio (AC3/EAC3/DTS) doesn't → use the audio-only HLS path
-  // client.hlsAudioUrl(item.id); the server copies video, re-encodes audio to AAC
+  // client.media.hlsMasterUrl(item.id, true); the server copies video, re-encodes audio to AAC
 }
 ```
 
@@ -62,10 +62,10 @@ import { KromaClient } from '@kroma/core';
 
 const client = new KromaClient({ baseUrl: 'http://nas.local:4040' });
 
-const movies  = await client.movies();
-const show    = await client.show(id);          // seasons + episodes
-const url     = client.streamUrl(item.id);      // range-streamed original
-const poster  = client.posterFor(item);         // resolved TMDB/cached art
+const movies  = await client.media.movies();
+const show    = await client.media.show(id);           // seasons + episodes
+const url     = client.media.streamUrl(item.id);       // range-streamed original
+const poster  = client.media.artwork.posterFor(item);  // resolved TMDB/cached art
 ```
 
 ## See also

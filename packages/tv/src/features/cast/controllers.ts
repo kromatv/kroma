@@ -1,7 +1,7 @@
 // The remotes currently driving THIS television. A module-level slot rather than
 // a context, so publishing a new roster re-renders only the chip that reads it.
 
-import type { CastClientMessage, CastController } from '@kroma/core';
+import type { CastClientMessage, CastController, ControllerId } from '@kroma/core';
 import { useSyncExternalStore } from 'react';
 
 // Shared and frozen, so `useSyncExternalStore` doesn't see a new array every
@@ -50,6 +50,6 @@ export function setCastUplink(send: ((message: CastClientMessage) => void) | nul
 
 /** Hangs up on one remote; the list updates when the server broadcasts the row
  * without it, never optimistically. */
-export function kickCastController(controllerId: string): void {
+export function kickCastController(controllerId: ControllerId): void {
   uplink?.({ type: 'cast.kick', controllerId });
 }

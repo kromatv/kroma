@@ -1,6 +1,6 @@
 // The single detail page for a title, owned or not. Fed a normalized `TitleView`
 
-import type { ItemId } from '@kroma/core';
+import { ItemId, type SubjectId } from '@kroma/core';
 import { useCast, useT } from '@kroma/ui';
 import { type HostElement, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
@@ -87,9 +87,9 @@ function TitleBody({
   busy: boolean;
   pendingEps: Set<string>;
   selected: Set<string>;
-  isWatched: (id: string) => boolean;
-  toggleWatched: (id: string) => void;
-  onPlay: (id: string) => void;
+  isWatched: (id: SubjectId) => boolean;
+  toggleWatched: (id: SubjectId) => void;
+  onPlay: (id: ItemId) => void;
   onToggleEpisode: (season: number, episode: number) => void;
   onRequestSelected: () => void;
   onRequestSeason: (season: number) => void;
@@ -139,7 +139,7 @@ function TitleBody({
 
       <SimilarRail title={t('content.similarTitles')} items={similarItems} />
 
-      {owned && localId ? <AiSuggestRail id={localId} /> : null}
+      {owned && localId ? <AiSuggestRail id={ItemId.parse(localId)} /> : null}
     </>
   );
 }
@@ -176,9 +176,9 @@ export function TitleDetail({ initial }: Readonly<{ initial: TitleView }>) {
   });
 
   const { active: castDevice, playOn } = useCast();
-  const play = (id: string) => {
+  const play = (id: ItemId) => {
     if (castDevice) {
-      void playOn(castDevice.id, id as ItemId);
+      void playOn(castDevice.id, id);
       return;
     }
     navigate({ to: '/watch/$id', params: { id } });

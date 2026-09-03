@@ -4,7 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  BASE_URL,
+  client,
   H,
+  ids,
   inbox,
   installHarness,
   type Listener,
@@ -15,7 +18,7 @@ import {
   row,
 } from '#web/features/notifications/use-notifications.fixture';
 
-vi.mock('@kroma/core', () => {
+vi.mock('@kroma/core', async (importOriginal) => {
   class KromaEvents {
     private readonly self: { url: string; emit: Listener; closed: boolean };
     constructor(url: string, opts: { onEvent: Listener }) {
@@ -28,12 +31,12 @@ vi.mock('@kroma/core', () => {
       this.self.closed = true;
     }
   }
-  return { KromaEvents };
+  return { ...(await importOriginal<typeof import('@kroma/core')>()), KromaEvents };
 });
 
 vi.mock('#web/shared/lib/api', () => ({
-  apiBase: () => 'http://server.test',
-  kromaClient: () => ({ listNotifications, markNotificationsRead, markNotificationsUnread }),
+  apiBase: () => BASE_URL,
+  kromaClient: () => client,
   toMovieView: (v: unknown) => v,
   toShowView: (v: unknown) => v,
 }));
@@ -72,11 +75,11 @@ describe('moving one row between read and unread', () => {
     H.client.setQueryData(key, inbox(row('a', false), row('b', false)));
     const { result } = render(() => useReadState());
 
-    act(() => result.current.markRead(['a']));
+    act(() => result.current.markRead(ids('a')));
     expect(H.client.getQueryData<NotificationsView>(key)?.unread).toBe(1);
     expect(markNotificationsRead).toHaveBeenCalledWith(['a']);
 
-    act(() => result.current.markUnread(['a']));
+    act(() => result.current.markUnread(ids('a')));
     expect(H.client.getQueryData<NotificationsView>(key)?.unread).toBe(2);
     expect(markNotificationsUnread).toHaveBeenCalledWith(['a']);
   });
@@ -100,11 +103,11 @@ describe('moving one row between read and unread', () => {
     }));
     await waitFor(() => expect(result.current.inbox?.notifications[0]?.read).toBe(false));
 
-    await act(async () => result.current.markRead(['a']));
+    await act(async () => result.current.markRead(ids('a')));
     await waitFor(() => expect(result.current.inbox?.notifications[0]?.read).toBe(true));
     expect(result.current.inbox?.unread).toBe(0);
 
-    await act(async () => result.current.markUnread(['a']));
+    await act(async () => result.current.markUnread(ids('a')));
     await waitFor(() => expect(result.current.inbox?.notifications[0]?.read).toBe(false));
     expect(result.current.inbox?.unread).toBe(1);
   });
@@ -116,7 +119,7 @@ describe('moving one row between read and unread', () => {
     H.client.setQueryData(key, inbox(row('a', true)));
     const { result } = render(() => useReadState());
 
-    await act(async () => result.current.markUnread(['a']));
+    await act(async () => result.current.markUnread(ids('a')));
     await waitFor(() =>
       expect(H.client.getQueryData<NotificationsView>(key)?.notifications[0]?.read).toBe(true),
     );

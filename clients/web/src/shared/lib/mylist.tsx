@@ -2,6 +2,7 @@
 // detail toggle and the list page. Server-backed, with optimistic toggles that
 // revert if the call fails.
 
+import type { SubjectId } from '@kroma/core';
 import {
   createContext,
   type ReactNode,
@@ -15,16 +16,16 @@ import { useAuth } from '#web/shared/lib/auth';
 
 interface MyListValue {
   ready: boolean;
-  ids: readonly string[];
-  inList: (id: string) => boolean;
-  setInList: (id: string, inList: boolean) => void;
-  toggle: (id: string) => void;
+  ids: readonly SubjectId[];
+  inList: (id: SubjectId) => boolean;
+  setInList: (id: SubjectId, inList: boolean) => void;
+  toggle: (id: SubjectId) => void;
 }
 
 const MyListContext = createContext<MyListValue | null>(null);
 
-function revertMembership(id: string, wasAdding: boolean) {
-  return (prev: readonly string[]): readonly string[] => {
+function revertMembership(id: SubjectId, wasAdding: boolean) {
+  return (prev: readonly SubjectId[]): readonly SubjectId[] => {
     if (wasAdding) return prev.filter((x) => x !== id);
     return prev.includes(id) ? prev : [id, ...prev];
   };
@@ -32,7 +33,7 @@ function revertMembership(id: string, wasAdding: boolean) {
 
 export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { client, user, ready: authReady } = useAuth();
-  const [ids, setIds] = useState<readonly string[]>([]);
+  const [ids, setIds] = useState<readonly SubjectId[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -44,7 +45,7 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
     }
     let cancelled = false;
     setReady(false);
-    client
+    client.playback
       .myList()
       .then((list) => {
         if (!cancelled) {
@@ -61,13 +62,13 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
   }, [client, user, authReady]);
 
   const setInList = useCallback(
-    (id: string, inList: boolean) => {
+    (id: SubjectId, inList: boolean) => {
       if (!user) return;
       setIds((prev) => {
         if (prev.includes(id) === inList) return prev;
         return inList ? [id, ...prev] : prev.filter((x) => x !== id);
       });
-      const call = inList ? client.addToList(id) : client.removeFromList(id);
+      const call = inList ? client.playback.addToList(id) : client.playback.removeFromList(id);
       call.catch(() => {
         setIds(revertMembership(id, inList));
       });

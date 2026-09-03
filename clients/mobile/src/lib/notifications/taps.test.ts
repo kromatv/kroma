@@ -69,18 +69,20 @@ describe('pushData', () => {
 
 describe('handleTap', () => {
   it('runs the matching action and does not navigate', async () => {
-    const client = { runNotificationAction: vi.fn().mockResolvedValue(undefined) };
+    const client = { notifications: { runAction: vi.fn().mockResolvedValue(undefined) } };
     const route = await handleTap(
       response({ link: '/admin/requests', actions: [APPROVE] }, 'approve'),
       client as never,
     );
-    expect(client.runNotificationAction).toHaveBeenCalledWith(APPROVE);
+    expect(client.notifications.runAction).toHaveBeenCalledWith(APPROVE);
     // Approving from the lock screen must not drag the app to the foreground.
     expect(route).toBeNull();
   });
 
   it('falls back to opening the app when the action fails', async () => {
-    const client = { runNotificationAction: vi.fn().mockRejectedValue(new Error('offline')) };
+    const client = {
+      notifications: { runAction: vi.fn().mockRejectedValue(new Error('offline')) },
+    };
     const route = await handleTap(
       response({ link: '/movie/ab12', actions: [APPROVE] }, 'approve'),
       client as never,
@@ -90,7 +92,7 @@ describe('handleTap', () => {
   });
 
   it('navigates on a body tap, translating the web link', async () => {
-    const client = { runNotificationAction: vi.fn() };
+    const client = { notifications: { runAction: vi.fn() } };
     // expo uses this identifier for "the notification itself was tapped".
     const route = await handleTap(
       response(
@@ -99,24 +101,24 @@ describe('handleTap', () => {
       ),
       client as never,
     );
-    expect(client.runNotificationAction).not.toHaveBeenCalled();
+    expect(client.notifications.runAction).not.toHaveBeenCalled();
     expect(route).toBe('/player/ef56');
   });
 
   it('does not navigate when the link has no phone screen', async () => {
-    const client = { runNotificationAction: vi.fn() };
+    const client = { notifications: { runAction: vi.fn() } };
     const route = await handleTap(response({ link: '/admin/reports' }, 'default'), client as never);
     expect(route).toBeNull();
   });
 
   it('ignores an action id the payload does not describe', async () => {
-    const client = { runNotificationAction: vi.fn() };
+    const client = { notifications: { runAction: vi.fn() } };
     const route = await handleTap(
       response({ link: '/movie/ab12', actions: [APPROVE] }, 'deny'),
       client as never,
     );
     // No href for `deny` in this payload: open the app rather than guess one.
-    expect(client.runNotificationAction).not.toHaveBeenCalled();
+    expect(client.notifications.runAction).not.toHaveBeenCalled();
     expect(route).toBe('/item/ab12');
   });
 });

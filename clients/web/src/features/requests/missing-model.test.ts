@@ -2,7 +2,7 @@ import { type CalendarEntry, RequestId } from '@kroma/core';
 import { describe, expect, it } from 'vitest';
 import { epKey, groupByTitle } from './missing-model';
 
-const req = (id: string) => RequestId.of(id);
+const req = (id: string) => RequestId.parse(id);
 
 function entry(over: Partial<CalendarEntry> = {}): CalendarEntry {
   return {

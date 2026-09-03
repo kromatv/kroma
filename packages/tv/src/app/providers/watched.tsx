@@ -1,6 +1,7 @@
 // Per-user "watched" state, server-backed and shared across every tile plus the
 // detail toggle. Toggles are optimistic and revert if the server call fails.
 
+import { ItemId, type SubjectId } from '@kroma/core';
 import {
   createContext,
   type ReactNode,
@@ -14,9 +15,9 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 
 interface Watched {
-  has: (id: string) => boolean;
-  setWatched: (id: string, watched: boolean) => void;
-  toggle: (id: string) => void;
+  has: (id: SubjectId) => boolean;
+  setWatched: (id: SubjectId, watched: boolean) => void;
+  toggle: (id: SubjectId) => void;
   refresh: () => void;
 }
 
@@ -25,14 +26,14 @@ const Ctx = createContext<Watched | null>(null);
 export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { user, ready } = useAuth();
   const { client } = useConnection();
-  const [ids, setIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [ids, setIds] = useState<ReadonlySet<SubjectId>>(() => new Set());
 
   const refresh = useCallback(() => {
     if (!ready || !user || !client) {
       setIds(new Set());
       return;
     }
-    client
+    client.playback
       .watched()
       .then((list) => setIds(new Set(list)))
       .catch(() => undefined);
@@ -41,7 +42,7 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
   useEffect(() => refresh(), [refresh]);
 
   const setWatched = useCallback(
-    (id: string, watched: boolean) => {
+    (id: SubjectId, watched: boolean) => {
       if (!client) return;
       setIds((prev) => {
         if (prev.has(id) === watched) return prev;
@@ -50,7 +51,9 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
         else next.delete(id);
         return next;
       });
-      const call = watched ? client.markWatched(id) : client.unmarkWatched(id);
+      const call = watched
+        ? client.playback.markWatched(ItemId.parse(id))
+        : client.playback.unmarkWatched(ItemId.parse(id));
       call.catch(() => {
         setIds((prev) => {
           const next = new Set(prev);

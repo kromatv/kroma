@@ -138,7 +138,10 @@ function ActiveRow({
   };
   return (
     <Pressable onPress={showOptions} style={s.row}>
-      <RowArt uri={client.backdropFor(item) ?? client.posterFor(item)} seed={item.id} />
+      <RowArt
+        uri={client.media.artwork.backdropFor(item) ?? client.media.artwork.posterFor(item)}
+        seed={item.id}
+      />
       <Box style={s.text}>
         <Text lines={2} style={s.rowTitle}>
           {item.showTitle ?? item.metadata?.title ?? item.title}

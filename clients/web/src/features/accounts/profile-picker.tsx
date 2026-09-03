@@ -1,4 +1,4 @@
-import type { StoredSession } from '@kroma/core';
+import type { StoredSession, UserId } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   AddTile,
@@ -24,7 +24,7 @@ const s = styles({
 });
 
 export interface ProfileChoice {
-  id: string;
+  id: UserId;
   username: string;
   avatarUrl: string | null;
   remembered: StoredSession | null;
@@ -42,7 +42,7 @@ export function ProfilePicker({
   tiles: ProfileChoice[];
   error: string | null;
   onPick: (tile: ProfileChoice) => void;
-  onForget: (userId: string) => void;
+  onForget: (userId: UserId) => void;
   onAdd: () => void;
   onForgot?: () => void;
 }>) {

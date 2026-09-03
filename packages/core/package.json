@@ -24,7 +24,7 @@
   "dependencies": {
     "@kroma/client": "workspace:*",
     "@kroma/i18n": "workspace:*",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "peerDependencies": {
     "react": ">=18",

@@ -29,7 +29,7 @@ const BY_STATUS: Record<number, GrantRefusal> = {
   429: 'checkTooMany',
 };
 
-/** Read a refused `handoffGrant`. Anything the contract does not name - a
+/** Read a refused `handoff.grant`. Anything the contract does not name - a
  * dropped request, a server having a bad time - reads as `gone`, the one answer
  * that offers the reader nothing to retry with. */
 export function grantRefusal(cause: unknown): GrantRefusal {

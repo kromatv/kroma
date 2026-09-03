@@ -4,7 +4,8 @@
 // the account, and what it does when that tap arrives a moment too late or
 // carries the wrong code.
 
-import { KromaApiError, type KromaClient } from '@kroma/client';
+import { HandoffHandle, type Health, KromaApiError } from '@kroma/client';
+import { fakeClient } from '@kroma/client/test';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DiscoveredTv, LanService } from '../handoff';
@@ -12,7 +13,7 @@ import { beaconTxt } from '../handoff';
 import { useNearbyTvs } from './nearby-tvs';
 
 const SALON: DiscoveredTv = {
-  handle: 'h-salon',
+  handle: HandoffHandle.parse('h-salon'),
   name: 'Salon',
   platform: 'tvOS',
   check: 'K7QMR',
@@ -20,7 +21,7 @@ const SALON: DiscoveredTv = {
   via: 'server',
 };
 const CHAMBRE: DiscoveredTv = {
-  handle: 'h-chambre',
+  handle: HandoffHandle.parse('h-chambre'),
   name: 'Chambre',
   platform: 'Tizen',
   check: 'B4XRT',
@@ -28,12 +29,31 @@ const CHAMBRE: DiscoveredTv = {
   via: 'server',
 };
 
-function stubClient(rows: DiscoveredTv[] = [SALON, CHAMBRE]) {
-  return {
-    handoffDevices: vi.fn(async () => rows),
-    handoffGrant: vi.fn(async () => undefined),
-    health: vi.fn(async () => ({ instanceId: 'srv-1' })),
-  } as unknown as KromaClient;
+const serverHealth = (over: Partial<Health> = {}): Health => ({
+  status: 'ok',
+  version: '1.0.0',
+  ffprobe: true,
+  libraries: 1,
+  items: 2,
+  shows: 1,
+  ...over,
+});
+
+interface StubOptions {
+  rows?: DiscoveredTv[];
+  health?: () => Promise<Health>;
+}
+
+function stubClient(opts: StubOptions = {}) {
+  const { rows = [SALON, CHAMBRE], health = async () => serverHealth({ instanceId: 'srv-1' }) } =
+    opts;
+  return fakeClient({
+    handoff: {
+      devices: vi.fn(async () => rows),
+      grant: vi.fn(async () => undefined),
+    },
+    media: { health: vi.fn(health) },
+  });
 }
 
 function refused(status: number) {
@@ -72,8 +92,7 @@ describe('while the picker is open', () => {
   // An older server answers /health without an instanceId at all. Nothing can be
   // dropped for belonging elsewhere then, so every row it found is listed.
   it('lists everything when the server names no install', async () => {
-    const client = stubClient();
-    (client as unknown as { health: () => Promise<unknown> }).health = vi.fn(async () => ({}));
+    const client = stubClient({ health: async () => serverHealth() });
     const { result } = renderHook(() => useNearbyTvs({ client }));
     await waitFor(() => expect(result.current.devices).toHaveLength(2));
   });
@@ -82,26 +101,26 @@ describe('while the picker is open', () => {
   // is rendering any more is the classic React warning, and the guard is why it
   // does not happen here.
   it('drops the answer that arrives after the picker has gone', async () => {
-    let release!: (h: { instanceId: string }) => void;
-    const held = new Promise<{ instanceId: string }>((resolve) => {
+    let release!: (h: Health) => void;
+    const held = new Promise<Health>((resolve) => {
       release = resolve;
     });
-    const client = stubClient();
-    (client as unknown as { health: () => Promise<unknown> }).health = vi.fn(async () => held);
+    const client = stubClient({ health: () => held });
 
     const { unmount } = renderHook(() => useNearbyTvs({ client }));
     unmount();
-    release({ instanceId: 'srv-1' });
-    await expect(held).resolves.toEqual({ instanceId: 'srv-1' });
+    release(serverHealth({ instanceId: 'srv-1' }));
+    await expect(held).resolves.toEqual(serverHealth({ instanceId: 'srv-1' }));
   });
 
   // Which install this phone belongs to is only used to DROP rows minted by
   // another one. A server that will not say must therefore cost nothing: the
   // picker still lists what it found rather than going empty.
   it('still lists the TVs when the server will not say which install it is', async () => {
-    const client = stubClient();
-    (client as unknown as { health: () => Promise<unknown> }).health = vi.fn(async () => {
-      throw new Error('offline');
+    const client = stubClient({
+      health: async () => {
+        throw new Error('offline');
+      },
     });
     const { result } = renderHook(() => useNearbyTvs({ client }));
     await waitFor(() => expect(result.current.devices).toHaveLength(2));
@@ -110,7 +129,7 @@ describe('while the picker is open', () => {
 
 describe('a phone that can hear its own link', () => {
   it('merges what it heard with what the server listed, and prefers what it heard', async () => {
-    const client = stubClient([SALON]);
+    const client = stubClient({ rows: [SALON] });
     const lan = stubLan([
       {
         name: 'Salon',
@@ -137,7 +156,7 @@ describe('a phone that can hear its own link', () => {
   });
 
   it('leaves the code to the grant on a television the server never listed', async () => {
-    const client = stubClient([]);
+    const client = stubClient({ rows: [] });
     const lan = stubLan([
       {
         name: 'Salon',
@@ -168,7 +187,7 @@ describe('a phone that can hear its own link', () => {
     // Two televisions on the link, one belonging to this server and one not.
     // Waiting for the ours-only list is a positive assertion: an empty list
     // would pass before the filter had done anything at all.
-    const client = stubClient([]);
+    const client = stubClient({ rows: [] });
     const lan = stubLan([
       {
         name: 'Salon',
@@ -205,7 +224,7 @@ describe('a phone that can hear its own link', () => {
     // and it lands a beat after mount. It must not restart the watchers: that
     // costs a second `/handoff/devices` inside a second, and a link browse that
     // stops and starts can report one empty list on the way back up.
-    const client = stubClient([SALON]);
+    const client = stubClient({ rows: [SALON] });
     let browses = 0;
     const lan = {
       browse(onFound: (found: LanService[]) => void) {
@@ -233,11 +252,11 @@ describe('a phone that can hear its own link', () => {
     // waits for exactly the state change that used to restart everything.
     await waitFor(() => expect(result.current.devices.map((d) => d.handle)).toEqual(['h-salon']));
     expect(browses).toBe(1);
-    expect(client.handoffDevices).toHaveBeenCalledTimes(1);
+    expect(client.handoff.devices).toHaveBeenCalledTimes(1);
   });
 
   it('sends the proof it heard along with the grant', async () => {
-    const client = stubClient([]);
+    const client = stubClient({ rows: [] });
     const lan = stubLan([
       {
         name: 'Salon',
@@ -260,7 +279,7 @@ describe('a phone that can hear its own link', () => {
     await act(async () => {
       await result.current.connect(heard);
     });
-    expect(client.handoffGrant).toHaveBeenCalledWith('h-salon', {
+    expect(client.handoff.grant).toHaveBeenCalledWith('h-salon', {
       proof: 'heard-it',
       check: undefined,
     });
@@ -279,7 +298,7 @@ describe('tapping a TV', () => {
     });
 
     expect(granted).toBe('granted');
-    expect(client.handoffGrant).toHaveBeenCalledWith('h-salon', {
+    expect(client.handoff.grant).toHaveBeenCalledWith('h-salon', {
       proof: undefined,
       check: undefined,
     });
@@ -295,7 +314,7 @@ describe('tapping a TV', () => {
     await act(async () => {
       await result.current.connect(CHAMBRE, 'B4XRT');
     });
-    expect(client.handoffGrant).toHaveBeenCalledWith('h-chambre', {
+    expect(client.handoff.grant).toHaveBeenCalledWith('h-chambre', {
       proof: undefined,
       check: 'B4XRT',
     });
@@ -303,7 +322,7 @@ describe('tapping a TV', () => {
 
   it('says so when that TV stopped waiting, and keeps the list usable', async () => {
     const client = stubClient();
-    vi.mocked(client.handoffGrant).mockRejectedValue(refused(404));
+    vi.mocked(client.handoff.grant).mockRejectedValue(refused(404));
     const { result } = renderHook(() => useNearbyTvs({ client }));
     await waitFor(() => expect(result.current.devices).toHaveLength(2));
 
@@ -331,7 +350,7 @@ describe('tapping a TV', () => {
       [403, 'checkWrong'],
       [429, 'checkTooMany'],
     ] as const) {
-      vi.mocked(client.handoffGrant).mockRejectedValueOnce(refused(status));
+      vi.mocked(client.handoff.grant).mockRejectedValueOnce(refused(status));
       let outcome: string | undefined;
       await act(async () => {
         outcome = await result.current.connect(CHAMBRE, 'WRONG');
@@ -345,7 +364,7 @@ describe('tapping a TV', () => {
 
   it('answers every attempt, so two wrong codes in a row are two answers', async () => {
     const client = stubClient();
-    vi.mocked(client.handoffGrant).mockRejectedValue(refused(403));
+    vi.mocked(client.handoff.grant).mockRejectedValue(refused(403));
     const { result } = renderHook(() => useNearbyTvs({ client }));
     await waitFor(() => expect(result.current.devices).toHaveLength(2));
 
@@ -361,7 +380,7 @@ describe('tapping a TV', () => {
     // Reading that as a success would sign in a television nobody granted.
     const client = stubClient();
     let release: (() => void) | undefined;
-    vi.mocked(client.handoffGrant).mockImplementation(
+    vi.mocked(client.handoff.grant).mockImplementation(
       () =>
         new Promise<void>((resolve) => {
           release = () => resolve();
@@ -382,7 +401,7 @@ describe('tapping a TV', () => {
       release?.();
       await first;
     });
-    expect(client.handoffGrant).toHaveBeenCalledTimes(1);
+    expect(client.handoff.grant).toHaveBeenCalledTimes(1);
   });
 
   it('does nothing without a session', async () => {

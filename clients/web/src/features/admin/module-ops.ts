@@ -6,7 +6,13 @@
 // before it and one tab holds one extra connection, not three. Plus the
 // sidecar restart, the one module op the server answers in a single call.
 
-import { KromaEvents, type MessageKey, type ServerEvent, type StoreOpEvent } from '@kroma/core';
+import {
+  KromaEvents,
+  type MessageKey,
+  type ModuleId,
+  type ServerEvent,
+  type StoreOpEvent,
+} from '@kroma/core';
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import { message, restartModule } from '#web/features/admin/module-api';
 import { apiBase } from '#web/shared/lib/api';
@@ -22,7 +28,7 @@ export const PHASE_KEY = {
 } as const satisfies Record<OpPhase, MessageKey>;
 
 export interface OpModule {
-  id: string;
+  id: ModuleId;
   name?: string | null;
   version?: string | null;
   phase: OpPhase;
@@ -35,14 +41,14 @@ export interface StoreOp {
   kind: 'install' | 'update' | 'uninstall';
   requested: string;
   /** Module ids in plan order (extras discovered mid-op are appended). */
-  order: string[];
+  order: ModuleId[];
   modules: Record<string, OpModule>;
   finished: boolean;
   ok: boolean | null;
   error: string | null;
 }
 
-function blank(id: string): OpModule {
+function blank(id: ModuleId): OpModule {
   return { id, phase: 'wait', received: 0, total: null };
 }
 
@@ -56,7 +62,7 @@ export function foldOpEvent(
   switch (e.type) {
     case 'module.op.started': {
       const modules: Record<string, OpModule> = {};
-      const order: string[] = [];
+      const order: ModuleId[] = [];
       for (const m of e.modules) {
         order.push(m.id);
         modules[m.id] = { ...blank(m.id), name: m.name, version: m.version, total: m.size ?? null };

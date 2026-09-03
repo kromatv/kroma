@@ -16,7 +16,7 @@
 // way `discoverServer` already takes a `browse` hook.
 
 import type { HandoffDevice, KromaClient } from '@kroma/client';
-import { BeaconTxt } from '@kroma/client';
+import { BeaconTxt, HandoffHandle } from '@kroma/client';
 
 /** One waiting TV, however it was found. */
 export interface DiscoveredTv extends HandoffDevice {
@@ -207,7 +207,7 @@ export function watchLanBeacons(
       for (const { record, name } of rows) {
         if (record.state === 'waiting') {
           beacons.pairable.push({
-            handle: record.handle,
+            handle: HandoffHandle.parse(record.handle),
             name,
             platform: record.platform,
             check: record.check,
@@ -251,7 +251,7 @@ export function serverSource(client: KromaClient, everyMs = 3000): TvDiscoverySo
 
       const tick = async () => {
         try {
-          const rows = await client.handoffDevices();
+          const rows = await client.handoff.devices();
           if (!stopped) onRows(rows.map((row) => ({ ...row, via: 'server' as const })));
         } catch {
           /* keep the last good list: a dropped poll is not a TV going away */

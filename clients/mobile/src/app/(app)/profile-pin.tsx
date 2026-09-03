@@ -77,7 +77,7 @@ export default function ProfilePin() {
   const submitPin = async (code: string, current?: string) => {
     setBusy(true);
     try {
-      const { user: updated } = await client.setPin(code, current);
+      const { user: updated } = await client.accounts.setPin(code, current);
       setUser(updated);
       if (!hasPin && serverUrl && user) {
         // First PIN here: an active standalone lock folds into the PIN vault.
@@ -96,7 +96,7 @@ export default function ProfilePin() {
   const removePin = async (code: string) => {
     setBusy(true);
     try {
-      const { user: updated } = await client.clearPin(code);
+      const { user: updated } = await client.accounts.clearPin(code);
       setUser(updated);
       await syncVault(null);
       backToMenu(true);
@@ -112,7 +112,7 @@ export default function ProfilePin() {
     if (!serverUrl || !user) return;
     setBusy(true);
     try {
-      await client.pinVerify(code);
+      await client.accounts.verifyPin(code);
       const stored = await savePinBehindBiometrics(serverUrl, user.id, code);
       if (!stored) {
         backToMenu(false, t('account.saveFailed'));

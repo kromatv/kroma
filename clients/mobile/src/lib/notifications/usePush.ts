@@ -46,7 +46,7 @@ export function usePushGrantRefresh(): void {
       try {
         const refreshed = await refreshGrant();
         if (!refreshed || cancelled) return;
-        await client.subscribePush({
+        await client.notifications.push.subscribe({
           transport: 'relay',
           endpoint: refreshed.grant,
           device: deviceLabel(),
@@ -56,7 +56,7 @@ export function usePushGrantRefresh(): void {
         // old one won't expire for weeks, so it must be retired here or every
         // notification arrives twice.
         try {
-          await client.unsubscribePush(refreshed.previous);
+          await client.notifications.push.unsubscribe(refreshed.previous);
         } catch {
           // A duplicate is better than a lost registration.
         }

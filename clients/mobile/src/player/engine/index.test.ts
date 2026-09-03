@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import type { MediaItem } from '@kroma/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -67,11 +68,13 @@ const ITEM = {
   metadata: { title: 'A film' },
 } as unknown as MediaItem;
 
-const CLIENT = {
-  streamUrl: (id: string) => `stream://${id}`,
-  hlsMasterUrl: (id: string, _aac: boolean, anchor: number) => `hls://${id}@${anchor}`,
-  resolveArt: () => undefined,
-} as unknown as KromaClient;
+const CLIENT = fakeClient({
+  media: {
+    streamUrl: (id) => `stream://${id}`,
+    hlsMasterUrl: (id, _aac, anchor) => `hls://${id}@${anchor}`,
+    artwork: { resolve: () => null },
+  },
+});
 
 function open(startSec = 0) {
   return renderHook(() => useKromaEngine(CLIENT, ITEM, startSec));

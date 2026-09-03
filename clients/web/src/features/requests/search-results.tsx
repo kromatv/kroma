@@ -50,7 +50,7 @@ function LocalHit({ hit, width }: Readonly<{ hit: SearchHit; width: number }>) {
       <Poster
         title={show.title}
         colors={posterColors(show.id)}
-        poster={client.showPosterFor(show)}
+        poster={client.media.artwork.showPosterFor(show)}
         width={width}
         asChild
       >
@@ -68,7 +68,7 @@ function LocalHit({ hit, width }: Readonly<{ hit: SearchHit; width: number }>) {
       // An episode wears its show's poster, so it has to say which one it is.
       genre={episode ? [item.showTitle, episodeTag(item)].filter(Boolean).join(' · ') : undefined}
       colors={posterColors(item.id)}
-      poster={client.posterFor(item)}
+      poster={client.media.artwork.posterFor(item)}
       width={width}
       asChild
     >

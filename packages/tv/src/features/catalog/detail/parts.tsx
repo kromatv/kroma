@@ -74,7 +74,7 @@ export function CastRow({
             key={`${p.name}-${p.role ?? ''}`}
             name={p.name}
             role={p.role}
-            photo={client.resolveArt(p.profileUrl, FACE_W)}
+            photo={client.media.artwork.resolve(p.profileUrl, FACE_W)}
             gradient={CAST_GRADIENTS[i % CAST_GRADIENTS.length] as string}
             label={t('person.viewWorks', { name: p.name })}
             onPress={() => nav.go('person', { name: p.name })}

@@ -85,7 +85,7 @@ function ProfileEditor() {
       patch.subtitleLanguage = subtitle === NONE ? null : subtitle;
 
     save.run(async () => {
-      const { user: u } = await client.updateAccount(patch);
+      const { user: u } = await client.accounts.update(patch);
       updateUser({
         username: u.username,
         email: u.email,

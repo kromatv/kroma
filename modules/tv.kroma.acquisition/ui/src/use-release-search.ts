@@ -8,6 +8,7 @@
 import {
   apiErrorText,
   type InteractiveSearchView,
+  type RequestId,
   type ScoredReleaseView,
   type SearchScope,
 } from '@kroma/core';
@@ -34,7 +35,7 @@ const IDLE: SearchState = {
   grabbed: null,
 };
 
-export function useReleaseSearch(requestId: string) {
+export function useReleaseSearch(requestId: RequestId) {
   const t = useT();
   const { client } = useAdminHost();
   const [state, setState] = useState<SearchState>(IDLE);
@@ -47,7 +48,7 @@ export function useReleaseSearch(requestId: string) {
       generation.current += 1;
       const mine = generation.current;
       setState({ ...IDLE, busy: true, scope });
-      client
+      client.requests
         .searchReleases(requestId, scope)
         .then((view) => {
           if (generation.current === mine) setState({ ...IDLE, view, scope });
@@ -67,8 +68,8 @@ export function useReleaseSearch(requestId: string) {
       if (!scope) return;
       const mine = generation.current;
       setState((s) => ({ ...s, grabbing: true, grabbed: null }));
-      client
-        .grabRelease(requestId, { guid: release.guid, indexerId: release.indexerId, ...scope })
+      client.requests
+        .grab(requestId, { guid: release.guid, indexerId: release.indexerId, ...scope })
         .then(() => {
           if (generation.current !== mine) return;
           setState((s) => ({

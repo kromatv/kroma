@@ -19,17 +19,17 @@ async function fetchSubs(client: KromaClient, item: MediaItem): Promise<OfflineS
     if (!isTextSubtitle(sub.codec)) continue;
     const path = mediaPath(item.id, `e${index}.vtt`);
     try {
-      await FileSystem.downloadAsync(client.subtitleUrl(item.id, index), path);
+      await FileSystem.downloadAsync(client.media.subtitleUrl(item.id, index), path);
       subs.push({ index, language: sub.language, path });
     } catch {
       // Track unavailable offline.
     }
   }
   try {
-    const generated = await client.downloadedSubtitles(item.id);
+    const generated = await client.subtitles.downloaded(item.id);
     for (const [i, gen] of generated.entries()) {
       const path = mediaPath(item.id, `g${i}.vtt`);
-      await FileSystem.downloadAsync(client.resolveArt(gen.url) ?? gen.url, path);
+      await FileSystem.downloadAsync(client.media.artwork.resolve(gen.url) ?? gen.url, path);
       // Offset well past the embedded track indices so the two namespaces
       // can't collide in the offline picker.
       subs.push({ index: 1000 + i, language: gen.language, label: gen.label, ai: true, path });
@@ -45,10 +45,13 @@ async function fetchStoryboard(
   item: MediaItem,
 ): Promise<DownloadEntry['storyboard']> {
   try {
-    const manifest = await client.storyboard(item.id);
+    const manifest = await client.media.storyboard(item.id);
     if (!manifest || manifest === 'pending') return undefined;
     const spritePath = mediaPath(item.id, 'sb.img');
-    await FileSystem.downloadAsync(client.resolveArt(manifest.url) ?? manifest.url, spritePath);
+    await FileSystem.downloadAsync(
+      client.media.artwork.resolve(manifest.url) ?? manifest.url,
+      spritePath,
+    );
     return { manifest, spritePath };
   } catch {
     return undefined;

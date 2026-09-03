@@ -65,7 +65,7 @@ export function EpisodeRow({
   const [g1, g2] = posterColors(episode.id);
   const runtime = formatRuntime(episode.durationMs);
   const synopsis = episode.metadata?.overview;
-  const still = kromaClient().backdropFor(episode);
+  const still = kromaClient().media.artwork.backdropFor(episode);
   const num =
     episode.season != null && episode.episode != null
       ? `S${String(episode.season).padStart(2, '0')}E${String(episode.episode).padStart(2, '0')} · `

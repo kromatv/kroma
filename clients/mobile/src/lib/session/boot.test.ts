@@ -27,6 +27,8 @@ interface Account {
   user: { id: string; username: string; hasPin?: boolean };
 }
 
+const withAccounts = (accounts: Record<string, unknown>) => () => ({ accounts });
+
 const account = (over: Partial<Account> = {}): Account => ({
   serverUrl: 'https://attic',
   accessToken: 'device-token',
@@ -69,14 +71,16 @@ function deps(over: Record<string, unknown> = {}) {
       },
       persist: vi.fn(),
     },
-    makeClient: vi.fn(() => ({
-      exchangeToken: vi.fn(async () => ({ token: 'live', user: { id: 'u1', username: 'max' } })),
-      login: vi.fn(async () => ({
-        accessToken: 'dev-access',
-        token: 'dev-live',
-        user: { id: 'dev', username: 'dev' },
-      })),
-    })),
+    makeClient: vi.fn(
+      withAccounts({
+        exchangeToken: vi.fn(async () => ({ token: 'live', user: { id: 'u1', username: 'max' } })),
+        login: vi.fn(async () => ({
+          accessToken: 'dev-access',
+          token: 'dev-live',
+          user: { id: 'dev', username: 'dev' },
+        })),
+      }),
+    ),
     enterSession: (url: string, accessToken: string, token: string, user: unknown) => {
       state.entered = { url, accessToken, token, user };
     },
@@ -216,7 +220,7 @@ describe('exchanging the stored device token', () => {
     loadAccounts.mockResolvedValue([account()]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
     const { state } = await boot({
-      makeClient: () => ({
+      makeClient: withAccounts({
         exchangeToken: async () => {
           throw new KromaApiError(401, 'unauthorized', { error: 'revoked' });
         },
@@ -230,7 +234,7 @@ describe('exchanging the stored device token', () => {
     loadAccounts.mockResolvedValue([account()]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
     const { state } = await boot({
-      makeClient: () => ({
+      makeClient: withAccounts({
         exchangeToken: async () => {
           throw new KromaApiError(401, 'pin required', { pinRequired: true });
         },
@@ -244,7 +248,7 @@ describe('exchanging the stored device token', () => {
     loadAccounts.mockResolvedValue([account()]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
     const { state } = await boot({
-      makeClient: () => ({
+      makeClient: withAccounts({
         exchangeToken: async () => {
           throw new KromaApiError(401, 'pin required', { pinRequired: true });
         },
@@ -259,7 +263,7 @@ describe('exchanging the stored device token', () => {
     loadAccounts.mockResolvedValue([account(), other]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
     const { state } = await boot({
-      makeClient: () => ({
+      makeClient: withAccounts({
         exchangeToken: async () => {
           throw new KromaApiError(401, 'pin required', { pinRequired: true });
         },
@@ -274,7 +278,7 @@ describe('exchanging the stored device token', () => {
     loadAccounts.mockResolvedValue([account()]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
     const { state } = await boot({
-      makeClient: () => ({
+      makeClient: withAccounts({
         exchangeToken: async () => {
           throw new TypeError('Network request failed');
         },
@@ -289,7 +293,7 @@ describe('exchanging the stored device token', () => {
     loadAccounts.mockResolvedValue([account()]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
     const { state } = await boot({
-      makeClient: () => ({
+      makeClient: withAccounts({
         exchangeToken: async () => {
           throw new TypeError('offline');
         },
@@ -332,7 +336,7 @@ describe('the dev rig', () => {
     vi.stubEnv('EXPO_PUBLIC_KROMA_SERVER', 'https://rig.local');
     vi.stubEnv('EXPO_PUBLIC_KROMA_DEV_LOGIN', 'dev:hunter2');
     const { state } = await boot({
-      makeClient: () => ({
+      makeClient: withAccounts({
         login: async () => {
           throw new Error('rig is down');
         },
@@ -352,7 +356,7 @@ describe('the dev rig', () => {
       user: { id: 'dev' },
     }));
 
-    const { d } = deps({ makeClient: () => ({ login }) });
+    const { d } = deps({ makeClient: withAccounts({ login }) });
     renderHook(() => useBootRestore(d));
 
     await waitFor(() => expect(login).toHaveBeenCalledWith('dev', ''));
@@ -387,7 +391,7 @@ describe('leaving before the restore finishes', () => {
     loadAccounts.mockResolvedValue([account()]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
 
-    const { d, state } = deps({ makeClient: () => ({ exchangeToken }) });
+    const { d, state } = deps({ makeClient: withAccounts({ exchangeToken }) });
     const { unmount } = renderHook(() => useBootRestore(d));
     await waitFor(() => expect(exchangeToken).toHaveBeenCalled());
 
@@ -405,7 +409,7 @@ describe('leaving before the restore finishes', () => {
     loadAccounts.mockResolvedValue([account()]);
     loadActive.mockResolvedValue({ serverUrl: 'https://attic', userId: 'u1' });
 
-    const { d, state } = deps({ makeClient: () => ({ exchangeToken }) });
+    const { d, state } = deps({ makeClient: withAccounts({ exchangeToken }) });
     const { unmount } = renderHook(() => useBootRestore(d));
     await waitFor(() => expect(exchangeToken).toHaveBeenCalled());
 
@@ -442,7 +446,7 @@ describe('leaving before the restore finishes', () => {
     const gate = deferred<{ accessToken: string; token: string; user: { id: string } }>();
     const login = vi.fn(() => gate.promise);
 
-    const { d, state } = deps({ makeClient: () => ({ login }) });
+    const { d, state } = deps({ makeClient: withAccounts({ login }) });
     const { unmount } = renderHook(() => useBootRestore(d));
     await waitFor(() => expect(login).toHaveBeenCalled());
 

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { KromaClient } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
 import { I18nProvider } from '@kroma/ui';
 import { clearPressGuard } from '@kroma/ui/kit';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -71,9 +71,8 @@ function NavHandle({ onReady }: Readonly<{ onReady: (nav: TvNav) => void }>) {
   return null;
 }
 
-function mountApp(client: Partial<KromaClient> = {}) {
-  const createReport = vi.fn().mockResolvedValue({});
-  const fake = { createReport, ...client } as unknown as KromaClient;
+function mountApp(createReport = vi.fn().mockResolvedValue({})) {
+  const fake = fakeClient({ reports: { create: createReport } });
   let nav!: TvNav;
   render(
     <EnvProvider platform="TV">
@@ -143,7 +142,7 @@ describe('TvReport in the app', () => {
   });
 
   it('says why a report the server refused did not go', async () => {
-    const app = mountApp({ createReport: vi.fn().mockRejectedValue(new Error('offline')) });
+    const app = mountApp(vi.fn().mockRejectedValue(new Error('offline')));
     openReport(app);
 
     clearPressGuard();

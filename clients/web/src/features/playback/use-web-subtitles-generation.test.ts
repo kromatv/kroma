@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { H, installHarness, movie, settle } from '#web/features/playback/use-web-subtitles.fixture';
+import {
+  H,
+  installHarness,
+  kromaClientStub,
+  movie,
+  settle,
+} from '#web/features/playback/use-web-subtitles.fixture';
 
 // The language matcher stays real; only the catalog-facing bits are stubbed.
 vi.mock('@kroma/core', async (importOriginal) => ({
@@ -23,21 +29,13 @@ vi.mock('@kroma/ui', () => ({
   },
 }));
 
-vi.mock('#web/shared/lib/api', () => ({
-  kromaClient: () => ({
-    downloadedSubtitles: H.downloadedSubtitles,
-    subtitleCapabilities: H.subtitleCapabilities,
-    deleteSubtitle: H.deleteSubtitle,
-    generateSubtitle: H.generateSubtitle,
-    resolveArt: H.resolveArt,
-  }),
-}));
+vi.mock('#web/shared/lib/api', () => ({ kromaClient: kromaClientStub }));
 
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({
     user: H.user,
     updateUser: H.updateUser,
-    client: { updateAccount: H.updateAccount },
+    client: { accounts: { update: H.updateAccount } },
   }),
 }));
 
@@ -77,6 +75,15 @@ describe('useWebSubtitles generation lifecycle', () => {
     act(() => result.current.subtitleGen.onDelete('d1'));
     expect(result.current.activeIndex).toBe(1000);
     expect(H.deleteSubtitle).toHaveBeenCalledWith('movie-1', 'd1');
+  });
+
+  it('cancels a running generation by the id the panel showed', async () => {
+    const { result } = renderHook(() => useWebSubtitles(movie([]), t));
+    await settle();
+
+    act(() => result.current.subtitleGen.onCancel('g1'));
+
+    expect(H.cancel).toHaveBeenCalledWith('g1');
   });
 
   it('reports canCreate from caps and dispatches transcribe/translate requests', async () => {

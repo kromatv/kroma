@@ -72,7 +72,7 @@ export function UpNextCard({ next, frac }: Readonly<{ next: MediaItem; frac: num
     >
       <Box>
         <FadeImage
-          uri={sizedImageUrl(client.backdropFor(next), 480)}
+          uri={sizedImageUrl(client.media.artwork.backdropFor(next), 480)}
           seed={next.id}
           radius={radius.sm}
           style={s.upNextThumb}
@@ -119,7 +119,7 @@ export function EpisodeRow({
     >
       <Box>
         <FadeImage
-          uri={sizedImageUrl(client.backdropFor(episode), 480)}
+          uri={sizedImageUrl(client.media.artwork.backdropFor(episode), 480)}
           seed={episode.id}
           radius={radius.sm}
           style={s.epThumb}

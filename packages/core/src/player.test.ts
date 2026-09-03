@@ -1,8 +1,8 @@
-import type { KromaClient, MediaItem } from '@kroma/client';
+import { createKromaClient, type MediaItem } from '@kroma/client';
 import { describe, expect, it, vi } from 'vitest';
 import { attachDirectPlay, declaredAspect, formatRuntime } from './player';
 
-const client = { streamUrl: (id: string) => `http://nas/api/items/${id}/stream` } as KromaClient;
+const client = createKromaClient({ baseUrl: 'http://nas' });
 const ITEM = { id: 'i1', video: { codec: 'h264', bitDepth: 8 } } as unknown as MediaItem;
 
 function fakeVideo(over: { seekThrows?: boolean; playRejects?: boolean } = {}) {

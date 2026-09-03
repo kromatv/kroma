@@ -6,6 +6,7 @@ import {
   posterColors,
   type Show,
   type SortMode,
+  type SubjectId,
   sortTitles,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';
@@ -35,7 +36,7 @@ function sectionList<T extends MediaItem | Show>(
   items: T[],
   own: boolean,
   other: boolean,
-  myList: { has: (id: string) => boolean },
+  myList: { has: (id: SubjectId) => boolean },
 ): T[] {
   if (own) return items;
   if (other) return [];

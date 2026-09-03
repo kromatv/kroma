@@ -1,4 +1,4 @@
-import { genreSlugs } from '@kroma/core';
+import { genreSlugs, ItemId } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
@@ -17,10 +17,11 @@ export const Route = createFileRoute('/_app/movies/$id')({
     if (!isAuthed()) throw redirect({ to: '/' });
     // Warm the cache the component reads from (item + full list for the
     // similar-items fallback + embedding neighbours).
+    const id = ItemId.parse(params.id);
     await Promise.all([
-      queryClient.ensureQueryData(catalogQueries.item(params.id)),
+      queryClient.ensureQueryData(catalogQueries.item(id)),
       queryClient.ensureQueryData(catalogQueries.movies()),
-      queryClient.ensureQueryData(catalogQueries.similar(params.id)),
+      queryClient.ensureQueryData(catalogQueries.similar(id)),
     ]);
   },
   pendingComponent: DetailSkeleton,
@@ -30,7 +31,7 @@ export const Route = createFileRoute('/_app/movies/$id')({
 function MovieDetailPage() {
   const t = useT();
   const { client, user } = useAuth();
-  const { id } = Route.useParams();
+  const id = ItemId.parse(Route.useParams().id);
   // Re-enrichment (incl. a corrected TMDB match) lands via the event stream.
   useCatalogLiveRefresh('item', id);
   const { data: item } = useSuspenseQuery(catalogQueries.item(id));

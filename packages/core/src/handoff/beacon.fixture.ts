@@ -1,12 +1,24 @@
-import { KromaApiError, type KromaClient, type PairingStatus, type User } from '@kroma/client';
+import {
+  DeviceId,
+  type HandoffAnnounce,
+  type HandoffBeacon,
+  HandoffHandle,
+  KromaApiError,
+  type KromaClient,
+  type PairingStatus,
+  type User,
+} from '@kroma/client';
+import { fakeClient } from '@kroma/client/test';
 import { vi } from 'vitest';
 import type { HandoffBeaconView, HandoffLoopOptions } from './beacon';
 import { startHandoff } from './beacon';
 
 export const USER = { id: 'u1', username: 'owner' } as unknown as User;
 
-export const BEACON = {
-  handle: 'h1',
+export const DEVICE = DeviceId.parse('tv-salon-01');
+
+export const BEACON: HandoffBeacon = {
+  handle: HandoffHandle.parse('h1'),
   secret: 's1',
   check: 'K7QMR',
   confirmRequired: false,
@@ -16,30 +28,34 @@ export const BEACON = {
   pollSecs: 3,
 };
 
-export function stubClient(overrides: Partial<Record<string, unknown>> = {}) {
+export function stubClient(overrides: Partial<KromaClient['handoff']> = {}) {
   const calls: string[] = [];
-  const announces: Array<{ deviceId: string; name: string; prevSecret?: string }> = [];
+  const announces: HandoffAnnounce[] = [];
   const left: string[] = [];
   let minted = 0;
-  const client = {
-    announceHandoff: vi.fn(
-      async (body: { deviceId: string; name: string; prevSecret?: string }) => {
-        calls.push('announce');
-        announces.push(body);
-        minted += 1;
-        return { ...BEACON, secret: `s${minted}`, handle: `h${minted}`, proof: `p${minted}` };
-      },
-    ),
-    handoffPoll: vi.fn(async (): Promise<PairingStatus> => {
+  const handoff = {
+    announce: vi.fn(async (body: HandoffAnnounce) => {
+      calls.push('announce');
+      announces.push(body);
+      minted += 1;
+      return {
+        ...BEACON,
+        secret: `s${minted}`,
+        handle: HandoffHandle.parse(`h${minted}`),
+        proof: `p${minted}`,
+      };
+    }),
+    poll: vi.fn(async (): Promise<PairingStatus> => {
       calls.push('poll');
       return { status: 'pending' };
     }),
-    handoffLeave: vi.fn(async (secret: string) => {
+    leave: vi.fn(async (secret: string) => {
       calls.push('leave');
       left.push(secret);
     }),
     ...overrides,
-  } as unknown as KromaClient;
+  };
+  const client = fakeClient({ handoff });
   return { client, calls, announces, left };
 }
 
@@ -48,7 +64,7 @@ export function run(client: KromaClient, publish?: HandoffLoopOptions['publish']
   const signedIn: Array<{ token: string }> = [];
   const handoff = startHandoff({
     client,
-    deviceId: 'tv-salon-01',
+    deviceId: DEVICE,
     name: 'Apple TV',
     platform: 'Apple TV',
     publish,

@@ -15,6 +15,7 @@
 import {
   type CastCommand,
   type CastReceiver,
+  type DeviceId,
   type ItemId,
   KromaApiError,
   type KromaClient,
@@ -61,7 +62,7 @@ export function CastProvider({
   children,
 }: Readonly<CastProviderProps>) {
   const [receivers, setReceivers] = useState<CastReceiver[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<DeviceId | null>(null);
   const [error, setError] = useState<Cast['error']>(null);
   // Position base: what the TV last reported, and when we heard it. Rendering
   // interpolates from here, so a progress bar moves between heartbeats.
@@ -76,7 +77,7 @@ export function CastProvider({
   // of which are re-created per render. Written in a layout effect rather than
   // during render, which is the spelling the React Compiler accepts; nothing
   // reads them before the commit lands.
-  const drivingRef = useRef<string | null>(null);
+  const drivingRef = useRef<DeviceId | null>(null);
   const name = useRef(deviceName);
   const receiversRef = useRef<CastReceiver[]>(receivers);
   useLayoutEffect(() => {
@@ -87,8 +88,8 @@ export function CastProvider({
 
   const refresh = useCallback(() => {
     if (!enabled || !client) return;
-    client
-      .castReceivers()
+    client.cast
+      .receivers()
       .then(setReceivers)
       .catch(() => undefined);
   }, [client, enabled]);
@@ -169,10 +170,10 @@ export function CastProvider({
   const positionMs = livePosition(active, base, playing);
 
   const sendTo = useCallback(
-    async (receiverId: string, command: CastCommand): Promise<boolean> => {
+    async (receiverId: DeviceId, command: CastCommand): Promise<boolean> => {
       if (!client) return false;
       try {
-        await client.sendCastCommand(receiverId, command);
+        await client.cast.command(receiverId, command);
         setError(null);
         return true;
       } catch (e) {
@@ -190,7 +191,7 @@ export function CastProvider({
   );
 
   const playOn = useCallback(
-    async (receiverId: string, itemId: ItemId, positionMs = 0) => {
+    async (receiverId: DeviceId, itemId: ItemId, positionMs = 0) => {
       const ok = await sendTo(receiverId, { type: 'play', itemId, positionMs });
       if (ok) {
         setActiveId(receiverId);
@@ -211,7 +212,7 @@ export function CastProvider({
 
   // The latest `receivers` stay reachable through `receiversRef` above, so
   // `select` is never re-created.
-  const select = useCallback((receiverId: string | null) => {
+  const select = useCallback((receiverId: DeviceId | null) => {
     setActiveId(receiverId);
     setError(null);
     // Tell the set it is being driven, so it can show this remote (and let it

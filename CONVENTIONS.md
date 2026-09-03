@@ -49,7 +49,8 @@ Why, beyond it being shorter:
   the payload back at the caller.
 
 Schemas live in a `schemas.ts` (or `src/schemas/`) next to what they describe:
-see `packages/client/src/schemas/` and `packages/push-relay/worker/schemas.ts`.
+see `packages/client/src/api/<domain>/schemas.ts` and
+`packages/push-relay/worker/schemas.ts`.
 
 The one thing that stays hand-written is a **size check before parsing**: a
 schema cannot reject bytes it has not read yet, so bound the body first, then

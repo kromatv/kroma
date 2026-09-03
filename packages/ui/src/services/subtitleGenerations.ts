@@ -1,16 +1,22 @@
 // Shared subtitle-generation poll loop, behind each client's player.
 
-import type { KromaClient, SubtitleGeneration } from '@kroma/core';
+import type {
+  GenerationId,
+  ItemId,
+  KromaClient,
+  SubtitleGeneration,
+  SubtitleId,
+} from '@kroma/core';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 
 export interface SubtitleGenerationsOptions {
   active?: boolean;
-  onComplete: (subId: string) => void;
+  onComplete: (subId: SubtitleId) => void;
 }
 
 export interface SubtitleGenerationsResult {
   generations: SubtitleGeneration[];
-  cancel: (genId: string) => void;
+  cancel: (genId: GenerationId) => void;
   refresh: () => void;
 }
 
@@ -18,15 +24,15 @@ export interface SubtitleGenerationsResult {
 // inside a hook, and it would skip the whole poll loop over it.
 async function pollOnce(at: {
   client: KromaClient;
-  itemId: string;
-  seenDone: Set<string>;
+  itemId: ItemId;
+  seenDone: Set<GenerationId>;
   isStopped: () => boolean;
   report: (list: SubtitleGeneration[]) => void;
-  complete: (subId: string) => void;
+  complete: (subId: SubtitleId) => void;
   stop: () => void;
 }): Promise<void> {
   try {
-    const list = await at.client.subtitleGenerations(at.itemId);
+    const list = await at.client.subtitles.generations(at.itemId);
     if (at.isStopped()) return;
     at.report(list);
     for (const g of list) {
@@ -44,16 +50,16 @@ async function pollOnce(at: {
 
 export function useSubtitleGenerations(
   client: KromaClient,
-  itemId: string,
+  itemId: ItemId,
   { active = true, onComplete }: SubtitleGenerationsOptions,
 ): SubtitleGenerationsResult {
   const [generations, setGenerations] = useState<SubtitleGeneration[]>([]);
   const [nudge, setNudge] = useState(0);
-  const fireComplete = useEffectEvent((subId: string) => onComplete(subId));
+  const fireComplete = useEffectEvent((subId: SubtitleId) => onComplete(subId));
   // The ids already reported done, per item. Reset inside the effect rather
   // than during render: the effect re-runs on an item change anyway, and the
   // set must survive a `nudge` or `active` re-run.
-  const seenRef = useRef<{ itemId: string; seen: Set<string> } | null>(null);
+  const seenRef = useRef<{ itemId: ItemId; seen: Set<GenerationId> } | null>(null);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `nudge` is a trigger dep, not read in the body; bumping it via refresh() re-arms polling after a new generation is kicked off.
   useEffect(() => {
@@ -89,9 +95,9 @@ export function useSubtitleGenerations(
   }, [client, itemId, active, nudge]);
 
   const cancel = useCallback(
-    (genId: string) => {
+    (genId: GenerationId) => {
       setGenerations((prev) => prev.filter((g) => g.id !== genId));
-      void client.cancelGeneration(itemId, genId).catch(() => undefined);
+      void client.subtitles.cancel(itemId, genId).catch(() => undefined);
     },
     [client, itemId],
   );

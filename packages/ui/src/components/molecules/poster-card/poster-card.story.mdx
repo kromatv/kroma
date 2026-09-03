@@ -29,7 +29,7 @@ export const story = defineStory({
 The portrait poster of the library grids. Same focus model as the landscape thumbnail, different ratio.
 
 ```tsx
-<PosterCard title={item.title} overline={t(kindKey(item.kind))} art={client.resolveArt(item.posterUrl)} tint={item.tint} progress={item.progress} onPress={open} />
+<PosterCard title={item.title} overline={t(kindKey(item.kind))} art={client.media.artwork.resolve(item.posterUrl)} tint={item.tint} progress={item.progress} onPress={open} />
 ```
 
 <Scene name="A shelf">

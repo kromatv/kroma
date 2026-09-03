@@ -6,7 +6,8 @@
 // Offline, a local sprite short-circuits the fetch entirely; online, the
 // server answers 202 while still generating, which the client polls.
 
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import type { KromaClient, MediaItem, StoryboardManifest } from '@kroma/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DownloadEntry } from '#mobile/lib/downloads';
@@ -14,21 +15,24 @@ import { useStoryboard } from './useStoryboard';
 
 const POLL_MS = 5000;
 
-const MANIFEST = {
+const MANIFEST: StoryboardManifest = {
   url: '/sb/itm_1.jpg',
   count: 10,
   interval: 10,
+  duration: 100,
   cols: 5,
   rows: 2,
   tileW: 160,
   tileH: 90,
 };
 
-const storyboard = vi.fn(async (_id: string) => MANIFEST as unknown);
-const client = {
-  storyboard,
-  resolveArt: (url: string) => `https://kroma.test${url}`,
-} as unknown as KromaClient;
+type Storyboard = KromaClient['media']['storyboard'];
+type Manifest = Awaited<ReturnType<Storyboard>>;
+
+const storyboard = vi.fn<Storyboard>(async () => MANIFEST);
+const client = fakeClient({
+  media: { storyboard, artwork: { resolve: (url) => `https://kroma.test${url}` } },
+});
 
 const item = { id: 'itm_1' } as MediaItem;
 
@@ -93,9 +97,9 @@ describe('fetching the manifest', () => {
 
   it('stops mid-poll when the player closes before the answer arrives', async () => {
     vi.useFakeTimers();
-    const answer: { fire: ((m: unknown) => void) | null } = { fire: null };
+    const answer: { fire: ((m: Manifest) => void) | null } = { fire: null };
     storyboard.mockReturnValue(
-      new Promise((resolve) => {
+      new Promise<Manifest>((resolve) => {
         answer.fire = resolve;
       }),
     );
@@ -217,7 +221,7 @@ describe('resolving a tile', () => {
   });
 
   it('falls back to the raw url when nothing resolves it', async () => {
-    const bare = { ...client, resolveArt: () => null } as unknown as KromaClient;
+    const bare = fakeClient({ media: { storyboard, artwork: { resolve: () => null } } });
     const { result } = renderHook(() => useStoryboard(bare, item, true));
     await waitFor(() => expect(result.current(0)).not.toBeNull());
     expect(result.current(0)?.sheet).toBe('/sb/itm_1.jpg');

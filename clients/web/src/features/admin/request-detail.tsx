@@ -2,7 +2,7 @@
 // moderation actions, and the acquisition panel. A page rather than a drawer,
 // so a search survives a reload and can be linked to.
 
-import { hasPermission, type MediaRequest, type MessageKey } from '@kroma/core';
+import { hasPermission, type MediaRequest, type MessageKey, type RequestId } from '@kroma/core';
 import { ModuleSlot } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Box, Button, EmptyState, Row, Surface } from '@kroma/ui/kit';
@@ -22,7 +22,7 @@ import { useAuth } from '#web/shared/lib/auth';
 import { seasonsSummary } from '#web/shared/lib/request-status';
 import { RouteLink } from '#web/shared/ui/route-link';
 
-export function RequestDetailPage({ id }: Readonly<{ id: string }>) {
+export function RequestDetailPage({ id }: Readonly<{ id: RequestId }>) {
   const t = useT();
   const navigate = useNavigate();
   const { client, user } = useAuth();
@@ -33,7 +33,7 @@ export function RequestDetailPage({ id }: Readonly<{ id: string }>) {
   // this page and vice versa.
   const { data, reload } = usePoll(
     ['admin', 'requests', 'all'],
-    () => client.listRequests(),
+    () => client.requests.list(),
     30000,
   );
   const req = data?.requests.find((r) => r.id === id) ?? null;
@@ -104,13 +104,13 @@ export function RequestDetailPage({ id }: Readonly<{ id: string }>) {
                 busy={busy}
                 onApprove={() =>
                   act(`« ${req.title} » ${t('requests.toastApproved')}`, () =>
-                    client.approveRequest(req.id),
+                    client.requests.approve(req.id),
                   )
                 }
                 onStartDeny={() => setDenying(true)}
                 onDelete={() => {
                   void act(`« ${req.title} » ${t('requests.toastDeleted')}`, () =>
-                    client.deleteRequest(req.id),
+                    client.requests.delete(req.id),
                   ).then((ok) => {
                     if (ok) backToQueue();
                   });
@@ -130,7 +130,7 @@ export function RequestDetailPage({ id }: Readonly<{ id: string }>) {
             onCancel={() => setDenying(false)}
             onDeny={(n) => {
               void act(`« ${req.title} » ${t('requests.toastDenied')}`, () =>
-                client.denyRequest(req.id, n || undefined),
+                client.requests.deny(req.id, n || undefined),
               ).then((ok) => {
                 if (ok) setDenying(false);
               });

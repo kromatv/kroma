@@ -77,7 +77,7 @@ export function LocaleProvider({
     apply(detected);
     if (onAccountChange) {
       onAccountChange(detected);
-      client?.updateLanguage(detected).catch(() => {});
+      client?.accounts.updateLanguage(detected).catch(() => {});
     }
   }, []);
 
@@ -114,7 +114,7 @@ export function LocaleProvider({
       // Best-effort account sync so the choice follows the profile everywhere.
       if (onAccountChange) {
         onAccountChange(next);
-        client?.updateLanguage(next).catch(() => {});
+        client?.accounts.updateLanguage(next).catch(() => {});
       }
     },
     [apply, client, onAccountChange],

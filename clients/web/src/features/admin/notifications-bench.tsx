@@ -63,7 +63,7 @@ export function NotificationBench() {
     run(
       async () => {
         setSent(null);
-        const { delivered } = await kromaClient().sendNotification({
+        const { delivered } = await kromaClient().admin.notifications.send({
           title: draft.title,
           body: draft.body,
           category: draft.category,
@@ -210,7 +210,7 @@ const NOTE = { flex: 1 } as const;
 // what recipients actually see; `custom` is the event type this bench always sends.
 function PreviewRow({ draft, empty }: Readonly<{ draft: Draft; empty: string }>) {
   const t = useT();
-  const art = draft.imageUrl ? kromaClient().resolveArt(draft.imageUrl) : null;
+  const art = draft.imageUrl ? kromaClient().media.artwork.resolve(draft.imageUrl) : null;
   return (
     <NotificationCard
       style={PREVIEW_CARD}

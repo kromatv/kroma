@@ -41,13 +41,13 @@ function HistoryPageInner({ search, onSearchChange }: Readonly<HistoryScreenProp
 
   const { data } = usePoll(
     ['admin', 'plays', request],
-    () => client.adminPlays(request),
+    () => client.admin.plays(request),
     PLAYS_POLL_MS,
   );
-  const { data: users } = usePoll(['admin', 'users'], () => client.adminUsers(), FILTER_POLL_MS);
+  const { data: users } = usePoll(['admin', 'users'], () => client.admin.users(), FILTER_POLL_MS);
   const { data: libraries } = usePoll(
     ['admin', 'libraries'],
-    () => client.adminLibraries(),
+    () => client.library.list(),
     FILTER_POLL_MS,
   );
 

@@ -22,7 +22,7 @@ export function TopViewersSection() {
   const [page, setPage] = useState(1);
   const { data } = usePoll(
     ['admin', 'topUsers', range.value],
-    () => client.topUsers(daysOf(range.value)),
+    () => client.admin.topUsers(daysOf(range.value)),
     POLL_MS,
   );
 

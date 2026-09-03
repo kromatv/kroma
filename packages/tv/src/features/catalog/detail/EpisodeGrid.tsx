@@ -2,7 +2,7 @@
 // frames on a television is the number of mounted controls, and a 100-episode
 // season at three controls a row is 300 of them.
 
-import type { MediaItem } from '@kroma/core';
+import type { ItemId, MediaItem } from '@kroma/core';
 import { Grid, useGrowingCount } from '@kroma/ui/kit';
 import { EPISODE_COLUMNS, EPISODE_W, EpisodeRow } from '#tv/features/catalog/detail/EpisodeRow';
 import { CONTENT_W } from '#tv/shared/stage';
@@ -23,10 +23,10 @@ export function EpisodeGrid({
 }: Readonly<{
   episodes: readonly MediaItem[];
   stillFor: (episode: MediaItem, width: number) => string | null;
-  isWatched: (id: string) => boolean;
-  progressOf: (id: string) => number | null;
+  isWatched: (id: ItemId) => boolean;
+  progressOf: (id: ItemId) => number | null;
   onPlay: (episode: MediaItem) => void;
-  onToggleWatched: (id: string) => void;
+  onToggleWatched: (id: ItemId) => void;
   onReport: (episode: MediaItem) => void;
 }>) {
   const { count, isNearEnd, grow } = useGrowingCount(episodes.length, CHUNK);

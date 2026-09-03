@@ -3,20 +3,22 @@ import type { NotificationsView } from '@kroma/core';
 import { act } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  BASE_URL,
+  client,
   expectBadge,
   H,
+  ids,
   installHarness,
   type Listener,
   listNotifications,
   markNotificationsRead,
-  markNotificationsUnread,
   push,
   render,
   stream,
   view,
 } from '#web/features/notifications/use-notifications.fixture';
 
-vi.mock('@kroma/core', () => {
+vi.mock('@kroma/core', async (importOriginal) => {
   class KromaEvents {
     private readonly self: { url: string; emit: Listener; closed: boolean };
     constructor(url: string, opts: { onEvent: Listener }) {
@@ -29,12 +31,12 @@ vi.mock('@kroma/core', () => {
       this.self.closed = true;
     }
   }
-  return { KromaEvents };
+  return { ...(await importOriginal<typeof import('@kroma/core')>()), KromaEvents };
 });
 
 vi.mock('#web/shared/lib/api', () => ({
-  apiBase: () => 'http://server.test',
-  kromaClient: () => ({ listNotifications, markNotificationsRead, markNotificationsUnread }),
+  apiBase: () => BASE_URL,
+  kromaClient: () => client,
   toMovieView: (v: unknown) => v,
   toShowView: (v: unknown) => v,
 }));
@@ -169,7 +171,7 @@ describe('a press that lands before the inbox does', () => {
     listNotifications.mockReturnValue(new Promise(() => {}));
     const { result } = render(() => useReadState());
 
-    act(() => result.current.markRead(['a']));
+    act(() => result.current.markRead(ids('a')));
 
     expect(H.client.getQueryData<NotificationsView>(key)).toBeUndefined();
     expect(markNotificationsRead).toHaveBeenCalledWith(['a']);

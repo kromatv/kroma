@@ -9,22 +9,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const discoverServers = vi.hoisted(() => vi.fn(async () => [] as Array<{ url: string }>));
 const clients = vi.hoisted(() => ({ built: [] as string[] }));
-const KromaClient = vi.hoisted(() =>
-  vi.fn(function Client(this: Record<string, unknown>, { baseUrl }: { baseUrl: string }) {
+const createQueryClient = vi.hoisted(() =>
+  vi.fn(({ baseUrl }: { baseUrl: string }) => {
     clients.built.push(baseUrl);
-    this.baseUrl = baseUrl;
-    this.authConfig = async () => api.authConfig(baseUrl);
-    this.users = async () => api.users(baseUrl);
+    return {
+      baseUrl,
+      accounts: {
+        config: async () => api.config(baseUrl),
+        users: async () => api.users(baseUrl),
+      },
+    };
   }),
 );
 const api = vi.hoisted(() => ({
-  authConfig: async (_url: string) => ({ publicUserList: true, hasAccounts: true }),
+  config: async (_url: string) => ({ publicUserList: true, hasAccounts: true }),
   users: async (_url: string) => [{ id: 'u1', username: 'max' }],
 }));
 // `clientUserAgent` too: these hooks build their client through
 // `#mobile/lib/device`, which stamps the phone's own User-Agent onto it.
+vi.mock('@kroma/client/query', () => ({ createQueryClient }));
 vi.mock('@kroma/core', () => ({
-  KromaClient,
   discoverServers,
   activeLocale: () => 'fr',
   clientUserAgent: () => 'Kroma/test',
@@ -57,7 +61,7 @@ beforeEach(() => {
   discoverServers.mockResolvedValue([]);
   getDeviceLocalIp.mockResolvedValue('192.168.1.20');
   isBiometricLockEnabled.mockResolvedValue(false);
-  api.authConfig = async () => ({ publicUserList: true, hasAccounts: true });
+  api.config = async () => ({ publicUserList: true, hasAccounts: true });
   api.users = async () => [{ id: 'u1', username: 'max' }];
 });
 
@@ -252,21 +256,21 @@ describe('the server’s public profile roster', () => {
   });
 
   it('stays empty when the server keeps its list private', async () => {
-    api.authConfig = async () => ({ publicUserList: false, hasAccounts: true });
+    api.config = async () => ({ publicUserList: false, hasAccounts: true });
     const { result } = renderHook(() => useServerRoster('https://attic'));
     await waitFor(() => expect(clients.built).toContain('https://attic'));
     expect(result.current).toEqual([]);
   });
 
   it('stays empty on a server with no accounts yet', async () => {
-    api.authConfig = async () => ({ publicUserList: true, hasAccounts: false });
+    api.config = async () => ({ publicUserList: true, hasAccounts: false });
     const { result } = renderHook(() => useServerRoster('https://attic'));
     await waitFor(() => expect(clients.built).toContain('https://attic'));
     expect(result.current).toEqual([]);
   });
 
   it('stays empty, and usable, when the server cannot be reached', async () => {
-    api.authConfig = async () => {
+    api.config = async () => {
       throw new Error('offline');
     };
     const { result } = renderHook(() => useServerRoster('https://attic'));

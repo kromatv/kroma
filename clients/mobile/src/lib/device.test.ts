@@ -56,13 +56,24 @@ describe('this device, as a server sees it', () => {
 
   it('sends the name on every request a client makes', async () => {
     const seen: Headers[] = [];
+    const health = {
+      status: 'ok',
+      version: '0.1.3',
+      ffprobe: true,
+      libraries: 2,
+      items: 40,
+      shows: 3,
+    };
+
     const fetchSpy = vi.fn(async (_url: string, init?: RequestInit) => {
       seen.push(new Headers(init?.headers));
-      return new Response('{}', { headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify(health), {
+        headers: { 'content-type': 'application/json' },
+      });
     });
     vi.stubGlobal('fetch', fetchSpy);
 
-    await makeClient('http://kroma.test').health();
+    await makeClient('http://kroma.test').media.health();
 
     expect(seen).toHaveLength(1);
     expect(seen[0]?.get('User-Agent')).toBe('Kroma/0.1.3 (iPhone 17 Pro; iOS 26.0)');

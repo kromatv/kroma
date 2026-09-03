@@ -58,8 +58,8 @@ export function useTitleRequest(initial: TitleView): TitleRequestState {
     if (view.tmdbId == null) return;
     setBusy(true);
     setError(null);
-    client
-      .createRequest({ kind: view.kind, tmdbId: view.tmdbId, seasons, episodes })
+    client.requests
+      .create({ kind: view.kind, tmdbId: view.tmdbId, seasons, episodes })
       .then((req) => {
         setView((v) => nextViewAfterRequest(v, req.status, seasons, episodes));
         if (episodes?.length) setPendingEps((prev) => addPendingEpisodes(prev, episodes));

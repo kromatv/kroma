@@ -1,9 +1,9 @@
 // Stopping the loop, including while a request it started is still out.
 
-import type { PairingStatus } from '@kroma/client';
+import type { HandoffBeacon, PairingStatus } from '@kroma/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { startHandoff } from './beacon';
-import { BEACON, run, stubClient, tick, USER } from './beacon.fixture';
+import { BEACON, DEVICE, run, stubClient, tick, USER } from './beacon.fixture';
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -26,8 +26,8 @@ describe('stopping', () => {
 
     // Nothing is in flight afterwards, however long the caller waits.
     await tick(60_000);
-    expect(client.announceHandoff).toHaveBeenCalledTimes(1);
-    expect(client.handoffPoll).not.toHaveBeenCalled();
+    expect(client.handoff.announce).toHaveBeenCalledTimes(1);
+    expect(client.handoff.poll).not.toHaveBeenCalled();
   });
 
   it('takes down a beacon the server minted after the stop', async () => {
@@ -40,18 +40,18 @@ describe('stopping', () => {
     await tick();
 
     expect(left).toEqual(['s1']);
-    expect(client.handoffPoll).not.toHaveBeenCalled();
+    expect(client.handoff.poll).not.toHaveBeenCalled();
   });
 
   it('schedules nothing more when a poll in flight fails after the stop', async () => {
     let reject: ((cause: Error) => void) | undefined;
-    const handoffPoll = vi.fn(
+    const poll = vi.fn(
       () =>
         new Promise<PairingStatus>((_resolve, r) => {
           reject = r;
         }),
     );
-    const { client } = stubClient({ handoffPoll });
+    const { client } = stubClient({ poll });
     const { stop } = run(client);
     await tick();
     await tick(3000);
@@ -62,13 +62,13 @@ describe('stopping', () => {
 
     // The retry the failed poll would have queued was never armed.
     await tick(60_000);
-    expect(handoffPoll).toHaveBeenCalledTimes(1);
+    expect(poll).toHaveBeenCalledTimes(1);
   });
 
   it('does not sign in on a grant that lands after the stop', async () => {
     let resolve: ((status: PairingStatus) => void) | undefined;
     const { client } = stubClient({
-      handoffPoll: vi.fn(
+      poll: vi.fn(
         () =>
           new Promise<PairingStatus>((r) => {
             resolve = r;
@@ -88,9 +88,9 @@ describe('stopping', () => {
   it('shows no beacon for an announce that fails after the stop', async () => {
     let reject: ((cause: Error) => void) | undefined;
     const { client } = stubClient({
-      announceHandoff: vi.fn(
+      announce: vi.fn(
         () =>
-          new Promise((_resolve, r) => {
+          new Promise<HandoffBeacon>((_resolve, r) => {
             reject = r;
           }),
       ),
@@ -105,12 +105,12 @@ describe('stopping', () => {
     // The stop already published the empty state; the late failure adds nothing.
     expect(beacons).toHaveLength(before);
     await tick(60_000);
-    expect(client.announceHandoff).toHaveBeenCalledTimes(1);
+    expect(client.handoff.announce).toHaveBeenCalledTimes(1);
   });
 
   it('survives a leave the server refuses', async () => {
     const { client } = stubClient({
-      handoffLeave: vi.fn(async () => {
+      leave: vi.fn(async () => {
         throw new Error('gone');
       }),
     });
@@ -132,7 +132,7 @@ describe('stopping while a request is in flight', () => {
       release = resolve;
     });
     const { client } = stubClient({
-      announceHandoff: vi.fn(async () => {
+      announce: vi.fn(async () => {
         await held;
         return BEACON;
       }),
@@ -146,7 +146,7 @@ describe('stopping while a request is in flight', () => {
 
     // Nothing was armed behind it, however long anyone waits.
     await tick(120_000);
-    expect(client.handoffPoll).not.toHaveBeenCalled();
+    expect(client.handoff.poll).not.toHaveBeenCalled();
   });
 
   // The screen is told about its beacon and tears itself down on the spot: the
@@ -158,7 +158,7 @@ describe('stopping while a request is in flight', () => {
     let handle: { stop: () => void } | undefined;
     handle = startHandoff({
       client,
-      deviceId: 'tv-salon-01',
+      deviceId: DEVICE,
       name: 'Apple TV',
       platform: 'Apple TV',
       onBeacon: (b) => {
@@ -169,6 +169,6 @@ describe('stopping while a request is in flight', () => {
     await tick();
 
     await tick(120_000);
-    expect(client.handoffPoll).not.toHaveBeenCalled();
+    expect(client.handoff.poll).not.toHaveBeenCalled();
   });
 });

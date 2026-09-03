@@ -10,7 +10,14 @@ const api = vi.hoisted(() => ({
   posterFor: vi.fn((item: MediaItem, w?: number) => `/poster/${item.id}?w=${w}`),
 }));
 
-vi.mock('#web/shared/lib/api', () => ({ kromaClient: () => api }));
+vi.mock('#web/shared/lib/api', () => ({
+  kromaClient: () => ({
+    media: {
+      similar: api.similar,
+      artwork: { backdropFor: api.backdropFor, posterFor: api.posterFor },
+    },
+  }),
+}));
 
 import { useWebUpNext } from './use-web-upnext';
 

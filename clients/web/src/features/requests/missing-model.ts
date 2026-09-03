@@ -1,10 +1,10 @@
 // The "Manquants" page's client-side shape: entries off the wire grouped under
 // their title, and the row key the selection / busy / done sets share.
 
-import type { CalendarEntry } from '@kroma/core';
+import type { CalendarEntry, RequestId } from '@kroma/core';
 
 export interface MissingGroup {
-  requestId: string | null;
+  requestId: RequestId | null;
   tmdbId: number;
   kind: CalendarEntry['kind'];
   title: string;

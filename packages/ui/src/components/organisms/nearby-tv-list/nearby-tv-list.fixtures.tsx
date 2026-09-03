@@ -1,4 +1,4 @@
-import type { DiscoveredTv } from '@kroma/core';
+import { type DiscoveredTv, HandoffHandle } from '@kroma/core';
 
 import type { HandoffOutcome } from '@kroma/core/react';
 
@@ -11,7 +11,7 @@ import { useT } from '#ui/services/i18n';
 import { NearbyTvList } from './nearby-tv-list';
 
 export const SALON: DiscoveredTv = {
-  handle: 'h-4f2a91',
+  handle: HandoffHandle.parse('h-4f2a91'),
   name: 'Salon',
   platform: 'tvOS',
   check: 'K7QMR',
@@ -20,7 +20,7 @@ export const SALON: DiscoveredTv = {
 };
 
 export const CHAMBRE: DiscoveredTv = {
-  handle: 'h-9c0b73',
+  handle: HandoffHandle.parse('h-9c0b73'),
   name: 'Chambre',
   platform: 'Tizen',
   check: 'B4XRT',
@@ -32,7 +32,7 @@ export // Heard on this link and never placed by the server, which is what makes
 // for its check string, and carrying its platform as its name, which is what a
 // set nobody has renamed publishes. The row prints the word once.
 const SPARE: DiscoveredTv = {
-  handle: 'h-1de55c',
+  handle: HandoffHandle.parse('h-1de55c'),
   name: 'webOS',
   platform: 'webOS',
   check: 'M2NDV',

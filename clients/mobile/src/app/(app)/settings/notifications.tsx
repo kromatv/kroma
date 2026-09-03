@@ -34,11 +34,10 @@ export default function NotificationSettings() {
     void nativePush.blocker().then(setBlocker);
   }, []);
 
-  const pushKey = useQuery({ queryKey: ['push-key'], queryFn: () => client.pushKey() });
-  const prefs = useQuery({
-    queryKey: ['notification-prefs'],
-    queryFn: () => client.getNotificationPrefs(),
-  });
+  const pushKeyQuery = client.query.notifications.push.key();
+  const prefsQuery = client.query.notifications.prefs();
+  const pushKey = useQuery(pushKeyQuery);
+  const prefs = useQuery(prefsQuery);
   const subscribed = pushKey.data?.subscribed ?? false;
 
   const toggle = useMutation({
@@ -50,7 +49,7 @@ export default function NotificationSettings() {
       setError(null);
       // The permission answer may have changed what is possible.
       setBlocker(await nativePush.blocker());
-      await qc.invalidateQueries({ queryKey: ['push-key'] });
+      await qc.invalidateQueries({ queryKey: pushKeyQuery.queryKey });
     },
     onError: (e: Error) => {
       const reason = blockerOf(e);
@@ -59,9 +58,9 @@ export default function NotificationSettings() {
   });
 
   const savePrefs = useMutation({
-    mutationFn: (categories: CategoryPref[]) => client.setNotificationPrefs({ categories }),
+    mutationFn: (categories: CategoryPref[]) => client.notifications.setPrefs({ categories }),
     // The PUT returns the saved matrix, so seed the cache instead of refetching.
-    onSuccess: (saved) => qc.setQueryData(['notification-prefs'], saved),
+    onSuccess: (saved) => qc.setQueryData(prefsQuery.queryKey, saved),
   });
 
   const setPref = (category: NotificationCategory, patch: Partial<CategoryPref>) => {

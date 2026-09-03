@@ -34,7 +34,7 @@ export function TvPerson() {
       card: {
         id: m.id,
         title: m.title,
-        poster: (width: number) => client.posterFor(m, width),
+        poster: (width: number) => client.media.artwork.posterFor(m, width),
         colors: posterColors(m.id),
         onClick: () => nav.go('movie', { item: m }),
       } satisfies GridCard,
@@ -44,7 +44,7 @@ export function TvPerson() {
       card: {
         id: s.id,
         title: s.title,
-        poster: (width: number) => client.showPosterFor(s, width),
+        poster: (width: number) => client.media.artwork.showPosterFor(s, width),
         colors: posterColors(s.id),
         onClick: () => nav.go('show', { show: s }),
       } satisfies GridCard,
@@ -60,7 +60,10 @@ export function TvPerson() {
   const detail = usePersonDetail(name);
   // The provider's portrait is the better one; the credit's photo is the instant
   // one.
-  const photo = client.resolveArt(detail?.profileUrl ?? involvement.profileUrl, PORTRAIT_W);
+  const photo = client.media.artwork.resolve(
+    detail?.profileUrl ?? involvement.profileUrl,
+    PORTRAIT_W,
+  );
   const roles = roleLabels(t, involvement);
 
   return (

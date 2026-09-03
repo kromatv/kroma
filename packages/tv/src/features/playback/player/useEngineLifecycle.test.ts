@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { type KromaClient, type MediaItem, setDecoderFrameLimits } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import { type MediaItem, setDecoderFrameLimits } from '@kroma/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineListeners } from '#tv/features/playback/player/engine';
@@ -42,7 +43,7 @@ vi.mock('#tv/features/playback/player/vlcPlane', () => ({ vlcAvailable: () => H.
 
 const { useEngineLifecycle } = await import('#tv/features/playback/player/useEngineLifecycle');
 
-const CLIENT = { hasAuth: false } as unknown as KromaClient;
+const CLIENT = fakeClient();
 const ITEM = { id: 'vid1', durationMs: 7_200_000 } as unknown as MediaItem;
 
 function open() {

@@ -48,7 +48,7 @@ function ContinueRail() {
               title={item.title}
               genre={label}
               colors={posterColors(item.id)}
-              poster={client.posterFor(item)}
+              poster={client.media.artwork.posterFor(item)}
               progress={pct}
               asChild
             >

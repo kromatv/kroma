@@ -13,6 +13,7 @@
 
 import {
   type Notification,
+  type NotificationId,
   type NotificationRun,
   sizedImageUrl,
   type Translate,
@@ -126,7 +127,7 @@ function ReadToggle({
   unread,
   title,
   ids,
-}: Readonly<{ unread: boolean; title: string; ids: string[] }>) {
+}: Readonly<{ unread: boolean; title: string; ids: NotificationId[] }>) {
   const t = useT();
   const { markRead, markUnread } = useReadState();
   return (

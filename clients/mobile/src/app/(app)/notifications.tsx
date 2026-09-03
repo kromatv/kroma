@@ -43,7 +43,7 @@ export default function NotificationsScreen() {
   async function markAll() {
     setBusy(true);
     try {
-      await client.markAllNotificationsRead();
+      await client.notifications.markAllRead();
       refresh();
     } finally {
       setBusy(false);
@@ -109,21 +109,21 @@ function NotificationRow({ row }: Readonly<{ row: Notification }>) {
 
   // Through the client, not raw: art arrives as a server-relative path
   // (`/api/images/…`), which a phone cannot fetch without the server's origin.
-  const poster = client.resolveArt(row.imageUrl, 96);
+  const poster = client.media.artwork.resolve(row.imageUrl, 96);
   const route = destinationOf(row);
   const glyph = eventGlyph(row.event);
   const unread = !row.read;
 
   async function open() {
     if (!row.read) {
-      await client.markNotificationsRead([row.id]);
+      await client.notifications.markRead([row.id]);
       refresh();
     }
     if (route) router.push(route as never);
   }
 
   async function remove() {
-    await client.deleteNotification(row.id);
+    await client.notifications.delete(row.id);
     refresh();
   }
 

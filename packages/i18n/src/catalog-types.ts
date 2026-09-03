@@ -7,7 +7,7 @@ export interface CatalogTypesSource {
 }
 
 const HEADER = `// Written by @kroma/i18n/vite from the catalog files beside it, and ignored by
-// git. The Vite dev server refreshes it; \`bun run i18n:types\` does without one.
+// git. The Vite dev server refreshes it; \`bun run gen:types\` does without one.
 // Do not edit.`;
 
 function pascal(word: string): string {

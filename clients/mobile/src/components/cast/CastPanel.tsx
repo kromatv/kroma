@@ -2,6 +2,7 @@
 // shell, which is a plain <Modal>, because this screen is a native
 // fullScreenModal and @gorhom's sheet renders behind it.
 
+import type { DeviceId } from '@kroma/core';
 import { CastDeviceList } from '#mobile/components/cast/CastDeviceList';
 import { PlayerPanel } from '#mobile/player/PlayerPanel';
 
@@ -12,7 +13,7 @@ export function CastPanel({
 }: Readonly<{
   visible: boolean;
   onClose(): void;
-  onPick(receiverId: string | null): void;
+  onPick(receiverId: DeviceId | null): void;
 }>) {
   return (
     <PlayerPanel visible={visible} onClose={onClose}>

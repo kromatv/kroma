@@ -53,7 +53,7 @@ export function useCatalogueSync(
       onClose: () => recheck(),
       onOpen: () => {
         recheck();
-        void client
+        void client.admin
           .status()
           .then(setActivity)
           .catch(() => undefined);

@@ -19,7 +19,7 @@ export function ModuleLogs({ id }: Readonly<{ id: string }>) {
   const { client } = useAuth();
   const { data } = usePoll(
     ['admin', 'logs', 'module', id],
-    () => client.adminLogs({ source: id, limit: LIMIT }),
+    () => client.admin.logs({ source: id, limit: LIMIT }),
     POLL_MS,
   );
   const entries = data?.entries ?? [];

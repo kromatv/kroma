@@ -1,7 +1,6 @@
 import {
   audioSupport,
   formatTimecode as fmtTime,
-  type ItemId,
   type MediaItem,
   playerSubtitle,
 } from '@kroma/core';
@@ -104,7 +103,9 @@ export function Player({
           next.season != null && next.episode != null
             ? `S${next.season} E${next.episode}`
             : undefined,
-        posterUrl: kromaClient().backdropFor(next) ?? kromaClient().posterFor(next),
+        posterUrl:
+          kromaClient().media.artwork.backdropFor(next) ??
+          kromaClient().media.artwork.posterFor(next),
       }
     : null;
 
@@ -133,11 +134,7 @@ export function Player({
       onCast={async () => {
         const picked = await castPicker();
         if (!picked) return;
-        const ok = await cast.playOn(
-          picked,
-          item.id as ItemId,
-          Math.round(pb.getPosition() * 1000),
-        );
+        const ok = await cast.playOn(picked, item.id, Math.round(pb.getPosition() * 1000));
         if (ok) onClose();
       }}
       markers={item.markers ?? undefined}

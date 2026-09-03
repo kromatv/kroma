@@ -37,10 +37,10 @@ function UsersPageInner() {
   const t = useT();
   const fmt = useFormat();
   const { client } = useAuth();
-  const { data, reload } = usePoll(['admin', 'users'], () => client.adminUsers(), 8000);
+  const { data, reload } = usePoll(['admin', 'users'], () => client.admin.users(), 8000);
   const { data: invitesData, reload: reloadInvites } = usePoll(
     ['admin', 'invites'],
-    () => client.invites(),
+    () => client.accounts.invites(),
     15000,
   );
   const openInvite = async () => {

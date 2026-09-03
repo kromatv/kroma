@@ -38,7 +38,10 @@ function SuggestedRow({ item }: Readonly<{ item: MediaItem }>) {
       style={({ pressed }) => [s.suggestRow, gutters.style, pressed && s.suggestRowPressed]}
     >
       <FadeImage
-        uri={sizedImageUrl(client.backdropFor(item) ?? client.posterFor(item), 480)}
+        uri={sizedImageUrl(
+          client.media.artwork.backdropFor(item) ?? client.media.artwork.posterFor(item),
+          480,
+        )}
         seed={item.id}
         radius={radius.sm}
         style={s.suggestThumb}
@@ -68,16 +71,11 @@ export default function Search() {
   const q = useDebounced(query.trim(), 300);
 
   const results = useQuery({
-    queryKey: ['search', q],
-    queryFn: () => client.search(q, { limit: 60 }),
+    ...client.query.media.search(q, { limit: 60 }),
     enabled: q.length >= 2,
     placeholderData: (prev) => prev,
   });
-  const suggested = useQuery({
-    queryKey: ['forYou'],
-    queryFn: () => client.forYou(),
-    staleTime: 10 * 60_000,
-  });
+  const suggested = useQuery({ ...client.query.playback.forYou(), staleTime: 10 * 60_000 });
 
   const cards: CardModel[] = (results.data?.results ?? []).map((hit) =>
     hit.type === 'show' ? showCard(hit.show, client, cardW) : movieCard(hit.item, client, cardW),

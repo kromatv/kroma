@@ -1,4 +1,4 @@
-import type { MediaFile, MediaItem } from '@kroma/client';
+import { type MediaFile, MediaFileId, type MediaItem } from '@kroma/client';
 import { describe, expect, it } from 'vitest';
 import {
   bufferPlan,
@@ -8,6 +8,9 @@ import {
   reachableBufferEnd,
   shakaStreamingConfig,
 } from './playback-buffer';
+
+const FIRST_FILE = MediaFileId.parse('f1');
+const SECOND_FILE = MediaFileId.parse('f2');
 
 function ranges(pairs: [number, number][]): TimeRanges {
   return {
@@ -61,7 +64,7 @@ describe('bufferPlan', () => {
 
 describe('itemBufferPlan', () => {
   it('divides the default file size by its runtime', () => {
-    const remux = item([{ id: 'f1', size: 60_000_000_000, durationMs: 7_200_000 }]);
+    const remux = item([{ id: FIRST_FILE, size: 60_000_000_000, durationMs: 7_200_000 }]);
 
     expect(itemBufferPlan(remux).forwardSec).toBe(20);
   });
@@ -69,24 +72,24 @@ describe('itemBufferPlan', () => {
   it('prefers the default file over the first one listed', () => {
     const both = item(
       [
-        { id: 'f1', size: 60_000_000_000, durationMs: 7_200_000 },
-        { id: 'f2', size: 3_000_000_000, durationMs: 7_200_000 },
+        { id: FIRST_FILE, size: 60_000_000_000, durationMs: 7_200_000 },
+        { id: SECOND_FILE, size: 3_000_000_000, durationMs: 7_200_000 },
       ],
-      { defaultFileId: 'f2' },
+      { defaultFileId: SECOND_FILE },
     );
 
     expect(itemBufferPlan(both).forwardSec).toBe(120);
   });
 
   it('falls back to the runtime on the item when the file carries none', () => {
-    const unprobed = item([{ id: 'f1', size: 14_400_000_000, durationMs: null }]);
+    const unprobed = item([{ id: FIRST_FILE, size: 14_400_000_000, durationMs: null }]);
 
     expect(itemBufferPlan(unprobed).forwardSec).toBe(30);
   });
 
   it('takes the assumed bitrate for an item with no sized file', () => {
     expect(itemBufferPlan(item([])).forwardSec).toBe(bufferPlan(undefined).forwardSec);
-    expect(itemBufferPlan(item([{ id: 'f1', size: null }])).forwardSec).toBe(
+    expect(itemBufferPlan(item([{ id: FIRST_FILE, size: null }])).forwardSec).toBe(
       bufferPlan(undefined).forwardSec,
     );
   });

@@ -34,7 +34,7 @@ export function FolderPicker({
     let active = true;
     setLoading(true);
     kromaClient()
-      .adminBrowseFolders(path)
+      .library.browse(path)
       .then((res) => {
         if (active) setList(res);
       })

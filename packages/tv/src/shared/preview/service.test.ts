@@ -1,4 +1,5 @@
-import type { ContinueItem, KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import type { ContinueItem, MediaItem } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const buildPreviewData = vi.hoisted(() => vi.fn(() => '{"sections":[]}' as string | null));
@@ -93,9 +94,9 @@ function runtime(
   };
 }
 
-const client = {
-  continueWatching: vi.fn(async (): Promise<ContinueItem[]> => []),
-} as unknown as KromaClient;
+const client = fakeClient({
+  playback: { continueWatching: vi.fn(async (): Promise<ContinueItem[]> => []) },
+});
 
 const movies = [{ id: 'itm_1' }] as MediaItem[];
 
@@ -109,7 +110,7 @@ async function load() {
 beforeEach(() => {
   vi.clearAllMocks();
   buildPreviewData.mockReturnValue('{"sections":[]}');
-  vi.mocked(client.continueWatching).mockResolvedValue([]);
+  vi.mocked(client.playback.continueWatching).mockResolvedValue([]);
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
 });
@@ -148,7 +149,7 @@ describe('building the carousel', () => {
 
   it('includes continue-watching when the user is signed in', async () => {
     const resume = [{ item: { id: 'itm_9' } }] as ContinueItem[];
-    vi.mocked(client.continueWatching).mockResolvedValue(resume);
+    vi.mocked(client.playback.continueWatching).mockResolvedValue(resume);
     runtime();
     const { publishPreview } = await load();
     await publishPreview(client, movies);
@@ -156,7 +157,7 @@ describe('building the carousel', () => {
   });
 
   it('still publishes the recently-added row when there is no session', async () => {
-    vi.mocked(client.continueWatching).mockRejectedValue(new Error('401'));
+    vi.mocked(client.playback.continueWatching).mockRejectedValue(new Error('401'));
     const tv = runtime();
     const { publishPreview } = await load();
     await publishPreview(client, movies);

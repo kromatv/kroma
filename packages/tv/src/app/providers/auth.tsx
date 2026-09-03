@@ -11,9 +11,9 @@ import {
   normalizeServerUrl as norm,
   type StoredSession,
   saveSession,
-  setSessionToken,
   sharedTokenExchange,
   User,
+  type UserId,
 } from '@kroma/core';
 import {
   createContext,
@@ -27,14 +27,6 @@ import {
 } from 'react';
 
 const keyOf = (a: Pick<StoredSession, 'serverUrl' | 'user'>) => `${norm(a.serverUrl)}|${a.user.id}`;
-
-// The bearer has to reach both places: `KromaEvents` authenticates its WebSocket
-// from the shared session module (a browser cannot set a header on a handshake,
-// so the bearer rides as a subprotocol), not from the client.
-function applyBearer(client: KromaClient | null, token?: string): void {
-  client?.setAuthToken(token);
-  setSessionToken(token);
-}
 
 function sameValue(a: unknown, b: unknown): boolean {
   if (Array.isArray(a) && Array.isArray(b))
@@ -64,7 +56,7 @@ interface Auth {
   login: (res: AuthResult, serverUrl: string) => void;
   activate: (account: StoredSession) => void;
   switchProfile: () => void;
-  forget: (userId: string, serverUrl: string) => void;
+  forget: (userId: UserId, serverUrl: string) => void;
   logout: () => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
   isUnlocked: (account: Pick<StoredSession, 'serverUrl' | 'user'>) => boolean;
@@ -96,7 +88,7 @@ export function AuthProvider({
   const ready = !client || !session || resumed === session.accessToken;
 
   const drop = useCallback((c: KromaClient | null) => {
-    applyBearer(c);
+    c?.setAuthToken();
     c?.setRefreshHandler();
     unlocked.current.clear();
     clearSession();
@@ -109,7 +101,7 @@ export function AuthProvider({
   useEffect(() => {
     if (!client) return;
     if (!session) {
-      applyBearer(client);
+      client.setAuthToken();
       client.setRefreshHandler();
       setResumed(null);
       return;
@@ -124,10 +116,10 @@ export function AuthProvider({
     // coalesces them, so a poster grid full of 401s cannot trip the
     // brute-force guard with N of them.
     const resume = (stored: StoredSession): Promise<string | undefined> =>
-      sharedTokenExchange(() => client.exchangeToken(stored.accessToken))
+      sharedTokenExchange(() => client.accounts.exchangeToken(stored.accessToken))
         .then((res) => {
           if (cancelled) return undefined;
-          applyBearer(client, res.token);
+          client.setAuthToken(res.token);
           setSession((cur) => withUser(cur, res.user));
           saveSession({ ...stored, user: res.user });
           setResumed(stored.accessToken);
@@ -167,7 +159,7 @@ export function AuthProvider({
   const login = useCallback(
     (res: AuthResult, serverUrl: string) => {
       // Its bearer is already live, so the effect must not exchange it again.
-      applyBearer(client, res.token);
+      client?.setAuthToken(res.token);
       setResumed(res.accessToken);
       enter({ serverUrl: norm(serverUrl), accessToken: res.accessToken, user: res.user });
     },
@@ -184,12 +176,12 @@ export function AuthProvider({
   const switchProfile = useCallback(() => drop(client), [client, drop]);
 
   const forget = useCallback(
-    (userId: string, serverUrl: string) => {
+    (userId: UserId, serverUrl: string) => {
       forgetAccountStore(userId, serverUrl);
       setAccounts(loadAccounts());
       setSession((s) => {
         if (s?.user.id === userId && norm(s?.serverUrl) === norm(serverUrl)) {
-          applyBearer(client);
+          client?.setAuthToken();
           return null;
         }
         return s;
@@ -201,7 +193,7 @@ export function AuthProvider({
   const logout = useCallback(async () => {
     const active = session;
     try {
-      await client?.logout(active?.accessToken);
+      await client?.accounts.logout(active?.accessToken);
     } catch {
       /* best-effort server-side revocation */
     }

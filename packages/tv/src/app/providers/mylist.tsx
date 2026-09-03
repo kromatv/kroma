@@ -2,6 +2,7 @@
 // client) via the my-list API, hydrated once into a set; toggles are optimistic
 // and revert if the server call fails. Mirrors the watched provider.
 
+import type { SubjectId } from '@kroma/core';
 import {
   createContext,
   type ReactNode,
@@ -15,8 +16,8 @@ import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 
 interface MyList {
-  has: (id: string) => boolean;
-  toggle: (id: string) => void;
+  has: (id: SubjectId) => boolean;
+  toggle: (id: SubjectId) => void;
   refresh: () => void;
 }
 
@@ -25,14 +26,14 @@ const Ctx = createContext<MyList | null>(null);
 export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { user, ready } = useAuth();
   const { client } = useConnection();
-  const [ids, setIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [ids, setIds] = useState<ReadonlySet<SubjectId>>(() => new Set());
 
   const refresh = useCallback(() => {
     if (!ready || !user || !client) {
       setIds(new Set());
       return;
     }
-    client
+    client.playback
       .myList()
       .then((list) => setIds(new Set(list)))
       .catch(() => undefined);
@@ -41,7 +42,7 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
   useEffect(() => refresh(), [refresh]);
 
   const setInList = useCallback(
-    (id: string, inList: boolean) => {
+    (id: SubjectId, inList: boolean) => {
       if (!client) return;
       setIds((prev) => {
         if (prev.has(id) === inList) return prev;
@@ -50,7 +51,7 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
         else next.delete(id);
         return next;
       });
-      const call = inList ? client.addToList(id) : client.removeFromList(id);
+      const call = inList ? client.playback.addToList(id) : client.playback.removeFromList(id);
       call.catch(() => {
         setIds((prev) => {
           const next = new Set(prev);

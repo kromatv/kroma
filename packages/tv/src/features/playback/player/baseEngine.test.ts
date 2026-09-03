@@ -1,4 +1,5 @@
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import type { MediaItem } from '@kroma/core';
 import type { AudioFilterMode } from '@kroma/ui';
 import { describe, expect, it, vi } from 'vitest';
 import { BaseTvEngine, type EngineOptions } from './baseEngine';
@@ -26,11 +27,13 @@ function mkListeners(): EngineListeners {
 
 // A fake client whose URL builders echo their arguments so a test can assert the
 // EXACT direct / master URL the engine composed for the current mode.
-const client = {
-  streamUrl: (id: string) => `stream:${id}`,
-  hlsMasterUrl: (id: string, aac: boolean, startSec: number, audio: number) =>
-    `master:${id}:${aac}:${startSec}:${audio}`,
-} as unknown as KromaClient;
+const client = fakeClient({
+  media: {
+    streamUrl: (id: string) => `stream:${id}`,
+    hlsMasterUrl: (id: string, aac = false, startSec = 0, audio = 0) =>
+      `master:${id}:${aac}:${startSec}:${audio}`,
+  },
+});
 
 const item = { id: 'm1' } as unknown as MediaItem;
 

@@ -20,7 +20,7 @@ type LiveProgress = Record<string, { done: number; total: number }>;
 export function JobsPage() {
   const t = useT();
   const { client } = useAuth();
-  const { data, reload } = usePoll(['admin', 'jobs'], () => client.adminJobs(), 6000);
+  const { data, reload } = usePoll(['admin', 'jobs'], () => client.jobs.list(), 6000);
   const [live, setLive] = useState<LiveProgress>({});
 
   // A page-scoped event stream for smooth progress + immediate reloads on

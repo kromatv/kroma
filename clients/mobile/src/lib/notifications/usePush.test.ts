@@ -10,9 +10,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const session = vi.hoisted(() => ({
   status: 'signedIn' as string,
   client: {
-    subscribePush: vi.fn(async () => undefined),
-    unsubscribePush: vi.fn(async () => undefined),
-  } as Record<string, ReturnType<typeof vi.fn>>,
+    notifications: {
+      push: {
+        subscribe: vi.fn(async () => undefined),
+        unsubscribe: vi.fn(async () => undefined),
+      },
+    },
+  },
 }));
 vi.mock('#mobile/lib/session', () => ({ useSession: () => session }));
 
@@ -66,8 +70,8 @@ beforeEach(() => {
   push.mockClear();
   handleTap.mockClear().mockResolvedValue('/show/abc');
   refreshGrant.mockReset().mockResolvedValue(null);
-  session.client.subscribePush.mockClear().mockResolvedValue(undefined);
-  session.client.unsubscribePush.mockClear().mockResolvedValue(undefined);
+  session.client.notifications.push.subscribe.mockClear().mockResolvedValue(undefined);
+  session.client.notifications.push.unsubscribe.mockClear().mockResolvedValue(undefined);
   notifications.getLastNotificationResponse.mockClear().mockReturnValue(null);
   notifications.addNotificationResponseReceivedListener.mockClear();
 });
@@ -95,7 +99,7 @@ describe('keeping the grant alive', () => {
   it('does nothing while the stored grant has time left', async () => {
     renderHook(() => usePushGrantRefresh());
     await settle();
-    expect(session.client.subscribePush).not.toHaveBeenCalled();
+    expect(session.client.notifications.push.subscribe).not.toHaveBeenCalled();
   });
 
   it('registers the replacement, then adopts it, then retires the old row', async () => {
@@ -108,19 +112,19 @@ describe('keeping the grant alive', () => {
     renderHook(() => usePushGrantRefresh());
     await settle();
 
-    expect(session.client.subscribePush).toHaveBeenCalledWith({
+    expect(session.client.notifications.push.subscribe).toHaveBeenCalledWith({
       transport: 'relay',
       endpoint: 'v1.new',
       device: 'iPhone 17 Pro',
     });
     expect(commit).toHaveBeenCalled();
-    expect(session.client.unsubscribePush).toHaveBeenCalledWith('v1.old');
+    expect(session.client.notifications.push.unsubscribe).toHaveBeenCalledWith('v1.old');
   });
 
   it('does not adopt a grant the server refused', async () => {
     const commit = vi.fn(async () => undefined);
     refreshGrant.mockResolvedValue({ grant: 'v1.new', previous: 'v1.old', commit });
-    session.client.subscribePush.mockRejectedValue(new Error('offline'));
+    session.client.notifications.push.subscribe.mockRejectedValue(new Error('offline'));
 
     renderHook(() => usePushGrantRefresh());
     await settle();
@@ -128,14 +132,14 @@ describe('keeping the grant alive', () => {
     // Still the old grant on file, which is the only one the server can be told
     // to forget.
     expect(commit).not.toHaveBeenCalled();
-    expect(session.client.unsubscribePush).not.toHaveBeenCalled();
+    expect(session.client.notifications.push.unsubscribe).not.toHaveBeenCalled();
   });
 
   it('keeps the new grant even when retiring the old row fails', async () => {
     // A duplicate is better than a lost registration.
     const commit = vi.fn(async () => undefined);
     refreshGrant.mockResolvedValue({ grant: 'v1.new', previous: 'v1.old', commit });
-    session.client.unsubscribePush.mockRejectedValue(new Error('offline'));
+    session.client.notifications.push.unsubscribe.mockRejectedValue(new Error('offline'));
 
     renderHook(() => usePushGrantRefresh());
     await settle();

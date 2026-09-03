@@ -64,8 +64,8 @@ export function NewRequestDialog({
     setBusy(true);
     let live = true;
     const at = setTimeout(() => {
-      client
-        .discoverSearch(needle, { type: scope })
+      client.discovery
+        .search(needle, { type: scope })
         .then((r) => {
           if (!live) return;
           setResults(r.results);
@@ -94,8 +94,8 @@ export function NewRequestDialog({
     }
     setAdding(entry.tmdbId);
     setError(null);
-    client
-      .createRequest({ kind: entry.kind, tmdbId: entry.tmdbId, seasons: null })
+    client.requests
+      .create({ kind: entry.kind, tmdbId: entry.tmdbId, seasons: null })
       .then((req) => {
         setCreated((c) => ({ ...c, [entry.tmdbId]: req.id }));
         setMade(entry.title);

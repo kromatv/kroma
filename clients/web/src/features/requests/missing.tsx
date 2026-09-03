@@ -67,19 +67,19 @@ export function MissingPage() {
   // a library gap becomes a request for those episodes, then (if we can) grabs.
   const acquire = async (g: MissingGroup, items: CalendarEntry[]) => {
     if (g.requestId) {
-      await client.autoSearchRequest(g.requestId);
+      await client.requests.autoSearch(g.requestId);
       return;
     }
     const episodes = items
       .filter((i) => i.season != null && i.episode != null)
       .map((i) => ({ season: i.season as number, episode: i.episode as number }));
-    const req = await client.createRequest({
+    const req = await client.requests.create({
       kind: 'show',
       tmdbId: g.tmdbId,
       seasons: null,
       episodes,
     });
-    if (canManage) await client.autoSearchRequest(req.id);
+    if (canManage) await client.requests.autoSearch(req.id);
   };
 
   const runGroup = (g: MissingGroup, items: CalendarEntry[]) => {
@@ -109,7 +109,7 @@ export function MissingPage() {
 
   const onSearchAll = () => {
     setSearchAll('busy');
-    client
+    client.requests
       .searchAllMissing()
       .then(() => {
         setSearchAll('done');

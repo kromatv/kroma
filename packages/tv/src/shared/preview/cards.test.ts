@@ -1,9 +1,10 @@
-import type { ContinueItem, KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import type { ContinueItem, MediaItem } from '@kroma/core';
 import { describe, expect, it } from 'vitest';
 import { buildPreviewData } from './cards';
 
 // buildPreviewData reads only `client.baseUrl`.
-const client = { baseUrl: 'http://kroma.test' } as unknown as KromaClient;
+const client = fakeClient();
 
 function mov(
   o: Partial<Omit<MediaItem, 'id' | 'showId'>> & { id?: string; showId?: string },

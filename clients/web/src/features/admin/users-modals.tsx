@@ -148,7 +148,7 @@ export function PendingInvite({ inv, onChange }: Readonly<{ inv: Invite; onChang
           variant="danger"
           size="sm"
           label={t('common.cancel')}
-          onPress={() => void client.revokeInvite(inv.token).then(onChange)}
+          onPress={() => void client.accounts.revokeInvite(inv.token).then(onChange)}
         />
       </ListRow.Trailing>
     </ListRow.Root>
@@ -223,7 +223,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
   const save = () =>
     run(
       async () => {
-        await client.updateUser(user.id, { permissions: [...perms], username: name.trim() });
+        await client.admin.updateUser(user.id, { permissions: [...perms], username: name.trim() });
         call.end(true);
       },
       () => t('admin.updateFailed'),
@@ -240,7 +240,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
     if (!ok) return;
     run(
       async () => {
-        await client.deleteUser(user.id);
+        await client.admin.deleteUser(user.id);
         call.end(true);
       },
       () => t('admin.deleteFailed'),
@@ -256,14 +256,14 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
     });
     if (!ok) return;
     run(
-      async () => setReset(await client.resetUser(user.id)),
+      async () => setReset(await client.admin.resetUser(user.id)),
       () => t('admin.resetAccessFailed'),
     );
   };
 
   const sendVerification = () =>
     run(
-      async () => setVerification(await client.sendEmailVerification(user.id)),
+      async () => setVerification(await client.admin.sendEmailVerification(user.id)),
       () => t('admin.verificationFailed'),
     );
 
@@ -278,7 +278,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
     if (!ok) return;
     run(
       async () => {
-        await client.clearUserPin(user.id);
+        await client.admin.clearUserPin(user.id);
         setPinCleared(true);
       },
       () => t('admin.updateFailed'),
@@ -439,7 +439,7 @@ export const InviteModal = createCallable<void, boolean>(({ call }) => {
 
   const create = () =>
     run(async () => {
-      const res = await client.createInvite({ permissions: [...perms] });
+      const res = await client.accounts.createInvite({ permissions: [...perms] });
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
       setLink(res.url ?? `${origin}/join?invite=${res.token}`);
     });

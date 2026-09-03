@@ -3,22 +3,23 @@
 // its id, which `moduleApiHook` binds without the module naming itself.
 
 import { moduleApiHook } from '@kroma/module-sdk';
-import type {
-  SaveVpnBody,
+import {
+  type SaveVpnBody,
+  SaveVpnResult,
   VpnAdminView,
-  VpnBandwidthRange,
+  type VpnBandwidthRange,
   VpnBandwidthView,
   VpnTestResult,
 } from './schemas';
 
 export const useVpnApi = moduleApiHook((api) => ({
-  status: () => api.get<VpnAdminView>('/vpn'),
+  status: () => api.get('/vpn', VpnAdminView),
   /** Store the WireGuard config (write-only; "" removes it) and restart the
    *  bridge + embedded engine. */
-  save: (body: SaveVpnBody) => api.put<{ wgConfigured: boolean }>('/vpn', body),
+  save: (body: SaveVpnBody) => api.put('/vpn', body, SaveVpnResult),
   /** Live seal probe: exit IP through the proxy vs direct. */
-  test: () => api.post<VpnTestResult>('/vpn/test'),
+  test: () => api.post('/vpn/test', undefined, VpnTestResult),
   /** `null` when no download module is installed to answer. */
   bandwidth: (range: VpnBandwidthRange) =>
-    api.get<VpnBandwidthView | null>(`/vpn/bandwidth?range=${range}`),
+    api.get(`/vpn/bandwidth?range=${range}`, VpnBandwidthView.nullable()),
 }));

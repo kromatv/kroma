@@ -70,7 +70,7 @@ export function TvSearch() {
           id: show.id,
           title: show.title,
           badge: qualityBadgeForVideo(show.video),
-          poster: client.showPosterFor(show, RESULT_W),
+          poster: client.media.artwork.showPosterFor(show, RESULT_W),
           colors: posterColors(show.id),
           onOpen: () => {
             remember();
@@ -83,7 +83,7 @@ export function TvSearch() {
         id: m.id,
         title: m.episodeTitle ?? m.title,
         badge: qualityBadge(m),
-        poster: client.posterFor(m, RESULT_W),
+        poster: client.media.artwork.posterFor(m, RESULT_W),
         colors: posterColors(m.id),
         onOpen: () => {
           remember();
@@ -122,7 +122,7 @@ export function TvSearch() {
     }
     const mine = ++seq.current;
     const timer = setTimeout(() => {
-      client
+      client.media
         .search(q)
         .then((res) => {
           if (mine === seq.current) setHits(res.results.map((hit) => toHit(hit, q)));

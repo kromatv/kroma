@@ -62,7 +62,7 @@ function toProgram(movie: MediaItem, client: KromaClient): HomeProgram {
     title: movie.title,
     subtitle: movie.year ? String(movie.year) : '',
     imageUrl: art,
-    backdropUrl: client.backdropFor(movie, LAUNCHER_ART_W) ?? undefined,
+    backdropUrl: client.media.artwork.backdropFor(movie, LAUNCHER_ART_W) ?? undefined,
     kind: 'movie',
   };
 }
@@ -124,7 +124,7 @@ export function buildWatchNext(items: ContinueItem[], client: KromaClient): Watc
       title: it.showTitle ?? it.title,
       subtitle: it.episodeTitle ?? (it.year ? String(it.year) : ''),
       imageUrl: cardArt(c, client),
-      backdropUrl: client.backdropFor(it, LAUNCHER_ART_W) ?? undefined,
+      backdropUrl: client.media.artwork.backdropFor(it, LAUNCHER_ART_W) ?? undefined,
       // Launchers link an episode card to the SHOW: the movie catalogue cannot
       // resolve an episode id.
       showId: it.showId ?? undefined,

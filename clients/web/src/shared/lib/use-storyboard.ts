@@ -3,14 +3,14 @@
 // signature. All logic (lazy-generation polling, fast+slow backoff, visibility
 // re-check, tile math) lives in `@kroma/ui`.
 
-import { loadSession } from '@kroma/core';
+import { type ItemId, loadSession } from '@kroma/core';
 import { useStoryboard as useSharedStoryboard } from '@kroma/ui';
 import { useMemo } from 'react';
 import { kromaClient } from '#web/shared/lib/api';
 
 export type { Storyboard, StoryboardTile } from '@kroma/ui';
 
-export function useStoryboard(itemId: string, opts?: { generate?: boolean }) {
+export function useStoryboard(itemId: ItemId, opts?: { generate?: boolean }) {
   // `kromaClient()` mints a fresh instance every call, and the Player re-renders
   // constantly; the shared hook keys its polling effect on `client`, so an
   // unstable reference would tear it down and hammer the endpoint every render.

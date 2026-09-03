@@ -44,7 +44,10 @@ export function TvMovieDetail() {
       id={item.id}
       kind={t('content.film')}
       title={item.title}
-      backdrop={client.backdropFor(item, STAGE_W) ?? client.posterFor(item, STAGE_W)}
+      backdrop={
+        client.media.artwork.backdropFor(item, STAGE_W) ??
+        client.media.artwork.posterFor(item, STAGE_W)
+      }
       rating={meta?.rating}
       meta={metaLong}
       badge={qualityBadge(item)}

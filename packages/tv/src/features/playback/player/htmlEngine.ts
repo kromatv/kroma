@@ -163,7 +163,7 @@ export class HtmlEngine implements TvEngine {
     const seq = ++this.attachSeq;
     // The URL must carry both the anchor and the audio track: without the anchor
     // the server always starts at t=0 and the picture ignores every seek.
-    const url = this.opts.client.hlsMasterUrl(
+    const url = this.opts.client.media.hlsMasterUrl(
       this.opts.item.id,
       this.opts.masterAac,
       this.baseSec,

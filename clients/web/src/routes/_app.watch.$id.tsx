@@ -1,3 +1,4 @@
+import { ItemId } from '@kroma/core';
 import { color } from '@kroma/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
@@ -10,7 +11,7 @@ export const Route = createFileRoute('/_app/watch/$id')({
     if (!isAuthed()) throw redirect({ to: '/' });
     // The next episode (for the Netflix-style "up next" autoplay) is sequence-based
     // and public, so it loads alongside the item.
-    await queryClient.ensureQueryData(catalogQueries.watch(params.id));
+    await queryClient.ensureQueryData(catalogQueries.watch(ItemId.parse(params.id)));
   },
   // Player is fullscreen with its own buffering spinner; a black hold beats a
   // structural skeleton here.
@@ -21,7 +22,7 @@ export const Route = createFileRoute('/_app/watch/$id')({
 });
 
 function WatchPage() {
-  const { id } = Route.useParams();
+  const id = ItemId.parse(Route.useParams().id);
   const {
     data: { item, next, following },
   } = useSuspenseQuery(catalogQueries.watch(id));

@@ -83,7 +83,7 @@ export function ReportsQueuePage() {
   const [q, setQ] = useState('');
   const { toast, flash } = useConsoleToast();
 
-  const { data, reload } = usePoll(['admin', 'reports'], () => client.adminReports(), 30000);
+  const { data, reload } = usePoll(['admin', 'reports'], () => client.reports.list(), 30000);
 
   const throttledReload = useThrottledReload(reload);
   useEffect(() => {
@@ -109,13 +109,13 @@ export function ReportsQueuePage() {
         throw e;
       });
   const resolve = (r: Report) =>
-    act(`« ${r.subjectTitle} » ${t('reports.toastResolved')}`, () => client.resolveReport(r.id));
+    act(`« ${r.subjectTitle} » ${t('reports.toastResolved')}`, () => client.reports.resolve(r.id));
   const dismiss = (r: Report) =>
-    act(`« ${r.subjectTitle} » ${t('reports.toastDismissed')}`, () => client.dismissReport(r.id));
+    act(`« ${r.subjectTitle} » ${t('reports.toastDismissed')}`, () => client.reports.dismiss(r.id));
   const reopen = (r: Report) =>
-    act(`« ${r.subjectTitle} » ${t('reports.toastReopened')}`, () => client.reopenReport(r.id));
+    act(`« ${r.subjectTitle} » ${t('reports.toastReopened')}`, () => client.reports.reopen(r.id));
   const remove = (r: Report) =>
-    act(`« ${r.subjectTitle} » ${t('reports.toastDeleted')}`, () => client.deleteReport(r.id));
+    act(`« ${r.subjectTitle} » ${t('reports.toastDeleted')}`, () => client.reports.delete(r.id));
 
   const openDrawer = (report: Report) =>
     ReportDrawer.call({

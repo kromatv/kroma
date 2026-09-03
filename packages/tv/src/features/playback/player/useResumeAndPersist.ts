@@ -22,8 +22,8 @@ export function useResumeAndPersist(client: KromaClient, item: MediaItem, port: 
     const pos = p.getPosition();
     if (!Number.isFinite(d) || d <= 0 || pos < 5) return;
     // Marking watched also clears the resume position server-side.
-    if (pos > d * 0.97) void client.markWatched(item.id);
-    else void client.saveProgress(item.id, pos * 1000, d * 1000);
+    if (pos > d * 0.97) void client.playback.markWatched(item.id);
+    else void client.playback.save(item.id, pos * 1000, d * 1000);
   }, [client, item]);
 
   useEffect(() => {
@@ -40,6 +40,6 @@ export function useResumeAndPersist(client: KromaClient, item: MediaItem, port: 
   }, [port.paused, save]);
 
   useEffect(() => {
-    if (port.endedNonce > 0 && client.hasAuth) void client.markWatched(item.id);
+    if (port.endedNonce > 0 && client.hasAuth) void client.playback.markWatched(item.id);
   }, [port.endedNonce, client, item]);
 }

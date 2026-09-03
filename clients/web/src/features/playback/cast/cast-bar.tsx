@@ -83,7 +83,7 @@ function NowPlaying({
   onSelect,
 }: Readonly<{ item?: MediaItem; playingOn: string; onSelect: Cast['select'] }>) {
   const t = useT();
-  const poster = item ? kromaClient().posterFor(item, 96) : null;
+  const poster = item ? kromaClient().media.artwork.posterFor(item, 96) : null;
   return (
     <>
       {poster ? (

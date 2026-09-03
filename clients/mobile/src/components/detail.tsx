@@ -127,7 +127,7 @@ export function CastRail({ cast }: Readonly<{ cast: CastMember[] }>) {
           size="sm"
           name={member.name}
           role={member.character}
-          photo={sizedImageUrl(client.resolveArt(member.profileUrl), 320)}
+          photo={sizedImageUrl(client.media.artwork.resolve(member.profileUrl), 320)}
           gradient={tintGradient(posterColors(member.name))}
           onPress={() => router.push(`/person/${encodeURIComponent(member.name)}` as never)}
         />

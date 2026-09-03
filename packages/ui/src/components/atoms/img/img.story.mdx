@@ -37,7 +37,7 @@ export const story = defineStory({
 Every piece of artwork goes through here. The component owns the instant gradient, the fade-in on load and the cross-fade when the source changes; the decoder itself is injectable, which lets the mobile app use expo-image without touching the design.
 
 ```tsx
-<Img src={client.resolveArt(item.posterUrl)} background={tintGradient(item.tint)} radius={13} />
+<Img src={client.media.artwork.resolve(item.posterUrl)} background={tintGradient(item.tint)} radius={13} />
 ```
 
 <Scene name="Contain" args={{ fit: 'contain' }}>

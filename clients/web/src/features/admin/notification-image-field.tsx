@@ -43,7 +43,7 @@ export function NotificationImageField({
       <InputGroup.Root label={t('admin.notifFieldImage')}>
         <InputGroup.Addon onPress={() => setOpen(true)}>
           <Img
-            src={value ? kromaClient().resolveArt(value, 160) : null}
+            src={value ? kromaClient().media.artwork.resolve(value, 160) : null}
             alt=""
             radius={4}
             style={THUMB}
@@ -93,7 +93,7 @@ function ImagePickerDialog({
   const upload = (file: File) =>
     run(
       async () => {
-        const { imageUrl } = await kromaClient().uploadNotificationImage(file);
+        const { imageUrl } = await kromaClient().admin.notifications.uploadImage(file);
         onPick(imageUrl);
       },
       (e) => (e instanceof Error ? e.message : t('error.serverBody')),
@@ -147,7 +147,7 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
   useEffect(() => {
     let active = true;
     kromaClient()
-      .listNotificationImages()
+      .admin.notifications.images()
       .then((listing) => {
         if (active) setImages(listing.images);
       })
@@ -186,7 +186,7 @@ function ServerImageGrid({ onPick }: Readonly<{ onPick: (url: string) => void }>
       {images.map((img) => (
         <Focusable key={img.name} style={s.tile} label={img.name} onPress={() => onPick(img.url)}>
           <Img
-            src={kromaClient().resolveArt(img.url, 320)}
+            src={kromaClient().media.artwork.resolve(img.url, 320)}
             alt={img.name}
             radius={8}
             style={TILE}

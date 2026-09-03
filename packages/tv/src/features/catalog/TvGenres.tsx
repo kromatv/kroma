@@ -58,7 +58,7 @@ export function TvGenres() {
                   key={g.slug}
                   genre={g}
                   count={t('person.titleCount', { count: g.count })}
-                  backdrop={pick ? client.backdropFor(pick, CARD_MIN) : null}
+                  backdrop={pick ? client.media.artwork.backdropFor(pick, CARD_MIN) : null}
                   onSelect={openGenre}
                 />
               );

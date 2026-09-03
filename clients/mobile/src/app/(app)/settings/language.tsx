@@ -24,7 +24,7 @@ export default function LanguageSettings() {
     setOverride(next);
     setSaving(true);
     try {
-      const { user: updated } = await client.updateLanguage(next);
+      const { user: updated } = await client.accounts.updateLanguage(next);
       setUser(updated);
     } catch {
       // Device override still applies; the account sync is best-effort.

@@ -1,6 +1,6 @@
 import {
+  createKromaClient,
   deviceLocale,
-  KromaClient,
   sessionToken,
   setActiveLocale,
   setSessionToken,
@@ -27,6 +27,25 @@ vi.mock('@kroma/core', async (importOriginal) => ({
   sharedTokenExchange: (run: () => Promise<unknown>) => H.exchange(run),
 }));
 
+const ACCOUNT = {
+  id: 'u1',
+  email: 'max@kroma.tv',
+  username: 'maxime',
+  permissions: [],
+  createdAt: '2026-01-01',
+  hasPin: false,
+};
+
+function jsonFetch(body: unknown) {
+  return vi.fn<typeof fetch>(
+    async () =>
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+  );
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
@@ -46,7 +65,7 @@ describe('kromaClient', () => {
     );
     vi.stubGlobal('fetch', fetchSpy);
 
-    await kromaClient().splash();
+    await kromaClient().media.splash();
 
     const headers = new Headers(fetchSpy.mock.calls[0]?.[1]?.headers);
     expect(headers.get('accept-language')).toBe('en');
@@ -132,14 +151,14 @@ describe('ensureSession', () => {
 
   it('exchanges through a client pointed at the API origin', async () => {
     H.session = { accessToken: 'stored' };
-    const exchangeToken = vi
-      .spyOn(KromaClient.prototype, 'exchangeToken')
-      .mockResolvedValue({ token: 'bearer-3' } as Awaited<
-        ReturnType<KromaClient['exchangeToken']>
-      >);
+
+    const fetchSpy = jsonFetch({ token: 'bearer-3', user: ACCOUNT });
+    vi.stubGlobal('fetch', fetchSpy);
     H.exchange.mockImplementation((run: () => Promise<unknown>) => run());
+
     await ensureSession();
-    expect(exchangeToken).toHaveBeenCalledWith('stored');
+
+    expect(fetchSpy.mock.calls[0]?.[0]).toBe(`${apiBase()}/api/auth/token`);
     expect(sessionToken()).toBe('bearer-3');
   });
 
@@ -154,22 +173,17 @@ describe('ensureSession', () => {
 describe('kromaClient', () => {
   it('refreshes the bearer from the stored access token on a 401', async () => {
     H.session = { accessToken: 'stored' };
+
     H.exchange.mockResolvedValue({ token: 'bearer-2' });
-    const setRefreshHandler = vi.spyOn(KromaClient.prototype, 'setRefreshHandler');
 
-    const client = kromaClient();
-    expect(client).toBeInstanceOf(KromaClient);
+    await expect(kromaClient().refreshSession()).resolves.toBe('bearer-2');
 
-    const refresh = setRefreshHandler.mock.calls[0]?.[0];
-    await expect(refresh?.()).resolves.toBe('bearer-2');
     expect(sessionToken()).toBe('bearer-2');
   });
 
   it('hands the refresh handler nothing to do when signed out', async () => {
-    const setRefreshHandler = vi.spyOn(KromaClient.prototype, 'setRefreshHandler');
-    kromaClient();
-    const refresh = setRefreshHandler.mock.calls[0]?.[0];
-    await expect(refresh?.()).resolves.toBeUndefined();
+    await expect(kromaClient().refreshSession()).resolves.toBeUndefined();
+
     expect(H.exchange).not.toHaveBeenCalled();
   });
 });
@@ -192,7 +206,7 @@ describe('imageUrl', () => {
 });
 
 describe('toMovieView / toShowView', () => {
-  const client = new KromaClient({ baseUrl: 'http://kroma.test' });
+  const client = createKromaClient({ baseUrl: 'http://kroma.test' });
 
   it('resolves art + stream + subtitle urls, gating image subs to null', () => {
     const item = {

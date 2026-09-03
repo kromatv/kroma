@@ -23,7 +23,7 @@ export function useResolvedStart(client: KromaClient, item: MediaItem): Resolved
     };
     // Never let a stalled progress fetch block playback forever.
     const timer = setTimeout(() => settle(0), 4000);
-    client
+    client.playback
       .itemProgress(item.id)
       .then((p) => {
         const durMs = p?.durationMs ?? item.durationMs ?? 0;

@@ -99,9 +99,10 @@ export function ProviderCard({
   const modelPlaceholder = MODEL_PLACEHOLDER[p.provider] ?? 'qwen2.5:1.5b-instruct';
 
   // Probe with the in-progress values; send the provider id so a blank key falls
-  // back to *this* provider's stored secret server-side (omit the key when blank).
+  // back to *this* provider's stored secret server-side (a blank one is omitted,
+  // which the server reads the same way).
   const probeBody = () => ({
-    id: p.id,
+    ...(p.id ? { id: p.id } : {}),
     provider: p.provider,
     baseUrl: p.baseUrl,
     model: p.model,
@@ -121,7 +122,7 @@ export function ProviderCard({
   const loadModels = async () => {
     setBusy('models');
     try {
-      const r = await client.llmModels(probeBody());
+      const r = await client.llm.models(probeBody());
       setModels(r.models);
       if (r.error) setProbe({ ok: false, text: r.error });
     } finally {
@@ -131,7 +132,7 @@ export function ProviderCard({
   const test = async () => {
     setBusy('test');
     try {
-      const r = await client.testLlm(probeBody());
+      const r = await client.llm.test(probeBody());
       setProbe({ ok: r.ok, text: r.message });
     } finally {
       setBusy('idle');

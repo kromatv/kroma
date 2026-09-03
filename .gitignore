@@ -160,3 +160,6 @@ clients/web/public/sw.js
 
 # Signed Tizen packages (clients/tizen/scripts/package-all.ts)
 clients/tizen/out/
+
+# @kroma/client domain index, written from the folders in src/api by `bun run gen:types`
+packages/client/src/api/index.ts

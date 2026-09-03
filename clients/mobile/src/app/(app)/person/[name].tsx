@@ -28,18 +28,10 @@ function PersonPage({ name }: Readonly<{ name: string }>) {
   const { width } = useWindowDimensions();
   const { cardW } = gridMetrics(width);
 
-  const credits = useQuery({
-    queryKey: ['person', person],
-    queryFn: () => client.personCredits(person),
-    staleTime: 10 * 60_000,
-  });
+  const credits = useQuery({ ...client.query.media.people(person), staleTime: 10 * 60_000 });
   // A separate query on purpose: the biography is a provider lookup and must
   // never hold up the filmography, which the library already knows.
-  const profile = useQuery({
-    queryKey: ['person-details', person],
-    queryFn: () => client.personDetails(person),
-    staleTime: 60 * 60_000,
-  });
+  const profile = useQuery({ ...client.query.media.person(person), staleTime: 60 * 60_000 });
 
   if (credits.isPending)
     return (
@@ -59,7 +51,10 @@ function PersonPage({ name }: Readonly<{ name: string }>) {
   const metas = results.map((hit) => (hit.type === 'show' ? hit.show.metadata : hit.item.metadata));
   const involvement = personInvolvement(metas, person);
   const detail = profile.data?.person ?? null;
-  const photo = client.resolveArt(detail?.profileUrl ?? involvement.profileUrl, PORTRAIT_W);
+  const photo = client.media.artwork.resolve(
+    detail?.profileUrl ?? involvement.profileUrl,
+    PORTRAIT_W,
+  );
 
   return (
     <Screen padded={false}>

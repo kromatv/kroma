@@ -3,7 +3,8 @@
 // does not understand is skipped rather than shown half-empty, and neither
 // source blanks its list over one dropped answer.
 
-import type { HandoffDevice, KromaClient } from '@kroma/client';
+import { type HandoffDevice, HandoffHandle } from '@kroma/client';
+import { fakeClient } from '@kroma/client/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   beaconTxt,
@@ -26,7 +27,7 @@ const RECORD = {
 
 function serverRows(n: number): HandoffDevice[] {
   return Array.from({ length: n }, (_, i) => ({
-    handle: `h${i}`,
+    handle: HandoffHandle.parse(`h${i}`),
     name: `TV ${i}`,
     platform: 'tvOS',
     check: 'K7QMR',
@@ -105,57 +106,57 @@ describe('the server source', () => {
   });
 
   it('lists what the server can see, and keeps looking', async () => {
-    const handoffDevices = vi.fn(async () => serverRows(1));
-    const client = { handoffDevices } as unknown as KromaClient;
+    const devices = vi.fn(async () => serverRows(1));
+    const client = fakeClient({ handoff: { devices } });
     const seen: unknown[][] = [];
     const stop = serverSource(client).start((rows) => seen.push(rows));
 
     await tick();
     expect(seen[0]).toEqual([{ ...serverRows(1)[0], via: 'server' }]);
 
-    handoffDevices.mockResolvedValue(serverRows(2));
+    devices.mockResolvedValue(serverRows(2));
     await tick(3000);
     expect(seen.at(-1)).toHaveLength(2);
     stop();
   });
 
   it('keeps the last good list when a poll does not answer, and recovers', async () => {
-    const handoffDevices = vi.fn(async () => serverRows(1));
-    const client = { handoffDevices } as unknown as KromaClient;
+    const devices = vi.fn(async () => serverRows(1));
+    const client = fakeClient({ handoff: { devices } });
     const seen: unknown[][] = [];
     const stop = serverSource(client).start((rows) => seen.push(rows));
     await tick();
 
-    handoffDevices.mockRejectedValue(new Error('offline'));
+    devices.mockRejectedValue(new Error('offline'));
     await tick(3000);
     expect(seen).toHaveLength(1);
 
-    handoffDevices.mockResolvedValue(serverRows(3));
+    devices.mockResolvedValue(serverRows(3));
     await tick(3000);
     expect(seen.at(-1)).toHaveLength(3);
     stop();
   });
 
   it('stops looking once the picker closes', async () => {
-    const handoffDevices = vi.fn(async () => serverRows(1));
-    const client = { handoffDevices } as unknown as KromaClient;
+    const devices = vi.fn(async () => serverRows(1));
+    const client = fakeClient({ handoff: { devices } });
     const stop = serverSource(client).start(() => undefined);
     await tick();
     stop();
 
     await tick(30_000);
-    expect(handoffDevices).toHaveBeenCalledTimes(1);
+    expect(devices).toHaveBeenCalledTimes(1);
   });
 
   it('publishes nothing from a poll that landed after the picker closed', async () => {
     let release: ((rows: HandoffDevice[]) => void) | undefined;
-    const handoffDevices = vi.fn(
+    const devices = vi.fn(
       () =>
         new Promise<HandoffDevice[]>((resolve) => {
           release = resolve;
         }),
     );
-    const client = { handoffDevices } as unknown as KromaClient;
+    const client = fakeClient({ handoff: { devices } });
     const seen: unknown[][] = [];
     const stop = serverSource(client).start((rows) => seen.push(rows));
 
@@ -167,19 +168,19 @@ describe('the server source', () => {
 
   it('schedules nothing more when a poll in flight fails after the close', async () => {
     let reject: ((cause: Error) => void) | undefined;
-    const handoffDevices = vi.fn(
+    const devices = vi.fn(
       () =>
         new Promise<HandoffDevice[]>((_resolve, r) => {
           reject = r;
         }),
     );
-    const client = { handoffDevices } as unknown as KromaClient;
+    const client = fakeClient({ handoff: { devices } });
     const stop = serverSource(client).start(() => undefined);
 
     stop();
     reject?.(new Error('offline'));
     await tick(60_000);
-    expect(handoffDevices).toHaveBeenCalledTimes(1);
+    expect(devices).toHaveBeenCalledTimes(1);
   });
 });
 

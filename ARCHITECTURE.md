@@ -108,7 +108,7 @@ lockfiles, `*.gen.ts`, irreducible adapters (ffmpeg flag-builders).
 | 2 | Server layering (`infra/` + `services/` + `api/` column + `extract.rs`) | ✓ done |
 | 3 | Monorepo move (`packages/tv→apps/tv`, `clients/web→apps/web`, `server→apps/server`) | abandoned |
 | 4 | Frontend feature slices (TV then web) | ✓ done |
-| 5 | Hardening (`api.ts` per-domain sub-clients, `packages/client/src/client/`) | ✓ done |
+| 5 | Hardening (one `KromaClient` namespace per domain, `packages/client/src/api/`) | ✓ done |
 | 6 | Server workspace split into 14 crates (1 bin + 13 libs), binary is a thin `api` shell over `kroma-engine`; layers compiler-enforced | ✓ done |
 
 Phase 3 was dropped: the layering it was after came from phase 6's crates instead,

@@ -26,6 +26,7 @@
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.14",
     "@kesha-antonov/react-native-background-downloader": "^4.6.1",
+    "@kroma/client": "workspace:*",
     "@kroma/core": "workspace:*",
     "@kroma/lan-beacon": "workspace:*",
     "@kroma/media3-ffmpeg": "workspace:*",
@@ -64,7 +65,7 @@
     "react-native-screens": "4.26.0",
     "react-native-svg": "15.15.5",
     "react-native-worklets": "0.10.1",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

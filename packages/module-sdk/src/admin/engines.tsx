@@ -35,7 +35,7 @@ function useModules(): ModuleInfo[] {
   const { client } = useAdminHost();
   const { data } = useQuery({
     queryKey: ['modules'],
-    queryFn: () => client.modules(),
+    queryFn: () => client.modules.list(),
     staleTime: 30_000,
   });
   return data ?? [];
@@ -61,7 +61,7 @@ export function useEnabledEngines(point: string): EngineChoice[] {
 export function useModuleEnabledCheck(): (id: string) => boolean {
   const modules = useModules();
   return useMemo(() => {
-    const off = new Set(modules.filter((m) => m.enabled === false).map((m) => m.id));
+    const off = new Set<string>(modules.filter((m) => m.enabled === false).map((m) => m.id));
     return (id: string) => !off.has(id);
   }, [modules]);
 }

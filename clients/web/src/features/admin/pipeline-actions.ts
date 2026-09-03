@@ -1,9 +1,20 @@
-import { type ElementRow, type KromaClient, KromaEvents, type MessageKey } from '@kroma/core';
+import {
+  type ElementRow,
+  ItemId,
+  type KromaClient,
+  KromaEvents,
+  type MessageKey,
+  ShowId,
+  type SubjectId,
+} from '@kroma/core';
 import type { useT } from '@kroma/ui';
 import { type Dispatch, type SetStateAction, useEffect } from 'react';
 import { apiBase } from '#web/shared/lib/api';
 
 const apiKind = (el: ElementRow): 'item' | 'show' => (el.kind === 'series' ? 'show' : 'item');
+
+const subjectId = (el: ElementRow): SubjectId =>
+  el.kind === 'series' ? ShowId.parse(el.id) : ItemId.parse(el.id);
 
 const RELOAD_EVENTS = new Set([
   'pipeline.stats',
@@ -41,8 +52,8 @@ export function pipelineActions(deps: {
     if (!canManage) return;
     const next = !paused;
     setPaused(next); // optimistic
-    client
-      .pausePipeline(next)
+    client.pipeline
+      .pause(next)
       .then((r) => {
         setPaused(r.paused);
         flash(t(next ? 'pipeline.toastPaused' : 'pipeline.toastResumed'));
@@ -52,8 +63,8 @@ export function pipelineActions(deps: {
   const reprocess = (el: ElementRow) => {
     if (!canManage) return;
     setBusy(true);
-    client
-      .reprocessSubject(apiKind(el), el.id)
+    client.pipeline
+      .reprocessSubject(apiKind(el), subjectId(el))
       .then(() => {
         flash(`« ${el.title} » ${t('pipeline.toastReprocess')}`);
         reload();
@@ -63,8 +74,8 @@ export function pipelineActions(deps: {
   const retryStage = (el: ElementRow, stage: string) => {
     if (!canManage) return;
     setBusy(true);
-    client
-      .retryElementStage(apiKind(el), el.id, stage)
+    client.pipeline
+      .retryElement(apiKind(el), subjectId(el), stage)
       .then(() => {
         const stageName = t(`pipeline.t.${stage}` as MessageKey);
         flash(`${stageName} ${t('pipeline.toastRetry')}`);

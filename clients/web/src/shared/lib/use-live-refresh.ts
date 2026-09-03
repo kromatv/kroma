@@ -4,14 +4,19 @@
 // stream. This hook listens for the ONE id the page is showing and invalidates
 // its cache entry, so the new poster/title/synopsis swap in on their own.
 //
-// Invalidation is by key prefix, so `['show', id]` also refreshes the show's
-// `['show', id, 'bundle']`. Bursts are coalesced (an enrich pass emits many
-// updates for the same id) into a single refetch.
+// Bursts are coalesced (an enrich pass emits many updates for the same
+// id) into a single refetch.
 
-import { KromaEvents } from '@kroma/core';
+import { ItemId, KromaEvents, ShowId } from '@kroma/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { apiBase } from '#web/shared/lib/api';
+import { catalogQueries } from '#web/shared/lib/queries';
+
+const subjectKey = (kind: 'item' | 'show', id: string): readonly unknown[] =>
+  kind === 'show'
+    ? catalogQueries.show(ShowId.parse(id)).queryKey
+    : catalogQueries.item(ItemId.parse(id)).queryKey;
 
 export function useCatalogLiveRefresh(kind: 'item' | 'show', id: string): void {
   const queryClient = useQueryClient();
@@ -23,7 +28,7 @@ export function useCatalogLiveRefresh(kind: 'item' | 'show', id: string): void {
         if (e.type !== want || e.id !== id || pending) return;
         pending = setTimeout(() => {
           pending = null;
-          void queryClient.invalidateQueries({ queryKey: [kind, id] });
+          void queryClient.invalidateQueries({ queryKey: subjectKey(kind, id) });
         }, 600);
       },
     });

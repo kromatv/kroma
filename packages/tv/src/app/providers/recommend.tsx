@@ -35,13 +35,13 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
       return;
     }
     let cancelled = false;
-    client
+    client.media
       .home()
       .then((s) => {
         if (!cancelled) setSections(s);
       })
       .catch(() => undefined);
-    client
+    client.media
       .featured()
       .then((f) => {
         if (!cancelled) setFeatured(f);

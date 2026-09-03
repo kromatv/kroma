@@ -3,13 +3,14 @@
 // the proof of the copy that was heard. Including whether granting it costs the
 // person a code, which a record on the link may not answer for.
 
+import { HandoffHandle } from '@kroma/client';
 import { describe, expect, it, vi } from 'vitest';
 import { watchNearbyTvs } from './nearby';
 import type { DiscoveredTv, TvDiscoverySource } from './sources';
 
 function row(handle: string, name: string, via: 'lan' | 'server'): DiscoveredTv {
   return {
-    handle,
+    handle: HandoffHandle.parse(handle),
     name,
     platform: 'tvOS',
     check: 'K7QMR',

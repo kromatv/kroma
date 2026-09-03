@@ -1,4 +1,4 @@
-import type { NotificationsView } from '@kroma/core';
+import { NotificationId, type NotificationsView } from '@kroma/core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
@@ -18,6 +18,24 @@ export const H = {
 export const listNotifications = vi.fn();
 export const markNotificationsRead = vi.fn();
 export const markNotificationsUnread = vi.fn();
+
+export const BASE_URL = 'http://server.test';
+
+export const client = {
+  notifications: {
+    list: listNotifications,
+    markRead: markNotificationsRead,
+    markUnread: markNotificationsUnread,
+  },
+  query: {
+    notifications: {
+      list: () => ({
+        queryKey: ['kroma', BASE_URL, 'notifications', 'list'],
+        queryFn: () => listNotifications(),
+      }),
+    },
+  },
+};
 
 export function render<T>(hook: () => T) {
   const wrapper = ({ children }: { children: ReactNode }) =>
@@ -51,6 +69,11 @@ export function stream() {
 
 export function row(id: string, read: boolean): NotificationsView['notifications'][number] {
   return { id, read } as NotificationsView['notifications'][number];
+}
+
+/** The ids a test names, branded the way the inbox carries them. */
+export function ids(...raw: string[]): NotificationId[] {
+  return raw.map((one) => NotificationId.parse(one));
 }
 
 export function inbox(...rows: NotificationsView['notifications']): NotificationsView {

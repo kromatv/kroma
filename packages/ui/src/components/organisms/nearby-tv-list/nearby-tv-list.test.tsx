@@ -4,22 +4,29 @@
 // because the two shells that draw it used to decide this separately and a
 // person holding both devices sees both.
 
-import type { DiscoveredTv, Translate } from '@kroma/core';
+import { type DiscoveredTv, HandoffHandle, type Translate } from '@kroma/core';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NearbyTvList } from './nearby-tv-list';
 
 afterEach(cleanup);
 
+const SALON_HANDLE = HandoffHandle.parse('h-salon');
+
 const SALON: DiscoveredTv = {
-  handle: 'h-salon',
+  handle: SALON_HANDLE,
   name: 'Salon',
   platform: 'tvOS',
   check: 'K7QMR',
   confirmRequired: false,
   via: 'server',
 };
-const CHAMBRE: DiscoveredTv = { ...SALON, handle: 'h-chambre', name: 'Chambre', check: 'B4XRT' };
+const CHAMBRE: DiscoveredTv = {
+  ...SALON,
+  handle: HandoffHandle.parse('h-chambre'),
+  name: 'Chambre',
+  check: 'B4XRT',
+};
 
 const t = ((key: string) => key) as Translate;
 
@@ -61,7 +68,7 @@ describe('the rows', () => {
 
 describe('a row that is doing something', () => {
   it('says so, and drops the check string while it does', () => {
-    list({ connectingHandle: 'h-salon' });
+    list({ connectingHandle: SALON_HANDLE });
     expect(screen.getByText('handoff.connecting')).toBeTruthy();
     expect(screen.queryByText('K7QMR')).toBeNull();
     // The spinner is inside the row's own name, so the row is what has to
@@ -70,7 +77,7 @@ describe('a row that is doing something', () => {
   });
 
   it('is still pressable, since nothing has ended yet', () => {
-    const { onSelect } = list({ connectingHandle: 'h-salon' });
+    const { onSelect } = list({ connectingHandle: SALON_HANDLE });
     screen.getByLabelText('Salon').click();
     expect(onSelect).toHaveBeenCalled();
   });
@@ -78,18 +85,18 @@ describe('a row that is doing something', () => {
 
 describe('a row that has finished', () => {
   it('says how it went', () => {
-    list({ outcomeFor: (d) => (d.handle === 'h-salon' ? 'done' : null) });
+    list({ outcomeFor: (d) => (d.handle === SALON_HANDLE ? 'done' : null) });
     expect(screen.getByText('handoff.rowDone')).toBeTruthy();
   });
 
   it('names the refusal when it did not go through', () => {
-    list({ outcomeFor: (d) => (d.handle === 'h-salon' ? 'gone' : null) });
+    list({ outcomeFor: (d) => (d.handle === SALON_HANDLE ? 'gone' : null) });
     expect(screen.getByText('handoff.gone')).toBeTruthy();
   });
 
   // The beacon behind it is spent; the row is only still here to be read.
   it('stops being pressable', () => {
-    const { onSelect } = list({ outcomeFor: (d) => (d.handle === 'h-salon' ? 'done' : null) });
+    const { onSelect } = list({ outcomeFor: (d) => (d.handle === SALON_HANDLE ? 'done' : null) });
     screen.getByLabelText('Salon').click();
     expect(onSelect).not.toHaveBeenCalled();
   });

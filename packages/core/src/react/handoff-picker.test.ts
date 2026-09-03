@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { HandoffHandle } from '@kroma/client';
 import type { Translate } from '@kroma/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,7 +13,7 @@ import {
 } from './handoff-picker';
 
 const SALON: DiscoveredTv = {
-  handle: 'h-salon',
+  handle: HandoffHandle.parse('h-salon'),
   name: 'Salon',
   platform: 'tvOS',
   check: 'K7QMR',
@@ -22,7 +23,11 @@ const SALON: DiscoveredTv = {
 
 // A packaged Samsung or LG shell: the server could not place its origin, so the
 // code on its screen is the only thing that stands for being in the room.
-const UNPLACEABLE: DiscoveredTv = { ...SALON, handle: 'h-tizen', confirmRequired: true };
+const UNPLACEABLE: DiscoveredTv = {
+  ...SALON,
+  handle: HandoffHandle.parse('h-tizen'),
+  confirmRequired: true,
+};
 
 function picker(result: GrantResult, devices: DiscoveredTv[] = [SALON]) {
   const connect = vi.fn(async () => result);

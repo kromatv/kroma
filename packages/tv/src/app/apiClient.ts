@@ -2,7 +2,13 @@
 // User-Agent that names nothing (`KROMA/1 CFNetwork/…`, `okhttp/4.12.0`), so a
 // television would otherwise list itself as an unknown desktop.
 
-import { activeLocale, clientUserAgent, type DeviceIdentity, KromaClient } from '@kroma/core';
+import {
+  activeLocale,
+  clientUserAgent,
+  createKromaClient,
+  type DeviceIdentity,
+  type KromaClient,
+} from '@kroma/core';
 import { Platform } from 'react-native';
 import { buildInfo } from '#tv/app/clientBuild';
 
@@ -28,7 +34,7 @@ export function tvIdentity(): DeviceIdentity | null {
 
 export function makeClient(baseUrl: string): KromaClient {
   const identity = tvIdentity();
-  return new KromaClient({
+  return createKromaClient({
     baseUrl,
     locale: activeLocale(),
     ...(identity ? { userAgent: clientUserAgent(identity) } : {}),

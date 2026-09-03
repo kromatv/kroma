@@ -66,6 +66,15 @@ describe('tvIdentity', () => {
   });
 });
 
+const HEALTH = {
+  status: 'ok',
+  version: '1.0.0',
+  ffprobe: true,
+  libraries: 0,
+  items: 0,
+  shows: 0,
+};
+
 describe('makeClient', () => {
   function recorded(): Headers[] {
     const seen: Headers[] = [];
@@ -73,7 +82,9 @@ describe('makeClient', () => {
       'fetch',
       vi.fn(async (_url: string, init?: RequestInit) => {
         seen.push(new Headers(init?.headers));
-        return new Response('{}', { headers: { 'content-type': 'application/json' } });
+        return new Response(JSON.stringify(HEALTH), {
+          headers: { 'content-type': 'application/json' },
+        });
       }),
     );
     return seen;
@@ -86,7 +97,7 @@ describe('makeClient', () => {
       constants: { systemName: 'tvOS', osVersion: '26.0' },
     };
     const seen = recorded();
-    await makeClient('http://kroma.test').health();
+    await makeClient('http://kroma.test').media.health();
     expect(seen[0]?.get('User-Agent')).toBe('Kroma/0.1.35 (Apple TV; tvOS 26.0)');
     vi.unstubAllGlobals();
   });
@@ -94,7 +105,7 @@ describe('makeClient', () => {
   it('leaves the header alone in a browser shell', async () => {
     platform.current = { OS: 'web' };
     const seen = recorded();
-    await makeClient('http://kroma.test').health();
+    await makeClient('http://kroma.test').media.health();
     expect(seen[0]?.get('User-Agent')).toBeNull();
     vi.unstubAllGlobals();
   });

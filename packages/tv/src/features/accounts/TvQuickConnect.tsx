@@ -45,7 +45,7 @@ export function TvQuickConnect() {
     const poll = async () => {
       if (cancelled) return;
       try {
-        const res = await client.quickConnectPoll(secret);
+        const res = await client.accounts.quickConnect.poll(secret);
         if (cancelled) return;
         if (res.status === 'authorized') {
           clearTimers();
@@ -67,7 +67,7 @@ export function TvQuickConnect() {
       try {
         // Passing the outgoing secret has the server revoke it instead of leaving
         // it approvable until its own TTL lapses.
-        const init = await client.quickConnectInitiate(secret || undefined);
+        const init = await client.accounts.quickConnect.initiate(secret || undefined);
         if (cancelled) return;
         secret = init.secret;
         setInfo(init);

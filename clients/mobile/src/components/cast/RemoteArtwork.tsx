@@ -9,7 +9,10 @@ export function RemoteArtwork({ item }: Readonly<{ item?: MediaItem }>) {
   const client = useClient();
   const { width } = useWindowDimensions();
   const art = item
-    ? sizedImageUrl(client.backdropFor(item) ?? client.posterFor(item), width)
+    ? sizedImageUrl(
+        client.media.artwork.backdropFor(item) ?? client.media.artwork.posterFor(item),
+        width,
+      )
     : null;
   return (
     <>

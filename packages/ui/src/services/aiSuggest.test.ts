@@ -7,10 +7,14 @@
 // detail screen shows a spinner or gives up. The ceiling matters too: a model
 // that never answers must stop the loop rather than poll a television forever.
 
-import type { KromaClient, Section } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import { ItemId, type Section } from '@kroma/core';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAiSuggest } from './aiSuggest';
+
+const ITEM = ItemId.parse('item-1');
+const OTHER_ITEM = ItemId.parse('item-2');
 
 const section = (items: unknown[] = [{ id: 'a' }]) => ({ title: 'For you', items }) as Section;
 
@@ -18,7 +22,7 @@ const section = (items: unknown[] = [{ id: 'a' }]) => ({ title: 'For you', items
 function clientServing(...pages: (Section | null)[]) {
   let at = 0;
   const aiSuggest = vi.fn(async () => pages[Math.min(at++, pages.length - 1)] ?? null);
-  return { client: { aiSuggest } as unknown as KromaClient, aiSuggest };
+  return { client: fakeClient({ media: { aiSuggest } }), aiSuggest };
 }
 
 const settle = () => act(async () => undefined);
@@ -35,7 +39,7 @@ afterEach(() => {
 describe('useAiSuggest', () => {
   it('reports the section as soon as one arrives', async () => {
     const { client } = clientServing(section());
-    const { result } = renderHook(() => useAiSuggest(client, 'item-1'));
+    const { result } = renderHook(() => useAiSuggest(client, ITEM));
     await settle();
     expect(result.current.section?.items).toHaveLength(1);
     expect(result.current.pending).toBe(false);
@@ -45,7 +49,7 @@ describe('useAiSuggest', () => {
   // the caller renders nothing instead of spinning forever.
   it('treats an empty section as a real answer, not as still-working', async () => {
     const { client } = clientServing(section([]));
-    const { result } = renderHook(() => useAiSuggest(client, 'item-1'));
+    const { result } = renderHook(() => useAiSuggest(client, ITEM));
     await settle();
     expect(result.current.section?.items).toHaveLength(0);
     expect(result.current.pending).toBe(false);
@@ -53,7 +57,7 @@ describe('useAiSuggest', () => {
 
   it('keeps polling while the server answers null', async () => {
     const { client, aiSuggest } = clientServing(null, null, section());
-    const { result } = renderHook(() => useAiSuggest(client, 'item-1'));
+    const { result } = renderHook(() => useAiSuggest(client, ITEM));
     await settle();
     expect(result.current.pending).toBe(true);
     expect(aiSuggest).toHaveBeenCalledTimes(1);
@@ -73,7 +77,7 @@ describe('useAiSuggest', () => {
   // A model that never answers must not keep a television polling all evening.
   it('gives up after the ceiling', async () => {
     const { client, aiSuggest } = clientServing(null);
-    const { result } = renderHook(() => useAiSuggest(client, 'item-1'));
+    const { result } = renderHook(() => useAiSuggest(client, ITEM));
     await settle();
     for (let i = 0; i < 14; i++) {
       await act(async () => {
@@ -87,19 +91,21 @@ describe('useAiSuggest', () => {
   });
 
   it('stops pending when the request fails', async () => {
-    const client = {
-      aiSuggest: vi.fn(async () => {
-        throw new Error('offline');
-      }),
-    } as unknown as KromaClient;
-    const { result } = renderHook(() => useAiSuggest(client, 'item-1'));
+    const client = fakeClient({
+      media: {
+        aiSuggest: vi.fn(async () => {
+          throw new Error('offline');
+        }),
+      },
+    });
+    const { result } = renderHook(() => useAiSuggest(client, ITEM));
     await settle();
     expect(result.current.pending).toBe(false);
   });
 
   it('does not poll at all while inactive', async () => {
     const { client, aiSuggest } = clientServing(section());
-    renderHook(() => useAiSuggest(client, 'item-1', { active: false }));
+    renderHook(() => useAiSuggest(client, ITEM, { active: false }));
     await settle();
     expect(aiSuggest).not.toHaveBeenCalled();
   });
@@ -107,18 +113,18 @@ describe('useAiSuggest', () => {
   it('starts over for a different title', async () => {
     const { client, aiSuggest } = clientServing(section());
     const { result, rerender } = renderHook(({ id }) => useAiSuggest(client, id), {
-      initialProps: { id: 'item-1' },
+      initialProps: { id: ITEM },
     });
     await settle();
     expect(result.current.section).not.toBeNull();
-    rerender({ id: 'item-2' });
+    rerender({ id: OTHER_ITEM });
     await settle();
-    expect(aiSuggest).toHaveBeenLastCalledWith('item-2');
+    expect(aiSuggest).toHaveBeenLastCalledWith(OTHER_ITEM);
   });
 
   it('stops polling once unmounted', async () => {
     const { client, aiSuggest } = clientServing(null);
-    const { unmount } = renderHook(() => useAiSuggest(client, 'item-1'));
+    const { unmount } = renderHook(() => useAiSuggest(client, ITEM));
     await settle();
     unmount();
     await act(async () => {
@@ -133,7 +139,7 @@ describe('progress', () => {
   // read as finished before the work actually lands.
   it('climbs while pending but never reaches 1', async () => {
     const { client } = clientServing(null);
-    const { result } = renderHook(() => useAiSuggest(client, 'item-1'));
+    const { result } = renderHook(() => useAiSuggest(client, ITEM));
     await settle();
     expect(result.current.progress).toBe(0);
 
@@ -152,7 +158,7 @@ describe('progress', () => {
 
   it('stays at zero when nothing is pending', async () => {
     const { client } = clientServing(section());
-    const { result } = renderHook(() => useAiSuggest(client, 'item-1'));
+    const { result } = renderHook(() => useAiSuggest(client, ITEM));
     await settle();
     await act(async () => {
       vi.advanceTimersByTime(10_000);

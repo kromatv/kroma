@@ -16,8 +16,14 @@ export const H = {
   safariCaps: { caps: 'safari' },
   // A STABLE client reference: the resume effect keys on client identity, so a
   // fresh object each render would loop and clobber `anchor`.
-  client: { itemProgress },
+  client: { playback: { itemProgress } },
 };
+
+export function kromaClientStub() {
+  return {
+    media: { hlsMasterUrl: (_id: string, _aac: boolean, anchor: number) => `hls://${anchor}` },
+  };
+}
 
 export function fakeVideo(over: Partial<Record<string, unknown>> = {}) {
   return {

@@ -5,7 +5,7 @@
 // not offered, and `enabled` defaults to true while the module list is still
 // loading, so add-flows don't blink off on every page load.
 
-import type { EngineField, ModuleInfo } from '@kroma/core';
+import { type EngineField, ModuleId, type ModuleInfo } from '@kroma/core';
 import { I18nProvider } from '@kroma/ui';
 import { clearPressGuard, setEntryDefaults } from '@kroma/ui/kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -30,14 +30,14 @@ import {
   useModuleEnabled,
 } from './engines';
 
-// A provider whose `client.modules()` answers `modules`; retries off so a
+// A provider whose `client.modules.list()` answers `modules`; retries off so a
 // rejected fetch settles once instead of backing off through the test.
 function wrapper(modules: ModuleInfo[] | (() => Promise<ModuleInfo[]>)) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   const client = {
-    modules: typeof modules === 'function' ? modules : vi.fn(async () => modules),
+    modules: { list: typeof modules === 'function' ? modules : vi.fn(async () => modules) },
   };
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
@@ -48,8 +48,13 @@ function wrapper(modules: ModuleInfo[] | (() => Promise<ModuleInfo[]>)) {
   );
 }
 
-const mod = (over: Partial<ModuleInfo> & { id: string }): ModuleInfo =>
-  ({ enabled: true, contributes: [], ...over }) as ModuleInfo;
+const mod = ({ id, ...over }: Partial<Omit<ModuleInfo, 'id'>> & { id: string }): ModuleInfo => ({
+  id: ModuleId.parse(id),
+  name: id,
+  enabled: true,
+  contributes: [],
+  ...over,
+});
 
 // A contribution with an instance name, because the add-picker only offers one
 // that has it: the id is the kind an added row stores.

@@ -1,3 +1,4 @@
+import { ShowId } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
@@ -12,7 +13,7 @@ import { DetailSkeleton } from '#web/shared/ui';
 export const Route = createFileRoute('/_app/shows/$id')({
   loader: async ({ params, context: { queryClient } }) => {
     if (!isAuthed()) throw redirect({ to: '/' });
-    await queryClient.ensureQueryData(catalogQueries.showBundle(params.id));
+    await queryClient.ensureQueryData(catalogQueries.showBundle(ShowId.parse(params.id)));
   },
   pendingComponent: DetailSkeleton,
   component: ShowDetailPage,
@@ -21,7 +22,7 @@ export const Route = createFileRoute('/_app/shows/$id')({
 function ShowDetailPage() {
   const t = useT();
   const { client, user } = useAuth();
-  const { id } = Route.useParams();
+  const id = ShowId.parse(Route.useParams().id);
   // Re-enrichment (incl. a corrected TMDB match) lands via the event stream.
   useCatalogLiveRefresh('show', id);
   const {

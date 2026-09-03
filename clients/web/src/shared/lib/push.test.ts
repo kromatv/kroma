@@ -5,7 +5,11 @@ const pushKey = vi.fn();
 const subscribePush = vi.fn();
 const unsubscribePush = vi.fn();
 vi.mock('#web/shared/lib/api', () => ({
-  kromaClient: () => ({ pushKey, subscribePush, unsubscribePush }),
+  kromaClient: () => ({
+    notifications: {
+      push: { key: pushKey, subscribe: subscribePush, unsubscribe: unsubscribePush },
+    },
+  }),
 }));
 
 const { disablePush: disable, enablePush: enable } = await import('@kroma/core');

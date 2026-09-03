@@ -7,12 +7,7 @@
 // two ways. So the draft is a flat set of (season, episode) pairs plus the set
 // of seasons taken whole, and it collapses back to the wire shape on save.
 
-import type {
-  LedgerEpisode,
-  LedgerSeason,
-  RequestCoverage,
-  RequestCoverageBody,
-} from '@kroma/core';
+import type { LedgerEpisode, LedgerSeason, RequestCoverage } from '@kroma/core';
 
 /** How a draft names one episode: `season:episode`. */
 export const keyOf = (season: number, episode: number): string => `${season}:${episode}`;
@@ -104,7 +99,7 @@ export function coveredCount(draft: CoverageDraft, all: readonly LedgerSeason[])
 
 /** Collapse to the wire shape. Every season taken whole is the whole show, which
  * is worth saying as `null`: it keeps covering seasons TMDB has not announced. */
-export function toBody(draft: CoverageDraft, all: readonly LedgerSeason[]): RequestCoverageBody {
+export function toBody(draft: CoverageDraft, all: readonly LedgerSeason[]): RequestCoverage {
   const seasons = [...draft.seasons].sort((a, b) => a - b);
   const wholeShow = all.length > 0 && seasons.length === all.length && draft.episodes.size === 0;
   if (wholeShow) return { seasons: null, episodes: null };

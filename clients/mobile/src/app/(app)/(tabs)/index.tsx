@@ -1,3 +1,4 @@
+import { ItemId, ShowId } from '@kroma/core';
 import { Box, Chip, color, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -51,7 +52,7 @@ function HomeHeader() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const gutters = useGutters();
-  const avatar = client.resolveArt(user?.avatarUrl);
+  const avatar = client.media.artwork.resolve(user?.avatarUrl);
   return (
     <Box style={[s.header, { paddingTop: insets.top + spacing.sm }, gutters.style]}>
       <Box style={s.brandRow}>
@@ -109,7 +110,7 @@ function MyListRail() {
   const client = useClient();
   const { width } = useWindowDimensions();
   const cardW = posterWidth(width);
-  const ids = useQuery({ queryKey: ['myList'], queryFn: () => client.myList() });
+  const ids = useQuery(client.query.playback.myList());
   const items = useQuery({
     queryKey: ['myListItems', ids.data],
     enabled: (ids.data?.length ?? 0) > 0,
@@ -118,9 +119,9 @@ function MyListRail() {
     queryFn: async () => {
       const found = await Promise.all(
         (ids.data ?? []).slice(0, 24).map(async (id) => {
-          const movie = await client.item(id).catch(() => null);
+          const movie = await client.media.item(ItemId.parse(id)).catch(() => null);
           if (movie) return { kind: 'movie', movie } as const;
-          const detail = await client.show(id).catch(() => null);
+          const detail = await client.media.show(ShowId.parse(id)).catch(() => null);
           return detail ? ({ kind: 'show', show: detail.show } as const) : null;
         }),
       );
@@ -148,15 +149,10 @@ export default function Home() {
   const { width } = useWindowDimensions();
   const cardW = posterWidth(width);
 
-  const featured = useQuery({
-    queryKey: ['featured'],
-    queryFn: () => client.featured(),
-    staleTime: 5 * 60_000,
-  });
-  const home = useQuery({ queryKey: ['home'], queryFn: () => client.home() });
+  const featured = useQuery({ ...client.query.media.featured(), staleTime: 5 * 60_000 });
+  const home = useQuery(client.query.media.home());
   const cont = useQuery({
-    queryKey: ['continue'],
-    queryFn: () => client.continueWatching(),
+    ...client.query.playback.continueWatching(),
     staleTime: 30_000,
   });
 

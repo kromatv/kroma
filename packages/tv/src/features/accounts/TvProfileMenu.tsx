@@ -66,7 +66,7 @@ export function TvProfileMenu() {
           seed={user.id}
           size={96}
           roundness={0.27}
-          src={client?.resolveArt(user.avatarUrl, 96)}
+          src={client?.media.artwork.resolve(user.avatarUrl, 96)}
         />
         <Text variant="headingTv">{user.username}</Text>
       </Box>

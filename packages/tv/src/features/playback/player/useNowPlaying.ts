@@ -49,8 +49,10 @@ function rasterize(blob: Blob, w = 342, h = 513): Promise<Uint8Array | null> {
 // falling back to a full-item fetch for a lightweight item missing its metadata.
 async function resolveArtwork(client: KromaClient, item: MediaItem): Promise<number[]> {
   try {
-    const full = item.metadata?.posterUrl ? item : await client.item(item.id).catch(() => item);
-    const blob = await client.posterBlob(full);
+    const full = item.metadata?.posterUrl
+      ? item
+      : await client.media.item(item.id).catch(() => item);
+    const blob = await client.media.artwork.posterBlob(full);
     const jpeg = await rasterize(blob);
     return jpeg ? Array.from(jpeg) : [];
   } catch {

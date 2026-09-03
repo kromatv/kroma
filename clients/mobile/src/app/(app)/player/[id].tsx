@@ -2,6 +2,7 @@
 // landscape on phones, keeps the screen awake, resumes from saved progress,
 // reports the playback heartbeat, and autoplays the next episode on end.
 
+import { ItemId } from '@kroma/core';
 import { useQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
 import { Redirect, useLocalSearchParams } from 'expo-router';
@@ -23,10 +24,10 @@ function resumeSec(positionMs: number | undefined, durationMs: number | null): n
 
 export default function PlayerRoute() {
   const id = routeParam(useLocalSearchParams<{ id?: string }>().id);
-  return id ? <PlayerScreen id={id} /> : <Redirect href="/" />;
+  return id ? <PlayerScreen id={ItemId.parse(id)} /> : <Redirect href="/" />;
 }
 
-function PlayerScreen({ id }: Readonly<{ id: string }>) {
+function PlayerScreen({ id }: Readonly<{ id: ItemId }>) {
   // `start` (seconds) is set when playback is handed BACK from a TV: the remote
   // knows the exact position, which is better than the last persisted beat.
   const { start } = useLocalSearchParams<{ start?: string }>();
@@ -39,14 +40,9 @@ function PlayerScreen({ id }: Readonly<{ id: string }>) {
   const dl = downloads.stateFor(id);
   const offline = dl.status === 'done' ? dl.entry : null;
 
-  const item = useQuery({
-    queryKey: ['item', id],
-    queryFn: () => client.item(id),
-    enabled: !offline,
-  });
+  const item = useQuery({ ...client.query.media.item(id), enabled: !offline });
   const progress = useQuery({
-    queryKey: ['progress', id],
-    queryFn: () => client.itemProgress(id),
+    ...client.query.playback.itemProgress(id),
     staleTime: 0,
     retry: 0,
   });

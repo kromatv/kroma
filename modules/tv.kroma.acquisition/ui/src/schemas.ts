@@ -38,6 +38,11 @@ export const ManualAddBody = z.object({
 });
 export type ManualAddBody = z.infer<typeof ManualAddBody>;
 
+export const ManualAddResult = z.object({
+  id: z.string(),
+});
+export type ManualAddResult = z.infer<typeof ManualAddResult>;
+
 /** One release from a free-text manual indexer search. `guid` is an opaque
  * release id. */
 export const ManualReleaseView = z.object({

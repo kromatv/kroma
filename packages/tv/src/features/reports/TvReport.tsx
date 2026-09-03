@@ -59,8 +59,8 @@ export function TvReport() {
     // An episode subject is the episode's own id; the series keeps the kind it
     // arrived with (`movie` / `show`).
     const subjectKind: ReportSubjectKind = subjectId === id ? kind : 'episode';
-    client
-      .createReport({
+    client.reports
+      .create({
         subjectKind,
         subjectId,
         category,

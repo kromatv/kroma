@@ -1,4 +1,11 @@
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import {
+  type DownloadedSub,
+  type KromaClient,
+  type MediaItem,
+  type StoryboardManifest,
+  SubtitleId,
+} from '@kroma/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const downloadAsync = vi.hoisted(() => vi.fn(async (_url: string, _path: string) => ({})));
@@ -21,15 +28,45 @@ const item = (codecs: string[]): MediaItem =>
     subtitles: codecs.map((codec, i) => ({ codec, language: `l${i}` })),
   }) as MediaItem;
 
-function client(over: Partial<Record<string, unknown>> = {}): KromaClient {
-  return {
-    subtitleUrl: (id: string, index: number) => `https://kroma.test/sub/${id}/${index}`,
-    downloadedSubtitles: async () => [],
-    storyboard: async () => null,
-    resolveArt: (url: string) => url,
-    ...over,
-  } as unknown as KromaClient;
+type Media = KromaClient['media'];
+
+interface ServerStub {
+  downloaded?: KromaClient['subtitles']['downloaded'];
+  storyboard?: Media['storyboard'];
+  resolve?: Media['artwork']['resolve'];
 }
+
+function client(over: ServerStub = {}): KromaClient {
+  return fakeClient({
+    media: {
+      subtitleUrl: (id, index) => `https://kroma.test/sub/${id}/${index}`,
+      storyboard: over.storyboard ?? (async () => null),
+      artwork: { resolve: over.resolve ?? ((url) => url ?? null) },
+    },
+    subtitles: { downloaded: over.downloaded ?? (async () => []) },
+  });
+}
+
+const generatedSub = (url: string, over: Partial<DownloadedSub> = {}): DownloadedSub => ({
+  id: SubtitleId.parse('sub_1'),
+  language: 'en',
+  label: 'English',
+  provider: 'whisper',
+  url,
+  ...over,
+});
+
+const sheetManifest = (over: Partial<StoryboardManifest> = {}): StoryboardManifest => ({
+  url: '/sb/itm_1.jpg',
+  interval: 10,
+  tileW: 160,
+  tileH: 90,
+  cols: 10,
+  rows: 10,
+  count: 100,
+  duration: 1000,
+  ...over,
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -81,9 +118,7 @@ describe('server-generated subtitles', () => {
   it('takes them offline, marked as AI and labelled', async () => {
     const { subs } = await fetchSidecars(
       client({
-        downloadedSubtitles: async () => [
-          { url: '/gen/0.vtt', language: 'en', label: 'English (AI)' },
-        ],
+        downloaded: async () => [generatedSub('/gen/0.vtt', { label: 'English (AI)' })],
       }),
       item([]),
     );
@@ -93,9 +128,9 @@ describe('server-generated subtitles', () => {
   it('offsets their index past any embedded track', async () => {
     const { subs } = await fetchSidecars(
       client({
-        downloadedSubtitles: async () => [
-          { url: '/gen/0.vtt', language: 'en' },
-          { url: '/gen/1.vtt', language: 'fr' },
+        downloaded: async () => [
+          generatedSub('/gen/0.vtt'),
+          generatedSub('/gen/1.vtt', { language: 'fr' }),
         ],
       }),
       item(['subrip', 'ass']),
@@ -107,11 +142,11 @@ describe('server-generated subtitles', () => {
   });
 
   it('resolves a relative url against the server', async () => {
-    const resolveArt = vi.fn((url: string) => `https://kroma.test${url}`);
+    const resolve = vi.fn<Media['artwork']['resolve']>((url) => `https://kroma.test${url}`);
     await fetchSidecars(
       client({
-        resolveArt,
-        downloadedSubtitles: async () => [{ url: '/gen/0.vtt', language: 'en' }],
+        resolve,
+        downloaded: async () => [generatedSub('/gen/0.vtt')],
       }),
       item([]),
     );
@@ -124,8 +159,8 @@ describe('server-generated subtitles', () => {
   it('falls back to the raw url when nothing resolves it', async () => {
     await fetchSidecars(
       client({
-        resolveArt: () => null,
-        downloadedSubtitles: async () => [{ url: 'https://cdn.test/g.vtt', language: 'en' }],
+        resolve: () => null,
+        downloaded: async () => [generatedSub('https://cdn.test/g.vtt')],
       }),
       item([]),
     );
@@ -135,7 +170,7 @@ describe('server-generated subtitles', () => {
   it('keeps the embedded tracks when the generated list cannot be fetched', async () => {
     const { subs } = await fetchSidecars(
       client({
-        downloadedSubtitles: async () => {
+        downloaded: async () => {
           throw new Error('offline');
         },
       }),
@@ -147,7 +182,7 @@ describe('server-generated subtitles', () => {
 
 describe('the storyboard', () => {
   it('takes the sprite offline with its manifest', async () => {
-    const manifest = { url: '/sb/itm_1.jpg', cols: 10, rows: 10 };
+    const manifest = sheetManifest();
     const { storyboard } = await fetchSidecars(
       client({ storyboard: async () => manifest }),
       item([]),
@@ -174,8 +209,8 @@ describe('the storyboard', () => {
   it('falls back to the raw sprite url when nothing resolves it', async () => {
     await fetchSidecars(
       client({
-        resolveArt: () => null,
-        storyboard: async () => ({ url: 'https://cdn.test/sb.jpg' }),
+        resolve: () => null,
+        storyboard: async () => sheetManifest({ url: 'https://cdn.test/sb.jpg' }),
       }),
       item([]),
     );
@@ -185,7 +220,7 @@ describe('the storyboard', () => {
   it('gives up quietly when the sprite cannot be fetched', async () => {
     downloadAsync.mockRejectedValue(new Error('offline'));
     const { storyboard } = await fetchSidecars(
-      client({ storyboard: async () => ({ url: '/sb.jpg' }) }),
+      client({ storyboard: async () => sheetManifest({ url: '/sb.jpg' }) }),
       item([]),
     );
     expect(storyboard).toBeUndefined();
@@ -198,7 +233,7 @@ describe('the two together', () => {
     await expect(
       fetchSidecars(
         client({
-          downloadedSubtitles: async () => {
+          downloaded: async () => {
             throw new Error('500');
           },
           storyboard: async () => {
@@ -215,7 +250,7 @@ describe('the two together', () => {
     let storyboardStartedBeforeSubsFinished = false;
     const { subs, storyboard } = await fetchSidecars(
       client({
-        downloadedSubtitles: async () => {
+        downloaded: async () => {
           subsStarted = true;
           await new Promise((r) => setTimeout(r, 5));
           return [];

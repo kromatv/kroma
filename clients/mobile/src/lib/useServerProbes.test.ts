@@ -15,22 +15,21 @@ const health = vi.hoisted(() => ({
   calls: [] as Array<{ url: string; signal?: AbortSignal }>,
 }));
 
-const KromaClient = vi.hoisted(() =>
-  vi.fn(function Client(this: Record<string, unknown>, { baseUrl }: { baseUrl: string }) {
-    this.health = async (opts?: HealthOpts) => {
-      health.calls.push({ url: baseUrl, signal: opts?.signal });
-      const answer = health.answers.get(baseUrl);
-      if (!answer) throw new Error(`unreachable: ${baseUrl}`);
-      return answer();
-    };
-  }),
+const createQueryClient = vi.hoisted(() =>
+  vi.fn(({ baseUrl }: { baseUrl: string }) => ({
+    media: {
+      health: async (opts?: HealthOpts) => {
+        health.calls.push({ url: baseUrl, signal: opts?.signal });
+        const answer = health.answers.get(baseUrl);
+        if (!answer) throw new Error(`unreachable: ${baseUrl}`);
+        return answer();
+      },
+    },
+  })),
 );
 
-vi.mock('@kroma/core', () => ({
-  KromaClient,
-  activeLocale: () => 'fr',
-  clientUserAgent: () => 'Kroma/test',
-}));
+vi.mock('@kroma/client/query', () => ({ createQueryClient }));
+vi.mock('@kroma/core', () => ({ activeLocale: () => 'fr', clientUserAgent: () => 'Kroma/test' }));
 
 const renameServer = vi.hoisted(() => vi.fn());
 vi.mock('./session', () => ({ useSession: () => ({ renameServer }) }));
@@ -97,7 +96,7 @@ describe('probing', () => {
 
   it('probes nothing when there are no saved servers', () => {
     renderHook(() => useServerProbes([]));
-    expect(KromaClient).not.toHaveBeenCalled();
+    expect(createQueryClient).not.toHaveBeenCalled();
   });
 });
 

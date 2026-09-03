@@ -120,7 +120,7 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
                 seed={user.id}
                 size={44}
                 roundness={0.25}
-                src={client?.resolveArt(user.avatarUrl, 44)}
+                src={client?.media.artwork.resolve(user.avatarUrl, 44)}
               />
             </Focusable>
           ) : null}

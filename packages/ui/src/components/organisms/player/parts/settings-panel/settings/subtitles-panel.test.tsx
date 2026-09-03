@@ -6,7 +6,7 @@
 // the list is [Off, ...subs, (create?)], so an off-by-one would hand the
 // viewer the wrong language.
 
-import type { SubtitleGeneration } from '@kroma/core';
+import { GenerationId, type SubtitleGeneration } from '@kroma/core';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -47,7 +47,7 @@ const bundle = (over: Partial<SubtitleGenBundle> = {}): SubtitleGenBundle => ({
 });
 
 const generation = (over: Partial<SubtitleGeneration> = {}): SubtitleGeneration => ({
-  id: 'g1',
+  id: GenerationId.parse('g1'),
   mode: 'transcribe',
   lang: 'French',
   stage: 'transcribe',
@@ -239,7 +239,7 @@ describe('SubtitlesPanel', () => {
         subs={[]}
         current={null}
         onSelect={vi.fn()}
-        gen={bundle({ pending: [generation({ id: 'gen-9' })], onCancel })}
+        gen={bundle({ pending: [generation({ id: GenerationId.parse('gen-9') })], onCancel })}
         onBack={vi.fn()}
       />,
     );

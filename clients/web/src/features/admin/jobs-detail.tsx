@@ -3,7 +3,7 @@
 // :runId/logs`; while a run is active the short poll interval makes the logs
 // feel live.
 
-import type { JobLog, JobRun, MessageKey } from '@kroma/core';
+import type { JobKey, JobLog, JobRun, JobRunId, MessageKey } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
 import { Box, type ColorValue, Divider, ListRow, Row, Text } from '@kroma/ui/kit';
 import { type CSSProperties, useState } from 'react';
@@ -15,17 +15,17 @@ import { useAuth } from '#web/shared/lib/auth';
 // spelling, so the pane stays a real element.
 const PANE: CSSProperties = { maxHeight: 320, overflowY: 'auto' };
 
-export function JobDetailPanel({ jobKey }: Readonly<{ jobKey: string }>) {
+export function JobDetailPanel({ jobKey }: Readonly<{ jobKey: JobKey }>) {
   const t = useT();
   const { client } = useAuth();
-  const { data } = usePoll(['admin', 'job', jobKey], () => client.adminJob(jobKey), 4000);
+  const { data } = usePoll(['admin', 'job', jobKey], () => client.jobs.detail(jobKey), 4000);
   const runs = data?.runs ?? [];
 
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<JobRunId | null>(null);
   const runId = selected ?? runs[0]?.id ?? null;
   const { data: logsData } = usePoll(
     ['admin', 'jobRunLogs', runId ?? 'none'],
-    () => (runId ? client.jobRunLogs(runId) : Promise.resolve({ logs: [] as JobLog[] })),
+    () => (runId ? client.jobs.runLogs(runId) : Promise.resolve({ logs: [] as JobLog[] })),
     2500,
   );
   const logs = logsData?.logs ?? [];

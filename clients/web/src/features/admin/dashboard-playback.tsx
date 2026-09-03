@@ -39,7 +39,7 @@ export function PlaybackSection() {
   const what = kind.value === ANY_KIND ? undefined : kind.value;
   const { data } = usePoll(
     ['admin', 'playHistory', days, kind.value, account.value],
-    () => client.playHistory({ days, kind: what, user: who }),
+    () => client.admin.history({ days, kind: what, user: who }),
     POLL_MS,
   );
 

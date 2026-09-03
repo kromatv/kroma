@@ -3,7 +3,7 @@
 // subtitle stream ffprobe found. All of this already rides on the item DTO the
 // fiche loaded, so the modal reads from cache and adds no request.
 
-import type { MediaFile, MediaItem } from '@kroma/core';
+import { ItemId, type MediaFile, MediaFileId, type MediaItem } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Dialog, IconButton, Row, Spinner, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
@@ -17,7 +17,7 @@ export const MediaInfoModal = createCallable<{ id: string; title: string }, void
   ({ call, id, title }) => {
     const t = useT();
     // Cached: the fiche already loaded this item, so this resolves instantly.
-    const { data: item, isPending } = useQuery(catalogQueries.item(id));
+    const { data: item, isPending } = useQuery(catalogQueries.item(ItemId.parse(id)));
     const files = item ? filesOf(item) : [];
 
     return (
@@ -67,7 +67,7 @@ function filesOf(item: MediaItem): MediaFile[] {
   if (item.files.length) return item.files;
   return [
     {
-      id: item.id,
+      id: MediaFileId.parse(item.id),
       relPath: item.relPath ?? null,
       container: item.container,
       durationMs: item.durationMs ?? null,

@@ -112,8 +112,8 @@ export const ReportDialog = createCallable<
   const submit = () => {
     setBusy(true);
     setError(null);
-    client
-      .createReport({ subjectKind, subjectId, category, message: message.trim() || undefined })
+    client.reports
+      .create({ subjectKind, subjectId, category, message: message.trim() || undefined })
       .then(() => setSent(true))
       .catch((e) => setError(apiErrorText(e, t('report.failed'))))
       .finally(() => setBusy(false));

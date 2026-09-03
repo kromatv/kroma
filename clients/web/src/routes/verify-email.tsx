@@ -20,10 +20,10 @@ function VerifyEmailPage() {
   const { token } = Route.useSearch();
   const { client } = useAuth();
 
-  const link = useTokenLink(token, (tok) => client.checkEmailVerification(tok));
+  const link = useTokenLink(token, (tok) => client.accounts.checkEmailVerification(tok));
   const submit = () => {
     if (!token) return;
-    void link.run(() => client.confirmEmailVerification(token), t('auth.verifyFailed'));
+    void link.run(() => client.accounts.confirmEmailVerification(token), t('auth.verifyFailed'));
   };
 
   return (

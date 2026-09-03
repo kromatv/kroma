@@ -5,6 +5,7 @@ import {
   episodeTag,
   formatRuntime,
   formatTimecode,
+  ItemId,
   type MediaItem,
   type ProgressEntry,
   qualityBadge,
@@ -73,10 +74,10 @@ function ItemMeta({ media }: Readonly<{ media: MediaItem }>) {
 
 export default function ItemRoute() {
   const id = routeParam(useLocalSearchParams<{ id?: string }>().id);
-  return id ? <ItemDetail id={id} /> : <Redirect href="/" />;
+  return id ? <ItemDetail id={ItemId.parse(id)} /> : <Redirect href="/" />;
 }
 
-function ItemDetail({ id }: Readonly<{ id: string }>) {
+function ItemDetail({ id }: Readonly<{ id: ItemId }>) {
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -89,29 +90,24 @@ function ItemDetail({ id }: Readonly<{ id: string }>) {
     scrollY.value = e.contentOffset.y;
   });
 
-  const item = useQuery({ queryKey: ['item', id], queryFn: () => client.item(id) });
-  const progress = useQuery({
-    queryKey: ['progress', id],
-    queryFn: () => client.itemProgress(id),
-    staleTime: 15_000,
-  });
-  const myList = useQuery({ queryKey: ['myList'], queryFn: () => client.myList() });
-  const watchedIds = useQuery({ queryKey: ['watched'], queryFn: () => client.watched() });
-  const similar = useQuery({
-    queryKey: ['similar', id],
-    queryFn: () => client.similar(id),
-    staleTime: 10 * 60_000,
-  });
+  const item = useQuery(client.query.media.item(id));
+  const progress = useQuery({ ...client.query.playback.itemProgress(id), staleTime: 15_000 });
+  const myListQuery = client.query.playback.myList();
+  const watchedQuery = client.query.playback.watched();
+  const myList = useQuery(myListQuery);
+  const watchedIds = useQuery(watchedQuery);
+  const similar = useQuery({ ...client.query.media.similar(id), staleTime: 10 * 60_000 });
 
   const inList = (myList.data ?? []).includes(id);
   const toggleList = useMutation({
-    mutationFn: () => (inList ? client.removeFromList(id) : client.addToList(id)),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['myList'] }),
+    mutationFn: () => (inList ? client.playback.removeFromList(id) : client.playback.addToList(id)),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: myListQuery.queryKey }),
   });
   const isWatched = (watchedIds.data ?? []).includes(id);
   const toggleWatched = useMutation({
-    mutationFn: () => (isWatched ? client.unmarkWatched(id) : client.markWatched(id)),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['watched'] }),
+    mutationFn: () =>
+      isWatched ? client.playback.unmarkWatched(id) : client.playback.markWatched(id),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: watchedQuery.queryKey }),
   });
 
   if (item.isPending) return <Loading label={t('common.loading')} />;
@@ -126,7 +122,7 @@ function ItemDetail({ id }: Readonly<{ id: string }>) {
 
   const media = item.data;
   const backdrop = sizedImageUrl(
-    client.backdropFor(media) ?? client.posterFor(media),
+    client.media.artwork.backdropFor(media) ?? client.media.artwork.posterFor(media),
     Math.min(1280, width),
   );
   const title = media.metadata?.title ?? media.title;

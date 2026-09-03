@@ -5,6 +5,7 @@ import {
   fakeVideo,
   H,
   installHarness,
+  kromaClientStub,
   movie,
 } from '#web/features/playback/use-video-playback.fixture';
 
@@ -30,11 +31,7 @@ vi.mock('#web/features/playback/video-engine', () => ({
   attachMediaSource: vi.fn(() => () => {}),
 }));
 
-vi.mock('#web/shared/lib/api', () => ({
-  kromaClient: () => ({
-    hlsMasterUrl: (_id: string, _aac: boolean, anchor: number) => `hls://${anchor}`,
-  }),
-}));
+vi.mock('#web/shared/lib/api', () => ({ kromaClient: kromaClientStub }));
 
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ client: H.client, user: H.user }),

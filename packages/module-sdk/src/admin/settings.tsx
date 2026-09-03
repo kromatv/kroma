@@ -74,8 +74,8 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
   useEffect(() => {
     let active = true;
     setFailure(null);
-    client
-      .adminSettings(view)
+    client.admin
+      .settings(view)
       .then((r) => active && setGroups(r.groups))
       .catch((e: unknown) => active && setFailure({ error: e }));
     return () => {
@@ -85,7 +85,7 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
 
   const set = useStableCallback((key: string, value: unknown) => {
     setGroups((gs) => (gs ? applySetting(gs, key, value) : gs));
-    client
+    client.admin
       .updateSettings({ [key]: value })
       .then(() => {
         setSaved(true);
@@ -323,7 +323,7 @@ const ACTIONS: Record<string, ActionSpec> = {
     label: 'admin.smtpTestRun',
     running: 'admin.smtpTestSending',
     failed: 'admin.smtpTestFailed',
-    run: (client) => client.testSmtpSettings(),
+    run: (client) => client.admin.testSmtp(),
     ok: (t, r) => t('admin.smtpTestOk', { email: r.sentTo }),
   },
 };

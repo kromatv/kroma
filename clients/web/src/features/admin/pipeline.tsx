@@ -53,7 +53,7 @@ export function PipelinePage() {
   // Refresh is event-driven; the slow poll is only a reconnect/missed-event net.
   const { data, reload } = usePoll(
     ['admin', 'pipeline', 'elements', status, kind, dq, page],
-    () => client.pipelineElements({ status, kind, q: dq, page, limit: PER_PAGE }),
+    () => client.pipeline.elements({ status, kind, q: dq, page, limit: PER_PAGE }),
     30000,
   );
 
@@ -74,7 +74,7 @@ export function PipelinePage() {
   // update optimistically.
   const { data: health } = usePoll(
     ['admin', 'pipeline', 'health'],
-    () => client.adminPipeline(),
+    () => client.pipeline.overview(),
     30000,
   );
   useEffect(() => {

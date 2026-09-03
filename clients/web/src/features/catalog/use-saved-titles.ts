@@ -1,10 +1,9 @@
-import { type DiscoverDetail, type DiscoverEntry, ItemId, ShowId } from '@kroma/core';
+import type { DiscoverDetail, DiscoverEntry } from '@kroma/core';
 import { useQueries } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { SavedTitle, SavedTitles } from '#web/features/catalog/saved-titles';
 import { kromaClient, type MovieView, type ShowView } from '#web/shared/lib/api';
-
-const TMDB_PREFIX = 'tmdb:';
+import { TMDB_PREFIX } from '#web/shared/lib/saved-title-id';
 
 function tmdbIdOf(id: string): number | null {
   if (!id.startsWith(TMDB_PREFIX)) return null;
@@ -43,9 +42,9 @@ function entryOf(detail: DiscoverDetail): DiscoverEntry {
 async function fetchDiscoverEntry(tmdbId: number): Promise<DiscoverEntry> {
   const client = kromaClient();
   try {
-    return entryOf(await client.discoverDetail('movie', tmdbId));
+    return entryOf(await client.discovery.detail('movie', tmdbId));
   } catch {
-    return entryOf(await client.discoverDetail('tv', tmdbId));
+    return entryOf(await client.discovery.detail('tv', tmdbId));
   }
 }
 
@@ -120,12 +119,12 @@ function collect(
       if (entry) out.push(fromDiscover(entry));
       continue;
     }
-    const movie = movieById.get(ItemId.of(id));
+    const movie = movieById.get(id);
     if (movie) {
       out.push(fromMovie(movie));
       continue;
     }
-    const show = showById.get(ShowId.of(id));
+    const show = showById.get(id);
     if (show) out.push(fromShow(show));
   }
   return out;

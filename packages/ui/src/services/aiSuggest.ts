@@ -4,7 +4,7 @@
 // items may be empty, in which case the caller renders nothing) or we give up.
 // The client is injected so web and TV share the exact same logic.
 
-import type { KromaClient, Section } from '@kroma/core';
+import type { ItemId, KromaClient, Section } from '@kroma/core';
 import { useEffect, useState } from 'react';
 
 const POLL_MS = 6000;
@@ -46,7 +46,7 @@ function useEstimatedProgress(active: boolean): number {
 
 export function useAiSuggest(
   client: KromaClient,
-  id: string,
+  id: ItemId,
   { active = true }: UseAiSuggestOptions = {},
 ): UseAiSuggestResult {
   const [section, setSection] = useState<Section | null>(null);
@@ -61,7 +61,7 @@ export function useAiSuggest(
     setSection(null);
     setPending(true);
     const poll = () => {
-      client
+      client.media
         .aiSuggest(id)
         .then((res) => {
           if (cancelled) return;

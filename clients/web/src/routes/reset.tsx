@@ -29,12 +29,15 @@ function ResetPage() {
 
   const [code, setCode] = useState(codeFromUrl ?? '');
   const [password, setPassword] = useState('');
-  const link = useTokenLink(token, (tok) => client.checkReset(tok));
+  const link = useTokenLink(token, (tok) => client.accounts.checkReset(tok));
 
   const ready = code.trim().length === CODE_LEN && password.length >= MIN_PASSWORD_LEN;
   const submit = () => {
     if (!ready || !token) return;
-    void link.run(() => client.redeemReset(token, code.trim(), password), t('auth.resetFailed'));
+    void link.run(
+      () => client.accounts.redeemReset(token, code.trim(), password),
+      t('auth.resetFailed'),
+    );
   };
 
   return (

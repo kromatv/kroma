@@ -1,10 +1,10 @@
-import type { MediaItem } from '@kroma/core';
+import { ItemId, type MediaItem } from '@kroma/core';
 import type { PlayerController } from '@kroma/ui';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyCastCommand, type CastDeps } from '#tv/features/cast/applyCommand';
 import { setCastTarget } from '#tv/features/cast/castBridge';
 
-const item = (id: string) => ({ id, title: id }) as MediaItem;
+const item = (id: string) => ({ id: ItemId.parse(id), title: id }) as MediaItem;
 
 function controller(overrides: Partial<PlayerController> = {}) {
   return {
@@ -35,8 +35,8 @@ function deps(): CastDeps & {
 } {
   return {
     client: {
-      item: vi.fn(async (id: string) => item(id)),
-      nextEpisode: vi.fn(async () => item('s01e02')),
+      media: { item: vi.fn(async (id: string) => item(id)) },
+      playback: { nextEpisode: vi.fn(async () => item('s01e02')) },
     } as unknown as CastDeps['client'],
     nav: { reset: vi.fn(), swap: vi.fn(), home: vi.fn() },
   } as never;
@@ -47,7 +47,7 @@ beforeEach(() => setCastTarget(null));
 describe('play', () => {
   it('launches the title with no history behind it', async () => {
     const d = deps();
-    await applyCastCommand({ type: 'play', itemId: 'it1' as never, positionMs: 60_000 }, d);
+    await applyCastCommand({ type: 'play', itemId: ItemId.parse('it1'), positionMs: 60_000 }, d);
     expect(d.nav.reset).toHaveBeenCalledWith('player', {
       item: expect.objectContaining({ id: 'it1' }),
     });
@@ -57,7 +57,7 @@ describe('play', () => {
     const c = controller({ playing: false });
     setCastTarget({ item: item('it1'), controller: c });
     const d = deps();
-    await applyCastCommand({ type: 'play', itemId: 'it1' as never, positionMs: 30_000 }, d);
+    await applyCastCommand({ type: 'play', itemId: ItemId.parse('it1'), positionMs: 30_000 }, d);
     expect(d.nav.reset).not.toHaveBeenCalled();
     expect(c.seekTo).toHaveBeenCalledWith(30);
     expect(c.togglePlay).toHaveBeenCalled();
@@ -67,7 +67,7 @@ describe('play', () => {
     const c = controller({ playing: true });
     setCastTarget({ item: item('it1'), controller: c });
     const d = deps();
-    await applyCastCommand({ type: 'play', itemId: 'it1' as never }, d);
+    await applyCastCommand({ type: 'play', itemId: ItemId.parse('it1') }, d);
     expect(c.seekTo).not.toHaveBeenCalled();
     expect(c.togglePlay).not.toHaveBeenCalled();
     expect(d.nav.reset).not.toHaveBeenCalled();
@@ -75,7 +75,7 @@ describe('play', () => {
 
   it('launches from the start when the sender named no position', async () => {
     const d = deps();
-    await applyCastCommand({ type: 'play', itemId: 'it1' as never }, d);
+    await applyCastCommand({ type: 'play', itemId: ItemId.parse('it1') }, d);
     expect(d.nav.reset).toHaveBeenCalledWith('player', {
       item: expect.objectContaining({ id: 'it1' }),
     });
@@ -83,8 +83,8 @@ describe('play', () => {
 
   it('does nothing when the title cannot be resolved', async () => {
     const d = deps();
-    (d.client.item as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('404'));
-    await applyCastCommand({ type: 'play', itemId: 'gone' as never }, d);
+    (d.client.media.item as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('404'));
+    await applyCastCommand({ type: 'play', itemId: ItemId.parse('gone') }, d);
     expect(d.nav.reset).not.toHaveBeenCalled();
   });
 });
@@ -139,7 +139,7 @@ describe('skipNext / stop', () => {
   it('leaves the player alone when there is no next episode', async () => {
     setCastTarget({ item: item('film'), controller: controller() });
     const d = deps();
-    (d.client.nextEpisode as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
+    (d.client.playback.nextEpisode as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
     await applyCastCommand({ type: 'skipNext' }, d);
     expect(d.nav.swap).not.toHaveBeenCalled();
   });
@@ -147,7 +147,9 @@ describe('skipNext / stop', () => {
   it('stays on the current episode when the lookup fails', async () => {
     setCastTarget({ item: item('s01e01'), controller: controller() });
     const d = deps();
-    (d.client.nextEpisode as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('offline'));
+    (d.client.playback.nextEpisode as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('offline'),
+    );
     await applyCastCommand({ type: 'skipNext' }, d);
     expect(d.nav.swap).not.toHaveBeenCalled();
   });

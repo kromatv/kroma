@@ -55,7 +55,7 @@ const account = (over: Partial<MobileAccount> = {}): MobileAccount => ({
   serverUrl: 'https://kroma.local',
   accessToken: 'tok',
   user: {
-    id: UserId.of('u1'),
+    id: UserId.parse('u1'),
     username: 'max',
     email: 'max@kroma.local',
     avatarUrl: null,

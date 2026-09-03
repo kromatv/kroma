@@ -1,4 +1,5 @@
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import type { MediaItem } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineOptions } from './baseEngine';
 import type { EngineListeners } from './engine';
@@ -67,11 +68,13 @@ function mkListeners(): EngineListeners {
   };
 }
 
-const client = {
-  streamUrl: (id: string) => `stream:${id}`,
-  hlsMasterUrl: (id: string, aac: boolean, startSec: number, audio: number) =>
-    `master:${id}:${aac}:${startSec}:${audio}`,
-} as unknown as KromaClient;
+const client = fakeClient({
+  media: {
+    streamUrl: (id: string) => `stream:${id}`,
+    hlsMasterUrl: (id: string, aac = false, startSec = 0, audio = 0) =>
+      `master:${id}:${aac}:${startSec}:${audio}`,
+  },
+});
 const item = { id: 'v9' } as unknown as MediaItem;
 
 /** The `set_property af <chain>` values sent so far, in order. */

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "KROMA server client: the typed API client (KromaClient), ts-rs wire types, zod runtime schemas + branded ids, and session storage. Shared by every KROMA app.",
+  "description": "KROMA server client: the typed API client (KromaClient), the zod schemas that are the wire types, branded ids, and session storage. Shared by every KROMA app.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "license": "GPL-2.0-or-later",
   "repository": {
@@ -13,7 +13,10 @@
   },
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./query": "./src/query/index.ts",
+    "./test": "./src/kroma-client.fixture.ts",
+    "./vite": "./vite/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -21,9 +24,22 @@
   },
   "dependencies": {
     "@kroma/registry": "workspace:*",
-    "zod": "^4.4.3"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@tanstack/react-query": "^5.101.4",
     "typescript": "^7.0.2"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5",
+    "vite": ">=6"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "vite": {
+      "optional": true
+    }
   }
 }

@@ -46,8 +46,10 @@ export function TvShowDetail() {
   useFocusNav({ onBack: nav.back });
 
   const meta = show.metadata;
-  const backdrop = client.backdropFor(show, STAGE_W) ?? client.showPosterFor(show, STAGE_W);
-  const theme = useThemeAudio(client.themeFor(show));
+  const backdrop =
+    client.media.artwork.backdropFor(show, STAGE_W) ??
+    client.media.artwork.showPosterFor(show, STAGE_W);
+  const theme = useThemeAudio(client.media.artwork.themeFor(show));
 
   const firstEpisode = activeSeason?.episodes[0] ?? null;
   const playTarget = upNext?.item ?? firstEpisode;
@@ -195,7 +197,7 @@ export function TvShowDetail() {
             </Row>
             <EpisodeGrid
               episodes={activeSeason.episodes}
-              stillFor={(ep, w) => client.backdropFor(ep, w) ?? backdrop}
+              stillFor={(ep, w) => client.media.artwork.backdropFor(ep, w) ?? backdrop}
               isWatched={(id) => watched.has(id)}
               progressOf={(id) => epProgress[id] ?? null}
               onPlay={(ep) => nav.go('player', { item: ep })}

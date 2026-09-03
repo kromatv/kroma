@@ -4,8 +4,9 @@
 //
 // Not a credential: the cast roster binds the id to the account that first
 // announced it, and a handoff beacon only ever reveals it on its own subnet.
-// Must be unique and match the server's shape rule (8-64 of `[A-Za-z0-9._-]`).
+// Must be unique; `DeviceId` carries the shape rule the server enforces.
 
+import { DeviceId } from '@kroma/core';
 import { readDeviceValue, writeDeviceValue } from '#tv/app/devicePref';
 
 // Named for the cast roster, which is where a device id was first needed. Kept
@@ -14,25 +15,22 @@ const KEY = 'kroma:cast-receiver-id';
 
 let seq = 0;
 
-function mint(): string {
-  return `tv-${Date.now().toString(36)}-${(seq++).toString(36)}-${Math.floor(
-    Math.random() * 0xffffff,
-  )
-    .toString(36)
-    .padStart(4, '0')}`;
+function mint(): DeviceId {
+  return DeviceId.parse(
+    `tv-${Date.now().toString(36)}-${(seq++).toString(36)}-${Math.floor(Math.random() * 0xffffff)
+      .toString(36)
+      .padStart(4, '0')}`,
+  );
 }
 
-function usable(id: string | null): id is string {
-  return !!id && id.length >= 8 && id.length <= 64 && /^[A-Za-z0-9._-]+$/.test(id);
-}
-
-let cached: string | null = null;
+let cached: DeviceId | null = null;
 
 /** This device's stable id, minting + persisting one on first use. */
-export function deviceId(): string {
+export function deviceId(): DeviceId {
   if (cached) return cached;
   const stored = readDeviceValue(KEY);
-  const id = usable(stored) ? stored : mint();
+  const kept = DeviceId.safeParse(stored);
+  const id = kept.success ? kept.data : mint();
   if (id !== stored) writeDeviceValue(KEY, id);
   cached = id;
   return id;

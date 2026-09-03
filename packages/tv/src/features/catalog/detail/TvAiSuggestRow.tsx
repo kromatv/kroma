@@ -1,4 +1,4 @@
-import { genreLabels, posterColors, type SectionItem } from '@kroma/core';
+import { genreLabels, type ItemId, posterColors, type SectionItem } from '@kroma/core';
 import { useAiSuggest, useT } from '@kroma/ui';
 import { Box, MediaCard, ProgressRing, RAIL_GAP, Rail, styles, Text } from '@kroma/ui/kit';
 import { useClient, useNav } from '#tv/app/router';
@@ -25,7 +25,7 @@ const s = styles({
   },
 });
 
-export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
+export function TvAiSuggestRow({ id }: Readonly<{ id: ItemId }>) {
   const t = useT();
   const client = useClient();
   const { go } = useNav();
@@ -39,7 +39,10 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
           key={show.id}
           title={show.title}
           overline={genreLabels(t, show.metadata)[0] ?? t('content.series')}
-          art={client.backdropFor(show, TILE_ART_W) ?? client.showPosterFor(show, TILE_ART_W)}
+          art={
+            client.media.artwork.backdropFor(show, TILE_ART_W) ??
+            client.media.artwork.showPosterFor(show, TILE_ART_W)
+          }
           tint={posterColors(show.id)}
           onPress={() => go('show', { show })}
         />
@@ -51,7 +54,10 @@ export function TvAiSuggestRow({ id }: Readonly<{ id: string }>) {
         key={m.id}
         title={m.title}
         overline={genreLabels(t, m.metadata)[0] ?? t('content.film')}
-        art={client.backdropFor(m, TILE_ART_W) ?? client.posterFor(m, TILE_ART_W)}
+        art={
+          client.media.artwork.backdropFor(m, TILE_ART_W) ??
+          client.media.artwork.posterFor(m, TILE_ART_W)
+        }
         tint={posterColors(m.id)}
         onPress={() => go('movie', { item: m })}
       />

@@ -189,8 +189,8 @@ async function finalizeTransfer(client: KromaClient, meta: TransferMeta): Promis
     itemId: item.id,
     item,
     fileUri,
-    posterUrl: client.posterFor(item),
-    backdropUrl: client.backdropFor(item),
+    posterUrl: client.media.artwork.posterFor(item),
+    backdropUrl: client.media.artwork.backdropFor(item),
     sizeBytes: size,
     downloadedAt: new Date().toISOString(),
     subs,
@@ -207,8 +207,8 @@ export async function runTransfer(
   try {
     await ensureDir();
     const url = meta.raw
-      ? client.streamUrl(item.id)
-      : client.downloadUrl(item.id, downloadCopyCodecs(), downloadVideoCodecs());
+      ? client.media.streamUrl(item.id)
+      : client.media.downloadUrl(item.id, downloadCopyCodecs(), downloadVideoCodecs());
     // `/download` is session-gated (it costs a server-side ffmpeg for the length
     // of a film), and this transfer is owned by the platform downloader, so the
     // bearer has to be attached by hand.

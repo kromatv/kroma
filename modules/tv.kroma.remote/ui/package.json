@@ -22,7 +22,8 @@
   "dependencies": {
     "@kroma/module-sdk": "workspace:*",
     "@kroma/ui": "workspace:*",
-    "@tabler/icons-react": "^3.46.0"
+    "@tabler/icons-react": "^3.46.0",
+    "zod": "^4.5.4"
   },
   "peerDependencies": {
     "react": "^19.2.8"

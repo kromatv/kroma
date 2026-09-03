@@ -7,7 +7,7 @@
 // it. It lives HERE rather than in the console because all of it is acquisition:
 // with this module gone the page has nothing to show but the fallback.
 
-import type { LedgerSeason, ScoredReleaseView, SearchScope } from '@kroma/core';
+import type { LedgerSeason, RequestId, ScoredReleaseView, SearchScope } from '@kroma/core';
 import { type SlotProps, useAdminHost, useLocale, useT } from '@kroma/module-sdk';
 import {
   Box,
@@ -145,8 +145,8 @@ export function RequestSearchPanel({
               onCancel={() => setDraft(null)}
               onSave={() => {
                 setSaving(true);
-                client
-                  .setRequestCoverage(requestId, toBody(draft, ledger.data?.seasons ?? []))
+                client.requests
+                  .setCoverage(requestId, toBody(draft, ledger.data?.seasons ?? []))
                   .then(() => {
                     setDraft(null);
                     // The ledger and the queue behind both describe what just
@@ -241,7 +241,7 @@ function Catalog({
   episodes: Parameters<typeof RequestLedger>[0]['episodes'];
   loading: boolean;
   failure: Error | null;
-  requestId: string;
+  requestId: RequestId;
   draft: CoverageDraft | null;
   onToggleSeason: (season: number, on: boolean) => void;
   onToggleEpisode: (season: number, episode: number) => void;

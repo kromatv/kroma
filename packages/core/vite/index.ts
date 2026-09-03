@@ -10,7 +10,7 @@ export const CORE_LOCALES = fileURLToPath(new URL('../src/locales/', import.meta
  *  `src/locales/messages.d.ts`, and each namespace travelling with the code
  *  that names its keys, fetched in the rendered locale alone. `kroma()` loads
  *  it for every shell; Metro registers the folder itself and reads the types
- *  `bun run i18n:types` wrote. */
+ *  `bun run gen:types` wrote. */
 export function kromaCatalogs(options: Pick<CatalogsOptions, 'eager'> = {}): Plugin {
   return catalogs({ dir: CORE_LOCALES, defaultLocale: DEFAULT_LOCALE_CODE, ...options });
 }

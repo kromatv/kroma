@@ -75,7 +75,7 @@ function PushPanel() {
   const sendTest = async () => {
     setBusy(true);
     try {
-      const { delivered } = await kromaClient().testPush();
+      const { delivered } = await kromaClient().notifications.push.test();
       setTested(delivered);
     } finally {
       setBusy(false);
@@ -149,7 +149,7 @@ function CategoryMatrix() {
       const categories = data.categories.map((c) =>
         c.category === category ? { ...c, ...patch } : c,
       );
-      const saved = await kromaClient().setNotificationPrefs({ categories });
+      const saved = await kromaClient().notifications.setPrefs({ categories });
       qc.setQueryData(userQueries.notificationPrefs().queryKey, saved);
     } finally {
       setSaving(null);

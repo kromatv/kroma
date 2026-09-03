@@ -17,7 +17,7 @@ afterEach(() => {
 describe('a poll that did not answer', () => {
   it('keeps the beacon and tries again rather than re-announcing', async () => {
     const { client, announces } = stubClient({
-      handoffPoll: vi.fn(async () => {
+      poll: vi.fn(async () => {
         throw new Error('offline');
       }),
     });
@@ -27,7 +27,7 @@ describe('a poll that did not answer', () => {
     await tick(3000);
 
     expect(announces).toHaveLength(1);
-    expect(client.handoffPoll).toHaveBeenCalledTimes(2);
+    expect(client.handoff.poll).toHaveBeenCalledTimes(2);
     stop();
   });
 });
@@ -37,12 +37,12 @@ describe('an announce that did not go through', () => {
     const announce = vi.fn(async () => {
       throw new Error('offline');
     });
-    const { client } = stubClient({ announceHandoff: announce });
+    const { client } = stubClient({ announce });
     const { beacons, stop } = run(client);
     await tick();
 
     expect(beacons.at(-1)).toBeNull();
-    expect(client.handoffPoll).not.toHaveBeenCalled();
+    expect(client.handoff.poll).not.toHaveBeenCalled();
 
     await tick(15_000);
     expect(announce).toHaveBeenCalledTimes(2);
@@ -51,7 +51,7 @@ describe('an announce that did not go through', () => {
 
   it('keeps asking while this network is already holding all it may', async () => {
     const announce = refusing(429);
-    const { client } = stubClient({ announceHandoff: announce });
+    const { client } = stubClient({ announce });
     const { stop } = run(client);
     await tick();
     await tick(15_000);
@@ -63,7 +63,7 @@ describe('an announce that did not go through', () => {
 
   it('keeps asking through a server that is having a bad time', async () => {
     const announce = refusing(503);
-    const { client } = stubClient({ announceHandoff: announce });
+    const { client } = stubClient({ announce });
     const { stop } = run(client);
     await tick();
     await tick(15_000);
@@ -76,7 +76,7 @@ describe('an announce that did not go through', () => {
 describe('a server this television may never raise a beacon on', () => {
   it('stops asking when the origin is refused, rather than every 15s forever', async () => {
     const announce = refusing(403);
-    const { client } = stubClient({ announceHandoff: announce });
+    const { client } = stubClient({ announce });
     const { beacons, stop } = run(client);
     await tick();
 
@@ -84,14 +84,14 @@ describe('a server this television may never raise a beacon on', () => {
 
     await tick(60_000);
     expect(announce).toHaveBeenCalledTimes(1);
-    expect(client.handoffPoll).not.toHaveBeenCalled();
+    expect(client.handoff.poll).not.toHaveBeenCalled();
     stop();
-    expect(client.handoffLeave).not.toHaveBeenCalled();
+    expect(client.handoff.leave).not.toHaveBeenCalled();
   });
 
   it('stops asking a server too old to have the route at all', async () => {
     const announce = refusing(404);
-    const { client } = stubClient({ announceHandoff: announce });
+    const { client } = stubClient({ announce });
     const { beacons, stop } = run(client);
     await tick();
     await tick(60_000);
@@ -103,7 +103,7 @@ describe('a server this television may never raise a beacon on', () => {
 
   it('ignores a rename once it has given up, since a name was never the problem', async () => {
     const announce = refusing(403);
-    const { client } = stubClient({ announceHandoff: announce });
+    const { client } = stubClient({ announce });
     const { rename, stop } = run(client);
     await tick();
 
@@ -116,22 +116,22 @@ describe('a server this television may never raise a beacon on', () => {
 
   it('stops polling one it did raise, taking its record off the link', async () => {
     const unpublish = vi.fn();
-    const { client } = stubClient({ handoffPoll: refusing(403, '/handoff/poll') });
+    const { client } = stubClient({ poll: refusing(403, '/handoff/poll') });
     const { beacons, stop } = run(client, () => unpublish);
     await tick();
     await tick(3000);
 
-    expect(client.handoffPoll).toHaveBeenCalledTimes(1);
+    expect(client.handoff.poll).toHaveBeenCalledTimes(1);
     expect(beacons.at(-1)).toBeNull();
     expect(unpublish).toHaveBeenCalledTimes(1);
 
     await tick(60_000);
-    expect(client.handoffPoll).toHaveBeenCalledTimes(1);
-    expect(client.announceHandoff).toHaveBeenCalledTimes(1);
+    expect(client.handoff.poll).toHaveBeenCalledTimes(1);
+    expect(client.handoff.announce).toHaveBeenCalledTimes(1);
 
     // The beacon lapses on its own: taking it down asks the same refused route.
     stop();
-    expect(client.handoffLeave).not.toHaveBeenCalled();
+    expect(client.handoff.leave).not.toHaveBeenCalled();
   });
 });
 
@@ -145,7 +145,7 @@ describe('a television whose origin the server cannot place', () => {
     // than merely not stopped.
     const announce = vi.fn(async () => ({ ...BEACON, confirmRequired: true }));
     const unpublish = vi.fn();
-    const { client } = stubClient({ announceHandoff: announce });
+    const { client } = stubClient({ announce });
     const { beacons, stop } = run(client, () => unpublish);
     await tick();
 
@@ -154,7 +154,7 @@ describe('a television whose origin the server cannot place', () => {
 
     for (let polls = 1; polls <= 5; polls++) {
       await tick(3000);
-      expect(client.handoffPoll).toHaveBeenCalledTimes(polls);
+      expect(client.handoff.poll).toHaveBeenCalledTimes(polls);
     }
 
     // One beacon, still the current one: no retry loop, no re-announce, and
@@ -174,8 +174,8 @@ describe('a television whose origin the server cannot place', () => {
       user: USER,
     };
     const { client } = stubClient({
-      announceHandoff: vi.fn(async () => ({ ...BEACON, confirmRequired: true })),
-      handoffPoll: vi.fn(async () => authorized),
+      announce: vi.fn(async () => ({ ...BEACON, confirmRequired: true })),
+      poll: vi.fn(async () => authorized),
     });
     const { signedIn, stop } = run(client);
     await tick();

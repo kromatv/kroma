@@ -50,7 +50,7 @@ export function RequestsQueuePage() {
 
   const { data, reload } = usePoll(
     ['admin', 'requests', 'all'],
-    () => client.listRequests(),
+    () => client.requests.list(),
     30000,
   );
 
@@ -79,9 +79,9 @@ export function RequestsQueuePage() {
       .catch(() => flash(t('requests.actionFailed')));
   };
   const approve = (r: MediaRequest) =>
-    act(`« ${r.title} » ${t('requests.toastApproved')}`, () => client.approveRequest(r.id));
+    act(`« ${r.title} » ${t('requests.toastApproved')}`, () => client.requests.approve(r.id));
   const deny = (r: MediaRequest, note?: string) =>
-    act(`« ${r.title} » ${t('requests.toastDenied')}`, () => client.denyRequest(r.id, note));
+    act(`« ${r.title} » ${t('requests.toastDenied')}`, () => client.requests.deny(r.id, note));
   const open = (r: MediaRequest) => navigate({ to: '/admin/requests/$id', params: { id: r.id } });
 
   const all = data?.requests ?? [];

@@ -1,7 +1,7 @@
 import type { SubCapabilities, SubtitleGeneration } from '@kroma/core';
 
 /** The request {@link GenerateWizard} emits; the platform adapter maps it to its own
- * `generateSubtitle` call, so the shared chrome never imports an API client. */
+ * `subtitles.generate` call, so the shared chrome never imports an API client. */
 export interface SubtitleGenRequest {
   mode: 'transcribe' | 'translate';
   /** Spoken language to transcribe (transcribe mode). */

@@ -1,10 +1,4 @@
-import {
-  apiErrorText,
-  KromaApiError,
-  type PublicUser,
-  type StoredSession,
-  UserId,
-} from '@kroma/core';
+import { apiErrorText, KromaApiError, type PublicUser, type StoredSession } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { useEffect, useState } from 'react';
 import { ForgotForm, LoginForm, RegisterForm } from '#web/features/accounts/auth-forms';
@@ -32,8 +26,8 @@ export function GateBody() {
 
   useEffect(() => {
     let cancelled = false;
-    client
-      .authConfig()
+    client.accounts
+      .config()
       .then((cfg) => {
         if (cancelled) return;
         setCanPick(cfg.publicUserList);
@@ -45,7 +39,7 @@ export function GateBody() {
           setMode(accounts.length > 0 ? { kind: 'pick' } : { kind: 'login', user: null });
           return;
         }
-        client
+        client.accounts
           .users()
           .then((u) => {
             if (!cancelled) setProfiles(u);
@@ -124,7 +118,7 @@ export function GateBody() {
   async function doForgot(identifier: string) {
     setBusy(true);
     try {
-      await client.requestPasswordReset(identifier);
+      await client.accounts.requestReset(identifier);
     } catch {
       // Swallowed on purpose: the confirmation is uniform whether the request
       // reached the server or not, so this screen never answers "does this
@@ -233,7 +227,7 @@ export function GateBody() {
       setMode({
         kind: 'login',
         user: {
-          id: UserId.of(tile.id),
+          id: tile.id,
           username: tile.username,
           avatarUrl: tile.avatarUrl,
           hasPin: false,

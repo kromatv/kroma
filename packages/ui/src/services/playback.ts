@@ -8,14 +8,20 @@
 // `playing` state; the TV player supplies platform labels + the raw <video> and
 // drives the prompt ping off the element's play/pause events.
 
-import { KromaApiError, type KromaClient, KromaEvents } from '@kroma/core';
+import {
+  type ItemId,
+  KromaApiError,
+  type KromaClient,
+  KromaEvents,
+  PlaybackSessionId,
+} from '@kroma/core';
 import { type RefObject, useEffect, useEffectEvent, useRef, useState } from 'react';
 
 export interface PlaybackHeartbeatParams {
   client: KromaClient;
   /** Gates pinging (web: signed-in; TV: `client.hasAuth`). */
   enabled: boolean;
-  itemId: string;
+  itemId: ItemId;
   durationMs: number | null;
   /** Absolute current position in seconds (offset-aware on the web seamless stream). */
   getPosition: () => number;
@@ -57,9 +63,11 @@ const SERVER_TTL_MS = 30_000;
 
 let sessionSeq = 0;
 
-function newSessionId(prefix: string): string {
+function newSessionId(prefix: string): PlaybackSessionId {
   sessionSeq += 1;
-  return `${prefix}-${Date.now().toString(36)}-${(sessionSeq - 1).toString(36)}`;
+  return PlaybackSessionId.parse(
+    `${prefix}-${Date.now().toString(36)}-${(sessionSeq - 1).toString(36)}`,
+  );
 }
 
 /**
@@ -105,8 +113,8 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
     beat.current = { at: now, positionMs };
     opened.current = true;
     const buffered = params.getBuffered?.();
-    inFlight.current = params.client
-      .pingPlayback({
+    inFlight.current = params.client.playback
+      .ping({
         sessionId,
         itemId: params.itemId,
         positionMs,
@@ -153,7 +161,7 @@ export function usePlaybackHeartbeat(params: PlaybackHeartbeatParams): void {
     () => () => {
       if (terminated.current || !opened.current) return;
       const stop = () => {
-        clientRef.current.stopPlayback(sessionId).catch(() => undefined);
+        clientRef.current.playback.stop(sessionId).catch(() => undefined);
       };
       const pending = inFlight.current;
       if (pending) void pending.then(stop, stop);

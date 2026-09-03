@@ -33,11 +33,12 @@ function mount(
     over = {},
   }: { perms?: string[]; over?: Record<string, unknown> } = {},
 ) {
-  const client = {
-    adminSettings: vi.fn(async () => ({ groups })),
+  const admin = {
+    settings: vi.fn(async () => ({ groups })),
     updateSettings: vi.fn(async () => undefined),
     ...over,
   };
+  const client = { admin };
   const wrap = ({ children }: { children: ReactNode }) => (
     <I18nProvider locale="en">
       <AdminHostProvider value={{ client, user: { permissions: perms } } as never}>
@@ -53,7 +54,7 @@ function mount(
     />,
     { wrapper: wrap },
   );
-  return { ...view, client };
+  return { ...view, admin };
 }
 
 // jsdom types on a real keyboard, so the kit entries render real inputs.
@@ -75,8 +76,8 @@ describe('access', () => {
   // The server enforces it too; denying here avoids rendering a page whose
   // every call would 403.
   it('denies the page without settings.manage', () => {
-    const { client } = mount([group([{}])], { perms: ['playback'] });
-    expect(client.adminSettings).not.toHaveBeenCalled();
+    const { admin } = mount([group([{}])], { perms: ['playback'] });
+    expect(admin.settings).not.toHaveBeenCalled();
   });
 
   it('renders for a settings manager', async () => {
@@ -128,16 +129,18 @@ describe('rendering', () => {
   });
 
   it('asks the server for the view it was given', async () => {
-    const { client } = mount([]);
-    await waitFor(() => expect(client.adminSettings).toHaveBeenCalledWith('general'));
+    const { admin } = mount([]);
+    await waitFor(() => expect(admin.settings).toHaveBeenCalledWith('general'));
   });
 
   // Embedded under another page (the VPN card), the header would be a second
   // title on the same screen.
   it('omits the header when embedded', async () => {
     const client = {
-      adminSettings: vi.fn(async () => ({ groups: [group([{}])] })),
-      updateSettings: vi.fn(async () => undefined),
+      admin: {
+        settings: vi.fn(async () => ({ groups: [group([{}])] })),
+        updateSettings: vi.fn(async () => undefined),
+      },
     };
     const { container } = render(
       <I18nProvider locale="en">
@@ -181,13 +184,13 @@ describe('secret rows', () => {
   });
 
   it('sends a pasted key once, then forgets it', async () => {
-    const { container, client } = mount([secret(false)]);
+    const { container, admin } = mount([secret(false)]);
     await waitFor(() => expect(container.textContent).toContain('Auth key'));
     const input = field(container);
     fireEvent.change(input, { target: { value: '-----BEGIN PRIVATE KEY-----' } });
     fireEvent.blur(input);
     await waitFor(() =>
-      expect(client.updateSettings).toHaveBeenCalledWith({ k0: '-----BEGIN PRIVATE KEY-----' }),
+      expect(admin.updateSettings).toHaveBeenCalledWith({ k0: '-----BEGIN PRIVATE KEY-----' }),
     );
     // Not left in the textarea, and not written back into the row's value by the
     // optimistic update either.
@@ -199,24 +202,24 @@ describe('secret rows', () => {
   // The whole reason blur does not commit blindly: tabbing through the form
   // would otherwise silently turn iOS push off.
   it('does not erase a stored key when the field is left empty', async () => {
-    const { container, client } = mount([secret(true)]);
+    const { container, admin } = mount([secret(true)]);
     await waitFor(() => expect(container.textContent).toContain('Auth key'));
     fireEvent.blur(field(container));
     fireEvent.change(field(container), { target: { value: '   ' } });
     fireEvent.blur(field(container));
-    expect(client.updateSettings).not.toHaveBeenCalled();
+    expect(admin.updateSettings).not.toHaveBeenCalled();
     expect(container.textContent).toContain('Configured');
   });
 
   // ...which means removing one has to be deliberate.
   it('clears a stored key on an explicit request', async () => {
-    const { container, client } = mount([secret(true)]);
+    const { container, admin } = mount([secret(true)]);
     await waitFor(() => expect(container.textContent).toContain('Auth key'));
     const clear = [...container.querySelectorAll('[role="button"]')].find((b) =>
       b.textContent?.includes('Clear'),
     );
     fireEvent.click(clear as HTMLElement);
-    await waitFor(() => expect(client.updateSettings).toHaveBeenCalledWith({ k0: '' }));
+    await waitFor(() => expect(admin.updateSettings).toHaveBeenCalledWith({ k0: '' }));
     expect(container.textContent).toContain('Not set');
   });
 });
@@ -226,12 +229,12 @@ describe('select rows', () => {
     group([{ kind: 'select', value, options, label: 'Language' }]);
 
   it('saves the option that was picked', async () => {
-    const { container, client } = mount([language(['fr', 'en'])]);
+    const { container, admin } = mount([language(['fr', 'en'])]);
     await waitFor(() => expect(container.textContent).toContain('Language'));
 
     press(screen.getByRole('combobox'));
     fireEvent.click(screen.getAllByRole('option')[1] as HTMLElement);
-    await waitFor(() => expect(client.updateSettings).toHaveBeenCalledWith({ k0: 'en' }));
+    await waitFor(() => expect(admin.updateSettings).toHaveBeenCalledWith({ k0: 'en' }));
   });
 
   // A stored setting the schema no longer names would otherwise fall to the
@@ -251,7 +254,7 @@ describe('text rows', () => {
   const field = (container: HTMLElement) => container.querySelector('input') as HTMLInputElement;
 
   it('commits what was typed when the field is left', async () => {
-    const { container, client } = mount([name]);
+    const { container, admin } = mount([name]);
     await waitFor(() => expect(field(container)).not.toBeNull());
 
     // The row holds a draft and commits it against the value it was given, so
@@ -261,34 +264,31 @@ describe('text rows', () => {
     await waitFor(() => expect(input.value).toBe('salon'));
 
     fireEvent.blur(input);
-    await waitFor(() => expect(client.updateSettings).toHaveBeenCalledWith({ k0: 'salon' }));
+    await waitFor(() => expect(admin.updateSettings).toHaveBeenCalledWith({ k0: 'salon' }));
   });
 
   it('says nothing when the field is left as it was found', async () => {
-    const { container, client } = mount([name]);
+    const { container, admin } = mount([name]);
     await waitFor(() => expect(field(container)).not.toBeNull());
 
     fireEvent.blur(field(container));
-    expect(client.updateSettings).not.toHaveBeenCalled();
+    expect(admin.updateSettings).not.toHaveBeenCalled();
   });
 });
 
 describe('failures', () => {
   it('keeps the page up when a save is refused', async () => {
-    const { container, client } = mount(
-      [group([{ kind: 'toggle', value: false, label: 'Scan' }])],
-      {
-        over: {
-          updateSettings: vi.fn(async () => {
-            throw new Error('offline');
-          }),
-        },
+    const { container, admin } = mount([group([{ kind: 'toggle', value: false, label: 'Scan' }])], {
+      over: {
+        updateSettings: vi.fn(async () => {
+          throw new Error('offline');
+        }),
       },
-    );
+    });
     await waitFor(() => expect(container.textContent).toContain('Scan'));
 
     fireEvent.click(screen.getByRole('switch', { name: 'Scan' }));
-    await waitFor(() => expect(client.updateSettings).toHaveBeenCalledWith({ k0: true }));
+    await waitFor(() => expect(admin.updateSettings).toHaveBeenCalledWith({ k0: true }));
     expect(container.textContent).toContain('Scan');
   });
 
@@ -315,7 +315,7 @@ describe('failures', () => {
   it('renders an empty page when the fetch fails rather than throwing', async () => {
     const { container } = mount([], {
       over: {
-        adminSettings: vi.fn(async () => {
+        settings: vi.fn(async () => {
           throw new Error('offline');
         }),
       },

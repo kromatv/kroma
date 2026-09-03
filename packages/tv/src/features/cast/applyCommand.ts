@@ -12,7 +12,7 @@ export interface CastRouter {
 }
 
 export interface CastDeps {
-  client: Pick<KromaClient, 'item' | 'nextEpisode'>;
+  client: Pick<KromaClient, 'media' | 'playback'>;
   nav: CastRouter;
 }
 
@@ -29,7 +29,7 @@ async function play(
     if (controller && !controller.playing) controller.togglePlay();
     return;
   }
-  const item = await deps.client.item(command.itemId).catch(() => null);
+  const item = await deps.client.media.item(command.itemId).catch(() => null);
   if (!item) return;
   requestCastSeek(item.id, command.positionMs ?? 0);
   // reset, not push: a cast launch has no detail screen behind it.
@@ -40,7 +40,7 @@ async function skipNext(
   deps: CastDeps,
   target: NonNullable<ReturnType<typeof castTarget>>,
 ): Promise<void> {
-  const next = await deps.client.nextEpisode(target.item.id).catch(() => null);
+  const next = await deps.client.playback.nextEpisode(target.item.id).catch(() => null);
   // swap, not push: what is behind the player stays behind it.
   if (next) deps.nav.swap('player', { item: next });
 }

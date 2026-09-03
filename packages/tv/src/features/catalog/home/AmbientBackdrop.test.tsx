@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { fakeClient } from '@kroma/client/test';
 import type { KromaClient, MediaItem } from '@kroma/core';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { act } from 'react';
@@ -6,18 +7,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TvClientProvider } from '#tv/app/router';
 import { AmbientBackdrop, type CatalogEntry } from '#tv/features/catalog/home/AmbientBackdrop';
 
-const client = {
-  backdropFor: (item: MediaItem) => `http://s/${item.id}-back.jpg`,
-} as unknown as KromaClient;
+const client = fakeClient({
+  media: { artwork: { backdropFor: (item) => item.metadata?.backdropUrl ?? null } },
+});
 
-const noBackdrop = {
-  backdropFor: () => null,
-  posterFor: (item: MediaItem, width: number) => `http://s/${item.id}-poster.jpg?w=${width}`,
-} as unknown as KromaClient;
+const noBackdrop = fakeClient({
+  media: {
+    artwork: {
+      backdropFor: () => null,
+      posterFor: (item, width) => `http://s/${item.id}-poster.jpg?w=${width}`,
+    },
+  },
+});
 
 const entry = (id: string): CatalogEntry => ({
   kind: 'movie',
-  item: { id, title: id } as unknown as MediaItem,
+  item: {
+    id,
+    title: id,
+    metadata: { backdropUrl: `http://s/${id}-back.jpg` },
+  } as unknown as MediaItem,
 });
 
 const art = (root: HTMLElement) => root.querySelector('img:not([aria-hidden])');

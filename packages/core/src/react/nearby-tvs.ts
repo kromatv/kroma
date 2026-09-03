@@ -53,7 +53,7 @@ export function useNearbyTvs(opts: NearbyTvsOptions): NearbyTvs {
       return;
     }
     let cancelled = false;
-    client
+    client.media
       .health()
       .then((h) => {
         if (!cancelled) setOurServer(h.instanceId ?? null);
@@ -99,7 +99,7 @@ export function useNearbyTvs(opts: NearbyTvsOptions): NearbyTvs {
       inFlight.current = true;
       setConnecting(device);
       try {
-        await client.handoffGrant(device.handle, { proof: device.proof, check });
+        await client.handoff.grant(device.handle, { proof: device.proof, check });
         // The beacon is consumed server-side; drop the row now rather than
         // leaving a TV in the list that is already signing in.
         setRows((current) => current.filter((row) => row.handle !== device.handle));

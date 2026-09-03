@@ -150,10 +150,10 @@ export function JobCard({
   const action = useAsyncAction();
   const [open, setOpen] = useState(false);
 
-  const run = () => action.run(() => client.runJob(job.key).then(reload));
-  const cancel = () => action.run(() => client.cancelJob(job.key).then(reload));
+  const run = () => action.run(() => client.jobs.run(job.key).then(reload));
+  const cancel = () => action.run(() => client.jobs.cancel(job.key).then(reload));
   const toggle = (enabled: boolean) =>
-    action.run(() => client.updateJob(job.key, { enabled }).then(reload));
+    action.run(() => client.jobs.update(job.key, { enabled }).then(reload));
   const editSchedule = async () => {
     if (await ScheduleModal.call({ job })) reload();
   };

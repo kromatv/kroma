@@ -2,7 +2,7 @@
 // recipient: a socket only ever receives its own account's, so nothing that
 // arrives here needs filtering.
 
-import { KromaEvents, type NotificationsView } from '@kroma/core';
+import { KromaEvents, type NotificationId, type NotificationsView } from '@kroma/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { apiBase, kromaClient } from '#web/shared/lib/api';
@@ -93,13 +93,13 @@ export const NO_STICKY: ReadonlySet<string> = new Set<string>();
  * back is the most confusing way to say a write did not happen.
  */
 export function useReadState(): {
-  markRead: (ids: string[]) => void;
-  markUnread: (ids: string[]) => void;
+  markRead: (ids: NotificationId[]) => void;
+  markUnread: (ids: NotificationId[]) => void;
 } {
   const queryClient = useQueryClient();
   return useMemo(() => {
     const key = userQueries.notifications().queryKey;
-    const patch = (ids: string[], read: boolean) => {
+    const patch = (ids: NotificationId[], read: boolean) => {
       queryClient.setQueryData(key, (prev: NotificationsView | undefined) =>
         prev ? applyRead(prev, ids, read) : prev,
       );
@@ -107,19 +107,19 @@ export function useReadState(): {
     const settle = () => {
       void queryClient.invalidateQueries({ queryKey: key });
     };
-    const write = (ids: string[], read: boolean) => {
+    const write = (ids: NotificationId[], read: boolean) => {
       if (ids.length === 0) return;
       patch(ids, read);
       const client = kromaClient();
-      const sent = read ? client.markNotificationsRead(ids) : client.markNotificationsUnread(ids);
+      const sent = read ? client.notifications.markRead(ids) : client.notifications.markUnread(ids);
       sent.then(settle, () => {
         patch(ids, !read);
         settle();
       });
     };
     return {
-      markRead: (ids: string[]) => write(ids, true),
-      markUnread: (ids: string[]) => write(ids, false),
+      markRead: (ids: NotificationId[]) => write(ids, true),
+      markUnread: (ids: NotificationId[]) => write(ids, false),
     };
   }, [queryClient]);
 }

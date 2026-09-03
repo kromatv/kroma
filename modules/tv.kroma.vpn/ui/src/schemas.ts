@@ -38,6 +38,11 @@ export const SaveVpnBody = z.object({
 });
 export type SaveVpnBody = z.infer<typeof SaveVpnBody>;
 
+export const SaveVpnResult = z.object({
+  wgConfigured: z.boolean(),
+});
+export type SaveVpnResult = z.infer<typeof SaveVpnResult>;
+
 export const VpnBandwidthRange = z.enum(['12h', '24h', '7d', '30d', '90d', '1y', 'all']);
 export type VpnBandwidthRange = z.infer<typeof VpnBandwidthRange>;
 

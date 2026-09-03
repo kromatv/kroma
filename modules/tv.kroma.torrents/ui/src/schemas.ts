@@ -8,7 +8,7 @@ import { VpnStatusView } from '@kroma/module-vpn/schemas';
 import { z } from 'zod';
 
 export const DownloadClientId = brandedId('DownloadClientId');
-export type DownloadClientId = ReturnType<typeof DownloadClientId.of>;
+export type DownloadClientId = z.infer<typeof DownloadClientId>;
 
 /** One configured download client (password write-only). `kind` is an open
  * string on the wire (`rqbit` | `transmission` | `qbittorrent`). */
@@ -165,6 +165,11 @@ export interface DownloadQuery {
   dir?: SortDirection;
 }
 
+export const BulkActionResult = z.object({
+  count: z.number(),
+});
+export type BulkActionResult = z.infer<typeof BulkActionResult>;
+
 /** The engine-wide ceilings. `0` is unlimited in every field. */
 export const LimitsView = z.object({
   downKbps: z.number(),
@@ -220,6 +225,9 @@ export const EpisodeInfo = z.object({
   stillUrl: z.string().nullable(),
 });
 export type EpisodeInfo = z.infer<typeof EpisodeInfo>;
+
+export const EpisodeInfoList = z.array(EpisodeInfo);
+export type EpisodeInfoList = z.infer<typeof EpisodeInfoList>;
 
 /** `POST /downloads/torrent`: what an uploaded `.torrent` says about itself, in
  * the shape the manual-add flow already speaks. Queues nothing. */

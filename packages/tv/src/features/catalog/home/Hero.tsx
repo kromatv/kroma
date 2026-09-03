@@ -70,8 +70,10 @@ export function computeHero(
   if (hero) {
     heroBackdrop =
       hero.type === 'show'
-        ? (client.backdropFor(hero.show, HERO_W) ?? client.showPosterFor(hero.show, HERO_W))
-        : (client.backdropFor(hero.item, HERO_W) ?? client.posterFor(hero.item, HERO_W));
+        ? (client.media.artwork.backdropFor(hero.show, HERO_W) ??
+          client.media.artwork.showPosterFor(hero.show, HERO_W))
+        : (client.media.artwork.backdropFor(hero.item, HERO_W) ??
+          client.media.artwork.posterFor(hero.item, HERO_W));
   }
   let heroBadge: string | null = null;
   if (hero) {

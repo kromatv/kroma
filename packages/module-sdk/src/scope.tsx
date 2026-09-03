@@ -6,16 +6,16 @@
 // its API through `useModuleApi()` without ever spelling the id out. Naming a
 // module is then reserved for what it should mean: addressing a DIFFERENT one.
 
-import type { ModuleApi } from '@kroma/core';
+import { type ModuleApi, ModuleId } from '@kroma/core';
 import { useScopedT } from '@kroma/ui';
 import { createContext, type ReactNode, useContext, useMemo } from 'react';
 import { useAdminHost } from './admin/context';
 
-const ModuleIdContext = createContext<string | null>(null);
+const ModuleIdContext = createContext<ModuleId | null>(null);
 
 /** Mounted by the host around a module's page, carrying that module's id. */
 export function ModuleScope({ id, children }: Readonly<{ id: string; children: ReactNode }>) {
-  return <ModuleIdContext.Provider value={id}>{children}</ModuleIdContext.Provider>;
+  return <ModuleIdContext.Provider value={ModuleId.parse(id)}>{children}</ModuleIdContext.Provider>;
 }
 
 /** Translate against THIS module's catalog first, then the app's. Outside a
@@ -30,7 +30,7 @@ export function useT(): ReturnType<ReturnType<typeof useScopedT>> {
 export function useModuleApi(): ModuleApi {
   const id = useContext(ModuleIdContext);
   const { client } = useAdminHost();
-  const api = useMemo(() => (id === null ? null : client.module(id)), [client, id]);
+  const api = useMemo(() => (id === null ? null : client.modules.api(id)), [client, id]);
   if (api === null) {
     throw new Error('useModuleApi must be used inside a module page (the host mounts ModuleScope)');
   }
@@ -51,11 +51,11 @@ export function moduleApiHook<T>(
   boundFactory?: (api: ModuleApi) => T,
 ): () => T {
   if (typeof idOrFactory === 'string') {
-    const id = idOrFactory;
+    const id = ModuleId.parse(idOrFactory);
     const factory = boundFactory as (api: ModuleApi) => T;
     return function useBoundModuleApi(): T {
       const { client } = useAdminHost();
-      return useMemo(() => factory(client.module(id)), [client]);
+      return useMemo(() => factory(client.modules.api(id)), [client]);
     };
   }
   const factory = idOrFactory;

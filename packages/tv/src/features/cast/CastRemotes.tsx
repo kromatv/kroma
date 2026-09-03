@@ -69,7 +69,7 @@ export function CastRemotes() {
                   seed={remote.username}
                   size={44}
                   roundness={0.35}
-                  src={client?.resolveArt(remote.avatarUrl ?? undefined, 44)}
+                  src={client?.media.artwork.resolve(remote.avatarUrl ?? undefined, 44)}
                 />
               </ListRow.Leading>
               <ListRow.Trailing>

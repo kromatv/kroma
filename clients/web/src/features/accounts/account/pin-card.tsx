@@ -59,7 +59,7 @@ export function PinCard() {
     }
     setMismatch(false);
     save.run(async () => {
-      const { user: u } = await client.setPin(pin, hasPin ? current : undefined);
+      const { user: u } = await client.accounts.setPin(pin, hasPin ? current : undefined);
       updateUser({ hasPin: u.hasPin });
       reset();
     }, t('account.saveFailed'));
@@ -68,7 +68,7 @@ export function PinCard() {
   const removePin = () => {
     if (current.length !== 4) return;
     remove.run(async () => {
-      const { user: u } = await client.clearPin(current);
+      const { user: u } = await client.accounts.clearPin(current);
       updateUser({ hasPin: u.hasPin });
       reset();
     }, t('account.saveFailed'));

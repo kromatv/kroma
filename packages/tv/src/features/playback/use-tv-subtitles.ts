@@ -1,9 +1,11 @@
 import {
   GEN_LANGS,
+  GenerationId,
   type KromaClient,
   LANG_OFF,
   type MediaItem,
   type SubCapabilities,
+  SubtitleId,
 } from '@kroma/core';
 import {
   type PlayerSub,
@@ -38,8 +40,8 @@ export function useTvSubtitles(
 
   useEffect(() => {
     let cancelled = false;
-    client
-      .subtitleCapabilities(item.id)
+    client.subtitles
+      .capabilities(item.id)
       .then((c) => !cancelled && setCaps(c))
       .catch(() => undefined);
     return () => {
@@ -87,8 +89,8 @@ export function useTvSubtitles(
 
   const onDelete = useCallback(
     (subId: string) => {
-      void client
-        .deleteSubtitle(item.id, subId)
+      void client.subtitles
+        .delete(item.id, SubtitleId.parse(subId))
         .then(() => sel.reload())
         .catch(() => undefined);
     },
@@ -104,8 +106,8 @@ export function useTvSubtitles(
         sel.reload();
       };
       if (req.mode === 'transcribe') {
-        void client
-          .generateSubtitle(item.id, {
+        void client.subtitles
+          .generate(item.id, {
             mode: 'transcribe',
             lang: lang.label,
             spokenLang: lang.code,
@@ -116,8 +118,8 @@ export function useTvSubtitles(
       } else {
         const src = sel.rendered.find((s) => s.index === req.sourceIndex && s.url);
         if (!src) return;
-        void client
-          .generateSubtitle(item.id, {
+        void client.subtitles
+          .generate(item.id, {
             mode: 'translate',
             lang: lang.label,
             ...(src.subId ? { sourceSubId: src.subId } : { sourceTrack: src.index }),
@@ -133,7 +135,7 @@ export function useTvSubtitles(
     canCreate: Boolean(caps?.transcribe || caps?.translate),
     caps,
     pending: generations.filter((g) => g.status !== 'done'),
-    onCancel: cancel,
+    onCancel: (id) => cancel(GenerationId.parse(id)),
     onDelete,
     onStart,
   };

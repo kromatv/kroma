@@ -74,7 +74,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
       return;
     }
     let cancelled = false;
-    const url = kromaClient().hlsMasterUrl(item.id, decision.aacMaster, anchor, audioIndex);
+    const url = kromaClient().media.hlsMasterUrl(item.id, decision.aacMaster, anchor, audioIndex);
     fetch(url)
       .then((r) => {
         const start = r.headers.get('X-Hls-Start');

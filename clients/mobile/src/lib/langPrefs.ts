@@ -17,6 +17,6 @@ export function useLangPrefs(): LangPrefs {
     },
     [user, setUser],
   );
-  const updateAccount = useCallback((patch: LangPatch) => client.updateAccount(patch), [client]);
+  const updateAccount = useCallback((patch: LangPatch) => client.accounts.update(patch), [client]);
   return useSharedLangPrefs({ user, updateUser, updateAccount });
 }

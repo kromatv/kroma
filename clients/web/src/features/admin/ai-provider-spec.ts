@@ -1,9 +1,10 @@
-import type { MessageKey } from '@kroma/core';
+import type { LlmProviderId, MessageKey } from '@kroma/core';
 
 // `apiKey` is a transient field ('' = keep the stored secret); `hasApiKey`
-// reports whether one is stored server-side.
+// reports whether one is stored server-side. `id` is blank until the server
+// mints one on the first save.
 export type ProviderForm = {
-  id: string;
+  id: LlmProviderId | '';
   name: string;
   provider: string;
   baseUrl: string;

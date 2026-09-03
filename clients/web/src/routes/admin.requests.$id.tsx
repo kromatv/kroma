@@ -1,3 +1,4 @@
+import { RequestId } from '@kroma/core';
 import { createFileRoute } from '@tanstack/react-router';
 import { RequestDetailPage } from '#web/features/admin/request-detail';
 
@@ -7,5 +8,5 @@ export const Route = createFileRoute('/admin/requests/$id')({
 
 function RequestDetailRoute() {
   const { id } = Route.useParams();
-  return <RequestDetailPage id={id} />;
+  return <RequestDetailPage id={RequestId.parse(id)} />;
 }

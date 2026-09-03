@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const personDetails = vi.hoisted(() =>
   vi.fn(async (_name: string) => ({ person: null as unknown })),
 );
-const client = vi.hoisted(() => ({ current: { personDetails } }));
+const client = vi.hoisted(() => ({ current: { media: { person: personDetails } } }));
 vi.mock('#tv/app/router', () => ({ useClient: () => client.current }));
 
 import { usePersonDetail } from './usePersonDetail';
@@ -16,7 +16,7 @@ const GRETA = { name: 'Greta Gerwig', biography: 'Born in Sacramento.' };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  client.current = { personDetails };
+  client.current = { media: { person: personDetails } };
   personDetails.mockResolvedValue({ person: null });
 });
 
@@ -109,7 +109,7 @@ describe('walking from one person to another', () => {
     const { rerender } = renderHook(() => usePersonDetail('Denis Villeneuve'));
     await waitFor(() => expect(personDetails).toHaveBeenCalledOnce());
 
-    client.current = { personDetails };
+    client.current = { media: { person: personDetails } };
     rerender();
     await waitFor(() => expect(personDetails).toHaveBeenCalledTimes(2));
   });

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
-import type { KromaClient, MediaItem, SearchResponse, Show } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import type { MediaItem, SearchResponse, Show } from '@kroma/core';
 import { clearPressGuard } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -43,11 +44,15 @@ function mount({
   movies?: MediaItem[];
   shows?: Show[];
 } = {}) {
-  const client = {
-    search,
-    posterFor: (m: MediaItem) => `art:${m.id}`,
-    showPosterFor: (s: Show) => `art:${s.id}`,
-  } as unknown as KromaClient;
+  const client = fakeClient({
+    media: {
+      search,
+      artwork: {
+        posterFor: (m) => `art:${m.id}`,
+        showPosterFor: (s) => `art:${s.id}`,
+      },
+    },
+  });
   let nav!: TvNav;
   render(
     onScreen(

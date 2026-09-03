@@ -31,7 +31,7 @@ export class CrashBoundary extends Component<Props, State> {
     const { client, platform } = this.props;
     if (!client) return;
     const report = buildCrashReport(error, info.componentStack, platform, Date.now());
-    client.reportCrash(report).catch(() => {});
+    client.diagnostics.crash(report).catch(() => {});
   }
 
   private readonly retry = (): void => {

@@ -81,7 +81,7 @@ export async function publishPreview(client: KromaClient, movies: MediaItem[]): 
   if (!t) return;
   let continueItems: ContinueItem[] = [];
   try {
-    continueItems = await client.continueWatching();
+    continueItems = await client.playback.continueWatching();
   } catch {
     /* not logged in / no progress yet */
   }

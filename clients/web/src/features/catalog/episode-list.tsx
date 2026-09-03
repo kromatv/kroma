@@ -4,7 +4,7 @@
 // for exactly the episodes it is missing from one screen. The sticky request
 // bar below turns the ticks into one request.
 
-import type { CastMember, MediaItem } from '@kroma/core';
+import type { CastMember, ItemId, MediaItem, SubjectId } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Chip, ringRoomBlock, Text } from '@kroma/ui/kit';
 import { type CSSProperties, useState } from 'react';
@@ -77,10 +77,10 @@ export function SeasonSection({
 }: Readonly<{
   seasons: TitleSeason[];
   fallbackCast: CastMember[];
-  isWatched: (id: string) => boolean;
-  toggleWatched: (id: string) => void;
-  progressOf: (id: string) => number | null;
-  onPlay: (id: string) => void;
+  isWatched: (id: SubjectId) => boolean;
+  toggleWatched: (id: SubjectId) => void;
+  progressOf: (id: ItemId) => number | null;
+  onPlay: (id: ItemId) => void;
   canRequest: boolean;
   selected: Set<string>;
   onToggleEpisode: (season: number, episode: number) => void;
@@ -205,10 +205,10 @@ function SeasonEpisodes({
   current: TitleSeason;
   ordered: number[];
   ownedByNum: Map<number, MediaItem>;
-  isWatched: (id: string) => boolean;
-  toggleWatched: (id: string) => void;
-  progressOf: (id: string) => number | null;
-  onPlay: (id: string) => void;
+  isWatched: (id: SubjectId) => boolean;
+  toggleWatched: (id: SubjectId) => void;
+  progressOf: (id: ItemId) => number | null;
+  onPlay: (id: ItemId) => void;
   selected: Set<string>;
   onToggleEpisode: (season: number, episode: number) => void;
   pendingEpisodes: Set<string>;

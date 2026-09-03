@@ -129,7 +129,7 @@ export function useCatalogue(platform: string): Catalogue {
   const fetchCatalogue = useCallback(async (c: KromaClient, quiet = false) => {
     if (!quiet) setStatus('connecting');
     try {
-      const [mvs, shs] = await Promise.all([c.movies(), c.shows()]);
+      const [mvs, shs] = await Promise.all([c.media.movies(), c.media.shows()]);
       // A server switch mid-flight: the answer belongs to the server that has
       // just been left, so it must not become the catalogue on screen.
       if (liveClient.current !== c) return;

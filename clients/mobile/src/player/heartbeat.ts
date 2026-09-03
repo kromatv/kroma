@@ -6,7 +6,13 @@
 // shared service (@kroma/ui services/playback) does: the `playback.terminate`
 // event on the live WS bus, and a 410 on the next ping as fallback.
 
-import { KromaApiError, type KromaClient, KromaEvents, type MediaItem } from '@kroma/core';
+import {
+  KromaApiError,
+  type KromaClient,
+  KromaEvents,
+  type MediaItem,
+  PlaybackSessionId,
+} from '@kroma/core';
 import * as Device from 'expo-device';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
@@ -47,9 +53,11 @@ let sessionSeq = 0;
 // Not a secret and never an auth token, so this needs uniqueness, not
 // unpredictability. React Native has no `crypto.randomUUID`, and pulling in a
 // native crypto module just to name a dashboard row isn't a trade worth making.
-function newSessionId(device: string): string {
+function newSessionId(device: string): PlaybackSessionId {
   const slug = device.replace(/[^A-Za-z0-9]+/g, '-').toLowerCase();
-  return `mob-${slug}-${Date.now().toString(36)}-${(sessionSeq++).toString(36)}`;
+  return PlaybackSessionId.parse(
+    `mob-${slug}-${Date.now().toString(36)}-${(sessionSeq++).toString(36)}`,
+  );
 }
 
 function deviceLabel(): string {
@@ -58,7 +66,7 @@ function deviceLabel(): string {
 
 interface Session {
   itemId: string;
-  id: string;
+  id: PlaybackSessionId;
   /** Whether the server knows this session, so a title that never played is
    *  neither registered nor stopped. */
   opened: boolean;
@@ -105,12 +113,8 @@ export function useHeartbeat(
     const save = () => {
       const s = snapRef.current();
       if (s.positionSec <= 0) return;
-      void client
-        .saveProgress(
-          item.id,
-          Math.round(s.positionSec * 1000),
-          Math.round(s.durationSec * 1000) || null,
-        )
+      void client.playback
+        .save(item.id, Math.round(s.positionSec * 1000), Math.round(s.durationSec * 1000) || null)
         .catch(() => undefined);
     };
 
@@ -129,8 +133,8 @@ export function useHeartbeat(
         if (beforeGap && s.positionSec <= beforeGap.positionSec) return;
       }
       live.opened = true;
-      inFlight.current = client
-        .pingPlayback({
+      inFlight.current = client.playback
+        .ping({
           sessionId: live.id,
           itemId: item.id,
           positionMs: Math.round(s.positionSec * 1000),
@@ -184,7 +188,7 @@ export function useHeartbeat(
       live.opened = false;
       const owner = clientRef.current;
       inFlight.current = inFlight.current
-        .then(() => owner.stopPlayback(live.id))
+        .then(() => owner.playback.stop(live.id))
         .catch(() => undefined);
     };
   }, [item.id]);

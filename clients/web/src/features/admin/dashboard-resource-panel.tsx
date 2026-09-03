@@ -31,7 +31,7 @@ export function useMetricsWindow(): MetricsWindow {
   const range = useChoice(useRangeOptions(METRIC_RANGES), 'live');
   const { data } = usePoll(
     ['admin', 'metrics', range.value],
-    () => client.adminMetrics(range.value),
+    () => client.admin.metrics(range.value),
     range.value === 'live' ? LIVE_POLL_MS : STORED_POLL_MS,
   );
   return { range, metrics: data };

@@ -1,4 +1,4 @@
-import type { CastReceiver, ServerEvent } from '@kroma/core';
+import type { CastReceiver, DeviceId, ServerEvent } from '@kroma/core';
 import type { Dispatch, SetStateAction } from 'react';
 import type { Cast } from './cast-context';
 import type { PositionBase } from './cast-position';
@@ -8,7 +8,7 @@ import type { PositionBase } from './cast-position';
  * nobody can read, and two of them are only touched by one event. */
 interface CastEventSetters {
   receivers: Dispatch<SetStateAction<CastReceiver[]>>;
-  activeId: Dispatch<SetStateAction<string | null>>;
+  activeId: Dispatch<SetStateAction<DeviceId | null>>;
   error: Dispatch<SetStateAction<Cast['error']>>;
   base: Dispatch<SetStateAction<PositionBase | null>>;
 }

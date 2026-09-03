@@ -4,6 +4,7 @@
 // actually wants - "which screen" - and none of them should have to hold open
 // state to ask. Its single root is mounted in the app shell.
 
+import type { DeviceId } from '@kroma/core';
 import { useCast, useT } from '@kroma/ui';
 import { Dialog, EmptyState, Icon, type IconName, ListRow } from '@kroma/ui/kit';
 import { createCallable } from 'react-call';
@@ -12,8 +13,7 @@ export interface CastPickerProps {
   offerLocal?: boolean;
 }
 
-// `undefined` = dismissed · `null` = this device · a string = that receiver.
-type Picked = string | null | undefined;
+type Picked = DeviceId | null | undefined;
 
 export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offerLocal }) => {
   const t = useT();

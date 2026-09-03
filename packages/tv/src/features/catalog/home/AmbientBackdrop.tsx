@@ -57,10 +57,12 @@ const FALLBACK_TINT: [string, string] = [colors.surface2, colors.bg];
 export type CatalogEntry = { kind: 'movie'; item: MediaItem } | { kind: 'show'; item: Show };
 
 export function entryPoster(client: KromaClient, e: CatalogEntry, width: number): string {
-  return e.kind === 'movie' ? client.posterFor(e.item, width) : client.showPosterFor(e.item, width);
+  return e.kind === 'movie'
+    ? client.media.artwork.posterFor(e.item, width)
+    : client.media.artwork.showPosterFor(e.item, width);
 }
 
 function entryBackdrop(client: KromaClient, e: CatalogEntry | null): string | null {
   if (!e) return null;
-  return client.backdropFor(e.item, STAGE_W) ?? entryPoster(client, e, STAGE_W);
+  return client.media.artwork.backdropFor(e.item, STAGE_W) ?? entryPoster(client, e, STAGE_W);
 }

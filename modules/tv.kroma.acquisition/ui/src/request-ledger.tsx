@@ -11,6 +11,7 @@ import {
   type LedgerSeason,
   type MessageKey,
   qualityBadgeForVideo,
+  type RequestId,
 } from '@kroma/core';
 import { ModuleSlot, TABULAR, Table, useT } from '@kroma/module-sdk';
 import {
@@ -73,7 +74,7 @@ export function RequestLedger({
   today: string;
   locale: string;
   loading: boolean;
-  requestId: string;
+  requestId: RequestId;
   /** While editing what the request covers: the pick in progress. Absent when
    *  the catalogue is just being read. */
   draft: CoverageDraft | null;
@@ -251,7 +252,7 @@ function EpisodeRow({
   ep: LedgerEpisode;
   today: string;
   locale: string;
-  requestId: string;
+  requestId: RequestId;
   /** Whether the draft covers this episode; null when not editing. */
   picked: boolean | null;
   onToggle: () => void;

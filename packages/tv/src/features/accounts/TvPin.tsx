@@ -40,7 +40,7 @@ function resolveHeaderUser(
     return {
       name: activeUser.username,
       seed: activeUser.id,
-      src: activeClient?.resolveArt(activeUser.avatarUrl, 118),
+      src: activeClient?.media.artwork.resolve(activeUser.avatarUrl, 118),
     };
   }
   return null;
@@ -92,12 +92,12 @@ export function TvPin() {
   };
 
   // The exchange takes the PIN so a not-yet-verified token doesn't 401
-  // before `pinVerify`, the authoritative gate, can run.
+  // before `accounts.verifyPin`, the authoritative gate, can run.
   const runVerify = async (pin: string) => {
     if (!verifyClient || !account) return;
-    const sess = await verifyClient.exchangeToken(account.accessToken, pin);
+    const sess = await verifyClient.accounts.exchangeToken(account.accessToken, pin);
     verifyClient.setAuthToken(sess.token);
-    await verifyClient.pinVerify(pin);
+    await verifyClient.accounts.verifyPin(pin);
     activate(account);
     nav.home(); // `pin` is allowed while signed in (set/clear), so move on explicitly
   };
@@ -113,14 +113,14 @@ export function TvPin() {
       fail('pin.mismatch');
       return;
     }
-    const res = await activeClient?.setPin(pin);
+    const res = await activeClient?.accounts.setPin(pin);
     if (!res) return; // offline: don't fake success
     updateUser(res.user);
     nav.back();
   };
 
   const runClearPin = async (pin: string) => {
-    const res = await activeClient?.clearPin(pin);
+    const res = await activeClient?.accounts.clearPin(pin);
     if (!res) return; // offline: don't fake a disabled PIN
     updateUser(res.user);
     nav.back();

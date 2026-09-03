@@ -14,21 +14,31 @@ const ANY_ID = 'all';
 // The well a Select row gives its media slot.
 const MARK = 18;
 
-interface IdFilterProps {
+interface IdFilterProps<Id extends string> {
   label: string;
   anyLabel: string;
-  value: string | undefined;
-  options: readonly { id: string; name: string; media?: ReactNode }[];
-  onPick: (value: string | undefined) => void;
+  value: Id | undefined;
+  options: readonly { id: Id; name: string; media?: ReactNode }[];
+  onPick: (value: Id | undefined) => void;
 }
 
-function IdFilter({ label, anyLabel, value, options, onPick }: Readonly<IdFilterProps>) {
+function IdFilter<Id extends string>({
+  label,
+  anyLabel,
+  value,
+  options,
+  onPick,
+}: Readonly<IdFilterProps<Id>>) {
+  const pick = (next: string) => {
+    if (next === ANY_ID) {
+      onPick(undefined);
+      return;
+    }
+    const picked = options.find((option) => option.id === next);
+    if (picked) onPick(picked.id);
+  };
   return (
-    <Select.Root
-      label={label}
-      value={value ?? ANY_ID}
-      onValueChange={(next) => onPick(next === ANY_ID ? undefined : next)}
-    >
+    <Select.Root label={label} value={value ?? ANY_ID} onValueChange={pick}>
       <Select.Trigger />
       <Select.Item value={ANY_ID} label={anyLabel} />
       {options.map((option) => (

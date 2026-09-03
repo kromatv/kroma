@@ -31,7 +31,7 @@ export function useStoryboard(
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const poll = () => {
-      client
+      client.media
         .storyboard(item.id)
         .then((m) => {
           if (cancelled) return;
@@ -51,7 +51,7 @@ export function useStoryboard(
     if (!manifest || manifest.count === 0 || manifest.interval <= 0) return null;
     const index = Math.min(manifest.count - 1, Math.max(0, Math.floor(absSec / manifest.interval)));
     return {
-      sheet: localSprite ?? client.resolveArt(manifest.url) ?? manifest.url,
+      sheet: localSprite ?? client.media.artwork.resolve(manifest.url) ?? manifest.url,
       x: (index % manifest.cols) * manifest.tileW,
       y: Math.floor(index / manifest.cols) * manifest.tileH,
       tileW: manifest.tileW,

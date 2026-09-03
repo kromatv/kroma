@@ -1,3 +1,4 @@
+import { InviteToken } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Button, Logo, Text } from '@kroma/ui/kit';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
@@ -11,9 +12,10 @@ import { PAGE_RADIAL } from '#web/shared/ui';
 // `/join?invite=TOKEN`; the invitee creates their account here. The global
 // AuthGate is bypassed on this path so a not-yet-user can reach it.
 export const Route = createFileRoute('/join')({
-  validateSearch: (s: Record<string, unknown>): { invite?: string } => ({
-    invite: typeof s.invite === 'string' ? s.invite : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { invite?: InviteToken } => {
+    const invite = InviteToken.safeParse(s.invite);
+    return invite.success ? { invite: invite.data } : {};
+  },
   component: JoinPage,
 });
 
@@ -36,7 +38,7 @@ function JoinPage() {
       return;
     }
     let cancelled = false;
-    client
+    client.accounts
       .checkInvite(invite)
       .then((r) => {
         if (!cancelled) setStatus(r.valid ? 'ok' : 'invalid');

@@ -60,7 +60,7 @@ export function InvitePage() {
 
   const refresh = useCallback(() => {
     if (!allowed) return;
-    client
+    client.accounts
       .invites()
       .then(setPending)
       .catch(() => undefined);
@@ -81,7 +81,7 @@ export function InvitePage() {
     setBusy(true);
     setError(null);
     try {
-      const res = await client.createInvite({
+      const res = await client.accounts.createInvite({
         permissions: picked,
         expiresInDays: Number(expiry),
       });
@@ -239,7 +239,7 @@ function PendingInviteRow({ inv, onChange }: Readonly<{ inv: Invite; onChange: (
     if (!ok) return;
     setRevoking(true);
     try {
-      await client.revokeInvite(inv.token);
+      await client.accounts.revokeInvite(inv.token);
       onChange();
     } finally {
       setRevoking(false);

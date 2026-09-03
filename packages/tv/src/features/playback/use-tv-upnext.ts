@@ -1,6 +1,7 @@
 import {
   formatRuntime,
   genreLabels,
+  ItemId,
   type KromaClient,
   type MediaItem,
   metaLine,
@@ -25,7 +26,9 @@ function toCard(client: KromaClient, t: Translate, item: MediaItem): UpNextItem 
     subtitle: isEp
       ? `S${item.season} E${item.episode} · ${formatRuntime(item.durationMs)}`
       : metaLine(item),
-    posterUrl: client.backdropFor(item, UP_NEXT_ART_W) ?? client.posterFor(item, UP_NEXT_ART_W),
+    posterUrl:
+      client.media.artwork.backdropFor(item, UP_NEXT_ART_W) ??
+      client.media.artwork.posterFor(item, UP_NEXT_ART_W),
     categoryLabel: genreLabels(t, item.metadata)[0],
   };
 }
@@ -37,7 +40,9 @@ function toOffer(client: KromaClient, item: MediaItem): PostPlayItem {
     subtitle: metaLine(item),
     rating: item.metadata?.rating,
     overview: item.metadata?.overview,
-    artUrl: client.backdropFor(item, POST_PLAY_ART_W) ?? client.posterFor(item, POST_PLAY_ART_W),
+    artUrl:
+      client.media.artwork.backdropFor(item, POST_PLAY_ART_W) ??
+      client.media.artwork.posterFor(item, POST_PLAY_ART_W),
   };
 }
 
@@ -65,8 +70,8 @@ export function useTvUpNext(
   const recoId = item.showId ?? item.id;
   useEffect(() => {
     let cancelled = false;
-    client
-      .similar(recoId)
+    client.media
+      .similar(ItemId.parse(recoId))
       .then((list) => !cancelled && setSimilar(list))
       .catch(() => undefined);
     return () => {

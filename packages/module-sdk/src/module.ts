@@ -1,6 +1,7 @@
 // The frontend module contract: a `@kroma/module-<id>` package exports one
 // `KromaModule`, whose `id` must match its backend crate's module id.
 
+import type { RequestId } from '@kroma/core';
 import type { ComponentType } from 'react';
 import type { KromaHost } from './host';
 import type { Dependencies } from './types';
@@ -56,10 +57,15 @@ export interface SlotProps {
   /** The acquisition half of the admin request page: search for releases of
    *  this request and grab one. Everything about indexers, releases and
    *  downloads lives behind it. */
-  'requests.detail': { requestId: string; kind: 'movie' | 'show'; title: string; canGrab: boolean };
+  'requests.detail': {
+    requestId: RequestId;
+    kind: 'movie' | 'show';
+    title: string;
+    canGrab: boolean;
+  };
   /** Beside one episode row of the request page's catalogue: how far along the
    *  download of that episode is, if anything is downloading it. */
-  'requests.episode.progress': { requestId: string; season: number; episode: number };
+  'requests.episode.progress': { requestId: RequestId; season: number; episode: number };
 }
 
 export type SlotName = keyof SlotProps;

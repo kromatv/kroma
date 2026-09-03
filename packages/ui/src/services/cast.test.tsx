@@ -8,7 +8,8 @@
 // message rather than a silent no-op. And the position has to advance between
 // heartbeats, because a bar that steps once every ten seconds reads as broken.
 
-import { type CastReceiver, KromaApiError, type KromaClient } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import { type CastReceiver, DeviceId, ItemId, KromaApiError, type KromaClient } from '@kroma/core';
 import { act, render, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -38,9 +39,11 @@ vi.mock('@kroma/core', async (real) => {
   };
 });
 
+const SALON_ID = DeviceId.parse('tv-salon-01');
+
 const salon = (over: Partial<CastReceiver> = {}): CastReceiver =>
   ({
-    id: 'tv-salon-01',
+    id: SALON_ID,
     name: 'Apple TV',
     platform: 'Apple TV',
     username: 'Salon',
@@ -60,14 +63,10 @@ const playing = (positionMs: number) =>
     },
   } as unknown as Partial<CastReceiver>);
 
-function fakeClient(over: Record<string, unknown> = {}) {
-  const client = {
-    baseUrl: 'http://nas',
-    castReceivers: vi.fn(async () => [salon()]),
-    sendCastCommand: vi.fn(async () => 1),
-    ...over,
-  };
-  return client as unknown as KromaClient & typeof client;
+function castClient(over: Partial<KromaClient['cast']> = {}) {
+  return fakeClient({
+    cast: { receivers: vi.fn(async () => [salon()]), command: vi.fn(async () => 1), ...over },
+  });
 }
 
 function mount(client: KromaClient, enabled = true) {
@@ -89,56 +88,59 @@ afterEach(() => {
 
 describe('the roster', () => {
   it('lists the live receivers once signed in', async () => {
-    const { result } = mount(fakeClient());
+    const { result } = mount(castClient());
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
     expect(result.current.available).toBe(true);
     expect(result.current.active).toBeNull();
   });
 
   it('stays empty and asks for nothing while signed out', async () => {
-    const client = fakeClient();
+    const client = castClient();
     mount(client, false);
     await act(async () => undefined);
-    expect(client.castReceivers).not.toHaveBeenCalled();
+    expect(client.cast.receivers).not.toHaveBeenCalled();
   });
 
   it('patches a changed row in place instead of refetching', async () => {
-    const client = fakeClient();
+    const client = castClient();
     const { result } = mount(client);
-    await waitFor(() => expect(client.castReceivers).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(client.cast.receivers).toHaveBeenCalledTimes(1));
 
     act(() => events.onEvent?.({ type: 'cast.receiver', receiver: playing(1000) }));
     await waitFor(() => expect(result.current.receivers[0]?.nowPlaying?.state).toBe('playing'));
     // The whole point of carrying the row: one pause on one TV costs every
     // sender a patch, not an HTTP round trip.
-    expect(client.castReceivers).toHaveBeenCalledTimes(1);
+    expect(client.cast.receivers).toHaveBeenCalledTimes(1);
 
     // A TV nobody had yet simply joins the list, in the server's own order.
     act(() =>
-      events.onEvent?.({ type: 'cast.receiver', receiver: salon({ id: 'tv-a', name: 'AAA' }) }),
+      events.onEvent?.({
+        type: 'cast.receiver',
+        receiver: salon({ id: DeviceId.parse('tv-annexe-01'), name: 'AAA' }),
+      }),
     );
     await waitFor(() => expect(result.current.receivers).toHaveLength(2));
     expect(result.current.receivers[0]?.name).toBe('AAA');
   });
 
   it('resyncs on reconnect, where a gap may have swallowed a change', async () => {
-    const client = fakeClient();
+    const client = castClient();
     mount(client);
-    await waitFor(() => expect(client.castReceivers).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(client.cast.receivers).toHaveBeenCalledTimes(1));
     act(() => events.onOpen?.());
-    await waitFor(() => expect(client.castReceivers).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(client.cast.receivers).toHaveBeenCalledTimes(2));
   });
 
   it('drops the selection when the chosen TV goes away', async () => {
-    const client = fakeClient();
+    const client = castClient();
     const { result } = mount(client);
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
-    act(() => result.current.select('tv-salon-01'));
-    await waitFor(() => expect(result.current.active?.id).toBe('tv-salon-01'));
+    act(() => result.current.select(SALON_ID));
+    await waitFor(() => expect(result.current.active?.id).toBe(SALON_ID));
 
     // A TV whose socket closed is announced by id - no refetch, and the remote
     // stops pretending it is driving something.
-    act(() => events.onEvent?.({ type: 'cast.receiver.gone', receiverId: 'tv-salon-01' }));
+    act(() => events.onEvent?.({ type: 'cast.receiver.gone', receiverId: SALON_ID }));
     await waitFor(() => expect(result.current.active).toBeNull());
     expect(result.current.receivers).toHaveLength(0);
   });
@@ -146,32 +148,32 @@ describe('the roster', () => {
 
 describe('sending', () => {
   it('starts a title and takes over that TV', async () => {
-    const client = fakeClient();
+    const client = castClient();
     const { result } = mount(client);
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
 
     await act(async () => {
-      await result.current.playOn('tv-salon-01', 'it1' as never, 60_000);
+      await result.current.playOn(SALON_ID, ItemId.parse('it1'), 60_000);
     });
-    expect(client.sendCastCommand).toHaveBeenCalledWith('tv-salon-01', {
+    expect(client.cast.command).toHaveBeenCalledWith(SALON_ID, {
       type: 'play',
       itemId: 'it1',
       positionMs: 60_000,
     });
-    expect(result.current.active?.id).toBe('tv-salon-01');
+    expect(result.current.active?.id).toBe(SALON_ID);
     // Optimistic, so the remote doesn't sit at 0:00 while the TV starts.
     expect(result.current.positionMs).toBeGreaterThanOrEqual(60_000);
   });
 
   it('reports a TV that went away, and stops driving it', async () => {
-    const client = fakeClient({
-      sendCastCommand: vi.fn(async () => {
+    const client = castClient({
+      command: vi.fn(async () => {
         throw new KromaApiError(404, 'gone');
       }),
     });
     const { result } = mount(client);
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
-    act(() => result.current.select('tv-salon-01'));
+    act(() => result.current.select(SALON_ID));
 
     let ok: boolean | undefined;
     await act(async () => {
@@ -183,40 +185,40 @@ describe('sending', () => {
   });
 
   it('distinguishes a failed send from a missing TV', async () => {
-    const client = fakeClient({
-      sendCastCommand: vi.fn(async () => {
+    const client = castClient({
+      command: vi.fn(async () => {
         throw new KromaApiError(500, 'boom');
       }),
     });
     const { result } = mount(client);
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
-    act(() => result.current.select('tv-salon-01'));
+    act(() => result.current.select(SALON_ID));
     await act(async () => {
       await result.current.send({ type: 'pause' });
     });
     expect(result.current.error).toBe('cast.failed');
     // A 500 is this server having a bad moment, not the TV leaving.
-    expect(result.current.active?.id).toBe('tv-salon-01');
+    expect(result.current.active?.id).toBe(SALON_ID);
   });
 
   it('sends nothing when no TV is selected', async () => {
-    const client = fakeClient();
+    const client = castClient();
     const { result } = mount(client);
     let ok: boolean | undefined;
     await act(async () => {
       ok = await result.current.send({ type: 'pause' });
     });
     expect(ok).toBe(false);
-    expect(client.sendCastCommand).not.toHaveBeenCalled();
+    expect(client.cast.command).not.toHaveBeenCalled();
   });
 });
 
 describe('the position', () => {
   it('runs between heartbeats and resets on the next one', async () => {
-    const client = fakeClient({ castReceivers: vi.fn(async () => [playing(30_000)]) });
+    const client = castClient({ receivers: vi.fn(async () => [playing(30_000)]) });
     const { result } = mount(client);
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
-    act(() => result.current.select('tv-salon-01'));
+    act(() => result.current.select(SALON_ID));
 
     const start = result.current.positionMs;
     expect(start).toBeGreaterThanOrEqual(30_000);
@@ -230,7 +232,7 @@ describe('the position', () => {
     act(() =>
       events.onEvent?.({
         type: 'cast.position',
-        receiverId: 'tv-salon-01',
+        receiverId: SALON_ID,
         positionMs: 90_000,
         durationMs: 8_160_000,
         state: 'playing',
@@ -251,10 +253,10 @@ describe('the position', () => {
         subtitles: [],
       },
     } as unknown as Partial<CastReceiver>);
-    const client = fakeClient({ castReceivers: vi.fn(async () => [paused]) });
+    const client = castClient({ receivers: vi.fn(async () => [paused]) });
     const { result } = mount(client);
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
-    act(() => result.current.select('tv-salon-01'));
+    act(() => result.current.select(SALON_ID));
     await act(async () => {
       vi.advanceTimersByTime(5000);
     });
@@ -264,13 +266,13 @@ describe('the position', () => {
 
 describe('being one of the TV s remotes', () => {
   it('announces itself when it takes a TV, and lets go when it stops', async () => {
-    const { result } = mount(fakeClient());
+    const { result } = mount(castClient());
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
 
-    act(() => result.current.select('tv-salon-01'));
+    act(() => result.current.select(SALON_ID));
     expect(events.send).toHaveBeenCalledWith({
       type: 'cast.control',
-      receiverId: 'tv-salon-01',
+      receiverId: SALON_ID,
       name: 'iPhone',
     });
 
@@ -279,22 +281,22 @@ describe('being one of the TV s remotes', () => {
   });
 
   it('stands down when the television disconnects it', async () => {
-    const { result } = mount(fakeClient());
+    const { result } = mount(castClient());
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
-    act(() => result.current.select('tv-salon-01'));
-    await waitFor(() => expect(result.current.active?.id).toBe('tv-salon-01'));
+    act(() => result.current.select(SALON_ID));
+    await waitFor(() => expect(result.current.active?.id).toBe(SALON_ID));
 
-    act(() => events.onEvent?.({ type: 'cast.kicked', receiverId: 'tv-salon-01' }));
+    act(() => events.onEvent?.({ type: 'cast.kicked', receiverId: SALON_ID }));
     await waitFor(() => expect(result.current.active).toBeNull());
     expect(result.current.error).toBe('cast.kicked');
   });
 
   it('ignores a disconnect meant for another set', async () => {
-    const { result } = mount(fakeClient());
+    const { result } = mount(castClient());
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
-    act(() => result.current.select('tv-salon-01'));
+    act(() => result.current.select(SALON_ID));
     act(() => events.onEvent?.({ type: 'cast.kicked', receiverId: 'tv-chambre-02' }));
-    expect(result.current.active?.id).toBe('tv-salon-01');
+    expect(result.current.active?.id).toBe(SALON_ID);
   });
 });
 

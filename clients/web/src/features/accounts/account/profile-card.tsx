@@ -21,7 +21,7 @@ export function PhotoCard() {
   const pickAvatar = (file: File | null) => {
     if (!file) return;
     avatar.run(async () => {
-      const { avatarUrl } = await client.uploadAvatar(file);
+      const { avatarUrl } = await client.accounts.uploadAvatar(file);
       updateUser({ avatarUrl });
     }, t('account.avatarFailed'));
   };

@@ -6,7 +6,7 @@ import { useClient } from '#mobile/lib/session';
 export default function Films() {
   const t = useT();
   const client = useClient();
-  const query = useQuery({ queryKey: ['movies'], queryFn: () => client.movies() });
+  const query = useQuery(client.query.media.movies());
   return (
     <CatalogueScreen
       title={t('nav.films')}

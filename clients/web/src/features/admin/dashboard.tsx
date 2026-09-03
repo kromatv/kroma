@@ -23,12 +23,12 @@ export function DashboardScreen() {
 
   const { data: sessionsData, reload: reloadSessions } = usePoll(
     ['admin', 'sessions'],
-    () => client.adminSessions(),
+    () => client.admin.sessions(),
     SESSIONS_POLL_MS,
   );
   const { data: transcodes } = usePoll(
     ['admin', 'transcodes'],
-    () => client.adminTranscodes(),
+    () => client.admin.transcodes(),
     TRANSCODES_POLL_MS,
   );
   const roster = useAccountRoster();

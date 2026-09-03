@@ -77,7 +77,7 @@ export function ScanCode({ onConnected }: Readonly<{ onConnected: () => void }>)
   const submit = async (value: string) => {
     setState('busy');
     try {
-      await client.quickConnectAuthorize(value);
+      await client.accounts.quickConnect.authorize(value);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onConnected();
     } catch {

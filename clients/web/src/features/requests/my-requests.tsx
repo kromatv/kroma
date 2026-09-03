@@ -65,8 +65,8 @@ export function MyRequestsPage() {
 
   const cancel = (req: MediaRequest) => {
     setBusyId(req.id);
-    client
-      .deleteRequest(req.id)
+    client.requests
+      .delete(req.id)
       .then(() => queryClient.invalidateQueries({ queryKey: requestsQuery.queryKey }))
       .catch(() => undefined)
       .finally(() => setBusyId(null));

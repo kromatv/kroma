@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { TopUser } from '@kroma/core';
+import { type TopUser, UserId } from '@kroma/core';
 import { I18nProvider } from '@kroma/ui';
 import {
   createMemoryHistory,
@@ -18,7 +18,7 @@ afterEach(cleanup);
 
 const viewer = (fields: Partial<TopUser> = {}): TopUser => ({
   username: 'maxime',
-  userId: 'u-7',
+  userId: UserId.parse('u-7'),
   plays: 12,
   watchedMs: 3_600_000,
   filmsMs: 1_200_000,

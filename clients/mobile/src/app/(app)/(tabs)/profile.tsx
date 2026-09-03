@@ -50,7 +50,7 @@ export default function Profile() {
   const client = useClient();
   const downloads = useDownloads();
   const insets = useSafeAreaInsets();
-  const avatar = client.resolveArt(user?.avatarUrl);
+  const avatar = client.media.artwork.resolve(user?.avatarUrl);
 
   return (
     <ScrollView

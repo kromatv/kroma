@@ -101,7 +101,10 @@ export function UpNextCard({
 }>) {
   const t = useT();
   const client = useClient();
-  const thumb = sizedImageUrl(client.backdropFor(next) ?? client.posterFor(next), 320);
+  const thumb = sizedImageUrl(
+    client.media.artwork.backdropFor(next) ?? client.media.artwork.posterFor(next),
+    320,
+  );
   return (
     <Pressable onPress={onPlayNext} style={[s.upNext, { bottom }]}>
       <FadeImage uri={thumb} seed={next.id} radius={6} style={s.upNextThumb} />

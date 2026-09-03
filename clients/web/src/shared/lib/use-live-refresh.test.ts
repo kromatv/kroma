@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 
+import { ItemId, ShowId } from '@kroma/core';
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { c } from './queries.fixture';
 
 interface Handlers {
   onEvent: (e: { type: string; id: string }) => void;
@@ -31,11 +33,20 @@ vi.mock('@kroma/core', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   KromaEvents,
 }));
-vi.mock('#web/shared/lib/api', () => ({ apiBase: () => 'https://kroma.test' }));
+vi.mock('#web/shared/lib/api', () => ({
+  apiBase: () => 'https://kroma.test',
+  kromaClient: () => c,
+  toMovieView: (_c: unknown, m: unknown) => m,
+  toShowView: (_c: unknown, s: unknown) => s,
+}));
 
 const invalidateQueries = vi.hoisted(() => vi.fn(async () => undefined));
-vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ invalidateQueries }) }));
+vi.mock('@tanstack/react-query', () => ({
+  useQueryClient: () => ({ invalidateQueries }),
+  queryOptions: <T>(options: T) => options,
+}));
 
+import { catalogQueries } from './queries';
 import { useCatalogLiveRefresh } from './use-live-refresh';
 
 const COALESCE_MS = 600;
@@ -87,8 +98,9 @@ describe('what it reacts to', () => {
     renderHook(() => useCatalogLiveRefresh('item', 'itm_1'));
     emit('item.updated', 'itm_1');
     vi.advanceTimersByTime(COALESCE_MS);
-    // By key PREFIX, so a show's bundle under ['show', id, 'bundle'] refreshes too.
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['item', 'itm_1'] });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: catalogQueries.item(ItemId.parse('itm_1')).queryKey,
+    });
   });
 
   it('ignores an update for a DIFFERENT title', () => {
@@ -114,7 +126,9 @@ describe('what it reacts to', () => {
 
     emit('show.updated', 'shw_1');
     vi.advanceTimersByTime(COALESCE_MS);
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ['show', 'shw_1'] });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: catalogQueries.show(ShowId.parse('shw_1')).queryKey,
+    });
   });
 });
 

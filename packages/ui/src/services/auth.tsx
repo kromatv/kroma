@@ -2,11 +2,7 @@
 //
 // Token model: localStorage holds only a long-lived ACCESS token per remembered
 // account (never a bearer). On boot we silently exchange the active account's
-// access token for a short-lived SESSION token, kept in memory (see
-// `setSessionToken` in @kroma/core) and set as the client's bearer. A 401 during
-// use triggers a silent re-exchange (the `refreshHandler`). Switching INTO a
-// PIN-locked profile requires the PIN on the exchange; returning to the picker
-// re-locks it (`relock`) so the next switch-in re-prompts.
+// access token for a short-lived SESSION token, kept in memory.
 
 import {
   type AuthResult,
@@ -20,9 +16,9 @@ import {
   loadSession,
   type StoredSession,
   saveSession,
-  setSessionToken,
   sharedTokenExchange,
   type User,
+  type UserId,
 } from '@kroma/core';
 import {
   type Dispatch,
@@ -66,7 +62,7 @@ export interface AuthSession {
    * session and re-lock the access token so the next switch-in re-prompts. */
   switchProfile: () => void;
   /** Forget a remembered account on this device (revokes it when it's active). */
-  forget: (userId: string) => void;
+  forget: (userId: UserId) => void;
   /** Fully sign out of the current account (revoke tokens + forget this device). */
   logout: () => Promise<void>;
   /** Merge a patch into the active user, persisting it to the stored session. */
@@ -81,20 +77,18 @@ function refreshExchange(
 ): Promise<string | undefined> {
   const active = loadSession();
   if (!active) return Promise.resolve(undefined);
-  return sharedTokenExchange(() => client.exchangeToken(active.accessToken))
+  return sharedTokenExchange(() => client.accounts.exchangeToken(active.accessToken))
     .then((res) => {
-      setSessionToken(res.token);
       client.setAuthToken(res.token);
       setSession((cur) => (cur ? { ...cur, user: res.user } : cur));
       saveSession({ ...active, user: res.user });
-      return res.token as string | undefined;
+      return res.token;
     })
     .catch(() => {
       // The access token is dead (revoked/expired, or a PIN was added
       // elsewhere so no-PIN exchange 401s). Drop the session so the login
       // gate reappears instead of a zombie 'signed-in' state that 401s every
       // request forever. The account stays remembered for a re-login/PIN.
-      setSessionToken(undefined);
       client.setAuthToken();
       clearSession();
       setSession(null);
@@ -107,10 +101,8 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
   const [accounts, setAccounts] = useState<StoredSession[]>([]);
   const [ready, setReady] = useState(false);
 
-  /** Adopt a freshly-minted session token: memory + client bearer + stored user. */
   const adopt = useCallback(
     (stored: StoredSession, token: string, user: User) => {
-      setSessionToken(token);
       client?.setAuthToken(token);
       const next: StoredSession = { ...stored, user };
       saveSession(next);
@@ -141,7 +133,7 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
       return;
     }
     let cancelled = false;
-    sharedTokenExchange(() => client.exchangeToken(active.accessToken))
+    sharedTokenExchange(() => client.accounts.exchangeToken(active.accessToken))
       .then((res) => {
         if (cancelled) return;
         adopt(active, res.token, res.user);
@@ -149,7 +141,6 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
       .catch(() => {
         if (cancelled) return;
         // Can't silently resume (PIN required / token invalid): show the picker.
-        setSessionToken(undefined);
         client.setAuthToken();
         clearSession();
         setSession(null);
@@ -173,7 +164,7 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
     async (s: StoredSession, pin?: string): Promise<ActivateResult> => {
       if (!client) return { ok: false, needsPin: false, unreachable: true };
       try {
-        const res = await client.exchangeToken(s.accessToken, pin);
+        const res = await client.accounts.exchangeToken(s.accessToken, pin);
         adopt(s, res.token, res.user);
         return { ok: true };
       } catch (e) {
@@ -206,24 +197,23 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
 
   const switchProfile = useCallback(() => {
     const active = loadSession();
-    if (active && client) client.relock(active.accessToken).catch(() => {});
-    setSessionToken(undefined);
+    if (active && client) client.accounts.relock(active.accessToken).catch(() => {});
     client?.setAuthToken();
     clearSession();
     setSession(null);
   }, [client]);
 
   const forget = useCallback(
-    (userId: string) => {
+    (userId: UserId) => {
       const active = loadSession();
       // Revoke server-side only when it's the active account (the logout call
       // also drops the current bearer, which we're discarding anyway).
-      if (active?.user.id === userId && client) client.logout(active.accessToken).catch(() => {});
+      if (active?.user.id === userId && client)
+        client.accounts.logout(active.accessToken).catch(() => {});
       forgetAccount(userId);
       setAccounts(loadAccounts());
       setSession((s) => {
         if (s?.user.id === userId) {
-          setSessionToken(undefined);
           client?.setAuthToken();
           return null;
         }
@@ -240,12 +230,11 @@ export function useAuthSession(client: KromaClient | null): AuthSession {
     const token = active?.accessToken;
     if (client) {
       try {
-        await client.logout(token);
+        await client.accounts.logout(token);
       } catch {
         /* best-effort server-side revocation */
       }
     }
-    setSessionToken(undefined);
     client?.setAuthToken();
     if (active) forgetAccount(active.user.id);
     else clearSession();

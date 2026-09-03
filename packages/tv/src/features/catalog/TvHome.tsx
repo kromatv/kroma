@@ -90,7 +90,10 @@ export function TvHome() {
             key={`${key}-${show.id}`}
             title={show.title}
             overline={genreLabels(t, show.metadata)[0] ?? t('content.series')}
-            art={client.backdropFor(show, TILE_W) ?? client.showPosterFor(show, TILE_W)}
+            art={
+              client.media.artwork.backdropFor(show, TILE_W) ??
+              client.media.artwork.showPosterFor(show, TILE_W)
+            }
             tint={posterColors(show.id)}
             watched={isWatched(show.id)}
             progress={show.progress == null ? null : show.progress / 100}
@@ -104,7 +107,9 @@ export function TvHome() {
           key={`${key}-${m.id}`}
           title={m.title}
           overline={genreLabels(t, m.metadata)[0] ?? t('content.film')}
-          art={client.backdropFor(m, TILE_W) ?? client.posterFor(m, TILE_W)}
+          art={
+            client.media.artwork.backdropFor(m, TILE_W) ?? client.media.artwork.posterFor(m, TILE_W)
+          }
           tint={posterColors(m.id)}
           watched={isWatched(m.id)}
           onPress={() => onSelectMovie(m)}
@@ -145,7 +150,10 @@ export function TvHome() {
                 key={`continue-${item.id}`}
                 title={item.title}
                 overline={genre}
-                art={client.backdropFor(item, TILE_W) ?? client.posterFor(item, TILE_W)}
+                art={
+                  client.media.artwork.backdropFor(item, TILE_W) ??
+                  client.media.artwork.posterFor(item, TILE_W)
+                }
                 tint={posterColors(item.id)}
                 progress={pct / 100}
                 onPress={() => onPlay(item)}
@@ -178,7 +186,10 @@ export function TvHome() {
                   genreLabels(t, show.metadata)[0] ??
                   t('content.seasonCount', { count: show.seasonCount })
                 }
-                art={client.backdropFor(show, TILE_W) ?? client.showPosterFor(show, TILE_W)}
+                art={
+                  client.media.artwork.backdropFor(show, TILE_W) ??
+                  client.media.artwork.showPosterFor(show, TILE_W)
+                }
                 tint={posterColors(show.id)}
                 watched={isWatched(show.id)}
                 progress={show.progress == null ? null : show.progress / 100}

@@ -78,9 +78,9 @@ export function useKromaEngine(
 
   const sourceUrl = useCallback((): string => {
     if (localUri) return localUri;
-    if (core.mode === 'direct') return client.streamUrl(item.id);
+    if (core.mode === 'direct') return client.media.streamUrl(item.id);
     const f = core.filter === 'off' ? undefined : core.filter;
-    return client.hlsMasterUrl(item.id, core.forceAac, core.baseSec, core.audioIndex, {
+    return client.media.hlsMasterUrl(item.id, core.forceAac, core.baseSec, core.audioIndex, {
       filter: f,
     });
   }, [client, item.id, core, localUri]);
@@ -120,7 +120,7 @@ export function useKromaEngine(
           metadata: {
             title: meta?.title ?? item.title,
             artist: item.showTitle ?? undefined,
-            artwork: client.resolveArt(meta?.posterUrl) ?? undefined,
+            artwork: client.media.artwork.resolve(meta?.posterUrl) ?? undefined,
           },
         })
         .catch(() => id === core.loadId && setFailed(true));

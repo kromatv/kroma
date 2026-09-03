@@ -62,7 +62,7 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
   const create = () => {
     if (!name.trim()) return;
     run(async () => {
-      await client.createLibrary({
+      await client.library.create({
         name: name.trim(),
         kind,
         folders: folder.trim() ? [folder.trim()] : [],
@@ -120,7 +120,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
 
     const save = () =>
       run(async () => {
-        await client.updateLibrary(lib.id, { name: name.trim(), kind, folders, autoScan });
+        await client.library.update(lib.id, { name: name.trim(), kind, folders, autoScan });
         call.end(true);
       });
     const remove = async () => {
@@ -133,7 +133,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
       });
       if (!ok) return;
       run(async () => {
-        await client.deleteLibrary(lib.id);
+        await client.library.delete(lib.id);
         call.end(true);
       });
     };

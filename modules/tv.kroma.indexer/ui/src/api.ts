@@ -3,31 +3,31 @@
 // here.
 
 import { moduleApiHook } from '@kroma/module-sdk';
-import type {
+import {
   IndexerDefinitionDetailView,
   IndexerDefinitionsView,
   IndexersView,
   IndexerTestResult,
   IndexerView,
-  SaveIndexerBody,
+  type SaveIndexerBody,
   SyncDefinitionsResult,
 } from './schemas';
 
 const enc = encodeURIComponent;
 
 export const useIndexerApi = moduleApiHook((api) => ({
-  list: () => api.get<IndexersView>('/indexers'),
-  create: (body: SaveIndexerBody) => api.post<IndexerView>('/indexers', body),
+  list: () => api.get('/indexers', IndexersView),
+  create: (body: SaveIndexerBody) => api.post('/indexers', body, IndexerView),
   /** Partial update: an omitted field keeps its value, apiKey included. */
-  update: (id: string, body: SaveIndexerBody) => api.put<IndexerView>(`/indexers/${enc(id)}`, body),
-  remove: (id: string) => api.delete<void>(`/indexers/${enc(id)}`),
+  update: (id: string, body: SaveIndexerBody) => api.put(`/indexers/${enc(id)}`, body, IndexerView),
+  remove: (id: string) => api.delete(`/indexers/${enc(id)}`),
   /** Live t=caps round-trip: latency, server title, TMDB id support. */
-  test: (id: string) => api.post<IndexerTestResult>(`/indexers/${enc(id)}/test`),
+  test: (id: string) => api.post(`/indexers/${enc(id)}/test`, undefined, IndexerTestResult),
   /** Browse the cached Cardigann definition catalog (built-in indexers). */
-  definitions: () => api.get<IndexerDefinitionsView>('/indexers/definitions'),
+  definitions: () => api.get('/indexers/definitions', IndexerDefinitionsView),
   /** The settings schema for one definition (drives the add form). */
   definition: (id: string) =>
-    api.get<IndexerDefinitionDetailView>(`/indexers/definitions/${enc(id)}`),
+    api.get(`/indexers/definitions/${enc(id)}`, IndexerDefinitionDetailView),
   /** Fetch the current definition set from upstream into the local cache. */
-  syncDefinitions: () => api.post<SyncDefinitionsResult>('/indexers/definitions/sync'),
+  syncDefinitions: () => api.post('/indexers/definitions/sync', undefined, SyncDefinitionsResult),
 }));

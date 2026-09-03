@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import type { MediaItem } from '@kroma/core';
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useSubtitleSelection } from './useSubtitleSelection';
 
-const client = {
-  downloadedSubtitles: () => Promise.resolve([]),
-  subtitleUrl: (id: string, index: number) => `/sub/${id}/${index}.vtt`,
-  resolveArt: (url: string) => url,
-} as unknown as KromaClient;
+const client = fakeClient({
+  subtitles: { downloaded: async () => [] },
+  media: { subtitleUrl: (id, index) => `/sub/${id}/${index}.vtt` },
+});
 
 /** Index 1 is a PICTURE sub (PGS): French, but not renderable as text - the
  * preference must skip it and land on the text track at index 2. */

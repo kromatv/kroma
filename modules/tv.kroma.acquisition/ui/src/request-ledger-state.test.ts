@@ -1,4 +1,4 @@
-import type { LedgerEpisode, LedgerSeason } from '@kroma/core';
+import { type LedgerEpisode, type LedgerSeason, WantedId } from '@kroma/core';
 import { describe, expect, it } from 'vitest';
 import { episodeState, isRequested, seasonToOpen } from './request-ledger-state';
 
@@ -14,7 +14,7 @@ function ep(episode: number, patch: Partial<LedgerEpisode> = {}): LedgerEpisode 
     stillUrl: null,
     rating: null,
     onDisk: false,
-    wantedId: `w${episode}`,
+    wantedId: WantedId.parse(`w${episode}`),
     wantedStatus: 'wanted',
     itemId: null,
     video: null,

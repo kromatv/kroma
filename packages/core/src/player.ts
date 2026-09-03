@@ -19,7 +19,7 @@ export function attachDirectPlay(
 ): DirectPlayVerdict {
   const verdict = canDirectPlay(item, capabilities());
 
-  video.src = client.streamUrl(item.id);
+  video.src = client.media.streamUrl(item.id);
   video.preload = 'auto';
   if (opts.startMs && opts.startMs > 0) {
     const seekTo = opts.startMs / 1000;

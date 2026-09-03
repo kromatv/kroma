@@ -1,6 +1,7 @@
 // Per-user "watched" state: the whole set of ids is loaded once on sign-in so a
 // card checks membership instead of costing a request. Toggling is optimistic.
 
+import { ItemId, type SubjectId } from '@kroma/core';
 import {
   createContext,
   type ReactNode,
@@ -15,22 +16,20 @@ import { useAuth } from '#web/shared/lib/auth';
 
 interface WatchedValue {
   ready: boolean;
-  ids: readonly string[];
-  isWatched: (id: string) => boolean;
-  setWatched: (id: string, watched: boolean) => void;
-  toggleWatched: (id: string) => void;
+  ids: readonly SubjectId[];
+  isWatched: (id: SubjectId) => boolean;
+  setWatched: (id: SubjectId, watched: boolean) => void;
+  toggleWatched: (id: SubjectId) => void;
 }
 
 const WatchedContext = createContext<WatchedValue | null>(null);
 
 export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { client, user, ready: authReady } = useAuth();
-  const [ids, setIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [ids, setIds] = useState<ReadonlySet<SubjectId>>(() => new Set());
   const [ready, setReady] = useState(false);
-  // Mirror of `ids`, readable synchronously from `setWatched` without putting
-  // `ids` in its dep list (which would churn its identity).
-  const idsRef = useRef<ReadonlySet<string>>(ids);
-  const apply = useCallback((next: ReadonlySet<string>) => {
+  const idsRef = useRef<ReadonlySet<SubjectId>>(ids);
+  const apply = useCallback((next: ReadonlySet<SubjectId>) => {
     idsRef.current = next;
     setIds(next);
   }, []);
@@ -44,7 +43,7 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
     }
     let cancelled = false;
     setReady(false);
-    client
+    client.playback
       .watched()
       .then((list) => {
         if (!cancelled) {
@@ -61,16 +60,16 @@ export function WatchedProvider({ children }: Readonly<{ children: ReactNode }>)
   }, [client, user, authReady, apply]);
 
   const setWatched = useCallback(
-    (id: string, watched: boolean) => {
+    (id: SubjectId, watched: boolean) => {
       if (!user) return;
-      // Only act on a real transition: a failed redundant call would revert and
-      // clear an already-watched badge.
       if (idsRef.current.has(id) === watched) return;
       const next = new Set(idsRef.current);
       if (watched) next.add(id);
       else next.delete(id);
       apply(next);
-      const call = watched ? client.markWatched(id) : client.unmarkWatched(id);
+      const call = watched
+        ? client.playback.markWatched(ItemId.parse(id))
+        : client.playback.unmarkWatched(ItemId.parse(id));
       call.catch(() => {
         const reverted = new Set(idsRef.current);
         if (watched) reverted.delete(id);

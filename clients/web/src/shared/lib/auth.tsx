@@ -1,7 +1,14 @@
 // Client-side authentication context: one authed KromaClient plus the
 // web-specific login, passkey and registration flows over `useAuthSession`.
 
-import { activeLocale, KromaClient, type StoredSession, type User } from '@kroma/core';
+import { createQueryClient, type QueryClient } from '@kroma/client/query';
+import {
+  activeLocale,
+  type InviteToken,
+  type StoredSession,
+  type User,
+  type UserId,
+} from '@kroma/core';
 import { type ActivateResult, useAuthSession } from '@kroma/ui';
 import { useRouter } from '@tanstack/react-router';
 import { createContext, type ReactNode, useCallback, useContext, useMemo } from 'react';
@@ -12,7 +19,7 @@ import { getPasskey } from '#web/shared/lib/webauthn';
 interface AuthValue {
   user: User | null;
   ready: boolean;
-  client: KromaClient;
+  client: QueryClient;
   accounts: StoredSession[];
   login: (email: string, password: string) => Promise<void>;
   loginPasskey: () => Promise<void>;
@@ -21,11 +28,11 @@ interface AuthValue {
     username: string,
     password: string,
     avatar?: File | null,
-    inviteToken?: string,
+    inviteToken?: InviteToken,
   ) => Promise<void>;
   activate: (s: StoredSession, pin?: string) => Promise<ActivateResult>;
   switchProfile: () => void;
-  forget: (userId: string) => void;
+  forget: (userId: UserId) => void;
   logout: () => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
 }
@@ -33,13 +40,16 @@ interface AuthValue {
 const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const client = useMemo(() => new KromaClient({ baseUrl: apiBase(), locale: activeLocale() }), []);
+  const client = useMemo(
+    () => createQueryClient({ baseUrl: apiBase(), locale: activeLocale() }),
+    [],
+  );
   const auth = useAuthSession(client);
   const router = useRouter();
 
   const login = useCallback(
     async (email: string, password: string) => {
-      auth.apply(await client.login(email, password));
+      auth.apply(await client.accounts.login(email, password));
       void router.invalidate();
       void queryClient.invalidateQueries();
     },
@@ -47,9 +57,9 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
   );
 
   const loginPasskey = useCallback(async () => {
-    const { ceremonyId, options } = await client.passkeyAuthStart();
+    const { ceremonyId, options } = await client.accounts.passkeys.authStart();
     const credential = await getPasskey(options);
-    auth.apply(await client.passkeyAuthFinish({ ceremonyId, credential }));
+    auth.apply(await client.accounts.passkeys.authFinish({ ceremonyId, credential }));
     void router.invalidate();
     void queryClient.invalidateQueries();
   }, [client, auth, router]);
@@ -60,13 +70,13 @@ export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
       username: string,
       password: string,
       avatar?: File | null,
-      inviteToken?: string,
+      inviteToken?: InviteToken,
     ) => {
-      const res = await client.register(email, username, password, inviteToken);
+      const res = await client.accounts.register(email, username, password, inviteToken);
       auth.apply(res);
       if (avatar) {
         try {
-          const { avatarUrl } = await client.uploadAvatar(avatar);
+          const { avatarUrl } = await client.accounts.uploadAvatar(avatar);
           auth.updateUser({ avatarUrl });
         } catch {
           /* avatar is optional keep the account without it */

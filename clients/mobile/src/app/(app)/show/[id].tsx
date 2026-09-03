@@ -2,7 +2,7 @@
 // episode to play; long-press for its detail page. Row components live in
 // components/showEpisodes.tsx.
 
-import { sizedImageUrl } from '@kroma/core';
+import { ShowId, sizedImageUrl } from '@kroma/core';
 import { Box, Button, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -22,10 +22,10 @@ import { spacing, type } from '#mobile/lib/theme';
 
 export default function ShowRoute() {
   const id = routeParam(useLocalSearchParams<{ id?: string }>().id);
-  return id ? <ShowDetail id={id} /> : <Redirect href="/" />;
+  return id ? <ShowDetail id={ShowId.parse(id)} /> : <Redirect href="/" />;
 }
 
-function ShowDetail({ id }: Readonly<{ id: string }>) {
+function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
   const t = useT();
   const client = useClient();
   const router = useRouter();
@@ -42,22 +42,10 @@ function ShowDetail({ id }: Readonly<{ id: string }>) {
     scrollY.value = e.contentOffset.y;
   });
 
-  const detail = useQuery({ queryKey: ['show', id], queryFn: () => client.show(id) });
-  const upNext = useQuery({
-    queryKey: ['upNext', id],
-    queryFn: () => client.upNext(id),
-    staleTime: 30_000,
-  });
-  const progress = useQuery({
-    queryKey: ['allProgress'],
-    queryFn: () => client.progress(),
-    staleTime: 30_000,
-  });
-  const watched = useQuery({
-    queryKey: ['watched'],
-    queryFn: () => client.watched(),
-    staleTime: 60_000,
-  });
+  const detail = useQuery(client.query.media.show(id));
+  const upNext = useQuery({ ...client.query.playback.upNext(id), staleTime: 30_000 });
+  const progress = useQuery({ ...client.query.playback.progress(), staleTime: 30_000 });
+  const watched = useQuery({ ...client.query.playback.watched(), staleTime: 60_000 });
 
   if (detail.isPending) return <Loading label={t('common.loading')} />;
   if (detail.isError)
@@ -72,7 +60,7 @@ function ShowDetail({ id }: Readonly<{ id: string }>) {
   const { show, seasons } = detail.data;
   const season = seasons[Math.min(seasonIdx, seasons.length - 1)];
   const backdrop = sizedImageUrl(
-    client.backdropFor(show) ?? client.showPosterFor(show),
+    client.media.artwork.backdropFor(show) ?? client.media.artwork.showPosterFor(show),
     Math.min(1280, width),
   );
   const title = show.metadata?.title ?? show.title;

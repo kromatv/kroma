@@ -33,7 +33,7 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
     }),
     [client, user],
   );
-  const { data: serverInfo } = usePoll(['admin', 'server'], () => client.adminServer(), 15000);
+  const { data: serverInfo } = usePoll(['admin', 'server'], () => client.admin.server(), 15000);
 
   // Coalesce to one refresh per window, since e.g. an enrich pass emits one
   // item.updated per title. Compared as plain strings: download.progress is a

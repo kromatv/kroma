@@ -19,7 +19,7 @@ export function IdentityForm() {
     setSavingInfo(true);
     setInfoNote(null);
     try {
-      const { user: updated } = await client.updateAccount({
+      const { user: updated } = await client.accounts.update({
         username: username.trim(),
         email: email.trim(),
       });

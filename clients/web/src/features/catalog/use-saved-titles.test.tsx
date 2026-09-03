@@ -11,7 +11,9 @@ const api = vi.hoisted(() => ({
   discoverDetail: vi.fn(),
 }));
 
-vi.mock('#web/shared/lib/api', () => ({ kromaClient: () => api }));
+vi.mock('#web/shared/lib/api', () => ({
+  kromaClient: () => ({ discovery: { detail: api.discoverDetail } }),
+}));
 
 import { useSavedTitles } from './use-saved-titles';
 

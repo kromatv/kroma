@@ -72,8 +72,8 @@ export abstract class BaseTvEngine implements TvEngine {
 
   protected sourceUrl(): string {
     return this.mode === 'direct'
-      ? this.client.streamUrl(this.item.id)
-      : this.client.hlsMasterUrl(
+      ? this.client.media.streamUrl(this.item.id)
+      : this.client.media.hlsMasterUrl(
           this.item.id,
           this.forceAac,
           this.baseSec,

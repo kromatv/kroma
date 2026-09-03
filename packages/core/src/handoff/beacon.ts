@@ -6,7 +6,7 @@
 // which only a phone in the same room can hear. The second is optional and the
 // first is not, because the grant travels through the server either way.
 
-import { type AuthResult, KromaApiError, type KromaClient } from '@kroma/client';
+import { type AuthResult, type DeviceId, KromaApiError, type KromaClient } from '@kroma/client';
 import { beaconTxt, type LanDiscoveryBridge } from './sources';
 
 /** What the gate screens show while the TV waits: the name a phone sees, and
@@ -18,7 +18,7 @@ export interface HandoffBeaconView {
 
 export interface HandoffLoopOptions {
   client: KromaClient;
-  deviceId: string;
+  deviceId: DeviceId;
   /** Publish the beacon on this device's own link as well, when the platform
    * has a DNS-SD stack to publish it with. A phone that hears the record has
    * proved it is in the room, which is worth more than any address the server
@@ -111,7 +111,7 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
 
   const poll = async (mine: number, every: number) => {
     try {
-      const status = await client.handoffPoll(secret);
+      const status = await client.handoff.poll(secret);
       if (stale(mine)) return;
       if (status.status === 'authorized') {
         // Collected: the beacon is already consumed server-side, so there is
@@ -149,7 +149,7 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
     try {
       // Passing the outgoing secret retires that beacon up front, so a phone
       // looking at the list never sees this TV twice.
-      const beacon = await client.announceHandoff({
+      const beacon = await client.handoff.announce({
         deviceId,
         name,
         platform,
@@ -158,7 +158,7 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
       if (stale(mine)) {
         // Nothing holds this reply any more, and a beacon left standing keeps a
         // row in every nearby picker for its full TTL. Take it down.
-        client.handoffLeave(beacon.secret).catch(() => undefined);
+        client.handoff.leave(beacon.secret).catch(() => undefined);
         return;
       }
       secret = beacon.secret;
@@ -199,7 +199,7 @@ export function startHandoff(opts: HandoffLoopOptions): HandoffBeaconHandle {
       if (secret) {
         const going = secret;
         secret = '';
-        client.handoffLeave(going).catch(() => undefined);
+        client.handoff.leave(going).catch(() => undefined);
       }
     },
     rename(next: string) {

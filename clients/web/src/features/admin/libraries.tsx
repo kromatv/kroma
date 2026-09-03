@@ -46,7 +46,7 @@ export function LibrariesScreen() {
 function LibrariesPageInner() {
   const t = useT();
   const { client } = useAuth();
-  const { data, reload } = usePoll(['admin', 'libraries'], () => client.adminLibraries(), 8000);
+  const { data, reload } = usePoll(['admin', 'libraries'], () => client.library.list(), 8000);
 
   const openAdd = async () => {
     if (await AddLibraryModal.call()) reload();
@@ -115,7 +115,7 @@ function LibraryCard({
   async function scan() {
     setScanning(true);
     try {
-      await client.scanLibrary(lib.id);
+      await client.library.scan(lib.id);
     } finally {
       setTimeout(() => setScanning(false), 1200);
     }

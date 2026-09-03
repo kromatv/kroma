@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { decodableAudioCodecs, type KromaClient, type MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import { decodableAudioCodecs, type MediaItem } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineListeners } from './engine';
 import { HtmlEngine } from './htmlEngine';
@@ -148,11 +149,15 @@ const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
 function mkClient() {
   const hlsMasterUrl = vi.fn(
-    (id: string, aac: boolean, startSec: number, audio: number) =>
+    (id: string, aac = false, startSec = 0, audio = 0) =>
       `master:${id}:${aac}:${startSec}:${audio}`,
   );
   const streamUrl = vi.fn((id: string) => `stream:${id}`);
-  return { client: { streamUrl, hlsMasterUrl } as unknown as KromaClient, hlsMasterUrl, streamUrl };
+  return {
+    client: fakeClient({ media: { streamUrl, hlsMasterUrl } }),
+    hlsMasterUrl,
+    streamUrl,
+  };
 }
 
 function makeEngine(opts: {

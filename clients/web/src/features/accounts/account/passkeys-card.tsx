@@ -35,7 +35,7 @@ function PasskeyRow({
   const remove = async () => {
     setRemoving(true);
     try {
-      await kromaClient().deletePasskey(passkey.id);
+      await kromaClient().accounts.passkeys.delete(passkey.id);
       onRemoved();
     } finally {
       setRemoving(false);
@@ -72,17 +72,17 @@ export function PasskeysCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['passkeys'] });
+  const invalidate = () => qc.invalidateQueries({ queryKey: userQueries.passkeys().queryKey });
 
   const add = async () => {
     setBusy(true);
     setError(null);
     try {
       const client = kromaClient();
-      const { ceremonyId, options } = await client.passkeyRegisterStart();
+      const { ceremonyId, options } = await client.accounts.passkeys.registerStart();
       const credential = await createPasskey(options);
       const name = deviceInfo(navigator.userAgent, t('account.unknownDevice')).label;
-      await client.passkeyRegisterFinish({ ceremonyId, name, credential });
+      await client.accounts.passkeys.registerFinish({ ceremonyId, name, credential });
       await invalidate();
     } catch (e) {
       if (!isCancel(e)) {

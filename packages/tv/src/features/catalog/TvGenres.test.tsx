@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import type { MediaItem } from '@kroma/core';
 import { clearPressGuard } from '@kroma/ui/kit';
 import { layout, onScreen } from '@kroma/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -40,7 +41,7 @@ function measure(container: HTMLElement) {
 }
 
 function mount(movies: MediaItem[]) {
-  const client = { backdropFor: (m: MediaItem) => `art:${m.id}` } as unknown as KromaClient;
+  const client = fakeClient({ media: { artwork: { backdropFor: () => 'art:backdrop' } } });
   let nav!: TvNav;
   const { container } = render(
     onScreen(

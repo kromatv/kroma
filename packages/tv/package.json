@@ -36,6 +36,7 @@
     "expo-video": "*"
   },
   "devDependencies": {
+    "@kroma/client": "workspace:*",
     "@types/qrcode-generator": "^1.0.6",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",

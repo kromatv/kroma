@@ -3,7 +3,8 @@
 // recipient, so anything arriving on this socket is ours and needs no filtering;
 // its unread total is authoritative, while the list is only marked stale.
 
-import { type KromaClient, KromaEvents, type NotificationsView } from '@kroma/core';
+import type { QueryClient } from '@kroma/client/query';
+import { KromaEvents, type NotificationsView } from '@kroma/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useClient, useSession } from '#mobile/lib/session';
@@ -11,37 +12,31 @@ import { useClient, useSession } from '#mobile/lib/session';
 export type { Notification } from '@kroma/core';
 export { mobileRoute } from './route';
 
-const KEY = ['notifications'] as const;
-
 /** Opens the stream while signed in. Mount once, near the root. */
 export function useNotificationStream(): void {
   const { status, client } = useSession();
   const queryClient = useQueryClient();
   const signedIn = status === 'signedIn';
-  const baseUrl = client?.baseUrl;
 
   useEffect(() => {
-    if (!signedIn || !baseUrl) return;
-    const events = new KromaEvents(baseUrl, {
+    if (!signedIn || !client) return;
+    const { queryKey } = client.query.notifications.list();
+    const events = new KromaEvents(client.baseUrl, {
       onEvent: (e) => {
         if (e.type !== 'notification.created' && e.type !== 'notification.read') return;
-        queryClient.setQueryData(KEY, (prev: NotificationsView | undefined) =>
+        queryClient.setQueryData(queryKey, (prev: NotificationsView | undefined) =>
           prev ? { ...prev, unread: e.unread } : prev,
         );
-        void queryClient.invalidateQueries({ queryKey: KEY, refetchType: 'active' });
+        void queryClient.invalidateQueries({ queryKey, refetchType: 'active' });
       },
     });
     events.connect();
     return () => events.close();
-  }, [signedIn, baseUrl, queryClient]);
+  }, [signedIn, client, queryClient]);
 }
 
-function inbox(client: KromaClient) {
-  return {
-    queryKey: KEY,
-    queryFn: () => client.listNotifications(),
-    staleTime: 30_000,
-  };
+function inbox(client: QueryClient) {
+  return { ...client.query.notifications.list(), staleTime: 30_000 };
 }
 
 /** The inbox, newest first. */
@@ -59,5 +54,6 @@ export function useUnreadCount(): number {
 
 export function useRefreshNotifications(): () => void {
   const queryClient = useQueryClient();
-  return () => void queryClient.invalidateQueries({ queryKey: KEY });
+  const { queryKey } = useClient().query.notifications.list();
+  return () => void queryClient.invalidateQueries({ queryKey });
 }

@@ -74,7 +74,7 @@ export default function SignIn() {
     if (!serverUrl) return;
     let cancelled = false;
     clientFor(serverUrl)
-      .splash()
+      .media.splash()
       .then((entries) => {
         if (cancelled) return;
         setCovers(
@@ -153,7 +153,7 @@ export default function SignIn() {
         key: keyOf(account),
         name: account.user.username,
         caption,
-        avatarUri: clientFor(account.serverUrl).resolveArt(account.user.avatarUrl),
+        avatarUri: clientFor(account.serverUrl).media.artwork.resolve(account.user.avatarUrl),
         busy: busy === keyOf(account),
         offline,
         locked: account.user.hasPin || bioLocked.has(keyOf(account)),
@@ -163,7 +163,7 @@ export default function SignIn() {
     ...rosterOnly.map((profile) => ({
       key: `roster-${profile.id}`,
       name: profile.username,
-      avatarUri: serverUrl ? clientFor(serverUrl).resolveArt(profile.avatarUrl) : null,
+      avatarUri: serverUrl ? clientFor(serverUrl).media.artwork.resolve(profile.avatarUrl) : null,
       locked: profile.hasPin,
       onPress: () =>
         setPhase({
@@ -222,7 +222,9 @@ export default function SignIn() {
         <PinPhase
           identity={{
             name: phase.account.user.username,
-            avatarUri: clientFor(phase.account.serverUrl).resolveArt(phase.account.user.avatarUrl),
+            avatarUri: clientFor(phase.account.serverUrl).media.artwork.resolve(
+              phase.account.user.avatarUrl,
+            ),
           }}
           pin={pin}
           disabled={busy !== null}
@@ -240,7 +242,9 @@ export default function SignIn() {
             phase.kind === 'password'
               ? {
                   name: phase.username,
-                  avatarUri: serverUrl ? clientFor(serverUrl).resolveArt(phase.avatarUrl) : null,
+                  avatarUri: serverUrl
+                    ? clientFor(serverUrl).media.artwork.resolve(phase.avatarUrl)
+                    : null,
                 }
               : null
           }

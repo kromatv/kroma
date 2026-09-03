@@ -1,4 +1,5 @@
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import type { MediaItem } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineOptions } from './baseEngine';
 import { NATIVE_SEEK_AHEAD } from './baseEngine';
@@ -98,11 +99,13 @@ vi.mock('react-native', () => ({ Platform: { OS: 'android' } }));
 
 type Fake = InstanceType<typeof FakePlayer>;
 
-const client = {
-  streamUrl: (id: string) => `stream:${id}`,
-  hlsMasterUrl: (id: string, aac: boolean, startSec: number, audio: number) =>
-    `master:${id}:${aac}:${startSec}:${audio}`,
-} as unknown as KromaClient;
+const client = fakeClient({
+  media: {
+    streamUrl: (id: string) => `stream:${id}`,
+    hlsMasterUrl: (id: string, aac = false, startSec = 0, audio = 0) =>
+      `master:${id}:${aac}:${startSec}:${audio}`,
+  },
+});
 const item = { id: 'ev1' } as unknown as MediaItem;
 const budget = nativeBufferBudget();
 

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import type { KromaClient, MediaItem } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import type { MediaItem } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AvplayEngine } from './avplayEngine';
 import type { EngineOptions } from './baseEngine';
@@ -91,16 +92,18 @@ function mkListeners(): EngineListeners {
   };
 }
 
-const client = {
-  streamUrl: (id: string) => `stream:${id}`,
-  hlsMasterUrl: (
-    id: string,
-    aac: boolean,
-    startSec: number,
-    audio: number,
-    decl?: { filter?: string },
-  ) => `master:${id}:${aac}:${startSec}:${audio}${decl?.filter ? `:${decl.filter}` : ''}`,
-} as unknown as KromaClient;
+const client = fakeClient({
+  media: {
+    streamUrl: (id: string) => `stream:${id}`,
+    hlsMasterUrl: (
+      id: string,
+      aac = false,
+      startSec = 0,
+      audio = 0,
+      decl: { filter?: string } = {},
+    ) => `master:${id}:${aac}:${startSec}:${audio}${decl.filter ? `:${decl.filter}` : ''}`,
+  },
+});
 const item = { id: 'sm1' } as unknown as MediaItem;
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 const track = (index: number, type: string): AvplayTrack => ({ index, type }) as AvplayTrack;

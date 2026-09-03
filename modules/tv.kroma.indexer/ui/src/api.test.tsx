@@ -10,7 +10,12 @@ type Call = { method: string; path: string; body?: unknown };
 
 const calls: Call[] = [];
 
-const record = (method: string) => (path: string, body?: unknown) => {
+const read = (method: string) => (path: string) => {
+  calls.push({ method, path, body: undefined });
+  return Promise.resolve({ ok: true });
+};
+
+const write = (method: string) => (path: string, body?: unknown) => {
   calls.push({ method, path, body });
   return Promise.resolve({ ok: true });
 };
@@ -18,14 +23,16 @@ const record = (method: string) => (path: string, body?: unknown) => {
 const scopedTo = { id: '' };
 
 const client = {
-  module(id: string) {
-    scopedTo.id = id;
-    return {
-      get: record('GET'),
-      post: record('POST'),
-      put: record('PUT'),
-      delete: record('DELETE'),
-    };
+  modules: {
+    api(id: string) {
+      scopedTo.id = id;
+      return {
+        get: read('GET'),
+        post: write('POST'),
+        put: write('PUT'),
+        delete: read('DELETE'),
+      };
+    },
   },
 };
 

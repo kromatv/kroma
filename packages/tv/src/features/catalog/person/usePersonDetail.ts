@@ -17,8 +17,8 @@ export function usePersonDetail(name: string): PersonDetail | null {
     // The screen is reused across `person` routes; drop the previous
     // biography immediately rather than show it under the wrong name.
     setDetail(null);
-    client
-      .personDetails(name)
+    client.media
+      .person(name)
       .then((res) => {
         if (!cancelled) setDetail(res.person ?? null);
       })

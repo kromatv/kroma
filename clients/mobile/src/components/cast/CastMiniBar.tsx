@@ -19,7 +19,7 @@ export function CastMiniBar() {
 
   const playing = active.nowPlaying;
   const title = playing ? (playing.item.metadata?.title ?? playing.item.title) : t('cast.idle');
-  const poster = playing ? client.posterFor(playing.item) : null;
+  const poster = playing ? client.media.artwork.posterFor(playing.item) : null;
   const duration = playing?.durationMs ?? 0;
   const progress = duration > 0 ? Math.min(1, positionMs / duration) : 0;
   const isPlaying = playing?.state === 'playing';

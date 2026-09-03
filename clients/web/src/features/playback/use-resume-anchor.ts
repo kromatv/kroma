@@ -28,7 +28,7 @@ export function useResumeAnchor(
       return;
     }
     let cancelled = false;
-    client
+    client.playback
       .itemProgress(item.id)
       .then((p) => {
         if (cancelled) return;

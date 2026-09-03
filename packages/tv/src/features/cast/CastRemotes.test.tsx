@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
-import type { CastController, KromaClient } from '@kroma/core';
+import { fakeClient } from '@kroma/client/test';
+import { type CastController, ControllerId } from '@kroma/core';
 import { clearPressGuard } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
@@ -10,13 +11,13 @@ import { CastRemotes } from '#tv/features/cast/CastRemotes';
 import { setCastControllers, setCastUplink } from '#tv/features/cast/controllers';
 
 const phone = (id: string, username: string, name: string): CastController => ({
-  id,
+  id: ControllerId.parse(id),
   username,
   name,
   avatarUrl: null,
 });
 
-const client = { resolveArt: () => null } as unknown as KromaClient;
+const client = fakeClient({ media: { artwork: { resolve: () => null } } });
 
 function show() {
   return render(

@@ -35,7 +35,7 @@ export function movieCard(item: MediaItem, client: KromaClient, width: number): 
     key: item.id,
     title: item.metadata?.title ?? item.title,
     subtitle: item.year ? String(item.year) : undefined,
-    poster: sizedImageUrl(client.posterFor(item), width),
+    poster: sizedImageUrl(client.media.artwork.posterFor(item), width),
     route: `/item/${item.id}`,
   };
 }
@@ -45,7 +45,7 @@ export function showCard(show: Show, client: KromaClient, width: number): CardMo
     key: show.id,
     title: show.metadata?.title ?? show.title,
     subtitle: show.year ? String(show.year) : undefined,
-    poster: sizedImageUrl(client.showPosterFor(show), width),
+    poster: sizedImageUrl(client.media.artwork.showPosterFor(show), width),
     route: `/show/${show.id}`,
   };
 }
@@ -113,7 +113,10 @@ export function ContinueCard({
   const { item, positionMs, durationMs } = entry;
   const total = durationMs ?? item.durationMs ?? 0;
   const frac = total > 0 ? Math.min(1, positionMs / total) : 0;
-  const backdrop = sizedImageUrl(client.backdropFor(item) ?? client.posterFor(item), artWidth);
+  const backdrop = sizedImageUrl(
+    client.media.artwork.backdropFor(item) ?? client.media.artwork.posterFor(item),
+    artWidth,
+  );
   const tag = episodeTag(item) || undefined;
   return (
     <Pressable

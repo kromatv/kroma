@@ -1,4 +1,4 @@
-import type { MessageKey } from '@kroma/core';
+import { LibraryId, type MessageKey, UserId } from '@kroma/core';
 import type { SortColumn, SortDirection } from '@kroma/ui/kit';
 import { z } from 'zod';
 import { type HistorySort, isHistorySort } from '#web/features/admin/history-columns';
@@ -24,8 +24,8 @@ export type HistoryRange = (typeof HISTORY_RANGES)[number]['value'];
 export const EVERY_WINDOW = 'all' satisfies HistoryRange;
 
 export interface HistorySearch {
-  library?: string;
-  user?: string;
+  library?: LibraryId;
+  user?: UserId;
   item?: string;
   range?: HistoryRange;
   sort?: HistorySort;
@@ -35,8 +35,8 @@ export interface HistorySearch {
 
 export interface HistoryRequest {
   days: number;
-  user?: string;
-  library?: string;
+  user?: UserId;
+  library?: LibraryId;
   item?: string;
   sort: string;
   limit: number;
@@ -69,8 +69,8 @@ function daysIn(range: HistoryRange | undefined): number {
 export function validateHistorySearch(params: Record<string, unknown>): HistorySearch {
   const { library, user, item, range, sort, dir, page } = HistoryParams.parse(params);
   const search: HistorySearch = {};
-  if (library) search.library = library;
-  if (user) search.user = user;
+  if (library) search.library = LibraryId.parse(library);
+  if (user) search.user = UserId.parse(user);
   if (item) search.item = item;
   if (isHistoryRange(range)) search.range = range;
   if (isHistorySort(sort)) search.sort = sort;

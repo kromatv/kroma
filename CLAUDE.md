@@ -210,7 +210,8 @@ Three workspace roots, and the split is what each one is FOR:
 
 ```
 packages/  libraries, consumed by name and never by path
-  client/   zod schemas ARE the wire types (src/schemas/) + KromaClient + events
+  client/   one KromaClient namespace per domain (src/api/<domain>/), whose zod
+            schemas ARE the wire types; the transport and events in src/core/
   core/     re-exports @kroma/client, plus HEVC detection, direct-play, i18n, remote map
   ui/       @kroma/ui: the design system, authored against React Native
   tv/       the whole 10-foot experience (spatial focus nav, home, detail, player)
@@ -254,7 +255,7 @@ each other, and both reach a library by its `@kroma/*` name.
   Dependency rule: `features/* → shared/* → @kroma/ui → @kroma/core`. A feature
   **must not import a sibling feature**: lift shared code to `shared/`.
 - Wire types come only from `@kroma/core`, never hand-redefined. Adding or changing
-  a payload means editing the zod schema in `packages/client/src/schemas/`.
+  a payload means editing the zod schema in `packages/client/src/api/<domain>/`.
 - Subpath imports: `#ui/*`, `#tv/*`, `#web/*` (see `tsconfig.base.json`).
 - Design tokens live in TypeScript only. `kromaUI()` (`@kroma/ui/vite`) expands
   `@import "@kroma/ui/css"` into them at build time, so there is no generated CSS

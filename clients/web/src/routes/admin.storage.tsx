@@ -29,7 +29,7 @@ function StoragePage() {
   const t = useT();
   const fmt = useFormat();
   const { client } = useAuth();
-  const { data, reload } = usePoll(['admin', 'storage'], () => client.adminStorage(), 10000);
+  const { data, reload } = usePoll(['admin', 'storage'], () => client.admin.storage(), 10000);
   const [clearing, setClearing] = useState(false);
   const [resetting, setResetting] = useState(false);
 
@@ -40,7 +40,7 @@ function StoragePage() {
   async function clearCache() {
     setClearing(true);
     try {
-      await client.clearCache();
+      await client.admin.clearCache();
       reload();
     } finally {
       setClearing(false);
@@ -58,7 +58,7 @@ function StoragePage() {
     if (!ok) return;
     setResetting(true);
     try {
-      await client.resetMetadata();
+      await client.admin.resetMetadata();
       reload();
     } finally {
       setResetting(false);
@@ -168,7 +168,7 @@ function StoragePage() {
                 label={t('admin.cacheLimit')}
                 value={data?.cache.limit ?? '80 Go'}
                 options={['40 Go', '80 Go', '120 Go', '256 Go', t('opt.unlimited')]}
-                onChange={(v) => client.updateSettings({ cacheLimit: v }).then(reload)}
+                onChange={(v) => client.admin.updateSettings({ cacheLimit: v }).then(reload)}
               />
             }
           />
@@ -180,7 +180,9 @@ function StoragePage() {
                 label={t('admin.transcodeCacheLimit')}
                 value={data?.cache.transcodeLimit ?? '20 Go'}
                 options={['10 Go', '20 Go', '50 Go', '100 Go', t('opt.unlimited')]}
-                onChange={(v) => client.updateSettings({ transcodeCacheLimit: v }).then(reload)}
+                onChange={(v) =>
+                  client.admin.updateSettings({ transcodeCacheLimit: v }).then(reload)
+                }
               />
             }
           />

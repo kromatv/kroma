@@ -19,6 +19,18 @@ export const H = {
   updateAccount: vi.fn(async () => ({})),
 };
 
+export function kromaClientStub() {
+  return {
+    subtitles: {
+      downloaded: H.downloadedSubtitles,
+      capabilities: H.subtitleCapabilities,
+      delete: H.deleteSubtitle,
+      generate: H.generateSubtitle,
+    },
+    media: { artwork: { resolve: H.resolveArt } },
+  };
+}
+
 export function movie(subs: MovieView['subs']): MovieView {
   return { id: 'movie-1', subs } as MovieView;
 }

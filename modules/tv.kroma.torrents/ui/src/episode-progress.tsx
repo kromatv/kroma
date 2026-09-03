@@ -4,12 +4,12 @@
 // stuck, and the queue is the only thing that knows better -- which is exactly
 // why the core cannot draw it.
 
-import { type SlotProps, useAdminHost } from '@kroma/module-sdk';
+import { ModuleId, type SlotProps, useAdminHost } from '@kroma/module-sdk';
 import { Box, Progress, Row, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import type { DownloadsView } from './schemas';
+import { DownloadsView } from './schemas';
 
-const MODULE_ID = 'tv.kroma.torrents';
+const MODULE_ID = ModuleId.parse('tv.kroma.torrents');
 const POLL_MS = 4000;
 
 // One query for the whole request, shared by every row through the query key:
@@ -18,7 +18,7 @@ function useRequestDownloads(requestId: string) {
   const { client } = useAdminHost();
   const { data } = useQuery({
     queryKey: ['admin', 'requests', requestId, 'downloads'],
-    queryFn: () => client.module(MODULE_ID).get<DownloadsView>('/downloads'),
+    queryFn: () => client.modules.api(MODULE_ID).get('/downloads', DownloadsView),
     refetchInterval: POLL_MS,
     retry: false,
   });

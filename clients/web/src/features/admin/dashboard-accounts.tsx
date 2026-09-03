@@ -1,4 +1,4 @@
-import { type AdminUser, resolveImageUrl } from '@kroma/core';
+import { type AdminUser, resolveImageUrl, type UserId } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Avatar } from '@kroma/ui/kit';
 import { EVERYONE, type FilterOption } from '#web/features/admin/dashboard-filters';
@@ -18,13 +18,16 @@ export function useAccountRoster(): AdminUser[] {
   const allowed = useCap('users.manage');
   const { data } = usePoll(
     ['admin', 'users', allowed],
-    () => (allowed ? client.adminUsers() : Promise.resolve(null)),
+    () => (allowed ? client.admin.users() : Promise.resolve(null)),
     POLL_MS,
   );
   return data?.users ?? [];
 }
 
-export function useAccountOptions(): FilterOption<string>[] {
+/** Whose plays a panel counts: one member, or everyone. */
+export type AccountFilter = UserId | typeof EVERYONE;
+
+export function useAccountOptions(): FilterOption<AccountFilter>[] {
   const t = useT();
   const roster = useAccountRoster();
   return [

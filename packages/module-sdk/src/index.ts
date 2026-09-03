@@ -18,6 +18,7 @@ export {
   IndexerId,
   ItemId,
   KromaEvents as KromaEventStream,
+  ModuleId,
   RequestId,
 } from '@kroma/core';
 export { useFormat, useLocale } from '@kroma/ui';

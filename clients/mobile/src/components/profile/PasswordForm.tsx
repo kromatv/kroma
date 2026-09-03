@@ -22,7 +22,7 @@ export function PasswordForm() {
     setSavingPassword(true);
     setPasswordNote(null);
     try {
-      await client.changePassword(current, next);
+      await client.accounts.changePassword(current, next);
       setCurrent('');
       setNext('');
       setConfirm('');

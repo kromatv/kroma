@@ -1,4 +1,4 @@
-import { formatRuntime, type ItemId } from '@kroma/core';
+import { formatRuntime, ItemId, type SubjectId } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button, type HostElement } from '@kroma/ui/kit';
 import {
@@ -10,6 +10,7 @@ import {
   subString,
 } from '#web/features/catalog/detail';
 import { ReportDialog } from '#web/features/catalog/report-dialog';
+import { savedTitleId } from '#web/shared/lib/saved-title-id';
 import { type TitleView, tmdbMetaLine } from '#web/shared/lib/titleView';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip';
 
@@ -32,21 +33,17 @@ export function TitleHero({
   localId: string | null | undefined;
   busy: boolean;
   overline: string;
-  isWatched: (id: string) => boolean;
-  toggleWatched: (id: string) => void;
-  inList: (id: string) => boolean;
-  toggleList: (id: string) => void;
-  onPlay: (id: string) => void;
+  isWatched: (id: SubjectId) => boolean;
+  toggleWatched: (id: SubjectId) => void;
+  inList: (id: SubjectId) => boolean;
+  toggleList: (id: SubjectId) => void;
+  onPlay: (id: ItemId) => void;
   onRequest: () => void;
   back: HostElement;
 }>) {
   const t = useT();
   const playable = owned ? view.playable : null;
-  // Both list actions (watched, my-list) work for both owned and discover
-  // titles. Owned titles use their local item id; discover titles use
-  // `tmdb:<id>` so the membership survives a library rescan and still finds the
-  // title via the discover route.
-  const listId = localId ?? (view.tmdbId != null ? `tmdb:${view.tmdbId}` : null);
+  const listId = savedTitleId(view.kind, localId, view.tmdbId);
   const listState: {
     watched?: boolean;
     onToggleWatched?: () => void;
@@ -84,9 +81,7 @@ export function TitleHero({
       playLabel={view.playLabel ?? undefined}
       themeUrl={view.themeUrl}
       watched={listState.watched}
-      // Owned titles only: there is nothing to start on a TV until the file is
-      // in the library.
-      castItemId={owned && localId ? (localId as ItemId) : undefined}
+      castItemId={owned && localId ? ItemId.parse(localId) : undefined}
       onToggleWatched={listState.onToggleWatched}
       inList={listState.inList}
       onToggleList={listState.onToggleList}

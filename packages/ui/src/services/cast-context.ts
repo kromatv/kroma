@@ -1,4 +1,4 @@
-import type { CastCommand, CastReceiver, DiscoveredTv, ItemId } from '@kroma/core';
+import type { CastCommand, CastReceiver, DeviceId, DiscoveredTv, ItemId } from '@kroma/core';
 import { createContext, useContext } from 'react';
 
 /** What a sender can do with the TV it is driving. */
@@ -16,9 +16,9 @@ export interface Cast {
   /** The active receiver's position, interpolated between heartbeats (ms). */
   positionMs: number;
   /** Start driving a receiver (or `null` to go back to local playback). */
-  select: (receiverId: string | null) => void;
+  select: (receiverId: DeviceId | null) => void;
   /** Start a title on `receiverId`, and drive that TV from now on. */
-  playOn: (receiverId: string, itemId: ItemId, positionMs?: number) => Promise<boolean>;
+  playOn: (receiverId: DeviceId, itemId: ItemId, positionMs?: number) => Promise<boolean>;
   /** Send an order to the active receiver. False when it failed / went away. */
   send: (command: CastCommand) => Promise<boolean>;
   /** The last failure, as a message key, or null. Cleared on the next success.

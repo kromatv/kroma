@@ -1,4 +1,4 @@
-import type { PlayEntry } from '@kroma/core';
+import { ItemId, type PlayEntry, ShowId } from '@kroma/core';
 import { describe, expect, it } from 'vitest';
 import {
   HISTORY_COLUMNS,
@@ -77,26 +77,30 @@ describe("a row's title", () => {
 
 describe('the page a row opens', () => {
   it('is the series an episode belongs to, rather than the episode', () => {
-    const episode = play({ kind: 'episode', itemId: 'ep7', showId: 'sev' });
+    const episode = play({
+      kind: 'episode',
+      itemId: ItemId.parse('ep7'),
+      showId: ShowId.parse('sev'),
+    });
 
     expect(titlePage(episode)).toEqual({ page: 'show', id: 'sev' });
   });
 
   it('is the film itself', () => {
-    expect(titlePage(play({ kind: 'movie', itemId: 'arrival' }))).toEqual({
+    expect(titlePage(play({ kind: 'movie', itemId: ItemId.parse('arrival') }))).toEqual({
       page: 'movie',
       id: 'arrival',
     });
   });
 
   it('is nowhere once the title has left the catalog', () => {
-    const gone = play({ kind: 'movie', itemId: 'arrival', inCatalog: false });
+    const gone = play({ kind: 'movie', itemId: ItemId.parse('arrival'), inCatalog: false });
 
     expect(titlePage(gone)).toBeNull();
   });
 
   it('is nowhere for an episode the log kept no series for', () => {
-    expect(titlePage(play({ kind: 'episode', itemId: 'ep7' }))).toBeNull();
+    expect(titlePage(play({ kind: 'episode', itemId: ItemId.parse('ep7') }))).toBeNull();
   });
 });
 

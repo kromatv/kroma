@@ -1,4 +1,4 @@
-import { KromaClient, sizedImageUrl } from '@kroma/core';
+import { createKromaClient, sizedImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   BackButton,
@@ -53,7 +53,7 @@ function useSplashCovers(): SplashCover[] {
     void (async () => {
       for (const url of urls) {
         try {
-          const entries = await new KromaClient({ baseUrl: url }).splash();
+          const entries = await createKromaClient({ baseUrl: url }).media.splash();
           if (cancelled) return;
           if (entries.length === 0) continue;
           setCovers(

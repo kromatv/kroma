@@ -13,6 +13,6 @@ export { prefValue } from '@kroma/core/react';
 export function useLangPrefs(): LangPrefs {
   const { user, updateUser } = useAuth();
   const client = useClient();
-  const updateAccount = useCallback((patch: LangPatch) => client.updateAccount(patch), [client]);
+  const updateAccount = useCallback((patch: LangPatch) => client.accounts.update(patch), [client]);
   return useSharedLangPrefs({ user, updateUser, updateAccount });
 }

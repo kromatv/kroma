@@ -41,7 +41,7 @@ async function devAutoLogin(deps: BootDeps, cancelled: Cancelled): Promise<boole
   try {
     const url = normalizeServerUrl(server);
     const [identifier, password] = devLogin.split(':');
-    const result = await deps.makeClient(url).login(identifier ?? '', password ?? '');
+    const result = await deps.makeClient(url).accounts.login(identifier ?? '', password ?? '');
     if (cancelled()) return true;
     deps.enterSession(url, result.accessToken, result.token, result.user);
     return true;
@@ -76,7 +76,7 @@ async function resumeAccount(
 ): Promise<void> {
   try {
     const probe = deps.makeClient(account.serverUrl);
-    const { token, user: fresh } = await probe.exchangeToken(account.accessToken);
+    const { token, user: fresh } = await probe.accounts.exchangeToken(account.accessToken);
     if (cancelled()) return;
     deps.enterSession(account.serverUrl, account.accessToken, token, fresh);
   } catch (err) {

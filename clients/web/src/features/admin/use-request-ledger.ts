@@ -5,14 +5,15 @@
 // reads the same one for its catalogue under the same query key, so the two
 // share a single fetch rather than racing for it.
 
+import type { RequestId } from '@kroma/core';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '#web/shared/lib/auth';
 
-export function useRequestLedger(id: string, enabled: boolean) {
+export function useRequestLedger(id: RequestId, enabled: boolean) {
   const { client } = useAuth();
   return useQuery({
     queryKey: ['admin', 'requests', id, 'ledger'],
-    queryFn: () => client.requestLedger(id),
+    queryFn: () => client.requests.ledger(id),
     enabled,
     staleTime: 60_000,
   });
