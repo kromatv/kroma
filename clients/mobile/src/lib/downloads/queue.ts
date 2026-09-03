@@ -1,4 +1,5 @@
-import type { KromaClient, MediaItem } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
 import * as Network from 'expo-network';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';

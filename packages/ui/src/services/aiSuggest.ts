@@ -4,7 +4,8 @@
 // items may be empty, in which case the caller renders nothing) or we give up.
 // The client is injected so web and TV share the exact same logic.
 
-import type { ItemId, KromaClient, Section } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { ItemId, Section } from '@kroma/client/media';
 import { useEffect, useState } from 'react';
 
 const POLL_MS = 6000;

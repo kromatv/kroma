@@ -1,4 +1,4 @@
-import type { Metadata } from '@kroma/client';
+import type { Metadata } from '@kroma/client/media';
 import { describe, expect, it } from 'vitest';
 import type { Sortable } from './browse';
 import { hueFromString } from './format';

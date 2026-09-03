@@ -2,7 +2,7 @@
 // client) via the my-list API, hydrated once into a set; toggles are optimistic
 // and revert if the server call fails. Mirrors the watched provider.
 
-import type { SubjectId } from '@kroma/core';
+import type { SubjectId } from '@kroma/client/media';
 import {
   createContext,
   type ReactNode,

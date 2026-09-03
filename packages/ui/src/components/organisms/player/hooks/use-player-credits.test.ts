@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { Marker } from '@kroma/core';
+import type { Marker } from '@kroma/client/media';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePlayerCredits } from './use-player-credits';

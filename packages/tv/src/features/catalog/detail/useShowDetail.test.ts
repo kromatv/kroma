@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { ItemId, type ProgressEntry, type ShowDetail, ShowId, type UpNext } from '@kroma/core';
+import {
+  ItemId,
+  type ProgressEntry,
+  type ShowDetail,
+  ShowId,
+  type UpNext,
+} from '@kroma/client/media';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

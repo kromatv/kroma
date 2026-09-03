@@ -1,9 +1,5 @@
-import {
-  audioSupport,
-  formatTimecode as fmtTime,
-  type MediaItem,
-  playerSubtitle,
-} from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import { audioSupport, formatTimecode as fmtTime, playerSubtitle } from '@kroma/core';
 import {
   Player as UnifiedPlayer,
   useCast,

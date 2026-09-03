@@ -2,7 +2,7 @@
 // One module because the two answers share a number: the readout bridges exactly
 // the holes the engines are configured to skip, so neither can drift from the other.
 
-import type { MediaItem } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
 
 // A remux is segmented at real keyframes while its AAC frames are a fixed
 // 21.33 ms, so ffmpeg's fMP4 output leaves sub-frame holes at segment boundaries

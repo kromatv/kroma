@@ -9,14 +9,8 @@
 // Tolerates a null client (the TV `connect` screen runs before a server is
 // reached), so even pre-auth copy is translated.
 
-import {
-  deviceLocale,
-  type KromaClient,
-  type Locale,
-  normalizeLocale,
-  saveLocalePref,
-  setActiveLocale,
-} from '@kroma/core';
+import { type KromaClient, saveLocalePref } from '@kroma/client';
+import { deviceLocale, type Locale, normalizeLocale, setActiveLocale } from '@kroma/core';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { I18nProvider } from './i18n';
 

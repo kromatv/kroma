@@ -1,14 +1,9 @@
 // Client-side authentication context: one authed KromaClient plus the
 // web-specific login, passkey and registration flows over `useAuthSession`.
 
+import type { InviteToken, StoredSession, User, UserId } from '@kroma/client/accounts';
 import { createQueryClient, type QueryClient } from '@kroma/client/query';
-import {
-  activeLocale,
-  type InviteToken,
-  type StoredSession,
-  type User,
-  type UserId,
-} from '@kroma/core';
+import { activeLocale } from '@kroma/core';
 import { type ActivateResult, useAuthSession } from '@kroma/ui';
 import { useRouter } from '@tanstack/react-router';
 import { createContext, type ReactNode, useCallback, useContext, useMemo } from 'react';

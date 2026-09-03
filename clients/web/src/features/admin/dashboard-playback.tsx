@@ -1,4 +1,4 @@
-import type { HistoryStats } from '@kroma/core';
+import type { HistoryStats } from '@kroma/client/admin';
 import { useFormat, useT } from '@kroma/ui';
 import { Button, Row, Section } from '@kroma/ui/kit';
 import { HistoryBars } from '#web/features/admin/charts';

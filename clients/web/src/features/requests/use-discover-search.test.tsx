@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { DiscoverEntry } from '@kroma/core';
+import type { DiscoverEntry } from '@kroma/client/discovery';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';

@@ -6,7 +6,8 @@
 // which only a phone in the same room can hear. The second is optional and the
 // first is not, because the grant travels through the server either way.
 
-import { type AuthResult, type DeviceId, KromaApiError, type KromaClient } from '@kroma/client';
+import { type DeviceId, KromaApiError, type KromaClient } from '@kroma/client';
+import type { AuthResult } from '@kroma/client/accounts';
 import { beaconTxt, type LanDiscoveryBridge } from './sources';
 
 /** What the gate screens show while the TV waits: the name a phone sees, and

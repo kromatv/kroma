@@ -1,4 +1,4 @@
-import { ItemId, ShowId } from '@kroma/core';
+import { ItemId, ShowId } from '@kroma/client/media';
 import { describe, expect, it, type Mock, vi } from 'vitest';
 import { c, installHarness, run } from './queries.fixture';
 

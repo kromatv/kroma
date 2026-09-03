@@ -2,7 +2,7 @@
 // season switcher clears it, so what the request bar counts is always what the
 // screen is showing.
 
-import type { EpisodeRef } from '@kroma/core';
+import type { EpisodeRef } from '@kroma/client/requests';
 
 export const epKey = (season: number, episode: number) => `${season}-${episode}`;
 

@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
+
+import type { MediaItem } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import { decodableAudioCodecs, type MediaItem } from '@kroma/core';
+import { decodableAudioCodecs } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineListeners } from './engine';
 import { HtmlEngine } from './htmlEngine';

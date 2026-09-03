@@ -1,4 +1,4 @@
-import type { MatchCandidate } from '@kroma/core';
+import type { MatchCandidate } from '@kroma/client/media';
 import type { ColorValue } from '@kroma/ui/kit';
 
 /** At or above this the matcher agrees with the file on disk. */

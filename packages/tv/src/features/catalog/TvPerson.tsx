@@ -1,4 +1,4 @@
-import type { Metadata } from '@kroma/core';
+import type { Metadata } from '@kroma/client/media';
 import { creditsPerson, personInvolvement, posterColors, roleLabels } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Text, useFocusNav } from '@kroma/ui/kit';

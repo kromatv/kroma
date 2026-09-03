@@ -1,4 +1,5 @@
-import { type CompatVerdict, checkServerCompat, type KromaClient } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import { type CompatVerdict, checkServerCompat } from '@kroma/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CLIENT_BUILD } from '#tv/app/clientBuild';
 import { startHealthMonitor } from '#tv/app/healthMonitor';

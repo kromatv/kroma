@@ -1,5 +1,12 @@
-import type { CastMember, TitleGenres } from '@kroma/core';
-import { genreLabels, genreSegment, genreSlugs, posterColors, sizedImageUrl } from '@kroma/core';
+import type { CastMember } from '@kroma/client/media';
+import {
+  genreLabels,
+  genreSegment,
+  genreSlugs,
+  posterColors,
+  sizedImageUrl,
+  type TitleGenres,
+} from '@kroma/core';
 import { BackButton, Box, Chip, PersonCard, styles, Text, tintGradient } from '@kroma/ui/kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';

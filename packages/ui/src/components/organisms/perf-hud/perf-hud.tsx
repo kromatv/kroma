@@ -1,7 +1,7 @@
 // The performance HUD: frame timings, focus response, heap and surface size,
 // read on the television they are about. Turned on in the device settings.
 
-import { artworkScaleValue } from '@kroma/core';
+import { artworkScaleValue } from '@kroma/client/media';
 import { useEffect, useState } from 'react';
 import { Dimensions, PixelRatio } from 'react-native';
 import { Box } from '#ui/components/atoms/box';

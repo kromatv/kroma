@@ -1,4 +1,5 @@
 export type { BackupImportOptions, BackupImportResult } from './backup';
+export * from './client';
 export * from './logs';
 export * from './metrics';
 export * from './settings';

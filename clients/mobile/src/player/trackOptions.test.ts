@@ -1,4 +1,4 @@
-import type { AudioTrack, MediaItem } from '@kroma/core';
+import type { AudioTrack, MediaItem } from '@kroma/client/media';
 import type { AudioTrack as LocalAudioTrack } from 'expo-video';
 import { describe, expect, it } from 'vitest';
 import type { useT } from '#mobile/lib/i18n';

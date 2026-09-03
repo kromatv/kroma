@@ -1,4 +1,4 @@
-import type { PlaybackSession } from '@kroma/core';
+import type { PlaybackSession } from '@kroma/client/admin';
 import { useT } from '@kroma/ui';
 import { Box, EmptyState, Section } from '@kroma/ui/kit';
 import { useMemo } from 'react';

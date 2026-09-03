@@ -1,4 +1,5 @@
-import { audioTracksOf, langCode, type MediaItem, preferredAudioIndex } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import { audioTracksOf, langCode, preferredAudioIndex } from '@kroma/core';
 import { useCast } from '@kroma/ui';
 import { Box, styles } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';

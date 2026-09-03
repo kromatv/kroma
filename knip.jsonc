@@ -55,13 +55,13 @@
   ],
 
   "workspaces": {
-    // Three resolutions no static tool can follow: a domain's endpoints are
-    // loaded by `import.meta.glob` / `require.context` (see
-    // `src/api/discover*.ts`), the Vite half of that discovery is picked by
-    // extension precedence, and `src/api/index.ts` - which re-exports every
-    // domain - is written by `bun run gen:types` and gitignored.
+    // Two resolutions no static tool can follow: a domain's endpoints are loaded
+    // by `import.meta.glob` / `require.context` (see `src/api/discover*.ts`),
+    // and the Vite half of that discovery is picked by extension precedence. A
+    // domain index is an entry because consumers reach it by subpath
+    // (`@kroma/client/media`), which the package's exports pattern resolves.
     "packages/client": {
-      "entry": ["src/api/*/index.ts", "src/api/*/client.ts", "src/api/discover.web.ts", "vite/*.ts"]
+      "entry": ["src/api/*/index.ts", "src/api/*/client.ts", "src/api/discover.web.ts"]
     },
     ".": {
       // `clients/tv-build` and `clients/expo-build` hold no package.json, so

@@ -1,6 +1,7 @@
 // Stopping the loop, including while a request it started is still out.
 
-import type { HandoffBeacon, PairingStatus } from '@kroma/client';
+import type { PairingStatus } from '@kroma/client/accounts';
+import type { HandoffBeacon } from '@kroma/client/handoff';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { startHandoff } from './beacon';
 import { BEACON, DEVICE, run, stubClient, tick, USER } from './beacon.fixture';

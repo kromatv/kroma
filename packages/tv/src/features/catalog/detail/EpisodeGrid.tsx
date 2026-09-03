@@ -2,7 +2,7 @@
 // frames on a television is the number of mounted controls, and a 100-episode
 // season at three controls a row is 300 of them.
 
-import type { ItemId, MediaItem } from '@kroma/core';
+import type { ItemId, MediaItem } from '@kroma/client/media';
 import { Grid, useGrowingCount } from '@kroma/ui/kit';
 import { EPISODE_COLUMNS, EPISODE_W, EpisodeRow } from '#tv/features/catalog/detail/EpisodeRow';
 import { CONTENT_W } from '#tv/shared/stage';

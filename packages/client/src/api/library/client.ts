@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import { AdminFsList } from '../admin';
 import { LibraryId } from '../media';
 import { AdminLibrary, type LibraryBody, type LibraryPatch } from './schemas';

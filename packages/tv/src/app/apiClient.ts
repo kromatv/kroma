@@ -3,12 +3,12 @@
 // television would otherwise list itself as an unknown desktop.
 
 import {
-  activeLocale,
   clientUserAgent,
   createKromaClient,
   type DeviceIdentity,
   type KromaClient,
-} from '@kroma/core';
+} from '@kroma/client';
+import { activeLocale } from '@kroma/core';
 import { Platform } from 'react-native';
 import { buildInfo } from '#tv/app/clientBuild';
 

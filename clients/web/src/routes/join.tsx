@@ -1,4 +1,4 @@
-import { InviteToken } from '@kroma/core';
+import { InviteToken } from '@kroma/client/accounts';
 import { useT } from '@kroma/ui';
 import { Box, Button, Logo, Text } from '@kroma/ui/kit';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';

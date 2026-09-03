@@ -3,7 +3,7 @@
 // until now was invisible: a remux is a child ffmpeg, so the CPU chart read as
 // idle while the machine sat at 100%.
 
-import type { LiveTranscode, Transcodes } from '@kroma/core';
+import type { LiveTranscode, Transcodes } from '@kroma/client/admin';
 import { TABULAR } from '@kroma/module-sdk';
 import { useFormat, useT } from '@kroma/ui';
 import {

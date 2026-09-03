@@ -34,8 +34,25 @@ interface StreamHooks {
   onEvent: (e: Record<string, unknown>) => void;
 }
 
-vi.mock('@kroma/core', () => {
-  const createKromaClient = (opts: { baseUrl: string }) => {
+vi.mock('@kroma/client/accounts', () => ({
+  loadSession: H.loadSession,
+  forgetServer: H.forgetServer,
+  saveServer: H.saveServer,
+  normalizeServerUrl: H.norm,
+}));
+
+vi.mock('@kroma/client/events', () => ({
+  KromaEvents: class {
+    constructor(url: string, opts: unknown) {
+      H.streams.push({ url, opts: opts as StreamHooks });
+    }
+    connect() {}
+    close() {}
+  },
+}));
+
+vi.mock('@kroma/client', () => ({
+  createKromaClient: (opts: { baseUrl: string }) => {
     const client = {
       baseUrl: opts.baseUrl,
       hasAuth: false,
@@ -45,26 +62,14 @@ vi.mock('@kroma/core', () => {
     };
     H.instances.push(client);
     return client;
-  };
-  class KromaEvents {
-    constructor(url: string, opts: unknown) {
-      H.streams.push({ url, opts: opts as StreamHooks });
-    }
-    connect() {}
-    close() {}
-  }
-  return {
-    createKromaClient,
-    KromaEvents,
-    activeLocale: () => 'fr',
-    discoverServer: H.discoverServer,
-    loadSession: H.loadSession,
-    forgetServer: H.forgetServer,
-    saveServer: H.saveServer,
-    normalizeServerUrl: H.norm,
-    checkServerCompat: H.checkServerCompat,
-  };
-});
+  },
+}));
+
+vi.mock('@kroma/core', () => ({
+  activeLocale: () => 'fr',
+  discoverServer: H.discoverServer,
+  checkServerCompat: H.checkServerCompat,
+}));
 
 type HealthModule = typeof import('#tv/app/useServerHealth');
 vi.mock('#tv/app/useServerHealth', async (importOriginal) => {

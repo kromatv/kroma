@@ -1,4 +1,4 @@
-import type { AudioTrack, MediaItem } from '@kroma/client';
+import type { AudioTrack, MediaItem } from '@kroma/client/media';
 import { describe, expect, it } from 'vitest';
 import {
   audioSupport,

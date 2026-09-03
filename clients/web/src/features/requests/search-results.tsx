@@ -2,7 +2,8 @@
 // decouvrir" (TMDB, gated), each a counted grid. Skeletons while loading, a
 // friendly empty state when nothing matches.
 
-import { episodeTag, posterColors, type SearchHit } from '@kroma/core';
+import type { SearchHit } from '@kroma/client/media';
+import { episodeTag, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, EmptyState, Row, Text } from '@kroma/ui/kit';
 

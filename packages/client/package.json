@@ -16,7 +16,7 @@
     ".": "./src/index.ts",
     "./query": "./src/query/index.ts",
     "./test": "./src/kroma-client.fixture.ts",
-    "./vite": "./vite/index.ts"
+    "./*": "./src/api/*/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -31,14 +31,10 @@
     "typescript": "^7.0.2"
   },
   "peerDependencies": {
-    "@tanstack/react-query": "^5",
-    "vite": ">=6"
+    "@tanstack/react-query": "^5"
   },
   "peerDependenciesMeta": {
     "@tanstack/react-query": {
-      "optional": true
-    },
-    "vite": {
       "optional": true
     }
   }

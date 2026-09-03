@@ -1,7 +1,7 @@
 // Netflix-style billboard: a tall rounded artwork card bleeding into the page
 // background, with the title, a genre line and Play / My list actions.
 
-import type { SectionItem } from '@kroma/core';
+import type { SectionItem } from '@kroma/client/media';
 import { genreLabels, sizedImageUrl } from '@kroma/core';
 import { Box, Button, styles, Text } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

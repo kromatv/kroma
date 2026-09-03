@@ -7,7 +7,7 @@
 // two ways. So the draft is a flat set of (season, episode) pairs plus the set
 // of seasons taken whole, and it collapses back to the wire shape on save.
 
-import type { LedgerEpisode, LedgerSeason, RequestCoverage } from '@kroma/core';
+import type { LedgerEpisode, LedgerSeason, RequestCoverage } from '@kroma/client/requests';
 
 /** How a draft names one episode: `season:episode`. */
 export const keyOf = (season: number, episode: number): string => `${season}:${episode}`;

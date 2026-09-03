@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
-import { setSessionToken, UserId } from '@kroma/core';
+
+import { setSessionToken } from '@kroma/client';
+import { UserId } from '@kroma/client/accounts';
 import { act, cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider, useAuth } from '#tv/app/providers/auth';

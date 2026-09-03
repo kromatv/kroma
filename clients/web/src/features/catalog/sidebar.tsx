@@ -1,4 +1,5 @@
-import { hasPermission, type MessageKey } from '@kroma/core';
+import { hasPermission } from '@kroma/client/accounts';
+import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, color, Drawer, Logo, Row, Text, useBreakpoint } from '@kroma/ui/kit';
 import {

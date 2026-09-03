@@ -1,20 +1,17 @@
 // KROMA API origin resolution.
 
-import { createQueryClient, type QueryClient } from '@kroma/client/query';
 import {
-  activeLocale,
   createKromaClient,
-  isTextSubtitle,
   type KromaClient,
-  loadSession,
-  type MediaItem,
-  resolveImageUrl,
-  type Show,
-  type SubtitleId,
   sessionToken,
   setSessionToken,
   sharedTokenExchange,
-} from '@kroma/core';
+} from '@kroma/client';
+import { loadSession } from '@kroma/client/accounts';
+import type { MediaItem, Show } from '@kroma/client/media';
+import { createQueryClient, type QueryClient } from '@kroma/client/query';
+import type { SubtitleId } from '@kroma/client/subtitles';
+import { activeLocale, isTextSubtitle, resolveImageUrl } from '@kroma/core';
 
 declare global {
   interface Window {

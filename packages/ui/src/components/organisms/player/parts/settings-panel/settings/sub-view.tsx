@@ -7,7 +7,7 @@
 // Every panel takes the same ref - the open one owns the keys (PanelHandle) -
 // and the same `onBack`, which returns to the menu.
 
-import type { ReportCategory } from '@kroma/core';
+import type { ReportCategory } from '@kroma/client/reports';
 import { forwardRef } from 'react';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import type { SubtitleAppearance } from '#ui/components/organisms/player/lib/subtitle-appearance';

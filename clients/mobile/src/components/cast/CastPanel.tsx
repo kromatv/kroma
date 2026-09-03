@@ -2,7 +2,7 @@
 // shell, which is a plain <Modal>, because this screen is a native
 // fullScreenModal and @gorhom's sheet renders behind it.
 
-import type { DeviceId } from '@kroma/core';
+import type { DeviceId } from '@kroma/client';
 import { CastDeviceList } from '#mobile/components/cast/CastDeviceList';
 import { PlayerPanel } from '#mobile/player/PlayerPanel';
 

@@ -7,7 +7,12 @@
 // it. It lives HERE rather than in the console because all of it is acquisition:
 // with this module gone the page has nothing to show but the fallback.
 
-import type { LedgerSeason, RequestId, ScoredReleaseView, SearchScope } from '@kroma/core';
+import type {
+  LedgerSeason,
+  RequestId,
+  ScoredReleaseView,
+  SearchScope,
+} from '@kroma/client/requests';
 import { type SlotProps, useAdminHost, useLocale, useT } from '@kroma/module-sdk';
 import {
   Box,

@@ -1,7 +1,7 @@
 // The paths where the server says no: a poll that never answered, an announce
 // it refused, and an origin it will not raise a beacon for.
 
-import type { PairingStatus } from '@kroma/client';
+import type { PairingStatus } from '@kroma/client/accounts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BEACON, refusing, run, stubClient, tick, USER } from './beacon.fixture';
 

@@ -1,4 +1,4 @@
-import { type LedgerEpisode, type LedgerSeason, WantedId } from '@kroma/core';
+import { type LedgerEpisode, type LedgerSeason, WantedId } from '@kroma/client/requests';
 import { describe, expect, it } from 'vitest';
 import { episodeState, isRequested, seasonToOpen } from './request-ledger-state';
 

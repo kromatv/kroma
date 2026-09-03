@@ -1,7 +1,8 @@
 // One TMDB candidate in the rematch grid, drawn to a fixed box so a card with
 // three lines of plot and a card with none stay comparable.
 
-import { type MatchCandidate, posterColors } from '@kroma/core';
+import type { MatchCandidate } from '@kroma/client/media';
+import { posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Focusable, Icon, Progress, Spinner, sv, Text, tintGradient } from '@kroma/ui/kit';
 import { confidencePercent, confidenceTone } from '#web/features/catalog/rematch-ranking';

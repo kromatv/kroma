@@ -1,4 +1,4 @@
-import type { MediaItem } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
 import { audioTracksOf, canDecodeAudioCodec, masterNeedsAac } from './audio-support';
 import type { PlaybackCapabilities } from './capabilities';
 import { canDirectPlay, MSE_CAPS, NATIVE_TV_CAPS, SAFARI_CAPS } from './directplay';

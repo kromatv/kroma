@@ -5,7 +5,7 @@
 // spent; a vaulted PIN the server rejects is dropped, not retried; a revoked
 // token falls back to the password rather than being read as a wrong PIN.
 
-import { KromaApiError } from '@kroma/core';
+import { KromaApiError } from '@kroma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const passProfileBiometricGate = vi.hoisted(() => vi.fn(async () => true));

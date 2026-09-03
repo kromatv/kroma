@@ -2,7 +2,7 @@
 // reporter + date, the free-text message, a deep-link to the title's fiche, and
 // the triage actions (resolve / dismiss / reopen / delete).
 
-import type { Report, ReportStatus } from '@kroma/core';
+import type { Report, ReportStatus } from '@kroma/client/reports';
 import { useT } from '@kroma/ui';
 import {
   Avatar,

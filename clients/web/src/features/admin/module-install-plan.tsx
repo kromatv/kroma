@@ -7,7 +7,7 @@ import type {
   StoreOptionalModule,
   StorePlan,
   StorePlanModule,
-} from '@kroma/core';
+} from '@kroma/client/modules';
 import { useFormat, useT } from '@kroma/ui';
 import {
   Badge,

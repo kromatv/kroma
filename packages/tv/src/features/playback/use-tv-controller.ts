@@ -1,9 +1,6 @@
-import {
-  type KromaClient,
-  type MediaItem,
-  qualityBadgeForVideo,
-  refineTrackLang,
-} from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
+import { qualityBadgeForVideo, refineTrackLang } from '@kroma/core';
 import { buildLeanStats, type PlayerController, useAudioFilter, useT } from '@kroma/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {

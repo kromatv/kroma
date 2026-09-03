@@ -2,7 +2,7 @@
 // to the HLS master; downloading cannot, so `canRawDownload` is strictly
 // stronger than `decideSource`.
 
-import type { MediaItem } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rn = vi.hoisted(() => ({ os: 'ios' as 'ios' | 'android' }));

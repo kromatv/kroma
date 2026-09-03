@@ -1,4 +1,4 @@
-import type { AccountPatch } from '@kroma/core';
+import type { AccountPatch } from '@kroma/client/accounts';
 import { prefValue } from '@kroma/core/react';
 import { useT } from '@kroma/ui';
 import {

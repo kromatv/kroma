@@ -3,7 +3,7 @@
 // the proof of the copy that was heard. Including whether granting it costs the
 // person a code, which a record on the link may not answer for.
 
-import { HandoffHandle } from '@kroma/client';
+import { HandoffHandle } from '@kroma/client/handoff';
 import { describe, expect, it, vi } from 'vitest';
 import { watchNearbyTvs } from './nearby';
 import type { DiscoveredTv, TvDiscoverySource } from './sources';

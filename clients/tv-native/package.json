@@ -23,6 +23,7 @@
     "perf:androidtv": "bun ./scripts/perf-androidtv.ts"
   },
   "dependencies": {
+    "@kroma/client": "workspace:*",
     "@kroma/core": "workspace:*",
     "@kroma/lan-beacon": "workspace:*",
     "@kroma/media3-ffmpeg": "workspace:*",

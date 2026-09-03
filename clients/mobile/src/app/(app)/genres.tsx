@@ -1,14 +1,13 @@
 // Genres: tiles built from the library's own metadata, each showing the best
 // unused backdrop for that genre over its hue gradient (same helpers as TV).
 
+import type { MediaItem, Show } from '@kroma/client/media';
 import {
   collectGenres,
   genreColors,
   genreLabel,
   genreSegment,
   genreShowcases,
-  type MediaItem,
-  type Show,
   sizedImageUrl,
 } from '@kroma/core';
 import { Box, styles, Text } from '@kroma/ui/kit';

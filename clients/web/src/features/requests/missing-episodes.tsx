@@ -2,7 +2,8 @@
 // the selection control, and long lists collapse behind a "show more" toggle so
 // one gappy series can't swallow the page.
 
-import { type CalendarEntry, episodeTag, relativeAirDate, sentenceCase } from '@kroma/core';
+import type { CalendarEntry } from '@kroma/client/requests';
+import { episodeTag, relativeAirDate, sentenceCase } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
 import {
   Box,

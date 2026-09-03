@@ -8,7 +8,7 @@ vi.mock('@module-federation/runtime', () => ({
   loadRemote: vi.fn(),
 }));
 
-import { setSessionToken } from '@kroma/core';
+import { setSessionToken } from '@kroma/client';
 import * as mfRuntime from '@module-federation/runtime';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';

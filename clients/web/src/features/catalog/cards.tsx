@@ -1,4 +1,5 @@
-import { genreLabels, metaLine, posterColors, type Section } from '@kroma/core';
+import type { Section } from '@kroma/client/media';
+import { genreLabels, metaLine, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Badge, Box, Button, gradient, Row, Text } from '@kroma/ui/kit';
 import { type CSSProperties, memo } from 'react';

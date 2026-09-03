@@ -1,4 +1,4 @@
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import { PairingStatus } from '../accounts';
 import type { HandoffHandle } from './ids';
 import {

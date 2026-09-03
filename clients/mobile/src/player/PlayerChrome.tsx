@@ -1,6 +1,7 @@
 // Pure presentation over the Engine; all playback logic lives in engine/.
 
-import { audioTracksOf, type MediaItem } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import { audioTracksOf } from '@kroma/core';
 import {
   audioFilterLabels,
   buildLeanStats,

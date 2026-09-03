@@ -3,8 +3,8 @@
 // preferences, per-recipient rendering, the stored row, the live bell, the push
 // fan-out), so "everyone" reaches every account for real.
 
-import type { MessageKey, Notification } from '@kroma/core';
-import { NOTIFICATION_CATEGORY_LABEL } from '@kroma/core';
+import type { Notification } from '@kroma/client/notifications';
+import { type MessageKey, NOTIFICATION_CATEGORY_LABEL } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,

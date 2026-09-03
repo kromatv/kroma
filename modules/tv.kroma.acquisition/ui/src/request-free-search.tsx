@@ -7,7 +7,7 @@
 // only where they mean something, and the line under the field says what the
 // indexers will actually be asked, because the numbers change that silently.
 
-import { apiErrorText } from '@kroma/core';
+import { apiErrorText } from '@kroma/client';
 import { useT } from '@kroma/module-sdk';
 import {
   Box,

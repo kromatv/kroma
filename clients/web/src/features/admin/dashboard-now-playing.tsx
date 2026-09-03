@@ -1,4 +1,5 @@
-import { type PlaybackSession, posterGradient, resolveImageUrl } from '@kroma/core';
+import type { PlaybackSession } from '@kroma/client/admin';
+import { posterGradient, resolveImageUrl } from '@kroma/core';
 import type { Translate } from '@kroma/i18n';
 import { TABULAR } from '@kroma/module-sdk';
 import { useFormat, useT } from '@kroma/ui';

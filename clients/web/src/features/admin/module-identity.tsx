@@ -1,4 +1,5 @@
-import type { MessageKey, StoreModule } from '@kroma/core';
+import type { StoreModule } from '@kroma/client/modules';
+import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Row, Surface, Text } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';

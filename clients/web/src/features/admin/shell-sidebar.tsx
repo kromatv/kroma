@@ -1,4 +1,4 @@
-import { hasPermission } from '@kroma/core';
+import { hasPermission } from '@kroma/client/accounts';
 import type { ModuleNav } from '@kroma/module-sdk';
 import { useFormat, useT } from '@kroma/ui';
 import { Box, color, Drawer, Focusable, Logo, Row, sv, Text } from '@kroma/ui/kit';

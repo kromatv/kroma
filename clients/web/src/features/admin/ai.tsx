@@ -1,6 +1,6 @@
 // Admin AI page: register the LLM providers that power personalized home
 // sections and taste profiles. Backed by /api/admin/llm*.
-import type { LlmAdminConfig } from '@kroma/core';
+import type { LlmAdminConfig } from '@kroma/client/llm';
 import { useT } from '@kroma/ui';
 import {
   Badge,

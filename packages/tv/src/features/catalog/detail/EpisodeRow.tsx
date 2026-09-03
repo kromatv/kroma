@@ -7,7 +7,8 @@
 // lights up while any of them holds focus, tracked here rather than asked
 // of the navigator, since a blur can arrive after the neighbour's focus.
 
-import { episodeTag, formatRuntime, type MediaItem, posterColors } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import { episodeTag, formatRuntime, posterColors } from '@kroma/core';
 import { endsAtClock, useLocale, useT } from '@kroma/ui';
 import {
   Badge,

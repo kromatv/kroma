@@ -4,7 +4,7 @@
 // no action at all, so with an empty roster this renders nothing rather than an
 // enabled button that opens an empty picker.
 
-import type { ItemId } from '@kroma/core';
+import type { ItemId } from '@kroma/client/media';
 import { useCast, useT } from '@kroma/ui';
 import { Button } from '@kroma/ui/kit';
 import { castPicker } from '#web/shared/ui/cast-picker';

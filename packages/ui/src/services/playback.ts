@@ -8,13 +8,10 @@
 // `playing` state; the TV player supplies platform labels + the raw <video> and
 // drives the prompt ping off the element's play/pause events.
 
-import {
-  type ItemId,
-  KromaApiError,
-  type KromaClient,
-  KromaEvents,
-  PlaybackSessionId,
-} from '@kroma/core';
+import { KromaApiError, type KromaClient } from '@kroma/client';
+import { KromaEvents } from '@kroma/client/events';
+import type { ItemId } from '@kroma/client/media';
+import { PlaybackSessionId } from '@kroma/client/playback';
 import { type RefObject, useEffect, useEffectEvent, useRef, useState } from 'react';
 
 export interface PlaybackHeartbeatParams {

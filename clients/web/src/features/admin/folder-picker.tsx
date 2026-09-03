@@ -1,7 +1,7 @@
 // A server-side folder browser: `value` is the committed path and `onChange`
 // fires on "use this folder"; browsing state is internal, seeded from `value`.
 // `onCancel` adds a cancel button for callers that show the browser on demand.
-import type { AdminFsList } from '@kroma/core';
+import type { AdminFsList } from '@kroma/client/admin';
 import { useT } from '@kroma/ui';
 import {
   Button,

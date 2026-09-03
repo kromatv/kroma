@@ -6,13 +6,10 @@
 // shared service (@kroma/ui services/playback) does: the `playback.terminate`
 // event on the live WS bus, and a 410 on the next ping as fallback.
 
-import {
-  KromaApiError,
-  type KromaClient,
-  KromaEvents,
-  type MediaItem,
-  PlaybackSessionId,
-} from '@kroma/core';
+import { KromaApiError, type KromaClient } from '@kroma/client';
+import { KromaEvents } from '@kroma/client/events';
+import type { MediaItem } from '@kroma/client/media';
+import { PlaybackSessionId } from '@kroma/client/playback';
 import * as Device from 'expo-device';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';

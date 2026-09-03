@@ -6,8 +6,9 @@
 // Offline, a local sprite short-circuits the fetch entirely; online, the
 // server answers 202 while still generating, which the client polls.
 
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem, StoryboardManifest } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import type { KromaClient, MediaItem, StoryboardManifest } from '@kroma/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DownloadEntry } from '#mobile/lib/downloads';

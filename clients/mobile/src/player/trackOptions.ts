@@ -1,10 +1,5 @@
-import {
-  audioTrackLabel,
-  audioTracksOf,
-  langName,
-  type MediaItem,
-  refineTrackLang,
-} from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import { audioTrackLabel, audioTracksOf, langName, refineTrackLang } from '@kroma/core';
 import type { useT } from '#mobile/lib/i18n';
 import type { Engine } from './engine';
 import type { Subtitles } from './useSubtitles';

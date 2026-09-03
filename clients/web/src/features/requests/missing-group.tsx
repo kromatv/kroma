@@ -5,13 +5,8 @@
 // trailing button carries the row's busy and "search started" states. All
 // mutation state lives in `missing.tsx`.
 
-import {
-  type CalendarEntry,
-  posterColors,
-  relativeAirDate,
-  sentenceCase,
-  sizedImageUrl,
-} from '@kroma/core';
+import type { CalendarEntry } from '@kroma/client/requests';
+import { posterColors, relativeAirDate, sentenceCase, sizedImageUrl } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
 import {
   Badge,

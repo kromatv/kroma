@@ -90,7 +90,7 @@
     "server:build": "cd server && cargo build --release",
     "prepare": "(git config core.hooksPath .githooks || true) && bun run gen:types",
     "hooks:install": "git config core.hooksPath .githooks",
-    "gen:types": "bun packages/core/vite/types.ts && bun packages/client/vite/types.ts"
+    "gen:types": "bun packages/core/vite/types.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.8",

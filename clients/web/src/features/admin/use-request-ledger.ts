@@ -5,7 +5,7 @@
 // reads the same one for its catalogue under the same query key, so the two
 // share a single fetch rather than racing for it.
 
-import type { RequestId } from '@kroma/core';
+import type { RequestId } from '@kroma/client/requests';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '#web/shared/lib/auth';
 

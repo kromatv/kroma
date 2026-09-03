@@ -2,7 +2,9 @@
 // moderation actions, and the acquisition panel. A page rather than a drawer,
 // so a search survives a reload and can be linked to.
 
-import { hasPermission, type MediaRequest, type MessageKey, type RequestId } from '@kroma/core';
+import { hasPermission } from '@kroma/client/accounts';
+import type { MediaRequest, RequestId } from '@kroma/client/requests';
+import type { MessageKey } from '@kroma/core';
 import { ModuleSlot } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Box, Button, EmptyState, Row, Surface } from '@kroma/ui/kit';

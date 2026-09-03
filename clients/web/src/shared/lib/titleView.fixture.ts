@@ -1,5 +1,6 @@
+import type { User } from '@kroma/client/accounts';
 import { fakeClient } from '@kroma/client/test';
-import type { Translate, User } from '@kroma/core';
+import type { Translate } from '@kroma/core';
 import { buildTitleView, type TitleInput } from './titleView';
 
 // A translator that echoes the key, appending var values so we can assert

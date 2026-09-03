@@ -1,14 +1,8 @@
 // One genre: every movie and show carrying it, in a poster grid with the
 // genre's hue as the header accent.
 
-import {
-  genreLabel,
-  genreOfSegment,
-  hasGenre,
-  type MediaItem,
-  type Show,
-  sortTitles,
-} from '@kroma/core';
+import type { MediaItem, Show } from '@kroma/client/media';
+import { genreLabel, genreOfSegment, hasGenre, sortTitles } from '@kroma/core';
 import { Icon } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';

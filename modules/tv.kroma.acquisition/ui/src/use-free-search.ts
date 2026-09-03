@@ -3,7 +3,7 @@
 // The season/episode boxes stay STRINGS. An empty box is "no number", which a
 // number cannot say, and the target decides whether the box is asked for at all.
 
-import { apiErrorText } from '@kroma/core';
+import { apiErrorText } from '@kroma/client';
 import { useT } from '@kroma/module-sdk';
 import { useCallback, useRef, useState } from 'react';
 import { canSearch, type FreeTarget, scopeOf } from './free-search-target';

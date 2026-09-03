@@ -1,12 +1,10 @@
+import type { MediaItem, Show, SubjectId } from '@kroma/client/media';
 import {
   collectGenres,
   hasGenre,
-  type MediaItem,
   type MessageKey,
   posterColors,
-  type Show,
   type SortMode,
-  type SubjectId,
   sortTitles,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';

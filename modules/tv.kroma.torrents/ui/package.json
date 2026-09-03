@@ -20,7 +20,7 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
-    "@kroma/core": "workspace:*",
+    "@kroma/client": "workspace:*",
     "@kroma/module-acquisition": "workspace:*",
     "@kroma/module-sdk": "workspace:*",
     "@kroma/module-vpn": "workspace:*",

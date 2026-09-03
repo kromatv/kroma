@@ -2,7 +2,7 @@
 // phone otherwise. Downloads deliberately do not use it - an offline file is on
 // this device, and playing it here is the point.
 
-import type { ItemId } from '@kroma/core';
+import type { ItemId } from '@kroma/client/media';
 import { useCast } from '@kroma/ui';
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';

@@ -1,5 +1,5 @@
+import { ItemId, type MediaItem } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import { ItemId, type MediaItem } from '@kroma/core';
 import { describe, expect, it, vi } from 'vitest';
 import type { EngineListeners } from '#tv/features/playback/player/engine';
 import { VlcEngine } from '#tv/features/playback/player/vlcEngine';

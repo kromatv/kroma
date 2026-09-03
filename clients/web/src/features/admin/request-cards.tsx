@@ -2,7 +2,7 @@
 // approve/deny/delete controls and the deny note. Pure presentation, so the page
 // itself stays data + layout.
 
-import type { MediaRequest } from '@kroma/core';
+import type { MediaRequest } from '@kroma/client/requests';
 import { posterGradient } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {

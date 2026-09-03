@@ -65,7 +65,7 @@ const useVideoPlayer = vi.hoisted(() => {
 vi.mock('expo-video', () => ({ useVideoPlayer }));
 
 const store = new Map<string, string>();
-vi.mock('@kroma/core', () => ({
+vi.mock('@kroma/client', () => ({
   deviceStorage: () => ({
     getItem: (key: string) => store.get(key) ?? null,
     setItem: (key: string, value: string) => void store.set(key, value),

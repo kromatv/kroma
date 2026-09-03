@@ -1,4 +1,4 @@
-import type { DiscoverDetail, DiscoverEntry } from '@kroma/core';
+import type { DiscoverDetail, DiscoverEntry } from '@kroma/client/discovery';
 import { useQueries } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { SavedTitle, SavedTitles } from '#web/features/catalog/saved-titles';

@@ -1,4 +1,4 @@
-import type { StoredSession } from '@kroma/core';
+import type { StoredSession } from '@kroma/client/accounts';
 import { type ActivateResult, useT } from '@kroma/ui';
 import { Box, Spinner as BusyRing, Button, OtpField, Row, Text, useShake } from '@kroma/ui/kit';
 import { type ReactNode, useEffect, useState } from 'react';

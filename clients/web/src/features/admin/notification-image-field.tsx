@@ -1,4 +1,4 @@
-import type { NotificationImage } from '@kroma/core';
+import type { NotificationImage } from '@kroma/client/notifications';
 import { useT } from '@kroma/ui';
 import {
   Box,

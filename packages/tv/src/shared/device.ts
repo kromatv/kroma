@@ -6,7 +6,7 @@
 // announced it, and a handoff beacon only ever reveals it on its own subnet.
 // Must be unique; `DeviceId` carries the shape rule the server enforces.
 
-import { DeviceId } from '@kroma/core';
+import { DeviceId } from '@kroma/client';
 import { readDeviceValue, writeDeviceValue } from '#tv/app/devicePref';
 
 // Named for the cast roster, which is where a device id was first needed. Kept

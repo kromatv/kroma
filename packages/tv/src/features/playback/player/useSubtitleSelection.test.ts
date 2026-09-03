@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
+
+import type { MediaItem } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import type { MediaItem } from '@kroma/core';
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useSubtitleSelection } from './useSubtitleSelection';

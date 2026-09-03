@@ -1,4 +1,4 @@
-import { Health } from '@kroma/core';
+import { Health } from '@kroma/client/media';
 import { useEffect, useState } from 'react';
 
 const INTERVAL_MS = 12000;

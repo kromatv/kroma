@@ -18,7 +18,8 @@ import {
   t,
 } from '#web/modules/host.fixture';
 
-vi.mock('@kroma/core', () => ({ sessionToken, hasPermission }));
+vi.mock('@kroma/client/accounts', () => ({ hasPermission }));
+vi.mock('@kroma/client', () => ({ sessionToken }));
 vi.mock('@kroma/module-sdk', () => ({ createEventBus }));
 vi.mock('@kroma/ui', () => ({
   useT: () => t,

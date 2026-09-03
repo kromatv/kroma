@@ -1,4 +1,4 @@
-import type { CrewMember, Metadata } from '@kroma/client';
+import type { CrewMember, Metadata } from '@kroma/client/media';
 import type { Translate } from './i18n';
 import { slugify } from './slug';
 

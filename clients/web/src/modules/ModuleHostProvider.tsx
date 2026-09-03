@@ -1,4 +1,5 @@
-import { hasPermission, type TVars } from '@kroma/core';
+import { hasPermission } from '@kroma/client/accounts';
+import type { TVars } from '@kroma/core';
 import type { KromaHost, ModuleNav, ModulePanel, ModuleRoute } from '@kroma/module-sdk';
 import { useScopedT, useT } from '@kroma/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

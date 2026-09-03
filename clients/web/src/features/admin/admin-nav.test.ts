@@ -1,4 +1,4 @@
-import type { Permission } from '@kroma/core';
+import type { Permission } from '@kroma/client/accounts';
 import type { ModuleNav } from '@kroma/module-sdk';
 import { describe, expect, it } from 'vitest';
 import { adminNavSections, NAV_GROUPS } from './admin-nav';

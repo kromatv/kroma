@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
+import type { MediaItem, SearchResponse, Show } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import type { MediaItem, SearchResponse, Show } from '@kroma/core';
 import { clearPressGuard } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';

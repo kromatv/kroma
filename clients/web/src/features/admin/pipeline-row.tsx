@@ -2,8 +2,9 @@
 // (metadata, or the failing/running stage), the treatment "flow" of status dots,
 // the overall status pill, and a reprocess shortcut.
 
-import type { ElementRow, MessageKey, Translate, Treatment } from '@kroma/core';
-import { ItemId, posterGradient, ShowId } from '@kroma/core';
+import { ItemId, ShowId } from '@kroma/client/media';
+import type { ElementRow, Treatment } from '@kroma/client/pipeline';
+import { type MessageKey, posterGradient, type Translate } from '@kroma/core';
 import { Table } from '@kroma/module-sdk';
 import { type Format, useFormat, useT } from '@kroma/ui';
 import { Box, type ColorValue, Icon, Row, Spinner, Text, Tooltip } from '@kroma/ui/kit';

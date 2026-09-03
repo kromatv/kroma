@@ -1,10 +1,11 @@
 // How this phone names itself to a server, feeding the account page's active
-// sessions list and the push subscription's device column. Uses @kroma/core's
+// sessions list and the push subscription's device column. Uses @kroma/client's
 // clientUserAgent (shared with the TV app); this file supplies the phone's own
 // hardware fields.
 
+import { clientUserAgent } from '@kroma/client';
 import { createQueryClient, type QueryClient } from '@kroma/client/query';
-import { activeLocale, clientUserAgent } from '@kroma/core';
+import { activeLocale } from '@kroma/core';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { buildInfo } from '#mobile/lib/buildInfo';

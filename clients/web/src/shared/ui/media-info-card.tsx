@@ -3,15 +3,8 @@
 // audio and subtitle streams ffprobe found. Split out of `media-info-modal.tsx`
 // so each file stays small and every branch reads as its own named piece.
 
-import {
-  type AudioTrack,
-  channelLabel,
-  codecLabel,
-  langName,
-  type MediaFile,
-  type SubtitleTrack,
-  type VideoTrack,
-} from '@kroma/core';
+import type { AudioTrack, MediaFile, SubtitleTrack, VideoTrack } from '@kroma/client/media';
+import { channelLabel, codecLabel, langName } from '@kroma/core';
 import { useFormat, useT } from '@kroma/ui';
 import { Box, color, DataField, Grid, Row, Text } from '@kroma/ui/kit';
 import { IconFileInfo } from '@tabler/icons-react';

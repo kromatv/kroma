@@ -1,11 +1,5 @@
-import {
-  episodeTag,
-  genreLabels,
-  type MediaItem,
-  posterColors,
-  type SectionItem,
-  type Show,
-} from '@kroma/core';
+import type { MediaItem, SectionItem, Show } from '@kroma/client/media';
+import { episodeTag, genreLabels, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,

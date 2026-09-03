@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import { JobCancelled, JobStarted } from '../jobs';
 import type { SubjectId } from '../media';
 import {

@@ -1,4 +1,4 @@
-import type { Query, RequestContext } from '../../core/http';
+import type { Query, RequestContext } from '../../core/client';
 import { DiscoverDetail, DiscoverResponse, type DiscoverType, type TmdbKind } from './schemas';
 
 /** What a discovery listing asks for. `all` is the absence of a type filter and

@@ -1,4 +1,5 @@
-import { genreLabels, type ItemId, posterColors, type SectionItem } from '@kroma/core';
+import type { ItemId, SectionItem } from '@kroma/client/media';
+import { genreLabels, posterColors } from '@kroma/core';
 import { useAiSuggest, useT } from '@kroma/ui';
 import { Box, MediaCard, ProgressRing, RAIL_GAP, Rail, styles, Text } from '@kroma/ui/kit';
 import { useClient, useNav } from '#tv/app/router';

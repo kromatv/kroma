@@ -3,7 +3,7 @@
 // catalog fetch server-side), and live per-module progress off the
 // `module.op.*` stream.
 
-import type { StoreModule } from '@kroma/core';
+import type { StoreModule } from '@kroma/client/modules';
 import { useFormat, useT } from '@kroma/ui';
 import { Box, Button, EmptyState, Icon, ListRow, Row, Text } from '@kroma/ui/kit';
 import type { OpModule } from '#web/features/admin/module-ops';

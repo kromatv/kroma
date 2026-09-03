@@ -1,20 +1,19 @@
 // Multi-server per-user session for the TV: unlike the web (single origin), the
 // TV remembers profiles from several KROMA servers at once.
 
+import { type KromaClient, sharedTokenExchange } from '@kroma/client';
 import {
   type AuthResult,
   clearSession,
   forgetAccount as forgetAccountStore,
-  type KromaClient,
   loadAccounts,
   loadSession,
   normalizeServerUrl as norm,
   type StoredSession,
   saveSession,
-  sharedTokenExchange,
   User,
   type UserId,
-} from '@kroma/core';
+} from '@kroma/client/accounts';
 import {
   createContext,
   type ReactNode,

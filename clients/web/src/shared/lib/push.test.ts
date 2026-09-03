@@ -12,7 +12,7 @@ vi.mock('#web/shared/lib/api', () => ({
   }),
 }));
 
-const { disablePush: disable, enablePush: enable } = await import('@kroma/core');
+const { disablePush: disable, enablePush: enable } = await import('@kroma/client/notifications');
 const { pushBlocker, webPush } = await import('./push');
 const { bytesToBase64Url } = await import('./base64url');
 const { kromaClient } = await import('#web/shared/lib/api');

@@ -1,7 +1,8 @@
 // "Manquants": episode-level rows grouped under their series (or a single movie
 // row), with the search actions that turn a library gap into a request.
 
-import { type CalendarEntry, hasPermission } from '@kroma/core';
+import { hasPermission } from '@kroma/client/accounts';
+import type { CalendarEntry } from '@kroma/client/requests';
 import { useT } from '@kroma/ui';
 import {
   Badge,

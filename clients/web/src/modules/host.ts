@@ -1,7 +1,9 @@
 // Adapts the web app's providers (auth, i18n, router, session) into the neutral
 // KromaHost the module SDK defines, then resolves + starts the registry.
 
-import { hasPermission, type MessageKey, sessionToken, type TVars } from '@kroma/core';
+import { sessionToken } from '@kroma/client';
+import { hasPermission } from '@kroma/client/accounts';
+import type { MessageKey, TVars } from '@kroma/core';
 import {
   createEventBus,
   type HostBase,

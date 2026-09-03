@@ -1,4 +1,4 @@
-import type { ElementRow } from '@kroma/core';
+import type { ElementRow } from '@kroma/client/pipeline';
 import { Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Box, Button, Callout, color, EmptyState, Row } from '@kroma/ui/kit';

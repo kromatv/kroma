@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import { LlmAdminConfig, type LlmProbe, type LlmSave } from './schemas';
 
 const Models = z.object({ models: z.array(z.string()), error: z.string().optional() });

@@ -1,11 +1,6 @@
-import {
-  type AdminUser,
-  type Invite,
-  PERMISSIONS,
-  type Permission,
-  type ResetCreated,
-  type VerificationCreated,
-} from '@kroma/core';
+import type { Invite, Permission, ResetCreated, VerificationCreated } from '@kroma/client/accounts';
+import type { AdminUser } from '@kroma/client/admin';
+import { PERMISSIONS } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,

@@ -4,7 +4,7 @@
 // live on the push notification itself (see lib/notifications/push); this
 // list stays a record rather than a console.
 
-import type { Notification, NotificationEvent } from '@kroma/core';
+import type { Notification, NotificationEvent } from '@kroma/client/notifications';
 import { groupNotificationsByDay, NOTIFICATION_DAY_LABEL } from '@kroma/core';
 import { Box, color, Icon, IconButton, type IconName, styles, Text } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';

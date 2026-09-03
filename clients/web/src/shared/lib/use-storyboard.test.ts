@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { ItemId } from '@kroma/core';
+import { ItemId } from '@kroma/client/media';
 import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,8 +11,8 @@ const shared = vi.fn((client: unknown, itemId: string, opts?: unknown) => ({
   opts,
 }));
 
-vi.mock('@kroma/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@kroma/core')>()),
+vi.mock('@kroma/client/accounts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kroma/client/accounts')>()),
   loadSession: () => loadSession(),
 }));
 vi.mock('@kroma/ui', () => ({ useStoryboard: shared }));

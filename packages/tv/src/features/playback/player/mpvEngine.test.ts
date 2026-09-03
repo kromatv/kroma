@@ -1,5 +1,5 @@
+import type { MediaItem } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import type { MediaItem } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineOptions } from './baseEngine';
 import type { EngineListeners } from './engine';

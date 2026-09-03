@@ -1,4 +1,4 @@
-import type { SessionInfo } from '@kroma/core';
+import type { SessionInfo } from '@kroma/client/accounts';
 import { useFormat, useT } from '@kroma/ui';
 import { Badge, Box, Button, Icon, type IconName, ListRow, Row, Text } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

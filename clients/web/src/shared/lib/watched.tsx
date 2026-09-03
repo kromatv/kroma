@@ -1,7 +1,7 @@
 // Per-user "watched" state: the whole set of ids is loaded once on sign-in so a
 // card checks membership instead of costing a request. Toggling is optimistic.
 
-import { ItemId, type SubjectId } from '@kroma/core';
+import { ItemId, type SubjectId } from '@kroma/client/media';
 import {
   createContext,
   type ReactNode,

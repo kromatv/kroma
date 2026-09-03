@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 
-import { type AdminUser, LibraryId, UserId } from '@kroma/core';
+import { UserId } from '@kroma/client/accounts';
+import type { AdminUser } from '@kroma/client/admin';
+import { LibraryId } from '@kroma/client/media';
 import { I18nProvider } from '@kroma/ui';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';

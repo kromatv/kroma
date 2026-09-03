@@ -2,15 +2,9 @@
 // pure presentation; navigation targets are resolved by the small helpers at
 // the top so every screen routes titles the same way.
 
-import {
-  type ContinueItem,
-  episodeTag,
-  type KromaClient,
-  type MediaItem,
-  type SectionItem,
-  type Show,
-  sizedImageUrl,
-} from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { ContinueItem, MediaItem, SectionItem, Show } from '@kroma/client/media';
+import { episodeTag, sizedImageUrl } from '@kroma/core';
 import { Box, styles, Text, VirtualRail } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { memo } from 'react';

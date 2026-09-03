@@ -2,7 +2,8 @@
 // thumbnails for the seek preview. The server builds it lazily, so this polls while
 // `pending`, then preloads the image so the first hover/scrub doesn't flash empty.
 
-import type { ItemId, KromaClient, StoryboardManifest } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { ItemId, StoryboardManifest } from '@kroma/client/media';
 import { useCallback, useEffect, useState } from 'react';
 import { Image } from 'react-native';
 import { webDocument } from '#ui/lib/dom';

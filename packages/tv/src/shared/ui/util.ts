@@ -1,4 +1,4 @@
-import { normalizeServerUrl } from '@kroma/core';
+import { normalizeServerUrl } from '@kroma/client/accounts';
 
 /** Hostname of a server URL, or `null` when it can't be parsed. */
 export function hostOf(url: string): string | null {

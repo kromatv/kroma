@@ -1,4 +1,4 @@
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import type { ReportId } from './ids';
 import { type CreateReportBody, Report, type ReportQuery, ReportsView } from './schemas';
 

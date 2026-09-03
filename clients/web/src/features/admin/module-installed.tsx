@@ -3,7 +3,8 @@
 // chip and a chevron into the detail drawer. Configuration, dependencies and
 // uninstall live in the drawer, so the list stays scannable.
 
-import type { MessageKey, StoreCatalog } from '@kroma/core';
+import type { StoreCatalog } from '@kroma/client/modules';
+import type { MessageKey } from '@kroma/core';
 import { moduleIconUrl, Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Badge, Box, EmptyState, Icon, Row, Switch, Text, Tooltip } from '@kroma/ui/kit';

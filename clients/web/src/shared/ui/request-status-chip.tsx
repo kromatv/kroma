@@ -1,7 +1,7 @@
 // The request status chip, one component for every surface: poster-card
 // overlay, table rows and the discover-detail hero.
 
-import type { RequestStatus } from '@kroma/core';
+import type { RequestStatus } from '@kroma/client/requests';
 import { useT } from '@kroma/ui';
 import { Box, backdropBlur, Row, Text, useLoop } from '@kroma/ui/kit';
 import { requestStatusMeta } from '#web/shared/lib/request-status';

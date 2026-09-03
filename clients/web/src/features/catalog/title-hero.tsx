@@ -1,4 +1,5 @@
-import { formatRuntime, ItemId, type SubjectId } from '@kroma/core';
+import { ItemId, type SubjectId } from '@kroma/client/media';
+import { formatRuntime } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Button, type HostElement } from '@kroma/ui/kit';
 import {

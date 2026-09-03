@@ -1,4 +1,5 @@
-import type { MessageKey, Permission } from '@kroma/core';
+import type { Permission } from '@kroma/client/accounts';
+import type { MessageKey } from '@kroma/core';
 import type { ModuleNav } from '@kroma/module-sdk';
 import {
   IconApps,

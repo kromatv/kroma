@@ -1,4 +1,5 @@
-import { type CrewMember, personSegment } from '@kroma/core';
+import type { CrewMember } from '@kroma/client/media';
+import { personSegment } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Button, color, DataField, IconButton, Text } from '@kroma/ui/kit';
 import { Link } from '@tanstack/react-router';

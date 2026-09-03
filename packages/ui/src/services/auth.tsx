@@ -5,21 +5,23 @@
 // access token for a short-lived SESSION token, kept in memory.
 
 import {
-  type AuthResult,
   apiErrorBody,
   apiErrorText,
-  clearSession,
-  forgetAccount,
   KromaApiError,
   type KromaClient,
+  sharedTokenExchange,
+} from '@kroma/client';
+import {
+  type AuthResult,
+  clearSession,
+  forgetAccount,
   loadAccounts,
   loadSession,
   type StoredSession,
   saveSession,
-  sharedTokenExchange,
   type User,
   type UserId,
-} from '@kroma/core';
+} from '@kroma/client/accounts';
 import {
   type Dispatch,
   type SetStateAction,

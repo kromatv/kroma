@@ -121,25 +121,25 @@ describe('the artwork default', () => {
 
   const boot = async (gb: number | null) => {
     vi.resetModules();
-    const core = await import('@kroma/core');
+    const media = await import('@kroma/client/media');
     const hardware = await import('#tv/app/clientHardware');
     hardware.setHardwareSource(reporting(gb));
     const store = await import('./store');
-    return { core, hardware, store };
+    return { hardware, media, store };
   };
 
   it('stays full on a set that reports enough memory', async () => {
-    const { core, store } = await boot(4);
+    const { media, store } = await boot(4);
 
     expect(store.artworkPrefStore.get()).toBe('full');
-    expect(core.artworkScaleValue()).toBe(1);
+    expect(media.artworkScaleValue()).toBe(1);
   });
 
   it('steps down to high on a set that reports the low-memory ceiling or less', async () => {
-    const { core, store } = await boot(2);
+    const { media, store } = await boot(2);
 
     expect(store.artworkPrefStore.get()).toBe('high');
-    expect(core.artworkScaleValue()).toBe(0.75);
+    expect(media.artworkScaleValue()).toBe(0.75);
   });
 
   it('stays full where the set will not report its memory at all', async () => {
@@ -182,18 +182,19 @@ describe('a preference stored by an earlier run', () => {
 
   it('re-applies the artwork scale when the device store arrives late', async () => {
     vi.resetModules();
-    const core = await import('@kroma/core');
+    const media = await import('@kroma/client/media');
+    const { setSessionStorage } = await import('@kroma/client');
     await import('./store');
     const late = new Map([['kroma:artwork', 'medium']]);
-    expect(core.artworkScaleValue()).toBe(1);
+    expect(media.artworkScaleValue()).toBe(1);
 
-    core.setSessionStorage({
+    setSessionStorage({
       getItem: (k: string) => late.get(k) ?? null,
       setItem: (k: string, v: string) => void late.set(k, v),
       removeItem: (k: string) => void late.delete(k),
     });
 
-    expect(core.artworkScaleValue()).toBe(0.5);
-    core.setSessionStorage(null);
+    expect(media.artworkScaleValue()).toBe(0.5);
+    setSessionStorage(null);
   });
 });

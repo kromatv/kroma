@@ -2,7 +2,7 @@
 // has to do: publish and wait, sign in on a grant, start over when the beacon
 // lapses, and keep its DNS-SD record in step with whichever beacon is current.
 
-import type { PairingStatus } from '@kroma/client';
+import type { PairingStatus } from '@kroma/client/accounts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type HandoffBeaconView, startHandoff } from './beacon';
 import { DEVICE, run, stubClient, tick, USER } from './beacon.fixture';

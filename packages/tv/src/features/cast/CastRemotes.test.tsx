@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
+import { type CastController, ControllerId } from '@kroma/client/cast';
 import { fakeClient } from '@kroma/client/test';
-import { type CastController, ControllerId } from '@kroma/core';
 import { clearPressGuard } from '@kroma/ui/kit';
 import { onScreen } from '@kroma/ui/testing';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';

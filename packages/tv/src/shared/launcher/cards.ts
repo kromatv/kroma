@@ -2,7 +2,8 @@
 // the Android TV preview channels and the Watch Next row. The providers own the
 // effects; this owns the shape, so it is testable without React.
 
-import type { ContinueItem, KromaClient, MediaItem, Section } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { ContinueItem, MediaItem, Section } from '@kroma/client/media';
 
 // A launcher card is drawn 1280 wide; asking for the original ships a
 // multi-megabyte still to a shelf that shows a thumbnail.

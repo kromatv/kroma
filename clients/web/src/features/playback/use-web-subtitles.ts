@@ -2,13 +2,10 @@ import {
   type DownloadedSub,
   GEN_LANGS,
   GenerationId,
-  LANG_OFF,
-  langName,
-  preferredSubIndex,
   type SubCapabilities,
   SubtitleId,
-  type Translate,
-} from '@kroma/core';
+} from '@kroma/client/subtitles';
+import { LANG_OFF, langName, preferredSubIndex, type Translate } from '@kroma/core';
 import {
   type PlayerSub,
   type SubtitleGenBundle,

@@ -4,7 +4,8 @@
 // because the two shells that draw it used to decide this separately and a
 // person holding both devices sees both.
 
-import { type DiscoveredTv, HandoffHandle, type Translate } from '@kroma/core';
+import { HandoffHandle } from '@kroma/client/handoff';
+import type { DiscoveredTv, Translate } from '@kroma/core';
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NearbyTvList } from './nearby-tv-list';

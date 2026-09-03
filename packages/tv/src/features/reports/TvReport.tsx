@@ -1,5 +1,5 @@
-import type { ReportCategory, ReportSubjectKind } from '@kroma/core';
-import { apiErrorText } from '@kroma/core';
+import { apiErrorText } from '@kroma/client';
+import type { ReportCategory, ReportSubjectKind } from '@kroma/client/reports';
 import { useT } from '@kroma/ui';
 import { Box, Button, Field, ListRow, Text, useFocusNav } from '@kroma/ui/kit';
 import { useCallback, useEffect, useRef, useState } from 'react';

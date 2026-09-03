@@ -1,4 +1,6 @@
-import { type AdminUser, resolveImageUrl, type UserId } from '@kroma/core';
+import type { UserId } from '@kroma/client/accounts';
+import type { AdminUser } from '@kroma/client/admin';
+import { resolveImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Avatar } from '@kroma/ui/kit';
 import { EVERYONE, type FilterOption } from '#web/features/admin/dashboard-filters';

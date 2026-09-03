@@ -288,6 +288,7 @@
       "name": "@kroma/tv-native",
       "version": "0.0.0",
       "dependencies": {
+        "@kroma/client": "workspace:*",
         "@kroma/core": "workspace:*",
         "@kroma/lan-beacon": "workspace:*",
         "@kroma/media3-ffmpeg": "workspace:*",
@@ -411,6 +412,7 @@
       "name": "@kroma/module-acquisition",
       "version": "0.0.0",
       "dependencies": {
+        "@kroma/client": "workspace:*",
         "@kroma/core": "workspace:*",
         "@kroma/module-sdk": "workspace:*",
         "@kroma/ui": "workspace:*",
@@ -465,7 +467,7 @@
       "name": "@kroma/module-torrents",
       "version": "0.0.0",
       "dependencies": {
-        "@kroma/core": "workspace:*",
+        "@kroma/client": "workspace:*",
         "@kroma/module-acquisition": "workspace:*",
         "@kroma/module-sdk": "workspace:*",
         "@kroma/module-vpn": "workspace:*",
@@ -509,7 +511,6 @@
         "@babel/plugin-transform-classes": "^7.29.7",
         "@babel/preset-env": "^7.29.7",
         "@kroma/build-info": "workspace:*",
-        "@kroma/client": "workspace:*",
         "@kroma/core": "workspace:*",
         "@kroma/i18n": "workspace:*",
         "@kroma/i18n-devtools": "workspace:*",
@@ -564,11 +565,9 @@
       },
       "peerDependencies": {
         "@tanstack/react-query": "^5",
-        "vite": ">=6",
       },
       "optionalPeers": [
         "@tanstack/react-query",
-        "vite",
       ],
     },
     "packages/core": {
@@ -680,6 +679,7 @@
       "name": "@kroma/module-sdk",
       "version": "0.0.0",
       "dependencies": {
+        "@kroma/client": "workspace:*",
         "@kroma/core": "workspace:*",
         "@kroma/registry": "workspace:*",
         "@kroma/ui": "workspace:*",

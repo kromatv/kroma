@@ -2,7 +2,7 @@
 // `AuthGate.tsx`, which owns the gate/routing + profile picker and composes
 // these two screens.
 
-import { isEmail, isPassword, isUsername, type PublicUser } from '@kroma/core';
+import { isEmail, isPassword, isUsername, type PublicUser } from '@kroma/client/accounts';
 import { useT } from '@kroma/ui';
 import { Box, Button, Callout, Field, Text } from '@kroma/ui/kit';
 import { type CSSProperties, useState } from 'react';

@@ -1,4 +1,5 @@
-import type { Marker, ReportCategory } from '@kroma/core';
+import type { Marker } from '@kroma/client/media';
+import type { ReportCategory } from '@kroma/client/reports';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import type { LayoutChangeEvent, View } from 'react-native';
 import { Dimensions } from 'react-native';

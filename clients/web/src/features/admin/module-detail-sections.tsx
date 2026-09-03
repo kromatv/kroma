@@ -3,7 +3,7 @@
 // the module's declared settings. The page itself lives in module-detail.tsx,
 // its controls in module-detail-actions.tsx.
 
-import type { StoreCatalog, StoreModule } from '@kroma/core';
+import type { StoreCatalog, StoreModule } from '@kroma/client/modules';
 import { depEntries, moduleIconUrl } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Badge, Box, Button, Callout, DataField, Grid, Progress, Row, Text } from '@kroma/ui/kit';

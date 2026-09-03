@@ -1,11 +1,5 @@
-import {
-  channelLabel,
-  codecLabel,
-  langName,
-  type MediaItem,
-  type Translate,
-  type VideoTrack,
-} from '@kroma/core';
+import type { MediaItem, VideoTrack } from '@kroma/client/media';
+import { channelLabel, codecLabel, langName, type Translate } from '@kroma/core';
 
 export type QualityTone = '4K' | 'HDR' | 'H.265';
 

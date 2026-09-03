@@ -1,6 +1,7 @@
 // Overlays that sit above the video independently of the player controls.
 
-import { type MediaItem, sizedImageUrl } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import { sizedImageUrl } from '@kroma/core';
 import { type SubtitleAppearance, withOpacity } from '@kroma/ui';
 import { Box, Button, Icon, Spinner, styles, Text } from '@kroma/ui/kit';
 import { Platform, Pressable, type TextStyle } from 'react-native';

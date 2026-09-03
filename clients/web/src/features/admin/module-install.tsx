@@ -4,7 +4,7 @@
 // install was attempted, so the caller refreshes; `false` on a plain cancel.
 // Built on the kit `Dialog`, which stacks above the detail drawer.
 
-import type { StoreOptionalModule, StorePlan } from '@kroma/core';
+import type { StoreOptionalModule, StorePlan } from '@kroma/client/modules';
 import { useT } from '@kroma/ui';
 import { Box, Button, Dialog, Divider, Icon, Progress, Row, Text } from '@kroma/ui/kit';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';

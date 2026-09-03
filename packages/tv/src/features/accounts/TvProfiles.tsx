@@ -1,4 +1,4 @@
-import { normalizeServerUrl as norm, type StoredSession } from '@kroma/core';
+import { normalizeServerUrl as norm, type StoredSession } from '@kroma/client/accounts';
 import { useT } from '@kroma/ui';
 import {
   AddTile,

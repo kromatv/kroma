@@ -1,4 +1,4 @@
-import type { Section, SectionItem } from '@kroma/core';
+import type { Section, SectionItem } from '@kroma/client/media';
 import {
   createContext,
   type ReactNode,

@@ -2,7 +2,8 @@
 // searchable / filterable table (mirroring the Demandes queue), with a triage
 // drawer. Backed by GET /api/admin/reports + the report.updated WS event.
 
-import { KromaEvents, type Report, type ReportCategory, type ReportStatus } from '@kroma/core';
+import { KromaEvents } from '@kroma/client/events';
+import type { Report, ReportCategory, ReportStatus } from '@kroma/client/reports';
 import { TABULAR, Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Avatar, EmptyState, Row, Text } from '@kroma/ui/kit';

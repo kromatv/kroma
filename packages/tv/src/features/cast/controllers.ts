@@ -1,7 +1,7 @@
 // The remotes currently driving THIS television. A module-level slot rather than
 // a context, so publishing a new roster re-renders only the chip that reads it.
 
-import type { CastClientMessage, CastController, ControllerId } from '@kroma/core';
+import type { CastClientMessage, CastController, ControllerId } from '@kroma/client/cast';
 import { useSyncExternalStore } from 'react';
 
 // Shared and frozen, so `useSyncExternalStore` doesn't see a new array every

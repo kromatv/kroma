@@ -1,6 +1,7 @@
 // The two horizontal rails under a detail hero: the cast, and similar titles.
 
-import { type CastMember, personSegment, posterColors } from '@kroma/core';
+import type { CastMember } from '@kroma/client/media';
+import { personSegment, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, color, Focusable, gradient, type HostElement, sv, Text, themed } from '@kroma/ui/kit';
 import type { CSSProperties } from 'react';

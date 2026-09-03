@@ -1,4 +1,4 @@
-import type { ReportCategory } from '@kroma/core';
+import type { ReportCategory } from '@kroma/client/reports';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';

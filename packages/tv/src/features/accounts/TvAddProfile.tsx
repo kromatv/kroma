@@ -1,4 +1,4 @@
-import { normalizeServerUrl as norm } from '@kroma/core';
+import { normalizeServerUrl as norm } from '@kroma/client/accounts';
 import { useT } from '@kroma/ui';
 import { Box, FocusColumn, Hint, Spinner, styles, Text, useFocusNav } from '@kroma/ui/kit';
 import { useEffect, useMemo } from 'react';

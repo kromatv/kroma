@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
+
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import type { KromaClient, MediaItem, Translate } from '@kroma/core';
+import type { Translate } from '@kroma/core';
 import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useTvUpNext } from './use-tv-upnext';

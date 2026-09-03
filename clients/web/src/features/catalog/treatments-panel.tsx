@@ -4,7 +4,10 @@
 // action. The treatment list needs `settings.manage`; fixing a match needs
 // `library.manage`. Either shows the strip; each control gates itself.
 
-import { hasPermission, ItemId, type MessageKey, ShowId, type Treatment } from '@kroma/core';
+import { hasPermission } from '@kroma/client/accounts';
+import { ItemId, ShowId } from '@kroma/client/media';
+import type { Treatment } from '@kroma/client/pipeline';
+import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Button, color, Spinner, Text } from '@kroma/ui/kit';
 import {

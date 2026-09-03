@@ -7,8 +7,8 @@
 // detail screen shows a spinner or gives up. The ceiling matters too: a model
 // that never answers must stop the loop rather than poll a television forever.
 
+import { ItemId, type Section } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import { ItemId, type Section } from '@kroma/core';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAiSuggest } from './aiSuggest';

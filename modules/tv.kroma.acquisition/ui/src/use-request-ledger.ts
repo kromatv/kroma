@@ -2,7 +2,7 @@
 // that needs them shares one fetch: the header card wants the artwork and the
 // library link, the acquisition panel wants the seasons.
 
-import type { RequestId } from '@kroma/core';
+import type { RequestId } from '@kroma/client/requests';
 import { useAdminHost } from '@kroma/module-sdk';
 import { useQuery } from '@tanstack/react-query';
 

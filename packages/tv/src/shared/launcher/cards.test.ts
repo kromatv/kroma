@@ -1,5 +1,6 @@
+import type { KromaClient } from '@kroma/client';
+import type { ContinueItem, MediaItem, Section } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import type { ContinueItem, KromaClient, MediaItem, Section } from '@kroma/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildHomeChannels,

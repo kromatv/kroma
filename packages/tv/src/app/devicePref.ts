@@ -3,7 +3,7 @@
 // no localStorage, and the store's reads/writes never throw, so a locked-down
 // profile or storage quota can't wedge a screen.
 
-import { deviceStorage } from '@kroma/core';
+import { deviceStorage } from '@kroma/client';
 
 /** The raw stored value for a device key, or null when absent/unavailable. */
 export function readDeviceValue(key: string): string | null {

@@ -5,7 +5,7 @@
 // revoked credential, nor must a plain network failure; the standalone
 // biometric lock must be able to refuse the resume outright.
 
-import { KromaApiError } from '@kroma/core';
+import { KromaApiError } from '@kroma/client';
 import { renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

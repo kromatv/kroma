@@ -4,7 +4,8 @@
 // closes on an ack rather than waiting for the new art (the fiche live-refreshes
 // on the update event). Gated on `library.manage` by the caller AND the server.
 
-import { apiErrorText, ItemId, ShowId } from '@kroma/core';
+import { apiErrorText } from '@kroma/client';
+import { ItemId, ShowId } from '@kroma/client/media';
 import { useT } from '@kroma/ui';
 import { Box, Button, Callout, Field, IconButton, Spinner, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';

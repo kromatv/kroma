@@ -1,4 +1,4 @@
-import { ItemId, ShowId } from '@kroma/core';
+import { ItemId, ShowId } from '@kroma/client/media';
 import { Box, Chip, color, Icon, IconButton, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';

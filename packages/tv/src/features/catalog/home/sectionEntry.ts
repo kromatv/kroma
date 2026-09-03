@@ -1,4 +1,4 @@
-import type { SectionItem } from '@kroma/core';
+import type { SectionItem } from '@kroma/client/media';
 
 // A recommendation row entry is a movie *or* a show (the server mixes them).
 export const entryId = (e: SectionItem): string => (e.type === 'show' ? e.show.id : e.item.id);

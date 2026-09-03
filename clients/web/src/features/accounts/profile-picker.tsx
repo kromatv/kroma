@@ -1,4 +1,4 @@
-import type { StoredSession, UserId } from '@kroma/core';
+import type { StoredSession, UserId } from '@kroma/client/accounts';
 import { useT } from '@kroma/ui';
 import {
   AddTile,

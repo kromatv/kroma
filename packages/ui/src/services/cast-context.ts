@@ -1,4 +1,7 @@
-import type { CastCommand, CastReceiver, DeviceId, DiscoveredTv, ItemId } from '@kroma/core';
+import type { DeviceId } from '@kroma/client';
+import type { CastCommand, CastReceiver } from '@kroma/client/cast';
+import type { ItemId } from '@kroma/client/media';
+import type { DiscoveredTv } from '@kroma/core';
 import { createContext, useContext } from 'react';
 
 /** What a sender can do with the TV it is driving. */

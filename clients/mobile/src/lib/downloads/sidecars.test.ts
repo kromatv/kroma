@@ -1,11 +1,7 @@
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem, StoryboardManifest } from '@kroma/client/media';
+import { type DownloadedSub, SubtitleId } from '@kroma/client/subtitles';
 import { fakeClient } from '@kroma/client/test';
-import {
-  type DownloadedSub,
-  type KromaClient,
-  type MediaItem,
-  type StoryboardManifest,
-  SubtitleId,
-} from '@kroma/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const downloadAsync = vi.hoisted(() => vi.fn(async (_url: string, _path: string) => ({})));

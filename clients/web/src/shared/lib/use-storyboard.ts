@@ -3,7 +3,8 @@
 // signature. All logic (lazy-generation polling, fast+slow backoff, visibility
 // re-check, tile math) lives in `@kroma/ui`.
 
-import { type ItemId, loadSession } from '@kroma/core';
+import { loadSession } from '@kroma/client/accounts';
+import type { ItemId } from '@kroma/client/media';
 import { useStoryboard as useSharedStoryboard } from '@kroma/ui';
 import { useMemo } from 'react';
 import { kromaClient } from '#web/shared/lib/api';

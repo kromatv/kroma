@@ -1,4 +1,4 @@
-import type { AdminLibrary } from '@kroma/core';
+import type { AdminLibrary } from '@kroma/client/library';
 import { useFormat, useT } from '@kroma/ui';
 import {
   Box,

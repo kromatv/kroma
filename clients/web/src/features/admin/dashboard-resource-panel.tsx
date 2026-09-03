@@ -1,4 +1,4 @@
-import type { MetricRange, MetricsSnapshot } from '@kroma/core';
+import type { MetricRange, MetricsSnapshot } from '@kroma/client/admin';
 import { useT } from '@kroma/ui';
 import { EmptyState, Row, Section } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';

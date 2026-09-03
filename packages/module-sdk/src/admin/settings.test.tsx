@@ -4,7 +4,7 @@
 // / Acquisition module pages. It writes optimistically: a row shows the new
 // value immediately, and a failed PUT does not take the page down.
 
-import type { SettingGroup } from '@kroma/core';
+import type { SettingGroup } from '@kroma/client/admin';
 import { I18nProvider } from '@kroma/ui';
 import { setEntryDefaults } from '@kroma/ui/kit';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';

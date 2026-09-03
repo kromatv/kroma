@@ -3,7 +3,7 @@
 // does not understand is skipped rather than shown half-empty, and neither
 // source blanks its list over one dropped answer.
 
-import { type HandoffDevice, HandoffHandle } from '@kroma/client';
+import { type HandoffDevice, HandoffHandle } from '@kroma/client/handoff';
 import { fakeClient } from '@kroma/client/test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {

@@ -5,8 +5,8 @@
 // so the absolute position is `baseSec + currentTime`, where `baseSec` is the
 // keyframe start the server reports rather than the anchor that was asked for.
 
+import type { AudioTrack } from '@kroma/client/media';
 import {
-  type AudioTrack,
   attachHlsRecovery,
   type EngineDecision,
   hlsBufferConfig,

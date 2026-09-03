@@ -1,4 +1,5 @@
-import { type MediaItem, sizedImageUrl } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import { sizedImageUrl } from '@kroma/core';
 import { Box, Icon, styles, Text } from '@kroma/ui/kit';
 import { Image } from 'expo-image';
 import { useWindowDimensions } from 'react-native';

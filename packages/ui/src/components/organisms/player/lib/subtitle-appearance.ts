@@ -1,4 +1,4 @@
-import { deviceStorage } from '@kroma/core';
+import { deviceStorage } from '@kroma/client';
 import { useCallback, useEffect, useState } from 'react';
 import type { TextStyle, ViewStyle } from 'react-native';
 import type { ColorValue } from '#ui/core';

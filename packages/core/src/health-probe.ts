@@ -1,7 +1,7 @@
 // Reaching `/api/health` on a candidate origin: the schema the answer is held
 // to, and the bounded races the discovery entry points run over a host list.
 
-import { Health } from '@kroma/client';
+import { Health } from '@kroma/client/media';
 import { z } from 'zod';
 
 // Any host on the link can answer a probe, so what comes back is validated

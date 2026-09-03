@@ -1,4 +1,4 @@
-import type { HistoryBucket } from '@kroma/core';
+import type { HistoryBucket } from '@kroma/client/admin';
 import { useFormat, useT } from '@kroma/ui';
 import { Chart, type ChartPoint, type ColorValue } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';

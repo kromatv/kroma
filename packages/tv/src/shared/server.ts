@@ -1,10 +1,10 @@
 // Server origin resolution for TV shells, now multi-server. The list of saved
-// servers lives in `@kroma/core` storage (`kroma.servers`); this module adds the
+// servers lives in `@kroma/client/accounts` storage (`kroma.servers`); this adds the
 // TV-specific bits: a one-time migration from the old single `kroma.serverUrl`,
 // and a build-time `VITE_KROMA_SERVER` default baked in at deploy time so a fresh
 // install of a single-server appliance still finds its server.
 
-import { loadServers, migrateStorage, type SavedServer, saveServer } from '@kroma/core';
+import { loadServers, migrateStorage, type SavedServer, saveServer } from '@kroma/client/accounts';
 
 const ENV_DEFAULT = (import.meta as unknown as { env?: Record<string, string | undefined> }).env
   ?.VITE_KROMA_SERVER;

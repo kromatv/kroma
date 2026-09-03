@@ -1,4 +1,4 @@
-import type { ReportCategory } from '@kroma/core';
+import type { ReportCategory } from '@kroma/client/reports';
 import { useT } from '@kroma/ui';
 import { Box, Chip, Icon, ListRow, Rail, REPORT_CATEGORIES, Text } from '@kroma/ui/kit';
 import type { ReportEpisode } from '#tv/app/router';

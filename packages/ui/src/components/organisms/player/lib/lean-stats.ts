@@ -1,7 +1,8 @@
 // For surfaces whose player exposes no decode counters; the web builds its own
 // richer snapshot instead.
 
-import type { AudioTrack, MediaItem, Translate } from '@kroma/core';
+import type { AudioTrack, MediaItem } from '@kroma/client/media';
+import type { Translate } from '@kroma/core';
 import type { PlayerStats } from '#ui/components/organisms/player/types';
 
 /** Typed structurally so React Native surfaces can satisfy it with no DOM lib. */

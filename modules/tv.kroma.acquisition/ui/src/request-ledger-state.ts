@@ -3,7 +3,7 @@
 // it: the request covering an episode and the library holding it are different
 // facts, and only one of them is what an admin came here to see.
 
-import type { LedgerEpisode, LedgerSeason } from '@kroma/core';
+import type { LedgerEpisode, LedgerSeason } from '@kroma/client/requests';
 
 /** Where one episode stands. `untracked` is on no shelf and in no request: the
  * request left it out, which is not the same as it being wanted. */

@@ -7,7 +7,7 @@
 // of rendering to a plane behind the page - hence `kind` is 'video' and `setRect`
 // is absent.
 
-import type { MediaItem } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
 import { audioTracksOf } from '@kroma/core';
 import { createVideoPlayer, type VideoPlayer } from 'expo-video';
 import { Platform } from 'react-native';

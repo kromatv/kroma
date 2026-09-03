@@ -1,4 +1,4 @@
-import type { WatchKind, WatchTotals } from '@kroma/core';
+import type { WatchKind, WatchTotals } from '@kroma/client/admin';
 import { WATCH_KINDS } from '#web/features/admin/dashboard-filters';
 
 /** Milliseconds watched per kind, zeroes included. `byKind` is what a server

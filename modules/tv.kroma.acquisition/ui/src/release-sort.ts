@@ -2,7 +2,7 @@
 // "why is this release above that one" is the question the admin is actually
 // asking of the table.
 
-import type { ScoredReleaseView } from '@kroma/core';
+import type { ScoredReleaseView } from '@kroma/client/requests';
 
 export type ReleaseSort = 'score' | 'size' | 'seeders' | 'date';
 export type ReleaseFilter = 'accepted' | 'rejected' | 'all';

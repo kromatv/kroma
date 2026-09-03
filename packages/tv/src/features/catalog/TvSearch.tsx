@@ -1,5 +1,11 @@
-import type { SearchHit, TitleGenres } from '@kroma/core';
-import { genreLabels, posterColors, qualityBadge, qualityBadgeForVideo } from '@kroma/core';
+import type { SearchHit } from '@kroma/client/media';
+import {
+  genreLabels,
+  posterColors,
+  qualityBadge,
+  qualityBadgeForVideo,
+  type TitleGenres,
+} from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   BackButton,

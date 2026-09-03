@@ -1,4 +1,5 @@
-import { type DiscoveredTv, HandoffHandle } from '@kroma/core';
+import { HandoffHandle } from '@kroma/client/handoff';
+import type { DiscoveredTv } from '@kroma/core';
 
 import type { HandoffOutcome } from '@kroma/core/react';
 

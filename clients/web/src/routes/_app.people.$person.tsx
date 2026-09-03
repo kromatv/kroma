@@ -1,4 +1,5 @@
-import { personInvolvement, posterColors, roleLabels, type TmdbCredit } from '@kroma/core';
+import type { TmdbCredit } from '@kroma/client/media';
+import { personInvolvement, posterColors, roleLabels } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,

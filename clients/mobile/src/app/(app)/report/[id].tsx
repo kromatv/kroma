@@ -2,7 +2,7 @@
 // optionally describe, send. Mirrors the web client's "Signaler un probleme"
 // flow (POST /api/reports).
 
-import type { ReportCategory, ReportSubjectKind } from '@kroma/core';
+import type { ReportCategory, ReportSubjectKind } from '@kroma/client/reports';
 import { Box, Button, Field, Icon, styles, Text } from '@kroma/ui/kit';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';

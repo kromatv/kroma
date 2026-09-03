@@ -1,4 +1,5 @@
-import type { DiscoverEntry, MessageKey } from '@kroma/core';
+import type { DiscoverEntry } from '@kroma/client/discovery';
+import type { MessageKey } from '@kroma/core';
 import type { IconName } from '@kroma/ui/kit';
 import type { MovieView, ShowView } from '#web/shared/lib/api';
 

@@ -2,7 +2,8 @@
 // chip on discover cards, detail pages, "Mes demandes" and the admin queue.
 // Pure data (no JSX); labels resolve through i18n in the components.
 
-import type { MessageKey, RequestStatus } from '@kroma/core';
+import type { RequestStatus } from '@kroma/client/requests';
+import type { MessageKey } from '@kroma/core';
 import { color } from '@kroma/ui/kit';
 
 export interface RequestStatusMeta {

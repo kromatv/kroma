@@ -1,4 +1,9 @@
-import { type AudioTrack, type MediaItem, setArtworkScale, type VideoTrack } from '@kroma/client';
+import {
+  type AudioTrack,
+  type MediaItem,
+  setArtworkScale,
+  type VideoTrack,
+} from '@kroma/client/media';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   audioTrackLabel,

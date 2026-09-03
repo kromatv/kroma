@@ -3,7 +3,8 @@
 // secure context (HTTPS or localhost), so on plain-HTTP LAN access the card
 // shows a notice instead of the add button.
 
-import { apiErrorText, type PasskeyInfo } from '@kroma/core';
+import { apiErrorText } from '@kroma/client';
+import type { PasskeyInfo } from '@kroma/client/accounts';
 import { useFormat, useT } from '@kroma/ui';
 import { Box, Button, Icon, IconWell, ListRow, Text } from '@kroma/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';

@@ -1,7 +1,8 @@
 // Storyboard scrub previews. The manifest answers 202 while the server is still
 // generating it, hence the poll.
 
-import type { KromaClient, MediaItem, StoryboardManifest } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem, StoryboardManifest } from '@kroma/client/media';
 import { useEffect, useState } from 'react';
 import type { DownloadEntry } from '#mobile/lib/downloads';
 

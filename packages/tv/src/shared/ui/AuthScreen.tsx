@@ -1,4 +1,5 @@
-import { createKromaClient, sizedImageUrl } from '@kroma/core';
+import { createKromaClient } from '@kroma/client';
+import { sizedImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   BackButton,

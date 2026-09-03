@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { ModuleId } from '@kroma/core';
+import { ModuleId } from '@kroma/client/modules';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -21,8 +21,8 @@ const H = vi.hoisted(() => ({
   }>,
 }));
 
-vi.mock('@kroma/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@kroma/core')>()),
+vi.mock('@kroma/client/events', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kroma/client/events')>()),
   KromaEvents: class {
     connect = vi.fn();
     close = vi.fn();

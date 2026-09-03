@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
-import { type TopUser, UserId } from '@kroma/core';
+import { UserId } from '@kroma/client/accounts';
+import type { TopUser } from '@kroma/client/admin';
 import { I18nProvider } from '@kroma/ui';
 import {
   createMemoryHistory,

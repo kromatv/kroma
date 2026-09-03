@@ -4,7 +4,7 @@
 // for exactly the episodes it is missing from one screen. The sticky request
 // bar below turns the ticks into one request.
 
-import type { CastMember, ItemId, MediaItem, SubjectId } from '@kroma/core';
+import type { CastMember, ItemId, MediaItem, SubjectId } from '@kroma/client/media';
 import { useT } from '@kroma/ui';
 import { Box, Chip, ringRoomBlock, Text } from '@kroma/ui/kit';
 import { type CSSProperties, useState } from 'react';

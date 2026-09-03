@@ -2,7 +2,8 @@
 // episode to play; long-press for its detail page. Row components live in
 // components/showEpisodes.tsx.
 
-import { ShowId, sizedImageUrl } from '@kroma/core';
+import { ShowId } from '@kroma/client/media';
+import { sizedImageUrl } from '@kroma/core';
 import { Box, Button, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';

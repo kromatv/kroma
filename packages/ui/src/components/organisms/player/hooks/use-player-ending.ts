@@ -1,4 +1,5 @@
-import type { Marker, RemoteKey } from '@kroma/core';
+import type { Marker } from '@kroma/client/media';
+import type { RemoteKey } from '@kroma/core';
 import { useEffect, useState } from 'react';
 import type { PostPlayFocus, PostPlayItem } from '#ui/components/organisms/player/parts/post-play';
 import type { UpNextItem } from '#ui/components/organisms/player/parts/up-next-sheet';

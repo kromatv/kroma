@@ -4,7 +4,7 @@
 // installed state, and a live `module.op.*` stream replaces the action with a
 // download/install progress bar.
 
-import type { StoreCatalog, StoreModule } from '@kroma/core';
+import type { StoreCatalog, StoreModule } from '@kroma/client/modules';
 import { useFormat, useT } from '@kroma/ui';
 import {
   Badge,

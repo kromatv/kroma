@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import { ResetCreated, type UserId, VerificationCreated } from '../accounts';
 import { ServerInfo } from '../media';
 import type { PlaybackSessionId } from '../playback';

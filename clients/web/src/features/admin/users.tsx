@@ -1,4 +1,5 @@
-import { type AdminUser, resolveImageUrl } from '@kroma/core';
+import type { AdminUser } from '@kroma/client/admin';
+import { resolveImageUrl } from '@kroma/core';
 import { Table } from '@kroma/module-sdk';
 import { useFormat, useT } from '@kroma/ui';
 import {

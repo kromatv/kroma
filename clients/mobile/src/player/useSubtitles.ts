@@ -3,16 +3,10 @@
 // on-device generated tracks (indices 1000+); the app fetches the WebVTT itself
 // and renders cues as an overlay, so a "pick" is just state.
 
-import {
-  activeCueText,
-  type Cue,
-  type DownloadedSub,
-  isTextSubtitle,
-  type KromaClient,
-  type MediaItem,
-  parseVtt,
-  preferredSubIndex,
-} from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
+import type { DownloadedSub } from '@kroma/client/subtitles';
+import { activeCueText, type Cue, isTextSubtitle, parseVtt, preferredSubIndex } from '@kroma/core';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DownloadEntry } from '#mobile/lib/downloads';

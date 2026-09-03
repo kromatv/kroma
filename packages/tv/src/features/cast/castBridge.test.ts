@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import type { MediaItem, Translate } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import type { Translate } from '@kroma/core';
 import type { PlayerController, PlayerSub } from '@kroma/ui';
 import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';

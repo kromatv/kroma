@@ -1,6 +1,6 @@
 // The single detail page for a title, owned or not. Fed a normalized `TitleView`
 
-import { ItemId, type SubjectId } from '@kroma/core';
+import { ItemId, type SubjectId } from '@kroma/client/media';
 import { useCast, useT } from '@kroma/ui';
 import { type HostElement, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import type { DeviceId } from '../../core/ids';
 import {
   type CastAnnounceBody,

@@ -12,16 +12,11 @@
 // position is interpolated locally, so a remote's progress bar runs smoothly
 // instead of stepping every ten seconds.
 
-import {
-  type CastCommand,
-  type CastReceiver,
-  type DeviceId,
-  type ItemId,
-  KromaApiError,
-  type KromaClient,
-  KromaEvents,
-  type LanDiscoveryBridge,
-} from '@kroma/core';
+import { type DeviceId, KromaApiError, type KromaClient } from '@kroma/client';
+import type { CastCommand, CastReceiver } from '@kroma/client/cast';
+import { KromaEvents } from '@kroma/client/events';
+import type { ItemId } from '@kroma/client/media';
+import type { LanDiscoveryBridge } from '@kroma/core';
 import {
   type ReactNode,
   useCallback,

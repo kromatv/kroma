@@ -2,7 +2,8 @@
 // request. The whole row is the control, so the trailing report / watched
 // buttons are actions inside it rather than a second stop beside it.
 
-import { formatRuntime, type MediaItem, posterColors } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import { formatRuntime, posterColors } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,

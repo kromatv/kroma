@@ -1,4 +1,5 @@
-import { resolveImageUrl, type TopUser, type WatchKind } from '@kroma/core';
+import type { TopUser, WatchKind } from '@kroma/client/admin';
+import { resolveImageUrl } from '@kroma/core';
 import { TABULAR } from '@kroma/module-sdk';
 import { useFormat, useT } from '@kroma/ui';
 import {

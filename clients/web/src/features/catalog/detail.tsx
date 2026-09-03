@@ -1,10 +1,5 @@
-import {
-  type CrewMember,
-  canDirectPlay,
-  type ItemId,
-  type MediaItem,
-  posterColors,
-} from '@kroma/core';
+import type { CrewMember, ItemId, MediaItem } from '@kroma/client/media';
+import { canDirectPlay, posterColors } from '@kroma/core';
 import { useT, useThemeAudio } from '@kroma/ui';
 import {
   BackButton,

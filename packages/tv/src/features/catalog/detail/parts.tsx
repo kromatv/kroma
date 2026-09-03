@@ -1,5 +1,5 @@
-import type { CastMember, CrewMember, Translate } from '@kroma/core';
-import { directorsOf, jobLabel } from '@kroma/core';
+import type { CastMember, CrewMember } from '@kroma/client/media';
+import { directorsOf, jobLabel, type Translate } from '@kroma/core';
 import { endsAtClock, useLocale, useT } from '@kroma/ui';
 import {
   AVATAR_GRADIENTS,

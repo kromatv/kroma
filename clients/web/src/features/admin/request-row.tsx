@@ -1,8 +1,8 @@
 // One request row in the admin queue: poster, title + type pill + seasons,
 // requester, date, status chip, and quick approve/deny on pending rows.
 
-import type { MediaRequest, MessageKey } from '@kroma/core';
-import { posterGradient } from '@kroma/core';
+import type { MediaRequest } from '@kroma/client/requests';
+import { type MessageKey, posterGradient } from '@kroma/core';
 import { TABULAR, Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Avatar, Box, Row, Text } from '@kroma/ui/kit';

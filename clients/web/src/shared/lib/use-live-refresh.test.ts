@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { ItemId, ShowId } from '@kroma/core';
+import { ItemId, ShowId } from '@kroma/client/media';
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { c } from './queries.fixture';
@@ -29,7 +29,7 @@ const KromaEvents = vi.hoisted(() =>
   }),
 );
 
-vi.mock('@kroma/core', async (importOriginal) => ({
+vi.mock('@kroma/client/events', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   KromaEvents,
 }));

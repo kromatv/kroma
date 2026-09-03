@@ -1,4 +1,4 @@
-import type { PersonDetail } from '@kroma/core';
+import type { PersonDetail } from '@kroma/client/media';
 import { personFacts } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
 import { Avatar, Box, Chip, DataField, styles, Text } from '@kroma/ui/kit';

@@ -2,7 +2,7 @@
 // lazily-generated section; while it generates we show a progress ring, and once
 // items arrive we render them in the same Poster/Rail as the home + similar rails.
 
-import type { ItemId } from '@kroma/core';
+import type { ItemId } from '@kroma/client/media';
 import { useAiSuggest, useT } from '@kroma/ui';
 import { Box, ProgressRing, Row, Text } from '@kroma/ui/kit';
 import type { CSSProperties } from 'react';

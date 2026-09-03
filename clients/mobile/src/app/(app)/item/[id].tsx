@@ -1,13 +1,11 @@
 // Movie / episode detail: cinematic hero, Netflix-style action block, genre
 // chips, cast and similar rails.
 
+import { ItemId, type MediaItem, type ProgressEntry } from '@kroma/client/media';
 import {
   episodeTag,
   formatRuntime,
   formatTimecode,
-  ItemId,
-  type MediaItem,
-  type ProgressEntry,
   qualityBadge,
   sizedImageUrl,
   type Translate,

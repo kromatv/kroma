@@ -15,8 +15,8 @@
 // Nothing here imports a native module. Each shell hands its own bridge in, the
 // way `discoverServer` already takes a `browse` hook.
 
-import type { HandoffDevice, KromaClient } from '@kroma/client';
-import { BeaconTxt, HandoffHandle } from '@kroma/client';
+import type { KromaClient } from '@kroma/client';
+import { BeaconTxt, type HandoffDevice, HandoffHandle } from '@kroma/client/handoff';
 
 /** One waiting TV, however it was found. */
 export interface DiscoveredTv extends HandoffDevice {

@@ -25,7 +25,7 @@ vi.mock('expo-secure-store', () => ({
   canUseBiometricAuthentication: vi.fn(() => true),
 }));
 
-import { UserId } from '@kroma/core';
+import { UserId } from '@kroma/client/accounts';
 import * as SecureStore from 'expo-secure-store';
 import {
   canStoreBiometricPin,

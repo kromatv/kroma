@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { NotificationsView } from '@kroma/core';
+import type { NotificationsView } from '@kroma/client/notifications';
 import { useQuery } from '@tanstack/react-query';
 import { act, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';

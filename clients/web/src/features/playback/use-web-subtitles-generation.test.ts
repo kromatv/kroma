@@ -10,11 +10,15 @@ import {
 } from '#web/features/playback/use-web-subtitles.fixture';
 
 // The language matcher stays real; only the catalog-facing bits are stubbed.
-vi.mock('@kroma/core', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@kroma/core')>()),
+vi.mock('@kroma/client/subtitles', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kroma/client/subtitles')>()),
   get GEN_LANGS() {
     return H.genLangs;
   },
+}));
+
+vi.mock('@kroma/core', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@kroma/core')>()),
   langName: (_t: unknown, code: string | null | undefined) => (code ? code.toUpperCase() : null),
 }));
 

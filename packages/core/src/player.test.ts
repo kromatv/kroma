@@ -1,4 +1,5 @@
-import { createKromaClient, type MediaItem } from '@kroma/client';
+import { createKromaClient } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
 import { describe, expect, it, vi } from 'vitest';
 import { attachDirectPlay, declaredAspect, formatRuntime } from './player';
 

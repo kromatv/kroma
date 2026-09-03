@@ -1,4 +1,4 @@
-import type { AudioTrack } from '@kroma/core';
+import type { AudioTrack } from '@kroma/client/media';
 import { channelLabel, langName } from '@kroma/core';
 import { forwardRef, useImperativeHandle } from 'react';
 import { Box } from '#ui/components/atoms/box';

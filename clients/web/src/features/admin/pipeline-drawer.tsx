@@ -1,5 +1,6 @@
-import type { ElementRow, MessageKey } from '@kroma/core';
-import { ItemId, posterGradient, ShowId } from '@kroma/core';
+import { ItemId, ShowId } from '@kroma/client/media';
+import type { ElementRow } from '@kroma/client/pipeline';
+import { type MessageKey, posterGradient } from '@kroma/core';
 import { useFormat, useT } from '@kroma/ui';
 import { Box, Button, Callout, color, Drawer, IconButton, Row, Text } from '@kroma/ui/kit';
 import { createCallable } from 'react-call';

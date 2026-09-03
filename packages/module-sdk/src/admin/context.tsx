@@ -5,7 +5,8 @@
 // through `useAdminHost()`. This is what lets a module page use the same data
 // access as a built-in page without importing app internals.
 
-import type { KromaClient, User } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { User } from '@kroma/client/accounts';
 import { createContext, type ReactNode, useContext } from 'react';
 
 export interface AdminHostValue {

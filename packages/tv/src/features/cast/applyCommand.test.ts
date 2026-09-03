@@ -1,4 +1,4 @@
-import { ItemId, type MediaItem } from '@kroma/core';
+import { ItemId, type MediaItem } from '@kroma/client/media';
 import type { PlayerController } from '@kroma/ui';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyCastCommand, type CastDeps } from '#tv/features/cast/applyCommand';

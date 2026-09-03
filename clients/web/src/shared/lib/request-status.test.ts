@@ -1,4 +1,4 @@
-import type { RequestStatus } from '@kroma/core';
+import type { RequestStatus } from '@kroma/client/requests';
 import { color } from '@kroma/ui/kit';
 import { describe, expect, it } from 'vitest';
 import { REQUEST_STATUS_META, requestStatusMeta, seasonsSummary } from './request-status';

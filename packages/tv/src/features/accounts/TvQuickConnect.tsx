@@ -1,4 +1,6 @@
-import type { AuthResult, KromaClient, MessageKey, QuickConnectInit } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { AuthResult, QuickConnectInit } from '@kroma/client/accounts';
+import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Spinner, SvgXml, styles, Text, useFocusNav } from '@kroma/ui/kit';
 // Static import on purpose: Metro has no code splitting, and a dynamic `import()`

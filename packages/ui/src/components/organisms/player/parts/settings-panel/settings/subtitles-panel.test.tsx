@@ -6,7 +6,7 @@
 // the list is [Off, ...subs, (create?)], so an off-by-one would hand the
 // viewer the wrong language.
 
-import { GenerationId, type SubtitleGeneration } from '@kroma/core';
+import { GenerationId, type SubtitleGeneration } from '@kroma/client/subtitles';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';

@@ -1,4 +1,4 @@
-import { ItemId, ShowId, type SubjectId } from '@kroma/core';
+import { ItemId, ShowId, type SubjectId } from '@kroma/client/media';
 
 export const TMDB_PREFIX = 'tmdb:';
 

@@ -1,5 +1,5 @@
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
-import type { MediaItem } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
 import { useCast } from '@kroma/ui';
 import { Box, Button, Icon, styles, Text } from '@kroma/ui/kit';
 import { useRef } from 'react';

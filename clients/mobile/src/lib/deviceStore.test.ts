@@ -47,7 +47,7 @@ vi.mock('expo-file-system', () => ({
 }));
 
 const stored = vi.hoisted(() => ({ current: null as unknown }));
-vi.mock('@kroma/core', () => ({
+vi.mock('@kroma/client', () => ({
   setSessionStorage: (s: unknown) => {
     stored.current = s;
   },

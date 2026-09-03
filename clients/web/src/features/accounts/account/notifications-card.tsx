@@ -1,15 +1,13 @@
 // The push opt-in for this device, plus the per-account delivery matrix.
 
 import {
-  blockerOf,
   type CategoryPref,
   disablePush,
   enablePush,
-  NOTIFICATION_CATEGORY_LABEL,
   type NotificationCategory,
-  PUSH_BLOCKER_LABEL,
   type PushBlocker,
-} from '@kroma/core';
+} from '@kroma/client/notifications';
+import { blockerOf, NOTIFICATION_CATEGORY_LABEL, PUSH_BLOCKER_LABEL } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,

@@ -1,5 +1,5 @@
+import type { ContinueItem, MediaItem } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import type { ContinueItem, MediaItem } from '@kroma/core';
 import { describe, expect, it } from 'vitest';
 import { buildPreviewData } from './cards';
 

@@ -2,7 +2,7 @@
 // landscape on phones, keeps the screen awake, resumes from saved progress,
 // reports the playback heartbeat, and autoplays the next episode on end.
 
-import { ItemId } from '@kroma/core';
+import { ItemId } from '@kroma/client/media';
 import { useQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
 import { Redirect, useLocalSearchParams } from 'expo-router';

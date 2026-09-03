@@ -1,4 +1,5 @@
-import { formatRuntime, type MediaItem, type ProgressEntry, sizedImageUrl } from '@kroma/core';
+import type { MediaItem, ProgressEntry } from '@kroma/client/media';
+import { formatRuntime, sizedImageUrl } from '@kroma/core';
 import { Box, Button, Icon, styles, Text } from '@kroma/ui/kit';
 import { useRouter } from 'expo-router';
 import { Pressable } from 'react-native';

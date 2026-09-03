@@ -1,12 +1,11 @@
 // Shared catalogue browser for the Films / Series tabs: large header with the
 // title count, sort selector, genre filter chips, and an exact-fit poster grid.
 
+import type { MediaItem, Show } from '@kroma/client/media';
 import {
   collectGenres,
   genreLabel,
   hasGenre,
-  type MediaItem,
-  type Show,
   SORT_MODES,
   type SortMode,
   sortTitles,

@@ -1,4 +1,5 @@
-import { genreSlugs, ItemId } from '@kroma/core';
+import { ItemId } from '@kroma/client/media';
+import { genreSlugs } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';

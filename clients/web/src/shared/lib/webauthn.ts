@@ -2,7 +2,7 @@
 // (binary fields as base64url), `navigator.credentials` speaks ArrayBuffers.
 // WebAuthn needs a secure context, so callers gate on `passkeysSupported()`.
 
-import type { WebAuthnCredential, WebAuthnOptions } from '@kroma/core';
+import type { WebAuthnCredential, WebAuthnOptions } from '@kroma/client/accounts';
 import { z } from 'zod';
 import { base64UrlToBytes, bytesToBase64Url } from '#web/shared/lib/base64url';
 

@@ -5,14 +5,8 @@
 // card, so its width is whatever is left over, and a grid of fixed columns spent
 // that width on headings until the episode title had none.
 
-import {
-  datedDayLabel,
-  type LedgerEpisode,
-  type LedgerSeason,
-  type MessageKey,
-  qualityBadgeForVideo,
-  type RequestId,
-} from '@kroma/core';
+import type { LedgerEpisode, LedgerSeason, RequestId } from '@kroma/client/requests';
+import { datedDayLabel, type MessageKey, qualityBadgeForVideo } from '@kroma/core';
 import { ModuleSlot, TABULAR, Table, useT } from '@kroma/module-sdk';
 import {
   Box,

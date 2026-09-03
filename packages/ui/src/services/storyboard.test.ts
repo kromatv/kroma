@@ -3,8 +3,9 @@
 // A tile is a window onto one sheet, offset and clipped: React Native has no
 // `background-position`, so the CSS spelling renders nothing on Apple TV.
 
+import type { KromaClient } from '@kroma/client';
+import { ItemId, type StoryboardManifest } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import { ItemId, type KromaClient, type StoryboardManifest } from '@kroma/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useStoryboard } from './storyboard';

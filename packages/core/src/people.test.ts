@@ -1,4 +1,4 @@
-import type { Metadata } from '@kroma/client';
+import type { Metadata } from '@kroma/client/media';
 import { describe, expect, it } from 'vitest';
 import type { Translate } from './i18n';
 import {

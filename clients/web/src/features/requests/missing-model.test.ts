@@ -1,4 +1,4 @@
-import { type CalendarEntry, RequestId } from '@kroma/core';
+import { type CalendarEntry, RequestId } from '@kroma/client/requests';
 import { describe, expect, it } from 'vitest';
 import { epKey, groupByTitle } from './missing-model';
 

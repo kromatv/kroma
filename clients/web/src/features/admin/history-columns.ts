@@ -1,4 +1,5 @@
-import type { MessageKey, PlayEntry } from '@kroma/core';
+import type { PlayEntry } from '@kroma/client/admin';
+import type { MessageKey } from '@kroma/core';
 import type { TableColumn } from '@kroma/ui/kit';
 
 export type HistorySort = 'username' | 'kind' | 'title' | 'device' | 'player' | 'endedAt';

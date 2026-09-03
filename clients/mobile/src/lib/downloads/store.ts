@@ -1,7 +1,7 @@
 // On-disk side of offline downloads: where files live, the JSON manifest that
 // indexes them, and the startup reconciliation between the two.
 
-import type { MediaItem, StoryboardManifest } from '@kroma/core';
+import type { MediaItem, StoryboardManifest } from '@kroma/client/media';
 import * as FileSystem from 'expo-file-system/legacy';
 
 export const DIR = `${FileSystem.documentDirectory}kroma-downloads/`;

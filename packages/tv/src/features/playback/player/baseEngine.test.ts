@@ -1,5 +1,5 @@
+import type { MediaItem } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import type { MediaItem } from '@kroma/core';
 import type { AudioFilterMode } from '@kroma/ui';
 import { describe, expect, it, vi } from 'vitest';
 import { BaseTvEngine, type EngineOptions } from './baseEngine';

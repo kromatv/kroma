@@ -1,4 +1,5 @@
-import { deviceStorage, type MessageKey, type Translate } from '@kroma/core';
+import { deviceStorage } from '@kroma/client';
+import type { MessageKey, Translate } from '@kroma/core';
 import { type RefObject, useCallback, useEffect, useState } from 'react';
 import type { AudioFilterMode } from '#ui/components/organisms/player/types';
 import { webDocument } from '#ui/lib/dom';

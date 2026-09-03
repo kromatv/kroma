@@ -1,10 +1,6 @@
-import {
-  audioSupport,
-  type MediaItem,
-  playerSubtitle,
-  type ReportCategory,
-  type Translate,
-} from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import type { ReportCategory } from '@kroma/client/reports';
+import { audioSupport, playerSubtitle, type Translate } from '@kroma/core';
 import {
   Player,
   TV_FLAGS,

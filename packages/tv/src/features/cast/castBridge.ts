@@ -2,13 +2,9 @@
 // The player registers itself here rather than threading a controller through
 // the router; one module-level slot, since there is only ever one player.
 
-import {
-  audioTrackLabel,
-  type CastAnnounceBody,
-  langName,
-  type MediaItem,
-  type Translate,
-} from '@kroma/core';
+import type { CastAnnounceBody } from '@kroma/client/cast';
+import type { MediaItem } from '@kroma/client/media';
+import { audioTrackLabel, langName, type Translate } from '@kroma/core';
 import type { PlayerController } from '@kroma/ui';
 import { useEffect } from 'react';
 

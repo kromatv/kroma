@@ -4,7 +4,8 @@
 // shared answers, so a module page is never a black screen and every one of
 // them waits the same way.
 
-import { apiErrorText, KromaApiError, type MessageKey } from '@kroma/core';
+import { apiErrorText, KromaApiError } from '@kroma/client';
+import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,

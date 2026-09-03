@@ -1,4 +1,4 @@
-import type { Volume } from '@kroma/core';
+import type { Volume } from '@kroma/client/admin';
 import { useFormat, useT } from '@kroma/ui';
 import {
   Box,

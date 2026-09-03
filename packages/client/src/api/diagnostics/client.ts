@@ -1,4 +1,4 @@
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import type { CrashReport } from './schemas';
 
 /** Opt-in crash reporting: post an uncaught client crash to the diagnostics

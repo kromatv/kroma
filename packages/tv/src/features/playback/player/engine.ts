@@ -1,8 +1,8 @@
+import type { MediaItem } from '@kroma/client/media';
 import {
   audioTrackId,
   audioTracksOf,
   type DirectPlayVerdict,
-  type MediaItem,
   resolveAudioRelativeIndex,
 } from '@kroma/core';
 import type { AudioFilterMode, PlaneRect } from '@kroma/ui';

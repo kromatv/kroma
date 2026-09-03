@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
+
+import type { MediaItem } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import { type MediaItem, setDecoderFrameLimits } from '@kroma/core';
+import { setDecoderFrameLimits } from '@kroma/core';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EngineListeners } from '#tv/features/playback/player/engine';

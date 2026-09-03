@@ -6,7 +6,8 @@
 // the UX stays the phone's own, which is why this file mirrors those parts
 // rather than importing them.
 
-import { audioTracksOf, episodeTag, formatTimecode, type MediaItem } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import { audioTracksOf, episodeTag, formatTimecode } from '@kroma/core';
 import {
   BackButton,
   Box,

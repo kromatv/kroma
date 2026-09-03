@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import type { ModuleId } from './ids';
 import { moduleApi } from './module-api';
 import { ModuleInfo } from './schemas';

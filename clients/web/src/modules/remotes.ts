@@ -1,7 +1,7 @@
 // The web + desktop runtime-load tier: remotes discovered from `GET /api/modules`,
 // loaded from `/modules/<id>/remoteEntry.js`. The Chromium-53 TV tier stays bundled.
 
-import { sessionToken } from '@kroma/core';
+import { sessionToken } from '@kroma/client';
 import type { KromaModule, ModuleManifest, ModuleRegistry } from '@kroma/module-sdk';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';

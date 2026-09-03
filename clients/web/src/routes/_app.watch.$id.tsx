@@ -1,4 +1,4 @@
-import { ItemId } from '@kroma/core';
+import { ItemId } from '@kroma/client/media';
 import { color } from '@kroma/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';

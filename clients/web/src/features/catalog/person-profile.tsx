@@ -4,7 +4,8 @@
 // is optional: with nothing to show this renders nothing and the page keeps the
 // header-plus-grid it has always had.
 
-import { type PersonDetail, personFacts } from '@kroma/core';
+import type { PersonDetail } from '@kroma/client/media';
+import { personFacts } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
 import { Box, color, DataField, ExpandableText, Text } from '@kroma/ui/kit';
 

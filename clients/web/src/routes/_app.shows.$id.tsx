@@ -1,4 +1,4 @@
-import { ShowId } from '@kroma/core';
+import { ShowId } from '@kroma/client/media';
 import { useT } from '@kroma/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';

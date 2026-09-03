@@ -4,6 +4,8 @@
 // restarts at 0, so absolute position is `baseSec + element time`. A seek outside
 // the buffered range re-anchors (reloads the master at the new offset).
 
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
 import {
   attachDirectPlay,
   attachHlsRecovery,
@@ -12,8 +14,6 @@ import {
   hlsBufferConfig,
   isPlayableAt,
   itemBufferPlan,
-  type KromaClient,
-  type MediaItem,
   reachableBufferEnd,
   recoverMse,
   STALL_NUDGE_SEC,

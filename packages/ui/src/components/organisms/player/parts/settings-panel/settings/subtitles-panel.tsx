@@ -1,5 +1,5 @@
-import type { RemoteKey, SubtitleGeneration } from '@kroma/core';
-import { langName, subtitleEtaTime, subtitleStageKey } from '@kroma/core';
+import type { SubtitleGeneration } from '@kroma/client/subtitles';
+import { langName, type RemoteKey, subtitleEtaTime, subtitleStageKey } from '@kroma/core';
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';

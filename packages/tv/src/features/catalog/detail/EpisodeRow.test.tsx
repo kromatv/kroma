@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import type { MediaItem } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
 import { I18nProvider } from '@kroma/ui';
 import { onScreen } from '@kroma/ui/testing';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';

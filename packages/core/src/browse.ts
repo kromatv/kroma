@@ -1,7 +1,7 @@
 // Sort and genre-filter helpers for the catalogue screens, working over the wire
 // types already held in memory so browsing needs no extra request.
 
-import type { Metadata } from '@kroma/client';
+import type { Metadata } from '@kroma/client/media';
 
 import { genreEntries, genreSlug, genreSlugs } from './genre';
 

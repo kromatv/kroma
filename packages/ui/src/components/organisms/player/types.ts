@@ -1,4 +1,4 @@
-import type { AudioTrack } from '@kroma/core';
+import type { AudioTrack } from '@kroma/client/media';
 import type { ColorValue } from '#ui/core';
 
 /**

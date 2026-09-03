@@ -1,4 +1,5 @@
-import { type AdminUser, type HistoryLibrary, resolveImageUrl } from '@kroma/core';
+import type { AdminUser, HistoryLibrary } from '@kroma/client/admin';
+import { resolveImageUrl } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Avatar, Chip, Row, Select } from '@kroma/ui/kit';
 import type { ReactNode } from 'react';

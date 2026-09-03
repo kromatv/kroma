@@ -3,24 +3,14 @@
 // renders with come from `@kroma/ui/kit`, the one design system every KROMA
 // surface shares.
 
-export type {
-  EngineContribution,
-  KromaClient,
-  MessageKey,
-  ModuleApi,
-  ServerEvent,
-} from '@kroma/core';
+export { apiErrorText, brandedId, type KromaClient } from '@kroma/client';
 // The SSE client is renamed to avoid colliding with the SDK's own `KromaEvents`
 // event-map interface.
-export {
-  apiErrorText,
-  brandedId,
-  IndexerId,
-  ItemId,
-  KromaEvents as KromaEventStream,
-  ModuleId,
-  RequestId,
-} from '@kroma/core';
+export { KromaEvents as KromaEventStream, type ServerEvent } from '@kroma/client/events';
+export { ItemId } from '@kroma/client/media';
+export { type EngineContribution, type ModuleApi, ModuleId } from '@kroma/client/modules';
+export { IndexerId, RequestId } from '@kroma/client/requests';
+export type { MessageKey } from '@kroma/core';
 export { useFormat, useLocale } from '@kroma/ui';
 export type { AdminHostValue } from './admin/context';
 export { AdminHostProvider, useAdminHost } from './admin/context';

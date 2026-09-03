@@ -1,7 +1,7 @@
 // Device persistence: remembered accounts (in SecureStore, they hold device
 // credentials), saved servers and small prefs.
 
-import { User } from '@kroma/core';
+import { User } from '@kroma/client/accounts';
 import * as SecureStore from 'expo-secure-store';
 import { z } from 'zod';
 

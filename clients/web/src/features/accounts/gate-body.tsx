@@ -1,4 +1,5 @@
-import { apiErrorText, KromaApiError, type PublicUser, type StoredSession } from '@kroma/core';
+import { apiErrorText, KromaApiError } from '@kroma/client';
+import type { PublicUser, StoredSession } from '@kroma/client/accounts';
 import { useT } from '@kroma/ui';
 import { useEffect, useState } from 'react';
 import { ForgotForm, LoginForm, RegisterForm } from '#web/features/accounts/auth-forms';

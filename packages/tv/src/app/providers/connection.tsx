@@ -1,11 +1,8 @@
-import type {
-  Activity,
-  CompatVerdict,
-  KromaClient,
-  MediaItem,
-  SavedServer,
-  Show,
-} from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { SavedServer } from '@kroma/client/accounts';
+import type { Activity } from '@kroma/client/admin';
+import type { MediaItem, Show } from '@kroma/client/media';
+import type { CompatVerdict } from '@kroma/core';
 import { createContext, type ReactNode, useContext } from 'react';
 import type { DeepLink } from '#tv/shared/preview';
 

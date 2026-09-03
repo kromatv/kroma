@@ -6,12 +6,12 @@
 // direct attempt the decoder rejects falls back to the HLS master at the same
 // position (see engine.ts).
 
+import type { MediaItem } from '@kroma/client/media';
 import {
   audioTracksOf,
   canDecodeAudioCodec,
   canDirectPlay,
   FMP4_COPY_CODECS,
-  type MediaItem,
   masterNeedsAac,
   type PlaybackCapabilities,
 } from '@kroma/core';

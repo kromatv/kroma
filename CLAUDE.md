@@ -212,7 +212,8 @@ Three workspace roots, and the split is what each one is FOR:
 packages/  libraries, consumed by name and never by path
   client/   one KromaClient namespace per domain (src/api/<domain>/), whose zod
             schemas ARE the wire types; the transport and events in src/core/
-  core/     re-exports @kroma/client, plus HEVC detection, direct-play, i18n, remote map
+  core/     the rules on top of the client: HEVC detection, direct-play, i18n,
+            remote map. It re-exports nothing
   ui/       @kroma/ui: the design system, authored against React Native
   tv/       the whole 10-foot experience (spatial focus nav, home, detail, player)
   workbench the component atelier + the story SDK the kit's stories are written in
@@ -252,10 +253,24 @@ each other, and both reach a library by its `@kroma/*` name.
   experience in `@kroma/tv`. Write platform code once.
 - Both `clients/web/src` and `packages/tv/src` are **feature-sliced**
   (`features/{catalog,playback,accounts,admin,…}` + `shared/` + `app`/`routes`).
-  Dependency rule: `features/* → shared/* → @kroma/ui → @kroma/core`. A feature
-  **must not import a sibling feature**: lift shared code to `shared/`.
-- Wire types come only from `@kroma/core`, never hand-redefined. Adding or changing
-  a payload means editing the zod schema in `packages/client/src/api/<domain>/`.
+  Dependency rule: `features/* → shared/* → @kroma/ui → @kroma/core →
+  @kroma/client`. A feature **must not import a sibling feature**: lift shared
+  code to `shared/`.
+- **Three doors, and each thing is behind exactly one.** Nothing re-exports
+  another, so the import path says where a symbol comes from:
+  - `@kroma/client/<domain>` — what one domain owns: its zod schemas, its ids,
+    its response types. `ItemId` is media's, `CastReceiver` is cast's.
+  - `@kroma/client` — what no single domain owns: `KromaClient`, the transport,
+    the session store, and the ids two domains share (`DeviceId` names a
+    television on the cast roster AND on a handoff beacon).
+  - `@kroma/core` — what is not a wire type at all: the rules built on top,
+    and shapes derived from one (`DiscoveredTv` extends the handoff domain's
+    `HandoffDevice` with fields the server never sends).
+
+  Wire types are never hand-redefined; adding or changing a payload means
+  editing the zod schema in `packages/client/src/api/<domain>/`. Nothing lists
+  the domains: the package's `exports` maps `./*` onto `src/api/*/index.ts`, so
+  **adding a domain is adding a folder**.
 - Subpath imports: `#ui/*`, `#tv/*`, `#web/*` (see `tsconfig.base.json`).
 - Design tokens live in TypeScript only. `kromaUI()` (`@kroma/ui/vite`) expands
   `@import "@kroma/ui/css"` into them at build time, so there is no generated CSS

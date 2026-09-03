@@ -3,7 +3,8 @@
 // the player) sees a change the moment any of them writes it. localStorage has
 // no same-tab change events, so writes notify the in-process listeners here.
 
-import { onDeviceStorageChange, setArtworkScale } from '@kroma/core';
+import { onDeviceStorageChange } from '@kroma/client';
+import { setArtworkScale } from '@kroma/client/media';
 import { setFrostEnabled } from '@kroma/ui/kit';
 import { useSyncExternalStore } from 'react';
 import { clientHardware } from '#tv/app/clientHardware';

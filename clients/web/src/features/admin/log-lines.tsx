@@ -2,7 +2,7 @@
 // recent-output panel: the scrolling pane, the day marks that break it up and
 // the per-line grid. The filters and the follow toggle stay with the console.
 
-import type { LogEntry } from '@kroma/core';
+import type { LogEntry } from '@kroma/client/admin';
 import { TABULAR } from '@kroma/module-sdk';
 import { useLocaleDefault } from '@kroma/ui';
 import { Box, type ColorValue, Row, Text } from '@kroma/ui/kit';

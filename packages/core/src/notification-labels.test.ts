@@ -1,4 +1,4 @@
-import type { Notification } from '@kroma/client';
+import type { Notification } from '@kroma/client/notifications';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   groupNotificationRepeats,

@@ -1,7 +1,7 @@
 // Profile lock: set / change / remove the 4-digit profile PIN and toggle
 // Face ID / Touch ID.
 
-import { apiErrorText } from '@kroma/core';
+import { apiErrorText } from '@kroma/client';
 import { Box, Button, styles, Text } from '@kroma/ui/kit';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';

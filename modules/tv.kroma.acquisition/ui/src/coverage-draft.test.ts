@@ -1,4 +1,4 @@
-import type { LedgerEpisode, LedgerSeason, RequestCoverage } from '@kroma/core';
+import type { LedgerEpisode, LedgerSeason, RequestCoverage } from '@kroma/client/requests';
 import { describe, expect, it } from 'vitest';
 import {
   type CoverageDraft,

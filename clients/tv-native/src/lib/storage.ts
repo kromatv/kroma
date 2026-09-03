@@ -11,7 +11,7 @@
 // store probes by writing and checking the bytes landed, falling back to the
 // purgeable caches directory if they did not.
 
-import { type SessionStorage, setSessionStorage } from '@kroma/core';
+import { type SessionStorage, setSessionStorage } from '@kroma/client';
 import { Directory, File, Paths } from 'expo-file-system';
 
 const FILE_NAME = 'kroma-session.json';

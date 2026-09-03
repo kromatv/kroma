@@ -8,7 +8,8 @@ import {
   createDownloadTask,
   type DownloadTask,
 } from '@kesha-antonov/react-native-background-downloader';
-import { type KromaClient, MediaItem } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import { MediaItem } from '@kroma/client/media';
 import * as FileSystem from 'expo-file-system/legacy';
 import { z } from 'zod';
 import { canRawDownload, downloadCopyCodecs, downloadVideoCodecs } from '#mobile/player/caps';

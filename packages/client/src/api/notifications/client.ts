@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import type { NotificationId } from './ids';
 import { pushApi } from './push';
 import { type NotificationAction, NotificationPrefs, NotificationsView } from './schemas';

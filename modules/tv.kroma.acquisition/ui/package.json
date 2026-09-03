@@ -21,6 +21,7 @@
     "build": "tsc --noEmit"
   },
   "dependencies": {
+    "@kroma/client": "workspace:*",
     "@kroma/core": "workspace:*",
     "@kroma/module-sdk": "workspace:*",
     "@kroma/ui": "workspace:*",

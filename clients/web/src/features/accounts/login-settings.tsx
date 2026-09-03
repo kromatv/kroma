@@ -1,5 +1,6 @@
 import buildInfo from 'virtual:build-info';
-import { type Health, LOCALES } from '@kroma/core';
+import type { Health } from '@kroma/client/media';
+import { LOCALES } from '@kroma/core';
 import { useLocale, useSetLocale, useT } from '@kroma/ui';
 import { Box, Divider, IconButton, Row, Select, StatusDot, styles, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';

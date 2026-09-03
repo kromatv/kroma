@@ -13,7 +13,6 @@ import {
   RNW_SSR_NO_EXTERNAL,
   webResolve,
 } from '@kroma/bundler/rnw';
-import { kromaDomains } from '@kroma/client/vite';
 import { kromaCatalogs } from '@kroma/core/vite';
 import { kromaI18nDevtools } from '@kroma/i18n-devtools/vite';
 import { kromaUI } from '@kroma/ui/vite';
@@ -81,7 +80,6 @@ export function kroma(options: KromaOptions = {}): PluginOption[] {
     depsWithoutMaps(),
     buildInfoPlugin(),
     kromaCatalogs(),
-    kromaDomains(),
     kromaUI(),
     kromaI18nDevtools(),
     mdx ? kromaMdx() : [],

@@ -2,7 +2,7 @@
 // no-op with plausible numbers, so a story can render chrome that needs a
 // `PlayerController` without any video to play. Overrides via `fakeController({...})`.
 
-import type { AudioTrack } from '@kroma/core';
+import type { AudioTrack } from '@kroma/client/media';
 import type { StoryboardTile } from '#ui/services/storyboard';
 import type {
   AudioFilterMode,

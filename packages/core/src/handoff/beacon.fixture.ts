@@ -1,13 +1,6 @@
-import {
-  DeviceId,
-  type HandoffAnnounce,
-  type HandoffBeacon,
-  HandoffHandle,
-  KromaApiError,
-  type KromaClient,
-  type PairingStatus,
-  type User,
-} from '@kroma/client';
+import { DeviceId, KromaApiError, type KromaClient } from '@kroma/client';
+import type { PairingStatus, User } from '@kroma/client/accounts';
+import { type HandoffAnnounce, type HandoffBeacon, HandoffHandle } from '@kroma/client/handoff';
 import { fakeClient } from '@kroma/client/test';
 import { vi } from 'vitest';
 import type { HandoffBeaconView, HandoffLoopOptions } from './beacon';

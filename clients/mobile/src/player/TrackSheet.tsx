@@ -2,7 +2,8 @@
 // visual language (icon rows, sub-views, same glyphs and shapes), but stays
 // touch-driven: a modal or bottom sheet, no focus engine.
 
-import { LANG_OFF, langName, type MediaItem } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import { LANG_OFF, langName } from '@kroma/core';
 import type { SubtitleAppearance } from '@kroma/ui';
 import { AUDIO_FILTER_KEY } from '@kroma/ui';
 import { Box } from '@kroma/ui/kit';

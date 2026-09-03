@@ -1,4 +1,5 @@
-import type { AudioTrack, MediaItem, Translate, VideoTrack } from '@kroma/core';
+import type { AudioTrack, MediaItem, VideoTrack } from '@kroma/client/media';
+import type { Translate } from '@kroma/core';
 import { describe, expect, it } from 'vitest';
 import { audioFlagLabel, audioString, qualityBadges, subString } from './media-labels';
 

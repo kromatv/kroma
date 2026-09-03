@@ -2,7 +2,8 @@
 // table (mirroring the pipeline console's shape), with quick approve/deny and
 // a detail drawer. Backed by GET /api/requests + the request.updated WS event.
 
-import { KromaEvents, type MediaRequest, type RequestStatus } from '@kroma/core';
+import { KromaEvents } from '@kroma/client/events';
+import type { MediaRequest, RequestStatus } from '@kroma/client/requests';
 import { Table } from '@kroma/module-sdk';
 import { useT } from '@kroma/ui';
 import { Button, EmptyState, Row } from '@kroma/ui/kit';

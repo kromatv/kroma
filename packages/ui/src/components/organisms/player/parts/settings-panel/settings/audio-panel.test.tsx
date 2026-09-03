@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { AudioTrack } from '@kroma/core';
+import type { AudioTrack } from '@kroma/client/media';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';

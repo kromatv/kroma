@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import type { ItemId } from '../media';
 import { GenerationId, type SubtitleId } from './ids';
 import { DownloadedSub, type GenerateReq, SubCapabilities, SubtitleGeneration } from './schemas';

@@ -1,4 +1,4 @@
-import type { WatchKind } from '@kroma/core';
+import type { WatchKind } from '@kroma/client/admin';
 import { colors } from '@kroma/ui/tokens/colors';
 
 /**

@@ -5,7 +5,7 @@
 // must not launch the app. APNs only shows pre-registered button labels, so
 // what each button does rides in the payload instead.
 
-import type { KromaClient } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
 import type * as Notifications from 'expo-notifications';
 import { z } from 'zod';
 

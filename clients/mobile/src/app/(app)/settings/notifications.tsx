@@ -2,14 +2,14 @@
 // the account. A push subscription belongs to one device; the categories
 // travel with the account.
 
-import type { CategoryPref, NotificationCategory, PushBlocker } from '@kroma/core';
 import {
-  blockerOf,
+  type CategoryPref,
   disablePush,
   enablePush,
-  NOTIFICATION_CATEGORY_LABEL,
-  PUSH_BLOCKER_LABEL,
-} from '@kroma/core';
+  type NotificationCategory,
+  type PushBlocker,
+} from '@kroma/client/notifications';
+import { blockerOf, NOTIFICATION_CATEGORY_LABEL, PUSH_BLOCKER_LABEL } from '@kroma/core';
 import { Box, color, Switch, styles, Text } from '@kroma/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';

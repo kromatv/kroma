@@ -1,11 +1,5 @@
-import {
-  formatRuntime,
-  genreLabels,
-  ItemId,
-  type MediaItem,
-  metaLine,
-  type Translate,
-} from '@kroma/core';
+import { ItemId, type MediaItem } from '@kroma/client/media';
+import { formatRuntime, genreLabels, metaLine, type Translate } from '@kroma/core';
 import {
   POST_PLAY_ART_W,
   type PostPlayItem,

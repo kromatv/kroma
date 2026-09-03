@@ -1,4 +1,4 @@
-import type { SubCapabilities, SubtitleGeneration } from '@kroma/core';
+import type { SubCapabilities, SubtitleGeneration } from '@kroma/client/subtitles';
 
 /** The request {@link GenerateWizard} emits; the platform adapter maps it to its own
  * `subtitles.generate` call, so the shared chrome never imports an API client. */

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
-import { ItemId, type PlayEntry, ShowId } from '@kroma/core';
+import type { PlayEntry } from '@kroma/client/admin';
+import { ItemId, ShowId } from '@kroma/client/media';
 import { I18nProvider } from '@kroma/ui';
 import { pinDesignWidth } from '@kroma/ui/kit';
 import {

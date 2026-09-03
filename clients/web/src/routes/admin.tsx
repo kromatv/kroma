@@ -1,4 +1,4 @@
-import { hasPermission } from '@kroma/core';
+import { hasPermission } from '@kroma/client/accounts';
 import { useT } from '@kroma/ui';
 import { Box, Text } from '@kroma/ui/kit';
 import { createFileRoute, Outlet } from '@tanstack/react-router';

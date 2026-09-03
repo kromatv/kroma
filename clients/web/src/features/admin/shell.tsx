@@ -1,4 +1,4 @@
-import { KromaEvents } from '@kroma/core';
+import { KromaEvents } from '@kroma/client/events';
 import { AdminHostProvider, ModuleSlotProvider } from '@kroma/module-sdk';
 import { Box, useBreakpoint } from '@kroma/ui/kit';
 import { useQueryClient } from '@tanstack/react-query';

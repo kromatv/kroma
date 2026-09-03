@@ -12,7 +12,7 @@
 // keeps no notion of focus of its own - two of those is what once lit a row and
 // the Back button at the same time.
 
-import type { ReportCategory } from '@kroma/core';
+import type { ReportCategory } from '@kroma/client/reports';
 import {
   forwardRef,
   useCallback,

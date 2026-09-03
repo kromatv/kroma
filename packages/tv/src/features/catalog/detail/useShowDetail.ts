@@ -1,4 +1,4 @@
-import type { ItemId, ShowDetail, ShowId, UpNext } from '@kroma/core';
+import type { ItemId, ShowDetail, ShowId, UpNext } from '@kroma/client/media';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWatched } from '#tv/app/providers/watched';
 import { useClient } from '#tv/app/router';

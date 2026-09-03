@@ -1,4 +1,5 @@
-import { hasPermission, type Invite, PERMISSIONS, type Permission } from '@kroma/core';
+import { hasPermission, type Invite, type Permission } from '@kroma/client/accounts';
+import { PERMISSIONS } from '@kroma/core';
 import { useLocale, useT } from '@kroma/ui';
 import {
   Badge,

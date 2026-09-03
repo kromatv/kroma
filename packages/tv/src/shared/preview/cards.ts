@@ -1,7 +1,9 @@
 // Smart Hub preview card-builder: turns the live catalog (newest movies +
 // resumable items) into the carousel tile JSON the TV expects.
 
-import { type ContinueItem, type KromaClient, type MediaItem, metaLine } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { ContinueItem, MediaItem } from '@kroma/client/media';
+import { metaLine } from '@kroma/core';
 import type { DeepLink } from '#tv/shared/preview/types';
 
 const RECENT_SECTION = 'Ajout récent';

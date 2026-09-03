@@ -1,14 +1,13 @@
+import type { KromaClient } from '@kroma/client';
 import {
-  discoverServer,
   forgetServer as forgetServerStore,
-  type KromaClient,
   loadSession,
-  type MediaItem,
   normalizeServerUrl as norm,
   type SavedServer,
-  type Show,
   saveServer as saveServerStore,
-} from '@kroma/core';
+} from '@kroma/client/accounts';
+import type { MediaItem, Show } from '@kroma/client/media';
+import { discoverServer } from '@kroma/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { makeClient } from '#tv/app/apiClient';
 import type { Connection } from '#tv/app/providers/connection';

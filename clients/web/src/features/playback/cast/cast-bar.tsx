@@ -2,7 +2,9 @@
 // drives a TV. It shows what the TV last reported, not what was last asked of
 // it, with the position interpolated between the receiver's heartbeats.
 
-import { type CastNowPlaying, formatTimecode, type MediaItem } from '@kroma/core';
+import type { CastNowPlaying } from '@kroma/client/cast';
+import type { MediaItem } from '@kroma/client/media';
+import { formatTimecode } from '@kroma/core';
 import { type Cast, useCast, useT } from '@kroma/ui';
 import {
   Box,

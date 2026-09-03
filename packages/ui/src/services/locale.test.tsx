@@ -8,7 +8,7 @@
 // keeps the previous person's language, which is the kind of bug nobody reports
 // and everybody notices.
 
-import { saveLocalePref, setSessionStorage } from '@kroma/core';
+import { saveLocalePref, setSessionStorage } from '@kroma/client';
 import { render } from '@testing-library/react';
 import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

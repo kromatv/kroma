@@ -1,7 +1,7 @@
 // Per-user "watched" state, server-backed and shared across every tile plus the
 // detail toggle. Toggles are optimistic and revert if the server call fails.
 
-import { ItemId, type SubjectId } from '@kroma/core';
+import { ItemId, type SubjectId } from '@kroma/client/media';
 import {
   createContext,
   type ReactNode,

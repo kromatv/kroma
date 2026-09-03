@@ -1,7 +1,8 @@
 // Cold start: restore the saved servers and remembered accounts, then decide
 // whether this launch may silently re-enter the last active profile.
 
-import { KromaApiError, type KromaClient, normalizeServerUrl } from '@kroma/core';
+import { KromaApiError, type KromaClient } from '@kroma/client';
+import { normalizeServerUrl } from '@kroma/client/accounts';
 import { useEffect } from 'react';
 import { z } from 'zod';
 import { passBootBiometricGate } from '#mobile/lib/biometricGate';

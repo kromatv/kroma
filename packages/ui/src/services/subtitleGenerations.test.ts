@@ -8,8 +8,9 @@
 // loop must STOP once nothing is in flight rather than polling a finished item
 // forever on a television.
 
+import { ItemId } from '@kroma/client/media';
+import { GenerationId, type SubtitleGeneration, SubtitleId } from '@kroma/client/subtitles';
 import { fakeClient } from '@kroma/client/test';
-import { GenerationId, ItemId, type SubtitleGeneration, SubtitleId } from '@kroma/core';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSubtitleGenerations } from './subtitleGenerations';

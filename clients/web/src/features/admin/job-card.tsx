@@ -1,4 +1,5 @@
-import type { JobInfo, MessageKey } from '@kroma/core';
+import type { JobInfo } from '@kroma/client/jobs';
+import type { MessageKey } from '@kroma/core';
 import { TABULAR } from '@kroma/module-sdk';
 import { useLocale, useT } from '@kroma/ui';
 import {

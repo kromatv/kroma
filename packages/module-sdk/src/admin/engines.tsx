@@ -6,13 +6,9 @@
 // change. One <AddEngineHost/> is mounted by the shell, the same shape as the
 // kit's `toast()`/`confirm()`.
 
-import {
-  apiErrorText,
-  type EngineContribution,
-  type EngineField,
-  type MessageKey,
-  type ModuleInfo,
-} from '@kroma/core';
+import { apiErrorText } from '@kroma/client';
+import type { EngineContribution, EngineField, ModuleInfo } from '@kroma/client/modules';
+import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Dialog, Field, SegmentGroup, Select, Text } from '@kroma/ui/kit';
 import { useQuery } from '@tanstack/react-query';

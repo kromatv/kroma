@@ -1,4 +1,4 @@
-import type { MetricsSnapshot } from '@kroma/core';
+import type { MetricsSnapshot } from '@kroma/client/admin';
 import { useFormat, useT } from '@kroma/ui';
 import { CHART_SERIES } from '#web/features/admin/chart-palette';
 import { MetricsChart, type MetricsSeries } from '#web/features/admin/charts';

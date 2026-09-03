@@ -1,4 +1,5 @@
-import type { MessageKey, PlayEntry } from '@kroma/core';
+import type { PlayEntry } from '@kroma/client/admin';
+import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Pagination, Row } from '@kroma/ui/kit';
 import { useMemo } from 'react';

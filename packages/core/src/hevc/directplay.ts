@@ -1,4 +1,4 @@
-import type { MediaItem } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
 import type { MessageKey, TVars } from '../i18n';
 import {
   type AudioCapabilities,

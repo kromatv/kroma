@@ -1,11 +1,7 @@
-import {
-  type DiscoverEntry,
-  posterColors,
-  type RequestStatus,
-  type SubjectId,
-  sizedImageUrl,
-  type Translate,
-} from '@kroma/core';
+import type { DiscoverEntry } from '@kroma/client/discovery';
+import type { SubjectId } from '@kroma/client/media';
+import type { RequestStatus } from '@kroma/client/requests';
+import { posterColors, sizedImageUrl, type Translate } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import { Box, Img, rhythm, Text } from '@kroma/ui/kit';
 import { type ReactNode, useState } from 'react';

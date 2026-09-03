@@ -2,7 +2,7 @@
 // detail toggle and the list page. Server-backed, with optimistic toggles that
 // revert if the call fails.
 
-import type { SubjectId } from '@kroma/core';
+import type { SubjectId } from '@kroma/client/media';
 import {
   createContext,
   type ReactNode,

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { KromaApiError } from '@kroma/core';
+import { KromaApiError } from '@kroma/client';
 import { I18nProvider } from '@kroma/ui';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactElement, ReactNode } from 'react';

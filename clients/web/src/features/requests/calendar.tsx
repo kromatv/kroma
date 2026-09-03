@@ -4,8 +4,8 @@
 // Releases landing within the week get the accent date treatment so the
 // imminent stuff pops out of the list.
 
+import type { CalendarEntry } from '@kroma/client/requests';
 import {
-  type CalendarEntry,
   daysFromToday,
   episodeTag,
   monthKey,

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RequestContext } from '../../core/http';
+import type { RequestContext } from '../../core/client';
 import type { InviteToken, SessionId } from './ids';
 import { passkeysApi } from './passkeys';
 import { quickConnectApi } from './quick-connect';

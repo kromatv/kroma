@@ -1,5 +1,9 @@
-import type { GenQuality, SubCapabilities } from '@kroma/core';
-import { GEN_LANGS, GEN_QUALITIES } from '@kroma/core';
+import {
+  GEN_LANGS,
+  GEN_QUALITIES,
+  type GenQuality,
+  type SubCapabilities,
+} from '@kroma/client/subtitles';
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { Pressable, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';

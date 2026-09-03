@@ -1,4 +1,4 @@
-import type { Query, RequestContext } from '../../core/http';
+import type { Query, RequestContext } from '../../core/client';
 import { JobStarted } from '../jobs';
 import { artworkApi } from './artwork';
 import type { ItemId, LibraryId, ShowId } from './ids';

@@ -1,4 +1,5 @@
-import type { AudioTrack, MediaItem, Translate } from '@kroma/core';
+import type { AudioTrack, MediaItem } from '@kroma/client/media';
+import type { Translate } from '@kroma/core';
 import { describe, expect, it } from 'vitest';
 import { buildLeanStats, type LeanStatsInput } from './lean-stats';
 

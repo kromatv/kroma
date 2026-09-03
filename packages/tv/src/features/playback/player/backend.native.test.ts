@@ -1,7 +1,8 @@
 // The native playback backend (Apple TV, Android TV): expo-video is the platform
 // player, so the only decision is direct playback versus a server remux.
 
-import type { MediaItem, PlayEnv } from '@kroma/core';
+import type { MediaItem } from '@kroma/client/media';
+import type { PlayEnv } from '@kroma/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EnginePref } from '#tv/app/enginePref';
 

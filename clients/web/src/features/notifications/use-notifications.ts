@@ -2,7 +2,8 @@
 // recipient: a socket only ever receives its own account's, so nothing that
 // arrives here needs filtering.
 
-import { KromaEvents, type NotificationId, type NotificationsView } from '@kroma/core';
+import { KromaEvents } from '@kroma/client/events';
+import type { NotificationId, NotificationsView } from '@kroma/client/notifications';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { apiBase, kromaClient } from '#web/shared/lib/api';

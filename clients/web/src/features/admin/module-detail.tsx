@@ -1,4 +1,4 @@
-import type { StoreModule } from '@kroma/core';
+import type { StoreModule } from '@kroma/client/modules';
 import { useT } from '@kroma/ui';
 import { Box, Button, EmptyState, Skeleton, Surface } from '@kroma/ui/kit';
 import { useNavigate } from '@tanstack/react-router';

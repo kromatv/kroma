@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
+
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
 import { fakeClient } from '@kroma/client/test';
-import type { KromaClient, MediaItem } from '@kroma/core';
 import { cleanup, fireEvent, render } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

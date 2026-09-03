@@ -3,7 +3,8 @@
 // `defaultNotFoundComponent` (unmatched routes → 404). Styled to the KROMA
 // design: deep charcoal, a single amber accent, a big cinematic status number.
 
-import { apiErrorText, KromaApiError, type MessageKey } from '@kroma/core';
+import { apiErrorText, KromaApiError } from '@kroma/client';
+import type { MessageKey } from '@kroma/core';
 import { useT } from '@kroma/ui';
 import {
   Box,

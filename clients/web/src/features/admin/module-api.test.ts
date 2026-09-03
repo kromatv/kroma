@@ -1,4 +1,4 @@
-import { sessionToken, setSessionToken } from '@kroma/core';
+import { sessionToken, setSessionToken } from '@kroma/client';
 import { describe, expect, it } from 'vitest';
 import {
   calls,

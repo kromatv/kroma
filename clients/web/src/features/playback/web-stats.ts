@@ -1,5 +1,5 @@
+import type { AudioTrack } from '@kroma/client/media';
 import {
-  type AudioTrack,
   formatTimecode as clock,
   decimal,
   formatBytes,

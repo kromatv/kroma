@@ -1,4 +1,4 @@
-import { KromaApiError } from '@kroma/core';
+import { KromaApiError } from '@kroma/client';
 import { Box, Button, Field, styles } from '@kroma/ui/kit';
 import { useState } from 'react';
 import { type Note, ProfileNote } from '#mobile/components/profile/ProfileNote';

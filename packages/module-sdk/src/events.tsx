@@ -1,7 +1,7 @@
 // Live server events for module pages: one socket per mount, torn down with
 // the component, handler always the latest render's.
 
-import { KromaEvents, type ServerEvent } from '@kroma/core';
+import { KromaEvents, type ServerEvent } from '@kroma/client/events';
 import { useEffect, useRef } from 'react';
 import { useAdminHost } from './admin/context';
 

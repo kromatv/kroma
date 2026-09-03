@@ -1,4 +1,5 @@
-import type { AudioTrack, Translate } from '@kroma/core';
+import type { AudioTrack } from '@kroma/client/media';
+import type { Translate } from '@kroma/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MovieView } from '../../shared/lib/api';
 import { buildWebStats, type WebStatsInput } from './web-stats';

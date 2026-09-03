@@ -1,4 +1,5 @@
-import type { MessageKey, PlayEntry } from '@kroma/core';
+import type { PlayEntry } from '@kroma/client/admin';
+import type { MessageKey } from '@kroma/core';
 import { TABULAR } from '@kroma/module-sdk';
 import { useFormat, useT } from '@kroma/ui';
 import { Box, EmptyState, type SortColumn, Table, Text } from '@kroma/ui/kit';

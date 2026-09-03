@@ -1,7 +1,7 @@
 // Native shells send a User-Agent that names nothing (`KROMA/1 CFNetwork/…`,
 // `okhttp/…`); only the browser shell is allowed to say nothing itself.
 
-import { clientUserAgent } from '@kroma/core';
+import { clientUserAgent } from '@kroma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { setBuildInfo } from '#tv/app/clientBuild';
 

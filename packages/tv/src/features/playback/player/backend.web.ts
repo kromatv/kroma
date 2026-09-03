@@ -3,12 +3,12 @@
 // plane, or mpv on the desktop shell. The hook that drives playback never
 // learns which one it got.
 
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
 import {
   audioTracksOf,
   avplayDirectPlayable,
   canDirectPlay,
-  type KromaClient,
-  type MediaItem,
   NATIVE_TV_CAPS,
   type PlayEnv,
   selectEngine,

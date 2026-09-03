@@ -1,10 +1,10 @@
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
 import {
   audioTracksOf,
   beyondDecoder,
   canDirectPlay,
   type DirectPlayVerdict,
-  type KromaClient,
-  type MediaItem,
   preferredAudioIndex,
 } from '@kroma/core';
 import { storedAudioFilter } from '@kroma/ui';

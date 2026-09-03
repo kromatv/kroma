@@ -2,7 +2,7 @@
 // shows name + type + default badge + model·host; expanded reveals the
 // editable fields and per-card Test / Set default / Remove. Backed by
 // /api/admin/llm*.
-import type { KromaClient } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
 import { useT } from '@kroma/ui';
 import { Badge, Box, Focusable, Icon, Row, Surface, styles, Text } from '@kroma/ui/kit';
 import { useState } from 'react';

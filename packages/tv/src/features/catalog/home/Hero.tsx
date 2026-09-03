@@ -1,14 +1,11 @@
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem, Section, SectionItem, Show } from '@kroma/client/media';
 import {
   formatRuntime,
   genreLabels,
-  type KromaClient,
-  type MediaItem,
   posterColors,
   qualityBadge,
   qualityBadgeForVideo,
-  type Section,
-  type SectionItem,
-  type Show,
   type Translate,
 } from '@kroma/core';
 import { useT } from '@kroma/ui';

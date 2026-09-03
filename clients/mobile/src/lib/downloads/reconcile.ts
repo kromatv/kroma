@@ -1,5 +1,6 @@
 import { getExistingDownloadTasks } from '@kesha-antonov/react-native-background-downloader';
-import type { KromaClient, MediaItem } from '@kroma/core';
+import type { KromaClient } from '@kroma/client';
+import type { MediaItem } from '@kroma/client/media';
 import { type DownloadEntry, readIndex, readWanted, sweepOrphans } from './store';
 import { adoptTransfer, type TransferHooks, transferMetaOf } from './transfer';
 
