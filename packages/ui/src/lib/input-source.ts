@@ -22,6 +22,7 @@ if (win) {
   };
   win.addEventListener('mousemove', pointer, { capture: true, passive: true });
   win.addEventListener('wheel', pointer, { capture: true, passive: true });
+  win.addEventListener('pointerdown', pointer, { capture: true, passive: true });
   win.addEventListener(
     'keydown',
     () => {
@@ -31,8 +32,8 @@ if (win) {
   );
 }
 
-/** True when the last input was the pointer (mouse move or wheel), false the
- * moment a key is pressed. Always false off the web. */
+/** True when the last input was the pointer (mouse move, wheel or press), false
+ * the moment a key is pressed. Always false off the web. */
 export function pointerDriving(): boolean {
   return pointerDrove;
 }

@@ -135,6 +135,7 @@ describe('a Focusable that delegates its host to a router link', () => {
       </Focusable>,
     );
 
+    fireEvent.keyDown(window, { key: 'Tab' });
     fireEvent.focus(host('Genres'));
 
     expect(host('Genres').style.outlineWidth).toBe(
